@@ -1,0 +1,235 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>org.neo4j.build</groupId>
+    <artifactId>parent-pom</artifactId>
+    <version>30</version>
+    <relativePath />
+  </parent>
+  <groupId>org.neo4j</groupId>
+  <artifactId>installer-qa</artifactId>
+  <version>1.6-SNAPSHOT</version>
+  <packaging>jar</packaging>
+
+  <name>Neo4j Installer Quality Assurance</name>
+  <description>QA for installers for the Neo4j Server</description>
+
+  <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
+
+  <scm>
+    <connection>scm:git:git://github.com/neo4j/packaging.git</connection>
+    <developerConnection>scm:git:git@github.com:neo4j/packaging.git</developerConnection>
+    <url>https://github.com/neo4j/packaging</url>
+  </scm>
+
+  <properties>
+    <short-name>installer-qa</short-name>
+    <neo4j.version>1.6.4-SNAPSHOT</neo4j.version>
+    <license-text.header>GPL-3-header.txt</license-text.header>
+  </properties>
+
+  <dependencies>
+
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit-dep</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.hamcrest</groupId>
+      <artifactId>hamcrest-all</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.sun.jersey</groupId>
+      <artifactId>jersey-client</artifactId>
+      <version>1.9</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.neo4j.app</groupId>
+      <artifactId>neo4j-server</artifactId>
+      <version>${neo4j.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>net.schmizz</groupId>
+      <artifactId>sshj</artifactId>
+      <version>0.6.1</version>
+      <scope>compile</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.bouncycastle</groupId>
+      <artifactId>bcmail-jdk16</artifactId>
+      <version>1.46</version>
+      <type>jar</type>
+      <scope>compile</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <version>2.2</version>
+        <executions>
+          <execution>
+            <id>unpack</id>
+            <phase>process-resources</phase>
+            <goals>
+              <goal>copy</goal>
+            </goals>
+            <configuration>
+              <outputDirectory>${project.build.outputDirectory}</outputDirectory>
+              <artifactItems>
+                <!-- Windows installers -->
+                <artifactItem>
+                  <groupId>org.neo4j</groupId>
+                  <artifactId>installer-windows</artifactId>
+                  <version>${neo4j.version}</version>
+                  <classifier>windows-community</classifier>
+                  <type>msi</type>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>org.neo4j</groupId>
+                  <artifactId>installer-windows</artifactId>
+                  <version>${neo4j.version}</version>
+                  <classifier>windows-advanced</classifier>
+                  <type>msi</type>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>org.neo4j</groupId>
+                  <artifactId>installer-windows</artifactId>
+                  <version>${neo4j.version}</version>
+                  <classifier>windows-enterprise</classifier>
+                  <type>msi</type>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>org.neo4j</groupId>
+                  <artifactId>installer-windows</artifactId>
+                  <version>${neo4j.version}</version>
+                  <classifier>windows-coordinator</classifier>
+                  <type>msi</type>
+                </artifactItem>
+
+                <!-- Debian installers -->
+                <artifactItem>
+                  <groupId>org.neo4j</groupId>
+                  <artifactId>installer-debian</artifactId>
+                  <version>${neo4j.version}</version>
+                  <classifier>debian-community</classifier>
+                  <type>deb</type>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>org.neo4j</groupId>
+                  <artifactId>installer-debian</artifactId>
+                  <version>${neo4j.version}</version>
+                  <classifier>debian-advanced</classifier>
+                  <type>deb</type>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>org.neo4j</groupId>
+                  <artifactId>installer-debian</artifactId>
+                  <version>${neo4j.version}</version>
+                  <classifier>debian-enterprise</classifier>
+                  <type>deb</type>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>org.neo4j</groupId>
+                  <artifactId>installer-debian</artifactId>
+                  <version>${neo4j.version}</version>
+                  <classifier>debian-coordinator</classifier>
+                  <type>deb</type>
+                </artifactItem>
+              </artifactItems>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+
+      <plugin>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <executions>
+          <execution>
+            <phase>process-resources</phase>
+            <goals>
+              <goal>run</goal>
+            </goals>
+            <configuration>
+              <target>
+                <!-- Windows installers -->
+                <move
+                  file="${project.build.outputDirectory}/installer-windows-${project.version}-windows-community.msi"
+                  toFile="${project.build.outputDirectory}/installer-windows-community.msi" />
+                <move
+                  file="${project.build.outputDirectory}/installer-windows-${project.version}-windows-advanced.msi"
+                  toFile="${project.build.outputDirectory}/installer-windows-advanced.msi" />
+                <move
+                  file="${project.build.outputDirectory}/installer-windows-${project.version}-windows-enterprise.msi"
+                  toFile="${project.build.outputDirectory}/installer-windows-enterprise.msi" />
+                <move
+                  file="${project.build.outputDirectory}/installer-windows-${project.version}-windows-coordinator.msi"
+                  toFile="${project.build.outputDirectory}/installer-windows-coordinator.msi" />
+
+                <!-- Debian installers -->
+                <move
+                  file="${project.build.outputDirectory}/installer-debian-${project.version}-debian-community.deb"
+                  toFile="${project.build.outputDirectory}/installer-debian-community.deb" />
+                <move
+                  file="${project.build.outputDirectory}/installer-debian-${project.version}-debian-advanced.deb"
+                  toFile="${project.build.outputDirectory}/installer-debian-advanced.deb" />
+                <move
+                  file="${project.build.outputDirectory}/installer-debian-${project.version}-debian-enterprise.deb"
+                  toFile="${project.build.outputDirectory}/installer-debian-enterprise.deb" />
+                <move
+                  file="${project.build.outputDirectory}/installer-debian-${project.version}-debian-coordinator.deb"
+                  toFile="${project.build.outputDirectory}/installer-debian-coordinator.deb" />
+              </target>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <systemPropertyVariables>
+            <neo4j.version>${neo4j.version}</neo4j.version>
+            <java.util.logging.config.file>test-logging.properties</java.util.logging.config.file>
+          </systemPropertyVariables>
+        </configuration>
+      </plugin>
+
+    </plugins>
+  </build>
+
+  <repositories>
+    <repository>
+      <id>neo4j-snapshot-repository</id>
+      <name>Publically available Maven 2 repository for Neo4j</name>
+      <url>http://m2.neo4j.org/snapshots</url>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
+    </repository>
+    <repository>
+      <id>neo4j-release-repository</id>
+      <name>Publically available Maven 2 repository for Neo4j</name>
+      <url>http://m2.neo4j.org/releases</url>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+    </repository>
+  </repositories>
+
+</project>

@@ -1,0 +1,14 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+require 'share/neo4j/cygwin'
+
+Vagrant::Config.run do |config|
+  config.vm.box = "windows-2008R2-amd64"
+  config.vm.system = Neo4j::Cygwin
+  
+  config.vm.network("33.33.33.12")
+  
+  config.vm.provision :shell, :path => "share/win2008-disable-firewall.sh"
+  
+end

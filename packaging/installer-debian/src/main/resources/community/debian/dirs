@@ -1,0 +1,12 @@
+
+# Debian policy is that database data goes in /var/lib/[package] 
+# (see http://people.debian.org/~seanius/policy/dbapp-policy.html/)
+var/lib/neo4j
+
+# Need to create neo4j's own directory to track the pid since the daemon is not run as root 
+# and doesn't have permission to write the pid to /var/run (which would be the preferred location).
+var/run/neo4j
+
+# Store neo4j log file in it's own directory, since log rotation is in place, so there will be
+# many of them.
+var/log/neo4j

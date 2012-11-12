@@ -1,0 +1,7 @@
+target/
+lib_managed/
+src_managed/
+project/boot/
+*.gz
+*.zip
+neo4j_home/

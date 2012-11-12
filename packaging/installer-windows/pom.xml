@@ -1,0 +1,344 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+        <groupId>org.neo4j.build</groupId>
+        <artifactId>parent-pom</artifactId>
+        <version>30</version>
+        <relativePath/>
+    </parent>
+
+	<groupId>org.neo4j</groupId>
+	<artifactId>installer-windows</artifactId>
+	<version>1.6-SNAPSHOT</version>
+	<packaging>pom</packaging>
+
+	<name>Neo4j Windows Installer</name>
+	<description>Windows installers for the Neo4j Server</description>
+
+	<url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
+
+	<scm>
+		<connection>scm:git:git://github.com/neo4j/packaging.git</connection>
+		<developerConnection>scm:git:git@github.com:neo4j/packaging.git</developerConnection>
+		<url>https://github.com/neo4j/packaging</url>
+	</scm>
+
+	<properties>
+		<short-name>installer-windows</short-name>
+		<neo4j.version>1.6.4-SNAPSHOT</neo4j.version>
+        <license-text.header>GPL-3-header.txt</license-text.header>
+
+		<buildnumber>0</buildnumber>
+
+		<windows-wrapper.version>2-SNAPSHOT</windows-wrapper.version>
+		<windows-wrapper.path>${project.build.outputDirectory}\windows-service-wrapper-${windows-wrapper.version}.jar</windows-wrapper.path>
+
+		<ai.executable>C:\Program Files\Caphyon\Advanced Installer 8.6\bin\x86\AdvancedInstaller.com</ai.executable>
+	</properties>
+
+	<dependencies>
+		<dependency>
+			<groupId>org.neo4j.assembly</groupId>
+			<artifactId>neo4j-standalone</artifactId>
+			<version>${neo4j.version}</version>
+			<classifier>windows-community</classifier>
+			<type>zip</type>
+			<exclusions>
+				<exclusion>
+					<groupId>org.codehaus.groovy</groupId>
+					<artifactId>groovy</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+	</dependencies>
+
+	<build>
+		<resources>
+			<resource>
+				<directory>src/main/resources</directory>
+				<filtering>true</filtering>
+				<includes>
+					<include>**/*.commands</include>
+				</includes>
+			</resource>
+			<resource>
+				<directory>src/main/resources</directory>
+				<filtering>false</filtering>
+				<excludes>
+					<exclude>**/*.commands</exclude>
+				</excludes>
+			</resource>
+		</resources>
+
+		<plugins>
+
+			<plugin>
+				<artifactId>maven-resources-plugin</artifactId>
+				<executions>
+					<execution>
+						<phase>process-resources</phase>
+						<goals>
+							<goal>resources</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-dependency-plugin</artifactId>
+				<version>2.2</version>
+				<executions>
+					<execution>
+						<id>unpack</id>
+						<phase>process-resources</phase>
+						<goals>
+							<goal>copy</goal>
+						</goals>
+						<configuration>
+							<artifactItems>
+								<artifactItem>
+									<groupId>org.neo4j.assembly</groupId>
+									<artifactId>neo4j-standalone</artifactId>
+									<classifier>windows-community</classifier>
+									<type>zip</type>
+									<outputDirectory>${project.build.outputDirectory}</outputDirectory>
+									<includes>**/*</includes>
+								</artifactItem>
+								<artifactItem>
+									<groupId>org.neo4j.assembly</groupId>
+									<artifactId>neo4j-standalone</artifactId>
+									<classifier>windows-advanced</classifier>
+									<type>zip</type>
+									<outputDirectory>${project.build.outputDirectory}</outputDirectory>
+									<includes>**/*</includes>
+								</artifactItem>
+								<artifactItem>
+									<groupId>org.neo4j.assembly</groupId>
+									<artifactId>neo4j-standalone</artifactId>
+									<classifier>windows-enterprise</classifier>
+									<type>zip</type>
+									<outputDirectory>${project.build.outputDirectory}</outputDirectory>
+									<includes>**/*</includes>
+								</artifactItem>
+							</artifactItems>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+
+			<plugin>
+				<groupId>org.codehaus.gmaven</groupId>
+				<artifactId>gmaven-plugin</artifactId>
+				<version>1.3</version>
+				<executions>
+					<execution>
+						<id>generate-windows-compliant-version</id>
+						<phase>generate-resources</phase>
+						<goals>
+							<goal>execute</goal>
+						</goals>
+						<configuration>
+							<source>
+								def version = project.properties['neo4j.version']
+
+								// If version does not match "X.Y[.Z]"
+								if( !( version =~ /^\d+\.\d+(\.\d+)?$/) ) {
+									// X.Y.Z[CLASSIFIER] to X.Y.Z.[BUILDNUMBER]
+									if( version =~ /^(\d+\.\d+\.\d+)[^\d]+/ ) {
+										match = (version =~ /^(\d+\.\d+\.\d+)[^\d]+/)
+										version = match[0][1] + "." + project.properties['buildnumber']
+									// X.Y[CLASSIFIER] to X.Y.0.[BUILDNUMBER]
+									} else {
+										match = (version =~ /^(\d+\.\d+)[^\d]+/)
+										version = match[0][1] + ".0." + project.properties['buildnumber']
+									}
+								}
+
+								project.properties['neo4j.version.windows_compliant'] = version
+							</source>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-antrun-plugin</artifactId>
+				<version>1.7</version>
+				<executions>
+					<execution>
+						<id>build-installers</id>
+						<phase>package</phase>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<configuration>
+							<target>
+								<!-- Unzip the standalone distributions -->
+								<unzip
+									src="${project.build.outputDirectory}/neo4j-standalone-${neo4j.version}-windows-community.zip"
+									dest="${project.build.outputDirectory}" />
+								<unzip
+									src="${project.build.outputDirectory}/neo4j-standalone-${neo4j.version}-windows-advanced.zip"
+									dest="${project.build.outputDirectory}" />
+								<unzip
+									src="${project.build.outputDirectory}/neo4j-standalone-${neo4j.version}-windows-enterprise.zip"
+									dest="${project.build.outputDirectory}" />
+
+								<!-- Move distributions into build folders -->
+								<move toDir="${project.build.outputDirectory}/community">
+									<fileset
+										dir="${project.build.outputDirectory}/neo4j-community-${neo4j.version}"
+										includes="**" />
+								</move>
+								<move toDir="${project.build.outputDirectory}/advanced">
+									<fileset
+										dir="${project.build.outputDirectory}/neo4j-advanced-${neo4j.version}"
+										includes="**" />
+								</move>
+								<move toDir="${project.build.outputDirectory}/enterprise">
+									<fileset
+										dir="${project.build.outputDirectory}/neo4j-enterprise-${neo4j.version}"
+										includes="**" />
+								</move>
+
+								<!-- Create duplicate AdvancedInstaller project for each distribution -->
+								<copy toDir="${project.build.outputDirectory}/community">
+									<fileset dir="${project.build.outputDirectory}/installer"
+										includes="**" />
+								</copy>
+
+								<copy toDir="${project.build.outputDirectory}/advanced">
+									<fileset dir="${project.build.outputDirectory}/installer"
+										includes="**" />
+								</copy>
+
+								<copy toDir="${project.build.outputDirectory}/enterprise">
+									<fileset dir="${project.build.outputDirectory}/installer"
+										includes="**" />
+								</copy>
+								
+								<copy toDir="${project.build.outputDirectory}/coordinator">
+									<fileset dir="${project.build.outputDirectory}/enterprise"
+										includes="**" />
+								</copy>
+
+								<!-- Run installer projects -->
+								<exec executable="${ai.executable}"
+									dir="${project.build.outputDirectory}/community">
+									<arg line="/execute" />
+									<arg line="installer.aip" />
+									<arg line="installer.commands" />
+								</exec>
+								<exec executable="${ai.executable}"
+									dir="${project.build.outputDirectory}/advanced">
+									<arg line="/execute" />
+									<arg line="installer.aip" />
+									<arg line="installer.commands" />
+								</exec>
+								<exec executable="${ai.executable}"
+									dir="${project.build.outputDirectory}/enterprise">
+									<arg line="/execute" />
+									<arg line="installer.aip" />
+									<arg line="installer.commands" />
+								</exec>
+								
+								<!-- For enterprise, create coordinator installer as well -->
+								<exec executable="${ai.executable}"
+									dir="${project.build.outputDirectory}/coordinator">
+									<arg line="/execute" />
+									<arg line="coordinator-installer.aip" />
+									<arg line="coordinator-installer.commands" />
+								</exec>
+
+								<!-- Copy resulting installers into /target, and give them appropriate 
+									names -->
+								<copy
+									file="${project.build.outputDirectory}/community/BuildSetupFiles/installer.msi"
+									toFile="target/neo4j-community-setup-${neo4j.version}.msi" />
+								<copy
+									file="${project.build.outputDirectory}/advanced/BuildSetupFiles/installer.msi"
+									toFile="target/neo4j-advanced-setup-${neo4j.version}.msi" />
+								<copy
+									file="${project.build.outputDirectory}/enterprise/BuildSetupFiles/installer.msi"
+									toFile="target/neo4j-enterprise-setup-${neo4j.version}.msi" />
+								<copy
+									file="${project.build.outputDirectory}/coordinator/BuildSetupFiles/installer.msi"
+									toFile="target/neo4j-coordinator-setup-${neo4j.version}.msi" />
+
+							</target>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			
+			
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>build-helper-maven-plugin</artifactId>
+				<version>1.5</version>
+				<executions>
+				  <execution>
+					<id>attach-artifacts</id>
+					<phase>package</phase>
+					<goals>
+					  <goal>attach-artifact</goal>
+					</goals>
+					<configuration>
+					  <artifacts>
+						<artifact>
+						  <file>target/neo4j-community-setup-${neo4j.version}.msi</file>
+						  <type>zip</type>
+						  <classifier>windows-community</classifier>
+						</artifact>
+						<artifact>
+						  <file>target/neo4j-advanced-setup-${neo4j.version}.msi</file>
+						  <type>zip</type>
+						  <classifier>windows-advanced</classifier>
+						</artifact>
+						<artifact>
+						  <file>target/neo4j-enterprise-setup-${neo4j.version}.msi</file>
+						  <type>zip</type>
+						  <classifier>windows-enterprise</classifier>
+						</artifact>
+						<artifact>
+						  <file>target/neo4j-coordinator-setup-${neo4j.version}.msi</file>
+						  <type>zip</type>
+						  <classifier>windows-coordinator</classifier>
+						</artifact>
+					  </artifacts>
+					</configuration>
+				  </execution>
+				</executions>
+			  </plugin>
+		</plugins>
+	</build>
+
+	<repositories>
+		<repository>
+			<id>neo4j-snapshot-repository</id>
+			<name>Publically available Maven 2 repository for Neo4j</name>
+			<url>http://m2.neo4j.org/snapshots</url>
+			<snapshots>
+				<enabled>true</enabled>
+			</snapshots>
+			<releases>
+				<enabled>false</enabled>
+			</releases>
+		</repository>
+		<repository>
+			<id>neo4j-release-repository</id>
+			<name>Publically available Maven 2 repository for Neo4j</name>
+			<url>http://m2.neo4j.org/releases</url>
+			<snapshots>
+				<enabled>false</enabled>
+			</snapshots>
+			<releases>
+				<enabled>true</enabled>
+			</releases>
+		</repository>
+	</repositories>
+
+</project>
