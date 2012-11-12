@@ -1,0 +1,47 @@
+[[python-embedded-core-properties]]
+== Properties ==
+
+Both nodes and relationships can have properties, so this section applies equally to both node and relationship objects.
+Allowed property values include strings, numbers, booleans, as well as arrays of those primitives.
+Within each array, all values must be of the same type.
+
+=== Setting properties ===
+
+[snippet,python]
+----
+component=neo4j-python-embedded
+source=core.py
+tag=setProperties
+classifier=test-sources
+----
+
+=== Getting properties ===
+
+[snippet,python]
+----
+component=neo4j-python-embedded
+source=core.py
+tag=getProperties
+classifier=test-sources
+----
+
+=== Removing properties ===
+
+[snippet,python]
+----
+component=neo4j-python-embedded
+source=core.py
+tag=deleteProperties
+classifier=test-sources
+----
+
+=== Looping through properties ===
+
+[snippet,python]
+----
+component=neo4j-python-embedded
+source=core.py
+tag=loopProperties
+classifier=test-sources
+----
+

@@ -1,0 +1,82 @@
+[[python-embedded-core-nodes]]
+== Nodes ==
+
+This describes operations that are specific to node objects.
+For documentation on how to handle properties on both relationships and nodes, see <<python-embedded-core-properties>>.
+
+=== Creating a node ===
+
+[snippet,python]
+----
+component=neo4j-python-embedded
+source=core.py
+tag=createNode
+classifier=test-sources
+----
+
+=== Fetching a node by id ===
+
+[snippet,python]
+----
+component=neo4j-python-embedded
+source=core.py
+tag=getNodeById
+classifier=test-sources
+----
+
+=== Fetching the reference node ===
+
+[snippet,python]
+----
+component=neo4j-python-embedded
+source=core.py
+tag=getReferenceNode
+classifier=test-sources
+----
+
+=== Removing a node ===
+
+[snippet,python]
+----
+component=neo4j-python-embedded
+source=core.py
+tag=deleteNode
+classifier=test-sources
+----
+
+TIP: See also <<transactions-delete>>.
+
+=== Removing a node by id ===
+
+[snippet,python]
+----
+component=neo4j-python-embedded
+source=core.py
+tag=deleteByIdNode
+classifier=test-sources
+----
+
+=== Accessing relationships from a node ===
+
+For details on what you can do with the relationship objects, see <<python-embedded-core-relationships>>.
+
+[snippet,python]
+----
+component=neo4j-python-embedded
+source=core.py
+tag=accessingRelationships
+classifier=test-sources
+----
+
+=== Getting and/or counting all nodes ===
+
+Use this with care, it will become extremely slow in large datasets.
+
+[snippet,python]
+----
+component=neo4j-python-embedded
+source=core.py
+tag=getAllNodes
+classifier=test-sources
+----
+

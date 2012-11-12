@@ -1,0 +1,111 @@
+[[python-embedded-reference-traversal]]
+Traversals
+==========
+
+[WARNING]
+Traversal support in neo4j-embedded for python is _deprecated_ as of Neo4j 1.7 GA. 
+Please see <<python-embedded-reference-cypher>> or the core API instead.
+This is done because the traversal framework requires a very tight coupling between the JVM and python.
+To keep improving performance, we need to break that coupling.
+
+The below documentation will be removed in neo4j-embedded 1.8, and support for traversals will be dropped in neo4j-embedded 1.9.
+
+The traversal API used here is essentially the same as the one used in the Java API, with a few modifications.
+
+Traversals start at a given node and uses a set of rules to move through the graph and to decide what parts of the graph to return.
+
+== Basic traversals ==
+
+=== Following a relationship ===
+
+The most basic traversals simply follow certain relationship types, and return everything they encounter.
+By default, each node is visited only once, so there is no risk of infinite loops.
+
+[snippet,python]
+----
+component=neo4j-python-embedded
+source=traversal.py
+tag=basicTraversal
+classifier=test-sources
+----
+
+=== Following a relationship in a specific direction ===
+
+You can tell the traverser to only follow relationships in some specific direction.
+
+[snippet,python]
+----
+component=neo4j-python-embedded
+source=traversal.py
+tag=directedTraversal
+classifier=test-sources
+----
+
+=== Following multiple relationship types ===
+
+You can specify an arbitrary number of relationship types and directions to follow.
+
+[snippet,python]
+----
+component=neo4j-python-embedded
+source=traversal.py
+tag=multiRelationshipTraversal
+classifier=test-sources
+----
+
+== Traversal results ==
+
+A traversal can give you one of three different result types: <<python-embedded-core-nodes,nodes>>, <<python-embedded-core-relationships,relationships>> or <<python-embedded-core-paths,paths>>.
+
+Traversals are performed lazily, which means that the graph is traversed as you loop through the result.
+
+[snippet,python]
+----
+component=neo4j-python-embedded
+source=traversal.py
+tag=traversalResults
+classifier=test-sources
+----
+
+== Uniqueness ==
+
+To avoid infinite loops, it's important to define what parts of the graph can be re-visited during a traversal.
+By default, uniqueness is set to +NODE_GLOBAL+, which means that each node is only visited once.
+
+Here are the other options that are available.
+
+[snippet,python]
+----
+component=neo4j-python-embedded
+source=traversal.py
+tag=uniqueness
+classifier=test-sources
+----
+
+== Ordering ==
+
+You can traverse either depth first, or breadth first. Depth first is the default, because it has lower memory overhead.
+
+[snippet,python]
+----
+component=neo4j-python-embedded
+source=traversal.py
+tag=ordering
+classifier=test-sources
+----
+
+== Evaluators - advanced filtering ==
+
+In order to traverse based on other critera, such as node properties, or more complex things like neighboring nodes or patterns, we use evaluators.
+An evaluator is a normal Python method that takes a path as an argument, and returns a description of what to do next.
+
+The path argument is the current position the traverser is at, and the description of what to do can be one of four things, as seen in the example below.
+
+[snippet,python]
+----
+component=neo4j-python-embedded
+source=traversal.py
+tag=evaluators
+classifier=test-sources
+----
+

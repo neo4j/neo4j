@@ -1,0 +1,14 @@
+[[python-embedded-tutorial-helloworld]]
+Hello, world!
+=============
+
+Here is a simple example to get you started.
+
+[snippet,python]
+----
+component=neo4j-python-embedded
+source=examples.py
+tag=helloworld
+classifier=test-sources
+----
+
