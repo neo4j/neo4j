@@ -1,0 +1,40 @@
+[[tutorials-java-embedded-graph-algo]]
+Graph Algorithm examples
+========================
+
+[TIP]
+The source code used in the example is found here:
+https://github.com/neo4j/community/blob/{neo4j-git-tag}/embedded-examples/src/test/java/org/neo4j/examples/PathFindingExamplesTest.java[PathFindingExamplesTest.java]
+
+
+Calculating the shortest path (least number of relationships) between two nodes:
+
+[snippet,java]
+----
+component=neo4j-examples
+source=org/neo4j/examples/PathFindingExamplesTest.java
+tag=shortestPathUsage
+----
+
+Using http://en.wikipedia.org/wiki/Dijkstra%27s_algorithm[Dijkstra's algorithm] to calculate cheapest path between node A and B where each relationship can have a weight (i.e. cost) and the path(s) with least cost are found.
+
+[snippet,java]
+----
+component=neo4j-examples
+source=org/neo4j/examples/PathFindingExamplesTest.java
+tag=dijkstraUsage
+----
+
+Using http://en.wikipedia.org/wiki/A*_search_algorithm[A*] to calculate the cheapest path between node A and B, where cheapest is for example the path in a network of roads which has the shortest length between node A and B.
+Here's our example graph:
+
+image::graphalgo-astar.png[scaledwidth="50%", alt="A* algorithm example graph"]
+
+[snippet,java]
+----
+component=neo4j-examples
+source=org/neo4j/examples/PathFindingExamplesTest.java
+tag=astarUsage
+----
+
+

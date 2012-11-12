@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+    Copyright (c) 2002-2012 "Neo Technology,"
+    Network Engine for Objects in Lund AB [http://neotechnology.com]
+
+    This file is part of Neo4j.
+
+    Neo4j is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as
+    published by the Free Software Foundation, either version 3 of the
+    License, or (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+-->
+<licensing-requirements>
+  <missing-artifacts>
+    <artifact id="arbor.js" name="arbor.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="arbor-graphics.js" name="arbor-graphics.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="arbor-tween.js" name="arbor-tween.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="easing.js" name="Easing Equations (in easing.js)">
+      <license>BSD License</license>
+    </artifact>
+    <artifact id="backbone.js" name="Underscore.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="colorpicker.js" name="Color picker">
+      <license>MIT</license>
+      <license>GPL2</license>
+    </artifact>
+    <artifact id="DateFormat.js" name="Date Format">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="excanvas.js" name="ExplorerCanvas">
+      <license>ASL2.0</license>
+    </artifact>
+    <artifact id="has.js" name="Pure Feature Detection Library (has.js)">
+      <license>New BSD License</license>
+      <license>MIT</license>
+      <license>Academic Free License</license>
+    </artifact>
+    <artifact id="jquery.flot.js" name="jquery.flot.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="jquery.colorhelpers.js" name="jquery.colorhelpers.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="jquery.hotkeys.js" name="jquery.hotkeys.js">
+      <license>MIT</license>
+      <license>GPL2</license>
+    </artifact>
+    <artifact id="jquery.js" name="JQuery">
+      <license>MIT</license>
+      <license>GPL2</license>
+    </artifact>
+    <artifact id="jquery.putCursorAtEnd.js" name="jquery.putCursorAtEnd.js">
+      <license>MIT</license>
+      <license>GPL2</license>
+    </artifact>
+    <artifact id="jquery.sortable.js" name="jquery.sortable.js">
+      <license>MIT</license>
+      <license>GPL2</license>
+    </artifact>
+    <artifact id="json2.js" name="JSON2">
+      <license>Public Domain - JSON2</license>
+    </artifact>
+    <artifact id="rgbcolor.js" name="RGB Color">
+      <license>Public Domain - RGB Color</license>
+    </artifact>
+    <artifact id="seedrandom.js" name="seedrandom.js">
+      <license>BSD - seedrandom.js</license>
+    </artifact>
+    <artifact id="glyphish" name="Glyphish Icons Free">
+      <license>Creative Commons - Glyphish</license>
+    </artifact>
+    <artifact id="tango" name="Tango Icons">
+      <license>Public Domain - Tango</license>
+    </artifact>
+  </missing-artifacts>
+</licensing-requirements>
+

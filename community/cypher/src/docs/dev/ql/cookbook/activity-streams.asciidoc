@@ -1,0 +1,8 @@
+[[domain-modeling-activity-streams]]
+== Activity Streams ==
+
+.Graph
+include::includes/cypher-graphity-graph.asciidoc[]
+
+include::find-activity-streams-in-a-network-without-scaling-penalty.asciidoc[]
+

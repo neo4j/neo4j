@@ -1,0 +1,6 @@
+install: 
+  - MAVEN_OPTS="-Xss2m -Xmx1G"
+  - mvn install -DskipTests
+  
+language: java
+jdk: openjdk6

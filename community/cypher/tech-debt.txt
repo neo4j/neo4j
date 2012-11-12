@@ -1,0 +1,3 @@
+* Strings should all be move into a single file in the parser
+* We need to expose updating statistics for Java objects
+* Parameters should be stored in the QueryState and not in the execution context

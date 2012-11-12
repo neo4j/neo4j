@@ -1,0 +1,22 @@
+%p
+  %label(for="create-relationship-from") From node
+  %input#create-relationship-from(type="text" value="#{htmlEscape(from)}")
+
+%p
+  %label(for="create-relationship-type") Type
+  %input#create-relationship-type(type="text" value="#{htmlEscape(type)}")
+
+%p
+  %select#create-relationship-types &nbsp;
+    %option Types in use
+    :each type in types
+      %option= htmlEscape(type)
+  .break
+
+%p
+  %label(for="create-relationship-to") To node
+  %input#create-relationship-to(type="text" value="#{htmlEscape(to)}")
+
+%ul.button-bar.popout-controls
+  %li
+    #create-relationship.button Create

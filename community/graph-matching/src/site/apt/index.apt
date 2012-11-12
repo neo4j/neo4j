@@ -1,0 +1,31 @@
+The Neo4j graph pattern matching component
+
+ This component provides means for searching for patterns in a
+ Neo4j Graph Database.
+
+ The pattern matching is done by first defining a graph pattern and then
+ searching for matching occurrences of that pattern in the graph around a
+ given anchor node.
+
+* Introduction to the API
+
+ For complete API reference, please refer to the {{{apidocs/index.html}JavaDoc pages}}.
+ 
+ A graph matching pattern is made up of two main object types, the
+ {{{apidocs/org/neo4j/graphmatching/PatternNode.html}PatternNode}} and the
+ {{{apidocs/org/neo4j/graphmatching/PatternRelationship.html}PatternRelationship}}.
+ <<<PatternNode>>>s and <<<PatternRelationship>>>s can be associated with actual
+ <<<Node>>>s and <<<Relationship>>>s respectively, or can be restricted by a set
+ of {{{apidocs/org/neo4j/graphmatching/AbstractPatternObject.html#addPropertyConstraint(java.lang.String, org.neo4j.graphmatching.ValueMatcher)}property constraints}}.
+ Associating a <<<PatternNode>>> with a <<<Node>>> or a <<<PatternRelationship>>>
+ with a <<<Relatoonship>>> will force that <<<PatternNode>>> or
+ <<<PatternRelationship>>> to only match the <<<Node>>> or <<<Relationship>>> it
+ was associated with. Adding constraints on properties will restrict that
+ <<<PatternNode>>> or <<<PatternRelationship>>> to only match a <<<Node>>> or
+ <<<Relationship>>> where the property with the given name matches
+ {{{apidocs/org/neo4j/graphmatching/ValueMatcher.html}the defined restriction}}.
+
+* Examples
+
+ See {{{https://github.com/neo4j/community/blob/master/graph-matching/src/test/java/examples/TestSiteIndexExamples.java}TestSiteIndexExamples.java}} for examples.
+

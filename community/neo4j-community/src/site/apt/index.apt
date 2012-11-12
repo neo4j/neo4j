@@ -1,0 +1,12 @@
+Neo4j Community
+
+    This is a meta package containing the most commonly used Neo4j libraries,
+    which means that it enables you to add these as a single {{{http://maven.apache.org/}Maven}}
+    dependency in your projects. Using this package, you're also sure that you use
+    component versions that fit together.
+
+    To see what's included, have a look at the {{{./dependencies.html}dependencies}}.
+    
+    See the {{{http://docs.neo4j.org/chunked/milestone/tutorials-java-embedded-setup.html}Neo4j Manual}} for further information.
+
+

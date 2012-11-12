@@ -1,0 +1,11 @@
+Export-Package: org.neo4j.graphalgo.*;version="${pom.version}"
+
+# ABK: using DynamicImport-Package is inelegant, but will do for now. 
+# The registration of services should be revised to
+# use alternate facilities for injecting the implementation classes. 
+DynamicImport-Package: *
+Implementation-Title: ${project.name}
+Implementation-Version: ${project.version}
+Implementation-Vendor-Id: ${project.groupId}
+Implementation-Revision: ${vcs.committedRevision}
+Implementation-Revision-Status: revision=${vcs.revision};status=${vcs.status};path=${vcs.path}

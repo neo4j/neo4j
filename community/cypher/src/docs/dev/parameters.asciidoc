@@ -1,0 +1,97 @@
+[[cypher-parameters]]
+Parameters
+==========
+
+Cypher supports querying with parameters. This allows developers to not to have to do string building
+to create a query, and it also makes caching of execution plans much easier for Cypher.
+
+Parameters can be used for literals and expressions in the +WHERE+ clause, for the index key and index value in the +START+
+clause, index queries, and finally for node/relationship ids. Parameters can not be used as for property names, since 
+property notation is part of query structure that is compiled into a query plan. 
+
+Accepted names for parameter are letters and number, and any combination of these.
+
+
+Here follows a few examples of how you can use parameters from Java.
+
+.Parameter for node id
+[snippet,java]
+----
+component=neo4j-cypher
+source=org/neo4j/cypher/javacompat/JavaExecutionEngineTest.java
+tag=exampleWithParameterForNodeId
+classifier=test-sources
+----
+
+.Parameter for node object
+[snippet,java]
+----
+component=neo4j-cypher
+source=org/neo4j/cypher/javacompat/JavaExecutionEngineTest.java
+tag=exampleWithParameterForNodeObject
+classifier=test-sources
+----
+
+.Parameter for multiple node ids
+[snippet,java]
+----
+component=neo4j-cypher
+source=org/neo4j/cypher/javacompat/JavaExecutionEngineTest.java
+tag=exampleWithParameterForMultipleNodeIds
+classifier=test-sources
+----
+
+.Parameter for string literal
+[snippet,java]
+----
+component=neo4j-cypher
+source=org/neo4j/cypher/javacompat/JavaExecutionEngineTest.java
+tag=exampleWithStringLiteralAsParameter
+classifier=test-sources
+----
+
+.Parameter for index key and value
+[snippet,java]
+----
+component=neo4j-cypher
+source=org/neo4j/cypher/javacompat/JavaExecutionEngineTest.java
+tag=exampleWithParametersForIndexKeyAndValue
+classifier=test-sources
+----
+
+.Parameter for index query
+[snippet,java]
+----
+component=neo4j-cypher
+source=org/neo4j/cypher/javacompat/JavaExecutionEngineTest.java
+tag=exampleWithParametersForQuery
+classifier=test-sources
+----
+
+.Numeric parameters for +SKIP+ and +LIMIT+
+[snippet,java]
+----
+component=neo4j-cypher
+source=org/neo4j/cypher/javacompat/JavaExecutionEngineTest.java
+tag=exampleWithParameterForSkipLimit
+classifier=test-sources
+----
+
+.Parameter for regular expression
+[snippet,java]
+----
+component=neo4j-cypher
+source=org/neo4j/cypher/javacompat/JavaExecutionEngineTest.java
+tag=exampleWithParameterRegularExpression
+classifier=test-sources
+----
+
+.Parameter setting properties on node
+[snippet,java]
+----
+component=neo4j-cypher
+source=org/neo4j/cypher/javacompat/JavaExecutionEngineTest.java
+tag=set_properties_on_a_node_from_a_map
+classifier=test-sources
+----
+

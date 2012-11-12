@@ -1,0 +1,239 @@
+[[configuration-caches]]
+Caches in Neo4j
+=============
+
+For how to provide custom configuration to Neo4j, see <<configuration-introduction>>.
+
+Neo4j utilizes two different types of caches:
+A file buffer cache and an object cache.
+The file buffer cache caches the storage file data in the same format as it is stored on the durable storage media.
+The object cache caches the nodes, relationships and properties in a format that is optimized for high traversal speeds and transactional writes.
+
+
+File buffer cache
+-----------------
+
+.Quick info
+***********
+* The file buffer cache is sometimes called _low level cache_ or _file system cache_.
+* It caches the Neo4j data as stored on the durable media.
+* It uses the operating system memory mapping features when possible.
+* Neo4j will configure the cache automatically as long as the heap size of the JVM is configured properly.
+***********
+
+The file buffer cache caches the Neo4j data in the same format as it is represented on the durable storage media.
+The purpose of this cache layer is to improve both read and write performance.
+The file buffer cache improves write performance by writing to the cache and deferring durable write until the logical log is rotated.
+This behavior is safe since all transactions are always durably written to the logical log, which can be used to recover the store files in the event of a crash.
+
+Since the operation of the cache is tightly related to the data it stores, a short description of the Neo4j durable representation format is necessary background.
+Neo4j stores data in multiple files and relies on the underlying file system to handle this efficiently.
+Each Neo4j storage file contains uniform fixed size records of a particular type:
+
+[options="header",grid="none",frame="none",cols="<,>m,<", width="50%"]
+|============================================
+| Store file         | Record size | Contents
+| nodestore          |         9 B | Nodes
+| relstore           |        33 B | Relationships
+| propstore          |        41 B | Properties for nodes and relationships
+| stringstore        |       128 B | Values of string properties
+| arraystore         |       128 B | Values of array properties
+|============================================
+
+For strings and arrays, where data can be of variable length, data is stored in one or more 120B chunks, with 8B record overhead.
+The sizes of these blocks can actually be configured when the store is created using the `string_block_size` and `array_block_size` parameters.
+The size of each record type can also be used to calculate the storage requirements of a Neo4j graph or the appropriate cache size for each file buffer cache.
+Note that some strings and arrays can be stored without using the string store or the array store respectively, see <<short-strings>> and <<short-arrays>>.
+
+Neo4j uses multiple file buffer caches, one for each different storage file.
+Each file buffer cache divides its storage file into a number of equally sized windows.
+Each cache window contains an even number of storage records.
+The cache holds the most active cache windows in memory and tracks hit vs. miss ratio for the windows.
+When the hit ratio of an uncached window gets higher than the miss ratio of a cached window, the cached window gets evicted and the previously uncached window is cached instead.
+
+IMPORTANT: Note that the block sizes can only be configured at store creation time.
+
+Configuration
+~~~~~~~~~~~~~
+
+[options="header",frame="none",cols="<35m,<30,<35"]
+|========================================================
+| Parameter                 | Possible values   | Effect
+| use_memory_mapped_buffers | `true` or `false` |
+  If set to `true` Neo4j will use the operating systems memory mapping functionality for the file buffer cache windows.
+  If set to `false` Neo4j will use its own buffer implementation.
+  In this case the buffers will reside in the JVM heap which needs to be increased accordingly.
+  The default value for this parameter is `true`, except on Windows.
+| neostore.nodestore.db.mapped_memory             .7+^.^|
+  The maximum amount of memory to use for memory mapped buffers for this file buffer cache.
+  The default unit is `MiB`, for other units use any of the following suffixes: `B`, `k`, `M` or `G`.
+  |
+  The maximum amount of memory to use for the file buffer cache of the node storage file.
+| neostore.relationshipstore.db.mapped_memory           |
+  The maximum amount of memory to use for the file buffer cache of the relationship store file.
+| neostore.propertystore.db.index.keys.mapped_memory    |
+  The maximum amount of memory to use for the file buffer cache of the something-something file.
+| neostore.propertystore.db.index.mapped_memory         |
+  The maximum amount of memory to use for the file buffer cache of the something-something file.
+| neostore.propertystore.db.mapped_memory               |
+  The maximum amount of memory to use for the file buffer cache of the property storage file.
+| neostore.propertystore.db.strings.mapped_memory       |
+  The maximum amount of memory to use for the file buffer cache of the string property storage file.
+| neostore.propertystore.db.arrays.mapped_memory        |
+  The maximum amount of memory to use for the file buffer cache of the array property storage file.
+| string_block_size .2+^.^| The number of bytes per block. |
+  Specifies the block size for storing strings.
+  This parameter is only honored when the store is created, otherwise it is ignored.
+  Note that each character in a string occupies two bytes, meaning that a block size of 120 (the default size) will hold a 60 character long string before overflowing into a second block.
+  Also note that each block carries an overhead of 8 bytes.
+  This means that if the block size is 120, the size of the stored records will be 128 bytes.
+| array_block_size        |
+  Specifies the block size for storing arrays.
+  This parameter is only honored when the store is created, otherwise it is ignored.
+  The default block size is 120 bytes, and the overhead of each block is the same as for string blocks, i.e., 8 bytes.
+| dump_configuration | `true` or `false` | If set to `true` the current configuration settings will be written to the default system output, mostly the console or the logfiles.
+|========================================================
+
+When memory mapped buffers are used (`use_memory_mapped_buffers = true`) the heap size of the JVM must be smaller than the total available memory of the computer, minus the total amount of memory used for the buffers.
+When heap buffers are used (`use_memory_mapped_buffers = false`) the heap size of the JVM must be large enough to contain all the buffers, plus the runtime heap memory requirements of the application and the object cache.
+
+When reading the configuration parameters on startup Neo4j will automatically configure the parameters that are not specified.
+The cache sizes will be configured based on the available memory on the computer, how much is used by the JVM heap, and how large the storage files are.
+
+Object cache
+------------
+
+.Quick info
+***********
+* The object cache is sometimes called _high level cache_.
+* It caches the Neo4j data in a form optimized for fast traversal.
+***********
+
+The object cache caches individual nodes and relationships and their properties in a form that is optimized for fast traversal of the graph.
+There are two different categories of object caches in Neo4j.
+
+There is the reference caches.
+Here Neo4j will utilize as much as it can out of the allocated heap memory for the JVM for object caching and relies on garbage collection for eviction from the cache in an LRU manner.
+Note however that Neo4j is "competing" for the heap space with other objects in the same JVM, such as a your application, if deployed in embedded mode, and Neo4j will let the application "win" by using less memory if the application needs more.
+
+NOTE: The GC resistant cache described below is only available in the Neo4j Enterprise Edition.
+
+The other is the _GC resistant cache_ which gets assigned a certain amount of space in the JVM heap and will purge objects whenever it grows bigger than that.
+It is assigned a maximum amount of memory which the sum of all cached objects in it will not exceed.
+Objects will be evicted from cache when the maximum size is about to be reached, instead of relying on garbage collection (GC) to make that decision.
+Here the competition with other objects in the heap as well as GC-pauses can be better controlled since the cache gets assigned a maximum heap space usage.
+The overhead of the GC resistant cache is also much smaller as well as insert/lookup times faster than for reference caches.
+
+[TIP]
+The use of heap memory is subject to the java garbage collector -- depending on the cache type some tuning might be needed to play well with the GC at large heap sizes.
+Therefore, assigning a large heap for Neo4j's sake isn't always the best strategy as it may lead to long GC-pauses.
+Instead leave some space for Neo4j's filesystem caches.
+These are outside of the heap and under under the kernel's direct control, thus more efficiently managed.
+
+The content of this cache are objects with a representation geared towards supporting the Neo4j object API and graph traversals.
+Reading from this cache is 5 to 10 times faster than reading from the file buffer cache.
+This cache is contained in the heap of the JVM and the size is adapted to the current amount of available heap memory.
+
+Nodes and relationships are added to the object cache as soon as they are accessed.
+The cached objects are however populated lazily.
+The properties for a node or relationship are not loaded until properties are accessed for that node or relationship.
+String (and array) properties are not loaded until that particular property is accessed.
+The relationships for a particular node is also not loaded until the relationships are accessed for that node.
+
+
+Configuration
+~~~~~~~~~~~~~
+
+The main configuration parameter for the object cache is the `cache_type` parameter.
+This specifies which cache implementation to use for the object cache.
+Note that there will exist two cache instances, one for nodes and one for relationships.
+The available cache types are:
+
+[options="header",frame="none",cols="<15m,<85"]
+|==========================================
+| `cache_type` | Description
+| none         | Do not use a high level cache. No objects will be cached.
+| soft         | Provides optimal utilization of the available memory.
+                 Suitable for high performance traversal.
+                 May run into GC issues under high load if the frequently accessed parts of the graph does not fit in the cache.
+
+                 This is the default cache implementation.
+| weak         | Provides short life span for cached objects.
+                 Suitable for high throughput applications where a larger portion of the graph than what can fit into memory is frequently accessed.
+| strong       | This cache will hold on to *all data* that gets loaded to never release it again.
+                 Provides good performance if your graph is small enough to fit in memory.
+| gcr          | Provides means of assigning a specific amount of memory to dedicate to caching loaded nodes and relationships.
+                 Small footprint and fast insert/lookup. Should be the best option for most scenarios. See below on how to configure it.
+                 Note that this option is only available in the Neo4j Enterprise Edition.
+|==========================================
+
+GC resistant cache configuration
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Since the GC resistant cache operates with a maximum size in the JVM it may be configured per use case for optimal performance.
+There are two aspects of the cache size.
+
+One is the size of the array referencing the objects that are put in the cache.
+It is specified as a fraction of the heap, for example specifying +5+ will let that array itself take up 5% out of the entire heap.
+Increasing this figure (up to a maximum of 10) will reduce the chance of hash collisions at the expense of more heap used for it.
+More collisions means more redundant loading of objects from the low level cache.
+
+[options="header",frame="none",cols="<15m,<70,<15m"]
+|==========================================
+| `configuration option`            | Description (what it controls)                                                                 | Example value
+| node_cache_array_fraction         | Fraction of the heap to dedicate to the array holding the nodes in the cache (max 10).         | 7
+| relationship_cache_array_fraction | Fraction of the heap to dedicate to the array holding the relationships in the cache (max 10). | 5
+|==========================================
+
+The other aspect is the maximum size of all the objects in the cache. It is specified as size in bytes, for example +500M+ for 500 megabytes or +2G+ for two gigabytes.
+Right before the maximum size is reached a +purge+ is performed where (currently) random objects are evicted from the cache until the cache size gets below 90% of the maximum size.
+Optimal settings for the maximum size depends on the size of your graph.
+The configured maximum size should leave enough room for other objects to coexist in the same JVM, but at the same time large enough to keep loading from the low level cache at a minimum.
+Predicted load on the JVM as well as layout of domain level objects should also be take into consideration.  
+
+[options="header",frame="none",cols="<15m,<70,<15m"]
+|==========================================
+| `configuration option`   | Description (what it controls)                                           | Example value
+| node_cache_size          | Maximum size of the heap memory to dedicate to the cached nodes.         | 2G
+| relationship_cache_size  | Maximum size of the heap memory to dedicate to the cached relationships. | 800M
+|==========================================
+
+You can read about references and relevant JVM settings for Sun HotSpot here:
+
+* http://weblogs.java.net/blog/enicholas/archive/2006/05/understanding_w.html[Understanding soft/weak references]
+
+* http://jeremymanson.blogspot.com/2009/07/how-hotspot-decides-to-clear_07.html[How Hotspot Decides to Clear SoftReferences]
+
+* http://www.oracle.com/technetwork/java/hotspotfaq-138619.html#gc_softrefs[HotSpot FAQ]
+
+
+Heap memory usage
+~~~~~~~~~~~~~~~~~
+
+This table can be used to calculate how much memory the data in the object cache will occupy on a 64bit JVM:
+
+[options="header",frame="none",cols="<15,<15e,<70e"]
+|================================
+| Object           | Size  | Comment
+.5+| Node          .+>m| 344 B | Size for each node (not counting its relationships or properties).
+                   .+>m|  48 B | Object overhead.
+                   .+>m| 136 B | Property storage (ArrayMap `48B`, HashMap `88B`).
+                   .+>m| 136 B | Relationship storage (ArrayMap `48B`, HashMap `88B`).
+                   .+>m|  24 B | Location of first / next set of relationships.
+.3+| Relationship  .+>m| 208 B | Size for each relationship (not counting its properties).
+                   .+>m|  48 B | Object overhead.
+                   .+>m| 136 B | Property storage (ArrayMap `48B`, HashMap `88B`).
+.5+| Property      .+>m| 116 B | Size for each property of a node or relationship.
+                   .+>m|  32 B | Data element -- allows for transactional modification and keeps track of on disk location.
+                   .+>m|  48 B | Entry in the hash table where it is stored.
+                   .+>m|  12 B | Space used in hash table, accounts for normal fill ratio.
+                   .+>m|  24 B | Property key index.
+.4+| Relationships .+>m| 108 B | Size for each relationship type for a node that has a relationship of that type.
+                   .+>m|  48 B | Collection of the relationships of this type.
+                   .+>m|  48 B | Entry in the hash table where it is stored.
+                   .+>m|  12 B | Space used in hash table, accounts for normal fill ratio.
+| Relationships    .+>m|   8 B | Space used by each relationship related to a particular node (both incoming and outgoing).
+| Primitive        .+>m|  24 B | Size of a primitive property value.
+| String           .+>m|  64+B | Size of a string property value. `64 + 2*len(string) B` (64 bytes, plus two bytes for each character in the string).
+|================================
+

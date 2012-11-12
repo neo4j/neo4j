@@ -1,0 +1,14 @@
+
+:if index.configAvailable()
+  %td
+    %h3= htmlEscape(index.name)
+    %p.small = htmlEscape(index.provider)
+  %td
+    %p.small= htmlEscape(JSON.stringify(index.getConfig()).replace(/,/gi,", "))
+:if !index.configAvailable()
+  %td
+    %p N/A  
+  %td 
+    %p N/A
+%td
+  %button.delete-index.micro-button.bad-button Delete

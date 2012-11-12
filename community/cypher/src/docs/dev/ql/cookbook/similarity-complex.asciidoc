@@ -1,0 +1,10 @@
+[[cypher-cookbook-similarity-calc]]
+== Complex similarity computations ==
+
+:leveloffset: 2
+
+include::calculate-similarities-by-complex-calculations.asciidoc[]
+
+.Graph
+include::includes/cypher-complexsimilarity-graph.asciidoc[]
+

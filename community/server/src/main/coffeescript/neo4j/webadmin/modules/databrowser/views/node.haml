@@ -1,0 +1,19 @@
+
+.headline-bar.pad
+  .title
+    %h3= "Node " + htmlEscape(item.getId())
+    %p.small = htmlEscape(item.getSelf())
+  
+  %ul.button-bar.item-controls
+    %li
+      %a.data-show-relationships.button(title="Show a list of relationships for this node" href="#/data/search/rels:#{htmlEscape(item.getId())}/") Show relationships
+    %li
+      .data-save-properties.button(disabled="true") Saved
+    %li
+      .data-delete-item.bad-button Delete
+
+  .break
+
+.properties
+
+.break

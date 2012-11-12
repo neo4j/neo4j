@@ -1,0 +1,15 @@
+[[query-skip]]
+Skip
+====
+
++SKIP+ enables the return of only subsets of the total result.
+By using +SKIP+, the result set will get trimmed from the top.
+Please note that no guarantees are made on the order of the result unless the query specifies the +ORDER BY+ clause.
+
+.Graph
+include::includes/cypher-skip-graph.asciidoc[]
+
+include::skip-first-three.asciidoc[]
+
+include::return-middle-two.asciidoc[]
+

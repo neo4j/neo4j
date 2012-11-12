@@ -1,0 +1,46 @@
+["dot", "cypher-pathtree-layout-path.svg", "neoviz"]
+----
+  root [label="Root"]
+
+  subgraph years {
+    Y10 [label="Year 2010"]
+    Y11 [label="Year 2011"]
+    root -> Y10 [label="2010",]
+    root -> Y11 [label="2011"]
+    
+  }
+    subgraph months {
+    Y10M12 [label="Month 12"]
+    Y11M01 [label="Month 01"]
+    Y10 -> Y10M12 [label="12"]
+    Y11 -> Y11M01 [label="01"]
+  }
+    subgraph days {
+    Y10M12D31 [label="Day 31"]
+    Y11M01D01 [label="Day 01"]
+    Y11M01D02 [label="Day 02"]
+    Y11M01D03 [label="Day 03"]
+    Y10M12 -> Y10M12D31 [label="31"]
+    Y11M01 -> Y11M01D01 [label="01"]
+    Y11M01 -> Y11M01D02 [label="02"]
+    Y11M01 -> Y11M01D03 [label="03"]
+    Y10M12D31 -> Y11M01D01 [label="NEXT"]
+    Y11M01D01 -> Y11M01D02 [label="NEXT"]
+    Y11M01D02 -> Y11M01D03 [label="NEXT"]
+
+  }
+    subgraph events {
+    node [penwidth=2]
+    E1 [label="Event1"]
+    E2 [label="Event2"]
+    E3 [label="Event3"]
+    Y10M12D31 -> E1 [label="VALUE"]
+    Y10M12D31 -> E2 [label="VALUE"]
+    Y11M01D01 -> E2 [label="VALUE"]
+    Y11M01D03 -> E3 [label="VALUE"]
+  }
+  {rank=same; "E1" "E2" "E3"}
+  {rank=same; "Y10M12D31" "Y11M01D01" "Y11M01D02" "Y11M01D03"}
+  {rank=same; "E1" "E2" "E3"}
+
+----

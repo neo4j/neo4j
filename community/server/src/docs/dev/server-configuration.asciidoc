@@ -1,0 +1,188 @@
+[[server-configuration]]
+Server Configuration 
+====================
+
+.Quick info
+***********
+* The server's primary configuration file is found under 'conf/neo4j-server.properties'
+* The 'conf/log4j.properties' file contains the default server logging configuration
+* Low-level performance tuning parameters are found in 'conf/neo4j.properties'
+* Configuraion of the deamonizing wrapper are found in 'conf/neo4j-wrapper.properties'
+* HTTP logging configuration is found in 'conf/neo4j-http-logging.xml'
+***********
+
+== Important server configurations parameters ==
+
+The main configuration file for the server can be found at 'conf/neo4j-server.properties'.
+This file contains several important settings, and although the defaults are sensible
+administrators might choose to make changes (especially to the port settings).
+
+Set the location on disk of the database directory like this:
+[source]
+----
+org.neo4j.server.database.location=data/graph.db
+----
+
+NOTE: On Windows systems, absolute locations including drive letters need to read '"c:/data/db"'.
+
+Specify the HTTP server port supporting data, administrative, and UI access:
+[source]
+----
+org.neo4j.server.webserver.port=7474
+----
+
+Specify the client accept pattern for the webserver (default is +127.0.0.1+, localhost only):
+[source]
+----
+#allow any client to connect
+org.neo4j.server.webserver.address=0.0.0.0
+----
+
+For securing the Neo4j Server, see also <<security-server>>
+
+
+Set the location of the round-robin database directory which gathers metrics on the running server instance:
+[source]
+----
+org.neo4j.server.webadmin.rrdb.location=data/graph.db/../rrd
+----
+
+Set the URI path for the REST data API through which the database is accessed. This should be a relative path.
+[source]
+----
+org.neo4j.server.webadmin.data.uri=/db/data/
+----
+
+Setting the management URI for the administration API that the Webadmin tool uses. This should be a relative path.
+[source]
+----
+org.neo4j.server.webadmin.management.uri=/db/manage
+----
+
+Force the server to use IPv4 network addresses, in 'conf/neo4j-wrapper.conf' under the section _Java Additional Parameters_ add a new paramter:
+[source]
+----
+wrapper.java.additional.3=-Djava.net.preferIPv4Stack=true
+----
+
+Low-level performance tuning parameters can be explicitly set by referring
+to the following property:
+
+[source]
+----
+org.neo4j.server.db.tuning.properties=neo4j.properties
+----
+
+If this property isn't set, the server will look for a file called 'neo4j.properties' in 
+the same directory as the 'neo4j-server.properties' file.
+
+If this property isn't set, and there is no 'neo4j.properties' file in the default
+configuration directory, then the server will log a warning. Subsequently at runtime the
+database engine will attempt tune itself based on the prevailing conditions.
+
+== Neo4j Database performance configuration ==
+
+The fine-tuning of the low-level Neo4j graph database engine is specified in a separate
+properties file, 'conf/neo4j.properties'.
+
+The graph database engine has a range of performance tuning options which are enumerated in
+<<server-performance>>. Note that other factors than Neo4j tuning should be considered
+when performance tuning a server, including general server load, memory and file contention, 
+and even garbage collection penalties on the JVM, though such considerations are beyond the scope
+of this configuration document.
+
+== Server logging configuration ==
+
+Application events within Neo4j server are processed with
+ +http://download.oracle.com/javase/6/docs/technotes/guides/logging/overview.html[java.util.logging]+ and
+ configured in the file 'conf/logging.properties'.
+
+By default it is setup to print +INFO+ level messages both on screen and in a rolling file in 'data/log'.
+Most deployments will choose to use their own configuration here to meet local standards.
+During development, much useful information can be found in the logs so some form of logging to disk is well worth keeping.
+On the other hand, if you want to completely silence the console output, set:
+
+[source]
+----
+java.util.logging.ConsoleHandler.level=OFF
+----
+
+By default log files are rotated at approximately 10Mb and named consecutively neo4j.<id>.<rotation sequence #>.log
+To change the naming scheme, rotation frequency and backlog size modify
+
+[source]
+----
+java.util.logging.FileHandler.pattern
+java.util.logging.FileHandler.limit
+java.util.logging.FileHandler.count
+----
+
+respectively to your needs. Details are available at the Javadoc for +http://download.oracle.com/javase/6/docs/api/java/util/logging/FileHandler.html[java.util.logging.FileHandler]+.
+
+Apart from log statements originating from the Neo4j server, other libraries report their messages
+through various frameworks.
+
+Zookeeper is hardwired to use the log4j logging framework. The bundled 'conf/log4j.properties' applies for this use only and uses a rolling appender and outputs logs by default to the
+'data/log' directory.
+
+== HTTP logging configuration ==
+
+As well as logging events happening within the Neo4j server, it is possible to log the HTTP requests and responses
+that the server consumes and produces. Configuring HTTP logging requires operators to enable and configure the
+logger and where it will log; and then to optionally configure the log format.
+
+[WARNING]
+By default the HTTP logger uses +http://en.wikipedia.org/wiki/Common_Log_Format[Common Log Format]+
+meaning that most Web server tooling can automtically consume such logs. In general users should only enable HTTP logging,
+select an output directory, and if necessary alter the rollover and retention policies.
+
+To enable HTTP logging, edit the 'conf/neo4j-server.properties' file resemble the following:
+
+[source]
+----
+org.neo4j.server.http.log.enabled=true
+org.neo4j.server.http.log.config=conf/neo4j-http-logging.xml
+----
+
+'org.neo4j.server.http.log.enabled=true' tells the server that HTTP logging is enabled. HTTP logging can be totally
+disabled by setting this property to 'false'.
+'org.neo4j.server.http.log.config=conf/neo4j-http-logging.xml' specifies the logging format and rollover policy file
+that governs how HTTP log output is presented and archived. The defaults provided with Neo4j server uses an hourly log
+rotation and +http://en.wikipedia.org/wiki/Common_Log_Format[Common Log Format]+.
+
+If logging is set up to use log files then the server will check that the log file directory exists and is writable. If
+this check fails, then the server will not startup and wil report the failure another available channel like standard out.
+
+
+== Other configuration options ==
+
+=== Enabling logging from the garbage collector ===
+
+To get garbage collection logging output you have to pass the corresponding option to the server JVM 
+executable by setting in 'conf/neo4j-wrapper.conf' the value
+[source]
+----
+wrapper.java.additional.3=-Xloggc:data/log/neo4j-gc.log
+----
+This line is already present and needs uncommenting. Note also that logging is not directed to console ;
+You will find the logging statements in 'data/log/ne4j-gc.log' or whatever directory you set at the option.
+
+
+=== Disabling console types in Webadmin ===
+
+You may, for security reasons, want to disable the Gremlin console and/or the Neo4j Shell in Webadmin.
+Both of them allow arbitrary code execution, and so they could constitute a security risk if you do not trust all users of your Neo4j Server.
+
+In the 'conf/neo4j-server.properties' file:
+
+[source]
+----
+# To disable both Neo4j Shell and Gremlin:
+org.neo4j.server.manage.console_engines=
+
+# To enable only the Neo4j Shell:
+org.neo4j.server.manage.console_engines=shell
+
+# To enable both
+org.neo4j.server.manage.console_engines=gremlin,shell
+----

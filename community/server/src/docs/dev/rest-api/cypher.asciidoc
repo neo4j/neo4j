@@ -1,0 +1,21 @@
+[[rest-api-cypher]]
+== Cypher queries ==
+
+The Neo4j REST API allows querying with Cypher, see <<cypher-query-lang>>.
+The results are returned as a list of string headers (+columns+), and a +data+ part,
+consisting of a list of all rows, every row consisting of a list of REST representations
+of the field value -- +Node+, +Relationship+, +Path+ or any simple value like +String+.
+
+[TIP]
+In order to speed up queries in repeated scenarios, try not to use literals but replace them with parameters wherever possible in order to let the server cache query plans, see <<rest-api-send-queries-with-parameters>> for details.
+
+include::send-queries-with-parameters.asciidoc[]
+
+include::send-a-query.asciidoc[]
+
+include::return-paths.asciidoc[]
+
+include::nested-results.asciidoc[]
+
+include::server-errors.asciidoc[]
+

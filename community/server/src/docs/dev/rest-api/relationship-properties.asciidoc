@@ -1,0 +1,15 @@
+[[rest-api-relationship-properties]]
+== Relationship properties ==
+
+include::update-relationship-properties.asciidoc[]
+
+include::remove-properties-from-a-relationship.asciidoc[]
+
+include::remove-property-from-a-relationship.asciidoc[]
+
+include::remove-non-existent-property-from-a-relationship.asciidoc[]
+
+include::remove-properties-from-a-non-existing-relationship.asciidoc[]
+
+include::remove-property-from-a-non-existing-relationship.asciidoc[]
+

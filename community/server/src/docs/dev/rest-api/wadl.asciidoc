@@ -1,0 +1,26 @@
+[[rest-api-wadl-support]]
+== WADL Support ==
+
+The Neo4j REST API is a truly RESTful interface relying on hypermedia controls (links) to advertise permissible
+actions to users. Hypermedia is a dynamic interface style where declarative constructs (semantic markup) are used
+to inform clients of their next legal choices just in time.
+
+[CAUTION]
+RESTful APIs cannot be modelled by static interface description languages like WSDL or WADL.
+
+However for some use cases, developers may wish to expose WADL descriptions of the Neo4j REST API, particularly when
+using tooling that expects such.
+
+In those cases WADL generation may be enabled by adding to your server's +neo4j.properties+ file:
+
+[source]
+----
+unsupported_wadl_generation_enabled=true
+----
+
+[CAUTION]
+WADL is not an officially supported part of the Neo4j server API because WADL is insufficiently expressive to capture
+the set of potential interactions a client can drive with Neo4j server. Expect the WADL description to be incomplete,
+and in some cases contradictory to the real API. In any cases where the WADL description disagrees with the REST API,
+the REST API should be considered authoritative. WADL generation may be withdrawn at any point in the Neo4j release
+cycle.

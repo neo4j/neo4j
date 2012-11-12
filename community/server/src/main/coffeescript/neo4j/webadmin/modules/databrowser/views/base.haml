@@ -1,0 +1,62 @@
+.workarea
+  .controls.pad
+    .span-half.data-console-wrap
+      #data-console-area
+            
+      .form-tooltip
+        %a(href="#")
+          %span.form-tooltip-icon
+          %span.form-tooltip-text  
+            %b Global shortcuts:
+            %br
+            \<i>s</i> - Highlight query console
+            %br
+            \<i>v</i> - Toggle between visualizer and tabular view
+            %br
+            %br
+            %b Query console special keys:
+            %br
+            \<i>RETURN</i> Add new line
+            %br
+            \<i>CTRL+RETURN</i> Execute current query
+            %br
+            %br
+            \<b>Query console syntax:</b>
+            %br
+            \<b>Cypher:</b> [any cypher query]
+            %br
+            \<b>Node:</b> [node id]
+            %br
+            \<b>Relationship:</b> rel:[relationship id]
+            %br
+            %br
+            \<b>Indexes</b>
+            %br
+            \<b>Nodes:</b> node:index:[index]:[query]
+            %br
+            \<b>Rels:</b> rel:index:[index]:[query]
+            %br
+            \<i>Ex: node:index:myindex:name:*</i>
+    .span-half.last
+      %ul.data-toolbar.button-bar
+        %li
+          #data-create-node.text-icon-button(title="Create a node")
+            %span.icon
+            Node
+        %li
+          #data-create-relationship.text-icon-button(title="Create a relationship")
+            %span.icon
+            Relationship
+        :if viewType === "tabular"      
+          %li
+            #data-switch-view.icon-button(title="Switch view mode")
+              %span.icon
+        :if viewType !== "tabular"      
+          %li
+            #data-switch-view.icon-button(title="Switch view mode")
+              %span.icon.tabular
+
+    .break
+
+  #data-query-metadata.pad
+  #data-area

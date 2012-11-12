@@ -1,0 +1,54 @@
+.sidebar
+  %p.pad The Neo4j Shell, allows you to use the Cypher query language for working with your graph, as well as other powerful shell features.
+  %p.pad For command reference, see <a href="http://docs.neo4j.org/chunked/${project.version}/shell-commands.html" target="_BLANK">the shell documentation</a>.
+  %p.pad For Cypher syntax help, see <a href="http://docs.neo4j.org/chunked/${project.version}/cypher-query-lang.html" target="_BLANK">the Cypher documentation</a>. Remember to end your queries with a semicolon!
+
+  .foldout
+    %h2
+      %a.foldout_trigger(href="#") Cheat sheet
+    .foldout_content
+      %ul.info_list
+        %li
+          %h3 Get node with id 0
+          %p START a = node(0)
+          %p RETURN a;
+        %li
+          %h3 Get all nodes connects to node with id 0
+          %p START a = node(0)
+          %p MATCH a-->b
+          %p RETURN b;
+        %li
+          %h3 Get all nodes connected to node with id 0, and the relationships
+          %p START a = node(0)
+          %p MATCH a-[r]->b
+          %p RETURN r, b;
+        %li
+          %h3 Get all nodes related to node with id 0 with relationship type KNOWS
+          %p START a = node(0)
+          %p MATCH a-[:KNOWS]->b
+          %p RETURN b;
+        %li
+          %h3 Get all nodes from index "people", with key "name", matching value "Doctor"
+          %p START a = node:people( name= "Doctor")
+          %p RETURN a;
+        %li
+          %h3 Get all nodes connected to the doctor 
+          %p START doctor = node:people(name="Doctor")
+          %p MATCH doctor-[:ENEMY_OF]->enemy
+          %p WHERE enemy.name = "Cybermen"
+          %p RETURN doctor;
+        %li
+          %h3 Get all friends of friends of the doctor 
+          %p START doctor = node:people( name="Doctor")
+          %p MATCH doctor-[:FRIEND]->friend-[:FRIEND]->friend_of_friend
+          %p RETURN friend_of_friend;
+
+
+  .foldout
+    %h2
+      %a.foldout_trigger(href="#") If the console hangs
+    .foldout_content
+      %p.pad If the console hangs, you can reset it by clearing your browser cookies for webadmin.
+
+.workarea.with-sidebar#console-base
+
