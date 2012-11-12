@@ -1,0 +1,45 @@
+                              AsciiDoc README File
+
+   version 8.6.7, 17 March 2012
+     __________________________________________________________________
+
+1. Prerequisites
+
+   AsciiDoc is written in Python so you need a Python interpreter (version
+   2.4 or later) to execute asciidoc(1). Python is installed by default in
+   most Linux distributions. You can download Python from the official
+   Python website [1]http://www.python.org.
+     __________________________________________________________________
+
+2. Obtaining AsciiDoc
+
+   Documentation and installation instructions are on the AsciiDoc website
+   [2]http://www.methods.co.nz/asciidoc/
+     __________________________________________________________________
+
+3. Tools
+
+   Current AsciiDoc version tested on Xubuntu Linux 10.04 with:
+     * Python 2.6.5
+     * DocBook XSL Stylesheets 1.76.1
+     * xsltproc (libxml 20706, libxslt 10126 and libexslt 815).
+     * w3m 0.5.2
+     * dblatex 0.3
+     * FOP 0.95
+     * A-A-P 1.091
+     __________________________________________________________________
+
+4. Copying
+
+   Copyright © 2002-2011 Stuart Rackham. Free use of this software is
+   granted under the terms of the GNU General Public License version 2
+   (GPLv2).
+     __________________________________________________________________
+
+   Version 8.6.7
+   Last updated 2011-05-04 18:47:58 NZST
+
+References
+
+   1. http://www.python.org/
+   2. http://www.methods.co.nz/asciidoc/

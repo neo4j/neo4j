@@ -1,0 +1,31 @@
+[[introduction-highlights]]
+Neo4j Highlights
+================
+
+As a robust, scalable and high-performance database, Neo4j is suitable for full enterprise deployment or a subset of the full server can be used in lightweight projects.
+
+It features:
+
+* true ACID transactions
+* high availability
+* scales to billions of nodes and relationships
+* high speed querying through traversals
+
+Proper ACID behavior is the foundation of data reliability.
+Neo4j enforces that all operations that modify data occur within a transaction, guaranteeing consistent data.
+This robustness extends from single instance embedded graphs to multi-server high availability installations.
+For details, see <<transactions>>.
+
+Reliable graph storage can easily be added to any application.
+A graph can scale in size and complexity as the application evolves, with little impact on performance.
+Whether starting new development, or augmenting existing functionality, Neo4j is only limited by physical hardware.
+
+A single server instance can handle a graph of billions of nodes and relationships.
+When data throughput is insufficient, the graph database can be distributed among multiple servers in a high availability configuration. 
+See <<ha>> to learn more. 
+
+The graph database storage shines when storing richly-connected data. 
+Querying is performed through traversals, which can perform millions of traversal steps per second.
+A traversal step resembles a _join_ in a RDBMS.
+
+

@@ -1,0 +1,112 @@
+[[what-is-a-graphdb]]
+What is a Graph Database?
+=========================
+
+A graph database stores data in a graph, the most generic of data structures, capable of elegantly representing any kind of data in a highly accessible way. 
+Let’s follow along some graphs, using them to express graph concepts. 
+We’ll ``read'' a graph by following arrows around the diagram to form sentences. 
+
+== A Graph contains Nodes and Relationships ==
+
+____
+``A Graph —records data in-> Nodes —which have-> Properties''
+____
+
+The simplest possible graph is a single Node, a record that has named values referred to as Properties. 
+A Node could start with a single Property and grow to a few million, though that can get a little awkward. 
+At some point it makes sense to distribute the data into multiple nodes, organized with explicit Relationships.
+
+["dot", "graphdb-GVE.svg", "meta"]
+----
+"Graph" [fillcolor="NODEHIGHLIGHT"]
+"Graph" -> Nodes [label="records data in" weight=2.0]
+"Graph" -> Relationships [label="records data in" weight=2.0]
+Relationships -> Nodes [label="organize"]
+Nodes -> Properties [label="have"]
+Relationships -> Properties [label="have"]
+----
+
+== Relationships organize the Graph ==
+
+____
+``Nodes —are organized by-> Relationships —which also have-> Properties''
+____
+
+Relationships organize Nodes into arbitrary structures, allowing a Graph to resemble a List, a Tree, a Map, or a compound Entity – any of which can be combined into yet more complex, richly inter-connected structures. 
+
+
+== Query a Graph with a Traversal ==
+
+____
+``A Traversal —navigates-> a Graph; it —identifies-> Paths —which order-> Nodes''
+____
+
+A Traversal is how you query a Graph, navigating from starting Nodes to related Nodes according to an algorithm, finding answers to questions like ``what music do my friends like that I don't yet own,'' or ``if this power supply goes down, what web services are affected?''
+
+["dot", "graphdb-traversal.svg", "meta"]
+----
+Traversal [fillcolor="NODEHIGHLIGHT"]
+"Graph" [fillcolor="NODE2HIGHLIGHT"]
+Paths [fillcolor="NODE2HIGHLIGHT"]
+Algorithm [fillcolor="NODE2HIGHLIGHT"]
+Relationships -> Nodes [label="organize"]
+"Graph" -> Nodes [label="records data in"]
+"Graph" -> Relationships [label="records data in"]
+Traversal -> "Graph" [label="navigates" weight=2.0 color="EDGEHIGHLIGHT" fontcolor="EDGEHIGHLIGHT"]
+Traversal -> Paths [label="identifies" weight=2.0 color="EDGEHIGHLIGHT" fontcolor="EDGEHIGHLIGHT"]
+Traversal -> Algorithm [label="expresses" color="EDGEHIGHLIGHT" fontcolor="EDGEHIGHLIGHT"]
+Paths -> Nodes [label="order" weight=2.0]
+----
+
+
+== Indexes look-up Nodes or Relationships ==
+
+____
+``An Index —maps from-> Properties —to either-> Nodes or Relationships''
+____
+
+Often, you want to find a specific Node or Relationship according to a Property it has.
+Rather than traversing the entire graph, use an Index to perform a look-up, for questions like ``find the Account for username master-of-graphs.''
+
+["dot", "graphdb-indexes.svg", "meta"]
+----
+Indexes [fillcolor="NODEHIGHLIGHT"]
+Relationships -> Nodes [label="organize"]
+Nodes -> Properties [label="have"]
+Relationships -> Properties [label="have"]
+Indexes -> Nodes [label="map to" weight=2.0]
+Indexes -> Relationships [label="map to" weight=2.0]
+Indexes -> Properties [label="map from" weight=2.0]
+----
+
+== Neo4j is a Graph Database ==
+
+____
+``A Graph Database —manages a-> Graph and —also manages related-> Indexes''
+____
+
+Neo4j is a commercially supported open-source graph database.
+It was designed and built from the ground-up to be a reliable database, optimized for graph structures instead of tables. 
+Working with Neo4j, your application gets all the expressiveness of a graph, with all the dependability you expect out of a database.
+
+["dot", "graphdb-overview.svg", "meta", scaledwidth="75%"]
+----
+"Graph Database" [fillcolor="NODEHIGHLIGHT"]
+"Graph" [fillcolor="NODE2HIGHLIGHT"]
+Indexes [fillcolor="NODE2HIGHLIGHT"]
+Relationships -> Nodes [label="organize"]
+Nodes -> Properties [label="have"]
+Relationships -> Properties [label="have"]
+"Graph Database" -> "Graph" [label="manages" color="EDGEHIGHLIGHT" fontcolor="EDGEHIGHLIGHT"]
+"Graph" -> Nodes [label="records data in"]
+"Graph" -> Relationships [label="records data in"]
+"Graph Database" -> Indexes [label="manages" color="EDGEHIGHLIGHT" fontcolor="EDGEHIGHLIGHT"]
+Indexes -> Nodes [label="map to"]
+Indexes -> Relationships [label="map to"]
+Indexes -> Properties [label="map from"]  
+Traversal -> "Graph" [label="navigates"]
+Traversal -> Paths [label="identifies"]
+Traversal -> Algorithm [label="expresses"]
+Paths -> Nodes [label="order"]
+----
+
