@@ -1,0 +1,156 @@
+<!--
+
+    Copyright (c) 2002-2012 "Neo Technology,"
+    Network Engine for Objects in Lund AB [http://neotechnology.com]
+
+    This file is part of Neo4j.
+
+    Neo4j is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as
+    published by the Free Software Foundation, either version 3 of the
+    License, or (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+-->
+<project name="neo4j-ha" default="distribution" basedir=".">
+  <xmlproperty file="${basedir}/pom.xml" prefix="maven"/>
+  <property name="project.version" value="${maven.project.version}"/>
+
+  <property name="skip.tests" value="true"/>
+  <property name="target.zip"
+   location="${basedir}/target/${ant.project.name}-${project.version}.zip"/>
+  <property name="dev.zip"
+   location="${basedir}/target/${ant.project.name}-${project.version}-dev.zip"/>
+
+  <property name="kernel-in-same-repo"
+            location="../../../components/kernel/trunk"/>
+  <available file="${kernel-in-same-repo}" type="dir"
+             property="kernel.same.repo"/>
+  <target name="configure kernel" depends="kernel same repo,kernel subdir"/>
+  <target name="kernel same repo" if="kernel.same.repo">
+    <property name="kernel.dir" location="${kernel-in-same-repo}"/>
+    <echo message="building kernel from same working copy"/>
+    <exec executable="svn" dir="${kernel.dir}"><arg value="update"/></exec>
+  </target>
+  <target name="kernel subdir" unless="kernel.same.repo">
+    <property name="kernel.dir" location="${basedir}/target/neo4j-kernel"/>
+    <delete dir="${kernel.dir}"/>
+    <echo message="checking out kernel from repo"/>
+    <exec executable="svn" failonerror="true">
+      <arg value="export"/>
+      <arg value="https://svn.neo4j.org/components/kernel/trunk"/>
+      <arg value="${kernel.dir}"/>
+    </exec>
+  </target>
+
+  <property name="index-in-same-repo"
+            location="../../../components/lucene-index/trunk"/>
+  <available file="${index-in-same-repo}" type="dir"
+             property="index.same.repo"/>
+  <target name="configure index" depends="index same repo,index subdir"/>
+  <target name="index same repo" if="index.same.repo">
+    <property name="index.dir" location="${index-in-same-repo}"/>
+    <echo message="building index from same working copy"/>
+    <exec executable="svn" dir="${index.dir}"><arg value="update"/></exec>
+  </target>
+  <target name="index subdir" unless="index.same.repo">
+    <property name="index.dir" location="${basedir}/target/neo4j-index"/>
+    <delete dir="${index.dir}"/>
+    <echo message="checking out index from repo"/>
+    <exec executable="svn" failonerror="true">
+      <arg value="export"/>
+      <arg value="https://svn.neo4j.org/components/lucene-index/trunk"/>
+      <arg value="${index.dir}"/>
+    </exec>
+  </target>
+
+  <target name="build kernel" depends="configure kernel">
+    <exec executable="mvn" dir="${kernel.dir}" failonerror="true">
+      <arg value="clean"/>
+      <arg value="install"/>
+      <arg value="-DskipTests=${skip.tests}"/>
+      <arg value="-Dmaven.javadoc.skip=true"/>
+    </exec>
+  </target>
+  <target name="build index" depends="configure index">
+    <exec executable="mvn" dir="${index.dir}" failonerror="true">
+      <arg value="clean"/>
+      <arg value="install"/>
+      <arg value="-DskipTests=${skip.tests}"/>
+      <arg value="-Dmaven.javadoc.skip=true"/>
+    </exec>
+  </target>
+  <target name="build" depends="build kernel,build index">
+    <exec executable="mvn" failonerror="true">
+      <arg value="clean"/>
+      <arg value="package"/>
+      <arg value="test-compile"/>
+      <arg value="dependency:copy-dependencies"/>
+      <arg value="-DskipTests=${skip.tests}"/>
+      <arg value="-Dmaven.javadoc.skip=true"/>
+    </exec>
+  </target>
+
+  <target name="install" depends="build kernel,build index">
+    <exec executable="mvn" failonerror="true">
+      <arg value="clean"/>
+      <arg value="install"/>
+    </exec>
+  </target>
+
+  <target name="bootstrap script">
+<echo file="${basedir}/target/bootstrap.sh">
+HADIR=$(cd $(dirname $0); pwd)
+SCRIPTDIR=$HADIR
+LIBDIR=$HADIR
+function rebuild () {
+    return 1
+}
+</echo>
+<echo file="${basedir}/target/unzip.sh">#!/bin/sh
+WORKDIR=$(cd $(dirname $0); pwd)
+TARGET=$(basename $0)
+TARGET=${TARGET%.*}
+mkdir $TARGET
+cd $TARGET
+unzip $WORKDIR/$(basename $0)
+cd -
+$TARGET/zkdevcluster.sh
+$TARGET/hadevcluster.sh "$@"
+exit
+</echo>
+  </target>
+
+  <target name="distribution" depends="build,bootstrap script">
+    <zip destfile="${target.zip}">
+      <zipfileset dir="${basedir}/target/dependency"
+                  excludes="commons-io*"/>
+      <zipfileset dir="${basedir}/target" includes="*.jar"
+                  excludes="*-javadoc.jar,*-sources.jar"/>
+      <zipfileset dir="${basedir}" includes="*.txt"/>
+    </zip>
+    <zip destfile="${dev.zip}">
+      <zipfileset dir="${basedir}/target/dependency"
+                  excludes="commons-io*"/>
+      <zipfileset dir="${basedir}/target" includes="*.jar,bootstrap.sh"
+                  excludes="*-javadoc.jar,*-sources.jar"/>
+      <zipfileset dir="${basedir}" includes="*.txt"/>
+      <zipfileset dir="${basedir}/src/main/script" filemode="755"
+                  excludes="bootstrap.sh"/>
+      <zipfileset dir="${basedir}/target/test-classes" prefix="classes"
+                  includes="org/neo4j/ha/*.class"/>
+    </zip>
+    <concat destfile="${basedir}/target/${ant.project.name}">
+      <fileset file="${basedir}/target/unzip.sh"/>
+      <fileset file="${dev.zip}"/>
+    </concat>
+    <chmod file="${basedir}/target/${ant.project.name}" perm="ugo+x"/>
+  </target>
+</project>

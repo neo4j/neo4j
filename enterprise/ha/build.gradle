@@ -1,0 +1,20 @@
+dependencies {
+    compile project(":neo4j-kernel"),
+            project(":neo4j-com"),
+            project(":neo4j-lucene-index"),
+            project(":neo4j-management")
+
+    compile("org.apache.zookeeper:zookeeper:$zookeeperVersion") {
+        exclude module: "jline"
+        exclude module: "log4j"
+    }
+
+    testCompile "commons-io:commons-io:$commonsIoVersion"
+    testCompile "log4j:log4j:$log4jVersion"
+}
+
+sourceSets {
+    test {
+        classpath += project(':neo4j-kernel').sourceSets.test.classes
+    }
+}

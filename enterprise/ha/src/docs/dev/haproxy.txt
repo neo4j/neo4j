@@ -1,0 +1,167 @@
+[[ha-haproxy]]
+Setting up HAProxy as a load balancer
+=======================================
+
+In the Neo4j HA architecture, the cluster is typically fronted by a load balancer. In this section we will explore
+how to set up HAProxy to perform load balancing across the HA cluster.
+
+== Installing HAProxy ==
+
+For this tutorial we will assume a Linux environment. We will also be installing HAProxy from source, and we'll be
+using version 1.4.18. You need to ensure that your Linux server has a development environment set up. On
+Ubuntu/apt systems, simply do:
+
+[source,shell]
+----
+aptitude install build-essential
+----
+
+And on CentOS/yum systems do:
+
+[source,shell]
+----
+yum -y groupinstall 'Development Tools'
+----
+
+Then download the tarball from the http://haproxy.1wt.eu/[HAProxy website]. Once you've downloaded it,
+simply build and install HAProxy:
+
+[source,shell]
+----
+tar -zvxf haproxy-1.4.18.tar.gz
+cd haproxy-1.4.18
+make
+cp haproxy /usr/sbin/haproxy
+----
+
+Or specify a target for make (TARGET=linux26 for linux kernel 2.6 or above or linux24 for 2.4 kernel)
+
+[source,shell]
+----
+tar -zvxf haproxy-1.4.18.tar.gz
+cd haproxy-1.4.18
+make TARGET=linux26
+cp haproxy /usr/sbin/haproxy
+----
+
+== Configuring HAProxy ==
+
+HAProxy can be configured in many ways. The full documentation is available at their website.
+
+For this example, we will configure HAProxy to load balance requests to three HA servers. Simply write the follow
+configuration to +/etc/haproxy.cfg+:
+
+[source]
+----
+global
+    daemon
+    maxconn 256
+
+defaults
+    mode http
+    timeout connect 5000ms
+    timeout client 50000ms
+    timeout server 50000ms
+
+frontend http-in
+    bind *:80
+    default_backend neo4j
+
+backend neo4j
+    server s1 10.0.1.10:7474 maxconn 32
+    server s2 10.0.1.11:7474 maxconn 32
+    server s3 10.0.1.12:7474 maxconn 32
+
+listen admin
+    bind *:8080
+    stats enable
+----
+
+HAProxy can now be started by running:
+
+[source,shell]
+----
+/usr/sbin/haproxy -f /etc/haproxy.cfg
+----
+
+You can connect to http://<ha-proxy-ip>:8080/haproxy?stats to view the status dashboard. This dashboard can
+be moved to run on port 80, and authentication can also be added. See the HAProxy documentation for details on this.
+
+== Configuring separate sets for master and slaves ==
+
+It is possible to set HAProxy backends up to only include slaves or the master. For example, it may be desired
+to only write to slaves. To accomplish this, you need to have a small extension on the server than can report
+whether or not the machine is master via HTTP response codes. In this example, the extension exposes two URLs:
+
+* +/hastatus/master+, which returns 200 if the machine is the master, and 404 if the machine is a slave
+* +/hastatus/slave+, which returns 200 if the machine is a slave, and 404 if the machine is the master
+
+The following example excludes the master from the set of machines. Request will only be sent to the slaves.
+
+[source]
+----
+global
+    daemon
+    maxconn 256
+
+defaults
+    mode http
+    timeout connect 5000ms
+    timeout client 50000ms
+    timeout server 50000ms
+
+frontend http-in
+    bind *:80
+    default_backend neo4j-slaves
+
+backend neo4j-slaves
+    option httpchk GET /hastatus/slave
+    server s1 10.0.1.10:7474 maxconn 32 check
+    server s2 10.0.1.11:7474 maxconn 32 check
+    server s3 10.0.1.12:7474 maxconn 32 check
+
+listen admin
+    bind *:8080
+    stats enable
+----
+
+== Cache-based sharding with HAProxy ==
+
+Neo4j HA enables what is called cache-based sharding. If the dataset is too big to fit into the cache of any
+single machine, then by applying a consistent routing algorithm to requests, the caches on each machine will
+actually cache different parts of the graph. A typical routing key could be user ID.
+
+In this example, the user ID is a query parameter in the URL being requested. This will route the same user
+to the same machine for each request.
+
+[source]
+----
+global
+    daemon
+    maxconn 256
+
+defaults
+    mode http
+    timeout connect 5000ms
+    timeout client 50000ms
+    timeout server 50000ms
+
+frontend http-in
+    bind *:80
+    default_backend neo4j-slaves
+
+backend neo4j-slaves
+    balance url_param user_id
+    server s1 10.0.1.10:7474 maxconn 32
+    server s2 10.0.1.11:7474 maxconn 32
+    server s3 10.0.1.12:7474 maxconn 32
+
+listen admin
+    bind *:8080
+    stats enable
+----
+
+Naturally the health check and query parameter-based routing can be combined to only route requests to slaves
+by user ID. Other load balancing algorithms are also available, such as routing by source IP (+source+),
+the URI (+uri+) or HTTP headers(+hdr()+).
+
