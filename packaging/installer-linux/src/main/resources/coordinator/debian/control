@@ -1,0 +1,16 @@
+Source: neo4j-coordinator
+Section: misc
+Priority: optional
+Maintainer: ${neo4j.debian.maintainer}
+Build-Depends: debhelper (>= 5)
+Standards-Version: 3.7.2
+Homepage: http://neo4j.org/
+
+Package: neo4j-coordinator
+Architecture: all
+Depends: ${misc:Depends}, daemon, adduser, psmisc, default-jre
+Conflicts: 
+Replaces: 
+Description: Coordinator service for Neo4j clusters.
+ This is a Neo4j packaged version of Apache Zookeeper, used to 
+ coordinate neo4j clusters.

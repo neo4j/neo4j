@@ -1,0 +1,368 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <artifactId>assembly-pom</artifactId>
+    <groupId>org.neo4j.build</groupId>
+    <version>35</version>
+    <relativePath />
+  </parent>
+
+  <groupId>org.neo4j.assembly</groupId>
+  <artifactId>neo4j-standalone</artifactId>
+  <packaging>pom</packaging>
+
+  <name>Neo4j - Server Assembler</name>
+
+  <version>1.8-SNAPSHOT</version>
+  <description>This project assembles the Neo4j stand-alone distribution,
+    pulling together all the deliverable artifacts and packaging them 
+      into a downloadable installer.</description>
+  <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
+
+  <scm>
+    <url>https://github.com/neo4j/packaging/tree/master/standalone</url>
+  </scm>
+  
+  <modules>
+    <module>standalone-community</module>
+    <module>standalone-advanced</module>
+    <module>standalone-enterprise</module>
+  </modules>
+
+  <properties>
+    <short-name>neo4j-standalone</short-name>
+    <docs-plugin.skip>true</docs-plugin.skip>
+
+    <!-- Document substituion properties are in document.properties file -->
+
+    <!-- other filter properties -->
+    <wrapper.conf>conf/neo4j-wrapper.conf</wrapper.conf>
+    <neo4j.version>1.8-SNAPSHOT</neo4j.version>
+    <windows-wrapper.version>4</windows-wrapper.version>
+    <windows-wrapper.filename>windows-service-wrapper-*.jar</windows-wrapper.filename>
+    
+    <!-- conf/neo4j-server.properties filter properties -->
+    <org.neo4j.database.location>data/graph.db</org.neo4j.database.location>
+    <org.neo4j.server.webserver.http.enabled>true</org.neo4j.server.webserver.http.enabled>
+    <org.neo4j.webserver.port>7474</org.neo4j.webserver.port>
+    
+    <org.neo4j.server.webserver.https.enabled>true</org.neo4j.server.webserver.https.enabled>
+    <org.neo4j.webserver.https.port>7473</org.neo4j.webserver.https.port>
+    <org.neo4j.server.webserver.https.cert.location>conf/ssl/snakeoil.cert</org.neo4j.server.webserver.https.cert.location>
+    <org.neo4j.server.webserver.https.key.location>conf/ssl/snakeoil.key</org.neo4j.server.webserver.https.key.location>
+    <org.neo4j.server.webserver.https.keystore.location>data/keystore</org.neo4j.server.webserver.https.keystore.location>
+     <org.neo4j.webservice.packages>org.neo4j.rest.web,org.neo4j.webadmin,org.neo4j.webadmin.backup,org.neo4j.webadmin.console,org.neo4j.webadmin.domain,org.neo4j.webadmin.parser,org.neo4j.webadmin.properties,org.neo4j.webadmin.resources,org.neo4j.webadmin.rest,org.neo4j.webadmin.rrd,org.neo4j.webadmin.task,org.neo4j.webadmin.utils</org.neo4j.webservice.packages>
+    <org.neo4j.server.bundledir>system/lib</org.neo4j.server.bundledir>
+
+    <!-- Runtime properties. These are used to bootstrap the server. All other configuration should happen through a configuration file. Each of these should have a sensible default, so that the server can operate without them defined. -->
+    <neo4j.home>${project.build.directory}/neo4j</neo4j.home>
+    <neo4j.confdir>${neo4j.home}/conf</neo4j.confdir> <!-- needed? -->
+    <neo4j.datadir>${neo4j.home}/data</neo4j.datadir> <!-- needed? -->
+    <neo4j.logdir>${neo4j.datadir}/log</neo4j.logdir> <!-- needed? -->
+
+  </properties>
+
+  <licenses>
+    <license>
+      <name>GNU Affero General Public License, Version 3</name>
+      <url>http://www.gnu.org/licenses/agpl-3.0-standalone.html</url>
+      <comments>The software ("Software") developed and owned by Network Engine for
+Objects in Lund AB (referred to in this notice as "Neo Technology") is
+licensed under the GNU AFFERO GENERAL PUBLIC LICENSE Version 3 to all
+third parties and that license is included below.
+
+However, if you have executed an End User Software License and Services
+Agreement or an OEM Software License and Support Services Agreement, or
+another commercial license agreement with Neo Technology or one of its
+affiliates (each, a "Commercial Agreement"), the terms of the license in
+such Commercial Agreement will supersede the GNU AFFERO GENERAL PUBLIC
+LICENSE Version 3 and you may use the Software solely pursuant to the
+terms of the relevant Commercial Agreement.
+      </comments>
+    </license>
+  </licenses>
+
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>create-javadocs</id>
+            <phase>none</phase>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>get-javadoc-sources</id>
+            <phase>none</phase>
+          </execution>
+          <execution>
+            <id>unpack-upgrade</id>
+            <phase>generate-resources</phase>
+            <goals><goal>unpack</goal></goals>
+             <configuration>
+               <artifactItems>
+                 <artifactItem>
+                  <groupId>org.neo4j.doc</groupId>
+                  <artifactId>neo4j-manual</artifactId>
+                  <version>${neo4j.version}</version>
+                  <classifier>upgrade</classifier>
+                  <type>zip</type>
+                  <outputDirectory>${project.build.directory}/upgrade</outputDirectory>
+                  <includes>*.*,**/*.*</includes>
+                  <excludes>META-INF/**</excludes>
+                 </artifactItem>
+               </artifactItems>
+             </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <artifactId>maven-jar-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>attach-test-jar</id>
+            <phase>none</phase>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.neo4j.build.plugins</groupId>
+        <artifactId>license-maven-plugin</artifactId>
+        <configuration>
+          <excludes>
+            <exclude>**/logback.xml</exclude>
+          </excludes>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>wagon-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>upload-to-dist-server</id>
+            <phase>none</phase>
+          </execution>
+        </executions>
+      </plugin>
+
+       <plugin>
+        <groupId>org.neo4j.build.plugins</groupId>
+        <artifactId>licensing-maven-plugin</artifactId>
+        <version>1.7.4</version>
+        <configuration>
+          <failIfDisliked>true</failIfDisliked>
+          <failIfMissing>true</failIfMissing>
+          <plainTextReport>true</plainTextReport>
+          <prependText>notice-agpl-prefix.txt</prependText>
+          <excludedGroups>^((org.neo4j){1}|(org.neo4j.app){1}|(org.neo4j.doc){1}|(org.neo4j.server.plugin){1}|(org.neo4j.assembly){1})$</excludedGroups>
+        </configuration>
+        <executions>
+          <execution>
+            <id>enforce-licensing-oss</id>
+            <phase>compile</phase>
+            <goals>
+              <goal>check</goal>
+            </goals>
+            <configuration>
+              <licensingRequirementFiles>
+                <licensingRequirementFile>licensing-requirements-base.xml</licensingRequirementFile>
+                <licensingRequirementFile>licensing-requirements-js.xml</licensingRequirementFile>
+                <licensingRequirementFile>licensing-requirements-oss.xml</licensingRequirementFile>
+              </licensingRequirementFiles>
+              <thirdPartyLicensingFilename>${project.artifactId}-${neo4j.version}-oss.txt</thirdPartyLicensingFilename>
+            </configuration>
+          </execution>
+          <execution>
+            <id>enforce-licensing-oss-win</id>
+            <phase>compile</phase>
+            <goals>
+              <goal>check</goal>
+            </goals>
+            <configuration>
+              <licensingRequirementFiles>
+                <licensingRequirementFile>licensing-requirements-base.xml</licensingRequirementFile>
+                <licensingRequirementFile>licensing-requirements-js.xml</licensingRequirementFile>
+                <licensingRequirementFile>licensing-requirements-win.xml</licensingRequirementFile>
+                <licensingRequirementFile>licensing-requirements-oss.xml</licensingRequirementFile>
+              </licensingRequirementFiles>
+              <thirdPartyLicensingFilename>${project.artifactId}-${neo4j.version}-oss-win.txt</thirdPartyLicensingFilename>
+            </configuration>
+          </execution>
+          <execution>
+            <id>list-all-licenses</id>
+            <phase>compile</phase>
+            <goals>
+              <goal>check</goal>
+            </goals>
+            <configuration>
+              <licensingRequirementFiles>
+                <licensingRequirementFile>licensing-requirements-base.xml</licensingRequirementFile>
+                <licensingRequirementFile>licensing-requirements-js.xml</licensingRequirementFile>
+              </licensingRequirementFiles>
+              <thirdPartyLicensingFilename>${project.artifactId}-${neo4j.version}-NOTICE.txt</thirdPartyLicensingFilename>
+              <listPrependText>list-prefix.txt</listPrependText>
+              <listReport>${project.artifactId}-${neo4j.version}-LICENSES.txt</listReport>
+            </configuration>
+          </execution>
+          <execution>
+            <id>enforce-licensing-com</id>
+            <phase>compile</phase>
+            <goals>
+              <goal>check</goal>
+            </goals>
+            <configuration>
+              <licensingRequirementFiles>
+                <licensingRequirementFile>licensing-requirements-base.xml</licensingRequirementFile>
+                <licensingRequirementFile>licensing-requirements-js.xml</licensingRequirementFile>
+                <licensingRequirementFile>licensing-requirements-com.xml</licensingRequirementFile>
+              </licensingRequirementFiles>
+              <thirdPartyLicensingFilename>${project.artifactId}-${neo4j.version}.txt</thirdPartyLicensingFilename>
+            </configuration>
+          </execution>
+          <execution>
+            <id>enforce-licensing-com-win</id>
+            <phase>compile</phase>
+            <goals>
+              <goal>check</goal>
+            </goals>
+            <configuration>
+              <licensingRequirementFiles>
+                <licensingRequirementFile>licensing-requirements-base.xml</licensingRequirementFile>
+                <licensingRequirementFile>licensing-requirements-js.xml</licensingRequirementFile>
+                <licensingRequirementFile>licensing-requirements-win.xml</licensingRequirementFile>
+                <licensingRequirementFile>licensing-requirements-com.xml</licensingRequirementFile>
+              </licensingRequirementFiles>
+              <thirdPartyLicensingFilename>${project.artifactId}-${neo4j.version}-win.txt</thirdPartyLicensingFilename>
+            </configuration>
+          </execution>
+        </executions>
+        <dependencies>
+          <dependency>
+            <groupId>org.neo4j.build</groupId>
+            <artifactId>licensecheck-config</artifactId>
+            <version>1.8-SNAPSHOT</version>
+          </dependency>
+        </dependencies>
+      </plugin>
+
+    </plugins>
+  </build>
+
+  <repositories>
+    <repository>
+      <id>neo4j-release-repository</id>
+      <name>Neo4j Maven 2 release repository</name>
+      <url>http://m2.neo4j.org/content/repositories/releases</url>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+    </repository>
+    <repository>
+      <id>neo4j-snapshot-repository</id>
+      <name>Neo4j Maven 2 snapshot repository</name>
+      <url>http://m2.neo4j.org/content/repositories/snapshots</url>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
+    </repository>
+  </repositories>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.neo4j.app</groupId>
+      <artifactId>windows-service-wrapper</artifactId>
+      <version>${windows-wrapper.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j.app</groupId>
+      <artifactId>neo4j-server</artifactId>
+      <version>${neo4j.version}</version>
+      <classifier>static-web</classifier> 
+    </dependency>
+
+    <dependency>
+      <groupId>org.neo4j.doc</groupId>
+      <artifactId>neo4j-manual</artifactId>
+      <version>${neo4j.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.neo4j.doc</groupId>
+      <artifactId>neo4j-manual</artifactId>
+      <version>${neo4j.version}</version>
+      <classifier>manpages</classifier>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j.doc</groupId>
+      <artifactId>neo4j-manual</artifactId>
+      <version>${neo4j.version}</version>
+      <classifier>manpagesenterprise</classifier>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j.doc</groupId>
+      <artifactId>neo4j-manual</artifactId>
+      <version>${neo4j.version}</version>
+      <classifier>upgrade</classifier>
+      <type>zip</type>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j.server.plugin</groupId>
+      <artifactId>neo4j-gremlin-plugin</artifactId>
+      <version>${neo4j.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j.server.plugin</groupId>
+      <artifactId>neo4j-cypher-plugin</artifactId>
+      <version>${neo4j.version}</version>
+    </dependency>
+  </dependencies>
+
+  <distributionManagement>
+    <site>
+      <id>neo4j-site</id>
+      <url>scpexe://static.neo4j.org/var/www/components.neo4j.org/${project.artifactId}/${project.version}</url>
+    </site>
+  </distributionManagement>
+
+  <profiles>
+    <profile>
+      <id>freeze</id>
+      <activation>
+        <activeByDefault>false</activeByDefault>
+        <property>
+          <name>freeze</name>
+        </property>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <artifactId>ease-maven-plugin</artifactId>
+            <groupId>org.neo4j.build.plugins</groupId>
+            <executions>
+              <execution>
+                <id>freeze-artifacts</id>
+                <phase>none</phase>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
+
+</project>
+

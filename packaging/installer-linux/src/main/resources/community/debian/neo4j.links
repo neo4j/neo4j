@@ -1,0 +1,9 @@
+usr/share/neo4j/lib      var/lib/neo4j/lib
+usr/share/neo4j/plugins  var/lib/neo4j/plugins
+usr/share/neo4j/system   var/lib/neo4j/system
+
+var/log/neo4j            var/lib/neo4j/data/log
+
+etc/neo4j                var/lib/neo4j/conf
+
+var/lib/neo4j/bin/neo4j-shell   usr/bin/neo4j-shell

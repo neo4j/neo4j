@@ -1,0 +1,287 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>org.neo4j.build</groupId>
+    <artifactId>parent-central</artifactId>
+    <version>35</version>
+    <relativePath />
+  </parent>
+  <groupId>org.neo4j</groupId>
+  <artifactId>installer-qa</artifactId>
+  <version>1.8-SNAPSHOT</version>
+  <packaging>jar</packaging>
+
+  <name>Neo4j Installer Quality Assurance</name>
+  <description>QA for installers for the Neo4j Server</description>
+
+  <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
+
+  <scm>
+    <connection>scm:git:git://github.com/neo4j/packaging.git</connection>
+    <developerConnection>scm:git:git@github.com:neo4j/packaging.git</developerConnection>
+    <url>https://github.com/neo4j/packaging</url>
+  </scm>
+
+  <properties>
+    <short-name>installer-qa</short-name>
+    <neo4j.version>1.8-SNAPSHOT</neo4j.version>
+    <license-text.header>GPL-3-header.txt</license-text.header>
+    
+    <box-path-ubuntu-11.04-amd64-with-jre>${basedir}/boxes/ubuntu-11.04-server-amd64-with-jre.box</box-path-ubuntu-11.04-amd64-with-jre>
+    <box-path-win2008-amd64>${basedir}/boxes/win2008-amd64.box</box-path-win2008-amd64>
+    
+    <vagrant.path>vagrant</vagrant.path>
+    <scp.path>scp</scp.path>
+    
+    <!-- Print shell commands issued in the VMs and on the host machine to
+         standard out. -->
+    <jagrant.printCommandsToConsole>false</jagrant.printCommandsToConsole>
+    
+    <!-- The number of times HA failures should be retried, this is horrid, but is
+         a temporary workaround until we get rid of zookeeper.
+         The actual number will be two times this, since we destroy the VMs and retry
+         to verify that we have found a problem and not run into vagrant bugs (see below). -->
+    <ha-retries>1</ha-retries>
+    
+    <!-- If something fails, should we destroy the VMs to verify we have
+         encountered an actual issue, and not a vagrant bug?
+         Note: Running without this for prolonged periods (eg CI) will
+         lead to false positives as VirtualBox and Vagrant bugs eventually
+         corrupt the VMs, making them unresponsive. -->
+    <destroy-vm-and-retry-on-error>false</destroy-vm-and-retry-on-error>
+  </properties>
+
+  <dependencies>
+
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit-dep</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.hamcrest</groupId>
+      <artifactId>hamcrest-all</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.sun.jersey</groupId>
+      <artifactId>jersey-client</artifactId>
+      <version>1.9</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.neo4j.app</groupId>
+      <artifactId>neo4j-server</artifactId>
+      <version>${neo4j.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>net.schmizz</groupId>
+      <artifactId>sshj</artifactId>
+      <version>0.6.1</version>
+      <scope>compile</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.bouncycastle</groupId>
+      <artifactId>bcmail-jdk16</artifactId>
+      <version>1.46</version>
+      <type>jar</type>
+      <scope>compile</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <executions>
+          <execution>
+            <phase>process-resources</phase>
+            <id>rename-and-move-installers-into-classpath</id>
+            <goals>
+              <goal>run</goal>
+            </goals>
+            <configuration>
+              <target>
+                <!-- Windows installers -->
+                <move
+                  file="${project.build.directory}/neo4j-community-setup-${neo4j.version}.msi"
+                  toFile="${project.build.outputDirectory}/installer-windows-community.msi"
+                  failonerror="false" />
+                <move
+                  file="${project.build.directory}/neo4j-advanced-setup-${neo4j.version}.msi"
+                  toFile="${project.build.outputDirectory}/installer-windows-advanced.msi"
+                  failonerror="false" />
+                <move
+                  file="${project.build.directory}/neo4j-enterprise-setup-${neo4j.version}.msi"
+                  toFile="${project.build.outputDirectory}/installer-windows-enterprise.msi"
+                  failonerror="false" />
+                <move
+                  file="${project.build.directory}/neo4j-coordinator-setup-${neo4j.version}.msi"
+                  toFile="${project.build.outputDirectory}/installer-windows-coordinator.msi"
+                  failonerror="false" />
+
+                <!-- Debian installers -->
+                <move
+                  file="${project.build.directory}/neo4j_${neo4j.version}_all.deb"
+                  toFile="${project.build.outputDirectory}/installer-debian-community.deb"
+                  failonerror="false" />
+                <move
+                  file="${project.build.directory}/neo4j-advanced_${neo4j.version}_all.deb"
+                  toFile="${project.build.outputDirectory}/installer-debian-advanced.deb"
+                  failonerror="false" />
+                <move
+                  file="${project.build.directory}/neo4j-enterprise_${neo4j.version}_all.deb"
+                  toFile="${project.build.outputDirectory}/installer-debian-enterprise.deb"
+                  failonerror="false" />
+                <move
+                  file="${project.build.directory}/neo4j-coordinator_${neo4j.version}_all.deb"
+                  toFile="${project.build.outputDirectory}/installer-debian-coordinator.deb"
+                  failonerror="false" />
+
+                <!-- Unix tar.gz packages -->
+                <move
+                  file="${project.build.directory}/neo4j-community-${neo4j.version}-unix.tar.gz"
+                  toFile="${project.build.outputDirectory}/installer-unix-community.tar.gz"
+                  failonerror="false" />
+                <move
+                  file="${project.build.directory}/neo4j-advanced-${neo4j.version}-unix.tar.gz"
+                  toFile="${project.build.outputDirectory}/installer-unix-advanced.tar.gz"
+                  failonerror="false" />
+                <move
+                  file="${project.build.directory}/neo4j-enterprise-${neo4j.version}-unix.tar.gz"
+                  toFile="${project.build.outputDirectory}/installer-unix-enterprise.tar.gz"
+                  failonerror="false" />
+                <copy
+                  file="${project.build.outputDirectory}/installer-unix-enterprise.tar.gz"
+                  toFile="${project.build.outputDirectory}/installer-unix-coordinator.tar.gz"
+                  failonerror="false" />
+              </target>
+            </configuration>
+          </execution>
+          
+          <!-- Tar the log files from all tests -->
+          <execution>
+            <phase>package</phase>
+            <id>default-cli</id>
+            <goals>
+              <goal>run</goal>
+            </goals>
+            <configuration>
+              <target>
+                <tar destfile="${project.build.directory}/logs.tar.gz" 
+                     basedir="${project.build.directory}/test-logs"
+                     compression="gzip" />
+              </target>
+            </configuration>
+          </execution>
+          
+        </executions>
+      </plugin>
+
+      <plugin>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <systemPropertyVariables>
+            <neo4j.version>${neo4j.version}</neo4j.version>
+            <java.util.logging.config.file>${project.build.directory}/test-classes/test-logging.properties</java.util.logging.config.file>
+            
+            <box-path-ubuntu-11.04-amd64-with-jre>${box-path-ubuntu-11.04-amd64-with-jre}</box-path-ubuntu-11.04-amd64-with-jre>
+            <box-path-win2008-amd64>${box-path-win2008-amd64}</box-path-win2008-amd64>
+            
+            <vagrant.path>${vagrant.path}</vagrant.path>
+            <scp.path>${scp.path}</scp.path>
+            
+            <qa-test.ha-retries>${ha-retries}</qa-test.ha-retries>
+            <qa-test.destroy-vm-and-retry-on-error>${destroy-vm-and-retry-on-error}</qa-test.destroy-vm-and-retry-on-error>
+            
+            <jagrant.printCommandsToConsole>${jagrant.printCommandsToConsole}</jagrant.printCommandsToConsole>
+          </systemPropertyVariables>
+        </configuration>
+      </plugin>
+
+    </plugins>
+  </build>
+  
+  <profiles>
+    <profile>
+      <!-- This project expects installers to be available under /target/classes. You can
+      either place them there manually, or activate this
+      profile to pull them in directly from the file system -->
+      <id>pull-artifacts</id>
+      <activation>
+        <property>
+          <name>!pullArtifacts</name>
+        </property>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-antrun-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>pull-artifacts</id>
+                <phase>generate-resources</phase>
+                <goals>
+                  <goal>run</goal>
+                </goals>
+                <configuration>
+                  <target>
+                    <copy toDir="${project.build.directory}"
+                          failonerror="false">
+                      <fileset dir="${project.baseDir}/../../installer-linux/target">
+                        <include name="*.deb"/>
+                      </fileset>
+                    </copy>
+                    <copy toDir="${project.build.directory}"
+                          failonerror="false">
+                      <fileset dir="${project.baseDir}/../../installer-windows/target">
+                        <include name="*.msi"/>
+                      </fileset>
+                    </copy>
+                    <copy toDir="${project.build.directory}"
+                          failonerror="false">
+                      <fileset dir="${project.baseDir}/../../standalone/target">
+                        <include name="*.tar.gz"/>
+                      </fileset>
+                    </copy>
+                  </target>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
+
+  <repositories>
+    <repository>
+      <id>neo4j-snapshot-repository</id>
+      <name>Publically available Maven 2 repository for Neo4j</name>
+      <url>http://m2.neo4j.org/content/repositories/snapshots</url>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
+    </repository>
+    <repository>
+      <id>neo4j-release-repository</id>
+      <name>Publically available Maven 2 repository for Neo4j</name>
+      <url>http://m2.neo4j.org/content/repositories/releases</url>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+    </repository>
+  </repositories>
+
+</project>
