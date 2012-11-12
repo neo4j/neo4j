@@ -1,0 +1,15 @@
+[[tools]]
+Tools
+=====
+
+[partintro]
+--
+The Tools part describes available Neo4j tools and how to use them.
+--
+
+:leveloffset: 1
+
+include::webadmin.asciidoc[]
+
+include::{importdir}/neo4j-shell-docs-jar/dev/shell.asciidoc[]
+

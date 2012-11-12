@@ -1,0 +1,16 @@
+[appendix]
+[[manpages]]
+Manpages
+========
+
+The Neo4j Unix manual pages are included on the following pages.
+
+:leveloffset: 1
+
+[subs="none"]
+++++++++++++++++++++++++++++++++++++++
+<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="neo4j.1.xml"></xi:include> 
+<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="neo4j-shell.1.xml"></xi:include> 
+<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="neo4j-backup.1.xml"></xi:include> 
+++++++++++++++++++++++++++++++++++++++
+

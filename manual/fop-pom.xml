@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>org.neo4j.build</groupId>
+    <artifactId>parent-pom</artifactId>
+    <version>33</version>
+    <relativePath />
+  </parent>
+  <groupId>org.neo4j.doc</groupId>
+  <artifactId>neo4j-manual-fop</artifactId>
+  <version>1.9-SNAPSHOT</version>
+  <name>Neo4j - Reference Manual- FOP build</name>
+  <description>Neo4j Reference Manual - FOP build.</description>
+  <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
+  <packaging>pom</packaging>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.apache.xmlgraphics</groupId>
+      <artifactId>fop</artifactId>
+      <version>1.0</version>
+    </dependency>
+  </dependencies>
+
+  <repositories>
+    <repository>
+    <id>neo4j-release-repository</id>
+    <name>Neo4j Maven 2 release repository</name>
+    <url>http://m2.neo4j.org/content/repositories/releases</url>
+    <releases>
+      <enabled>true</enabled>
+    </releases>
+    <snapshots>
+      <enabled>false</enabled>
+    </snapshots>
+    </repository>
+  </repositories>
+
+</project>
+

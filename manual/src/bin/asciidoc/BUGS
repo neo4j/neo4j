@@ -1,0 +1,27 @@
+                            Bugs and Known Problems
+
+   version 8.6.7, 17 March 2012
+     __________________________________________________________________
+
+1. AsciiDoc
+
+     * A benign warning with will become a reserved keyword in Python 2.6
+       sometimes occurs when using Python 2.5 — it’s harmless and will
+       disappear with Python 3.
+     * Reported line numbers in diagnostic messages are sometimes wrong.
+     * Attribute references in macro attribute lists can’t be unescaped
+       (with the exception of attribute list entry {0}).
+     * Section numbering is incorrect when outputting HTML from a
+       multi-part book type document. This is not a biggy since multi-part
+       books are generally processed to DocBook.
+     * A row of apostrophes in an inline context throws AsciiDoc into an
+       endless loop. The problem seems to be in the input file Reader.
+     __________________________________________________________________
+
+2. dblatex
+
+   See ./dblatex/dblatex-readme.txt.
+     __________________________________________________________________
+
+   Version 8.6.7
+   Last updated 2011-11-10 09:23:10 NZDT

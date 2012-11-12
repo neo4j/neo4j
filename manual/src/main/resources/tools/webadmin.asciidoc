@@ -1,0 +1,80 @@
+[[tools-webadmin]]
+Web Administration
+==================
+
+The Neo4j Web Administration is the primary user interface for Neo4j.
+With it, you can:
+
+- monitor the Neo4j Server
+- manipulate and browse data
+- interact with the database via various consoles
+- view raw data management objects (JMX MBeans)
+
+The tool is available at http://127.0.0.1:7474/ after you have installed the <<server,Neo4j Server>>.
+To use it together with an embedded database, see <<server-embedded>>.
+
+[[webadmin-dashboard]]
+== Dashboard tab ==
+
+The Dashboard tab provides an overview of a running Neo4j instance.
+
+.Web Administration Dashboard
+image::operations/webadmin-overview.png["Dashboard tab", scaledwidth="100%"]
+
+=== Entity chart ===
+
+The charts show entity counts over time: node, relationship and properties. 
+
+.Entity charting
+image::operations/webadmin-charts.png["Entity charts", scaledwidth="75%"]
+
+=== Status monitoring ===
+
+Below the entity chart is a collection of status panels, displaying current resource usage.
+
+.Status indicator panels
+image::operations/webadmin-stats.png["Status indicator panels", scaledwidth="75%"]
+
+[[webadmin-data]]
+== Data tab ==
+
+Use the Data tab to browse, add or modify nodes, relationships and their properties.
+
+.Browsing and manipulating data
+image::operations/webadmin-data.png["Data tab", scaledwidth="100%"]
+
+.Editing properties
+image::operations/webadmin-databrowser.png["Node properties", scaledwidth="75%"]
+
+[[webadmin-console]]
+== Console tab ==
+
+The Console tab gives:
+
+* scripting access to the database via the http://gremlin.tinkerpop.com[Gremlin] scripting engine,
+* query access via <<cypher-query-lang,Cypher>>,
+* HTTP access via the HTTP console.
+
+.Traverse data with Gremlin
+image::operations/webadmin-console-gremlin.png["Data manipulation with Gremlin", scaledwidth="75%"]
+
+.Query data with Cypher
+image::operations/webadmin-console-cypher.png["Queries with Cypher", scaledwidth="75%"]
+
+//:leveloffset: 3
+
+//include::{importdir}/neo4j-server-docs-jar/webadmin/accessing-the-cypher-console.asciidoc[]
+
+//:leveloffset: 1
+
+.Interact over HTTP
+image::operations/webadmin-console-http.png["Queries with Cypher", scaledwidth="75%"]
+
+[[webadmin-serverinfo]]
+== The Server Info tab ==
+
+The Server Info tab provides raw access to all available management objects (see <<operations-monitoring>> for details).
+
+.JMX Attributes
+image::operations/webadmin-jmx.png["JMX", scaledwidth="50%"]
+

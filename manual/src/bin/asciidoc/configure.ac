@@ -1,0 +1,11 @@
+AC_INIT(asciidoc, 8.6.7)
+
+AC_CONFIG_FILES(Makefile)
+
+AC_PROG_SED
+
+AC_PROG_LN_S
+
+AC_PROG_INSTALL
+
+AC_OUTPUT

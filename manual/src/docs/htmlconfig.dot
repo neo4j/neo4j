@@ -1,0 +1,75 @@
+digraph htmlconfig {
+  subgraph clusterA {
+    label="Output Formats"
+    "offline"  [label="Offline HTML"]
+    "online"   [label="Online HTML"]
+  }
+  subgraph clusterB {
+    label="Sources"
+    "coll"    [label="Collected \nAsciidoc Sources"]
+    "img"      [label="Collected \nDot Graphs"]
+  }
+  "asciidoc" [label="AsciiDoc" shape="component"]
+  "docbook"  [label="DocBook XML 4.5"]
+  "install"  [label="Neo4j Download Packages"]
+  "docsneo"  [label="docs.neo4j.org"]
+  "graphviz" [label="Graphviz Dot" shape="component"]
+  "svg"      [label="SVG Images"]
+  "png"      [label="PNG Images"]
+  "xsltp"    [label="XSLT Processor" shape="component"]
+  "asciidoc.conf" [label="conf/\n *.conf" shape="folder"]
+  "asciidoc.conf.note" [label="asciidoc.conf: general settings\ndocbook45.conf: docbook ouput config\nlinkedimages.conf: wrap images in a link to the image\nxhtml.conf: docbook for HTML output settings" shape="note"]
+  "asciidoc.conf.note" -> "asciidoc.conf"
+  "xsl.conf" [label="conf/\n *.xsl" shape="folder"]
+  "web"      [label="css/\n images/\n js/" shape="folder"]
+  "chunked.xsl" [shape="note"]
+  "chunked-offline.xsl" [shape="note"]  
+  "common.xsl" [shape="note"]
+  "html-params.xsl" [shape="note"]
+  "head.xsl" [shape="note"]
+  "head-offline.xsl" [shape="note"]
+  "syntaxhighlight.xsl" [shape="note"]
+  "disqus-footer.xsl" [shape="note"]
+  "breadcrumbs.xsl" [shape="note"]
+  "css" [shape="folder"]
+  "css.note" [label="Syntaxhighlighter\n neo.css\n *.png" shape="note"]
+  "js" [shape="folder"]
+  "js.note" [label="Syntaxhiglighter\n JQuery\n cypherconsole.js\n imagescaler.js\n svgreplacer.js\n tablestyler.js\n version.js\n versionswitcher.js" shape="note"]
+  "css" -> "web"
+  "js" -> "web"
+  "js.note" -> "js"
+  "css.note" -> "css"
+  "coll"    -> "asciidoc"  [label="parsed by"]
+  "asciidoc.conf"->"asciidoc"[label="configures"]
+  "asciidoc" -> "docbook" [label="generates"]
+  "img"     -> "graphviz" [label="parsed by"]
+  "graphviz" -> "svg"   [label="generates"]
+  "graphviz" -> "png"   [label="generates"]
+  "docbook" -> "xsltp" [label="transformed by"]
+  "xsltp" -> "offline" [label="into"]
+  "xsltp" -> "online" [label="into"]
+  "xsl.conf" -> "xsltp" [label="configures"]
+  "chunked.xsl" -> "xsl.conf"
+  "chunked-offline.xsl" -> "xsl.conf"
+  "common.xsl" -> "chunked.xsl" [label="imported by"]
+  "html-params.xsl" -> "chunked.xsl" [label="imported by"]
+  "head.xsl" -> "chunked.xsl" [label="imported by"]
+  "syntaxhighlight.xsl" -> "chunked.xsl" [label="imported by"]
+  "disqus-footer.xsl" -> "chunked.xsl" [label="imported by"]
+  "common.xsl" -> "chunked-offline.xsl" [label="imported by"]
+  "html-params.xsl" -> "chunked-offline.xsl" [label="imported by"]
+  "head-offline.xsl" -> "chunked-offline.xsl" [label="imported by"]
+  "syntaxhighlight.xsl" -> "chunked-offline.xsl" [label="imported by"]
+  "offline-footer.xsl" -> "chunked-offline.xsl" [label="imported by"]
+  "breadcrumbs.xsl" -> "head.xsl" [label="imported by"]
+  "breadcrumbs.xsl" -> "head-offline.xsl" [label="imported by"]
+  "svg" -> "offline" [label="copied to"]
+  "svg" -> "online" [label="copied to"]
+  "png" -> "offline" [label="copied to"]
+  "png" -> "online" [label="copied to"]
+  "web" -> "offline" [label="copied to"]
+  "web" -> "online" [label="copied to"]
+  "offline" -> "install" [label="included in"]
+  "online" -> "docsneo" [label="published at"]
+}
+

@@ -1,0 +1,19 @@
+Source Hightlight Filter Test
+=============================
+
+Details of the filter can be found in
+`./doc/source-highlight-filter.txt`.
+
+[source,python]
+---------------------------------------------------------------------
+''' A multi-line
+    comment.'''
+def sub_word(mo):
+    ''' Single line comment.'''
+    word = mo.group('word')     # Inline comment
+    if word in keywords[language]:
+        return quote + word + quote
+    else:
+        return word
+---------------------------------------------------------------------
+

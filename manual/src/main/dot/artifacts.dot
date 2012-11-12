@@ -1,0 +1,112 @@
+digraph g{
+ graph [rankdir="BT" size="9.0,7.0"]
+
+subgraph cluster_community {
+ label="Community"
+ "lucene-index" -> "kernel"
+ "jmx" -> "kernel"
+ "graph-algo" -> "kernel"
+ "graph-matching" -> "kernel"
+ "graphviz" -> "kernel"
+ "cypher" -> "lucene-index"
+ "cypher" -> "graphviz"
+ "shell" -> "kernel"
+ "shell" -> "jmx"
+ "shell" -> "graph-algo"
+ "shell" -> "cypher"
+ "udc" -> "kernel"
+ "neo4j" -> "kernel"
+ "neo4j" -> "lucene-index"
+ "neo4j" -> "graph-algo"
+ "neo4j" -> "graph-matching"
+ "neo4j" -> "udc"
+ "neo4j" -> "jmx"
+ "neo4j" -> "cypher"
+ "neo4j-community" -> "neo4j" [label="copy of"]
+ "server-api" -> "kernel"
+ "server" -> "server-api"
+ "server" -> "neo4j"
+ "server" -> "shell"
+}
+
+subgraph cluster_advanced {
+ label="Advanced"
+ "management" -> "kernel"
+ "management" -> "jmx"
+ "neo4j-advanced" -> "neo4j-community"
+ "neo4j-advanced" -> "management"
+ "server-advanced" -> "server"
+ "server-advanced" -> "neo4j-advanced"
+ "server-advanced" -> "shell"
+}
+
+subgraph cluster_enterprise {
+ label="Enterprise"
+ "com" -> "kernel"
+ "backup" -> "com"
+ "ha" -> "kernel"
+ "ha" -> "jmx"
+ "ha" -> "management"
+ "ha" -> "backup"
+ "ha" -> "lucene-index"
+ "ha" -> "com"
+ "ha" -> "shell"
+ "neo4j-enterprise" -> "neo4j-advanced"
+ "neo4j-enterprise" -> "com"
+ "neo4j-enterprise" -> "backup"
+ "neo4j-enterprise" -> "ha"
+ "server-enterprise" -> "server-advanced"
+ "server-enterprise" -> "neo4j-enterprise"
+ "server-enterprise" -> "shell" 
+}
+
+subgraph cluster_serverplugins {
+ label="Server plugins"
+ "cypher-plugin" -> "server"
+ "cypher-plugin" -> "neo4j"
+ "cypher-plugin" -> "server-api"
+ "gremlin-plugin" -> "server-api"
+ "gremlin-plugin" -> "server"
+ "gremlin-plugin" -> "neo4j"
+}
+
+subgraph cluster_langs {
+ label="Language bindings"
+ "neo4js"
+ "python-embedded" -> "neo4j"
+}
+
+subgraph cluster_docs {
+ label="Documentation"
+ "manual" -> "Depends on everything"
+ "Depends on everything" [shape="plaintext"]
+}
+
+subgraph cluster_wrappers {
+ label="Service Wrappers"
+ "windows-wrapper"
+}
+
+
+subgraph cluster_packaging {
+ label="Packaging & Products"
+ "standalone" -> "neo4j-community"
+ "standalone" -> "server"
+ "standalone" -> "neo4j-advanced"
+ "standalone" -> "server-advanced"
+ "standalone" -> "neo4j-enterprise"
+ "standalone" -> "server-enterprise"
+ "standalone" -> "cypher-plugin"
+ "standalone" -> "gremlin-plugin"
+ "standalone" -> "windows-wrapper"
+ "standalone" -> "manual"
+ "neo4j-enterprise-windows" -> "standalone" [arrowhead="none"]
+ "neo4j-enterprise-unix" -> "standalone" [arrowhead="none"]
+ "neo4j-advanced-windows" -> "standalone" [arrowhead="none"]
+ "neo4j-advanced-unix" -> "standalone" [arrowhead="none"]
+ "neo4j-community-windows" -> "standalone" [arrowhead="none"]
+ "neo4j-community-unix" -> "standalone" [arrowhead="none"]
+}
+
+}
+
