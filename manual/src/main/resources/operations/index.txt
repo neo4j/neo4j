@@ -1,0 +1,34 @@
+[[operations]]
+Operations
+==========
+
+[partintro]
+--
+This part describes how to install and maintain a Neo4j installation.
+This includes topics such as backing up the database and monitoring the health of the database as well as diagnosing issues.
+--
+
+:leveloffset: 1
+
+include::installation-deployment/index.txt[]
+
+:leveloffset: 1
+
+include::{importdir}/neo4j-kernel-docs-jar/ops/index.txt[]
+
+:leveloffset: 1
+
+include::{importdir}/neo4j-ha-docs-jar/dev/index.txt[]
+
+:leveloffset: 1
+
+include::{importdir}/neo4j-backup-docs-jar/ops/backup.txt[]
+
+:leveloffset: 1
+
+include::security.txt[]
+
+:leveloffset: 1
+
+include::{importdir}/neo4j-management-docs-jar/ops/monitoring.txt[]
+

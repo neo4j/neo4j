@@ -1,0 +1,65 @@
+AsciiDoc DocBook XSL Stylesheets Notes
+======================================
+
+Output file customisation is achieved by tweaking the DocBook XSL
+stylesheets.  I've tried to keep customization to a minimum and
+confine it to the separate XSL driver files in the distribution
+`./docbook-xsl/` directory (see the User Guide for details).
+
+To polish some rough edges I've written some patches for the DocBook
+XSL stylesheets -- you don't need them but they're documented below
+and included in the distribution `./docbook-xsl/` directory.
+
+
+Manually upgrading Debian to the latest DocBook XSL stylesheets
+---------------------------------------------------------------
+The DocBook XSL Stylesheets distribution is just a directory full of
+text files and you can switch between releases by changing the
+directory name in the system XML catalog.
+
+To upgrade to the latest docbook-xsl stylesheets without having to
+wait for the Debian `docbook-xsl` package:
+
+- Download the latest docbook-xsl tarball from
+  http://sourceforge.net/projects/docbook/. Bleeding edge snapshots
+  can be found at http://docbook.sourceforge.net/snapshots/
+
+- Unzip the tarball to `/usr/share/xml/docbook/stylesheet/`:
+
+  $ cd /usr/share/xml/docbook/stylesheet
+  $ sudo tar -xzf /tmp/docbook-xsl-1.72.0.tar.gz
+
+- Edit `/etc/xml/docbook-xsl.xml` catalog and replace occurences of
+  the current stylesheets directory with the new one (in our example
+  it would be `/usr/share/xml/docbook/stylesheet/docbook-xsl-1.72.0`.
+
+  $ cd /etc/xml/
+  $ sudo cp -p docbook-xsl.xml docbook-xsl.xml.ORIG
+  $ sudo vi docbook-xsl.xml
+
+
+Customizing Generated Text
+--------------------------
+An example
+http://www.sagehill.net/docbookxsl/CustomGentext.html#CustomGenText[DocBook
+XSL Stylesheets customization file] for formatting chapter titles
+without chapter numbering.
+
+.custom-chapter.xml
+---------------------------------------------------------------------
+<!-- Customize chapter title -->
+<l:i18n xmlns:l="http://docbook.sourceforge.net/xmlns/l10n/1.0">
+  <l:l10n language="en">
+    <l:context name="title">
+      <l:template name="chapter" text="%t"/>
+    </l:context>
+  </l:l10n>
+</l:i18n>
+---------------------------------------------------------------------
+
+Executed with this 'xsltproc' parameter:
+
+  --param local.l10n.xml document\(\'custom-chapter.xml\'\)
+
+NOTE: This example is hypothetical -- use the 'xsltproc'
+`--stringparam chapter.autolabel 0` option to do the same job.

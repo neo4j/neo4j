@@ -1,0 +1,77 @@
+#####################################################################
+#
+# A-A-P file for making AsciiDoc distribution.
+# (you can obtain A-A-P from http://www.a-a-p.org)
+#
+# Stuart Rackham <srackham@gmail.com>
+#####################################################################
+
+:execute ./common.aap
+
+all: distribution
+
+vers:
+    :print Version: $VERS (released $DATE)
+
+vers_update:
+    # Propagate version number in common.aap to other versioned files.
+    :syseval grep "$$VERSION = '$(VERS)'" asciidoc.py | :assign dummy
+    @if exit != 0:
+        :print updating version numbers...
+        @for (fname,match) in (('asciidoc.py',r'^VERSION = '),('a2x.py',r'^VERSION = '),('configure.ac',r'^AC_INIT\(.*\)')):
+            :sys sed '/$match/ s/[0-9.][0-9.a-zA-Z_]\+/$VERS/' <$fname >$(fname).tmp
+            :sys mv -f $(fname).tmp $fname
+            @if fname in ('asciidoc.py','a2x.py'):
+                :sys chmod +x $fname
+
+tags:
+    :sys rm -f tags
+    :sys ctags asciidoc.py asciidocapi.py tests/testasciidoc.py
+
+docs:
+    :execute ./doc/main.aap
+
+website:
+    :execute ./examples/website/main.aap
+
+distribution: vers_update docs website
+    NAME = asciidoc-$(VERS)
+    # Make configure script.
+    :sys autoconf
+    :sys ln -s . $(NAME)
+    # Make tarball of all files in MANIFEST.
+    :sys tar -czf $(NAME).tar.gz \
+        ``sed s:^:$(NAME)/: MANIFEST``
+    # Make zip file.
+    ZIP = `program_path("zip")`
+    @if ZIP:
+        :sys rm -f $(NAME).zip
+        :sys ls ``sed s:^:$(NAME)/: MANIFEST`` | $ZIP $(NAME).zip -@
+        # Zip files don't know about symlinks so just duplicate the
+        # files.
+        :sys $ZIP $(NAME).zip \
+                $(NAME)/doc/images/tiger.png \
+                $(NAME)/doc/images/smallnew.png \
+                $(NAME)/doc/images/icons/README \
+                $(NAME)/doc/images/icons/*.png \
+                $(NAME)/doc/images/icons/callouts/*.png \
+                $(NAME)/examples/website/images/tiger.png \
+                $(NAME)/examples/website/images/highlighter.png \
+                $(NAME)/examples/website/images/smallnew.png \
+                $(NAME)/examples/website/images/icons/README \
+                $(NAME)/examples/website/images/icons/*.png \
+                $(NAME)/examples/website/images/icons/callouts/*.png
+        :sys rm -f $(NAME)
+    @else:
+        :print WARNING: zip(1) unavailable, skipping zip file creation
+    :sys rm -f $(NAME)
+
+test:
+    :sys python ./asciidoc.py --doctest
+    :sys python ./asciidocapi.py
+    :execute ./doc/main.aap test
+    :syseval ls ./tests/data/*.html | :assign TESTFILES
+    @if _no.TESTFILES:
+        :sys python ./tests/testasciidoc.py run
+    @else:
+        :print WARNING: no test files, run './tests/testasciidoc.py update'

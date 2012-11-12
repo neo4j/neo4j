@@ -1,0 +1,2 @@
+* external links (ulink in docbook jargon) should be checked for validity
+
