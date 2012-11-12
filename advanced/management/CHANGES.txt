@@ -1,0 +1,23 @@
+1.7 (2012-04-18)
+----------------
+o Now contains management information for the new Garbage Collection Resistant Cache
+
+1.7.M01 (2012-03-12)
+--------------------
+o Restructuring to use DI, configuration interfaces, less setters/getters, removed unecessary lifecycle classes,
+  added proper life cycle support for services and lots and lots of other cleanups.
+
+1.6.M03 (2012-01-12)
+--------------------
+o Added the ability to monitor the locks (optionally filter on contended-only and how long they've lived) in the LockManager through JMX.
+o Added a management bean for the diagnostics logging SPI.
+o Adding possiblity to restart server via JMX.
+
+1.6.M01 (2011-11-24)
+--------------------
+o Added support for a branched data bean (implemented in HA)
+o Added info on latest committed txId in TransactionManager bean
+
+older
+-----
+o Split up the management component in two, one ("jmx") with basic support and one ("management" - this component) with advanced support.
