@@ -1,0 +1,8 @@
+Neo4j Embedded
+
+    Neo4j examples contains code examples using the different components
+    included in the Neo4j package.
+    To see the tutorials that use this code, see:
+    {{{http://docs.neo4j.org/chunked/milestone/tutorials.html}The Neo4j Manual}}
+
+

@@ -1,0 +1,519 @@
+[[indexing]]
+Indexing
+========
+
+Indexing in Neo4j can be done in two different ways:
+
+. The database itself is a _natural index_ consisting of its relationships of different types between nodes.
+  For example a tree structure can be layered on top of the data and used for index lookups performed by a traverser.
+. Separate index engines can be used, with http://lucene.apache.org/java/{lucene-version}/index.html[Apache Lucene] being the default backend included with Neo4j.
+
+This chapter demonstrate how to use the second type of indexing, focusing on Lucene.
+
+[[indexing-introduction]]
+== Introduction ==
+
+Indexing operations are part of the http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/index/package-summary.html[Neo4j index API].
+
+Each index is tied to a unique, user-specified name (for example "first_name" or "books") and can index either http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/Node.html[nodes] or http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/Relationship.html[relationships].
+
+The default index implementation is provided by the +neo4j-lucene-index+ component, which is included in the standard Neo4j download.
+It can also be downloaded separately from http://repo1.maven.org/maven2/org/neo4j/neo4j-lucene-index/ .
+For Maven users, the +neo4j-lucene-index+ component has the coordinates +org.neo4j:neo4j-lucene-index+ and should be used with the same version of +org.neo4j:neo4j-kernel+.
+Different versions of the index and kernel components are not compatible in the general case.
+Both components are included transitively by the +org.neo4j:neo4j:pom+ artifact which makes it simple to keep the versions in sync.
+
+For initial import of data using indexes, see <<indexing-batchinsert>>.
+
+.Transactions
+NOTE: All modifying index operations must be performed inside a transaction, as with any modifying operation in Neo4j.
+
+
+[[indexing-create]]
+== Create ==
+
+An index is created if it doesn't exist when you ask for it.
+Unless you give it a custom configuration, it will be created with default configuration and backend.
+
+To set the stage for our examples, let's create some indexes to begin with:
+
+[snippet,java]
+----
+component=neo4j-lucene-index
+source=examples/ImdbExampleTest.java
+tag=createIndexes
+----
+
+This will create two node indexes and one relationship index with default configuration.
+See <<indexing-relationships>> for more information specific to relationship indexes.
+
+See <<indexing-create-advanced>> for how to create _fulltext_ indexes.
+
+You can also check if an index exists like this:
+
+[snippet,java]
+----
+component=neo4j-lucene-index
+source=examples/ImdbExampleTest.java
+tag=checkIfExists
+----
+
+
+[[indexing-delete]]
+== Delete ==
+
+Indexes can be deleted.
+When deleting, the entire contents of the index will be removed as well as its associated configuration.
+A new index can be created with the same name at a later point in time.
+
+[snippet,java]
+----
+component=neo4j-lucene-index
+source=examples/ImdbExampleTest.java
+tag=delete
+----
+
+Note that the actual deletion of the index is made during the commit of _the surrounding transaction_.
+Calls made to such an index instance after http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/index/Index.html#delete%28%29[delete()] has been called are invalid inside that transaction as well as outside (if the transaction is successful), but will become valid again if the transaction is rolled back.
+
+
+[[indexing-add]]
+== Add ==
+
+Each index supports associating any number of key-value pairs with any number of entities (nodes or relationships), where each association between entity and key-value pair is performed individually.
+To begin with, let's add a few nodes to the indexes:
+
+[snippet,java]
+----
+component=neo4j-lucene-index
+source=examples/ImdbExampleTest.java
+tag=createNodes
+----
+
+Note that there can be multiple values associated with the same entity and key.
+
+Next up, we'll create relationships and index them as well:
+
+[snippet,java]
+----
+component=neo4j-lucene-index
+source=examples/ImdbExampleTest.java
+tag=createRelationships
+----
+
+After these operations, our example graph looks like this:
+
+include::movie-and-actor-graph.txt[]
+
+[[indexing-remove]]
+== Remove ==
+
+http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/index/Index.html#remove%28T,%20java.lang.String,%20java.lang.Object%29[Removing] from an index is similar to adding, but can be done by supplying one of the following combinations of arguments:
+
+* entity
+* entity, key
+* entity, key, value
+
+[snippet,java]
+----
+component=neo4j-lucene-index
+source=examples/ImdbExampleTest.java
+tag=removeNodeFromIndex
+----
+
+
+[[indexing-update]]
+== Update ==
+
+[IMPORTANT]
+To update an index entry, the old one must be removed and a new one added.
+For details on removing index entries, see <<indexing-remove>>.
+
+Remember that a node or relationship can be associated with any number of key-value pairs in an index.
+This means that you can index a node or relationship with many key-value pairs that have the same key.
+In the case where a property value changes and you'd like to update the index, it's not enough to just index the new value -- you'll have to remove the old value as well.
+
+Here's a code example that demonstrates how it's done:
+
+[snippet,java]
+----
+component=neo4j-lucene-index
+source=examples/ImdbExampleTest.java
+tag=update
+----
+
+
+[[indexing-search]]
+== Search ==
+
+An index can be searched in two ways, http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/index/Index.html#get%28java.lang.String,%20java.lang.Object%29[get] and http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/index/Index.html#query%28java.lang.String,%20java.lang.Object%29[query].
+The +get+ method will return exact matches to the given key-value pair, whereas +query+ exposes querying capabilities directly from the backend used by the index.
+For example the http://lucene.apache.org/java/{lucene-version}/queryparsersyntax.html[Lucene query syntax] can be used directly with the default indexing backend.
+
+[[indexing-search-get]]
+=== Get ===
+
+This is how to search for a single exact match:
+
+[snippet,java]
+----
+component=neo4j-lucene-index
+source=examples/ImdbExampleTest.java
+tag=getSingleNode
+----
+
+http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/index/IndexHits.html[IndexHits] is an +Iterable+ with some additional useful methods. For example http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/index/IndexHits.html#getSingle%28%29[getSingle()] returns the first and only item from the result iterator, or +null+ if there isn't any hit.
+
+Here's how to get a single relationship by exact matching and retrieve its start and end nodes:
+
+[snippet,java]
+----
+component=neo4j-lucene-index
+source=examples/ImdbExampleTest.java
+tag=getSingleRelationship
+----
+
+Finally, we can iterate over all exact matches from a relationship index:
+
+[snippet,java]
+----
+component=neo4j-lucene-index
+source=examples/ImdbExampleTest.java
+tag=getRelationships
+----
+
+IMPORTANT: In case you don't iterate through all the hits, http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/index/IndexHits.html#close%28%29[IndexHits.close()] must be called explicitly.
+
+[[indexing-search-query]]
+=== Query ===
+
+There are two query methods, one which uses a key-value signature where the value represents a query for values with the given key only.
+The other method is more generic and supports querying for more than one key-value pair in the same query.
+
+Here's an example using the key-query option:
+
+[snippet,java]
+----
+component=neo4j-lucene-index
+source=examples/ImdbExampleTest.java
+tag=actorsQuery
+----
+
+In the following example the query uses multiple keys:
+
+[snippet,java]
+----
+component=neo4j-lucene-index
+source=examples/ImdbExampleTest.java
+tag=matrixQuery
+----
+
+NOTE: Beginning a wildcard search with "*" or "?" is discouraged by Lucene, but will nevertheless work.
+
+CAUTION: You can't have _any whitespace_ in the search term with this syntax.
+  See <<indexing-lucene-query-objects>> for how to do that.
+
+
+[[indexing-relationships]]
+== Relationship indexes ==
+
+An index for relationships is just like an index for nodes, extended by providing support to constrain a search to relationships with a specific start and/or end nodes
+These extra methods reside in the http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/index/RelationshipIndex.html[RelationshipIndex] interface which extends http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/index/Index.html[Index<Relationship>].
+
+Example of querying a relationship index:
+
+[snippet,java]
+----
+component=neo4j-lucene-index
+source=examples/ImdbExampleTest.java
+tag=queryForRelationships
+----
+
+And here's an example for the special case of searching for a specific relationship type:
+
+[snippet,java]
+----
+component=neo4j-lucene-index
+source=examples/ImdbExampleTest.java
+tag=queryForRelationshipType
+----
+
+Such an index can be useful if your domain has nodes with a very large number of relationships between them, since it reduces the search time for a relationship between two nodes.
+A good example where this approach pays dividends is in time series data, where we have readings represented as a relationship per occurrence.
+
+[[indexing-scores]]
+== Scores ==
+
+The +IndexHits+ interface exposes http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/index/IndexHits.html#currentScore%28%29[scoring] so that the index can communicate scores for the hits.
+Note that the result is not sorted by the score unless you explicitly specify that.
+See <<indexing-lucene-sort>> for how to sort by score.
+
+
+[snippet,java]
+----
+component=neo4j-lucene-index
+source=examples/ImdbExampleTest.java
+tag=queryWithScore
+----
+
+
+[[indexing-create-advanced]]
+== Configuration and fulltext indexes ==
+
+At the time of creation extra configuration can be specified to control the behavior of the index and which backend to use.
+For example to create a Lucene fulltext index:
+
+[snippet,java]
+----
+component=neo4j-lucene-index
+source=examples/ImdbExampleTest.java
+tag=fulltext
+----
+
+Here's an example of how to create an exact index which is case-insensitive:
+
+[snippet,java]
+----
+component=neo4j-lucene-index
+source=org/neo4j/index/impl/lucene/TestLuceneIndex.java
+tag=exact-case-insensitive
+----
+
+TIP: In order to search for tokenized words, the +query+ method has to be used.
+  The +get+ method will only match the full string value, not the tokens.
+
+The configuration of the index is persisted once the index has been created.
+The +provider+ configuration key is interpreted by Neo4j, but any other configuration is passed onto the backend index (e.g. Lucene) to interpret.
+
+.Lucene indexing configuration parameters
+[options="header",frame="none",cols="<20m,<30,<50"]
+|========================================================
+| Parameter                 | Possible values   | Effect
+| type | +exact+, +fulltext+ |
+  +exact+ is the default and uses a Lucene http://lucene.apache.org/java/{lucene-version}/api/core/org/apache/lucene/analysis/KeywordAnalyzer.html[keyword analyzer].
+  +fulltext+ uses a white-space tokenizer in its analyzer.
+| to_lower_case | `true`, `false` | This parameter goes together with +type+: +fulltext+ and converts values to lower case during both additions and querying, making the index case insensitive. Defaults to `true`.
+| analyzer | the full class name of an http://lucene.apache.org/java/{lucene-version}/api/core/org/apache/lucene/analysis/Analyzer.html[Analyzer] | Overrides the +type+ so that a custom analyzer can be used.
+  Note: +to_lower_case+ still affects lowercasing of string queries. 
+  If the custom analyzer uppercases the indexed tokens, string queries will not match as expected. 
+|========================================================
+
+
+[[indexing-lucene-extras]]
+== Extra features for Lucene indexes ==
+
+[[indexing-lucene-numeric-ranges]]
+=== Numeric ranges ===
+
+Lucene supports smart indexing of numbers, querying for ranges and sorting such results, and so does its backend for Neo4j.
+To mark a value so that it is indexed as a numeric value, we can make use of the http://components.neo4j.org/neo4j-lucene-index/{neo4j-version}/apidocs/org/neo4j/index/lucene/ValueContext.html[ValueContext] class, like this:
+
+[snippet,java]
+----
+component=neo4j-lucene-index
+source=examples/ImdbExampleTest.java
+tag=numericRange
+----
+
+[NOTE]
+The same type must be used for indexing and querying.
+That is, you can't index a value as a Long and then query the index using an Integer.
+
+By giving +null+ as from/to argument, an open ended query is created.
+In the following example we are doing that, and have added sorting to the query as well:
+
+[snippet,java]
+----
+component=neo4j-lucene-index
+source=examples/ImdbExampleTest.java
+tag=sortedNumericRange
+----
+
+From/to in the ranges defaults to be _inclusive_, but you can change this behavior by using two extra parameters:
+
+[snippet,java]
+----
+component=neo4j-lucene-index
+source=examples/ImdbExampleTest.java
+tag=exclusiveRange
+----
+
+
+[[indexing-lucene-sort]]
+=== Sorting ===
+
+Lucene performs sorting very well, and that is also exposed in the index backend, through the http://components.neo4j.org/neo4j-lucene-index/{neo4j-version}/apidocs/org/neo4j/index/lucene/QueryContext.html[QueryContext] class:
+
+
+[snippet,java]
+----
+component=neo4j-lucene-index
+source=examples/ImdbExampleTest.java
+tag=sortedResult
+----
+
+We sort the results by relevance (score) like this:
+
+[snippet,java]
+----
+component=neo4j-lucene-index
+source=examples/ImdbExampleTest.java
+tag=queryWithRelevance
+----
+
+[[indexing-lucene-query-objects]]
+=== Querying with Lucene Query objects ===
+
+Instead of passing in Lucene query syntax queries, you can instantiate such queries programmatically and pass in as argument, for example:
+
+[snippet,java]
+----
+component=neo4j-lucene-index
+source=examples/ImdbExampleTest.java
+tag=termQuery
+----
+
+Note that the http://lucene.apache.org/java/{lucene-version}/api/core/org/apache/lucene/search/TermQuery.html[TermQuery] is basically the same thing as using the +get+ method on the index.
+
+This is how to perform _wildcard_ searches using Lucene Query Objects:
+
+[snippet,java]
+----
+component=neo4j-lucene-index
+source=examples/ImdbExampleTest.java
+tag=wildcardTermQuery
+----
+
+Note that this allows for whitespace in the search string.
+
+[[indexing-lucene-compound]]
+=== Compound queries ===
+
+Lucene supports querying for multiple terms in the same query, like so:
+
+[snippet,java]
+----
+component=neo4j-lucene-index
+source=examples/ImdbExampleTest.java
+tag=compoundQueries
+----
+
+CAUTION: Compound queries can't search across committed index entries and those who haven't got committed yet at the same time.
+
+[[indexing-lucene-default-operator]]
+=== Default operator ===
+
+The default operator (that is whether +AND+ or +OR+ is used in between different terms) in a query is +OR+. Changing that behavior is also done via the http://components.neo4j.org/neo4j-lucene-index/{neo4j-version}/apidocs/org/neo4j/index/lucene/QueryContext.html[QueryContext] class:
+
+[snippet,java]
+----
+component=neo4j-lucene-index
+source=examples/ImdbExampleTest.java
+tag=defaultOperator
+----
+
+[[indexing-lucene-caching]]
+=== Caching ===
+
+If your index lookups becomes a performance bottle neck, caching can be enabled for certain keys in certain indexes (key locations) to speed up get requests.
+The caching is implemented with an http://en.wikipedia.org/wiki/Cache_algorithms#Least_Recently_Used[LRU] cache so that only the most recently accessed results are cached (with "results" meaning a query result of a get request, not a single entity).
+You can control the size of the cache (the maximum number of results) per index key.
+
+[snippet,java]
+----
+component=neo4j-lucene-index
+source=examples/ImdbExampleTest.java
+tag=cache
+----
+
+CAUTION: This setting is not persisted after shutting down the database.
+  This means: set this value after each startup of the database if you want to keep it.
+
+[[auto-indexing]]
+== Automatic Indexing ==
+
+Neo4j provides a single index for nodes and one for relationships in each database that automatically follow property values as they are added, deleted and changed on database primitives.
+This functionality is called _auto indexing_ and is controlled both from the database configuration Map and through its own API.
+
+[[auto-indexing-config]]
+=== Configuration ===
+
+By default Auto Indexing is off for both Nodes and Relationships.
+To configure this in the 'neo4j.properties' file, use the configuration keys +node_auto_indexing+ and +relationship_auto_indexing+.
+For embedded mode, use the configuration options +GraphDatabaseSettings.node_auto_indexing+
+and +GraphDatabaseSettings.relationship_auto_indexing+.
+In both cases, set the value to +true+.
+This will enable automatic indexing on startup.
+Just note that we're not done yet, see below!
+
+To actually auto index something, you have to set which properties should get indexed.
+You do this by listing the property keys to index on.
+In the configuration file, use the +node_keys_indexable+ and +relationship_keys_indexable+ configuration keys.
+When using embedded mode, use the +GraphDatabaseSettings.node_keys_indexable+ and +GraphDatabaseSettings.relationship_keys_indexable+ configuration keys.
+In all cases, the value should be a comma separated list of property keys to index on.
+
+When coding in Java, it's done like this:
+
+[snippet,java]
+----
+component=neo4j-lucene-index
+source=examples/AutoIndexerExampleTests.java
+tag=ConfigAutoIndex
+classifier=test-sources
+----
+
+[[auto-indexing-api]]
+=== Search ===
+The usefulness of the auto indexing functionality comes of course from the ability to actually query the index and retrieve results.
+To that end, you can acquire a +ReadableIndex+ object from the +AutoIndexer+ that exposes all the query and get methods of a full
+http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/index/Index.html[+Index+] with exactly the same functionality.
+Continuing from the previous example, accessing the index is done like this:
+
+[snippet,java]
+----
+component=neo4j-lucene-index
+source=examples/AutoIndexerExampleTests.java
+tag=APIReadAutoIndex
+classifier=test-sources
+----
+
+[[auto-indexing-config-api]]
+=== Runtime Configuration ===
+
+The same options that are available during database creation via the configuration can also be set during runtime via the +AutoIndexer+ API.
+
+Gaining access to the +AutoIndexer+ API and adding two +Node+ and one +Relationship+ properties to auto index is done like so:
+
+[snippet,java]
+----
+component=neo4j-lucene-index
+source=examples/AutoIndexerExampleTests.java
+tag=APIAutoIndexer
+classifier=test-sources
+----
+
+[[NOTE]]
+Parameters to the AutoIndexers passed through the Configuration and settings made through the API are cumulative.
+So you can set some beforehand known settings, do runtime checks to augment the initial configuration and then enable the desired auto indexers -
+the final configuration is the same regardless of the method used to reach it.
+
+
+[[auto-indexing-update-removal]]
+=== Updating the Automatic Index ===
+Updates to the auto indexed properties happen of course automatically as you update them. Removal of properties from the auto index happens for two reasons.
+One is that you actually removed the property. The other is that you stopped autoindexing on a property. When the latter happens, any primitive you touch and
+it has that property, it is removed from the auto index, regardless of any operations on the property.
+When you start or stop auto indexing on a property, no auto update operation happens currently. If you need to change the set of auto indexed properties and
+have them re-indexed, you currently have to do this by hand. An example will illustrate the above better:
+
+[snippet,java]
+----
+component=neo4j-lucene-index
+source=examples/AutoIndexerExampleTests.java
+tag=Mutations
+classifier=test-sources
+----
+
+[CAUTION]
+If you start the database with auto indexing enabled but different auto indexed properties than the last run, then already auto-indexed entities will be deleted
+as you work with them. Make sure that the monitored set is what you want before enabling the functionality.

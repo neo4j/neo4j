@@ -1,0 +1,66 @@
+[[usage-data-collector]]
+Usage Data Collector
+====================
+
+The Neo4j Usage Data Collector is a sub-system that gathers usage data, reporting it to the UDC-server at udc.neo4j.org.
+It is easy to disable, and does not collect any data that is confidential. For more information about what is being sent, see below.
+
+The Neo4j team uses this information as a form of automatic, effortless feedback from the Neo4j community.
+We want to verify that we are doing the right thing by matching download statistics with usage statistics.
+After each release, we can see if there is a larger retention span of the server software.
+
+The data collected is clearly stated here.
+If any future versions of this system collect additional data, we will clearly announce those changes.
+
+The Neo4j team is very concerned about your privacy. We do not disclose any personally identifiable information.
+
+
+== Technical Information ==
+
+To gather good statistics about Neo4j usage, UDC collects this information:
+
+* Kernel version: The build number, and if there are any modifications to the kernel.
+* Store id: A randomized globally unique id created at the same time a database is created.
+* Ping count: UDC holds an internal counter which is incremented for every ping, and reset for every restart of the kernel.
+* Source: This is either "neo4j" or "maven". If you downloaded Neo4j from the Neo4j website, it's "neo4j", if you are using Maven to get Neo4j, it will be "maven".
+* Java version: The referrer string shows which version of Java is being used.
+* MAC address to uniquely identify instances behind firewalls.
+* Registration id: For registered server instances.
+* Tags about the execution context (e.g. test, language, web-container, app-container, spring, ejb).
+* Neo4j Edition (community, advanced, enterprise).
+* A hash of the current cluster name (if any).
+* Distribution information for Linux (rpm, dpkg, unknown).
+* User-Agent header for tracking usage of REST client drivers
+
+After startup, UDC waits for ten minutes before sending the first ping. It does this for two reasons; first, we don't want the startup to be slower because of UDC, and secondly, we want to keep pings from automatic tests to a minimum. The ping to the UDC servers is done with a HTTP GET.
+
+
+== How to disable UDC ==
+
+We've tried to make it extremely easy to disable UDC. In fact, the code for UDC is not even included in the kernel jar but as a completely separate component.
+
+There are three ways you can disable UDC:
+
+. The easiest way is to just remove the neo4j-udc-*.jar file. By doing this, the kernel will not load UDC, and no pings will be sent.
+
+. If you are using Maven, and want to make sure that UDC is never installed in your system, a dependency element like this will do that:
++
+[source,xml]
+--------------------
+ <dependency>
+   <groupId>org.neo4j</groupId>
+   <artifactId>neo4j</artifactId>
+   <version>${neo4j-version}</version>
+   <exclusions>
+     <exclusion>
+       <groupId>org.neo4j</groupId>
+       <artifactId>neo4j-udc</artifactId>
+     </exclusion>
+   </exclusions>
+ </dependency>
+--------------------
++
+_Where $\{neo4j-version} is the Neo4j version in use._
+
+. Lastly, if you are using a packaged version of Neo4j, and do not want to make any change to the jars, a system property setting like this will also make sure that UDC is never activated: +-Dneo4j.ext.udc.disable=true+. 
+

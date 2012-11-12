@@ -1,0 +1,26 @@
+[2010-02-09] Coding style does not adhere to Neo4j standards
+    The Graph Algorithms component was created by an intern in 2008 as
+    part of a masters thesis project. It has not been properly refactored
+    to fit into the Neo4j ecosystem since then, only had minor bug-fixes.
+
+[2010-02-09] The algorithms are not tuned for large graphs
+    Almost all algorithms in this package are written for, tested for,
+    and optimized for relatively small graphs (tens-hundreds of thousands of
+    nodes with thousands of relationships each[?]).
+    As many algorithms as possible should be made to work on much larger graphs
+    and where that is not possible, the limitations should be documented.
+
+[2010-03-03] Write tests for org.neo4j.graphalgo.shortestpath.future algos
+    We must create tests for these algos since they are under development
+    and it'd been good to know when they are ready and working :)
+    
+[2011-01-07] Make paths in BestFirstSearch algorithms merge on common nodes
+    If multiple paths with equal cost go through the same node, we currently
+    end up with exponential growth in the number of paths. If we instead
+    could merge the paths at the common nodes to be MultiPath instead we would
+    end up with additive growth in memory usage. This would mean that
+    PriorityMap would pop MultiPaths from one entry node when it pops instead
+    of just popping one link from the node. Which would actually remove the
+    entire PriorityMap.Node from the PriorityMap (and re-push as MultiPath
+    if needed). Problem that needs to be considered: what if we find another
+    path to the Node after it has been popped and converted to a MultiPath?

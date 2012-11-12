@@ -1,0 +1,25 @@
+:if engines.length > 1
+  #console-tabs
+    %ul.button-bar.grouped
+      :if _(engines).indexOf('shell') > -1
+        %li
+          %a(href="#/console/shell" class="button #{(current == 'shell' ? 'current':'')}") Neo4j Shell
+      :if _(engines).indexOf('gremlin') > -1
+        %li
+          %a(href="#/console/gremlin" class="button #{(current == 'gremlin' ? 'current':'')}") Gremlin
+      :if _(engines).indexOf('http') > -1
+        %li
+          %a(href="#/console/http" class="button #{(current == 'http' ? 'current':'')}") HTTP
+
+#console.pad
+  %ul
+    :each line in lines
+      %li = htmlEscape(line, true)
+
+    %li 
+      :if showPrompt
+        =htmlEscape(promptPrefix) 
+        %input#console-input(type="text" value="#{htmlEscape(prompt)}")
+    :if showMultilineHelp
+      %li.console-multiline-help
+        (Hit return again to execute)

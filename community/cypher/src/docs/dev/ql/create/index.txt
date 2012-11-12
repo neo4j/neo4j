@@ -1,0 +1,66 @@
+[[query-create]]
+Create
+======
+Creating graph elements -- nodes and relationships, is done with +CREATE+.
+
+[TIP]
+In the `CREATE` clause, patterns are used a lot.
+Read <<introduction-pattern>> for an introduction.
+
+:leveloffset: 2
+
+include::create-single-node.txt[]
+include::create-single-node-and-set-properties.txt[]
+include::return-created-node.txt[]
+include::create-a-relationship-between-two-nodes.txt[]
+include::create-a-relationship-and-set-properties.txt[]
+include::create-a-full-path.txt[]
+
+// TODO: get the query from the code somehow (could be written to a file).
+// This goes for the example below as well.
+
+[[create-create-single-node-from-map]]
+== Create single node from map ==
+You can also create a graph entity from a `Map<String,Object>` map. All
+the key/value pairs in the map will be set as properties on the created
+relationship or node.
+
+_Query_
+
+[source,cypher]
+----
+create ({props})
+----
+
+This query can be used in the following fashion:
+
+[snippet,java]
+----
+component=neo4j-cypher
+source=org/neo4j/cypher/javacompat/JavaExecutionEngineTests.java
+tag=create_node_from_map
+classifier=test-sources
+----
+
+[[create-create-multiple-nodes-from-map]]
+== Create multiple nodes from maps ==
+By providing an iterable of maps (`Iterable<Map<String,Object>>`), Cypher will create a node for each map
+in the iterable. When you do this, you can't create anything else in the same create statement.
+
+_Query_
+
+[source,cypher]
+----
+create (n {props}) return n
+----
+
+This query can be used in the following fashion:
+
+[snippet,java]
+----
+component=neo4j-cypher
+source=org/neo4j/cypher/javacompat/JavaExecutionEngineTests.java
+tag=create_multiple_nodes_from_map
+classifier=test-sources
+----
+

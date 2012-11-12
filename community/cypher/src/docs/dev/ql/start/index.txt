@@ -1,0 +1,21 @@
+[[query-start]]
+Start
+=====
+
+Every query describes a pattern, and in that pattern one can have multiple
+starting points. A starting point is a relationship or a node where a pattern is anchored.
+You can either introduce starting points by id, or by
+index lookups. Note that trying to use an index that doesn't exist will throw
+an exception.
+
+include::cypher-start-graph.txt[]
+
+include::node-by-id.txt[]
+include::relationship-by-id.txt[]
+include::multiple-nodes-by-id.txt[]
+include::all-nodes.txt[]
+include::node-by-index-lookup.txt[]
+include::relationship-by-index-lookup.txt[]
+include::node-by-index-query.txt[]
+include::multiple-starting-points.txt[]
+

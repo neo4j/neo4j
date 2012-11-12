@@ -1,0 +1,297 @@
+
+label {
+  display: block;
+  float: left;
+  padding: 6px 0;
+  width: 100px;
+  font-weight:bold;
+}
+
+input, textarea {
+  outline:none;
+  height:24px;
+  border: 1px solid #CCCCCC;
+  border-radius: 3px 3px 3px 3px;
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.8) inset;
+  -moz-box-shadow: 0 1px 1px rgba(0, 0, 0, 0.8) inset;
+  -webkit-box-shadow: 0 1px 1px rgba(0, 0, 0, 0.8) inset;
+  padding: 4px 3px;
+}
+
+textarea 
+{
+  padding: 5px;
+}
+
+input.small {
+  height: 14px;
+  line-height: 15px;
+  width: 100px;
+}
+
+input.form-input {
+  width: 190px;
+}
+
+input.big {
+  width: 300px;
+}
+
+.fat {
+  font-size: 14px;
+  padding: 5px;
+}
+
+button {
+  outline:none; 
+}
+ 
+.filter .filterText {
+  padding: 4px 3px;
+  width: 90%;
+}
+
+.filter .selectList {
+  height: 200px;
+  width: 450px;
+}
+
+.colorpicker-input {
+  background-color: #FFFFFF;
+  border: 1px solid #aaa;
+  border-radius: 3px 3px 3px 3px;
+  height: 25px;
+  cursor:pointer;
+  width: 100px;
+}
+
+.form {
+  list-style: none outside none;
+  margin: 0;
+  padding: 0;
+}
+
+.form > li {
+  float:left;
+}
+
+.form-fieldset {
+  list-style:none;
+  margin: 0;
+  padding: 0 5px 0;
+  width: 200px;
+}
+
+.form-fieldset li {
+  padding: 2px 2px 4px;
+}
+
+/* LABELS */
+
+.form-label {
+  line-height: 24px;
+  display: inline;
+  padding:0;
+  font-weight:normal;
+  float:none;
+}
+
+/* SORTABLE LISTS */
+
+.form-sort-handle {
+  background: url("../img/icons/glyphish/draggable.png") no-repeat scroll 0 0 transparent;
+  border: 1px solid #ccc;
+  border-radius: 3px 3px 3px 3px;
+  cursor: move;
+  height: 24px;
+  width: 24px;
+}
+
+/* HELP */
+
+.form-help-text {
+  color: #444;
+  font-size:11px;
+}
+
+.form-tooltip {
+  font-size: 12px;
+  padding: 3px 0;
+  float:right;
+}
+
+.form-tooltip a {
+  display: block;
+  cursor: pointer;
+  position:relative;
+}
+
+.form-tooltip a .form-tooltip-icon {
+  background: url("../img/icons/16x16/apps/help-browser.png") no-repeat scroll center center transparent;
+  display: block;
+  height: 18px;
+  text-decoration: none;
+  width: 20px;
+  border: 1px solid transparent;
+  border-bottom:none;
+  left: -22px;
+  position: absolute;
+}
+
+.form-tooltip a .form-tooltip-text {
+  
+  background: none repeat scroll 0 0 #EFEFEF;
+  border: 1px solid #AAAAAA;
+  box-shadow: 0 0 8px 0 #888888;
+  color: #444;
+  
+  display:none;
+  
+  padding: 5px 10px;
+  position: absolute;
+  text-decoration: none !important;
+  z-index:100;
+  right:0;    
+  top: 18px;
+  
+  width:200px;
+
+  -moz-border-radius:4px;
+  -webkit-border-radius:4px;
+  border-radius:4px;
+  border-top-right-radius:0px
+  
+}
+
+.form-tooltip a:hover .form-tooltip-icon {
+  background-color: #EFEFEF;
+  border: 1px solid #AAAAAA;
+  border-bottom:none;
+  border-top-right-radius:4px;
+  border-top-left-radius:4px;
+  z-index:101;
+  
+  box-shadow: 0 -2px 2px 0 #888888;
+}
+
+.form-tooltip a:hover .form-tooltip-text {
+  display:block;
+}
+
+/* FORM IMAGE FIELD */
+
+.form-image-url-field-metabar {
+  padding: 5px 0;
+}
+
+.form-image-url-field-builtin {
+  float:right;
+}
+
+/* ERRORS */
+
+.form-error {
+  background: url("../img/icons/16x16/status/dialog-error.png") no-repeat scroll left center transparent;
+  color: #8A0000;
+  font-size: 10px;
+  line-height: 12px;
+  padding: 4px 2px 4px 20px;
+  font-weight:bold;
+}
+
+/* FORM CHOOSER FIELD */
+
+.form-chooser-form-container .form-fieldset:first-child {
+  padding:0;
+}
+
+/* IMAGE PICKER */
+
+.imagepicker-image {
+  border: 1px solid #EEEEEE;
+  padding: 10px;
+  margin:5px;
+  border-radius:2px;
+  cursor:pointer;
+  width: 25px;
+  height:25px;
+}
+
+.imagepicker-image:hover {
+  border-color: #333;
+}
+
+.imagepicker-dialog {
+  width: 460px;
+  margin:0 auto !important;
+}
+
+/* DROPDOWN */
+
+.dropdown {
+  background: none repeat scroll 0 0 #EFEFEF;
+  border: 1px solid #AAAAAA;
+  box-shadow: 0 0 8px 0 #888888;
+  border-radius:2px;  
+}
+
+.dropdown > ul {
+  margin:0;
+  padding:0;
+  list-style:none;
+}
+
+.dropdown > ul > li {
+  border-bottom: 1px solid #ddd;
+  padding: 3px 5px;
+  font-size:12px;
+  width:210px;
+  clear:both;
+}
+
+.dropdown > ul > li > h3 {
+  font-size: 13px;
+  line-height: 20px;
+  margin: 0;
+}
+
+.dropdown > ul > li.actionable {
+  cursor:pointer;
+  height:24px;
+  line-height:24px;
+}
+
+.dropdown > ul > li.actionable:hover {
+  background: #abd3ee;
+  background: -moz-linear-gradient(top, #abd3ee 0%, #89c3eb 100%);
+  background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#abd3ee), color-stop(100%,#89c3eb));
+  background: -webkit-linear-gradient(top, #abd3ee 0%,#89c3eb 100%);
+  background: -o-linear-gradient(top, #abd3ee 0%,#89c3eb 100%);
+  background: -ms-linear-gradient(top, #abd3ee 0%,#89c3eb 100%);
+  filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#abd3ee', endColorstr='#89c3eb',GradientType=0 );
+  background: linear-gradient(top, #abd3ee 0%,#89c3eb 100%);
+}
+
+.dropdown .selected {
+  font-weight:bold;
+}
+
+.dropdown-controls {
+  float:right;
+}
+
+/* GRID */
+
+.grid, .grid > li > ul {
+  list-style:none;
+  padding:0;
+  margin:0;
+}
+
+.grid > li {
+  clear:both;
+}
+
+.grid > li > ul > li {
+  float: left;
+}

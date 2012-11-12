@@ -1,0 +1,103 @@
+1.8.1
+--------------------
+o Fixes #478 - Find single shortest path does not always return the shortest path
+
+1.8.M04 (2012-06-07)
+--------------------
+o AllPaths/AllSimplePaths uses the new bidirectional traversal feature in the traversal framework.
+  Less relationships now needs to be traversed to find the requested paths.
+o Added an implementation of the shortest path algorithm with the bidirectional traversal feature.
+
+1.8.M03 (2012-05-24)
+----------------
+o Added a FindCommonAncestor graph algorithm
+
+1.5 (2011-10-18)
+----------------
+o Fixed an issue where the shortest path sometimes wouldn't be found (when finding single path)
+
+1.4 (2011-07-08)
+----------------
+o Stops the shortest path algo as early as possible when finding a single path.
+
+1.4.M03 (2011-05-26)
+--------------------
+o No Changes.
+
+1.3.M05 (2011-03-24)
+--------------------
+o Fixed a bug regarding creation of invalid paths.
+
+1.3.M04 (2011-03-10)
+--------------------
+o Added DoubleCostEvaluatorWithDefault utility evaluator.
+o Bug fix in ShortestPath where too longs paths could be returned when maxDepth was less than two.
+
+1.3.M03 (2011-02-24)
+--------------------
+o No changes. 
+
+1.3.M02 (2011-02-10)
+-----------------------
+o Changed to not depend on neo4j-shell.
+
+0.8-1.3.M01 (2011-01-27)
+-----------------------
+
+o No changes
+
+0.7-1.2 (2010-12-29)
+--------------------
+
+o No changes made for 1.2.
+
+
+0.7-1.2.M06 (2010-12-21)
+------------------------
+
+o No changes made for M06.
+
+0.7-1.2.M05 (2010-12-02)
+------------------------
+
+o Added a convenience method for instantiating dijkstra with a 
+  RelationshipExpander and a String for the cost property.
+
+0.7-1.2.M04 (2010-11-18)
+------------------------
+
+o Implemented "paths" app which can run path algos f.ex. shortest path, all paths, all simple paths.
+o Removed "-d" option from "ls" in favor of f.ex. "-f KNOWS:out,LOVES:in" which is more flexible.
+o Some tweaking of output for relationships (and its types).
+
+0.7-1.2.M03 (2010-11-04)
+------------------------
+
+o Made the example code less confusing.
+
+0.7-1.2.M01 (2010-10-08)
+------------------------
+
+o Better documentation about which algorithms are considered well-tested and scalable.
+o Added ability to find paths of a certain length using ShortestPath algo.
+
+0.6 (2010-07-29)
+----------------
+
+o Added a new shortest path algorithm which is very memory efficient and is
+  as close to depth-first search as possible.
+o Added an implementation of the A* algorithm for efficient finding of cheapest
+  paths between two nodes.
+o Added a new implementation of the Dijkstra algorithm which uses the new
+  traversal framework.
+o Added a PathFinder interface which all algorithms which finds path(s) between
+  two nodes implements.
+o Recommended and functional algorithms can be reached from the
+  GraphAlgoFactory class. It also makes it easier to switch implementations
+  when such come along w/o having to update code using graph algo component.
+o Added a WeightedPath interface (extends Path) which includes a weight of
+  the path. Used for such algorithms as A* and Dijkstra.
+o Added a factory for common evaluators (used in f.ex A* and Dijkstra).
+o Moved all algorithm implementations to .impl.* package(s) to notify users
+  that they are up for change. The prefered way to get hold of algorithms is
+  via GraphAlgoFactory.

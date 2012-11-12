@@ -1,0 +1,2 @@
+Export-Package: org.neo4j.walk,!${bundle.namespace}.impl.*,${bundle.namespace}.*;version="${project.version}"
+Private-Package: ${bundle.namespace}.*

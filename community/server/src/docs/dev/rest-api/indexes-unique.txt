@@ -1,0 +1,15 @@
+[[rest-api-unique-indexes]]
+== Unique Indexes ==
+
+For more information, see <<transactions-unique-nodes>>.
+
+include::create-a-unique-node-in-an-index.txt[]
+
+include::create-a-unique-node-in-an-index-(the-case-where-it-exists).txt[]
+
+include::add-a-node-to-an-index-unless-a-node-already-exists-for-the-given-mapping.txt[]
+
+include::create-a-unique-relationship-in-an-index.txt[]
+
+include::add-a-relationship-to-an-index-unless-a-relationship-already-exists-for-the-given-mapping.txt[]
+

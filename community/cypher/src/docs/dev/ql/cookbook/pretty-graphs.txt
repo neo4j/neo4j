@@ -1,0 +1,30 @@
+[[cypher-cookbook-pretty-graphs]]
+== Pretty graphs ==
+
+This section is showing how to create some of the http://en.wikipedia.org/wiki/Gallery_of_named_graphs[named pretty graphs on Wikipedia].
+
+:leveloffset: 2
+
+include::star-graph.txt[]
+
+include::cypher-prettygraphsstar-graph.txt[]
+
+:leveloffset: 2
+
+include::wheel-graph.txt[]
+
+include::cypher-prettygraphswheel-graph.txt[]
+
+:leveloffset: 2
+
+include::complete-graph.txt[]
+
+include::cypher-prettygraphscompletegraph-graph.txt[]
+
+:leveloffset: 2
+
+include::friendship-graph.txt[]
+
+include::cypher-prettygraphsfriendshipgraph-graph.txt[]
+
+

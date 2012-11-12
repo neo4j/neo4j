@@ -1,0 +1,245 @@
+
+
+/**
+ * Button bar
+ */
+
+.button-bar {
+  list-style:none;
+  margin:0;
+  padding: 0;
+}
+
+.button-bar li {
+  display:block;
+  float:left;
+  padding-right: 5px;
+}
+
+.button-bar li:last-child {
+  padding-right: 0;
+}
+
+.button-bar.grouped li {
+  padding-right: 0;
+}
+
+.button-bar.grouped .button{
+  -moz-border-radius: 0 !important;
+  -webkit-border-radius:0 !important;
+  border-radius:0 !important;
+  border-right:0;
+}
+.button-bar.grouped li:first-child .button {
+  -moz-border-radius-topleft:4px !important;
+  -webkit-border-top-left-radius:4px !important;
+  border-top-left-radius:4px !important;
+  -moz-border-radius-bottomleft:4px !important;
+  -webkit-border-bottom-left-radius:4px !important;
+  border-bottom-left-radius:4px !important;
+}
+
+.button-bar.grouped li:last-child .button {
+  -moz-border-radius-topright:4px !important;
+  -webkit-border-top-right-radius:4px !important;
+  border-top-right-radius:4px !important;
+  -moz-border-radius-bottomright:4px !important;
+  -webkit-border-bottom-right-radius:4px !important;
+  border-bottom-right-radius:4px !important;
+  border-right:1px solid #ccc;
+}
+
+/**
+ * Buttons
+ */
+
+.button, .text-icon-button, .icon-button, .micro-button, .bad-button {
+  -moz-border-radius: 3px 3px 3px 3px;
+  -webkit-border-radius:3px;
+  border-radius:3px;
+  
+  background: #f2f2f2;
+  background: -moz-linear-gradient(top, #f2f2f2 1%, #eaeaea 100%);
+  background: -webkit-gradient(linear, left top, left bottom, color-stop(1%,#f2f2f2), color-stop(100%,#eaeaea));
+  background: -webkit-linear-gradient(top, #f2f2f2 1%,#eaeaea 100%);
+  background: -o-linear-gradient(top, #f2f2f2 1%,#eaeaea 100%);
+  background: -ms-linear-gradient(top, #f2f2f2 1%,#eaeaea 100%);
+  filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#f2f2f2', endColorstr='#eaeaea',GradientType=0 );
+  background: linear-gradient(top, #f2f2f2 1%,#eaeaea 100%);
+  
+  border: 1px solid #CCC;
+  color: #333;
+  cursor: pointer;
+  display: block;
+  float: left;
+  font:12px/15px Helvetica Neue,Arial,"Lucida Grande",Sans-serif;
+  font-weight: bold;
+  
+  height: 32px;
+  padding: 0 8px;
+  margin:0;
+  text-decoration: none;
+  line-height:30px;
+}
+
+/* Chrome + safari only */
+@media screen and (-webkit-min-device-pixel-ratio:0) {
+  .button, .text-icon-button, .icon-button, .micro-button, .bad-button {
+    line-height:32px;
+  }
+}
+
+.button:hover, .text-icon-button:hover, .icon-button:hover, .micro-button:hover {
+  border:1px solid #7EB3D6;
+  background: #abd3ee;
+  background: -moz-linear-gradient(top, #abd3ee 0%, #89c3eb 100%);
+  background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#abd3ee), color-stop(100%,#89c3eb));
+  background: -webkit-linear-gradient(top, #abd3ee 0%,#89c3eb 100%);
+  background: -o-linear-gradient(top, #abd3ee 0%,#89c3eb 100%);
+  background: -ms-linear-gradient(top, #abd3ee 0%,#89c3eb 100%);
+  filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#abd3ee', endColorstr='#89c3eb',GradientType=0 );
+  background: linear-gradient(top, #abd3ee 0%,#89c3eb 100%);
+}
+
+.button[disabled], .text-icon-button[disabled], .icon-button[disabled], .micro-button[disabled], .bad-button[disabled] {
+  background: #f7f7f7;
+  background: -moz-linear-gradient(top, #f7f7f7 0%, #eaeaea 81%, #e8e8e8 100%);
+  background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#f7f7f7), color-stop(81%,#eaeaea), color-stop(100%,#e8e8e8));
+  background: -webkit-linear-gradient(top, #f7f7f7 0%,#eaeaea 81%,#e8e8e8 100%);
+  background: -o-linear-gradient(top, #f7f7f7 0%,#eaeaea 81%,#e8e8e8 100%);
+  background: -ms-linear-gradient(top, #f7f7f7 0%,#eaeaea 81%,#e8e8e8 100%);
+  filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#f7f7f7', endColorstr='#e8e8e8',GradientType=0 );
+  background: linear-gradient(top, #f7f7f7 0%,#eaeaea 81%,#e8e8e8 100%);
+  border-color: #ccc;
+  color: #aaa;
+  cursor:default;
+}
+
+.button.current, .text-icon-button.current, .icon-button.current, .micro-button.current, .bad-button.current {
+  background: #a8a8a8;
+  background: -moz-linear-gradient(top, #a8a8a8 0%, #b5b5b5 19%, #e8e8e8 100%);
+  background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#a8a8a8), color-stop(19%,#b5b5b5), color-stop(100%,#e8e8e8));
+  background: -webkit-linear-gradient(top, #a8a8a8 0%,#b5b5b5 19%,#e8e8e8 100%);
+  background: -o-linear-gradient(top, #a8a8a8 0%,#b5b5b5 19%,#e8e8e8 100%);
+  background: -ms-linear-gradient(top, #a8a8a8 0%,#b5b5b5 19%,#e8e8e8 100%);
+  filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#a8a8a8', endColorstr='#e8e8e8',GradientType=0 );
+  background: linear-gradient(top, #a8a8a8 0%,#b5b5b5 19%,#e8e8e8 100%);
+}
+
+a.button {
+  padding-top:1px;
+  padding-bottom:1px;
+  height: auto;
+}
+
+/** 
+ * Big buttons with subtitles (used in the top header for the tabs)
+ */
+
+.title-button {
+  color: #EEEEEE;
+  text-decoration: none;
+  text-shadow: 1px 1px 0 #222222;
+  font-size:14px;
+}
+
+.title-button .subtitle {
+  clear: right;
+  color: #AAAAAA;
+  display: block;
+  font-size: 10px;
+}
+
+/**
+ * Micro button 
+ */
+
+.micro-button {
+  -moz-border-radius:8px;
+  -webkit-border-radius:8px;
+  border-radius:8px;
+  padding: 3px 6px;
+  font-size:10px;
+  height:auto;
+  line-height:15px;
+}
+
+/**
+ * BAD BUTTON 
+ */
+
+.bad-button {
+  background: #f27676;
+  background: -moz-linear-gradient(top, #f27676 1%, #ba5a5a 100%);
+  background: -webkit-gradient(linear, left top, left bottom, color-stop(1%,#f27676), color-stop(100%,#ba5a5a));
+  background: -webkit-linear-gradient(top, #f27676 1%,#ba5a5a 100%);
+  background: -o-linear-gradient(top, #f27676 1%,#ba5a5a 100%);
+  background: -ms-linear-gradient(top, #f27676 1%,#ba5a5a 100%);
+  filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#f27676', endColorstr='#ba5a5a',GradientType=0 );
+  background: linear-gradient(top, #f27676 1%,#ba5a5a 100%);
+  border-color: #994A4A;
+  color:#222;
+}
+
+.bad-button:hover {
+  background: #e26f6f;
+  background: -moz-linear-gradient(top, #e26f6f 0%, #aa5553 100%);
+  background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#e26f6f), color-stop(100%,#aa5553));
+  background: -webkit-linear-gradient(top, #e26f6f 0%,#aa5553 100%);
+  background: -o-linear-gradient(top, #e26f6f 0%,#aa5553 100%);
+  background: -ms-linear-gradient(top, #e26f6f 0%,#aa5553 100%);
+  filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#e26f6f', endColorstr='#aa5553',GradientType=0 );
+  background: linear-gradient(top, #e26f6f 0%,#aa5553 100%);
+}
+
+/**
+ * Icon buttons
+ */
+
+.text-icon-button, .icon-button {
+  padding: 0;
+  width: 32px;
+  position:relative;
+}
+
+.text-icon-button {
+  padding: 0 5px 0 32px;
+  width:auto;
+  font-size:13px;
+  font-weight:bold;
+}
+
+.text-icon-button .icon, .icon-button .icon {
+  display:block;
+  width:32px;
+  height:100%;
+  position: absolute;
+  top:0px;
+  left:0px;
+}
+
+/**
+ * POPOUT BUTTONS
+ */
+.popout {
+  width:300px;
+  background: #333;
+  padding: 10px;
+  -moz-border-radius:4px;
+  -webkit-border-radius:4px;
+  border-radius:4px;
+  -moz-border-radius-topright:0;
+  -webkit-border-top-right-radius:0;
+  border-top-right-radius:0;
+  color: #eee;
+}
+
+.popout input {
+  width:97%;
+}
+
+.popout-controls {
+  padding: 10px 0 !important;
+}
+
+

@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=$sourceEncoding$">
+    <title>Jasmine Spec Runner</title>
+    $cssDependencies$
+    $javascriptDependencies$
+    <script type="text/javascript" src="../../target/classes/webadmin-html/js/require.js"></script>
+</head>
+<body>
+    <script type="text/javascript">
+    
+        if(window.location.href.indexOf("ManualSpecRunner.html") !== -1) 
+        {
+            document.body.appendChild(document.createTextNode("Warning: opening this HTML file directly from the file system is deprecated. You should instead try running `mvn jasmine:bdd` from the command line, and then visit `http://localhost:8234` in your browser. "))
+        }
+
+        var specs = $specs$;
+        
+        window.reporter = new jasmine.$reporter$();
+        
+        require.config({
+            baseUrl: '../../',
+            paths: {
+                // Root namespaces
+                "neo4j"   : "target/classes/webadmin-html/js/neo4j",
+                "ribcage" : "target/classes/webadmin-html/js/ribcage",
+                "lib"     : "target/classes/webadmin-html/js/lib",
+                
+                // Files without namespaces
+                "order"   : "target/classes/webadmin-html/js/order",
+            },
+        });
+        
+        // Debugging
+        if(typeof(reporter) == "undefined") {
+            throw new Error("'reporter' is undefined, tried to set it to a new jasmine.$reporter$. Value of that is '" + jasmine.$reporter$ + "'.");
+        }
+
+        require(specs, function() 
+        {    
+            jasmine.getEnv().addReporter(reporter);
+            jasmine.getEnv().execute();
+        });
+    </script>
+</body>
+</html>

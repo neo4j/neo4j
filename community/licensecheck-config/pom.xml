@@ -1,0 +1,50 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <artifactId>grandparent</artifactId>
+    <groupId>org.neo4j.build</groupId>
+    <version>35</version>
+    <relativePath />
+  </parent>
+  <groupId>org.neo4j.build</groupId>
+  <artifactId>licensecheck-config</artifactId>
+  <version>1.8-SNAPSHOT</version>
+  <name>Licensing configuration</name>
+  <description>Licensing configuration for the Neo4j project.</description>
+  <packaging>jar</packaging>
+  <url>http://components.neo4j.org/${project.artifactId}</url>
+
+  <properties>
+    <short-name>licenses</short-name>
+  </properties>
+
+  <scm>
+    <url>https://github.com/neo4j/community/tree/master/licensecheck-config</url>
+  </scm>
+
+  <licenses>
+    <license>
+      <name>GNU Affero General Public License, Version 3</name>
+      <url>http://www.gnu.org/licenses/agpl-3.0-standalone.html</url>
+    </license>
+  </licenses>
+
+  <developers>
+    <developer>
+      <id>neo4j</id>
+      <name>The Neo4j Team</name>
+      <url>http://neo4j.org/</url>
+      <organization>Neo Technology</organization>
+      <organizationUrl>http://www.neotechnology.com/</organizationUrl>
+    </developer>
+  </developers>
+
+  <distributionManagement>
+    <site>
+      <id>neo4j-site</id>
+      <url>scpexe://static.neo4j.org/var/www/components.neo4j.org/${project.artifactId}/${project.version}</url>
+    </site>
+  </distributionManagement>
+
+</project>
+

@@ -1,0 +1,24 @@
+[2010-02-10] Better testing for broken entries in logical log
+    Currently the test code for broken entries does not test all possible 
+    combinations of broken entries (meaning crash during write of entry so it 
+    was incomplete). This is fine since a broken command entry will never be 
+    executed because it would then have to have a following prepare entry (can 
+    not happen since we do flush on them). Would however be nice to have code 
+    that tests this so user don't get an exception on recovery.
+
+[2010-02-25] Bug fix [3933] needs to be merged into 1.0.1
+
+[2010-02-25] Embedd checksum to logical log
+    We need to be able to do a checksum on the logical log before applying it 
+    during replication/backup.
+
+[2010-09-09] Uniform configuration of components
+    There should be a uniform mechanism for non-programmatic component and 
+    extension configuration (settings for which there is no direct API).
+    
+[2010-09-10] Expose build revision in JMX kernel bean
+    Now that the revision is available in a public api, it should also
+    be included in the jmx kernel bean. This will be particularly helpful
+    for reporting problems (since build revision will be a little more
+    particular than kernel version).
+

@@ -1,0 +1,22 @@
+[[data-modeling-examples]]
+Data Modeling Examples
+======================
+
+The following chapters contain simplified examples of how different domains can be modeled using Neo4j. 
+The aim is not to give full examples, but to suggest possible ways to think using nodes, relationships, graph patterns and data locality in traversals.
+
+The examples use Cypher queries a lot, read <<cypher-query-lang>> for more information.
+
+:leveloffset: 2
+
+include::examples/user-roles-in-graphs.txt[]
+
+:leveloffset: 2
+
+include::examples/acl-structures-in-graphs.txt[]
+
+:leveloffset: 1
+
+include::{importdir}/neo4j-cypher-docs-jar/dev/ql/cookbook/index.txt[]
+
+
