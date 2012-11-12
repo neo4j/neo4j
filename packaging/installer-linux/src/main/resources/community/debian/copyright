@@ -1,0 +1,24 @@
+This package was debianized by Jacob Hansson <jacob@voltvoodoo.com> on Fri, 4 Feb 2011 11:00:55 -0700.
+
+Upstream Author: 
+
+    http://neo4j.org/
+
+Copyright: 
+
+    Copyright (c) 2002-2012 "Neo Technology," Network Engine for Objects in Lund AB
+    [http://neotechnology.com]
+
+License:
+ 
+    This package is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 3 of the License, or
+    (at your option) any later version.
+ 
+    This package is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+ 
+    See /usr/share/common-licenses/GPL-3

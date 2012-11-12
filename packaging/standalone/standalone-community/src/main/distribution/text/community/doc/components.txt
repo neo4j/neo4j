@@ -1,0 +1,34 @@
+Neo4j Components
+==================
+
+The included jars in the `lib` directory provide an easy-to-get-going 
+distribution of essential components for "embedded programming" a
+graph database on the Java Virtual Machine.
+
+Included in this release of Neo4j are:
+
+   neo4j-kernel          the Neo4j graph database engine
+   neo4j-lucene-index    index implementation based on Lucene
+   neo4j-shell           command shell for browsing and manipulating the graph
+   neo4j-graph-algo      graph algorithms (such as shortest path algorithm)
+   neo4j-graph-matching  graph matching, matches and returns sub graphs
+   neo4j-jmx             exposing information about Neo4j through JMX/management beans
+   neo4j-udc             usage data collector
+   neo4j-cypher          the Cypher pattern query language
+   neo4j-server          Neo4j as a server with a RESTful API
+
+The `lib` directory contains the binary jar files for all components as well as 
+required third-party libraries. 
+
+The included usage data collector component will send basic information like     
+for example version number to udc.neo4j.org once a day and can easily be disabled,
+see more information in the manual:                                                 
+${neo4j-manual.url}/usage-data-collector.html
+
+References
+----------
+
+* [${neo4j-manual.title}](${neo4j-manual.url}) -- comprehensive documentation                
+* [${neo4j-components.url.title}](${neo4j-components.url}) -- documentation about each component
+* [Java API](/doc/java/api) -- offline javadoc for all components
+
