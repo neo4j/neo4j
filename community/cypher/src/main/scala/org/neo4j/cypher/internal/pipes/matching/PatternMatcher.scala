@@ -22,13 +22,15 @@ package org.neo4j.cypher.internal.pipes.matching
 import org.neo4j.graphdb.Node
 import org.neo4j.cypher.internal.commands.{True, Predicate}
 import collection.Map
+import org.neo4j.cypher.internal.pipes.ExecutionContext
+import org.neo4j.cypher.EntityNotFoundException
 
-class PatternMatcher(bindings: Map[String, MatchingPair], predicates: Seq[Predicate], includeOptionals: Boolean, source:Map[String,Any])
-  extends Traversable[Map[String, Any]] {
+class PatternMatcher(bindings: Map[String, MatchingPair], predicates: Seq[Predicate], includeOptionals: Boolean, source:ExecutionContext)
+  extends Traversable[ExecutionContext] {
   val boundNodes = bindings.filter(_._2.patternElement.isInstanceOf[PatternNode])
   val boundRels = bindings.filter(_._2.patternElement.isInstanceOf[PatternRelationship])
 
-  def foreach[U](f: (Map[String, Any]) => U) {
+  def foreach[U](f: (ExecutionContext) => U) {
     debug("startPatternMatching")
 
     traverseNode(boundNodes.values.toSet, new InitialHistory(source), f)
@@ -36,7 +38,7 @@ class PatternMatcher(bindings: Map[String, MatchingPair], predicates: Seq[Predic
 
   protected def traverseNextSpecificNode[U](remaining: Set[MatchingPair],
                                             history: History,
-                                            yielder: (Map[String, Any]) => U,
+                                            yielder: ExecutionContext => U,
                                             current: MatchingPair,
                                             alreadyInExtraWork: Boolean): Boolean = {
     debug(current, history, remaining)
@@ -63,14 +65,20 @@ class PatternMatcher(bindings: Map[String, MatchingPair], predicates: Seq[Predic
 
   private def traverseNode[U](remaining: Set[MatchingPair],
                               history: History,
-                              yielder: Map[String, Any] => U): Boolean = {
+                              yielder: ExecutionContext => U): Boolean = {
 
     val current = remaining.head
 
     traverseNextSpecificNode(remaining, history, yielder, current, alreadyInExtraWork = false)
   }
 
-  private def traverseNextNodeFromRelationship[U](rel: GraphRelationship, gNode: Node, nextPNode: PatternNode, currentRel: PatternRelationship, history: History, remaining: Set[MatchingPair], yielder: (Map[String, Any]) => U): Boolean = {
+  private def traverseNextNodeFromRelationship[U](rel: GraphRelationship,
+                                                  gNode: Node,
+                                                  nextPNode: PatternNode,
+                                                  currentRel: PatternRelationship,
+                                                  history: History,
+                                                  remaining: Set[MatchingPair],
+                                                  yielder: ExecutionContext => U): Boolean = {
     debug(rel, gNode, nextPNode, currentRel, history, remaining)
     val current = MatchingPair(currentRel, rel)
 
@@ -123,7 +131,7 @@ class PatternMatcher(bindings: Map[String, MatchingPair], predicates: Seq[Predic
                                       currentRel: PatternRelationship,
                                       history: History,
                                       remaining: Set[MatchingPair],
-                                      yielder: (Map[String, Any]) => U): Boolean = {
+                                      yielder: ExecutionContext => U): Boolean = {
     debug(currentNode, currentRel, history, remaining)
 
     val (pNode, gNode) = currentNode.getPatternAndGraphPoint
@@ -156,11 +164,11 @@ class PatternMatcher(bindings: Map[String, MatchingPair], predicates: Seq[Predic
 
   private def isMatchSoFar(history: History): Boolean = {
     val m = history.toMap
-    val predicate = predicates.filter(predicate=> !predicate.containsIsNull && predicate.dependencies.map(_.name).forall(m contains))
+    val predicate = predicates.filter(predicate=> !predicate.containsIsNull && predicate.symbolTableDependencies.forall(m contains))
     predicate.forall(_.isMatch(m))
   }
 
-  private def traverseNextNodeOrYield[U](remaining: Set[MatchingPair], history: History, yielder: Map[String, Any] => U): Boolean = {
+  private def traverseNextNodeOrYield[U](remaining: Set[MatchingPair], history: History, yielder: ExecutionContext => U): Boolean = {
     debug(history, remaining)
 
     if (remaining.isEmpty) {
@@ -170,7 +178,7 @@ class PatternMatcher(bindings: Map[String, MatchingPair], predicates: Seq[Predic
     }
   }
 
-  private def yieldThis[U](yielder: Map[String, Any] => U, history: History): Boolean = {
+  private def yieldThis[U](yielder: ExecutionContext => U, history: History): Boolean = {
     val toMap = history.toMap
     debug(history, toMap)
 

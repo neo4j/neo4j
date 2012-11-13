@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.commands
 
+import expressions.{ParameterExpression, Literal, Expression, AggregationExpression}
 import org.neo4j.cypher.internal.mutation.UpdateAction
 
 class QueryBuilder(startItems: Seq[StartItem]) {

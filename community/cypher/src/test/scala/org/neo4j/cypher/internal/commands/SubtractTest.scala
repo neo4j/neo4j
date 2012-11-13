@@ -19,13 +19,15 @@
  */
 package org.neo4j.cypher.internal.commands
 
+import expressions.{Literal, Subtract}
 import org.junit.Test
 import org.scalatest.Assertions
 import org.neo4j.cypher.CypherTypeException
+import org.neo4j.cypher.internal.pipes.ExecutionContext
 
 class SubtractTest extends Assertions {
 
-  val m = Map[String, Any]()
+  val m = ExecutionContext.empty
 
   @Test def numbers() {
     val expr = Subtract(Literal(2), Literal(1))

@@ -25,7 +25,6 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PathExpander;
 import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.kernel.Traversal;
 import org.neo4j.kernel.impl.util.SingleNodePath;
 
 /**
@@ -99,7 +98,7 @@ public abstract class Sorting
 
             private Integer count( Node node, PathExpander expander )
             {
-                return IteratorUtil.count( expander.expand( new SingleNodePath( node ), Traversal.NO_BRANCH_STATE ) );
+                return IteratorUtil.count( expander.expand( new SingleNodePath( node ), BranchState.NO_STATE ) );
             }
         };
     }

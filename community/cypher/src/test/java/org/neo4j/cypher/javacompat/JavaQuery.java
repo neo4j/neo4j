@@ -48,11 +48,13 @@ public class JavaQuery
     {
         // START SNIPPET: execute
         GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( DB_PATH );
-        // add some data first
+        // add some data first, keep id of node so we can refer to it
+        long id;
         Transaction tx = db.beginTx();
         try
         {
-            Node refNode = db.getReferenceNode();
+            Node refNode = db.createNode();
+            id = refNode.getId();
             refNode.setProperty( "name", "reference node" );
             tx.success();
         }
@@ -63,12 +65,10 @@ public class JavaQuery
 
         // let's execute a query now
         ExecutionEngine engine = new ExecutionEngine( db );
-        ExecutionResult result = engine.execute( "start n=node(0) return n, n.name" );
-        System.out.println( result );
+        ExecutionResult result = engine.execute( "start n=node("+id+") return n, n.name" );
         // END SNIPPET: execute
         // START SNIPPET: columns
         List<String> columns = result.columns();
-        System.out.println( columns );
         // END SNIPPET: columns
         // START SNIPPET: items
         Iterator<Node> n_column = result.columnAs( "n" );
@@ -77,11 +77,10 @@ public class JavaQuery
             // note: we're grabbing the name property from the node,
             // not from the n.name in this case.
             nodeResult = node + ": " + node.getProperty( "name" );
-            System.out.println( nodeResult );
         }
         // END SNIPPET: items
         // the result is now empty, get a new one
-        result = engine.execute( "start n=node(0) return n, n.name" );
+        result = engine.execute( "start n=node("+id+") return n, n.name" );
         // START SNIPPET: rows
         for ( Map<String, Object> row : result )
         {
@@ -91,9 +90,8 @@ public class JavaQuery
             }
             rows += "\n";
         }
-        System.out.println( rows );
         // END SNIPPET: rows
-        resultString = result.toString();
+        resultString = engine.execute( "start n=node("+id+") return n, n.name" ).toString();
         columnsString = columns.toString();
         db.shutdown();
     }

@@ -28,8 +28,6 @@ import java.util.Map;
 
 import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
 
-import java.util.Map;
-
 /**
  * To run a {@link Query}, use this class.
  */
@@ -57,16 +55,6 @@ public class ExecutionEngine
     }
 
     /**
-     * You should not parse queries manually and send them in - instead,
-     * use the overloaded method that takes a string
-     */
-    @Deprecated
-    public ExecutionResult execute( Query query ) throws SyntaxException
-    {
-        return new ExecutionResult(inner.execute( query ));
-    }
-
-    /**
      * Executes a query and returns an iterable that contains the result set
      * @param query The query to execute
      * @return A ExecutionResult that contains the result set
@@ -76,16 +64,6 @@ public class ExecutionEngine
     public ExecutionResult execute( String query ) throws SyntaxException
     {
         return new ExecutionResult(inner.execute( query ));
-    }
-
-    /**
-     * You should not parse queries manually and send them in - instead,
-     * use the overloaded method that takes a string
-     */
-    @Deprecated
-    public ExecutionResult execute( Query query, Map<String, Object> params) throws SyntaxException
-    {
-        return new ExecutionResult(inner.execute(query, params));
     }
 
     /**

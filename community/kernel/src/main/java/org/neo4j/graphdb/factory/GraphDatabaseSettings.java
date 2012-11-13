@@ -100,9 +100,29 @@ public abstract class GraphDatabaseSettings
     @Default(FALSE)
     public static final BooleanSetting intercept_deserialized_transactions = new BooleanSetting( "intercept_deserialized_transactions" );
 
-    // Cypher version
+    // Cypher settings
+    // TODO: These should live with cypher
     @Description( "Enable this to specify a parser other than the default one." )
     public static final OptionsSetting cypher_parser_version = new CypherParserSetting();
+
+    @Description( "Used to set the number of Cypher query execution plans that are cached." )
+    @Default( "100" )
+    public static GraphDatabaseSetting<Integer> query_cache_size = new IntegerSetting( "query_cache_size",
+            "Query cache size must be at least 0.", 0, Integer.MAX_VALUE  );
+
+
+    // Store files
+
+    @Description("The directory where the database files are located.")
+    public static final GraphDatabaseSetting.DirectorySetting store_dir = new GraphDatabaseSetting.DirectorySetting( "store_dir", true, true);
+
+    @Description("The base name for the Neo4j Store files, either an absolute path or relative to the store_dir setting. This should generally not be changed.")
+    @Default("neostore")
+    public static final GraphDatabaseSetting.FileSetting neo_store = new GraphDatabaseSetting.FileSetting( "neo_store", store_dir, true, true);
+
+    @Description("The base name for the logical log files, either an absolute path or relative to the store_dir setting. This should generally not be changed.")
+    @Default("nioneo_logical.log")
+    public static final GraphDatabaseSetting.FileSetting logical_log = new GraphDatabaseSetting.FileSetting( "logical_log", store_dir, true, true);
 
     // Remote logging
     @Description( "Whether to enable logging to a remote server or not." )
@@ -154,9 +174,9 @@ public abstract class GraphDatabaseSettings
     public static final BooleanSetting intercept_committing_transactions = new BooleanSetting( "intercept_committing_transactions" );
 
     @Description( "Make Neo4j keep the logical transaction logs for being able to backup the database." +
-    		"Can be used for specifying the threshold to prune logical logs after. For example \"10 days\" will " +
-    		"prune logical logs that only contains transactions older than 10 days from the current time, " +
-    		"or \"100k txs\" will keep the 100k latest transactions and prune any older transactions." )
+            "Can be used for specifying the threshold to prune logical logs after. For example \"10 days\" will " +
+            "prune logical logs that only contains transactions older than 10 days from the current time, " +
+            "or \"100k txs\" will keep the 100k latest transactions and prune any older transactions." )
     @Default("true")
     public static final StringSetting keep_logical_logs = new StringSetting( "keep_logical_logs", ANY,
             "Must be 'true'/'false' or of format '<number><optional unit> <type>' for example '100M size' for limiting logical log space on disk to 100Mb," +
@@ -170,33 +190,53 @@ public abstract class GraphDatabaseSettings
     @Description( "Tell Neo4j to use memory mapped buffers for accessing the native storage layer." )
     public static final UseMemoryMappedBuffers use_memory_mapped_buffers = new UseMemoryMappedBuffers();
 
+    @Description( "Target size for pages of mapped memory." )
+    @Default("1M")
+    public static final GraphDatabaseSetting<Long> mapped_memory_page_size = new NumberOfBytesSetting("mapped_memory_page_size");
+
+    @Description( "The size to allocate for a memory mapping pool to be shared between all stores." )
+    @Default("500M")
+    public static final GraphDatabaseSetting<Long> all_stores_total_mapped_memory_size = new NumberOfBytesSetting("all_stores_total_mapped_memory_size");
+
+    @Description( "Tell Neo4j to regularly log memory mapping statistics." )
+    @Default("false")
+    public static final GraphDatabaseSetting<Boolean> log_mapped_memory_stats = new BooleanSetting("log_mapped_memory_stats");
+
+    @Description("The file where Neo4j will record memory mapping statistics.")
+    @Default("mapped_memory_stats.log")
+    public static final GraphDatabaseSetting.FileSetting log_mapped_memory_stats_filename = new GraphDatabaseSetting.FileSetting( "log_mapped_memory_stats_filename", store_dir, true, true );
+
+    @Description( "The number of records to be loaded between regular logging of memory mapping statistics." )
+    @Default("1000000")
+    public static final GraphDatabaseSetting<Integer> log_mapped_memory_stats_interval = new IntegerSetting("log_mapped_memory_stats_interval", "Must be a number");
+
     @Description( "The size to allocate for memory mapping the node store." )
     @Default("20M")
-    public static final Setting nodestore_mapped_memory_size = new NumberOfBytesSetting("neostore.nodestore.db.mapped_memory");
+    public static final GraphDatabaseSetting<Long> nodestore_mapped_memory_size = new NumberOfBytesSetting("neostore.nodestore.db.mapped_memory");
 
     @Description( "The size to allocate for memory mapping the property value store." )
     @Default("90M")
-    public static final Setting nodestore_propertystore_mapped_memory_size = new NumberOfBytesSetting("neostore.propertystore.db.mapped_memory");
+    public static final GraphDatabaseSetting<Long> nodestore_propertystore_mapped_memory_size = new NumberOfBytesSetting("neostore.propertystore.db.mapped_memory");
 
     @Description( "The size to allocate for memory mapping the store for property key indexes." )
     @Default("1M")
-    public static final Setting nodestore_propertystore_index_mapped_memory_size = new NumberOfBytesSetting("neostore.propertystore.db.index.mapped_memory");
+    public static final GraphDatabaseSetting<Long> nodestore_propertystore_index_mapped_memory_size = new NumberOfBytesSetting("neostore.propertystore.db.index.mapped_memory");
 
     @Description( "The size to allocate for memory mapping the store for property key strings." )
     @Default("1M")
-    public static final Setting nodestore_propertystore_index_keys_mapped_memory_size = new NumberOfBytesSetting("neostore.propertystore.db.index.keys.mapped_memory");
+    public static final GraphDatabaseSetting<Long> nodestore_propertystore_index_keys_mapped_memory_size = new NumberOfBytesSetting("neostore.propertystore.db.index.keys.mapped_memory");
 
     @Description( "The size to allocate for memory mapping the string property store." )
     @Default("130M")
-    public static final Setting strings_mapped_memory_size = new NumberOfBytesSetting("neostore.propertystore.db.strings.mapped_memory");
+    public static final GraphDatabaseSetting<Long> strings_mapped_memory_size = new NumberOfBytesSetting("neostore.propertystore.db.strings.mapped_memory");
 
     @Description( "The size to allocate for memory mapping the array property store." )
     @Default("130M")
-    public static final Setting arrays_mapped_memory_size = new NumberOfBytesSetting("neostore.propertystore.db.arrays.mapped_memory");
+    public static final GraphDatabaseSetting<Long> arrays_mapped_memory_size = new NumberOfBytesSetting("neostore.propertystore.db.arrays.mapped_memory");
 
     @Description( "The size to allocate for memory mapping the relationship store." )
     @Default("100M")
-    public static final Setting relationshipstore_mapped_memory_size = new NumberOfBytesSetting("neostore.relationshipstore.db.mapped_memory");
+    public static final GraphDatabaseSetting<Long> relationshipstore_mapped_memory_size = new NumberOfBytesSetting("neostore.relationshipstore.db.mapped_memory");
 
     // Deprecated memory settings (these use String rather than NumberOfBytes)
 
@@ -279,11 +319,11 @@ public abstract class GraphDatabaseSettings
 
     @Description( "Amount of time in ms the GC monitor thread will wait before taking another measurement." )
     @Default( "100ms" )
-    public static final Setting gc_monitor_interval = MonitorGc.Configuration.gc_monitor_wait_time;
+    public static final GraphDatabaseSetting<Long> gc_monitor_interval = MonitorGc.Configuration.gc_monitor_wait_time;
 
     @Description( "The amount of time in ms the monitor thread has to be blocked before logging a message it was blocked." )
     @Default( "200ms" )
-    public static final Setting gc_monitor_block_threshold = MonitorGc.Configuration.gc_monitor_threshold;
+    public static final GraphDatabaseSetting<Long> gc_monitor_block_threshold = MonitorGc.Configuration.gc_monitor_threshold;
 
     // Deprecated GC monitor settings (old type)
 
@@ -296,19 +336,6 @@ public abstract class GraphDatabaseSettings
     @Default( "200ms" )
     @Deprecated
     public static StringSetting gc_monitor_threshold = new StringSetting( "gc_monitor_threshold", GraphDatabaseSetting.ANY, "Must be non-empty." );
-
-    // Store files
-
-    @Description("The directory where the database files are located.")
-    public static final GraphDatabaseSetting.DirectorySetting store_dir = new GraphDatabaseSetting.DirectorySetting( "store_dir", true, true);
-
-    @Description("The base name for the Neo4j Store files, either an absolute path or relative to the store_dir setting. This should generally not be changed.")
-    @Default("neostore")
-    public static final GraphDatabaseSetting.FileSetting neo_store = new GraphDatabaseSetting.FileSetting( "neo_store", store_dir, true, true);
-
-    @Description("The base name for the logical log files, either an absolute path or relative to the store_dir setting. This should generally not be changed.")
-    @Default("nioneo_logical.log")
-    public static final GraphDatabaseSetting.FileSetting logical_log = new GraphDatabaseSetting.FileSetting( "logical_log", store_dir, true, true);
 
     // Old GCR size settings, using string values
 
@@ -349,39 +376,39 @@ public abstract class GraphDatabaseSettings
      * to disable; any other value is considered false.
      */
     @Default( TRUE)
-    public static final Setting udc_enabled = new GraphDatabaseSetting.BooleanSetting("neo4j.ext.udc.enabled");
+    public static final GraphDatabaseSetting<Boolean> udc_enabled = new GraphDatabaseSetting.BooleanSetting("neo4j.ext.udc.enabled");
 
     /**
      * Configuration key for the first delay, expressed
      * in milliseconds.
      */
     @Default( ""+10 * 1000 * 60 )
-    public static final Setting first_delay = new GraphDatabaseSetting.IntegerSetting("neo4j.ext.udc.first_delay", "Must be nr of milliseconds to delay", 1, null);
+    public static final GraphDatabaseSetting<Integer> first_delay = new GraphDatabaseSetting.IntegerSetting("neo4j.ext.udc.first_delay", "Must be nr of milliseconds to delay", 1, null);
 
     /**
      * Configuration key for the interval for regular updates,
      * expressed in milliseconds.
      */
     @Default(""+1000 * 60 * 60 * 24)
-    public static final Setting interval = new GraphDatabaseSetting.IntegerSetting("neo4j.ext.udc.interval", "Must be nr of milliseconds of the interval for checking", 1, null);
+    public static final GraphDatabaseSetting<Integer> interval = new GraphDatabaseSetting.IntegerSetting("neo4j.ext.udc.interval", "Must be nr of milliseconds of the interval for checking", 1, null);
 
     /**
      * The host address to which UDC updates will be sent.
      * Should be of the form hostname[:port].
      */
     @Default( "udc.neo4j.org" )
-    public static final Setting udc_host = new GraphDatabaseSetting.StringSetting(  "neo4j.ext.udc.host", ANY, "Must be a valid hostname");
+    public static final GraphDatabaseSetting<String> udc_host = new GraphDatabaseSetting.StringSetting(  "neo4j.ext.udc.host", ANY, "Must be a valid hostname");
 
     /**
      * Configuration key for overriding the source parameter in UDC
      */
-    public static final Setting udc_source = new GraphDatabaseSetting.StringSetting("neo4j.ext.udc.source", ANY, "Must be a valid source");
+    public static final GraphDatabaseSetting<String> udc_source = new GraphDatabaseSetting.StringSetting("neo4j.ext.udc.source", ANY, "Must be a valid source");
 
     /**
      * Unique registration id
      */
     @Default( "unreg" )
-    public static final Setting udc_registration_key = new GraphDatabaseSetting.StringSetting( "neo4j.ext.udc.reg", ANY, "Must be a valid registration id" );
+    public static final GraphDatabaseSetting<String> udc_registration_key = new GraphDatabaseSetting.StringSetting( "neo4j.ext.udc.reg", ANY, "Must be a valid registration id" );
 
 
     // Specialized settings
@@ -403,9 +430,9 @@ public abstract class GraphDatabaseSettings
         public static final String strong = "strong";
 
         @Description("GC resistant cache. Gets assigned a configurable amount of space in the JVM heap \n" +
-        		"and will evict objects whenever it grows bigger than that, instead of relying on GC for eviction. \n" +
-        		"It has got the fastest insert/lookup times and should be optimal for most use cases. \n" +
-        		"This is the default cache setting." )
+                "and will evict objects whenever it grows bigger than that, instead of relying on GC for eviction. \n" +
+                "It has got the fastest insert/lookup times and should be optimal for most use cases. \n" +
+                "This is the default cache setting." )
         public static final String gcr = "gcr";
 
         public CacheTypeSetting()
@@ -430,9 +457,6 @@ public abstract class GraphDatabaseSettings
     public static class CypherParserSetting
         extends OptionsSetting
     {
-        @Description( "Cypher v1.6 syntax." )
-        public static final String v1_6 = "1.6";
-
         @Description( "Cypher v1.7 syntax." )
         public static final String v1_7 = "1.7";
 
@@ -441,7 +465,7 @@ public abstract class GraphDatabaseSettings
 
         public CypherParserSetting( )
         {
-            super( "cypher_parser_version", v1_6, v1_7, v1_8);
+            super( "cypher_parser_version", v1_7, v1_8 );
         }
     }
 

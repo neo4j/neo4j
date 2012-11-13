@@ -24,7 +24,7 @@ import org.junit.Assert.assertThat
 import org.junit.Assert.assertEquals
 import org.junit.matchers.JUnitMatchers.hasItem
 import org.junit.Test
-import org.neo4j.graphdb.{Relationship, Node}
+import org.neo4j.graphdb.{ Relationship, Node }
 import org.neo4j.graphdb.index.Index
 import org.neo4j.cypher.CuteGraphDatabaseService.gds2cuteGds
 
@@ -37,7 +37,11 @@ class StartTest extends DocumentingTestBase {
   @Test def nodes_by_id() {
     testQuery(
       title = "Node by id",
-      text = "Binding a node as a starting point is done with the `node(*)` function .",
+      text = "Binding a node as a starting point is done with the `node(*)` function. \n" +
+        "[NOTE]\n" +
+        "Neo4j reuses its internal ids when nodes and relationships are deleted, " +
+        "which means it's bad practice to refer to them this way. " +
+        "Instead, use application generated ids.",
       queryText = "start n=node(%A%) return n",
       returns = "The corresponding node is returned.",
       (p) => assertThat(p.columnAs[Node]("n").toList.asJava, hasItem(node("A"))))
@@ -46,7 +50,8 @@ class StartTest extends DocumentingTestBase {
   @Test def relationships_by_id() {
     testQuery(
       title = "Relationship by id",
-      text = "Binding a relationship as a starting point is done with the `relationship(*)` function, which can also be abbreviated `rel(*)`.",
+      text = "Binding a relationship as a starting point is done with the `relationship(*)` function, which can also be abbreviated `rel(*)`." +
+        " See <<start-node-by-id>> for more information on Neo4j ids.",
       queryText = "start r=relationship(0) return r",
       returns = "The relationship with id +0+ is returned.",
       (p) => assertThat(p.columnAs[Relationship]("r").toList.asJava, hasItem(rel(0))))
@@ -71,7 +76,7 @@ class StartTest extends DocumentingTestBase {
   }
 
   @Test def nodes_by_index() {
-    generateConsole = false 
+    generateConsole = false
     testQuery(
       title = "Node by index lookup",
       text = "When the starting point can be found by using index lookups, it can be done like this: `node:index-name(key = \"value\")`. In this example, there exists a node index named `nodes`.",
@@ -81,8 +86,8 @@ class StartTest extends DocumentingTestBase {
   }
 
   @Test def relationships_by_index() {
-    generateConsole = false 
-    db.inTx(()=>{
+    generateConsole = false
+    db.inTx(() => {
       val r = db.getRelationshipById(0)
       val property = "name"
       val value = "Andrés"
@@ -101,7 +106,7 @@ class StartTest extends DocumentingTestBase {
   }
 
   @Test def nodes_by_index_query() {
-    generateConsole = false 
+    generateConsole = false
     testQuery(
       title = "Node by index query",
       text = "When the starting point can be found by more complex Lucene queries, this is the syntax to use: `node:index-name(\"query\")`." +
@@ -117,6 +122,6 @@ class StartTest extends DocumentingTestBase {
       text = "Sometimes you want to bind multiple starting points. Just list them separated by commas.",
       queryText = """start a=node(%A%), b=node(%B%) return a,b""",
       returns = """Both the nodes +A+ and the +B+  are returned.""",
-      p => assertEquals(List(Map("a"->node("A"), "b"->node("B"))), p.toList))
+      p => assertEquals(List(Map("a" -> node("A"), "b" -> node("B"))), p.toList))
   }
 }

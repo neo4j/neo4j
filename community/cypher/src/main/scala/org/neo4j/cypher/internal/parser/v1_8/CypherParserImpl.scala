@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.parser.v1_8
 import org.neo4j.cypher.SyntaxException
 import org.neo4j.cypher.internal.parser.ActualParser
 import org.neo4j.cypher.internal.commands._
+import expressions.{Property, Expression, AggregationExpression}
 import org.neo4j.cypher.internal.ReattachAliasedExpressions
 import org.neo4j.cypher.internal.mutation.UpdateAction
 
@@ -74,17 +75,21 @@ Thank you, the Neo4j Team.
       val (pattern, namedPaths) = extractMatches(matching)
 
       val returns = Return(List("*"), AllIdentifiers())
-      BodyWith(updates, pattern, namedPaths, where, returns, None, startItems, paths, nextQ)
+      BodyWith(updates, pattern, namedPaths, None, where, Seq(), returns, None, startItems, paths, nextQ)
     }
   }
 
-  def bodyWith: Parser[Body] = opt(matching) ~ opt(where) ~ WITH ~ opt(start) ~ updates ~ body ^^ {
-    case matching ~ where ~ returns ~ start ~ updates ~ nextQ => {
+  def bodyWith: Parser[Body] = opt(matching) ~ opt(where) ~ WITH ~ opt(order) ~ opt(skip) ~ opt(limit) ~ opt(start) ~ updates ~ body ^^ {
+    case matching ~ where ~ returns ~ order ~ skip ~ limit ~ start ~ updates ~ nextQ => {
       val (pattern, matchPaths) = extractMatches(matching)
       val startItems = start.toSeq.flatMap(_._1)
       val startPaths = start.toSeq.flatMap(_._2)
+      val slice = (skip, limit) match {
+        case (None, None) => None
+        case (s, l) => Some(Slice(s, l))
+      }
 
-      BodyWith(updates._1, pattern, matchPaths ++ updates._2, where, returns._1, returns._2, startItems, startPaths, nextQ)
+      BodyWith(updates._1, pattern, matchPaths ++ updates._2, slice, where, order.toSeq.flatten, returns._1, returns._2, startItems, startPaths, nextQ)
     }
   }
 
@@ -112,7 +117,7 @@ Thank you, the Neo4j Team.
   private def expandQuery(start: Seq[StartItem], namedPaths: Seq[NamedPath], updates: Seq[UpdateAction], body: Body): Query = body match {
     case b: BodyWith => {
       checkForAggregates(b.where)
-      Query(b.returns, start, updates, b.matching, b.where, b.aggregate, Seq(), None, b.namedPath ++ namedPaths, Some(expandQuery(b.start, b.startPaths, b.updates, b.next)))
+      Query(b.returns, start, updates, b.matching, b.where, b.aggregate, b.order, b.slice, b.namedPath ++ namedPaths, Some(expandQuery(b.start, b.startPaths, b.updates, b.next)))
     }
     case b: BodyReturn => {
       checkForAggregates(b.where)
@@ -192,7 +197,7 @@ If a Body is an intermediate part, either explicitly with WITH, or implicitly wh
 
 This structure has three parts
  */
-case class BodyWith(updates:Seq[UpdateAction], matching: Seq[Pattern], namedPath: Seq[NamedPath], where: Option[Predicate], returns: Return, aggregate: Option[Seq[AggregationExpression]],// These items belong to the query part before the WITH delimiter
+case class BodyWith(updates:Seq[UpdateAction], matching: Seq[Pattern], namedPath: Seq[NamedPath], slice: Option[Slice], where: Option[Predicate], order:Seq[SortItem], returns: Return, aggregate: Option[Seq[AggregationExpression]],// These items belong to the query part before the WITH delimiter
                     start:Seq[StartItem], startPaths:Seq[NamedPath],                                                                                                                       // These are START or CREATE clauses directly following WITH
                     next: Body) extends Body                                                                                                                                               // This is the pointer to the next query part
 

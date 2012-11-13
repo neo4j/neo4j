@@ -19,18 +19,20 @@
  */
 package org.neo4j.cypher.internal.commands
 
+import expressions.Identifier
 import org.neo4j.cypher.GraphDatabaseTestBase
 import org.scalatest.Assertions
 import org.junit.{Before, Test}
 import org.neo4j.graphdb.{Node, Direction}
 import org.junit.Assert._
+import org.neo4j.cypher.internal.pipes.ExecutionContext
 
 
 class HasRelationshipTest extends GraphDatabaseTestBase with Assertions {
   var a: Node = null
   var b: Node = null
-  val aValue = Entity("a")
-  val bValue = Entity("b")
+  val aValue = Identifier("a")
+  val bValue = Identifier("b")
 
   @Before
   def init() {
@@ -38,14 +40,14 @@ class HasRelationshipTest extends GraphDatabaseTestBase with Assertions {
     b = createNode()
   }
 
-  def createPredicate(dir: Direction, relType: Seq[String]): HasRelationshipTo = HasRelationshipTo(Entity("a"), Entity("b"), dir, relType)
+  def createPredicate(dir: Direction, relType: Seq[String]): HasRelationshipTo = HasRelationshipTo(Identifier("a"), Identifier("b"), dir, relType)
 
   @Test def givenTwoRelatedNodesThenReturnsTrue() {
     relate(a, b)
 
     val predicate = createPredicate(Direction.BOTH, Seq())
 
-    assertTrue("Expected the predicate to return true, but it didn't", predicate.isMatch(Map("a" -> a, "b" -> b)))
+    assertTrue("Expected the predicate to return true, but it didn't", predicate.isMatch(ExecutionContext.from("a" -> a, "b" -> b)))
   }
 
   @Test def checksTheRelationshipType() {
@@ -53,7 +55,7 @@ class HasRelationshipTest extends GraphDatabaseTestBase with Assertions {
 
     val predicate = createPredicate(Direction.BOTH, Seq("FEELS"))
 
-    assertFalse("Expected the predicate to return false, but it didn't", predicate.isMatch(Map("a" -> a, "b" -> b)))
+    assertFalse("Expected the predicate to return false, but it didn't", predicate.isMatch(ExecutionContext.from("a" -> a, "b" -> b)))
   }
 
   @Test def checksTheRelationshipTypeAndDirection() {
@@ -61,6 +63,6 @@ class HasRelationshipTest extends GraphDatabaseTestBase with Assertions {
 
     val predicate = createPredicate(Direction.INCOMING, Seq("KNOWS"))
 
-    assertFalse("Expected the predicate to return false, but it didn't", predicate.isMatch(Map("a" -> a, "b" -> b)))
+    assertFalse("Expected the predicate to return false, but it didn't", predicate.isMatch(ExecutionContext.from("a" -> a, "b" -> b)))
   }
 }

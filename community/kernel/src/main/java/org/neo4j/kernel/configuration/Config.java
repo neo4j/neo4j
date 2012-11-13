@@ -28,6 +28,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.TimeUtil;
@@ -94,7 +95,7 @@ public class Config implements DiagnosticsProvider
         return params.keySet();
     }
 
-    public boolean isSet( GraphDatabaseSetting<?> graphDatabaseSetting )
+    public boolean isSet( Setting<?> graphDatabaseSetting )
     {
         return params.containsKey( graphDatabaseSetting.name() ) && params.get( graphDatabaseSetting.name() ) != null;
     }

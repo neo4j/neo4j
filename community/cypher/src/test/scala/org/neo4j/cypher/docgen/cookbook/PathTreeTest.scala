@@ -51,7 +51,8 @@ class PathTreeTest extends DocumentingTestBase {
 +startPath+ (color +Greenyellow+) and +endPath+  (color +Green+) span up the range, +valuePath+  (color +Blue+) is then connecting the leafs, and the values can
 be read from the +middle+ node, hanging off the +values+ (color +Red+) path.
 
-include::path-tree-layout-full-range.txt[]
+.Graph
+include::includes/path-tree-layout-full-range.asciidoc[]
 
 """,
       queryText = "START root=node:node_auto_index(name = 'Root') " +
@@ -63,7 +64,7 @@ include::path-tree-layout-full-range.txt[]
                 "RETURN event.name " +
                 "ORDER BY event.name ASC",
       returns = "Returning all events between 2010-12-31 and 2011-01-03, in this case all events.",
-      (p) => assertEquals(List(Map("event.name" -> "Event1"),
+      assertions = (p) => assertEquals(List(Map("event.name" -> "Event1"),
           Map("event.name" -> "Event2"),
           Map("event.name" -> "Event2"),
           Map("event.name" -> "Event3")
@@ -75,7 +76,8 @@ include::path-tree-layout-full-range.txt[]
       text = """Here, only the events indexed under one leaf (2010-12-31) are returned.
 The query only needs one path segment +rootPath+  (color +Green+) through the index.
 
-include::path-tree-layout-zero-range.txt[]
+.Graph
+include::includes/path-tree-layout-zero-range.asciidoc[]
 
 """,
       queryText = "START root=node:node_auto_index(name = 'Root') " +
@@ -85,7 +87,7 @@ include::path-tree-layout-zero-range.txt[]
                 "RETURN event.name " +
                 "ORDER BY event.name ASC",
       returns = "Returning all events on the date 2010-12-31, in this case +Event1+ and +Event2+",
-      (p) => assertEquals(List(Map("event.name" -> "Event1"),
+      assertions = (p) => assertEquals(List(Map("event.name" -> "Event1"),
           Map("event.name" -> "Event2")
           ),p.toList))
   } 
@@ -97,7 +99,8 @@ include::path-tree-layout-zero-range.txt[]
 making the introduction of and common path segment +commonPath+ (color +Black+) necessary, before spanning up +startPath+ (color +Greenyellow+) and 
 +endPath+ (color +Darkgreen+) . After that, +valuePath+ (color +Blue+) connects the leafs and the indexed values are returned off +values+ (color +Red+)  path.
 
-include::path-tree-layout-shared-root-path.txt[]
+.Graph
+include::includes/path-tree-layout-shared-root-path.asciidoc[]
 
 """,
       queryText = "START root=node:node_auto_index(name = 'Root') " +
@@ -110,7 +113,7 @@ include::path-tree-layout-shared-root-path.txt[]
                 "RETURN event.name " +
                 "ORDER BY event.name ASC",
       returns = "Returning all events between 2011-01-01 and 2011-01-03, in this case +Event2+ and +Event3+.",
-      (p) => assertEquals(List(
+      assertions = (p) => assertEquals(List(
           Map("event.name" -> "Event2"),
           Map("event.name" -> "Event3")
           ),p.toList))

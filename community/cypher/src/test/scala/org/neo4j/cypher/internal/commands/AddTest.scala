@@ -19,17 +19,24 @@
  */
 package org.neo4j.cypher.internal.commands
 
+import expressions.{Literal, Add}
 import org.junit.Test
 import org.scalatest.Assertions
 import org.neo4j.cypher.CypherTypeException
+import org.neo4j.cypher.internal.pipes.ExecutionContext
 
 class AddTest extends Assertions {
   
-  val m = Map[String, Any]()
+  val m = ExecutionContext.empty
   
   @Test def numbers() {
     val expr = Add(Literal(1), Literal(1))
     assert(expr(m) === 2)
+  }
+
+  @Test def with_null() {
+    assert(Add(Literal(null), Literal(1))(m) === null)
+    assert(Add(Literal(2), Literal(null))(m) === null)
   }
 
   @Test def strings() {
@@ -39,12 +46,12 @@ class AddTest extends Assertions {
 
   @Test def stringPlusNumber() {
     val expr = Add(Literal("hello"), Literal(1))
-    intercept[CypherTypeException](expr(m))
+    assert(expr(m) === "hello1")
   }
 
   @Test def numberPlusString() {
     val expr = Add(Literal(1), Literal("world"))
-    intercept[CypherTypeException](expr(m))
+    assert(expr(m) === "1world")
   }
 
   @Test def numberPlusBool() {

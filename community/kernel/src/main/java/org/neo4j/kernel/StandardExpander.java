@@ -890,7 +890,7 @@ public abstract class StandardExpander implements Expander, PathExpander
 
     public final Expansion<Relationship> expand( Node node )
     {
-        return new RelationshipExpansion( this, new SingleNodePath( node ), Traversal.NO_BRANCH_STATE );
+        return new RelationshipExpansion( this, new SingleNodePath( node ), BranchState.NO_STATE );
     }
 
     public final Expansion<Relationship> expand( Path path, BranchState state )

@@ -78,7 +78,7 @@ class GraphDatabaseTestBase extends JUnitSuite {
   }
 
   def nodeIds = nodes.map(_.getId).toArray
-
+  val REL = DynamicRelationshipType.withName("REL")
   def relate(a: Node, b: Node): Relationship = relate(a, b, "REL")
   def relate(a: Node, b: Node, pk:(String,Any)*): Relationship = relate(a, b, "REL", pk.toMap)
 

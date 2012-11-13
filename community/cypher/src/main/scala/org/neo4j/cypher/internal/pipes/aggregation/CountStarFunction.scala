@@ -18,12 +18,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package org.neo4j.cypher.internal.pipes.aggregation
-import collection.Map
+import org.neo4j.cypher.internal.pipes.ExecutionContext
 
 class CountStarFunction extends AggregationFunction {
   var count:Long = 0
 
-  def apply(data: Map[String, Any]) {
+  def apply(data: ExecutionContext) {
     count += 1
   }
 

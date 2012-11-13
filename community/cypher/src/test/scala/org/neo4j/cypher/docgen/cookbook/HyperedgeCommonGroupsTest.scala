@@ -60,8 +60,8 @@ class HyperedgeCommonGroupsTest extends DocumentingTestBase {
   }
     @Test def findCommonGroups() {
       testQuery(
-      title = "Find common groups based on shared roles",
-      text = """Assume a more complicated graph:
+        title = "Find common groups based on shared roles",
+        text = """Assume a more complicated graph:
 
 1. Two user nodes +User1+, +User2+.
 2. +User1+ is in +Group1+, +Group2+, +Group3+.
@@ -71,24 +71,24 @@ class HyperedgeCommonGroupsTest extends DocumentingTestBase {
 
 The graph for this looks like the following (nodes like +U1G2R23+ representing the HyperEdges):
 
-include::cypher-hyperedgecommongroups-graph.txt[]
+.Graph
+include::includes/cypher-hyperedgecommongroups-graph.asciidoc[]
 
 To return +Group1+ and +Group2+ as +User1+ and +User2+ share at least one common role in these two groups, the query looks like this:
-""",
-      queryText = "" +
-      		"start " +
-      		"u1=node:node_auto_index(name = \"User1\")," +
-      		"u2=node:node_auto_index(name = \"User2\") " +
-      		"match " +
-      		"u1-[:hasRoleInGroup]->hyperEdge1-[:hasGroup]->group, " +
-      		"hyperEdge1-[:hasRole]->role, " +
-            "u2-[:hasRoleInGroup]->hyperEdge2-[:hasGroup]->group, " +
-            "hyperEdge2-[:hasRole]->role " +
-            "return group.name, count(role) " +
-            "order by group.name ASC",
-      returns = "The groups where +User1+ and +User2+ share at least one common role:",
-      (p) => assertEquals(List(Map("group.name" -> "Group1", "count(role)"->1),Map("group.name" -> "Group2", "count(role)"->1)), p.toList))
-  }
+               """,
+        queryText = "" +
+          "start u1=node:node_auto_index(name = 'User1')," +
+          "      u2=node:node_auto_index(name = 'User2') " +
+          "match " +
+          "u1-[:hasRoleInGroup]->hyperEdge1-[:hasGroup]->group, " +
+          "hyperEdge1-[:hasRole]->role, " +
+          "u2-[:hasRoleInGroup]->hyperEdge2-[:hasGroup]->group, " +
+          "hyperEdge2-[:hasRole]->role " +
+          "return group.name, count(role) " +
+          "order by group.name ASC",
+        returns = "The groups where +User1+ and +User2+ share at least one common role:",
+        assertions = (p) => assertEquals(List(Map("group.name" -> "Group1", "count(role)" -> 1), Map("group.name" -> "Group2", "count(role)" -> 1)), p.toList))
+    }
 
   
 }

@@ -25,6 +25,7 @@ import collection.{Iterable, Traversable}
 import collection.Map
 import org.neo4j.cypher.internal.commands.Predicate
 import org.neo4j.helpers.ThisShouldNotHappenError
+import org.neo4j.cypher.internal.pipes.ExecutionContext
 
 /*
 This class performs simpler join operations, but faster than the full matcher.
@@ -42,9 +43,9 @@ class Joiner(source: Linkable,
              predicate: Predicate)
   extends Linkable {
 
-  def getResult(m: Map[String, Any]): Traversable[Map[String, Any]] = source.getResult(m).flatMap(getSingleResult)
+  def getResult(m: ExecutionContext): Traversable[ExecutionContext] = source.getResult(m).flatMap(getSingleResult)
 
-  def getSingleResult(m: Map[String, Any]): Iterable[Map[String, Any]] = {
+  def getSingleResult(m: ExecutionContext): Iterable[ExecutionContext] = {
     val startNode = m.get(start) match {
       case Some(x: Node) => x
       case _ => throw new ThisShouldNotHappenError("Andres Taylor", "The start node has to come from the underlying pipe!")
@@ -67,7 +68,7 @@ class Joiner(source: Linkable,
       }
       else {
         val product = Map(relName -> rel, end -> otherNode)
-        Some(m ++ product)
+        Some(m.newWith(product))
       }
     })
 
@@ -78,11 +79,11 @@ class Joiner(source: Linkable,
 }
 
 class Start(val providesKeys: Seq[String]) extends Linkable {
-  def getResult(m: Map[String, Any]): Traversable[Map[String, Any]] = Seq(m)
+  def getResult(m: ExecutionContext): Traversable[ExecutionContext] = Seq(m)
 }
 
 trait Linkable {
-  def getResult(m: Map[String, Any]): Traversable[Map[String, Any]]
+  def getResult(m: ExecutionContext): Traversable[ExecutionContext]
 
   def providesKeys(): Seq[String]
 }

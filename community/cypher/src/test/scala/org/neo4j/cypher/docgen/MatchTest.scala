@@ -155,7 +155,8 @@ class MatchTest extends DocumentingTestBase {
     testQuery(
       title = "Zero length paths",
       text = "Using variable length paths that have the lower bound zero means that two identifiers can point" +
-        " to the same node. If the distance between two nodes is zero, they are by definition the same node.",
+        " to the same node. If the distance between two nodes is zero, they are by definition the same node. " +
+        "Note that when matching zero length paths the result may contain a match even when matching on a relationship type not in use.",
       queryText = """start a=node(%A%) match p1=a-[:KNOWS*0..1]->b, p2=b-[:BLOCKS*0..1]->c return a,b,c, length(p1), length(p2)""",
       returns = "This query will return four paths, some of which have length zero.",
       assertions = p => assertEquals(Set(

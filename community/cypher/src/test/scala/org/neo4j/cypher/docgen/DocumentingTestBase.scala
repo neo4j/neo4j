@@ -78,7 +78,7 @@ _Graph_
 %s
 ----
 
-""".format(fileName, graphVizOptions, out)
+           """.format(fileName, graphVizOptions, out)
   }
 
   protected def getGraphvizStyle: GraphStyle = AsciiDocStyle.withAutomaticRelationshipTypeColors()
@@ -213,7 +213,3 @@ abstract class DocumentingTestBase extends Assertions with DocumentationHelper {
   }
 
 }
-
-
-
-

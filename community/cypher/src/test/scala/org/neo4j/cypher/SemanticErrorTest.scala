@@ -25,7 +25,7 @@ import org.junit.Test
 class SemanticErrorTest extends ExecutionEngineHelper {
   @Test def returnNodeThatsNotThere() {
     expectedError("start x=node(0) return bar",
-      """Unknown identifier `bar`.""")
+      "Unknown identifier `bar`.")
   }
 
   @Test def throwOnDisconnectedPattern() {
@@ -60,7 +60,7 @@ class SemanticErrorTest extends ExecutionEngineHelper {
 
   @Test def shouldKnowNotToCompareStringsAndNumbers() {
     expectedError("start a=node(0) where a.age =~ 13 return a",
-      "`13` expected to be a String but it is a Number")
+      "Literal expected to be of type String but it is of type Number")
   }
 
   @Test def shouldComplainAboutUnknownIdentifier() {
@@ -77,7 +77,7 @@ class SemanticErrorTest extends ExecutionEngineHelper {
     try {
       val result = parseAndExecute(query)
       result.toList
-      fail("Did not get the expected syntax error, expected: " + message)
+      fail("Did not get the expected syntax error, expected: %s".format(message))
     } catch {
       case x: CypherException => assertEquals(message, x.getMessage)
     }

@@ -19,14 +19,13 @@
  */
 package org.neo4j.cypher.internal.pipes
 
-import org.neo4j.kernel.Traversal
-import org.neo4j.cypher.SyntaxException
 import java.lang.String
 import collection.Seq
-import org.neo4j.cypher.internal.symbols.{NodeType, Identifier, PathType}
-import collection.mutable.Map
-import org.neo4j.cypher.internal.commands.{ShortestPathExpression, ReturnItem, ShortestPath}
-import org.neo4j.graphdb.{Path, Expander, DynamicRelationshipType, Node}
+import org.neo4j.cypher.internal.symbols._
+import org.neo4j.graphdb.Path
+import org.neo4j.cypher.internal.commands.ReturnItem
+import org.neo4j.cypher.internal.commands.expressions.ShortestPathExpression
+import org.neo4j.cypher.internal.commands.ShortestPath
 
 /**
  * Shortest pipe inserts a single shortest path between two already found nodes
@@ -34,23 +33,9 @@ import org.neo4j.graphdb.{Path, Expander, DynamicRelationshipType, Node}
  * It's also the base class for all shortest paths
  */
 class ShortestPathPipe(source: Pipe, ast: ShortestPath) extends PipeWithSource(source) {
-  def startName = ast.start
-
-  def endName = ast.end
-
-  def relType = ast.relTypes
-
-  def dir = ast.dir
-
-  def maxDepth = ast.maxDepth
-
-  def optional = ast.optional
-
-  def pathName = ast.pathName
-
-  def returnItems: Seq[ReturnItem] = Seq()
-
-  val expression = ShortestPathExpression(ast)
+  private def optional = ast.optional
+  private def pathName = ast.pathName
+  private val expression = ShortestPathExpression(ast)
 
   def createResults(state: QueryState) = source.createResults(state).flatMap(ctx => {
     val result: Stream[Path] = expression(ctx).asInstanceOf[Stream[Path]]
@@ -66,10 +51,11 @@ class ShortestPathPipe(source: Pipe, ast: ShortestPath) extends PipeWithSource(s
 
   })
 
-
-  def dependencies: Seq[Identifier] = Seq(Identifier(startName, NodeType()), Identifier(endName, NodeType()))
-
-  val symbols = source.symbols.add(Identifier(pathName, PathType()))
+  val symbols = source.symbols.add(pathName, PathType())
 
   override def executionPlan(): String = source.executionPlan() + "\r\n" + "ShortestPath(" + ast + ")"
+
+  def assertTypes(symbols: SymbolTable) {
+    ast.assertTypes(symbols)
+  }
 }

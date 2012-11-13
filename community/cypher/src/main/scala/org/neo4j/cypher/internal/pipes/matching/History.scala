@@ -19,11 +19,10 @@
  */
 package org.neo4j.cypher.internal.pipes.matching
 
-import collection.Map
 import collection.Set
 import collection.mutable.{Map => MutableMap}
-import org.neo4j.graphdb.{Relationship, Path, Node}
-import scala.Option
+import org.neo4j.graphdb.Node
+import org.neo4j.cypher.internal.pipes.ExecutionContext
 
 /**
  * This class is responsible for keeping track of the already visited parts of the pattern, and the matched
@@ -45,13 +44,13 @@ abstract class History {
 
   def add(pair: MatchingPair): History
 
-  val toMap: Map[String, Any]
+  val toMap: ExecutionContext
 
   def contains(p : MatchingPair) : Boolean
   override def toString: String = "History(%s)".format(seen.mkString("[", "], [", "]"))
 }
 
-class InitialHistory(source : Map[String,Any]) extends History {
+class InitialHistory(source : ExecutionContext) extends History {
   lazy val seen = Set[MatchingPair]()
 
   def matches(p: Any) = false
@@ -73,7 +72,7 @@ class AddedHistory(val parent : History, val pair : MatchingPair) extends Histor
   def add(pair: MatchingPair) = if (contains(pair)) this else new AddedHistory(this,pair)
 
   lazy val toMap = {
-    parent.toMap ++ toSeq(pair)
+    parent.toMap.newWith(toSeq(pair))
   }
 
   def toSeq(p: MatchingPair) : Seq[(String,Any)] = {

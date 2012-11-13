@@ -19,55 +19,105 @@
  */
 package org.neo4j.cypher.internal.symbols
 
-import org.scalatest.junit.JUnitSuite
 import org.junit.Test
 import org.neo4j.cypher.{CypherTypeException, SyntaxException}
+import org.scalatest.Assertions
+import org.neo4j.cypher.internal.commands.expressions.{Expression, Add}
+import collection.Map
+import org.neo4j.cypher.internal.pipes.ExecutionContext
 
-class SymbolTableTest extends JUnitSuite {
-  @Test def givenSymbolTableWithIdentifierWhenAskForExistingThenReturnIdentifier() {
-    val symbols = new SymbolTable(Identifier("x", AnyType()))
-    symbols.assertHas(Identifier("x", AnyType()))
+class SymbolTableTest extends Assertions {
+  @Test def anytype_is_ok() {
+    //given
+    val s = createSymbols("p" -> PathType())
+
+    //then
+    assert(s.evaluateType("p", AnyType()) === PathType())
   }
 
-  @Test(expected = classOf[SyntaxException]) def givenEmptySymbolTableWhenAskForNonExistingThenThrows() {
-    val symbols = new SymbolTable()
-    symbols.assertHas(Identifier("x", AnyType()))
+  @Test def missing_identifier() {
+    //given
+    val s = createSymbols()
+
+    //then
+    intercept[SyntaxException](s.evaluateType("p", AnyType()))
   }
 
-  @Test(expected = classOf[CypherTypeException]) def givenSymbolTableWithStringIdentifierWhenAskForIterableThenThrows() {
-    val symbols = new SymbolTable(Identifier("x", StringType()))
-    symbols.assertHas(Identifier("x", NumberType()))
+  @Test def identifier_with_wrong_type() {
+    //given
+    val symbolTable = createSymbols("x" -> StringType())
+
+    //then
+    intercept[CypherTypeException](symbolTable.evaluateType("x", NumberType()))
   }
 
-  @Test def givenSymbolTableWithIntegerIdentifierWhenAskForNumberThenReturn() {
-    val symbols = new SymbolTable(Identifier("x", IntegerType()))
-    symbols.assertHas(Identifier("x", NumberType()))
+  @Test def identifier_with_type_not_specific_enough() {
+    //given
+    val symbolTable = createSymbols("x" -> MapType())
+
+    //then
+    symbolTable.evaluateType("x", RelationshipType())
   }
 
-  @Test def givenSymbolTableWithIterableOfStringWhenAskForIterableOfAnyThenReturn() {
-    val symbols = new SymbolTable(Identifier("x", new CollectionType(StringType())))
-    symbols.assertHas(Identifier("x", new CollectionType(AnyType())))
+  @Test def adding_string_with_string_gives_string_type() {
+    //given
+    val symbolTable = createSymbols()
+    val exp = new Add(new FakeExpression(StringType()), new FakeExpression(StringType()))
+
+    //when
+    val returnType = exp.evaluateType(AnyType(), symbolTable)
+
+    //then
+    assert(returnType === StringType())
   }
 
-  @Test def givenSymbolTableWithStringIdentifierWhenMergedWithNumberIdentifierThenContainsBoth() {
-    val symbols = new SymbolTable(Identifier("x", StringType()))
-    val newSymbol = symbols.add(Identifier("y", NumberType()))
+  @Test def adding_number_with_number_gives_number_type() {
+    //given
+    val symbolTable = createSymbols()
+    val exp = new Add(new FakeExpression(NumberType()), new FakeExpression(NumberType()))
 
-    newSymbol.assertHas(Identifier("x", StringType()))
-    newSymbol.assertHas(Identifier("y", NumberType()))
+    //when
+    val returnType = exp.evaluateType(AnyType(), symbolTable)
+
+    //then
+    assert(returnType === NumberType())
   }
 
-  @Test(expected = classOf[SyntaxException]) def shouldNotBeAbleToCreateASymbolTableWithClashingNames() {
-    new SymbolTable(Identifier("x", StringType()), Identifier("x", RelationshipType()))
+  @Test def adding_to_string_collection() {
+    //given
+    val symbolTable = createSymbols()
+    val exp = new Add(new FakeExpression(new CollectionType(StringType())), new FakeExpression(StringType()))
+
+    //when
+    val returnType = exp.evaluateType(AnyType(), symbolTable)
+
+    //then
+    assert(returnType === new CollectionType(StringType()))
+  }
+
+  @Test def covariance() {
+    //given
+    val actual = new CollectionType(NodeType())
+    val expected = new CollectionType(MapType())
+
+    //then
+    assert(expected.isAssignableFrom(actual))
   }
 
 
-  @Test def filteringThroughShouldWork() {
-    assert(getPercolatedIdentifier(NodeType(), AnyType()) === NodeType())
-    assert(getPercolatedIdentifier(AnyIterableType(), AnyType()) === AnyIterableType())
-    assert(getPercolatedIdentifier(NodeType(), NodeType()) === NodeType())
+  def createSymbols(elems: (String, CypherType)*): SymbolTable = {
+    new SymbolTable(elems.toMap)
   }
+}
 
-  private def getPercolatedIdentifier(scopeType: AnyType, symbolType: AnyType): AnyType = new SymbolTable(Identifier("x", scopeType)).actualIdentifier(Identifier("x", symbolType)).typ
+class FakeExpression(typ: CypherType) extends Expression {
+  def apply(v1: ExecutionContext): Any = null
 
+  def rewrite(f: (Expression) => Expression): Expression = null
+
+  def filter(f: (Expression) => Boolean): Seq[Expression] = null
+
+  def calculateType(symbols: SymbolTable) = typ
+
+  def symbolTableDependencies = Set()
 }

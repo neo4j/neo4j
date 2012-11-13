@@ -23,7 +23,8 @@ package org.neo4j.cypher.internal.executionplan.builders
 import org.junit.Test
 import org.junit.Assert._
 import org.neo4j.cypher.internal.executionplan.PartiallySolvedQuery
-import org.neo4j.cypher.internal.commands.{Slice, ReturnItem, Literal, SortItem}
+import org.neo4j.cypher.internal.commands.{Slice, ReturnItem, SortItem}
+import org.neo4j.cypher.internal.commands.expressions.Literal
 
 class ColumnFilterBuilderTest extends BuilderTest {
 
@@ -70,7 +71,7 @@ class ColumnFilterBuilderTest extends BuilderTest {
   @Test def should_not_accept_if_not_sliced() {
     val q = PartiallySolvedQuery().copy(
       extracted = true,
-      slice = Seq(Unsolved(Slice(Some(Literal(19)), None))),
+      slice = Some(Unsolved(Slice(Some(Literal(19)), None))),
       returns = Seq(Unsolved(ReturnItem(Literal("foo"), "foo")))
     )
 

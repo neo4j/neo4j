@@ -19,12 +19,13 @@
  */
 package org.neo4j.cypher.internal.pipes.aggregation
 
-import org.neo4j.cypher.internal.commands.Expression
-import collection.Map
+import org.neo4j.cypher.internal.commands.expressions.Expression
+import org.neo4j.cypher.internal.pipes.ExecutionContext
+import org.neo4j.cypher.internal.helpers.TypeSafeMathSupport
 
 class AvgFunction(val value: Expression)
   extends AggregationFunction
-  with Plus
+  with TypeSafeMathSupport
   with NumericExpressionOnly {
 
   def name = "AVG"
@@ -34,11 +35,11 @@ class AvgFunction(val value: Expression)
 
   def result =
     if (count > 0)
-      divide(sofar, count)
+      divide(sofar, count.toDouble)
     else
       null
 
-  def apply(data: Map[String, Any]) {
+  def apply(data: ExecutionContext) {
     actOnNumber(value(data), (number) => {
       count += 1
       sofar = plus(sofar, number)

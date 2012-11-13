@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.pipes.matching
 import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.commands.{True, And, Predicate}
 import collection.Map
+import org.neo4j.cypher.internal.pipes.ExecutionContext
 
 object JoinerBuilder {
   def canHandlePatter(patternGraph: PatternGraph): Boolean =
@@ -34,7 +35,7 @@ object JoinerBuilder {
 class JoinerBuilder(patternGraph: PatternGraph, predicates: Seq[Predicate]) extends MatcherBuilder {
   val joiner = createAndLinkJoiners(patternGraph.boundElements.map(patternGraph.patternNodes(_)))
 
-  def getMatches(sourceRow: Map[String, Any]): Traversable[Map[String, Any]] = {
+  def getMatches(sourceRow: ExecutionContext): Traversable[ExecutionContext] = {
     joiner.getResult(sourceRow)
   }
 
@@ -80,8 +81,9 @@ class PredicateHolder(var predicates: Seq[Predicate]) {
   def getMatchingClauses(keys: Seq[String]) = {
 
     val (matchingPredicates, predicatesLeft) = predicates.partition(x => {
-      !x.containsIsNull && x.dependencies.map(_.name).filterNot(keys.contains).isEmpty
+      !x.containsIsNull && x.symbolTableDependencies.forall(keys contains)
     })
+
     predicates = predicatesLeft
 
     val result = if (matchingPredicates.isEmpty)

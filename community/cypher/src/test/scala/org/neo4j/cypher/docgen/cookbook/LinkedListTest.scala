@@ -96,9 +96,8 @@ START root=node:node_auto_index(name = "ROOT")
 MATCH root-[:LINK*0..]->before,
       before-[delBefore:LINK]->del-[delAfter:LINK]->after,
       after-[:LINK*0..]->root
-WHERE del.value = 10
+WHERE del.value! = 10
 CREATE before-[:LINK]->after
 DELETE del, delBefore, delAfter###
 """
-
 }

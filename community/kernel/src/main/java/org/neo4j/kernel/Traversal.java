@@ -30,11 +30,10 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipExpander;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
+import org.neo4j.graphdb.traversal.BranchCollisionDetector;
 import org.neo4j.graphdb.traversal.BranchOrderingPolicy;
-import org.neo4j.graphdb.traversal.BranchState;
 import org.neo4j.graphdb.traversal.Evaluators;
 import org.neo4j.graphdb.traversal.InitialStateFactory;
-import org.neo4j.graphdb.traversal.BranchCollisionDetector;
 import org.neo4j.graphdb.traversal.SideSelectorPolicy;
 import org.neo4j.graphdb.traversal.TraversalBranch;
 import org.neo4j.graphdb.traversal.TraversalDescription;
@@ -90,28 +89,7 @@ public class Traversal
     {
         return new BidirectionalTraversalDescriptionImpl();
     }
-    
-    @SuppressWarnings( "rawtypes" )
-    public static final BranchState NO_BRANCH_STATE = new BranchState()
-    {
-        @Override
-        public Object getState()
-        {
-            throw new UnsupportedOperationException( "Branch state disabled, pass in an initial state to enable it" );
-        }
-        
-        @Override
-        public void setState( Object state )
-        {
-            throw new UnsupportedOperationException( "Branch state disabled, pass in an initial state to enable it" );
-        }
-    };
-    
-    public static <STATE> BranchState<STATE> noBranchState()
-    {
-        return NO_BRANCH_STATE;
-    }
-    
+
     /**
      * {@link InitialStateFactory} which always returns the supplied {@code initialState}.
      * @param initialState the initial state for a traversal branch.

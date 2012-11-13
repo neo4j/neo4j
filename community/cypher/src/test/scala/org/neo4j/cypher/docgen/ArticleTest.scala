@@ -100,11 +100,11 @@ abstract class ArticleTest extends Assertions with DocumentationHelper {
 
 %s
 
-""".format(querySnippet)
+                    """.format(querySnippet)
 
     val resultText = """.Result
 %s
-""".format(resultSnippet)
+                     """.format(resultSnippet)
 
     if (includeResults)
       queryText + resultText + consoleText
@@ -139,7 +139,7 @@ abstract class ArticleTest extends Assertions with DocumentationHelper {
 
 %s
 ----
-""".format(create, query)
+      """.format(create, query)
     } else ""
   }
 
@@ -231,7 +231,3 @@ abstract class ArticleTest extends Assertions with DocumentationHelper {
     db
   }
 }
-
-
-
-

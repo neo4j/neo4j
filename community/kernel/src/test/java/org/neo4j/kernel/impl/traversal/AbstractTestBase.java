@@ -326,4 +326,15 @@ public abstract class AbstractTestBase
         }
         return buffer.toString();
     }
+    
+    protected void setRelationshipProperty( String fromNode, String toNode, String key, Object value )
+    {
+        for ( Relationship relationship : getNodeWithName( fromNode ).getRelationships() )
+            if ( relationship.getEndNode().equals( getNodeWithName( toNode ) ) )
+            {
+                relationship.setProperty( key, value );
+                return;
+            }
+        throw new IllegalArgumentException( "No relationship found between " + fromNode + " and " + toNode );
+    }
 }

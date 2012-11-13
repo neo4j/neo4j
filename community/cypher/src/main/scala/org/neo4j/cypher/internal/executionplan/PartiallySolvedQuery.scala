@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.executionplan
 import builders.{QueryToken, Solved, Unsolved}
 import org.neo4j.cypher.internal.commands._
 import collection.Seq
+import expressions.{Expression, AggregationExpression}
 import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.cypher.internal.pipes.Pipe
 import org.neo4j.cypher.internal.mutation.UpdateAction
@@ -31,8 +32,7 @@ object PartiallySolvedQuery {
 
   // Creates a fully unsolved query
   def apply(q: Query): PartiallySolvedQuery = {
-    val patterns = q.matching.map(Unsolved(_)) ++
-      q.namedPaths.flatMap(_.pathPattern.map(Unsolved(_)))
+    val patterns = q.matching.map(Unsolved(_))
 
     new PartiallySolvedQuery(
       returns = q.returns.returnItems.map(Unsolved(_)),
@@ -42,7 +42,7 @@ object PartiallySolvedQuery {
       where = q.where.toSeq.flatMap(_.atoms.map(Unsolved(_))),
       aggregation = q.aggregation.toSeq.flatten.map(Unsolved(_)),
       sort = q.sort.map(Unsolved(_)),
-      slice = q.slice.toSeq.map(Unsolved(_)),
+      slice = q.slice.map(Unsolved(_)),
       namedPaths = q.namedPaths.map(Unsolved(_)),
       aggregateQuery = if (q.aggregation.isDefined)
         Unsolved(true)
@@ -62,7 +62,7 @@ object PartiallySolvedQuery {
     where = Seq(),
     aggregation = Seq(),
     sort = Seq(),
-    slice = Seq(),
+    slice = None,
     namedPaths = Seq(),
     aggregateQuery = Solved(false),
     extracted = false,
@@ -81,7 +81,7 @@ case class PartiallySolvedQuery(returns: Seq[QueryToken[ReturnColumn]],
                                 where: Seq[QueryToken[Predicate]],
                                 aggregation: Seq[QueryToken[AggregationExpression]],
                                 sort: Seq[QueryToken[SortItem]],
-                                slice: Seq[QueryToken[Slice]],
+                                slice: Option[QueryToken[Slice]],
                                 namedPaths: Seq[QueryToken[NamedPath]],
                                 aggregateQuery: QueryToken[Boolean],
                                 extracted: Boolean,

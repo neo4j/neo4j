@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.parser.v1_8
 
 import org.neo4j.cypher.internal.commands._
+import expressions.{Property, Identifier, Nullable, Expression}
 
 
 trait Predicates extends Base with ParserPattern with StringLiteral {
@@ -37,12 +38,19 @@ trait Predicates extends Base with ParserPattern with StringLiteral {
       | operators
       | ignoreCase("not") ~> parens(predicate) ^^ ( inner => Not(inner) )
       | ignoreCase("not") ~> predicate ^^ ( inner => Not(inner) )
-      | ignoreCase("has") ~> parens(property) ^^ ( prop => Has(prop.asInstanceOf[Property]))
+      | hasProperty
       | parens(predicate)
       | sequencePredicate
       | patternPredicate
       | aggregateFunctionNames ~> parens(expression) ~> failure("aggregate functions can not be used in the WHERE clause")
     )
+
+  def hasProperty = ignoreCase("has") ~> parens(property) ^^ {
+    case x =>
+      val prop = x.asInstanceOf[Property]
+      Has(Identifier(prop.entity), prop.property)
+  }
+
 
   def sequencePredicate: Parser[Predicate] = allInSeq | anyInSeq | noneInSeq | singleInSeq | in
 
@@ -51,13 +59,13 @@ trait Predicates extends Base with ParserPattern with StringLiteral {
       |identity ~> ignoreCase("in") ~ expression ~> failure("expected where"))
 
   def in: Parser[Predicate] = expression ~ ignoreCase("in") ~ expression ^^ {
-    case checkee ~ in ~ collection => nullable(AnyInIterable(collection, "-_-INNER-_-", Equals(checkee, Entity("-_-INNER-_-"))), collection)
+    case checkee ~ in ~ collection => nullable(AnyInCollection(collection, "-_-INNER-_-", Equals(checkee, Identifier("-_-INNER-_-"))), collection)
   }
 
-  def allInSeq: Parser[Predicate] = ignoreCase("all") ~> parens(symbolIterablePredicate) ^^ (x => nullable(AllInIterable(x._1, x._2, x._3), x._1))
-  def anyInSeq: Parser[Predicate] = ignoreCase("any") ~> parens(symbolIterablePredicate) ^^ (x => nullable(AnyInIterable(x._1, x._2, x._3), x._1))
-  def noneInSeq: Parser[Predicate] = ignoreCase("none") ~> parens(symbolIterablePredicate) ^^ (x => nullable(NoneInIterable(x._1, x._2, x._3), x._1))
-  def singleInSeq: Parser[Predicate] = ignoreCase("single") ~> parens(symbolIterablePredicate) ^^ (x => nullable(SingleInIterable(x._1, x._2, x._3), x._1))
+  def allInSeq: Parser[Predicate] = ignoreCase("all") ~> parens(symbolIterablePredicate) ^^ (x => nullable(AllInCollection(x._1, x._2, x._3), x._1))
+  def anyInSeq: Parser[Predicate] = ignoreCase("any") ~> parens(symbolIterablePredicate) ^^ (x => nullable(AnyInCollection(x._1, x._2, x._3), x._1))
+  def noneInSeq: Parser[Predicate] = ignoreCase("none") ~> parens(symbolIterablePredicate) ^^ (x => nullable(NoneInCollection(x._1, x._2, x._3), x._1))
+  def singleInSeq: Parser[Predicate] = ignoreCase("single") ~> parens(symbolIterablePredicate) ^^ (x => nullable(SingleInCollection(x._1, x._2, x._3), x._1))
 
   def operators:Parser[Predicate] =
     (expression ~ "=" ~ expression ^^ { case l ~ "=" ~ r => nullable(Equals(l, r),l,r)  } |
@@ -86,6 +94,6 @@ trait Predicates extends Base with ParserPattern with StringLiteral {
   def expression: Parser[Expression]
   def aggregateFunctionNames:Parser[String]
   def property: Parser[Expression]
-  def entity: Parser[Entity]
+  def entity: Parser[Identifier]
   def pathExpression: Parser[Expression]
 }

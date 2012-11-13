@@ -20,6 +20,7 @@
 package org.neo4j.cypher
 
 import internal.commands._
+import expressions._
 import org.junit.Assert._
 import java.lang.String
 import scala.collection.JavaConverters._
@@ -35,7 +36,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
   @Test def shouldGetReferenceNode() {
     val query = Query.
       start(NodeById("n", Literal(0))).
-      returns(ReturnItem(Entity("n"), "n"))
+      returns(ReturnItem(Identifier("n"), "n"))
 
     val result = execute(query)
     assertEquals(List(refNode), result.columnAs[Node]("n").toList)
@@ -47,7 +48,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
 
     val query = Query.
       start(RelationshipById("r", Literal(0))).
-      returns(ReturnItem(Entity("r"), "r"))
+      returns(ReturnItem(Identifier("r"), "r"))
 
     val result = execute(query)
     assertEquals(List(r), result.columnAs[Relationship]("r").toList)
@@ -66,7 +67,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     val query = Query.
       start(NodeById("node", n1.getId, n2.getId)).
       where(RegularExpression(Property("node", "name"), Literal("And.*"))).
-      returns(ReturnItem(Entity("node"), "node"))
+      returns(ReturnItem(Identifier("node"), "node"))
 
     val result = execute(query)
     assertEquals(List(n1), result.columnAs[Node]("node").toList)
@@ -87,7 +88,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
 
     val query = Query.
       start(NodeById("node", node.getId)).
-      returns(ReturnItem(Entity("node"), "node"))
+      returns(ReturnItem(Identifier("node"), "node"))
 
     val result = execute(query)
     assertEquals(List(node), result.columnAs[Node]("node").toList)
@@ -99,7 +100,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
 
     val query = Query.
       start(RelationshipById("rel", rel.getId)).
-      returns(ReturnItem(Entity("rel"), "rel"))
+      returns(ReturnItem(Identifier("rel"), "rel"))
 
     val result = execute(query)
     assertEquals(List(rel), result.columnAs[Relationship]("rel").toList)
@@ -110,7 +111,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
 
     val query = Query.
       start(NodeById("node", refNode.getId, node.getId)).
-      returns(ReturnItem(Entity("node"), "node"))
+      returns(ReturnItem(Identifier("node"), "node"))
 
     val result = execute(query)
     assertEquals(List(refNode, node), result.columnAs[Node]("node").toList)
@@ -141,7 +142,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
       start(NodeById("start", start.getId)).
       matches(RelatedTo("start", "a", "rel", "x", Direction.BOTH)).
       where(Equals(Property("a", "name"), Literal(name))).
-      returns(ReturnItem(Entity("a"), "a"))
+      returns(ReturnItem(Identifier("a"), "a"))
 
     val result = execute(query)
     assertEquals(List(a2), result.columnAs[Node]("a").toList)
@@ -158,7 +159,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
       start(NodeById("start", start.getId)).
       matches(RelatedTo("start", "a", "r", "KNOWS", Direction.BOTH)).
       where(Equals(Property("r", "name"), Literal("monkey"))).
-      returns(ReturnItem(Entity("a"), "a"))
+      returns(ReturnItem(Identifier("a"), "a"))
 
     val result = execute(query)
     assertEquals(List(a), result.columnAs[Node]("a").toList)
@@ -170,7 +171,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
 
     val query = Query.
       start(NodeById("n1", n1.getId), NodeById("n2", n2.getId)).
-      returns(ReturnItem(Entity("n1"), "n1"), ReturnItem(Entity("n2"), "n2"))
+      returns(ReturnItem(Identifier("n1"), "n1"), ReturnItem(Identifier("n2"), "n2"))
 
     val result = execute(query)
 
@@ -185,7 +186,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     val query = Query.
       start(NodeById("n1", n1.getId)).
       matches(RelatedTo("n1", "n2", "rel", "KNOWS", Direction.OUTGOING)).
-      returns(ReturnItem(Entity("n1"), "n1"), ReturnItem(Entity("n2"), "n2"))
+      returns(ReturnItem(Identifier("n1"), "n1"), ReturnItem(Identifier("n2"), "n2"))
 
     val result = execute(query)
 
@@ -202,7 +203,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     val query = Query.
       start(NodeById("start", n1.getId)).
       matches(RelatedTo("start", "x", "rel", "KNOWS", Direction.OUTGOING)).
-      returns(ReturnItem(Entity("x"), "x"))
+      returns(ReturnItem(Identifier("x"), "x"))
 
     val result = execute(query)
 
@@ -219,7 +220,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     val query = Query.
       start(NodeById("start", n1.getId)).
       matches(RelatedTo("start", "x", "rel", "KNOWS", Direction.OUTGOING)).
-      returns(ReturnItem(Entity("x"), "x"), ReturnItem(Entity("start"), "start"))
+      returns(ReturnItem(Identifier("x"), "x"), ReturnItem(Identifier("start"), "start"))
 
     val result = execute(query)
 
@@ -230,7 +231,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     val query = Query.
       start(NodeById("start", refNode.getId)).
       where(Equals(Literal(1), Literal(0))).
-      returns(ReturnItem(Entity("start"), "start"))
+      returns(ReturnItem(Identifier("start"), "start"))
 
     val result = execute(query)
   }
@@ -242,14 +243,16 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     relate(n1, n2, "KNOWS")
     relate(n2, n3, "FRIEND")
 
-    val query = Query.
-      start(NodeById("start", n1.getId)).
-      matches(
-      RelatedTo("start", "a", "rel", "KNOWS", Direction.OUTGOING),
-      RelatedTo("a", "b", "rel2", "FRIEND", Direction.OUTGOING)).
-      returns(ReturnItem(Entity("b"), "b"))
+    val result = parseAndExecute("start n=node(1) match n-->a-->b RETURN b").toList
 
-    val result = execute(query)
+//    val query = Query.
+//      start(NodeById("start", n1.getId)).
+//      matches(
+//      RelatedTo("start", "a", "rel", "KNOWS", Direction.OUTGOING),
+//      RelatedTo("a", "b", "rel2", "FRIEND", Direction.OUTGOING)).
+//      returns(ReturnItem(Identifier("b"), "b"))
+//
+//    val result = execute(query)
 
     assertEquals(List(Map("b" -> n3)), result.toList)
   }
@@ -263,7 +266,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
 
     val query = Query.
       start(NodeByIndex("n", idxName, Literal(key), Literal(value))).
-      returns(ReturnItem(Entity("n"), "n"))
+      returns(ReturnItem(Identifier("n"), "n"))
 
     val result = execute(query)
 
@@ -279,7 +282,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
 
     val query = Query.
       start(NodeByIndexQuery("n", idxName, Literal(key + ":" + value))).
-      returns(ReturnItem(Entity("n"), "n"))
+      returns(ReturnItem(Identifier("n"), "n"))
 
     val result = execute(query)
 
@@ -294,7 +297,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
 
     val query = Query.
       start(NodeByIndex("n", idxName, Literal(key), ParameterExpression("value"))).
-      returns(ReturnItem(Entity("n"), "n"))
+      returns(ReturnItem(Identifier("n"), "n"))
 
     val result = execute(query, "value" -> "Andres")
 
@@ -310,7 +313,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
 
     val query = Query.
       start(NodeByIndexQuery("n", idxName, Literal(key + ":andr*"))).
-      returns(ReturnItem(Entity("n"), "n"))
+      returns(ReturnItem(Identifier("n"), "n"))
 
     val result = execute(query)
 
@@ -326,7 +329,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
       where(Or(
       Equals(Property("n", "name"), Literal("boy")),
       Equals(Property("n", "name"), Literal("girl")))).
-      returns(ReturnItem(Entity("n"), "n"))
+      returns(ReturnItem(Identifier("n"), "n"))
 
     val result = execute(query)
 
@@ -348,7 +351,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
       And(
         Equals(Property("n", "animal"), Literal("cow")),
         Equals(Property("n", "food"), Literal("grass"))))).
-      returns(ReturnItem(Entity("n"), "n"))
+      returns(ReturnItem(Identifier("n"), "n"))
 
     val result = execute(query)
 
@@ -389,7 +392,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
       start(NodeById("n", n1.getId, n4.getId)).
       matches(RelatedTo("n", "x", "rel", Seq(), Direction.OUTGOING, false, True())).
       where(Equals(Property("n", "animal"), Property("x", "animal"))).
-      returns(ReturnItem(Entity("n"), "n"), ReturnItem(Entity("x"), "x"))
+      returns(ReturnItem(Identifier("n"), "n"), ReturnItem(Identifier("x"), "x"))
 
     val result = execute(query)
 
@@ -410,7 +413,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     val query = Query.
       start(NodeById("n", n1.getId, n2.getId, n3.getId, n4.getId, n5.getId)).
       where(LessThan(Property("n", "x"), Literal(100))).
-      returns(ReturnItem(Entity("n"), "n"))
+      returns(ReturnItem(Identifier("n"), "n"))
 
     val result = execute(query)
 
@@ -426,7 +429,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
       where(And(
       LessThan(Property("n", "x"), Literal("Z")),
       LessThan(Property("n", "x"), Literal('Z')))).
-      returns(ReturnItem(Entity("n"), "n"))
+      returns(ReturnItem(Identifier("n"), "n"))
 
     val result = execute(query)
 
@@ -443,7 +446,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
       start(NodeById("a", refNode.getId)).
       matches(RelatedTo("a", "b", "rel", Seq(), Direction.OUTGOING, false, True())).
       aggregation(CountStar()).
-      returns(ReturnItem(Entity("a"), "a"), ReturnItem(CountStar(), "count(*)"))
+      returns(ReturnItem(Identifier("a"), "a"), ReturnItem(CountStar(), "count(*)"))
 
     val result = execute(query)
 
@@ -484,7 +487,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     val query = Query.
       start(NodeById("start", nodeIds: _*)).
       limit(2).
-      returns(ReturnItem(Entity("start"), "start"))
+      returns(ReturnItem(Identifier("start"), "start"))
 
     val result = execute(query)
 
@@ -498,7 +501,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
       start(NodeById("start", nodeIds: _*)).
       orderBy(SortItem(Property("start", "name"), true)).
       skip(2).
-      returns(ReturnItem(Entity("start"), "start"))
+      returns(ReturnItem(Identifier("start"), "start"))
 
     val result = execute(query)
 
@@ -512,7 +515,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
       start(NodeById("start", nodeIds: _*)).
       orderBy(SortItem(Property("start", "name"), true)).
       skip("skippa").
-      returns(ReturnItem(Entity("start"), "start"))
+      returns(ReturnItem(Identifier("start"), "start"))
 
     val result = execute(query, "skippa" -> 2)
 
@@ -527,7 +530,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
       orderBy(SortItem(Property("start", "name"), true)).
       limit(2).
       skip(2).
-      returns(ReturnItem(Entity("start"), "start"))
+      returns(ReturnItem(Identifier("start"), "start"))
 
     val result = execute(query)
 
@@ -542,7 +545,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
       orderBy(SortItem(Property("start", "name"), true)).
       limit("l").
       skip("s").
-      returns(ReturnItem(Entity("start"), "start"))
+      returns(ReturnItem(Identifier("start"), "start"))
 
     val result = execute(query, "l" -> 2, "s" -> 2)
 
@@ -590,8 +593,8 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     val query = Query.
       start(NodeById("n", 1)).
       matches(RelatedTo("n", "x", "r", Seq(), Direction.OUTGOING, false, True())).
-      where(Equals(RelationshipTypeFunction(Entity("r")), Literal("KNOWS"))).
-      returns(ReturnItem(Entity("x"), "x"))
+      where(Equals(RelationshipTypeFunction(Identifier("r")), Literal("KNOWS"))).
+      returns(ReturnItem(Identifier("x"), "x"))
 
     val result = execute(query)
 
@@ -603,12 +606,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     relate("A" -> "KNOWS" -> "B")
     relate("A" -> "HATES" -> "C")
 
-    val query = Query.
-      start(NodeById("n", 1)).
-      matches(RelatedTo("n", "x", "r", Seq(), Direction.OUTGOING, false, True())).
-      returns(ReturnItem(RelationshipTypeFunction(Entity("r")), "type(r)"))
-
-    val result = execute(query)
+    val result = parseAndExecute("start n=node(1) match n-[r]->x return type(r)")
 
     assertEquals(List("KNOWS", "HATES"), result.columnAs[String]("type(r)").toList)
   }
@@ -660,8 +658,8 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     val query = Query.
       start(NodeById("n", 1)).
       matches(RelatedTo("n", "x", "r", Seq(), Direction.OUTGOING, false, True())).
-      where(Or(Equals(RelationshipTypeFunction(Entity("r")), Literal("KNOWS")), Equals(RelationshipTypeFunction(Entity("r")), Literal("HATES")))).
-      returns(ReturnItem(Entity("x"), "x"))
+      where(Or(Equals(RelationshipTypeFunction(Identifier("r")), Literal("KNOWS")), Equals(RelationshipTypeFunction(Identifier("r")), Literal("HATES")))).
+      returns(ReturnItem(Identifier("x"), "x"))
 
     val result = execute(query)
 
@@ -672,12 +670,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     createNodes("A", "B")
     val r = relate("A" -> "KNOWS" -> "B")
 
-    val query = Query.
-      start(NodeById("a", 1)).
-      namedPaths(NamedPath("p", RelatedTo("a", "b", "rel", Seq(), Direction.OUTGOING, false, True()))).
-      returns(ReturnItem(Entity("p"), "p")) //  new CypherParser().parse("start a=(1) match p=(a-->b) return p")
-
-    val result = execute(query)
+    val result = parseAndExecute("start a = node(1) match p=a-->b return p")
 
     assertEquals(List(PathImpl(node("A"), r, node("B"))), result.columnAs[Path]("p").toList)
   }
@@ -687,15 +680,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     val r1 = relate("A" -> "KNOWS" -> "B")
     val r2 = relate("B" -> "KNOWS" -> "C")
 
-
-    val query = Query.
-      start(NodeById("a", 1)).
-      namedPaths(NamedPath("p",
-      RelatedTo("a", "b", "rel1", Seq(), Direction.OUTGOING, false, True()),
-      RelatedTo("b", "c", "rel2", Seq(), Direction.OUTGOING, false, True()))).
-      returns(ReturnItem(Entity("p"), "p")) //  new CypherParser().parse("start a=(1) match p=(a-->b) return p")
-
-    val result = execute(query)
+    val result = parseAndExecute("start a = node(1) match p = a-[rel1]->b-[rel2]->c return p")
 
     assertEquals(List(PathImpl(node("A"), r1, node("B"), r2, node("C"))), result.columnAs[Path]("p").toList)
   }
@@ -757,12 +742,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     relate(b, c, "rel")
     relate(c, d, "rel")
 
-    val query = Query.start(NodeById("pA", a.getId), NodeById("pB", d.getId)).
-      namedPaths(NamedPath("p", VarLengthRelatedTo("x", "pA", "pB", Some(1), Some(5), "rel", Direction.OUTGOING))).
-      where(AllInIterable(NodesFunction(Entity("p")), "i", Equals(Property("i", "foo"), Literal("bar")))).
-      returns(ReturnItem(Entity("pB"), "pB"))
-
-    val result = execute(query)
+    val result = parseAndExecute("start pA = node(1), pB=node(4) match p = pA-[:rel*1..5]->pB WHERE all(i in nodes(p) where i.foo = 'bar') return pB")
 
     assertEquals(List(d), result.columnAs[Node]("pB").toList)
   }
@@ -775,11 +755,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     val r1 = relate(a, b, "rel")
     val r2 = relate(b, c, "rel")
 
-    val query = Query.start(NodeById("pA", a.getId)).
-      namedPaths(NamedPath("p", VarLengthRelatedTo("x", "pA", "pB", Some(2), Some(2), "rel", Direction.OUTGOING))).
-      returns(ReturnItem(RelationshipFunction(Entity("p")), "RELATIONSHIPS(p)"))
-
-    val result = execute(query)
+    val result = parseAndExecute("start a = node(1) match p = a-[:rel*2..2]->b return RELATIONSHIPS(p)")
 
     assertEquals(List(r1, r2), result.columnAs[Node]("RELATIONSHIPS(p)").toList.head)
   }
@@ -799,16 +775,16 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
   }
 
   @Test def aVarLengthPathOfLengthZero() {
-    createNodes("A", "B", "C")
-    relate("A" -> "KNOWS" -> "B")
-    relate("B" -> "KNOWS" -> "C")
+    val a = createNode()
+    val b = createNode()
+    relate(a,b)
 
-    val result = parseAndExecute("start a=node(1) match a-[*0..1]->b return a,b")
+    val result = parseAndExecute("start a=node(1) match p=a-[*0..1]->b return a,b, length(p) as l")
 
     assertEquals(
       Set(
-        Map("a" -> node("A"), "b" -> node("B")),
-        Map("a" -> node("A"), "b" -> node("A"))),
+        Map("a" -> a, "b" -> a, "l"->0),
+        Map("a" -> a, "b" -> b, "l"->1)),
       result.toSet)
   }
 
@@ -887,7 +863,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     val query = Query.
       start(NodeById("a", 1), NodeById("b", 2)).
       matches(ShortestPath("p", "a", "b", Seq(), Direction.BOTH, Some(15), false, true, None)).
-      returns(ReturnItem(Entity("p"), "p"))
+      returns(ReturnItem(Identifier("p"), "p"))
 
     val result = execute(query).toList.head("p").asInstanceOf[Path]
 
@@ -905,7 +881,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     val query = Query.
       start(NodeById("a", 1), NodeById("b", 2)).
       matches(ShortestPath("p", "a", "b", Seq(), Direction.BOTH, None, false, true, None)).
-      returns(ReturnItem(Entity("p"), "p"))
+      returns(ReturnItem(Identifier("p"), "p"))
 
     //Checking that we don't get an exception
     execute(query).toList
@@ -922,11 +898,11 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
       NodeById("pD", ParameterExpression("0")),
       NodeById("pE", ParameterExpression("1"))).
       returns(
-      ReturnItem(Entity("pA"), "pA"),
-      ReturnItem(Entity("pB"), "pB"),
-      ReturnItem(Entity("pC"), "pC"),
-      ReturnItem(Entity("pD"), "pD"),
-      ReturnItem(Entity("pE"), "pE"))
+      ReturnItem(Identifier("pA"), "pA"),
+      ReturnItem(Identifier("pB"), "pB"),
+      ReturnItem(Identifier("pC"), "pC"),
+      ReturnItem(Identifier("pD"), "pD"),
+      ReturnItem(Identifier("pE"), "pE"))
 
     val result = execute(query,
       "a" -> Seq[Long](1),
@@ -944,7 +920,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
 
     val query = Query.
       start(NodeById("pA", ParameterExpression("a"))).
-      returns(ReturnItem(Entity("pA"), "pA"))
+      returns(ReturnItem(Identifier("pA"), "pA"))
 
     execute(query, "a" -> "Andres").toList
   }
@@ -964,7 +940,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     val query = Query.
       start(NodeById("a", 1)).
       where(Equals(Property("a", "name"), ParameterExpression("name")))
-      .returns(ReturnItem(Entity("a"), "a"))
+      .returns(ReturnItem(Identifier("a"), "a"))
 
     assert(0 === execute(query, "name" -> "Tobias").toList.size)
     assert(1 === execute(query, "name" -> "Andres").toList.size)
@@ -1111,7 +1087,7 @@ return foaf""")
   @Test(expected = classOf[ParameterNotFoundException]) def shouldComplainWhenMissingParams() {
     val query = Query.
       start(NodeById("pA", ParameterExpression("a"))).
-      returns(ReturnItem(Entity("pA"), "pA"))
+      returns(ReturnItem(Identifier("pA"), "pA"))
 
     execute(query).toList
   }
@@ -1224,9 +1200,7 @@ return a""")
   @Test def shouldSupportColumnRenaming() {
     val a = createNode(Map("name" -> "Andreas"))
 
-    val result: ExecutionResult = parseAndExecute( """
-start a  = node(1)
-return a as OneLove""")
+    val result = parseAndExecute("start a = node(1) return a as OneLove")
 
     assert(List(a) === result.columnAs[Node]("OneLove").toList)
   }
@@ -1337,8 +1311,7 @@ return p""")
 start root  = node(1)
 match p = root-[*]->leaf
 where not(leaf-->())
-return p, leaf
-                                  """)
+return p, leaf""")
 
     assert(List(
       Map("leaf" -> b, "p" -> PathImpl(a, rab, b)),
@@ -1377,8 +1350,7 @@ return leaf, stuff
     val result = parseAndExecute( """
 start a  = node(1), other = node(2,3)
 where not(a-->other)
-return other
-                                  """)
+return other""")
 
     assert(List(Map("other" -> c)) === result.toList)
   }
@@ -1769,12 +1741,12 @@ RETURN x0.name?
     val secondQ = Query.
       start().
       where(Equals(Property("x", "foo"), Literal(42))).
-      returns(ReturnItem(Entity("x"), "x"))
+      returns(ReturnItem(Identifier("x"), "x"))
 
     val q = Query.
       start(NodeById("x", 1, 2)).
       tail(secondQ).
-      returns(ReturnItem(Entity("x"), "x"))
+      returns(ReturnItem(Identifier("x"), "x"))
 
     val result = execute(q, "wut?" -> "wOOt!")
 
@@ -1786,8 +1758,8 @@ RETURN x0.name?
     // START x = node(1) WITH count(*) as apa WHERE apa = 1 RETURN x
     val secondQ = Query.
       start().
-      where(Equals(Entity("apa"), Literal(1))).
-      returns(ReturnItem(Entity("apa"), "apa"))
+      where(Equals(Identifier("apa"), Literal(1))).
+      returns(ReturnItem(Identifier("apa"), "apa"))
 
     val q = Query.
       start(NodeById("x", 0)).
@@ -1827,7 +1799,7 @@ RETURN x0.name?
   }
 
   @Test def createEngineWithSpecifiedParserVersion() {
-    val db = new ImpermanentGraphDatabase(Map[String, String]("cypher_parser_version" -> "1.6").asJava)
+    val db = new ImpermanentGraphDatabase(Map[String, String]("cypher_parser_version" -> "1.7").asJava)
     val engine = new ExecutionEngine(db)
 
     try {
@@ -1857,12 +1829,6 @@ RETURN x0.name?
     val resultWithLimit = parseAndExecute(q + " limit 1000")
 
     assert(resultWithLimit.toList === resultWithoutLimit.toList)
-  }
-
-  @Test def should_be_able_to_figure_out_that_aggregations_in_order_by() {
-    val q = "start user=node({0}) return user, avg(user.age) order by avg(user.age) desc, count(*) desc"
-
-    parseAndExecute(q)
   }
 
   @Test def return_all_identifiers() {
@@ -2028,8 +1994,12 @@ RETURN x0.name?
     val b = createNode()
     val r = relate(a, b)
 
-    val result = parseAndExecute("START a=node(1), b=node(2) match a-->b RETURN a-[*]->b").toList
-    assert(result === List(Map("a-[*]->b" -> List(PathImpl(a, r, b)))))
+    val resultPath = parseAndExecute("START a=node(1), b=node(2) RETURN a-[*]->b as path")
+      .toList.head("path").asInstanceOf[List[Path]].head
+
+    assert(resultPath.startNode() === a)
+    assert(resultPath.endNode() === b)
+    assert(resultPath.lastRelationship() === r)
   }
 
   @Test
@@ -2215,7 +2185,12 @@ RETURN x0.name?
   }
 
   @Test
-  def literal_collection() {
+  def should_be_able_to_return_predicate_result() {
+    val result = parseAndExecute("START a=node(0) return id(a) = 0, a is null").toList
+    assert(result === List(Map("id(a) = 0" -> true, "a is null" -> false)))
+  }
+
+  @Test def literal_collection() {
     val result = parseAndExecute("START a=node(0) return length([[],[]]+[[]]) as l").toList
     assert(result === List(Map("l" -> 3)))
   }
@@ -2248,4 +2223,66 @@ RETURN x0.name?
     assert(result.toList === List(3,4,5))
   }
 
+  @Test
+  def empty_collect_should_not_contain_null() {
+    val result = parseAndExecute("START n=node(0) MATCH n-[?:NOT_EXIST]->x RETURN n, collect(x)")
+
+    assert(result.toList === List(Map("n" -> refNode, "collect(x)" -> List())))
+  }
+
+  @Test
+  def params_should_survive_with() {
+    val result = parseAndExecute("START n=node(0) WITH collect(n) as coll where length(coll)={id} RETURN coll", "id"->1)
+
+    assert(result.toList === List(Map("coll" -> List(refNode))))
+  }
+
+  @Test
+  def head_on_empty_coll_should_return_null() {
+    val result = parseAndExecute("START n=node(0) RETURN head([])")
+
+    assert(result.toList === List(Map("head([])" -> null)))
+  }
+
+  @Test
+  def tail_on_empty_coll_should_return_empty_coll() {
+    val result = parseAndExecute("START n=node(0) RETURN tail([])")
+
+    assert(result.toList === List(Map("tail([])" -> List())))
+  }
+
+  @Test
+  def nodes_named_r_should_not_pose_a_problem() {
+    val a = createNode()
+    val r = createNode("foo"->"bar")
+    val b = createNode()
+
+    relate(a,r)
+    relate(r,b)
+
+    val result = parseAndExecute("START a=node(1) MATCH a-->r-->b WHERE r.foo = 'bar' RETURN b")
+
+    assert(result.toList === List(Map("b" -> b)))
+  }
+
+  @Test
+  def can_rewrite_has_property() {
+    val a = createNode()
+    val r = createNode("foo"->"bar")
+    val b = createNode()
+
+    relate(a,r)
+    relate(r,b)
+
+    val result = parseAndExecute("START a=node(1) MATCH a-->r-->b WHERE has(r.foo) RETURN b")
+
+    assert(result.toList === List(Map("b" -> b)))
+  }
+
+  @Test
+  def can_use_identifiers_created_inside_the_foreach() {
+    val result = parseAndExecute("start n=node(0) foreach (x in [1,2,3] : create a= { name: 'foo'}  set a.id = x)")
+
+    assert(result.toList === List())
+  }
 }

@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.parser.v1_7
 import org.neo4j.cypher.SyntaxException
 import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.commands._
+import expressions.Identifier._
 
 trait MatchClause extends Base with Expressions {
   val namer = new NodeNamer
@@ -32,11 +33,12 @@ trait MatchClause extends Base with Expressions {
 
   def correctMatch = ignoreCase("match") ~> comaList(path) ^^ {
     case matching =>
-      val unamedPaths: Seq[Pattern] = matching.filter(_.isInstanceOf[List[Pattern]]).map(_.asInstanceOf[List[Pattern]]).flatten ++ matching.filter(_.isInstanceOf[Pattern]).map(_.asInstanceOf[Pattern])
-      val namedPaths: Seq[NamedPath] = matching.filter(_.isInstanceOf[NamedPath]).map(_.asInstanceOf[NamedPath])
+      val namedPaths = matching.filter(_.isInstanceOf[NamedPath]).map(_.asInstanceOf[NamedPath])
+      val patterns = matching.filter(_.isInstanceOf[List[Pattern]]).map(_.asInstanceOf[List[Pattern]]).flatten ++
+                     matching.filter(_.isInstanceOf[Pattern]).map(_.asInstanceOf[Pattern]) ++
+                     namedPaths.flatMap(_.pathPattern)
 
-      (unamedPaths, namedPaths)
-
+      (patterns.distinct, namedPaths)
   }
 
   def path: Parser[Any] =
@@ -58,7 +60,7 @@ trait MatchClause extends Base with Expressions {
   def singlePathSegment: Parser[Pattern] = onlyOne("expected single path segment", relatedTos)
 
   def optionRelName(relName: String): Option[String] =
-    if (relName.startsWith("  UNNAMED"))
+    if (notNamed(relName))
       None
     else
       Some(relName)

@@ -24,6 +24,7 @@ import org.scalatest.Assertions
 import org.junit.Test
 import org.neo4j.graphdb.{DynamicRelationshipType, Direction}
 import org.neo4j.cypher.internal.commands.True
+import org.neo4j.cypher.internal.pipes.ExecutionContext
 
 class HistoryTest extends GraphDatabaseTestBase with Assertions {
 
@@ -35,7 +36,7 @@ class HistoryTest extends GraphDatabaseTestBase with Assertions {
     val pr = a.relateTo("r", b, Seq(), Direction.BOTH, false, True())
     val r = relate(graph.getReferenceNode, graph.getReferenceNode, "rel")
     val mp = new MatchingPair(pr, r)
-    val history = new InitialHistory(Map()).add(mp)
+    val history = new InitialHistory(ExecutionContext.empty).add(mp)
 
     assert(history.filter(Set[PatternRelationship](pr)) === Set())
   }

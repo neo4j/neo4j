@@ -25,7 +25,7 @@ import org.neo4j.graphmatching.{PatternMatcher => SimplePatternMatcher, PatternN
 import collection.JavaConverters._
 import org.neo4j.cypher.internal.commands.{Predicate, True}
 import org.neo4j.cypher.internal.symbols.SymbolTable
-import org.neo4j.cypher.internal.pipes.MutableMaps
+import org.neo4j.cypher.internal.pipes.{ExecutionContext, MutableMaps}
 
 class SimplePatternMatcherBuilder(pattern: PatternGraph, predicates: Seq[Predicate], symbolTable: SymbolTable) extends MatcherBuilder {
   def createPatternNodes: immutable.Map[String, SimplePatternNode] = {
@@ -77,12 +77,13 @@ class SimplePatternMatcherBuilder(pattern: PatternGraph, predicates: Seq[Predica
     (patternNodes, patternRels)
   }
 
-  def getMatches(sourceRow: Map[String, Any]) = {
-    val (patternNodes, patternRels) = setAssociations(sourceRow)
-    val result = MutableMaps.create(sourceRow)
-    val validPredicates = predicates.filter(p => symbolTable.satisfies(p.dependencies))
+  def getMatches(ctx: ExecutionContext) = {
+    val (patternNodes, patternRels) = setAssociations(ctx)
+    val validPredicates = predicates.filter(p => p.checkTypes(symbolTable))
     val startPoint = patternNodes.values.find(_.getAssociation != null).get
-    SimplePatternMatcher.getMatcher.`match`(startPoint, startPoint.getAssociation).asScala.map(patternMatch => {
+    SimplePatternMatcher.getMatcher.`match`(startPoint, startPoint.getAssociation).asScala.flatMap(patternMatch => {
+      val result = ctx.clone
+
       patternNodes.foreach {
         case (key, pn) => result += key -> patternMatch.getNodeFor(pn)
       }
@@ -90,11 +91,8 @@ class SimplePatternMatcherBuilder(pattern: PatternGraph, predicates: Seq[Predica
         case (key, pr) => result += key -> patternMatch.getRelationshipFor(pr)
       }
 
-      if (validPredicates.forall(p => p.isMatch(result)))
-        MutableMaps.create(result)
-      else
-        null
-    }).filter(_ != null)
+      Some(result).filter(r => validPredicates.forall(_.isMatch(r)))
+    })
   }
 }
 

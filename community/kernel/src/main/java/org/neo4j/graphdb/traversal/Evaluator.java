@@ -49,4 +49,30 @@ public interface Evaluator
      * down that path.
      */
     Evaluation evaluate( Path path );
+
+    /**
+     * Exposes an {@link Evaluator} as a {@link PathEvaluator}.
+     * @param <STATE> the type of state passed into the evaluator.
+     */
+    public static class AsPathEvaluator<STATE> implements PathEvaluator<STATE>
+    {
+        private final Evaluator evaluator;
+
+        public AsPathEvaluator( Evaluator evaluator )
+        {
+            this.evaluator = evaluator;
+        }
+
+        @Override
+        public Evaluation evaluate( Path path, BranchState<STATE> state )
+        {
+            return evaluator.evaluate( path );
+        }
+
+        @Override
+        public Evaluation evaluate( Path path )
+        {
+            return evaluator.evaluate( path );
+        }
+    }
 }

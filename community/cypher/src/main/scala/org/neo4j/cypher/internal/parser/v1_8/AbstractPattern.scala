@@ -20,9 +20,10 @@
 package org.neo4j.cypher.internal.parser.v1_8
 
 import org.neo4j.graphdb.Direction
-import org.neo4j.cypher.internal.commands.{Entity, Predicate, Expression}
 import collection.Map
 import org.neo4j.cypher.SyntaxException
+import org.neo4j.cypher.internal.commands.expressions.{Identifier, Expression}
+import org.neo4j.cypher.internal.commands.Predicate
 
 abstract sealed class AbstractPattern {
   def makeOutgoing:AbstractPattern
@@ -42,7 +43,8 @@ abstract class PatternWithPathName(val pathName: String) extends AbstractPattern
 }
 
 
-case class ParsedEntity(expression: Expression,
+case class ParsedEntity(name: String,
+                        expression: Expression,
                         props: Map[String, Expression],
                         predicate: Predicate) extends AbstractPattern{
   def makeOutgoing = this
@@ -76,8 +78,8 @@ trait Turnable {
       case Direction.INCOMING => turn(start = end, end = start, dir = Direction.OUTGOING)
       case Direction.OUTGOING => this.asInstanceOf[AbstractPattern]
       case Direction.BOTH     => (start.expression, end.expression) match {
-        case (Entity(a), Entity(b)) if a < b  => this.asInstanceOf[AbstractPattern]
-        case (Entity(a), Entity(b)) if a >= b => turn(start = end, end = start, dir = dir)
+        case (Identifier(a), Identifier(b)) if a < b  => this.asInstanceOf[AbstractPattern]
+        case (Identifier(a), Identifier(b)) if a >= b => turn(start = end, end = start, dir = dir)
         case _                                => this.asInstanceOf[AbstractPattern]
       }
     }

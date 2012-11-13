@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.executionplan.builders
 import org.neo4j.cypher.internal.executionplan.{ExecutionPlanInProgress, PlanBuilder}
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.cypher.internal.pipes.{Pipe, ExecuteUpdateCommandsPipe, TransactionStartPipe}
-import org.neo4j.cypher.internal.mutation.{CreateUniqueAction, UpdateAction}
+import org.neo4j.cypher.internal.mutation.UpdateAction
 import org.neo4j.cypher.internal.commands.StartItem
 
 class UpdateActionBuilder(db: GraphDatabaseService) extends PlanBuilder {
@@ -50,26 +50,30 @@ class UpdateActionBuilder(db: GraphDatabaseService) extends PlanBuilder {
     )
   }
 
-
   private def extractValidStartItems(plan: ExecutionPlanInProgress, p: Pipe): Seq[QueryToken[StartItem]] = {
-    plan.query.start.filter(cmd => cmd.unsolved && cmd.token.isInstanceOf[UpdateAction] && p.symbols.satisfies(cmd.token.asInstanceOf[UpdateAction].dependencies))
+    plan.query.start.filter(cmd => cmd.unsolved && cmd.token.mutating && cmd.token.symbolDependenciesMet(p.symbols))
   }
 
   private def extractValidUpdateActions(plan: ExecutionPlanInProgress, p: Pipe): Seq[QueryToken[UpdateAction]] = {
-    plan.query.updates.filter(cmd => cmd.unsolved && p.symbols.satisfies(cmd.token.dependencies))
+    plan.query.updates.filter(cmd => cmd.unsolved && cmd.token.symbolDependenciesMet(p.symbols))
   }
 
   def canWorkWith(plan: ExecutionPlanInProgress) =
-    extractValidUpdateActions(plan, plan.pipe).nonEmpty ||
-      extractValidStartItems(plan, plan.pipe).nonEmpty
+    {
+      val uas = extractValidUpdateActions(plan, plan.pipe).toSeq
+      val sitems = extractValidStartItems(plan, plan.pipe).toSeq
+
+      uas.nonEmpty || sitems.nonEmpty
+    }
+
 
   def priority = PlanBuilder.Mutation
 
   override def missingDependencies(plan: ExecutionPlanInProgress): Seq[String] = plan.query.updates.flatMap {
-    case Unsolved(cmd) => plan.pipe.symbols.missingDependencies(cmd.dependencies).map(_.name)
+    case Unsolved(cmd) => plan.pipe.symbols.missingSymbolTableDependencies(cmd)
     case _ => None
   } ++ plan.query.start.flatMap {
-    case Unsolved(cmd) if cmd.isInstanceOf[UpdateAction] => plan.pipe.symbols.missingDependencies(cmd.asInstanceOf[UpdateAction].dependencies).map(_.name)
+    case Unsolved(cmd) if cmd.mutating => plan.pipe.symbols.missingSymbolTableDependencies(cmd)
     case _ => None
   }
 }

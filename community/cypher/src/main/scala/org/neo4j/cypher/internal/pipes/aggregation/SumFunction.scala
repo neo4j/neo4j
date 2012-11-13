@@ -19,19 +19,20 @@
  */
 package org.neo4j.cypher.internal.pipes.aggregation
 
-import org.neo4j.cypher.internal.commands.Expression
-import collection.Map
+import org.neo4j.cypher.internal.commands.expressions.Expression
+import org.neo4j.cypher.internal.pipes.ExecutionContext
+import org.neo4j.cypher.internal.helpers.TypeSafeMathSupport
 
 class SumFunction(val value: Expression)
   extends AggregationFunction
-  with Plus
+  with TypeSafeMathSupport
   with NumericExpressionOnly {
 
   def name = "SUM"
 
   var result: Any = 0
 
-  def apply(data: Map[String, Any]) {
+  def apply(data: ExecutionContext) {
     actOnNumber(value(data), (number) => {
       result = plus(result, number)
     })

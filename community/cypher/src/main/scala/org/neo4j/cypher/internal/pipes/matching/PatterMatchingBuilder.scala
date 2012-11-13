@@ -22,9 +22,10 @@ package org.neo4j.cypher.internal.pipes.matching
 import org.neo4j.graphdb.{Relationship, Node, Direction, PropertyContainer}
 import org.neo4j.cypher.internal.commands.Predicate
 import collection.Map
+import org.neo4j.cypher.internal.pipes.ExecutionContext
 
 class PatterMatchingBuilder(patternGraph: PatternGraph, predicates: Seq[Predicate]) extends MatcherBuilder {
-  def getMatches(sourceRow: Map[String, Any]): Traversable[Map[String, Any]] = {
+  def getMatches(sourceRow: ExecutionContext): Traversable[ExecutionContext] = {
     val bindings: Map[String, Any] = sourceRow.filter(_._2.isInstanceOf[PropertyContainer])
     val boundPairs: Map[String, MatchingPair] = extractBoundMatchingPairs(bindings)
 
@@ -34,7 +35,7 @@ class PatterMatchingBuilder(patternGraph: PatternGraph, predicates: Seq[Predicat
       map(patternGraph(_).asInstanceOf[PatternRelationship]).
       filter(_.dir == Direction.BOTH)
 
-    val mandatoryPattern: Traversable[Map[String, Any]] = if (undirectedBoundRelationships.isEmpty) {
+    val mandatoryPattern: Traversable[ExecutionContext] = if (undirectedBoundRelationships.isEmpty) {
       createPatternMatcher(boundPairs, false, sourceRow)
     } else {
       val boundRels: Seq[Map[String, MatchingPair]] = createListOfBoundRelationshipsWithHangingNodes(undirectedBoundRelationships, bindings)
@@ -66,8 +67,9 @@ class PatterMatchingBuilder(patternGraph: PatternGraph, predicates: Seq[Predicat
     cartesian(toList).map(_.reduceLeft(_ ++ _))
   }
 
-  private def createNullValuesForOptionalElements(matchedGraph: Map[String, Any]): Map[String, Null] = {
-    (patternGraph.keySet -- matchedGraph.keySet).map(_ -> null).toMap
+  private def createNullValuesForOptionalElements(matchedGraph: ExecutionContext): ExecutionContext = {
+    val m = (patternGraph.keySet -- matchedGraph.keySet).map(_ -> null).toMap
+    matchedGraph.newWith(m)
   }
 
   // This method takes  a Seq of Seq and produces the cartesian product of all inner Seqs
@@ -78,7 +80,7 @@ class PatterMatchingBuilder(patternGraph: PatternGraph, predicates: Seq[Predicat
         result.flatMap(r => element.map(e => e :: r))
     ).toSeq
 
-  private def createPatternMatcher(boundPairs: Map[String, MatchingPair], includeOptionals: Boolean, source: Map[String, Any]): Traversable[Map[String, Any]] = {
+  private def createPatternMatcher(boundPairs: Map[String, MatchingPair], includeOptionals: Boolean, source: ExecutionContext): Traversable[ExecutionContext] = {
     val patternMatcher = if (patternGraph.hasDoubleOptionals)
       new DoubleOptionalPatternMatcher(boundPairs, predicates, includeOptionals, source, patternGraph.doubleOptionalPaths)
     else

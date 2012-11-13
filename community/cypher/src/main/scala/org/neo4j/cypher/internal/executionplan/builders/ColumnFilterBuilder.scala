@@ -28,6 +28,7 @@ class ColumnFilterBuilder extends PlanBuilder {
   def apply(plan: ExecutionPlanInProgress) = {
     val q = plan.query
     val p = plan.pipe
+
     val isLastPipe = q.tail.isEmpty
 
     if (!isLastPipe && q.returns == Seq(Unsolved(AllIdentifiers()))) {
@@ -37,15 +38,22 @@ class ColumnFilterBuilder extends PlanBuilder {
     } else {
 
       val returnItems = getReturnItems(q.returns, p.symbols)
-      val filterPipe = new ColumnFilterPipe(p, returnItems, isLastPipe)
 
-      val resultPipe = if (filterPipe.symbols != p.symbols || isLastPipe) {
+      val expressionsToExtract = returnItems.map {
+        case ReturnItem(e, k, _) => k -> e
+      }.toMap
+
+      val newPlan = ExtractBuilder.extractIfNecessary(plan, expressionsToExtract)
+
+      val filterPipe = new ColumnFilterPipe(newPlan.pipe, returnItems)
+
+      val resultPipe = if (filterPipe.symbols != p.symbols) {
         filterPipe
       } else {
         p
       }
 
-      val resultQ = q.copy(returns = q.returns.map(_.solve))
+      val resultQ = newPlan.query.copy(returns = q.returns.map(_.solve))
 
       plan.copy(pipe = resultPipe, query = resultQ)
     }
@@ -63,10 +71,9 @@ class ColumnFilterBuilder extends PlanBuilder {
   def priority = PlanBuilder.ColumnFilter
 
   private def getReturnItems(q: Seq[QueryToken[ReturnColumn]], symbols: SymbolTable): Seq[ReturnItem] = q.map(_.token).flatMap {
-    case x: ReturnItem => Seq(x)
-    case x: AllIdentifiers =>
-      val expressions = x.expressions(symbols)
-      val map = expressions.map(e => ReturnItem(e, e.identifier.name))
-      map
+    case x: ReturnItem     => Seq(x)
+    case x: AllIdentifiers => x.expressions(symbols).map {
+      case (n, e) => ReturnItem(e, n)
+    }
   }
 }

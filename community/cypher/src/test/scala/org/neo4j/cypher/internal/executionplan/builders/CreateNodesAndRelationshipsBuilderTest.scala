@@ -26,6 +26,7 @@ import org.hamcrest.core.IsInstanceOf.instanceOf
 import org.hamcrest.core.IsNot.not
 import org.neo4j.cypher.internal.pipes.{TransactionStartPipe, ExecuteUpdateCommandsPipe}
 import org.neo4j.cypher.internal.commands._
+import expressions.{HeadFunction, Identifier}
 
 class CreateNodesAndRelationshipsBuilderTest extends BuilderTest {
 
@@ -50,8 +51,8 @@ class CreateNodesAndRelationshipsBuilderTest extends BuilderTest {
   @Test
   def full_path() {
     val q = PartiallySolvedQuery().copy(start = Seq(
-      Unsolved(CreateRelationshipStartItem("r1", (Entity("a"), Map()), (Entity("  UNNAMED1"), Map()), "KNOWS", Map())),
-      Unsolved(CreateRelationshipStartItem("r2", (Entity("b"), Map()), (Entity("  UNNAMED1"), Map()), "LOVES", Map()))))
+      Unsolved(CreateRelationshipStartItem("r1", (Identifier("a"), Map()), (Identifier("  UNNAMED1"), Map()), "KNOWS", Map())),
+      Unsolved(CreateRelationshipStartItem("r2", (Identifier("b"), Map()), (Identifier("  UNNAMED1"), Map()), "LOVES", Map()))))
 
 
     val startPipe = createPipe(Seq("a", "b"))
@@ -62,7 +63,7 @@ class CreateNodesAndRelationshipsBuilderTest extends BuilderTest {
   @Test
   def single_relationship_missing_nodes() {
     val q = PartiallySolvedQuery().copy(start = Seq(
-      Unsolved(CreateRelationshipStartItem("r", (Entity("a"), Map()), (Entity("b"), Map()), "LOVES", Map()))))
+      Unsolved(CreateRelationshipStartItem("r", (Identifier("a"), Map()), (Identifier("b"), Map()), "LOVES", Map()))))
 
     assertTrue("Should be able to build on this", builder.canWorkWith(plan(q)))
   }
@@ -70,7 +71,7 @@ class CreateNodesAndRelationshipsBuilderTest extends BuilderTest {
   @Test
   def single_relationship_missing_nodes_with_expression() {
     val q = PartiallySolvedQuery().copy(updates = Seq(
-      Unsolved(CreateRelationshipStartItem("r", (HeadFunction(Entity("p")), Map()), (Entity("b"), Map()), "LOVES", Map()))))
+      Unsolved(CreateRelationshipStartItem("r", (HeadFunction(Identifier("p")), Map()), (Identifier("b"), Map()), "LOVES", Map()))))
 
     assertFalse("Should not be able to build on this", builder.canWorkWith(plan(q)))
   }

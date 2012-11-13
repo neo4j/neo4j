@@ -48,7 +48,7 @@ import org.neo4j.kernel.impl.util.FileUtils;
  */
 // Deprecated because we want to make this internal. Users should use Setting<T> instead.
 @Deprecated
-public abstract class GraphDatabaseSetting<T> implements Setting
+public abstract class GraphDatabaseSetting<T> implements Setting<T>
 {
     // Deprecated because we want to move this out of the public API
     @Deprecated

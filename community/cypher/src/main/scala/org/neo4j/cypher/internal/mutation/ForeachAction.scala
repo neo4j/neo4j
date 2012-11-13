@@ -19,30 +19,20 @@
  */
 package org.neo4j.cypher.internal.mutation
 
-import org.neo4j.cypher.internal.commands.{IterableSupport, Expression}
-import org.neo4j.cypher.internal.symbols.AnyIterableType
+import org.neo4j.cypher.internal.commands.expressions.Expression
+import org.neo4j.cypher.internal.helpers.CollectionSupport
+import org.neo4j.cypher.internal.symbols.{AnyCollectionType, SymbolTable}
 import org.neo4j.cypher.internal.pipes.{QueryState, ExecutionContext}
 
-
-case class ForeachAction(collection: Expression, symbol: String, actions: Seq[UpdateAction])
+case class ForeachAction(collection: Expression, id: String, actions: Seq[UpdateAction])
   extends UpdateAction
-  with IterableSupport {
-  def dependencies = {
-    val ownIdentifiers = actions.flatMap(_.identifier)
-
-    val updateDeps = actions.flatMap(_.dependencies).
-      filterNot(_.name == symbol). //remove dependencies to the symbol we're introducing
-      filterNot(ownIdentifiers contains) //remove dependencies to identifiers we are introducing
-
-    collection.dependencies(AnyIterableType()) ++ updateDeps
-  }
-
+  with CollectionSupport {
   def exec(context: ExecutionContext, state: QueryState) = {
-    val before = context.get(symbol)
+    val before = context.get(id)
 
     val seq = makeTraversable(collection(context))
     seq.foreach(element => {
-      context.put(symbol, element)
+      context.put(id, element)
 
       // We do a fold left here to allow updates to introduce
       // symbols in each others context.
@@ -52,8 +42,8 @@ case class ForeachAction(collection: Expression, symbol: String, actions: Seq[Up
     })
 
     before match {
-      case None => context.remove(symbol)
-      case Some(old) => context.put(symbol, old)
+      case None      => context.remove(id)
+      case Some(old) => context.put(id, old)
     }
 
     Stream(context)
@@ -61,7 +51,22 @@ case class ForeachAction(collection: Expression, symbol: String, actions: Seq[Up
 
   def filter(f: (Expression) => Boolean) = Some(collection).filter(f).toSeq ++ actions.flatMap(_.filter(f))
 
-  def rewrite(f: (Expression) => Expression) = ForeachAction(f(collection), symbol, actions.map(_.rewrite(f)))
+  def rewrite(f: (Expression) => Expression) = ForeachAction(f(collection), id, actions.map(_.rewrite(f)))
 
-  def identifier = Seq.empty
+  def identifiers = Seq.empty
+
+  def assertTypes(symbols: SymbolTable) {
+    val t = collection.evaluateType(AnyCollectionType(), symbols).iteratedType
+
+    val innerSymbols: SymbolTable = symbols.add(id, t)
+
+    actions.foreach(_.assertTypes(innerSymbols))
+  }
+
+  def symbolTableDependencies = {
+    val updateActionIdentifiers: Set[String] = actions.flatMap(_.identifiers.map(_._1)).toSet
+    val updateActionsDeps = actions.flatMap(_.symbolTableDependencies).filterNot(_ == id).toSet
+    val collectionDeps = collection.symbolTableDependencies
+    (updateActionsDeps -- updateActionIdentifiers) ++ collectionDeps
+  }
 }

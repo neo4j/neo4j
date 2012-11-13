@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.pipes.aggregation
 
 import collection.Map
+import org.neo4j.cypher.internal.pipes.ExecutionContext
 
 /**
  * Base class for aggregation functions. The function is stateful
@@ -30,7 +31,7 @@ abstract class AggregationFunction {
   /**
    * Adds this data to the aggregated total.
    */
-  def apply(data: Map[String, Any])
+  def apply(data: ExecutionContext)
 
   /**
    * The aggregated result.

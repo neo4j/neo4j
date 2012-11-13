@@ -19,11 +19,17 @@
  */
 package org.neo4j.cypher.internal.executionplan.builders
 
-import org.scalatest.Assertions
 import org.junit.Test
 import org.junit.Assert._
 import org.neo4j.cypher.internal.commands._
-import org.neo4j.cypher.internal.executionplan.{ExecutionPlanInProgress, PartiallySolvedQuery}
+import expressions._
+import expressions.Collect
+import expressions.CountStar
+import expressions.Identifier
+import expressions.HeadFunction
+import org.neo4j.cypher.internal.executionplan.PartiallySolvedQuery
+import org.neo4j.cypher.internal.commands.ReturnItem
+import org.neo4j.cypher.internal.executionplan.ExecutionPlanInProgress
 
 class AggregationBuilderTest extends BuilderTest {
 
@@ -33,7 +39,7 @@ class AggregationBuilderTest extends BuilderTest {
     val q = PartiallySolvedQuery().
       copy(
       aggregation = Seq(Unsolved(CountStar())),
-      returns = Seq(Unsolved(ReturnItem(Entity("n"), "n"))),
+      returns = Seq(Unsolved(ReturnItem(Identifier("n"), "n"))),
       aggregateQuery = Unsolved(true)
     )
 
@@ -59,7 +65,7 @@ class AggregationBuilderTest extends BuilderTest {
       copy(
       start = Seq(Unsolved(NodeById("n", 0))),
       aggregation = Seq(Unsolved(CountStar())),
-      returns = Seq(Unsolved(ReturnItem(Entity("n"), "n")))
+      returns = Seq(Unsolved(ReturnItem(Identifier("n"), "n")))
     )
 
     val p = createPipe(nodes = Seq())

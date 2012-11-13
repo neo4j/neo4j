@@ -23,7 +23,8 @@ package org.neo4j.cypher.internal.executionplan.builders
 import org.junit.Test
 import org.junit.Assert._
 import org.neo4j.cypher.internal.executionplan.PartiallySolvedQuery
-import org.neo4j.cypher.internal.commands.{Literal, Slice, SortItem}
+import org.neo4j.cypher.internal.commands.{Slice, SortItem}
+import org.neo4j.cypher.internal.commands.expressions.Literal
 
 class SliceBuilderTest extends BuilderTest {
 
@@ -31,7 +32,7 @@ class SliceBuilderTest extends BuilderTest {
 
   @Test def should_accept_if_all_work_is_done_and_sorting_not_yet() {
     val q = PartiallySolvedQuery().copy(
-      slice = Seq(Unsolved(Slice(Some(Literal(10)), Some(Literal(10))))),
+      slice = Some(Unsolved(Slice(Some(Literal(10)), Some(Literal(10))))),
       extracted = true
     )
 
@@ -46,7 +47,7 @@ class SliceBuilderTest extends BuilderTest {
 
   @Test def should_not_accept_if_not_yet_sorted() {
     val q = PartiallySolvedQuery().copy(
-      slice = Seq(Unsolved(Slice(Some(Literal(10)), Some(Literal(10))))),
+      slice = Some(Unsolved(Slice(Some(Literal(10)), Some(Literal(10))))),
       extracted = true,
       sort = Seq(Unsolved(SortItem(Literal(1), true)))
     )

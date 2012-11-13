@@ -19,27 +19,30 @@
  */
 package org.neo4j.cypher.internal.pipes
 
-import java.lang.String
-import collection.Seq
-import org.neo4j.cypher.internal.commands.{Expression, ReturnItem}
-import org.neo4j.cypher.internal.symbols.{AnyType, SymbolTable, Identifier}
+import org.neo4j.cypher.internal.symbols._
+import org.neo4j.cypher.internal.commands.expressions.Expression
 
-//This class will extract properties and other stuff to make the maps
-//easy to work with for other pipes
-class ExtractPipe(source: Pipe, val expressions: Seq[Expression]) extends PipeWithSource(source) {
-  def dependencies = expressions.flatMap(_.dependencies(AnyType()))
+class ExtractPipe(source: Pipe, val expressions: Map[String, Expression]) extends PipeWithSource(source) {
+  val symbols: SymbolTable = {
+    val newIdentifiers = expressions.map {
+      case (name, expression) => name -> expression.getType(source.symbols)
+    }
 
-  def getSymbolType(item: ReturnItem): Identifier = item.identifier
-
-  val symbols: SymbolTable = source.symbols.add(expressions.map(_.identifier):_*)
-
-  def createResults(state: QueryState) = {
-    source.createResults(state).map(row => {
-      expressions.foreach( exp => row += exp.identifier.name -> exp(row) )
-      row
-    })
+    source.symbols.add(newIdentifiers)
   }
 
-  override def executionPlan(): String = source.executionPlan() + "\r\nExtract([" + source.symbols.keys.mkString(",") + "] => [" + expressions.map(_.identifier.name).mkString(", ") + "])"
+  def createResults(state: QueryState) = source.createResults(state).map(subgraph => {
+    expressions.foreach {
+      case (name, expression) =>
+        subgraph += name -> expression(subgraph)
+    }
+    subgraph
+  })
+
+  override def executionPlan(): String = source.executionPlan() + "\r\nExtract([" + source.symbols.keys.mkString(",") + "] => [" + expressions.keys.mkString(", ") + "])"
+
+  def assertTypes(symbols: SymbolTable) {
+    expressions.foreach(_._2.assertTypes(symbols))
+  }
 }
 

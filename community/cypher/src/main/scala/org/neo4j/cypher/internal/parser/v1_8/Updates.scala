@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.parser.v1_8
 
 import org.neo4j.cypher.internal.mutation._
 import org.neo4j.cypher.internal.commands._
+import expressions.{Property, Identifier}
 import org.neo4j.cypher.SyntaxException
 
 trait Updates extends Base with Expressions with StartClause {
@@ -37,19 +38,25 @@ trait Updates extends Base with Expressions with StartClause {
     }
   }
 
-
   def delete: Parser[(Seq[UpdateAction], Seq[NamedPath])] = ignoreCase("delete") ~> commaList(expression) ^^ {
     case expressions => val updateActions: List[UpdateAction with Product] = expressions.map {
-      case Property(entity, property) => DeletePropertyAction(Entity(entity), property)
+      case Property(entity, property) => DeletePropertyAction(Identifier(entity), property)
       case x => DeleteEntityAction(x)
     }
       (updateActions, Seq())
   }
 
-  def set: Parser[(Seq[UpdateAction], Seq[NamedPath])] = ignoreCase("set") ~> commaList(propertySet) ^^ ((_,Seq()))
+  def set: Parser[(Seq[UpdateAction], Seq[NamedPath])] =
+    setSingleProperty ^^ ((_, Seq.empty)) |
+    setToMap ^^ (x => (Seq(x), Seq.empty))
 
+  def setToMap : Parser[UpdateAction] = ignoreCase("set") ~> expression ~ "=" ~ expression ^^ {
+    case element ~ "=" ~ map => MapPropertySetAction(element, map)
+  }
 
-  def propertySet = property ~ "=" ~ expression ^^ {
+  def setSingleProperty: Parser[Seq[UpdateAction]] = ignoreCase("set") ~> commaList(propertySet)
+
+  def propertySet = property ~ "=" ~ expressionOrPredicate ^^ {
     case p ~ "=" ~ e => PropertySetAction(p.asInstanceOf[Property], e)
   }
 }

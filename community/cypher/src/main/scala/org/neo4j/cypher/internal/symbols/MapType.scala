@@ -26,7 +26,8 @@ object MapType {
 }
 
 
-class MapType extends AnyType {
+class MapType extends ScalarType {
+  override def parentType:CypherType = ScalarType()
   override def toString = "Map"
 }
 

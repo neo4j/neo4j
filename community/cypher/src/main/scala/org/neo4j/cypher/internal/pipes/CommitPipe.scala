@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.pipes
 import org.neo4j.graphdb.{Transaction, TransactionFailureException, GraphDatabaseService}
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException
 import org.neo4j.cypher.{NodeStillHasRelationshipsException, InternalException}
+import org.neo4j.cypher.internal.symbols.SymbolTable
 
 class CommitPipe(source: Pipe, graph: GraphDatabaseService) extends PipeWithSource(source) {
   lazy val still_has_relationships = "Node record Node\\[(\\d),.*] still has relationships".r
@@ -33,11 +34,11 @@ class CommitPipe(source: Pipe, graph: GraphDatabaseService) extends PipeWithSour
     }
     try {
       try {
-        val result = source.createResults(state).toList
+        val result = source.createResults(state).toList.iterator
         tx.success()
         result
       } catch {
-        case e => {
+        case e: Throwable => {
           tx.failure()
           throw e
         }
@@ -45,28 +46,34 @@ class CommitPipe(source: Pipe, graph: GraphDatabaseService) extends PipeWithSour
         tx.finish()
       }
     } catch {
-      case e: TransactionFailureException => {
-        if (e.getCause != null) {
-          val inner = e.getCause
-          if (inner.getCause != null) {
-            val invalidRecord = inner.getCause
-            if (invalidRecord.isInstanceOf[InvalidRecordException]) {
-              invalidRecord.getMessage match {
+        case e: TransactionFailureException => {
+
+          var cause:Throwable = e
+          while(cause.getCause != null)
+          {
+            cause = cause.getCause
+            if(cause.isInstanceOf[InvalidRecordException])
+            {
+              cause.getMessage match {
                 case still_has_relationships(id) => throw new NodeStillHasRelationshipsException(id.toLong, e)
                 case _ => throw e
               }
             }
           }
-        }
 
-        throw e
-      }
+          throw e
+        }
     }
   }
 
   def executionPlan() = source.executionPlan() + "\r\nTransactionBegin()"
 
+//  def symbols = source.symbols
   def symbols = source.symbols
 
   def dependencies = Seq()
+
+  def deps = Map()
+
+  def assertTypes(symbols: SymbolTable) {}
 }

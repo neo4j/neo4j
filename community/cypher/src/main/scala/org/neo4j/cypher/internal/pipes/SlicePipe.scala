@@ -19,31 +19,31 @@
  */
 package org.neo4j.cypher.internal.pipes
 
-import org.neo4j.cypher.internal.commands.Expression
-import java.lang.String
+import org.neo4j.cypher.internal.commands.expressions.Expression
 import org.neo4j.helpers.ThisShouldNotHappenError
-import collection.mutable.Map
 
 class SlicePipe(source:Pipe, skip:Option[Expression], limit:Option[Expression]) extends Pipe {
+
   val symbols = source.symbols
 
-  //TODO: Make this nicer. I'm sure it's expensive and silly.
-  def createResults(state: QueryState): Traversable[ExecutionContext] = {
+  def createResults(state: QueryState) : Iterator[ExecutionContext] = {
     val sourceTraversable = source.createResults(state)
 
     if(sourceTraversable.isEmpty)
-      return Seq()
+      return Iterator()
 
-    val first: Map[String, Any] = sourceTraversable.head
+    val first: ExecutionContext = sourceTraversable.next()
+
+    val sourceIter = new HeadAndTail[ExecutionContext](first, sourceTraversable)
 
     def asInt(v:Expression)=v(first).asInstanceOf[Int]
 
     (skip, limit) match {
-      case (Some(x), None) => sourceTraversable.drop(asInt(x))
-      case (None, Some(x)) => sourceTraversable.take(asInt(x))
+      case (Some(x), None) => sourceIter.drop(asInt(x))
+      case (None, Some(x)) => sourceIter.take(asInt(x))
       case (Some(startAt), Some(count)) => {
         val start = asInt(startAt)
-        sourceTraversable.slice(start, start + asInt(count))
+        sourceIter.slice(start, start + asInt(count))
       }
       case (None, None)=>throw new ThisShouldNotHappenError("Andres Taylor", "A slice pipe that doesn't slice should never exist.")
     }
@@ -58,5 +58,19 @@ class SlicePipe(source:Pipe, skip:Option[Expression], limit:Option[Expression]) 
       case (None, None)=>throw new ThisShouldNotHappenError("Andres Taylor", "A slice pipe that doesn't slice should never exist.")
     }
     source.executionPlan() + "\r\n" + "Slice(" + info + ")"
+  }
+}
+
+class HeadAndTail[T](head:T, tail:Iterator[T]) extends Iterator[T] {
+  var usedHead = false
+  def headUnused = !usedHead
+
+  def hasNext = headUnused || tail.hasNext
+
+  def next() = if (headUnused) {
+    usedHead = true
+    head
+  } else {
+    tail.next()
   }
 }

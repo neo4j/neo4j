@@ -22,8 +22,6 @@ package org.neo4j.cypher.docgen.cookbook
 import org.junit.Test
 import org.junit.Assert._
 import org.neo4j.cypher.docgen.DocumentingTestBase
-import org.junit.Ignore
-import org.neo4j.graphdb.Node
 
 //modeled after a mailing list suggestion in
 //http://groups.google.com/group/neo4j/browse_thread/thread/57dbec6e904fca42
@@ -37,41 +35,40 @@ class MealTestIgnored extends DocumentingTestBase {
     "Bread composed_of Salt",
     "Bread composed_of Flour",
     "Bread composed_of Cereals")
-    
-    override val properties = Map(
+
+  override val properties = Map(
     "Potatoes" -> Map("weight" -> 10),
     "Meat" -> Map("weight" -> 40),
     "Salt" -> Map("weight" -> 10),
     "Flour" -> Map("weight" -> 30),
     "Cereals" -> Map("weight" -> 80))
 
-    //TODO:
-    //Rels props:
-    //burger--meat //quantity=2
-    //burger--bread //quantity=2
-    //bread--salt //quantity=2
-    //bread--flour //quantity=1
-    //bread--cereals //quantity=3
-    //peter.weight = (potatoes.weight) + ( (meal.weight*composed_of.quantity) + ( (salt.weight*composed_of.quantity) + (flour.weight*composed_of.quantity) (cereal.weight*composed_of.quantity) ) )
+  //TODO:
+  //Rels props:
+  //burger--meat //quantity=2
+  //burger--bread //quantity=2
+  //bread--salt //quantity=2
+  //bread--flour //quantity=1
+  //bread--cereals //quantity=3
+  //peter.weight = (potatoes.weight) + ( (meal.weight*composed_of.quantity) + ( (salt.weight*composed_of.quantity) + (flour.weight*composed_of.quantity) (cereal.weight*composed_of.quantity) ) )
 
-    
+
   def section = "cookbook"
 
   @Test def weightedMeal() {
     testQuery(
       title = "Longest Paths -- find the leaf ingredients",
       text = """From the root, find the paths to all the leaf ingredients in order to return the paths for the weight calculation""",
-      queryText = "" +
-      		"START me=node(%Peter%) " +
-        "MATCH me-[:eats]->meal, " +
-        "path=meal-[r:composed_of*0..]->ingredient " +
-        "WHERE not(ingredient --> ())" +
-        "RETURN ingredient.name ",
+      queryText = "START me=node(%Peter%) " +
+                  "MATCH me-[:eats]->meal, " +
+                  "path=meal-[r:composed_of*0..]->ingredient " +
+                  "WHERE not(ingredient --> ())" +
+                  "RETURN ingredient.name ",
       returns = "The activity stream for Jane is returned.",
-      (p) => assertEquals(List(Map("ingredient.name" -> "Potatoes"), 
-          Map("ingredient.name" -> "Meat"),
-          Map("ingredient.name" -> "Salt"),
-          Map("ingredient.name" -> "Flour"),
-          Map("ingredient.name" -> "Cereals")), p.toList))
+      assertions = (p) => assertEquals(List(Map("ingredient.name" -> "Potatoes"),
+        Map("ingredient.name" -> "Meat"),
+        Map("ingredient.name" -> "Salt"),
+        Map("ingredient.name" -> "Flour"),
+        Map("ingredient.name" -> "Cereals")), p.toList))
   }
 }

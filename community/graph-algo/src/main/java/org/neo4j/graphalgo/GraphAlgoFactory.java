@@ -30,6 +30,7 @@ import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PathExpander;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipExpander;
+import org.neo4j.graphdb.traversal.InitialBranchState;
 import org.neo4j.graphdb.traversal.InitialStateFactory;
 
 /**
@@ -154,7 +155,7 @@ public abstract class GraphAlgoFactory
      *            {@link Relationship}s for each {@link Node}.
      * @param maxDepth the max {@link Path#length()} returned paths are allowed
      *            to have.
-     * @param maxResultCount the maximum number of {@link Path}s to return.
+     * @param maxHitCount the maximum number of {@link Path}s to return.
      * If this number of found paths are encountered the traversal will stop.
      * @return an algorithm which finds shortest paths between two nodes.
      */
@@ -174,7 +175,7 @@ public abstract class GraphAlgoFactory
      *            {@link Relationship}s for each {@link Path}.
      * @param maxDepth the max {@link Path#length()} returned paths are allowed
      *            to have.
-     * @param maxResultCount the maximum number of {@link Path}s to return.
+     * @param maxHitCount the maximum number of {@link Path}s to return.
      * If this number of found paths are encountered the traversal will stop.
      * @return an algorithm which finds shortest paths between two nodes.
      */
@@ -370,15 +371,53 @@ public abstract class GraphAlgoFactory
      * @param expander the {@link PathExpander} to use for expanding
      * {@link Relationship}s for each {@link Path}.
      * @param stateFactory initial state for the traversal branches.
-     * @param relationshipPropertyRepresentingCost the property to represent cost
-     * on each relationship the algorithm traverses.
+     * @param costEvaluator the cost evaluator for each relationship the algorithm traverses.
      * @return an algorithm which finds the cheapest path between two nodes
      * using the Dijkstra algorithm.
      */
     public static PathFinder<WeightedPath> dijkstra( PathExpander expander,
             InitialStateFactory stateFactory, CostEvaluator<Double> costEvaluator )
     {
+        return new Dijkstra( expander, new InitialStateFactory.AsInitialBranchState( stateFactory ), costEvaluator );
+    }
+
+    /**
+     * See {@link #dijkstra(RelationshipExpander, CostEvaluator)}.
+     * 
+     * Uses a cost evaluator which uses the supplied property key to
+     * represent the cost (values of type <bold>double</bold>). 
+     * 
+     * @param expander the {@link PathExpander} to use for expanding
+     * {@link Relationship}s for each {@link Path}.
+     * @param stateFactory initial state for the traversal branches.
+     * @param costEvaluator the cost evaluator for each relationship the algorithm traverses.
+     * @return an algorithm which finds the cheapest path between two nodes
+     * using the Dijkstra algorithm.
+     */
+    public static PathFinder<WeightedPath> dijkstra( PathExpander expander,
+            InitialBranchState stateFactory, CostEvaluator<Double> costEvaluator )
+    {
         return new Dijkstra( expander, stateFactory, costEvaluator );
+    }
+    
+    /**
+     * See {@link #dijkstra(RelationshipExpander, CostEvaluator)}.
+     * 
+     * Uses a cost evaluator which uses the supplied property key to
+     * represent the cost (values of type <bold>double</bold>). 
+     * 
+     * @param expander the {@link PathExpander} to use for expanding
+     * {@link Relationship}s for each {@link Path}.
+     * @param stateFactory initial state for the traversal branches.
+     * @param relationshipPropertyRepresentingCost the property to represent cost
+     * on each relationship the algorithm traverses.
+     * @return an algorithm which finds the cheapest path between two nodes
+     * using the Dijkstra algorithm.
+     */
+    public static PathFinder<WeightedPath> dijkstra( PathExpander expander,
+            InitialStateFactory stateFactory, String relationshipPropertyRepresentingCost )
+    {
+        return dijkstra( expander, stateFactory, new DoubleEvaluator( relationshipPropertyRepresentingCost ) );
     }
 
     /**
@@ -396,7 +435,7 @@ public abstract class GraphAlgoFactory
      * using the Dijkstra algorithm.
      */
     public static PathFinder<WeightedPath> dijkstra( PathExpander expander,
-            InitialStateFactory stateFactory, String relationshipPropertyRepresentingCost )
+            InitialBranchState stateFactory, String relationshipPropertyRepresentingCost )
     {
         return dijkstra( expander, stateFactory, new DoubleEvaluator( relationshipPropertyRepresentingCost ) );
     }

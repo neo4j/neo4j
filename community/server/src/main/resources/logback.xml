@@ -37,4 +37,37 @@
   <root level="ERROR">
     <appender-ref ref="STDOUT" />
   </root>
+
+  <appender name="FILE" class="ch.qos.logback.core.FileAppender">
+    <file>${neo_store}/messages.log</file>
+    <encoder>
+      <pattern>%date{ISO8601} %-5level [%c]: %message%n</pattern>
+    </encoder>
+  </appender>
+
+  <if condition='property("remote_logging_enabled").contains("true")'>
+    <then>
+      <appender name="SOCKET" class="ch.qos.logback.classic.net.SocketAppender">
+        <remoteHost>${remote_logging_host}</remoteHost>
+        <port>${remote_logging_port}</port>
+        <reconnectionDelay>10000</reconnectionDelay>
+        <includeCallerData>true</includeCallerData>
+      </appender>
+      <logger name="neo4j">
+        <appender-ref ref="SOCKET" />
+      </logger>
+    </then>
+  </if>
+
+  <logger name="neo4j.diagnostics" level="DEBUG">
+  </logger>
+
+  <logger name="neo4j" additivity="false">
+    <appender-ref ref="FILE" />
+  </logger>
+
+  <logger name="neo4j.cypher" additivity="false"/>
+
+  <include resource="custom-logback.xml"/>
+
 </configuration>

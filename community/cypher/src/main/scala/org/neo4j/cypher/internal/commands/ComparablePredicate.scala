@@ -20,15 +20,18 @@
 package org.neo4j.cypher.internal.commands
 
 import collection.Seq
+import expressions.Expression
 import org.neo4j.cypher.internal.Comparer
 import java.lang.String
-import org.neo4j.cypher.internal.symbols.{AnyType, ScalarType, Identifier}
+import org.neo4j.cypher.internal.symbols._
 import collection.Map
+import org.neo4j.cypher.internal.helpers.IsCollection
+import org.neo4j.cypher.internal.pipes.ExecutionContext
 
 abstract sealed class ComparablePredicate(left: Expression, right: Expression) extends Predicate with Comparer {
   def compare(comparisonResult: Int): Boolean
 
-  def isMatch(m: Map[String, Any]): Boolean = {
+  def isMatch(m: ExecutionContext): Boolean = {
     val l: Any = left(m)
     val r: Any = right(m)
 
@@ -37,32 +40,44 @@ abstract sealed class ComparablePredicate(left: Expression, right: Expression) e
     compare(comparisonResult)
   }
 
-  def dependencies: Seq[Identifier] = left.dependencies(ScalarType()) ++ right.dependencies(ScalarType())
   def sign: String
   def atoms: Seq[Predicate] = Seq(this)
-  override def toString = left.toString() + " " + sign + " " + right.toString()
-  def exists(f: (Expression) => Boolean) = left.exists(f) || right.exists(f)
+  override def toString() = left.toString() + " " + sign + " " + right.toString()
   def containsIsNull = false
   def filter(f: (Expression) => Boolean): Seq[Expression] = left.filter(f) ++ right.filter(f)
+
+  def assertInnerTypes(symbols: SymbolTable) {
+    left.assertTypes(symbols)
+    right.assertTypes(symbols)
+  }
+
+  def symbolTableDependencies = left.symbolTableDependencies ++ right.symbolTableDependencies
 }
 
 case class Equals(a: Expression, b: Expression) extends Predicate with Comparer {
-  def isMatch(m: Map[String, Any]): Boolean = {
+
+  def isMatch(m: ExecutionContext): Boolean = {
     val a1 = a(m)
     val b1 = b(m)
 
     (a1, b1) match {
-      case (IsIterable(l), IsIterable(r)) => l == r
+      case (IsCollection(l), IsCollection(r)) => l == r
       case _                              => a1 == b1
     }
   }
+
   def atoms = Seq(this)
-  def exists(f: (Expression) => Boolean) = a.exists(f) || b.exists(f)
-  def dependencies = a.dependencies(AnyType()) ++ b.dependencies(AnyType())
-  override def toString = a.toString() + " == " + b.toString()
+  override def toString() = a.toString() + " == " + b.toString()
   def containsIsNull = false
   def rewrite(f: (Expression) => Expression) = Equals(a.rewrite(f), b.rewrite(f))
   def filter(f: (Expression) => Boolean): Seq[Expression] = a.filter(f) ++ b.filter(f)
+
+  def assertInnerTypes(symbols: SymbolTable) {
+    a.assertTypes(symbols)
+    b.assertTypes(symbols)
+  }
+
+  def symbolTableDependencies = a.symbolTableDependencies ++ b.symbolTableDependencies
 }
 
 case class LessThan(a: Expression, b: Expression) extends ComparablePredicate(a, b) {

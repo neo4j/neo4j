@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.pipes.aggregation
 import org.junit.Assert._
 import org.junit.Test
 import org.neo4j.cypher.SyntaxException
-import org.neo4j.cypher.internal.commands.Expression
+import org.neo4j.cypher.internal.commands.expressions.Expression
 
 class MinFunctionTest extends AggregateTest {
   @Test def singleValueReturnsThatNumber() {

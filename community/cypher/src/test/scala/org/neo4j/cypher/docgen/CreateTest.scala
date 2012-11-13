@@ -125,7 +125,7 @@ for this to work.""",
 will be created. """,
       queryText = "create p = (andres {name:'Andres'})-[:WORKS_AT]->neo<-[:WORKS_AT]-(michael {name:'Michael'}) return p",
       returns = "This query creates three nodes and two relationships in one go, assigns it to a path identifier, " +
-                "and returns it",
+                "and returns it.",
       assertions = (p) => assertStats(p, nodesCreated = 3, relationshipsCreated = 2, propertiesSet = 2))
   }
 

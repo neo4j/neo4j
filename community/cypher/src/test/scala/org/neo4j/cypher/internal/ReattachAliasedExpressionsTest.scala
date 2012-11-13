@@ -20,6 +20,11 @@
 package org.neo4j.cypher.internal
 
 import commands._
+import commands.ReturnItem
+import commands.SortItem
+import expressions._
+import expressions.CountStar
+import expressions.Property
 import org.scalatest.Assertions
 import org.junit.Test
 
@@ -30,12 +35,12 @@ class ReattachAliasedExpressionsTest extends Assertions {
 
     val q = Query.
       start(NodeById("a", 1)).
-      orderBy(SortItem(Entity("newAlias"), true)).
+      orderBy(SortItem(Identifier("newAlias"), ascending = true)).
       returns(ReturnItem(Property("a", "x"), "newAlias"))
 
     val expected = Query.
       start(NodeById("a", 1)).
-      orderBy(SortItem(Property("a", "x"), true)).
+      orderBy(SortItem(Property("a", "x"), ascending = true)).
       returns(ReturnItem(Property("a", "x"), "newAlias"))
 
     assert(ReattachAliasedExpressions(q) === expected)
@@ -47,13 +52,43 @@ class ReattachAliasedExpressionsTest extends Assertions {
 
     val q = Query.
       start(NodeById("a", 1)).
-      orderBy(SortItem(Entity("foo"), true)).
+      orderBy(SortItem(Identifier("foo"), ascending = true)).
       returns(ReturnItem(CountStar(), "foo"))
 
     val expected = Query.
       start(NodeById("a", 1)).
-      orderBy(SortItem(CountStar(), true)).
+      orderBy(SortItem(CountStar(), ascending = true)).
       returns(ReturnItem(CountStar(), "foo"))
+    val result = ReattachAliasedExpressions(q)
+
+    assert(result === expected)
+  }
+
+  @Test
+  def rewriteQueryWithWITH() {
+    // START x = node(1) WITH x RETURN count(x) as foo ORDER BY foo
+
+    val secondQ = Query.
+      start().
+      orderBy(SortItem(Identifier("foo"), ascending = true)).
+      returns(ReturnItem(Count(Identifier("x")), "foo", renamed = true))
+
+    val q = Query.
+      start(NodeById("x", 1)).
+      tail(secondQ).
+      returns(ReturnItem(Identifier("x"), "x"))
+
+    val expected2ndQ = Query.
+      start().
+      orderBy(SortItem(Count(Identifier("x")), ascending = true)).
+      returns(ReturnItem(Count(Identifier("x")), "foo", renamed = true))
+
+    val expected = Query.
+      start(NodeById("x", 1)).
+      tail(expected2ndQ).
+      returns(ReturnItem(Identifier("x"), "x"))
+
+
     val result = ReattachAliasedExpressions(q)
 
     assert(result === expected)

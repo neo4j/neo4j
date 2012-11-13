@@ -27,9 +27,9 @@ object RelationshipType {
 
 
 class RelationshipType extends MapType {
+  override def parentType: CypherType = MapType()
   override def toString = "Relationship"
 }
-
 
 
 

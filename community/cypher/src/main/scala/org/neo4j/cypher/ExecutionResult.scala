@@ -21,12 +21,9 @@ package org.neo4j.cypher
 
 import java.io.PrintWriter
 import java.lang.String
-import internal.symbols.SymbolTable
-
 
 trait ExecutionResult extends Iterator[Map[String, Any]] {
   def columns: List[String]
-  def symbols: SymbolTable
   def javaColumns: java.util.List[String]
   def javaColumnAs[T](column: String): java.util.Iterator[T]
   def columnAs[T](column: String): Iterator[T]
@@ -41,11 +38,11 @@ object QueryStatistics {
   def empty = new QueryStatistics(0,0,0,0,0)
 }
 
-case class QueryStatistics(nodesCreated: Long,
-                           relationshipsCreated: Long,
-                           propertiesSet: Long,
-                           deletedNodes: Long,
-                           deletedRelationships: Long) {
+case class QueryStatistics(nodesCreated: Int,
+                           relationshipsCreated: Int,
+                           propertiesSet: Int,
+                           deletedNodes: Int,
+                           deletedRelationships: Int) {
   def containsUpdates = nodesCreated > 0 ||
   relationshipsCreated > 0 ||
   propertiesSet > 0 ||

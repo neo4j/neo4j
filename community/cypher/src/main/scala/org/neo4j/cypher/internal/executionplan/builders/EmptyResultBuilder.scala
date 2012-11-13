@@ -36,7 +36,7 @@ class EmptyResultBuilder extends PlanBuilder {
     val noSortingLeftToDo = !q.sort.exists(_.unsolved)
     val noSkipOrLimitLeftToDo = !q.slice.exists(_.unsolved)
     val notYetHandledReturnItems = q.returns.exists(_.unsolved)
-    val nothingToReturnButPipeNotEmpty = q.returns.size == 0 && plan.pipe.symbols.keys.size > 0
+    val nothingToReturnButPipeNotEmpty = q.returns.size == 0 && plan.pipe.symbols.size > 0
     val isLastPipe = q.tail.isEmpty
 
     notYetExtracted &&

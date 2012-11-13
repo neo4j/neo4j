@@ -45,7 +45,7 @@ class HyperedgeTest extends DocumentingTestBase {
       text = """To find out in what roles a user is for a particular groups (here
         'Group2'), the following query can traverse this HyperEdge node and
         provide answers.""",
-      queryText = "start n=node:node_auto_index(name = \"User1\") " +
+      queryText = "start n=node:node_auto_index(name = 'User1') " +
         "match n-[:hasRoleInGroup]->hyperEdge-[:hasGroup]->group, " +
         "hyperEdge-[:hasRole]->role " +
         "where group.name = \"Group2\" " +

@@ -25,56 +25,60 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PathExpander;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.traversal.BranchState;
+import org.neo4j.graphdb.traversal.InitialBranchState;
 import org.neo4j.graphdb.traversal.TraversalBranch;
 import org.neo4j.graphdb.traversal.TraversalContext;
 
 public class TraversalBranchWithState extends TraversalBranchImpl implements BranchState
 {
-    protected Object state;
-    protected boolean stateSet;
+    protected final Object stateForMe;
+    protected Object stateForChildren;
     
-    public TraversalBranchWithState( TraversalBranch parent, int depth, Node source, Relationship toHere )
+    public TraversalBranchWithState( TraversalBranch parent, int depth, Node source, Relationship toHere, Object inheritedState )
     {
         super( parent, depth, source, toHere );
+        this.stateForMe = this.stateForChildren = inheritedState;
     }
 
-    public TraversalBranchWithState( TraversalContext context, TraversalBranch parent, Node source )
+    public TraversalBranchWithState( TraversalBranch parent, Node source, InitialBranchState initialState )
     {
-        super( context, parent, source );
+        super( parent, source );
+        this.stateForMe = this.stateForChildren = initialState.initialState( this );
     }
     
     @Override
     public void setState( Object state )
     {
-        this.state = state;
-        stateSet = true;
+        this.stateForChildren = state;
     }
     
     @Override
     public Object getState()
     {
-        if ( !stateSet )
-        {
-            this.state = retrieveStateFromParent();
-            stateSet = true;
-        }
-        return this.state;
-    }
-    
-    protected Object retrieveStateFromParent()
-    {
-        return ((TraversalBranchWithState)parent).getState();
+        return this.stateForMe;
     }
 
     @Override
     protected TraversalBranch newNextBranch( Node node, Relationship relationship )
     {
-        return new TraversalBranchWithState( this, length() + 1, node, relationship );
+        return new TraversalBranchWithState( this, length() + 1, node, relationship, stateForChildren );
     }
 
     @Override
     protected Iterator<Relationship> expandRelationshipsWithoutChecks( PathExpander expander )
     {
         return expander.expand( this, this ).iterator();
+    }
+    
+    @Override
+    public Object state()
+    {
+        return this.stateForMe;
+    }
+    
+    @Override
+    protected void evaluate( TraversalContext context )
+    {
+        setEvaluation( context.evaluate( this, this ) );
     }
 }
