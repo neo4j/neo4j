@@ -99,8 +99,6 @@ public class GremlinPluginTest
                 0.2f );
     }
 
-    private String exampleURI = "https://github.com/tinkerpop/gremlin/raw/master/data/graph-example-1.xml";
-
     @After
     public void tearDown() throws Exception
     {
