@@ -24,6 +24,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.io.UnsupportedEncodingException;
+import java.net.URL;
 import java.net.URLEncoder;
 
 import javax.ws.rs.core.MediaType;
@@ -141,9 +142,12 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
     public void testGremlinImportGraph() throws UnsupportedEncodingException
     {
         data.get().clear();
+
+        URL graphML = GremlinPluginFunctionalTest.class.getResource( "/graphml.xml" );
+
         String script = "" +
         		"g.clear();" +
-        		"g.loadGraphML('https://raw.github.com/neo4j/gremlin-plugin/master/src/data/graphml1.xml');" +
+        		"g.loadGraphML('" + graphML + "');" +
         		"g.idx('node_auto_index')[[name:'you']];";
         String response = doRestCall( script, OK );
         assertTrue( response.contains( "you" ) );
