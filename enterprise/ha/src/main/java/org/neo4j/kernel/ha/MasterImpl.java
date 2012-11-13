@@ -54,10 +54,11 @@ import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.GraphProperties;
-import org.neo4j.kernel.impl.core.LockReleaser;
 import org.neo4j.kernel.impl.core.NodeManager;
+import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.nioneo.store.IdGenerator;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
+import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.transaction.IllegalResourceException;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.LockType;
@@ -85,7 +86,6 @@ public class MasterImpl extends LifecycleAdapter implements Master
     private long unfinishedTransactionThresholdMillis;
     private GraphProperties graphProperties;
     private final LockManager lockManager;
-    private final LockReleaser lockReleaser;
     private final TransactionManager txManager;
 
     public MasterImpl( GraphDatabaseAPI db, StringLogger logger, Config config )
@@ -95,7 +95,6 @@ public class MasterImpl extends LifecycleAdapter implements Master
         this.config = config;
         graphProperties = graphDb.getDependencyResolver().resolveDependency( NodeManager.class ).getGraphProperties();
         lockManager = graphDb.getDependencyResolver().resolveDependency( LockManager.class );
-        lockReleaser = graphDb.getDependencyResolver().resolveDependency( LockReleaser.class );
         txManager = graphDb.getDependencyResolver().resolveDependency( TransactionManager.class );
     }
 
@@ -181,9 +180,11 @@ public class MasterImpl extends LifecycleAdapter implements Master
         Transaction otherTx = suspendOtherAndResumeThis( context, false );
         try
         {
+            LockManager lockManager = graphDb.getLockManager();
+            TransactionState state = ((AbstractTransactionManager)graphDb.getTxManager()).getTransactionState();
             for ( Object entity : entities )
             {
-                lockGrabber.grab( lockManager, lockReleaser, entity );
+                lockGrabber.grab( lockManager, state, entity );
             }
             return packResponse( context, new LockResult( LockStatus.OK_LOCKED ) );
         }
@@ -500,24 +501,24 @@ public class MasterImpl extends LifecycleAdapter implements Master
 
     private static interface LockGrabber
     {
-        void grab( LockManager lockManager, LockReleaser lockReleaser, Object entity );
+        void grab( LockManager lockManager, TransactionState state, Object entity );
     }
 
     private static LockGrabber READ_LOCK_GRABBER = new LockGrabber()
     {
-        public void grab( LockManager lockManager, LockReleaser lockReleaser, Object entity )
+        public void grab( LockManager lockManager, TransactionState state, Object entity )
         {
             lockManager.getReadLock( entity );
-            lockReleaser.addLockToTransaction( entity, LockType.READ );
+            state.addLockToTransaction( lockManager, entity, LockType.READ );
         }
     };
 
     private static LockGrabber WRITE_LOCK_GRABBER = new LockGrabber()
     {
-        public void grab( LockManager lockManager, LockReleaser lockReleaser, Object entity )
+        public void grab( LockManager lockManager, TransactionState state, Object entity )
         {
             lockManager.getWriteLock( entity );
-            lockReleaser.addLockToTransaction( entity, LockType.WRITE );
+            state.addLockToTransaction( lockManager, entity, LockType.WRITE );
         }
     };
 

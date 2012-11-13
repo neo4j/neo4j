@@ -63,7 +63,7 @@ public class RelationshipTypeHolder extends LifecycleAdapter
     
     void addRawRelationshipType( NameData type )
     {
-        RelationshipTypeImpl relType = new RelationshipTypeImpl( type.getName() );
+        RelationshipTypeImpl relType = new RelationshipTypeImpl( type.getName(), type.getId() );
         relTypes.put( type.getName(), type.getId() );
         relTranslation.put( type.getId(), relType );
     }
@@ -79,14 +79,14 @@ public class RelationshipTypeHolder extends LifecycleAdapter
                 return null;
             }
             id = createRelationshipType( name );
-            RelationshipTypeImpl type = new RelationshipTypeImpl( name );
+            RelationshipTypeImpl type = new RelationshipTypeImpl( name, id );
             relTranslation.put( id, type );
             return type;
         }
         RelationshipTypeImpl relType = relTranslation.get( id );
         if ( relType == null )
         {
-            relType = new RelationshipTypeImpl( name );
+            relType = new RelationshipTypeImpl( name, id );
             relTranslation.put( id, relType );
         }
         return relType;
@@ -97,19 +97,26 @@ public class RelationshipTypeHolder extends LifecycleAdapter
         return relTypes.get( type.name() ) != null;
     }
 
-    private static class RelationshipTypeImpl implements RelationshipType
+    public static class RelationshipTypeImpl implements RelationshipType
     {
-        private String name;
+        private final String name;
+        private final int id;
 
-        RelationshipTypeImpl( String name )
+        RelationshipTypeImpl( String name, int id )
         {
             assert name != null;
             this.name = name;
+            this.id = id;
         }
 
         public String name()
         {
             return name;
+        }
+        
+        public int getId()
+        {
+            return id;
         }
 
         public String toString()
@@ -164,7 +171,7 @@ public class RelationshipTypeHolder extends LifecycleAdapter
         }
     }
 
-    int getIdFor( RelationshipType type )
+    Integer getIdFor( RelationshipType type )
     {
         return getIdFor( type.name() );
     }
@@ -182,9 +189,9 @@ public class RelationshipTypeHolder extends LifecycleAdapter
     public Iterable<RelationshipType> getRelationshipTypes()
     {
         List<RelationshipType> relTypeList = new ArrayList<RelationshipType>();
-        for ( String name : relTypes.keySet() )
+        for ( Map.Entry<String, Integer> type : relTypes.entrySet() )
         {
-            relTypeList.add( new RelationshipTypeImpl( name ) );
+            relTypeList.add( new RelationshipTypeImpl( type.getKey(), type.getValue() ) );
         }
         return relTypeList;
     }

@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.util;
 
-import static org.neo4j.kernel.impl.cache.SizeOfs.sizeOf;
 import static org.neo4j.kernel.impl.cache.SizeOfs.withArrayOverhead;
 import static org.neo4j.kernel.impl.cache.SizeOfs.withObjectOverhead;
 import static org.neo4j.kernel.impl.cache.SizeOfs.withReference;
@@ -43,8 +42,31 @@ public class RelIdArray implements SizeOf
     public static class EmptyRelIdArray extends RelIdArray
     {
         private static final DirectionWrapper[] EMPTY_DIRECTION_ARRAY = new DirectionWrapper[0];
+        private final RelIdIterator EMPTY_ITERATOR = new RelIdIteratorImpl( this, EMPTY_DIRECTION_ARRAY )
+        {
+            @Override
+            public boolean hasNext()
+            {
+                return false;
+            }
+
+            @Override
+            protected boolean nextBlock()
+            {
+                return false;
+            }
+            
+            public void doAnotherRound()
+            {
+            }
+            
+            public RelIdIterator updateSource( RelIdArray newSource, DirectionWrapper direction )
+            {
+                return direction.iterator( newSource );
+            }
+        };
         
-        private EmptyRelIdArray( String type )
+        private EmptyRelIdArray( int type )
         {
             super( type );
         }
@@ -52,51 +74,29 @@ public class RelIdArray implements SizeOf
         @Override
         public RelIdIterator iterator( final DirectionWrapper direction )
         {
-            return new RelIdIteratorImpl( this, EMPTY_DIRECTION_ARRAY )
-            {
-                @Override
-                public boolean hasNext()
-                {
-                    return false;
-                }
-
-                @Override
-                protected boolean nextBlock()
-                {
-                    return false;
-                }
-                
-                public void doAnotherRound()
-                {
-                }
-                
-                public RelIdIterator updateSource( RelIdArray newSource )
-                {
-                    return direction.iterator( newSource );
-                }
-            };
+            return EMPTY_ITERATOR;
         }
     };
     
-    public static RelIdArray empty( String type )
+    public static RelIdArray empty( int type )
     {
         return new EmptyRelIdArray( type );
     }
     
-    public static RelIdArray EMPTY = new EmptyRelIdArray( "" );
+    public static RelIdArray EMPTY = new EmptyRelIdArray( -1 );
     
-    private final String type;
+    private final int type;
     private IdBlock lastOutBlock;
     private IdBlock lastInBlock;
     
-    public RelIdArray( String type )
+    public RelIdArray( int type )
     {
         this.type = type;
     }
     
     public int size()
     {
-        return withObjectOverhead( withReference( sizeOf( type ) ) + sizeOfBlockWithReference( lastOutBlock ) + sizeOfBlockWithReference( lastInBlock ) ); 
+        return withObjectOverhead( 8 /*type (padded)*/ + sizeOfBlockWithReference( lastOutBlock ) + sizeOfBlockWithReference( lastInBlock ) ); 
     }
     
     static int sizeOfBlockWithReference( IdBlock block )
@@ -104,7 +104,7 @@ public class RelIdArray implements SizeOf
         return withReference( block != null ? block.size() : 0 );
     }
 
-    public String getType()
+    public int getType()
     {
         return type;
     }
@@ -116,7 +116,7 @@ public class RelIdArray implements SizeOf
         this.lastInBlock = from.lastInBlock;
     }
     
-    protected RelIdArray( String type, IdBlock out, IdBlock in )
+    protected RelIdArray( int type, IdBlock out, IdBlock in )
     {
         this( type );
         this.lastOutBlock = out;
@@ -586,7 +586,6 @@ public class RelIdArray implements SizeOf
         private int blockIndex;
         private IdBlock block;
         private int relativePosition;
-        private int absolutePosition;
         
         public IteratorState( IdBlock block, int relativePosition )
         {
@@ -616,7 +615,6 @@ public class RelIdArray implements SizeOf
          */
         long next()
         {
-            absolutePosition++;
             return block.get( relativePosition++ );
         }
 
@@ -665,29 +663,20 @@ public class RelIdArray implements SizeOf
             }
         }
         
-        /* (non-Javadoc)
-         * @see org.neo4j.kernel.impl.util.RelIdIterator#getType()
-         */
         @Override
-        public String getType()
+        public int getType()
         {
             return ids.getType();
         }
         
-        /* (non-Javadoc)
-         * @see org.neo4j.kernel.impl.util.RelIdIterator#getIds()
-         */
         @Override
         public RelIdArray getIds()
         {
             return ids;
         }
         
-        /* (non-Javadoc)
-         * @see org.neo4j.kernel.impl.util.RelIdIterator#updateSource(org.neo4j.kernel.impl.util.RelIdArray)
-         */
         @Override
-        public RelIdIterator updateSource( RelIdArray newSource )
+        public RelIdIterator updateSource( RelIdArray newSource, DirectionWrapper direction )
         {
             if ( ids != newSource || newSource.couldBeNeedingUpdate() )
             {
@@ -706,9 +695,6 @@ public class RelIdArray implements SizeOf
             return this;
         }
         
-        /* (non-Javadoc)
-         * @see org.neo4j.kernel.impl.util.RelIdIterator#hasNext()
-         */
         @Override
         public boolean hasNext()
         {

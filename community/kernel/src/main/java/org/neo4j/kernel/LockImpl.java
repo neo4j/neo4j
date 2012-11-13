@@ -20,7 +20,7 @@
 package org.neo4j.kernel;
 
 import org.neo4j.graphdb.Lock;
-import org.neo4j.kernel.impl.core.LockReleaser.LockElement;
+import org.neo4j.kernel.impl.core.WritableTransactionState.LockElement;
 import org.neo4j.kernel.impl.transaction.LockManager;
 
 public class LockImpl implements Lock

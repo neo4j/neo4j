@@ -24,6 +24,7 @@ import org.neo4j.kernel.TransactionInterceptorProviders;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
+import org.neo4j.kernel.impl.transaction.TransactionStateFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
@@ -54,8 +55,8 @@ public class XaFactory
         this.pruneStrategy = pruneStrategy;
     }
 
-    public XaContainer newXaContainer(XaDataSource xaDataSource, String logicalLog, XaCommandFactory cf, XaTransactionFactory tf,
-                                      TransactionInterceptorProviders providers )
+    public XaContainer newXaContainer( XaDataSource xaDataSource, String logicalLog, XaCommandFactory cf,
+            XaTransactionFactory tf, TransactionStateFactory stateFactory, TransactionInterceptorProviders providers )
     {
         if ( logicalLog == null || cf == null || tf == null )
         {
@@ -71,11 +72,11 @@ public class XaFactory
         if ( providers.shouldInterceptDeserialized() && providers.hasAnyInterceptorConfigured() )
         {
             log = new InterceptingXaLogicalLog( logicalLog, rm, cf, tf, providers, logBufferFactory,
-                    fileSystemAbstraction, stringLogger, pruneStrategy );
+                    fileSystemAbstraction, stringLogger, pruneStrategy, stateFactory );
         }
         else
         {
-            log = new XaLogicalLog( logicalLog, rm, cf, tf, logBufferFactory, fileSystemAbstraction, stringLogger, pruneStrategy );
+            log = new XaLogicalLog( logicalLog, rm, cf, tf, logBufferFactory, fileSystemAbstraction, stringLogger, pruneStrategy, stateFactory );
         }
 
         // TODO These setters should be removed somehow

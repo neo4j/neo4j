@@ -32,7 +32,6 @@ import java.util.concurrent.Executors;
 
 import javax.transaction.TransactionManager;
 
-import ch.qos.logback.classic.LoggerContext;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -63,7 +62,6 @@ import org.neo4j.kernel.impl.core.Caches;
 import org.neo4j.kernel.impl.core.DefaultCaches;
 import org.neo4j.kernel.impl.core.DefaultRelationshipTypeCreator;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
-import org.neo4j.kernel.impl.core.LockReleaser;
 import org.neo4j.kernel.impl.core.NodeImpl;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.NodeProxy;
@@ -91,6 +89,7 @@ import org.neo4j.kernel.impl.transaction.LockType;
 import org.neo4j.kernel.impl.transaction.RagManager;
 import org.neo4j.kernel.impl.transaction.ReadOnlyTxManager;
 import org.neo4j.kernel.impl.transaction.TransactionManagerProvider;
+import org.neo4j.kernel.impl.transaction.TransactionStateFactory;
 import org.neo4j.kernel.impl.transaction.TxHook;
 import org.neo4j.kernel.impl.transaction.TxManager;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
@@ -114,6 +113,8 @@ import org.neo4j.kernel.logging.ClassicLoggingService;
 import org.neo4j.kernel.logging.LogbackService;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.tooling.GlobalGraphOperations;
+
+import ch.qos.logback.classic.LoggerContext;
 
 /**
  * Base implementation of GraphDatabaseService. Responsible for creating services, handling dependencies between them,
@@ -174,7 +175,6 @@ public abstract class InternalAbstractGraphDatabase
     protected TxEventSyncHookFactory syncHook;
     protected PersistenceManager persistenceManager;
     protected PropertyIndexManager propertyIndexManager;
-    protected LockReleaser lockReleaser;
     protected IndexStore indexStore;
     protected LogBufferFactory logBufferFactory;
     protected AbstractTransactionManager txManager;
@@ -192,7 +192,8 @@ public abstract class InternalAbstractGraphDatabase
     protected Caches caches;
 
     protected final LifeSupport life = new LifeSupport();
-    private final Map<String, CacheProvider> cacheProviders;
+    private final Map<String,CacheProvider> cacheProviders;
+    protected TransactionStateFactory stateFactory;
 
     protected InternalAbstractGraphDatabase( String storeDir, Map<String, String> params,
                                              Iterable<IndexProvider> indexProviders,
@@ -334,10 +335,11 @@ public abstract class InternalAbstractGraphDatabase
 
         guard = config.get( Configuration.execution_guard_enabled ) ? new Guard( msgLog ) : null;
 
+        stateFactory = new TransactionStateFactory();
+
         if ( readOnly )
         {
             txManager = new ReadOnlyTxManager( xaDataSourceManager );
-
         }
         else
         {
@@ -345,7 +347,7 @@ public abstract class InternalAbstractGraphDatabase
             if ( serviceName == null )
             {
                 txManager = new TxManager( this.storeDir, xaDataSourceManager, kernelPanicEventGenerator, txHook,
-                        logging.getLogger( TxManager.class ), fileSystem );
+                        logging.getLogger( TxManager.class ), fileSystem, stateFactory );
             }
             else
             {
@@ -358,7 +360,7 @@ public abstract class InternalAbstractGraphDatabase
                 }
                 txManager = provider.loadTransactionManager( this.storeDir, xaDataSourceManager,
                         kernelPanicEventGenerator, txHook, logging.getLogger( AbstractTransactionManager.class ),
-                        fileSystem );
+                        fileSystem, stateFactory );
             }
         }
         life.add( txManager );
@@ -377,15 +379,10 @@ public abstract class InternalAbstractGraphDatabase
 
         syncHook = new DefaultTxEventSyncHookFactory();
 
-        // TODO Cyclic dependency! lockReleaser is null here
         persistenceManager = new PersistenceManager( txManager,
-                persistenceSource, syncHook, lockReleaser );
+                persistenceSource, syncHook );
 
-        propertyIndexManager = life.add( new PropertyIndexManager(
-                txManager, persistenceManager, persistenceSource ) );
-
-        lockReleaser = new LockReleaser( lockManager, txManager, nodeManager, propertyIndexManager );
-        persistenceManager.setLockReleaser( lockReleaser ); // TODO This cyclic dep needs to be refactored
+        propertyIndexManager = life.add( new PropertyIndexManager( persistenceManager, persistenceSource ) );
 
         relationshipTypeHolder = new RelationshipTypeHolder( txManager,
                 persistenceManager, persistenceSource, relationshipTypeCreator );
@@ -399,8 +396,7 @@ public abstract class InternalAbstractGraphDatabase
                 createNodeManager( readOnly, cacheProvider, nodeCache, relCache );
 
         life.add( nodeManager );
-
-        lockReleaser.setNodeManager( nodeManager ); // TODO Another cyclic dep that needs to be refactored
+        stateFactory.setDependencies( lockManager, propertyIndexManager, nodeManager, txManager );
 
         indexStore = new IndexStore( this.storeDir, fileSystem );
 
@@ -446,7 +442,33 @@ public abstract class InternalAbstractGraphDatabase
                 logging.getLogger( XaFactory.class ), recoveryVerifier, LogPruneStrategies.fromConfigValue(
                 fileSystem, keepLogicalLogsConfig ) );
 
+//<<<<<<< HEAD
+//        // Create DataSource
+//        List<Pair<TransactionInterceptorProvider, Object>> providers = new ArrayList<Pair<TransactionInterceptorProvider, Object>>( 2 );
+//        for ( TransactionInterceptorProvider provider : Service.load( TransactionInterceptorProvider.class ) )
+//        {
+//            Object prov = params.get( TransactionInterceptorProvider.class.getSimpleName() + "." + provider.name() );
+//            if ( prov != null )
+//            {
+//                providers.add( Pair.of( provider, prov ) );
+//            }
+//        }
+//
+//        try
+//        {
+//            // TODO IO stuff should be done in lifecycle. Refactor!
+//            neoDataSource = new NeoStoreXaDataSource( config,
+//                    storeFactory, fileSystem, lockManager, logging.getLogger( Loggers.DATASOURCE ), xaFactory, stateFactory, providers, new DependencyResolverImpl());
+//            xaDataSourceManager.registerDataSource( neoDataSource );
+//        } catch (IOException e)
+//        {
+//            throw new IllegalStateException("Could not create Neo XA datasource", e);
+//        }
+//
+//        life.add( new StuffToDoAfterRecovery() );
+//=======
         createNeoDataSource();
+//>>>>>>> master
 
         life.add( new MonitorGc( config, msgLog ) );
 
@@ -481,12 +503,12 @@ public abstract class InternalAbstractGraphDatabase
     {
         if ( readOnly )
         {
-            return new ReadOnlyNodeManager( config, this, lockManager, lockReleaser, txManager, persistenceManager,
+            return new ReadOnlyNodeManager( config, this, lockManager, txManager, persistenceManager,
                     persistenceSource, relationshipTypeHolder, cacheType, propertyIndexManager, createNodeLookup(),
                     createRelationshipLookups(), nodeCache, relCache, xaDataSourceManager );
         }
 
-        return new NodeManager( config, this, lockManager, lockReleaser, txManager, persistenceManager,
+        return new NodeManager( config, this, lockManager, txManager, persistenceManager,
                 persistenceSource, relationshipTypeHolder, cacheType, propertyIndexManager, createNodeLookup(),
                 createRelationshipLookups(), nodeCache, relCache, xaDataSourceManager );
     }
@@ -496,7 +518,7 @@ public abstract class InternalAbstractGraphDatabase
     {
         if ( readOnly )
         {
-            return new ReadOnlyNodeManager( config, this, lockManager, lockReleaser, txManager, persistenceManager,
+            return new ReadOnlyNodeManager( config, this, lockManager, txManager, persistenceManager,
                     persistenceSource, relationshipTypeHolder, cacheType, propertyIndexManager, createNodeLookup(),
                     createRelationshipLookups(), nodeCache, relCache, xaDataSourceManager )
             {
@@ -545,7 +567,7 @@ public abstract class InternalAbstractGraphDatabase
             };
         }
 
-        return new NodeManager( config, this, lockManager, lockReleaser, txManager, persistenceManager,
+        return new NodeManager( config, this, lockManager, txManager, persistenceManager,
                 persistenceSource, relationshipTypeHolder, cacheType, propertyIndexManager, createNodeLookup(),
                 createRelationshipLookups(), nodeCache, relCache, xaDataSourceManager )
         {
@@ -752,8 +774,8 @@ public abstract class InternalAbstractGraphDatabase
         {
             // TODO IO stuff should be done in lifecycle. Refactor!
             neoDataSource = new NeoStoreXaDataSource( config,
-                    storeFactory, lockManager, lockReleaser, logging.getLogger( NeoStoreXaDataSource.class ),
-                    xaFactory, transactionInterceptorProviders, dependencyResolver );
+                    storeFactory, lockManager, logging.getLogger( NeoStoreXaDataSource.class ),
+                    xaFactory, stateFactory, transactionInterceptorProviders, dependencyResolver );
             xaDataSourceManager.registerDataSource( neoDataSource );
 
         }
@@ -791,7 +813,7 @@ public abstract class InternalAbstractGraphDatabase
         try
         {
             txManager.begin( forceMode );
-            result = new TopLevelTransaction( txManager, lockManager, lockReleaser );
+            result = new TopLevelTransaction( txManager, lockManager, txManager.getTransactionState() );
         }
         catch ( Exception e )
         {
@@ -932,12 +954,6 @@ public abstract class InternalAbstractGraphDatabase
     public NodeManager getNodeManager()
     {
         return nodeManager;
-    }
-
-    @Override
-    public LockReleaser getLockReleaser()
-    {
-        return lockReleaser;
     }
 
     @Override
@@ -1190,7 +1206,7 @@ public abstract class InternalAbstractGraphDatabase
         public TransactionEventsSyncHook create()
         {
             return transactionEventHandlers.hasHandlers() ?
-                    new TransactionEventsSyncHook( nodeManager, transactionEventHandlers, txManager ) : null;
+                   new TransactionEventsSyncHook( transactionEventHandlers, txManager) : null;
         }
     }
 
@@ -1225,11 +1241,7 @@ public abstract class InternalAbstractGraphDatabase
             {
                 return (T) lockManager;
             }
-            else if ( LockReleaser.class.isAssignableFrom( type ) )
-            {
-                return (T) lockReleaser;
-            }
-            else if ( StoreFactory.class.isAssignableFrom( type ) )
+            else if( StoreFactory.class.isAssignableFrom( type ) )
             {
                 return (T) storeFactory;
             }
@@ -1280,6 +1292,10 @@ public abstract class InternalAbstractGraphDatabase
             else if ( NodeManager.class.isAssignableFrom( type ) )
             {
                 return (T) nodeManager;
+            }
+            else if ( TransactionStateFactory.class.isAssignableFrom( type ) )
+            {
+                return (T) stateFactory;
             }
             else
             {

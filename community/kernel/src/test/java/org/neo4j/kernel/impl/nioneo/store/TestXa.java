@@ -23,6 +23,7 @@ package org.neo4j.kernel.impl.nioneo.store;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME;
+import static org.neo4j.kernel.impl.transaction.TransactionStateFactory.NO_STATE_FACTORY;
 
 import java.io.File;
 import java.io.IOException;
@@ -58,7 +59,6 @@ import org.neo4j.kernel.TransactionInterceptorProviders;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConfigurationDefaults;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
-import org.neo4j.kernel.impl.core.LockReleaser;
 import org.neo4j.kernel.impl.core.PropertyIndex;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaConnection;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
@@ -98,7 +98,6 @@ public class TestXa extends AbstractNeo4jTestCase
     }
 
     private LockManager lockManager;
-    private LockReleaser lockReleaser;
 
     private String path()
     {
@@ -133,13 +132,19 @@ public class TestXa extends AbstractNeo4jTestCase
         propertyIndexes = new HashMap<String, PropertyIndex>();
 
         FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
+//<<<<<<< HEAD
+//        StoreFactory sf = new StoreFactory(
+//                new Config( new ConfigurationDefaults( GraphDatabaseSettings.class ).apply( Collections
+//                        .<String, String> emptyMap() ) ), new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(),
+//                        fileSystem, null, StringLogger.DEV_NULL, null );
+//=======
         StoreFactory sf = new StoreFactory(new Config( new ConfigurationDefaults(GraphDatabaseSettings.class ).apply(
                 Collections.<String,String>emptyMap() )), new DefaultIdGeneratorFactory(),
                 new DefaultWindowPoolFactory(), fileSystem, StringLogger.DEV_NULL, null );
+//>>>>>>> master
         sf.createNeoStore(file( "neo" )).close();
 
         lockManager = getEmbeddedGraphDb().getLockManager();
-        lockReleaser = getEmbeddedGraphDb().getLockReleaser();
         ds = newNeoStore();
         xaCon = ds.getXaConnection();
     }
@@ -451,12 +456,12 @@ public class TestXa extends AbstractNeo4jTestCase
             }
         }
 
-        NeoStoreXaDataSource neoStoreXaDataSource = new NeoStoreXaDataSource( config, sf, lockManager, lockReleaser,
+        NeoStoreXaDataSource neoStoreXaDataSource = new NeoStoreXaDataSource( config, sf, lockManager,
                 StringLogger.DEV_NULL,
                 new XaFactory( config, TxIdGenerator.DEFAULT, txManager,
                         logBufferFactory, fileSystem, StringLogger.DEV_NULL, RecoveryVerifier.ALWAYS_VALID,
-                        LogPruneStrategies.NO_PRUNING ),
-                new TransactionInterceptorProviders( Collections.<TransactionInterceptorProvider>emptyList(),
+                        LogPruneStrategies.NO_PRUNING ), NO_STATE_FACTORY,
+                        new TransactionInterceptorProviders( Collections.<TransactionInterceptorProvider>emptyList(),
                         new DependencyResolver()
 
                         {

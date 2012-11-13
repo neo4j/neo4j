@@ -59,13 +59,13 @@ import org.neo4j.kernel.ha.SlaveServer;
 import org.neo4j.kernel.ha.SlaveStoreWriter;
 import org.neo4j.kernel.ha.StoreOutOfDateException;
 import org.neo4j.kernel.ha.StoreUnableToParticipateInClusterException;
-import org.neo4j.kernel.impl.core.LockReleaser;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.LockManager;
+import org.neo4j.kernel.impl.transaction.TransactionStateFactory;
 import org.neo4j.kernel.impl.transaction.TxManager;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.MissingLogDataException;
@@ -272,9 +272,9 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                                 nioneoDataSource = new NeoStoreXaDataSource( config,
                                         resolver.resolveDependency( StoreFactory.class ),
                                         resolver.resolveDependency( LockManager.class ),
-                                        resolver.resolveDependency( LockReleaser.class ),
                                         resolver.resolveDependency( StringLogger.class ),
                                         resolver.resolveDependency( XaFactory.class ),
+                                        resolver.resolveDependency( TransactionStateFactory.class ),
                                         resolver.resolveDependency( TransactionInterceptorProviders.class ),
                                         resolver );
                                 xaDsm.registerDataSource( nioneoDataSource );
@@ -362,9 +362,9 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                             nioneoDataSource = new NeoStoreXaDataSource( config,
                                     resolver.resolveDependency( StoreFactory.class ),
                                     resolver.resolveDependency( LockManager.class ),
-                                    resolver.resolveDependency( LockReleaser.class ),
                                     resolver.resolveDependency( StringLogger.class ),
                                     resolver.resolveDependency( XaFactory.class ),
+                                    resolver.resolveDependency( TransactionStateFactory.class ),
                                     resolver.resolveDependency( TransactionInterceptorProviders.class ),
                                     resolver );
                             xaDataSourceManager.registerDataSource( nioneoDataSource );

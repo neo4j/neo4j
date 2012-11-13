@@ -19,20 +19,13 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
+import static java.lang.System.arraycopy;
+
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
-
-import javax.transaction.Transaction;
-import javax.transaction.TransactionManager;
 
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.NotInTransactionException;
-import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.kernel.impl.nioneo.store.NameData;
 import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
@@ -42,21 +35,18 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 public class PropertyIndexManager
     extends LifecycleAdapter
 {
-    private Map<String, List<PropertyIndex>> indexMap = new CopyOnWriteHashMap<String, List<PropertyIndex>>();
+    private static final PropertyIndex[] EMPTY_PROPERTY_INDEXES = new PropertyIndex[0];
+    
+    private Map<String, PropertyIndex[]> indexMap = new CopyOnWriteHashMap<String, PropertyIndex[]>();
     private Map<Integer, PropertyIndex> idToIndexMap = new CopyOnWriteHashMap<Integer, PropertyIndex>();
 
-    private Map<Transaction, TxCommitHook> txCommitHooks = new ConcurrentHashMap<Transaction, TxCommitHook>();
-
-    private final TransactionManager transactionManager;
     private final PersistenceManager persistenceManager;
     private final EntityIdGenerator idGenerator;
 
     private boolean hasAll = false;
 
-    public PropertyIndexManager( TransactionManager transactionManager,
-        PersistenceManager persistenceManager, EntityIdGenerator idGenerator )
+    public PropertyIndexManager( PersistenceManager persistenceManager, EntityIdGenerator idGenerator )
     {
-        this.transactionManager = transactionManager;
         this.persistenceManager = persistenceManager;
         this.idGenerator = idGenerator;
     }
@@ -64,42 +54,44 @@ public class PropertyIndexManager
     @Override
     public void stop()
     {
-        indexMap = new ConcurrentHashMap<String, List<PropertyIndex>>();
+        indexMap = new ConcurrentHashMap<String, PropertyIndex[]>();
         idToIndexMap = new ConcurrentHashMap<Integer, PropertyIndex>();
-        txCommitHooks.clear();
     }
 
-    public Iterable<PropertyIndex> index( String key )
+    @Override
+    public void shutdown()
     {
-        List<PropertyIndex> list = null;
+    }
+
+    public PropertyIndex[] index( String key, TransactionState state )
+    {
+        PropertyIndex[] existing = null;
         if ( key != null )
         {
-            list = indexMap.get( key );
-            Transaction tx = getTransaction();
-            if ( tx != null )
+            existing = indexMap.get( key );
+            if ( state != null )
             {
-                TxCommitHook hook = txCommitHooks.get( getTransaction() );
-                if ( hook != null )
+                PropertyIndex[] fullList;
+                PropertyIndex added = state.getIndex( key );
+                if ( added != null )
                 {
-                    PropertyIndex index = hook.getIndex( key );
-                    if ( index != null )
+                    if ( existing != null )
                     {
-                        List<PropertyIndex> added = new ArrayList<PropertyIndex>();
-                        if ( list != null )
-                        {
-                            added.addAll( list );
-                        }
-                        added.add( index );
-                        return added;
+                        fullList = new PropertyIndex[existing.length+1];
+                        arraycopy( existing, 0, fullList, 0, existing.length );
                     }
+                    else
+                        fullList = new PropertyIndex[1];
+                    fullList[fullList.length-1] = added;
+                    return fullList;
                 }
             }
         }
-        if ( list == null )
+        if ( existing == null )
         {
-            list = Collections.emptyList();
+            existing = EMPTY_PROPERTY_INDEXES;
         }
-        return list;
+        return existing;
     }
 
     void setHasAll( boolean status )
@@ -132,23 +124,16 @@ public class PropertyIndexManager
             rawIndex.getId() ) );
     }
 
-    public PropertyIndex getIndexFor( int keyId )
+    public PropertyIndex getIndexFor( int keyId, TransactionState state )
     {
         PropertyIndex index = idToIndexMap.get( keyId );
         if ( index == null )
         {
-            Transaction tx = getTransaction();
-            if ( tx != null )
+            if ( state != null )
             {
-                TxCommitHook commitHook = txCommitHooks.get( getTransaction() );
-                if ( commitHook != null )
-                {
-                    index = commitHook.getIndex( keyId );
-                    if ( index != null )
-                    {
-                        return index;
-                    }
-                }
+                PropertyIndex added = state.getIndex( keyId );
+                if ( added != null )
+                    return added;
             }
             String indexString;
             indexString = persistenceManager.loadIndex( keyId );
@@ -163,122 +148,41 @@ public class PropertyIndexManager
     }
 
     // need synch here so we don't create multiple lists
-    private synchronized void addPropertyIndex( PropertyIndex index )
+    synchronized void addPropertyIndex( PropertyIndex index )
     {
-        List<PropertyIndex> list = indexMap.get( index.getKey() );
+        PropertyIndex[] list = indexMap.get( index.getKey() );
         if ( list == null )
         {
-            list = new CopyOnWriteArrayList<PropertyIndex>();
-            indexMap.put( index.getKey(), list );
+            list = new PropertyIndex[] { index };
         }
-        list.add( index );
+        else
+        {
+            PropertyIndex[] extendedList = new PropertyIndex[list.length+1];
+            arraycopy( list, 0, extendedList, 0, list.length );
+            extendedList[list.length] = index;
+            list = extendedList;
+        }
+        indexMap.put( index.getKey(), list );
         idToIndexMap.put( index.getKeyId(), index );
     }
-
-    private Transaction getTransaction()
+    
+    // concurrent transactions may create duplicate keys, oh well
+    PropertyIndex createPropertyIndex( String key, TransactionState state )
     {
-        try
-        {
-            return transactionManager.getTransaction();
-        }
-        catch ( Exception e )
-        {
-            throw new TransactionFailureException(
-                "Unable to get transaction.", e );
-        }
-    }
-
-    // concurent transactions may create duplicate keys, oh well
-    PropertyIndex createPropertyIndex( String key )
-    {
-        Transaction tx = getTransaction();
-        if ( tx == null )
+        if ( state == null )
         {
             throw new NotInTransactionException(
                 "Unable to create property index for " + key );
         }
-        TxCommitHook hook = txCommitHooks.get( tx );
-        if ( hook == null )
-        {
-            hook = new TxCommitHook();
-            txCommitHooks.put( tx, hook );
-        }
-        PropertyIndex index = hook.getIndex( key );
+        PropertyIndex index = state.getIndex( key );
         if ( index != null )
         {
             return index;
         }
         int id = (int) idGenerator.nextId( PropertyIndex.class );
         index = new PropertyIndex( key, id );
-        hook.addIndex( index );
+        state.addIndex( index );
         persistenceManager.createPropertyIndex( key, id );
         return index;
-    }
-
-    void setRollbackOnly()
-    {
-        try
-        {
-            transactionManager.setRollbackOnly();
-        }
-        catch ( javax.transaction.SystemException se )
-        {
-            se.printStackTrace();
-        }
-    }
-
-    void commit( Transaction tx )
-    {
-        if ( tx != null )
-        {
-            TxCommitHook hook = txCommitHooks.remove( tx );
-            if ( hook != null )
-            {
-                for ( PropertyIndex index : hook.getAddedPropertyIndexes() )
-                {
-                    addPropertyIndex( index );
-                }
-            }
-        }
-    }
-
-    void rollback( Transaction tx )
-    {
-        txCommitHooks.remove( tx );
-    }
-
-    private static class TxCommitHook
-    {
-        private Map<String,PropertyIndex> createdIndexes =
-            new HashMap<String,PropertyIndex>();
-        private Map<Integer,PropertyIndex> idToIndex =
-            new HashMap<Integer,PropertyIndex>();
-
-
-        TxCommitHook()
-        {
-        }
-
-        void addIndex( PropertyIndex index )
-        {
-            assert !createdIndexes.containsKey( index.getKey() );
-            createdIndexes.put( index.getKey(), index );
-            idToIndex.put( index.getKeyId(), index );
-        }
-
-        PropertyIndex getIndex( String key )
-        {
-            return createdIndexes.get( key );
-        }
-
-        PropertyIndex getIndex( int keyId )
-        {
-            return idToIndex.get( keyId );
-        }
-
-        Iterable<PropertyIndex> getAddedPropertyIndexes()
-        {
-            return createdIndexes.values();
-        }
     }
 }

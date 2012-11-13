@@ -22,13 +22,12 @@ package org.neo4j.kernel.impl.core;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.helpers.collection.PrefetchingIterator;
+import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.core.NodeImpl.LoadStatus;
 import org.neo4j.kernel.impl.util.RelIdArray;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
@@ -36,29 +35,30 @@ import org.neo4j.kernel.impl.util.RelIdIterator;
 
 class IntArrayIterator extends PrefetchingIterator<Relationship> implements Iterable<Relationship>
 {
-    private Iterator<RelIdIterator> typeIterator;
-    private RelIdIterator currentTypeIterator;
+    private RelIdIterator[] rels;
+    private int currentTypeIndex;
     private final NodeImpl fromNode;
     private final DirectionWrapper direction;
     private final NodeManager nodeManager;
-    private final RelationshipType types[];
-    private final List<RelIdIterator> rels;
     
-    // This is just for optimization
     private boolean lastTimeILookedThereWasMoreToLoad;
+    private final boolean allTypes;
 
-    IntArrayIterator( List<RelIdIterator> rels, NodeImpl fromNode,
-        DirectionWrapper direction, NodeManager nodeManager, RelationshipType[] types,
-        boolean hasMoreToLoad )
+    IntArrayIterator( RelIdIterator[] rels, NodeImpl fromNode,
+        DirectionWrapper direction, NodeManager nodeManager, boolean hasMoreToLoad, boolean allTypes )
     {
-        this.rels = rels;
+        initializeRels( rels );
         this.lastTimeILookedThereWasMoreToLoad = hasMoreToLoad;
-        this.typeIterator = rels.iterator();
-        this.currentTypeIterator = typeIterator.hasNext() ? typeIterator.next() : RelIdArray.EMPTY.iterator( direction );
         this.fromNode = fromNode;
         this.direction = direction;
         this.nodeManager = nodeManager;
-        this.types = types;
+        this.allTypes = allTypes;
+    }
+
+    private void initializeRels( RelIdIterator[] rels )
+    {
+        this.rels = rels;
+        this.currentTypeIndex = 0;
     }
 
     public Iterator<Relationship> iterator()
@@ -69,6 +69,7 @@ class IntArrayIterator extends PrefetchingIterator<Relationship> implements Iter
     @Override
     protected Relationship fetchNextOrNull()
     {
+        RelIdIterator currentTypeIterator = rels[currentTypeIndex];
         do
         {
             if ( currentTypeIterator.hasNext() )
@@ -86,9 +87,9 @@ class IntArrayIterator extends PrefetchingIterator<Relationship> implements Iter
             LoadStatus status;
             while ( !currentTypeIterator.hasNext() )
             {
-                if ( typeIterator.hasNext() )
+                if ( ++currentTypeIndex < rels.length )
                 {
-                    currentTypeIterator = typeIterator.next();
+                    currentTypeIterator = rels[currentTypeIndex];
                 }
                 else if ( (status = fromNode.getMoreRelationships( nodeManager )).loaded()
                         // This is here to guard for that someone else might have loaded
@@ -99,14 +100,14 @@ class IntArrayIterator extends PrefetchingIterator<Relationship> implements Iter
                         || lastTimeILookedThereWasMoreToLoad )
                 {
                     lastTimeILookedThereWasMoreToLoad = status.hasMoreToLoad();
-                    Map<String,RelIdIterator> newRels = new HashMap<String,RelIdIterator>();
+                    Map<Integer,RelIdIterator> newRels = new HashMap<Integer,RelIdIterator>();
                     for ( RelIdIterator itr : rels )
                     {
-                        String type = itr.getType();
+                        int type = itr.getType();
                         RelIdArray newSrc = fromNode.getRelationshipIds( type );
                         if ( newSrc != null )
                         {
-                            itr = itr.updateSource( newSrc );
+                            itr = itr.updateSource( newSrc, direction );
                             itr.doAnotherRound();
                         }
                         newRels.put( type, itr );
@@ -115,32 +116,31 @@ class IntArrayIterator extends PrefetchingIterator<Relationship> implements Iter
                     // If we wanted relationships of any type check if there are
                     // any new relationship types loaded for this node and if so
                     // initiate iterators for them
-                    if ( types.length == 0 )
+                    if ( allTypes )
                     {
+                        ArrayMap<Integer, Collection<Long>> skipMap = nodeManager.getTransactionState().
+                                getCowRelationshipRemoveMap( fromNode );
                         for ( RelIdArray ids : fromNode.getRelationshipIds() )
                         {
-                            String type = ids.getType();
+                            int type = ids.getType();
                             RelIdIterator itr = newRels.get( type );
                             if ( itr == null )
                             {
-                                Collection<Long> remove = nodeManager.getCowRelationshipRemoveMap( fromNode, type );
+                                Collection<Long> remove = skipMap != null ? skipMap.get( type ) : null;
                                 itr = remove == null ? ids.iterator( direction ) :
                                         RelIdArray.from( ids, null, remove ).iterator( direction );
                                 newRels.put( type, itr );
                             }
                             else
                             {
-                                itr = itr.updateSource( ids );
+                                itr = itr.updateSource( ids, direction );
                                 newRels.put( type, itr );
                             }
                         }
                     }
                     
-                    rels.clear();
-                    rels.addAll( newRels.values() );
-                    
-                    typeIterator = rels.iterator();
-                    currentTypeIterator = typeIterator.hasNext() ? typeIterator.next() : RelIdArray.EMPTY.iterator( direction );
+                    initializeRels( newRels.values().toArray( new RelIdIterator[newRels.size()] ) );
+                    currentTypeIterator = rels[currentTypeIndex];
                 }
                 else
                 {

@@ -22,6 +22,9 @@ package org.neo4j.kernel.impl.core;
 import static org.neo4j.kernel.impl.cache.SizeOfs.withArrayOverheadIncludingReferences;
 import static org.neo4j.kernel.impl.cache.SizeOfs.withObjectOverhead;
 
+import java.util.Arrays;
+import java.util.Comparator;
+
 import org.neo4j.kernel.impl.cache.EntityWithSize;
 import org.neo4j.kernel.impl.cache.SizeOfs;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
@@ -88,8 +91,23 @@ abstract class ArrayBasedPrimitive extends Primitive implements EntityWithSize
         {
             result[i++] = property;
         }
+        sort( result );
         return result;
     }
+    
+    private static void sort( PropertyData[] array )
+    {
+        Arrays.sort( array, PROPERTY_DATA_COMPARATOR );
+    }
+    
+    private static final Comparator<PropertyData> PROPERTY_DATA_COMPARATOR = new Comparator<PropertyData>()
+    {
+        @Override
+        public int compare( PropertyData o1, PropertyData o2 )
+        {
+            return o1.getIndex() - o2.getIndex();
+        }
+    };
 
     @Override
     public void setProperties( ArrayMap<Integer, PropertyData> properties, NodeManager nodeManager )
@@ -107,12 +125,25 @@ abstract class ArrayBasedPrimitive extends Primitive implements EntityWithSize
     @Override
     protected PropertyData getPropertyForIndex( int keyId )
     {
-        for ( PropertyData property : properties )
+        PropertyData[] local = properties;
+        
+        // Algorithm copied from java.util.Arrays#binarySearch
+        // Don't used used since the method signature makes it impossible
+        // to use for PropertyData objects (where we compare to PropertyData#getIndex()
+        int low = 0;
+        int high = local.length-1;
+        while ( low <= high )
         {
-            if ( property.getIndex() == keyId )
-            {
-                return property;
-            }
+            int mid = (low + high) >>> 1;
+            PropertyData midVal = local[mid];
+            int midId = midVal.getIndex();
+
+            if ( midId < keyId )
+                low = mid + 1;
+            else if ( midId > keyId )
+                high = mid - 1;
+            else
+                return midVal; // key found
         }
         return null;
     }
@@ -200,10 +231,12 @@ abstract class ArrayBasedPrimitive extends Primitive implements EntityWithSize
             {
                 PropertyData[] compactedNewArray = new PropertyData[newArraySize];
                 System.arraycopy( newArray, 0, compactedNewArray, 0, newArraySize );
+                sort( compactedNewArray );
                 properties = compactedNewArray;
             }
             else
             {
+                sort( newArray );
                 properties = newArray;
             }
             updateSize( nodeManager );

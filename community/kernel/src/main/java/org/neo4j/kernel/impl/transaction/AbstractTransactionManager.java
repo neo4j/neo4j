@@ -23,6 +23,7 @@ import javax.transaction.NotSupportedException;
 import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
 
+import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
@@ -62,6 +63,15 @@ public abstract class AbstractTransactionManager implements TransactionManager, 
     {
         return ForceMode.forced;
     }
+    
+    /**
+     * Returns the {@link TransactionState} associated with the current transaction.
+     * If no transaction is active for the current thread {@link TransactionState#NO_STATE}
+     * should be returned.
+     * 
+     * @return state associated with the current transaction for this thread.
+     */
+    public abstract TransactionState getTransactionState();
 
     public abstract int getEventIdentifier();
 
