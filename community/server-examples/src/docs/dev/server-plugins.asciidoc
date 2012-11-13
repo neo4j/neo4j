@@ -54,7 +54,7 @@ classifier=sources
 ----
 
 The full source code is found here:
-https://github.com/neo4j/community/blob/{neo4j-git-tag}/server-examples/src/main/java/org/neo4j/examples/server/plugins/GetAll.java[GetAll.java]
+https://github.com/neo4j/neo4j/blob/{neo4j-git-tag}/community/server-examples/src/main/java/org/neo4j/examples/server/plugins/GetAll.java[GetAll.java]
 
 .Find the shortest path between two nodes plugin
 [snippet,java]
@@ -66,7 +66,7 @@ classifier=sources
 ----
 
 The full source code is found here:
-https://github.com/neo4j/community/blob/{neo4j-git-tag}/server-examples/src/main/java/org/neo4j/examples/server/plugins/ShortestPath.java[ShortestPath.java]
+https://github.com/neo4j/neo4j/blob/{neo4j-git-tag}/community/server-examples/src/main/java/org/neo4j/examples/server/plugins/ShortestPath.java[ShortestPath.java]
 
 
 To deploy the code, simply compile it into a .jar file and place it onto the server classpath (which by

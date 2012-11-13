@@ -4,7 +4,7 @@ Graph Algorithm examples
 
 [TIP]
 The source code used in the example is found here:
-https://github.com/neo4j/community/blob/{neo4j-git-tag}/embedded-examples/src/test/java/org/neo4j/examples/PathFindingExamplesTest.java[PathFindingExamplesTest.java]
+https://github.com/neo4j/neo4j/blob/{neo4j-git-tag}/community/embedded-examples/src/test/java/org/neo4j/examples/PathFindingExamplesTest.java[PathFindingExamplesTest.java]
 
 
 Calculating the shortest path (least number of relationships) between two nodes:

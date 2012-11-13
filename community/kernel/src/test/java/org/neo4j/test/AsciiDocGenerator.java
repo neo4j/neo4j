@@ -325,23 +325,20 @@ public abstract class AsciiDocGenerator
     }
 
     public void addGithubTestSourceLink( String key, Class<?> source,
-            String repo,
             String dir )
     {
-        githubLink( key, source, repo, dir, "test" );
+        githubLink( key, source, dir, "test" );
     }
 
-    public void addGithubSourceLink( String key, Class<?> source, String repo,
-            String dir )
+    public void addGithubSourceLink( String key, Class<?> source, String dir )
     {
-        githubLink( key, source, repo, dir, "main" );
+        githubLink( key, source, dir, "main" );
     }
 
-    private void githubLink( String key, Class<?> source, String repo,
-            String dir, String mainOrTest )
+    private void githubLink( String key, Class<?> source, String dir,
+            String mainOrTest )
     {
-        String path = "https://github.com/" + repo
-                         + "/blob/{neo4j-git-tag}/";
+        String path = "https://github.com/neo4j/neo4j/blob/{neo4j-git-tag}/";
         if ( dir != null )
         {
             path += dir + "/";

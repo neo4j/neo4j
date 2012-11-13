@@ -47,7 +47,7 @@ classifier=sources
 ----
 
 The full source code is found here:
-https://github.com/neo4j/community/blob/{neo4j-git-tag}/server-examples/src/main/java/org/neo4j/examples/server/unmanaged/HelloWorldResource.java[HelloWorldResource.java]
+https://github.com/neo4j/neo4j/blob/{neo4j-git-tag}/community/server-examples/src/main/java/org/neo4j/examples/server/unmanaged/HelloWorldResource.java[HelloWorldResource.java]
 
 
 Build this code, and place the resulting jar file (and any custom dependencies) into the +$NEO4J_SERVER_HOME/plugins+ directory, and include this class in the +neo4j-server.properties+ file, like so:

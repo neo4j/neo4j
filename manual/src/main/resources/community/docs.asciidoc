@@ -5,7 +5,7 @@ Writing Neo4j Documentation
 NOTE: Other than writing documentation, you can help out by providing comments - head over to the http://docs.neo4j.org/chunked/snapshot/[online HTML version] to do that!
 
 For how to build the manual see:
-https://github.com/neo4j/manual/blob/master/README.asciidoc[readme]
+https://github.com/neo4j/neo4j/blob/master/manual/README.asciidoc[readme]
 
 The documents use the asciidoc format, see:
 

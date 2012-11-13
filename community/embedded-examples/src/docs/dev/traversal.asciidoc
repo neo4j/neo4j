@@ -12,7 +12,7 @@ The traversals from the Matrix example above, this time using the new traversal 
 
 [TIP]
 The source code of the examples is found here:
-https://github.com/neo4j/community/blob/{neo4j-git-tag}/embedded-examples/src/main/java/org/neo4j/examples/NewMatrix.java[NewMatrix.java]
+https://github.com/neo4j/neo4j/blob/{neo4j-git-tag}/community/embedded-examples/src/main/java/org/neo4j/examples/NewMatrix.java[NewMatrix.java]
 
 .Friends and friends of friends
 [snippet,java]
@@ -67,7 +67,7 @@ This example shows how to use a path context holding a representation of a path.
 
 [TIP]
 The source code of this example is found here:
-https://github.com/neo4j/community/blob/{neo4j-git-tag}/embedded-examples/src/main/java/org/neo4j/examples/orderedpath/OrderedPath.java[OrderedPath.java]
+https://github.com/neo4j/neo4j/blob/{neo4j-git-tag}/community/embedded-examples/src/main/java/org/neo4j/examples/orderedpath/OrderedPath.java[OrderedPath.java]
 
 .Create a toy graph
 [snippet,java]
@@ -143,7 +143,7 @@ image::examples-matrix.png[title="Matrix node space view", scaledwidth="75%"]
 
 [TIP]
 The source code of the examples is found here:
-https://github.com/neo4j/community/blob/{neo4j-git-tag}/embedded-examples/src/main/java/org/neo4j/examples/Matrix.java[Matrix.java]
+https://github.com/neo4j/neo4j/blob/{neo4j-git-tag}/community/embedded-examples/src/main/java/org/neo4j/examples/Matrix.java[Matrix.java]
 
 .Friends and friends of friends
 [snippet,java]

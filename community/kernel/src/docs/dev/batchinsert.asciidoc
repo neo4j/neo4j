@@ -24,7 +24,7 @@ As we have already pointed out, you can't have multiple threads using the batch 
 
 [TIP]
 The source code of the examples is found here:
-https://github.com/neo4j/community/blob/{neo4j-git-tag}/kernel/src/test/java/examples/BatchInsertExampleTest.java[BatchInsertExampleTest.java]
+https://github.com/neo4j/neo4j/blob/{neo4j-git-tag}/community/kernel/src/test/java/examples/BatchInsertExampleTest.java[BatchInsertExampleTest.java]
 
 To get hold of a +BatchInseter+, use http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/unsafe/batchinsert/BatchInserters.html[+BatchInserters+] and then go from there:
 
@@ -82,5 +82,5 @@ tag=batchDb
 
 [TIP]
 The source code of the example is found here:
-https://github.com/neo4j/community/blob/{neo4j-git-tag}/kernel/src/test/java/examples/BatchInsertExampleTest.java[BatchInsertExampleTest.java]
+https://github.com/neo4j/neo4j/blob/{neo4j-git-tag}/community/kernel/src/test/java/examples/BatchInsertExampleTest.java[BatchInsertExampleTest.java]
 
