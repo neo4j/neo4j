@@ -54,11 +54,12 @@ public class MultipleClusterTest
         ClusterManager clusterManager = new ClusterManager( fromXml( getClass().getResource( "/twoclustertest.xml" ).toURI() ),
                 root, MapUtil.stringMap() );
         clusterManager.start();
-        ManagedCluster cluster = clusterManager.getDefaultCluster();
+        ManagedCluster clusterOne = clusterManager.getCluster( "neo4j.ha" );
+        ManagedCluster clusterTwo = clusterManager.getCluster( "neo4j.ha2" );
 
         long cluster1;
         {
-            GraphDatabaseService master = cluster.getMaster();
+            GraphDatabaseService master = clusterOne.getMaster();
             logging.getLogger().info( "CREATE NODE" );
             Transaction tx = master.beginTx();
             Node node = master.createNode();
@@ -71,7 +72,7 @@ public class MultipleClusterTest
 
         long cluster2;
         {
-            GraphDatabaseService master = cluster.getMaster();
+            GraphDatabaseService master = clusterTwo.getMaster();
             logging.getLogger().info( "CREATE NODE" );
             Transaction tx = master.beginTx();
             Node node = master.createNode();
@@ -83,14 +84,14 @@ public class MultipleClusterTest
         }
 
         // Verify properties in all cluster nodes
-        for ( HighlyAvailableGraphDatabase highlyAvailableGraphDatabase : cluster.getAllMembers() )
+        for ( HighlyAvailableGraphDatabase highlyAvailableGraphDatabase : clusterOne.getAllMembers() )
         {
             highlyAvailableGraphDatabase.getDependencyResolver().resolveDependency( UpdatePuller.class ).pullUpdates();
             Assert.assertEquals( "neo4j.ha", highlyAvailableGraphDatabase.getNodeById( cluster1 ).getProperty(
                     "cluster" ) );
         }
 
-        for ( HighlyAvailableGraphDatabase highlyAvailableGraphDatabase : cluster.getAllMembers() )
+        for ( HighlyAvailableGraphDatabase highlyAvailableGraphDatabase : clusterTwo.getAllMembers() )
         {
             highlyAvailableGraphDatabase.getDependencyResolver().resolveDependency( UpdatePuller.class ).pullUpdates();
             Assert.assertEquals( "neo4j.ha2", highlyAvailableGraphDatabase.getNodeById( cluster2 ).getProperty(
