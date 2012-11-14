@@ -1,0 +1,17 @@
+[[query-order]]
+Order by
+========
+
+To sort the output, use the +ORDER BY+ clause. Note that you can not sort on nodes or relationships,
+just on properties on these.
+
+.Graph
+include::includes/cypher-orderby-graph.asciidoc[]
+
+include::order-nodes-by-property.asciidoc[]
+
+include::order-nodes-by-multiple-properties.asciidoc[]
+
+include::order-nodes-in-descending-order.asciidoc[]
+
+include::ordering-null.asciidoc[]

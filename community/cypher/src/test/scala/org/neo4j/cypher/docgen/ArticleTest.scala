@@ -30,6 +30,7 @@ import org.neo4j.cypher.javacompat.GraphImpl
 import org.neo4j.cypher._
 import org.neo4j.test.{GeoffService, ImpermanentGraphDatabase, TestGraphDatabaseFactory, GraphDescription}
 import org.scalatest.Assertions
+import org.neo4j.test.AsciiDocGenerator
 
 /*
 Use this base class for tests that are more flowing text with queries intersected in the middle of the text.
@@ -44,13 +45,14 @@ abstract class ArticleTest extends Assertions with DocumentationHelper {
   var relIndex: Index[Relationship] = null
   val properties: Map[String, Map[String, Any]] = Map()
   var generateConsole: Boolean = true
+  var dir: File = null
 
   def title: String
   def section: String
   def assert(name: String, result: ExecutionResult)
   def graphDescription: List[String]
   def indexProps: List[String] = List()
-
+  
   def executeQuery(queryText: String)(implicit engine: ExecutionEngine): ExecutionResult = try {
     val result = engine.execute(replaceNodeIds(queryText))
     result.toList //Let's materialize the result
@@ -90,21 +92,27 @@ abstract class ArticleTest extends Assertions with DocumentationHelper {
 
   def text: String
 
-  def expandQuery(query: String, includeResults: Boolean, emptyGraph: Boolean, possibleAssertion: Seq[String]) = {
-    val querySnippet = AsciidocHelper.createCypherSnippet(replaceNodeIds(query))
-    val consoleText = consoleSnippet(replaceNodeIds(query), emptyGraph)
+  def expandQuery(query: String, includeResults: Boolean, emptyGraph: Boolean, dir: File, possibleAssertion: Seq[String]) = {
+    val name = title.toLowerCase.replace(" ", "-")
+    val queryAsciidoc = AsciidocHelper.createCypherSnippet(replaceNodeIds(query))
+    val querySnippet = AsciiDocGenerator.dumpToSeparateFileWithType(dir,  name + "-query", queryAsciidoc)
+    val consoleAsciidoc = consoleSnippet(replaceNodeIds(query), emptyGraph)
+    val consoleText = if (!consoleAsciidoc.isEmpty)
+        ".Try this query live\n" + 
+        AsciiDocGenerator.dumpToSeparateFileWithType(dir, name + "-console", consoleAsciidoc)
+      else ""
     val queryOutput = runQuery(emptyGraph, query, possibleAssertion)
-    val resultSnippet = AsciidocHelper.createQueryResultSnippet(queryOutput)
+    val resultSnippetAsciiDoc = AsciidocHelper.createQueryResultSnippet(queryOutput)
+    val resultSnippet = AsciiDocGenerator.dumpToSeparateFileWithType(dir, name + "-result", resultSnippetAsciiDoc)
 
-    val queryText = """_Query_
-
+    val queryText = """.Query
 %s
 
-                    """.format(querySnippet)
+""".format(querySnippet)
 
     val resultText = """.Result
 %s
-                     """.format(resultSnippet)
+""".format(resultSnippet)
 
     if (includeResults)
       queryText + resultText + consoleText
@@ -124,7 +132,13 @@ abstract class ArticleTest extends Assertions with DocumentationHelper {
     else
       executeQuery(query)
 
-    possibleAssertion.foreach(assert(_, result))
+    possibleAssertion.foreach(name => {
+      try {
+        assert(name, result)
+      } catch {
+        case e:Exception => throw new RuntimeException("Test: %s\n%s".format(name, e.getMessage), e)
+      }
+    })
 
     result.dumpToString()
   }
@@ -132,14 +146,13 @@ abstract class ArticleTest extends Assertions with DocumentationHelper {
   private def consoleSnippet(query: String, empty: Boolean): String = {
     if (generateConsole) {
       val create = if (!empty) new GeoffService(db).toGeoff.trim else "start n=node(*) match n-[r?]->() delete n, r;"
-      """.Try this query live
-[console]
+      """[console]
 ----
 %s
 
 %s
 ----
-      """.format(create, query)
+""".format(create, query)
     } else ""
   }
 
@@ -149,7 +162,7 @@ abstract class ArticleTest extends Assertions with DocumentationHelper {
   def produceDocumentation() {
     val db = init()
     try {
-      val (dir: File, writer: PrintWriter) = createWriter(title, section)
+      val writer: PrintWriter = createWriter(title, dir)
 
       val queryText = includeQueries(text, dir)
 
@@ -164,17 +177,13 @@ abstract class ArticleTest extends Assertions with DocumentationHelper {
   val assertiongRegEx = "assertion=([^\\s]*)".r
 
   private def includeGraphviz(startText: String, dir: File):String = {
-    val graphVizLine = "include::" + graphvizFileName + "[]"
-
     val regex = "###graph-image(.*?)###".r
     regex.findFirstMatchIn(startText) match {
       case None => startText
       case Some(options) =>
         val optionString = options.group(1)
-        val txt = startText.replaceAllLiterally("###graph-image" + optionString + "###", graphVizLine)
-        if (txt != startText) {
-          dumpGraphViz(dir, optionString.trim)
-        }
+        val txt = startText.replaceAllLiterally("###graph-image" + optionString + "###", 
+            dumpGraphViz(dir, optionString.trim))
         txt
     }
   }
@@ -195,7 +204,7 @@ abstract class ArticleTest extends Assertions with DocumentationHelper {
 
         val rest = query.split("\n").tail.mkString("\n")
         val q = rest.replaceAll("#", "")
-        producedText = producedText.replace(query, expandQuery(q, includeResults, emptyGraph, asserts))
+        producedText = producedText.replace(query, expandQuery(q, includeResults, emptyGraph, dir, asserts))
       }
     }
 
@@ -203,6 +212,7 @@ abstract class ArticleTest extends Assertions with DocumentationHelper {
   }
 
   private def init() = {
+    dir = createDir(section)
     db = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().newGraphDatabase()
 
     db.asInstanceOf[ImpermanentGraphDatabase].cleanContent(false)
@@ -231,3 +241,7 @@ abstract class ArticleTest extends Assertions with DocumentationHelper {
     db
   }
 }
+
+
+
+

@@ -1,0 +1,41 @@
+[[query-aggregation]]
+Aggregation
+===========
+
+include::introduction.asciidoc[]
+
+
+The following examples are assuming the example graph structure below.
+
+.Graph
+include::includes/cypher-aggregation-graph.asciidoc[]
+
+== COUNT ==
++COUNT+ is used to count the number of rows. +COUNT+ can be used in two forms -- `COUNT(*)`
+which just counts the number of matching rows, and +COUNT(<identifier>)+, which counts
+the number of non-`null` values in +<identifier>+.
+
+include::count-nodes.asciidoc[]
+
+include::group-count-relationship-types.asciidoc[]
+
+include::count-entities.asciidoc[]
+
+include::count-non-null-values.asciidoc[]
+
+include::sum.asciidoc[]
+
+include::avg.asciidoc[]
+
+include::percentile_disc.asciidoc[]
+
+include::percentile_cont.asciidoc[]
+
+include::max.asciidoc[]
+
+include::min.asciidoc[]
+
+include::collect.asciidoc[]
+
+include::distinct.asciidoc[]
+

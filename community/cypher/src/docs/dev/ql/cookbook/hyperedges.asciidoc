@@ -1,0 +1,21 @@
+[[cypher-cookbook-hyperedges]]
+== Hyperedges ==
+
+Imagine a user being part of different groups.
+A group can have different roles, and a user can be part of different groups.
+He also can have different roles in different groups apart from the membership.
+The association of a User, a Group and a Role can be referred to as a _HyperEdge_.
+However, it can be easily modeled in a property graph as a node that captures this n-ary relationship, as depicted below in the +U1G2R1+ node.
+
+.Graph
+include::includes/cypher-hyperedge-graph.asciidoc[]
+
+:leveloffset: 2
+
+include::find-groups.asciidoc[]
+
+include::find-all-groups-and-roles-for-a-user.asciidoc[]
+       
+include::find-common-groups-based-on-shared-roles.asciidoc[]
+
+

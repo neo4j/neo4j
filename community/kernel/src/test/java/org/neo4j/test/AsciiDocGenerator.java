@@ -51,6 +51,7 @@ public abstract class AsciiDocGenerator
     protected GraphDatabaseService graph;
     protected static final String SNIPPET_MARKER = "@@";
     protected Map<String, String> snippets = new HashMap<String, String>();
+    private static final Map<String, Integer> counters = new HashMap<String, Integer>();
 
     public AsciiDocGenerator( final String title, final String section )
     {
@@ -119,22 +120,37 @@ public abstract class AsciiDocGenerator
 
     public static Writer getFW( String dir, String title )
     {
-        try 
+        try
         {
             File dirs = new File( dir );
-            if ( !dirs.exists() )
+            String name = title.replace( " ", "-" )
+                    .toLowerCase() + ".asciidoc";
+            return getFW( dirs, name );
+        }
+        catch ( Exception e )
+        {
+            e.printStackTrace();
+            throw new RuntimeException( e );
+        }
+    }
+
+    public static Writer getFW( File dir, String filename )
+    {
+        try
+        {
+            if ( !dir.exists() )
             {
-                dirs.mkdirs();
+                dir.mkdirs();
             }
-            String name = title.replace( " ", "-" ).toLowerCase();
-            File out = new File( dirs, name + ".txt" );
+            File out = new File( dir, filename );
             if ( out.exists() )
             {
                 out.delete();
             }
             if ( !out.createNewFile() )
             {
-                throw new RuntimeException( "File exists: " + out.getAbsolutePath() );
+                throw new RuntimeException( "File exists: "
+                                            + out.getAbsolutePath() );
             }
             return new OutputStreamWriter( new FileOutputStream( out, false ),
                     "UTF-8" );
@@ -142,8 +158,72 @@ public abstract class AsciiDocGenerator
         catch ( Exception e )
         {
             e.printStackTrace();
-            throw new RuntimeException(e);
+            throw new RuntimeException( e );
         }
+    }
+    
+    public static String dumpToSeparateFile( File dir, String testId,
+            String content )
+    {
+        if ( content == null || content.isEmpty() )
+        {
+            throw new IllegalArgumentException( "The content can not be empty("
+                                                + content + ")." );
+        }
+        String filename = testId + ".asciidoc";
+        Writer writer = AsciiDocGenerator.getFW( new File( dir, "includes" ),
+                filename );
+        String title = "";
+        char firstChar = content.charAt( 0 );
+        if ( firstChar == '.' || firstChar == '_' )
+        {
+            int pos = content.indexOf( '\n' );
+            if ( pos != -1 )
+            {
+                title = content.substring( 0, pos + 1 );
+                content = content.substring( pos + 1 );
+            }
+        }
+        try
+        {
+            writer.write( content );
+        }
+        catch ( IOException e )
+        {
+            e.printStackTrace();
+        }
+        finally
+        {
+            try
+            {
+                writer.close();
+            }
+            catch ( IOException e )
+            {
+                e.printStackTrace();
+            }
+        }
+        return title + "include::includes/" + filename + "[]\n";
+    }
+
+    public static String dumpToSeparateFileWithType( File dir, String type,
+            String content )
+    {
+        if ( type == null || type.isEmpty() )
+        {
+            throw new IllegalArgumentException(
+                    "The type can not be null or empty: [" + type + "]" );
+        }
+        String key = dir.getAbsolutePath() + type;
+        Integer counter = counters.get( key );
+        if ( counter == null )
+        {
+            counter = 0;
+        }
+        counter++;
+        counters.put( key, counter );
+        String testId = type + "-" + String.valueOf( counter );
+        return dumpToSeparateFile( dir, testId, content );
     }
 
     public static PrintWriter getPrintWriter( String dir, String title )
@@ -158,28 +238,31 @@ public abstract class AsciiDocGenerator
                 .replace( ".", "/" ) + "/" + source.getSimpleName() + ".java";
     }
 
-    protected String replaceSnippets( String description )
+    protected String replaceSnippets( String description, File dir, String title )
     {
         for (String key : snippets.keySet()) {
-            description = replaceSnippet( description, key );
+            description = replaceSnippet( description, key, dir, title );
         }
         if(description.contains( SNIPPET_MARKER )) {
-            int indexOf = description.indexOf( "@@" );
+            int indexOf = description.indexOf( SNIPPET_MARKER );
             String snippet = description.substring( indexOf, description.indexOf( "\n", indexOf ) );
             log.severe( "missing snippet ["+snippet+"] in " + description);
         }
         return description;
     }
 
-    private String replaceSnippet( String description, String key )
+    private String replaceSnippet( String description, String key, File dir,
+            String title )
     {
-        String snippetString = SNIPPET_MARKER+key;
-        if ( description.contains( snippetString + "\n") )
+        String snippetString = SNIPPET_MARKER + key;
+        if ( description.contains( snippetString + "\n" ) )
         {
-            description = description.replace( snippetString + "\n",
+            String include = dumpToSeparateFile( dir, title + "-" + key,
                     snippets.get( key ) );
+            description = description.replace( snippetString + "\n", include );
         } else {
-            log.severe( "could not find " + snippetString + "\\n in "+ description );
+            log.severe( "Could not find " + snippetString + "\\n in "
+                        + description );
         }
         return description;
     }

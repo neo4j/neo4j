@@ -1,0 +1,10 @@
+[[cypher-cookbook-graphity]]
+== The Graphity activity stream model ==
+
+:leveloffset: 2
+
+include::find-activity-streams-in-a-network-without-scaling-penalty.asciidoc[]
+
+.Graph
+include::includes/cypher-graphity-graph.asciidoc[]
+

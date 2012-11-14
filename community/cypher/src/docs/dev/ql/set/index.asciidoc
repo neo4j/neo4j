@@ -1,0 +1,11 @@
+[[query-set]]
+Set
+===
+Updating properties on nodes and relationships is done with the +SET+ clause. +SET+ can also be used with
+maps from parameters.
+
+:leveloffset: 2
+
+include::set-a-property.asciidoc[]
+include::remove-a-property.asciidoc[]
+include::copying-properties-between-nodes-and-relationships.asciidoc[]
