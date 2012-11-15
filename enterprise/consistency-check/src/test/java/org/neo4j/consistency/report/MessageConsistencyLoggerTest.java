@@ -19,6 +19,10 @@
  */
 package org.neo4j.consistency.report;
 
+import static org.junit.Assert.assertThat;
+import static org.neo4j.consistency.report.InconsistencyMessageLogger.LINE_SEPARATOR;
+import static org.neo4j.consistency.report.InconsistencyMessageLogger.TAB;
+
 import java.io.StringWriter;
 
 import org.hamcrest.Description;
@@ -29,19 +33,15 @@ import org.neo4j.consistency.RecordType;
 import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
 import org.neo4j.kernel.impl.util.StringLogger;
 
-import static org.junit.Assert.assertThat;
-import static org.neo4j.consistency.report.MessageConsistencyLogger.LINE_SEPARATOR;
-import static org.neo4j.consistency.report.MessageConsistencyLogger.TAB;
-
 public class MessageConsistencyLoggerTest
 {
     // given
-    private final MessageConsistencyLogger logger;
+    private final InconsistencyMessageLogger logger;
     private final StringWriter writer;
 
     {
         writer = new StringWriter();
-        logger = new MessageConsistencyLogger( StringLogger.wrap( writer ) );
+        logger = new InconsistencyMessageLogger( StringLogger.wrap( writer ) );
     }
 
     @Test

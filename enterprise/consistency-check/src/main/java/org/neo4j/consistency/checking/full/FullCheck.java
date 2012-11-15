@@ -31,10 +31,10 @@ import java.util.List;
 
 import org.neo4j.consistency.ConsistencyCheckSettings;
 import org.neo4j.consistency.checking.CheckDecorator;
-import org.neo4j.consistency.report.ConsistencyLogger;
 import org.neo4j.consistency.report.ConsistencyReporter;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
-import org.neo4j.consistency.report.MessageConsistencyLogger;
+import org.neo4j.consistency.report.InconsistencyMessageLogger;
+import org.neo4j.consistency.report.InconsistencyReport;
 import org.neo4j.consistency.store.CacheSmallStoresRecordAccess;
 import org.neo4j.consistency.store.DiffRecordAccess;
 import org.neo4j.consistency.store.DirectRecordAccess;
@@ -71,9 +71,12 @@ public class FullCheck
             throws ConsistencyCheckIncompleteException
     {
         ConsistencySummaryStatistics summary = new ConsistencySummaryStatistics();
+        InconsistencyReport report = new InconsistencyReport( new InconsistencyMessageLogger( logger ), summary );
+
         OwnerCheck ownerCheck = new OwnerCheck( checkPropertyOwners );
-        execute( store, ownerCheck, recordAccess( store ), new MessageConsistencyLogger( logger ), summary );
+        execute( store, ownerCheck, recordAccess( store ), report );
         ownerCheck.scanForOrphanChains( progressFactory );
+
         if ( !summary.isConsistent() )
         {
             logger.logMessage( "Inconsistencies found: " + summary );
@@ -82,17 +85,17 @@ public class FullCheck
     }
 
     void execute( StoreAccess store, CheckDecorator decorator, DiffRecordAccess recordAccess,
-                  ConsistencyLogger logger, ConsistencySummaryStatistics summary )
+                  InconsistencyReport report )
             throws ConsistencyCheckIncompleteException
     {
         StoreProcessor processEverything = new StoreProcessor( decorator,
-                new ConsistencyReporter( logger, recordAccess, summary ) );
+                new ConsistencyReporter( recordAccess, report ) );
 
         ProgressMonitorFactory.MultiPartBuilder progress = progressFactory.multipleParts( "Full consistency check" );
         List<StoreProcessorTask> tasks = new ArrayList<StoreProcessorTask>( 9 );
 
         MultiPassStore.Factory processorFactory = new MultiPassStore.Factory(
-                decorator, logger, totalMappedMemory, store, recordAccess, summary );
+                decorator, totalMappedMemory, store, recordAccess, report );
 
         tasks.add( new StoreProcessorTask<NodeRecord>(
                 store.getNodeStore(), progress, order,

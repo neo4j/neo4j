@@ -19,13 +19,13 @@
  */
 package org.neo4j.consistency.checking;
 
+import static org.mockito.Mockito.verify;
+
 import org.junit.Test;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
-
-import static org.mockito.Mockito.verify;
 
 public class NodeRecordCheckTest
         extends RecordCheckTestBase<NodeRecord, ConsistencyReport.NodeConsistencyReport, NodeRecordCheck>

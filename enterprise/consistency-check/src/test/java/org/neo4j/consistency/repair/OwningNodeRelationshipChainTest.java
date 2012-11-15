@@ -19,6 +19,11 @@
  */
 package org.neo4j.consistency.repair;
 
+import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+import static org.neo4j.kernel.impl.nioneo.store.Record.NO_NEXT_PROPERTY;
+
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.junit.Test;
@@ -26,11 +31,6 @@ import org.junit.internal.matchers.TypeSafeMatcher;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.RecordStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
-
-import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-import static org.neo4j.kernel.impl.nioneo.store.Record.NO_NEXT_PROPERTY;
 
 public class OwningNodeRelationshipChainTest
 {

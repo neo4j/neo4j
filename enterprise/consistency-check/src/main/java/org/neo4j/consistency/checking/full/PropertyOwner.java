@@ -19,6 +19,8 @@
  */
 package org.neo4j.consistency.checking.full;
 
+import static org.neo4j.consistency.store.RecordReference.SkippingReference.skipReference;
+
 import org.neo4j.consistency.report.PendingReferenceCheck;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.consistency.store.RecordReference;
@@ -26,8 +28,6 @@ import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PrimitiveRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
-
-import static org.neo4j.consistency.store.RecordReference.SkippingReference.skipReference;
 
 abstract class PropertyOwner<RECORD extends PrimitiveRecord> implements Owner
 {

@@ -20,9 +20,12 @@
 package org.neo4j.consistency;
 
 import java.io.File;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.full.FullCheck;
+import org.neo4j.consistency.report.ConsistencySummaryStatistics;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
@@ -35,6 +38,8 @@ import org.neo4j.kernel.impl.util.StringLogger;
 
 public class ConsistencyCheckService
 {
+    private final Date timestamp = new Date();
+
     public void runFullConsistencyCheck( String storeDir,
                                          Config tuningConfiguration,
                                          ProgressMonitorFactory progressFactory,
@@ -46,15 +51,47 @@ public class ConsistencyCheckService
                 tuningConfiguration.get( ConsistencyCheckSettings.consistency_check_window_pool_implementation )
                         .windowPoolFactory( tuningConfiguration, logger ), new DefaultFileSystemAbstraction(), logger,
                 new DefaultTxHook() );
+
+        ConsistencySummaryStatistics summary;
+        File reportFile = chooseReportPath( storeDir, tuningConfiguration );
+        StringLogger report = StringLogger.lazyLogger( reportFile );
+
         NeoStore neoStore = factory.newNeoStore( new File( storeDir, NeoStore.DEFAULT_NAME ).getAbsolutePath() );
         try
         {
             StoreAccess store = new StoreAccess( neoStore );
-            new FullCheck( tuningConfiguration, progressFactory ).execute( store, logger );
+            summary = new FullCheck( tuningConfiguration, progressFactory )
+                    .execute( store, StringLogger.tee( logger, report ) );
         }
         finally
         {
             neoStore.close();
         }
+
+        if ( !summary.isConsistent() )
+        {
+            logger.logMessage( String.format( "See '%s' for a detailed consistency report.", reportFile.getPath() ) );
+        }
+    }
+
+    private File chooseReportPath( String storeDir, Config tuningConfiguration )
+    {
+        String reportPath = tuningConfiguration.get( ConsistencyCheckSettings.consistency_check_report_file );
+        File reportFile = new File( storeDir );
+        if ( reportPath != null )
+        {
+            reportFile = new File( reportPath );
+        }
+        if ( reportFile.isDirectory() )
+        {
+            reportFile = new File( reportFile, defaultLogFileName() );
+        }
+        return reportFile;
+    }
+
+    String defaultLogFileName()
+    {
+        return String.format( "inconsistencies-%s.report",
+                new SimpleDateFormat( "yyyy-MM-dd.HH.mm.ss" ).format( timestamp ) );
     }
 }

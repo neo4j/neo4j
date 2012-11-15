@@ -22,7 +22,7 @@ package org.neo4j.consistency.report;
 import org.neo4j.consistency.RecordType;
 import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
 
-public interface ConsistencyLogger
+public interface InconsistencyLogger
 {
     void error( RecordType recordType, AbstractBaseRecord record, String message, Object[] args );
 

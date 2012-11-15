@@ -19,6 +19,8 @@
  */
 package org.neo4j.consistency;
 
+import static org.neo4j.graphdb.factory.GraphDatabaseSetting.ANY;
+
 import org.neo4j.consistency.checking.full.TaskExecutionOrder;
 import org.neo4j.consistency.store.windowpool.WindowPoolImplementation;
 import org.neo4j.graphdb.factory.Default;
@@ -50,4 +52,9 @@ public class ConsistencyCheckSettings
     GraphDatabaseSetting.EnumerableSetting<WindowPoolImplementation> consistency_check_window_pool_implementation =
             new GraphDatabaseSetting.EnumerableSetting<WindowPoolImplementation>(
                     "consistency_check_window_pool_implementation", WindowPoolImplementation.class );
+
+    @Description("File name for inconsistencies log file. If not specified, logs to a file in the store directory.")
+    public static final
+    GraphDatabaseSetting<String> consistency_check_report_file =
+            new GraphDatabaseSetting.StringSetting("consistency_check_report_file", ANY, "Must me a valid file name");
 }

@@ -22,12 +22,12 @@ package org.neo4j.consistency.report;
 import org.neo4j.consistency.RecordType;
 import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
 
-class ReportSink implements ConsistencyLogger
+public class InconsistencyReport implements InconsistencyLogger
 {
-    private final ConsistencyLogger logger;
+    private final InconsistencyLogger logger;
     private final ConsistencySummaryStatistics summary;
 
-    ReportSink( ConsistencyLogger logger, ConsistencySummaryStatistics summary )
+    public InconsistencyReport( InconsistencyLogger logger, ConsistencySummaryStatistics summary )
     {
         this.logger = logger;
         this.summary = summary;

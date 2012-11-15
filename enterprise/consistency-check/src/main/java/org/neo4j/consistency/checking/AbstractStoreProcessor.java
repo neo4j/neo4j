@@ -19,6 +19,9 @@
  */
 package org.neo4j.consistency.checking;
 
+import static java.lang.String.format;
+import static org.neo4j.consistency.checking.DynamicStore.ARRAY;
+
 import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.kernel.IdType;
@@ -31,9 +34,6 @@ import org.neo4j.kernel.impl.nioneo.store.RecordStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeRecord;
 
-import static java.lang.String.format;
-import static org.neo4j.consistency.checking.DynamicStore.ARRAY;
-
 public abstract class AbstractStoreProcessor extends RecordStore.Processor
 {
     private final RecordCheck<NeoStoreRecord, ConsistencyReport.NeoStoreConsistencyReport> neoStoreChecker;
@@ -42,7 +42,6 @@ public abstract class AbstractStoreProcessor extends RecordStore.Processor
     private final RecordCheck<PropertyRecord, ConsistencyReport.PropertyConsistencyReport> propertyChecker;
     private final RecordCheck<PropertyIndexRecord, ConsistencyReport.PropertyKeyConsistencyReport> propertyKeyChecker;
     private final RecordCheck<RelationshipTypeRecord, ConsistencyReport.LabelConsistencyReport> relationshipLabelChecker;
-    private final CheckDecorator decorator;
 
     public AbstractStoreProcessor()
     {
@@ -51,7 +50,6 @@ public abstract class AbstractStoreProcessor extends RecordStore.Processor
 
     public AbstractStoreProcessor( CheckDecorator decorator )
     {
-        this.decorator = decorator;
         this.neoStoreChecker = decorator.decorateNeoStoreChecker( new NeoStoreCheck() );
         this.nodeChecker = decorator.decorateNodeChecker( new NodeRecordCheck() );
         this.relationshipChecker = decorator.decorateRelationshipChecker( new RelationshipRecordCheck() );

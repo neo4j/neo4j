@@ -19,13 +19,13 @@
  */
 package org.neo4j.consistency.repair;
 
-import org.neo4j.consistency.checking.old.InconsistencyType;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
-
 import static org.neo4j.consistency.checking.old.InconsistencyType.ReferenceInconsistency.SOURCE_NODE_INVALID;
 import static org.neo4j.consistency.checking.old.InconsistencyType.ReferenceInconsistency.SOURCE_NODE_NOT_IN_USE;
 import static org.neo4j.consistency.checking.old.InconsistencyType.ReferenceInconsistency.TARGET_NODE_INVALID;
 import static org.neo4j.consistency.checking.old.InconsistencyType.ReferenceInconsistency.TARGET_NODE_NOT_IN_USE;
+
+import org.neo4j.consistency.checking.old.InconsistencyType;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 
 public enum RelationshipNodeField
 {

@@ -19,6 +19,8 @@
  */
 package org.neo4j.consistency.repair;
 
+import static org.junit.Assert.assertEquals;
+
 import java.io.File;
 
 import org.junit.Rule;
@@ -31,8 +33,6 @@ import org.neo4j.kernel.impl.nioneo.store.RecordStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
 import org.neo4j.test.TargetDirectory;
-
-import static org.junit.Assert.assertEquals;
 
 public class RelationshipChainExplorerTest
 {

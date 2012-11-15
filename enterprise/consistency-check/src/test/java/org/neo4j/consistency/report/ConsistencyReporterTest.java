@@ -19,6 +19,14 @@
  */
 package org.neo4j.consistency.report;
 
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.argThat;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.verifyZeroInteractions;
+
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Proxy;
@@ -55,14 +63,6 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeRecord;
 
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.argThat;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.verifyZeroInteractions;
-
 @RunWith(Suite.class)
 @Suite.SuiteClasses({ConsistencyReporterTest.TestAllReportMessages.class,
                      ConsistencyReporterTest.TestReportLifecycle.class})
@@ -76,7 +76,8 @@ public class ConsistencyReporterTest
             // given
             ConsistencySummaryStatistics summary = mock( ConsistencySummaryStatistics.class );
             ConsistencyReporter.ReportHandler handler = new ConsistencyReporter.ReportHandler(
-                    mock( ConsistencyLogger.class ), summary, RecordType.PROPERTY, new PropertyRecord( 0 ) );
+                    new InconsistencyReport( mock( InconsistencyLogger.class ), summary ),
+                    RecordType.PROPERTY, new PropertyRecord( 0 ) );
 
             // when
             handler.updateSummary();
@@ -92,7 +93,8 @@ public class ConsistencyReporterTest
             // given
             ConsistencySummaryStatistics summary = mock( ConsistencySummaryStatistics.class );
             ConsistencyReporter.ReportHandler handler = new ConsistencyReporter.ReportHandler(
-                    mock( ConsistencyLogger.class ), summary, RecordType.PROPERTY, new PropertyRecord( 0 ) );
+                    new InconsistencyReport( mock( InconsistencyLogger.class ), summary ),
+                    RecordType.PROPERTY, new PropertyRecord( 0 ) );
 
             ConsistencyReport.PropertyConsistencyReport report =
                     (ConsistencyReport.PropertyConsistencyReport) Proxy
@@ -135,9 +137,9 @@ public class ConsistencyReporterTest
         public void shouldLogInconsistency() throws Exception
         {
             // given
-            ConsistencyLogger logger = mock( ConsistencyLogger.class );
+            InconsistencyReport report = mock( InconsistencyReport.class );
             ConsistencyReport.Reporter reporter = new ConsistencyReporter(
-                    logger, mock( DiffRecordAccess.class ), new ConsistencySummaryStatistics() );
+                    mock( DiffRecordAccess.class ), report );
 
             // when
             reportMethod.invoke( reporter, parameters( reportMethod ) );
@@ -147,13 +149,13 @@ public class ConsistencyReporterTest
             {
                 if ( reportMethod.getName().endsWith( "Change" ) )
                 {
-                    verify( logger ).error( any( RecordType.class ),
+                    verify( report ).error( any( RecordType.class ),
                                             any( AbstractBaseRecord.class ), any( AbstractBaseRecord.class ),
                                             argThat( hasExpectedFormat() ), any( Object[].class ) );
                 }
                 else
                 {
-                    verify( logger ).error( any( RecordType.class ),
+                    verify( report ).error( any( RecordType.class ),
                                             any( AbstractBaseRecord.class ),
                                             argThat( hasExpectedFormat() ), any( Object[].class ) );
                 }
@@ -162,13 +164,13 @@ public class ConsistencyReporterTest
             {
                 if ( reportMethod.getName().endsWith( "Change" ) )
                 {
-                    verify( logger ).warning( any( RecordType.class ),
+                    verify( report ).warning( any( RecordType.class ),
                                               any( AbstractBaseRecord.class ), any( AbstractBaseRecord.class ),
                                               argThat( hasExpectedFormat() ), any( Object[].class ) );
                 }
                 else
                 {
-                    verify( logger ).warning( any( RecordType.class ),
+                    verify( report ).warning( any( RecordType.class ),
                                               any( AbstractBaseRecord.class ),
                                               argThat( hasExpectedFormat() ), any( Object[].class ) );
                 }

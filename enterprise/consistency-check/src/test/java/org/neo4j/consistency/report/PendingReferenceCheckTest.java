@@ -19,6 +19,10 @@
  */
 package org.neo4j.consistency.report;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+import static org.mockito.Mockito.mock;
+
 import java.lang.reflect.Proxy;
 
 import org.junit.Test;
@@ -26,18 +30,13 @@ import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.checking.ComparativeRecordChecker;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-import static org.mockito.Mockito.mock;
-
 public class PendingReferenceCheckTest
 {
     // given
     {
         ConsistencyReporter.ReportHandler handler =
                 new ConsistencyReporter.ReportHandler(
-                        mock( ConsistencyLogger.class ),
-                        mock( ConsistencySummaryStatistics.class ),
+                        mock( InconsistencyReport.class ),
                         RecordType.PROPERTY,
                         new PropertyRecord( 0 ) );
         ConsistencyReport.PropertyConsistencyReport report =

@@ -19,6 +19,10 @@
  */
 package org.neo4j.consistency.report;
 
+import static java.lang.reflect.Proxy.getInvocationHandler;
+import static org.neo4j.helpers.Exceptions.launderedException;
+import static org.neo4j.helpers.Exceptions.withCause;
+
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
@@ -39,10 +43,6 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyIndexRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeRecord;
-
-import static java.lang.reflect.Proxy.getInvocationHandler;
-import static org.neo4j.helpers.Exceptions.launderedException;
-import static org.neo4j.helpers.Exceptions.withCause;
 
 public class ConsistencyReporter implements ConsistencyReport.Reporter
 {
@@ -76,22 +76,19 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
     private static final ProxyFactory<ConsistencyReport.DynamicConsistencyReport> DYNAMIC_REPORT =
             ProxyFactory.create( ConsistencyReport.DynamicConsistencyReport.class );
 
-    private final ConsistencyLogger logger;
     private final DiffRecordAccess records;
-    private final ConsistencySummaryStatistics summary;
+    private final InconsistencyReport report;
 
-    public ConsistencyReporter( ConsistencyLogger logger, DiffRecordAccess records,
-                                ConsistencySummaryStatistics summary )
+    public ConsistencyReporter( DiffRecordAccess records, InconsistencyReport report )
     {
-        this.logger = logger;
         this.records = records;
-        this.summary = summary;
+        this.report = report;
     }
 
     private <RECORD extends AbstractBaseRecord, REPORT extends ConsistencyReport<RECORD, REPORT>>
     void dispatch( RecordType type, ProxyFactory<REPORT> factory, RECORD record, RecordCheck<RECORD, REPORT> checker )
     {
-        ReportHandler handler = new ReportHandler( logger, summary, type, record );
+        ReportHandler handler = new ReportHandler( report, type, record );
         checker.check( record, factory.create( handler ), records );
         handler.updateSummary();
     }
@@ -100,7 +97,7 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
     void dispatchChange( RecordType type, ProxyFactory<REPORT> factory, RECORD oldRecord, RECORD newRecord,
                          RecordCheck<RECORD, REPORT> checker )
     {
-        DiffReportHandler handler = new DiffReportHandler( logger, summary, type, oldRecord, newRecord );
+        DiffReportHandler handler = new DiffReportHandler( report, type, oldRecord, newRecord );
         checker.checkChange( oldRecord, newRecord, factory.create( handler ), records );
         handler.updateSummary();
     }
@@ -135,13 +132,13 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
 
     private static abstract class ReportInvocationHandler implements InvocationHandler
     {
-        final ReportSink sink;
+        final InconsistencyReport report;
         final RecordType type;
         private short errors = 0, warnings = 0, references = 1/*this*/;
 
-        private ReportInvocationHandler( ConsistencyLogger logger, ConsistencySummaryStatistics stats, RecordType type )
+        private ReportInvocationHandler( InconsistencyReport report, RecordType type )
         {
-            this.sink = new ReportSink( logger, stats );
+            this.report = report;
             this.type = type;
         }
 
@@ -149,7 +146,7 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
         {
             if ( --references == 0 )
             {
-                sink.updateSummary( type, errors, warnings );
+                report.updateSummary( type, errors, warnings );
             }
         }
 
@@ -251,11 +248,11 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
     {
         private final AbstractBaseRecord record;
 
-        ReportHandler( ConsistencyLogger logger, ConsistencySummaryStatistics summary, RecordType type,
-                       AbstractBaseRecord record )
-        {
-            super( logger, summary, type );
-            this.record = record;
+        ReportHandler( InconsistencyReport report, RecordType type,
+            AbstractBaseRecord record )
+            {
+                super( report, type );
+                this.record = record;
         }
 
         @Override
@@ -267,13 +264,13 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
         @Override
         protected void logError( String message, Object[] args )
         {
-            sink.error( type, record, message, args );
+            report.error( type, record, message, args );
         }
 
         @Override
         protected void logWarning( String message, Object[] args )
         {
-            sink.warning( type, record, message, args );
+            report.warning( type, record, message, args );
         }
 
         @Override
@@ -299,10 +296,10 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
         private final AbstractBaseRecord oldRecord;
         private final AbstractBaseRecord newRecord;
 
-        private DiffReportHandler( ConsistencyLogger logger, ConsistencySummaryStatistics summary, RecordType type,
+        private DiffReportHandler( InconsistencyReport report, RecordType type,
                                    AbstractBaseRecord oldRecord, AbstractBaseRecord newRecord )
         {
-            super( logger, summary, type );
+            super( report, type );
             this.oldRecord = oldRecord;
             this.newRecord = newRecord;
         }
@@ -316,13 +313,13 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
         @Override
         protected void logError( String message, Object[] args )
         {
-            sink.error( type, oldRecord, newRecord, message, args );
+            report.error( type, oldRecord, newRecord, message, args );
         }
 
         @Override
         protected void logWarning( String message, Object[] args )
         {
-            sink.warning( type, oldRecord, newRecord, message, args );
+            report.warning( type, oldRecord, newRecord, message, args );
         }
 
         @Override

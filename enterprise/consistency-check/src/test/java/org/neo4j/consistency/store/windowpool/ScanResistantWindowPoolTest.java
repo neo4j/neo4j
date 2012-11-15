@@ -25,9 +25,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import org.junit.Test;
-import org.neo4j.kernel.impl.nioneo.store.OperationType;
 import org.neo4j.consistency.store.paging.PageReplacementStrategy;
 import org.neo4j.consistency.store.paging.StubPageReplacementStrategy;
+import org.neo4j.kernel.impl.nioneo.store.OperationType;
 
 public class ScanResistantWindowPoolTest
 {

@@ -19,12 +19,12 @@
  */
 package org.neo4j.consistency.repair;
 
+import static org.neo4j.consistency.repair.RelationshipChainDirection.NEXT;
+import static org.neo4j.consistency.repair.RelationshipChainDirection.PREV;
+
 import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.nioneo.store.RecordStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
-
-import static org.neo4j.consistency.repair.RelationshipChainDirection.NEXT;
-import static org.neo4j.consistency.repair.RelationshipChainDirection.PREV;
 
 public class RelationshipChainExplorer
 {

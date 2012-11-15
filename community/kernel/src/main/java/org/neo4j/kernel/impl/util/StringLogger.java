@@ -20,6 +20,8 @@
 
 package org.neo4j.kernel.impl.util;
 
+import static org.neo4j.helpers.collection.IteratorUtil.loop;
+
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -31,8 +33,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.neo4j.helpers.Format;
 import org.neo4j.helpers.collection.Visitor;
-
-import static org.neo4j.helpers.collection.IteratorUtil.loop;
 
 public abstract class StringLogger
 {
@@ -150,6 +150,114 @@ public abstract class StringLogger
                 // do nothing
             }
         } ) );
+    }
+
+    public static StringLogger tee( final StringLogger logger1, final StringLogger logger2 )
+    {
+        return new StringLogger() {
+
+            public void logLongMessage( String msg, Visitor<LineLogger> source, boolean flush )
+            {
+                logger1.logLongMessage( msg, source, flush );
+                logger2.logLongMessage( msg, source, flush );
+            }
+
+            public void logMessage( String msg, boolean flush )
+            {
+                logger1.logMessage( msg, flush );
+                logger2.logMessage( msg, flush );
+            }
+
+            public void logMessage( String msg, Throwable cause, boolean flush )
+            {
+                logger1.logMessage( msg, cause, flush );
+                logger2.logMessage( msg, cause, flush );
+            }
+
+            public void addRotationListener( Runnable listener )
+            {
+                logger1.addRotationListener( listener );
+                logger2.addRotationListener( listener );
+            }
+
+            public void flush()
+            {
+                logger1.flush();
+                logger2.flush();
+            }
+
+            public void close()
+            {
+                logger1.close();
+                logger2.close();
+            }
+
+            protected void logLine( String line )
+            {
+                logger1.logLine( line );
+                logger2.logLine( line );
+            }
+        };
+    }
+
+    /**
+     * Create a StringLogger that only creates a file on the first attempt to write something to the log.
+     */
+    public static StringLogger lazyLogger( final File logFile )
+    {
+        return new StringLogger() {
+
+            StringLogger logger = null;
+
+            public void logLongMessage( String msg, Visitor<LineLogger> source, boolean flush )
+            {
+                createLogger();
+                logger.logLongMessage( msg, source, flush );
+            }
+
+            public void logMessage( String msg, boolean flush )
+            {
+                createLogger();
+                logger.logMessage( msg, flush );
+            }
+
+            public void logMessage( String msg, Throwable cause, boolean flush )
+            {
+                createLogger();
+                logger.logMessage( msg, cause, flush );
+            }
+
+            public void addRotationListener( Runnable listener )
+            {
+                createLogger();
+                logger.addRotationListener( listener );
+            }
+
+            public void flush()
+            {
+                createLogger();
+                logger.flush();
+            }
+
+            public void close()
+            {
+                createLogger();
+                logger.close();
+            }
+
+            protected void logLine( String line )
+            {
+                createLogger();
+                logger.logLine( line );
+            }
+
+            private synchronized void createLogger()
+            {
+                if (logger == null){
+                    logger = logger( logFile );
+                }
+            }
+        };
     }
 
     public void logMessage( String msg )

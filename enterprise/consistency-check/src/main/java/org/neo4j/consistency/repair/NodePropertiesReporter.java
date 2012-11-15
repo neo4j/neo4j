@@ -19,6 +19,8 @@
  */
 package org.neo4j.consistency.repair;
 
+import static java.lang.String.format;
+
 import java.io.PrintWriter;
 import java.util.HashSet;
 import java.util.Set;
@@ -26,8 +28,6 @@ import java.util.Set;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
-
-import static java.lang.String.format;
 
 public class NodePropertiesReporter
 {

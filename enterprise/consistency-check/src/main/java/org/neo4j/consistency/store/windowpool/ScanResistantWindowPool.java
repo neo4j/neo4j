@@ -24,12 +24,12 @@ import static org.neo4j.kernel.impl.nioneo.store.WindowPoolStats.extractName;
 
 import java.io.IOException;
 
+import org.neo4j.consistency.store.paging.PageLoadFailureException;
+import org.neo4j.consistency.store.paging.PageReplacementStrategy;
 import org.neo4j.kernel.impl.nioneo.store.OperationType;
 import org.neo4j.kernel.impl.nioneo.store.PersistenceWindow;
 import org.neo4j.kernel.impl.nioneo.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.nioneo.store.WindowPoolStats;
-import org.neo4j.consistency.store.paging.PageLoadFailureException;
-import org.neo4j.consistency.store.paging.PageReplacementStrategy;
 import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPool;
 
 public class ScanResistantWindowPool implements WindowPool,

@@ -19,6 +19,7 @@
  */
 package org.neo4j.test;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.channels.ReadableByteChannel;
 import java.util.HashMap;
@@ -48,6 +49,11 @@ public abstract class GraphStoreFixture implements TestRule
     public StoreAccess storeAccess()
     {
         return new StoreAccess( directory );
+    }
+
+    public File directory()
+    {
+        return new File( directory );
     }
 
     public static abstract class Transaction
