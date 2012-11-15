@@ -133,11 +133,6 @@
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-com</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
       <artifactId>neo4j-shell</artifactId>
       <version>${project.version}</version>
       <scope>provided</scope>
