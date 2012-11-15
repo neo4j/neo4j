@@ -26,6 +26,7 @@ import org.neo4j.consistency.store.windowpool.WindowPoolImplementation;
 import org.neo4j.graphdb.factory.Default;
 import org.neo4j.graphdb.factory.Description;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
+import org.neo4j.graphdb.factory.GraphDatabaseSetting.DefaultValue;
 
 /**
  * Settings for online backup
@@ -47,14 +48,35 @@ public class ConsistencyCheckSettings
                     "consistency_check_execution_order", TaskExecutionOrder.class );
 
     @Description("Window pool implementation to be used when running consistency check")
-    @Default( "SCAN_RESISTANT" )
     public static final
     GraphDatabaseSetting.EnumerableSetting<WindowPoolImplementation> consistency_check_window_pool_implementation =
-            new GraphDatabaseSetting.EnumerableSetting<WindowPoolImplementation>(
+            new WindowPoolImplementationSetting(
                     "consistency_check_window_pool_implementation", WindowPoolImplementation.class );
 
     @Description("File name for inconsistencies log file. If not specified, logs to a file in the store directory.")
     public static final
     GraphDatabaseSetting<String> consistency_check_report_file =
             new GraphDatabaseSetting.StringSetting("consistency_check_report_file", ANY, "Must me a valid file name");
+    
+    // A specific setting just to be able to have a conditional default value
+    private static class WindowPoolImplementationSetting extends GraphDatabaseSetting.EnumerableSetting<WindowPoolImplementation>
+            implements DefaultValue
+    {
+        public WindowPoolImplementationSetting( String name, Class<WindowPoolImplementation> theEnum )
+        {
+            super( name, theEnum );
+        }
+
+        @Override
+        public String getDefaultValue()
+        {
+            if ( !osIsWindows() )
+                return WindowPoolImplementation.SCAN_RESISTANT.name();
+            else
+                // On Windows there are problems with memory (un)mapping files, involving
+                // relying on GC for unmapping which is error prone. So default back to
+                // the a window pool that can switch off memory mapping.
+                return WindowPoolImplementation.MOST_FREQUENTLY_USED.name();
+        }
+    }
 }
