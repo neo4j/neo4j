@@ -20,29 +20,31 @@
 package org.neo4j.kernel.ha;
 
 import static junit.framework.Assert.assertEquals;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
 import static org.neo4j.test.ha.ClusterManager.masterAvailable;
 import static org.neo4j.test.ha.ClusterManager.masterSeesSlavesAsAvailable;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestName;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.ClusterManager;
 import org.neo4j.test.ha.ClusterManager.ManagedCluster;
 
-// TODO This needs to be fixed
-//@Ignore
 public class TestTxPushStrategyConfig
 {
     private LifeSupport life = new LifeSupport();
     private ManagedCluster cluster;
     private TargetDirectory dir;
+    
+    @Rule public TestName name = new TestName();
 
     @Before
     public void before() throws Exception
@@ -58,7 +60,7 @@ public class TestTxPushStrategyConfig
     
     private void startCluster( int memberCount, final int pushFactor, final String pushStrategy )
     {
-        ClusterManager clusterManager = life.add( new ClusterManager( clusterOfSize( memberCount ), dir.directory( "dbs", true ), MapUtil.stringMap() )
+        ClusterManager clusterManager = life.add( new ClusterManager( clusterOfSize( memberCount ), dir.directory( name.getMethodName(), true ), stringMap() )
         {
             @Override
             protected void config( GraphDatabaseBuilder builder, String clusterName, int serverId )
@@ -75,7 +77,8 @@ public class TestTxPushStrategyConfig
     public void twoFixed() throws Exception
     {
         startCluster( 4, 2, "fixed" );
-
+        cluster.await( masterSeesSlavesAsAvailable( 3 ) );
+        
         for ( int i = 0; i < 5; i++ )
         {
             createTransactionOnMaster();
@@ -89,6 +92,7 @@ public class TestTxPushStrategyConfig
     public void twoRoundRobin() throws Exception
     {
         startCluster( 5, 2, "round_robin" );
+        cluster.await( masterSeesSlavesAsAvailable( 4 ) );
 
         createTransactionOnMaster();
         assertLastTxId( 2, 2 );
@@ -119,6 +123,7 @@ public class TestTxPushStrategyConfig
     public void twoFixedFromSlaveCommit() throws Exception
     {
         startCluster( 4, 2, "fixed" );
+        cluster.await( masterSeesSlavesAsAvailable( 3 ) );
 
         createTransactionOn( 2 );
         assertLastTxId( 2, 4 );
@@ -153,6 +158,7 @@ public class TestTxPushStrategyConfig
     public void slaveListIsCorrectAfterMasterSwitch() throws Exception
     {
         startCluster( 3, 1, "fixed" );
+        cluster.await( masterSeesSlavesAsAvailable( 2 ) );
         
         cluster.shutdown( cluster.getMaster() );
         cluster.await( masterAvailable(), 10 );
