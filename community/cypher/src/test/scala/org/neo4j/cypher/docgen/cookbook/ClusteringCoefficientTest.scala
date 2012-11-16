@@ -46,6 +46,7 @@ _1-[:KNOWS]->_5,
 _2-[:KNOWS]->_6,
 _2-[:KNOWS]->_7,
 _3-[:KNOWS]->_4""");
+    dumpGraphViz(new java.io.File(dir, "clustering-coeff-dummy"), "");
     testQuery(
       title = "Calculating the Clustering Coefficient of a friend network",
       text = """In this example, adapted from 
