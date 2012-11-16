@@ -592,6 +592,7 @@
             <extensions>true</extensions>
             <executions>
               <execution>
+                <id>webadmin-specs</id>
                 <goals>
                   <goal>test</goal>
                 </goals>
@@ -854,6 +855,16 @@
                                 <phase>none</phase>
                             </execution>
                         </executions>
+                    </plugin>
+                    <plugin>
+                      <groupId>com.github.searls</groupId>
+                      <artifactId>jasmine-maven-plugin</artifactId>
+                      <executions>
+                        <execution>
+                          <id>webadmin-specs</id>
+                          <phase>none</phase>
+                        </execution>
+                      </executions>
                     </plugin>
                 </plugins>
             </build>
