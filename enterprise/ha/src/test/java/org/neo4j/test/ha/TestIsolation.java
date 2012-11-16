@@ -44,6 +44,8 @@ public class TestIsolation
 {
     GraphDatabaseService database;
 
+    private static final int COUNT = 1000;
+
     @Rule
     public TemporaryFolder temp = new TemporaryFolder();
 
@@ -51,6 +53,16 @@ public class TestIsolation
     public void setup()
     {
         database = new EmbeddedGraphDatabase( temp.getRoot().getAbsolutePath() );
+        Transaction tx = database.beginTx();
+
+        for (int i = 0; i < COUNT; i++)
+        {
+            Node node = database.createNode();
+            node.setProperty( "foo", 0 );
+        }
+
+        tx.success();
+        tx.finish();
     }
 
     @After
@@ -73,17 +85,7 @@ public class TestIsolation
     public void testIsolation()
         throws Exception
     {
-        Transaction tx = database.beginTx();
 
-        final int count=1000;
-        for (int i = 0; i < count; i++)
-        {
-            Node node = database.createNode();
-            node.setProperty( "foo", 0 );
-        }
-        
-        tx.success();
-        tx.finish();
 
         ExecutorService executor = Executors.newFixedThreadPool( 1 );
 
@@ -91,7 +93,7 @@ public class TestIsolation
         
         executor.submit( new DataChecker( done, database ) );
 
-        new DataChanger( database, count, done ).call();
+        new DataChanger( database, COUNT, done ).call();
     }
 
     /**
@@ -105,18 +107,6 @@ public class TestIsolation
     public void testIsolationWithLocks()
         throws Exception
     {
-        Transaction tx = database.beginTx();
-
-        final int count=1000;
-        for (int i = 0; i < count; i++)
-        {
-            Node node = database.createNode();
-            node.setProperty( "foo", 0 );
-        }
-
-        tx.success();
-        tx.finish();
-
         ExecutorService executor = Executors.newFixedThreadPool( 2 );
 
         final AtomicBoolean done = new AtomicBoolean( false );
@@ -140,7 +130,7 @@ public class TestIsolation
             }
         });
 
-        new DataChanger( database, count, done ).call();
+        new DataChanger( database, COUNT, done ).call();
     }
 
     /**
@@ -154,18 +144,6 @@ public class TestIsolation
     public void testIsolationWithLocksReversed()
         throws Exception
     {
-        Transaction tx = database.beginTx();
-
-        final int count=1000;
-        for (int i = 0; i < count; i++)
-        {
-            Node node = database.createNode();
-            node.setProperty( "foo", 0 );
-        }
-
-        tx.success();
-        tx.finish();
-
         ExecutorService executor = Executors.newFixedThreadPool( 2 );
 
         final AtomicBoolean done = new AtomicBoolean( false );
@@ -189,9 +167,9 @@ public class TestIsolation
             }
         });
 
-        executor.shutdownNow();
+        new DataChanger( database, COUNT, done ).call();
 
-        new DataChanger( database, count, done ).call();
+        executor.shutdownNow();
     }
 
     /**
@@ -207,19 +185,7 @@ public class TestIsolation
     public void testIsolationWithShortLocks()
         throws Exception
     {
-        Transaction tx = database.beginTx();
-
-        final int count=1000;
-        for (int i = 0; i < count; i++)
-        {
-            Node node = database.createNode();
-            node.setProperty( "foo", 0 );
-        }
-
-        tx.success();
-        tx.finish();
-
-        ExecutorService executor = Executors.newFixedThreadPool( 2 );
+        ExecutorService executor = Executors.newFixedThreadPool( 1 );
 
         final AtomicBoolean done = new AtomicBoolean( false );
 
@@ -256,7 +222,9 @@ public class TestIsolation
             }
         });
 
-        new DataChanger( database, count, done ).call();
+        new DataChanger( database, COUNT, done ).call();
+
+        executor.shutdownNow();
     }
 
     /**
@@ -272,18 +240,6 @@ public class TestIsolation
     public void testIsolationWithShortLocksReversed()
         throws Exception
     {
-        Transaction tx = database.beginTx();
-
-        final int count=1000;
-        for (int i = 0; i < count; i++)
-        {
-            Node node = database.createNode();
-            node.setProperty( "foo", 0 );
-        }
-
-        tx.success();
-        tx.finish();
-
         ExecutorService executor = Executors.newFixedThreadPool( 2 );
 
         final AtomicBoolean done = new AtomicBoolean( false );
@@ -321,7 +277,9 @@ public class TestIsolation
             }
         });
 
-        new DataChanger( database, count, done ).call();
+        new DataChanger( database, COUNT, done ).call();
+
+        executor.shutdownNow();
     }
 
     /**
@@ -337,25 +295,15 @@ public class TestIsolation
     public void testIsolationAll()
         throws Exception
     {
-        Transaction tx = database.beginTx();
-
-        final int count=1000;
-        for (int i = 0; i < count; i++)
-        {
-            Node node = database.createNode();
-            node.setProperty( "foo", 0 );
-        }
-
-        tx.success();
-        tx.finish();
-
         ExecutorService executor = Executors.newFixedThreadPool( 1 );
 
         final AtomicBoolean done = new AtomicBoolean( false );
 
-        executor.submit( new DataChecker2( count, done, database ) );
+        executor.submit( new DataChecker2( COUNT, done, database ) );
 
-        new DataChanger( database, count, done ).call();
+        new DataChanger( database, COUNT, done ).call();
+
+        executor.shutdownNow();
     }
 
     /**
@@ -369,23 +317,11 @@ public class TestIsolation
     public void testIsolationAllWithLocks()
         throws Exception
     {
-        Transaction tx = database.beginTx();
-
-        final int count=1000;
-        for (int i = 0; i < count; i++)
-        {
-            Node node = database.createNode();
-            node.setProperty( "foo", 0 );
-        }
-
-        tx.success();
-        tx.finish();
-
         ExecutorService executor = Executors.newFixedThreadPool( 1 );
 
         final AtomicBoolean done = new AtomicBoolean( false );
 
-        executor.submit( new DataChecker2( count, done, database )
+        executor.submit( new DataChecker2( COUNT, done, database )
         {
             @Override
             protected int getNodeValue( int i )
@@ -396,7 +332,9 @@ public class TestIsolation
             }
         });
 
-        new DataChanger( database, count, done ).call();
+        new DataChanger( database, COUNT, done ).call();
+
+        executor.shutdownNow();
     }
 
     /**
@@ -410,23 +348,11 @@ public class TestIsolation
     public void testIsolationAllWithLocksReverse()
         throws Exception
     {
-        Transaction tx = database.beginTx();
-
-        final int count=1000;
-        for (int i = 0; i < count; i++)
-        {
-            Node node = database.createNode();
-            node.setProperty( "foo", 0 );
-        }
-
-        tx.success();
-        tx.finish();
-
         ExecutorService executor = Executors.newFixedThreadPool( 1 );
 
         final AtomicBoolean done = new AtomicBoolean( false );
 
-        executor.submit( new DataChecker2( count, done, database )
+        executor.submit( new DataChecker2( COUNT, done, database )
         {
             @Override
             protected int getNodeValue( int i )
@@ -437,7 +363,9 @@ public class TestIsolation
             }
         });
 
-        new DataChanger( database, count, done ).call();
+        new DataChanger( database, COUNT, done ).call();
+
+        executor.shutdownNow();
     }
 
     private static class DataChanger
@@ -541,19 +469,24 @@ public class TestIsolation
                 double total = 0;
                 while(!done.get())
                 {
-                    tx = database.beginTx();
-
-                    int firstNode = getFirstValue();
-                    int lastNode = getSecondValue();
-                    if (firstNode - lastNode != 0)
+                    try
                     {
-                        errors++;
+                        tx = database.beginTx();
+
+                        int firstNode = getFirstValue();
+                        int lastNode = getSecondValue();
+                        if (firstNode - lastNode != 0)
+                        {
+                            errors++;
+                        }
+                        total++;
+
+                        tx.success();
                     }
-                    total++;
-
-                    tx.success();
-                    tx.finish();
-
+                    finally
+                    {
+                        tx.finish();
+                    }
                 }
                 double percentage = (errors/total)*100.0;
                 System.out.printf( "Done checking data, %1.0f errors found(%1.3f%%)\n", errors, percentage );
