@@ -1,0 +1,25 @@
+
+<!-- layout -->
+
+<script type="text/javascript" src="js/masonry.min.js"></script>
+<script type="text/javascript">
+window.onload = function() {
+  var h2s  = document.getElementsByTagName("h2");
+  var i = h2s.length;
+  while ( i-- ) {
+    var h2 = h2s[i];
+    var parent = h2.parentNode;
+    if ( parent.nextElementSibling ) {
+      var nextContainer = parent.nextElementSibling;
+      if ( nextContainer.firstElementChild ) {
+        nextContainer.insertBefore( h2, nextContainer.firstElementChild );
+      }
+    }
+  }
+  var wall = new Masonry( document.getElementById('page'), {
+    columnWidth: 440
+  });
+};
+</script>
+
+

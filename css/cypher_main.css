@@ -1,0 +1,437 @@
+html, body {
+  padding: 0;
+  margin: 0;
+  height: 100%;
+  background-color: #f0f0f0 ! important;
+  min-width: 400px;
+  font-family: "Droid Serif", Georgia, serif;
+}
+
+.col {
+  padding: 0;
+  margin: 10px;
+  width: 420px;
+  flot: left;
+}
+
+td p {
+}
+@media screen and (min-width: 1350px) {
+
+  html, body {
+    font-size: 0.975em;
+  }
+
+  .mid {
+    margin: 0 auto;
+    width: 1330px;
+  }
+  
+  header img.neo4j-logo {
+     width: 282px;
+     float: left;
+    margin: 2em 0 0 3%;
+  }  
+  
+  header h1 {
+    float: right;
+      padding: 1.5em 3% 0 3%;
+  }
+
+  header {
+    height: 8em;
+    }
+    
+    .col {
+      float: left;
+      width: 420px;
+      margin: 10px;
+      padding: 10px 0;
+    }
+
+}
+
+@media screen and (min-width: 978px)  and (max-width: 1349px) {
+
+  html, body {
+    font-size: 0.975em;
+  }
+
+  .mid {
+    margin: 0 auto;
+    width: 90%;
+  }
+  
+  header img.neo4j-logo {
+     width: 282px;
+     float: left;
+    margin: 2em 0 0 3%;
+  }  
+  
+  header h1 {
+    float: right;
+      padding: 1.5em 3% 0 3%;
+  }
+
+  header {
+    height: 8em;
+    }
+    
+    .col {
+      float: left;
+      width: 420px;
+      margin: 10px;
+    }
+
+}
+
+@media screen and (min-width: 780px) and (max-width: 977px) {
+
+  html, body {
+    font-size: 0.95em;
+  }
+
+  .mid {
+    margin: 0 auto;
+    width: 80%;
+  }
+  
+  header img.neo4j-logo {
+    width: 282px;
+    float: left;
+     margin: 2em 0 0 3%;
+  }
+  
+  header h1 {
+    float: right;
+      padding: 1.5em 3% 0 3%;
+  }
+
+  header {
+    height: 8em;
+    }
+    
+    .col {
+      float: left;
+      width: 600px;
+      margin: 10px;
+      padding: 10px 0;
+   }
+
+}
+
+@media screen and (min-width: 521px) and (max-width: 779px) {
+
+  html, body {
+    font-size: 0.9em;
+  }
+
+  .mid {
+    margin: 0 auto;
+    width: 93%;
+  }
+  
+  header img.neo4j-logo {
+    width: 212px;
+    float: left;
+     margin: 2em 0 0 3%;
+  }
+    
+  header h1 {
+    float: right;
+    padding: 1em 3% 0 3%;
+    font-size: 1.5em;
+  }
+  
+  header {
+    height: 7em;
+    }
+    
+    .col {
+      float: left;
+      width: 96%;
+   }
+   
+   .col img {
+     width: 80%;
+     }
+
+}
+
+@media screen and (max-width: 520px) {
+
+  html, body {
+    font-size: 0.9em;
+  }
+
+  .mid {
+    margin: 0;
+    width: 100%;
+  }
+  
+  header img.neo4j-logo {
+    width: 212px;
+    float: none;
+    margin: 1em 0 0 3%;
+  }
+  
+  header h1 {
+    float: none;
+    padding: 0.25em 3% 0 3%;
+    font-size: 1.3em;
+  }
+  
+  header {
+    height: 8em;
+    }
+    
+    .col {
+      float: none;
+      width: 92%;
+   }
+   
+   .col img {
+      width: 98%;
+   }
+
+}
+
+
+@media print {
+
+  html, body {
+    font-size: 9pt;
+  }
+
+  .mid {
+    margin: 0;
+    width: 100%;
+  }
+  
+  header img.neo4j-logo {
+    width: 282px;
+    float: left;
+    margin: 2em 0 0 3%;
+  }
+
+  header h1 {
+    float: right;
+      padding: 1.5em 3% 0 3%;
+  }
+  
+  header {
+    height: 8em;
+    }
+    
+  .col {
+      float: left;
+      width: 44%;
+      margin: 10px;
+      padding: 10px 0;
+   }
+
+  a[href]:after { content: ""; }
+}
+
+@page {
+  size: 8.5in 11in;
+}
+
+.page {
+  margin: 0 0 2em 0;
+  padding: 0 0 3em 0;
+/*  page-break-after : right;
+  page-break-inside : avoid;*/
+}
+
+header {
+  background: #005a72 url('bg.png');
+  color: #fff;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+
+.main .mid {
+  overflow: visible;
+  -moz-box-shadow: 0 10px 8px 4px #e5e5e5;
+  webkit-box-shadow: 0 10px 8px 4px #e5e5e5;
+  box-shadow: 0 10px 8px 4px #e5e5e5;
+  border-top: none;
+  position: relative;
+  background-color: #fff ! important;
+}
+
+header .mid {
+  background-color: #005a72;
+}
+
+header h1 {
+  margin: 0;
+  font-family:  'Ubuntu', Candara, sans-serif;
+  font-weight: 500;
+}
+
+footer div.mid {
+  margin-bottom: 1em;
+}
+
+.col h3 {
+  font-size: 1.1em;
+  margin-top: 0.5em;
+}
+
+.col h2 {
+  font-size: 1.3em;
+  margin-top: 0;
+  color: #005a72;
+}
+
+.twoCols {
+  width: 88%;
+  float: left;
+  padding: 0 3%;
+  margin: 2% 0 0 0;
+}
+
+.col table {
+  width: 100%;
+  border-spacing: 0;
+  margin: 1em 0;
+  /*table-layout: fixed;*/
+}
+
+.col table tr:nth-child(odd) {
+  background-color: #f5f5f5;
+}
+
+.col tr th {
+  padding: 0.125em 0.125em 0.25em 0.125em;
+  border: none;
+  /*background: #005a72 url('005a72.gif') repeat-x repeat-y top left;*/
+  background: #005a72 url('bg.png');
+  color: #fff;
+  font-family: 'Ubuntu', Candara, serif;
+  font-weight: 500;
+}
+
+.col tr th:first-child {
+  border-top-left-radius: 5px;
+  -webkit-border-top-left-radius: 5px;
+  -moz-border-top-left-radius: 5px;
+  width: 40%;
+}
+
+.col tr th:last-child {
+  border-top-right-radius: 5px;
+  -webkit-border-top-right-radius: 5px;
+  -moz-border-top-right-radius: 5px;
+  width: 60%;
+}
+
+.col tr td {
+  border-top: none;
+  margin: 0;
+  padding: 0.25em;
+  border-left: 1px solid #e5e5e5;
+  border-right: 1px solid #e5e5e5;
+  border-bottom: 1px solid #e5e5e5;
+}
+
+
+/*
+.col tr td:first-child {
+  font-family: monospace, serif;
+  font-size: 0.9em;
+  /*white-space: nowrap; */
+}
+*/
+
+
+.col td pre, .blk pre {
+  white-space: nowrap;
+}
+
+.col td pre {
+  padding: 0;
+  margin: 0;
+}
+
+em.code, em.tx {
+  font-family: "Ubuntu Mono", "Courier New", Courier, monospace, serif;
+  font-style: normal;
+}
+
+em.tx {
+  font-weight: bold;
+}
+
+.twoCols {
+  float: left;
+}
+
+.twoCols p {
+  width: 100%;
+  height: 100%;
+  padding-top: 1%;
+  overflow: auto;
+}
+
+
+#page_1, #page_2, #page_3, #page_4 {
+  /*border: 1px solid red;*/
+  overflow: auto;
+}
+
+
+.syntaxhighlighter a,
+.syntaxhighlighter div,
+.syntaxhighlighter code,
+.syntaxhighlighter table,
+.syntaxhighlighter table td,
+.syntaxhighlighter table tr,
+.syntaxhighlighter table tbody,
+.syntaxhighlighter table thead,
+.syntaxhighlighter table caption,
+.syntaxhighlighter textarea {
+  font-size: 14px !important;
+  font-family: "Ubuntu Mono", Consolas, Monaco,"Bitstream Vera Sans Mono", monospace !important;
+  line-height: 18px !important;
+}
+body .syntaxhighlighter,
+body .syntaxhighlighter .line.alt2 {
+  background-color: transparent !important;
+}
+body .syntaxhighlighter {
+  overflow: visible !important;
+}
+
+/**** Transitions ****/
+
+.masonry,
+.masonry .masonry-brick {
+  -webkit-transition-duration: 0.7s;
+     -moz-transition-duration: 0.7s;
+      -ms-transition-duration: 0.7s;
+       -o-transition-duration: 0.7s;
+          transition-duration: 0.7s;
+}
+
+.masonry {
+  -webkit-transition-property: width, height;
+     -moz-transition-property: width, height;
+      -ms-transition-property: width, height;
+       -o-transition-property: width, height;
+          transition-property: width, height;
+}
+
+.masonry .masonry-brick {
+  -webkit-transition-property: left, right, top;
+     -moz-transition-property: left, right, top;
+      -ms-transition-property: left, right, top;
+       -o-transition-property: left, right, top;
+          transition-property: left, right, top;
+}
+
+

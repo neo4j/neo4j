@@ -1,0 +1,132 @@
+Neo4j Cypher Refcard
+====================
+
+*Cypher is the declarative query language for Neo4j, the world’s leading graph database.*
+
+* Cypher matches patterns of nodes and relationship in the graph, to extract information or modify the data.
+* Cypher has the concept of identifiers which denote named, bound elements and parameters. 
+* Cypher can create, update, and remove nodes, relationships, and properties. 
+
+You can try cypher snippets live in the Neo4j Console at http://console.neo4j.org.
+
+
+== Query Syntax ==
+
+.Read-Only Query Structure 
+[refcard]
+----
+START me=node:people(name='Andres')
+MATCH me-[:FRIEND]-&gt;friend
+WHERE friend.age &gt; 18
+RETURN me, friend.name
+ORDER BY friend.age ASC
+SKIP 5 LIMIT 10
+----
+
+.START
+[refcard]
+----
+START n=node(id,[id2,id3])
+
+Load the node with id `id` into n.
+
+START n=node:indexName(key="value")
+
+Query the index for an exact value and put the result into n.
+Use node_auto_index for the auto-index.
+
+START n=node:indexName("lucene query")
+
+Query the index using a full Lucene query and put the result in n.
+
+START n=node(*)
+
+Load all nodes.
+
+START m=node(1), n=node(2)
+
+Multiple starting points.
+----
+
+.START
+[refcard]
+----
+START n=node:indexName( "lucene query")
+
+Query the index using a full Lucene query and put the result in n.
+
+START n=node(*)
+
+Load all nodes.
+
+START m=node(1), n=node(2)
+
+Multiple starting points.
+----
+
+.START
+[refcard]
+----
+START n=node(*)
+
+Load all nodes.
+
+START m=node(1), n=node(2)
+
+Multiple starting points.
+----
+
+.START
+[refcard]
+----
+START n=node(id,[id2,id3])
+
+Load the node with id `id` into n.
+
+START n=node:indexName(key="value")
+
+Query the index for an exact value and put the result into n.
+Use node_auto_index for the auto-index.
+----
+
+.START
+[refcard]
+----
+START n=node(id,[id2,id3])
+
+Load the node with id `id` into n.
+
+START n=node:indexName(key="value")
+
+Query the index for an exact value and put the result into n.
+Use node_auto_index for the auto-index.
+
+START n=node:indexName( "lucene query")
+
+Query the index using a full Lucene query and put the result in n.
+
+START n=node(*)
+
+Load all nodes.
+
+START m=node(1), n=node(2)
+
+Multiple starting points.
+----
+
+.START
+[refcard]
+----
+START n=node:indexName( "lucene query")
+
+Query the index using a full Lucene query and put the result in n.
+
+START n=node(*)
+
+Load all nodes.
+
+START m=node(1), n=node(2)
+
+Multiple starting points.
+----
+

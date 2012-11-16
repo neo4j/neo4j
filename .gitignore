@@ -1,0 +1,13 @@
+*~
+\#*
+target
+*.swp
+.project
+.classpath
+.settings
+.pydevproject
+*.iws
+*.ipr
+*.iml
+.idea
+.DS_Store

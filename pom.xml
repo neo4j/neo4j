@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>org.neo4j.build</groupId>
+    <artifactId>parent-central</artifactId>
+    <version>35</version>
+    <relativePath />
+  </parent>
+  <groupId>org.neo4j.doc</groupId>
+  <artifactId>neo4j-cypher-refcard</artifactId>
+  <version>1-SNAPSHOT</version>
+  <name>Neo4j Cypher Reference Card</name>
+  <description>Reference Card for the Neo4j Cypher Query Language.</description>
+  <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
+  <packaging>pom</packaging>
+
+  <properties>
+    <neo4j.version>1.9-SNAPSHOT</neo4j.version>
+    <docs.tools>${project.build.directory}/tools</docs.tools>
+    <docs.upstream>${project.build.directory}</docs.upstream>
+    <docs.importdir>${docs.upstream}/docs</docs.importdir>
+    <docs-plugin.skip>true</docs-plugin.skip>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.neo4j.build.plugins</groupId>
+      <artifactId>neo4j-doctools</artifactId>
+      <version>1-SNAPSHOT</version>
+      <scope>provided</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <outputDirectory>${project.build.directory}/src</outputDirectory>
+    <resources>
+      <resource>
+        <directory>src</directory>
+        <filtering>false</filtering>
+        <includes>
+          <include>*.*</include>
+          <include>**/*.*</include>
+        </includes>
+      </resource>
+    </resources>
+    <plugins>
+      <plugin>
+        <artifactId>maven-resources-plugin</artifactId>
+        <executions>
+          <execution>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>resources</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>unpack-doctools</id>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>unpack-dependencies</goal>
+            </goals>
+            <configuration>
+              <type>jar</type>
+              <includeArtifactIds>neo4j-doctools</includeArtifactIds>
+              <outputDirectory>${docs.tools}</outputDirectory>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>execute-asciidoc</id>
+            <phase>compile</phase>
+            <goals>
+              <goal>exec</goal>
+            </goals>
+            <configuration>
+              <executable>make</executable>
+              <arguments>
+                <argument>init</argument>
+                <argument>preview</argument>
+                <argument>VERSION=${neo4j.version}</argument>
+              </arguments>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.neo4j.build.plugins</groupId>
+        <artifactId>license-maven-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <artifactId>maven-jar-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>attach-docs</id>
+            <phase>none</phase>
+          </execution>
+          <execution>
+            <id>attach-test-jar</id>
+            <phase>none</phase>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+  
+  <distributionManagement>
+    <site>
+      <id>neo4j-site</id>
+      <url>scpexe://justgenerateanerrorplease</url>
+    </site>
+  </distributionManagement>
+
+</project>
+
