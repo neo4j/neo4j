@@ -20,6 +20,7 @@
 
 package org.neo4j.kernel.ha;
 
+import java.io.File;
 import java.util.EnumMap;
 import java.util.Map;
 
@@ -49,7 +50,7 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
     }
 
     @Override
-    public IdGenerator open( FileSystemAbstraction fs, String fileName, int grabSize, IdType idType )
+    public IdGenerator open( FileSystemAbstraction fs, File fileName, int grabSize, IdType idType )
     {
         IdGenerator initialIdGenerator = localFactory.open( fs, fileName, grabSize, idType );
         HaIdGenerator haIdGenerator = new HaIdGenerator( initialIdGenerator, fs, fileName, grabSize, idType );
@@ -58,7 +59,7 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
     }
 
     @Override
-    public void create( FileSystemAbstraction fs, String fileName, long highId )
+    public void create( FileSystemAbstraction fs, File fileName, long highId )
     {
         localFactory.create( fs, fileName, highId );
     }
@@ -135,12 +136,12 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
     {
         private IdGenerator delegate;
         private final FileSystemAbstraction fs;
-        private final String fileName;
+        private final File fileName;
         private final int grabSize;
         private final IdType idType;
         private volatile IdGeneratorState state = IdGeneratorState.TBD;
 
-        HaIdGenerator( IdGenerator initialDelegate, FileSystemAbstraction fs, String fileName, int grabSize,
+        HaIdGenerator( IdGenerator initialDelegate, FileSystemAbstraction fs, File fileName, int grabSize,
                        IdType idType )
         {
             delegate = initialDelegate;

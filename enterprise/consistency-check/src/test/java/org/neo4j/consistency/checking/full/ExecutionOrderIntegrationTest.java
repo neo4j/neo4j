@@ -19,6 +19,15 @@
  */
 package org.neo4j.consistency.checking.full;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.withSettings;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.test.Property.property;
+import static org.neo4j.test.Property.set;
+
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.HashMap;
@@ -45,7 +54,6 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.configuration.ConfigurationDefaults;
 import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
@@ -56,15 +64,6 @@ import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeRecord;
 import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
 import org.neo4j.test.GraphStoreFixture;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verifyZeroInteractions;
-import static org.mockito.Mockito.withSettings;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.test.Property.property;
-import static org.neo4j.test.Property.set;
 
 public class ExecutionOrderIntegrationTest
 {
@@ -116,9 +115,9 @@ public class ExecutionOrderIntegrationTest
         // then
         verifyZeroInteractions( logger );
         assertEquals( "Expected no inconsistencies in single pass.",
-                      0, singlePassSummary.getTotalInconsistencyCount() );
+                0, singlePassSummary.getTotalInconsistencyCount() );
         assertEquals( "Expected no inconsistencies in multiple passes.",
-                      0, multiPassSummary.getTotalInconsistencyCount() );
+                0, multiPassSummary.getTotalInconsistencyCount() );
 
         assertSameChecks( singlePassChecks.data, multiPassChecks.data );
 
@@ -127,18 +126,16 @@ public class ExecutionOrderIntegrationTest
             if ( LOG_DUPLICATES )
             {
                 System.out.printf( "Duplicate checks with single pass: %s, duplicate checks with multiple passes: %s%n",
-                                   singlePassChecks.duplicates, multiPassChecks.duplicates );
+                        singlePassChecks.duplicates, multiPassChecks.duplicates );
             }
         }
     }
 
     static Config config( TaskExecutionOrder executionOrder )
     {
-        return new Config( new ConfigurationDefaults( GraphDatabaseSettings.class, ConsistencyCheckSettings.class )
-                .apply( stringMap(
-                        ConsistencyCheckSettings.consistency_check_execution_order.name(),
-                        executionOrder.name())
-                ) );
+        return new Config( stringMap( ConsistencyCheckSettings.consistency_check_execution_order.name(),
+                executionOrder.name() ),
+                GraphDatabaseSettings.class, ConsistencyCheckSettings.class );
     }
 
     private static class InvocationLog
@@ -156,7 +153,7 @@ public class ExecutionOrderIntegrationTest
                 {
                     AbstractBaseRecord record = (AbstractBaseRecord) arg;
                     entry.append( ',' ).append( record.getClass().getSimpleName() )
-                         .append( '[' ).append( record.getLongId() ).append( ']' );
+                            .append( '[' ).append( record.getLongId() ).append( ']' );
                 }
             }
             String message = entry.append( ')' ).toString();
@@ -235,7 +232,8 @@ public class ExecutionOrderIntegrationTest
         }
 
         @Override
-        public RecordCheck<RelationshipRecord, ConsistencyReport.RelationshipConsistencyReport> decorateRelationshipChecker(
+        public RecordCheck<RelationshipRecord, ConsistencyReport.RelationshipConsistencyReport>
+        decorateRelationshipChecker(
                 PrimitiveRecordCheck<RelationshipRecord, ConsistencyReport.RelationshipConsistencyReport> checker )
         {
             return logging( checker );
@@ -249,7 +247,8 @@ public class ExecutionOrderIntegrationTest
         }
 
         @Override
-        public RecordCheck<PropertyIndexRecord, ConsistencyReport.PropertyKeyConsistencyReport> decoratePropertyKeyChecker(
+        public RecordCheck<PropertyIndexRecord, ConsistencyReport.PropertyKeyConsistencyReport>
+        decoratePropertyKeyChecker(
                 RecordCheck<PropertyIndexRecord, ConsistencyReport.PropertyKeyConsistencyReport> checker )
         {
             return logging( checker );
@@ -303,8 +302,8 @@ public class ExecutionOrderIntegrationTest
         public void dispatch( PendingReferenceCheck<T> reporter )
         {
             reference.dispatch( mock( (Class<PendingReferenceCheck<T>>) reporter.getClass(),
-                                      withSettings().spiedInstance( reporter )
-                                              .defaultAnswer( new ReporterSpy<T>( reference, reporter, log ) ) ) );
+                    withSettings().spiedInstance( reporter )
+                            .defaultAnswer( new ReporterSpy<T>( reference, reporter, log ) ) ) );
         }
     }
 

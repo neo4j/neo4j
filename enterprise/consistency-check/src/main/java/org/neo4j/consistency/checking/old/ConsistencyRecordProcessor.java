@@ -19,6 +19,7 @@
  */
 package org.neo4j.consistency.checking.old;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -637,8 +638,8 @@ public class ConsistencyRecordProcessor extends RecordStore.Processor implements
         private StoreProcessor( RecordStore<R> store, ProgressMonitorFactory.MultiPartBuilder builder )
         {
             this.store = store;
-            String name = store.getStorageFileName();
-            this.progressListener = builder.progressForPart( name.substring( name.lastIndexOf( '/' ) + 1 ), store.getHighId() );
+            File name = store.getStorageFileName();
+            this.progressListener = builder.progressForPart( name.getName(), store.getHighId() );
         }
 
         @Override

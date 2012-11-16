@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.storemigration.legacystore;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -37,7 +38,7 @@ public class LegacyNeoStoreReader
     private FileChannel fileChannel;
     private PersistenceWindowPool windowPool;
 
-    public LegacyNeoStoreReader( String fileName, StringLogger log ) throws FileNotFoundException
+    public LegacyNeoStoreReader( File fileName, StringLogger log ) throws FileNotFoundException
     {
         fileChannel = new RandomAccessFile( fileName, "r" ).getChannel();
         windowPool = new PersistenceWindowPool( fileName,

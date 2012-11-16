@@ -23,6 +23,7 @@ package org.neo4j.kernel.ha.cluster.paxos;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Map;
 
 import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.cluster.BindingListener;
@@ -33,6 +34,7 @@ import org.neo4j.cluster.protocol.atomicbroadcast.Payload;
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.protocol.cluster.ClusterListener;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatListener;
+import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.Listeners;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.configuration.Config;
@@ -49,13 +51,13 @@ public class PaxosHighAvailabilityEvents implements HighAvailabilityEvents, Life
 {
     public interface Configuration
     {
-        String getHaServer();
+        HostnamePort getHaServer();
 
         int getServerId();
 
         int getBackupPort();
     }
-    
+
     public static Configuration adapt( final Config config )
     {
         return new Configuration()
@@ -65,13 +67,13 @@ public class PaxosHighAvailabilityEvents implements HighAvailabilityEvents, Life
             {
                 return config.get( HaSettings.server_id );
             }
-            
+
             @Override
-            public String getHaServer()
+            public HostnamePort getHaServer()
             {
-                return HaSettings.ha_server.getAddressAndPortWithLocalhostDefault( config.getParams() );
+                return config.get( HaSettings.ha_server );
             }
-            
+
             @Override
             public int getBackupPort()
             {
@@ -79,7 +81,7 @@ public class PaxosHighAvailabilityEvents implements HighAvailabilityEvents, Life
             }
         };
     }
-    
+
     private URI serverClusterId;
     private Configuration config;
     private StringLogger logger;
@@ -103,7 +105,7 @@ public class PaxosHighAvailabilityEvents implements HighAvailabilityEvents, Life
             }
         } );
     }
-    
+
     @Override
     public void addClusterEventListener( HighAvailabilityListener listener )
     {
@@ -134,27 +136,31 @@ public class PaxosHighAvailabilityEvents implements HighAvailabilityEvents, Life
             public void enteredCluster( ClusterConfiguration clusterConfiguration )
             {
                 PaxosHighAvailabilityEvents.this.clusterConfiguration = clusterConfiguration;
+
+                // Catch up with elections
+                for ( Map.Entry<String, URI> memberRoles : clusterConfiguration.getRoles().entrySet() )
+                {
+                    elected( memberRoles.getKey(), memberRoles.getValue() );
+                }
             }
 
             @Override
-            public void elected( String role, URI electedMember )
+            public void elected( String role, final URI electedMember )
             {
-                try
+                if (role.equals( ClusterConfiguration.COORDINATOR ))
                 {
-                    // TODO This seems like double work. We just Paxos-declared an election,
-                    // and then broadcast it again??
-                    if ( electedMember.equals( serverClusterId ) )
+                    Listeners.notifyListeners( listeners, new Listeners.Notification<HighAvailabilityListener>()
                     {
-                        cluster.broadcast( serializer.broadcast( new MasterIsElected( serverClusterId ) ) );
-                    }
-                }
-                catch ( IOException e )
-                {
-                    e.printStackTrace();
+                        @Override
+                        public void notify( HighAvailabilityListener listener )
+                        {
+                            listener.masterIsElected( electedMember );
+                        }
+                    } );
                 }
             }
         } );
-        
+
         cluster.addHeartbeatListener( new HeartbeatListener.Adapter()
         {
             @Override
@@ -172,18 +178,7 @@ public class PaxosHighAvailabilityEvents implements HighAvailabilityEvents, Life
                 try
                 {
                     final Object value = serializer.receive( payload );
-                    if ( value instanceof MasterIsElected )
-                    {
-                        Listeners.notifyListeners( listeners, new Listeners.Notification<HighAvailabilityListener>()
-                        {
-                            @Override
-                            public void notify( HighAvailabilityListener listener )
-                            {
-                                listener.masterIsElected( ((MasterIsElected) value).getMasterUri() );
-                            }
-                        } );
-                    }
-                    else if ( value instanceof MemberIsAvailable )
+                    if ( value instanceof MemberIsAvailable )
                     {
                         Listeners.notifyListeners( listeners, new Listeners.Notification<HighAvailabilityListener>()
                         {
@@ -205,23 +200,26 @@ public class PaxosHighAvailabilityEvents implements HighAvailabilityEvents, Life
             }
         } );
     }
-    
+
     private void broadcastOurself()
     {
         // Reannounce that I am master, for the purpose of the new member to see this
         try
         {
             final URI coordinator = clusterConfiguration.getElected( ClusterConfiguration.COORDINATOR );
-            if ( coordinator.equals( serverClusterId ) )
+            if (coordinator != null)
             {
-                cluster.broadcast( serializer.broadcast( new MasterIsElected( serverClusterId ) ) );
-            }
-            else
-            {
-                memberIsAvailable( ClusterConfiguration.SLAVE );
+                if ( coordinator.equals( serverClusterId ) )
+                {
+                    cluster.broadcast( serializer.broadcast( new MasterIsElected( serverClusterId ) ) );
+                }
+                else
+                {
+                    memberIsAvailable( ClusterConfiguration.SLAVE );
+                }
             }
         }
-        catch ( IOException e )
+        catch ( Exception e )
         {
             e.printStackTrace();
         }
@@ -265,10 +263,10 @@ public class PaxosHighAvailabilityEvents implements HighAvailabilityEvents, Life
     {
         try
         {
-            // TODO if we don't want this fallback on cluster address, then add this
-            // logic to the (default) Configuration implementation?
-            String host = config.getHaServer();
-            return new URI( "ha", null, addressOf( host ), portOf( host ), null,
+            // TODO host.getPort() is wrong, because it could be a port range and it's actually bound to
+            // not-the-lowest-port
+            HostnamePort host = config.getHaServer();
+            return new URI( "ha", null, config.getHaServer().getHost( clusterUri.getHost() ), host.getPort(), null,
                     "serverId=" + config.getServerId(), null );
         }
         catch ( URISyntaxException e )
@@ -277,24 +275,14 @@ public class PaxosHighAvailabilityEvents implements HighAvailabilityEvents, Life
         }
     }
 
-    private int portOf( String addressWithOrWithoutPort )
-    {
-        String[] parts = addressWithOrWithoutPort.split( ":" );
-        return parts.length < 2 ? -1 : Integer.parseInt( parts[1] );
-    }
-
-    private String addressOf( String addressWithOrWithoutPort )
-    {
-        String[] parts = addressWithOrWithoutPort.split( ":" );
-        return parts[0].length() > 0 ? parts[0] : null;
-    }
-
     private URI getBackupUri( URI clusterUri )
     {
         try
         {
-            String host = config.getHaServer();
-            return new URI( "backup", null, addressOf( host ), config.getBackupPort(), null, null, null );
+            HostnamePort host = config.getHaServer();
+            String hostName = host.getHost( clusterUri.getHost() );
+
+            return new URI( "backup", null, hostName, config.getBackupPort(), null, null, null );
         }
         catch ( URISyntaxException e )
         {

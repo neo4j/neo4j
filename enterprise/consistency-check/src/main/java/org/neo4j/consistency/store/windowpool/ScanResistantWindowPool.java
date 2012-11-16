@@ -20,8 +20,8 @@
 package org.neo4j.consistency.store.windowpool;
 
 import static java.lang.String.format;
-import static org.neo4j.kernel.impl.nioneo.store.WindowPoolStats.extractName;
 
+import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.kernel.impl.nioneo.store.OperationType;
@@ -35,7 +35,7 @@ import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPool;
 public class ScanResistantWindowPool implements WindowPool,
         PageReplacementStrategy.Storage<PersistenceWindow, WindowPage>
 {
-    private final String storeFileName;
+    private final File storeFileName;
     private final FileMapper fileMapper;
     private final PageReplacementStrategy replacementStrategy;
     private final int bytesPerRecord;
@@ -47,7 +47,7 @@ public class ScanResistantWindowPool implements WindowPool,
     private int acquireCount = 0;
     private int mapCount = 0;
 
-    public ScanResistantWindowPool( String storeFileName, int bytesPerRecord, int targetBytesPerPage,
+    public ScanResistantWindowPool( File storeFileName, int bytesPerRecord, int targetBytesPerPage,
                                     FileMapper fileMapper, PageReplacementStrategy replacementStrategy,
                                     int reportInterval, MappingStatisticsListener statisticsListener )
             throws IOException
@@ -141,8 +141,7 @@ public class ScanResistantWindowPool implements WindowPool,
             long deltaTime = currentTime - lastReportTime;
             lastReportTime = currentTime;
 
-            statisticsListener.onStatistics(
-                    extractName( storeFileName ), reportInterval, deltaMapCount, deltaTime );
+            statisticsListener.onStatistics(storeFileName, reportInterval, deltaMapCount, deltaTime );
         }
     }
 

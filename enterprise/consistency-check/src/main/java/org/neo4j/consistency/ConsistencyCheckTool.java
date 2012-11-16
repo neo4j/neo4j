@@ -35,7 +35,6 @@ import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.configuration.ConfigurationDefaults;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogFiles;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -100,7 +99,7 @@ public class ConsistencyCheckTool
         else
         {
             XaLogicalLogFiles logFiles = new XaLogicalLogFiles(
-                    new File( storeDir, NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME ).getAbsolutePath(),
+                    new File( storeDir, NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME ),
                     new DefaultFileSystemAbstraction() );
             try
             {
@@ -162,8 +161,7 @@ public class ConsistencyCheckTool
             }
         }
         specifiedProperties.put( GraphDatabaseSettings.store_dir.name(), storeDir );
-        return new Config( new ConfigurationDefaults( GraphDatabaseSettings.class, ConsistencyCheckSettings.class )
-                .apply( specifiedProperties ) );
+        return new Config( specifiedProperties, GraphDatabaseSettings.class, ConsistencyCheckSettings.class );
     }
 
     private String usage()

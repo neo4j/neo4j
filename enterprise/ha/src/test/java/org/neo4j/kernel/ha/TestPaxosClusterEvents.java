@@ -25,11 +25,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 import junit.framework.Assert;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
@@ -55,7 +55,7 @@ public class TestPaxosClusterEvents
         HighlyAvailableGraphDatabase initialDatabase =
                 (HighlyAvailableGraphDatabase) new HighlyAvailableGraphDatabaseFactory().
                         newHighlyAvailableDatabaseBuilder( dir.directory( "1", true ).getAbsolutePath() )
-                        .setConfig( HaSettings.cluster_server, "127.0.0.1:5001" )
+                        .setConfig( ClusterSettings.cluster_server, "127.0.0.1:5001" )
                         .setConfig( HaSettings.server_id, "1" )
                         .setConfig( HaSettings.ha_server, "localhost:6361" )
                         .newGraphDatabase();
@@ -63,13 +63,14 @@ public class TestPaxosClusterEvents
 
         for ( int i = 0; i < 2; i++ )
         {
-            int serverId = i+2;
-            HighlyAvailableGraphDatabase database = (HighlyAvailableGraphDatabase) new HighlyAvailableGraphDatabaseFactory().
+            int serverId = i + 2;
+            HighlyAvailableGraphDatabase database = (HighlyAvailableGraphDatabase) new
+                    HighlyAvailableGraphDatabaseFactory().
                     newHighlyAvailableDatabaseBuilder( dir.directory( "" + serverId, true ).getAbsolutePath() )
+                    .setConfig( ClusterSettings.cluster_server, "localhost:" + (5002 + i) )
+                    .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:5001" )
                     .setConfig( HaSettings.server_id, serverId + "" )
                     .setConfig( HaSettings.ha_server, ":" + (6362 + i) )
-                    .setConfig( HaSettings.cluster_server, "localhost:" + (5002 + i) )
-                    .setConfig( HaSettings.initial_hosts, "127.0.0.1:5001" )
                     .newGraphDatabase();
 
             databases.add( database );

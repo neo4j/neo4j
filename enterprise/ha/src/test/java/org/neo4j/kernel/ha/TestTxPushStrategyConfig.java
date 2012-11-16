@@ -26,6 +26,7 @@ import static org.neo4j.test.ha.ClusterManager.masterSeesSlavesAsAvailable;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
@@ -37,7 +38,7 @@ import org.neo4j.test.ha.ClusterManager;
 import org.neo4j.test.ha.ClusterManager.ManagedCluster;
 
 // TODO This needs to be fixed
-//@Ignore
+@Ignore
 public class TestTxPushStrategyConfig
 {
     private LifeSupport life = new LifeSupport();
@@ -55,10 +56,11 @@ public class TestTxPushStrategyConfig
     {
         life.shutdown();
     }
-    
+
     private void startCluster( int memberCount, final int pushFactor, final String pushStrategy )
     {
-        ClusterManager clusterManager = life.add( new ClusterManager( clusterOfSize( memberCount ), dir.directory( "dbs", true ), MapUtil.stringMap() )
+        ClusterManager clusterManager = life.add( new ClusterManager( clusterOfSize( memberCount ),
+                dir.directory( "dbs", true ), MapUtil.stringMap() )
         {
             @Override
             protected void config( GraphDatabaseBuilder builder, String clusterName, int serverId )
@@ -148,12 +150,12 @@ public class TestTxPushStrategyConfig
         cluster.shutdown( cluster.getAnySlave() );
         cluster.await( masterSeesSlavesAsAvailable( 1 ) );
     }
-    
+
     @Test
     public void slaveListIsCorrectAfterMasterSwitch() throws Exception
     {
         startCluster( 3, 1, "fixed" );
-        
+
         cluster.shutdown( cluster.getMaster() );
         cluster.await( masterAvailable(), 10 );
         HighlyAvailableGraphDatabase newMaster = cluster.getMaster();
@@ -174,7 +176,8 @@ public class TestTxPushStrategyConfig
 
     private void assertLastTxId( long tx, int serverId )
     {
-        GraphDatabaseAPI db = cluster.getMemberByServerId( serverId );  // serverId == 1 ? master : getSlave( serverId );
+        GraphDatabaseAPI db = cluster.getMemberByServerId( serverId );  // serverId == 1 ? master : getSlave(
+        // serverId );
         assertEquals( tx, db.getXaDataSourceManager().getNeoStoreDataSource().getLastCommittedTxId() );
     }
 

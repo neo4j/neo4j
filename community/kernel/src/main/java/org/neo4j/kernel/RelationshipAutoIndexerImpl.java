@@ -21,7 +21,7 @@ package org.neo4j.kernel;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.factory.GraphDatabaseSetting;
+import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.graphdb.index.ReadableRelationshipIndex;
@@ -35,18 +35,20 @@ class RelationshipAutoIndexerImpl extends AbstractAutoIndexerImpl<Relationship>
 {
     public static abstract class Configuration
     {
-        public static final GraphDatabaseSetting.BooleanSetting relationship_auto_indexing = GraphDatabaseSettings.relationship_auto_indexing;
-        public static final GraphDatabaseSetting.StringSetting relationship_keys_indexable = GraphDatabaseSettings.relationship_keys_indexable;
+        public static final Setting<Boolean> relationship_auto_indexing = GraphDatabaseSettings
+                .relationship_auto_indexing;
+        public static final Setting<String> relationship_keys_indexable = GraphDatabaseSettings
+                .relationship_keys_indexable;
     }
-    
+
     static final String RELATIONSHIP_AUTO_INDEX = "relationship_auto_index";
     private Config config;
     private IndexManagerImpl indexManager;
     private NodeManager nodeManager;
 
-    public RelationshipAutoIndexerImpl( Config config, IndexManagerImpl indexManager, NodeManager nodeManager)
+    public RelationshipAutoIndexerImpl( Config config, IndexManagerImpl indexManager, NodeManager nodeManager )
     {
-        super( );
+        super();
         this.config = config;
         this.indexManager = indexManager;
         this.nodeManager = nodeManager;
@@ -54,7 +56,7 @@ class RelationshipAutoIndexerImpl extends AbstractAutoIndexerImpl<Relationship>
 
     @Override
     public void init()
-        throws Throwable
+            throws Throwable
     {
     }
 
@@ -62,18 +64,18 @@ class RelationshipAutoIndexerImpl extends AbstractAutoIndexerImpl<Relationship>
     public void start()
     {
         setEnabled( config.get( Configuration.relationship_auto_indexing ) );
-        propertyKeysToInclude.addAll( parseConfigList( config.get( Configuration.relationship_keys_indexable )) );
+        propertyKeysToInclude.addAll( parseConfigList( config.get( Configuration.relationship_keys_indexable ) ) );
     }
 
     @Override
     public void stop()
-        throws Throwable
+            throws Throwable
     {
     }
 
     @Override
     public void shutdown()
-        throws Throwable
+            throws Throwable
     {
     }
 
@@ -81,7 +83,7 @@ class RelationshipAutoIndexerImpl extends AbstractAutoIndexerImpl<Relationship>
     protected RelationshipIndex getIndexInternal()
     {
         return indexManager.getOrCreateRelationshipIndex(
-            RELATIONSHIP_AUTO_INDEX, null );
+                RELATIONSHIP_AUTO_INDEX, null );
     }
 
     @Override
@@ -121,7 +123,7 @@ class RelationshipAutoIndexerImpl extends AbstractAutoIndexerImpl<Relationship>
 
         @Override
         public IndexHits<Relationship> get( String key, Object valueOrNull,
-                Node startNodeOrNull, Node endNodeOrNull )
+                                            Node startNodeOrNull, Node endNodeOrNull )
         {
             return delegate.get( key,
                     valueOrNull, startNodeOrNull,
@@ -130,8 +132,8 @@ class RelationshipAutoIndexerImpl extends AbstractAutoIndexerImpl<Relationship>
 
         @Override
         public IndexHits<Relationship> query( String key,
-                Object queryOrQueryObjectOrNull, Node startNodeOrNull,
-                Node endNodeOrNull )
+                                              Object queryOrQueryObjectOrNull, Node startNodeOrNull,
+                                              Node endNodeOrNull )
         {
             return delegate.query( key,
                     queryOrQueryObjectOrNull,
@@ -140,7 +142,7 @@ class RelationshipAutoIndexerImpl extends AbstractAutoIndexerImpl<Relationship>
 
         @Override
         public IndexHits<Relationship> query( Object queryOrQueryObjectOrNull,
-                Node startNodeOrNull, Node endNodeOrNull )
+                                              Node startNodeOrNull, Node endNodeOrNull )
         {
             return delegate.query(
                     queryOrQueryObjectOrNull, startNodeOrNull,

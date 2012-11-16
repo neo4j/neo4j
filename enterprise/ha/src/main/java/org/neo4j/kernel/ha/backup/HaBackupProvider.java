@@ -35,7 +35,6 @@ import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.configuration.ConfigurationDefaults;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityEvents;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityListener;
@@ -63,8 +62,7 @@ public final class HaBackupProvider extends BackupExtensionService
         String clusterName = args.get( ClusterSettings.cluster_name.name(), null );
         if ( clusterName == null )
         {
-            clusterName = args.get( ClusterSettings.cluster_name.name(),
-                    ConfigurationDefaults.getDefault( ClusterSettings.cluster_name, ClusterSettings.class ) );
+            clusterName = args.get( ClusterSettings.cluster_name.name(), ClusterSettings.cluster_name.getDefaultValue() );
         }
 
         master = getMasterServerInCluster( address.getSchemeSpecificPart().substring(
@@ -86,16 +84,16 @@ public final class HaBackupProvider extends BackupExtensionService
     private static String getMasterServerInCluster( String from, String clusterName, final Logging logging )
     {
         LifeSupport life = new LifeSupport();
-        Map<String, String> params = new ConfigurationDefaults( ClusterSettings.class,
-                OnlineBackupSettings.class ).apply( new HashMap<String, String>() );
+        Map<String, String> params = new HashMap<String, String>();
         params.put( HaSettings.server_id.name(), "-1" );
         params.put( ClusterSettings.cluster_name.name(), clusterName );
-        params.put( HaSettings.initial_hosts.name(), from );
-        params.put( HaSettings.cluster_discovery_enabled.name(), "false" );
-        final Config config = new Config( params );
+        params.put( ClusterSettings.initial_hosts.name(), from );
+        params.put( ClusterSettings.cluster_discovery_enabled.name(), "false" );
+        final Config config = new Config( params,
+                ClusterSettings.class, OnlineBackupSettings.class );
 
-        ClusterClient clusterClient = life.add( new ClusterClient( ClusterClient.adapt( config,
-                new BackupElectionCredentialsProvider() ), logging ) );
+        ClusterClient clusterClient = life.add( new ClusterClient( ClusterClient.adapt( config ), logging,
+                new BackupElectionCredentialsProvider() ) );
         HighAvailabilityEvents events = life.add( new PaxosHighAvailabilityEvents( PaxosHighAvailabilityEvents.adapt(
                 config ), clusterClient, StringLogger.SYSTEM ) );
         final Semaphore infoReceivedLatch = new Semaphore( 0 );

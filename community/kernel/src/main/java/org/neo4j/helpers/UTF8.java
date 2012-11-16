@@ -26,8 +26,26 @@ import java.io.UnsupportedEncodingException;
  *
  * @author Tobias Ivarsson <tobias.ivarsson@neotechnology.com>
  */
-public class UTF8
+public final class UTF8
 {
+    public static final Function<String, byte[]> encode = new Function<String, byte[]>()
+    {
+        @Override
+        public byte[] apply( String s )
+        {
+            return encode( s );
+        }
+    };
+
+    public static final Function<byte[], String> decode = new Function<byte[], String>()
+    {
+        @Override
+        public String apply( byte[] bytes )
+        {
+            return decode( bytes );
+        }
+    };
+
     public static byte[] encode( String string )
     {
         try

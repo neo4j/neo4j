@@ -22,6 +22,7 @@ package org.neo4j.kernel;
 
 import static org.slf4j.impl.StaticLoggerBinder.getSingleton;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -41,6 +42,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
@@ -50,6 +52,8 @@ import org.neo4j.graphdb.index.IndexProvider;
 import org.neo4j.graphdb.index.IndexProviders;
 import org.neo4j.helpers.DaemonThreadFactory;
 import org.neo4j.helpers.Service;
+import org.neo4j.helpers.Settings;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConfigurationChange;
 import org.neo4j.kernel.configuration.ConfigurationChangeListener;
@@ -125,33 +129,29 @@ public abstract class InternalAbstractGraphDatabase
 
     public static class Configuration
     {
-        public static final GraphDatabaseSetting.BooleanSetting dump_configuration = GraphDatabaseSettings
-                .dump_configuration;
-        public static final GraphDatabaseSetting.BooleanSetting read_only = GraphDatabaseSettings.read_only;
-        public static final GraphDatabaseSetting.BooleanSetting use_memory_mapped_buffers = GraphDatabaseSettings
-                .use_memory_mapped_buffers;
-        public static final GraphDatabaseSetting.BooleanSetting execution_guard_enabled = GraphDatabaseSettings
-                .execution_guard_enabled;
+        public static final Setting<Boolean> read_only = GraphDatabaseSettings.read_only;
+        public static final Setting<Boolean> use_memory_mapped_buffers = GraphDatabaseSettings.use_memory_mapped_buffers;
+        public static final Setting<Boolean> execution_guard_enabled = GraphDatabaseSettings.execution_guard_enabled;
         public static final GraphDatabaseSettings.CacheTypeSetting cache_type = GraphDatabaseSettings.cache_type;
-        public static final GraphDatabaseSetting.BooleanSetting load_kernel_extensions = GraphDatabaseSettings
-                .load_kernel_extensions;
-        public static final GraphDatabaseSetting.BooleanSetting ephemeral = new GraphDatabaseSetting.BooleanSetting(
-                "ephemeral" );
+        public static final Setting<Boolean> load_kernel_extensions = GraphDatabaseSettings.load_kernel_extensions;
+        public static final Setting<Boolean> ephemeral = new GraphDatabaseSetting.BooleanSetting( Settings.setting("ephemeral", Settings.BOOLEAN, Settings.FALSE ));
 
-        public static final GraphDatabaseSetting.DirectorySetting store_dir = GraphDatabaseSettings.store_dir;
-        public static final GraphDatabaseSetting.FileSetting neo_store = GraphDatabaseSettings.neo_store;
-        public static final GraphDatabaseSetting.FileSetting logical_log = GraphDatabaseSettings.logical_log;
+        public static final Setting<File> store_dir = GraphDatabaseSettings.store_dir;
+        public static final Setting<File> neo_store = GraphDatabaseSettings.neo_store;
+        public static final Setting<File> logical_log = GraphDatabaseSettings.logical_log;
     }
 
     private static final long MAX_NODE_ID = IdType.NODE.getMaxValue();
     private static final long MAX_RELATIONSHIP_ID = IdType.RELATIONSHIP.getMaxValue();
 
-    protected String storeDir;
+    protected File storeDir;
     protected Map<String, String> params;
     private TransactionInterceptorProviders transactionInterceptorProviders;
     private final KernelExtensions kernelExtensions;
     protected StoreId storeId;
     private final TransactionBuilder defaultTxBuilder = new TransactionBuilderImpl( this, ForceMode.forced );
+
+    protected Config config;
 
     protected DependencyResolver dependencyResolver;
     protected Logging logging;
@@ -162,7 +162,6 @@ public abstract class InternalAbstractGraphDatabase
     protected NodeManager nodeManager;
     protected Iterable<IndexProvider> indexProviders;
     protected IndexManagerImpl indexManager;
-    protected Config config;
     protected KernelPanicEventGenerator kernelPanicEventGenerator;
     protected TxHook txHook;
     protected FileSystemAbstraction fileSystem;
@@ -195,6 +194,7 @@ public abstract class InternalAbstractGraphDatabase
     private final Map<String, CacheProvider> cacheProviders;
 
     protected InternalAbstractGraphDatabase( String storeDir, Map<String, String> params,
+                                             Iterable<Class<?>> settingsClasses,
                                              Iterable<IndexProvider> indexProviders,
                                              Iterable<KernelExtensionFactory<?>> kernelExtensions,
                                              Iterable<CacheProvider> cacheProviders,
@@ -210,7 +210,7 @@ public abstract class InternalAbstractGraphDatabase
         // SPI - provided services
         this.indexProviders = indexProviders;
         this.cacheProviders = mapCacheProviders( cacheProviders );
-        config = new Config( params, getSettingsClasses( kernelExtensions, cacheProviders ) );
+        config = new Config( params, getSettingsClasses( settingsClasses, kernelExtensions, cacheProviders ) );
         this.kernelExtensions = new KernelExtensions( kernelExtensions, config, dependencyResolver );
         this.transactionInterceptorProviders = new TransactionInterceptorProviders( transactionInterceptorProviders,
                 dependencyResolver );
@@ -291,7 +291,7 @@ public abstract class InternalAbstractGraphDatabase
         // Apply autoconfiguration for memory settings
         AutoConfigurator autoConfigurator = new AutoConfigurator( fileSystem,
                 config.get( NeoStoreXaDataSource.Configuration.store_dir ),
-                config.get( GraphDatabaseSettings.use_memory_mapped_buffers ),
+                GraphDatabaseSettings.UseMemoryMappedBuffers.shouldMemoryMap(config.get( Configuration.use_memory_mapped_buffers )),
                 config.get( GraphDatabaseSettings.dump_configuration ) );
         Map<String, String> configParams = config.getParams();
         Map<String, String> autoConfiguration = autoConfigurator.configure();
@@ -356,7 +356,7 @@ public abstract class InternalAbstractGraphDatabase
                     throw new IllegalStateException( "Unknown transaction manager implementation: "
                             + serviceName );
                 }
-                txManager = provider.loadTransactionManager( this.storeDir, xaDataSourceManager,
+                txManager = provider.loadTransactionManager( this.storeDir.getPath(), xaDataSourceManager,
                         kernelPanicEventGenerator, txHook, logging.getLogger( AbstractTransactionManager.class ),
                         fileSystem );
             }
@@ -766,7 +766,7 @@ public abstract class InternalAbstractGraphDatabase
     @Override
     public final String getStoreDir()
     {
-        return storeDir;
+        return storeDir.getPath();
     }
 
     @Override
@@ -1000,18 +1000,21 @@ public abstract class InternalAbstractGraphDatabase
         return kernelPanicEventGenerator;
     }
 
-    private Iterable<Class<?>> getSettingsClasses( Iterable<KernelExtensionFactory<?>> kernelExtensions, Iterable
+    private Iterable<Class<?>> getSettingsClasses( Iterable<Class<?>> settingsClasses,
+                                                   Iterable<KernelExtensionFactory<?>> kernelExtensions, Iterable
             <CacheProvider> cacheProviders )
     {
-        List<Class<?>> settingsClasses = new ArrayList<Class<?>>();
-        settingsClasses.add( GraphDatabaseSettings.class );
+        List<Class<?>> totalSettingsClasses = new ArrayList<Class<?>>();
+
+        // Add given settings classes
+        Iterables.addAll( totalSettingsClasses, settingsClasses );
 
         // Get the list of settings classes for extensions
         for ( KernelExtensionFactory<?> kernelExtension : kernelExtensions )
         {
             if ( kernelExtension.getSettingsClass() != null )
             {
-                settingsClasses.add( kernelExtension.getSettingsClass() );
+                totalSettingsClasses.add( kernelExtension.getSettingsClass() );
             }
         }
 
@@ -1019,11 +1022,11 @@ public abstract class InternalAbstractGraphDatabase
         {
             if ( cacheProvider.getSettingsClass() != null )
             {
-                settingsClasses.add( cacheProvider.getSettingsClass() );
+                totalSettingsClasses.add( cacheProvider.getSettingsClass() );
             }
         }
 
-        return settingsClasses;
+        return totalSettingsClasses;
     }
 
     @Override

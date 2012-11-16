@@ -86,7 +86,7 @@ public class XaLogicalLog implements LogLoader
     private boolean scanIsComplete = false;
     private boolean nonCleanShutdown = false;
 
-    private String fileName = null;
+    private File fileName = null;
     private final XaResourceManager xaRm;
     private final XaCommandFactory cf;
     private final XaTransactionFactory xaTf;
@@ -108,7 +108,7 @@ public class XaLogicalLog implements LogLoader
     private final XaLogicalLogFiles logFiles;
     private final PartialTransactionCopier partialTransactionCopier;
 
-    public XaLogicalLog( String fileName, XaResourceManager xaRm, XaCommandFactory cf,
+    public XaLogicalLog( File fileName, XaResourceManager xaRm, XaCommandFactory cf,
                          XaTransactionFactory xaTf, LogBufferFactory logBufferFactory, FileSystemAbstraction fileSystem,
                          StringLogger stringLogger, LogPruneStrategy pruneStrategy )
     {
@@ -142,7 +142,7 @@ public class XaLogicalLog implements LogLoader
                 break;
 
             case CLEAN:
-                String newLog = logFiles.getLog1FileName();
+                File newLog = logFiles.getLog1FileName();
                 renameIfExists( newLog );
                 renameIfExists( logFiles.getLog2FileName() );
                 open( newLog );
@@ -170,7 +170,7 @@ public class XaLogicalLog implements LogLoader
         instantiateCorrectWriteBuffer();
     }
 
-    private void renameIfExists( String fileName ) throws IOException
+    private void renameIfExists( File fileName ) throws IOException
     {
         if ( fileSystem.fileExists( fileName ) )
         {
@@ -189,7 +189,7 @@ public class XaLogicalLog implements LogLoader
         return logBufferFactory.create( channel );
     }
 
-    private void open( String fileToOpen ) throws IOException
+    private void open( File fileToOpen ) throws IOException
     {
         fileChannel = fileSystem.open( fileToOpen, "rw" );
         if ( new XaLogicalLogRecoveryCheck( fileChannel ).recoveryRequired() )
@@ -233,7 +233,7 @@ public class XaLogicalLog implements LogLoader
         }
     }
 
-    private String openedLogicalLogMessage( String fileToOpen, long lastTxId, boolean clean )
+    private String openedLogicalLogMessage( File fileToOpen, long lastTxId, boolean clean )
     {
         return "Opened logical log [" + fileToOpen + "] version=" + logVersion + ", lastTxId=" +
                 lastTxId + " (" + (clean ? "clean" : "recovered") + ")";
@@ -592,7 +592,7 @@ public class XaLogicalLog implements LogLoader
         }
     }
 
-    private void fixDualLogFiles( String activeLog, String oldLog ) throws IOException
+    private void fixDualLogFiles( File activeLog, File oldLog ) throws IOException
     {
         FileChannel activeLogChannel = fileSystem.open( activeLog, "r" );
         long[] activeLogHeader = LogIoUtils.readLogHeader( ByteBuffer.allocate( 16 ), activeLogChannel, false );
@@ -613,7 +613,7 @@ public class XaLogicalLog implements LogLoader
         {
             // we crashed in rotate after setActive but did not move the old log to the right name
             // (and we do not know if keepLogs is true or not so play it safe by keeping it)
-            String newName = getFileName( oldLogHeader[0] );
+            File newName = getFileName( oldLogHeader[0] );
             if ( !fileSystem.renameFile( oldLog, newName ) )
             {
                 throw new IOException( "Unable to rename " + oldLog + " to " + newName );
@@ -630,7 +630,7 @@ public class XaLogicalLog implements LogLoader
         }
     }
 
-    private void renameLogFileToRightVersion( String logFileName, long endPosition ) throws IOException
+    private void renameLogFileToRightVersion( File logFileName, long endPosition ) throws IOException
     {
         if ( !fileSystem.fileExists( logFileName ) )
         {
@@ -648,11 +648,11 @@ public class XaLogicalLog implements LogLoader
             msgLog.warn( "Failed to truncate log at correct size", e );
         }
         channel.close();
-        String newName;
+        File newName;
         if ( header == null )
         {
             // header was never written
-            newName = getFileName( -1 ) + "_empty_header_log_" + System.currentTimeMillis();
+            newName = new File( getFileName( -1 ).getPath() + "_empty_header_log_" + System.currentTimeMillis());
         }
         else
         {
@@ -701,7 +701,7 @@ public class XaLogicalLog implements LogLoader
         }
 
         xaTf.flushAll();
-        String activeLogFileName = fileName + "." + logWas;
+        File activeLogFileName = new File( fileName.getPath() + "." + logWas);
         renameLogFileToRightVersion( activeLogFileName, endPosition );
         xaTf.getAndSetNewVersion();
         pruneStrategy.prune( this );
@@ -726,7 +726,7 @@ public class XaLogicalLog implements LogLoader
         return msgLog;
     }
 
-    private void doInternalRecovery( String logFileName ) throws IOException
+    private void doInternalRecovery( File logFileName ) throws IOException
     {
         msgLog.info( "Non clean shutdown detected on log [" + logFileName +
                 "]. Recovery started ..." );
@@ -739,7 +739,7 @@ public class XaLogicalLog implements LogLoader
             msgLog.logMessage( "No log version found for " + logFileName, true );
             fileChannel.close();
             boolean success = fileSystem.renameFile( logFileName,
-                    logFileName + "_unknown_timestamp_" + System.currentTimeMillis() + ".log" );
+                    new File( logFileName.getPath() + "_unknown_timestamp_" + System.currentTimeMillis() + ".log") );
             assert success;
             fileChannel.close();
             fileChannel = fileSystem.open( logFileName, "rw" );
@@ -871,7 +871,7 @@ public class XaLogicalLog implements LogLoader
 
     public ReadableByteChannel getLogicalLog( long version, long position ) throws IOException
     {
-        String name = getFileName( version );
+        File name = getFileName( version );
         if ( !fileSystem.fileExists( name ) )
         {
             throw new NoSuchLogVersionException( version );
@@ -997,7 +997,7 @@ public class XaLogicalLog implements LogLoader
         {
             if ( version == logVersion )
             {
-                String currentLogName = getCurrentLogFileName();
+                File currentLogName = getCurrentLogFileName();
                 FileChannel channel = fileSystem.open( currentLogName, "r" );
                 channel.position( position );
                 return new BufferedFileChannel( channel );
@@ -1037,7 +1037,7 @@ public class XaLogicalLog implements LogLoader
         }
         else if ( version == logVersion )
         {
-            String currentLogName = getCurrentLogFileName();
+            File currentLogName = getCurrentLogFileName();
             FileChannel channel = fileSystem.open( currentLogName, "r" );
             channel = new BufferedFileChannel( channel );
             /*
@@ -1061,7 +1061,7 @@ public class XaLogicalLog implements LogLoader
         }
     }
 
-    private String getCurrentLogFileName()
+    private File getCurrentLogFileName()
     {
         return currentLog == LOG1 ? logFiles.getLog1FileName() : logFiles.getLog2FileName();
     }
@@ -1078,7 +1078,7 @@ public class XaLogicalLog implements LogLoader
 
     public boolean deleteLogicalLog( long version )
     {
-        String file = getFileName( version );
+        File file = getFileName( version );
         return fileSystem.fileExists( file ) ? fileSystem.deleteFile( file ) : false;
     }
 
@@ -1354,12 +1354,12 @@ public class XaLogicalLog implements LogLoader
     {
 //        if ( writeBuffer.getFileChannelPosition() == LogIoUtils.LOG_HEADER_SIZE ) return xaTf.getLastCommittedTx();
         xaTf.flushAll();
-        String newLogFile = logFiles.getLog2FileName();
-        String currentLogFile = logFiles.getLog1FileName();
+        File newLogFile = logFiles.getLog2FileName();
+        File currentLogFile = logFiles.getLog1FileName();
         char newActiveLog = LOG2;
         long currentVersion = xaTf.getCurrentVersion();
 
-        String oldCopy = getFileName( currentVersion );
+        File oldCopy = getFileName( currentVersion );
         if ( currentLog == CLEAN || currentLog == LOG2 )
         {
             newActiveLog = LOG1;
@@ -1429,7 +1429,7 @@ public class XaLogicalLog implements LogLoader
         return lastTx;
     }
 
-    private void assertFileDoesntExist( String file, String description ) throws IOException
+    private void assertFileDoesntExist( File file, String description ) throws IOException
     {
         if ( fileSystem.fileExists( file ) )
         {
@@ -1474,7 +1474,7 @@ public class XaLogicalLog implements LogLoader
         }
         ByteBuffer bb = ByteBuffer.wrap( new byte[4] );
         bb.asCharBuffer().put( c ).flip();
-        FileChannel fc = fileSystem.open( fileName + ".active", "rw" );
+        FileChannel fc = fileSystem.open( new File( fileName.getPath() + ".active"), "rw" );
         int wrote = fc.write( bb );
         if ( wrote != 4 )
         {
@@ -1506,19 +1506,19 @@ public class XaLogicalLog implements LogLoader
     }
 
     @Override
-	public String getFileName( long version )
+	public File getFileName( long version )
     {
-        return fileName + ".v" + version;
+        return new File( fileName.getPath() + ".v" + version);
     }
 
-    public String getBaseFileName()
+    public File getBaseFileName()
     {
         return fileName;
     }
 
     public Pattern getHistoryFileNamePattern()
     {
-        return getHistoryFileNamePattern( new File( fileName ).getName() );
+        return getHistoryFileNamePattern( fileName.getName() );
     }
 
     public static Pattern getHistoryFileNamePattern( String baseFileName )
@@ -1596,12 +1596,12 @@ public class XaLogicalLog implements LogLoader
             }
             else
             {
-                String file = getFileName( version );
+                File file = getFileName( version );
                 if ( fileSystem.fileExists( file ) )
                 {
                     try
                     {
-                        long[] headerLongs = LogIoUtils.readLogHeader( fileSystem, new File( file ) );
+                        long[] headerLongs = LogIoUtils.readLogHeader( fileSystem, file  );
                         return headerLongs[1] + 1;
                     }
                     catch ( IOException e )

@@ -108,7 +108,7 @@ public class DefaultUdcInformationCollector implements UdcInformationCollector
         add( udcFields, EDITION, determineEdition( classPath ) );
         add( udcFields, TAGS, determineTags( jarNamesForTags, classPath ) );
         add( udcFields, CLUSTER_HASH, determineClusterNameHash() );
-        add( udcFields, SOURCE, config.<String>get( UdcSettings.udc_source ) );
+        add( udcFields, SOURCE, config.get( UdcSettings.udc_source ) );
         add( udcFields, REGISTRATION, config.<String>get( UdcSettings.udc_registration_key ) );
         add( udcFields, MAC, determineMacAddress() );
         add( udcFields, DISTRIBUTION, determineOsDistribution() );

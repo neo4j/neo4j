@@ -19,10 +19,15 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
+import static org.neo4j.helpers.Settings.setting;
+
+import java.io.File;
 import java.nio.channels.FileChannel;
 import java.util.Map;
 import java.util.logging.Logger;
 
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.Settings;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPool;
 import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
@@ -30,18 +35,16 @@ import org.neo4j.kernel.impl.util.StringLogger;
 
 public class DefaultWindowPoolFactory implements WindowPoolFactory
 {
-    @Deprecated
-    private static Logger logger = Logger.getLogger( DefaultWindowPoolFactory.class.getName() );
-
     @Override
-    public WindowPool create( String storageFileName, int recordSize, FileChannel fileChannel, Config configuration,
+    public WindowPool create( File storageFileName, int recordSize, FileChannel fileChannel, Config configuration,
                               StringLogger log )
     {
 
         return new PersistenceWindowPool( storageFileName, recordSize, fileChannel,
-                calculateMappedMemory( configuration.getParams(), storageFileName ),
-                configuration.get( CommonAbstractStore.Configuration.use_memory_mapped_buffers ),
-                isReadOnly( configuration ) && !isBackupSlave( configuration ), log );
+                calculateMappedMemory( configuration, storageFileName ),
+                GraphDatabaseSettings.UseMemoryMappedBuffers.shouldMemoryMap( configuration.get( CommonAbstractStore
+                        .Configuration.use_memory_mapped_buffers )),
+                        isReadOnly( configuration ) && !isBackupSlave( configuration ), log );
     }
 
     private boolean isBackupSlave( Config configuration )
@@ -62,47 +65,16 @@ public class DefaultWindowPoolFactory implements WindowPoolFactory
      *
      * @param config          Map of configuration parameters
      * @param storageFileName Name of the file on disk
-     * @param log
      * @return The number of bytes memory mapped windows this store has
      */
-    // TODO: This should use the type-safe config API, rather than this magic stuff
-    private long calculateMappedMemory( Map<?, ?> config, String storageFileName )
+    private long calculateMappedMemory( Config config, File storageFileName )
     {
-        String convertSlash = storageFileName.replace( '\\', '/' );
-        String realName = convertSlash.substring( convertSlash
-                .lastIndexOf( '/' ) + 1 );
-        String mem = (String) config.get( realName + ".mapped_memory" );
-        if ( mem != null )
-        {
-            long multiplier = 1;
-            mem = mem.trim().toLowerCase();
-            if ( mem.endsWith( "m" ) )
-            {
-                multiplier = 1024 * 1024;
-                mem = mem.substring( 0, mem.length() - 1 );
-            }
-            else if ( mem.endsWith( "k" ) )
-            {
-                multiplier = 1024;
-                mem = mem.substring( 0, mem.length() - 1 );
-            }
-            else if ( mem.endsWith( "g" ) )
-            {
-                multiplier = 1024 * 1024 * 1024;
-                mem = mem.substring( 0, mem.length() - 1 );
-            }
-            try
-            {
-                return Integer.parseInt( mem ) * multiplier;
-            }
-            catch ( NumberFormatException e )
-            {
-                logger.info( "Unable to parse mapped memory[" + mem
-                        + "] string for " + storageFileName );
-            }
-        }
+        String realName = storageFileName.getName();
 
-        return 0;
+        Long mem = config.get( setting( realName + ".mapped_memory", Settings.BYTES, Settings.NO_DEFAULT ));
+        if ( mem == null )
+            mem = 0L;
+
+        return mem;
     }
-
 }

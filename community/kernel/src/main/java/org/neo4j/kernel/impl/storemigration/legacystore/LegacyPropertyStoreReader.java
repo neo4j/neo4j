@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.storemigration.legacystore;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -39,12 +40,12 @@ public class LegacyPropertyStoreReader
     private PersistenceWindowPool windowPool;
     private final FileChannel fileChannel;
 
-    public LegacyPropertyStoreReader( String fileNamed ) throws FileNotFoundException
+    public LegacyPropertyStoreReader( File fileNamed ) throws FileNotFoundException
     {
         this(fileNamed, StringLogger.DEV_NULL);
     }
 
-    public LegacyPropertyStoreReader( String fileName, StringLogger log ) throws FileNotFoundException
+    public LegacyPropertyStoreReader( File fileName, StringLogger log ) throws FileNotFoundException
     {
         fileChannel = new RandomAccessFile( fileName, "r" ).getChannel();
         windowPool = new PersistenceWindowPool( fileName,

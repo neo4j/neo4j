@@ -19,51 +19,18 @@
  */
 package org.neo4j.kernel.impl.cache;
 
-import static org.neo4j.graphdb.factory.GraphDatabaseSetting.FloatSetting;
-import static org.neo4j.graphdb.factory.GraphDatabaseSetting.NumberOfBytesSetting;
-import static org.neo4j.graphdb.factory.GraphDatabaseSetting.TimeSpanSetting;
+import static org.neo4j.helpers.Settings.setting;
 
-import org.neo4j.graphdb.factory.Default;
-import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.NodeImpl;
 import org.neo4j.kernel.impl.core.RelationshipImpl;
 import org.neo4j.kernel.impl.util.StringLogger;
 
-@Service.Implementation( CacheProvider.class )
+@Service.Implementation(CacheProvider.class)
 public class GCResistantCacheProvider extends CacheProvider
 {
     public static final String NAME = "gcr";
-
-    public static class Configuration
-    {
-        public static GraphDatabaseSetting<Long> node_cache_size = new GCRMemoryUsageSetting("node_cache_size");
-        public static GraphDatabaseSetting<Long> relationship_cache_size = new GCRMemoryUsageSetting("relationship_cache_size");
-
-        @Default( "1.0" )
-        public static GraphDatabaseSetting<Float> node_cache_array_fraction = new FloatSetting( "node_cache_array_fraction", "Must be a valid floating point number.", 1.0f, 10.0f );
-
-        @Default( "1.0" )
-        public static GraphDatabaseSetting<Float> relationship_cache_array_fraction = new FloatSetting( "relationship_cache_array_fraction", "Must be a valid floating point number.", 1.0f, 10.0f );
-
-        @Default( "60s" )
-        public static GraphDatabaseSetting<Long> log_interval = new TimeSpanSetting( "gcr_cache_min_log_interval" );
-
-        private static final class GCRMemoryUsageSetting extends NumberOfBytesSetting implements org.neo4j.graphdb.factory.GraphDatabaseSetting.DefaultValue
-        {
-            public GCRMemoryUsageSetting(String name) {
-                super(name);
-            }
-
-            @Override
-            public String getDefaultValue() {
-                long available = Runtime.getRuntime().maxMemory();
-                long defaultMem = ( available / 4);
-                return ""+defaultMem;
-            }
-        }
-    }
 
     public GCResistantCacheProvider()
     {
@@ -73,25 +40,47 @@ public class GCResistantCacheProvider extends CacheProvider
     @Override
     public Cache<NodeImpl> newNodeCache( StringLogger logger, Config config )
     {
-        long node = config.get( Configuration.node_cache_size );
-        long rel = config.get( Configuration.relationship_cache_size );
+        Long node = config.get( GcrSettings.node_cache_size );
+        if ( node == null )
+        {
+            node = Runtime.getRuntime().maxMemory() / 4;
+        }
+
+        Long rel = config.get( GcrSettings.relationship_cache_size );
+        if ( rel == null )
+        {
+            rel = Runtime.getRuntime().maxMemory() / 4;
+        }
+
         checkMemToUse( logger, node, rel, Runtime.getRuntime().maxMemory() );
-        return new GCResistantCache<NodeImpl>( node, config.get( Configuration.node_cache_array_fraction ), config.get( Configuration.log_interval ),
+        return new GCResistantCache<NodeImpl>( node, config.get( GcrSettings.node_cache_array_fraction ),
+                config.get( GcrSettings.log_interval ),
                 NODE_CACHE_NAME, logger );
     }
 
     @Override
     public Cache<RelationshipImpl> newRelationshipCache( StringLogger logger, Config config )
     {
-        long node = config.get( Configuration.node_cache_size );
-        long rel = config.get( Configuration.relationship_cache_size );
+        Long node = config.get( GcrSettings.node_cache_size );
+        if ( node == null )
+        {
+            node = Runtime.getRuntime().maxMemory() / 4;
+        }
+
+        Long rel = config.get( GcrSettings.relationship_cache_size );
+        if ( rel == null )
+        {
+            rel = Runtime.getRuntime().maxMemory() / 4;
+        }
+
         checkMemToUse( logger, node, rel, Runtime.getRuntime().maxMemory() );
-        return new GCResistantCache<RelationshipImpl>( rel, config.get( Configuration.relationship_cache_array_fraction ), config.get( Configuration.log_interval ),
+        return new GCResistantCache<RelationshipImpl>( rel, config.get( GcrSettings
+                .relationship_cache_array_fraction ), config.get( GcrSettings.log_interval ),
                 RELATIONSHIP_CACHE_NAME, logger );
     }
 
     // TODO: Move into validation method of config setting?
-    @SuppressWarnings( "boxing" )
+    @SuppressWarnings("boxing")
     private void checkMemToUse( StringLogger logger, long node, long rel, long available )
     {
         long advicedMax = available / 2;
@@ -118,6 +107,6 @@ public class GCResistantCacheProvider extends CacheProvider
     @Override
     public Class getSettingsClass()
     {
-        return Configuration.class;
+        return GcrSettings.class;
     }
 }

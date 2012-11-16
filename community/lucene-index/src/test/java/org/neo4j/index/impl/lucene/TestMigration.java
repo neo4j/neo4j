@@ -165,7 +165,7 @@ public class TestMigration
 
     private void removeProvidersFromIndexDbFile( File storeDir )
     {
-        IndexStore indexStore = new IndexStore( storeDir.getPath(), new DefaultFileSystemAbstraction() );
+        IndexStore indexStore = new IndexStore( storeDir, new DefaultFileSystemAbstraction() );
         for ( Class<? extends PropertyContainer> cls : new Class[] {Node.class, Relationship.class} )
         {
             for ( String name : indexStore.getNames( cls ) )

@@ -36,8 +36,8 @@ import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
-import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.helpers.Pair;
+import org.neo4j.helpers.Settings;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.server.ha.ServerCluster;
@@ -61,7 +61,7 @@ public class HaServerFunctionalTest
     @BeforeClass
     public static void startZooKeeper()
     {
-        if ( GraphDatabaseSetting.osIsWindows() ) return;
+        if ( Settings.osIsWindows() ) return;
     }
 
     @AfterClass
@@ -82,14 +82,14 @@ public class HaServerFunctionalTest
     @Test
     public void canStartUpServerCluster() throws Exception
     {
-        if ( GraphDatabaseSetting.osIsWindows() ) return;
+        if ( Settings.osIsWindows() ) return;
         cluster = new ServerCluster( testName.getMethodName(), dir, SERVER_PORTS );
     }
 
     @Test
     public void canWriteToOneServerInTheClusterAndReadFromAnother() throws Exception
     {
-        if ( GraphDatabaseSetting.osIsWindows() ) return;
+        if ( Settings.osIsWindows() ) return;
         cluster = new ServerCluster( testName.getMethodName(), dir, SERVER_PORTS );
         URI base = cluster.getRandomServerUri();
 
@@ -102,7 +102,7 @@ public class HaServerFunctionalTest
     @Test
     public void canWriteToOneServerInTheClusterThenReadFromAnotherAfterShuttingDownTheWriteServer() throws Exception
     {
-        if ( GraphDatabaseSetting.osIsWindows() ) return;
+        if ( Settings.osIsWindows() ) return;
         cluster = new ServerCluster( testName.getMethodName(), dir, SERVER_PORTS );
         URI base = cluster.getRandomServerUri();
 

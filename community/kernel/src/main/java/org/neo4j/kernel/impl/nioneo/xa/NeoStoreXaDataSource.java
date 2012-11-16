@@ -36,6 +36,7 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Exceptions;
@@ -90,10 +91,10 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
     public static abstract class Configuration
         extends LogBackedXaDataSource.Configuration
     {
-        public static final GraphDatabaseSetting.BooleanSetting read_only = GraphDatabaseSettings.read_only;
-        public static final GraphDatabaseSetting.StringSetting store_dir = InternalAbstractGraphDatabase.Configuration.store_dir;
-        public static final GraphDatabaseSetting.StringSetting neo_store = InternalAbstractGraphDatabase.Configuration.neo_store;
-        public static final GraphDatabaseSetting.StringSetting logical_log = InternalAbstractGraphDatabase.Configuration.logical_log;
+        public static final Setting<Boolean> read_only= GraphDatabaseSettings.read_only;
+        public static final Setting<File> store_dir = InternalAbstractGraphDatabase.Configuration.store_dir;
+        public static final Setting<File> neo_store = InternalAbstractGraphDatabase.Configuration.neo_store;
+        public static final Setting<File> logical_log = InternalAbstractGraphDatabase.Configuration.logical_log;
     }
 
     public static final byte BRANCH_ID[] = UTF8.encode( "414141" );
@@ -109,7 +110,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
 
     private final LockManager lockManager;
     private final LockReleaser lockReleaser;
-    private String storeDir;
+    private File storeDir;
     private boolean readOnly;
 
     private final TransactionInterceptorProviders providers;
@@ -229,7 +230,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
         readOnly = config.get( Configuration.read_only );
 
         storeDir = config.get( Configuration.store_dir );
-        String store = config.get( Configuration.neo_store );
+        File store = config.get( Configuration.neo_store );
         storeFactory.ensureStoreExists();
 
         final TransactionFactory tf;
@@ -476,7 +477,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
 
     public String getStoreDir()
     {
-        return storeDir;
+        return storeDir.getPath();
     }
 
     @Override
@@ -563,7 +564,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
         final Collection<File> files = new ArrayList<File>();
         File neostoreFile = null;
         Pattern logFilePattern = getXaContainer().getLogicalLog().getHistoryFileNamePattern();
-        for ( File dbFile : new File( storeDir ).listFiles() )
+        for ( File dbFile : storeDir.listFiles() )
         {
             String name = dbFile.getName();
             // To filter for "neostore" is quite future proof, but the "index.db" file

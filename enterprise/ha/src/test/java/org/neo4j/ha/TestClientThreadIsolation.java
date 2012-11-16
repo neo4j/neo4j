@@ -26,6 +26,7 @@ import java.util.concurrent.CountDownLatch;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
@@ -58,21 +59,23 @@ public class TestClientThreadIsolation
             "readNextChunk", "waitTxCopyToStart", "finish"})
     public void testTransactionsPulled() throws Exception
     {
-        final HighlyAvailableGraphDatabase master = (HighlyAvailableGraphDatabase) new HighlyAvailableGraphDatabaseFactory().
+        final HighlyAvailableGraphDatabase master = (HighlyAvailableGraphDatabase) new
+                HighlyAvailableGraphDatabaseFactory().
                 newHighlyAvailableDatabaseBuilder( TargetDirectory.forTest( TestClientThreadIsolation.class ).directory(
                         "master", true ).getAbsolutePath() ).
                 setConfig( HaSettings.server_id, "1" ).
                 newGraphDatabase();
 
-        final HighlyAvailableGraphDatabase slave1 = (HighlyAvailableGraphDatabase) new HighlyAvailableGraphDatabaseFactory().
+        final HighlyAvailableGraphDatabase slave1 = (HighlyAvailableGraphDatabase) new
+                HighlyAvailableGraphDatabaseFactory().
                 newHighlyAvailableDatabaseBuilder( TargetDirectory.forTest( TestClientThreadIsolation.class ).directory(
                         "slave1", true ).getAbsolutePath() ).
+                setConfig( ClusterSettings.cluster_server, "127.0.0.1:5002" ).
+                setConfig( ClusterSettings.initial_hosts, "127.0.0.1:5001" ).
                 setConfig( HaSettings.server_id, "2" ).
-                setConfig( HaSettings.max_concurrent_channels_per_slave, "2" )
-                .setConfig( HaSettings.ha_server, "127.0.0.1:8001" )
-                .setConfig( HaSettings.cluster_server, "127.0.0.1:5002" )
-                .setConfig( HaSettings.initial_hosts, "127.0.0.1:5001" )
-                .newGraphDatabase();
+                setConfig( HaSettings.max_concurrent_channels_per_slave, "2" ).
+                setConfig( HaSettings.ha_server, "127.0.0.1:8001" ).
+                newGraphDatabase();
 
         Transaction masterTx = master.beginTx();
         master.createNode().createRelationshipTo( master.createNode(),

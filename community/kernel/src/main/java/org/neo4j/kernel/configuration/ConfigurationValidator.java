@@ -23,7 +23,8 @@ import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.graphdb.factory.GraphDatabaseSetting;
+import org.neo4j.graphdb.config.Setting;
+import org.neo4j.helpers.Functions;
 import org.neo4j.helpers.Pair;
 
 /**
@@ -31,39 +32,37 @@ import org.neo4j.helpers.Pair;
  * validates configuration maps using the validators
  * in the setting class fields.
  */
-public class ConfigurationValidator {
+public class ConfigurationValidator
+{
 
-	private AnnotatedFieldHarvester fieldHarvester = new AnnotatedFieldHarvester();
-	private Map<String, GraphDatabaseSetting<?>> settings;
-	
-	public ConfigurationValidator(Iterable<Class<?>> settingsClasses)
-	{
-		this.settings = getSettingsFrom(settingsClasses);
-	}
-	
-	public void validate(Map<String,String> rawConfig)
-	{
-		for(String key : rawConfig.keySet()) 
-		{
-			if(settings.containsKey(key))
-			{
-				settings.get(key).validate(rawConfig.get(key));
-			}
-		}
-	}
+    private AnnotatedFieldHarvester fieldHarvester = new AnnotatedFieldHarvester();
+    private Map<String, Setting<?>> settings;
 
-	@SuppressWarnings("rawtypes")
-	private Map<String, GraphDatabaseSetting<?>> getSettingsFrom(Iterable<Class<?>> settingsClasses) 
-	{
-		Map<String, GraphDatabaseSetting<?>> settings = new HashMap<String, GraphDatabaseSetting<?>>();
-		for(Class<?> clazz : settingsClasses)
-		{
-			for(Pair<Field, GraphDatabaseSetting> field : fieldHarvester.findStatic(clazz, GraphDatabaseSetting.class))
-			{
-				settings.put(field.other().name(), field.other());
-			}
-		}
-		return settings;
-	}
-	
+    public ConfigurationValidator( Iterable<Class<?>> settingsClasses )
+    {
+        this.settings = getSettingsFrom( settingsClasses );
+    }
+
+    public void validate( Map<String, String> rawConfig )
+    {
+        for ( Setting<?> setting : settings.values() )
+        {
+            setting.apply( Functions.map( rawConfig ) );
+        }
+    }
+
+    @SuppressWarnings("rawtypes")
+    private Map<String, Setting<?>> getSettingsFrom( Iterable<Class<?>> settingsClasses )
+    {
+        Map<String, Setting<?>> settings = new HashMap<String, Setting<?>>();
+        for ( Class<?> clazz : settingsClasses )
+        {
+            for ( Pair<Field, Setting> field : fieldHarvester.findStatic( clazz, Setting.class ) )
+            {
+                settings.put( field.other().name(), field.other() );
+            }
+        }
+        return settings;
+    }
+
 }

@@ -22,6 +22,8 @@ package org.neo4j.kernel.impl.transaction.xaframework;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.test.TargetDirectory.forTest;
 
+import java.io.File;
+
 import org.junit.Test;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.GraphDatabaseAPI;
@@ -45,10 +47,10 @@ public class TestStandaloneLogExtractor
     
     private void run( boolean cleanShutdown, int nr ) throws Exception
     {
-        String sourceDir = forTest( getClass() ).directory( "source" + nr, true ).getAbsolutePath();
+        File sourceDir = forTest( getClass() ).directory( "source" + nr, true );
         Process process = Runtime.getRuntime().exec( new String[]{
             "java", "-cp", System.getProperty( "java.class.path" ), CreateSomeTransactions.class.getName(),
-            sourceDir, "" + cleanShutdown
+            sourceDir.getPath(), "" + cleanShutdown
         } );
 
         new ProcessStreamHandler( process, true ).waitForResult();

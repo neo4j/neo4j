@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import java.io.File;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
@@ -42,7 +43,7 @@ public class JumpingIdGeneratorFactory implements IdGeneratorFactory
         this.sizePerJump = sizePerJump;
     }
 
-    public IdGenerator open( FileSystemAbstraction fs, String fileName, int grabSize, IdType idType )
+    public IdGenerator open( FileSystemAbstraction fs, File fileName, int grabSize, IdType idType )
     {
         return get( idType );
     }
@@ -63,7 +64,7 @@ public class JumpingIdGeneratorFactory implements IdGeneratorFactory
         return forTheRest;
     }
 
-    public void create( FileSystemAbstraction fs, String fileName, long highId )
+    public void create( FileSystemAbstraction fs, File fileName, long highId )
     {
     }
 

@@ -60,12 +60,12 @@ public class StoreUpgrader
         this.databaseFiles = databaseFiles;
     }
 
-    public void attemptUpgrade( String storageFileName )
+    public void attemptUpgrade( File storageFileName )
     {
         upgradeConfiguration.checkConfigurationAllowsAutomaticUpgrade();
-        upgradableDatabase.checkUpgradeable( new File( storageFileName ) );
+        upgradableDatabase.checkUpgradeable( storageFileName );
 
-        File workingDirectory = new File( storageFileName ).getParentFile();
+        File workingDirectory = storageFileName.getParentFile();
         File upgradeDirectory = new File( workingDirectory, "upgrade" );
         File backupDirectory = new File( workingDirectory, "upgrade_backup" );
 
@@ -89,7 +89,7 @@ public class StoreUpgrader
         }
     }
 
-    private void migrateToIsolatedDirectory( String storageFileName, File upgradeDirectory )
+    private void migrateToIsolatedDirectory( File storageFileName, File upgradeDirectory )
     {
         if (upgradeDirectory.exists()) {
             try
@@ -103,9 +103,9 @@ public class StoreUpgrader
         }
         upgradeDirectory.mkdir();
 
-        String upgradeFileName = new File( upgradeDirectory, NeoStore.DEFAULT_NAME ).getPath();
+        File upgradeFileName = new File( upgradeDirectory, NeoStore.DEFAULT_NAME );
         Map<String, String> upgradeConfig = new HashMap<String, String>( originalConfig.getParams() );
-        upgradeConfig.put( "neo_store", upgradeFileName );
+        upgradeConfig.put( "neo_store", upgradeFileName.getPath() );
 
 
         Config upgradeConfiguration = new Config( upgradeConfig );

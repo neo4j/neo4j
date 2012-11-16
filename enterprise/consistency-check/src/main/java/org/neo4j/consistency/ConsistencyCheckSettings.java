@@ -19,35 +19,34 @@
  */
 package org.neo4j.consistency;
 
+import static org.neo4j.graphdb.factory.GraphDatabaseSetting.FALSE;
+import static org.neo4j.helpers.Settings.BOOLEAN;
+import static org.neo4j.helpers.Settings.options;
+import static org.neo4j.helpers.Settings.setting;
+
 import org.neo4j.consistency.checking.full.TaskExecutionOrder;
 import org.neo4j.consistency.store.windowpool.WindowPoolImplementation;
-import org.neo4j.graphdb.factory.Default;
+import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.Description;
-import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 
 /**
- * Settings for online backup
+ * Settings for consistency checker
  */
 public class ConsistencyCheckSettings
 {
     @Description("Perform optional additional checking on property ownership. " +
             "This can detect a theoretical inconsistency where a property could be owned by multiple entities. " +
             "However, but the check is very expensive in time and memory, so it is skipped by default.")
-    /** Defaults to false due to the way Boolean.parseBoolean(null) works. */
-    public static final GraphDatabaseSetting<Boolean> consistency_check_property_owners =
-            new GraphDatabaseSetting.BooleanSetting( "consistency_check_property_owners" );
+    public static final Setting<Boolean> consistency_check_property_owners = setting(
+            "consistency_check_property_owners", BOOLEAN, FALSE );
 
     @Description("Window pool implementation to be used when running consistency check")
-    @Default( "MULTI_PASS" )
-    public static final
-    GraphDatabaseSetting.EnumerableSetting<TaskExecutionOrder> consistency_check_execution_order =
-            new GraphDatabaseSetting.EnumerableSetting<TaskExecutionOrder>(
-                    "consistency_check_execution_order", TaskExecutionOrder.class );
+    public static final Setting<TaskExecutionOrder> consistency_check_execution_order =
+            setting( "consistency_check_execution_order", options( TaskExecutionOrder.class ),
+                    TaskExecutionOrder.MULTI_PASS.name() );
 
     @Description("Window pool implementation to be used when running consistency check")
-    @Default( "SCAN_RESISTANT" )
-    public static final
-    GraphDatabaseSetting.EnumerableSetting<WindowPoolImplementation> consistency_check_window_pool_implementation =
-            new GraphDatabaseSetting.EnumerableSetting<WindowPoolImplementation>(
-                    "consistency_check_window_pool_implementation", WindowPoolImplementation.class );
+    public static final Setting<WindowPoolImplementation> consistency_check_window_pool_implementation =
+            setting( "consistency_check_window_pool_implementation", options( WindowPoolImplementation.class ),
+                    WindowPoolImplementation.SCAN_RESISTANT.name() );
 }

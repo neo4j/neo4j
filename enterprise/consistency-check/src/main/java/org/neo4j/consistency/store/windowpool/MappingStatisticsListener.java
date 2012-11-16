@@ -19,7 +19,9 @@
  */
 package org.neo4j.consistency.store.windowpool;
 
+import java.io.File;
+
 public interface MappingStatisticsListener
 {
-    void onStatistics( String storeFileName, int acquiredPages, int mappedPages, long samplePeriod );
+    void onStatistics( File storeFileName, int acquiredPages, int mappedPages, long samplePeriod );
 }

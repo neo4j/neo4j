@@ -46,7 +46,7 @@ public class ConsistencyCheckService
                 tuningConfiguration.get( ConsistencyCheckSettings.consistency_check_window_pool_implementation )
                         .windowPoolFactory( tuningConfiguration, logger ), new DefaultFileSystemAbstraction(), logger,
                 new DefaultTxHook() );
-        NeoStore neoStore = factory.newNeoStore( new File( storeDir, NeoStore.DEFAULT_NAME ).getAbsolutePath() );
+        NeoStore neoStore = factory.newNeoStore( new File( storeDir, NeoStore.DEFAULT_NAME ) );
         try
         {
             StoreAccess store = new StoreAccess( neoStore );

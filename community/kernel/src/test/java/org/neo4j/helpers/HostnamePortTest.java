@@ -20,10 +20,18 @@
 
 package org.neo4j.helpers;
 
-/**
- * Specification interface
- */
-public interface Specification<T>
+import org.hamcrest.CoreMatchers;
+import org.junit.Assert;
+import org.junit.Test;
+
+public class HostnamePortTest
 {
-    boolean satisfiedBy( T item );
+    @Test
+    public void testHostnameOnly()
+    {
+        HostnamePort hostnamePort = new HostnamePort( "myhost" );
+        Assert.assertThat( hostnamePort.getHost(), CoreMatchers.equalTo( "myhost" ) );
+        Assert.assertThat( hostnamePort.getPort(), CoreMatchers.equalTo( 0 ) );
+        Assert.assertThat( hostnamePort.getPorts(), CoreMatchers.equalTo( new int[]{0, 0} ) );
+    }
 }

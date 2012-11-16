@@ -39,6 +39,8 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.Settings;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
@@ -60,16 +62,16 @@ public class UpgradeStoreIT
         deleteFileOrDirectory( PATH );
     }
 
-    private String path( int i )
+    private File path( int i )
     {
-        return new File( PATH, "" + i ).getAbsolutePath();
+        return new File( PATH, "" + i );
     }
 
     @Test
     public void makeSureStoreWithTooManyRelationshipTypesCannotBeUpgraded() throws Exception
     {
-        String path = path( 0 );
-        new EmbeddedGraphDatabase( path ).shutdown();
+        File path = path( 0 );
+        new EmbeddedGraphDatabase( path.getPath() ).shutdown();
         createManyRelationshipTypes( path, 0x10000 );
         assertCannotStart( path, "Shouldn't be able to upgrade with that many types set" );
     }
@@ -77,8 +79,8 @@ public class UpgradeStoreIT
     @Test
     public void makeSureStoreWithDecentAmountOfRelationshipTypesCanBeUpgraded() throws Exception
     {
-        String path = path( 1 );
-        new EmbeddedGraphDatabase( path ).shutdown();
+        File path = path( 1 );
+        new EmbeddedGraphDatabase( path.getPath() ).shutdown();
         createManyRelationshipTypes( path, 0xFFFF );
         assertCanStart( path );
     }
@@ -86,32 +88,32 @@ public class UpgradeStoreIT
     @Test( expected=TransactionFailureException.class )
     public void makeSureStoreWithTooBigStringBlockSizeCannotBeCreated() throws Exception
     {
-        new EmbeddedGraphDatabase( path( 2 ), stringMap( Config.STRING_BLOCK_SIZE, "" + (0x10000) ) );
+        new EmbeddedGraphDatabase( path( 2 ).getPath(), stringMap( Config.STRING_BLOCK_SIZE, "" + (0x10000) ) );
     }
 
     @Test
     public void makeSureStoreWithDecentStringBlockSizeCanBeCreated() throws Exception
     {
-        new EmbeddedGraphDatabase( path( 3 ), stringMap( Config.STRING_BLOCK_SIZE, "" + (0xFFFF) ) ).shutdown();
+        new EmbeddedGraphDatabase( path( 3 ).getPath(), stringMap( Config.STRING_BLOCK_SIZE, "" + (0xFFFF) ) ).shutdown();
     }
 
     @Test( expected=TransactionFailureException.class )
     public void makeSureStoreWithTooBigArrayBlockSizeCannotBeCreated() throws Exception
     {
-        new EmbeddedGraphDatabase( path( 4 ), stringMap( Config.ARRAY_BLOCK_SIZE, "" + (0x10000) ) );
+        new EmbeddedGraphDatabase( path( 4 ).getPath(), stringMap( Config.ARRAY_BLOCK_SIZE, "" + (0x10000) ) );
     }
 
     @Test
     public void makeSureStoreWithDecentArrayBlockSizeCanBeCreated() throws Exception
     {
-        new EmbeddedGraphDatabase( path( 5 ), stringMap( Config.ARRAY_BLOCK_SIZE, "" + (0xFFFF) ) ).shutdown();
+        new EmbeddedGraphDatabase( path( 5 ).getPath(), stringMap( Config.ARRAY_BLOCK_SIZE, "" + (0xFFFF) ) ).shutdown();
     }
 
     @Test
     public void makeSureStoreWithTooBigStringBlockSizeCannotBeUpgraded() throws Exception
     {
-        String path = path( 6 );
-        new EmbeddedGraphDatabase( path ).shutdown();
+        File path = path( 6 );
+        new EmbeddedGraphDatabase( path.getPath() ).shutdown();
         setBlockSize( new File( path, "neostore.propertystore.db.strings" ), 0x10000, "StringPropertyStore v0.9.5" );
         assertCannotStart( path, "Shouldn't be able to upgrade with block size that big" );
     }
@@ -119,8 +121,8 @@ public class UpgradeStoreIT
     @Test
     public void makeSureStoreWithDecentStringBlockSizeCanBeUpgraded() throws Exception
     {
-        String path = path( 7 );
-        new EmbeddedGraphDatabase( path ).shutdown();
+        File path = path( 7 );
+        new EmbeddedGraphDatabase( path.getPath() ).shutdown();
         setBlockSize( new File( path, "neostore.propertystore.db.strings" ), 0xFFFF, "StringPropertyStore v0.9.5" );
         assertCanStart( path );
     }
@@ -128,8 +130,8 @@ public class UpgradeStoreIT
     @Test
     public void makeSureStoreWithTooBigArrayBlockSizeCannotBeUpgraded() throws Exception
     {
-        String path = path( 8 );
-        new EmbeddedGraphDatabase( path ).shutdown();
+        File path = path( 8 );
+        new EmbeddedGraphDatabase( path.getPath() ).shutdown();
         setBlockSize( new File( path, "neostore.propertystore.db.arrays" ), 0x10000, "ArrayPropertyStore v0.9.5" );
         assertCannotStart( path, "Shouldn't be able to upgrade with block size that big" );
     }
@@ -137,8 +139,8 @@ public class UpgradeStoreIT
     @Test
     public void makeSureStoreWithDecentArrayBlockSizeCanBeUpgraded() throws Exception
     {
-        String path = path( 9 );
-        new EmbeddedGraphDatabase( path ).shutdown();
+        File path = path( 9 );
+        new EmbeddedGraphDatabase( path.getPath() ).shutdown();
         setBlockSize( new File( path, "neostore.propertystore.db.arrays" ), 0xFFFF, "ArrayPropertyStore v0.9.5" );
         assertCanStart( path );
     }
@@ -147,14 +149,14 @@ public class UpgradeStoreIT
     public void makeSureLogsAreMovedWhenUpgrading() throws Exception
     {
         // Generate some logical logs
-        String path = path( 10 );
+        File path = path( 10 );
         for ( int i = 0; i < 3; i++ )
         {
-            new EmbeddedGraphDatabase( path, stringMap( Config.KEEP_LOGICAL_LOGS, "true" ) ).shutdown();
+            new EmbeddedGraphDatabase( path.getPath(), stringMap( GraphDatabaseSettings.keep_logical_logs.name(), Settings.TRUE ) ).shutdown();
         }
 
         setOlderNeoStoreVersion( path );
-        new EmbeddedGraphDatabase( path, stringMap( Config.ALLOW_STORE_UPGRADE, "true" ) ).shutdown();
+        new EmbeddedGraphDatabase( path.getPath(), stringMap( GraphDatabaseSettings.allow_store_upgrade.name(), Settings.TRUE ) ).shutdown();
 
         File oldLogDir = new File( path, "1.2-logs" );
         assertTrue( oldLogDir.exists() );
@@ -169,13 +171,13 @@ public class UpgradeStoreIT
     @Test
     public void makeSureStoreCantBeUpgradedIfNotExplicitlyToldTo() throws Exception
     {
-        String path = path( 11 );
-        new EmbeddedGraphDatabase( path ).shutdown();
+        File path = path( 11 );
+        new EmbeddedGraphDatabase( path.getPath() ).shutdown();
         setOlderNeoStoreVersion( path );
 
         try
         {
-            new EmbeddedGraphDatabase( path );
+            new EmbeddedGraphDatabase( path.getPath() );
             fail( "Shouldn't be able to upgrade if not told to" );
         }
         catch ( TransactionFailureException e )
@@ -190,13 +192,13 @@ public class UpgradeStoreIT
     @Test
     public void makeSureStoreCantBeUpgradedIfNotExplicitlyToldTo2() throws Exception
     {
-        String path = path( 12 );
-        new EmbeddedGraphDatabase( path ).shutdown();
+        File path = path( 12 );
+        new EmbeddedGraphDatabase( path.getPath() ).shutdown();
         setOlderNeoStoreVersion( path );
 
         try
         {
-            new EmbeddedGraphDatabase( path, stringMap( Config.ALLOW_STORE_UPGRADE, "false" ) );
+            new EmbeddedGraphDatabase( path.getPath(), stringMap( GraphDatabaseSettings.allow_store_upgrade.name(), Settings.TRUE ) );
             fail( "Shouldn't be able to upgrade if not told to" );
         }
         catch ( TransactionFailureException e )
@@ -211,22 +213,22 @@ public class UpgradeStoreIT
     @Test
     public void makeSureStoreCanBeUpgradedIfExplicitlyToldTo() throws Exception
     {
-        String path = path( 13 );
-        new EmbeddedGraphDatabase( path ).shutdown();
+        File path = path( 13 );
+        new EmbeddedGraphDatabase( path.getPath() ).shutdown();
         setOlderNeoStoreVersion( path );
-        new EmbeddedGraphDatabase( path, stringMap( Config.ALLOW_STORE_UPGRADE, "true" ) ).shutdown();
+        new EmbeddedGraphDatabase( path.getPath(), stringMap( GraphDatabaseSettings.allow_store_upgrade.name(), Settings.TRUE ) ).shutdown();
     }
 
     @Test
     public void makeSureStoreCantBeUpgradedByBatchInserterEvenIfExplicitlyToldTo() throws Exception
     {
-        String path = path( 14 );
-        new EmbeddedGraphDatabase( path ).shutdown();
+        File path = path( 14 );
+        new EmbeddedGraphDatabase( path.getPath() ).shutdown();
         setOlderNeoStoreVersion( path );
 
         try
         {
-            new BatchInserterImpl( path, stringMap( Config.ALLOW_STORE_UPGRADE, "true" ) );
+            new BatchInserterImpl( path.getPath(), stringMap( GraphDatabaseSettings.allow_store_upgrade.name(), Settings.TRUE ) );
             fail( "Shouldn't be able to upgrade with batch inserter" );
         }
         catch ( IllegalArgumentException e )
@@ -234,12 +236,12 @@ public class UpgradeStoreIT
         }
     }
 
-    private void assertCannotStart( String path, String failMessage )
+    private void assertCannotStart( File path, String failMessage )
     {
         GraphDatabaseService db = null;
         try
         {
-            db = new EmbeddedGraphDatabase( path );
+            db = new EmbeddedGraphDatabase( path.getPath() );
             fail( failMessage );
         }
         catch ( TransactionFailureException e )
@@ -259,12 +261,12 @@ public class UpgradeStoreIT
         }
     }
 
-    private void assertCanStart( String path )
+    private void assertCanStart( File path )
     {
         GraphDatabaseService db = null;
         try
         {
-            db = new EmbeddedGraphDatabase( path );
+            db = new EmbeddedGraphDatabase( path.getPath() );
         }
         finally
         {
@@ -275,7 +277,7 @@ public class UpgradeStoreIT
         }
     }
 
-    private void setOlderNeoStoreVersion( String path ) throws IOException
+    private void setOlderNeoStoreVersion( File path ) throws IOException
     {
         String oldVersion = "NeoStore v0.9.6";
         FileChannel channel = new RandomAccessFile( new File( path, NeoStore.DEFAULT_NAME ), "rw" ).getChannel();
@@ -300,10 +302,10 @@ public class UpgradeStoreIT
         channel.close();
     }
 
-    private void createManyRelationshipTypes( String path, int numberOfTypes )
+    private void createManyRelationshipTypes( File path, int numberOfTypes )
     {
-        String fileName = new File( path, "neostore.relationshiptypestore.db" ).getAbsolutePath();
-        DynamicStringStore stringStore = new DynamicStringStore( fileName + ".names", null, IdType.RELATIONSHIP_TYPE_BLOCK,
+        File fileName = new File( path, "neostore.relationshiptypestore.db" );
+        DynamicStringStore stringStore = new DynamicStringStore( new File( fileName.getPath() + ".names"), null, IdType.RELATIONSHIP_TYPE_BLOCK,
                 new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(), new DefaultFileSystemAbstraction(), StringLogger.SYSTEM );
         RelationshipTypeStore store = new RelationshipTypeStoreWithOneOlderVersion( fileName, stringStore );
         for ( int i = 0; i < numberOfTypes; i++ )
@@ -329,7 +331,7 @@ public class UpgradeStoreIT
     {
         private boolean versionCalled;
 
-        public RelationshipTypeStoreWithOneOlderVersion( String fileName, DynamicStringStore stringStore )
+        public RelationshipTypeStoreWithOneOlderVersion( File fileName, DynamicStringStore stringStore )
         {
             super( fileName, new Config( stringMap() ), new NoLimitIdGeneratorFactory(), new DefaultWindowPoolFactory(),
                     new DefaultFileSystemAbstraction(), StringLogger.SYSTEM, stringStore );
@@ -359,7 +361,7 @@ public class UpgradeStoreIT
     {
         private final Map<IdType, IdGenerator> generators = new HashMap<IdType, IdGenerator>();
 
-        public IdGenerator open( FileSystemAbstraction fs, String fileName, int grabSize, IdType idType )
+        public IdGenerator open( FileSystemAbstraction fs, File fileName, int grabSize, IdType idType )
         {
             IdGenerator generator = new IdGeneratorImpl( fs, fileName, grabSize, Long.MAX_VALUE, false );
             generators.put( idType, generator );
@@ -371,7 +373,7 @@ public class UpgradeStoreIT
             return generators.get( idType );
         }
 
-        public void create( FileSystemAbstraction fs, String fileName, long highId )
+        public void create( FileSystemAbstraction fs, File fileName, long highId )
         {
             IdGeneratorImpl.createGenerator( fs, fileName, highId );
         }

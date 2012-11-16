@@ -58,11 +58,11 @@ public class LogbackService
     public void init()
             throws Throwable
     {
-        final String storeDir = config.get( InternalAbstractGraphDatabase.Configuration.store_dir );
+        final File storeDir = config.get( InternalAbstractGraphDatabase.Configuration.store_dir );
 
         if ( storeDir != null )
         {
-            File file = new File( storeDir ).getAbsoluteFile();
+            File file = storeDir.getAbsoluteFile();
             if ( !file.exists() )
             {
                 file.mkdirs();
@@ -77,7 +77,7 @@ public class LogbackService
                 {
                     JoranConfigurator configurator = new JoranConfigurator();
                     configurator.setContext( loggerContext );
-                    loggerContext.putProperty( "neo_store", storeDir );
+                    loggerContext.putProperty( "neo_store", storeDir.getPath() );
                     loggerContext.putProperty( "remote_logging_enabled", config.get( GraphDatabaseSettings
                             .remote_logging_enabled ).toString() );
                     loggerContext.putProperty( "remote_logging_host", config.get( GraphDatabaseSettings

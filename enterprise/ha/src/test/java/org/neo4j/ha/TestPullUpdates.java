@@ -28,13 +28,14 @@ import java.util.concurrent.CountDownLatch;
 
 import org.junit.After;
 import org.junit.Test;
+import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
-import org.neo4j.kernel.ha.cluster.HighAvailabilityListener;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityEvents;
+import org.neo4j.kernel.ha.cluster.HighAvailabilityListener;
 import org.neo4j.shell.ShellClient;
 import org.neo4j.shell.ShellException;
 import org.neo4j.shell.ShellLobby;
@@ -52,21 +53,23 @@ public class TestPullUpdates
     {
         dbs = new HighlyAvailableGraphDatabase[size];
         for ( int i = 0; i < dbs.length; i++ )
+        {
             dbs[i] = newDb( i, pullInterval );
+        }
     }
 
     private HighlyAvailableGraphDatabase newDb( int i, int pullInterval )
     {
         HighlyAvailableGraphDatabase db = (HighlyAvailableGraphDatabase) new HighlyAvailableGraphDatabaseFactory().
                 newHighlyAvailableDatabaseBuilder( dir.directory( "" + (i + 1), true ).getAbsolutePath() ).
+                setConfig( ClusterSettings.cluster_server, "127.0.0.1:" + (5001 + i) ).
+                setConfig( ClusterSettings.initial_hosts, "127.0.0.1:5001,127.0.0.1:5002,127.0.0.1:5003" ).
                 setConfig( HaSettings.server_id, "" + (i + 1) ).
                 setConfig( HaSettings.ha_server, "127.0.0.1:" + (6361 + i) ).
-                setConfig( HaSettings.cluster_server, "127.0.0.1:" + (5001 + i) ).
-                setConfig( HaSettings.initial_hosts, "127.0.0.1:5001,127.0.0.1:5002,127.0.0.1:5003" ).
                 setConfig( HaSettings.pull_interval, pullInterval + "ms" ).
                 setConfig( HaSettings.tx_push_factor, "0" ).
                 setConfig( ShellSettings.remote_shell_enabled, "true" ).
-                setConfig( ShellSettings.remote_shell_port, "" + (SHELL_PORT+1) ).
+                setConfig( ShellSettings.remote_shell_port, "" + (SHELL_PORT + 1) ).
                 newGraphDatabase();
         Transaction tx = db.beginTx();
         tx.finish();
@@ -101,28 +104,29 @@ public class TestPullUpdates
         masterElectedLatch.await();
         awaitPropagation( 2 );
     }
-    
+
     @Test
     public void pullupdatesShellAppPullsUpdates() throws Exception
     {
         startDbs( 2, 0 );
         int master = getCurrentMaster();
         setProperty( master, 1 );
-        callPullUpdatesViaShell( (master+1)%dbs.length );
+        callPullUpdatesViaShell( (master + 1) % dbs.length );
         awaitPropagation( 1 );
     }
 
     private void callPullUpdatesViaShell( int i ) throws ShellException
     {
         HighlyAvailableGraphDatabase db = dbs[i];
-        ShellClient client = ShellLobby.newClient( SHELL_PORT+i );
+        ShellClient client = ShellLobby.newClient( SHELL_PORT + i );
         client.evaluate( "pullupdates" );
     }
 
     private void awaitNewMaster( int master )
     {
         masterElectedLatch = new CountDownLatch( 1 );
-        final HighAvailabilityEvents events = dbs[master].getDependencyResolver().resolveDependency( HighAvailabilityEvents.class );
+        final HighAvailabilityEvents events = dbs[master].getDependencyResolver().resolveDependency(
+                HighAvailabilityEvents.class );
         events.addClusterEventListener(
                 new HighAvailabilityListener.Adapter()
 

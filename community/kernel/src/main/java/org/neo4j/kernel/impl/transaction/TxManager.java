@@ -70,9 +70,8 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
      */
     private Map<Thread, TransactionImpl> txThreadMap = new ConcurrentHashMap<Thread, TransactionImpl>();
 
-    private final String txLogDir;
-    private static String separator = File.separator;
-    private String logSwitcherFileName = "active_tx_log";
+    private final File txLogDir;
+    private File logSwitcherFileName = null;
     private String txLog1FileName = "tm_tx_log.1";
     private String txLog2FileName = "tm_tx_log.2";
     private final int maxTxLogRecordCount = 1000;
@@ -99,7 +98,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
 
     private Throwable recoveryError;
 
-    public TxManager( String txLogDir,
+    public TxManager( File txLogDir,
                       XaDataSourceManager xaDataSourceManager,
                       KernelPanicEventGenerator kpe,
                       TxHook finishHook,
@@ -199,12 +198,12 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
         {
             if ( txLog.getName().endsWith( txLog1FileName ) )
             {
-                txLog.switchToLogFile( txLogDir + separator + txLog2FileName );
+                txLog.switchToLogFile( new File( txLogDir, txLog2FileName ));
                 changeActiveLog( txLog2FileName );
             }
             else if ( txLog.getName().endsWith( txLog2FileName ) )
             {
-                txLog.switchToLogFile( txLogDir + separator + txLog1FileName );
+                txLog.switchToLogFile( new File( txLogDir, txLog1FileName ));
                 changeActiveLog( txLog1FileName );
             }
             else
@@ -754,7 +753,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
 
     private void openLog()
     {
-        logSwitcherFileName = txLogDir + separator + "active_tx_log";
+        logSwitcherFileName = new File( txLogDir, "active_tx_log");
         txLog1FileName = "tm_tx_log.1";
         txLog2FileName = "tm_tx_log.2";
         try
@@ -766,8 +765,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
                 ByteBuffer buf = ByteBuffer.wrap( fileName );
                 fc.read( buf );
                 fc.close();
-                String currentTxLog = txLogDir + separator
-                        + UTF8.decode( fileName ).trim();
+                File currentTxLog = new File( txLogDir, UTF8.decode( fileName ).trim());
                 if ( !fileSystem.fileExists( currentTxLog ) )
                 {
                     throw logAndReturn( "TM startup failure",
@@ -780,8 +778,8 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
             }
             else
             {
-                if ( fileSystem.fileExists( txLogDir + separator + txLog1FileName )
-                        || fileSystem.fileExists( txLogDir + separator + txLog2FileName ) )
+                if ( fileSystem.fileExists( new File( txLogDir, txLog1FileName ))
+                        || fileSystem.fileExists( new File( txLogDir, txLog2FileName ) ))
                 {
                     throw logAndReturn( "TM startup failure",
                             new TransactionFailureException(
@@ -795,7 +793,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
                         .getBytes( "UTF-8" ) );
                 FileChannel fc = fileSystem.open( logSwitcherFileName, "rw" );
                 fc.write( buf );
-                txLog = new TxLog( txLogDir + separator + txLog1FileName, fileSystem, log );
+                txLog = new TxLog( new File( txLogDir, txLog1FileName), fileSystem, log );
                 log.logMessage( "TM new log: " + txLog1FileName, true );
                 fc.force( true );
                 fc.close();

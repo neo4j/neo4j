@@ -124,8 +124,8 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
     {
         try
         {
-            String storeDir = config.get( Configuration.store_dir );
-            String logFile = new File(storeDir, StringLogger.DEFAULT_NAME).getAbsolutePath();
+            File storeDir = config.get( Configuration.store_dir );
+            File logFile = new File(storeDir, StringLogger.DEFAULT_NAME);
             FileChannel fc = fileSystem.open( logFile, "rw" );
             FileChannelLoggingService logging = new FileChannelLoggingService( fc );
             life.add( logging );

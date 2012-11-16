@@ -22,7 +22,6 @@ package org.neo4j.kernel.configuration;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -32,6 +31,7 @@ import java.util.Map;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.helpers.Function;
+import org.neo4j.helpers.Functions;
 import org.neo4j.helpers.TimeUtil;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.annotations.Documented;
@@ -42,45 +42,48 @@ import org.neo4j.kernel.logging.BufferingLogger;
 
 /**
  * This class holds the overall configuration of a Neo4j database instance. Use the accessors
- * to convert the internal key-value settings to other types. 
- * 
+ * to convert the internal key-value settings to other types.
+ * <p/>
  * Users can assume that old settings have been migrated to their new counterparts, and that defaults
  * have been applied.
- * 
+ * <p/>
  * UI's can change configuration by calling applyChanges. Any listener, such as services that use
  * this configuration, can be notified of changes by implementing the {@link ConfigurationChangeListener} interface.
  */
 public class Config implements DiagnosticsProvider
 {
-    private final List<ConfigurationChangeListener> listeners = new ArrayList<ConfigurationChangeListener>(  );
+    private final List<ConfigurationChangeListener> listeners = new ArrayList<ConfigurationChangeListener>();
     private final Map<String, String> params = new HashMap<String, String>();
     private final ConfigurationMigrator migrator;
-    
+
     // Messages to this log get replayed into a real logger once logging has been
     // instantiated.
     private StringLogger log = new BufferingLogger();
-	private final ConfigurationValidator validator;
-    
+    private final ConfigurationValidator validator;
+    private Function<String, String> settingsFunction;
+
     public Config()
     {
-        this(new HashMap<String,String>(), Collections.<Class<?>>emptyList());
+        this( new HashMap<String, String>(), Collections.<Class<?>>emptyList() );
     }
-    
-    public Config(Map<String, String> inputParams)
+
+    public Config( Map<String, String> inputParams )
     {
-        this(inputParams, Collections.<Class<?>>emptyList());
+        this( inputParams, Collections.<Class<?>>emptyList() );
     }
-    
-    public Config(Map<String, String> inputParams, Class<?> ... settingsClasses)
+
+    public Config( Map<String, String> inputParams, Class<?>... settingsClasses )
     {
-        this(inputParams, Arrays.asList(settingsClasses));
+        this( inputParams, Arrays.asList( settingsClasses ) );
     }
-    
-    public Config(Map<String, String> inputParams, Iterable<Class<?>> settingsClasses)
+
+    public Config( Map<String, String> inputParams, Iterable<Class<?>> settingsClasses )
     {
-        this.migrator = new AnnotationBasedConfigurationMigrator(settingsClasses);
-        this.validator = new ConfigurationValidator(settingsClasses);
-        this.applyChanges(new ConfigurationDefaults(settingsClasses).apply(inputParams));
+        settingsFunction = Functions.map( params );
+
+        this.migrator = new AnnotationBasedConfigurationMigrator( settingsClasses );
+        this.validator = new ConfigurationValidator( settingsClasses );
+        this.applyChanges( inputParams );
     }
 
     // TODO: Get rid of this, to allow us to have something more
@@ -88,60 +91,52 @@ public class Config implements DiagnosticsProvider
     // properties).
     public Map<String, String> getParams()
     {
-        return new HashMap<String,String>(this.params);
-    }
-
-    public Collection<String> getKeys() 
-    {
-        return params.keySet();
-    }
-
-    public boolean isSet( Setting<?> graphDatabaseSetting )
-    {
-        return params.containsKey( graphDatabaseSetting.name() ) && params.get( graphDatabaseSetting.name() ) != null;
+        return new HashMap<String, String>( this.params );
     }
 
     /**
      * Retrieve a configuration property.
-     * 
+     *
      * @param setting
      * @return
      */
-    public <T> T get( GraphDatabaseSetting<T> setting )
+    public <T> T get( Setting<T> setting )
     {
-        String string = params.get( setting.name() );
-        if (string != null)
-            string = string.trim();
-        return setting.valueOf(string, this);
+        return setting.apply( settingsFunction );
     }
 
     /**
      * Replace the current set of configuration parameters with another one.
+     *
      * @param newConfiguration
      */
-    public synchronized void applyChanges(Map<String,String> newConfiguration)
+    public synchronized void applyChanges( Map<String, String> newConfiguration )
     {
-        newConfiguration = migrator.apply(newConfiguration, log);
-        
+        newConfiguration = migrator.apply( newConfiguration, log );
+
         // Make sure all changes are valid
-        validator.validate(newConfiguration);
-        
+        validator.validate( newConfiguration );
+
         // Figure out what changed
-        if (listeners.isEmpty())
+        if ( listeners.isEmpty() )
         {
             // Make the change
             params.clear();
             params.putAll( newConfiguration );
-        } else
+        }
+        else
         {
-            List<ConfigurationChange> configurationChanges = new ArrayList<ConfigurationChange>(  );
-            for( Map.Entry<String, String> stringStringEntry : newConfiguration.entrySet() )
+            List<ConfigurationChange> configurationChanges = new ArrayList<ConfigurationChange>();
+            for ( Map.Entry<String, String> stringStringEntry : newConfiguration.entrySet() )
             {
                 String oldValue = params.get( stringStringEntry.getKey() );
                 String newValue = stringStringEntry.getValue();
-                if (!(oldValue == null && newValue == null) &&
-                    (oldValue == null || newValue == null || !oldValue.equals( newValue )))
-                    configurationChanges.add( new ConfigurationChange( stringStringEntry.getKey(), oldValue, newValue ) );
+                if ( !(oldValue == null && newValue == null) &&
+                        (oldValue == null || newValue == null || !oldValue.equals( newValue )) )
+                {
+                    configurationChanges.add( new ConfigurationChange( stringStringEntry.getKey(), oldValue,
+                            newValue ) );
+                }
             }
 
             // Make the change
@@ -149,78 +144,79 @@ public class Config implements DiagnosticsProvider
             params.putAll( newConfiguration );
 
             // Notify listeners
-            for( ConfigurationChangeListener listener : listeners )
+            for ( ConfigurationChangeListener listener : listeners )
             {
-                listener.notifyConfigurationChanges(configurationChanges);
+                listener.notifyConfigurationChanges( configurationChanges );
             }
         }
     }
-    
-    public void setLogger(StringLogger log)
+
+    public void setLogger( StringLogger log )
     {
-        if(this.log instanceof BufferingLogger) 
+        if ( this.log instanceof BufferingLogger )
         {
-            ((BufferingLogger) this.log).replayInto(log);
+            ((BufferingLogger) this.log).replayInto( log );
         }
         this.log = log;
     }
-    
-    public void addConfigurationChangeListener(ConfigurationChangeListener listener)
+
+    public void addConfigurationChangeListener( ConfigurationChangeListener listener )
     {
-        listeners.add(listener);
+        listeners.add( listener );
     }
-    
-    public void removeConfigurationChangeListener(ConfigurationChangeListener listener)
+
+    public void removeConfigurationChangeListener( ConfigurationChangeListener listener )
     {
         listeners.remove( listener );
     }
-    
+
     @Override
-	public String getDiagnosticsIdentifier()
+    public String getDiagnosticsIdentifier()
     {
         return getClass().getName();
     }
 
     @Override
-	public void acceptDiagnosticsVisitor( Object visitor )
+    public void acceptDiagnosticsVisitor( Object visitor )
     {
         // nothing visits configuration
     }
 
     @Override
-	public void dump( DiagnosticsPhase phase, StringLogger log )
+    public void dump( DiagnosticsPhase phase, StringLogger log )
     {
         if ( phase.isInitialization() || phase.isExplicitlyRequested() )
         {
-            log.logLongMessage("Neo4j Kernel properties:", Iterables.map( new Function<Map.Entry<String, String>, String>()
+            log.logLongMessage( "Neo4j Kernel properties:", Iterables.map( new Function<Map.Entry<String, String>,
+                    String>()
             {
                 @Override
-				public String map( Map.Entry<String, String> stringStringEntry )
+                public String apply( Map.Entry<String, String> stringStringEntry )
                 {
-                    return stringStringEntry.getKey()+"="+stringStringEntry.getValue();
+                    return stringStringEntry.getKey() + "=" + stringStringEntry.getValue();
                 }
-            }, params.entrySet() ));
+            }, params.entrySet() ) );
         }
     }
 
     @Override
     public String toString()
     {
-        List<String> keys = new ArrayList<String>(params.keySet());
+        List<String> keys = new ArrayList<String>( params.keySet() );
         Collections.sort( keys );
-        LinkedHashMap<String,String> output = new LinkedHashMap<String, String>(  );
-        for( String key : keys )
+        LinkedHashMap<String, String> output = new LinkedHashMap<String, String>();
+        for ( String key : keys )
         {
             output.put( key, params.get( key ) );
         }
 
         return output.toString();
     }
-    
+
     //
     // To be removed in 1.10
     //
-    
+
     @Deprecated
     static final String NIO_NEO_DB_CLASS = "org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource";
     @Deprecated
@@ -238,12 +234,14 @@ public class Config implements DiagnosticsProvider
     @Documented
     @Deprecated
     public static final String USE_MEMORY_MAPPED_BUFFERS = "use_memory_mapped_buffers";
-    
-    /** Print out the effective Neo4j configuration after startup */
+
+    /**
+     * Print out the effective Neo4j configuration after startup
+     */
     @Documented
     @Deprecated
     public static final String DUMP_CONFIGURATION = "dump_configuration";
-    
+
     /**
      * Make Neo4j keep the logical transaction logs for being able to backup the
      * database. Provides control over how much disk space logical logs are allowed
@@ -252,26 +250,36 @@ public class Config implements DiagnosticsProvider
     @Documented
     @Deprecated
     public static final String KEEP_LOGICAL_LOGS = "keep_logical_logs";
-    /** Enable a remote shell server which shell clients can log in to */
+    /**
+     * Enable a remote shell server which shell clients can log in to
+     */
     @Documented
     @Deprecated
     public static final String ENABLE_REMOTE_SHELL = "enable_remote_shell";
-    
-    /** Enable a support for running online backups */
+
+    /**
+     * Enable a support for running online backups
+     */
     @Documented
     @Deprecated
     public static final String ENABLE_ONLINE_BACKUP = "enable_online_backup";
-    
-    /** Mark this database as a backup slave. */
+
+    /**
+     * Mark this database as a backup slave.
+     */
     @Documented
     @Deprecated
     public static final String BACKUP_SLAVE = "backup_slave";
 
-    /** Only allow read operations from this Neo4j instance. */
+    /**
+     * Only allow read operations from this Neo4j instance.
+     */
     @Documented
     @Deprecated
     public static final String READ_ONLY = "read_only";
-    /** Relative path for where the Neo4j storage directory is located */
+    /**
+     * Relative path for where the Neo4j storage directory is located
+     */
     @Documented
     @Deprecated
     public static final String STORAGE_DIRECTORY = "store_dir";
@@ -283,11 +291,15 @@ public class Config implements DiagnosticsProvider
     @Documented
     @Deprecated
     public static final String REBUILD_IDGENERATORS_FAST = "rebuild_idgenerators_fast";
-    /** The size to allocate for memory mapping the node store */
+    /**
+     * The size to allocate for memory mapping the node store
+     */
     @Documented
     @Deprecated
     public static final String NODE_STORE_MMAP_SIZE = "neostore.nodestore.db.mapped_memory";
-    /** The size to allocate for memory mapping the array property store */
+    /**
+     * The size to allocate for memory mapping the array property store
+     */
     @Documented
     @Deprecated
     public static final String ARRAY_PROPERTY_STORE_MMAP_SIZE = "neostore.propertystore.db.arrays.mapped_memory";
@@ -297,7 +309,8 @@ public class Config implements DiagnosticsProvider
      */
     @Documented
     @Deprecated
-    public static final String PROPERTY_INDEX_KEY_STORE_MMAP_SIZE = "neostore.propertystore.db.index.keys.mapped_memory";
+    public static final String PROPERTY_INDEX_KEY_STORE_MMAP_SIZE = "neostore.propertystore.db.index.keys" +
+            ".mapped_memory";
     /**
      * The size to allocate for memory mapping the store for property key
      * indexes
@@ -305,23 +318,33 @@ public class Config implements DiagnosticsProvider
     @Documented
     @Deprecated
     public static final String PROPERTY_INDEX_STORE_MMAP_SIZE = "neostore.propertystore.db.index.mapped_memory";
-    /** The size to allocate for memory mapping the property value store */
+    /**
+     * The size to allocate for memory mapping the property value store
+     */
     @Documented
     @Deprecated
     public static final String PROPERTY_STORE_MMAP_SIZE = "neostore.propertystore.db.mapped_memory";
-    /** The size to allocate for memory mapping the string property store */
+    /**
+     * The size to allocate for memory mapping the string property store
+     */
     @Documented
     @Deprecated
     public static final String STRING_PROPERTY_STORE_MMAP_SIZE = "neostore.propertystore.db.strings.mapped_memory";
-    /** The size to allocate for memory mapping the relationship store */
+    /**
+     * The size to allocate for memory mapping the relationship store
+     */
     @Documented
     @Deprecated
     public static final String RELATIONSHIP_STORE_MMAP_SIZE = "neostore.relationshipstore.db.mapped_memory";
-    /** Relative path for where the Neo4j logical log is located */
+    /**
+     * Relative path for where the Neo4j logical log is located
+     */
     @Documented
     @Deprecated
     public static final String LOGICAL_LOG = "logical_log";
-    /** Relative path for where the Neo4j storage information file is located */
+    /**
+     * Relative path for where the Neo4j storage information file is located
+     */
     @Documented
     @Deprecated
     public static final String NEO_STORE = "neo_store";
@@ -356,7 +379,8 @@ public class Config implements DiagnosticsProvider
     public static final String NODE_CACHE_ARRAY_FRACTION = "node_cache_array_fraction";
 
     /**
-     * The fraction of the heap (1%-10%) to use for the base array in the relationship cache (when using the 'gcr' cache).
+     * The fraction of the heap (1%-10%) to use for the base array in the relationship cache (when using the 'gcr'
+     * cache).
      */
     @Documented
     @Deprecated
@@ -364,7 +388,8 @@ public class Config implements DiagnosticsProvider
 
     /**
      * The minimal time that must pass in between logging statistics from the cache (when using the 'gcr' cache).
-     * Default unit is seconds, suffix with 's', 'm', or 'ms' to have the unit be seconds, minutes or milliseconds respectively.
+     * Default unit is seconds, suffix with 's', 'm', or 'ms' to have the unit be seconds,
+     * minutes or milliseconds respectively.
      */
     @Documented
     @Deprecated
@@ -409,7 +434,7 @@ public class Config implements DiagnosticsProvider
     public static final String STRING_BLOCK_SIZE = "string_block_size";
     @Deprecated
     public static final String ARRAY_BLOCK_SIZE = "array_block_size";
-    
+
     /**
      * A list of property names (comma separated) that will be indexed by
      * default.
@@ -485,41 +510,41 @@ public class Config implements DiagnosticsProvider
     static final String LOAD_EXTENSIONS = "load_kernel_extensions";
 
     @Deprecated
-    public boolean getBoolean(GraphDatabaseSetting.BooleanSetting setting)
+    public boolean getBoolean( GraphDatabaseSetting.BooleanSetting setting )
     {
         return get( setting );
     }
 
     @Deprecated
-    public int getInteger(GraphDatabaseSetting.IntegerSetting setting)
+    public int getInteger( GraphDatabaseSetting.IntegerSetting setting )
     {
         return get( setting );
     }
 
     @Deprecated
-    public long getLong(GraphDatabaseSetting.LongSetting setting)
+    public long getLong( GraphDatabaseSetting.LongSetting setting )
     {
         return get( setting );
     }
 
     @Deprecated
-    public double getDouble(GraphDatabaseSetting.DoubleSetting setting)
+    public double getDouble( GraphDatabaseSetting.DoubleSetting setting )
     {
         return get( setting );
     }
 
     @Deprecated
-    public float getFloat(GraphDatabaseSetting.FloatSetting setting)
+    public float getFloat( GraphDatabaseSetting.FloatSetting setting )
     {
         return get( setting );
     }
 
     @Deprecated
-    public long getSize(GraphDatabaseSetting.StringSetting setting)
+    public long getSize( GraphDatabaseSetting.StringSetting setting )
     {
         return parseLongWithUnit( get( setting ) );
     }
-    
+
     public static long parseLongWithUnit( String numberWithPotentialUnit )
     {
         numberWithPotentialUnit = numberWithPotentialUnit.toLowerCase();
@@ -544,14 +569,14 @@ public class Config implements DiagnosticsProvider
     }
 
     @Deprecated
-    public long getDuration(GraphDatabaseSetting.StringSetting setting)
+    public long getDuration( GraphDatabaseSetting.StringSetting setting )
     {
-        return TimeUtil.parseTimeMillis( get( setting ) );
+        return TimeUtil.parseTimeMillis.apply( get( setting ) );
     }
 
     @Deprecated
     public <T extends Enum<T>> T getEnum( Class<T> enumType,
-                                          GraphDatabaseSetting.OptionsSetting graphDatabaseSetting)
+                                          GraphDatabaseSetting.OptionsSetting graphDatabaseSetting )
     {
         return Enum.valueOf( enumType, get( graphDatabaseSetting ) );
     }

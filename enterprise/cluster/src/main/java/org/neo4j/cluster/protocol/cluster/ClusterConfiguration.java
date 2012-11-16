@@ -30,7 +30,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.helpers.Function;
-import org.neo4j.helpers.Specification;
+import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.Iterables;
 
 /**
@@ -174,14 +174,14 @@ public class ClusterConfiguration
         return Iterables.map( new Function<Map.Entry<String, URI>, String>()
         {
             @Override
-            public String map( Map.Entry<String, URI> stringURIEntry )
+            public String apply( Map.Entry<String, URI> stringURIEntry )
             {
                 return stringURIEntry.getKey();
             }
-        }, Iterables.filter( new Specification<Map.Entry<String, URI>>()
+        }, Iterables.filter( new Predicate<Map.Entry<String, URI>>()
         {
             @Override
-            public boolean satisfiedBy( Map.Entry<String, URI> item )
+            public boolean accept( Map.Entry<String, URI> item )
             {
                 return item.getValue().equals( node );
             }

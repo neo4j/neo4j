@@ -45,19 +45,20 @@ public class TestTxLog
         }
     }
 
-    private String path()
+    private File path()
     {
         String path = AbstractNeo4jTestCase.getStorePath( "txlog" );
-        new File( path ).mkdirs();
-        return path;
+        File file = new File( path );
+        file.mkdirs();
+        return file;
     }
     
-    private String file( String name )
+    private File file( String name )
     {
-        return path() + File.separator + name;
+        return new File( path(), name);
     }
     
-    private String txFile()
+    private File txFile()
     {
         return file( "tx_test_log.tx" );
     }
@@ -65,7 +66,7 @@ public class TestTxLog
     @Test
     public void testTxLog() throws IOException
     {
-        File file = new File( txFile() );
+        File file = txFile();
         if ( file.exists() )
         {
             file.delete();
@@ -129,7 +130,7 @@ public class TestTxLog
         }
         finally
         {
-            file = new File( txFile() );
+            file = txFile();
             if ( file.exists() )
             {
                 file.delete();
@@ -150,7 +151,7 @@ public class TestTxLog
     @Test
     public void testTruncateTxLog() throws IOException
     {
-        File file = new File( txFile() );
+        File file = txFile();
         if ( file.exists() )
         {
             file.delete();
@@ -181,7 +182,7 @@ public class TestTxLog
         }
         finally
         {
-            file = new File( txFile() );
+            file = txFile();
             if ( file.exists() )
             {
                 file.delete();

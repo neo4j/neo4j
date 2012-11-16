@@ -57,8 +57,8 @@ public class TestUpgradeOneDotFourToFiveIT
         fail( "Shouldn't be able to start" );
     }
 
-    protected String resourceFile()
+    protected File resourceFile()
     {
-        return new File( PATH, "nioneo_logical.log" ).getAbsolutePath();
+        return new File( PATH, "nioneo_logical.log" );
     }
 }

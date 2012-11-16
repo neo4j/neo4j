@@ -29,6 +29,7 @@ import java.util.Set;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -85,12 +86,13 @@ public class TestItAll
     private HighlyAvailableGraphDatabase startDb( final int serverId )
     {
 
-        HighlyAvailableGraphDatabase database = (HighlyAvailableGraphDatabase) new HighlyAvailableGraphDatabaseFactory().
+        HighlyAvailableGraphDatabase database = (HighlyAvailableGraphDatabase) new
+                HighlyAvailableGraphDatabaseFactory().
                 newHighlyAvailableDatabaseBuilder( path( serverId ) )
+                .setConfig( ClusterSettings.cluster_server, "127.0.0.1:" + (5001 + serverId) )
+                .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:5001" )
                 .setConfig( HaSettings.server_id, "" + serverId )
                 .setConfig( HaSettings.ha_server, "127.0.0.1:" + (8001 + serverId) )
-                .setConfig( HaSettings.cluster_server, "127.0.0.1:" + (5001 + serverId) )
-                .setConfig( HaSettings.initial_hosts, "127.0.0.1:5001" )
                 .newGraphDatabase();
 
         databases[serverId] = database;

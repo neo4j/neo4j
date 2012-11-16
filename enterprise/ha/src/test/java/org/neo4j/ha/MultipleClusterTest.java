@@ -51,8 +51,7 @@ public class MultipleClusterTest
     {
         File root = new File( "target/cluster" );
 
-        ClusterManager clusterManager = new ClusterManager( fromXml( getClass().getResource( "/twoclustertest.xml" ).toURI() ),
-                root, MapUtil.stringMap() );
+        ClusterManager clusterManager = new ClusterManager( fromXml( getClass().getResource( "/twoclustertest.xml" ).toURI() ), root, MapUtil.stringMap() );
         clusterManager.start();
         ManagedCluster cluster = clusterManager.getDefaultCluster();
 
@@ -71,7 +70,7 @@ public class MultipleClusterTest
 
         long cluster2;
         {
-            GraphDatabaseService master = cluster.getMaster();
+            GraphDatabaseService master = clusterManager.getCluster( "neo4j.ha2" ).getMaster();
             logging.getLogger().info( "CREATE NODE" );
             Transaction tx = master.beginTx();
             Node node = master.createNode();

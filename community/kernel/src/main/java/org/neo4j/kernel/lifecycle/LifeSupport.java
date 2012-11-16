@@ -341,7 +341,7 @@ public class LifeSupport
         return Iterables.map( new Function<LifecycleInstance, Lifecycle>()
         {
             @Override
-            public Lifecycle map( LifecycleInstance lifecycleInstance )
+            public Lifecycle apply( LifecycleInstance lifecycleInstance )
             {
                 return lifecycleInstance.instance;
             }

@@ -40,11 +40,11 @@ public class WindowPoolStats
     private final int refreshCount;
     private final int avertedRefreshCount;
     
-    public WindowPoolStats( String name, long memAvail, long memUsed, int windowCount,
+    public WindowPoolStats( File file, long memAvail, long memUsed, int windowCount,
             int windowSize, int hitCount, int missCount, int oomCount, int switchCount, int avgRefreshTime,
             int refreshCount, int avertedRefreshCount )
     {
-        this.name = extractName( name );
+        this.name = file.getName();
         this.memAvail = memAvail;
         this.memUsed = memUsed;
         this.windowCount = windowCount;
@@ -58,11 +58,6 @@ public class WindowPoolStats
         this.avertedRefreshCount = avertedRefreshCount;
     }
     
-    public static String extractName( String name )
-    {
-        return new File( name ).getName();
-    }
-
     public String getName()
     {
         return name;

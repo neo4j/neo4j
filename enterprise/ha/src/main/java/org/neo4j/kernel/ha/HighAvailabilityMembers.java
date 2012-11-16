@@ -36,7 +36,6 @@ import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.protocol.cluster.ClusterListener;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatListener;
-import org.neo4j.com.ComSettings;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.FilteringIterable;
 import org.neo4j.helpers.collection.IterableWrapper;
@@ -71,7 +70,7 @@ public class HighAvailabilityMembers implements Slaves, Lifecycle
     private final ClusterClient clusterClient;
 
     public HighAvailabilityMembers( ClusterClient clusterClient, HighAvailabilityMemberStateMachine clusterEvents,
-            StringLogger msgLog, Config config, XaDataSourceManager xaDsm )
+                                    StringLogger msgLog, Config config, XaDataSourceManager xaDsm )
     {
         this.clusterClient = clusterClient;
         this.msgLog = msgLog;
@@ -107,14 +106,16 @@ public class HighAvailabilityMembers implements Slaves, Lifecycle
     {
         life.shutdown();
     }
-    
+
     public MemberInfo[] getMembers()
     {
         Map<URI, Member> members = this.members.get();
         MemberInfo[] result = new MemberInfo[members.size()];
         int i = 0;
         for ( Member member : members.values() )
+        {
             result[i++] = member;
+        }
         return result;
     }
 
@@ -131,7 +132,7 @@ public class HighAvailabilityMembers implements Slaves, Lifecycle
             }
         };
     }
-    
+
     private static final Predicate<Member> ALIVE_SLAVE = new Predicate<HighAvailabilityMembers.Member>()
     {
         @Override
@@ -140,26 +141,26 @@ public class HighAvailabilityMembers implements Slaves, Lifecycle
             return item.available && item.isSlave();
         }
     };
-    
+
     public interface MemberInfo
     {
         int getServerId();
-        
+
         URI getClusterUri();
-        
+
         URI[] getUris();
-        
+
         boolean isSlave();
-        
+
         boolean isMaster();
-        
+
         String getHaRole();
-        
+
         String[] getClusterRoles();
-        
+
         boolean isAvailable();
     }
-    
+
     private class Member implements MemberInfo
     {
         private final URI clusterUri;
@@ -167,10 +168,10 @@ public class HighAvailabilityMembers implements Slaves, Lifecycle
         private HighAvailabilityMemberState role = HighAvailabilityMemberState.PENDING; // TODO reuse that enum here really?
         private URI haUri;
         private boolean available;
-        
+
         // Only assigned if I'm the master
         private SlaveClient slaveClient;
-        
+
         public Member( URI clusterUri, Iterable<String> initialClusterRoles )
         {
             this.clusterRoles = new HashSet<String>( asCollection( initialClusterRoles ) );
@@ -187,7 +188,7 @@ public class HighAvailabilityMembers implements Slaves, Lifecycle
         {
             this.role = role;
         }
-        
+
         @Override
         public boolean isMaster()
         {
@@ -198,21 +199,23 @@ public class HighAvailabilityMembers implements Slaves, Lifecycle
         {
             this.slaveClient = life.add( client );
         }
-        
+
         void becomeAvailable( URI haUri, HighAvailabilityMemberState role )
         {
             this.haUri = haUri;
             this.available = true;
             this.role = role;
         }
-        
+
         void setAlive( boolean alive )
         {
             this.available = alive;
             if ( !alive )
+            {
                 setHaRole( HighAvailabilityMemberState.PENDING );
+            }
         }
-        
+
         @Override
         public int getServerId()
         {
@@ -239,7 +242,9 @@ public class HighAvailabilityMembers implements Slaves, Lifecycle
             uris.add( clusterUri );
             URI haUri = this.haUri;
             if ( haUri != null )
+            {
                 uris.add( haUri );
+            }
             return uris.toArray( new URI[0] );
         }
 
@@ -248,14 +253,18 @@ public class HighAvailabilityMembers implements Slaves, Lifecycle
         {
             return this.available;
         }
-        
+
         @Override
         public String getHaRole()
         {
             if ( isMaster() )
+            {
                 return HighAvailabilityMemberState.MASTER.name();
+            }
             if ( isSlave() )
+            {
                 return HighAvailabilityMemberState.SLAVE.name();
+            }
             return "";
         }
 
@@ -264,7 +273,7 @@ public class HighAvailabilityMembers implements Slaves, Lifecycle
         {
             return clusterRoles.toArray( new String[0] );
         }
-        
+
         private synchronized void addClusterRole( String role )
         {
             clusterRoles.add( role );
@@ -305,12 +314,12 @@ public class HighAvailabilityMembers implements Slaves, Lifecycle
                         getServerId( haUri ),
                         haUri.getHost(), haUri.getPort(), msgLog, storeId,
                         config.get( HaSettings.max_concurrent_channels_per_slave ),
-                        config.get( ComSettings.com_chunk_size ) );
+                        config.get( HaSettings.com_chunk_size ).intValue() );
                 member.setSlaveClient( client );
             }
             member.becomeAvailable( haUri, HighAvailabilityMemberState.SLAVE );
         }
-        
+
         @Override
         public void masterIsAvailable( HighAvailabilityMemberChangeEvent event )
         {
@@ -318,14 +327,16 @@ public class HighAvailabilityMembers implements Slaves, Lifecycle
             Member member = members.get().get( event.getServerClusterUri() );
             member.becomeAvailable( event.getServerHaUri(), HighAvailabilityMemberState.MASTER );
         }
-        
+
         @Override
         public void instanceStops( HighAvailabilityMemberChangeEvent event )
         {
             // TODO have another state for stopping?
             Member member = members.get().get( event.getServerClusterUri() );
             if ( member != null )
+            {
                 member.setAlive( false );
+            }
         }
     }
 
@@ -360,7 +371,7 @@ public class HighAvailabilityMembers implements Slaves, Lifecycle
             }
             members.set( newMembers );
         }
-        
+
         @Override
         public void leftCluster( URI member )
         {
@@ -381,13 +392,14 @@ public class HighAvailabilityMembers implements Slaves, Lifecycle
             {
                 Map<URI, Member> oldMembers = members.get();
                 Map<URI, Member> newMembers = new HashMap<URI, Member>( oldMembers );
-                newMembers.put( memberClusterUri, new Member( memberClusterUri, clusterConfiguration.getRolesOf( memberClusterUri ) ) );
+                newMembers.put( memberClusterUri, new Member( memberClusterUri, clusterConfiguration.getRolesOf(
+                        memberClusterUri ) ) );
                 updated = members.compareAndSet( oldMembers, newMembers );
             }
             while ( !updated );
         }
     }
-    
+
     private class MembersHeartbeatListener implements HeartbeatListener
     {
         @Override

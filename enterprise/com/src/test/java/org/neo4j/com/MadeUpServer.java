@@ -23,6 +23,7 @@ import java.io.IOException;
 
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.channel.Channel;
+import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 public class MadeUpServer extends Server<MadeUpCommunicationInterface, Void>
@@ -30,7 +31,7 @@ public class MadeUpServer extends Server<MadeUpCommunicationInterface, Void>
     private volatile boolean responseWritten;
     private volatile boolean responseFailureEncountered;
     private final byte internalProtocolVersion;
-    public static final int FRAME_LENGTH = 1024*1024*1;
+    public static final int FRAME_LENGTH = 1024 * 1024 * 1;
 
     public MadeUpServer( MadeUpCommunicationInterface requestTarget, final int port, byte internalProtocolVersion,
                          byte applicationProtocolVersion, TxChecksumVerifier txVerifier, final int chunkSize )
@@ -50,21 +51,15 @@ public class MadeUpServer extends Server<MadeUpCommunicationInterface, Void>
             }
 
             @Override
-            public int getPort()
-            {
-                return port;
-            }
-
-            @Override
             public int getChunkSize()
             {
                 return chunkSize;
             }
 
             @Override
-            public String getServerAddress()
+            public HostnamePort getServerAddress()
             {
-                return null;
+                return new HostnamePort( null, port );
             }
         }, StringLogger.DEV_NULL, FRAME_LENGTH, applicationProtocolVersion, txVerifier );
         this.internalProtocolVersion = internalProtocolVersion;
@@ -135,12 +130,12 @@ public class MadeUpServer extends Server<MadeUpCommunicationInterface, Void>
                 return master.fetchDataStream( new ToChannelBufferWriter( target ), dataSize );
             }
         }, Protocol.VOID_SERIALIZER ),
-        
+
         SEND_DATA_STREAM( new TargetCaller<MadeUpCommunicationInterface, Void>()
         {
             @Override
             public Response<Void> call( MadeUpCommunicationInterface master,
-                    RequestContext context, ChannelBuffer input, ChannelBuffer target )
+                                        RequestContext context, ChannelBuffer input, ChannelBuffer target )
             {
                 BlockLogReader reader = new BlockLogReader( input );
                 try

@@ -61,7 +61,8 @@ public class TestRecoveryVerification
 
         TestGraphDatabase( String dir, RecoveryVerifier recoveryVerifier )
         {
-            super( dir, stringMap(), Service.load( IndexProvider.class ), Iterables.<KernelExtensionFactory<?>,
+            super( dir, stringMap(), Iterables.<Class<?>, Class<?>>iterable( (Class<?>) GraphDatabaseSettings.class )
+                    , Service.load( IndexProvider.class ), Iterables.<KernelExtensionFactory<?>,
                     KernelExtensionFactory>cast( Service.load( KernelExtensionFactory.class ) ),
                     Service.load( CacheProvider.class ), Service.load( TransactionInterceptorProvider.class ) );
             this.verifier = recoveryVerifier;

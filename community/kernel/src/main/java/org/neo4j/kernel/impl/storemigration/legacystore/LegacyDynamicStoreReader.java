@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.storemigration.legacystore;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
@@ -47,7 +48,7 @@ public class LegacyDynamicStoreReader
     protected static final int BLOCK_HEADER_SIZE = 1 + 4 + 4 + 4;
     private final FileChannel fileChannel;
 
-    public LegacyDynamicStoreReader( String fileName, String fromVersionArray, StringLogger log ) throws IOException
+    public LegacyDynamicStoreReader( File fileName, String fromVersionArray, StringLogger log ) throws IOException
     {
         fileChannel = new RandomAccessFile( fileName, "r" ).getChannel();
         long fileSize = fileChannel.size();

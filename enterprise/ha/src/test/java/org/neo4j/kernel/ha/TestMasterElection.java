@@ -26,14 +26,15 @@ import java.net.URI;
 import java.util.concurrent.CountDownLatch;
 
 import org.junit.Test;
+import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.consistency.checking.incremental.intercept.VerifyingTransactionInterceptorProvider;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
-import org.neo4j.kernel.ha.cluster.HighAvailabilityListener;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityEvents;
+import org.neo4j.kernel.ha.cluster.HighAvailabilityListener;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
 import org.neo4j.test.TargetDirectory;
 
@@ -66,7 +67,8 @@ public class TestMasterElection
     private void awaitNewMaster( HighlyAvailableGraphDatabase db )
     {
         masterElectedLatch = new CountDownLatch( 1 );
-        final HighAvailabilityEvents events = db.getDependencyResolver().resolveDependency( HighAvailabilityEvents.class );
+        final HighAvailabilityEvents events = db.getDependencyResolver().resolveDependency( HighAvailabilityEvents
+                .class );
         events.addClusterEventListener(
                 new HighAvailabilityListener.Adapter()
 
@@ -89,16 +91,15 @@ public class TestMasterElection
     {
         GraphDatabaseBuilder builder = new HighlyAvailableGraphDatabaseFactory()
                 .newHighlyAvailableDatabaseBuilder( path( serverId ) )
+                .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:5001,127.0.0.1:5002,127.0.0.1:5003" )
+                .setConfig( ClusterSettings.cluster_server, "127.0.0.1:" + (5001 + serverId) )
                 .setConfig( HaSettings.server_id, "" + serverId )
                 .setConfig( HaSettings.ha_server, ":" + (8001 + serverId) )
-                .setConfig( HaSettings.initial_hosts, "127.0.0.1:5001,127.0.0.1:5002,127.0.0.1:5003" )
-                .setConfig( HaSettings.cluster_server, "127.0.0.1:" + (5001 + serverId) )
                 .setConfig( HaSettings.tx_push_factor, "0" )
                 .setConfig( GraphDatabaseSettings.intercept_committing_transactions, "true" )
                 .setConfig( GraphDatabaseSettings.intercept_deserialized_transactions, "true" )
-                .setConfig(TransactionInterceptorProvider.class.getSimpleName() + "." +
-                        VerifyingTransactionInterceptorProvider.NAME, "true" )
-                ;
+                .setConfig( TransactionInterceptorProvider.class.getSimpleName() + "." +
+                        VerifyingTransactionInterceptorProvider.NAME, "true" );
         HighlyAvailableGraphDatabase db = (HighlyAvailableGraphDatabase) builder.newGraphDatabase();
         Transaction tx = db.beginTx();
         tx.finish();

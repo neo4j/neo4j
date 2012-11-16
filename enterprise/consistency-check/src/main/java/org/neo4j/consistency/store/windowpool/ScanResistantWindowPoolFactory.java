@@ -21,6 +21,7 @@ package org.neo4j.consistency.store.windowpool;
 
 import static java.lang.String.format;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
@@ -76,8 +77,7 @@ public class ScanResistantWindowPoolFactory implements WindowPoolFactory
         {
             try
             {
-                return new LoggingStatisticsListener(
-                        configuration.get( GraphDatabaseSettings.log_mapped_memory_stats_filename ) );
+                return new LoggingStatisticsListener(configuration.get( GraphDatabaseSettings.log_mapped_memory_stats_filename ) );
             }
             catch ( FileNotFoundException e )
             {
@@ -87,7 +87,7 @@ public class ScanResistantWindowPoolFactory implements WindowPoolFactory
         return new MappingStatisticsListener()
         {
             @Override
-            public void onStatistics( String storeFileName, int acquiredPages, int mappedPages, long samplePeriod )
+            public void onStatistics( File storeFileName, int acquiredPages, int mappedPages, long samplePeriod )
             {
                 // silent
             }
@@ -95,7 +95,7 @@ public class ScanResistantWindowPoolFactory implements WindowPoolFactory
     }
 
     @Override
-    public WindowPool create( String storageFileName, int recordSize, FileChannel fileChannel,
+    public WindowPool create( File storageFileName, int recordSize, FileChannel fileChannel,
                               Config configuration, StringLogger log )
     {
         try

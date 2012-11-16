@@ -36,7 +36,7 @@ public class ClassicLoggingService
 
     public ClassicLoggingService( Config config )
     {
-        stringLogger = StringLogger.logger( config.get( InternalAbstractGraphDatabase.Configuration.store_dir ) );
+        stringLogger = StringLogger.loggerDirectory( config.get( InternalAbstractGraphDatabase.Configuration.store_dir ) );
     }
 
     @Override

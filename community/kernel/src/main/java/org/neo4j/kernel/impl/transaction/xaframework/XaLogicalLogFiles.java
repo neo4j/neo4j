@@ -23,6 +23,7 @@ import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.C
 import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.LOG1;
 import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.LOG2;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
@@ -80,10 +81,10 @@ public class XaLogicalLogFiles {
         DUAL_LOGS_LOG_2_ACTIVE
     }
 
-    private String fileName;
+    private File fileName;
     private FileSystemAbstraction fileSystem;
     
-    public XaLogicalLogFiles(String fileName, FileSystemAbstraction fileSystem)
+    public XaLogicalLogFiles(File fileName, FileSystemAbstraction fileSystem)
     {
         this.fileName = fileName;
         this.fileSystem = fileSystem;
@@ -91,7 +92,7 @@ public class XaLogicalLogFiles {
 
     public State determineState() throws IOException
     {
-        String activeFileName = fileName + ACTIVE_FILE_SUFFIX;
+        File activeFileName = new File( fileName.getPath() + ACTIVE_FILE_SUFFIX);
         if ( !fileSystem.fileExists( activeFileName ) )
         {
             if ( fileSystem.fileExists( fileName ) )
@@ -163,14 +164,14 @@ public class XaLogicalLogFiles {
         }
     }
 
-    public String getLog1FileName()
+    public File getLog1FileName()
     {
-        return fileName + LOG_1_SUFFIX;
+        return new File( fileName.getPath() + LOG_1_SUFFIX);
     }
 
-    public String getLog2FileName()
+    public File getLog2FileName()
     {
-        return fileName + LOG_2_SUFFIX;
+        return new File( fileName.getPath() + LOG_2_SUFFIX);
     }
 
 }

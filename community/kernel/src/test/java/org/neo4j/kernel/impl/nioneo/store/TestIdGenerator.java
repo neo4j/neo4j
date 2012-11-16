@@ -56,22 +56,23 @@ public class TestIdGenerator
     @Before
     public void deleteIdGeneratorFile()
     {
-        new File( idGeneratorFile() ).delete();
+        idGeneratorFile().delete();
     }
 
-    private String path()
+    private File path()
     {
         String path = AbstractNeo4jTestCase.getStorePath( "xatest" );
-        new File( path ).mkdirs();
-        return path;
+        File file = new File( path );
+        file.mkdirs();
+        return file;
     }
 
-    private String file( String name )
+    private File file( String name )
     {
-        return path() + File.separator + name;
+        return new File( path(), name);
     }
 
-    private String idGeneratorFile()
+    private File idGeneratorFile()
     {
         return file( "testIdGenerator.id" );
     }
@@ -106,7 +107,7 @@ public class TestIdGenerator
         } // good
         try
         {
-            new IdGeneratorImpl( fs, "testIdGenerator.id", -1, 100, false ).close();
+            new IdGeneratorImpl( fs, new File("testIdGenerator.id"), -1, 100, false ).close();
             fail( "Negative grab size should throw exception" );
         }
         catch ( IllegalArgumentException e )
@@ -146,7 +147,7 @@ public class TestIdGenerator
         }
         finally
         {
-            File file = new File( idGeneratorFile() );
+            File file = idGeneratorFile();
             if ( file.exists() )
             {
                 assertTrue( file.delete() );
@@ -178,7 +179,7 @@ public class TestIdGenerator
         }
         finally
         {
-            File file = new File( idGeneratorFile() );
+            File file = idGeneratorFile();
             if ( file.exists() )
             {
                 assertTrue( file.delete() );
@@ -234,7 +235,7 @@ public class TestIdGenerator
         }
         finally
         {
-            File file = new File( idGeneratorFile() );
+            File file = idGeneratorFile();
             if ( file.exists() )
             {
                 assertTrue( file.delete() );
@@ -292,7 +293,7 @@ public class TestIdGenerator
         }
         finally
         {
-            File file = new File( idGeneratorFile() );
+            File file = idGeneratorFile();
             if ( file.exists() )
             {
                 assertTrue( file.delete() );
@@ -348,7 +349,7 @@ public class TestIdGenerator
         }
         finally
         {
-            File file = new File( idGeneratorFile() );
+            File file = idGeneratorFile();
             if ( file.exists() )
             {
                 assertTrue( file.delete() );
@@ -393,7 +394,7 @@ public class TestIdGenerator
         }
         finally
         {
-            File file = new File( idGeneratorFile() );
+            File file = idGeneratorFile();
             if ( file.exists() )
             {
                 assertTrue( file.delete() );
@@ -425,7 +426,7 @@ public class TestIdGenerator
         }
         finally
         {
-            File file = new File( idGeneratorFile() );
+            File file = idGeneratorFile();
             if ( file.exists() )
             {
                 assertTrue( file.delete() );
@@ -477,7 +478,7 @@ public class TestIdGenerator
         }
         finally
         {
-            File file = new File( idGeneratorFile() );
+            File file = idGeneratorFile();
             if ( file.exists() )
             {
                 assertTrue( file.delete() );
@@ -522,7 +523,7 @@ public class TestIdGenerator
         }
         finally
         {
-            File file = new File( idGeneratorFile() );
+            File file = idGeneratorFile();
             if ( file.exists() )
             {
                 assertTrue( file.delete() );
@@ -682,7 +683,7 @@ public class TestIdGenerator
         idGenerator.freeId( id );
         idGenerator.close();
         idGenerator.delete();
-        assertFalse( new File( idGeneratorFile() ).exists() );
+        assertFalse( idGeneratorFile().exists() );
         IdGeneratorImpl.createGenerator( fs, idGeneratorFile() );
         idGenerator = new IdGeneratorImpl( fs, idGeneratorFile(), 10, 1000, false );
         assertEquals( id, idGenerator.nextId() );
@@ -715,7 +716,7 @@ public class TestIdGenerator
         {
             if ( idGenerator != null )
                 closeIdGenerator( idGenerator );
-            File file = new File( idGeneratorFile() );
+            File file = idGeneratorFile();
             if ( file.exists() )
                 assertTrue( file.delete() );
         }

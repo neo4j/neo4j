@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
 import org.junit.Test;
+import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastListener;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastSerializer;
@@ -67,7 +68,8 @@ public class HardKillIT
             assertTrue( !dbWithId3.isMaster() );
 
             final CountDownLatch newMasterAvailableLatch = new CountDownLatch( 1 );
-            dbWithId2.getDependencyResolver().resolveDependency( ClusterClient.class ).addAtomicBroadcastListener( new AtomicBroadcastListener()
+            dbWithId2.getDependencyResolver().resolveDependency( ClusterClient.class ).addAtomicBroadcastListener(
+                    new AtomicBroadcastListener()
             {
                 @Override
                 public void receive( Payload value )
@@ -76,8 +78,12 @@ public class HardKillIT
                     {
                         Object event = new AtomicBroadcastSerializer().receive( value );
                         if ( event instanceof MemberIsAvailable )
+                        {
                             if ( ClusterConfiguration.COORDINATOR.equals( ((MemberIsAvailable) event).getRole() ) )
+                            {
                                 newMasterAvailableLatch.countDown();
+                            }
+                        }
                     }
                     catch ( Exception e )
                     {
@@ -92,14 +98,14 @@ public class HardKillIT
 
             assertTrue( dbWithId2.isMaster() );
             assertTrue( !dbWithId3.isMaster() );
-            
+
             HighlyAvailableGraphDatabase oldMaster = startDb( 1 );
             long oldMasterNode = createNamedNode( oldMaster, "Old master" );
             assertEquals( oldMasterNode, getNamedNode( dbWithId2, "Old master" ) );
         }
         finally
         {
-            if (proc != null)
+            if ( proc != null )
             {
                 proc.destroy();
             }
@@ -109,8 +115,12 @@ public class HardKillIT
     private long getNamedNode( HighlyAvailableGraphDatabase db, String name )
     {
         for ( Node node : GlobalGraphOperations.at( db ).getAllNodes() )
+        {
             if ( name.equals( node.getProperty( "name", null ) ) )
+            {
                 return node.getId();
+            }
+        }
         fail( "Couldn't find named node '" + name + "' at " + db );
         // The lone above will prevent this return from happening
         return -1;
@@ -138,7 +148,7 @@ public class HardKillIT
                 System.getProperty( "java.class.path" ), HardKillIT.class.getName() ) );
         allArgs.add( machineId );
 
-        Process process = Runtime.getRuntime().exec( allArgs.toArray( new String[allArgs.size()] ));
+        Process process = Runtime.getRuntime().exec( allArgs.toArray( new String[allArgs.size()] ) );
         processHandler = new ProcessStreamHandler( process, false );
         processHandler.launch();
         return process;
@@ -158,12 +168,11 @@ public class HardKillIT
     {
         GraphDatabaseBuilder builder = new HighlyAvailableGraphDatabaseFactory()
                 .newHighlyAvailableDatabaseBuilder( path( serverId ) )
+                .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:5002,127.0.0.1:5003,127.0.0.1:5004" )
+                .setConfig( ClusterSettings.cluster_server, "127.0.0.1:" + (5001 + serverId) )
                 .setConfig( HaSettings.server_id, "" + serverId )
                 .setConfig( HaSettings.ha_server, ":" + (8001 + serverId) )
-                .setConfig( HaSettings.initial_hosts, "127.0.0.1:5002,127.0.0.1:5003,127.0.0.1:5004" )
-                .setConfig( HaSettings.cluster_server, "127.0.0.1:" + (5001 + serverId) )
-                .setConfig( HaSettings.tx_push_factor, "0" )
-                ;
+                .setConfig( HaSettings.tx_push_factor, "0" );
         HighlyAvailableGraphDatabase db = (HighlyAvailableGraphDatabase) builder.newGraphDatabase();
         Transaction tx = db.beginTx();
         tx.finish();
