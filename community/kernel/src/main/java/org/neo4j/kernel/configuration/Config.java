@@ -28,6 +28,8 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
@@ -52,8 +54,8 @@ import org.neo4j.kernel.logging.BufferingLogger;
  */
 public class Config implements DiagnosticsProvider
 {
-    private final List<ConfigurationChangeListener> listeners = new ArrayList<ConfigurationChangeListener>(  );
-    private final Map<String, String> params = new HashMap<String, String>();
+    private final List<ConfigurationChangeListener> listeners = new CopyOnWriteArrayList<ConfigurationChangeListener>();
+    private final Map<String, String> params = new ConcurrentHashMap<String, String>(  );
     private final ConfigurationMigrator migrator;
     
     // Messages to this log get replayed into a real logger once logging has been
