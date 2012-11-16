@@ -25,6 +25,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
+import static org.neo4j.test.ha.ClusterManager.masterSeesAllSlavesAsAvailable;
 
 import java.net.InetAddress;
 import java.util.Arrays;
@@ -70,6 +71,7 @@ public class HaBeanIT
         };
         clusterManager.start();
         cluster = clusterManager.getDefaultCluster();
+        cluster.await( masterSeesAllSlavesAsAvailable() );
     }
     
     @After
@@ -166,7 +168,6 @@ public class HaBeanIT
         assertEquals( 2, instancesInCluster.length );
         ClusterMemberInfo[] secondInstancesInCluster = ha( cluster.getAnySlave() ).getInstancesInCluster();
         assertEquals( 2, secondInstancesInCluster.length );
-        
         assertMasterAndSlaveInformation( instancesInCluster );
         assertMasterAndSlaveInformation( secondInstancesInCluster );
     }

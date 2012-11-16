@@ -159,7 +159,6 @@ public class TestTxPushStrategyConfig
     {
         startCluster( 3, 1, "fixed" );
         cluster.await( masterSeesSlavesAsAvailable( 2 ) );
-        
         cluster.shutdown( cluster.getMaster() );
         cluster.await( masterAvailable(), 10 );
         HighlyAvailableGraphDatabase newMaster = cluster.getMaster();
@@ -191,7 +190,6 @@ public class TestTxPushStrategyConfig
 
     private void createTransactionOn( int serverId )
     {
-        System.out.println( "Creating tx on " + serverId );
         createTransaction( cluster.getMemberByServerId( serverId ) );
     }
 
