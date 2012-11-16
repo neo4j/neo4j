@@ -25,12 +25,14 @@ import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.getServer
 
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
@@ -63,7 +65,7 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
  */
 public class HighAvailabilityMembers implements Slaves, Lifecycle
 {
-    private final AtomicReference<Map<URI /*Member cluster URI, not HA URI*/, Member>> members;
+    private final Map<URI /*Member cluster URI, not HA URI*/, Member> members;
     protected final StringLogger msgLog;
     private StoreId storeId;
     private final Config config;
@@ -77,7 +79,7 @@ public class HighAvailabilityMembers implements Slaves, Lifecycle
         this.msgLog = msgLog;
         this.config = config;
         this.life = new LifeSupport();
-        this.members = new AtomicReference<Map<URI, Member>>( new HashMap<URI, Member>() );
+        this.members = Collections.synchronizedMap( new HashMap<URI, Member>() );
         clusterEvents.addClusterMemberListener( new MembersListener() );
         xaDsm.addDataSourceRegistrationListener( new StoreIdSettingListener() );
         clusterClient.addClusterListener( new MembersClusterListener() );
@@ -110,18 +112,16 @@ public class HighAvailabilityMembers implements Slaves, Lifecycle
     
     public MemberInfo[] getMembers()
     {
-        Map<URI, Member> members = this.members.get();
-        MemberInfo[] result = new MemberInfo[members.size()];
-        int i = 0;
-        for ( Member member : members.values() )
-            result[i++] = member;
-        return result;
+        return this.members.values()
+                .toArray( new MemberInfo[0] );
     }
 
     @Override
     public Iterable<Slave> getSlaves()
     {
-        Iterable<Member> aliveMembers = new FilteringIterable<Member>( members.get().values(), ALIVE_SLAVE );
+        List<Member> members = Arrays.asList( internalGetMembers() );
+        Iterable<Member> aliveMembers = new FilteringIterable<Member>( members,
+                ALIVE_SLAVE );
         return new IterableWrapper<Slave, Member>( aliveMembers )
         {
             @Override
@@ -132,6 +132,24 @@ public class HighAvailabilityMembers implements Slaves, Lifecycle
         };
     }
     
+    private Member[] internalGetMembers()
+    {
+        return members.values()
+                .toArray( new Member[0] );
+    }
+
+    private Member getMember( URI uri )
+    {
+        Member member = members.get( uri );
+        if ( member == null )
+        {
+            throw new IllegalStateException( "Member " + uri
+                                             + " doesn't exist amongst "
+                                             + members );
+        }
+        return member;
+    }
+
     private static final Predicate<Member> ALIVE_SLAVE = new Predicate<HighAvailabilityMembers.Member>()
     {
         @Override
@@ -183,11 +201,6 @@ public class HighAvailabilityMembers implements Slaves, Lifecycle
             return this.role == HighAvailabilityMemberState.SLAVE;
         }
 
-        private void setHaRole( HighAvailabilityMemberState role )
-        {
-            this.role = role;
-        }
-        
         @Override
         public boolean isMaster()
         {
@@ -204,13 +217,6 @@ public class HighAvailabilityMembers implements Slaves, Lifecycle
             this.haUri = haUri;
             this.available = true;
             this.role = role;
-        }
-        
-        void setAlive( boolean alive )
-        {
-            this.available = alive;
-            if ( !alive )
-                setHaRole( HighAvailabilityMemberState.PENDING );
         }
         
         @Override
@@ -264,15 +270,11 @@ public class HighAvailabilityMembers implements Slaves, Lifecycle
         {
             return clusterRoles.toArray( new String[0] );
         }
-        
-        private synchronized void addClusterRole( String role )
-        {
-            clusterRoles.add( role );
-        }
 
-        private synchronized void removeClusterRole( String role )
+        public void becomeUnavailable()
         {
-            clusterRoles.remove( role );
+            available = false;
+            this.role = HighAvailabilityMemberState.PENDING;
         }
     }
 
@@ -284,12 +286,13 @@ public class HighAvailabilityMembers implements Slaves, Lifecycle
         @Override
         public void masterIsElected( HighAvailabilityMemberChangeEvent event )
         {
-            instantiateFullSlaveClients = event.getNewState() == HighAvailabilityMemberState.TO_MASTER ||
-                    event.getNewState() == HighAvailabilityMemberState.MASTER;
             URI masterUri = event.getServerClusterUri();
+            instantiateFullSlaveClients = masterUri.equals( clusterClient.getServerUri() );
             if ( previouslyElectedMaster == null || !previouslyElectedMaster.equals( masterUri ) )
             {
                 life.clear();
+                for ( Member member : internalGetMembers() )
+                    member.becomeUnavailable();
                 previouslyElectedMaster = masterUri;
             }
         }
@@ -297,7 +300,7 @@ public class HighAvailabilityMembers implements Slaves, Lifecycle
         @Override
         public void slaveIsAvailable( HighAvailabilityMemberChangeEvent event )
         {
-            Member member = members.get().get( event.getServerClusterUri() );
+            Member member = getMember( event.getServerClusterUri() );
             URI haUri = event.getServerHaUri();
             if ( instantiateFullSlaveClients )
             {
@@ -315,17 +318,15 @@ public class HighAvailabilityMembers implements Slaves, Lifecycle
         public void masterIsAvailable( HighAvailabilityMemberChangeEvent event )
         {
             // TODO anything special for master?
-            Member member = members.get().get( event.getServerClusterUri() );
+            Member member = getMember( event.getServerClusterUri() );
             member.becomeAvailable( event.getServerHaUri(), HighAvailabilityMemberState.MASTER );
         }
         
         @Override
         public void instanceStops( HighAvailabilityMemberChangeEvent event )
         {
-            // TODO have another state for stopping?
-            Member member = members.get().get( event.getServerClusterUri() );
-            if ( member != null )
-                member.setAlive( false );
+            // Here event.getServerClusterURI() seems to be null, so don't
+            // update any member here
         }
     }
 
@@ -352,13 +353,11 @@ public class HighAvailabilityMembers implements Slaves, Lifecycle
             this.clusterConfiguration = clusterConfiguration;
             // This should be the first thing we get back, i.e.
             // the initial full cluster configuration
-            Map<URI, Member> newMembers = new HashMap<URI, Member>();
             for ( URI memberClusterUri : clusterConfiguration.getMembers() )
             {
                 Member member = new Member( memberClusterUri, clusterConfiguration.getRolesOf( memberClusterUri ) );
-                newMembers.put( memberClusterUri, member );
+                members.put( memberClusterUri, member );
             }
-            members.set( newMembers );
         }
         
         @Override
@@ -376,15 +375,8 @@ public class HighAvailabilityMembers implements Slaves, Lifecycle
         @Override
         public void joinedCluster( URI memberClusterUri )
         {
-            boolean updated = false;
-            do
-            {
-                Map<URI, Member> oldMembers = members.get();
-                Map<URI, Member> newMembers = new HashMap<URI, Member>( oldMembers );
-                newMembers.put( memberClusterUri, new Member( memberClusterUri, clusterConfiguration.getRolesOf( memberClusterUri ) ) );
-                updated = members.compareAndSet( oldMembers, newMembers );
-            }
-            while ( !updated );
+            members.put( memberClusterUri, new Member( memberClusterUri,
+                    clusterConfiguration.getRolesOf( memberClusterUri ) ) );
         }
     }
     
@@ -393,28 +385,29 @@ public class HighAvailabilityMembers implements Slaves, Lifecycle
         @Override
         public void failed( URI server )
         {
-            members.get().get( server ).available = false;
+            getMember( server ).available = false;
         }
 
         @Override
         public void alive( URI server )
         {
-            members.get().get( server ).available = true;
+            getMember( server ).available = true;
         }
     }
 
     private void memberLeft( URI memberClusterUri )
     {
-        boolean updated = false;
-        Member removedMember = null;
-        do
-        {
-            Map<URI, Member> oldMembers = members.get();
-            Map<URI, Member> newMembers = new HashMap<URI, Member>( oldMembers );
-            removedMember = newMembers.remove( memberClusterUri );
-            updated = members.compareAndSet( oldMembers, newMembers );
-        }
-        while ( !updated );
+        Member removedMember = members.remove( memberClusterUri );
+        assert removedMember != null : "Tried to remove member that wasn't there";
         life.remove( removedMember );
     }
+
+    // public void debug( String string )
+    // {
+    // System.out.println( clusterClient.getServerUri() + ":" + string );
+    // System.out.println( "{" );
+    // for ( Member member : internalGetMembers() )
+    // System.out.println( "  " + member );
+    // System.out.println( "}" );
+    // }
 }
