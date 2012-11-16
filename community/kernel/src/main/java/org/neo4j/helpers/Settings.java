@@ -21,11 +21,9 @@
 package org.neo4j.helpers;
 
 import java.io.File;
-import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -60,6 +58,7 @@ public final class Settings
     }
 
     // Set default value to this if user HAS to set a value
+    @SuppressWarnings("RedundantStringConstructorCall")
     public static final String MANDATORY = new String( "mandatory" );
     public static final String NO_DEFAULT = null;
 
@@ -71,6 +70,7 @@ public final class Settings
 
     public static final String ANY = ".+";
 
+    @SuppressWarnings("unchecked")
     public static <T> Setting<T> setting( final String name, final Function<String, T> parser,
                                           final String defaultValue )
     {
@@ -84,6 +84,7 @@ public final class Settings
         return setting( name, parser, defaultValue, null, valueConverters );
     }
 
+    @SuppressWarnings("unchecked")
     public static <T> Setting<T> setting( final String name, final Function<String, T> parser,
                                           final Setting<T> inheritedSetting )
     {
@@ -100,6 +101,7 @@ public final class Settings
         Function<Function<String, String>, String> defaultLookup;
         if ( defaultValue != null )
         {
+            //noinspection StringEquality
             if ( defaultValue == MANDATORY )
             {
                 defaultLookup = mandatory( valueLookup );
@@ -590,9 +592,8 @@ public final class Settings
             public File apply( File path, Function<String, String> settings )
             {
                 File parent = baseSetting.apply( settings );
-                File realPath = path.isAbsolute() ? path : new File( parent, path.getPath() );
 
-                return realPath;
+                return path.isAbsolute() ? path : new File( parent, path.getPath() );
             }
 
             @Override
@@ -750,8 +751,7 @@ public final class Settings
         public T apply( Function<String, String> settings )
         {
             // Lookup value as string
-            String value = null;
-            value = lookup( settings );
+            String value = lookup( settings );
 
             // Try defaults
             if ( value == null )

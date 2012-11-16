@@ -19,9 +19,11 @@ public class GcrSettings
     public static Setting<Long> relationship_cache_size =
             setting( "relationship_cache_size", Settings.BYTES,NO_DEFAULT );
 
+    @SuppressWarnings("unchecked")
     public static Setting<Float> node_cache_array_fraction =
             setting( "node_cache_array_fraction", FLOAT, "1.0",range( 1.0f, 10.0f ) );
 
+    @SuppressWarnings("unchecked")
     public static Setting<Float> relationship_cache_array_fraction =
             setting("relationship_cache_array_fraction", FLOAT, "1.0", range( 1.0f, 10.0f ) );
 

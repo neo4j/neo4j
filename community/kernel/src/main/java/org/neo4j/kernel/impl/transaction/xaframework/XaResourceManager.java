@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.channels.ReadableByteChannel;
 import java.util.ArrayList;
