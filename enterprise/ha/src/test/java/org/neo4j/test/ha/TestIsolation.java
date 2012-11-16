@@ -534,34 +534,36 @@ public class TestIsolation
         @Override
         public void run()
         {
-            try
-            {
                 System.out.println( "Start checking data" );
                 double errors = 0;
                 double total = 0;
                 while(!done.get())
                 {
                     tx = database.beginTx();
-
-                    int firstNode = getFirstValue();
-                    int lastNode = getSecondValue();
-                    if (firstNode - lastNode != 0)
+                    try
                     {
-                        errors++;
-                    }
-                    total++;
 
-                    tx.success();
-                    tx.finish();
+                        int firstNode = getFirstValue();
+                        int lastNode = getSecondValue();
+                        if (firstNode - lastNode != 0)
+                        {
+                            errors++;
+                        }
+                        total++;
+
+                        tx.success();
+                    }
+                    catch( Exception e )
+                    {
+                        tx.failure();
+                    } finally
+                    {
+                        tx.finish();
+                    }
 
                 }
                 double percentage = (errors/total)*100.0;
                 System.out.printf( "Done checking data, %1.0f errors found(%1.3f%%)\n", errors, percentage );
-            }
-            catch( Exception e )
-            {
-                e.printStackTrace();
-            }
         }
 
         protected Integer getSecondValue()
