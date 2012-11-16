@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -40,6 +41,7 @@ import org.neo4j.kernel.EmbeddedGraphDatabase;
 /**
  * Test atomicity of Neo4j. How to get consistent results with or without locks?
  */
+@Ignore
 public class TestIsolation
 {
     GraphDatabaseService database;
@@ -85,8 +87,6 @@ public class TestIsolation
     public void testIsolation()
         throws Exception
     {
-
-
         ExecutorService executor = Executors.newFixedThreadPool( 1 );
 
         final AtomicBoolean done = new AtomicBoolean( false );
@@ -390,7 +390,6 @@ public class TestIsolation
             int totalDeadlocks = 0;
             try
             {
-
                 for (int round = 0; round < 100; round++)
                 {
                     int deadLocks = 0;
