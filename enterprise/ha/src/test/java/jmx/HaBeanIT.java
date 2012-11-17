@@ -105,7 +105,7 @@ public class HaBeanIT
         assertTrue( "single instance should be master and available", ha.isAvailable() );
         assertEquals( "single instance should be master", HighAvailabilityMemberState.MASTER.name(), ha.getRole() );
         ClusterMemberInfo info = ha.getInstancesInCluster()[0];
-        assertEquals( "single instance should be the returned instance id", "1", info.getInstanceId() );
+        assertTrue( "single instance should be the returned instance id", info.getInstanceId().endsWith( ":5001" ) );
         assertTrue( "single instance should have coordinator cluster role", Arrays.equals( info.getClusterRoles(),
                 new String[]{ClusterConfiguration.COORDINATOR} ) );
     }
@@ -186,7 +186,7 @@ public class HaBeanIT
     }
     
     @Test
-    public void failedMemberIsStillInMemberListAlthoughUnavailable() throws Throwable
+    public void failedMemberIsStillInMemberListAlthoughFailed() throws Throwable
     {
         startCluster( 3 );
         assertEquals( 3, ha( cluster.getAnySlave() ).getInstancesInCluster().length );
@@ -194,8 +194,8 @@ public class HaBeanIT
         // Fail the instance
         HighlyAvailableGraphDatabase failedDb = cluster.getAnySlave();
         RepairKit dbFailure = cluster.fail( failedDb );
-        await( ha( cluster.getMaster() ), dbAvailability( false ) );
-        await( ha( cluster.getAnySlave( failedDb )), dbAvailability( false ) );
+        await( ha( cluster.getMaster() ), dbAlive( false ) );
+        await( ha( cluster.getAnySlave( failedDb )), dbAlive( false ) );
         
         // Repair the failure and come back
         dbFailure.repair();
@@ -206,14 +206,14 @@ public class HaBeanIT
     private void assertMasterAndSlaveInformation( ClusterMemberInfo[] instancesInCluster ) throws Exception
     {
         ClusterMemberInfo master = member( instancesInCluster, 5001 );
-        assertEquals( "1", master.getInstanceId() );
+        assertTrue( master.getInstanceId().endsWith( ":5001" ) );
         assertEquals( HighAvailabilityMemberState.MASTER.name(), master.getHaRole() );
         assertTrue( "Unexpected start of HA URI " + uri( "ha", master.getUris() ),
                 uri( "ha", master.getUris() ).startsWith( "ha://" + InetAddress.getLocalHost().getHostAddress() + ":1137" ) );
         assertTrue( "Master not available", master.isAvailable() );
 
         ClusterMemberInfo slave = member( instancesInCluster, 5002 );
-        assertEquals( "2", slave.getInstanceId() );
+        assertTrue( slave.getInstanceId().endsWith( ":5002" ) );
         assertEquals( HighAvailabilityMemberState.SLAVE.name(), slave.getHaRole() );
         assertTrue( "Unexpected start of HA URI" + uri( "ha", slave.getUris() ),
                 uri( "ha", slave.getUris() ).startsWith( "ha://" + InetAddress.getLocalHost().getHostAddress() + ":1138" ) );
@@ -260,6 +260,18 @@ public class HaBeanIT
             public boolean accept( ClusterMemberInfo item )
             {
                 return item.isAvailable() == available;
+            }
+        };
+    }
+
+    private Predicate<ClusterMemberInfo> dbAlive( final boolean alive )
+    {
+        return new Predicate<ClusterMemberInfo>()
+        {
+            @Override
+            public boolean accept( ClusterMemberInfo item )
+            {
+                return item.isAlive() == alive;
             }
         };
     }

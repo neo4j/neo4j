@@ -17,28 +17,26 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.management;
+package org.neo4j.cluster;
 
-public class ClusterDatabaseInfo extends ClusterMemberInfo
+import org.neo4j.cluster.protocol.cluster.ClusterListener;
+import org.neo4j.cluster.protocol.heartbeat.Heartbeat;
+
+/**
+ * Bundles up different ways of listening in on events going on
+ * in a cluster.
+ * 
+ * {@link Binding} for notifications about which URI is used
+ * for sending events of the network.
+ * {@link Heartbeat} for notifications about failed/alive members.
+ * {@link #addClusterListener(ClusterListener)}, {@link #removeClusterListener(ClusterListener)
+ * for getting notified about cluster membership events.
+ * 
+ * @author Mattias Persson
+ */
+public interface ClusterMonitor extends Binding, Heartbeat
 {
-    private final long lastCommittedTxId;
-    private final long lastUpdateTime;
-
-    public ClusterDatabaseInfo( ClusterMemberInfo memberInfo, long lastCommittedTxId, long lastUpdateTime )
-    {
-        super( memberInfo.getInstanceId(), memberInfo.isAvailable(), memberInfo.isAlive(), memberInfo.getHaRole(),
-                memberInfo.getClusterRoles(), memberInfo.getUris() );
-        this.lastCommittedTxId = lastCommittedTxId;
-        this.lastUpdateTime = lastUpdateTime;
-    }
-
-    public long getLastCommittedTxId()
-    {
-        return lastCommittedTxId;
-    }
-
-    public long getLastUpdateTime()
-    {
-        return lastUpdateTime;
-    }
+    void addClusterListener( ClusterListener listener);
+    
+    void removeClusterListener( ClusterListener listener);
 }

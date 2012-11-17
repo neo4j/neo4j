@@ -37,11 +37,11 @@ public abstract class AbstractModeSwitcher<T> implements Lifecycle
     private final DelegateInvocationHandler<T> delegate;
     private LifeSupport life;
 
-    protected AbstractModeSwitcher( HighAvailabilityMemberStateMachine stateMachine, DelegateInvocationHandler<T> delegate )
+    protected AbstractModeSwitcher( HighAvailability highAvailability, DelegateInvocationHandler<T> delegate )
     {
         this.delegate = delegate;
         this.life = new LifeSupport();
-        stateMachine.addClusterMemberListener( new DelegateStateSwitcher() );
+        highAvailability.addHighAvailabilityMemberListener( new DelegateStateSwitcher() );
     }
 
     @Override

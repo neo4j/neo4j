@@ -17,28 +17,11 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.management;
+package org.neo4j.kernel.ha;
 
-public class ClusterDatabaseInfo extends ClusterMemberInfo
+import java.net.URI;
+
+public interface SlaveFactory
 {
-    private final long lastCommittedTxId;
-    private final long lastUpdateTime;
-
-    public ClusterDatabaseInfo( ClusterMemberInfo memberInfo, long lastCommittedTxId, long lastUpdateTime )
-    {
-        super( memberInfo.getInstanceId(), memberInfo.isAvailable(), memberInfo.isAlive(), memberInfo.getHaRole(),
-                memberInfo.getClusterRoles(), memberInfo.getUris() );
-        this.lastCommittedTxId = lastCommittedTxId;
-        this.lastUpdateTime = lastUpdateTime;
-    }
-
-    public long getLastCommittedTxId()
-    {
-        return lastCommittedTxId;
-    }
-
-    public long getLastUpdateTime()
-    {
-        return lastUpdateTime;
-    }
+    Slave newSlave( URI uri );
 }

@@ -34,6 +34,9 @@ public interface HighAvailability
     @Description( "Whether this instance is available or not" )
     boolean isAvailable();
     
+    @Description( "Whether this instance is alive or not" )
+    boolean isAlive();
+    
     @Description( "The role this instance has in the cluster" )
     String getRole();
 

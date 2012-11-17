@@ -23,7 +23,7 @@ import java.net.URI;
 
 import org.neo4j.cluster.BindingListener;
 import org.neo4j.cluster.client.ClusterClient;
-import org.neo4j.kernel.ha.HighAvailabilityMembers.MemberInfo;
+import org.neo4j.kernel.ha.cluster.member.HighAvailabilityMembers;
 import org.neo4j.management.ClusterDatabaseInfo;
 import org.neo4j.management.ClusterMemberInfo;
 
@@ -47,13 +47,13 @@ public class ClusterDatabaseInfoProvider
 
     public ClusterDatabaseInfo getInfo()
     {
-        for ( MemberInfo member : members.getMembers() )
-            if ( member.getClusterUri().equals( me ) )
+        for ( ClusterMemberInfo member : members.getMembers() )
+        {
+            if ( member.getInstanceId().equals( me.toString() ) )
             {
-                ClusterMemberInfo info = HighAvailabilityBean.clusterMemberInfo( member );
-                return new ClusterDatabaseInfo( info.getInstanceId(), info.isAvailable(),
-                        info.getHaRole(), info.getClusterRoles(), info.getUris(), 0, 0 );
+                return new ClusterDatabaseInfo( member, 0, 0 );
             }
+        }
         
         // TODO return something instead of throwing exception, right?
         throw new IllegalStateException( "Couldn't find any information about myself, can't be right" );

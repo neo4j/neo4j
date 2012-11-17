@@ -17,28 +17,12 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.management;
+package org.neo4j.kernel.ha.cluster;
 
-public class ClusterDatabaseInfo extends ClusterMemberInfo
+import org.neo4j.cluster.Binding;
+import org.neo4j.cluster.protocol.cluster.Cluster;
+import org.neo4j.cluster.protocol.heartbeat.Heartbeat;
+
+public interface HighAvailabilityMonitor extends HighAvailability, Cluster, Heartbeat, Binding
 {
-    private final long lastCommittedTxId;
-    private final long lastUpdateTime;
-
-    public ClusterDatabaseInfo( ClusterMemberInfo memberInfo, long lastCommittedTxId, long lastUpdateTime )
-    {
-        super( memberInfo.getInstanceId(), memberInfo.isAvailable(), memberInfo.isAlive(), memberInfo.getHaRole(),
-                memberInfo.getClusterRoles(), memberInfo.getUris() );
-        this.lastCommittedTxId = lastCommittedTxId;
-        this.lastUpdateTime = lastUpdateTime;
-    }
-
-    public long getLastCommittedTxId()
-    {
-        return lastCommittedTxId;
-    }
-
-    public long getLastUpdateTime()
-    {
-        return lastUpdateTime;
-    }
 }
