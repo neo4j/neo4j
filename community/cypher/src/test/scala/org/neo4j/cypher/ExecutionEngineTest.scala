@@ -2285,4 +2285,12 @@ RETURN x0.name?
 
     assert(result.toList === List())
   }
+
+  @Test
+  def can_alias_and_aggregate() {
+    val a = createNode()
+    val result = parseAndExecute("start n=node(1) return sum(ID(n)), n as m")
+
+    assert(result.toList === List(Map("sum(ID(n))"->1, "m"->a)))
+  }
 }

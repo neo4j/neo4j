@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.pipes.{Pipe, ExtractPipe, EagerAggregationPipe}
 import org.neo4j.cypher.internal.executionplan.{PartiallySolvedQuery, ExecutionPlanInProgress, PlanBuilder}
 import org.neo4j.cypher.internal.commands.expressions.{Identifier, CachedExpression, AggregationExpression, Expression}
 import org.neo4j.cypher.internal.symbols.SymbolTable
+import org.neo4j.cypher.internal.commands.ReturnItem
 
 
 /*
@@ -48,7 +49,7 @@ value.
 class AggregationBuilder extends PlanBuilder  {
   def apply(plan: ExecutionPlanInProgress) = {
     // First, calculate the key expressions and save them down to the map
-    val keyExpressionsToExtract = getExpressions(plan)
+    val keyExpressionsToExtract: ExtractedExpressions = getExpressions(plan)
     val planToAggregate = ExtractBuilder.extractIfNecessary(plan, keyExpressionsToExtract.keys)
 
     // Get the aggregate expressions to calculate, and their named key expressions
@@ -57,10 +58,19 @@ class AggregationBuilder extends PlanBuilder  {
 
     val resultPipe = new EagerAggregationPipe(planToAggregate.pipe, expressions.keys, namedAggregates)
 
+
+    // Mark return items as done if they are extracted
+    val returnItems = planToAggregate.query.returns.map {
+      case r@Unsolved(ReturnItem(exp, name, renamed))
+        if keyExpressionsToExtract.keys.values.exists(keyExp => keyExp == exp) => r.solve
+      case r                                                                   => r
+    }
+
     //Mark aggregations as Solved.
     val resultQ = planToAggregate.query.copy(
       aggregation = planToAggregate.query.aggregation.map(_.solve),
       aggregateQuery = planToAggregate.query.aggregateQuery.solve,
+      returns = returnItems,
       extracted = true
     )
 
