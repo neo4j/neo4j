@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.symbols.{RelationshipType, NodeType, SymbolTabl
 
 final case class SingleStepTrail(next: Trail,
                                  dir: Direction,
-                                 rel: String,
+                                 relName: String,
                                  typ: Seq[String],
                                  start: String,
                                  relPred: Option[Predicate],
@@ -34,7 +34,7 @@ final case class SingleStepTrail(next: Trail,
                                  pattern: Pattern) extends Trail {
   def end = next.end
 
-  def pathDescription = next.pathDescription ++ Seq(rel, end)
+  def pathDescription = next.pathDescription ++ Seq(relName, end)
 
   def toSteps(id: Int) = {
     val types = typ.map(withName(_))
@@ -51,14 +51,22 @@ final case class SingleStepTrail(next: Trail,
     if (p.size < 2) {
       Iterator()
     } else {
-      val r = p.tail.head
-      val n = p.head
-      val newMap = m + (rel -> r) + (start -> n)
-      next.decompose(p.tail.tail, newMap)
+      val thisRel = p.tail.head
+      val thisNode = p.head
+
+      val a = m.get(relName)
+      val b = m.get(start)
+
+      if ((a.nonEmpty && a.get != thisRel)||(b.nonEmpty && b.get != thisNode)) {
+        Iterator()
+      } else {
+        val newMap = m + (relName -> thisRel) + (start -> thisNode)
+        next.decompose(p.tail.tail, newMap)
+      }
     }
 
   def symbols(table: SymbolTable): SymbolTable =
-    next.symbols(table).add(start, NodeType()).add(rel, RelationshipType())
+    next.symbols(table).add(start, NodeType()).add(relName, RelationshipType())
 
   def contains(target: String): Boolean = next.contains(target) || target == end
 
@@ -74,7 +82,7 @@ final case class SingleStepTrail(next: Trail,
       case x      => typ.mkString(":", "|", "")
     }
 
-    "(%s)%s-[%s%s]-%s%s".format(start, left, rel, t, right, next.toString)
+    "(%s)%s-[%s%s]-%s%s".format(start, left, relName, t, right, next.toString)
   }
 
 

@@ -57,16 +57,13 @@ class MatchBuilder extends PlanBuilder with PatternGraphBuilder {
 
   def canWorkWith(plan: ExecutionPlanInProgress) = {
     val q = plan.query
-    q.patterns.filter(yesOrNo(_, plan.pipe, q.start)).nonEmpty
+    q.patterns.exists(yesOrNo(_, plan.pipe, q.start))
   }
 
   private def yesOrNo(q: QueryToken[_], p: Pipe, start: Seq[QueryToken[StartItem]]) = q match {
     case Unsolved(x: ShortestPath) => false
     case Unsolved(x: Pattern) => {
-      val patternIdentifiers = x.possibleStartPoints.map(_._1)
-      val startItems = start.map(_.token.identifierName)
-
-      startItems.exists( patternIdentifiers.contains )
+      val patternIdentifiers: Seq[String] = x.possibleStartPoints.map(_._1)
 
       val apa = start.map(si => patternIdentifiers.find(_ == si.token.identifierName) match {
         case Some(_) => si.solved
@@ -74,7 +71,6 @@ class MatchBuilder extends PlanBuilder with PatternGraphBuilder {
       })
 
       val resolvedStartPoints =  apa.foldLeft(true)(_ && _)
-
       val pipeSatisfied = x.predicate.checkTypes(p.symbols)
 
       resolvedStartPoints && pipeSatisfied

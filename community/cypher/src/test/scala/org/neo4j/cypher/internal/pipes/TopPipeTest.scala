@@ -24,6 +24,7 @@ import org.junit.Test
 import org.neo4j.cypher.internal.commands.SortItem
 import org.neo4j.cypher.internal.commands.expressions.{Literal, Identifier}
 import org.neo4j.cypher.internal.symbols.IntegerType
+import util.Random
 
 
 class TopPipeTest extends Assertions {
@@ -63,7 +64,10 @@ class TopPipeTest extends Assertions {
   }
 
   private def createFakePipeWith(count: Int): FakePipe = {
-    val in = (0 until count).toSeq.map(i => Map("a" -> i))
+
+    val r = new Random(1337)
+
+    val in = (0 until count).toSeq.map(i => Map("a" -> i)).sortBy( x => r.nextInt(100))
     new FakePipe(in, "a" -> IntegerType())
   }
 }

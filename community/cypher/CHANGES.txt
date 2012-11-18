@@ -8,7 +8,7 @@ o When asking for the top x rows by some value, Cypher will now only keep a list
 o Fix so identifiers created inside a foreach can be used by other statements in the foreach
 o Refactored the type system from the bottom up
 o Predicates can now be returned and used to set properties
-o Fixes #797: CREATE UNIQUE now makes sure used identifiers have the same properties even if 
+o Fixes #797: CREATE UNIQUE now makes sure used identifiers have the same properties even if
   they are re-used without the properties
 o Added the traversal matcher, which uses the new traversal framework abilities to do
   pattern matching. It should provide for nice performance benefits for a lot of queries.
@@ -20,6 +20,10 @@ o Added the possibility to use ORDER BY, SKIP and LIMIT together with WITH
 o Fixes #904: CREATE UNIQUE doesn't work with parameter maps
 o Fixes #908: Parameters do not survive WITH if it has aggregation
 o SET can now be used to set properties on nodes and relationships from maps or other graph elements
+o Fix for problems when using patterns with multiple unnamed nodes
+o Fixes problems when doing ORDER BY ... LIMIT x. When x is larger than the input set, sorting was never done.
+o Fixed problem with dependencies inside foreach statements being reported wrongly
+o Fixes #336 - Patterns that re-use a pattern node can produce non-existing matches
 
 1.8.RC1 (2012-09-05)
 --------------------

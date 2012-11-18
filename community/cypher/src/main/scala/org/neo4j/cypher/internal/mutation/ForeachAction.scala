@@ -64,9 +64,10 @@ case class ForeachAction(collection: Expression, id: String, actions: Seq[Update
   }
 
   def symbolTableDependencies = {
+    val updateActionsDeps: Set[String] = actions.flatMap(_.symbolTableDependencies).toSet
     val updateActionIdentifiers: Set[String] = actions.flatMap(_.identifiers.map(_._1)).toSet
-    val updateActionsDeps = actions.flatMap(_.symbolTableDependencies).filterNot(_ == id).toSet
     val collectionDeps = collection.symbolTableDependencies
-    (updateActionsDeps -- updateActionIdentifiers) ++ collectionDeps
+
+    (updateActionsDeps -- updateActionIdentifiers) ++ collectionDeps -- Some(id)
   }
 }

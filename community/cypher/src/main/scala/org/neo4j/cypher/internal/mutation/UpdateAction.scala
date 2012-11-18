@@ -27,9 +27,8 @@ import org.neo4j.cypher.internal.pipes.{QueryState, ExecutionContext}
 import java.util.{Map => JavaMap}
 import scala.collection.JavaConverters._
 import collection.Map
-import org.neo4j.cypher.internal.commands._
-import expressions.Expression
 import org.neo4j.cypher.internal.helpers.CollectionSupport
+import org.neo4j.cypher.internal.commands.expressions.Expression
 
 trait UpdateAction extends TypeSafe {
   def exec(context: ExecutionContext, state: QueryState): Traversable[ExecutionContext]
