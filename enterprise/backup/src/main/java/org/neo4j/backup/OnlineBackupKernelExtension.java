@@ -20,6 +20,8 @@
 
 package org.neo4j.backup;
 
+import java.net.URI;
+
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -56,6 +58,9 @@ public class OnlineBackupKernelExtension implements Lifecycle
                                 OnlineBackupKernelExtension.class ) );
                 server.init();
                 server.start();
+
+//                URI backupUri = URI.create( "backup://"+server.getSocketAddress().getHostName()+":"+server.getSocketAddress().getPort());
+//                graphDatabaseAPI.getDependencyResolver().resolveDependency( ClusterClient.class );
             }
             catch ( Throwable t )
             {

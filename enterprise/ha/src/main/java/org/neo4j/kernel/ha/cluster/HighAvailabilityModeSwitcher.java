@@ -23,11 +23,13 @@ package org.neo4j.kernel.ha.cluster;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.com.Response;
 import org.neo4j.com.Server;
@@ -99,6 +101,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
     private URI availableMasterId;
     private final DelegateInvocationHandler delegateHandler;
     private final HighAvailabilityEvents clusterEvents;
+    private ClusterClient clusterClient;
     private final GraphDatabaseAPI graphDb;
     private final Config config;
     private LifeSupport life;
@@ -109,11 +112,12 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
 
     public HighAvailabilityModeSwitcher( DelegateInvocationHandler delegateHandler,
                                          HighAvailabilityEvents clusterEvents,
-                                         HighAvailabilityMemberStateMachine stateHandler, GraphDatabaseAPI graphDb,
+                                         HighAvailabilityMemberStateMachine stateHandler, ClusterClient clusterClient, GraphDatabaseAPI graphDb,
                                          Config config, StringLogger msgLog )
     {
         this.delegateHandler = delegateHandler;
         this.clusterEvents = clusterEvents;
+        this.clusterClient = clusterClient;
         this.graphDb = graphDb;
         this.config = config;
         this.msgLog = msgLog;
@@ -267,6 +271,9 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                         }
                     }
                     life.start();
+
+                    URI haUri = URI.create( "ha://"+masterServer.getSocketAddress().getHostName()+":"+masterServer.getSocketAddress().getPort()+"?serverId="+config.get( HaSettings.server_id ) );
+                    clusterClient.addURI(haUri);
                 }
                 catch ( Throwable e )
                 {
@@ -292,8 +299,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                 {
                     URI masterUri = availableMasterId;
 
-                    msgLog.logMessage( "I am " + config.get( HaSettings.server_id ) + ", moving to slave for master " +
-                            masterUri );
+                    msgLog.info( "I am " + config.get( HaSettings.server_id ) + ", moving to slave for master " + masterUri );
 
                     assert masterUri != null; // since we are here it must already have been set from outside
                     DependencyResolver resolver = graphDb.getDependencyResolver();
@@ -433,6 +439,10 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                             life.add( slaveImpl );
                             life.add( server );
                             life.start();
+
+                            URI haUri = URI.create( "ha://"+server.getSocketAddress().getHostName()+":"+server.getSocketAddress().getPort()+"?serverId="+config.get( HaSettings.server_id ) );
+                            clusterClient.addURI(haUri);
+
                             clusterEvents.memberIsAvailable( ClusterConfiguration.SLAVE );
 
                             msgLog.logMessage( "I am " + config.get( HaSettings.server_id ) +

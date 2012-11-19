@@ -89,6 +89,7 @@ public class PaxosHighAvailabilityEvents implements HighAvailabilityEvents, Life
     private final ClusterClient cluster;
     protected Iterable<HighAvailabilityListener> listeners = Listeners.newListeners();
     private volatile ClusterConfiguration clusterConfiguration;
+    private String role;
 
     public PaxosHighAvailabilityEvents( Configuration config, ClusterClient cluster, StringLogger logger )
     {
@@ -137,6 +138,8 @@ public class PaxosHighAvailabilityEvents implements HighAvailabilityEvents, Life
             {
                 PaxosHighAvailabilityEvents.this.clusterConfiguration = clusterConfiguration;
 
+                cluster.refreshSnapshot();
+
                 // Catch up with elections
                 for ( Map.Entry<String, URI> memberRoles : clusterConfiguration.getRoles().entrySet() )
                 {
@@ -166,7 +169,7 @@ public class PaxosHighAvailabilityEvents implements HighAvailabilityEvents, Life
             @Override
             public void alive( URI server )
             {
-                broadcastOurself();
+ //               broadcastOurself();
             }
         } );
 
@@ -203,26 +206,9 @@ public class PaxosHighAvailabilityEvents implements HighAvailabilityEvents, Life
 
     private void broadcastOurself()
     {
-        // Reannounce that I am master, for the purpose of the new member to see this
-        try
-        {
-            final URI coordinator = clusterConfiguration.getElected( ClusterConfiguration.COORDINATOR );
-            if (coordinator != null)
-            {
-                if ( coordinator.equals( serverClusterId ) )
-                {
-                    cluster.broadcast( serializer.broadcast( new MasterIsElected( serverClusterId ) ) );
-                }
-                else
-                {
-                    memberIsAvailable( ClusterConfiguration.SLAVE );
-                }
-            }
-        }
-        catch ( Exception e )
-        {
-            e.printStackTrace();
-        }
+        // Reannounce my role for the purpose of the new member to see this
+        if (role != null)
+            memberIsAvailable( role );
     }
 
     @Override
@@ -248,10 +234,13 @@ public class PaxosHighAvailabilityEvents implements HighAvailabilityEvents, Life
     {
         try
         {
-            Payload payload = serializer.broadcast( new MemberIsAvailable( role, serverClusterId, Iterables.iterable(
-                    getHaUri( serverClusterId ), getBackupUri( serverClusterId ) ) ) );
+            this.role = role;
+
+            Iterable<URI> uris = cluster.getURIs();
+            Payload payload = serializer.broadcast( new MemberIsAvailable( role, serverClusterId, uris ) );
             serializer.receive( payload );
             cluster.broadcast( payload );
+            logger.warn( "Could not distribute member availability" );
         }
         catch ( Throwable e )
         {
@@ -266,8 +255,7 @@ public class PaxosHighAvailabilityEvents implements HighAvailabilityEvents, Life
             // TODO host.getPort() is wrong, because it could be a port range and it's actually bound to
             // not-the-lowest-port
             HostnamePort host = config.getHaServer();
-            return new URI( "ha", null, config.getHaServer().getHost( clusterUri.getHost() ), host.getPort(), null,
-                    "serverId=" + config.getServerId(), null );
+            return new URI( "ha", null, config.getHaServer().getHost( clusterUri.getHost() ), host.getPort(), null,"serverId=" + config.getServerId(), null );
         }
         catch ( URISyntaxException e )
         {

@@ -19,7 +19,11 @@
  */
 package org.neo4j.cluster.client;
 
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
@@ -49,6 +53,8 @@ import org.neo4j.cluster.protocol.election.ElectionMessage;
 import org.neo4j.cluster.protocol.heartbeat.Heartbeat;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatListener;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatMessage;
+import org.neo4j.cluster.protocol.snapshot.Snapshot;
+import org.neo4j.cluster.protocol.snapshot.SnapshotProvider;
 import org.neo4j.cluster.statemachine.StateMachine;
 import org.neo4j.cluster.statemachine.StateTransitionLogger;
 import org.neo4j.cluster.timeout.FixedTimeoutStrategy;
@@ -63,14 +69,8 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.Logging;
 
-public class ClusterClient extends LifecycleAdapter implements Cluster, AtomicBroadcast, Heartbeat
+public class ClusterClient extends LifecycleAdapter implements Cluster, AtomicBroadcast, Heartbeat, Snapshot
 {
-    private final LifeSupport life = new LifeSupport();
-    private final Cluster cluster;
-    private final AtomicBroadcast broadcast;
-    private final Heartbeat heartbeat;
-    private final ProtocolServer server;
-
     public interface Configuration
     {
         HostnamePort getAddress();
@@ -226,6 +226,15 @@ public class ClusterClient extends LifecycleAdapter implements Cluster, AtomicBr
         };
     }
 
+    private final LifeSupport life = new LifeSupport();
+    private final Cluster cluster;
+    private final AtomicBroadcast broadcast;
+    private final Heartbeat heartbeat;
+    private final Snapshot snapshot;
+
+    private final ProtocolServer server;
+    private final List<URI> uris = new ArrayList<URI>(  );
+
     public ClusterClient( final Configuration config, final Logging logging,
                           ElectionCredentialsProvider electionCredentialsProvider )
     {
@@ -357,6 +366,7 @@ public class ClusterClient extends LifecycleAdapter implements Cluster, AtomicBr
         cluster = server.newClient( Cluster.class );
         broadcast = server.newClient( AtomicBroadcast.class );
         heartbeat = server.newClient( Heartbeat.class );
+        snapshot = server.newClient( Snapshot.class );
     }
 
     @Override
@@ -369,6 +379,26 @@ public class ClusterClient extends LifecycleAdapter implements Cluster, AtomicBr
     public void stop() throws Throwable
     {
         life.stop();
+    }
+
+    public void addURI( URI addedUri )
+    {
+        // Remove existing URI with same scheme
+        for ( URI uri : uris )
+        {
+            if (uri.getScheme().equals( addedUri.getScheme() ))
+            {
+                uris.remove( uri );
+                break;
+            }
+        }
+
+        uris.add( addedUri );
+    }
+
+    public Iterable<URI> getURIs()
+    {
+        return uris;
     }
 
     @Override
@@ -429,6 +459,18 @@ public class ClusterClient extends LifecycleAdapter implements Cluster, AtomicBr
     public void removeHeartbeatListener( HeartbeatListener listener )
     {
         heartbeat.removeHeartbeatListener( listener );
+    }
+
+    @Override
+    public void setSnapshotProvider( SnapshotProvider snapshotProvider )
+    {
+        snapshot.setSnapshotProvider( snapshotProvider );
+    }
+
+    @Override
+    public void refreshSnapshot()
+    {
+        snapshot.refreshSnapshot();
     }
 
     public void addBindingListener( BindingListener bindingListener )

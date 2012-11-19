@@ -178,7 +178,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
 
         memberStateMachine = new HighAvailabilityMemberStateMachine( memberContext, accessGuard, clusterEvents,
                 logging.getLogger( HighAvailabilityMemberStateMachine.class ) );
-        life.add( new HighAvailabilityModeSwitcher( delegateInvocationHandler, clusterEvents, memberStateMachine, this,
+        life.add( new HighAvailabilityModeSwitcher( delegateInvocationHandler, clusterEvents, memberStateMachine, clusterClient, this,
                 config, logging.getLogger( HighAvailabilityModeSwitcher.class ) ) );
 
         DelegateInvocationHandler<TxHook> txHookDelegate = new DelegateInvocationHandler<TxHook>();
@@ -404,7 +404,8 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         @Override
         public void start() throws Throwable
         {
-            accessGuard.await( 10000 );
+            accessGuard.await( 30000 );
+            System.out.println( "THIS IS INSTANCE IS NOW:"+getInstanceState() );
         }
     }
 }

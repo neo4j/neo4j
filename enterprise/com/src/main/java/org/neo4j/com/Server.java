@@ -82,6 +82,9 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
  */
 public abstract class Server<T, R> extends Protocol implements ChannelPipelineFactory, Lifecycle
 {
+
+    private InetSocketAddress socketAddress;
+
     public interface Configuration
     {
         long getOldChannelThreshold();
@@ -168,7 +171,7 @@ public abstract class Server<T, R> extends Protocol implements ChannelPipelineFa
         bootstrap.setPipelineFactory( this );
 
         Channel channel = null;
-        InetSocketAddress socketAddress = null;
+        socketAddress = null;
 
         // Try binding to any port in the port range
         int[] ports = config.getServerAddress().getPorts();
@@ -227,6 +230,11 @@ public abstract class Server<T, R> extends Protocol implements ChannelPipelineFa
     @Override
     public void shutdown() throws Throwable
     {
+    }
+
+    public InetSocketAddress getSocketAddress()
+    {
+        return socketAddress;
     }
 
     private Runnable silentChannelFinisher()
