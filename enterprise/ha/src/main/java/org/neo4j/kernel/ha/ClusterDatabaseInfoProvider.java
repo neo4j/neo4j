@@ -24,6 +24,7 @@ import java.net.URI;
 import org.neo4j.cluster.BindingListener;
 import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.kernel.ha.HighAvailabilityMembers.MemberInfo;
+import org.neo4j.kernel.impl.core.LastTxIdGetter;
 import org.neo4j.management.ClusterDatabaseInfo;
 import org.neo4j.management.ClusterMemberInfo;
 
@@ -31,10 +32,15 @@ public class ClusterDatabaseInfoProvider
 {
     private URI me;
     private final HighAvailabilityMembers members;
+    private final LastTxIdGetter txIdGetter;
+    private final LastUpdateTimeGetter lastUpdateTimeGetter;
 
-    public ClusterDatabaseInfoProvider( ClusterClient clusterClient, HighAvailabilityMembers members )
+    public ClusterDatabaseInfoProvider( ClusterClient clusterClient, HighAvailabilityMembers members,
+                                        LastTxIdGetter txIdGetter, LastUpdateTimeGetter lastUpdateTimeGetter)
     {
         this.members = members;
+        this.txIdGetter = txIdGetter;
+        this.lastUpdateTimeGetter = lastUpdateTimeGetter;
         clusterClient.addBindingListener( new BindingListener()
         {
             @Override
@@ -48,14 +54,16 @@ public class ClusterDatabaseInfoProvider
     public ClusterDatabaseInfo getInfo()
     {
         for ( MemberInfo member : members.getMembers() )
+        {
             if ( member.getClusterUri().equals( me ) )
             {
                 ClusterMemberInfo info = HighAvailabilityBean.clusterMemberInfo( member );
-                return new ClusterDatabaseInfo( info.getInstanceId(), info.isAvailable(),
-                        info.getHaRole(), info.getClusterRoles(), info.getUris(), 0, 0 );
+                return new ClusterDatabaseInfo (info.getInstanceId(), info.isAvailable(),
+                        info.getHaRole(), info.getClusterRoles(), info.getUris(), txIdGetter.getLastTxId(),
+                        lastUpdateTimeGetter.getLastUpdateTime() );
             }
-        
-        // TODO return something instead of throwing exception, right?
-        throw new IllegalStateException( "Couldn't find any information about myself, can't be right" );
+        }
+        // We couldn't find ourselves.
+        return new ClusterDatabaseInfo( "-1", false, "UNKNOWN", new String[0], new String[0], 0, 0 );
     }
 }

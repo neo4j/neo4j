@@ -26,7 +26,6 @@ import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 
 public class TxManagerCheckKernelEventHandler implements KernelEventHandler
 {
-
     private final XaDataSourceManager dataSourceManager;
     private final TxManager txManager;
 

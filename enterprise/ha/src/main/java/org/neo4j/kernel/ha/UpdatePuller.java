@@ -40,6 +40,7 @@ public class UpdatePuller implements Lifecycle
     private final StringLogger logger;
     private boolean pullUpdates = false;
     private ScheduledThreadPoolExecutor updatePuller;
+    private long lastUpdateTime;
 
     public UpdatePuller( HaXaDataSourceManager xaDataSourceManager, Master master,
                          RequestContextFactory requestContextFactory, AbstractTransactionManager txManager,
@@ -60,6 +61,7 @@ public class UpdatePuller implements Lifecycle
         {
             xaDataSourceManager.applyTransactions(
                     master.pullUpdates( requestContextFactory.newRequestContext( txManager.getEventIdentifier() ) ) );
+            lastUpdateTime = System.currentTimeMillis();
         }
     }
 
@@ -129,5 +131,10 @@ public class UpdatePuller implements Lifecycle
                         "Got exception while waiting for update puller termination", e, true );
             }
         }
+    }
+
+    public long getLastUpdateTime()
+    {
+        return lastUpdateTime;
     }
 }

@@ -74,6 +74,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     private InstanceAccessGuard accessGuard;
     private HighAvailabilityMemberStateMachine memberStateMachine;
     private UpdatePuller updatePuller;
+    private LastUpdateTimeGetter lastUpdateTimeGetter;
     private HighAvailabilityMemberContext memberContext;
     private ClusterClient clusterClient;
 
@@ -104,6 +105,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         life.add( memberStateMachine );
         life.add( updatePuller = new UpdatePuller( (HaXaDataSourceManager) xaDataSourceManager, master,
                 requestContextFactory, txManager, accessGuard, config, msgLog ) );
+        lastUpdateTimeGetter.setPuller( updatePuller );
 
         // Add this just before cluster join to ensure that it is up and running as late as possible
         // and is shut down as early as possible
@@ -172,8 +174,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         clusterClient = new ClusterClient( ClusterClient.adapt( config, electionCredentialsProvider ), logging );
 
         clusterEvents = life.add( new PaxosHighAvailabilityEvents( PaxosHighAvailabilityEvents.adapt( config ),
-                clusterClient,
-                logging.getLogger( PaxosHighAvailabilityEvents.class ) ) );
+                clusterClient, logging.getLogger( PaxosHighAvailabilityEvents.class ) ) );
 
         memberContext = new HighAvailabilityMemberContext( clusterClient );
 
@@ -262,8 +263,10 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     @Override
     protected KernelData createKernelData()
     {
+        this.lastUpdateTimeGetter = new LastUpdateTimeGetter();
         return new HighlyAvailableKernelData( this, this.slaves,
-                new ClusterDatabaseInfoProvider( clusterClient, slaves ) );
+                new ClusterDatabaseInfoProvider( clusterClient, slaves, new OnDiskLastTxIdGetter( new File( getStoreDir() ) ),
+                        lastUpdateTimeGetter ) );
     }
 
     @Override
@@ -339,17 +342,13 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         return getClass().getSimpleName() + "[" + 0 + ", " + storeDir + "]";
     }
 
+    @Deprecated
     public String getInstanceState()
     {
         return memberStateMachine.getCurrentState().name();
     }
 
-    public long lastUpdateTime()
-    {
-        //TODO implement this as a transaction interceptor
-        return 0;
-    }
-
+    @Deprecated
     public boolean isMaster()
     {
         return memberStateMachine.getCurrentState() == HighAvailabilityMemberState.MASTER;

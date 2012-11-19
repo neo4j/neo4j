@@ -123,7 +123,14 @@ public final class HighAvailabilityBean extends ManagementBeanProvider
         @Override
         public String getLastUpdateTime()
         {
-            return Format.date( kernelData.getMemberInfo().getLastUpdateTime() );
+            long lastUpdateTime = kernelData.getMemberInfo().getLastUpdateTime();
+            return lastUpdateTime == 0 ? "N/A" : Format.date( lastUpdateTime );
+        }
+
+        @Override
+        public long getLastCommittedTxId()
+        {
+            return kernelData.getMemberInfo().getLastCommittedTxId();
         }
 
         @Override
@@ -132,7 +139,8 @@ public final class HighAvailabilityBean extends ManagementBeanProvider
             long time = System.currentTimeMillis();
             try
             {
-                // TODO make this work through a MemberOps class passed in as a dependency
+                kernelData.graphDatabase().getDependencyResolver().
+                        resolveDependency( UpdatePuller.class ).pullUpdates();
             }
             catch ( Exception e )
             {
