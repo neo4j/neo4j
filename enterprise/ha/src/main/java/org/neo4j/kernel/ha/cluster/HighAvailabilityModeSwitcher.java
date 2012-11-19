@@ -119,7 +119,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
         this.config = config;
         this.msgLog = msgLog;
         this.life = new LifeSupport();
-        stateHandler.addClusterMemberListener( this );
+        stateHandler.addHighAvailabilityMemberListener( this );
     }
 
     @Override

@@ -27,10 +27,10 @@ import org.neo4j.com.Response;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
+import org.neo4j.kernel.ha.cluster.HighAvailability;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberChangeEvent;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberListener;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState;
-import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberStateMachine;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.IdGenerator;
 import org.neo4j.kernel.impl.nioneo.store.IdRange;
@@ -42,10 +42,10 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
     private final IdGeneratorFactory localFactory = new DefaultIdGeneratorFactory();
     private final Master master;
 
-    public HaIdGeneratorFactory( Master master, HighAvailabilityMemberStateMachine stateHandler )
+    public HaIdGeneratorFactory( Master master, HighAvailability highAvailability )
     {
         this.master = master;
-        stateHandler.addClusterMemberListener( new HaIdGeneratorFactoryClusterMemberListener() );
+        highAvailability.addHighAvailabilityMemberListener( new HaIdGeneratorFactoryClusterMemberListener() );
     }
 
     @Override

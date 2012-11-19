@@ -38,7 +38,7 @@ import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.ClusterManager;
 import org.neo4j.test.ha.ClusterManager.ManagedCluster;
 
-public class TestTxPushStrategyConfig
+public class TxPushStrategyConfigIT
 {
     private LifeSupport life = new LifeSupport();
     private ManagedCluster cluster;

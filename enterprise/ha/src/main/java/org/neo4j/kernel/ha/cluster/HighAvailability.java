@@ -17,28 +17,17 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.management;
+package org.neo4j.kernel.ha.cluster;
 
-public class ClusterDatabaseInfo extends ClusterMemberInfo
+/**
+ * A place to register {@link HighAvailabilityMemberListener listeners}
+ * that will receive events about (high) availability and roles in a cluster.
+ * 
+ * @author Mattias Persson
+ */
+public interface HighAvailability
 {
-    private final long lastCommittedTxId;
-    private final long lastUpdateTime;
+    void addHighAvailabilityMemberListener( HighAvailabilityMemberListener listener );
 
-    public ClusterDatabaseInfo( ClusterMemberInfo memberInfo, long lastCommittedTxId, long lastUpdateTime )
-    {
-        super( memberInfo.getInstanceId(), memberInfo.isAvailable(), memberInfo.isAlive(), memberInfo.getHaRole(),
-                memberInfo.getClusterRoles(), memberInfo.getUris() );
-        this.lastCommittedTxId = lastCommittedTxId;
-        this.lastUpdateTime = lastUpdateTime;
-    }
-
-    public long getLastCommittedTxId()
-    {
-        return lastCommittedTxId;
-    }
-
-    public long getLastUpdateTime()
-    {
-        return lastUpdateTime;
-    }
+    void removeHighAvailabilityMemberListener( HighAvailabilityMemberListener listener );
 }
