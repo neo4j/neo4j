@@ -37,12 +37,11 @@ final case class SingleStepTrail(next: Trail,
   def pathDescription = next.pathDescription ++ Seq(rel, end)
 
   def toSteps(id: Int) = {
-    val types = typ.map(withName(_))
     val steps = next.toSteps(id + 1)
     val relPredicate = relPred.getOrElse(True())
     val nodePredicate = nodePred.getOrElse(True())
 
-    Some(SingleStep(id, types, dir, steps, relPredicate, nodePredicate))
+    Some(SingleStep(id, typ, dir, steps, relPredicate, nodePredicate))
   }
 
   def size = next.size + 1

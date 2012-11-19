@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.commands.Predicate
 import org.neo4j.cypher.internal.symbols._
 import scala.Some
 import org.neo4j.cypher.internal.symbols.RelationshipType
+import org.neo4j.cypher.internal.spi.QueryContext
 
 class PatternRelationship(key: String,
                           val startNode: PatternNode,
@@ -41,20 +42,15 @@ class PatternRelationship(key: String,
 
   def getOtherNode(node: PatternNode) = if (startNode == node) endNode else startNode
 
-  lazy val neo4jRelTypes = relTypes.map(t => DynamicRelationshipType.withName(t))
+  def getGraphRelationships(node: PatternNode, realNode: Node, ctx:QueryContext): Seq[GraphRelationship] = {
 
-  def getGraphRelationships(node: PatternNode, realNode: Node): Seq[GraphRelationship] = {
-
-    val result = (if (relTypes.isEmpty) {
-      realNode.getRelationships(getDirection(node))
-    } else {
-      realNode.getRelationships(getDirection(node), neo4jRelTypes: _*)
-    }).asScala.toStream.map(new SingleGraphRelationship(_))
+    val result: Iterable[GraphRelationship] =
+      ctx.getRelationshipsFor(realNode, getDirection(node), relTypes:_*).asScala.map(new SingleGraphRelationship(_))
 
     if (startNode == endNode)
-      result.filter(r => r.getOtherNode(realNode) == realNode)
+      result.filter(r => r.getOtherNode(realNode) == realNode).toSeq
     else
-      result
+      result.toSeq
   }
 
   protected def getDirection(node: PatternNode): Direction = {
@@ -120,7 +116,7 @@ class VariableLengthPatternRelationship(pathName: String,
       endNode.key -> NodeType(),
       key -> new CollectionType(RelationshipType())) ++ relIterable.map(_ -> new CollectionType(RelationshipType())).toMap
 
-  override def getGraphRelationships(node: PatternNode, realNode: Node): Seq[GraphRelationship] = {
+  override def getGraphRelationships(node: PatternNode, realNode: Node, ctx:QueryContext): Seq[GraphRelationship] = {
 
     val depthEval = (minHops, maxHops) match {
       case (None, None)           => Evaluators.fromDepth(1)

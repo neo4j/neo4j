@@ -29,21 +29,22 @@ import org.neo4j.cypher.internal.symbols.{SymbolTable, CypherType, NodeType}
 import collection.{Map => CollectionMap}
 import org.neo4j.cypher.internal.commands.{CreateRelationshipStartItem, CreateNodeStartItem}
 import org.neo4j.cypher.internal.commands.expressions.{Expression, Literal}
+import org.neo4j.cypher.internal.spi.gdsimpl.GDSBackedQueryContext
 
 
 class MutationTest extends ExecutionEngineHelper with Assertions {
 
-  def createQueryState = new QueryState(graph, Map.empty)
+  def createQueryState = new QueryState(graph, new GDSBackedQueryContext(graph), Map.empty)
 
   @Test
   def create_node() {
     val start = new NullPipe
     val txBegin = new TransactionStartPipe(start, graph)
     val createNode = new ExecuteUpdateCommandsPipe(txBegin, graph, Seq(CreateNodeStartItem("n", Map("name" -> Literal("Andres")))))
-    val commitPipe = new CommitPipe(createNode, graph)
 
     val queryState = createQueryState
-    commitPipe.createResults(queryState)
+    createNode.createResults(queryState).toList
+
 
     val n = graph.getNodeById(1)
     assert(n.getProperty("name") === "Andres")
@@ -57,9 +58,8 @@ class MutationTest extends ExecutionEngineHelper with Assertions {
     val start = new NullPipe
     val txBegin = new TransactionStartPipe(start, graph)
     val createNode = new ExecuteUpdateCommandsPipe(txBegin, graph, Seq(CreateNodeStartItem("n", Map("name" -> Literal("Andres")))))
-    val commitPipe = new CommitPipe(createNode, graph)
 
-    commitPipe.createResults(createQueryState)
+    createNode.createResults(createQueryState).toList
 
     tx.failure()
     tx.finish()
@@ -73,9 +73,8 @@ class MutationTest extends ExecutionEngineHelper with Assertions {
     val start = new NullPipe
     val txBegin = new TransactionStartPipe(start, graph)
     val createNode = new ExecuteUpdateCommandsPipe(txBegin, graph, Seq(CreateNodeStartItem("n", Map("name" -> Literal("Andres")))))
-    val commitPipe = new CommitPipe(createNode, graph)
 
-    commitPipe.createResults(createQueryState)
+    createNode.createResults(createQueryState).toList
 
     tx.success()
     tx.finish()
@@ -96,10 +95,9 @@ class MutationTest extends ExecutionEngineHelper with Assertions {
     val startPipe = new NullPipe
     val txBeginPipe = new TransactionStartPipe(startPipe, graph)
     val createNodePipe = new ExecuteUpdateCommandsPipe(txBeginPipe, graph, Seq(createRel))
-    val commitPipe = new CommitPipe(createNodePipe, graph)
 
     val state = createQueryState
-    val results: List[MutableMap[String, Any]] = commitPipe.createResults(state).map(ctx => ctx.m).toList
+    val results: List[MutableMap[String, Any]] = createNodePipe.createResults(state).map(ctx => ctx.m).toList
 
     val r = graph.getRelationshipById(0)
     assert(r.getProperty("I") === "was here")
@@ -124,9 +122,11 @@ class MutationTest extends ExecutionEngineHelper with Assertions {
     val startPipe = new NullPipe
     val txBeginPipe = new TransactionStartPipe(startPipe, graph)
     val createNodePipe = new ExecuteUpdateCommandsPipe(txBeginPipe, graph, Seq(deleteCommand))
-    val commitPipe = new CommitPipe(createNodePipe, graph)
 
-    commitPipe.createResults(createQueryState).toList
+    val state = createQueryState
+    createNodePipe.createResults(state).toList
+    state.transaction.get.success()
+    state.transaction.get.finish()
 
     intercept[NotFoundException](graph.getNodeById(node_id))
   }

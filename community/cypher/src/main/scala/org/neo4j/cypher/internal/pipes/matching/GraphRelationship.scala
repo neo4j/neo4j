@@ -41,12 +41,7 @@ case class SingleGraphRelationship(rel: Relationship) extends GraphRelationship 
     case x => x == this || x == rel
   }
 
-  override def toString =
-    try {
-      rel.getProperty("name").toString
-    } catch {
-      case e:NotFoundException => rel.toString
-    }
+  override def toString = rel.toString
 }
 
 case class VariableLengthGraphRelationship(path: Path) extends GraphRelationship {

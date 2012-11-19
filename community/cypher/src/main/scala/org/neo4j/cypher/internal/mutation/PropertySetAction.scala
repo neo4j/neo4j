@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.mutation
 
 import org.neo4j.cypher.internal.symbols.SymbolTable
 import org.neo4j.cypher.internal.pipes.{QueryState, ExecutionContext}
-import org.neo4j.graphdb.PropertyContainer
+import org.neo4j.graphdb.{Relationship, Node, PropertyContainer}
 import org.neo4j.cypher.internal.commands.expressions.{Expression, Property}
 
 case class PropertySetAction(prop: Property, e: Expression)
@@ -32,9 +32,11 @@ case class PropertySetAction(prop: Property, e: Expression)
     val value = makeValueNeoSafe(e(context))
     val entity = context(entityKey).asInstanceOf[PropertyContainer]
 
-    value match {
-      case null => entity.removeProperty(propertyKey)
-      case _    => entity.setProperty(propertyKey, value)
+    (value, entity) match {
+      case (null, n: Node)         => state.query.nodeOps().removeProperty(n, propertyKey)
+      case (null, r: Relationship) => state.query.relationshipOps().removeProperty(r, propertyKey)
+      case (_, r: Relationship)    => state.query.relationshipOps().setProperty(r, propertyKey, value)
+      case (_, n: Node)            => state.query.nodeOps().setProperty(n, propertyKey, value)
     }
 
     state.propertySet.increase()

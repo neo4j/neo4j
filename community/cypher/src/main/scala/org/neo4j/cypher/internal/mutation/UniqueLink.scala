@@ -41,7 +41,6 @@ object UniqueLink {
 
 case class UniqueLink(start: NamedExpectation, end: NamedExpectation, rel: NamedExpectation, relType: String, dir: Direction)
   extends GraphElementPropertyFunctions with Pattern with MapSupport {
-  lazy val relationshipType = DynamicRelationshipType.withName(relType)
 
   def exec(context: ExecutionContext, state: QueryState): Option[(UniqueLink, CreateUniqueResult)] = {
 
@@ -60,10 +59,9 @@ case class UniqueLink(start: NamedExpectation, end: NamedExpectation, rel: Named
     // If any matching rels are found, they are returned. Otherwise, a new one is
     // created and returned.
     def twoNodes(startNode: Node, endNode: Node): Option[(UniqueLink, CreateUniqueResult)] = {
-      val rels = startNode.getRelationships(relationshipType, dir).asScala.
-        filter(r => {
-        r.getOtherNode(startNode) == endNode && rel.compareWithExpectations(r, context)
-      }).toList
+      val rels = context.state.query.getRelationshipsFor(startNode, dir, relType).asScala.
+        filter(r => r.getOtherNode(startNode) == endNode && rel.compareWithExpectations(r, context) ).
+        toList
 
       rels match {
         case List() =>
@@ -97,9 +95,8 @@ case class UniqueLink(start: NamedExpectation, end: NamedExpectation, rel: Named
         Seq(nodeCreate, relUpdate)
       }
 
-      val rels = startNode.getRelationships(relationshipType, dir).asScala.filter(r => {
-        rel.compareWithExpectations(r, context) && other.compareWithExpectations(r.getOtherNode(startNode), context)
-      }).toList
+      val rels = context.state.query.getRelationshipsFor(startNode, dir, relType).asScala.
+        filter(r => rel.compareWithExpectations(r, context) && other.compareWithExpectations(r.getOtherNode(startNode), context)).toList
 
       rels match {
         case List() =>

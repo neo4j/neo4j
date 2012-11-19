@@ -20,6 +20,7 @@
 package org.neo4j.cypher
 
 import internal.helpers.CollectionSupport
+import internal.pipes.QueryState
 import internal.StringExtras
 import internal.commands.expressions.StringHelper
 import scala.collection.JavaConverters._
@@ -27,7 +28,7 @@ import java.io.{StringWriter, PrintWriter}
 import collection.Map
 import collection.immutable.{Map => ImmutableMap}
 
-class PipeExecutionResult(result: Iterator[Map[String, Any]], val columns: List[String])
+class PipeExecutionResult(result: Iterator[Map[String, Any]], val columns: List[String], state:QueryState)
   extends ExecutionResult
   with StringExtras
   with CollectionSupport
@@ -58,7 +59,7 @@ class PipeExecutionResult(result: Iterator[Map[String, Any]], val columns: List[
 
     result.foreach((m) => {
       m.foreach((kv) => {
-        val length = text(kv._2).size
+        val length = text(kv._2, state.query).size
         if (!columnSizes.contains(kv._1) || columnSizes.get(kv._1).get < length) {
           columnSizes.put(kv._1, length)
         }
@@ -129,7 +130,7 @@ class PipeExecutionResult(result: Iterator[Map[String, Any]], val columns: List[
   private def createString(columns: List[String], columnSizes: Map[String, Int], m: Map[String, Any]): String = {
     columns.map(c => {
       val length = columnSizes.get(c).get
-      val txt = text(m.get(c).get)
+      val txt = text(m.get(c).get, state.query)
       val value = makeSize(txt, length)
       value
     }).mkString("| ", " | ", " |")
