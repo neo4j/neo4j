@@ -25,7 +25,6 @@ import java.lang.reflect.Proxy;
 import java.util.List;
 import java.util.Map;
 
-import ch.qos.logback.classic.LoggerContext;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.com.NetworkInstance;
@@ -46,6 +45,8 @@ import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberListener;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberStateMachine;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher;
+import org.neo4j.kernel.ha.cluster.member.HighAvailabilityMembers;
+import org.neo4j.kernel.ha.cluster.member.HighAvailabilitySlaves;
 import org.neo4j.kernel.ha.cluster.paxos.PaxosHighAvailabilityEvents;
 import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.core.Caches;
@@ -62,10 +63,13 @@ import org.neo4j.kernel.logging.ClassicLoggingService;
 import org.neo4j.kernel.logging.LogbackService;
 import org.neo4j.kernel.logging.Logging;
 
+import ch.qos.logback.classic.LoggerContext;
+
 public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
 {
     private RequestContextFactory requestContextFactory;
-    private HighAvailabilityMembers slaves;
+    private Slaves slaves;
+    private HighAvailabilityMembers members;
     private DelegateInvocationHandler delegateInvocationHandler;
     private LoggerContext loggerContext;
     private DefaultTransactionSupport transactionSupport;
@@ -177,8 +181,6 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
 
         memberContext = new HighAvailabilityMemberContext( clusterClient );
 
-        life.add( memberContext );
-
         memberStateMachine = new HighAvailabilityMemberStateMachine( memberContext, accessGuard, clusterEvents,
                 logging.getLogger( HighAvailabilityMemberStateMachine.class ) );
         life.add( new HighAvailabilityModeSwitcher( delegateInvocationHandler, clusterEvents, memberStateMachine, this,
@@ -206,8 +208,10 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         TxIdGenerator txIdGenerator =
                 (TxIdGenerator) Proxy.newProxyInstance( TxIdGenerator.class.getClassLoader(),
                         new Class[]{TxIdGenerator.class}, txIdGeneratorDelegate );
-        slaves = life.add( new HighAvailabilityMembers( clusterClient, memberStateMachine, msgLog, config,
-                xaDataSourceManager ) );
+        slaves = life.add( new HighAvailabilitySlaves( clusterClient, memberStateMachine, new DefaultSlaveFactory(
+                xaDataSourceManager, msgLog, config.get( HaSettings.max_concurrent_channels_per_slave ),
+                config.get( ComSettings.com_chunk_size ) ), logging ) );
+        members = new HighAvailabilityMembers( clusterClient, memberStateMachine );
         new TxIdGeneratorModeSwitcher( memberStateMachine, txIdGeneratorDelegate,
                 (HaXaDataSourceManager) xaDataSourceManager, master, requestContextFactory, msgLog, config, slaves );
         return txIdGenerator;
@@ -262,14 +266,14 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     @Override
     protected KernelData createKernelData()
     {
-        return new HighlyAvailableKernelData( this, this.slaves,
-                new ClusterDatabaseInfoProvider( clusterClient, slaves ) );
+        return new HighlyAvailableKernelData( this, members,
+                new ClusterDatabaseInfoProvider( clusterClient, members ) );
     }
 
     @Override
     protected void registerRecovery()
     {
-        memberStateMachine.addClusterMemberListener( new HighAvailabilityMemberListener()
+        memberStateMachine.addHighAvailabilityMemberListener( new HighAvailabilityMemberListener()
         {
             @Override
             public void masterIsElected( HighAvailabilityMemberChangeEvent event )

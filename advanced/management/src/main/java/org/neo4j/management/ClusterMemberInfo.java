@@ -38,15 +38,18 @@ public class ClusterMemberInfo implements Serializable
     private static final long serialVersionUID = 1L;
     private final String instanceId;
     private final boolean available;
+    private final boolean alive;
     private final String haRole;
     private final String[] clusterRoles;
     private final String[] uris;
 
-    @ConstructorProperties( { "instanceId", "available", "haRole", "clusterRoles", "uris" } )
-    public ClusterMemberInfo( String instanceId, boolean available, String haRole, String[] clusterRoles, String[] uris )
+    @ConstructorProperties( { "instanceId", "available", "alive", "haRole", "clusterRoles", "uris" } )
+    public ClusterMemberInfo( String instanceId, boolean available, boolean alive, String haRole,
+            String[] clusterRoles, String[] uris )
     {
         this.instanceId = instanceId;
         this.available = available;
+        this.alive = alive;
         this.haRole = haRole;
         this.clusterRoles = clusterRoles;
         this.uris = uris;
@@ -60,6 +63,11 @@ public class ClusterMemberInfo implements Serializable
     public boolean isAvailable()
     {
         return available;
+    }
+    
+    public boolean isAlive()
+    {
+        return alive;
     }
     
     public String getHaRole()
