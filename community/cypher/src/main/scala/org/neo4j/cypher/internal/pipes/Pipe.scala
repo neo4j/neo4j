@@ -30,6 +30,8 @@ import java.util.HashMap
 import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.cypher.ParameterNotFoundException
 import java.util.concurrent.atomic.AtomicInteger
+import org.neo4j.cypher.internal.spi.QueryContext
+import org.neo4j.cypher.internal.spi.gdsimpl.GDSBackedQueryContext
 
 /**
  * Pipe is a central part of Cypher. Most pipes are decorators - they
@@ -70,10 +72,12 @@ object MutableMaps {
 }
 
 object QueryState {
-  def apply() = new QueryState(null, Map.empty)
+  def apply() = new QueryState(null, null, Map.empty)
+  def apply(db: GraphDatabaseService) = new QueryState(db, new GDSBackedQueryContext(db), Map.empty, None)
 }
 
 class QueryState(val db: GraphDatabaseService,
+                 val query: QueryContext,
                  val params: Map[String, Any],
                  var transaction: Option[Transaction] = None) {
   val createdNodes = new Counter
@@ -106,12 +110,12 @@ object ExecutionContext {
 
 case class ExecutionContext(m: MutableMap[String, Any] = MutableMaps.empty,
                             mutationCommands: Queue[UpdateAction] = Queue.empty,
-                            params: Map[String, Any] = Map.empty)
+                            state:QueryState = QueryState())
   extends MutableMap[String, Any] {
   def get(key: String): Option[Any] = m.get(key)
 
   def getParam(key: String): Any =
-    params.getOrElse(key, throw new ParameterNotFoundException("Expected a parameter named " + key))
+    state.params.getOrElse(key, throw new ParameterNotFoundException("Expected a parameter named " + key))
 
   def iterator: Iterator[(String, Any)] = m.iterator
 

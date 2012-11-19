@@ -37,7 +37,7 @@ expand, if we have one. If we don't have a next step, we return an empty result 
 as the next step.
  */
 case class VarLengthStep(id: Int,
-                         typ: Seq[RelationshipType],
+                         typ: Seq[String],
                          direction: Direction,
                          min: Int,
                          max: Option[Int],
@@ -49,7 +49,7 @@ case class VarLengthStep(id: Int,
 
   def expand(node: Node, parameters: ExecutionContext): (Iterable[Relationship], Option[ExpanderStep]) = {
     def filter(r: Relationship, n: Node): Boolean = {
-      val m = new MiniMap(r, n, parameters)
+      val m = new MiniMap(r, n, parameters.state)
       relPredicate.isMatch(m) && nodePredicate.isMatch(m)
     }
 
@@ -80,10 +80,8 @@ case class VarLengthStep(id: Int,
       }
     }
 
-    val matchingRelationships = typ match {
-      case Seq() => node.getRelationships(direction).asScala.filter(r => filter(r, r.getOtherNode(node)))
-      case x     => node.getRelationships(direction, x: _*).asScala.filter(r => filter(r, r.getOtherNode(node)))
-    }
+    val matchingRelationships = parameters.state.query.getRelationshipsFor(node, direction, typ:_*).asScala
+
 
     val result = if (matchingRelationships.isEmpty && min == 0) {
       /*
@@ -122,7 +120,7 @@ case class VarLengthStep(id: Int,
         ">"
 
     val typeString =
-      typ.map(_.name()).mkString("|")
+      typ.mkString("|")
 
     val varLengthString = max match {
       case None    => "%s..".format(min)
@@ -142,7 +140,7 @@ case class VarLengthStep(id: Int,
     case other: VarLengthStep =>
       val a = id == other.id
       val b = direction == other.direction
-      val c = typ.map(_.name()) == other.typ.map(_.name())
+      val c = typ == other.typ
       val d = min == other.min
       val e = max == other.max
       val f = next == other.next

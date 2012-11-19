@@ -22,7 +22,6 @@ package org.neo4j.cypher.docgen.cookbook
 import org.junit.Test
 import org.junit.Assert._
 import org.neo4j.cypher.docgen.DocumentingTestBase
-import org.neo4j.test.GeoffService
 
 class ClusteringCoefficientTest extends DocumentingTestBase {
   def graphDescription = List()
@@ -47,7 +46,6 @@ _1-[:KNOWS]->_5,
 _2-[:KNOWS]->_6,
 _2-[:KNOWS]->_7,
 _3-[:KNOWS]->_4""");
-    println(new GeoffService(db).toGeoff());
     testQuery(
       title = "Calculating the Clustering Coefficient of a friend network",
       text = """In this example, adapted from 
