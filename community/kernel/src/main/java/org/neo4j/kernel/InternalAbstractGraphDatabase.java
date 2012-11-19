@@ -442,33 +442,7 @@ public abstract class InternalAbstractGraphDatabase
                 logging.getLogger( XaFactory.class ), recoveryVerifier, LogPruneStrategies.fromConfigValue(
                 fileSystem, keepLogicalLogsConfig ) );
 
-//<<<<<<< HEAD
-//        // Create DataSource
-//        List<Pair<TransactionInterceptorProvider, Object>> providers = new ArrayList<Pair<TransactionInterceptorProvider, Object>>( 2 );
-//        for ( TransactionInterceptorProvider provider : Service.load( TransactionInterceptorProvider.class ) )
-//        {
-//            Object prov = params.get( TransactionInterceptorProvider.class.getSimpleName() + "." + provider.name() );
-//            if ( prov != null )
-//            {
-//                providers.add( Pair.of( provider, prov ) );
-//            }
-//        }
-//
-//        try
-//        {
-//            // TODO IO stuff should be done in lifecycle. Refactor!
-//            neoDataSource = new NeoStoreXaDataSource( config,
-//                    storeFactory, fileSystem, lockManager, logging.getLogger( Loggers.DATASOURCE ), xaFactory, stateFactory, providers, new DependencyResolverImpl());
-//            xaDataSourceManager.registerDataSource( neoDataSource );
-//        } catch (IOException e)
-//        {
-//            throw new IllegalStateException("Could not create Neo XA datasource", e);
-//        }
-//
-//        life.add( new StuffToDoAfterRecovery() );
-//=======
         createNeoDataSource();
-//>>>>>>> master
 
         life.add( new MonitorGc( config, msgLog ) );
 

@@ -20,6 +20,8 @@
 
 package org.neo4j.kernel.impl.nioneo.store;
 
+import static org.neo4j.helpers.Exceptions.launderedException;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
@@ -38,8 +40,6 @@ import org.neo4j.kernel.impl.core.ReadOnlyDbException;
 import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPool;
 import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
-
-import static org.neo4j.helpers.Exceptions.launderedException;
 
 /**
  * Contains common implementation for {@link AbstractStore} and
@@ -620,16 +620,6 @@ public abstract class CommonAbstractStore
         {
             releaseFileLockAndCloseFileChannel();
             success = true;
-//=======
-//            try
-//            {
-//                fileChannel.close();
-//            }
-//            catch ( IOException e )
-//            {
-//                logger.log( Level.WARNING, "Could not close fileChannel [" + storageFileName + "]", e );
-//            }
-//>>>>>>> parent of 739f974... Change start-up sequence so that version number in neostore gets checked, not just in the child stores
         }
         if ( !success )
         {

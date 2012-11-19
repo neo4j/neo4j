@@ -97,15 +97,32 @@ abstract class ArrayBasedPrimitive extends Primitive implements EntityWithSize
     
     private static void sort( PropertyData[] array )
     {
-        Arrays.sort( array, PROPERTY_DATA_COMPARATOR );
+        Arrays.sort( array, PROPERTY_DATA_COMPARATOR_FOR_SORTING );
     }
     
-    private static final Comparator<PropertyData> PROPERTY_DATA_COMPARATOR = new Comparator<PropertyData>()
+    private static final Comparator<PropertyData> PROPERTY_DATA_COMPARATOR_FOR_SORTING = new Comparator<PropertyData>()
     {
         @Override
         public int compare( PropertyData o1, PropertyData o2 )
         {
             return o1.getIndex() - o2.getIndex();
+        }
+    };
+    
+    /* This is essentially a deliberate misuse of Comparator, knowing details about Arrays#binarySearch.
+     * The signature is binarySearch( T[] array, T key, Comparator<T> ), but in this case we're
+     * comparing PropertyData[] to an int as key. To avoid having to create a new object for
+     * the key for each call we create a single Comparator taking the PropertyData as first
+     * argument and the key as the second, as #binarySearch does internally. Although the int
+     * here will be boxed I imagine it to be slightly better, with Integer caching for low
+     * integers. */
+    @SuppressWarnings( "rawtypes" )
+    static final Comparator PROPERTY_DATA_COMPARATOR_FOR_BINARY_SEARCH = new Comparator()
+    {
+        @Override
+        public int compare( Object o1, Object o2 )
+        {
+            return ((PropertyData)o1).getIndex() - ((Integer) o2).intValue();
         }
     };
 
@@ -122,30 +139,13 @@ abstract class ArrayBasedPrimitive extends Primitive implements EntityWithSize
         return properties;
     }
 
+    @SuppressWarnings( "unchecked" )
     @Override
     protected PropertyData getPropertyForIndex( int keyId )
     {
-        PropertyData[] local = properties;
-        
-        // Algorithm copied from java.util.Arrays#binarySearch
-        // Don't used used since the method signature makes it impossible
-        // to use for PropertyData objects (where we compare to PropertyData#getIndex()
-        int low = 0;
-        int high = local.length-1;
-        while ( low <= high )
-        {
-            int mid = (low + high) >>> 1;
-            PropertyData midVal = local[mid];
-            int midId = midVal.getIndex();
-
-            if ( midId < keyId )
-                low = mid + 1;
-            else if ( midId > keyId )
-                high = mid - 1;
-            else
-                return midVal; // key found
-        }
-        return null;
+        PropertyData[] localProperties = properties;
+        int index = Arrays.binarySearch( localProperties, keyId, PROPERTY_DATA_COMPARATOR_FOR_BINARY_SEARCH );
+        return index < 0 ? null : localProperties[index];
     }
 
     @Override

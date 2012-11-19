@@ -54,7 +54,6 @@ import org.neo4j.kernel.impl.util.RelIdIterator;
 public class NodeImpl extends ArrayBasedPrimitive
 {
     private static final RelIdArray[] NO_RELATIONSHIPS = new RelIdArray[0];
-    private static final RelIdIterator[] NO_RELATIONSHIP_ITERATORS = new RelIdIterator[0];
 
     private volatile RelIdArray[] relationships;
 
@@ -198,7 +197,7 @@ public class NodeImpl extends ArrayBasedPrimitive
         }
         if ( result.length == 0 )
             return Collections.emptyList();
-        return new IntArrayIterator( result, this, direction, nodeManager, hasMore, true );
+        return new RelationshipIterator( result, this, direction, nodeManager, hasMore, true );
     }
 
     Iterable<Relationship> getAllRelationshipsOfType( NodeManager nodeManager,
@@ -243,7 +242,7 @@ public class NodeImpl extends ArrayBasedPrimitive
         }
         if ( result.length == 0 )
             return Collections.emptyList();
-        return new IntArrayIterator( result, this, direction, nodeManager, hasMore, false );
+        return new RelationshipIterator( result, this, direction, nodeManager, hasMore, false );
     }
     
     private RelIdIterator getRelationshipsIterator( NodeManager nodeManager, DirectionWrapper direction,
@@ -411,7 +410,7 @@ public class NodeImpl extends ArrayBasedPrimitive
         return result;
     }
     
-    private static final Comparator<RelIdArray> TYPE_COMPARATOR = new Comparator<RelIdArray>()
+    private static final Comparator<RelIdArray> RELATIONSHIP_TYPE_COMPARATOR_FOR_SORTING = new Comparator<RelIdArray>()
     {
         @Override
         public int compare( RelIdArray o1, RelIdArray o2 )
@@ -420,9 +419,26 @@ public class NodeImpl extends ArrayBasedPrimitive
         }
     };
     
+    /* This is essentially a deliberate misuse of Comparator, knowing details about Arrays#binarySearch.
+     * The signature is binarySearch( T[] array, T key, Comparator<T> ), but in this case we're
+     * comparing RelIdArray[] to an int as key. To avoid having to create a new object for
+     * the key for each call we create a single Comparator taking the RelIdArray as first
+     * argument and the key as the second, as #binarySearch does internally. Although the int
+     * here will be boxed I imagine it to be slightly better, with Integer caching for low
+     * integers. */
+    @SuppressWarnings( "rawtypes" )
+    private static final Comparator RELATIONSHIP_TYPE_COMPARATOR_FOR_BINARY_SEARCH = new Comparator()
+    {
+        @Override
+        public int compare( Object o1, Object o2 )
+        {
+            return ((RelIdArray)o1).getType() - ((Integer) o2).intValue();
+        }
+    };
+    
     private static void sort( RelIdArray[] array )
     {
-        Arrays.sort( array, TYPE_COMPARATOR );
+        Arrays.sort( array, RELATIONSHIP_TYPE_COMPARATOR_FOR_SORTING );
     }
 
     private Triplet<ArrayMap<Integer,RelIdArray>,List<RelationshipImpl>,Long> getMoreRelationships(
@@ -554,31 +570,17 @@ public class NodeImpl extends ArrayBasedPrimitive
         }
     }
 
+    @SuppressWarnings( "unchecked" )
     private RelIdArray getRelIdArray( int type )
     {
-        RelIdArray[] local = relationships;
-        int low = 0;
-        int high = local.length - 1;
-
-        while ( low <= high )
-        {
-            int mid = (low + high) >>> 1;
-            RelIdArray midVal = local[mid];
-            int midId = midVal.getType();
-
-            if ( midId < type )
-                low = mid + 1;
-            else if ( midId > type )
-                high = mid - 1;
-            else
-                return midVal; // key found
-        }
-        return null;
+        RelIdArray[] localRelationships = relationships;
+        int index = Arrays.binarySearch( localRelationships, type, RELATIONSHIP_TYPE_COMPARATOR_FOR_BINARY_SEARCH );
+        return index < 0 ? null : localRelationships[index];
     }
 
     private void putRelIdArray( RelIdArray addRels )
     {
-        // we don't do size update here, instead performed in lockRelaser 
+        // we don't do size update here, instead performed 
         // when calling commitRelationshipMaps and in getMoreRelationships
 
         // precondition: called under synchronization
@@ -607,35 +609,6 @@ public class NodeImpl extends ArrayBasedPrimitive
     {
         return nodeManager.createRelationship( thisProxy, this, otherNode, type );
     }
-
-    /* Tentative expansion API
-    public Expansion<Relationship> expandAll()
-    {
-        return Traversal.expanderForAllTypes().expand( this );
-    }
-
-    public Expansion<Relationship> expand( RelationshipType type )
-    {
-        return expand( type, Direction.BOTH );
-    }
-
-    public Expansion<Relationship> expand( RelationshipType type,
-            Direction direction )
-    {
-        return Traversal.expanderForTypes( type, direction ).expand(
-                this );
-    }
-
-    public Expansion<Relationship> expand( Direction direction )
-    {
-        return Traversal.expanderForAllTypes( direction ).expand( this );
-    }
-
-    public Expansion<Relationship> expand( RelationshipExpander expander )
-    {
-        return Traversal.expander( expander ).expand( this );
-    }
-    */
 
     public boolean hasRelationship( NodeManager nodeManager )
     {

@@ -27,13 +27,13 @@ import java.util.Map;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.helpers.collection.PrefetchingIterator;
-import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.core.NodeImpl.LoadStatus;
+import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.RelIdArray;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 import org.neo4j.kernel.impl.util.RelIdIterator;
 
-class IntArrayIterator extends PrefetchingIterator<Relationship> implements Iterable<Relationship>
+class RelationshipIterator extends PrefetchingIterator<Relationship> implements Iterable<Relationship>
 {
     private RelIdIterator[] rels;
     private int currentTypeIndex;
@@ -44,7 +44,7 @@ class IntArrayIterator extends PrefetchingIterator<Relationship> implements Iter
     private boolean lastTimeILookedThereWasMoreToLoad;
     private final boolean allTypes;
 
-    IntArrayIterator( RelIdIterator[] rels, NodeImpl fromNode,
+    RelationshipIterator( RelIdIterator[] rels, NodeImpl fromNode,
         DirectionWrapper direction, NodeManager nodeManager, boolean hasMoreToLoad, boolean allTypes )
     {
         initializeRels( rels );

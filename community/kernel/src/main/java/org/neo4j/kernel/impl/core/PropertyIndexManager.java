@@ -72,7 +72,7 @@ public class PropertyIndexManager
             if ( state != null )
             {
                 PropertyIndex[] fullList;
-                PropertyIndex added = state.getIndex( key );
+                PropertyIndex added = state.getPropertyIndex( key );
                 if ( added != null )
                 {
                     if ( existing != null )
@@ -131,7 +131,7 @@ public class PropertyIndexManager
         {
             if ( state != null )
             {
-                PropertyIndex added = state.getIndex( keyId );
+                PropertyIndex added = state.getPropertyIndex( keyId );
                 if ( added != null )
                     return added;
             }
@@ -174,14 +174,14 @@ public class PropertyIndexManager
             throw new NotInTransactionException(
                 "Unable to create property index for " + key );
         }
-        PropertyIndex index = state.getIndex( key );
+        PropertyIndex index = state.getPropertyIndex( key );
         if ( index != null )
         {
             return index;
         }
         int id = (int) idGenerator.nextId( PropertyIndex.class );
         index = new PropertyIndex( key, id );
-        state.addIndex( index );
+        state.addPropertyIndex( index );
         persistenceManager.createPropertyIndex( key, id );
         return index;
     }

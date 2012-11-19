@@ -132,16 +132,9 @@ public class TestXa extends AbstractNeo4jTestCase
         propertyIndexes = new HashMap<String, PropertyIndex>();
 
         FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
-//<<<<<<< HEAD
-//        StoreFactory sf = new StoreFactory(
-//                new Config( new ConfigurationDefaults( GraphDatabaseSettings.class ).apply( Collections
-//                        .<String, String> emptyMap() ) ), new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(),
-//                        fileSystem, null, StringLogger.DEV_NULL, null );
-//=======
         StoreFactory sf = new StoreFactory(new Config( new ConfigurationDefaults(GraphDatabaseSettings.class ).apply(
                 Collections.<String,String>emptyMap() )), new DefaultIdGeneratorFactory(),
                 new DefaultWindowPoolFactory(), fileSystem, StringLogger.DEV_NULL, null );
-//>>>>>>> master
         sf.createNeoStore(file( "neo" )).close();
 
         lockManager = getEmbeddedGraphDb().getLockManager();

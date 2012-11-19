@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import java.util.Arrays;
+
 import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
@@ -82,29 +84,7 @@ public class TestBinarySearchPerformance
     
     private PropertyData doBinarySearch( PropertyData[] array, int keyId )
     {
-        // Copied from ArrayBasedPrimitive#getPropertyForIndex
-        
-        PropertyData[] local = array;
-        
-        // Algorithm copied from java.util.Arrays#binarySearch
-        // Don't used used since the method signature makes it impossible
-        // to use for PropertyData objects (where we compare to PropertyData#getIndex()
-        int low = 0;
-        int high = local.length-1;
-        while ( low <= high )
-        {
-            int mid = (low + high) >>> 1;
-            PropertyData midVal = local[mid];
-            int midId = midVal.getIndex();
-
-            if ( midId < keyId )
-                low = mid + 1;
-            else if ( midId > keyId )
-                high = mid - 1;
-            else
-                return midVal; // key found
-        }
-        return null;
+        return array[Arrays.binarySearch( array, keyId, ArrayBasedPrimitive.PROPERTY_DATA_COMPARATOR_FOR_BINARY_SEARCH )];
     }
 
     private void measure( String name, Runnable runnable )

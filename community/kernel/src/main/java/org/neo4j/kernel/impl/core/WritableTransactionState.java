@@ -52,9 +52,6 @@ import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 import org.neo4j.kernel.impl.util.RelIdArrayWithLoops;
 import org.neo4j.kernel.impl.util.RelIdIterator;
 
-/**
- * Manages object version diffs and locks for a transaction.
- */
 public class WritableTransactionState implements TransactionState
 {
     private static Logger log = Logger.getLogger( TransactionState.class.getName() );
@@ -762,7 +759,7 @@ public class WritableTransactionState implements TransactionState
     }
 
     @Override
-    public void addIndex( PropertyIndex index )
+    public void addPropertyIndex( PropertyIndex index )
     {
         if ( createdIndexes == null )
         {
@@ -775,13 +772,13 @@ public class WritableTransactionState implements TransactionState
     }
 
     @Override
-    public PropertyIndex getIndex( String key )
+    public PropertyIndex getPropertyIndex( String key )
     {
         return createdIndexes != null ? createdIndexes.get( key ) : null;
     }
     
     @Override
-    public PropertyIndex getIndex( int keyId )
+    public PropertyIndex getPropertyIndex( int keyId )
     {
         return idToIndex != null ? idToIndex.get( keyId ) : null;
     }

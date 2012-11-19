@@ -34,6 +34,17 @@ import org.neo4j.kernel.impl.transaction.LockType;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.RelIdArray;
 
+/**
+ * Keeps transaction state for a single transaction, such as:
+ * <ul>
+ *   <li>Created nodes and relationships</li>
+ *   <li>Added, modified and deleted properties</li>
+ *   <li>Created relationship types and property indexes</li>
+ *   <li>Held locks</li>
+ * </ul>
+ * @author Mattias
+ *
+ */
 public interface TransactionState
 {
     LockElement addLockToTransaction( LockManager lockManager, Object resource, LockType type )
@@ -89,11 +100,11 @@ public interface TransactionState
 
     TransactionData getTransactionData();
     
-    void addIndex( PropertyIndex index );
+    void addPropertyIndex( PropertyIndex index );
 
-    PropertyIndex getIndex( String key );
+    PropertyIndex getPropertyIndex( String key );
 
-    PropertyIndex getIndex( int keyId );
+    PropertyIndex getPropertyIndex( int keyId );
     
     boolean isDeleted( Node node );
 
@@ -130,7 +141,6 @@ public interface TransactionState
         @Override
         public void setFirstIds( long nodeId, long firstRel, long firstProp )
         {
-//            throw new NotInTransactionException();
         }
 
         @Override
@@ -215,13 +225,11 @@ public interface TransactionState
         @Override
         public void addRelationshipType( NameData type )
         {
-//            throw new NotInTransactionException();
         }
 
         @Override
         public void addPropertyIndex( NameData index )
         {
-//            throw new NotInTransactionException();
         }
 
         @Override
@@ -251,19 +259,19 @@ public interface TransactionState
         }
 
         @Override
-        public void addIndex( PropertyIndex index )
+        public void addPropertyIndex( PropertyIndex index )
         {
             throw new NotInTransactionException();
         }
 
         @Override
-        public PropertyIndex getIndex( String key )
+        public PropertyIndex getPropertyIndex( String key )
         {
             return null;
         }
 
         @Override
-        public PropertyIndex getIndex( int keyId )
+        public PropertyIndex getPropertyIndex( int keyId )
         {
             return null;
         }

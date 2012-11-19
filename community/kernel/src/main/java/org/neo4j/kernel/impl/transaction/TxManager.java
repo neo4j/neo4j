@@ -133,10 +133,6 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
     @Override
     public void init()
     {
-        txThreadMap = new ThreadLocalWithSize<TransactionImpl>();
-        logSwitcherFileName = txLogDir + separator + "active_tx_log";
-        txLog1FileName = "tm_tx_log.1";
-        txLog2FileName = "tm_tx_log.2";
     }
 
     @Override
