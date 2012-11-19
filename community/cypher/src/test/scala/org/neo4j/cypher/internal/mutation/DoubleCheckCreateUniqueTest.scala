@@ -27,6 +27,7 @@ import org.neo4j.graphdb.Traverser.Order
 import org.neo4j.graphdb._
 import org.neo4j.cypher.internal.pipes.{ExecutionContext, QueryState}
 import collection.JavaConverters._
+import org.neo4j.cypher.internal.spi.gdsimpl.GDSBackedQueryContext
 
 /*
 This test tries to set up a situation where CREATE UNIQUE would fail, unless we guard with locks to prevent creating
@@ -49,7 +50,7 @@ class DoubleCheckCreateUniqueTest extends Assertions {
     val a = try {
       val a = db.createNode()
 
-      relateAction.exec(createExecutionContext(a), createQueryState(tx))
+      relateAction.exec(createExecutionContext(a, tx), createQueryState(tx))
 
       tx.success()
       a
@@ -63,12 +64,12 @@ class DoubleCheckCreateUniqueTest extends Assertions {
   val relateAction = CreateUniqueAction(UniqueLink("a", "b", "r", "X", Direction.OUTGOING))
 
 
-  private def createExecutionContext(a: Node): ExecutionContext = {
-    ExecutionContext.empty.newWith(Map("a" -> a))
+  private def createExecutionContext(a: Node, tx: Transaction): ExecutionContext = {
+    ExecutionContext(state = createQueryState(tx)).newWith(Map("a" -> a))
   }
 
   private def createQueryState(tx: Transaction): QueryState = {
-    new QueryState(db, Map.empty, Some(tx))
+    new QueryState(db, new GDSBackedQueryContext(db), Map.empty, Some(tx))
   }
 
   private def createRel(node:Node) {
@@ -107,7 +108,7 @@ class PausingNode(n: Node, afterGetRelationship: Node => Unit) extends Node {
 
   def getRelationships(types: RelationshipType*): Iterable[Relationship] = throw new RuntimeException
 
-  def getRelationships(direction: Direction, types: RelationshipType*): Iterable[Relationship] = throw new RuntimeException
+  def getRelationships(direction: Direction, types: RelationshipType*): Iterable[Relationship] = getRelationships
 
   def hasRelationship(types: RelationshipType*): Boolean = throw new RuntimeException
 

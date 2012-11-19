@@ -39,10 +39,10 @@ import org.neo4j.cypher.internal.pipes.matching.SingleStepTrail
 import org.neo4j.cypher.internal.commands.True
 
 class TrailToStepTest extends GraphDatabaseTestBase with Assertions with BuilderTest {
-  val A = withName("A")
-  val B = withName("B")
-  val C = withName("C")
-  val D = withName("D")
+  val A = "A"
+  val B = "B"
+  val C = "C"
+  val D = "D"
 
   /*
           (b2)
@@ -141,7 +141,7 @@ class TrailToStepTest extends GraphDatabaseTestBase with Assertions with Builder
   }
 
   private def step(id: Int,
-                   typ: Seq[RelationshipType],
+                   typ: Seq[String],
                    direction: Direction,
                    next: Option[ExpanderStep],
                    nodePredicate: Predicate = True(),
@@ -149,7 +149,7 @@ class TrailToStepTest extends GraphDatabaseTestBase with Assertions with Builder
     SingleStep(id, typ, direction, next, relPredicate = relPredicate, nodePredicate = nodePredicate)
 
   private def varlengthStep(id: Int,
-                            typ: Seq[RelationshipType],
+                            typ: Seq[String],
                             direction: Direction,
                             min: Int,
                             max: Option[Int],

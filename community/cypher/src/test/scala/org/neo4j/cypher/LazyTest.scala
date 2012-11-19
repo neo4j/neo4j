@@ -74,7 +74,7 @@ class LazyTest extends ExecutionEngineHelper with Assertions {
 
     val step = SingleStep(0, Seq(), Direction.OUTGOING, None, True(), True())
     val matcher = new MonoDirectionalTraversalMatcher(step, (ctx) => Seq(monitoredNode))
-    val ctx = ExecutionContext.empty.newWith("a" -> monitoredNode)
+    val ctx = ExecutionContext(state=QueryState(graph)).newWith("a" -> monitoredNode)
 
     //When:
     val iter = matcher.findMatchingPaths(QueryState(), ctx)
@@ -88,7 +88,7 @@ class LazyTest extends ExecutionEngineHelper with Assertions {
 
   @Test def execution_of_query_is_lazy() {
     //Given:
-    val limiter = new Limiter(2)
+    val limiter = new Limiter(3)
     val monitoredNode = new MonitoredNode(a, limiter.monitor)
 
     val engine = new ExecutionEngine(graph)
@@ -103,6 +103,20 @@ class LazyTest extends ExecutionEngineHelper with Assertions {
     iter.next()
   }
 
+  @Test def execution_of_query_is_eager() {
+    //Given:
+    var touched = false
+    val monitoredNode = new MonitoredNode(a, () => touched = true)
+
+    val engine = new ExecutionEngine(graph)
+
+    //When:
+    val iter: ExecutionResult = engine.execute("start n=node({foo}) match n-->x create n-[:FOO]->x", Map("foo" -> monitoredNode))
+
+    //Then:
+    assert(touched, "Query should have been executed")
+  }
+
 
   @Test def traversalmatcherpipe_is_lazy() {
     //Given:
@@ -110,13 +124,13 @@ class LazyTest extends ExecutionEngineHelper with Assertions {
     val traversalMatchPipe = createTraversalMatcherPipe(limiter)
 
     //When:
-    val result = traversalMatchPipe.createResults(QueryState())
+    val result = traversalMatchPipe.createResults(QueryState(graph))
 
     //Then:
     assert(limiter.count === 0)
 
     //Also then:
-    result.next()  // throws exception if we iterate over more than expected to fill buffers
+    result.next() // throws exception if we iterate over more than expected to fill buffers
   }
 
   @Test def filterpipe_is_lazy() {
@@ -136,7 +150,7 @@ class LazyTest extends ExecutionEngineHelper with Assertions {
   }
 
 
-  private def createTraversalMatcherPipe(limiter:Limiter) :TraversalMatchPipe = {
+  private def createTraversalMatcherPipe(limiter: Limiter): TraversalMatchPipe = {
     val monitoredNode = new MonitoredNode(a, limiter.monitor)
 
     val end = EndPoint("b")

@@ -21,10 +21,11 @@ package org.neo4j.cypher.internal.mutation
 
 import org.neo4j.cypher.internal.commands.expressions.{Literal, Identifier, Expression}
 import org.neo4j.cypher.internal.symbols.{SymbolTable, TypeSafe}
-import org.neo4j.graphdb.PropertyContainer
+import org.neo4j.graphdb.{Relationship, Node, PropertyContainer}
 import org.neo4j.cypher.internal.pipes.ExecutionContext
 import collection.Map
-import org.neo4j.cypher.internal.helpers.{IsMap, CollectionSupport}
+import org.neo4j.cypher.internal.helpers.{IsCollection, IsMap, CollectionSupport}
+import org.neo4j.cypher.internal.spi.QueryContext
 
 object NamedExpectation {
   def apply(name: String): NamedExpectation = NamedExpectation(name, Map.empty)
@@ -33,7 +34,7 @@ object NamedExpectation {
     new NamedExpectation(name, Identifier(name), properties)
 }
 
-case class NamedExpectation(name: String, e:Expression, properties: Map[String, Expression])
+case class NamedExpectation(name: String, e: Expression, properties: Map[String, Expression])
   extends GraphElementPropertyFunctions
   with CollectionSupport
   with TypeSafe {
@@ -49,25 +50,42 @@ case class NamedExpectation(name: String, e:Expression, properties: Map[String, 
     case _             =>
       e(ctx) match {
         case _: PropertyContainer => properties
-        case IsMap(m)             => m.map {
-          case (k, v) => k -> Literal(v)
-        }
+        case IsMap(f)             =>
+          val m = f(ctx.state.query)
+          m.map {
+            case (k, v) => k -> Literal(v)
+          }
       }
   }
 
 
-  def compareWithExpectations(pc: PropertyContainer, ctx: ExecutionContext): Boolean = getExpectations(ctx).forall {
-      case ("*", expression) => getMapFromExpression(expression(ctx)).forall {
-        case (k, value) => pc.hasProperty(k) && pc.getProperty(k) == value
-      }
-      case (k, exp)          =>
-        if (!pc.hasProperty(k)) false
-        else {
-          val expectationValue = exp(ctx)
-          val elementValue = pc.getProperty(k)
+  def compareWithExpectations(pc: PropertyContainer, ctx: ExecutionContext): Boolean = {
+    val expectations = getExpectations(ctx)
 
-          if (expectationValue == elementValue) true
-          else isCollection(expectationValue) && isCollection(elementValue) && makeTraversable(expectationValue).toList == makeTraversable(elementValue).toList
+    pc match {
+      case n: Node         => compareWithExpectation(n, ctx.state.query.nodeOps(), ctx, expectations)
+      case n: Relationship => compareWithExpectation(n, ctx.state.query.relationshipOps(), ctx, expectations)
+    }
+  }
+
+  private def compareWithExpectation[T <: PropertyContainer](x: T,
+                                                             ops: QueryContext.Operations[T],
+                                                             ctx: ExecutionContext,
+                                                             expectations: Map[String, Expression]): Boolean =
+    expectations.forall {
+      case ("*", expression) => getMapFromExpression(expression(ctx)).forall {
+        case (k, value) => ops.hasProperty(x, k) && ops.getProperty(x, k) == value
+      }
+
+      case (k, _) if !ops.hasProperty(x, k) => false
+
+      case (k, exp) =>
+        val expectationValue = exp(ctx)
+        val elementValue = ops.getProperty(x, k)
+
+        (expectationValue, elementValue) match {
+          case (IsCollection(l), IsCollection(r)) => l == r
+          case (l, r)                             => l == r
         }
     }
 

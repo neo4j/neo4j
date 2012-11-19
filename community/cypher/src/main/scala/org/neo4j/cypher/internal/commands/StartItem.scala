@@ -76,13 +76,13 @@ case class CreateNodeStartItem(key: String, props: Map[String, Expression])
         val m: Map[String, Expression] = x.asInstanceOf[Map[String, Any]].map {
           case (k, v) => (k -> Literal(v))
         }
-        val node = db.createNode()
+        val node = state.query.createNode()
         state.createdNodes.increase()
         setProperties(node, m, context, state)
         context.newWith(key -> node)
       })
     } else {
-      val node = db.createNode()
+      val node = state.query.createNode()
       state.createdNodes.increase()
       setProperties(node, props, context, state)
 
@@ -111,7 +111,6 @@ case class CreateRelationshipStartItem(key: String,
   with Mutator
   with UpdateAction
   with GraphElementPropertyFunctions {
-  private lazy val relationshipType = DynamicRelationshipType.withName(typ)
 
   def filter(f: (Expression) => Boolean): Seq[Expression] = from._1.filter(f) ++ props.values.flatMap(_.filter(f))
 
@@ -120,7 +119,7 @@ case class CreateRelationshipStartItem(key: String,
   def exec(context: ExecutionContext, state: QueryState) = {
     val f = from._1(context).asInstanceOf[Node]
     val t = to._1(context).asInstanceOf[Node]
-    val relationship = f.createRelationshipTo(t, relationshipType)
+    val relationship = state.query.createRelationship(f, t, typ)
     state.createdRelationships.increase()
     setProperties(relationship, props, context, state)
     context.put(key, relationship)

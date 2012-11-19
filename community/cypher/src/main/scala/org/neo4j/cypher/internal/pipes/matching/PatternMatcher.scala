@@ -136,7 +136,7 @@ class PatternMatcher(bindings: Map[String, MatchingPair], predicates: Seq[Predic
 
     val (pNode, gNode) = currentNode.getPatternAndGraphPoint
 
-    val relationships = currentNode.getGraphRelationships(currentRel)
+    val relationships = currentNode.getGraphRelationships(currentRel, source.state.query)
     val step1 = history.filter(relationships)
     val notVisitedRelationships: Seq[GraphRelationship] = step1.
       filter(x => alreadyPinned(currentRel, x))
