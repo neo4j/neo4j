@@ -245,15 +245,6 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
 
     val result = parseAndExecute("start n=node(1) match n-->a-->b RETURN b").toList
 
-//    val query = Query.
-//      start(NodeById("start", n1.getId)).
-//      matches(
-//      RelatedTo("start", "a", "rel", "KNOWS", Direction.OUTGOING),
-//      RelatedTo("a", "b", "rel2", "FRIEND", Direction.OUTGOING)).
-//      returns(ReturnItem(Identifier("b"), "b"))
-//
-//    val result = execute(query)
-
     assertEquals(List(Map("b" -> n3)), result.toList)
   }
 
@@ -2292,5 +2283,13 @@ RETURN x0.name?
     val result = parseAndExecute("start n=node(1) return sum(ID(n)), n as m")
 
     assert(result.toList === List(Map("sum(ID(n))"->1, "m"->a)))
+  }
+
+  @Test
+  def can_handle_paths_with_multiple_unnamed_nodes() {
+    val a = createNode()
+    val result = parseAndExecute("START a=node(0) MATCH a<--()<--b-->()-->c RETURN c")
+
+    assert(result.toList === List())
   }
 }
