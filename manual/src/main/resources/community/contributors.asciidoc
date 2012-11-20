@@ -59,7 +59,7 @@ As an Open Source Project, the Neo4j User community extends its warmest thanks t
 |Craig Taverner |https://github.com/craigtaverner[craigtaverner]
 |David Winslow |https://github.com/dwins[dwins]
 |Patrick Fitzgerald |https://github.com/paddydub[paddydub]
-|Stefan Berder |https://github.com/stefan-berder[stefan-berder]
+|Stefan Berder |https://github.com/hrbonz[hrbonz]
 |Michael Kanner |https://github.com/SepiaGroup[SepiaGroup]
 |Lin Zhemin |https://github.com/miaoski[miaoski]
 |Christophe Willemsen |https://github.com/kwattro[kwattro]
