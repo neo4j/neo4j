@@ -19,7 +19,12 @@
  */
 package org.neo4j.server.rest;
 
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.*;
+import static org.junit.Assert.assertThat;
+import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.server.rest.domain.JsonHelper.createJsonFrom;
+import static org.neo4j.server.rest.domain.JsonHelper.readJson;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -32,7 +37,6 @@ import javax.ws.rs.core.Response.Status;
 
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.web.PropertyValueException;
@@ -143,23 +147,24 @@ public class TraverserFunctionalTest extends AbstractRestFunctionalTestBase
     {
         Node start = getNode( "Root" );
         List<Map<String, Object>> rels = new ArrayList<Map<String, Object>>();
-        rels.add( MapUtil.map( "type", "knows", "direction", "all" ) );
-        rels.add( MapUtil.map( "type", "loves", "direction", "all" ) );
-        String description = JsonHelper.createJsonFrom( MapUtil.map(
+        rels.add( map( "type", "knows", "direction", "all" ) );
+        rels.add( map( "type", "loves", "direction", "all" ) );
+        String description = createJsonFrom( map(
                 "order",
                 "breadth_first",
                 "uniqueness",
                 "node_global",
                 "prune_evaluator",
-                MapUtil.map( "language", "javascript", "body", "position.length() > 10" ),
+                map( "language", "javascript", "body", "position.length() > 10" ),
                 "return_filter",
-                MapUtil.map( "language", "javascript", "body",
+                map( "language", "javascript", "body",
                         "position.endNode().getProperty('name').toLowerCase().contains('t')" ),
                 "relationships", rels, "max_depth", 3 ) );
         String entity = gen().expectedStatus( 200 ).payload( description ).post(
                 getTraverseUriNodes( start ) ).entity();
         expectNodes( entity, getNodes( "Root", "Mattias", "Peter", "Tobias" ) );
     }
+
     /**
      * Traversal returning nodes below a certain depth.
      * 
@@ -172,11 +177,11 @@ public class TraverserFunctionalTest extends AbstractRestFunctionalTestBase
             throws PropertyValueException
     {
         Node start = getNode( "Root" );
-        String description = JsonHelper.createJsonFrom( MapUtil.map(
+        String description = createJsonFrom( map(
                 "prune_evaluator",
-                MapUtil.map( "language", "builtin", "name", "none" ),
+                map( "language", "builtin", "name", "none" ),
                 "return_filter",
-                MapUtil.map( "language", "javascript", "body",
+                map( "language", "javascript", "body",
                         "position.length()<3;" ) ) );
         String entity = gen().expectedStatus( 200 ).payload( description ).post(
                 getTraverseUriNodes( start ) ).entity();
@@ -190,5 +195,40 @@ public class TraverserFunctionalTest extends AbstractRestFunctionalTestBase
         gen().expectedStatus( Status.BAD_REQUEST.getStatusCode() ).payload(
                 "::not JSON{[ at all" ).post(
                 getTraverseUriNodes( getNode( "I" ) ) ).entity();
+    }
+
+    @Test
+    @Graph( {"Root knows Mattias",
+             "Root knows Johan",  "Johan knows Emil", "Emil knows Peter",
+             "Root eats Cork",    "Cork hates Root",
+             "Root likes Banana", "Banana is_a Fruit"} )
+    public void shouldAllowTypeOrderedTraversals()
+            throws PropertyValueException
+    {
+        Node start = getNode( "Root" );
+        String description = createJsonFrom( map(
+                "type_order", new String[]{"eats", "knows", "likes"},
+                "prune_evaluator",
+                    map( "language", "builtin",
+                         "name", "none" ),
+                "return_filter",
+                    map( "language", "javascript",
+                         "body", "position.length()<2;" )
+        ) );
+        List<Map<String,Object>> nodes = (List<Map<String, Object>>) readJson( gen().expectedStatus( 200 ).payload(
+                description ).post(
+                getTraverseUriNodes( start ) ).entity() );
+
+        assertThat( nodes.size(), is( 5 ) );
+        assertThat( getName( nodes.get( 0 ) ), is( "Root" ) );
+        assertThat( getName( nodes.get( 1 ) ), is( "Cork" ) );
+        assertThat( getName( nodes.get( 2 ) ), is( "Mattias" ) );
+        assertThat( getName( nodes.get( 3 ) ), is( "Johan" ) );
+        assertThat( getName( nodes.get( 4 ) ), is( "Banana" ) );
+    }
+
+    private String getName( Map<String, Object> propContainer )
+    {
+        return (String) ((Map<String,Object>)propContainer.get( "data" )).get( "name" );
     }
 }
