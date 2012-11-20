@@ -36,7 +36,6 @@ trait Pattern extends TypeSafe {
   protected def rightArrow(dir: Direction) = if (dir == Direction.OUTGOING) "->" else "-"
 
   def rewrite( f : Expression => Expression) : Pattern
-  def equalOrUnnamed(name1: String, name2: String) = name1 == name2 || (notNamed(name1) && notNamed(name2))
   protected def filtered(x:Seq[String]): Seq[String] =x.filter(isNamed)
 
   def nodes:Seq[String]
@@ -68,18 +67,6 @@ case class RelatedTo(left: String,
 
   def rewrite(f: (Expression) => Expression) =
     new RelatedTo(left, right, relName, relTypes, direction, optional, predicate.rewrite(f))
-  override def equals(p1: Any): Boolean = p1 match {
-    case null => false
-    case other: RelatedTo =>
-      equalOrUnnamed(other.left, left) &&
-        equalOrUnnamed(other.right, right) &&
-        equalOrUnnamed(other.relName, relName) &&
-        other.relTypes  == relTypes &&
-        other.direction == direction &&
-        other.optional == optional &&
-        other.predicate == predicate
-    case _ => false
-  }
 
   def nodes = Seq(left,right)
 
@@ -143,22 +130,6 @@ case class VarLengthRelatedTo(pathName: String,
 
   def rewrite(f: (Expression) => Expression) = new VarLengthRelatedTo(pathName,start,end, minHops,maxHops,relTypes,direction,relIterator,optional,predicate.rewrite(f))
   lazy val possibleStartPoints: Seq[(String, AnyType)] = Seq(start -> NodeType(), end -> NodeType(), pathName -> PathType())
-
-  override def equals(p1: Any): Boolean = p1 match {
-    case null => false
-    case other: VarLengthRelatedTo =>
-      equalOrUnnamed(other.pathName, pathName) &&
-        equalOrUnnamed(other.start, start) &&
-        equalOrUnnamed(other.end, end) &&
-        other.minHops == minHops &&
-        other.maxHops == maxHops &&
-        other.relTypes == relTypes &&
-        other.direction == direction &&
-        other.relIterator == relIterator &&
-        other.optional == optional &&
-        other.predicate == predicate
-    case _ => false
-  }
 
   def nodes = Seq(start,end)
 
