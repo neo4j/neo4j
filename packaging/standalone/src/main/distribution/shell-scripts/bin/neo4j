@@ -177,6 +177,8 @@ startit() {
   checkstatus
   checklimits
 
+  checkjvmcompatibility
+
   detectrunning
   if [ $newpid ] ; then
 	     echo "Another server-process is running with [$newpid], cannot start a new one. Exiting."

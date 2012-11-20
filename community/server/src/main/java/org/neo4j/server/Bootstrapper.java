@@ -23,10 +23,13 @@ import java.io.File;
 
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.Service;
+import org.neo4j.kernel.info.JvmChecker;
+import org.neo4j.kernel.info.JvmMetadataRepository;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.PropertyFileConfigurator;
 import org.neo4j.server.configuration.validation.DatabaseLocationMustBeSpecifiedRule;
 import org.neo4j.server.configuration.validation.Validator;
+import org.neo4j.server.logging.JulAdapter;
 import org.neo4j.server.logging.Logger;
 
 public abstract class Bootstrapper
@@ -74,7 +77,10 @@ public abstract class Bootstrapper
     {
         try
         {
+            checkCompatibility();
+
         	configurator = createConfigurator();
+
             server = createNeoServer();
             server.start();
 
@@ -85,7 +91,7 @@ public abstract class Bootstrapper
         catch ( TransactionFailureException tfe )
         {
             log.error(tfe);
-            log.error( String.format( "Failed to start Neo Server on port [%d], because ", 
+            log.error( String.format( "Failed to start Neo Server on port [%d], because ",
             		configurator.configuration().getInt(Configurator.WEBSERVER_PORT_PROPERTY_KEY, Configurator.DEFAULT_WEBSERVER_PORT) )
                        + tfe + ". Another process may be using database location " + server.getDatabase()
                                .getLocation() );
@@ -94,10 +100,15 @@ public abstract class Bootstrapper
         catch ( Exception e )
         {
             log.error(e);
-            log.error( "Failed to start Neo Server on port [%s]", 
+            log.error( "Failed to start Neo Server on port [%s]",
             		configurator.configuration().getInt(Configurator.WEBSERVER_PORT_PROPERTY_KEY, Configurator.DEFAULT_WEBSERVER_PORT) );
             return WEB_SERVER_STARTUP_ERROR_CODE;
         }
+    }
+
+    private void checkCompatibility()
+    {
+        new JvmChecker( new JulAdapter( log ), new JvmMetadataRepository() ).checkJvmCompatibilityAndIssueWarning();
     }
 
     protected abstract NeoServer createNeoServer();
@@ -116,7 +127,7 @@ public abstract class Bootstrapper
             {
                 server.stop();
             }
-            log.info( "Successfully shutdown Neo Server on port [%d], database [%s]", 
+            log.info( "Successfully shutdown Neo Server on port [%d], database [%s]",
             		configurator.configuration().getInt(Configurator.WEBSERVER_PORT_PROPERTY_KEY, Configurator.DEFAULT_WEBSERVER_PORT),
                     location );
             return 0;
