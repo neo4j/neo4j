@@ -17,20 +17,12 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.consistency.report;
+package org.neo4j.kernel.ha.cluster;
 
-import org.neo4j.consistency.RecordType;
-import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
+import org.neo4j.cluster.Binding;
+import org.neo4j.cluster.protocol.cluster.Cluster;
+import org.neo4j.cluster.protocol.heartbeat.Heartbeat;
 
-public interface ConsistencyLogger
+public interface HighAvailabilityMonitor extends HighAvailability, Cluster, Heartbeat, Binding
 {
-    void error( RecordType recordType, AbstractBaseRecord record, String message, Object[] args );
-
-    void error( RecordType recordType, AbstractBaseRecord oldRecord, AbstractBaseRecord newRecord, String message,
-                Object[] args );
-
-    void warning( RecordType recordType, AbstractBaseRecord record, String message, Object[] args );
-
-    void warning( RecordType recordType, AbstractBaseRecord oldRecord, AbstractBaseRecord newRecord, String message,
-                  Object[] args );
 }

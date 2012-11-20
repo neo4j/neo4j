@@ -45,7 +45,7 @@
     <appender-ref ref="CONSOLE"/>
   </root>
 
-  <logger name="neo4j" level="debug">
+  <logger name="org.neo4j" level="info">
     <appender-ref ref="CONSOLE"/>
   </logger>
 

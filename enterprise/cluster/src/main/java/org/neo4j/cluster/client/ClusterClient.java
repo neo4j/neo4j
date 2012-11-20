@@ -32,6 +32,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.cluster.BindingListener;
+import org.neo4j.cluster.ClusterMonitor;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.ConnectedStateMachines;
 import org.neo4j.cluster.MultiPaxosServerFactory;
@@ -69,7 +70,7 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.Logging;
 
-public class ClusterClient extends LifecycleAdapter implements Cluster, AtomicBroadcast, Heartbeat, Snapshot
+public class ClusterClient extends LifecycleAdapter implements ClusterMonitor, Cluster, AtomicBroadcast, Snapshot
 {
     public interface Configuration
     {
@@ -265,8 +266,8 @@ public class ClusterClient extends LifecycleAdapter implements Cluster, AtomicBr
             }
         }, StringLogger.SYSTEM );
 
-        server = life.add( protocolServerFactory.newProtocolServer( timeoutStrategy, networkNodeTCP, networkNodeTCP,
-                acceptorInstanceStore, electionCredentialsProvider ) );
+        server = protocolServerFactory.newProtocolServer( timeoutStrategy, networkNodeTCP, networkNodeTCP,
+                acceptorInstanceStore, electionCredentialsProvider );
 
         networkNodeTCP.addNetworkChannelsListener( new NetworkInstance.NetworkChannelsListener()
         {
@@ -476,6 +477,12 @@ public class ClusterClient extends LifecycleAdapter implements Cluster, AtomicBr
     public void addBindingListener( BindingListener bindingListener )
     {
         server.addBindingListener( bindingListener );
+    }
+    
+    @Override
+    public void removeBindingListener( BindingListener listener )
+    {
+        server.removeBindingListener( listener );
     }
 
     public void dumpDiagnostics( StringBuilder appendTo )

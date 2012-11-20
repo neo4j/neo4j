@@ -25,9 +25,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.consistency.checking.CheckDecorator;
-import org.neo4j.consistency.report.ConsistencyLogger;
 import org.neo4j.consistency.report.ConsistencyReporter;
-import org.neo4j.consistency.report.ConsistencySummaryStatistics;
+import org.neo4j.consistency.report.InconsistencyReport;
 import org.neo4j.consistency.store.DiffRecordAccess;
 import org.neo4j.consistency.store.RecordReference;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
@@ -196,21 +195,19 @@ enum MultiPassStore
     static class Factory
     {
         private final CheckDecorator decorator;
-        private final ConsistencyLogger logger;
         private final DiffRecordAccess recordAccess;
-        private final ConsistencySummaryStatistics summary;
         private final long totalMappedMemory;
         private final StoreAccess storeAccess;
+        private final InconsistencyReport report;
 
-        Factory( CheckDecorator decorator, ConsistencyLogger logger, long totalMappedMemory,
-                 StoreAccess storeAccess, DiffRecordAccess recordAccess, ConsistencySummaryStatistics summary )
+        Factory( CheckDecorator decorator, long totalMappedMemory,
+                 StoreAccess storeAccess, DiffRecordAccess recordAccess, InconsistencyReport report )
         {
             this.decorator = decorator;
-            this.logger = logger;
             this.totalMappedMemory = totalMappedMemory;
             this.storeAccess = storeAccess;
             this.recordAccess = recordAccess;
-            this.summary = summary;
+            this.report = report;
         }
 
         StoreProcessor[] createAll( MultiPassStore... stores )
@@ -221,7 +218,7 @@ enum MultiPassStore
                 List<DiffRecordAccess> filters = store.multiPassFilters( totalMappedMemory, storeAccess, recordAccess );
                 for ( DiffRecordAccess filter : filters )
                 {
-                    result.add( new StoreProcessor( decorator, new ConsistencyReporter( logger, filter, summary ) ) );
+                    result.add( new StoreProcessor( decorator, new ConsistencyReporter( filter, report ) ) );
                 }
             }
             return result.toArray( new StoreProcessor[result.size()] );

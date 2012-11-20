@@ -44,7 +44,7 @@ With that in place, we're ready to code our tests.
 
 [TIP]
 For the full source code of this example see:
-https://github.com/neo4j/community/blob/{neo4j-git-tag}/embedded-examples/src/test/java/org/neo4j/examples/Neo4jBasicTest.java[Neo4jBasicTest.java]
+https://github.com/neo4j/neo4j/blob/{neo4j-git-tag}/community/embedded-examples/src/test/java/org/neo4j/examples/Neo4jBasicTest.java[Neo4jBasicTest.java]
 
 
 Before each test, create a fresh database:

@@ -4,7 +4,7 @@ Execute Cypher Queries from Java
 
 [TIP]
 The full source code of the example:
-https://github.com/neo4j/community/blob/{neo4j-git-tag}/cypher/src/test/java/org/neo4j/cypher/javacompat/JavaQuery.java[JavaQuery.java]
+https://github.com/neo4j/neo4j/blob/{neo4j-git-tag}/community/cypher/src/test/java/org/neo4j/cypher/javacompat/JavaQuery.java[JavaQuery.java]
 
 In Java, you can use the <<cypher-query-lang,Cypher query language>> like this:
 

@@ -20,9 +20,14 @@
 package org.neo4j.consistency;
 
 import java.io.File;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Map;
 
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.full.FullCheck;
+import org.neo4j.consistency.report.ConsistencySummaryStatistics;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
@@ -35,26 +40,67 @@ import org.neo4j.kernel.impl.util.StringLogger;
 
 public class ConsistencyCheckService
 {
+    private final Date timestamp = new Date();
+
     public void runFullConsistencyCheck( String storeDir,
                                          Config tuningConfiguration,
                                          ProgressMonitorFactory progressFactory,
                                          StringLogger logger ) throws ConsistencyCheckIncompleteException
     {
+        Map<String, String> params = tuningConfiguration.getParams();
+        params.put( GraphDatabaseSettings.store_dir.name(), storeDir );
+        tuningConfiguration.applyChanges( params );
+
         StoreFactory factory = new StoreFactory(
                 tuningConfiguration,
                 new DefaultIdGeneratorFactory(),
                 tuningConfiguration.get( ConsistencyCheckSettings.consistency_check_window_pool_implementation )
                         .windowPoolFactory( tuningConfiguration, logger ), new DefaultFileSystemAbstraction(), logger,
                 new DefaultTxHook() );
+
+        ConsistencySummaryStatistics summary;
+        File reportFile = chooseReportPath( tuningConfiguration );
+        StringLogger report = StringLogger.lazyLogger( reportFile );
+
         NeoStore neoStore = factory.newNeoStore( new File( storeDir, NeoStore.DEFAULT_NAME ) );
         try
         {
             StoreAccess store = new StoreAccess( neoStore );
-            new FullCheck( tuningConfiguration, progressFactory ).execute( store, logger );
+            summary = new FullCheck( tuningConfiguration, progressFactory )
+                    .execute( store, StringLogger.tee( logger, report ) );
         }
         finally
         {
             neoStore.close();
         }
+
+        if ( !summary.isConsistent() )
+        {
+            logger.logMessage( String.format( "See '%s' for a detailed consistency report.", reportFile.getPath() ) );
+        }
+    }
+
+    private File chooseReportPath( Config tuningConfiguration )
+    {
+        File reportPath = tuningConfiguration.get( ConsistencyCheckSettings.consistency_check_report_file );
+        File reportFile;
+        if ( reportPath == null )
+        {
+            reportFile = new File( tuningConfiguration.get( GraphDatabaseSettings.store_dir ), defaultLogFileName() );
+        } else
+        {
+            if ( reportPath.isDirectory() )
+            {
+                reportFile = new File( reportPath, defaultLogFileName() );
+            } else
+                reportFile = reportPath;
+        }
+        return reportFile;
+    }
+
+    String defaultLogFileName()
+    {
+        return String.format( "inconsistencies-%s.report",
+                new SimpleDateFormat( "yyyy-MM-dd.HH.mm.ss" ).format( timestamp ) );
     }
 }

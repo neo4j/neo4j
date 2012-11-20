@@ -203,12 +203,11 @@ Still if you've gotten this far, then switching +.post()+ for +.delete()+ in the
 
 The HTTP API provides a good basis for implementers of client libraries, it's also great for HTTP and REST folks.
 In the future though we expect that idiomatic language bindings will appear to take advantage of the REST API while providing comfortable language-level constructs for developers to use, much as there are similar bindings for the embedded database.
-For a list of current Neo4j REST clients and embedded wrappers, see http://www.delicious.com/neo4j/drivers.
 
 == Appendix: the code ==
 
- * https://github.com/neo4j/community/blob/{neo4j-git-tag}/server-examples/src/main/java/org/neo4j/examples/server/CreateSimpleGraph.java[CreateSimpleGraph.java]
- * https://github.com/neo4j/community/blob/{neo4j-git-tag}/server-examples/src/main/java/org/neo4j/examples/server/Relationship.java[Relationship.java]
- * https://github.com/neo4j/community/blob/{neo4j-git-tag}/server-examples/src/main/java/org/neo4j/examples/server/TraversalDescription.java[TraversalDescription.java]
+ * https://github.com/neo4j/neo4j/blob/{neo4j-git-tag}/community/server-examples/src/main/java/org/neo4j/examples/server/CreateSimpleGraph.java[CreateSimpleGraph.java]
+ * https://github.com/neo4j/neo4j/blob/{neo4j-git-tag}/community/server-examples/src/main/java/org/neo4j/examples/server/Relationship.java[Relationship.java]
+ * https://github.com/neo4j/neo4j/blob/{neo4j-git-tag}/community/server-examples/src/main/java/org/neo4j/examples/server/TraversalDescription.java[TraversalDescription.java]
 
 

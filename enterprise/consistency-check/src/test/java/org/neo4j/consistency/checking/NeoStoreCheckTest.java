@@ -19,12 +19,12 @@
  */
 package org.neo4j.consistency.checking;
 
+import static org.mockito.Mockito.verify;
+
 import org.junit.Test;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
-
-import static org.mockito.Mockito.verify;
 
 public class NeoStoreCheckTest
         extends RecordCheckTestBase<NeoStoreRecord, ConsistencyReport.NeoStoreConsistencyReport, NeoStoreCheck>

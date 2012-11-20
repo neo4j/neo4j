@@ -50,4 +50,7 @@ class InternalException(message:String, inner:Exception=null) extends CypherExce
 
 class MissingIndexException(indexName:String) extends CypherException("Index `" + indexName + "` does not exist")
 
+class InvalidAggregateException(message:String) extends CypherException(message)
+
 class NodeStillHasRelationshipsException(val nodeId:Long, cause:Throwable) extends CypherException("Node with id " + nodeId + " still has relationships, and can not be deleted.")
+

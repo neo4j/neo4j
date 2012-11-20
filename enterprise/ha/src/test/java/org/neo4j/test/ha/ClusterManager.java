@@ -46,7 +46,6 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
 import org.neo4j.helpers.Predicate;
-import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
@@ -307,7 +306,8 @@ public class ClusterManager
 
             config( graphDatabaseBuilder, name, serverId );
 
-            logger.info( "Starting cluster node " + serverId + " in cluster " + name );
+            // logger.info( "Starting cluster node " + serverId + " in cluster "
+            // + name );
             final GraphDatabaseService graphDatabase = graphDatabaseBuilder.
                     newGraphDatabase();
 
@@ -322,7 +322,8 @@ public class ClusterManager
                 }
             } );
 
-            logger.info( "Started cluster node " + serverId + " in cluster " + name );
+            // logger.info( "Started cluster node " + serverId + " in cluster "
+            // + name );
         }
 
         /**

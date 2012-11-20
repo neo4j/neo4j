@@ -22,7 +22,6 @@ package org.neo4j.kernel.ha.cluster;
 
 import java.net.URI;
 
-import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.com.ServerUtil;
 import org.neo4j.helpers.Listeners;
 import org.neo4j.kernel.ha.InstanceAccessGuard;
@@ -35,7 +34,7 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
  * that wants to know what is going on should register ClusterMemberListener implementations
  * which will receive callbacks on state changes.
  */
-public class HighAvailabilityMemberStateMachine extends LifecycleAdapter
+public class HighAvailabilityMemberStateMachine extends LifecycleAdapter implements HighAvailability
 {
     private final HighAvailabilityMemberContext context;
     private final InstanceAccessGuard accessGuard;
@@ -51,7 +50,7 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter
         this.accessGuard = accessGuard;
         this.events = events;
         this.logger = logger;
-        events.addClusterEventListener( new StateMachineClusterEventListener() );
+        events.addHighAvailabilityEventListener( new StateMachineClusterEventListener() );
         state = HighAvailabilityMemberState.PENDING;
     }
 
@@ -73,11 +72,16 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter
         accessGuard.setState( state );
     }
 
-    public void addClusterMemberListener( HighAvailabilityMemberListener toAdd )
+    public void addHighAvailabilityMemberListener( HighAvailabilityMemberListener toAdd )
     {
         memberListeners = Listeners.addListener( toAdd, memberListeners );
     }
 
+    public void removeHighAvailabilityMemberListener( HighAvailabilityMemberListener toRemove )
+    {
+        memberListeners = Listeners.removeListener( toRemove, memberListeners );
+    }
+    
     public HighAvailabilityMemberState getCurrentState()
     {
         return state;
@@ -95,7 +99,7 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter
                 String msg = "";
                 if ( oldState.equals( HighAvailabilityMemberState.MASTER ) && masterUri.equals( context.getMyId() ) )
                 {
-                    events.memberIsAvailable( ClusterConfiguration.COORDINATOR );
+                    events.memberIsAvailable( HighAvailabilityEvents.MASTER );
                     msg = "(Sent masterIsAvailable) ";
                 }
                 else //if ( !masterUri.equals( context.getMyId() ) )
@@ -131,7 +135,7 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter
         {
             try
             {
-                if ( role.equals( ClusterConfiguration.COORDINATOR ) )
+                if ( role.equals( HighAvailabilityEvents.MASTER ) )
                 {
                     URI masterHaUri = ServerUtil.getUriForScheme( "ha", instanceUris );
                     if ( !masterHaUri.equals( context.getAvailableHaMaster() ) )
@@ -156,7 +160,7 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter
                         accessGuard.setState( state );
                     }
                 }
-                else if ( role.equals( ClusterConfiguration.SLAVE ) )
+                else if ( role.equals( HighAvailabilityEvents.SLAVE ) )
                 {
                     URI slaveHaUri = ServerUtil.getUriForScheme( "ha", instanceUris );
                     HighAvailabilityMemberState oldState = state;

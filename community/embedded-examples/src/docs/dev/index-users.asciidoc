@@ -11,7 +11,7 @@ That is, the reference node is connected to a users-reference node to which all 
 
 [TIP]
 The source code used in this example is found here:
-https://github.com/neo4j/community/blob/{neo4j-git-tag}/embedded-examples/src/main/java/org/neo4j/examples/EmbeddedNeo4jWithIndexing.java[EmbeddedNeo4jWithIndexing.java]
+https://github.com/neo4j/neo4j/blob/{neo4j-git-tag}/community/embedded-examples/src/main/java/org/neo4j/examples/EmbeddedNeo4jWithIndexing.java[EmbeddedNeo4jWithIndexing.java]
 
 To begin with, we define the relationship types we want to use:
 

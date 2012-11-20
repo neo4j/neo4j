@@ -202,7 +202,7 @@ public class ConsistencyCheckTool
             System.err.println( getMessage() );
             if ( getCause() != null )
             {
-                getCause().printStackTrace( System.out );
+                getCause().printStackTrace( System.err );
             }
             System.exit( 1 );
         }

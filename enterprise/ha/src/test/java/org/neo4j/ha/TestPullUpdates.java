@@ -29,7 +29,6 @@ import java.util.concurrent.CountDownLatch;
 import org.junit.After;
 import org.junit.Test;
 import org.neo4j.cluster.ClusterSettings;
-import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
 import org.neo4j.kernel.ha.HaSettings;
@@ -127,17 +126,17 @@ public class TestPullUpdates
         masterElectedLatch = new CountDownLatch( 1 );
         final HighAvailabilityEvents events = dbs[master].getDependencyResolver().resolveDependency(
                 HighAvailabilityEvents.class );
-        events.addClusterEventListener(
+        events.addHighAvailabilityEventListener(
                 new HighAvailabilityListener.Adapter()
 
                 {
                     @Override
                     public void memberIsAvailable( String role, URI instanceClusterUri, Iterable<URI> instanceUris )
                     {
-                        if ( role.equals( ClusterConfiguration.COORDINATOR ) )
+                        if ( role.equals( HighAvailabilityEvents.MASTER ) )
                         {
                             masterElectedLatch.countDown();
-                            events.removeClusterEventListener( this );
+                            events.removeHighAvailabilityEventListener( this );
                         }
                     }
                 } );

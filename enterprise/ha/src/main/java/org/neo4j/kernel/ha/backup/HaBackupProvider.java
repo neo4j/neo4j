@@ -31,7 +31,6 @@ import org.neo4j.backup.BackupExtensionService;
 import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.client.ClusterClient;
-import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.configuration.Config;
@@ -99,7 +98,7 @@ public final class HaBackupProvider extends BackupExtensionService
         final Semaphore infoReceivedLatch = new Semaphore( 0 );
         final ClusterInfoHolder addresses = new ClusterInfoHolder();
 
-        events.addClusterEventListener( new HighAvailabilityListener()
+        events.addHighAvailabilityEventListener( new HighAvailabilityListener()
         {
             @Override
             public void masterIsElected( URI masterUri )
@@ -109,7 +108,7 @@ public final class HaBackupProvider extends BackupExtensionService
             @Override
             public void memberIsAvailable( String role, URI masterClusterUri, Iterable<URI> masterURIs )
             {
-                if ( ClusterConfiguration.COORDINATOR.equals( role ) )
+                if ( HighAvailabilityEvents.MASTER.equals( role ) )
                 {
                     addresses.held = masterURIs;
                     infoReceivedLatch.release();

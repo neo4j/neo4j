@@ -42,6 +42,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
+import org.neo4j.kernel.ha.cluster.HighAvailabilityEvents;
 import org.neo4j.kernel.ha.cluster.paxos.MemberIsAvailable;
 import org.neo4j.test.ProcessStreamHandler;
 import org.neo4j.test.TargetDirectory;
@@ -57,12 +58,13 @@ public class HardKillIT
     public void testMasterSwitchHappensOnKillMinus9() throws Exception
     {
         Process proc = null;
+        HighlyAvailableGraphDatabase dbWithId2 = null, dbWithId3 = null, oldMaster = null;
         try
         {
             proc = run( "1" );
             Thread.sleep( 12000 );
-            HighlyAvailableGraphDatabase dbWithId2 = startDb( 2 );
-            HighlyAvailableGraphDatabase dbWithId3 = startDb( 3 );
+            dbWithId2 = startDb( 2 );
+            dbWithId3 = startDb( 3 );
 
             assertTrue( !dbWithId2.isMaster() );
             assertTrue( !dbWithId3.isMaster() );
@@ -79,7 +81,7 @@ public class HardKillIT
                         Object event = new AtomicBroadcastSerializer().receive( value );
                         if ( event instanceof MemberIsAvailable )
                         {
-                            if ( ClusterConfiguration.COORDINATOR.equals( ((MemberIsAvailable) event).getRole() ) )
+                            if ( HighAvailabilityEvents.MASTER.equals( ((MemberIsAvailable) event).getRole() ) )
                             {
                                 newMasterAvailableLatch.countDown();
                             }
@@ -98,8 +100,8 @@ public class HardKillIT
 
             assertTrue( dbWithId2.isMaster() );
             assertTrue( !dbWithId3.isMaster() );
-
-            HighlyAvailableGraphDatabase oldMaster = startDb( 1 );
+            
+            oldMaster = startDb( 1 );
             long oldMasterNode = createNamedNode( oldMaster, "Old master" );
             assertEquals( oldMasterNode, getNamedNode( dbWithId2, "Old master" ) );
         }
@@ -109,6 +111,12 @@ public class HardKillIT
             {
                 proc.destroy();
             }
+            if ( oldMaster != null )
+            {
+                oldMaster.shutdown();
+            }
+            dbWithId2.shutdown();
+            dbWithId3.shutdown();
         }
     }
 

@@ -116,35 +116,35 @@ the relevant Commercial Agreement.
               <outputDirectory>${project.build.directory}/javadoc-sources</outputDirectory>
               <resources>
                 <resource>
-                  <directory>../cypher/src/main/java/</directory>
+                  <directory>${project.build.directory}/../../cypher/src/main/java/</directory>
                   <filtering>false</filtering>
                 </resource>
                 <resource>
-                  <directory>../cypher/src/main/scala/</directory>
+                  <directory>${project.build.directory}/../../cypher/src/main/scala/</directory>
                   <filtering>false</filtering>
                 </resource>
                 <resource>
-                  <directory>../graph-algo/src/main/java/</directory>
+                  <directory>${project.build.directory}/../../graph-algo/src/main/java/</directory>
                   <filtering>false</filtering>
                 </resource>
                 <resource>
-                  <directory>../graph-matching/src/main/java/</directory>
+                  <directory>${project.build.directory}/../../graph-matching/src/main/java/</directory>
                   <filtering>false</filtering>
                 </resource>
                 <resource>
-                  <directory>../jmx/src/main/java/</directory>
+                  <directory>${project.build.directory}/../../jmx/src/main/java/</directory>
                   <filtering>false</filtering>
                 </resource>
                 <resource>
-                  <directory>../kernel/src/main/java/</directory>
+                  <directory>${project.build.directory}/../../kernel/src/main/java/</directory>
                   <filtering>false</filtering>
                 </resource>
                 <resource>
-                  <directory>../kernel/target/generated-sources/</directory>
+                  <directory>${project.build.directory}/../../kernel/target/generated-sources/</directory>
                   <filtering>false</filtering>
                 </resource>
                 <resource>
-                  <directory>../lucene-index/src/main/java/</directory>
+                  <directory>${project.build.directory}/../../lucene-index/src/main/java/</directory>
                   <filtering>false</filtering>
                 </resource>
               </resources>

@@ -19,6 +19,11 @@
  */
 package org.neo4j.consistency.store;
 
+import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyZeroInteractions;
+
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.junit.Test;
@@ -26,11 +31,6 @@ import org.junit.internal.matchers.TypeSafeMatcher;
 import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyIndexRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeRecord;
-
-import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
 
 public class CacheSmallStoresRecordAccessTest
 {

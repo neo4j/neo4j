@@ -19,23 +19,6 @@
  */
 package org.neo4j.consistency.checking.full;
 
-import org.junit.Test;
-import org.neo4j.consistency.RecordType;
-import org.neo4j.consistency.checking.DynamicStore;
-import org.neo4j.consistency.checking.PrimitiveRecordCheck;
-import org.neo4j.consistency.checking.RecordCheck;
-import org.neo4j.consistency.report.ConsistencyReport;
-import org.neo4j.consistency.store.RecordAccessStub;
-import org.neo4j.helpers.progress.ProgressMonitorFactory;
-import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
-import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
-import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
-import org.neo4j.kernel.impl.nioneo.store.PropertyIndexRecord;
-import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
-import org.neo4j.kernel.impl.nioneo.store.PropertyType;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeRecord;
-
 import static org.junit.Assert.assertSame;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
@@ -55,6 +38,23 @@ import static org.neo4j.consistency.checking.RecordCheckTestBase.notInUse;
 import static org.neo4j.consistency.checking.RecordCheckTestBase.propertyBlock;
 import static org.neo4j.consistency.checking.RecordCheckTestBase.string;
 import static org.neo4j.consistency.checking.RecordCheckTestBase.verifyOnlyReferenceDispatch;
+
+import org.junit.Test;
+import org.neo4j.consistency.RecordType;
+import org.neo4j.consistency.checking.DynamicStore;
+import org.neo4j.consistency.checking.PrimitiveRecordCheck;
+import org.neo4j.consistency.checking.RecordCheck;
+import org.neo4j.consistency.report.ConsistencyReport;
+import org.neo4j.consistency.store.RecordAccessStub;
+import org.neo4j.helpers.progress.ProgressMonitorFactory;
+import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
+import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
+import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
+import org.neo4j.kernel.impl.nioneo.store.PropertyIndexRecord;
+import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
+import org.neo4j.kernel.impl.nioneo.store.PropertyType;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeRecord;
 
 public class OwnerCheckTest
 {

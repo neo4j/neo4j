@@ -125,8 +125,10 @@ public class UdcExtensionImplTest
     @Test
     public void shouldRecordFailuresWhenThereIsNoServer() throws Exception
     {
+        possibleDirectory = new File( "target" + File.separator + "should-record-failures" );
+
         GraphDatabaseService graphdb = new GraphDatabaseFactory().
-                newEmbeddedDatabaseBuilder( "should-record-failures" ).
+                newEmbeddedDatabaseBuilder( possibleDirectory.getPath() ).
                 loadPropertiesFromURL( getClass().getResource( "/org/neo4j/ext/udc/udc.properties" ) ).
                 setConfig( UdcSettings.first_delay, "100" ).
                 setConfig( UdcSettings.udc_host, "127.0.0.1:1" ).

@@ -72,8 +72,9 @@ public class DocumentationTest extends AbstractJavaDocTestbase
         // initialize the graph with the annotation data
         data.get();
         gen.get().addTestSourceSnippets( this.getClass(), "sampleDocumentation" );
-        gen.get().addGithubTestSourceLink( "github", this.getClass(), "neo4j/community",
-                "embedded-examples" );
+        gen.get()
+                .addGithubTestSourceLink( "github", this.getClass(),
+                        "community/embedded-examples" );
 
         gen.get().addSnippet( "output",
                 createOutputSnippet( "Hello graphy world!" ) );

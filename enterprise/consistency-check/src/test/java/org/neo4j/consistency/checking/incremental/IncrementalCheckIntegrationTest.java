@@ -19,6 +19,13 @@
  */
 package org.neo4j.consistency.checking.incremental;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.neo4j.graphdb.DynamicRelationshipType.withName;
+import static org.neo4j.test.Property.property;
+import static org.neo4j.test.Property.set;
+
 import java.io.IOException;
 import java.util.Map;
 
@@ -42,13 +49,6 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyType;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
 import org.neo4j.test.GraphStoreFixture;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.neo4j.graphdb.DynamicRelationshipType.withName;
-import static org.neo4j.test.Property.property;
-import static org.neo4j.test.Property.set;
 
 public class IncrementalCheckIntegrationTest
 {

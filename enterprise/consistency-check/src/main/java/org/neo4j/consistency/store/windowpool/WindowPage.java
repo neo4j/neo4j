@@ -19,8 +19,8 @@
  */
 package org.neo4j.consistency.store.windowpool;
 
-import org.neo4j.kernel.impl.nioneo.store.PersistenceWindow;
 import org.neo4j.consistency.store.paging.Page;
+import org.neo4j.kernel.impl.nioneo.store.PersistenceWindow;
 
 class WindowPage extends Page<PersistenceWindow>
 {

@@ -19,6 +19,8 @@
  */
 package org.neo4j.consistency.checking;
 
+import static org.mockito.Mockito.verify;
+
 import org.junit.Test;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
@@ -29,8 +31,6 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyIndexRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyType;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
-
-import static org.mockito.Mockito.verify;
 
 public class PropertyRecordCheckTest
         extends RecordCheckTestBase<PropertyRecord, ConsistencyReport.PropertyConsistencyReport, PropertyRecordCheck>

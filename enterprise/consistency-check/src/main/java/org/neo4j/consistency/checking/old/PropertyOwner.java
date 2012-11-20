@@ -19,14 +19,16 @@
  */
 package org.neo4j.consistency.checking.old;
 
+import static org.neo4j.consistency.checking.old.InconsistencyType.ReferenceInconsistency
+        .PROPERTY_NOT_REMOVED_FOR_DELETED_NODE;
+import static org.neo4j.consistency.checking.old.InconsistencyType.ReferenceInconsistency
+        .PROPERTY_NOT_REMOVED_FOR_DELETED_RELATIONSHIP;
+
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PrimitiveRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.RecordStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
-
-import static org.neo4j.consistency.checking.old.InconsistencyType.ReferenceInconsistency.PROPERTY_NOT_REMOVED_FOR_DELETED_NODE;
-import static org.neo4j.consistency.checking.old.InconsistencyType.ReferenceInconsistency.PROPERTY_NOT_REMOVED_FOR_DELETED_RELATIONSHIP;
 
 @Deprecated
 abstract class PropertyOwner

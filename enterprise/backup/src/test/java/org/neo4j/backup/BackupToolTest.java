@@ -47,6 +47,7 @@ import org.mockito.ArgumentCaptor;
 import org.neo4j.consistency.ConsistencyCheckSettings;
 import org.neo4j.consistency.checking.full.TaskExecutionOrder;
 import org.neo4j.consistency.store.windowpool.WindowPoolImplementation;
+import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.test.TargetDirectory;
 
@@ -88,7 +89,10 @@ public class BackupToolTest
         assertFalse( config.getValue().get( ConsistencyCheckSettings.consistency_check_property_owners ) );
         assertEquals( TaskExecutionOrder.MULTI_PASS,
                 config.getValue().get( ConsistencyCheckSettings.consistency_check_execution_order ) );
-        assertEquals( WindowPoolImplementation.SCAN_RESISTANT,
+        WindowPoolImplementation expectedPoolImplementation = !GraphDatabaseSetting.osIsWindows() ?
+                WindowPoolImplementation.SCAN_RESISTANT :
+                WindowPoolImplementation.MOST_FREQUENTLY_USED;
+        assertEquals( expectedPoolImplementation,
                 config.getValue().get( ConsistencyCheckSettings.consistency_check_window_pool_implementation ) );
     }
 

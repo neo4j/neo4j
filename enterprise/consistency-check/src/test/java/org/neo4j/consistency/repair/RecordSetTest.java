@@ -19,10 +19,10 @@
  */
 package org.neo4j.consistency.repair;
 
+import static org.junit.Assert.assertEquals;
+
 import org.junit.Test;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
-
-import static org.junit.Assert.assertEquals;
 
 public class RecordSetTest
 {

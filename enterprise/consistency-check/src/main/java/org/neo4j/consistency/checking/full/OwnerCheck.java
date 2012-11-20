@@ -19,6 +19,12 @@
  */
 package org.neo4j.consistency.checking.full;
 
+import static java.util.Collections.unmodifiableMap;
+import static org.neo4j.consistency.RecordType.ARRAY_PROPERTY;
+import static org.neo4j.consistency.RecordType.PROPERTY_KEY_NAME;
+import static org.neo4j.consistency.RecordType.RELATIONSHIP_LABEL_NAME;
+import static org.neo4j.consistency.RecordType.STRING_PROPERTY;
+
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
@@ -49,12 +55,6 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyType;
 import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeRecord;
-
-import static java.util.Collections.unmodifiableMap;
-import static org.neo4j.consistency.RecordType.ARRAY_PROPERTY;
-import static org.neo4j.consistency.RecordType.PROPERTY_KEY_NAME;
-import static org.neo4j.consistency.RecordType.RELATIONSHIP_LABEL_NAME;
-import static org.neo4j.consistency.RecordType.STRING_PROPERTY;
 
 class OwnerCheck implements CheckDecorator
 {

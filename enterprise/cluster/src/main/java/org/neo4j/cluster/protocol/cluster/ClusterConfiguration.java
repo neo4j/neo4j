@@ -39,7 +39,6 @@ import org.neo4j.helpers.collection.Iterables;
 public class ClusterConfiguration
 {
     public static final String COORDINATOR = "coordinator";
-    public static final String SLAVE = "slave";
 
     private final String name;
     private List<URI> members;
@@ -128,8 +127,7 @@ public class ClusterConfiguration
             assert members.contains( uri );
         }
 
-        this.roles.clear();
-        this.roles.putAll( roles );
+        this.roles = new HashMap<String, URI>( roles );
     }
 
     public List<URI> getMembers()

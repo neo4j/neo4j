@@ -18,7 +18,7 @@ The graph algorithms are found in the +neo4j-graph-algo+ component, which is inc
 
 * http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphalgo/package-summary.html[Javadocs]
 * http://search.maven.org/#search%7Cgav%7C1%7Cg%3A%22org.neo4j%22%20AND%20a%3A%22neo4j-graph-algo%22[Download]
-* https://github.com/neo4j/community/tree/{neo4j-git-tag}/graph-algo[Source code]
+* https://github.com/neo4j/neo4j/tree/{neo4j-git-tag}/community/graph-algo[Source code]
 
 For information on how to use neo4j-graph-algo as a dependency with Maven and other dependency management tools, see +http://search.maven.org/#search%7Cgav%7C1%7Cg%3A%22org.neo4j%22%20AND%20a%3A%22neo4j-graph-algo%22[org.neo4j:neo4j-graph-algo]+
 Note that it should be used with the same version of +http://search.maven.org/#search%7Cgav%7C1%7Cg%3A%22org.neo4j%22%20AND%20a%3A%22neo4j-kernel%22[org.neo4j:neo4j-kernel]+.

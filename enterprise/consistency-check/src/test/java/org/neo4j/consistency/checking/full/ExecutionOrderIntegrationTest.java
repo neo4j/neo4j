@@ -41,9 +41,10 @@ import org.neo4j.consistency.ConsistencyCheckSettings;
 import org.neo4j.consistency.checking.CheckDecorator;
 import org.neo4j.consistency.checking.PrimitiveRecordCheck;
 import org.neo4j.consistency.checking.RecordCheck;
-import org.neo4j.consistency.report.ConsistencyLogger;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
+import org.neo4j.consistency.report.InconsistencyLogger;
+import org.neo4j.consistency.report.InconsistencyReport;
 import org.neo4j.consistency.report.PendingReferenceCheck;
 import org.neo4j.consistency.store.DiffRecordAccess;
 import org.neo4j.consistency.store.RecordAccess;
@@ -104,13 +105,15 @@ public class ExecutionOrderIntegrationTest
 
         ConsistencySummaryStatistics multiPassSummary = new ConsistencySummaryStatistics();
         ConsistencySummaryStatistics singlePassSummary = new ConsistencySummaryStatistics();
-        ConsistencyLogger logger = mock( ConsistencyLogger.class );
+        InconsistencyLogger logger = mock( InconsistencyLogger.class );
         InvocationLog singlePassChecks = new InvocationLog();
         InvocationLog multiPassChecks = new InvocationLog();
 
         // when
-        singlePass.execute( store, new LogDecorator( singlePassChecks ), access, logger, singlePassSummary );
-        multiPass.execute( store, new LogDecorator( multiPassChecks ), access, logger, multiPassSummary );
+        singlePass.execute( store, new LogDecorator( singlePassChecks ), access,
+                new InconsistencyReport( logger, singlePassSummary ) );
+        multiPass.execute( store, new LogDecorator( multiPassChecks ), access,
+                new InconsistencyReport( logger, multiPassSummary ) );
 
         // then
         verifyZeroInteractions( logger );
@@ -143,6 +146,7 @@ public class ExecutionOrderIntegrationTest
         private final Map<String, Throwable> data = new HashMap<String, Throwable>();
         private final Map<String, Integer> duplicates = new HashMap<String, Integer>();
 
+        @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
         void log( PendingReferenceCheck check, InvocationOnMock invocation )
         {
             StringBuilder entry = new StringBuilder( invocation.getMethod().getName() ).append( '(' );
@@ -298,6 +302,7 @@ public class ExecutionOrderIntegrationTest
             this.log = log;
         }
 
+        @SuppressWarnings("unchecked")
         @Override
         public void dispatch( PendingReferenceCheck<T> reporter )
         {

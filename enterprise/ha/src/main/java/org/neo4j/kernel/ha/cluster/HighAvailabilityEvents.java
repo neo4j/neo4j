@@ -34,15 +34,19 @@ package org.neo4j.kernel.ha.cluster;
  */
 public interface HighAvailabilityEvents
 {
+    // HA member roles
+    public static final String MASTER = "master";
+    public static final String SLAVE = "slave";
+
     /**
      * When a member has finished a transition to a particular role, i.e. master or slave,
      * then it should call this which will broadcast the new status to the cluster.
      *
-     * @param role
+     * @param role one of the above HA member roles
      */
     void memberIsAvailable( String role );
 
-    void addClusterEventListener( HighAvailabilityListener listener );
+    void addHighAvailabilityEventListener( HighAvailabilityListener listener );
 
-    void removeClusterEventListener( HighAvailabilityListener listener );
+    void removeHighAvailabilityEventListener( HighAvailabilityListener listener );
 }

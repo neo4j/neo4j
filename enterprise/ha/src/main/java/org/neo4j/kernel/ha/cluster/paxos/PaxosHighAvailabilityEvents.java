@@ -21,8 +21,12 @@
 package org.neo4j.kernel.ha.cluster.paxos;
 
 import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.backup.OnlineBackupSettings;
@@ -34,6 +38,7 @@ import org.neo4j.cluster.protocol.atomicbroadcast.Payload;
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.protocol.cluster.ClusterListener;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatListener;
+import org.neo4j.cluster.protocol.snapshot.SnapshotProvider;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.Listeners;
 import org.neo4j.helpers.collection.Iterables;
@@ -90,6 +95,7 @@ public class PaxosHighAvailabilityEvents implements HighAvailabilityEvents, Life
     protected Iterable<HighAvailabilityListener> listeners = Listeners.newListeners();
     private volatile ClusterConfiguration clusterConfiguration;
     private String role;
+    private HighAvailabilitySnapshot snapshot = new HighAvailabilitySnapshot();
 
     public PaxosHighAvailabilityEvents( Configuration config, ClusterClient cluster, StringLogger logger )
     {
@@ -108,13 +114,13 @@ public class PaxosHighAvailabilityEvents implements HighAvailabilityEvents, Life
     }
 
     @Override
-    public void addClusterEventListener( HighAvailabilityListener listener )
+    public void addHighAvailabilityEventListener( HighAvailabilityListener listener )
     {
         listeners = Listeners.addListener( listener, listeners );
     }
 
     @Override
-    public void removeClusterEventListener( HighAvailabilityListener listener )
+    public void removeHighAvailabilityEventListener( HighAvailabilityListener listener )
     {
         listeners = Listeners.removeListener( listener, listeners );
     }
@@ -130,7 +136,6 @@ public class PaxosHighAvailabilityEvents implements HighAvailabilityEvents, Life
             @Override
             public void joinedCluster( URI member )
             {
-                broadcastOurself();
             }
 
             @Override
@@ -152,6 +157,7 @@ public class PaxosHighAvailabilityEvents implements HighAvailabilityEvents, Life
             {
                 if (role.equals( ClusterConfiguration.COORDINATOR ))
                 {
+                    // Use the cluster coordinator as master for HA
                     Listeners.notifyListeners( listeners, new Listeners.Notification<HighAvailabilityListener>()
                     {
                         @Override
@@ -161,15 +167,6 @@ public class PaxosHighAvailabilityEvents implements HighAvailabilityEvents, Life
                         }
                     } );
                 }
-            }
-        } );
-
-        cluster.addHeartbeatListener( new HeartbeatListener.Adapter()
-        {
-            @Override
-            public void alive( URI server )
-            {
- //               broadcastOurself();
             }
         } );
 
@@ -183,12 +180,16 @@ public class PaxosHighAvailabilityEvents implements HighAvailabilityEvents, Life
                     final Object value = serializer.receive( payload );
                     if ( value instanceof MemberIsAvailable )
                     {
+                        final MemberIsAvailable memberIsAvailable = (MemberIsAvailable) value;
+
+                        // Update snapshot
+                        snapshot.availableMember( memberIsAvailable );
+
                         Listeners.notifyListeners( listeners, new Listeners.Notification<HighAvailabilityListener>()
                         {
                             @Override
                             public void notify( HighAvailabilityListener listener )
                             {
-                                MemberIsAvailable memberIsAvailable = (MemberIsAvailable) value;
                                 listener.memberIsAvailable( memberIsAvailable.getRole(),
                                         memberIsAvailable.getClusterUri(),
                                         memberIsAvailable.getInstanceUris() );
@@ -202,13 +203,8 @@ public class PaxosHighAvailabilityEvents implements HighAvailabilityEvents, Life
                 }
             }
         } );
-    }
 
-    private void broadcastOurself()
-    {
-        // Reannounce my role for the purpose of the new member to see this
-        if (role != null)
-            memberIsAvailable( role );
+        cluster.setSnapshotProvider( new HighAvailabilitySnapshotProvider() );
     }
 
     @Override
@@ -248,33 +244,47 @@ public class PaxosHighAvailabilityEvents implements HighAvailabilityEvents, Life
         }
     }
 
-    private URI getHaUri( URI clusterUri )
+    private class HighAvailabilitySnapshotProvider implements SnapshotProvider
     {
-        try
+        @Override
+        public void getState( ObjectOutputStream output ) throws IOException
         {
-            // TODO host.getPort() is wrong, because it could be a port range and it's actually bound to
-            // not-the-lowest-port
-            HostnamePort host = config.getHaServer();
-            return new URI( "ha", null, config.getHaServer().getHost( clusterUri.getHost() ), host.getPort(), null,"serverId=" + config.getServerId(), null );
+            output.writeObject( snapshot );
         }
-        catch ( URISyntaxException e )
+
+        @Override
+        public void setState( ObjectInputStream input ) throws IOException, ClassNotFoundException
         {
-            throw new RuntimeException( e );
+            snapshot = HighAvailabilitySnapshot.class.cast(input.readObject());
+
+            // Send current availability events to listeners
+            Listeners.notifyListeners( listeners, new Listeners.Notification<HighAvailabilityListener>()
+            {
+                @Override
+                public void notify( HighAvailabilityListener listener )
+                {
+                    for ( MemberIsAvailable memberIsAvailable : snapshot.getCurrentAvailableMembers() )
+                    {
+                        listener.memberIsAvailable( memberIsAvailable.getRole(), memberIsAvailable.getClusterUri(), memberIsAvailable.getInstanceUris() );
+                    }
+                }
+            } );
         }
     }
 
-    private URI getBackupUri( URI clusterUri )
+    public static class HighAvailabilitySnapshot
+        implements Serializable
     {
-        try
-        {
-            HostnamePort host = config.getHaServer();
-            String hostName = host.getHost( clusterUri.getHost() );
+        Map<URI, MemberIsAvailable> availableMembers = new HashMap<URI, MemberIsAvailable>(  );
 
-            return new URI( "backup", null, hostName, config.getBackupPort(), null, null, null );
-        }
-        catch ( URISyntaxException e )
+        public void availableMember(MemberIsAvailable memberIsAvailable)
         {
-            throw new RuntimeException( e );
+            availableMembers.put( memberIsAvailable.getClusterUri(), memberIsAvailable );
+        }
+
+        public Iterable<MemberIsAvailable> getCurrentAvailableMembers()
+        {
+            return availableMembers.values();
         }
     }
 }

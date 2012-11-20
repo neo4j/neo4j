@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.ha;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
@@ -27,9 +28,7 @@ import java.util.concurrent.CountDownLatch;
 
 import org.junit.Test;
 import org.neo4j.cluster.ClusterSettings;
-import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.consistency.checking.incremental.intercept.VerifyingTransactionInterceptorProvider;
-import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
@@ -53,10 +52,10 @@ public class TestMasterElection
         assertTrue( !slave1.isMaster() );
         assertTrue( !slave2.isMaster() );
 
-        awaitNewMaster( slave2 );
+        startListenForNewMaster( slave2 );
 
         master.shutdown();
-        masterElectedLatch.await();
+        assertTrue( masterElectedLatch.await( 20, SECONDS ) );
         assertTrue( slave1.isMaster() );
         assertTrue( !slave2.isMaster() );
 
@@ -64,25 +63,22 @@ public class TestMasterElection
         slave1.shutdown();
     }
 
-    private void awaitNewMaster( HighlyAvailableGraphDatabase db )
+    private void startListenForNewMaster( HighlyAvailableGraphDatabase db )
     {
         masterElectedLatch = new CountDownLatch( 1 );
-        final HighAvailabilityEvents events = db.getDependencyResolver().resolveDependency( HighAvailabilityEvents
-                .class );
-        events.addClusterEventListener(
-                new HighAvailabilityListener.Adapter()
-
+        final HighAvailabilityEvents events = db.getDependencyResolver().resolveDependency( HighAvailabilityEvents.class );
+        events.addHighAvailabilityEventListener( new HighAvailabilityListener.Adapter()
+        {
+            @Override
+            public void memberIsAvailable( String role, URI instanceClusterUri, Iterable<URI> instanceUris )
+            {
+                if ( role.equals( HighAvailabilityEvents.MASTER ) )
                 {
-                    @Override
-                    public void memberIsAvailable( String role, URI instanceClusterUri, Iterable<URI> instanceUris )
-                    {
-                        if ( role.equals( ClusterConfiguration.COORDINATOR ) )
-                        {
-                            masterElectedLatch.countDown();
-                            events.removeClusterEventListener( this );
-                        }
-                    }
-                } );
+                    masterElectedLatch.countDown();
+                    events.removeHighAvailabilityEventListener( this );
+                }
+            }
+        } );
     }
 
     private CountDownLatch masterElectedLatch;
@@ -98,20 +94,10 @@ public class TestMasterElection
                 .setConfig( HaSettings.tx_push_factor, "0" )
                 .setConfig( GraphDatabaseSettings.intercept_committing_transactions, "true" )
                 .setConfig( GraphDatabaseSettings.intercept_deserialized_transactions, "true" )
-                .setConfig( TransactionInterceptorProvider.class.getSimpleName() + "." +
-                        VerifyingTransactionInterceptorProvider.NAME, "true" );
-        HighlyAvailableGraphDatabase db = (HighlyAvailableGraphDatabase) builder.newGraphDatabase();
-        Transaction tx = db.beginTx();
-        tx.finish();
-        try
-        {
-            Thread.sleep( 2000 );
-        }
-        catch ( InterruptedException e )
-        {
-            throw new RuntimeException( e );
-        }
-        return db;
+                .setConfig(TransactionInterceptorProvider.class.getSimpleName() + "." +
+                        VerifyingTransactionInterceptorProvider.NAME, "true" )
+                ;
+        return (HighlyAvailableGraphDatabase) builder.newGraphDatabase();
     }
 
     private String path( int i )

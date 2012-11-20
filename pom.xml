@@ -2,30 +2,46 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
                       http://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <modelVersion>4.0.0</modelVersion>
+    <modelVersion>4.0.0</modelVersion>
 
-  <groupId>org.neo4j</groupId>
-  <artifactId>parent</artifactId>
-  <version>1.9-SNAPSHOT</version>
-  <packaging>pom</packaging>
+    <groupId>org.neo4j</groupId>
+    <artifactId>parent</artifactId>
+    <version>1.9-SNAPSHOT</version>
+    <packaging>pom</packaging>
+    <name>Neo4j</name>
+    <description>Neo4j Graph Database</description>
 
-  <modules>
-    <module>community</module>
-    <module>advanced</module>
-    <module>enterprise</module>
-    <module>manual</module>
-    <module>packaging</module>
-    <module>packaging/installer-linux</module>
-    <module>gremlin-plugin</module>
-    <module>cypher-plugin</module>
-    <module>python-embedded</module>
-  </modules>
+    <modules>
+        <module>community</module>
+        <module>advanced</module>
+        <module>enterprise</module>
+        <module>gremlin-plugin</module>
+        <module>cypher-plugin</module>
+    </modules>
 
-  <distributionManagement>
-    <site>
-        <id>neo4j-site</id>
-        <url>scpexe://static.neo4j.org/var/www/components.neo4j.org/${project.artifactId}/${project.version}</url>
-      </site>
+    <profiles>
+        <profile>
+            <id>manual-and-packaging</id>
+            <activation>
+                <property>
+                    <name>!skipNativeDeps</name>
+                    <!-- The exclamation mark indicates that the property should be absent -->
+                </property>
+            </activation>
+            <modules>
+                <module>python-embedded</module>
+                <module>manual</module>
+                <module>packaging</module>
+                <module>packaging/installer-linux</module>
+            </modules>
+        </profile>
+    </profiles>
+
+    <distributionManagement>
+        <site>
+            <id>neo4j-site</id>
+            <url>scpexe://static.neo4j.org/var/www/components.neo4j.org/${project.artifactId}/${project.version}</url>
+        </site>
     </distributionManagement>
 
 </project>

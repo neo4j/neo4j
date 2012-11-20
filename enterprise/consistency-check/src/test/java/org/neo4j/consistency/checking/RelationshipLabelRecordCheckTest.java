@@ -19,12 +19,12 @@
  */
 package org.neo4j.consistency.checking;
 
+import static org.mockito.Mockito.verify;
+
 import org.junit.Test;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeRecord;
-
-import static org.mockito.Mockito.verify;
 
 public class RelationshipLabelRecordCheckTest extends
         RecordCheckTestBase<RelationshipTypeRecord, ConsistencyReport.LabelConsistencyReport, RelationshipLabelRecordCheck>

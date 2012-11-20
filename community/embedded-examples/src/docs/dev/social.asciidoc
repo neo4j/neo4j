@@ -9,7 +9,7 @@ This example shows a very simple social model that connects friends and keeps tr
 
 [TIP]
 The source code of the example is found here:
-https://github.com/neo4j/community/tree/{neo4j-git-tag}/embedded-examples/src/main/java/org/neo4j/examples/socnet[socnet]
+https://github.com/neo4j/neo4j/tree/{neo4j-git-tag}/community/embedded-examples/src/main/java/org/neo4j/examples/socnet[socnet]
 
 == Simple social model ==
 

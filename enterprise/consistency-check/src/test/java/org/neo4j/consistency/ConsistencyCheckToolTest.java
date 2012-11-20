@@ -32,6 +32,7 @@ import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.neo4j.graphdb.factory.GraphDatabaseSetting.osIsWindows;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -86,7 +87,10 @@ public class ConsistencyCheckToolTest
         assertFalse( config.getValue().get( ConsistencyCheckSettings.consistency_check_property_owners ) );
         assertEquals( TaskExecutionOrder.MULTI_PASS,
                 config.getValue().get( ConsistencyCheckSettings.consistency_check_execution_order ) );
-        assertEquals( WindowPoolImplementation.SCAN_RESISTANT,
+        WindowPoolImplementation expectedPoolImplementation = !osIsWindows() ?
+                WindowPoolImplementation.SCAN_RESISTANT :
+                WindowPoolImplementation.MOST_FREQUENTLY_USED;
+        assertEquals( expectedPoolImplementation,
                 config.getValue().get( ConsistencyCheckSettings.consistency_check_window_pool_implementation ) );
     }
 

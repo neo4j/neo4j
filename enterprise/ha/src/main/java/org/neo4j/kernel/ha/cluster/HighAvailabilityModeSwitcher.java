@@ -122,7 +122,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
         this.config = config;
         this.msgLog = msgLog;
         this.life = new LifeSupport();
-        stateHandler.addClusterMemberListener( this );
+        stateHandler.addHighAvailabilityMemberListener( this );
     }
 
     @Override
@@ -280,7 +280,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                     msgLog.logMessage( "Failed to switch to master", e );
                     return;
                 }
-                clusterEvents.memberIsAvailable( ClusterConfiguration.COORDINATOR );
+                clusterEvents.memberIsAvailable( HighAvailabilityEvents.MASTER );
             }
         } );
     }
@@ -443,7 +443,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                             URI haUri = URI.create( "ha://"+server.getSocketAddress().getHostName()+":"+server.getSocketAddress().getPort()+"?serverId="+config.get( HaSettings.server_id ) );
                             clusterClient.addURI(haUri);
 
-                            clusterEvents.memberIsAvailable( ClusterConfiguration.SLAVE );
+                            clusterEvents.memberIsAvailable( HighAvailabilityEvents.SLAVE );
 
                             msgLog.logMessage( "I am " + config.get( HaSettings.server_id ) +
                                     ", successfully moved to slave for master " + masterUri );

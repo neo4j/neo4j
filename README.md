@@ -19,4 +19,10 @@ We encourage everyone to experiment with Neo4j. You can build extensions to Neo4
 
 *Please note* that this GitHub repository contains mixed GPL and AGPL code.  Our community edition (in the community/ directory) is GPL. Our advanced and enterprise editions (advanced/ and enterprise/, you get the drill) are Affero GPL and so have different licensing implications.
 
+Building Neo4j
+--------------
+
+This build will build all of our product, including documentation. If you don't have the tools for documentation (e.g. asciidoc, LaTeX), then use pass the -DskipNativeDeps flag to Maven.
+
+
 We also supply commercial licenses. Please contact [Neo Technology](sales@neotechnology.com) for more information.
