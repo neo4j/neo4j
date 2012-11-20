@@ -29,7 +29,6 @@ import org.neo4j.cypher.GraphDatabaseTestBase
 import org.neo4j.cypher.internal.pipes.matching._
 import org.neo4j.cypher.internal.pipes.matching.EndPoint
 import org.neo4j.cypher.internal.commands.Equals
-import scala.Some
 import org.neo4j.cypher.internal.pipes.matching.SingleStepTrail
 import org.neo4j.cypher.internal.commands.True
 
@@ -196,7 +195,7 @@ class TrailBuilderTest extends GraphDatabaseTestBase with Assertions with Builde
 
     val endPoint = EndPoint("e")
     val second = VariableLengthStepTrail(endPoint, Direction.OUTGOING, Seq("A"), 1, None, "p", None, "b", BtoE)
-    val trail  = SingleStepTrail(second, Direction.OUTGOING, "pr1", Seq("A"), "a", None, None, AtoB)
+    val trail = SingleStepTrail(second, Direction.OUTGOING, "pr1", Seq("A"), "a", None, None, AtoB)
 
     val expected = Some(LongestTrail("a", None, trail))
 
@@ -215,7 +214,7 @@ class TrailBuilderTest extends GraphDatabaseTestBase with Assertions with Builde
 
     val endPoint = EndPoint("e")
     val second = VariableLengthStepTrail(endPoint, Direction.OUTGOING, Seq("A"), 1, None, "p", None, "b", BtoE)
-    val trail  = SingleStepTrail(second, Direction.OUTGOING, "pr1", Seq("A"), "a", None, None, AtoB)
+    val trail = SingleStepTrail(second, Direction.OUTGOING, "pr1", Seq("A"), "a", None, None, AtoB)
 
     val expected = Some(LongestTrail("a", None, trail))
 
@@ -234,7 +233,7 @@ class TrailBuilderTest extends GraphDatabaseTestBase with Assertions with Builde
 
     val endPoint = EndPoint("e")
     val second = VariableLengthStepTrail(endPoint, Direction.OUTGOING, Seq("A"), 1, None, "p", None, "b", BtoE)
-    val trail  = SingleStepTrail(second, Direction.OUTGOING, "pr1", Seq("A"), "a", None, None, AtoB)
+    val trail = SingleStepTrail(second, Direction.OUTGOING, "pr1", Seq("A"), "a", None, None, AtoB)
 
     val expected = Some(LongestTrail("a", None, trail))
 
@@ -256,7 +255,7 @@ class TrailBuilderTest extends GraphDatabaseTestBase with Assertions with Builde
 
     val endPoint = EndPoint("e")
     val second = VariableLengthStepTrail(endPoint, Direction.OUTGOING, Seq("A"), 1, None, "p", None, "b", BtoE)
-    val trail  = SingleStepTrail(second, Direction.OUTGOING, "pr1", Seq("A"), "a", None, None, AtoB)
+    val trail = SingleStepTrail(second, Direction.OUTGOING, "pr1", Seq("A"), "a", None, None, AtoB)
 
     val expected = Some(LongestTrail("a", None, trail))
 
@@ -281,6 +280,29 @@ class TrailBuilderTest extends GraphDatabaseTestBase with Assertions with Builde
     val result = TrailBuilder.findLongestTrail(Seq(AtoB, BtoC, AtoX, XtoC), Seq("a", "c"), Seq.empty)
     println(result)
     val expected = Some(LongestTrail("a", Some("c"), trail))
+
+    assert(result === expected)
+  }
+
+  @Test def should_handle_long_paths_with_unnamed_nodes() {
+    // GIVEN
+    // a<-[15]- (13)<-[16]- b-[17]-> (14)-[18]-> c
+
+    val s1 = RelatedTo("  UNNAMED13", "a", "  UNNAMED15", Seq(), Direction.OUTGOING, optional = false, predicate = True())
+    val s2 = RelatedTo("b", "  UNNAMED13", "  UNNAMED16", Seq(), Direction.OUTGOING, optional = false, predicate = True())
+    val s3 = RelatedTo("b", "  UNNAMED14", "  UNNAMED17", Seq(), Direction.OUTGOING, optional = false, predicate = True())
+    val s4 = RelatedTo("  UNNAMED14", "c", "  UNNAMED18", Seq(), Direction.OUTGOING, optional = false, predicate = True())
+
+
+    val fifth = EndPoint("c")
+    val fourth = SingleStepTrail(fifth , Direction.OUTGOING, "  UNNAMED18", Seq(), "  UNNAMED14", None, None, s4)
+    val third  = SingleStepTrail(fourth, Direction.OUTGOING, "  UNNAMED17", Seq(), "b", None, None, s3)
+    val second = SingleStepTrail(third , Direction.INCOMING, "  UNNAMED16", Seq(), "  UNNAMED13", None, None, s2)
+    val first  = SingleStepTrail(second, Direction.INCOMING, "  UNNAMED15", Seq(), "a", None, None, s1)
+
+    val result = TrailBuilder.findLongestTrail(Seq(s1, s2, s3, s4), Seq("a"), Seq.empty)
+    println(result)
+    val expected = Some(LongestTrail("a", None, first))
 
     assert(result === expected)
   }

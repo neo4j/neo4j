@@ -276,7 +276,7 @@ case class NonEmpty(collection:Expression) extends Predicate with CollectionSupp
   }
 
   def atoms: Seq[Predicate] = Seq(this)
-  override def toString(): String = "nonEmpty(" + collection + ")"
+  override def toString(): String = "nonEmpty(" + collection.toString() + ")"
   def containsIsNull = false
   def rewrite(f: (Expression) => Expression) = NonEmpty(collection.rewrite(f))
   def filter(f: (Expression) => Boolean) = collection.filter(f)

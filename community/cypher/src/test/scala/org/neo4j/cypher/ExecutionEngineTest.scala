@@ -245,15 +245,6 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
 
     val result = parseAndExecute("start n=node(1) match n-->a-->b RETURN b").toList
 
-//    val query = Query.
-//      start(NodeById("start", n1.getId)).
-//      matches(
-//      RelatedTo("start", "a", "rel", "KNOWS", Direction.OUTGOING),
-//      RelatedTo("a", "b", "rel2", "FRIEND", Direction.OUTGOING)).
-//      returns(ReturnItem(Identifier("b"), "b"))
-//
-//    val result = execute(query)
-
     assertEquals(List(Map("b" -> n3)), result.toList)
   }
 
@@ -2282,6 +2273,14 @@ RETURN x0.name?
   @Test
   def can_use_identifiers_created_inside_the_foreach() {
     val result = parseAndExecute("start n=node(0) foreach (x in [1,2,3] : create a= { name: 'foo'}  set a.id = x)")
+
+    assert(result.toList === List())
+  }
+
+  @Test
+  def can_handle_paths_with_multiple_unnamed_nodes() {
+    val a = createNode()
+    val result = parseAndExecute("START a=node(0) MATCH a<--()<--b-->()-->c RETURN c")
 
     assert(result.toList === List())
   }
