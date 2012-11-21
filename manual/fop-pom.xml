@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.neo4j.build</groupId>
     <artifactId>parent-pom</artifactId>
-    <version>33</version>
+    <version>35</version>
     <relativePath />
   </parent>
   <groupId>org.neo4j.doc</groupId>
@@ -19,7 +19,28 @@
     <dependency>
       <groupId>org.apache.xmlgraphics</groupId>
       <artifactId>fop</artifactId>
-      <version>1.0</version>
+      <version>1.1</version>
+      <!-- They screwed up the dependency version! -->
+      <exclusions>
+        <exclusion>
+          <groupId>org.apache.avalon.framework</groupId>
+          <artifactId>avalon-framework-api</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.apache.avalon.framework</groupId>
+          <artifactId>avalon-framework-impl</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.avalon.framework</groupId>
+      <artifactId>avalon-framework-api</artifactId>
+      <version>4.3.1</version>
+    </dependency>
+   <dependency>
+      <groupId>org.apache.avalon.framework</groupId>
+      <artifactId>avalon-framework-impl</artifactId>
+      <version>4.3.1</version>
     </dependency>
   </dependencies>
 
