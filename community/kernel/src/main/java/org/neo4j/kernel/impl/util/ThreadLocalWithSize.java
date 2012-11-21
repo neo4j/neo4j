@@ -19,24 +19,28 @@
  */
 package org.neo4j.kernel.impl.util;
 
-import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
+import java.util.concurrent.atomic.AtomicInteger;
 
-public interface RelIdIterator
+public class ThreadLocalWithSize<T> extends ThreadLocal<T>
 {
-    int getType();
+    private final AtomicInteger size = new AtomicInteger();
 
-    RelIdArray getIds();
+    @Override
+    public void set( T value )
+    {
+        super.set( value );
+        size.incrementAndGet();
+    }
 
-    RelIdIterator updateSource( RelIdArray newSource, DirectionWrapper direction );
+    @Override
+    public void remove()
+    {
+        super.remove();
+        size.decrementAndGet();
+    }
 
-    boolean hasNext();
-
-    /**
-     * Tells this iterator to try another round with all its directions
-     * starting from each their previous states. Called from IntArrayIterator,
-     * when it finds out it has gotten more relationships of this type.
-     */
-    void doAnotherRound();
-
-    long next();
+    public int size()
+    {
+        return size.get();
+    }
 }

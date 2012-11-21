@@ -30,17 +30,12 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import javax.transaction.SystemException;
-import javax.transaction.Transaction;
-import javax.transaction.TransactionManager;
-
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Triplet;
@@ -56,6 +51,7 @@ import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
+import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.transaction.DataSourceRegistrationListener;
 import org.neo4j.kernel.impl.transaction.LockException;
 import org.neo4j.kernel.impl.transaction.LockManager;
@@ -82,8 +78,7 @@ public class NodeManager
     private final CacheProvider cacheProvider;
 
     private final LockManager lockManager;
-    private final TransactionManager transactionManager;
-    private final LockReleaser lockReleaser;
+    private final AbstractTransactionManager transactionManager;
     private final PropertyIndexManager propertyIndexManager;
     private final RelationshipTypeHolder relTypeHolder;
     private final PersistenceManager persistenceManager;
@@ -106,7 +101,7 @@ public class NodeManager
     private NodeManagerDatasourceListener dataSourceListener;
 
     public NodeManager( Config config, GraphDatabaseService graphDb, LockManager lockManager,
-                        LockReleaser lockReleaser, TransactionManager transactionManager,
+                        AbstractTransactionManager transactionManager,
                         PersistenceManager persistenceManager, EntityIdGenerator idGenerator,
                         RelationshipTypeHolder relationshipTypeHolder, CacheProvider cacheProvider,
                         PropertyIndexManager propertyIndexManager, NodeProxy.NodeLookup nodeLookup,
@@ -117,7 +112,6 @@ public class NodeManager
         this.lockManager = lockManager;
         this.transactionManager = transactionManager;
         this.propertyIndexManager = propertyIndexManager;
-        this.lockReleaser = lockReleaser;
         this.persistenceManager = persistenceManager;
         this.idGenerator = idGenerator;
         this.nodeLookup = nodeLookup;
@@ -194,7 +188,7 @@ public class NodeManager
         }
         finally
         {
-            releaseLock( proxy, LockType.WRITE );
+            releaseLock( proxy, LockType.WRITE, getTransactionState() );
             if ( !success )
             {
                 setRollbackOnly();
@@ -237,6 +231,7 @@ public class NodeManager
         RelationshipProxy proxy = new RelationshipProxy( id, relationshipLookups );
         acquireLock( proxy, LockType.WRITE );
         boolean success = false;
+        TransactionState tx = getTransactionState();
         try
         {
             acquireLock( startNodeProxy, LockType.WRITE );
@@ -247,12 +242,12 @@ public class NodeManager
                     endNodeId );
             if ( startNodeId == endNodeId )
             {
-                startNode.addRelationship( this, type, id, DirectionWrapper.BOTH );
+                tx.getOrCreateCowRelationshipAddMap( startNode, typeId ).add( id, DirectionWrapper.BOTH );
             }
             else
             {
-                startNode.addRelationship( this, type, id, DirectionWrapper.OUTGOING );
-                secondNode.addRelationship( this, type, id, DirectionWrapper.INCOMING );
+                tx.getOrCreateCowRelationshipAddMap( startNode, typeId ).add( id, DirectionWrapper.OUTGOING );
+                tx.getOrCreateCowRelationshipAddMap( secondNode, typeId ).add( id, DirectionWrapper.INCOMING );
             }
             // relCache.put( rel.getId(), rel );
             relCache.put( rel );
@@ -266,7 +261,7 @@ public class NodeManager
             {
                 try
                 {
-                    releaseLock( startNodeProxy, LockType.WRITE );
+                    releaseLock( startNodeProxy, LockType.WRITE, tx );
                 }
                 catch ( Exception e )
                 {
@@ -278,7 +273,7 @@ public class NodeManager
             {
                 try
                 {
-                    releaseLock( endNode, LockType.WRITE );
+                    releaseLock( endNode, LockType.WRITE, tx );
                 }
                 catch ( Exception e )
                 {
@@ -286,7 +281,7 @@ public class NodeManager
                     log.log( Level.SEVERE, "Failed to release lock", e );
                 }
             }
-            releaseLock( proxy, LockType.WRITE );
+            releaseLock( proxy, LockType.WRITE, tx );
             if ( !success )
             {
                 setRollbackOnly();
@@ -610,16 +605,15 @@ public class NodeManager
         return persistenceManager.getRelationshipChainPosition( node.getId() );
     }
 
-    // Triplet<ArrayMap<String,RelIdArray>,Map<Long,RelationshipImpl>,Long> getMoreRelationships( NodeImpl node )
-    Triplet<ArrayMap<String, RelIdArray>, List<RelationshipImpl>, Long> getMoreRelationships( NodeImpl node )
+    Triplet<ArrayMap<Integer,RelIdArray>,List<RelationshipImpl>,Long> getMoreRelationships( NodeImpl node )
     {
         long nodeId = node.getId();
         long position = node.getRelChainPosition();
         Pair<Map<DirectionWrapper, Iterable<RelationshipRecord>>, Long> rels =
-                persistenceManager.getMoreRelationships( nodeId, position );
-        ArrayMap<String, RelIdArray> newRelationshipMap =
-                new ArrayMap<String, RelIdArray>();
-        // Map<Long,RelationshipImpl> relsMap = new HashMap<Long,RelationshipImpl>( 150 );
+            persistenceManager.getMoreRelationships( nodeId, position );
+        ArrayMap<Integer,RelIdArray> newRelationshipMap =
+            new ArrayMap<Integer,RelIdArray>();
+
         List<RelationshipImpl> relsList = new ArrayList<RelationshipImpl>( 150 );
 
         Iterable<RelationshipRecord> loops = rels.first().get( DirectionWrapper.BOTH );
@@ -637,11 +631,8 @@ public class NodeManager
         return Triplet.of( newRelationshipMap, relsList, rels.other() );
     }
 
-    //    private void receiveRelationships(
-//            Iterable<RelationshipRecord> rels, ArrayMap<String, RelIdArray> newRelationshipMap,
-//            Map<Long, RelationshipImpl> relsMap, DirectionWrapper dir, boolean hasLoops )
     private void receiveRelationships(
-            Iterable<RelationshipRecord> rels, ArrayMap<String, RelIdArray> newRelationshipMap,
+            Iterable<RelationshipRecord> rels, ArrayMap<Integer, RelIdArray> newRelationshipMap,
             List<RelationshipImpl> relsList, DirectionWrapper dir, boolean hasLoops )
     {
         for ( RelationshipRecord rel : rels )
@@ -649,24 +640,26 @@ public class NodeManager
             long relId = rel.getId();
             RelationshipImpl relImpl = relCache.get( relId );
             RelationshipType type = null;
+            int typeId;
             if ( relImpl == null )
             {
-                type = getRelationshipTypeById( rel.getType() );
+                typeId = rel.getType();
+                type = getRelationshipTypeById( typeId );
                 assert type != null;
                 relImpl = newRelationshipImpl( relId, rel.getFirstNode(), rel.getSecondNode(), type,
-                        rel.getType(), false );
-//                relsMap.put( relId, relImpl );
+                        typeId, false );
                 relsList.add( relImpl );
             }
             else
             {
-                type = getRelationshipTypeById( relImpl.getTypeId() );
+                typeId = relImpl.getTypeId();
+                type = getRelationshipTypeById( typeId );
             }
-            RelIdArray relationshipSet = newRelationshipMap.get( type.name() );
+            RelIdArray relationshipSet = newRelationshipMap.get( typeId );
             if ( relationshipSet == null )
             {
-                relationshipSet = hasLoops ? new RelIdArrayWithLoops( type.name() ) : new RelIdArray( type.name() );
-                newRelationshipMap.put( type.name(), relationshipSet );
+                relationshipSet = hasLoops ? new RelIdArrayWithLoops( typeId ) : new RelIdArray( typeId );
+                newRelationshipMap.put( typeId, relationshipSet );
             }
             relationshipSet.add( relId, dir );
         }
@@ -736,9 +729,7 @@ public class NodeManager
     {
         T existing = index.get( key, value ).getSingle();
         if ( existing != null )
-        {
             return existing;
-        }
 
         // Grab lock
         IndexLock lock = new IndexLock( index.getName(), key );
@@ -760,9 +751,7 @@ public class NodeManager
         finally
         {
             if ( existing == null )
-            {
-                LockType.WRITE.unacquire( lock, lockManager, lockReleaser );
-            }
+                LockType.WRITE.unacquire( lock, lockManager, getTransactionState() );
         }
     }
 
@@ -779,7 +768,7 @@ public class NodeManager
     void acquireTxBoundLock( PropertyContainer resource, LockType lockType )
     {
         lockType.acquire( resource, lockManager );
-        lockType.unacquire( resource, lockManager, lockReleaser );
+        lockType.unacquire( resource, lockManager, getTransactionState() );
     }
 
     void acquireIndexLock( String index, String key, LockType lockType )
@@ -787,19 +776,19 @@ public class NodeManager
         lockType.acquire( new IndexLock( index, key ), lockManager );
     }
 
-    void releaseLock( Primitive resource, LockType lockType )
+    void releaseLock( Primitive resource, LockType lockType, TransactionState state )
     {
-        lockType.unacquire( resource.asProxy( this ), lockManager, lockReleaser );
+        lockType.unacquire( resource.asProxy( this ), lockManager, state );
     }
 
-    void releaseLock( PropertyContainer resource, LockType lockType )
+    void releaseLock( PropertyContainer resource, LockType lockType, TransactionState state )
     {
-        lockType.unacquire( resource, lockManager, lockReleaser );
+        lockType.unacquire( resource, lockManager, state );
     }
 
     void releaseIndexLock( String index, String key, LockType lockType )
     {
-        lockType.unacquire( new IndexLock( index, key ), lockManager, lockReleaser );
+        lockType.unacquire( new IndexLock( index, key ), lockManager, getTransactionState() );
     }
 
     public static class IndexLock
@@ -906,14 +895,14 @@ public class NodeManager
         propertyIndexManager.setHasAll( hasAll );
     }
 
-    PropertyIndex getIndexFor( int keyId )
+    PropertyIndex getIndexFor( int keyId, TransactionState tx )
     {
-        return propertyIndexManager.getIndexFor( keyId );
+        return propertyIndexManager.getIndexFor( keyId, tx );
     }
 
-    Iterable<PropertyIndex> index( String key )
+    PropertyIndex[] index( String key, TransactionState tx )
     {
-        return propertyIndexManager.index( key );
+        return propertyIndexManager.index( key, tx );
     }
 
     boolean hasAllPropertyIndexes()
@@ -928,10 +917,10 @@ public class NodeManager
 
     PropertyIndex createPropertyIndex( String key )
     {
-        return propertyIndexManager.createPropertyIndex( key );
+        return propertyIndexManager.createPropertyIndex( key, getTransactionState() );
     }
 
-    int getRelationshipTypeIdFor( RelationshipType type )
+    Integer getRelationshipTypeIdFor( RelationshipType type )
     {
         return relTypeHolder.getIdFor( type );
     }
@@ -946,9 +935,9 @@ public class NodeManager
         return relTypeHolder.getRelationshipTypes();
     }
 
-    ArrayMap<Integer, PropertyData> deleteNode( NodeImpl node )
+    ArrayMap<Integer,PropertyData> deleteNode( NodeImpl node, TransactionState tx )
     {
-        deletePrimitive( node );
+        tx.deletePrimitive( node );
         return persistenceManager.nodeDelete( node.getId() );
         // remove from node cache done via event
     }
@@ -967,7 +956,7 @@ public class NodeManager
     }
 
     PropertyData nodeChangeProperty( NodeImpl node, PropertyData property,
-                                     Object value )
+            Object value, TransactionState tx )
     {
         if ( !nodePropertyTrackers.isEmpty() )
         {
@@ -975,7 +964,7 @@ public class NodeManager
             {
                 nodePropertyTracker.propertyChanged(
                         getNodeById( node.getId() ),
-                        getIndexFor( property.getIndex() ).getKey(),
+                        getIndexFor( property.getIndex(), tx ).getKey(),
                         property.getValue(), value );
             }
         }
@@ -983,7 +972,7 @@ public class NodeManager
                 value );
     }
 
-    void nodeRemoveProperty( NodeImpl node, PropertyData property )
+    void nodeRemoveProperty( NodeImpl node, PropertyData property, TransactionState tx )
     {
         if ( !nodePropertyTrackers.isEmpty() )
         {
@@ -991,7 +980,7 @@ public class NodeManager
             {
                 nodePropertyTracker.propertyRemoved(
                         getNodeById( node.getId() ),
-                        getIndexFor( property.getIndex() ).getKey(),
+                        getIndexFor( property.getIndex(), tx ).getKey(),
                         property.getValue() );
             }
         }
@@ -1012,10 +1001,9 @@ public class NodeManager
     {
         persistenceManager.graphRemoveProperty( property );
     }
-
-    ArrayMap<Integer, PropertyData> deleteRelationship( RelationshipImpl rel )
+    ArrayMap<Integer,PropertyData> deleteRelationship( RelationshipImpl rel, TransactionState tx )
     {
-        deletePrimitive( rel );
+        tx.deletePrimitive( rel );
         return persistenceManager.relDelete( rel.getId() );
         // remove in rel cache done via event
     }
@@ -1036,7 +1024,7 @@ public class NodeManager
     }
 
     PropertyData relChangeProperty( RelationshipImpl rel,
-                                    PropertyData property, Object value )
+            PropertyData property, Object value, TransactionState tx )
     {
         if ( !relationshipPropertyTrackers.isEmpty() )
         {
@@ -1044,7 +1032,7 @@ public class NodeManager
             {
                 relPropertyTracker.propertyChanged(
                         getRelationshipById( rel.getId() ),
-                        getIndexFor( property.getIndex() ).getKey(),
+                        getIndexFor( property.getIndex(), tx ).getKey(),
                         property.getValue(), value );
             }
         }
@@ -1052,7 +1040,7 @@ public class NodeManager
                 value );
     }
 
-    void relRemoveProperty( RelationshipImpl rel, PropertyData property )
+    void relRemoveProperty( RelationshipImpl rel, PropertyData property, TransactionState tx )
     {
         if ( !relationshipPropertyTrackers.isEmpty() )
         {
@@ -1060,36 +1048,11 @@ public class NodeManager
             {
                 relPropertyTracker.propertyRemoved(
                         getRelationshipById( rel.getId() ),
-                        getIndexFor( property.getIndex() ).getKey(),
+                        getIndexFor( property.getIndex(), tx ).getKey(),
                         property.getValue() );
             }
         }
         persistenceManager.relRemoveProperty( rel.getId(), property );
-    }
-
-    public Collection<Long> getCowRelationshipRemoveMap( NodeImpl node, String type )
-    {
-        return lockReleaser.getCowRelationshipRemoveMap( node, type );
-    }
-
-    public Collection<Long> getOrCreateCowRelationshipRemoveMap( NodeImpl node, String type )
-    {
-        return lockReleaser.getOrCreateCowRelationshipRemoveMap( node, type );
-    }
-
-    public ArrayMap<String, RelIdArray> getCowRelationshipAddMap( NodeImpl node )
-    {
-        return lockReleaser.getCowRelationshipAddMap( node );
-    }
-
-    public RelIdArray getCowRelationshipAddMap( NodeImpl node, String string )
-    {
-        return lockReleaser.getCowRelationshipAddMap( node, string );
-    }
-
-    public RelIdArray getOrCreateCowRelationshipAddMap( NodeImpl node, String string )
-    {
-        return lockReleaser.getOrCreateCowRelationshipAddMap( node, string );
     }
 
     public NodeImpl getNodeIfCached( long nodeId )
@@ -1100,40 +1063,6 @@ public class NodeManager
     public RelationshipImpl getRelIfCached( long nodeId )
     {
         return relCache.get( nodeId );
-    }
-
-    public ArrayMap<Integer, PropertyData> getCowPropertyRemoveMap(
-            Primitive primitive )
-    {
-        return lockReleaser.getCowPropertyRemoveMap( primitive );
-    }
-
-    private void deletePrimitive( Primitive primitive )
-    {
-        lockReleaser.deletePrimitive( primitive );
-    }
-
-    public ArrayMap<Integer, PropertyData> getCowPropertyAddMap(
-            Primitive primitive )
-    {
-        return lockReleaser.getCowPropertyAddMap( primitive );
-    }
-
-    public ArrayMap<Integer, PropertyData> getOrCreateCowPropertyAddMap(
-            Primitive primitive )
-    {
-        return lockReleaser.getOrCreateCowPropertyAddMap( primitive );
-    }
-
-    public ArrayMap<Integer, PropertyData> getOrCreateCowPropertyRemoveMap(
-            Primitive primitive )
-    {
-        return lockReleaser.getOrCreateCowPropertyRemoveMap( primitive );
-    }
-
-    LockReleaser getLockReleaser()
-    {
-        return this.lockReleaser;
     }
 
     LockManager getLockManager()
@@ -1151,11 +1080,6 @@ public class NodeManager
         propertyIndexManager.addPropertyIndex( index );
     }
 
-    public TransactionData getTransactionData()
-    {
-        return lockReleaser.getTransactionData();
-    }
-
     RelIdArray getCreatedNodes()
     {
         return persistenceManager.getCreatedNodes();
@@ -1171,10 +1095,10 @@ public class NodeManager
         return persistenceManager.isRelationshipCreated( relId );
     }
 
-    public String getKeyForProperty( PropertyData property )
+    public String getKeyForProperty( PropertyData property, TransactionState tx )
     {
         // int keyId = persistenceManager.getKeyIdForProperty( property );
-        return propertyIndexManager.getIndexFor( property.getIndex() ).getKey();
+        return propertyIndexManager.getIndexFor( property.getIndex(), tx ).getKey();
     }
 
     public RelationshipTypeHolder getRelationshipTypeHolder()
@@ -1202,47 +1126,32 @@ public class NodeManager
         relationshipPropertyTrackers.remove( relationshipPropertyTracker );
     }
 
-    public boolean isDeleted( PropertyContainer resource )
+    // For compatibility reasons with Cypher
+    public boolean isDeleted( PropertyContainer entity )
     {
-        Transaction transaction;
-        try
-        {
-            transaction = transactionManager.getTransaction();
-        }
-        catch ( SystemException se )
-        {
-            // our TM never throws this exception
-            log.log( Level.SEVERE, "Failed to retrieve transaction", se );
-            return false;
-        }
-
-        if ( transaction == null )
-        {
-            return false;
-        }
-
-        boolean dontCreateIfMissing = false;
-        LockReleaser.PrimitiveElement primitiveElement = lockReleaser.getPrimitiveElement( transaction,
-                dontCreateIfMissing );
-
-        if ( primitiveElement == null )
-        {
-            return false;
-        }
-
-        LockReleaser.CowEntityElement cowEntity;
-        if ( resource instanceof Node )
-        {
-            cowEntity = primitiveElement.nodeElement( ((Node) resource).getId(), false );
-        }
+        if ( entity instanceof Node )
+            return isDeleted( (Node)entity );
+        else if ( entity instanceof Relationship )
+            return isDeleted( (Relationship)entity );
         else
-        {
-            cowEntity = primitiveElement.relationshipElement( ((Relationship) resource).getId(), false );
-        }
-
-        return cowEntity != null && cowEntity.deleted;
+            throw new IllegalArgumentException( "Unknown entity type: " + entity + ", " + entity.getClass() );
     }
-
+    
+    public boolean isDeleted( Node resource )
+    {
+        return getTransactionState().isDeleted( resource );
+    }
+    
+    public boolean isDeleted( Relationship resource )
+    {
+        return getTransactionState().isDeleted( resource );
+    }        
+    
+    PersistenceManager getPersistenceManager()
+    {
+        return persistenceManager;
+    }
+    
     private GraphProperties instantiateGraphProperties()
     {
         return new GraphProperties( this );
@@ -1267,7 +1176,12 @@ public class NodeManager
     {
         relCache.updateSize( rel, newSize );
     }
-
+    
+    TransactionState getTransactionState()
+    {
+        return transactionManager.getTransactionState();
+    }
+    
     private class NodeManagerDatasourceListener implements DataSourceRegistrationListener
     {
         @Override

@@ -26,7 +26,6 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
-import org.neo4j.kernel.impl.core.LockReleaser;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.RelationshipTypeHolder;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
@@ -50,9 +49,6 @@ public interface GraphDatabaseAPI
 
     @Deprecated
     NodeManager getNodeManager();
-
-    @Deprecated
-    LockReleaser getLockReleaser();
 
     @Deprecated
     LockManager getLockManager();

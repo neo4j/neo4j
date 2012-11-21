@@ -78,10 +78,12 @@ import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.TransactionInterceptorProviders;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.cache.LruCache;
+import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.index.IndexProviderStore;
 import org.neo4j.kernel.impl.index.IndexStore;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
+import org.neo4j.kernel.impl.transaction.TransactionStateFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBackedXaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
@@ -251,8 +253,8 @@ public class LuceneDataSource extends LogBackedXaDataSource
                 return (T) LuceneDataSource.this.config;
             }
         };
-        xaContainer = xaFactory.newXaContainer(this, this.baseStorePath + File.separator + "lucene.log", cf, tf,
-                new TransactionInterceptorProviders( new HashSet<TransactionInterceptorProvider>(), dummy ));
+        xaContainer = xaFactory.newXaContainer( this, this.baseStorePath + File.separator + "lucene.log", cf, tf,
+                TransactionStateFactory.NO_STATE_FACTORY, new TransactionInterceptorProviders( new HashSet<TransactionInterceptorProvider>(), dummy ) );
         closed = false;
         if ( !isReadOnly )
         {
@@ -377,7 +379,7 @@ public class LuceneDataSource extends LogBackedXaDataSource
     private class LuceneTransactionFactory extends XaTransactionFactory
     {
         @Override
-        public XaTransaction create( int identifier )
+        public XaTransaction create( int identifier, TransactionState state )
         {
             return createTransaction( identifier, this.getLogicalLog() );
         }

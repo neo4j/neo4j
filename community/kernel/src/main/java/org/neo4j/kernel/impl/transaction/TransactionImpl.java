@@ -40,6 +40,7 @@ import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
 
 import org.neo4j.helpers.Exceptions;
+import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
 import org.neo4j.kernel.impl.util.MultipleCauseException;
@@ -63,6 +64,7 @@ class TransactionImpl implements Transaction
         new LinkedList<ResourceElement>();
     private List<Synchronization> syncHooks =
         new ArrayList<Synchronization>();
+    private boolean hasChanges;
 
     private final int eventIdentifier;
 
@@ -70,9 +72,12 @@ class TransactionImpl implements Transaction
     private final ForceMode forceMode;
     private Thread owner;
 
-    TransactionImpl( TxManager txManager, ForceMode forceMode )
+    private TransactionState state;
+
+    TransactionImpl( TxManager txManager, ForceMode forceMode, TransactionState state )
     {
         this.txManager = txManager;
+        this.state = state;
         globalId = XidImpl.getNewGlobalId();
         eventIdentifier = txManager.getNextEventIdentifier();
         this.forceMode = forceMode;
@@ -92,6 +97,16 @@ class TransactionImpl implements Transaction
     byte[] getGlobalId()
     {
         return globalId;
+    }
+    
+    boolean hasChanges()
+    {
+        return hasChanges;
+    }
+    
+    public TransactionState getState()
+    {
+        return state;
     }
 
     @Override
@@ -158,6 +173,7 @@ class TransactionImpl implements Transaction
                     byte branchId[] = txManager.getBranchId( xaRes );
                     Xid xid = new XidImpl( globalId, branchId );
                     resourceList.add( new ResourceElement( xid, xaRes ) );
+                    hasChanges = true;
                     xaRes.start( xid, XAResource.TMNOFLAGS );
                     try
                     {
@@ -255,6 +271,7 @@ class TransactionImpl implements Transaction
         {
             resourceList.add( element );
         }
+        hasChanges = true;
     }
 
     @Override

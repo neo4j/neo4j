@@ -28,21 +28,21 @@ import javax.transaction.Status;
 import javax.transaction.Synchronization;
 import javax.transaction.SystemException;
 import javax.transaction.Transaction;
-import javax.transaction.TransactionManager;
 import javax.transaction.xa.XAResource;
 
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.Pair;
-import org.neo4j.kernel.impl.core.LockReleaser;
 import org.neo4j.kernel.impl.core.PropertyIndex;
 import org.neo4j.kernel.impl.core.TransactionEventsSyncHook;
+import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.core.TxEventSyncHookFactory;
 import org.neo4j.kernel.impl.nioneo.store.NameData;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.xa.NioNeoDbPersistenceSource;
+import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.transaction.xaframework.XaConnection;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.RelIdArray;
@@ -54,27 +54,20 @@ public class PersistenceManager
         .getName() );
 
     private final PersistenceSource persistenceSource;
-    private final TransactionManager transactionManager;
-    private LockReleaser lockReleaser;
+    private final AbstractTransactionManager transactionManager;
 
     private final ArrayMap<Transaction,NeoStoreTransaction> txConnectionMap =
         new ArrayMap<Transaction,NeoStoreTransaction>( (byte)5, true, true );
 
     private final TxEventSyncHookFactory syncHookFactory;
 
-    public PersistenceManager( TransactionManager transactionManager,
+    public PersistenceManager( AbstractTransactionManager transactionManager,
             PersistenceSource persistenceSource,
-            TxEventSyncHookFactory syncHookFactory, LockReleaser lockReleaser )
+            TxEventSyncHookFactory syncHookFactory )
     {
         this.transactionManager = transactionManager;
         this.persistenceSource = persistenceSource;
         this.syncHookFactory = syncHookFactory;
-        this.lockReleaser = lockReleaser;
-    }
-
-    public void setLockReleaser(LockReleaser lockReleaser)
-    {
-        this.lockReleaser = lockReleaser;
     }
 
     public NodeRecord loadLightNode( long id )
@@ -279,8 +272,10 @@ public class PersistenceManager
                 }
                 con = persistenceSource.createTransaction( xaConnection );
 
-                tx.registerSynchronization( new TxCommitHook( tx ) );
-                if ( registerEventHooks ) registerTransactionEventHookIfNeeded();
+                TransactionState state = transactionManager.getTransactionState();
+                tx.registerSynchronization( new TxCommitHook( tx, state ) );
+                if ( registerEventHooks )
+                    registerTransactionEventHookIfNeeded( tx );
                 txConnectionMap.put( tx, con );
             }
             catch ( javax.transaction.RollbackException re )
@@ -297,14 +292,13 @@ public class PersistenceManager
         return con;
     }
 
-    private void registerTransactionEventHookIfNeeded()
+    private void registerTransactionEventHookIfNeeded( Transaction tx )
             throws SystemException, RollbackException
     {
         TransactionEventsSyncHook hook = syncHookFactory.create();
         if ( hook != null )
         {
-            this.transactionManager.getTransaction().registerSynchronization(
-                    hook );
+            tx.registerSynchronization( hook );
         }
     }
 
@@ -325,10 +319,12 @@ public class PersistenceManager
     private class TxCommitHook implements Synchronization
     {
         private final Transaction tx;
+        private final TransactionState state;
 
-        TxCommitHook( Transaction tx )
+        TxCommitHook( Transaction tx, TransactionState state )
         {
             this.tx = tx;
+            this.state = state;
         }
 
         @Override
@@ -337,11 +333,11 @@ public class PersistenceManager
             releaseConnections( tx );
             if ( param == Status.STATUS_COMMITTED )
             {
-                lockReleaser.commit(tx);
+                state.commit();
             }
             else
             {
-                lockReleaser.rollback(tx);
+                state.rollback();
             }
         }
 

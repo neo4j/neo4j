@@ -218,22 +218,16 @@ public class TestSizeOf
                 size );
     }
     
-    public static RelationshipArraySize array( String type )
+    public static RelationshipArraySize array()
     {
-        return new RelationshipArraySize( type );
+        return new RelationshipArraySize();
     }
     
     private static class RelationshipArraySize
     {
-        private final String type;
         private int nrOut;
         private int nrIn;
         private int nrLoop;
-
-        RelationshipArraySize( String type )
-        {
-            this.type = type;
-        }
 
         RelationshipArraySize withOutRelationships( int nrOut )
         {
@@ -261,7 +255,7 @@ public class TestSizeOf
 
         int size()
         {
-            int size = REFERENCE_SIZE + sizeOf( type ) +  // for the type String reference and size itself in RelIdArray
+            int size = 8 + // for the type (padded)
                     REFERENCE_SIZE * 2; // for the IdBlock references in RelIdArray
             for ( int rels : new int[] { nrOut, nrIn, nrLoop } )
             {
@@ -372,7 +366,7 @@ public class TestSizeOf
     {
         Node node = createNodeAndLoadFresh( map(), 1, 1 );
         assertEquals( withNodeOverhead(
-                relationships().add( array( relTypeName( 0 ) ).withOutRelationships( 1 ) ).size() ),
+                relationships().add( array().withOutRelationships( 1 ) ).size() ),
                 sizeOfNode( node ) );
     }
     
@@ -381,7 +375,7 @@ public class TestSizeOf
     {
         Node node = createNodeAndLoadFresh( map(), 10, 1 );
         assertEquals( withNodeOverhead( relationships().add(
-                array( relTypeName( 0 ) ).withOutRelationships( 10 ) ).size() ), sizeOfNode( node ) );
+                array().withOutRelationships( 10 ) ).size() ), sizeOfNode( node ) );
     }
     
     @Test
@@ -389,9 +383,9 @@ public class TestSizeOf
     {
         Node node = createNodeAndLoadFresh( map(), 3, 3 );
         assertEquals( withNodeOverhead( relationships().add(
-                array( relTypeName( 0 ) ).withOutRelationships( 3 ) ).add(
-                array( relTypeName( 1 ) ).withOutRelationships( 3 ) ).add(
-                array( relTypeName( 2 ) ).withOutRelationships( 3 ) ).size() ), sizeOfNode( node ) );
+                array().withOutRelationships( 3 ) ).add(
+                array().withOutRelationships( 3 ) ).add(
+                array().withOutRelationships( 3 ) ).size() ), sizeOfNode( node ) );
     }
     
     @Test
@@ -399,9 +393,9 @@ public class TestSizeOf
     {
         Node node = createNodeAndLoadFresh( map(), 9, 3, 1 );
         assertEquals( withNodeOverhead( relationships().add(
-                array( relTypeName( 0 ) ).withRelationshipInAllDirections( 3 ) ).add(
-                array( relTypeName( 1 ) ).withRelationshipInAllDirections( 3 ) ).add(
-                array( relTypeName( 2 ) ).withRelationshipInAllDirections( 3 ) ).size() ),
+                array().withRelationshipInAllDirections( 3 ) ).add(
+                array().withRelationshipInAllDirections( 3 ) ).add(
+                array().withRelationshipInAllDirections( 3 ) ).size() ),
                 sizeOfNode( node ) );
     }
 
@@ -412,9 +406,9 @@ public class TestSizeOf
         Node node = createNodeAndLoadFresh( map( "age", 10, "array", array ), 9, 3, 1 );
         assertEquals(
             withNodeOverhead( relationships().add(
-                array( relTypeName( 0 ) ).withRelationshipInAllDirections( 3 ) ).add(
-                array( relTypeName( 1 ) ).withRelationshipInAllDirections( 3 ) ).add(
-                array( relTypeName( 2 ) ).withRelationshipInAllDirections( 3 ) ).size() +
+                array().withRelationshipInAllDirections( 3 ) ).add(
+                array().withRelationshipInAllDirections( 3 ) ).add(
+                array().withRelationshipInAllDirections( 3 ) ).size() +
                 properties().withSmallPrimitiveProperty().withArrayProperty( array ).size() ),
             sizeOfNode( node ) );
     }

@@ -23,6 +23,7 @@ package org.neo4j.kernel.impl.nioneo.store;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.kernel.impl.transaction.TransactionStateFactory.NO_STATE_FACTORY;
 
 import java.io.File;
 import java.io.IOException;
@@ -52,14 +53,13 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.CombiningIterable;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
+import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.TransactionInterceptorProviders;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConfigurationDefaults;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
-import org.neo4j.kernel.impl.core.LockReleaser;
 import org.neo4j.kernel.impl.core.PropertyIndex;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaConnection;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
@@ -159,7 +159,6 @@ public class TestNeoStore extends AbstractNeo4jTestCase
     private void initializeStores() throws IOException
     {
         LockManager lockManager = getEmbeddedGraphDb().getLockManager();
-        LockReleaser lockReleaser = getEmbeddedGraphDb().getLockReleaser();
 
         FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
         final Config config = new Config( new ConfigurationDefaults(GraphDatabaseSettings.class ).apply( MapUtil.stringMap(
@@ -169,10 +168,10 @@ public class TestNeoStore extends AbstractNeo4jTestCase
         StoreFactory sf = new StoreFactory(config, new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(),
                 fileSystem, StringLogger.DEV_NULL, null );
 
-        ds = new NeoStoreXaDataSource(config, sf, lockManager, lockReleaser, StringLogger.DEV_NULL,
+        ds = new NeoStoreXaDataSource(config, sf, lockManager, StringLogger.DEV_NULL,
                 new XaFactory(config, TxIdGenerator.DEFAULT, new PlaceboTm(),
                         new DefaultLogBufferFactory(), fileSystem, StringLogger.DEV_NULL, RecoveryVerifier.ALWAYS_VALID,
-                        LogPruneStrategies.NO_PRUNING ), new TransactionInterceptorProviders( Collections.<TransactionInterceptorProvider>emptyList(), new DependencyResolver()
+                        LogPruneStrategies.NO_PRUNING ), NO_STATE_FACTORY, new TransactionInterceptorProviders( Collections.<TransactionInterceptorProvider>emptyList(), new DependencyResolver()
 
         {
             @Override

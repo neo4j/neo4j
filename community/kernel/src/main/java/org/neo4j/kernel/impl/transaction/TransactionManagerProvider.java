@@ -46,5 +46,6 @@ public abstract class TransactionManagerProvider extends Service
     		KernelPanicEventGenerator kpe, 
     		TxHook rollbackHook, 
     		StringLogger msgLog, 
-    		FileSystemAbstraction fileSystem );
+    		FileSystemAbstraction fileSystem,
+    		TransactionStateFactory stateFactory );
 }

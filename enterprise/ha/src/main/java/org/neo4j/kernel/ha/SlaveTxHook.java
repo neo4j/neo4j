@@ -22,26 +22,22 @@ package org.neo4j.kernel.ha;
 import javax.transaction.Transaction;
 
 import org.neo4j.com.Response;
-import org.neo4j.kernel.ha.HaXaDataSourceManager;
-import org.neo4j.kernel.ha.Master;
-import org.neo4j.kernel.ha.RequestContextFactory;
-import org.neo4j.kernel.ha.TxHookModeSwitcher;
-import org.neo4j.kernel.impl.core.LockReleaser;
+import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.transaction.TxHook;
 
 public class SlaveTxHook implements TxHook
 {
     private final Master master;
-    private final LockReleaser lockReleaser;
     private final HaXaDataSourceManager xaDsm;
     private final RequestContextFactory contextFactory;
+    private final AbstractTransactionManager txManager;
 
-    public SlaveTxHook( Master master, LockReleaser lockReleaser, HaXaDataSourceManager xaDsm,
-                        TxHookModeSwitcher.RequestContextFactoryResolver contextFactory )
+    public SlaveTxHook( Master master, HaXaDataSourceManager xaDsm,
+                        TxHookModeSwitcher.RequestContextFactoryResolver contextFactory, AbstractTransactionManager txManager )
     {
-        this.lockReleaser = lockReleaser;
         this.master = master;
         this.xaDsm = xaDsm;
+        this.txManager = txManager;
         this.contextFactory = contextFactory.get();
     }
 
@@ -55,7 +51,7 @@ public class SlaveTxHook implements TxHook
     @Override
     public boolean hasAnyLocks( Transaction tx )
     {
-        return lockReleaser.hasLocks( tx );
+        return txManager.getTransactionState().hasLocks();
     }
 
     @Override

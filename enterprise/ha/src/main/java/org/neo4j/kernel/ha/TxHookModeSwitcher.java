@@ -21,17 +21,19 @@ package org.neo4j.kernel.ha;
 
 import java.net.URI;
 
+import javax.transaction.TransactionManager;
+
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.ha.cluster.AbstractModeSwitcher;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberStateMachine;
-import org.neo4j.kernel.impl.core.LockReleaser;
+import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.transaction.TxHook;
 
 public class TxHookModeSwitcher extends AbstractModeSwitcher<TxHook>
 {
     private final Master master;
     private final RequestContextFactoryResolver requestContextFactory;
-    private DependencyResolver resolver;
+    private final DependencyResolver resolver;
 
     public TxHookModeSwitcher( HighAvailabilityMemberStateMachine stateMachine,
                                DelegateInvocationHandler<TxHook> delegate, Master master,
@@ -52,8 +54,8 @@ public class TxHookModeSwitcher extends AbstractModeSwitcher<TxHook>
     @Override
     protected TxHook getSlaveImpl( URI serverHaUri )
     {
-        return new SlaveTxHook( master, resolver.resolveDependency( LockReleaser.class ),
-                resolver.resolveDependency( HaXaDataSourceManager.class ), requestContextFactory );
+        return new SlaveTxHook( master, resolver.resolveDependency( HaXaDataSourceManager.class ),
+                requestContextFactory, (AbstractTransactionManager)resolver.resolveDependency( TransactionManager.class ) );
     }
 
     public interface RequestContextFactoryResolver

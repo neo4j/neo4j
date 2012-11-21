@@ -25,7 +25,7 @@ import java.nio.channels.ReadableByteChannel;
 import java.util.Collection;
 import java.util.logging.Logger;
 
-import org.neo4j.kernel.impl.core.LockReleaser;
+import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
@@ -288,7 +288,7 @@ public abstract class Command extends XaCommand
     private static final byte PROP_INDEX_COMMAND = (byte) 5;
     private static final byte NEOSTORE_COMMAND = (byte) 6;
 
-    abstract void removeFromCache( LockReleaser lockReleaser );
+    abstract void removeFromCache( TransactionState state );
 
     static class NodeCommand extends Command
     {
@@ -309,9 +309,9 @@ public abstract class Command extends XaCommand
         }
 
         @Override
-        void removeFromCache( LockReleaser lockReleaser )
+        void removeFromCache( TransactionState state )
         {
-            lockReleaser.removeNodeFromCache( getKey() );
+            state.removeNodeFromCache( getKey() );
         }
 
         @Override
@@ -430,13 +430,13 @@ public abstract class Command extends XaCommand
         }
 
         @Override
-        void removeFromCache( LockReleaser lockReleaser )
+        void removeFromCache( TransactionState state )
         {
-            lockReleaser.removeRelationshipFromCache( getKey() );
+            state.removeRelationshipFromCache( getKey() );
             if ( this.getFirstNode() != -1 || this.getSecondNode() != -1 )
             {
-                lockReleaser.removeNodeFromCache( this.getFirstNode() );
-                lockReleaser.removeNodeFromCache( this.getSecondNode() );
+                state.removeNodeFromCache( this.getFirstNode() );
+                state.removeNodeFromCache( this.getSecondNode() );
             }
         }
 
@@ -607,7 +607,7 @@ public abstract class Command extends XaCommand
         }
 
         @Override
-        void removeFromCache( LockReleaser lockReleaser )
+        void removeFromCache( TransactionState state )
         {
             // no-op
         }
@@ -659,7 +659,7 @@ public abstract class Command extends XaCommand
         }
 
         @Override
-        void removeFromCache( LockReleaser lockReleaser )
+        void removeFromCache( TransactionState state )
         {
             // no-op
         }
@@ -792,17 +792,17 @@ public abstract class Command extends XaCommand
         }
 
         @Override
-        void removeFromCache( LockReleaser lockReleaser )
+        void removeFromCache( TransactionState state )
         {
             long nodeId = this.getNodeId();
             long relId = this.getRelId();
             if ( nodeId != -1 )
             {
-                lockReleaser.removeNodeFromCache( nodeId );
+                state.removeNodeFromCache( nodeId );
             }
             else if ( relId != -1 )
             {
-                lockReleaser.removeRelationshipFromCache( relId );
+                state.removeRelationshipFromCache( relId );
             }
         }
 
@@ -1018,7 +1018,7 @@ public abstract class Command extends XaCommand
         }
 
         @Override
-        void removeFromCache( LockReleaser lockReleaser )
+        void removeFromCache( TransactionState state )
         {
             // no-op
         }
