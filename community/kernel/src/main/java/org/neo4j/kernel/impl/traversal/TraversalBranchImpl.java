@@ -127,22 +127,7 @@ class TraversalBranchImpl implements TraversalBranch
     public void initialize( final PathExpander expander, TraversalContext metadata )
     {
         evaluate( metadata );
-        
-        // Instantiate an Iterator<Relationship> which will initialize the real
-        // iterator on the first call to hasNext() and rebind the relationships
-        // variable to it.
-        relationships = new Iterator<Relationship>()
-        {
-            @Override
-            public boolean hasNext()
-            {
-                expandRelationships( expander );
-                return relationships.hasNext();
-            }
-
-            @Override public Relationship next() { throw new UnsupportedOperationException(); }
-            @Override public void remove() { throw new UnsupportedOperationException(); }
-        };
+        expandRelationships( expander );
     }
 
     public TraversalBranch next( PathExpander expander, TraversalContext context )

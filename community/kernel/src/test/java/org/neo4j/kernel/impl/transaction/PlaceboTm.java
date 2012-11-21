@@ -27,6 +27,8 @@ import javax.transaction.RollbackException;
 import javax.transaction.SystemException;
 import javax.transaction.Transaction;
 
+import org.neo4j.kernel.impl.core.TransactionState;
+
 public class PlaceboTm extends AbstractTransactionManager
 {
     public void begin() throws NotSupportedException, SystemException
@@ -122,5 +124,11 @@ public class PlaceboTm extends AbstractTransactionManager
     @Override
     public void doRecovery() throws Throwable
     {
+    }
+
+    @Override
+    public TransactionState getTransactionState()
+    {
+        return TransactionState.NO_STATE;
     }
 }

@@ -22,6 +22,8 @@ package org.neo4j.kernel.impl.transaction;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.naming.NamingException;
 import javax.transaction.HeuristicMixedException;
@@ -36,6 +38,7 @@ import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
+import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -45,7 +48,6 @@ import org.objectweb.jotm.TransactionResourceManager;
 
 public class JOTMTransactionManager extends AbstractTransactionManager
 {
-
     @Override
     public int getEventIdentifier()
     {
@@ -63,9 +65,9 @@ public class JOTMTransactionManager extends AbstractTransactionManager
         public AbstractTransactionManager loadTransactionManager(
                 String txLogDir, XaDataSourceManager xaDataSourceManager, KernelPanicEventGenerator kpe,
                 TxHook rollbackHook, StringLogger msgLog,
-                FileSystemAbstraction fileSystem )
+                FileSystemAbstraction fileSystem, TransactionStateFactory stateFactory )
         {
-            return new JOTMTransactionManager( xaDataSourceManager );
+            return new JOTMTransactionManager( xaDataSourceManager, stateFactory );
         }
     }
 
@@ -74,10 +76,13 @@ public class JOTMTransactionManager extends AbstractTransactionManager
     private final TransactionManager current;
     private final Jotm jotm;
     private final XaDataSourceManager xaDataSourceManager;
+    private final Map<Transaction, TransactionState> states = new HashMap<Transaction, TransactionState>();
+    private final TransactionStateFactory stateFactory;
 
-    private JOTMTransactionManager( XaDataSourceManager xaDataSourceManager )
+    private JOTMTransactionManager( XaDataSourceManager xaDataSourceManager, TransactionStateFactory stateFactory )
     {
         this.xaDataSourceManager = xaDataSourceManager;
+        this.stateFactory = stateFactory;
 
         Registry registry = null;
         try
@@ -126,6 +131,8 @@ public class JOTMTransactionManager extends AbstractTransactionManager
     public void begin() throws NotSupportedException, SystemException
     {
         current.begin();
+        Transaction tx = getTransaction();
+        states.put( tx, stateFactory.create() );
     }
 
     @Override
@@ -184,11 +191,10 @@ public class JOTMTransactionManager extends AbstractTransactionManager
         return current.suspend();
     }
 
-    @Override
-    public void start() throws Throwable
-    {
-
-    }
+	@Override
+	public void start() throws Throwable
+	{
+	}
 
     /**
      * Stops the JOTM instance.
@@ -199,11 +205,15 @@ public class JOTMTransactionManager extends AbstractTransactionManager
         jotm.stop();
     }
 
-    @Override
-    public void shutdown() throws Throwable
-    {
-
-    }
+	@Override
+	public void shutdown() throws Throwable
+	{
+	}
+	
+	public Jotm getJotmTxManager()
+	{
+	    return jotm;
+	}
 
     @Override
     public void doRecovery() throws Throwable
@@ -232,9 +242,17 @@ public class JOTMTransactionManager extends AbstractTransactionManager
         }
     }
 
-    public Jotm getJotmTxManager()
+    @Override
+    public TransactionState getTransactionState()
     {
-        return jotm;
+        try
+        {
+            TransactionState state = states.get( getTransaction() );
+            return state != null ? state : TransactionState.NO_STATE;
+        }
+        catch ( SystemException e )
+        {
+            throw new RuntimeException( e );
+        }
     }
-
 }

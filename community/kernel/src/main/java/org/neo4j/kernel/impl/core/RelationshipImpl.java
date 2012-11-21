@@ -21,9 +21,8 @@ package org.neo4j.kernel.impl.core;
 
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.kernel.impl.core.LockReleaser.CowEntityElement;
-import org.neo4j.kernel.impl.core.LockReleaser.PrimitiveElement;
+import org.neo4j.kernel.impl.core.WritableTransactionState.CowEntityElement;
+import org.neo4j.kernel.impl.core.WritableTransactionState.PrimitiveElement;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.transaction.LockException;
 import org.neo4j.kernel.impl.transaction.LockType;
@@ -61,9 +60,9 @@ public class RelationshipImpl extends ArrayBasedPrimitive
 
     @Override
     protected PropertyData changeProperty( NodeManager nodeManager,
-            PropertyData property, Object value )
+            PropertyData property, Object value, TransactionState tx )
     {
-        return nodeManager.relChangeProperty( this, property, value );
+        return nodeManager.relChangeProperty( this, property, value, tx );
     }
 
     @Override
@@ -80,9 +79,9 @@ public class RelationshipImpl extends ArrayBasedPrimitive
 
     @Override
     protected void removeProperty( NodeManager nodeManager,
-            PropertyData property )
+            PropertyData property, TransactionState tx )
     {
-        nodeManager.relRemoveProperty( this, property );
+        nodeManager.relRemoveProperty( this, property, tx );
     }
 
     @Override
@@ -121,6 +120,7 @@ public class RelationshipImpl extends ArrayBasedPrimitive
         boolean endNodeLocked = false;
         boolean thisLocked = false;
         boolean success = false;
+        TransactionState tx = null;
         try
         {
             startNode = nodeManager.getLightNode( getStartNodeId() );
@@ -140,10 +140,11 @@ public class RelationshipImpl extends ArrayBasedPrimitive
             // no need to load full relationship, all properties will be
             // deleted when relationship is deleted
 
+            tx = nodeManager.getTransactionState();
             ArrayMap<Integer,PropertyData> skipMap =
-                nodeManager.getOrCreateCowPropertyRemoveMap( this );
+                tx.getOrCreateCowPropertyRemoveMap( this );
             ArrayMap<Integer,PropertyData> removedProps =
-                nodeManager.deleteRelationship( this );
+                nodeManager.deleteRelationship( this, tx );
             if ( removedProps.size() > 0 )
             {
                 for ( int index : removedProps.keySet() )
@@ -152,15 +153,15 @@ public class RelationshipImpl extends ArrayBasedPrimitive
                 }
             }
             success = true;
-            RelationshipType type = nodeManager.getRelationshipTypeById( getTypeId() );
+            int typeId = getTypeId();
             long id = getId();
             if ( startNode != null )
             {
-                startNode.removeRelationship( nodeManager, type, id );
+                tx.getOrCreateCowRelationshipRemoveMap( startNode, typeId ).add( id );
             }
             if ( endNode != null )
             {
-                endNode.removeRelationship( nodeManager, type, id );
+                tx.getOrCreateCowRelationshipRemoveMap( endNode, typeId ).add( id );
             }
             success = true;
         }
@@ -171,7 +172,7 @@ public class RelationshipImpl extends ArrayBasedPrimitive
             {
                 if ( thisLocked )
                 {
-                    nodeManager.releaseLock( proxy, LockType.WRITE );
+                    nodeManager.releaseLock( proxy, LockType.WRITE, tx );
                 }
             }
             catch ( Exception e )
@@ -183,7 +184,7 @@ public class RelationshipImpl extends ArrayBasedPrimitive
             {
                 if ( startNodeLocked )
                 {
-                    nodeManager.releaseLock( startNode, LockType.WRITE );
+                    nodeManager.releaseLock( startNode, LockType.WRITE, tx );
                 }
             }
             catch ( Exception e )
@@ -195,7 +196,7 @@ public class RelationshipImpl extends ArrayBasedPrimitive
             {
                 if ( endNodeLocked )
                 {
-                    nodeManager.releaseLock( endNode, LockType.WRITE );
+                    nodeManager.releaseLock( endNode, LockType.WRITE, tx );
                 }
             }
             catch ( Exception e )

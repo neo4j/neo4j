@@ -96,7 +96,7 @@ public class XaResourceManager
         }
         return status.getTransactionStatus().getTransaction();
     }
-
+    
     synchronized void start( XAResource xaResource, Xid xid )
         throws XAException
     {
@@ -109,7 +109,7 @@ public class XaResourceManager
         if ( xidMap.get( xid ) == null )
         {
             int identifier = log.start( xid, txIdGenerator.getCurrentMasterId(), txIdGenerator.getMyId() );
-            XaTransaction xaTx = tf.create( identifier );
+            XaTransaction xaTx = tf.create( identifier, transactionManager.getTransactionState() );
             xidMap.put( xid, new XidStatus( xaTx ) );
         }
     }

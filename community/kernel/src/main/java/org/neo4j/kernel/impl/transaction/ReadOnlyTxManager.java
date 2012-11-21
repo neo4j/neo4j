@@ -34,6 +34,7 @@ import javax.transaction.xa.XAResource;
 
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.impl.core.ReadOnlyDbException;
+import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.transaction.xaframework.XaResource;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -329,9 +330,15 @@ public class ReadOnlyTxManager extends AbstractTransactionManager
         }
         return -1;
     }
-
+    
     @Override
     public void doRecovery() throws Throwable
     {
+    }
+
+    @Override
+    public TransactionState getTransactionState()
+    {
+        return TransactionState.NO_STATE;
     }
 }

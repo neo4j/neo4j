@@ -41,8 +41,8 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Pair;
-import org.neo4j.kernel.impl.core.LockReleaser;
 import org.neo4j.kernel.impl.core.PropertyIndex;
+import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.nioneo.store.ConstraintViolationException;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
@@ -100,16 +100,16 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
     private boolean committed = false;
     private boolean prepared = false;
 
-    private final LockReleaser lockReleaser;
+    private final TransactionState state;
     private final LockManager lockManager;
     private XaConnection xaConnection;
 
     WriteTransaction( int identifier, XaLogicalLog log, NeoStore neoStore,
-            LockReleaser lockReleaser, LockManager lockManager )
+            TransactionState state, LockManager lockManager )
     {
         super( identifier, log );
         this.neoStore = neoStore;
-        this.lockReleaser = lockReleaser;
+        this.state = state;
         this.lockManager = lockManager;
     }
 
@@ -385,22 +385,22 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
 
     private void removeRelationshipTypeFromCache( int id )
     {
-        lockReleaser.removeRelationshipTypeFromCache( id );
+        state.removeRelationshipTypeFromCache( id );
     }
 
     private void removeRelationshipFromCache( long id )
     {
-        lockReleaser.removeRelationshipFromCache( id );
+        state.removeRelationshipFromCache( id );
     }
 
     private void removeNodeFromCache( long id )
     {
-        lockReleaser.removeNodeFromCache( id );
+        state.removeNodeFromCache( id );
     }
 
     private void removeGraphPropertiesFromCache()
     {
-        lockReleaser.removeGraphPropertiesFromCache();
+        state.removeGraphPropertiesFromCache();
     }
 
     private void addRelationshipType( int id )
@@ -409,7 +409,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         NameData type = isRecovered() ?
                 neoStore.getRelationshipTypeStore().getName( id, true ) :
                 neoStore.getRelationshipTypeStore().getName( id );
-        lockReleaser.addRelationshipType( type );
+        state.addRelationshipType( type );
     }
 
     private void addPropertyIndexCommand( int id )
@@ -417,7 +417,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         NameData index = isRecovered() ?
                 neoStore.getPropertyStore().getIndexStore().getName( id, true ) :
                 neoStore.getPropertyStore().getIndexStore().getName( id );
-        lockReleaser.addPropertyIndex( index );
+        state.addPropertyIndex( index );
     }
 
     @Override
@@ -493,7 +493,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
                 if ( !isRecovered )
                 {
                     updateFirstRelationships();
-                    lockReleaser.commitCows(); // updates the cached primitives
+                    state.commitCows(); // updates the cached primitives
                 }
                 neoStore.setLastCommittedTx( getCommitTxId() );
             }
@@ -520,7 +520,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
     private void updateFirstRelationships()
     {
         for ( NodeRecord record : nodeRecords.values() )
-            lockReleaser.setFirstIds( record.getId(), record.getNextRel(), record.getNextProp() );
+            state.setFirstIds( record.getId(), record.getNextRel(), record.getNextProp() );
     }
 
     private void executeCreated( boolean removeFromCache, List<? extends Command>... commands )
@@ -532,7 +532,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
                 command.execute();
                 if ( removeFromCache )
                 {
-                    command.removeFromCache( lockReleaser );
+                    command.removeFromCache( state );
                 }
             }
         }
@@ -547,7 +547,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
                 command.execute();
                 if ( removeFromCache )
                 {
-                    command.removeFromCache( lockReleaser );
+                    command.removeFromCache( state );
                 }
             }
         }
@@ -562,7 +562,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
                 command.execute();
                 if ( removeFromCache )
                 {
-                    command.removeFromCache( lockReleaser );
+                    command.removeFromCache( state );
                 }
             }
         }
@@ -870,7 +870,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
     private void getWriteLock( Relationship lockableRel )
     {
         lockManager.getWriteLock( lockableRel );
-        lockReleaser.addLockToTransaction( lockableRel, LockType.WRITE );
+        state.addLockToTransaction( lockManager, lockableRel, LockType.WRITE );
     }
 
     public long getRelationshipChainPosition( long nodeId )
@@ -1694,7 +1694,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
     @Override
     public RelIdArray getCreatedNodes()
     {
-        RelIdArray createdNodes = new RelIdArray( null );
+        RelIdArray createdNodes = new RelIdArray( 0 );
         for ( NodeRecord record : nodeRecords.values() )
         {
             if ( record.isCreated() )

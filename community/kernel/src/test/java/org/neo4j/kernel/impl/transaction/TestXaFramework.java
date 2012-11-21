@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.transaction;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
+import static org.neo4j.kernel.impl.transaction.TransactionStateFactory.NO_STATE_FACTORY;
 
 import java.io.File;
 import java.io.FilenameFilter;
@@ -50,6 +51,7 @@ import org.neo4j.kernel.TransactionInterceptorProviders;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConfigurationDefaults;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
+import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.xaframework.DefaultLogBufferFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
@@ -200,7 +202,7 @@ public class TestXaFramework extends AbstractNeo4jTestCase
     private static class DummyTransactionFactory extends XaTransactionFactory
     {
         @Override
-        public XaTransaction create( int identifier )
+        public XaTransaction create( int identifier, TransactionState state )
         {
             return new DummyTransaction( identifier, getLogicalLog() );
         }
@@ -247,7 +249,7 @@ public class TestXaFramework extends AbstractNeo4jTestCase
                 map.put( "store_dir", path() );
                 xaContainer = xaFactory.newXaContainer( this, resourceFile(),
                         new DummyCommandFactory(),
-                        new DummyTransactionFactory(), new TransactionInterceptorProviders(
+                        new DummyTransactionFactory(), NO_STATE_FACTORY, new TransactionInterceptorProviders(
                         Iterables.<TransactionInterceptorProvider>empty(),
                         new DependencyResolver()
                         {

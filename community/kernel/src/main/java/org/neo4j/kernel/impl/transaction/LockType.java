@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.transaction;
 
 import javax.transaction.Transaction;
 
-import org.neo4j.kernel.impl.core.LockReleaser;
+import org.neo4j.kernel.impl.core.TransactionState;
 
 /**
  * Enum defining the <CODE>READ</CODE> lock and the <CODE>WRITE</CODE> lock.
@@ -37,7 +37,7 @@ public enum LockType
         }
 
         @Override
-        public void unacquire( Object resource, LockManager lockManager, LockReleaser lockReleaser, Transaction tx )
+        public void unacquire( Object resource, LockManager lockManager, TransactionState state, Transaction tx )
         {
             lockManager.releaseReadLock( resource, tx );
         }
@@ -57,9 +57,9 @@ public enum LockType
         }
 
         @Override
-        public void unacquire( Object resource, LockManager lockManager, LockReleaser lockReleaser, Transaction tx )
+        public void unacquire( Object resource, LockManager lockManager, TransactionState state, Transaction tx )
         {
-            lockReleaser.addLockToTransaction( resource, this, tx );
+            state.addLockToTransaction( lockManager, resource, this );
         }
 
         @Override
@@ -71,7 +71,7 @@ public enum LockType
     
     public abstract void acquire( Object resource, LockManager lockManager, Transaction tx );
 
-    public abstract void unacquire( Object resource, LockManager lockManager, LockReleaser lockReleaser, Transaction tx );
+    public abstract void unacquire( Object resource, LockManager lockManager, TransactionState state, Transaction tx );
     
     public abstract void release( Object resource, LockManager lockManager, Transaction tx );
     
@@ -85,9 +85,9 @@ public enum LockType
         acquire( resource, lockManager, null);
     }
     
-    public void unacquire( Object resource, LockManager lockManager, LockReleaser lockReleaser)
+    public void unacquire( Object resource, LockManager lockManager, TransactionState state )
     {
-        unacquire( resource, lockManager, lockReleaser, null);
+        unacquire( resource, lockManager, state, null);
     }
     
     public void release( Object resource, LockManager lockManager ) 

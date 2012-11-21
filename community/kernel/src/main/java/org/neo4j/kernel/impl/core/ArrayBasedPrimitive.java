@@ -22,6 +22,9 @@ package org.neo4j.kernel.impl.core;
 import static org.neo4j.kernel.impl.cache.SizeOfs.withArrayOverheadIncludingReferences;
 import static org.neo4j.kernel.impl.cache.SizeOfs.withObjectOverhead;
 
+import java.util.Arrays;
+import java.util.Comparator;
+
 import org.neo4j.kernel.impl.cache.EntityWithSize;
 import org.neo4j.kernel.impl.cache.SizeOfs;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
@@ -88,8 +91,40 @@ abstract class ArrayBasedPrimitive extends Primitive implements EntityWithSize
         {
             result[i++] = property;
         }
+        sort( result );
         return result;
     }
+    
+    private static void sort( PropertyData[] array )
+    {
+        Arrays.sort( array, PROPERTY_DATA_COMPARATOR_FOR_SORTING );
+    }
+    
+    private static final Comparator<PropertyData> PROPERTY_DATA_COMPARATOR_FOR_SORTING = new Comparator<PropertyData>()
+    {
+        @Override
+        public int compare( PropertyData o1, PropertyData o2 )
+        {
+            return o1.getIndex() - o2.getIndex();
+        }
+    };
+    
+    /* This is essentially a deliberate misuse of Comparator, knowing details about Arrays#binarySearch.
+     * The signature is binarySearch( T[] array, T key, Comparator<T> ), but in this case we're
+     * comparing PropertyData[] to an int as key. To avoid having to create a new object for
+     * the key for each call we create a single Comparator taking the PropertyData as first
+     * argument and the key as the second, as #binarySearch does internally. Although the int
+     * here will be boxed I imagine it to be slightly better, with Integer caching for low
+     * integers. */
+    @SuppressWarnings( "rawtypes" )
+    static final Comparator PROPERTY_DATA_COMPARATOR_FOR_BINARY_SEARCH = new Comparator()
+    {
+        @Override
+        public int compare( Object o1, Object o2 )
+        {
+            return ((PropertyData)o1).getIndex() - ((Integer) o2).intValue();
+        }
+    };
 
     @Override
     public void setProperties( ArrayMap<Integer, PropertyData> properties, NodeManager nodeManager )
@@ -104,17 +139,13 @@ abstract class ArrayBasedPrimitive extends Primitive implements EntityWithSize
         return properties;
     }
 
+    @SuppressWarnings( "unchecked" )
     @Override
     protected PropertyData getPropertyForIndex( int keyId )
     {
-        for ( PropertyData property : properties )
-        {
-            if ( property.getIndex() == keyId )
-            {
-                return property;
-            }
-        }
-        return null;
+        PropertyData[] localProperties = properties;
+        int index = Arrays.binarySearch( localProperties, keyId, PROPERTY_DATA_COMPARATOR_FOR_BINARY_SEARCH );
+        return index < 0 ? null : localProperties[index];
     }
 
     @Override
@@ -200,10 +231,12 @@ abstract class ArrayBasedPrimitive extends Primitive implements EntityWithSize
             {
                 PropertyData[] compactedNewArray = new PropertyData[newArraySize];
                 System.arraycopy( newArray, 0, compactedNewArray, 0, newArraySize );
+                sort( compactedNewArray );
                 properties = compactedNewArray;
             }
             else
             {
+                sort( newArray );
                 properties = newArray;
             }
             updateSize( nodeManager );

@@ -29,7 +29,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.impl.core.LockReleaser;
+import org.neo4j.kernel.impl.core.WritableTransactionState;
 import org.neo4j.test.AbstractSubProcessTestBase;
 import org.neo4j.test.subprocess.BreakPoint;
 import org.neo4j.test.subprocess.DebugInterface;
@@ -107,7 +107,7 @@ public class TestPropertyReadOnNewEntityBeforeLockRelease extends AbstractSubPro
     }
 
     private volatile DebuggedThread thread;
-    private final BreakPoint lockReleaserCommit = new BreakPoint( LockReleaser.class, "commit", javax.transaction.Transaction.class )
+    private final BreakPoint lockReleaserCommit = new BreakPoint( WritableTransactionState.class, "commit" )
     {
         @Override
         protected void callback( DebugInterface debug ) throws KillSubProcess
