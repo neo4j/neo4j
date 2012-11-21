@@ -30,6 +30,7 @@ import org.junit.{Ignore, Test}
 import org.neo4j.index.lucene.ValueContext
 import org.neo4j.test.ImpermanentGraphDatabase
 import collection.mutable
+import util.Random
 
 class ExecutionEngineTest extends ExecutionEngineHelper {
 
@@ -2287,9 +2288,25 @@ RETURN x0.name?
 
   @Test
   def can_handle_paths_with_multiple_unnamed_nodes() {
-    val a = createNode()
     val result = parseAndExecute("START a=node(0) MATCH a<--()<--b-->()-->c RETURN c")
 
     assert(result.toList === List())
+  }
+
+  @Test
+  def getting_top_x_when_we_have_less_than_x_left() {
+    val r = new Random(1337)
+    val nodes = (0 to 15).map(x => createNode("count" -> x)).sortBy(x => r.nextInt(100))
+
+    val result = parseAndExecute("START a=node({nodes}) RETURN a.count ORDER BY a.count SKIP 10 LIMIT 10", "nodes" -> nodes)
+
+    assert(result.toList === List(
+      Map("a.count" -> 10),
+      Map("a.count" -> 11),
+      Map("a.count" -> 12),
+      Map("a.count" -> 13),
+      Map("a.count" -> 14),
+      Map("a.count" -> 15)
+    ))
   }
 }

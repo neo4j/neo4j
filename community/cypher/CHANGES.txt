@@ -7,6 +7,7 @@ o Major refactoring to make certain Cypher is more lazy
 o When asking for the top x rows by some value, Cypher will now only keep a list the size of x
 o Fix so identifiers created inside a foreach can be used by other statements in the foreach
 o Fix for problems when using patterns with multiple unnamed nodes
+o Fixes problems when doing ORDER BY ... LIMIT x. When x is larger than the input set, sorting was never done.
 
 1.9.M01 (2012-10-23)
 --------------------
