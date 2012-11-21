@@ -43,6 +43,7 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
     private StringLogger logger;
     private Iterable<HighAvailabilityMemberListener> memberListeners = Listeners.newListeners();
     private HighAvailabilityMemberState state;
+    private StateMachineClusterEventListener eventsListener;
 
     public HighAvailabilityMemberStateMachine( HighAvailabilityMemberContext context, InstanceAccessGuard accessGuard,
                                       HighAvailabilityEvents events, StringLogger logger )
@@ -51,13 +52,19 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
         this.accessGuard = accessGuard;
         this.events = events;
         this.logger = logger;
-        events.addClusterEventListener( new StateMachineClusterEventListener() );
         state = HighAvailabilityMemberState.PENDING;
+    }
+
+    @Override
+    public void init() throws Throwable
+    {
+        events.addClusterEventListener( eventsListener = new StateMachineClusterEventListener() );
     }
 
     @Override
     public void stop() throws Throwable
     {
+        events.removeClusterEventListener( eventsListener );
         HighAvailabilityMemberState oldState = state;
         state = HighAvailabilityMemberState.PENDING;
         final HighAvailabilityMemberChangeEvent event = new HighAvailabilityMemberChangeEvent( oldState, state, null, null );
@@ -69,7 +76,6 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
                 listener.instanceStops( event );
             }
         } );
-
         accessGuard.setState( state );
     }
 
