@@ -88,23 +88,9 @@
               <arguments>
                 <argument>init</argument>
                 <argument>preview</argument>
+                <argument>docbook</argument>
+                <argument>pdf</argument>
                 <argument>VERSION=${neo4j.version}</argument>
-              </arguments>
-            </configuration>
-          </execution>
-          <execution>
-            <id>execute-asciidoc-html5-print</id>
-            <phase>compile</phase>
-            <goals>
-              <goal>exec</goal>
-            </goals>
-            <configuration>
-              <executable>make</executable>
-              <arguments>
-                <argument>preview</argument>
-                <argument>VERSION=${neo4j.version}</argument>
-                <argument>HTML5_DIR_NAME=html5-print</argument>
-                <argument>HTML5_DOCINFO=docinfo</argument>
               </arguments>
             </configuration>
           </execution>
