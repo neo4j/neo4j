@@ -19,14 +19,10 @@
  */
 package org.neo4j.cypher.internal.commands
 
-import expressions.{Literal, Property, Expression}
-import java.lang.String
-import collection.Seq
+import expressions.{Literal, Expression}
 import scala.collection.JavaConverters._
-import org.neo4j.graphdb.{DynamicRelationshipType, Node, Direction, PropertyContainer}
+import org.neo4j.graphdb._
 import org.neo4j.cypher.internal.symbols._
-import org.neo4j.helpers.ThisShouldNotHappenError
-import collection.Map
 import org.neo4j.cypher.CypherTypeException
 import org.neo4j.cypher.internal.helpers.{IsCollection, CollectionSupport}
 import org.neo4j.cypher.internal.pipes.ExecutionContext
@@ -134,13 +130,8 @@ case class HasRelationshipTo(from: Expression, to: Expression, dir: Direction, r
       return false
     }
 
-    if(relType.isEmpty) {
-      fromNode.getRelationships(dir).iterator().asScala.exists(rel => rel.getOtherNode(fromNode) == toNode)
-    } else {
-      val types = relType.map(t=>  DynamicRelationshipType.withName(t))
-      val rels = fromNode.getRelationships(dir, types: _*).iterator().asScala
-      rels.exists(rel => rel.getOtherNode(fromNode) == toNode)
-    }
+    m.state.query.getRelationshipsFor(fromNode, dir, relType:_*).asScala.
+      exists(rel => rel.getOtherNode(fromNode) == toNode)
   }
 
   def atoms: Seq[Predicate] = Seq(this)
@@ -163,11 +154,9 @@ case class HasRelationship(from: Expression, dir: Direction, relType: Seq[String
       return false
     }
 
+    val matchingRelationships = m.state.query.getRelationshipsFor(fromNode, dir, relType: _*)
 
-    if (relType.isEmpty)
-      fromNode.getRelationships(dir).iterator().hasNext
-    else
-      fromNode.getRelationships(dir, relType.map(t => DynamicRelationshipType.withName(t)): _*).iterator().hasNext
+    matchingRelationships.iterator().hasNext
   }
 
   def atoms: Seq[Predicate] = Seq(this)
@@ -209,12 +198,11 @@ case class True() extends Predicate {
 }
 
 case class Has(element: Expression, propertyName: String) extends Predicate {
-  def isMatch(m: ExecutionContext): Boolean = {
-    element(m) match {
-      case pc: PropertyContainer => pc.hasProperty(propertyName)
-      case null                  => false
-      case _                     => throw new CypherTypeException("Expected " + element + " to be a property container.")
-    }
+  def isMatch(m: ExecutionContext): Boolean = element(m) match {
+    case pc: Node         => m.state.query.nodeOps().hasProperty(pc, propertyName)
+    case pc: Relationship => m.state.query.relationshipOps().hasProperty(pc, propertyName)
+    case null             => false
+    case _                => throw new CypherTypeException("Expected " + element + " to be a property container.")
   }
 
   def atoms: Seq[Predicate] = Seq(this)
@@ -288,7 +276,7 @@ case class NonEmpty(collection:Expression) extends Predicate with CollectionSupp
   }
 
   def atoms: Seq[Predicate] = Seq(this)
-  override def toString(): String = "nonEmpty(" + collection + ")"
+  override def toString(): String = "nonEmpty(" + collection.toString() + ")"
   def containsIsNull = false
   def rewrite(f: (Expression) => Expression) = NonEmpty(collection.rewrite(f))
   def filter(f: (Expression) => Boolean) = collection.filter(f)

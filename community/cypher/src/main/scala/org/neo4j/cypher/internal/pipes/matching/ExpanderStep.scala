@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.pipes.matching
 import org.neo4j.graphdb._
 import org.neo4j.cypher.internal.commands.Predicate
 import collection.mutable
-import org.neo4j.cypher.internal.pipes.ExecutionContext
+import org.neo4j.cypher.internal.pipes.{QueryState, ExecutionContext}
 import org.neo4j.cypher.internal.commands.expressions.Expression
 import org.neo4j.cypher.internal.symbols.SymbolTable
 import org.neo4j.cypher.internal.commands.True
@@ -33,7 +33,7 @@ import org.neo4j.helpers.ThisShouldNotHappenError
 trait ExpanderStep {
   def next: Option[ExpanderStep]
 
-  def typ: Seq[RelationshipType]
+  def typ: Seq[String]
 
   def direction: Direction
 
@@ -101,7 +101,10 @@ abstract class MiniMapProperty(originalName: String, prop: String) extends Expre
       case m: MiniMap => {
         val pc = extract(m)
         try {
-          pc.getProperty(prop)
+          pc match {
+            case n:Node=>ctx.state.query.nodeOps().getProperty(n, prop)
+            case r:Relationship=>ctx.state.query.relationshipOps().getProperty(r, prop)
+          }
         } catch {
           case x: NotFoundException =>
             throw new EntityNotFoundException("The property '%s' does not exist on %s, which was found with the identifier: %s".format(prop, pc, originalName), x)
@@ -152,8 +155,8 @@ case class RelationshipIdentifier(name:String) extends MiniMapIdentifier(name) {
   protected def extract(m: MiniMap) = m.relationship
 }
 
-case class MiniMap(var relationship: Relationship, var node: Node, parameters: ExecutionContext)
-  extends ExecutionContext(params = parameters.params) {
+case class MiniMap(var relationship: Relationship, var node: Node, myState:QueryState)
+  extends ExecutionContext(state = myState) {
 
   override def iterator = throw new RuntimeException
 

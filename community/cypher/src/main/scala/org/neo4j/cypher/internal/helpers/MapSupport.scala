@@ -22,11 +22,13 @@ package org.neo4j.cypher.internal.helpers
 import collection.{Iterator, Map}
 import java.util.{Map => JavaMap}
 import collection.JavaConverters._
-import org.neo4j.graphdb.PropertyContainer
+import org.neo4j.graphdb.{Relationship, Node, PropertyContainer}
 import org.neo4j.helpers.ThisShouldNotHappenError
+import org.neo4j.cypher.internal.pipes.ExecutionContext
+import org.neo4j.cypher.internal.spi.QueryContext
 
 object IsMap extends MapSupport {
-  def unapply(x: Any): Option[Map[String, Any]] = if (isMap(x)) {
+  def unapply(x: Any): Option[(QueryContext) => Map[String, Any]] = if (isMap(x)) {
     Some(castToMap(x))
   } else {
     None
@@ -36,22 +38,25 @@ object IsMap extends MapSupport {
 trait MapSupport {
   def isMap(x: Any) = castToMap.isDefinedAt(x)
 
-  def castToMap: PartialFunction[Any, Map[String, Any]] = {
-    case x: Map[String, Any]     => x
-    case x: JavaMap[String, Any] => x.asScala
-    case x: PropertyContainer    => new PropContainerMap(x)
+  def castToMap: PartialFunction[Any, (QueryContext) => Map[String, Any]] = {
+    case x: Map[String, Any]     => (_: QueryContext) => x
+    case x: JavaMap[String, Any] => (_: QueryContext) => x.asScala
+    case x: Node                 => (ctx: QueryContext) => new PropertyContainerMap(x, ctx.nodeOps())
+    case x: Relationship         => (ctx: QueryContext) => new PropertyContainerMap(x, ctx.relationshipOps())
   }
 
-  class PropContainerMap(pc: PropertyContainer) extends Map[String, Any] {
+  class PropertyContainerMap[T <: PropertyContainer](n: T, ops: QueryContext.Operations[T]) extends Map[String, Any] {
     def +[B1 >: Any](kv: (String, B1)) = throw new ThisShouldNotHappenError("Andres", "This map is not a real map")
 
     def -(key: String) = throw new ThisShouldNotHappenError("Andres", "This map is not a real map")
 
-    def get(key: String) = if (pc.hasProperty(key)) Some(pc.getProperty(key)) else None
+    def get(key: String) = if(ops.hasProperty(n, key))
+      Some(ops.getProperty(n, key))
+    else
+      None
 
-    def iterator: Iterator[(String, Any)] = pc.getPropertyKeys.asScala.map(k => k -> pc.getProperty(k)).toIterator
+    def iterator: Iterator[(String, Any)] = ops.propertyKeys(n).asScala.map(k => k -> ops.getProperty(n, k)).toIterator
 
-    override def contains(key: String) = pc.hasProperty(key)
+    override def contains(key: String) = ops.hasProperty(n, key)
   }
-
 }

@@ -20,18 +20,27 @@
 package org.neo4j.cypher.internal.mutation
 
 import org.neo4j.cypher.internal.pipes.{QueryState, ExecutionContext}
-import org.neo4j.graphdb.PropertyContainer
+import org.neo4j.graphdb.{Relationship, Node, PropertyContainer}
 import org.neo4j.cypher.internal.symbols.{SymbolTable, ScalarType, MapType}
 import org.neo4j.cypher.internal.commands.expressions.Expression
+import org.neo4j.helpers.ThisShouldNotHappenError
 
 case class DeletePropertyAction(element: Expression, property: String)
   extends UpdateAction {
 
   def exec(context: ExecutionContext, state: QueryState) = {
-    val entity = element(context).asInstanceOf[PropertyContainer]
-    if (entity.hasProperty(property)) {
-      entity.removeProperty(property)
-      state.propertySet.increase()
+    element(context) match {
+      case n: Node => if (state.query.nodeOps().hasProperty(n, property)) {
+        state.query.nodeOps().removeProperty(n, property)
+        state.propertySet.increase()
+      }
+
+      case r: Relationship => if (state.query.relationshipOps().hasProperty(r, property)) {
+        state.query.relationshipOps().removeProperty(r, property)
+        state.propertySet.increase()
+      }
+
+      case _ => throw new ThisShouldNotHappenError("Andres", "This should be a node or a relationship")
     }
 
     Stream(context)

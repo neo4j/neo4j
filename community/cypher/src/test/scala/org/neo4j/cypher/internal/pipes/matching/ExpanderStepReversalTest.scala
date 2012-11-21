@@ -28,9 +28,9 @@ import org.neo4j.cypher.internal.symbols.SymbolTable
 import org.neo4j.cypher.internal.pipes.ExecutionContext
 
 class ExpanderStepReversalTest extends Assertions {
-  val A = DynamicRelationshipType.withName("A")
-  val B = DynamicRelationshipType.withName("B")
-  val C = DynamicRelationshipType.withName("C")
+  val A = "A"
+  val B = "B"
+  val C = "C"
 
   val c = step(2, Seq(C), Direction.INCOMING, None)
   val b = step(1, Seq(B), Direction.BOTH, Some(c))
@@ -104,14 +104,14 @@ class ExpanderStepReversalTest extends Assertions {
   }
 
   private def step(id: Int,
-                   typ: Seq[RelationshipType],
+                   typ: Seq[String],
                    direction: Direction,
                    next: Option[ExpanderStep]) = SingleStep(id, typ, direction, next, True(), True())
 
-  def step(id: Int, t: RelationshipType, dir: Direction, next: Option[ExpanderStep], relName: String, nodeName: String): ExpanderStep =
+  def step(id: Int, t: String, dir: Direction, next: Option[ExpanderStep], relName: String, nodeName: String): ExpanderStep =
     SingleStep(id, Seq(t), dir, next, relPredicate = Pred(relName), nodePredicate = Pred(nodeName))
 
-  def step(id: Int, t: RelationshipType, dir: Direction, next: Option[ExpanderStep], relName: String): ExpanderStep =
+  def step(id: Int, t: String, dir: Direction, next: Option[ExpanderStep], relName: String): ExpanderStep =
     SingleStep(id, Seq(t), dir, next, relPredicate = Pred(relName), nodePredicate = True())
 }
 

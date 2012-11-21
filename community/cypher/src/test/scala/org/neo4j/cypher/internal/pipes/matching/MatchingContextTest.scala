@@ -35,7 +35,8 @@ import org.neo4j.cypher.internal.executionplan.builders.PatternGraphBuilder
 import org.neo4j.cypher.internal.commands.True
 import org.neo4j.cypher.internal.commands.Equals
 import org.neo4j.cypher.internal.commands.AllInCollection
-import org.neo4j.cypher.internal.pipes.ExecutionContext
+import org.neo4j.cypher.internal.pipes.{QueryState, ExecutionContext}
+import org.neo4j.cypher.internal.spi.gdsimpl.GDSBackedQueryContext
 
 class MatchingContextTest extends GraphDatabaseTestBase with Assertions with PatternGraphBuilder {
   var a: Node = null
@@ -43,7 +44,7 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions with Pat
   var c: Node = null
   var d: Node = null
 
-  private def ctx(x:(String,Any)*)=ExecutionContext.empty.newWith(x.toMap)
+  private def ctx(x: (String, Any)*) = ExecutionContext(state = new QueryState(graph, new GDSBackedQueryContext(graph), Map.empty)).newWith(x.toMap)
 
   @Before
   def init() {
@@ -149,7 +150,7 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions with Pat
       RelatedTo("a", "b", "r1", Seq(), Direction.OUTGOING, false, True()),
       RelatedTo("a", "c", "r2", Seq(), Direction.OUTGOING, false, True())
     )
-    val matchingContext = createMatchingContextWithNodes(patterns,Seq("a"))
+    val matchingContext = createMatchingContextWithNodes(patterns, Seq("a"))
 
     val traversable = matchingContext.getMatches(ctx("a" -> a))
     assertMatches(traversable, 2,
@@ -170,14 +171,14 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions with Pat
       RelatedTo("C", "D", "pr4", Seq(), Direction.OUTGOING, false, True())
     )
 
-    val matchingContext = createMatchingContextWithNodes(patterns,Seq("A"))
+    val matchingContext = createMatchingContextWithNodes(patterns, Seq("A"))
 
     assertMatches(matchingContext.getMatches(ctx("A" -> a)), 2,
       Map("A" -> a, "B" -> b, "C" -> c, "D" -> d, "pr1" -> r1, "pr2" -> r2, "pr3" -> r3, "pr4" -> r4),
       Map("A" -> a, "B" -> c, "C" -> b, "D" -> d, "pr1" -> r2, "pr2" -> r1, "pr3" -> r4, "pr4" -> r3))
   }
 
-  private def createDiamondWithExtraLoop(start: Node):Node={
+  private def createDiamondWithExtraLoop(start: Node): Node = {
     val b = createNode()
     val c = createNode()
     val d = createNode()
@@ -205,7 +206,7 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions with Pat
       RelatedTo("C", "E", "pr6", Seq("IN"), Direction.OUTGOING, false, True())
     )
 
-    val matchingContext = createMatchingContextWithNodes(patterns,Seq("A", "E"))
+    val matchingContext = createMatchingContextWithNodes(patterns, Seq("A", "E"))
 
     val matches = matchingContext.getMatches(ctx("A" -> a, "E" -> e))
 
@@ -481,12 +482,12 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions with Pat
 
   @Test def solveDoubleOptionalProblem() {
     val e = createNode()
-    
-    relate(a,b)
-    relate(a,c)
-    relate(d,c)
-    relate(d,e)
-    
+
+    relate(a, b)
+    relate(a, c)
+    relate(d, c)
+    relate(d, e)
+
     val patterns = Seq(
       RelatedTo("a", "x", "r1", Seq(), Direction.OUTGOING, true, True()),
       RelatedTo("x", "b", "r2", Seq(), Direction.INCOMING, true, True())
@@ -494,7 +495,7 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions with Pat
 
     val matchingContext = createMatchingContextWithNodes(patterns, Seq("a", "b"))
 
-    assertMatches(matchingContext.getMatches(ctx("a" -> a, "b"->d)), 3)
+    assertMatches(matchingContext.getMatches(ctx("a" -> a, "b" -> d)), 3)
   }
 
   @Test def predicateInPatternRelationshipAlsoForVarLength() {
@@ -520,11 +521,11 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions with Pat
     })
   }
 
-  private def createMatchingContextWith(patterns: Seq[Pattern], nodes: Seq[String], rels: Seq[String], predicates:Seq[Predicate]=Seq[Predicate]()): MatchingContext = {
+  private def createMatchingContextWith(patterns: Seq[Pattern], nodes: Seq[String], rels: Seq[String], predicates: Seq[Predicate] = Seq[Predicate]()): MatchingContext = {
     val nodeIdentifiers2 = nodes.map(_ -> NodeType())
-    val relIdentifiers2 = rels.map(_ ->RelationshipType())
+    val relIdentifiers2 = rels.map(_ -> RelationshipType())
 
-    val identifiers2 = (nodeIdentifiers2++relIdentifiers2).toMap
+    val identifiers2 = (nodeIdentifiers2 ++ relIdentifiers2).toMap
     val symbols2 = new SymbolTable(identifiers2)
     new MatchingContext(symbols2, predicates, buildPatternGraph(symbols2, patterns))
   }
@@ -538,7 +539,7 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions with Pat
   private def compare(matches: Map[String, Any], expectation: Map[String, Any]): Boolean = {
     expectation.foreach(kv =>
       matches.get(kv._1) match {
-        case None => return false
+        case None    => return false
         case Some(x) => if (x != kv._2) return false
       })
 

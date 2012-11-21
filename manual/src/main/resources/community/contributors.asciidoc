@@ -29,7 +29,6 @@ As an Open Source Project, the Neo4j User community extends its warmest thanks t
 |Hugo Josefson |https://github.com/hugojosefson[hugojosefson]
 |Vivek Prahlad |https://github.com/vivekprahlad[vivekprahlad]
 |Adriano Almeida |https://github.com/adrianoalmeida7[adrianoalmeida7]
-|Kevin Moore |https://github.com/kevmoo[kevmoo]
 |Benjamin Gehrels |https://github.com/BGehrels[BGehrels]
 |Christopher Schmidt |https://github.com/FaKod[FaKod]
 |Pascal Rehfeldt |https://github.com/prehfeldt[prehfeldt]
@@ -60,7 +59,7 @@ As an Open Source Project, the Neo4j User community extends its warmest thanks t
 |Craig Taverner |https://github.com/craigtaverner[craigtaverner]
 |David Winslow |https://github.com/dwins[dwins]
 |Patrick Fitzgerald |https://github.com/paddydub[paddydub]
-|Stefan Berder |https://github.com/stefan-berder[stefan-berder]
+|Stefan Berder |https://github.com/hrbonz[hrbonz]
 |Michael Kanner |https://github.com/SepiaGroup[SepiaGroup]
 |Lin Zhemin |https://github.com/miaoski[miaoski]
 |Christophe Willemsen |https://github.com/kwattro[kwattro]
@@ -73,5 +72,6 @@ As an Open Source Project, the Neo4j User community extends its warmest thanks t
 |Davide Savazzi |https://github.com/svzdvd[svzdvd]
 |Nigel Small |https://github.com/nigelsmall[nigelsmall]
 |Lasse Westh-Nielsen |https://github.com/lassewesth[lassewesth]
+|Wujek Srujek |https://github.com/wujek-srujek[wujek-srujek]
 |=======
 

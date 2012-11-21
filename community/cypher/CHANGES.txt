@@ -6,6 +6,7 @@ o Made Cypher better at keeping a numeric type. Adding two integers now returns 
 o Major refactoring to make certain Cypher is more lazy
 o When asking for the top x rows by some value, Cypher will now only keep a list the size of x
 o Fix so identifiers created inside a foreach can be used by other statements in the foreach
+o Fix for problems when using patterns with multiple unnamed nodes
 
 1.9.M01 (2012-10-23)
 --------------------

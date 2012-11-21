@@ -48,8 +48,7 @@ Build Steps Community:
 To build all of the Neo4j Distribution
 ======================================
 
-# Building
-Neo4j is built using Maven - http://maven.apache.org/
+To build Neo4j, use Apache Maven, version 3.
 
 These instructions are for OS X, with https://github.com/mxcl/homebrew installed.
 

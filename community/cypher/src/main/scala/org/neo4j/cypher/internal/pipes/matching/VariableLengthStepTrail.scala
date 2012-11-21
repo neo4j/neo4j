@@ -117,10 +117,9 @@ final case class VariableLengthStepTrail(next: Trail,
   }
 
   def toSteps(id: Int): Option[ExpanderStep] = {
-    val types = typ.map(withName(_))
     val steps = next.toSteps(id + 1)
 
-    Some(VarLengthStep(id, types, dir, min, max, steps, True(), True()))
+    Some(VarLengthStep(id, typ, dir, min, max, steps, True(), True()))
   }
 
   override def toString = {

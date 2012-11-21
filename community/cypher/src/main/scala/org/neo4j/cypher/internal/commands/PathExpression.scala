@@ -23,7 +23,6 @@ import expressions.Expression
 import expressions.Identifier._
 import org.neo4j.cypher.internal.symbols._
 import org.neo4j.cypher.internal.pipes.matching.MatchingContext
-import collection.Map
 import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.graphdb.Path
 import org.neo4j.cypher.internal.executionplan.builders.PatternGraphBuilder
@@ -77,4 +76,6 @@ case class PathExpression(pathPattern: Seq[Pattern])
     val startPointDependencies = pathPattern.flatMap(_.possibleStartPoints).map(_._1).filter(isNamed).toSet
     patternDependencies ++ startPointDependencies
   }
+
+  override def toString() = pathPattern.mkString
 }
