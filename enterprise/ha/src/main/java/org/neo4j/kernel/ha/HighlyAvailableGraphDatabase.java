@@ -25,6 +25,7 @@ import java.lang.reflect.Proxy;
 import java.util.List;
 import java.util.Map;
 
+import ch.qos.logback.classic.LoggerContext;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.com.NetworkInstance;
@@ -62,8 +63,6 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.ClassicLoggingService;
 import org.neo4j.kernel.logging.LogbackService;
 import org.neo4j.kernel.logging.Logging;
-
-import ch.qos.logback.classic.LoggerContext;
 
 public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
 {
@@ -105,13 +104,8 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         kernelEventHandlers.registerKernelEventHandler( new TxManagerCheckKernelEventHandler( xaDataSourceManager,
                 (TxManager) txManager ) );
         transactionSupport.setLockReleaser( lockReleaser );
-        life.add( memberStateMachine );
         life.add( updatePuller = new UpdatePuller( (HaXaDataSourceManager) xaDataSourceManager, master,
                 requestContextFactory, txManager, accessGuard, config, msgLog ) );
-
-        // Add this just before cluster join to ensure that it is up and running as late as possible
-        // and is shut down as early as possible
-        life.add( clusterClient );
 
         life.add( new StartupWaiter() );
 
@@ -173,16 +167,15 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         DefaultElectionCredentialsProvider electionCredentialsProvider = new DefaultElectionCredentialsProvider(
                 config.get( HaSettings.server_id ), new OnDiskLastTxIdGetter( new File( getStoreDir() ) ) );
         // Add if to lifecycle later, as late as possible really
-        clusterClient = new ClusterClient( ClusterClient.adapt( config, electionCredentialsProvider ), logging );
-
+        clusterClient = life.add( new ClusterClient( ClusterClient.adapt( config, electionCredentialsProvider ),
+                logging ) );
         clusterEvents = life.add( new PaxosHighAvailabilityEvents( PaxosHighAvailabilityEvents.adapt( config ),
-                clusterClient,
-                logging.getLogger( PaxosHighAvailabilityEvents.class ) ) );
+                clusterClient, logging.getLogger( PaxosHighAvailabilityEvents.class ) ) );
 
         memberContext = new HighAvailabilityMemberContext( clusterClient );
 
-        memberStateMachine = new HighAvailabilityMemberStateMachine( memberContext, accessGuard, clusterEvents,
-                logging.getLogger( HighAvailabilityMemberStateMachine.class ) );
+        memberStateMachine = life.add( new HighAvailabilityMemberStateMachine( memberContext, accessGuard, clusterEvents,
+                logging.getLogger( HighAvailabilityMemberStateMachine.class ) ) );
         life.add( new HighAvailabilityModeSwitcher( delegateInvocationHandler, clusterEvents, memberStateMachine, this,
                 config, logging.getLogger( HighAvailabilityModeSwitcher.class ) ) );
 

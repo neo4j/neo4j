@@ -35,6 +35,7 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.UpdatePuller;
 import org.neo4j.test.LoggerRule;
+import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.ClusterManager;
 import org.neo4j.test.ha.ClusterManager.ManagedCluster;
 
@@ -49,7 +50,7 @@ public class MultipleClusterTest
     @Test
     public void runTwoClusters() throws Throwable
     {
-        File root = new File( "target/cluster" );
+        File root = TargetDirectory.forTest( getClass() ).directory( "cluster", true );
 
         ClusterManager clusterManager = new ClusterManager( fromXml( getClass().getResource( "/twoclustertest.xml" ).toURI() ),
                 root, MapUtil.stringMap() );
