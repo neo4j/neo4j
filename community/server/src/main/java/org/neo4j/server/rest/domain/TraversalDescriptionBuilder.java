@@ -27,11 +27,14 @@ import java.util.Map;
 
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Expander;
+import org.neo4j.graphdb.PathExpander;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Traverser.Order;
 import org.neo4j.graphdb.traversal.Evaluator;
 import org.neo4j.graphdb.traversal.Evaluators;
 import org.neo4j.graphdb.traversal.TraversalDescription;
+import org.neo4j.kernel.OrderedByTypeExpander;
+import org.neo4j.kernel.StandardExpander;
 import org.neo4j.kernel.Traversal;
 
 public class TraversalDescriptionBuilder
@@ -50,6 +53,7 @@ public class TraversalDescriptionBuilder
         {
             TraversalDescription result = Traversal.description();
             result = describeOrder( result, description );
+            result = describeTypeOrder( result, description );
             result = describeUniqueness( result, description );
             result = describeRelationships( result, description );
             result = describePruneEvaluator( result, description );
@@ -185,6 +189,35 @@ public class TraversalDescriptionBuilder
             }
         }
         return result;
+    }
+
+    private TraversalDescription describeTypeOrder( TraversalDescription traversalDescription,
+                                                    Map<String, Object> description )
+    {
+        if(description.containsKey( "type_order" ))
+        {
+            Object types = description.get( "type_order" );
+            if(types instanceof Collection)
+            {
+                StandardExpander orderedExpander = new OrderedByTypeExpander();
+
+                Collection<Object> typeCollection = (Collection<Object>)types;
+                for ( Object o : typeCollection )
+                {
+                    orderedExpander = orderedExpander.add( DynamicRelationshipType.withName( o.toString() ) );
+                }
+
+                return traversalDescription.expand( (PathExpander)orderedExpander );
+
+            } else
+            {
+                throw new IllegalArgumentException( "type_order must be an array of relationship types as strings." );
+            }
+
+        } else
+        {
+            return traversalDescription;
+        }
     }
 
     private <T extends Enum<T>> T stringToEnum( String name, Class<T> enumClass, boolean fuzzyMatch )
