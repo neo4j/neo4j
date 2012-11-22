@@ -20,6 +20,8 @@
 
 package org.neo4j.cluster.client;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
@@ -31,6 +33,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -191,7 +194,8 @@ public class ClusterJoin
                         Future<ClusterConfiguration> config = cluster.join( joinUri );
                         try
                         {
-                            logger.logMessage( "Joined cluster:" + config.get() );
+                            ClusterConfiguration configuration = config.get( 10, SECONDS );
+                            logger.logMessage( "Joined cluster:" + configuration );
 
                             try
                             {
@@ -211,6 +215,10 @@ public class ClusterJoin
                         catch ( ExecutionException e )
                         {
                             logger.logMessage( "Could not join cluster member " + member.getHost() );
+                        }
+                        catch ( TimeoutException e )
+                        {
+                            logger.logMessage( "Could not join cluster member (timed out) " + member.getHost() );
                         }
                     }
                 }
@@ -344,10 +352,11 @@ public class ClusterJoin
 
                     host = resolvePortOnlyHost( host );
                     logger.info( "Attempting to join " + host );
-                    Future<ClusterConfiguration> clusterConfig = cluster.join( new URI( "cluster://" + host ) );
+                    Future<ClusterConfiguration> config = cluster.join( new URI( "cluster://" + host ) );
                     try
                     {
-                        logger.info( "Joined cluster:" + clusterConfig.get() );
+                        ClusterConfiguration configuration = config.get( 10, SECONDS );
+                        logger.info( "Joined cluster:" + configuration );
                         return;
                     }
                     catch ( InterruptedException e )
@@ -357,6 +366,10 @@ public class ClusterJoin
                     catch ( ExecutionException e )
                     {
                         logger.error( "Could not join cluster member " + host );
+                    }
+                    catch ( TimeoutException e )
+                    {
+                        logger.error( "Could not join cluster member (timed out)" + host );
                     }
                 }
 

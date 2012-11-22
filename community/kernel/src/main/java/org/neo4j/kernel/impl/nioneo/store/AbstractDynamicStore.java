@@ -476,8 +476,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
             throw new InvalidRecordException( "Illegal blockSize: " +
                 getBlockSize() );
         }
-        logger.fine( "Rebuilding id generator for[" + getStorageFileName()
-            + "] ..." );
+        stringLogger.debug( "Rebuilding id generator for[" + getStorageFileName() + "] ..." );
         closeIdGenerator();
         if ( fileSystemAbstraction.fileExists( getStorageFileName() + ".id" ) )
         {
@@ -534,7 +533,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
                 "Unable to rebuild id generator " + getStorageFileName(), e );
         }
         setHighId( highId + 1 );
-        logger.fine( "[" + getStorageFileName() + "] high id=" + getHighId()
+        stringLogger.debug( "[" + getStorageFileName() + "] high id=" + getHighId()
             + " (defragged=" + defraggedCount + ")" );
         if ( stringLogger != null )
         {
