@@ -24,9 +24,7 @@ import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 
 public class LimitedFileSystemGraphDatabase extends EmbeddedGraphDatabase
 {
-
     private LimitedFilesystemAbstraction fs;
-    private int runOutAfter;
 
     public LimitedFileSystemGraphDatabase( String storeDir )
     {
@@ -38,7 +36,6 @@ public class LimitedFileSystemGraphDatabase extends EmbeddedGraphDatabase
     {
         return fs = new LimitedFilesystemAbstraction( super.createFileSystemAbstraction() );
     }
-
 
     public void runOutOfDiskSpaceNao()
     {

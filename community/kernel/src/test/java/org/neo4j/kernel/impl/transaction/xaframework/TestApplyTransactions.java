@@ -72,7 +72,6 @@ public class TestApplyTransactions
         XaDataSource originNeoDataSource = origin.getXaDataSourceManager().getXaDataSource(
                 Config.DEFAULT_DATA_SOURCE_NAME );
         int latestTxId = (int) originNeoDataSource.getLastCommittedTxId();
-        System.out.println( "Xtracted tx id " + latestTxId );
         InMemoryLogBuffer theTx = new InMemoryLogBuffer();
         originNeoDataSource.getLogExtractor( latestTxId, latestTxId ).extractNext( theTx );
 

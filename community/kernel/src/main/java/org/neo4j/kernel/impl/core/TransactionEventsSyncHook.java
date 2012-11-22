@@ -50,10 +50,9 @@ public class TransactionEventsSyncHook implements Synchronization
 
     public void beforeCompletion()
     {
-        this.transactionData = tm.getTransactionState().getTransactionData();
-        
         try
         {
+            this.transactionData = tm.getTransactionState().getTransactionData();
             if ( tm.getStatus() != Status.STATUS_ACTIVE ) 
             {
                 return;

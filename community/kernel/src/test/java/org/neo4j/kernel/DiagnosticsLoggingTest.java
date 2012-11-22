@@ -31,13 +31,12 @@ import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.test.TargetDirectory;
 
-
 public class DiagnosticsLoggingTest
 {
     @Test
     public void shouldSeeHelloWorld()
     {
-        File temp = TargetDirectory.forTest( getClass() ).directory( "temp" );
+        File temp = TargetDirectory.forTest( getClass() ).directory( "temp", true );
         // We use an EmbeddedDatabase because Impermanent does not create the directory and returns 0 for disk space
         FakeDatabase db = new FakeDatabase( temp.getAbsolutePath() );
         FakeLogger logger = db.getLogger();

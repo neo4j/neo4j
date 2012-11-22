@@ -53,7 +53,14 @@ class DefaultTransactionSupport extends LifecycleAdapter implements TransactionS
     @Override
     public boolean hasAnyLocks( Transaction tx )
     {
-        return txManager.getTransactionState().hasLocks();
+        try
+        {
+            return txManager.getTransactionState().hasLocks();
+        }
+        catch ( SystemException e )
+        {
+            throw new RuntimeException( e );
+        }
     }
 
     @Override

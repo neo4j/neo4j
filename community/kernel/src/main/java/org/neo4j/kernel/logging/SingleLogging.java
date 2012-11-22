@@ -21,10 +21,18 @@ package org.neo4j.kernel.logging;
 
 import org.neo4j.kernel.impl.util.StringLogger;
 
-public class DevNullLoggingService extends SingleLogging
+public class SingleLogging implements Logging
 {
-    public DevNullLoggingService()
+    private StringLogger logger;
+
+    public SingleLogging( StringLogger logger )
     {
-        super( StringLogger.DEV_NULL );
+        this.logger = logger;
+    }
+
+    @Override
+    public StringLogger getLogger( Class loggingClass )
+    {
+        return logger;
     }
 }

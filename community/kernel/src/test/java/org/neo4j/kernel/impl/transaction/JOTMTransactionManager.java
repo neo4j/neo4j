@@ -243,16 +243,9 @@ public class JOTMTransactionManager extends AbstractTransactionManager
     }
 
     @Override
-    public TransactionState getTransactionState()
+    public TransactionState getTransactionState() throws SystemException
     {
-        try
-        {
-            TransactionState state = states.get( getTransaction() );
-            return state != null ? state : TransactionState.NO_STATE;
-        }
-        catch ( SystemException e )
-        {
-            throw new RuntimeException( e );
-        }
+        TransactionState state = states.get( getTransaction() );
+        return state != null ? state : TransactionState.NO_STATE;
     }
 }

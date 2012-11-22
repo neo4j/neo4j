@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.ha;
 
+import javax.transaction.SystemException;
 import javax.transaction.Transaction;
 
 import org.neo4j.com.Response;
@@ -51,7 +52,14 @@ public class SlaveTxHook implements TxHook
     @Override
     public boolean hasAnyLocks( Transaction tx )
     {
-        return txManager.getTransactionState().hasLocks();
+        try
+        {
+            return txManager.getTransactionState().hasLocks();
+        }
+        catch ( SystemException e )
+        {
+            throw new RuntimeException( e );
+        }
     }
 
     @Override

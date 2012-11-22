@@ -39,4 +39,12 @@ public interface Lock
      * @throws IllegalStateException if this lock has already been released.
      */
     void release();
+
+    public static final Lock NO_LOCK = new Lock()
+    {
+        @Override
+        public void release()
+        {
+        }
+    };
 }

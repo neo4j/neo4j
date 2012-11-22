@@ -33,6 +33,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
 
+import javax.transaction.SystemException;
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
@@ -109,8 +110,15 @@ public class XaResourceManager
         if ( xidMap.get( xid ) == null )
         {
             int identifier = log.start( xid, txIdGenerator.getCurrentMasterId(), txIdGenerator.getMyId() );
-            XaTransaction xaTx = tf.create( identifier, transactionManager.getTransactionState() );
-            xidMap.put( xid, new XidStatus( xaTx ) );
+            try
+            {
+                XaTransaction xaTx = tf.create( identifier, transactionManager.getTransactionState() );
+                xidMap.put( xid, new XidStatus( xaTx ) );
+            }
+            catch ( SystemException e )
+            {
+                throw new XAException( "Error getting state of the current transaction: " + e.toString() );
+            }
         }
     }
 

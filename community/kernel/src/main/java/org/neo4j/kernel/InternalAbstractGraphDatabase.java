@@ -785,20 +785,18 @@ public abstract class InternalAbstractGraphDatabase
     {
         if ( transactionRunning() )
         {
-            return new PlaceboTransaction( txManager );
+            return new PlaceboTransaction( txManager, lockManager );
         }
-        Transaction result = null;
         try
         {
             txManager.begin( forceMode );
-            result = new TopLevelTransaction( txManager, lockManager, txManager.getTransactionState() );
+            return new TopLevelTransaction( txManager, lockManager );
         }
         catch ( Exception e )
         {
             throw new TransactionFailureException(
                     "Unable to begin transaction", e );
         }
-        return result;
     }
 
     @Override

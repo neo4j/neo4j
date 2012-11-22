@@ -70,8 +70,9 @@ public abstract class AbstractTransactionManager implements TransactionManager, 
      * should be returned.
      * 
      * @return state associated with the current transaction for this thread.
+     * @throws SystemException in the event of transaction manager failure.
      */
-    public abstract TransactionState getTransactionState();
+    public abstract TransactionState getTransactionState() throws SystemException;
 
     public abstract int getEventIdentifier();
 

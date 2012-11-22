@@ -20,6 +20,10 @@
 package org.neo4j.kernel.impl.transaction;
 
 import static org.junit.Assert.fail;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import javax.transaction.SystemException;
 
 import org.junit.After;
 import org.junit.Before;
@@ -27,7 +31,10 @@ import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.kernel.TopLevelTransaction;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.test.OtherThreadExecutor;
 
@@ -60,7 +67,7 @@ public class TestManualAcquireLock extends AbstractNeo4jTestCase
         try
         {
             worker.setProperty( node, key, "ksjd" );
-            fail( "Shouldn't be able to grab it" );
+            fail( "Shouldn't be able to acquire it" );
         }
         catch ( Exception e )
         {
@@ -112,6 +119,27 @@ public class TestManualAcquireLock extends AbstractNeo4jTestCase
         tx.success();
         tx.finish();
         worker.finishTx();
+    }
+    
+    @Test
+    public void txManagerInInvalidStateShouldFailAcquireLock() throws Exception
+    {
+        // given
+        AbstractTransactionManager txManager = mock( AbstractTransactionManager.class );
+        when( txManager.getTransactionState() ).thenThrow( new SystemException( "Faked invalid tx manager state" ) );
+        LockManager lockManager = mock( LockManager.class );
+        Transaction tx = new TopLevelTransaction( txManager, lockManager );
+        PropertyContainer entity = mock( PropertyContainer.class );
+
+        // when
+        try
+        {
+            tx.acquireWriteLock( entity );
+            fail( "Should have thrown exception" );
+        }
+        catch ( TransactionFailureException e )
+        {   // Good
+        }
     }
     
     private class State
