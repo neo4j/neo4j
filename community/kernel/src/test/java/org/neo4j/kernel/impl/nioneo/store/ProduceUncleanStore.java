@@ -41,7 +41,7 @@ public class ProduceUncleanStore
         GraphDatabaseService db = new EmbeddedGraphDatabase( storeDir )
         {
             @Override
-            protected Logging createStringLogger()
+            protected Logging createLogging()
             {
                 // Create a dev/null logging service due there being a locking problem
                 // on windows (this class being run as a separate JVM from another test).
