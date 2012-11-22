@@ -21,6 +21,7 @@ package org.neo4j.kernel;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
 
@@ -31,7 +32,6 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.traversal.BranchState;
 import org.neo4j.helpers.Pair;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.collection.NestingIterator;
 
 public final class OrderedByTypeExpander extends
@@ -41,33 +41,52 @@ public final class OrderedByTypeExpander extends
     
     public OrderedByTypeExpander()
     {
-        this( MapUtil.<Direction, RelationshipType[]>genericMap() );
+        this( Collections.<Pair<RelationshipType, Direction>>emptyList() );
     }
 
-    OrderedByTypeExpander( Map<Direction, RelationshipType[]> types )
+    OrderedByTypeExpander( Collection<Pair<RelationshipType, Direction>> orderedTypes )
     {
-        super( types );
-        orderedTypes = constructOrderedList( types );
+        super( Collections.<Direction, RelationshipType[]>emptyMap() );
+        this.orderedTypes = orderedTypes;
     }
 
-    private Collection<Pair<RelationshipType, Direction>> constructOrderedList(
-            Map<Direction, RelationshipType[]> types )
+    @Override
+    public StandardExpander add( RelationshipType type, Direction direction )
     {
-        Collection<Pair<RelationshipType, Direction>> list = new ArrayList<Pair<RelationshipType,Direction>>();
-        for ( Map.Entry<Direction, RelationshipType[]> entry : types.entrySet() )
-        {
-            for ( RelationshipType type : entry.getValue() )
-            {
-                list.add( Pair.of( type, entry.getKey() ) );
-            }
-        }
-        return list;
+        Collection<Pair<RelationshipType, Direction>> newTypes = new ArrayList<Pair<RelationshipType,Direction>>( orderedTypes );
+        newTypes.add( Pair.of( type, direction ) );
+        return new OrderedByTypeExpander( newTypes );
+    }
+    
+    @Override
+    public StandardExpander remove( RelationshipType type )
+    {
+        Collection<Pair<RelationshipType, Direction>> newTypes = new ArrayList<Pair<RelationshipType,Direction>>();
+        for ( Pair<RelationshipType, Direction> pair : orderedTypes )
+            if ( !type.name().equals( pair.first().name() ) )
+                newTypes.add( pair );
+        return new OrderedByTypeExpander( newTypes );
+    }
+    
+    @Override
+    void buildString( StringBuilder result )
+    {
+        result.append( orderedTypes.toString() );
+    }
+    
+    @Override
+    public StandardExpander reverse()
+    {
+        Collection<Pair<RelationshipType, Direction>> newTypes = new ArrayList<Pair<RelationshipType,Direction>>();
+        for ( Pair<RelationshipType, Direction> pair : orderedTypes )
+            newTypes.add( Pair.of( pair.first(), pair.other().reverse() ) );
+        return new OrderedByTypeExpander( newTypes );
     }
 
     @Override
     RegularExpander createNew( Map<Direction, RelationshipType[]> newTypes )
     {
-        return new OrderedByTypeExpander( newTypes );
+        throw new UnsupportedOperationException();
     }
 
     @Override
