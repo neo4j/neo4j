@@ -67,7 +67,6 @@ public class OrderedPathTest
         TraversalDescription traversalDescription = orderedPath.findPaths();
         assertEquals( 1, count( traversalDescription.traverse( A ) ) );
         String output = orderedPath.printPaths( traversalDescription, A );
-        System.out.println( output );
         assertTrue( output.contains( "(A)--[REL1]-->(B)--[REL2]-->(C)--[REL3]-->(D)" ) );
         String graph = AsciidocHelper.createGraphVizDeletingReferenceNode(
                 "Ordered Path Graph", orderedPath.db, "java" );

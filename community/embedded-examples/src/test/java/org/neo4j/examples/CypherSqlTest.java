@@ -211,7 +211,6 @@ public class CypherSqlTest extends AbstractJavaDocTestbase
         for ( CypherSql.TestData query : cyperSql.queries )
         {
             String rawSqlResult = null;
-            System.out.println( "\n*** " + query.name + " ***\n" );
             if ( query.sql != null )
             {
                 String sqlSnippet = createSqlSnippet( query.sql );
@@ -221,8 +220,6 @@ public class CypherSqlTest extends AbstractJavaDocTestbase
                 String sqlResult = createQueryResultSnippet( rawSqlResult );
                 gen.get()
                         .addSnippet( query.name + "-sql-result", sqlResult );
-                System.out.println( sqlSnippet );
-                System.out.println( sqlResult );
             }
             String cypherSnippet = createCypherSnippet( query.cypher );
             gen.get()
@@ -231,8 +228,6 @@ public class CypherSqlTest extends AbstractJavaDocTestbase
             String cypherResult = createQueryResultSnippet( rawCypherResult );
             gen.get()
                     .addSnippet( query.name + "-cypher-result", cypherResult );
-            System.out.println( cypherSnippet );
-            System.out.println( cypherResult );
             for ( String match : query.matchStrings )
             {
                 if ( query.sql != null )
