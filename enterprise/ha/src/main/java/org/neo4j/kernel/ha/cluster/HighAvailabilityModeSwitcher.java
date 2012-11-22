@@ -85,6 +85,8 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
  */
 public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListener, Lifecycle
 {
+    private HighAvailabilityMemberStateMachine stateHandler;
+
     public static int getServerId( URI serverId )
     {
         String query = serverId.getQuery();
@@ -119,25 +121,27 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
         this.config = config;
         this.msgLog = msgLog;
         this.life = new LifeSupport();
-        stateHandler.addHighAvailabilityMemberListener( this );
+        this.stateHandler = stateHandler;
     }
 
     @Override
     public void init() throws Throwable
     {
+        executor = Executors.newSingleThreadScheduledExecutor( new NamedThreadFactory( "Mode switcher" ) );
+        stateHandler.addHighAvailabilityMemberListener( this );
         life.init();
     }
 
     @Override
     public void start() throws Throwable
     {
-        executor = Executors.newSingleThreadScheduledExecutor( new NamedThreadFactory( "Mode switcher" ) );
         life.start();
     }
 
     @Override
-    public void stop() throws Throwable
+    public synchronized void stop() throws Throwable
     {
+        stateHandler.removeHighAvailabilityMemberListener( this );
         executor.shutdownNow();
         life.stop();
     }
@@ -172,7 +176,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
         stateChanged( event );
     }
 
-    private void stateChanged( HighAvailabilityMemberChangeEvent event )
+    private synchronized void stateChanged( HighAvailabilityMemberChangeEvent event )
     {
         availableMasterId = event.getServerHaUri();
         if ( event.getNewState() == event.getOldState() )
@@ -294,6 +298,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                     return;
                 }
                 clusterEvents.memberIsAvailable( ClusterConfiguration.COORDINATOR );
+                msgLog.logMessage( "I am " + config.get( HaSettings.server_id ) + ", successfully moved to master" );
             }
         } );
     }
