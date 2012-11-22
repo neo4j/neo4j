@@ -19,20 +19,24 @@
  */
 package org.neo4j.cypher.internal.commands.expressions
 
-import org.neo4j.graphdb.{NotFoundException, PropertyContainer}
+import org.neo4j.graphdb.{Relationship, Node, NotFoundException}
 import org.neo4j.cypher.EntityNotFoundException
 import org.neo4j.cypher.internal.symbols._
-import collection.Map
 import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.cypher.internal.pipes.ExecutionContext
 
 case class Property(entity: String, property: String) extends Expression {
-  def apply(ctx: ExecutionContext): Any = ctx(entity).asInstanceOf[PropertyContainer] match {
-    case null              => null
-    case propertyContainer => try {
-      propertyContainer.getProperty(property)
+  def apply(ctx: ExecutionContext): Any = {
+    val value = ctx(entity)
+    try {
+      value match {
+        case null            => null
+        case n: Node         => ctx.state.query.nodeOps().getProperty(n, property)
+        case r: Relationship => ctx.state.query.relationshipOps().getProperty(r, property)
+        case _               => throw new ThisShouldNotHappenError("Andres", "Got something with properties")
+      }
     } catch {
-      case x: NotFoundException => throw new EntityNotFoundException("The property '%s' does not exist on %s".format(property, propertyContainer), x)
+      case x: NotFoundException => throw new EntityNotFoundException("The property '%s' does not exist on %s".format(property, value), x)
     }
   }
 

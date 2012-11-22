@@ -20,17 +20,21 @@
 package org.neo4j.cypher.internal.executionplan
 
 import builders._
-import org.neo4j.graphdb._
-import collection.Seq
 import org.neo4j.cypher.internal.pipes._
 import org.neo4j.cypher._
+import internal.ClosingIterator
 import internal.commands._
+import internal.spi.gdsimpl.{GDSBackedLocker, RepeatableReadQueryContext, GDSBackedQueryContext}
 import internal.symbols.{NodeType, RelationshipType, SymbolTable}
+import org.neo4j.kernel.InternalAbstractGraphDatabase
+import org.neo4j.graphdb.GraphDatabaseService
 
 class ExecutionPlanImpl(inputQuery: Query, graph: GraphDatabaseService) extends ExecutionPlan with PatternGraphBuilder {
   val (executionPlan, executionPlanText) = prepareExecutionPlan()
 
   def execute(params: Map[String, Any]): ExecutionResult = executionPlan(params)
+
+  lazy val lockManager = graph.asInstanceOf[InternalAbstractGraphDatabase].getLockManager
 
   private def prepareExecutionPlan(): ((Map[String, Any]) => ExecutionResult, String) = {
     var continue = true
@@ -65,7 +69,7 @@ class ExecutionPlanImpl(inputQuery: Query, graph: GraphDatabaseService) extends 
 
     val columns = getQueryResultColumns(inputQuery, planInProgress.pipe.symbols)
     val (pipe, func) = if (planInProgress.containsTransaction) {
-      val p = new CommitPipe(planInProgress.pipe, graph)
+      val p = planInProgress.pipe//new CommitPipe(planInProgress.pipe, graph)
       (p, getEagerReadWriteQuery(p, columns))
     } else {
       (planInProgress.pipe, getLazyReadonlyQuery(planInProgress.pipe, columns))
@@ -82,7 +86,7 @@ class ExecutionPlanImpl(inputQuery: Query, graph: GraphDatabaseService) extends 
     validatePattern(startPoints, planInProgress.query.patterns.map(_.token))
   }
 
-  private def validatePattern(symbols:SymbolTable, patterns:Seq[Pattern])={
+  private def validatePattern(symbols: SymbolTable, patterns: Seq[Pattern]) = {
     //We build the graph here, because the pattern graph builder finds problems with the pattern
     //that we don't find other wise. This should be moved out from the patternGraphBuilder, but not right now
     buildPatternGraph(symbols, patterns)
@@ -96,11 +100,11 @@ class ExecutionPlanImpl(inputQuery: Query, graph: GraphDatabaseService) extends 
       case AllRelationships(varName: String)                => varName -> RelationshipType()
       case CreateRelationshipStartItem(varName, _, _, _, _) => varName -> RelationshipType()
 
-      case NodeByIndex(varName: String, _, _, _)            => varName -> NodeType()
-      case NodeByIndexQuery(varName: String, _, _)          => varName -> NodeType()
-      case NodeById(varName: String, _)                     => varName -> NodeType()
-      case AllNodes(varName: String)                        => varName -> NodeType()
-      case CreateNodeStartItem(varName: String, _)          => varName -> NodeType()
+      case NodeByIndex(varName: String, _, _, _)   => varName -> NodeType()
+      case NodeByIndexQuery(varName: String, _, _) => varName -> NodeType()
+      case NodeById(varName: String, _)            => varName -> NodeType()
+      case AllNodes(varName: String)               => varName -> NodeType()
+      case CreateNodeStartItem(varName: String, _) => varName -> NodeType()
     }.toMap
 
     val symbols = new SymbolTable(startMap)
@@ -123,18 +127,38 @@ class ExecutionPlanImpl(inputQuery: Query, graph: GraphDatabaseService) extends 
 
   private def getLazyReadonlyQuery(pipe: Pipe, columns: List[String]): Map[String, Any] => ExecutionResult = {
     val func = (params: Map[String, Any]) => {
-      val state = new QueryState(graph, params)
-      val results = pipe.createResults(state)
-      new PipeExecutionResult(results, columns)
+      val (state, results) = prepareStateAndResult(params, pipe)
+
+      new PipeExecutionResult(results, columns, state)
     }
 
     func
   }
 
+  private def prepareStateAndResult(params: Map[String, Any], pipe: Pipe): (QueryState, Iterator[ExecutionContext]) = {
+    val tx = graph.beginTx()
+
+    try
+    {
+      val gdsContext = new GDSBackedQueryContext(graph)
+//      val lockingContext = new RepeatableReadQueryContext(gdsContext, new GDSBackedLocker(tx))
+      val state = new QueryState(graph, gdsContext, params)
+      val results = pipe.createResults(state)
+
+      val closingIterator = new ClosingIterator[ExecutionContext](results, state.query, tx)
+
+      (state, closingIterator)
+    } catch {
+      case e: Throwable =>
+        tx.failure()
+        tx.finish()
+        throw e
+    }
+  }
+
   private def getEagerReadWriteQuery(pipe: Pipe, columns: List[String]): Map[String, Any] => ExecutionResult = {
     val func = (params: Map[String, Any]) => {
-      val state = new QueryState(graph, params)
-      val results = pipe.createResults(state)
+      val (state, results) = prepareStateAndResult(params, pipe)
       new EagerPipeExecutionResult(results, columns, state, graph)
     }
 
@@ -142,8 +166,6 @@ class ExecutionPlanImpl(inputQuery: Query, graph: GraphDatabaseService) extends 
   }
 
   private def produceAndThrowException(plan: ExecutionPlanInProgress) {
-    val s = plan.pipe.symbols
-
     val errors = builders.flatMap(builder => builder.missingDependencies(plan).map(builder -> _)).toList.
       sortBy {
       case (builder, _) => builder.priority

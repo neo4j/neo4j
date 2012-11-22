@@ -45,8 +45,8 @@ import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.TransactionInterceptorProviders;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.core.LockReleaser;
 import org.neo4j.kernel.impl.core.PropertyIndex;
+import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.index.IndexStore;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
@@ -56,6 +56,7 @@ import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.nioneo.store.WindowPoolStats;
 import org.neo4j.kernel.impl.persistence.IdGenerationFailedException;
 import org.neo4j.kernel.impl.transaction.LockManager;
+import org.neo4j.kernel.impl.transaction.TransactionStateFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBackedXaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptor;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
@@ -108,7 +109,6 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
     private ArrayMap<Class<?>,Store> idGenerators;
 
     private final LockManager lockManager;
-    private final LockReleaser lockReleaser;
     private String storeDir;
     private boolean readOnly;
 
@@ -117,6 +117,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
     private boolean logApplied = false;
 
     private final StringLogger msgLog;
+    private final TransactionStateFactory stateFactory;
 
     private enum Diagnostics implements DiagnosticsExtractor<NeoStoreXaDataSource>
     {
@@ -200,18 +201,18 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
      * @throws IOException
      *             If unable to create data source
      */
-    public NeoStoreXaDataSource( Config config, StoreFactory sf, LockManager lockManager, LockReleaser lockReleaser,
-                                 StringLogger stringLogger, XaFactory xaFactory,
-                                 TransactionInterceptorProviders providers, DependencyResolver dependencyResolver)
+    public NeoStoreXaDataSource( Config config, StoreFactory sf, LockManager lockManager,
+                                 StringLogger stringLogger, XaFactory xaFactory, TransactionStateFactory stateFactory,
+                                 TransactionInterceptorProviders providers, DependencyResolver dependencyResolver )
             throws IOException
     {
         super( BRANCH_ID, Config.DEFAULT_DATA_SOURCE_NAME );
         this.config = config;
+        this.stateFactory = stateFactory;
         this.providers = providers;
 
         readOnly = config.get( Configuration.read_only );
         this.lockManager = lockManager;
-        this.lockReleaser = lockReleaser;
         msgLog = stringLogger;
         this.storeFactory = sf;
         this.dependencyResolver = dependencyResolver;
@@ -235,7 +236,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
         final TransactionFactory tf;
         if ( providers.shouldInterceptCommitting() )
         {
-            tf = new InterceptingTransactionFactory( dependencyResolver );
+            tf = new InterceptingTransactionFactory();
         }
         else
         {
@@ -243,7 +244,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
         }
         neoStore = storeFactory.newNeoStore( store );
 
-        xaContainer = xaFactory.newXaContainer(this, config.get( Configuration.logical_log ), new CommandFactory( neoStore ), tf, providers  );
+        xaContainer = xaFactory.newXaContainer(this, config.get( Configuration.logical_log ), new CommandFactory( neoStore ), tf, stateFactory, providers  );
 
         try
         {
@@ -359,18 +360,11 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
 
     private class InterceptingTransactionFactory extends TransactionFactory
     {
-        private final DependencyResolver dependencyResolver;
-
-        public InterceptingTransactionFactory( DependencyResolver dependencyResolver )
-        {
-            this.dependencyResolver = dependencyResolver;
-        }
-
         @Override
-        public XaTransaction create( int identifier )
+        public XaTransaction create( int identifier, TransactionState state )
         {
             TransactionInterceptor first = providers.resolveChain( NeoStoreXaDataSource.this );
-            return new InterceptingWriteTransaction( identifier, getLogicalLog(), neoStore, lockReleaser, lockManager,
+            return new InterceptingWriteTransaction( identifier, getLogicalLog(), neoStore, state, lockManager,
                     first );
         }
     }
@@ -378,10 +372,10 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
     private class TransactionFactory extends XaTransactionFactory
     {
         @Override
-        public XaTransaction create( int identifier )
+        public XaTransaction create( int identifier, TransactionState state )
         {
             return new WriteTransaction( identifier, getLogicalLog(), neoStore,
-                lockReleaser, lockManager );
+                state, lockManager );
         }
 
         @Override

@@ -23,7 +23,7 @@ import java.lang.String
 import org.neo4j.cypher.internal.symbols.SymbolTable
 
 class ParameterPipe() extends Pipe {
-  def createResults(state: QueryState) = Iterator(ExecutionContext(params = state.params))
+  def createResults(state: QueryState) = Iterator(ExecutionContext(state = state))
 
   val symbols = new SymbolTable()
 

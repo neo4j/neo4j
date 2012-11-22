@@ -20,10 +20,14 @@
 package org.neo4j.kernel.ha;
 
 import java.net.URI;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.neo4j.cluster.BindingListener;
 import org.neo4j.cluster.client.ClusterClient;
-import org.neo4j.kernel.ha.HighAvailabilityMembers.MemberInfo;
+import org.neo4j.com.ServerUtil;
+import org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher;
+import org.neo4j.kernel.ha.cluster.member.HighAvailabilityMembers;
 import org.neo4j.kernel.impl.core.LastTxIdGetter;
 import org.neo4j.management.ClusterDatabaseInfo;
 import org.neo4j.management.ClusterMemberInfo;
@@ -33,14 +37,14 @@ public class ClusterDatabaseInfoProvider
     private URI me;
     private final HighAvailabilityMembers members;
     private final LastTxIdGetter txIdGetter;
-    private final LastUpdateTimeGetter lastUpdateTimeGetter;
+    private final LastUpdateTime lastUpdateTime;
 
     public ClusterDatabaseInfoProvider( ClusterClient clusterClient, HighAvailabilityMembers members,
-                                        LastTxIdGetter txIdGetter, LastUpdateTimeGetter lastUpdateTimeGetter)
+                                        LastTxIdGetter txIdGetter, LastUpdateTime lastUpdateTime )
     {
         this.members = members;
         this.txIdGetter = txIdGetter;
-        this.lastUpdateTimeGetter = lastUpdateTimeGetter;
+        this.lastUpdateTime = lastUpdateTime;
         clusterClient.addBindingListener( new BindingListener()
         {
             @Override
@@ -53,17 +57,28 @@ public class ClusterDatabaseInfoProvider
 
     public ClusterDatabaseInfo getInfo()
     {
-        for ( MemberInfo member : members.getMembers() )
+        for ( ClusterMemberInfo info : members.getMembers() )
         {
-            if ( member.getClusterUri().equals( me ) )
+            if ( info.getClusterId().equals( me.toString() ) )
             {
-                ClusterMemberInfo info = HighAvailabilityBean.clusterMemberInfo( member );
-                return new ClusterDatabaseInfo (info.getInstanceId(), info.isAvailable(),
-                        info.getHaRole(), info.getClusterRoles(), info.getUris(), txIdGetter.getLastTxId(),
-                        lastUpdateTimeGetter.getLastUpdateTime() );
+                List<URI> uris = new ArrayList<URI>( info.getUris().length );
+                for (String uri : info.getUris())
+                {
+                    uris.add( URI.create( uri ) );
+                }
+                URI haURI = ServerUtil.getUriForScheme( "ha", uris );
+                int serverId = -1;
+                if ( haURI != null )
+                {
+                    serverId = HighAvailabilityModeSwitcher.getServerId( haURI);
+                }
+                return new ClusterDatabaseInfo ( new ClusterMemberInfo( info.getClusterId(), info.isAvailable(),
+                        info.isAlive(), info.getHaRole(), info.getClusterRoles(), info.getUris() ), serverId,
+                        txIdGetter.getLastTxId(), lastUpdateTime.getLastUpdateTime() );
             }
         }
-        // We couldn't find ourselves.
-        return new ClusterDatabaseInfo( "-1", false, "UNKNOWN", new String[0], new String[0], 0, 0 );
+
+        return new ClusterDatabaseInfo( new ClusterMemberInfo("-1", false, false, "UNKNOWN", new String[0],
+                new String[0] ), -1, 0, 0 );
     }
 }

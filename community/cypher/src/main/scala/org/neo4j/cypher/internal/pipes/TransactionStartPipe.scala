@@ -32,8 +32,6 @@ class TransactionStartPipe(source: Pipe, graph: GraphDatabaseService) extends Pi
 
   def executionPlan() = source.executionPlan() + "\r\nTransactionBegin()"
 
-//  def symbols = source.symbols
-
   def dependencies = Seq()
 
   def deps = Map()

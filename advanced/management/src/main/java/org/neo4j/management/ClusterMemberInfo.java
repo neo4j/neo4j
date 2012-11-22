@@ -36,30 +36,38 @@ import org.neo4j.helpers.Pair;
 public class ClusterMemberInfo implements Serializable
 {
     private static final long serialVersionUID = 1L;
-    private final String instanceId;
+    private final String clusterId;
     private final boolean available;
+    private final boolean alive;
     private final String haRole;
     private final String[] clusterRoles;
     private final String[] uris;
 
-    @ConstructorProperties( { "instanceId", "available", "haRole", "clusterRoles", "uris" } )
-    public ClusterMemberInfo( String instanceId, boolean available, String haRole, String[] clusterRoles, String[] uris )
+    @ConstructorProperties( { "clusterId", "available", "alive", "haRole", "clusterRoles", "uris" } )
+    public ClusterMemberInfo( String clusterId, boolean available, boolean alive, String haRole,
+            String[] clusterRoles, String[] uris )
     {
-        this.instanceId = instanceId;
+        this.clusterId = clusterId;
         this.available = available;
+        this.alive = alive;
         this.haRole = haRole;
         this.clusterRoles = clusterRoles;
         this.uris = uris;
     }
 
-    public String getInstanceId()
+    public String getClusterId()
     {
-        return instanceId;
+        return clusterId;
     }
 
     public boolean isAvailable()
     {
         return available;
+    }
+    
+    public boolean isAlive()
+    {
+        return alive;
     }
     
     public String getHaRole()
@@ -81,8 +89,8 @@ public class ClusterMemberInfo implements Serializable
     @SuppressWarnings( "boxing" )
     public String toString()
     {
-        return String.format( "Neo4jHaInstance[id=%s,available=%s,haRole=%s,clusterRoles=%s,URI List=%s]",
-                instanceId, available, haRole, Arrays.toString( clusterRoles ), Arrays.toString( uris ) );
+        return String.format( "Neo4jClusterInstance[clusterId=%s,available=%s,haRole=%s,clusterRoles=%s,URI List=%s]",
+                clusterId, available, haRole, Arrays.toString( clusterRoles ), Arrays.toString( uris ) );
     }
 
     public Pair<Neo4jManager, HighAvailability> connect()
@@ -104,7 +112,7 @@ public class ClusterMemberInfo implements Serializable
         {
             throw new IllegalStateException( "The instance does not have a public JMX server." );
         }
-        Neo4jManager manager = Neo4jManager.get( url(address), username, password, instanceId );
+        Neo4jManager manager = Neo4jManager.get( url(address), username, password, clusterId );
         return Pair.of( manager, manager.getHighAvailabilityBean() );
     }
 

@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.pipes.matching
 
 import org.neo4j.graphdb.{Direction, Node}
 import org.neo4j.cypher.internal.commands.Predicate
+import org.neo4j.cypher.internal.spi.QueryContext
 
 class PatternNode(key: String) extends PatternElement(key) {
 
@@ -28,7 +29,7 @@ class PatternNode(key: String) extends PatternElement(key) {
 
   def getPRels(history: Seq[MatchingPair]): Seq[PatternRelationship] = relationships.filterNot(r => history.exists(_.matches(r))).toSeq
 
-  def getGraphRelationships(node: Node, pRel: PatternRelationship): Seq[GraphRelationship] = pRel.getGraphRelationships(this, node)
+  def getGraphRelationships(node: Node, pRel: PatternRelationship, ctx:QueryContext): Seq[GraphRelationship] = pRel.getGraphRelationships(this, node, ctx)
 
   def relateTo(key: String, other: PatternNode, relType: Seq[String], dir: Direction, optional: Boolean, predicate: Predicate): PatternRelationship = {
     val rel = new PatternRelationship(key, this, other, relType, dir, optional, predicate)

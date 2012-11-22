@@ -23,13 +23,20 @@ public class ClusterDatabaseInfo extends ClusterMemberInfo
 {
     private final long lastCommittedTxId;
     private final long lastUpdateTime;
+    private final int serverId;
 
-    public ClusterDatabaseInfo( String instanceId, boolean available, String haRole, String[] clusterRoles, String[] uris,
-                                long lastCommittedTxId, long lastUpdateTime )
+    public ClusterDatabaseInfo( ClusterMemberInfo memberInfo, int serverId, long lastCommittedTxId, long lastUpdateTime )
     {
-        super( instanceId, available, haRole, clusterRoles, uris );
+        super( memberInfo.getClusterId(), memberInfo.isAvailable(), memberInfo.isAlive(), memberInfo.getHaRole(),
+                memberInfo.getClusterRoles(), memberInfo.getUris() );
+        this.serverId = serverId;
         this.lastCommittedTxId = lastCommittedTxId;
         this.lastUpdateTime = lastUpdateTime;
+    }
+
+    public int getServerId()
+    {
+        return serverId;
     }
 
     public long getLastCommittedTxId()

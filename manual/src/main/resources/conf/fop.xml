@@ -23,6 +23,7 @@
 
   <renderers>
     <renderer mime="application/pdf">
+      <version>1.5</version>
       <fonts>
          <directory>./src/bin/fonts</directory>
       </fonts>

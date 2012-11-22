@@ -35,6 +35,7 @@ class TopPipe(source: Pipe, sortDescription: List[SortItem], countExpression: Ex
     var last: Option[ExecutionContext] = None
     val largerThanLast = (ctx: ExecutionContext) => last.forall(s => compareBy(s, ctx, sortDescription))
     var size = 0
+    var sorted = false
 
     val input = source.createResults(state)
 
@@ -60,12 +61,15 @@ class TopPipe(source: Pipe, sortDescription: List[SortItem], countExpression: Ex
               result -= last.get
               result += ctx
               result = result.sortWith((a, b) => compareBy(a, b, sortDescription))
-
+              sorted = true
               last = Some(result.last)
             }
       }
     }
 
+    if (!sorted) {
+      result = result.sortWith((a, b) => compareBy(a, b, sortDescription))
+    }
 
 
     result.toIterator

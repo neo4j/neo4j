@@ -19,11 +19,13 @@
  */
 package org.neo4j.kernel;
 
+import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
+
 import org.neo4j.kernel.ha.ClusterDatabaseInfoProvider;
-import org.neo4j.kernel.ha.HighAvailabilityMembers;
-import org.neo4j.kernel.ha.HighAvailabilityMembers.MemberInfo;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
+import org.neo4j.kernel.ha.cluster.member.HighAvailabilityMembers;
 import org.neo4j.management.ClusterDatabaseInfo;
+import org.neo4j.management.ClusterMemberInfo;
 
 public class HighlyAvailableKernelData extends KernelData
 {
@@ -52,9 +54,9 @@ public class HighlyAvailableKernelData extends KernelData
         return db;
     }
 
-    public MemberInfo[] getClusterInfo()
+    public ClusterMemberInfo[] getClusterInfo()
     {
-        return memberInfo.getMembers();
+        return asCollection( memberInfo.getMembers() ).toArray( new ClusterMemberInfo[0] );
     }
 
     public ClusterDatabaseInfo getMemberInfo()

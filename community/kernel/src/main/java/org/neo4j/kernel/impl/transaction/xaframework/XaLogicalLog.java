@@ -41,6 +41,7 @@ import javax.transaction.xa.Xid;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.kernel.impl.transaction.TransactionStateFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry.Commit;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry.Start;
 import org.neo4j.kernel.impl.transaction.xaframework.LogExtractor.LogLoader;
@@ -108,9 +109,11 @@ public class XaLogicalLog implements LogLoader
     private final XaLogicalLogFiles logFiles;
     private final PartialTransactionCopier partialTransactionCopier;
 
+    private final TransactionStateFactory stateFactory;
+
     public XaLogicalLog( String fileName, XaResourceManager xaRm, XaCommandFactory cf,
                          XaTransactionFactory xaTf, LogBufferFactory logBufferFactory, FileSystemAbstraction fileSystem,
-                         StringLogger stringLogger, LogPruneStrategy pruneStrategy )
+                         StringLogger stringLogger, LogPruneStrategy pruneStrategy, TransactionStateFactory stateFactory )
     {
         this.fileName = fileName;
         this.xaRm = xaRm;
@@ -119,6 +122,7 @@ public class XaLogicalLog implements LogLoader
         this.logBufferFactory = logBufferFactory;
         this.fileSystem = fileSystem;
         this.pruneStrategy = pruneStrategy;
+        this.stateFactory = stateFactory;
         this.logFiles = new XaLogicalLogFiles( fileName, fileSystem );
 
         sharedBuffer = ByteBuffer.allocateDirect( 9 + Xid.MAXGTRIDSIZE
@@ -451,7 +455,7 @@ public class XaLogicalLog implements LogLoader
         // re-create the transaction
         Xid xid = entry.getXid();
         xidIdentMap.put( identifier, entry );
-        XaTransaction xaTx = xaTf.create( identifier );
+        XaTransaction xaTx = xaTf.create( identifier, stateFactory.create() );
         xaTx.setRecovered();
         recoveredTxMap.put( identifier, xaTx );
         xaRm.injectStart( xid, xaTx );
@@ -459,7 +463,6 @@ public class XaLogicalLog implements LogLoader
         // marks tx as committed
         // fileChannel.force( false );
     }
-
 
     private void applyPrepareEntry( LogEntry.Prepare prepareEntry ) throws IOException
     {

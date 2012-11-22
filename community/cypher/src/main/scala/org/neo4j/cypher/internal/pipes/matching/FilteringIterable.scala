@@ -29,7 +29,7 @@ class FilteringIterable(inner: Iterable[Relationship], startNode:Node, predicate
 
   class FilteringIterator(inner: Iterator[Relationship]) extends Iterator[Relationship] {
     private var nextInLine: Option[Relationship] = null
-    private val m:MiniMap = new MiniMap(null, startNode, ctx)
+    private val m:MiniMap = new MiniMap(null, startNode, ctx.state)
 
     spoolToNextInLine()
 
@@ -63,8 +63,8 @@ class FilteringIterable(inner: Iterable[Relationship], startNode:Node, predicate
     }
   }
 
-  private def filter(r: Relationship, n: Node, parameters: ExecutionContext): Boolean = {
-    val m = new MiniMap(r, n, parameters)
+  private def filter(r: Relationship, n: Node, ctx: ExecutionContext): Boolean = {
+    val m = new MiniMap(r, n, ctx.state)
     predicate.isMatch(m)
   }
 

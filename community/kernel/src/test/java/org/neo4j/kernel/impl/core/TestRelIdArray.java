@@ -44,7 +44,7 @@ public class TestRelIdArray
     @Test
     public void testBasic() throws Exception
     {
-        RelIdArray array = new RelIdArray( null );
+        RelIdArray array = new RelIdArray( 0 );
         array.add( 1, OUTGOING );
         array.add( 2, OUTGOING );
         array.add( 3, INCOMING );
@@ -81,12 +81,12 @@ public class TestRelIdArray
     @Test
     public void testWithAddRemove() throws Exception
     {
-        RelIdArray source = new RelIdArray( null );
+        RelIdArray source = new RelIdArray( 0 );
         source.add( 1, OUTGOING );
         source.add( 2, OUTGOING );
         source.add( 3, INCOMING );
         source.add( 4, INCOMING );
-        RelIdArray add = new RelIdArray( null );
+        RelIdArray add = new RelIdArray( 0 );
         add.add( 5, OUTGOING );
         add.add( 6, OUTGOING );
         add.add( 7, OUTGOING );
@@ -101,7 +101,7 @@ public class TestRelIdArray
     @Test
     public void testDifferentBlocks() throws Exception
     {
-        RelIdArray array = new RelIdArray( null );
+        RelIdArray array = new RelIdArray( 0 );
         long justUnderIntMax = (long) Math.pow( 2, 32 )-3;
         array.add( justUnderIntMax, OUTGOING );
         array.add( justUnderIntMax+1, OUTGOING );
@@ -126,16 +126,16 @@ public class TestRelIdArray
     @Test
     public void testAddDifferentBlocks() throws Exception
     {
-        RelIdArray array1 = new RelIdArray( null );
+        RelIdArray array1 = new RelIdArray( 0 );
         array1.add( 0, OUTGOING );
         array1.add( 1, OUTGOING );
         
-        RelIdArray array2 = new RelIdArray( null );
+        RelIdArray array2 = new RelIdArray( 0 );
         long justOverIntMax = (long) Math.pow( 2, 32 )+3;
         array2.add( justOverIntMax, OUTGOING );
         array2.add( justOverIntMax+1, OUTGOING );
         
-        RelIdArray all = new RelIdArray( null );
+        RelIdArray all = new RelIdArray( 0 );
         all.addAll( array1 );
         all.addAll( array2 );
         

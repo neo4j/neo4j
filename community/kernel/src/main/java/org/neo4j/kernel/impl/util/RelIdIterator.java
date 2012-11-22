@@ -19,13 +19,15 @@
  */
 package org.neo4j.kernel.impl.util;
 
+import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
+
 public interface RelIdIterator
 {
-    String getType();
+    int getType();
 
     RelIdArray getIds();
 
-    RelIdIterator updateSource( RelIdArray newSource );
+    RelIdIterator updateSource( RelIdArray newSource, DirectionWrapper direction );
 
     boolean hasNext();
 

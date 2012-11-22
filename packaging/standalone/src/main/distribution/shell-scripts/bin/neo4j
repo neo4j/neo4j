@@ -156,6 +156,8 @@ startit() {
   checkstatus
   checklimits
 
+  checkjvmcompatibility
+
   detectrunning
   if [ $newpid ] ; then
 	     echo "Another server-process is running with [$newpid], cannot start a new one. Exiting."
@@ -454,7 +456,7 @@ case "${!OPTIND}" in
     exit 0
     ;;
   *)
-    echo "Usage: neo4j { start | stop | restart | status | info | install | remove }"
+    echo "Usage: neo4j { console | start | start-no-wait | stop | restart | status | info | install | remove }"
     exit 0;;
 
 esac

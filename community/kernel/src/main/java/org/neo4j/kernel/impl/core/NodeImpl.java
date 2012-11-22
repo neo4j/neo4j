@@ -19,14 +19,16 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import static java.lang.System.arraycopy;
 import static org.neo4j.kernel.impl.cache.SizeOfs.withArrayOverheadIncludingReferences;
 import static org.neo4j.kernel.impl.util.RelIdArray.empty;
 import static org.neo4j.kernel.impl.util.RelIdArray.wrap;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 
 import org.neo4j.graphdb.Direction;
@@ -37,8 +39,8 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.helpers.Triplet;
 import org.neo4j.kernel.impl.cache.SizeOfs;
-import org.neo4j.kernel.impl.core.LockReleaser.CowEntityElement;
-import org.neo4j.kernel.impl.core.LockReleaser.PrimitiveElement;
+import org.neo4j.kernel.impl.core.WritableTransactionState.CowEntityElement;
+import org.neo4j.kernel.impl.core.WritableTransactionState.PrimitiveElement;
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.nioneo.store.Record;
@@ -108,9 +110,9 @@ public class NodeImpl extends ArrayBasedPrimitive
 
     @Override
     protected PropertyData changeProperty( NodeManager nodeManager,
-            PropertyData property, Object value )
+            PropertyData property, Object value, TransactionState tx )
     {
-        return nodeManager.nodeChangeProperty( this, property, value );
+        return nodeManager.nodeChangeProperty( this, property, value, tx );
     }
 
     @Override
@@ -121,9 +123,9 @@ public class NodeImpl extends ArrayBasedPrimitive
 
     @Override
     protected void removeProperty( NodeManager nodeManager,
-            PropertyData property )
+            PropertyData property, TransactionState tx )
     {
-        nodeManager.nodeRemoveProperty( this, property );
+        nodeManager.nodeRemoveProperty( this, property, tx );
     }
 
     @Override
@@ -144,49 +146,58 @@ public class NodeImpl extends ArrayBasedPrimitive
         // the point where we check whether or not there are more relationships to load.
         boolean hasMore = hasMoreRelationshipsToLoad();
         
-        List<RelIdIterator> relTypeList = new LinkedList<RelIdIterator>();
-        boolean hasModifications = nodeManager.getLockReleaser().hasRelationshipModifications( this );
-        ArrayMap<String,RelIdArray> addMap = null;
-        if ( hasModifications )
+        RelIdArray[] localRelationships = relationships;
+        RelIdIterator[] result = new RelIdIterator[localRelationships.length];
+        TransactionState tx = nodeManager.getTransactionState();
+        ArrayMap<Integer, RelIdArray> addMap = null;
+        ArrayMap<Integer, Collection<Long>> skipMap = null;
+        if ( tx.hasChanges() )
         {
-            addMap = nodeManager.getCowRelationshipAddMap( this );
+            addMap = tx.getCowRelationshipAddMap( this );
+            skipMap = tx.getCowRelationshipRemoveMap( this );
         }
 
-        for ( RelIdArray src : relationships )
+        for ( int i = 0; i < localRelationships.length; i++ )
         {
-            String type = src.getType();
-            Collection<Long> remove = null;
-            RelIdArray add = null;
+            RelIdArray src = localRelationships[i];
+            int type = src.getType();
             RelIdIterator iterator = null;
-            if ( hasModifications )
+            if ( addMap != null || skipMap != null )
             {
-                remove = nodeManager.getCowRelationshipRemoveMap( this, type );
-                if ( addMap != null )
-                {
-                    add = addMap.get( type );
-                }
-                iterator = new CombinedRelIdIterator( type, direction, src, add, remove );
+                iterator = new CombinedRelIdIterator( type, direction, src,
+                        addMap != null ? addMap.get( type ) : null,
+                        skipMap != null ? skipMap.get( type ) : null );
             }
             else
             {
                 iterator = src.iterator( direction );
             }
-            relTypeList.add( iterator );
+            result[i] = iterator;
         }
+        
+        // New relationship types for this node which hasn't been committed yet,
+        // but exists only as transactional state.
         if ( addMap != null )
         {
-            for ( String type : addMap.keySet() )
+            RelIdIterator[] additional = new RelIdIterator[addMap.size() /*worst case size*/];
+            int additionalSize = 0;
+            for ( int type : addMap.keySet() )
             {
                 if ( getRelIdArray( type ) == null )
                 {
-                    Collection<Long> remove = nodeManager.getCowRelationshipRemoveMap( this, type );
                     RelIdArray add = addMap.get( type );
-                    relTypeList.add( new CombinedRelIdIterator( type, direction, null, add, remove ) );
+                    additional[additionalSize++] = new CombinedRelIdIterator( type, direction, null, add,
+                            skipMap != null ? skipMap.get( type ) : null );
                 }
             }
+            RelIdIterator[] newResult = new RelIdIterator[result.length+additionalSize];
+            arraycopy( result, 0, newResult, 0, result.length );
+            arraycopy( additional, 0, newResult, result.length, additionalSize );
+            result = newResult;
         }
-        
-        return new IntArrayIterator( relTypeList, this, direction, nodeManager, new RelationshipType[0], hasMore );
+        if ( result.length == 0 )
+            return Collections.emptyList();
+        return new RelationshipIterator( result, this, direction, nodeManager, hasMore, true );
     }
 
     Iterable<Relationship> getAllRelationshipsOfType( NodeManager nodeManager,
@@ -201,29 +212,53 @@ public class NodeImpl extends ArrayBasedPrimitive
         // the point where we check whether or not there are more relationships to load.
         boolean hasMore = hasMoreRelationshipsToLoad();
         
-        List<RelIdIterator> relTypeList = new LinkedList<RelIdIterator>();
-        boolean hasModifications = nodeManager.getLockReleaser().hasRelationshipModifications( this );
-        for ( RelationshipType type : types )
+        RelIdIterator[] result = new RelIdIterator[types.length];
+        TransactionState tx = nodeManager.getTransactionState();
+        ArrayMap<Integer, RelIdArray> addMap = null;
+        ArrayMap<Integer, Collection<Long>> skipMap = null;
+        if ( tx.hasChanges() )
         {
-            String typeName = type.name();
-            RelIdArray src = getRelIdArray( typeName );
-            Collection<Long> remove = null;
-            RelIdArray add = null;
-            RelIdIterator iterator = null;
-            if ( hasModifications )
-            {
-                remove = nodeManager.getCowRelationshipRemoveMap( this, typeName );
-                add = nodeManager.getCowRelationshipAddMap( this, typeName );
-                iterator = new CombinedRelIdIterator( typeName, direction, src, add, remove );
-            }
-            else
-            {
-                iterator = src != null ? src.iterator( direction ) : empty( typeName ).iterator( direction );
-            }
-            relTypeList.add( iterator );
+            addMap = tx.getCowRelationshipAddMap( this );
+            skipMap = tx.getCowRelationshipRemoveMap( this );
+        }
+        int actualLength = 0;
+        for ( int i = 0; i < types.length; i++ )
+        {
+            Integer typeId = nodeManager.getRelationshipTypeIdFor( types[i] );
+            if ( typeId == null )
+                // This relationship type doesn't even exist in this database
+                continue;
+            
+            result[actualLength++] = getRelationshipsIterator( nodeManager, direction,
+                    addMap != null ? addMap.get( typeId ) : null,
+                    skipMap != null ? skipMap.get( typeId ) : null, typeId );
         }
         
-        return new IntArrayIterator( relTypeList, this, direction, nodeManager, types, hasMore );
+        if ( actualLength < result.length )
+        {
+            RelIdIterator[] compacted = new RelIdIterator[actualLength];
+            arraycopy( result, 0, compacted, 0, actualLength );
+            result = compacted;
+        }
+        if ( result.length == 0 )
+            return Collections.emptyList();
+        return new RelationshipIterator( result, this, direction, nodeManager, hasMore, false );
+    }
+    
+    private RelIdIterator getRelationshipsIterator( NodeManager nodeManager, DirectionWrapper direction,
+            RelIdArray add, Collection<Long> remove, int type )
+    {
+        RelIdArray src = getRelIdArray( type );
+        RelIdIterator iterator = null;
+        if ( add != null || remove != null )
+        {
+            iterator = new CombinedRelIdIterator( type, direction, src, add, remove );
+        }
+        else
+        {
+            iterator = src != null ? src.iterator( direction ) : empty( type ).iterator( direction );
+        }
+        return iterator;
     }
 
     public Iterable<Relationship> getRelationships( NodeManager nodeManager )
@@ -281,12 +316,11 @@ public class NodeImpl extends ArrayBasedPrimitive
     {
         nodeManager.acquireLock( proxy, LockType.WRITE );
         boolean success = false;
+        TransactionState tx = nodeManager.getTransactionState();
         try
         {
-            ArrayMap<Integer,PropertyData> skipMap =
-                nodeManager.getOrCreateCowPropertyRemoveMap( this );
-            ArrayMap<Integer,PropertyData> removedProps =
-                nodeManager.deleteNode( this );
+            ArrayMap<Integer,PropertyData> skipMap = tx.getOrCreateCowPropertyRemoveMap( this );
+            ArrayMap<Integer,PropertyData> removedProps = nodeManager.deleteNode( this, tx );
             if ( removedProps.size() > 0 )
             {
                 for ( Integer index : removedProps.keySet() )
@@ -298,7 +332,7 @@ public class NodeImpl extends ArrayBasedPrimitive
         }
         finally
         {
-            nodeManager.releaseLock( proxy, LockType.WRITE );
+            nodeManager.releaseLock( proxy, LockType.WRITE, tx );
             if ( !success )
             {
                 nodeManager.setRollbackOnly();
@@ -317,27 +351,6 @@ public class NodeImpl extends ArrayBasedPrimitive
         return "NodeImpl#" + this.getId();
     }
 
-    // caller is responsible for acquiring lock
-    // this method is only called when a relationship is created or
-    // a relationship delete is undone or when the full node is loaded
-    void addRelationship( NodeManager nodeManager, RelationshipType type, long relId,
-            DirectionWrapper dir )
-    {
-        RelIdArray relationshipSet = nodeManager.getOrCreateCowRelationshipAddMap(
-            this, type.name() );
-        relationshipSet.add( relId, dir );
-    }
-
-    // caller is responsible for acquiring lock
-    // this method is only called when a undo create relationship or
-    // a relationship delete is invoked.
-    void removeRelationship( NodeManager nodeManager, RelationshipType type, long relId )
-    {
-        Collection<Long> relationshipSet = nodeManager.getOrCreateCowRelationshipRemoveMap(
-            this, type.name() );
-        relationshipSet.add( relId );
-    }
-
     private void ensureRelationshipMapNotNull( NodeManager nodeManager )
     {
         if ( relationships == null )
@@ -348,8 +361,7 @@ public class NodeImpl extends ArrayBasedPrimitive
 
     private void loadInitialRelationships( NodeManager nodeManager )
     {
-        // Triplet<ArrayMap<String, RelIdArray>, Map<Long, RelationshipImpl>, Long> rels = null;
-        Triplet<ArrayMap<String, RelIdArray>, List<RelationshipImpl>, Long> rels = null;
+        Triplet<ArrayMap<Integer, RelIdArray>, List<RelationshipImpl>, Long> rels = null;
         synchronized ( this )
         {
             if ( relationships == null )
@@ -363,8 +375,8 @@ public class NodeImpl extends ArrayBasedPrimitive
                     throw new NotFoundException( asProxy( nodeManager ) +
                             " concurrently deleted while loading its relationships?", e );
                 }
-
-                ArrayMap<String,RelIdArray> tmpRelMap = new ArrayMap<String,RelIdArray>();
+                
+                ArrayMap<Integer,RelIdArray> tmpRelMap = new ArrayMap<Integer,RelIdArray>();
                 rels = getMoreRelationships( nodeManager, tmpRelMap );
                 this.relationships = toRelIdArray( tmpRelMap );
                 if ( rels != null )
@@ -386,40 +398,66 @@ public class NodeImpl extends ArrayBasedPrimitive
         nodeManager.updateCacheSize( this, size() );
     }
 
-    private RelIdArray[] toRelIdArray( ArrayMap<String, RelIdArray> tmpRelMap )
+    private RelIdArray[] toRelIdArray( ArrayMap<Integer, RelIdArray> tmpRelMap )
     {
-        if ( tmpRelMap == null || tmpRelMap.size() == 0 )
-        {
-            return NO_RELATIONSHIPS;
-        }
-
         RelIdArray[] result = new RelIdArray[tmpRelMap.size()];
         int i = 0;
         for ( RelIdArray array : tmpRelMap.values() )
         {
             result[i++] = array;
         }
+        sort( result );
         return result;
     }
+    
+    private static final Comparator<RelIdArray> RELATIONSHIP_TYPE_COMPARATOR_FOR_SORTING = new Comparator<RelIdArray>()
+    {
+        @Override
+        public int compare( RelIdArray o1, RelIdArray o2 )
+        {
+            return o1.getType() - o2.getType();
+        }
+    };
+    
+    /* This is essentially a deliberate misuse of Comparator, knowing details about Arrays#binarySearch.
+     * The signature is binarySearch( T[] array, T key, Comparator<T> ), but in this case we're
+     * comparing RelIdArray[] to an int as key. To avoid having to create a new object for
+     * the key for each call we create a single Comparator taking the RelIdArray as first
+     * argument and the key as the second, as #binarySearch does internally. Although the int
+     * here will be boxed I imagine it to be slightly better, with Integer caching for low
+     * integers. */
+    @SuppressWarnings( "rawtypes" )
+    private static final Comparator RELATIONSHIP_TYPE_COMPARATOR_FOR_BINARY_SEARCH = new Comparator()
+    {
+        @Override
+        public int compare( Object o1, Object o2 )
+        {
+            return ((RelIdArray)o1).getType() - ((Integer) o2).intValue();
+        }
+    };
+    
+    private static void sort( RelIdArray[] array )
+    {
+        Arrays.sort( array, RELATIONSHIP_TYPE_COMPARATOR_FOR_SORTING );
+    }
 
-//            NodeManager nodeManager, ArrayMap<String,RelIdArray> tmpRelMap )
-    private Triplet<ArrayMap<String,RelIdArray>,List<RelationshipImpl>,Long> getMoreRelationships(
-            NodeManager nodeManager, ArrayMap<String,RelIdArray> tmpRelMap )
+    private Triplet<ArrayMap<Integer,RelIdArray>,List<RelationshipImpl>,Long> getMoreRelationships(
+            NodeManager nodeManager, ArrayMap<Integer,RelIdArray> tmpRelMap )
     {
         if ( !hasMoreRelationshipsToLoad() )
         {
             return null;
         }
-        Triplet<ArrayMap<String,RelIdArray>,List<RelationshipImpl>,Long> rels;
+        Triplet<ArrayMap<Integer,RelIdArray>,List<RelationshipImpl>,Long> rels;
 
-        rels = loadMoreRelationshipsFromNodeManager(nodeManager);
+        rels = loadMoreRelationshipsFromNodeManager( nodeManager );
 
-        ArrayMap<String,RelIdArray> addMap = rels.first();
+        ArrayMap<Integer,RelIdArray> addMap = rels.first();
         if ( addMap.size() == 0 )
         {
             return null;
         }
-        for ( String type : addMap.keySet() )
+        for ( Integer type : addMap.keySet() )
         {
             RelIdArray addRels = addMap.get( type );
             RelIdArray srcRels = tmpRelMap.get( type );
@@ -474,7 +512,7 @@ public class NodeImpl extends ArrayBasedPrimitive
 
     LoadStatus getMoreRelationships( NodeManager nodeManager )
     {
-        Triplet<ArrayMap<String,RelIdArray>,List<RelationshipImpl>,Long> rels;
+        Triplet<ArrayMap<Integer,RelIdArray>,List<RelationshipImpl>,Long> rels;
         if ( !hasMoreRelationshipsToLoad() )
         {
             return LoadStatus.NOTHING;
@@ -487,15 +525,14 @@ public class NodeImpl extends ArrayBasedPrimitive
                 return LoadStatus.NOTHING;
             }
             rels = loadMoreRelationshipsFromNodeManager(nodeManager);
-            ArrayMap<String,RelIdArray> addMap = rels.first();
+            ArrayMap<Integer,RelIdArray> addMap = rels.first();
             if ( addMap.size() == 0 )
             {
                 return LoadStatus.NOTHING;
             }
-            for ( String type : addMap.keySet() )
+            for ( int type : addMap.keySet() )
             {
                 RelIdArray addRels = addMap.get( type );
-                // IntArray srcRels = tmpRelMap.get( type );
                 RelIdArray srcRels = getRelIdArray( type );
                 if ( srcRels == null )
                 {
@@ -519,37 +556,31 @@ public class NodeImpl extends ArrayBasedPrimitive
         return more ? LoadStatus.LOADED_MORE : LoadStatus.LOADED_END;
     }
 
-    private Triplet<ArrayMap<String, RelIdArray>, List<RelationshipImpl>, Long>
+    private Triplet<ArrayMap<Integer, RelIdArray>, List<RelationshipImpl>, Long>
         loadMoreRelationshipsFromNodeManager( NodeManager nodeManager )
     {
         try
         {
             return nodeManager.getMoreRelationships( this );
-        } catch(InvalidRecordException e)
+        }
+        catch(InvalidRecordException e)
         {
             throw new NotFoundException( "Unable to load one or more relationships from " + asProxy( nodeManager ) +
                     ". This usually happens when relationships are deleted by someone else just as we are about to load them. Please try again.", e );
         }
     }
 
-    private RelIdArray getRelIdArray( String type )
+    @SuppressWarnings( "unchecked" )
+    private RelIdArray getRelIdArray( int type )
     {
-        // Concurrency-wise it's ok even if the relationships variable
-        // gets rebound to something else (in putRelIdArray) since for-each
-        // stashes the reference away and uses that
-        for ( RelIdArray array : relationships )
-        {
-            if ( array.getType().equals( type ) )
-            {
-                return array;
-            }
-        }
-        return null;
+        RelIdArray[] localRelationships = relationships;
+        int index = Arrays.binarySearch( localRelationships, type, RELATIONSHIP_TYPE_COMPARATOR_FOR_BINARY_SEARCH );
+        return index < 0 ? null : localRelationships[index];
     }
 
     private void putRelIdArray( RelIdArray addRels )
     {
-        // we don't do size update here, instead performed in lockRelaser 
+        // we don't do size update here, instead performed 
         // when calling commitRelationshipMaps and in getMoreRelationships
 
         // precondition: called under synchronization
@@ -557,10 +588,10 @@ public class NodeImpl extends ArrayBasedPrimitive
         // make a local reference to the array to avoid multiple read barrier hits
         RelIdArray[] array = relationships;
         // Try to overwrite it if it's already set
-        String expectedType = addRels.getType();
+        int expectedType = addRels.getType();
         for ( int i = 0; i < array.length; i++ )
         {
-            if ( array[i].getType().equals( expectedType ) )
+            if ( array[i].getType() == expectedType )
             {
                 array[i] = addRels;
                 return;
@@ -569,6 +600,7 @@ public class NodeImpl extends ArrayBasedPrimitive
         // no previous entry of the given type - extend the array
         array = Arrays.copyOf( array, array.length + 1 );
         array[array.length - 1] = addRels;
+        sort( array );
         relationships = array;
     }
 
@@ -577,35 +609,6 @@ public class NodeImpl extends ArrayBasedPrimitive
     {
         return nodeManager.createRelationship( thisProxy, this, otherNode, type );
     }
-
-    /* Tentative expansion API
-    public Expansion<Relationship> expandAll()
-    {
-        return Traversal.expanderForAllTypes().expand( this );
-    }
-
-    public Expansion<Relationship> expand( RelationshipType type )
-    {
-        return expand( type, Direction.BOTH );
-    }
-
-    public Expansion<Relationship> expand( RelationshipType type,
-            Direction direction )
-    {
-        return Traversal.expanderForTypes( type, direction ).expand(
-                this );
-    }
-
-    public Expansion<Relationship> expand( Direction direction )
-    {
-        return Traversal.expanderForAllTypes( direction ).expand( this );
-    }
-
-    public Expansion<Relationship> expand( RelationshipExpander expander )
-    {
-        return Traversal.expander( expander ).expand( this );
-    }
-    */
 
     public boolean hasRelationship( NodeManager nodeManager )
     {
@@ -634,8 +637,8 @@ public class NodeImpl extends ArrayBasedPrimitive
     }
 
     protected void commitRelationshipMaps(
-        ArrayMap<String,RelIdArray> cowRelationshipAddMap,
-        ArrayMap<String,Collection<Long>> cowRelationshipRemoveMap, long firstRel, NodeManager nodeManager )
+        ArrayMap<Integer,RelIdArray> cowRelationshipAddMap,
+        ArrayMap<Integer,Collection<Long>> cowRelationshipRemoveMap, long firstRel, NodeManager nodeManager )
     {
         if ( relationships == null )
         {
@@ -647,7 +650,7 @@ public class NodeImpl extends ArrayBasedPrimitive
         {
             if ( cowRelationshipAddMap != null )
             {
-                for ( String type : cowRelationshipAddMap.keySet() )
+                for ( int type : cowRelationshipAddMap.keySet() )
                 {
                     RelIdArray add = cowRelationshipAddMap.get( type );
                     Collection<Long> remove = null;
@@ -661,7 +664,7 @@ public class NodeImpl extends ArrayBasedPrimitive
             }
             if ( cowRelationshipRemoveMap != null )
             {
-                for ( String type : cowRelationshipRemoveMap.keySet() )
+                for ( int type : cowRelationshipRemoveMap.keySet() )
                 {
                     if ( cowRelationshipAddMap != null &&
                         cowRelationshipAddMap.get( type ) != null )
@@ -700,7 +703,7 @@ public class NodeImpl extends ArrayBasedPrimitive
         }
     }
 
-    RelIdArray getRelationshipIds( String type )
+    RelIdArray getRelationshipIds( int type )
     {
         return getRelIdArray( type );
     }

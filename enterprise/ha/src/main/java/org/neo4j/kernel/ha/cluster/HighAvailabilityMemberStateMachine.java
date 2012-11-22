@@ -35,7 +35,7 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
  * that wants to know what is going on should register ClusterMemberListener implementations
  * which will receive callbacks on state changes.
  */
-public class HighAvailabilityMemberStateMachine extends LifecycleAdapter
+public class HighAvailabilityMemberStateMachine extends LifecycleAdapter implements HighAvailability
 {
     private final HighAvailabilityMemberContext context;
     private final InstanceAccessGuard accessGuard;
@@ -73,11 +73,16 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter
         accessGuard.setState( state );
     }
 
-    public void addClusterMemberListener( HighAvailabilityMemberListener toAdd )
+    public void addHighAvailabilityMemberListener( HighAvailabilityMemberListener toAdd )
     {
         memberListeners = Listeners.addListener( toAdd, memberListeners );
     }
 
+    public void removeHighAvailabilityMemberListener( HighAvailabilityMemberListener toRemove )
+    {
+        memberListeners = Listeners.removeListener( toRemove, memberListeners );
+    }
+    
     public HighAvailabilityMemberState getCurrentState()
     {
         return state;
@@ -103,8 +108,8 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter
                     state = state.masterIsElected( context, masterUri );
 
                     context.setElectedMasterId( masterUri );
-                    final HighAvailabilityMemberChangeEvent event = new HighAvailabilityMemberChangeEvent( oldState, state, masterUri,
-                            null );
+                    final HighAvailabilityMemberChangeEvent event = new HighAvailabilityMemberChangeEvent( oldState,
+                            state, masterUri, null );
                     Listeners.notifyListeners( memberListeners,
                             new Listeners.Notification<HighAvailabilityMemberListener>()
                             {
@@ -141,9 +146,8 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter
                         state = state.masterIsAvailable( context, instanceClusterUri, masterHaUri );
                         logger.debug( "Got masterIsAvailable(" + instanceClusterUri + ", moved to " + state + " from " +
                                 oldState );
-                        final HighAvailabilityMemberChangeEvent event = new HighAvailabilityMemberChangeEvent( oldState, state,
-                                instanceClusterUri,
-                                masterHaUri );
+                        final HighAvailabilityMemberChangeEvent event = new HighAvailabilityMemberChangeEvent( oldState,
+                                state, instanceClusterUri, masterHaUri );
                         Listeners.notifyListeners( memberListeners,
                                 new Listeners.Notification<HighAvailabilityMemberListener>()
                                 {

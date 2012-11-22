@@ -30,6 +30,7 @@ import org.junit.{Ignore, Test}
 import org.neo4j.index.lucene.ValueContext
 import org.neo4j.test.ImpermanentGraphDatabase
 import collection.mutable
+import util.Random
 
 class ExecutionEngineTest extends ExecutionEngineHelper {
 
@@ -244,15 +245,6 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     relate(n2, n3, "FRIEND")
 
     val result = parseAndExecute("start n=node(1) match n-->a-->b RETURN b").toList
-
-//    val query = Query.
-//      start(NodeById("start", n1.getId)).
-//      matches(
-//      RelatedTo("start", "a", "rel", "KNOWS", Direction.OUTGOING),
-//      RelatedTo("a", "b", "rel2", "FRIEND", Direction.OUTGOING)).
-//      returns(ReturnItem(Identifier("b"), "b"))
-//
-//    val result = execute(query)
 
     assertEquals(List(Map("b" -> n3)), result.toList)
   }
@@ -2284,5 +2276,37 @@ RETURN x0.name?
     val result = parseAndExecute("start n=node(0) foreach (x in [1,2,3] : create a= { name: 'foo'}  set a.id = x)")
 
     assert(result.toList === List())
+  }
+
+  @Test
+  def can_alias_and_aggregate() {
+    val a = createNode()
+    val result = parseAndExecute("start n=node(1) return sum(ID(n)), n as m")
+
+    assert(result.toList === List(Map("sum(ID(n))"->1, "m"->a)))
+  }
+
+  @Test
+  def can_handle_paths_with_multiple_unnamed_nodes() {
+    val result = parseAndExecute("START a=node(0) MATCH a<--()<--b-->()-->c RETURN c")
+
+    assert(result.toList === List())
+  }
+
+  @Test
+  def getting_top_x_when_we_have_less_than_x_left() {
+    val r = new Random(1337)
+    val nodes = (0 to 15).map(x => createNode("count" -> x)).sortBy(x => r.nextInt(100))
+
+    val result = parseAndExecute("START a=node({nodes}) RETURN a.count ORDER BY a.count SKIP 10 LIMIT 10", "nodes" -> nodes)
+
+    assert(result.toList === List(
+      Map("a.count" -> 10),
+      Map("a.count" -> 11),
+      Map("a.count" -> 12),
+      Map("a.count" -> 13),
+      Map("a.count" -> 14),
+      Map("a.count" -> 15)
+    ))
   }
 }

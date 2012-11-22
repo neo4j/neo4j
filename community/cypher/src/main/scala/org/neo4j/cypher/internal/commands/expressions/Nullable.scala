@@ -23,12 +23,14 @@ import org.neo4j.cypher.internal.symbols.{SymbolTable, CypherType}
 import org.neo4j.cypher.EntityNotFoundException
 import collection.Map
 import org.neo4j.cypher.internal.pipes.ExecutionContext
+import org.neo4j.graphdb.NotFoundException
 
 case class Nullable(expression: Expression) extends Expression {
   def apply(ctx: ExecutionContext) = try {
     expression.apply(ctx)
   } catch {
     case x: EntityNotFoundException => null
+    case x: NotFoundException       => null
   }
 
   def rewrite(f: (Expression) => Expression) = f(Nullable(expression.rewrite(f)))

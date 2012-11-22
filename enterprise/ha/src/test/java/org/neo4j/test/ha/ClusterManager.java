@@ -275,7 +275,7 @@ public class ClusterManager
             network.stop();
             return new StartNetworkAgainKit( network );
         }
-        
+
         private void startMember( int serverId ) throws URISyntaxException
         {
             Clusters.Member member = spec.getMembers().get( serverId-1 );

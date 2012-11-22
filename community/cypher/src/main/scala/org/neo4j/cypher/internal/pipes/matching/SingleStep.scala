@@ -25,7 +25,7 @@ import collection.JavaConverters._
 import org.neo4j.cypher.internal.pipes.ExecutionContext
 
 case class SingleStep(id: Int,
-                      typ: Seq[RelationshipType],
+                      typ: Seq[String],
                       direction: Direction,
                       next: Option[ExpanderStep],
                       relPredicate: Predicate,
@@ -36,16 +36,12 @@ case class SingleStep(id: Int,
 
 
   private def filter(r: Relationship, n: Node, parameters: ExecutionContext): Boolean = {
-    val m = new MiniMap(r, n, parameters)
+    val m = new MiniMap(r, n, parameters.state)
     relPredicate.isMatch(m) && nodePredicate.isMatch(m)
   }
 
   def expand(node: Node, parameters: ExecutionContext): (Iterable[Relationship], Option[ExpanderStep]) = {
-
-    val intermediate = typ match {
-      case Seq() => node.getRelationships(direction).asScala
-      case x     => node.getRelationships(direction, x: _*).asScala
-    }
+    val intermediate = parameters.state.query.getRelationshipsFor(node, direction, typ:_*).asScala
 
     val rels = new FilteringIterable(intermediate, node, And(relPredicate, nodePredicate), parameters)
     (rels, next)
@@ -66,7 +62,7 @@ case class SingleStep(id: Int,
 
     val relInfo = typ.toList match {
       case List() => ""
-      case _      => "[:%s {%s,%s}]".format(typ.map(_.name()).mkString("|"), relPredicate, nodePredicate)
+      case _      => "[:%s {%s,%s}]".format(typ.mkString("|"), relPredicate, nodePredicate)
     }
 
     val shape = "(%s)%s-%s-%s".format(id, left, relInfo, right)
@@ -88,7 +84,7 @@ case class SingleStep(id: Int,
       val a = id == other.id
       val b = direction == other.direction
       val c = next == other.next
-      val d = typ.map(_.name()) == other.typ.map(_.name())
+      val d = typ == other.typ
       val e = relPredicate == other.relPredicate
       val f = nodePredicate == other.nodePredicate
       a && b && c && d && e && f

@@ -24,6 +24,7 @@ import org.neo4j.cypher.GraphDatabaseTestBase
 import org.neo4j.cypher.internal.commands.expressions.Literal
 import org.neo4j.cypher.internal.pipes.{QueryState, ExecutionContext}
 import org.neo4j.graphdb.{PropertyContainer, Transaction}
+import org.neo4j.cypher.internal.spi.gdsimpl.GDSBackedQueryContext
 
 
 class MapPropertySetActionTest extends GraphDatabaseTestBase {
@@ -34,7 +35,7 @@ class MapPropertySetActionTest extends GraphDatabaseTestBase {
   @Before
   def init() {
     tx = graph.beginTx()
-    state = QueryState()
+    state = new QueryState(graph, new GDSBackedQueryContext(graph), Map.empty, None)
   }
 
   @After
