@@ -108,8 +108,8 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
                     state = state.masterIsElected( context, masterUri );
 
                     context.setElectedMasterId( masterUri );
-                    final HighAvailabilityMemberChangeEvent event = new HighAvailabilityMemberChangeEvent( oldState, state, masterUri,
-                            null );
+                    final HighAvailabilityMemberChangeEvent event = new HighAvailabilityMemberChangeEvent( oldState,
+                            state, masterUri, null );
                     Listeners.notifyListeners( memberListeners,
                             new Listeners.Notification<HighAvailabilityMemberListener>()
                             {
@@ -146,9 +146,8 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
                         state = state.masterIsAvailable( context, instanceClusterUri, masterHaUri );
                         logger.debug( "Got masterIsAvailable(" + instanceClusterUri + ", moved to " + state + " from " +
                                 oldState );
-                        final HighAvailabilityMemberChangeEvent event = new HighAvailabilityMemberChangeEvent( oldState, state,
-                                instanceClusterUri,
-                                masterHaUri );
+                        final HighAvailabilityMemberChangeEvent event = new HighAvailabilityMemberChangeEvent( oldState,
+                                state, instanceClusterUri, masterHaUri );
                         Listeners.notifyListeners( memberListeners,
                                 new Listeners.Notification<HighAvailabilityMemberListener>()
                                 {

@@ -43,6 +43,9 @@ public interface HighAvailability
     @Description( "The time when the data on this instance was last updated from the master" )
     String getLastUpdateTime();
 
+    @Description( "The latest transaction id present in this instance's store" )
+    long getLastCommittedTxId();
+
     @Description( "Information about all instances in this cluster" )
     ClusterMemberInfo[] getInstancesInCluster();
 

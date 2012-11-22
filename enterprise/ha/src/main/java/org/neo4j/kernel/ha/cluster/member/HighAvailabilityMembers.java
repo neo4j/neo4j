@@ -139,11 +139,12 @@ public class HighAvailabilityMembers extends AbstractHighAvailabilityMembers
 
         protected ClusterMemberInfo asClusterMemberInfo()
         {
-            String[] clusterRoles = asCollection( clusterConfiguration.getRolesOf( clusterUri ) ).toArray( new String[0] );
-            return new ClusterMemberInfo( clusterUri.toString(), available, alive, haRole.name(),
-                    clusterRoles, new String[] { clusterUri.toString(), nullSafeUriToString( haUri ) } );
+            String[] clusterRoles = asCollection(
+                    clusterConfiguration.getRolesOf( clusterUri ) ).toArray( new String[0] );
+            return new ClusterMemberInfo( clusterUri.toASCIIString(),  available, alive, haRole.name(), clusterRoles,
+                    new String[] { clusterUri.toString(), nullSafeUriToString( haUri ) } );
         }
-        
+
         Member becomeAvailable( HighAvailabilityRole haRole, URI haUri )
         {
             return new Member( this.clusterUri, haRole, haUri, true, this.alive );
