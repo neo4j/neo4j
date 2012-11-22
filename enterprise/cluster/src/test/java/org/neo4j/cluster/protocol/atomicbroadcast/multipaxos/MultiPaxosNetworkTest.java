@@ -54,7 +54,6 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConfigurationDefaults;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.LogbackService;
-import org.neo4j.test.TargetDirectory;
 
 /**
  * TODO
@@ -67,8 +66,7 @@ public class MultiPaxosNetworkTest
     {
         final LifeSupport life = new LifeSupport();
         Config config = new Config( new ConfigurationDefaults( GraphDatabaseSettings.class ).apply( MapUtil.stringMap
-                ( GraphDatabaseSettings.store_dir.name(),
-                        TargetDirectory.forTest( getClass() ).directory( "cluster" ).getAbsolutePath() ) ) );
+                ( GraphDatabaseSettings.store_dir.name(), "test" ) ) );
 
         final LoggerContext loggerContext = new LoggerContext();
         loggerContext.putProperty( "host", "none" );

@@ -136,7 +136,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
     }
 
     @Override
-    public synchronized void start()
+    public void start()
             throws Throwable
     {
         openLog();
@@ -175,7 +175,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
     }
 
     @Override
-    public synchronized void stop()
+    public void stop()
     {
         recovered = false;
         xaDataSourceManager.removeDataSourceRegistrationListener( dataSourceRegistrationListener );

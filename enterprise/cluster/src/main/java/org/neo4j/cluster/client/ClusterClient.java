@@ -274,12 +274,6 @@ public class ClusterClient extends LifecycleAdapter implements ClusterMonitor, C
     }
 
     @Override
-    public void init() throws Throwable
-    {
-        life.init();
-    }
-
-    @Override
     public void start() throws Throwable
     {
         life.start();

@@ -47,10 +47,6 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
  */
 public class PaxosHighAvailabilityEvents implements HighAvailabilityEvents, Lifecycle
 {
-    private ClusterListener clusterListener;
-    private HeartbeatListener heartbeatListener;
-    private AtomicBroadcastListener atomicBroadcastListener;
-
     public interface Configuration
     {
         String getHaServer();
@@ -126,7 +122,7 @@ public class PaxosHighAvailabilityEvents implements HighAvailabilityEvents, Life
     {
         serializer = new AtomicBroadcastSerializer();
 
-        cluster.addClusterListener( clusterListener = new ClusterListener.Adapter()
+        cluster.addClusterListener( new ClusterListener.Adapter()
         {
             @Override
             public void joinedCluster( URI member )
@@ -159,7 +155,7 @@ public class PaxosHighAvailabilityEvents implements HighAvailabilityEvents, Life
             }
         } );
         
-        cluster.addHeartbeatListener( heartbeatListener = new HeartbeatListener.Adapter()
+        cluster.addHeartbeatListener( new HeartbeatListener.Adapter()
         {
             @Override
             public void alive( URI server )
@@ -168,7 +164,7 @@ public class PaxosHighAvailabilityEvents implements HighAvailabilityEvents, Life
             }
         } );
 
-        cluster.addAtomicBroadcastListener( atomicBroadcastListener = new AtomicBroadcastListener()
+        cluster.addAtomicBroadcastListener( new AtomicBroadcastListener()
         {
             @Override
             public void receive( Payload payload )
@@ -241,9 +237,6 @@ public class PaxosHighAvailabilityEvents implements HighAvailabilityEvents, Life
     public void stop()
             throws Throwable
     {
-        cluster.removeAtomicBroadcastListener( atomicBroadcastListener );
-        cluster.removeClusterListener( clusterListener );
-        cluster.removeHeartbeatListener( heartbeatListener );
     }
 
     @Override

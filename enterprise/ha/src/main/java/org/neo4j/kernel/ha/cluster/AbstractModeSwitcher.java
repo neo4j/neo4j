@@ -36,15 +36,12 @@ public abstract class AbstractModeSwitcher<T> implements Lifecycle
 {
     private final DelegateInvocationHandler<T> delegate;
     private LifeSupport life;
-    private final HighAvailability highAvailability;
-    private DelegateStateSwitcher delegateStateSwitcher;
 
     protected AbstractModeSwitcher( HighAvailability highAvailability, DelegateInvocationHandler<T> delegate )
     {
         this.delegate = delegate;
         this.life = new LifeSupport();
-        this.highAvailability = highAvailability;
-        highAvailability.addHighAvailabilityMemberListener( delegateStateSwitcher = new DelegateStateSwitcher() );
+        highAvailability.addHighAvailabilityMemberListener( new DelegateStateSwitcher() );
     }
 
     @Override
@@ -63,7 +60,6 @@ public abstract class AbstractModeSwitcher<T> implements Lifecycle
     public void stop() throws Throwable
     {
         life.stop();
-        highAvailability.removeHighAvailabilityMemberListener( delegateStateSwitcher );
     }
 
     @Override
