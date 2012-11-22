@@ -131,7 +131,7 @@ public class DiagnosticsLoggingTest
         }
 
         @Override
-        protected Logging createStringLogger()
+        protected Logging createLogging()
         {
             return new FakeLogger();
         }

@@ -289,7 +289,7 @@ public abstract class InternalAbstractGraphDatabase
         fileSystem = life.add( createFileSystemAbstraction() );
 
         // Create logger
-        this.logging = createStringLogger();
+        this.logging = createLogging();
 
         // Apply autoconfiguration for memory settings
         AutoConfigurator autoConfigurator = new AutoConfigurator( fileSystem,
@@ -730,7 +730,7 @@ public abstract class InternalAbstractGraphDatabase
         return new LockManagerImpl( new RagManager( txManager ) );
     }
 
-    protected Logging createStringLogger()
+    protected Logging createLogging()
     {
         Logging logging;
         try

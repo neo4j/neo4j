@@ -143,7 +143,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         return super.beginTx( forceMode );
     }
 
-    protected Logging createStringLogger()
+    protected Logging createLogging()
     {
         try
         {
