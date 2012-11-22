@@ -245,7 +245,14 @@ public class StateMachineProxyFactory
         public synchronized Object get()
                 throws InterruptedException, ExecutionException
         {
-            throw new UnsupportedOperationException( "This is to discourage use of get() without a timeout" );
+            if ( response != null )
+            {
+                return getResult();
+            }
+
+            this.wait();
+
+            return getResult();
         }
 
         private synchronized Object getResult()
