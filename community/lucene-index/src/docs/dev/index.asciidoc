@@ -492,7 +492,7 @@ tag=APIAutoIndexer
 classifier=test-sources
 ----
 
-[[NOTE]]
+[NOTE]
 Parameters to the AutoIndexers passed through the Configuration and settings made through the API are cumulative.
 So you can set some beforehand known settings, do runtime checks to augment the initial configuration and then enable the desired auto indexers -
 the final configuration is the same regardless of the method used to reach it.
@@ -515,5 +515,6 @@ classifier=test-sources
 ----
 
 [CAUTION]
-If you start the database with auto indexing enabled but different auto indexed properties than the last run, then already auto-indexed entities will be deleted
-as you work with them. Make sure that the monitored set is what you want before enabling the functionality.
+If you start the database with auto indexing enabled but different auto indexed properties than the last run, then already auto-indexed properties will be deleted from the index when a value is written to them (assuming the property isn't present in the new configuration).
+Make sure that the monitored set is what you want before enabling the functionality.
+
