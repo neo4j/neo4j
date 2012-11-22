@@ -244,7 +244,7 @@ public class ClusterManager
         {
             assertMember( db );
             int serverId = db.getDependencyResolver().resolveDependency( Config.class ).get( HaSettings.server_id );
-            members.remove( db );
+            members.remove( serverId );
             life.remove( db );
             db.shutdown();
             return new StartDatabaseAgainKit( this, serverId );
@@ -275,17 +275,22 @@ public class ClusterManager
             network.stop();
             return new StartNetworkAgainKit( network );
         }
-        
+
         private void startMember( int serverId ) throws URISyntaxException
         {
             Clusters.Member member = spec.getMembers().get( serverId-1 );
             int haPort = new URI( "cluster://" + member.getHost() ).getPort() + 3000;
 
+            StringBuilder initialHosts = new StringBuilder( spec.getMembers().get( 0 ).getHost() );
+            for (int i = 1; i < spec.getMembers().size(); i++)
+            {
+                initialHosts.append( "," ).append( spec.getMembers().get( i ).getHost() );
+            }
             GraphDatabaseBuilder graphDatabaseBuilder = new HighlyAvailableGraphDatabaseFactory()
                     .newHighlyAvailableDatabaseBuilder( new File( new File( root, name ),
                             "server" + serverId ).getAbsolutePath() ).
                             setConfig( ClusterSettings.cluster_name, name ).
-                            setConfig( HaSettings.initial_hosts, spec.getMembers().get( 0 ).getHost() ).
+                            setConfig( HaSettings.initial_hosts, initialHosts.toString() ).
                             setConfig( HaSettings.server_id, serverId + "" ).
                             setConfig( HaSettings.cluster_server, member.getHost() ).
                             setConfig( HaSettings.ha_server, ":" + haPort ).
@@ -392,7 +397,7 @@ public class ClusterManager
             }
         };
     }
-    
+
     /**
      * There must be a master available.
      */

@@ -21,6 +21,7 @@ package jmx;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -28,12 +29,15 @@ import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
 import static org.neo4j.test.ha.ClusterManager.masterSeesAllSlavesAsAvailable;
 
 import java.net.InetAddress;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.Arrays;
 
 import org.junit.After;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Predicate;
@@ -100,12 +104,126 @@ public class HaBeanIT
         assertMasterInformation( ha );
     }
 
+    @Test
+    public void testLatestTxInfoIsCorrect() throws Throwable
+    {
+        startCluster( 1 );
+        HighlyAvailableGraphDatabase db = cluster.getMaster();
+        HighAvailability masterHa = ha( db );
+        long lastCommitted = masterHa.getLastCommittedTxId();
+        Transaction tx = db.beginTx();
+        db.createNode();
+        tx.success();
+        tx.finish();
+        assertEquals( lastCommitted + 1, masterHa.getLastCommittedTxId() );
+    }
+
+    @Test
+    public void testUpdatePullWorksAndUpdatesLastUpdateTime() throws Throwable
+    {
+        startCluster( 2 );
+        HighlyAvailableGraphDatabase master = cluster.getMaster();
+        HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
+        Transaction tx = master.beginTx();
+        master.createNode();
+        tx.success();
+        tx.finish();
+        HighAvailability slaveBean = ha( slave );
+        DateFormat format = new SimpleDateFormat( "yyyy-MM-DD kk:mm:ss.SSSZZZZ" );
+        // To begin with, no updates
+        assertEquals( "N/A", slaveBean.getLastUpdateTime() );
+        slaveBean.update();
+        long timeUpdated = format.parse( slaveBean.getLastUpdateTime() ).getTime();
+        assertTrue( timeUpdated > 0 );
+    }
+
+    @Test
+    public void testAfterGentleMasterSwitchClusterInfoIsCorrect() throws Throwable
+    {
+        startCluster( 3 );
+        RepairKit masterShutdown = cluster.shutdown( cluster.getMaster() );
+        cluster.await( ClusterManager.masterAvailable() );
+        cluster.await( ClusterManager.masterSeesSlavesAsAvailable( 1 ) );
+        for ( HighlyAvailableGraphDatabase db : cluster.getAllMembers() )
+        {
+            assertEquals( 2, ha( db ).getInstancesInCluster().length );
+        }
+        masterShutdown.repair();
+        cluster.await( ClusterManager.masterAvailable() );
+        cluster.await( ClusterManager.masterSeesAllSlavesAsAvailable() );
+        for ( HighlyAvailableGraphDatabase db : cluster.getAllMembers() )
+        {
+            HighAvailability bean = ha( db );
+
+            assertEquals( 3, bean.getInstancesInCluster().length );
+            for ( ClusterMemberInfo info : bean.getInstancesInCluster() )
+            {
+                assertTrue( "every instance should be available", info.isAvailable() );
+                if ( info.getClusterRoles().length > 0 )
+                {
+                    assertEquals(ClusterConfiguration.COORDINATOR, info.getClusterRoles()[0] );
+                    assertEquals( HighAvailabilityMemberState.MASTER.name(), info.getHaRole() );
+                }
+                else
+                {
+                    assertEquals( "instance "+info.getClusterId()+" is cluster slave but HA master",
+                            HighAvailabilityMemberState.SLAVE.name(), info.getHaRole() );
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testAfterHardMasterSwitchClusterInfoIsCorrect() throws Throwable
+    {
+        startCluster( 3 );
+        cluster.fail( cluster.getMaster() );
+        RepairKit masterShutdown = cluster.shutdown( cluster.getMaster() );
+        cluster.await( ClusterManager.masterAvailable() );
+        cluster.await( ClusterManager.masterSeesSlavesAsAvailable( 1 ) );
+        for ( HighlyAvailableGraphDatabase db : cluster.getAllMembers() )
+        {
+            assertEquals( 3, ha( db ).getInstancesInCluster().length );
+        }
+        assertEquals( "2", ha( cluster.getMaster()).getInstanceId());
+        masterShutdown.repair();
+        cluster.await( ClusterManager.masterAvailable() );
+        cluster.await( ClusterManager.masterSeesAllSlavesAsAvailable() );
+        assertEquals( "2", ha( cluster.getMaster()).getInstanceId());
+        assertFalse( cluster.getMemberByServerId( 1 ).isMaster() );
+        Thread.sleep(1000);
+        for ( HighlyAvailableGraphDatabase db : cluster.getAllMembers() )
+        {
+            HighAvailability bean = ha( db );
+
+            assertEquals( 3, bean.getInstancesInCluster().length );
+            for ( ClusterMemberInfo info : bean.getInstancesInCluster() )
+            {
+                assertTrue( bean.getInstanceId() + ": every instance should be available: "+info.getClusterId(),
+                        info.isAvailable() );
+                if ( info.getClusterRoles().length > 0 )
+                {
+                    assertEquals( bean.getInstanceId() + ": Got a role different than coordinator?",
+                            ClusterConfiguration.COORDINATOR, info.getClusterRoles()[0] );
+                    assertEquals( bean.getInstanceId()+": got a coordinator who is not master: "+info.getClusterId(),
+                            HighAvailabilityMemberState.MASTER.name(), info.getHaRole() );
+                }
+                else
+                {
+                    assertEquals( bean.getInstanceId()+": instance "+info.getClusterId()+" is cluster slave but HA master",
+                            HighAvailabilityMemberState.SLAVE.name(), info.getHaRole() );
+                }
+            }
+        }
+    }
+
     private void assertMasterInformation( HighAvailability ha )
     {
+        assertEquals( "instance id should be the one configured", "1", ha.getInstanceId() );
         assertTrue( "single instance should be master and available", ha.isAvailable() );
         assertEquals( "single instance should be master", HighAvailabilityMemberState.MASTER.name(), ha.getRole() );
         ClusterMemberInfo info = ha.getInstancesInCluster()[0];
-        assertTrue( "single instance should be the returned instance id", info.getInstanceId().endsWith( ":5001" ) );
+        assertTrue( "single instance should be the returned instance id", info.getClusterId().endsWith( ":5001" ) );
         assertTrue( "single instance should have coordinator cluster role", Arrays.equals( info.getClusterRoles(),
                 new String[]{ClusterConfiguration.COORDINATOR} ) );
     }
@@ -132,7 +250,7 @@ public class HaBeanIT
         assertNotNull( clusterMember );
 //        String address = clusterMember.getAddress();
 //        assertNotNull( "No JMX address for instance", address );
-        String id = clusterMember.getInstanceId();
+        String id = clusterMember.getClusterId();
         assertNotNull( "No instance id", id );
     }
 
@@ -157,7 +275,7 @@ public class HaBeanIT
         assertNotNull( clusterMembers );
         assertEquals( 1, clusterMembers.length );
 //        assertEquals( clusterMember.getAddress(), clusterMembers[0].getAddress() );
-        assertEquals( clusterMember.getInstanceId(), clusterMembers[0].getInstanceId() );
+        assertEquals( clusterMember.getClusterId(), clusterMembers[0].getClusterId() );
     }
     
     @Test
@@ -196,7 +314,6 @@ public class HaBeanIT
         RepairKit dbFailure = cluster.fail( failedDb );
         await( ha( cluster.getMaster() ), dbAlive( false ) );
         await( ha( cluster.getAnySlave( failedDb )), dbAlive( false ) );
-        
         // Repair the failure and come back
         dbFailure.repair();
         for ( HighlyAvailableGraphDatabase db : cluster.getAllMembers() )
@@ -206,14 +323,14 @@ public class HaBeanIT
     private void assertMasterAndSlaveInformation( ClusterMemberInfo[] instancesInCluster ) throws Exception
     {
         ClusterMemberInfo master = member( instancesInCluster, 5001 );
-        assertTrue( master.getInstanceId().endsWith( ":5001" ) );
+        assertTrue( master.getClusterId().endsWith( ":5001" ) );
         assertEquals( HighAvailabilityMemberState.MASTER.name(), master.getHaRole() );
         assertTrue( "Unexpected start of HA URI " + uri( "ha", master.getUris() ),
                 uri( "ha", master.getUris() ).startsWith( "ha://" + InetAddress.getLocalHost().getHostAddress() + ":1137" ) );
         assertTrue( "Master not available", master.isAvailable() );
 
         ClusterMemberInfo slave = member( instancesInCluster, 5002 );
-        assertTrue( slave.getInstanceId().endsWith( ":5002" ) );
+        assertTrue( slave.getClusterId().endsWith( ":5002" ) );
         assertEquals( HighAvailabilityMemberState.SLAVE.name(), slave.getHaRole() );
         assertTrue( "Unexpected start of HA URI" + uri( "ha", slave.getUris() ),
                 uri( "ha", slave.getUris() ).startsWith( "ha://" + InetAddress.getLocalHost().getHostAddress() + ":1138" ) );

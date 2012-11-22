@@ -77,7 +77,7 @@ public class ClusterMemberMatcher extends BaseMatcher<Iterable<ClusterMemberInfo
         
         return true;
     }
-    
+
     public static ClusterMemberMatch member( URI member )
     {
         return new ClusterMemberMatch( member );
@@ -120,7 +120,7 @@ public class ClusterMemberMatcher extends BaseMatcher<Iterable<ClusterMemberInfo
         
         private boolean match( ClusterMemberInfo toMatch )
         {
-            if ( !member.toString().equals( toMatch.getInstanceId() ) )
+            if ( !member.toString().equals( toMatch.getClusterId() ) )
                 return false;
             if ( available != null && toMatch.isAvailable() != available )
                 return false;
