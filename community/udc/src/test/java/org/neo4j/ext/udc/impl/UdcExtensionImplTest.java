@@ -20,30 +20,6 @@
 
 package org.neo4j.ext.udc.impl;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.not;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.neo4j.ext.udc.UdcConstants.EDITION;
-import static org.neo4j.ext.udc.UdcConstants.MAC;
-import static org.neo4j.ext.udc.UdcConstants.REGISTRATION;
-import static org.neo4j.ext.udc.UdcConstants.SOURCE;
-import static org.neo4j.ext.udc.UdcConstants.TAGS;
-import static org.neo4j.ext.udc.UdcConstants.USER_AGENTS;
-import static org.neo4j.ext.udc.UdcConstants.VERSION;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Random;
-import java.util.Set;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.http.localserver.LocalTestServer;
 import org.junit.Before;
@@ -56,6 +32,14 @@ import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.server.rest.web.CollectUserAgentFilter;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.*;
+
+import static org.hamcrest.CoreMatchers.*;
+import static org.junit.Assert.*;
+import static org.neo4j.ext.udc.UdcConstants.*;
 // import org.neo4j.kernel.ha.HaSettings;
 
 /**
@@ -385,6 +369,23 @@ public class UdcExtensionImplTest
         assertTrue( "1.10-SNAPSHOT".matches( pattern ) );
         assertTrue( "1.10.M01".matches( pattern ) );
     }
+
+    @Test
+    public void shouldFilterPlusBuildNumbers() throws Exception {
+        assertThat(new DefaultUdcInformationCollector(null, null, null).filterVersionForUDC("1.9.0-M01+00001"), is(equalTo("1.9.0-M01")));
+    }
+
+    @Test
+    public void shouldNotFilterSnapshotBuildNumbers() throws Exception {
+        assertThat(new DefaultUdcInformationCollector(null, null, null).filterVersionForUDC("1.9-SNAPSHOT"), is(equalTo("1.9-SNAPSHOT")));
+
+    }
+
+    @Test
+    public void shouldNotFilterReleaseBuildNumbers() throws Exception {
+        assertThat(new DefaultUdcInformationCollector(null, null, null).filterVersionForUDC("1.9"), is(equalTo("1.9")));
+    }
+
 
     private static interface Condition<T>
     {
