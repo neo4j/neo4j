@@ -110,7 +110,6 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
 
         kernelEventHandlers.registerKernelEventHandler( new TxManagerCheckKernelEventHandler( xaDataSourceManager,
                 (TxManager) txManager ) );
-        transactionSupport.setLockReleaser( lockReleaser );
         life.add( memberStateMachine );
         life.add( updatePuller = new UpdatePuller( (HaXaDataSourceManager) xaDataSourceManager, master,
                 requestContextFactory, txManager, accessGuard, config, msgLog ) );
@@ -144,7 +143,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         return super.beginTx( forceMode );
     }
 
-    protected Logging createStringLogger()
+    protected Logging createLogging()
     {
         try
         {
@@ -224,7 +223,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     protected LockManager createLockManager()
     {
         // TransactionSupport piggy-backing on creating the lock manager
-        transactionSupport = new DefaultTransactionSupport( lockReleaser, txManager, txHook, accessGuard, config );
+        transactionSupport = new DefaultTransactionSupport( txManager, txHook, accessGuard, config );
 
         DelegateInvocationHandler<LockManager> lockManagerDelegate = new DelegateInvocationHandler<LockManager>();
         LockManager lockManager =

@@ -32,6 +32,7 @@ import org.neo4j.graphdb.Traverser.Order;
 import org.neo4j.graphdb.traversal.Evaluator;
 import org.neo4j.graphdb.traversal.Evaluators;
 import org.neo4j.graphdb.traversal.TraversalDescription;
+import org.neo4j.kernel.OrderedByTypeExpander;
 import org.neo4j.kernel.Traversal;
 
 public class TraversalDescriptionBuilder
@@ -51,7 +52,7 @@ public class TraversalDescriptionBuilder
             TraversalDescription result = Traversal.description();
             result = describeOrder( result, description );
             result = describeUniqueness( result, description );
-            result = describeRelationships( result, description );
+            result = describeExpander( result, description );
             result = describePruneEvaluator( result, description );
             result = describeReturnFilter( result, description );
             return result;
@@ -111,8 +112,8 @@ public class TraversalDescriptionBuilder
     }
 
     @SuppressWarnings( "unchecked" )
-    private TraversalDescription describeRelationships( TraversalDescription result,
-            Map<String, Object> description )
+    private TraversalDescription describeExpander( TraversalDescription result,
+                                                   Map<String, Object> description )
     {
         Object relationshipsDescription = description.get( "relationships" );
         if ( relationshipsDescription != null )
@@ -126,8 +127,9 @@ public class TraversalDescriptionBuilder
             {
                 pairDescriptions = Arrays.asList( relationshipsDescription );
             }
-            
-            Expander expander = Traversal.emptyExpander();
+
+            Expander expander = createExpander( description );
+
             for ( Object pairDescription : pairDescriptions )
             {
                 Map map = (Map) pairDescription;
@@ -141,6 +143,30 @@ public class TraversalDescriptionBuilder
             result = result.expand( expander );
         }
         return result;
+    }
+
+    private Expander createExpander( Map<String, Object> description )
+    {
+        if(description.containsKey( "expander" ))
+        {
+            Object expanderDesc = description.get( "expander" );
+            if(! (expanderDesc instanceof String))
+            {
+                throw new IllegalArgumentException( "Invalid expander type '"+expanderDesc+"', expected a string name." );
+
+            }
+
+            String expanderName = (String) expanderDesc;
+            if(expanderName.equalsIgnoreCase( "order_by_type" ))
+            {
+                return new OrderedByTypeExpander();
+            }
+
+            throw new IllegalArgumentException( "Unknown expander type: '"+expanderName+"'" );
+        }
+
+        // Default expander
+        return Traversal.emptyExpander();
     }
 
     private TraversalDescription describeUniqueness( TraversalDescription result, Map<String, Object> description )

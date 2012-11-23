@@ -23,35 +23,27 @@ import javax.transaction.SystemException;
 import javax.transaction.Transaction;
 
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.core.LockReleaser;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.transaction.TxHook;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 class DefaultTransactionSupport extends LifecycleAdapter implements TransactionSupport
 {
-    private LockReleaser lockReleaser;
     private final AbstractTransactionManager txManager;
     private final TxHook txHook;
     private final InstanceAccessGuard switchBlock;
     private final Config config;
     private long stateSwitchTimeout;
 
-    DefaultTransactionSupport( LockReleaser lockReleaser, AbstractTransactionManager txManager, TxHook txHook,
+    DefaultTransactionSupport( AbstractTransactionManager txManager, TxHook txHook,
                                InstanceAccessGuard switchBlock, Config config )
     {
-        this.lockReleaser = lockReleaser;
         this.txManager = txManager;
         this.txHook = txHook;
         this.switchBlock = switchBlock;
         this.config = config;
     }
     
-    void setLockReleaser( LockReleaser lockReleaser )
-    {   // Needed due to cyclic dependency: LockManager -> TransactionSupport -> LockReleaser -> LockManager
-        this.lockReleaser = lockReleaser;
-    }
-
     @Override
     public void start() throws Throwable
     {
@@ -61,7 +53,7 @@ class DefaultTransactionSupport extends LifecycleAdapter implements TransactionS
     @Override
     public boolean hasAnyLocks( Transaction tx )
     {
-        return lockReleaser.hasLocks( tx );
+        return txManager.getTransactionState().hasLocks();
     }
 
     @Override

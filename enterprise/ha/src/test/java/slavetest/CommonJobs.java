@@ -39,8 +39,9 @@ import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.ha.LockableNode;
 import org.neo4j.kernel.impl.core.GraphProperties;
-import org.neo4j.kernel.impl.core.LockReleaser;
+import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.nioneo.store.IdGenerator;
+import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.LockType;
 
@@ -647,12 +648,12 @@ public abstract class CommonJobs
         protected Void executeInTransaction( GraphDatabaseAPI db, Transaction tx )
         {
             LockManager lockManager = db.getLockManager();
-            LockReleaser lockReleaser = db.getLockReleaser();
+            TransactionState state = ((AbstractTransactionManager)db.getTxManager()).getTransactionState();
             for ( int i = 0; i < amount; i++ )
             {
                 Object resource = new LockableNode( i );
                 lockManager.getWriteLock( resource );
-                lockReleaser.addLockToTransaction( resource, LockType.WRITE );
+                state.addLockToTransaction( lockManager, resource, LockType.WRITE );
             }
             return null;
         }

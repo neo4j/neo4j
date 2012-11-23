@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import javax.transaction.TransactionManager;
-
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -31,20 +29,21 @@ import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
+import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.util.ArrayMap;
 
 public class ReadOnlyNodeManager extends NodeManager
 {
-    public ReadOnlyNodeManager(Config config, GraphDatabaseService graphDb, LockManager lockManager, LockReleaser lockReleaser,
-                               TransactionManager transactionManager, PersistenceManager persistenceManager,
+    public ReadOnlyNodeManager(Config config, GraphDatabaseService graphDb, LockManager lockManager,
+                               AbstractTransactionManager transactionManager, PersistenceManager persistenceManager,
                                EntityIdGenerator idGenerator, RelationshipTypeHolder relationshipTypeHolder,
                                CacheProvider cacheType, PropertyIndexManager propertyIndexManager,
                                NodeProxy.NodeLookup nodeLookup, RelationshipProxy.RelationshipLookups relationshipLookups,
                                Cache<NodeImpl> nodeCache, Cache<RelationshipImpl> relCache, XaDataSourceManager xaDsm )
     {
-        super(config, graphDb, lockManager, lockReleaser, transactionManager, persistenceManager, idGenerator,
+        super(config, graphDb, lockManager, transactionManager, persistenceManager, idGenerator,
                 relationshipTypeHolder, cacheType, propertyIndexManager, nodeLookup, relationshipLookups,
                 nodeCache, relCache, xaDsm );
     }
@@ -69,7 +68,7 @@ public class ReadOnlyNodeManager extends NodeManager
     }
 
     @Override
-    ArrayMap<Integer,PropertyData> deleteNode( NodeImpl node )
+    ArrayMap<Integer,PropertyData> deleteNode( NodeImpl node, TransactionState tx )
     {
         throw new ReadOnlyDbException();
     }
@@ -82,19 +81,19 @@ public class ReadOnlyNodeManager extends NodeManager
 
     @Override
     PropertyData nodeChangeProperty( NodeImpl node, PropertyData property,
-            Object value )
+            Object value, TransactionState tx )
     {
         throw new ReadOnlyDbException();
     }
 
     @Override
-    void nodeRemoveProperty( NodeImpl node, PropertyData property )
+    void nodeRemoveProperty( NodeImpl node, PropertyData property, TransactionState tx )
     {
         throw new ReadOnlyDbException();
     }
 
     @Override
-    ArrayMap<Integer,PropertyData> deleteRelationship( RelationshipImpl rel )
+    ArrayMap<Integer,PropertyData> deleteRelationship( RelationshipImpl rel, TransactionState tx )
     {
         throw new ReadOnlyDbException();
     }
@@ -107,13 +106,13 @@ public class ReadOnlyNodeManager extends NodeManager
 
     @Override
     PropertyData relChangeProperty( RelationshipImpl rel,
-            PropertyData property, Object value )
+            PropertyData property, Object value, TransactionState tx )
     {
         throw new ReadOnlyDbException();
     }
 
     @Override
-    void relRemoveProperty( RelationshipImpl rel, PropertyData property )
+    void relRemoveProperty( RelationshipImpl rel, PropertyData property, TransactionState tx )
     {
         throw new ReadOnlyDbException();
     }

@@ -394,7 +394,6 @@ public class CypherSql
     {
         String sql = "CREATE TABLE " + identifierQuoteString + name
                      + identifierQuoteString + "(" + definition + ")";
-        System.out.println( sql );
         Statement statement = sqldb.createStatement();
         statement.execute( sql );
     }

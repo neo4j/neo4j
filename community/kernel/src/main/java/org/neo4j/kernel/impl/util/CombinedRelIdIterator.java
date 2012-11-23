@@ -30,16 +30,14 @@ public class CombinedRelIdIterator implements RelIdIterator
     private final RelIdIterator addIterator;
     private RelIdIterator currentIterator;
     private final Collection<Long> removed;
-    private final String type;
-    private final DirectionWrapper direction;
+    private final int type;
     private boolean nextElementDetermined;
     private long nextElement;
     
-    public CombinedRelIdIterator( String type, DirectionWrapper direction, RelIdArray src,
+    public CombinedRelIdIterator( int type, DirectionWrapper direction, RelIdArray src,
             RelIdArray add, Collection<Long> remove )
     {
         this.type = type;
-        this.direction = direction;
         this.srcIterator = src != null ? src.iterator( direction ) : RelIdArray.EMPTY.iterator( direction );
         this.addIterator = add != null ? add.iterator( direction ) : RelIdArray.EMPTY.iterator( direction );
         this.currentIterator = srcIterator;
@@ -47,7 +45,7 @@ public class CombinedRelIdIterator implements RelIdIterator
     }
     
     @Override
-    public String getType()
+    public int getType()
     {
         return type;
     }
@@ -59,9 +57,9 @@ public class CombinedRelIdIterator implements RelIdIterator
     }
 
     @Override
-    public RelIdIterator updateSource( RelIdArray newSource )
+    public RelIdIterator updateSource( RelIdArray newSource, DirectionWrapper direction )
     {
-        srcIterator = srcIterator.updateSource( newSource );
+        srcIterator = srcIterator.updateSource( newSource, direction );
         return this;
     }
 

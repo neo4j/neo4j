@@ -25,6 +25,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.LinkedList;
 import java.util.List;
+
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.UTF8;
@@ -167,7 +168,7 @@ public abstract class AbstractStore extends CommonAbstractStore
             throw new ReadOnlyDbException();
         }
 
-        logger.fine( "Rebuilding id generator for[" + getStorageFileName()
+        stringLogger.debug( "Rebuilding id generator for[" + getStorageFileName()
             + "] ..." );
         closeIdGenerator();
         if ( fileSystemAbstraction.fileExists( new File( getStorageFileName().getPath() + ".id" ) ))
@@ -227,7 +228,7 @@ public abstract class AbstractStore extends CommonAbstractStore
         setHighId( highId + 1 );
         stringLogger.logMessage( getStorageFileName() + " rebuild id generator, highId=" + getHighId() +
                 " defragged count=" + defraggedCount, true );
-        logger.fine( "[" + getStorageFileName() + "] high id=" + getHighId()
+        stringLogger.debug( "[" + getStorageFileName() + "] high id=" + getHighId()
             + " (defragged=" + defraggedCount + ")" );
         closeIdGenerator();
         openIdGenerator( false );

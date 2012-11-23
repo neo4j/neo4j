@@ -30,6 +30,7 @@ import java.io.File;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.neo4j.kernel.impl.transaction.TransactionStateFactory;
 
 public class TestUpgradeOneDotFourToFiveIT
 {
@@ -52,7 +53,7 @@ public class TestUpgradeOneDotFourToFiveIT
 //        config.put( LogBufferFactory.class, CommonFactories.defaultLogBufferFactory() );
         
         XaLogicalLog log = new XaLogicalLog( resourceFile(), null, null, null, defaultLogBufferFactory(), defaultFileSystemAbstraction(), DEV_NULL,
-                LogPruneStrategies.NO_PRUNING );
+                LogPruneStrategies.NO_PRUNING, TransactionStateFactory.NO_STATE_FACTORY );
         log.open();
         fail( "Shouldn't be able to start" );
     }

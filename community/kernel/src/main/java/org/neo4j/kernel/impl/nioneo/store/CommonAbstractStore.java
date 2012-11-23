@@ -20,13 +20,13 @@
 
 package org.neo4j.kernel.impl.nioneo.store;
 
+import static org.neo4j.helpers.Exceptions.launderedException;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.OverlappingFileLockException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
@@ -40,8 +40,6 @@ import org.neo4j.kernel.impl.core.ReadOnlyDbException;
 import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPool;
 import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
-
-import static org.neo4j.helpers.Exceptions.launderedException;
 
 /**
  * Contains common implementation for {@link AbstractStore} and
@@ -62,9 +60,6 @@ public abstract class CommonAbstractStore
 
     public static final String ALL_STORES_VERSION = "v0.A.0";
     public static final String UNKNOWN_VERSION = "Uknown";
-
-    protected static final Logger logger = Logger
-        .getLogger( CommonAbstractStore.class.getName() );
 
     protected Config configuration;
     private final IdGeneratorFactory idGeneratorFactory;
@@ -124,8 +119,7 @@ public abstract class CommonAbstractStore
         }
         catch ( Exception e )
         {
-            if ( fileChannel != null )
-                closeChannel();
+            releaseFileLockAndCloseFileChannel();
             throw launderedException( e );
         }
     }
@@ -578,7 +572,7 @@ public abstract class CommonAbstractStore
         }
         if ( (isReadOnly() && !isBackupSlave()) || idGenerator == null || !storeOk )
         {
-            closeChannel();
+            releaseFileLockAndCloseFileChannel();
             return;
         }
         long highId = idGenerator.getHighId();
@@ -622,33 +616,11 @@ public abstract class CommonAbstractStore
         {
             releaseFileLockAndCloseFileChannel();
             success = true;
-//=======
-//            try
-//            {
-//                fileChannel.close();
-//            }
-//            catch ( IOException e )
-//            {
-//                logger.log( Level.WARNING, "Could not close fileChannel [" + storageFileName + "]", e );
-//            }
-//>>>>>>> parent of 739f974... Change start-up sequence so that version number in neostore gets checked, not just in the child stores
         }
         if ( !success )
         {
             throw new UnderlyingStorageException( "Unable to close store "
                 + getStorageFileName(), storedIoe );
-        }
-    }
-
-    private void closeChannel()
-    {
-        try
-        {
-            fileChannel.close();
-        }
-        catch ( IOException e )
-        {
-            throw new UnderlyingStorageException( e );
         }
     }
 
@@ -664,9 +636,10 @@ public abstract class CommonAbstractStore
             {
                 fileChannel.close();
             }
-        } catch ( IOException e )
+        }
+        catch ( IOException e )
         {
-            logger.log( Level.WARNING, "Could not close [" + storageFileName + "]", e );
+            stringLogger.warn( "Could not close [" + storageFileName + "]", e );
         }
         fileChannel = null;
     }

@@ -17,26 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.util;
+package org.neo4j.kernel.info;
 
-import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
-
-public interface RelIdIterator
+public class JvmMetadataRepository
 {
-    int getType();
+    public String getJavaVmName()
+    {
+        return System.getProperty( "java.vm.name" );
+    }
 
-    RelIdArray getIds();
-
-    RelIdIterator updateSource( RelIdArray newSource, DirectionWrapper direction );
-
-    boolean hasNext();
-
-    /**
-     * Tells this iterator to try another round with all its directions
-     * starting from each their previous states. Called from IntArrayIterator,
-     * when it finds out it has gotten more relationships of this type.
-     */
-    void doAnotherRound();
-
-    long next();
+    public String getJavaVersion()
+    {
+        return System.getProperty( "java.version" );
+    }
 }

@@ -19,11 +19,14 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import org.junit.Test;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.PropertyContainer;
+import org.neo4j.kernel.impl.core.WritableTransactionState.CowEntityElement;
+import org.neo4j.kernel.impl.core.WritableTransactionState.PrimitiveElement;
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.util.ArrayMap;
@@ -44,10 +47,17 @@ import org.neo4j.kernel.impl.util.ArrayMap;
  */
 public class TestOperationsOnDeletedPrimitive
 {
-    private NodeManager nodeManager = mock(NodeManager.class);
+    private NodeManager nodeManager = mockTheNodeManager();
     private PropertyContainer propertyContainer = mock( PropertyContainer.class );
     Primitive primitive = new PrimitiveThatHasActuallyBeenDeleted( false );
 
+    private NodeManager mockTheNodeManager()
+    {
+        NodeManager mock = mock( NodeManager.class );
+        when( mock.getTransactionState() ).thenReturn( TransactionState.NO_STATE );
+        return mock;
+    }
+    
     @Test(expected = NotFoundException.class)
     public void shouldThrowNotFoundOnGetPropertyWithDefaultOnDeletedEntity() throws Exception
     {
@@ -93,13 +103,13 @@ public class TestOperationsOnDeletedPrimitive
     @Test(expected = NotFoundException.class)
     public void shouldThrowNotFoundExceptionOnGetAllCommittedPropertiesOnDeletedEntity() throws Exception
     {
-        primitive.getAllCommittedProperties( nodeManager );
+        primitive.getAllCommittedProperties( nodeManager, nodeManager.getTransactionState() );
     }
 
     @Test(expected = NotFoundException.class)
     public void shouldThrowNotFoundExceptionOnGetCommittedPropertyValueOnDeletedEntity() throws Exception
     {
-        primitive.getCommittedPropertyValue( nodeManager, "the_key" );
+        primitive.getCommittedPropertyValue( nodeManager, "the_key", nodeManager.getTransactionState() );
     }
 
     // Test utils
@@ -121,7 +131,7 @@ public class TestOperationsOnDeletedPrimitive
         }
 
         @Override
-        protected PropertyData changeProperty( NodeManager nodeManager, PropertyData property, Object value )
+        protected PropertyData changeProperty( NodeManager nodeManager, PropertyData property, Object value, TransactionState tx )
         {
             return null;
         }
@@ -133,7 +143,7 @@ public class TestOperationsOnDeletedPrimitive
         }
 
         @Override
-        protected void removeProperty( NodeManager nodeManager, PropertyData property )
+        protected void removeProperty( NodeManager nodeManager, PropertyData property, TransactionState tx )
         {
         }
 
@@ -172,7 +182,7 @@ public class TestOperationsOnDeletedPrimitive
         }
 
         @Override
-        public LockReleaser.CowEntityElement getEntityElement( LockReleaser.PrimitiveElement element, boolean create )
+        public CowEntityElement getEntityElement( PrimitiveElement element, boolean create )
         {
             return null;
         }
