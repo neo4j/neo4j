@@ -28,12 +28,13 @@ import java.util.concurrent.CountDownLatch;
 
 import org.junit.Test;
 import org.neo4j.cluster.ClusterSettings;
+import org.neo4j.cluster.member.ClusterMemberListener;
 import org.neo4j.consistency.checking.incremental.intercept.VerifyingTransactionInterceptorProvider;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
-import org.neo4j.kernel.ha.cluster.HighAvailabilityEvents;
-import org.neo4j.kernel.ha.cluster.HighAvailabilityListener;
+import org.neo4j.cluster.member.ClusterMemberEvents;
+import org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
 import org.neo4j.test.TargetDirectory;
 
@@ -66,16 +67,16 @@ public class TestMasterElection
     private void startListenForNewMaster( HighlyAvailableGraphDatabase db )
     {
         masterElectedLatch = new CountDownLatch( 1 );
-        final HighAvailabilityEvents events = db.getDependencyResolver().resolveDependency( HighAvailabilityEvents.class );
-        events.addHighAvailabilityEventListener( new HighAvailabilityListener.Adapter()
+        final ClusterMemberEvents events = db.getDependencyResolver().resolveDependency( ClusterMemberEvents.class );
+        events.addClusterMemberListener( new ClusterMemberListener.Adapter()
         {
             @Override
-            public void memberIsAvailable( String role, URI instanceClusterUri, Iterable<URI> instanceUris )
+            public void memberIsAvailable( String role, URI instanceClusterUri, URI roleUri )
             {
-                if ( role.equals( HighAvailabilityEvents.MASTER ) )
+                if ( role.equals( HighAvailabilityModeSwitcher.MASTER ) )
                 {
                     masterElectedLatch.countDown();
-                    events.removeHighAvailabilityEventListener( this );
+                    events.removeClusterMemberListener( this );
                 }
             }
         } );

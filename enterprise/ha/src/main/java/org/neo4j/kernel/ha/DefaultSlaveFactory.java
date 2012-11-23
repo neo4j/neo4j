@@ -25,6 +25,7 @@ import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.getServer
 import java.net.URI;
 
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.ha.cluster.member.ClusterMember;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.DataSourceRegistrationListener;
@@ -49,9 +50,9 @@ public class DefaultSlaveFactory implements SlaveFactory
     }
     
     @Override
-    public Slave newSlave( URI uri )
+    public Slave newSlave( ClusterMember clusterMember )
     {
-        return new SlaveClient( getServerId( uri ), uri.getHost(), uri.getPort(), logger, storeId,
+        return new SlaveClient( clusterMember.getInstanceId(), clusterMember.getHAUri().getHost(), clusterMember.getHAUri().getPort(), logger, storeId,
                 maxConcurrentChannelsPerSlave, chunkSize );
     }
 
@@ -60,7 +61,7 @@ public class DefaultSlaveFactory implements SlaveFactory
         @Override
         public void registeredDataSource( XaDataSource ds )
         {
-            if ( ds.getName().equals( Config.DEFAULT_DATA_SOURCE_NAME ) )
+            if ( ds instanceof NeoStoreXaDataSource)
                 storeId = ((NeoStoreXaDataSource) ds).getStoreId();
         }
     }

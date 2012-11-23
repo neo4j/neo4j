@@ -22,6 +22,8 @@ package org.neo4j.backup;
 
 import java.net.URI;
 
+import org.neo4j.cluster.member.ClusterMemberAvailability;
+import org.neo4j.cluster.member.ClusterMemberEvents;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -29,9 +31,13 @@ import org.neo4j.kernel.logging.Logging;
 
 public class OnlineBackupKernelExtension implements Lifecycle
 {
+    // This is the role used to announce that a cluster member can handle backups
+    public static final String BACKUP = "backup";
+
     private Config config;
     private GraphDatabaseAPI graphDatabaseAPI;
     private BackupServer server;
+    private URI backupUri;
 
     public OnlineBackupKernelExtension( Config config, GraphDatabaseAPI graphDatabaseAPI )
     {
@@ -59,8 +65,20 @@ public class OnlineBackupKernelExtension implements Lifecycle
                 server.init();
                 server.start();
 
-//                URI backupUri = URI.create( "backup://"+server.getSocketAddress().getHostName()+":"+server.getSocketAddress().getPort());
-//                graphDatabaseAPI.getDependencyResolver().resolveDependency( ClusterClient.class );
+                try
+                {
+                    ClusterMemberAvailability ha = graphDatabaseAPI.getDependencyResolver().resolveDependency( ClusterMemberAvailability.class );
+                    backupUri = URI.create( "backup://" + server.getSocketAddress().getHostName() + ":" + server.getSocketAddress().getPort() );
+                    ha.memberIsAvailable( BACKUP, backupUri );
+                }
+                catch ( NoClassDefFoundError e )
+                {
+                    // Not running HA
+                }
+                catch ( IllegalArgumentException e )
+                {
+                    // HA available, but not used
+                }
             }
             catch ( Throwable t )
             {
@@ -77,6 +95,20 @@ public class OnlineBackupKernelExtension implements Lifecycle
             server.stop();
             server.shutdown();
             server = null;
+
+            try
+            {
+                ClusterMemberAvailability client = graphDatabaseAPI.getDependencyResolver().resolveDependency( ClusterMemberAvailability.class );
+                client.memberIsUnavailable( BACKUP );
+            }
+            catch ( NoClassDefFoundError e )
+            {
+                // Not running HA
+            }
+            catch ( IllegalArgumentException e )
+            {
+                // HA available, but not used
+            }
         }
     }
 

@@ -70,7 +70,38 @@ public final class Functions
         };
     }
 
-    public static <T1, T2> Function2<Function2<T1, T2, T1>, Function2<T1, T2, T1>, Function2<T1, T2, T1>> compose()
+    public static <From, To> Function<From, To> constant( final To value)
+    {
+        return new Function<From, To>()
+        {
+            @Override
+            public To apply( From from )
+            {
+                return value;
+            }
+        };
+    }
+
+    public static <From, From2, To> Function2<Function<From, From2>, Function<From2, To>, Function<From, To>> compose()
+    {
+        return new Function2<Function<From, From2>, Function<From2, To>, Function<From, To>>()
+        {
+            @Override
+            public Function<From, To> apply( final Function<From, From2> f1, final Function<From2, To> f2 )
+            {
+                return new Function<From, To>()
+                {
+                    @Override
+                    public To apply( From from )
+                    {
+                        return f2.apply( f1.apply( from ) );
+                    }
+                };
+            }
+        };
+    }
+
+    public static <T1, T2> Function2<Function2<T1, T2, T1>, Function2<T1, T2, T1>, Function2<T1, T2, T1>> compose2()
     {
         return new Function2<Function2<T1, T2, T1>, Function2<T1, T2, T1>, Function2<T1, T2, T1>>()
         {
@@ -89,6 +120,18 @@ public final class Functions
             }
         };
     }
+
+    public static Function<Object, String> TO_STRING = new Function<Object, String>()
+    {
+        @Override
+        public String apply( Object from )
+        {
+            if (from != null)
+                return from.toString();
+            else
+                return "";
+        }
+    };
 
     private Functions()
     {

@@ -28,6 +28,8 @@ import java.util.Set;
 
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
+import org.hamcrest.Matcher;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.management.ClusterMemberInfo;
 
 public class ClusterMemberMatcher extends BaseMatcher<Iterable<ClusterMemberInfo>>
@@ -45,6 +47,39 @@ public class ClusterMemberMatcher extends BaseMatcher<Iterable<ClusterMemberInfo
     public void describeTo( Description description )
     {
         description.appendText( Arrays.toString( expectedMembers ) );
+    }
+
+    public static Matcher<ClusterMember> sameMemberAs( final ClusterMember clusterMember)
+    {
+        return new BaseMatcher<ClusterMember>()
+        {
+            @Override
+            public boolean matches( Object instance )
+            {
+                if (!(instance instanceof ClusterMember))
+                    return false;
+
+                ClusterMember member = ClusterMember.class.cast( instance );
+                if (!member.getClusterUri().equals( clusterMember.getClusterUri() ))
+                    return false;
+
+                if (!member.isAlive()==clusterMember.isAlive())
+                    return false;
+
+                HashSet<URI> memberUris = new HashSet<URI>( Iterables.toList( member.getRoleURIs() ) );
+                HashSet<URI> clusterMemberUris = new HashSet<URI>( Iterables.toList( clusterMember.getRoleURIs() ) );
+                if (!memberUris.equals( clusterMemberUris ))
+                    return false;
+
+                return true;
+            }
+
+            @Override
+            public void describeTo( Description description )
+            {
+                description.appendText( "member should match " ).appendValue( clusterMember );
+            }
+        };
     }
 
     @Override
@@ -128,7 +163,7 @@ public class ClusterMemberMatcher extends BaseMatcher<Iterable<ClusterMemberInfo
                 return false;
             if ( haRole != null && !haRole.equals( toMatch.getHaRole() ) )
                 return false;
-            if ( uris != null && !uris.equals( new HashSet<String>( asList( toMatch.getUris() ) ) ) )
+            if ( uris != null && !uris.equals( new HashSet<String>( asList( toMatch.getURIs() ) ) ) )
                 return false;
             return true;
         }

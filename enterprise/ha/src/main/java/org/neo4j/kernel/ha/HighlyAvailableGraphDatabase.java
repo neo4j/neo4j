@@ -30,6 +30,9 @@ import java.util.Map;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.com.NetworkInstance;
+import org.neo4j.cluster.member.ClusterMemberAvailability;
+import org.neo4j.cluster.member.paxos.PaxosClusterMemberAvailability;
+import org.neo4j.cluster.member.paxos.PaxosClusterMemberEvents;
 import org.neo4j.cluster.protocol.election.DefaultElectionCredentialsProvider;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -39,16 +42,15 @@ import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.KernelData;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
-import org.neo4j.kernel.ha.cluster.HighAvailabilityEvents;
+import org.neo4j.cluster.member.ClusterMemberEvents;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberChangeEvent;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberContext;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberListener;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberStateMachine;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher;
-import org.neo4j.kernel.ha.cluster.member.HighAvailabilityMembers;
+import org.neo4j.kernel.ha.cluster.member.ClusterMembers;
 import org.neo4j.kernel.ha.cluster.member.HighAvailabilitySlaves;
-import org.neo4j.kernel.ha.cluster.paxos.PaxosHighAvailabilityEvents;
 import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.core.Caches;
 import org.neo4j.kernel.impl.core.RelationshipTypeCreator;
@@ -70,17 +72,18 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
 {
     private RequestContextFactory requestContextFactory;
     private Slaves slaves;
-    private HighAvailabilityMembers members;
+    private ClusterMembers members;
     private DelegateInvocationHandler delegateInvocationHandler;
     private LoggerContext loggerContext;
     private DefaultTransactionSupport transactionSupport;
     private Master master;
-    private HighAvailabilityEvents clusterEvents;
     private InstanceAccessGuard accessGuard;
     private HighAvailabilityMemberStateMachine memberStateMachine;
     private UpdatePuller updatePuller;
     private HighAvailabilityMemberContext memberContext;
     private ClusterClient clusterClient;
+    private ClusterMemberEvents clusterEvents;
+    private ClusterMemberAvailability clusterMemberAvailability;
 
     public HighlyAvailableGraphDatabase( String storeDir, Map<String, String> params,
                                          List<IndexProvider> indexProviders, List<KernelExtensionFactory<?>>
@@ -172,15 +175,14 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         // Add if to lifecycle later, as late as possible really
         clusterClient = new ClusterClient( ClusterClient.adapt( config ), logging, electionCredentialsProvider );
 
-        clusterEvents = life.add( new PaxosHighAvailabilityEvents( PaxosHighAvailabilityEvents.adapt( config ),
-                clusterClient,
-                logging.getLogger( PaxosHighAvailabilityEvents.class ) ) );
+        clusterEvents = life.add( new PaxosClusterMemberEvents( clusterClient, clusterClient, clusterClient, logging.getLogger( PaxosClusterMemberEvents.class ) ) );
+        clusterMemberAvailability = life.add( new PaxosClusterMemberAvailability( clusterClient, clusterClient, logging.getLogger( PaxosClusterMemberEvents.class ) ) );
 
         memberContext = new HighAvailabilityMemberContext( clusterClient );
 
         memberStateMachine = new HighAvailabilityMemberStateMachine( memberContext, accessGuard, clusterEvents,
                 logging.getLogger( HighAvailabilityMemberStateMachine.class ) );
-        life.add( new HighAvailabilityModeSwitcher( delegateInvocationHandler, clusterEvents, memberStateMachine, clusterClient, this,
+        life.add( new HighAvailabilityModeSwitcher( delegateInvocationHandler, clusterMemberAvailability, memberStateMachine, this,
                 config, logging.getLogger( HighAvailabilityModeSwitcher.class ) ) );
 
         DelegateInvocationHandler<TxHook> txHookDelegate = new DelegateInvocationHandler<TxHook>();
@@ -205,10 +207,8 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         TxIdGenerator txIdGenerator =
                 (TxIdGenerator) Proxy.newProxyInstance( TxIdGenerator.class.getClassLoader(),
                         new Class[]{TxIdGenerator.class}, txIdGeneratorDelegate );
-        slaves = life.add( new HighAvailabilitySlaves( clusterClient, memberStateMachine,
-                new DefaultSlaveFactory(xaDataSourceManager, msgLog, config.get( HaSettings.max_concurrent_channels_per_slave ),
-                config.get( HaSettings.com_chunk_size ).intValue() ), logging ) );
-        members = new HighAvailabilityMembers( clusterClient, memberStateMachine );
+        members = new ClusterMembers( clusterClient, clusterClient, clusterClient, clusterEvents );
+        slaves = life.add( new HighAvailabilitySlaves( members, clusterClient, new DefaultSlaveFactory(xaDataSourceManager, msgLog, config.get( HaSettings.max_concurrent_channels_per_slave ), config.get( HaSettings.com_chunk_size ).intValue() ) ) );
         new TxIdGeneratorModeSwitcher( memberStateMachine, txIdGeneratorDelegate,
                 (HaXaDataSourceManager) xaDataSourceManager, master, requestContextFactory, msgLog, config, slaves );
         return txIdGenerator;
@@ -264,7 +264,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     protected KernelData createKernelData()
     {
         return new HighlyAvailableKernelData( this, members,
-                new ClusterDatabaseInfoProvider( clusterClient, members ) );
+                new ClusterDatabaseInfoProvider( members ) );
     }
 
     @Override
@@ -371,9 +371,13 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                 }
                 catch ( IllegalArgumentException e )
                 {
-                    if ( HighAvailabilityEvents.class.isAssignableFrom( type ) )
+                    if ( ClusterMemberEvents.class.isAssignableFrom( type ) )
                     {
                         result = type.cast(clusterEvents);
+                    }
+                    else if ( ClusterMemberAvailability.class.isAssignableFrom( type ) )
+                    {
+                        result = type.cast(clusterMemberAvailability);
                     }
                     else if ( UpdatePuller.class.isAssignableFrom( type ) )
                     {
@@ -409,7 +413,6 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         public void start() throws Throwable
         {
             accessGuard.await( 30000 );
-            System.out.println( "THIS IS INSTANCE IS NOW:"+getInstanceState() );
         }
     }
 }

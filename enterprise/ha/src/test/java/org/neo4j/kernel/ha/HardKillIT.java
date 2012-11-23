@@ -37,13 +37,13 @@ import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastListener;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastSerializer;
 import org.neo4j.cluster.protocol.atomicbroadcast.Payload;
-import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
-import org.neo4j.kernel.ha.cluster.HighAvailabilityEvents;
-import org.neo4j.kernel.ha.cluster.paxos.MemberIsAvailable;
+import org.neo4j.cluster.member.ClusterMemberEvents;
+import org.neo4j.cluster.member.paxos.MemberIsAvailable;
+import org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher;
 import org.neo4j.test.ProcessStreamHandler;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.tooling.GlobalGraphOperations;
@@ -81,7 +81,7 @@ public class HardKillIT
                         Object event = new AtomicBroadcastSerializer().receive( value );
                         if ( event instanceof MemberIsAvailable )
                         {
-                            if ( HighAvailabilityEvents.MASTER.equals( ((MemberIsAvailable) event).getRole() ) )
+                            if ( HighAvailabilityModeSwitcher.MASTER.equals( ((MemberIsAvailable) event).getRole() ) )
                             {
                                 newMasterAvailableLatch.countDown();
                             }

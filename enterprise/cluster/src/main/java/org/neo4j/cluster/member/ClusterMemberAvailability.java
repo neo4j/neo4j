@@ -18,35 +18,29 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.neo4j.kernel.ha.cluster;
+package org.neo4j.cluster.member;
+
+import java.net.URI;
 
 /**
- * Sits closest to the distributed master election algorithm and can provide input to
- * it and also delegate events to listeners.
- * <p/>
- * (DISTRIBUTED MASTER ELECTION THINGIE) ----- (MasterElectionClient for db 1) ----- (listener 1)
- * |                                                    |----- (listener 2)
- * |
- * (MasterElectionClient for db 2)
- * |
- * |
- * (listener 3)
+ * This can be used to signal that a cluster member can now actively
+ * participate with a given role, accompanied by a URI for accessing that role.
  */
-public interface HighAvailabilityEvents
+public interface ClusterMemberAvailability
 {
-    // HA member roles
-    public static final String MASTER = "master";
-    public static final String SLAVE = "slave";
-
     /**
      * When a member has finished a transition to a particular role, i.e. master or slave,
      * then it should call this which will broadcast the new status to the cluster.
      *
-     * @param role one of the above HA member roles
+     * @param role
      */
-    void memberIsAvailable( String role );
+    void memberIsAvailable( String role, URI roleUri );
 
-    void addHighAvailabilityEventListener( HighAvailabilityListener listener );
-
-    void removeHighAvailabilityEventListener( HighAvailabilityListener listener );
+    /**
+     * When a member is no longer available in a particular role it should call this
+     * to announce it to the other members of the cluster.
+     *
+     * @param role
+     */
+    void memberIsUnavailable( String role );
 }

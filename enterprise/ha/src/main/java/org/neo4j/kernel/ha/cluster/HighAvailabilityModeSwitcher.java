@@ -20,20 +20,23 @@
 
 package org.neo4j.kernel.ha.cluster;
 
+import static org.neo4j.helpers.Functions.withDefaults;
+import static org.neo4j.helpers.Settings.INTEGER;
+import static org.neo4j.helpers.Uris.parameter;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.cluster.client.ClusterClient;
-import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
+import org.neo4j.cluster.member.ClusterMemberAvailability;
 import org.neo4j.com.Response;
 import org.neo4j.com.Server;
 import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.helpers.Functions;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.helpers.Pair;
@@ -79,29 +82,23 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 
 /**
  * Performs the internal switches from pending to slave/master, by listening for
- * ClusterMemberChangeEvents. When finished it will invoke {@link HighAvailabilityEvents#memberIsAvailable(String)}
- * to announce
- * to the cluster it's new status.
+ * ClusterMemberChangeEvents. When finished it will invoke {@link org.neo4j.cluster.member.ClusterMemberAvailability#memberIsAvailable(String, URI)}
+ * to announce to the cluster it's new status.
  */
 public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListener, Lifecycle
 {
-    public static int getServerId( URI serverId )
+    public static final String MASTER = "master";
+    public static final String SLAVE = "slave";
+
+    public static int getServerId( URI haUri )
     {
-        String query = serverId.getQuery();
-        for ( String param : query.split( "&" ) )
-        {
-            if ( param.startsWith( "serverId" ) )
-            {
-                return Integer.parseInt( param.substring( "serverId=".length() ) );
-            }
-        }
-        return -1;
+        // Get serverId parameter, default to -1 if it is missing, and parse to integer
+        return INTEGER.apply( withDefaults( Functions.<URI, String>constant( "-1" ), parameter( "serverId" ) ).apply( haUri ));
     }
 
     private URI availableMasterId;
     private final DelegateInvocationHandler delegateHandler;
-    private final HighAvailabilityEvents clusterEvents;
-    private ClusterClient clusterClient;
+    private ClusterMemberAvailability clusterMemberAvailability;
     private final GraphDatabaseAPI graphDb;
     private final Config config;
     private LifeSupport life;
@@ -111,13 +108,12 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
     private Future<?> toSlaveTask;
 
     public HighAvailabilityModeSwitcher( DelegateInvocationHandler delegateHandler,
-                                         HighAvailabilityEvents clusterEvents,
-                                         HighAvailabilityMemberStateMachine stateHandler, ClusterClient clusterClient, GraphDatabaseAPI graphDb,
+                                         ClusterMemberAvailability clusterMemberAvailability,
+                                         HighAvailabilityMemberStateMachine stateHandler, GraphDatabaseAPI graphDb,
                                          Config config, StringLogger msgLog )
     {
         this.delegateHandler = delegateHandler;
-        this.clusterEvents = clusterEvents;
-        this.clusterClient = clusterClient;
+        this.clusterMemberAvailability = clusterMemberAvailability;
         this.graphDb = graphDb;
         this.config = config;
         this.msgLog = msgLog;
@@ -187,6 +183,12 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
             case TO_MASTER:
                 life.shutdown();
                 life = new LifeSupport();
+
+                if ( event.getOldState().equals( HighAvailabilityMemberState.SLAVE ) )
+                {
+                    clusterMemberAvailability.memberIsUnavailable( SLAVE );
+                }
+
                 switchToMaster();
                 break;
             case TO_SLAVE:
@@ -195,6 +197,16 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                 switchToSlave();
                 break;
             case PENDING:
+
+                if ( event.getOldState().equals( HighAvailabilityMemberState.SLAVE ) )
+                {
+                    clusterMemberAvailability.memberIsUnavailable( SLAVE );
+                }
+                else if ( event.getOldState().equals( HighAvailabilityMemberState.MASTER ) )
+                {
+                    clusterMemberAvailability.memberIsUnavailable( MASTER );
+                }
+
                 life.shutdown();
                 life = new LifeSupport();
                 break;
@@ -273,14 +285,13 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                     life.start();
 
                     URI haUri = URI.create( "ha://"+masterServer.getSocketAddress().getHostName()+":"+masterServer.getSocketAddress().getPort()+"?serverId="+config.get( HaSettings.server_id ) );
-                    clusterClient.addURI(haUri);
+                    clusterMemberAvailability.memberIsAvailable( MASTER, haUri );
                 }
                 catch ( Throwable e )
                 {
                     msgLog.logMessage( "Failed to switch to master", e );
                     return;
                 }
-                clusterEvents.memberIsAvailable( HighAvailabilityEvents.MASTER );
             }
         } );
     }
@@ -441,9 +452,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                             life.start();
 
                             URI haUri = URI.create( "ha://"+server.getSocketAddress().getHostName()+":"+server.getSocketAddress().getPort()+"?serverId="+config.get( HaSettings.server_id ) );
-                            clusterClient.addURI(haUri);
-
-                            clusterEvents.memberIsAvailable( HighAvailabilityEvents.SLAVE );
+                            clusterMemberAvailability.memberIsAvailable( SLAVE, haUri );
 
                             msgLog.logMessage( "I am " + config.get( HaSettings.server_id ) +
                                     ", successfully moved to slave for master " + masterUri );

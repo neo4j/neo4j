@@ -529,7 +529,7 @@ public final class Settings
 
     public static <T extends Comparable<T>> Function2<T, Function<String, String>, T> range( final T min, final T max )
     {
-        return Functions.<T, Function<String, String>>compose().apply( min( min ), max( max ) );
+        return Functions.<T, Function<String, String>>compose2().apply( min( min ), max( max ) );
     }
 
     public static Function2<Integer, Function<String, String>, Integer> port =

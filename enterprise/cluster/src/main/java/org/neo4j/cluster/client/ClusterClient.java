@@ -234,7 +234,6 @@ public class ClusterClient extends LifecycleAdapter implements ClusterMonitor, C
     private final Snapshot snapshot;
 
     private final ProtocolServer server;
-    private final List<URI> uris = new ArrayList<URI>(  );
 
     public ClusterClient( final Configuration config, final Logging logging,
                           ElectionCredentialsProvider electionCredentialsProvider )
@@ -380,26 +379,6 @@ public class ClusterClient extends LifecycleAdapter implements ClusterMonitor, C
     public void stop() throws Throwable
     {
         life.stop();
-    }
-
-    public void addURI( URI addedUri )
-    {
-        // Remove existing URI with same scheme
-        for ( URI uri : uris )
-        {
-            if (uri.getScheme().equals( addedUri.getScheme() ))
-            {
-                uris.remove( uri );
-                break;
-            }
-        }
-
-        uris.add( addedUri );
-    }
-
-    public Iterable<URI> getURIs()
-    {
-        return uris;
     }
 
     @Override

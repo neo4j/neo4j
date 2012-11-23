@@ -84,9 +84,7 @@ import org.neo4j.kernel.info.DiagnosticsPhase;
  */
 public class NeoStoreXaDataSource extends LogBackedXaDataSource
 {
-    private StoreFactory storeFactory;
-    private DependencyResolver dependencyResolver;
-    private XaFactory xaFactory;
+    public static final String DEFAULT_DATA_SOURCE_NAME = "nioneodb";
 
     public static abstract class Configuration
         extends LogBackedXaDataSource.Configuration
@@ -102,6 +100,10 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
 
     private static Logger logger = Logger.getLogger(
         NeoStoreXaDataSource.class.getName() );
+
+    private StoreFactory storeFactory;
+    private DependencyResolver dependencyResolver;
+    private XaFactory xaFactory;
 
     private Config config;
     private NeoStore neoStore;
