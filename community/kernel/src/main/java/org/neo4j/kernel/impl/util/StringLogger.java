@@ -38,7 +38,7 @@ public abstract class StringLogger
 {
     public static final String DEFAULT_NAME = "messages.log";
     public static final StringLogger SYSTEM =
-            new ActualStringLogger( new PrintWriter( System.out ) )
+            new ActualStringLogger( new PrintWriter( System.out, true ) )
             {
                 @Override
                 public void close()
