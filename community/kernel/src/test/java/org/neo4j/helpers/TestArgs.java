@@ -53,4 +53,37 @@ public class TestArgs
         assertEquals( "param1", args.orphans().get( 0 ) );
         assertEquals( "param2", args.orphans().get( 1 ) );
     }
+    
+    @Test
+    public void testEnum()
+    {
+        String[] line = { "--enum=" + MyEnum.second.name() };
+        Args args = new Args( line );
+        Enum<MyEnum> result = args.getEnum( MyEnum.class, "enum", MyEnum.first );
+        assertEquals( MyEnum.second, result );
+    }
+        
+    @Test
+    public void testEnumWithDefault()
+    {
+        String[] line = {};
+        Args args = new Args( line );
+        MyEnum result = args.getEnum( MyEnum.class, "enum", MyEnum.third );
+        assertEquals( MyEnum.third, result );
+    }
+    
+    @Test( expected = IllegalArgumentException.class )
+    public void testEnumWithInvalidValue() throws Exception
+    {
+        String[] line = { "--myenum=something" };
+        Args args = new Args( line );
+        args.getEnum( MyEnum.class, "myenum", MyEnum.third );
+    }
+    
+    private static enum MyEnum
+    {
+        first,
+        second,
+        third;
+    }
 }

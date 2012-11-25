@@ -123,6 +123,18 @@ public class Args
         }
         return this.map.containsKey( key ) ? defaultValueIfNoValue : defaultValueIfNotFound;
     }
+    
+    public <T extends Enum<T>> T getEnum( Class<T> enumClass, String key, T defaultValue )
+    {
+        String raw = this.map.get( key );
+        if ( raw == null )
+            return defaultValue;
+        
+        for ( T candidate : enumClass.getEnumConstants() )
+            if ( candidate.name().equals( raw ) )
+                return candidate;
+        throw new IllegalArgumentException( "No enum instance '" + raw + "' in " + enumClass.getName() );
+    }
 
     public Object put( String key, String value )
     {
