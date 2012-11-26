@@ -70,7 +70,7 @@ public final class Functions
         };
     }
 
-    public static <From, To> Function<From, To> constant( final To value)
+    public static <From, To> Function<From, To> constant( final To value )
     {
         return new Function<From, To>()
         {

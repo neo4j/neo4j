@@ -48,7 +48,6 @@ import org.neo4j.graphdb.config.Setting;
 
 public class SettingsTest
 {
-
     @Test
     public void testInteger()
     {
@@ -167,10 +166,26 @@ public class SettingsTest
         }
     }
 
+    @Test( expected = IllegalArgumentException.class )
+    public void testDurationWithBrokenDefault()
+    {
+        // Notice that the default value is less that the minimum
+        Setting<Long> setting = setting( "foo.bar", DURATION, "1s", min( DURATION.apply( "3s" ) ) );
+        setting.apply( map( stringMap() ) );
+    }
+
+    @Test( expected = IllegalArgumentException.class )
+    public void testDurationWithValueNotWithinConstraint()
+    {
+        Setting<Long> setting = setting( "foo.bar", DURATION, "3s", min( DURATION.apply( "3s" ) ) );
+        setting.apply( map( stringMap( "foo.bar", "2s" ) ) );
+    }
+
     @Test
     public void testDuration()
     {
-        Setting<Long> setting = setting( "foo.bar", DURATION, "1s", min( DURATION.apply( "3s" ) ) );
+        Setting<Long> setting = setting( "foo.bar", DURATION, "3s", min( DURATION.apply( "3s" ) ) );
+        assertThat( setting.apply( map( stringMap( "foo.bar", "4s" ) ) ), equalTo( 4000L ) );
     }
 
     @Test
@@ -204,10 +219,12 @@ public class SettingsTest
     {
         Setting<File> home = setting( "home", PATH, "." );
         Setting<File> config = setting( "config", PATH, "config.properties", basePath( home ), isFile );
+        assertThat( config.apply( map( stringMap() ) ).getAbsolutePath(),
+            equalTo( new File( ".", "config.properties" ).getAbsolutePath() ) );
     }
 
     @Test
-    public void testInherit()
+    public void testInheritOneLevel()
     {
         Setting<Integer> root = setting( "root", INTEGER, "4" );
         Setting<Integer> setting = setting( "foo", INTEGER, root );
@@ -215,13 +232,17 @@ public class SettingsTest
         // Ok
         assertThat( setting.apply( map( stringMap( "foo", "1" ) ) ), equalTo( 1 ) );
         assertThat( setting.apply( map( stringMap() ) ), equalTo( 4 ) );
+    }
 
+    @Test
+    public void testInheritHierarchy()
+    {
         // Test hierarchies
-        Setting<String> a = setting( "A", STRING, "A" );
-        Setting<String> b = setting( "B", STRING, "B", a );
-        Setting<String> c = setting( "C", STRING, "C", b );
-        Setting<String> d = setting( "D", STRING, b );
-        Setting<String> e = setting( "E", STRING, d );
+        Setting<String> a = setting( "A", STRING, "A" ); // A defaults to A
+        Setting<String> b = setting( "B", STRING, "B", a ); // B defaults to B unless A is defined
+        Setting<String> c = setting( "C", STRING, "C", b ); // C defaults to C unless B is defined
+        Setting<String> d = setting( "D", STRING, b ); // D defaults to B
+        Setting<String> e = setting( "E", STRING, d ); // E defaults to D (hence B)
 
         assertThat( c.apply( map( stringMap( "C", "X" ) ) ), equalTo( "X" ) );
         assertThat( c.apply( map( stringMap( "B", "X" ) ) ), equalTo( "X" ) );
@@ -231,17 +252,15 @@ public class SettingsTest
         assertThat( d.apply( map( stringMap() ) ), equalTo( "B" ) );
         assertThat( e.apply( map( stringMap() ) ), equalTo( "B" ) );
 
+    }
+
+    @Test( expected = IllegalArgumentException.class )
+    public void testMandatoryApplyToInherited()
+    {
         // Check that mandatory settings fail even in inherited cases
         Setting<String> x = setting( "X", STRING, NO_DEFAULT );
         Setting<String> y = setting( "Y", STRING, MANDATORY, x );
 
-        try
-        {
-            y.apply( Functions.<String, String>nullFunction() );
-        }
-        catch ( IllegalArgumentException e1 )
-        {
-            // Ok
-        }
+        y.apply( Functions.<String, String>nullFunction() );
     }
 }

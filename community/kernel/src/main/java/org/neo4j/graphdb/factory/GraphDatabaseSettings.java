@@ -27,7 +27,6 @@ import static org.neo4j.helpers.Settings.DURATION_FORMAT;
 import static org.neo4j.helpers.Settings.FALSE;
 import static org.neo4j.helpers.Settings.FLOAT;
 import static org.neo4j.helpers.Settings.INTEGER;
-import static org.neo4j.helpers.Settings.LONG;
 import static org.neo4j.helpers.Settings.NO_DEFAULT;
 import static org.neo4j.helpers.Settings.PATH;
 import static org.neo4j.helpers.Settings.SIZE_FORMAT;
@@ -424,7 +423,7 @@ public abstract class GraphDatabaseSettings
     public static class UseMemoryMappedBuffers
             extends BooleanSetting
     {
-        public UseMemoryMappedBuffers(Setting<Boolean> setting)
+        public UseMemoryMappedBuffers( Setting<Boolean> setting )
         {
             super( setting );
         }
@@ -437,10 +436,12 @@ public abstract class GraphDatabaseSettings
          * @param useMemoryMapped
          * @return
          */
-        public static boolean shouldMemoryMap(Boolean useMemoryMapped)
+        public static boolean shouldMemoryMap( Boolean useMemoryMapped )
         {
-            if (useMemoryMapped != null)
+            if ( useMemoryMapped != null )
+            {
                 return useMemoryMapped;
+            }
             else
             {
                 // if on windows, default no memory mapping

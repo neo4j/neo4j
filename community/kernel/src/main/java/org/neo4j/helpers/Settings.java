@@ -59,6 +59,7 @@ public final class Settings
 
     // Set default value to this if user HAS to set a value
     @SuppressWarnings("RedundantStringConstructorCall")
+    // It's an explicitly allocated string so identity equality checks work
     public static final String MANDATORY = new String( "mandatory" );
     public static final String NO_DEFAULT = null;
 

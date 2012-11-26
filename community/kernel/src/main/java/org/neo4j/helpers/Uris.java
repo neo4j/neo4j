@@ -28,20 +28,23 @@ import java.net.URI;
 public final class Uris
 {
     /**
-     * Extract a named parameter from the query of a URI. If a parameter is set but no value defined, then "true" is returned
+     * Extract a named parameter from the query of a URI. If a parameter is set but no value defined,
+     * then "true" is returned
      *
      * @param name of the parameter
      * @return value of named parameter or null if missing
      */
-    public static Function<URI, String> parameter(final String name)
+    public static Function<URI, String> parameter( final String name )
     {
         return new Function<URI, String>()
         {
             @Override
             public String apply( URI uri )
             {
-                if (uri == null)
+                if ( uri == null )
+                {
                     return null;
+                }
 
                 String query = uri.getQuery();
                 for ( String param : query.split( "&" ) )
@@ -50,10 +53,14 @@ public final class Uris
 
                     if ( keyValue[0].equalsIgnoreCase( name ) )
                     {
-                        if (keyValue.length == 2)
+                        if ( keyValue.length == 2 )
+                        {
                             return keyValue[1];
+                        }
                         else
+                        {
                             return "true";
+                        }
                     }
                 }
                 return null;

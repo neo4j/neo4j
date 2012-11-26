@@ -34,4 +34,31 @@ public class HostnamePortTest
         Assert.assertThat( hostnamePort.getPort(), CoreMatchers.equalTo( 0 ) );
         Assert.assertThat( hostnamePort.getPorts(), CoreMatchers.equalTo( new int[]{0, 0} ) );
     }
+
+    @Test
+    public void testHostnamePort()
+    {
+        HostnamePort hostnamePort = new HostnamePort( "myhost:1234" );
+        Assert.assertThat( hostnamePort.getHost(), CoreMatchers.equalTo( "myhost" ) );
+        Assert.assertThat( hostnamePort.getPort(), CoreMatchers.equalTo( 1234 ) );
+        Assert.assertThat( hostnamePort.getPorts(), CoreMatchers.equalTo( new int[] {1234, 1234} ) );
+    }
+
+    @Test
+    public void testHostnamePortRange()
+    {
+        HostnamePort hostnamePort = new HostnamePort( "myhost:1234-1243" );
+        Assert.assertThat( hostnamePort.getHost(), CoreMatchers.equalTo( "myhost" ) );
+        Assert.assertThat( hostnamePort.getPort(), CoreMatchers.equalTo( 1234 ) );
+        Assert.assertThat( hostnamePort.getPorts(), CoreMatchers.equalTo( new int[] {1234, 1243} ) );
+    }
+
+    @Test
+    public void testHostnamePortRangeInversed()
+    {
+        HostnamePort hostnamePort = new HostnamePort( "myhost:1243-1234" );
+        Assert.assertThat( hostnamePort.getHost(), CoreMatchers.equalTo( "myhost" ) );
+        Assert.assertThat( hostnamePort.getPort(), CoreMatchers.equalTo( 1243 ) );
+        Assert.assertThat( hostnamePort.getPorts(), CoreMatchers.equalTo( new int[] {1243, 1234} ) );
+    }
 }

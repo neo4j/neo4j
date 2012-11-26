@@ -38,7 +38,7 @@ public class ServiceTest {
 	}
 
 	@Test
-	public void whenContextCalssLoaderBlocksServicesFolderShouldLoadClassFromKernelClassloader() {
+	public void whenContextCallsLoaderBlocksServicesFolderShouldLoadClassFromKernelClassloader() {
 		ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
 		try {
 			Thread.currentThread().setContextClassLoader(new ServiceBlockClassLoader(contextClassLoader));
