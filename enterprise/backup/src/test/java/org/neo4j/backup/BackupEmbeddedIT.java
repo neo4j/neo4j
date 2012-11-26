@@ -20,10 +20,14 @@
 
 package org.neo4j.backup;
 
+import static org.junit.Assert.assertEquals;
+import static org.neo4j.graphdb.factory.GraphDatabaseSetting.osIsWindows;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
@@ -36,14 +40,12 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.ProcessStreamHandler;
-
-import static org.junit.Assert.*;
-import static org.neo4j.graphdb.factory.GraphDatabaseSetting.*;
+import org.neo4j.test.TargetDirectory;
 
 public class BackupEmbeddedIT
 {
-    public static final File PATH = new File(  "target/var/db");
-    public static final File BACKUP_PATH = new File( "target/var/backup-db");
+    public static final File PATH = TargetDirectory.forTest( BackupEmbeddedIT.class ).directory( "db" );
+    public static final File BACKUP_PATH = TargetDirectory.forTest( BackupEmbeddedIT.class ).directory( "backup-db" );
     private GraphDatabaseService db;
 
     @Before

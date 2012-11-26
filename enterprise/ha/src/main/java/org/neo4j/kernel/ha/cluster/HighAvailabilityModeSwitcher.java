@@ -32,9 +32,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.member.ClusterMemberAvailability;
-import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.com.Response;
 import org.neo4j.com.Server;
 import org.neo4j.graphdb.DependencyResolver;
@@ -42,9 +40,6 @@ import org.neo4j.helpers.Functions;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.helpers.Pair;
-import org.neo4j.helpers.Settings;
-import org.neo4j.helpers.Uris;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.TransactionInterceptorProviders;
@@ -112,9 +107,10 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
     private Future<?> toMasterTask;
     private Future<?> toSlaveTask;
 
-    public HighAvailabilityModeSwitcher( DelegateInvocationHandler delegateHandler, ClusterMemberAvailability clusterMemberAvailability,
-                                      HighAvailabilityMemberStateMachine stateHandler, GraphDatabaseAPI graphDb,
-                                      Config config, StringLogger msgLog )
+    public HighAvailabilityModeSwitcher( DelegateInvocationHandler delegateHandler,
+                                         ClusterMemberAvailability clusterMemberAvailability,
+                                         HighAvailabilityMemberStateMachine stateHandler, GraphDatabaseAPI graphDb,
+                                         Config config, StringLogger msgLog )
     {
         this.delegateHandler = delegateHandler;
         this.clusterMemberAvailability = clusterMemberAvailability;
@@ -288,7 +284,9 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                     }
                     life.start();
 
-                    URI haUri = URI.create( "ha://"+masterServer.getSocketAddress().getHostName()+":"+masterServer.getSocketAddress().getPort()+"?serverId="+config.get( HaSettings.server_id ) );
+                    URI haUri = URI.create( "ha://" + masterServer.getSocketAddress().getHostName() + ":" +
+                            masterServer.getSocketAddress().getPort() + "?serverId=" +
+                            config.get( HaSettings.server_id ) );
                     clusterMemberAvailability.memberIsAvailable( MASTER, haUri );
                 }
                 catch ( Throwable e )
@@ -454,7 +452,9 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                         life.add( server );
                         life.start();
 
-                        URI haUri = URI.create( "ha://"+server.getSocketAddress().getHostName()+":"+server.getSocketAddress().getPort()+"?serverId="+config.get( HaSettings.server_id ) );
+                        URI haUri = URI.create( "ha://" + server.getSocketAddress().getHostName() + ":" +
+                                server.getSocketAddress().getPort() + "?serverId=" +
+                                config.get( HaSettings.server_id ) );
                         clusterMemberAvailability.memberIsAvailable( SLAVE, haUri );
 
                         msgLog.logMessage( "I am " + config.get( HaSettings.server_id ) +
@@ -487,7 +487,8 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                 graphDb.getDependencyResolver().resolveDependency( XaDataSourceManager.class ).start();
             }
 
-            private void stopServicesAndHandleBranchedStore( BranchedDataPolicy branchPolicy, boolean deleteIndexes ) throws Throwable
+            private void stopServicesAndHandleBranchedStore( BranchedDataPolicy branchPolicy, boolean deleteIndexes )
+                    throws Throwable
             {
                 graphDb.getDependencyResolver().resolveDependency( XaDataSourceManager.class ).stop();
                 graphDb.getDependencyResolver().resolveDependency( TxManager.class ).stop();

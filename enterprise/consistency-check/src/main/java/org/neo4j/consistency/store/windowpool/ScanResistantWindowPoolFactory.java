@@ -77,7 +77,8 @@ public class ScanResistantWindowPoolFactory implements WindowPoolFactory
         {
             try
             {
-                return new LoggingStatisticsListener(configuration.get( GraphDatabaseSettings.log_mapped_memory_stats_filename ) );
+                return new LoggingStatisticsListener( configuration.get(
+                        GraphDatabaseSettings.log_mapped_memory_stats_filename ) );
             }
             catch ( FileNotFoundException e )
             {

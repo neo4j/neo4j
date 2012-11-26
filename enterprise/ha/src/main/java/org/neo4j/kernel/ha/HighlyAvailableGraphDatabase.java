@@ -174,14 +174,17 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         // Add if to lifecycle later, as late as possible really
         clusterClient = new ClusterClient( ClusterClient.adapt( config ), logging, electionCredentialsProvider );
 
-        clusterEvents = life.add( new PaxosClusterMemberEvents( clusterClient, clusterClient, clusterClient, logging.getLogger( PaxosClusterMemberEvents.class ) ) );
-        clusterMemberAvailability = life.add( new PaxosClusterMemberAvailability( clusterClient, clusterClient, logging.getLogger( PaxosClusterMemberEvents.class ) ) );
+        clusterEvents = life.add( new PaxosClusterMemberEvents( clusterClient, clusterClient, clusterClient,
+                logging.getLogger( PaxosClusterMemberEvents.class ) ) );
+        clusterMemberAvailability = life.add( new PaxosClusterMemberAvailability( clusterClient, clusterClient,
+                logging.getLogger( PaxosClusterMemberEvents.class ) ) );
 
         memberContext = new HighAvailabilityMemberContext( clusterClient );
 
         memberStateMachine = new HighAvailabilityMemberStateMachine( memberContext, accessGuard, clusterEvents,
                 logging.getLogger( HighAvailabilityMemberStateMachine.class ) );
-        life.add( new HighAvailabilityModeSwitcher( delegateInvocationHandler, clusterMemberAvailability, memberStateMachine, this,
+        life.add( new HighAvailabilityModeSwitcher( delegateInvocationHandler, clusterMemberAvailability,
+                memberStateMachine, this,
                 config, logging.getLogger( HighAvailabilityModeSwitcher.class ) ) );
 
         DelegateInvocationHandler<TxHook> txHookDelegate = new DelegateInvocationHandler<TxHook>();
@@ -207,7 +210,9 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                 (TxIdGenerator) Proxy.newProxyInstance( TxIdGenerator.class.getClassLoader(),
                         new Class[]{TxIdGenerator.class}, txIdGeneratorDelegate );
         members = new ClusterMembers( clusterClient, clusterClient, clusterClient, clusterEvents );
-        slaves = life.add( new HighAvailabilitySlaves( members, clusterClient, new DefaultSlaveFactory(xaDataSourceManager, msgLog, config.get( HaSettings.max_concurrent_channels_per_slave ), config.get( HaSettings.com_chunk_size ).intValue() ) ) );
+        slaves = life.add( new HighAvailabilitySlaves( members, clusterClient, new DefaultSlaveFactory(
+                xaDataSourceManager, msgLog, config.get( HaSettings.max_concurrent_channels_per_slave ),
+                config.get( HaSettings.com_chunk_size ).intValue() ) ) );
         new TxIdGeneratorModeSwitcher( memberStateMachine, txIdGeneratorDelegate,
                 (HaXaDataSourceManager) xaDataSourceManager, master, requestContextFactory, msgLog, config, slaves );
         return txIdGenerator;

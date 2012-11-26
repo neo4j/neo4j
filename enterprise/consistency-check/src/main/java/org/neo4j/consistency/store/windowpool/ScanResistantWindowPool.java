@@ -141,7 +141,7 @@ public class ScanResistantWindowPool implements WindowPool,
             long deltaTime = currentTime - lastReportTime;
             lastReportTime = currentTime;
 
-            statisticsListener.onStatistics(storeFileName, reportInterval, deltaMapCount, deltaTime );
+            statisticsListener.onStatistics( storeFileName, reportInterval, deltaMapCount, deltaTime );
         }
     }
 

@@ -36,9 +36,7 @@ import java.util.List;
 
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.Description;
-import org.neo4j.graphdb.factory.GraphDatabaseSetting.StringSetting;
 import org.neo4j.helpers.HostnamePort;
-import org.neo4j.helpers.Settings;
 
 /**
  * Settings for high availability mode
@@ -46,7 +44,8 @@ import org.neo4j.helpers.Settings;
 public class ClusterSettings
 {
     @Description( "The name of a cluster" )
-    public static final Setting<String> cluster_name = setting( "ha.cluster_name", STRING, "neo4j.ha", illegalValueMessage( "Must be a valid cluster name" , matches( ANY )));
+    public static final Setting<String> cluster_name = setting( "ha.cluster_name", STRING, "neo4j.ha",
+            illegalValueMessage( "Must be a valid cluster name" , matches( ANY )));
 
     @Description( "Whether to enable cluster discovery or not" )
     public static final Setting<Boolean> cluster_discovery_enabled = setting( "ha.discovery.enabled", BOOLEAN, FALSE );
@@ -55,10 +54,12 @@ public class ClusterSettings
     public static final Setting<String> cluster_discovery_url = setting( "ha.discovery.url", STRING, NO_DEFAULT );
 
     @Description( "If cluster discovery is disabled, use this list of potential cluster members" )
-    public static final Setting<List<HostnamePort>> initial_hosts = setting( "ha.initial_hosts", list( ",", HOSTNAME_PORT ), "" );
+    public static final Setting<List<HostnamePort>> initial_hosts = setting( "ha.initial_hosts",
+            list( ",", HOSTNAME_PORT ), "" );
 
     @Description( "Host name and port to use for the cluster server" )
-    public static final Setting<HostnamePort> cluster_server = setting( "ha.cluster_server", HOSTNAME_PORT, ":5001-5099" );
+    public static final Setting<HostnamePort> cluster_server = setting( "ha.cluster_server", HOSTNAME_PORT,
+            ":5001-5099" );
 
     @Description( "Whether to allow this instance to create a cluster if unable to join" )
     public static final Setting<Boolean> allow_init_cluster = setting( "ha.allow_init_cluster", BOOLEAN, TRUE );
@@ -68,10 +69,11 @@ public class ClusterSettings
     public static final Setting<Long> default_timeout = setting( "ha.default_timeout", DURATION, "5s" );
 
     @Description( "Timeout for heartbeats between cluster members. Should be at least twice that of the interval" )
-    public static final Setting<Long> heartbeat_timeout = setting( "ha.heartbeat_timeout", DURATION, "10s" );
+    public static final Setting<Long> heartbeat_timeout = setting( "ha.heartbeat_timeout", DURATION, "11s" );
 
     @Description( "How often heartbeat messages should be sent" )
-    public static final Setting<Long> heartbeat_interval = setting( "ha.heartbeat_interval", DURATION, default_timeout );
+    public static final Setting<Long> heartbeat_interval = setting( "ha.heartbeat_interval", DURATION,
+            default_timeout );
 
     @Description( "Timeout for broadcasting values in cluster. Must consider end-to-end duration of Paxos algorithm" )
     public static final Setting<Long> broadcast_timeout = setting( "ha.broadcast_timeout", DURATION, "30s" );
@@ -80,7 +82,8 @@ public class ClusterSettings
     public static final Setting<Long> join_timeout = setting( "ha.join_timeout", DURATION, default_timeout );
 
     @Description( "Timeout for waiting for configuration from an existing cluster member" )
-    public static final Setting<Long> configuration_timeout = setting( "ha.configuration_timeout", DURATION, default_timeout );
+    public static final Setting<Long> configuration_timeout = setting( "ha.configuration_timeout", DURATION,
+            default_timeout );
 
     @Description( "Timeout for waiting for cluster leave to finish" )
     public static final Setting<Long> leave_timeout = setting( "ha.leave_timeout", DURATION, broadcast_timeout );

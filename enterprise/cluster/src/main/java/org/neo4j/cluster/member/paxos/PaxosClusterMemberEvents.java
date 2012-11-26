@@ -74,7 +74,7 @@ public class PaxosClusterMemberEvents implements ClusterMemberEvents, Lifecycle
         this.atomicBroadcast = atomicBroadcast;
         this.logger = logger;
 
-        clusterListener = new ClusterListenerImpl( );
+        clusterListener = new ClusterListenerImpl();
 
         atomicBroadcastListener = new AtomicBroadcastListenerImpl();
     }
@@ -116,7 +116,7 @@ public class PaxosClusterMemberEvents implements ClusterMemberEvents, Lifecycle
     public void stop()
             throws Throwable
     {
-        if (executor != null)
+        if ( executor != null )
         {
             executor.shutdown();
             executor = null;
