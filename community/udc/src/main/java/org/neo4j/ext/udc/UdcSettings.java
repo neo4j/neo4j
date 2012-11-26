@@ -31,7 +31,6 @@ import static org.neo4j.helpers.Settings.min;
 import static org.neo4j.helpers.Settings.setting;
 
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.Settings;
 

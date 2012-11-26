@@ -23,7 +23,6 @@ import java.net.URI;
 
 import org.neo4j.cluster.Binding;
 import org.neo4j.cluster.BindingListener;
-import org.neo4j.cluster.client.ClusterClient;
 
 /**
  * Context used by the {@link HighAvailabilityMemberStateMachine}. Keeps track of what elections and previously

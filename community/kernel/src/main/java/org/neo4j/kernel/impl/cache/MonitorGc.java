@@ -24,7 +24,6 @@ import static org.neo4j.helpers.Settings.DURATION;
 import static org.neo4j.helpers.Settings.setting;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
-import org.neo4j.helpers.Settings;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifecycle;

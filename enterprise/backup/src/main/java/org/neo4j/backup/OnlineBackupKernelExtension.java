@@ -23,7 +23,6 @@ package org.neo4j.backup;
 import java.net.URI;
 
 import org.neo4j.cluster.member.ClusterMemberAvailability;
-import org.neo4j.cluster.member.ClusterMemberEvents;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.Lifecycle;

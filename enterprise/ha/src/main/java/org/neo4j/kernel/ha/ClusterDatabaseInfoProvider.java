@@ -19,10 +19,6 @@
  */
 package org.neo4j.kernel.ha;
 
-import java.net.URI;
-
-import org.neo4j.cluster.Binding;
-import org.neo4j.cluster.BindingListener;
 import org.neo4j.helpers.Functions;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.ha.cluster.member.ClusterMember;

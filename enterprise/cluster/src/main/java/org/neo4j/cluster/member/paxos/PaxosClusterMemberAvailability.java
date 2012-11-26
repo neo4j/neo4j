@@ -20,35 +20,13 @@
 
 package org.neo4j.cluster.member.paxos;
 
-import static org.neo4j.helpers.collection.Iterables.append;
-import static org.neo4j.helpers.collection.Iterables.filter;
-import static org.neo4j.helpers.collection.Iterables.toList;
-
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.Serializable;
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.Map;
-
 import org.neo4j.cluster.Binding;
 import org.neo4j.cluster.BindingListener;
-import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.member.ClusterMemberAvailability;
-import org.neo4j.cluster.member.ClusterMemberEvents;
-import org.neo4j.cluster.member.ClusterMemberListener;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcast;
-import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastListener;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastSerializer;
 import org.neo4j.cluster.protocol.atomicbroadcast.Payload;
-import org.neo4j.cluster.protocol.cluster.Cluster;
-import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
-import org.neo4j.cluster.protocol.cluster.ClusterListener;
-import org.neo4j.cluster.protocol.snapshot.SnapshotProvider;
-import org.neo4j.helpers.Listeners;
-import org.neo4j.helpers.Predicate;
-import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 

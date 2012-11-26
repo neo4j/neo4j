@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.cache;
 
-import static org.neo4j.helpers.Settings.setting;
-
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.NodeImpl;

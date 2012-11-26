@@ -26,7 +26,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Functions;
 

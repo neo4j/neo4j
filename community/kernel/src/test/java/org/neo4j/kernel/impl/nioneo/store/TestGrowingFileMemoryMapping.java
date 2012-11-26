@@ -28,7 +28,6 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import java.io.File;
 
 import org.junit.Test;
-import org.neo4j.helpers.Settings;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.DefaultTxHook;

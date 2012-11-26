@@ -33,7 +33,6 @@ import java.util.Arrays;
 import org.junit.After;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Predicate;

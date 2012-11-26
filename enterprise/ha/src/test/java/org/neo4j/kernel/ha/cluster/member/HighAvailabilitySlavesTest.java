@@ -22,41 +22,24 @@ package org.neo4j.kernel.ha.cluster.member;
 import static java.net.URI.create;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.sameInstance;
-import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.Iterables.iterable;
-import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
-
 import java.net.URI;
-import java.net.URISyntaxException;
-
 import org.hamcrest.CoreMatchers;
-import org.hamcrest.core.Is;
 import org.junit.Assert;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
-import org.neo4j.cluster.BindingListener;
-import org.neo4j.cluster.ClusterMonitor;
 import org.neo4j.cluster.protocol.cluster.Cluster;
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.protocol.cluster.ClusterListener;
-import org.neo4j.cluster.protocol.heartbeat.HeartbeatListener;
-import org.neo4j.com.Response;
-import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.ha.Slave;
 import org.neo4j.kernel.ha.SlaveFactory;
-import org.neo4j.kernel.ha.cluster.HighAvailability;
-import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberListener;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher;
-import org.neo4j.kernel.logging.DevNullLoggingService;
 
 public class HighAvailabilitySlavesTest
 {

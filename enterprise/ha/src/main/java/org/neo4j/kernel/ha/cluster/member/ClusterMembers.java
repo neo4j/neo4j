@@ -33,7 +33,6 @@ import org.neo4j.cluster.protocol.cluster.ClusterListener;
 import org.neo4j.cluster.protocol.heartbeat.Heartbeat;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatListener;
 import org.neo4j.helpers.Predicate;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher;
 import org.neo4j.kernel.impl.util.CopyOnWriteHashMap;
 

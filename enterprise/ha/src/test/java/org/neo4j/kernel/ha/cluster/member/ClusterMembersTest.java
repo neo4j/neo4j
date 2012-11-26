@@ -24,27 +24,19 @@ import static java.util.Arrays.asList;
 import static org.junit.Assert.assertThat;
 import static org.junit.internal.matchers.IsCollectionContaining.hasItem;
 import static org.junit.internal.matchers.IsCollectionContaining.hasItems;
-import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.MASTER;
 import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.SLAVE;
-import static org.neo4j.kernel.ha.cluster.member.ClusterMemberMatcher.containsMembers;
-import static org.neo4j.kernel.ha.cluster.member.ClusterMemberMatcher.containsOnlyMembers;
-import static org.neo4j.kernel.ha.cluster.member.ClusterMemberMatcher.member;
 import static org.neo4j.kernel.ha.cluster.member.ClusterMemberMatcher.sameMemberAs;
 
 import java.net.URI;
-import java.net.URISyntaxException;
-
 import org.hamcrest.CoreMatchers;
 import org.junit.Test;
-import org.junit.internal.matchers.IsCollectionContaining;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 import org.neo4j.cluster.Binding;
 import org.neo4j.cluster.BindingListener;
-import org.neo4j.cluster.ClusterMonitor;
 import org.neo4j.cluster.member.ClusterMemberEvents;
 import org.neo4j.cluster.member.ClusterMemberListener;
 import org.neo4j.cluster.protocol.cluster.Cluster;
@@ -52,9 +44,6 @@ import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.protocol.cluster.ClusterListener;
 import org.neo4j.cluster.protocol.heartbeat.Heartbeat;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatListener;
-import org.neo4j.kernel.ha.cluster.HighAvailability;
-import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberListener;
-import org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher;
 
 public class ClusterMembersTest
 {

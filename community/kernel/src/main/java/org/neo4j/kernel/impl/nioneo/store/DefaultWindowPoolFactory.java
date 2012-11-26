@@ -23,9 +23,6 @@ import static org.neo4j.helpers.Settings.setting;
 
 import java.io.File;
 import java.nio.channels.FileChannel;
-import java.util.Map;
-import java.util.logging.Logger;
-
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Settings;
 import org.neo4j.kernel.configuration.Config;

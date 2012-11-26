@@ -21,26 +21,10 @@
 package org.neo4j.graphdb.factory;
 
 import java.io.File;
-import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.EnumSet;
-import java.util.Formatter;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.ResourceBundle;
-import java.util.regex.Pattern;
-
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.Function;
-import org.neo4j.helpers.Functions;
 import org.neo4j.helpers.HostnamePort;
-import org.neo4j.helpers.TimeUtil;
-import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.impl.util.FileUtils;
 
 /**
  * Setting types for Neo4j. Actual settings are in GraphDatabaseSettings.

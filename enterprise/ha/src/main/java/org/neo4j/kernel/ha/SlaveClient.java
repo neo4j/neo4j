@@ -35,8 +35,6 @@ import org.neo4j.com.RequestType;
 import org.neo4j.com.Response;
 import org.neo4j.com.Serializer;
 import org.neo4j.com.TargetCaller;
-import org.neo4j.graphdb.config.Setting;
-import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.helpers.Functions;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.util.StringLogger;

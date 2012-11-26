@@ -21,7 +21,6 @@ package org.neo4j.perftest.enterprise.windowpool;
 
 import java.util.Map;
 
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Settings;
 
 public class MemoryMappingConfiguration

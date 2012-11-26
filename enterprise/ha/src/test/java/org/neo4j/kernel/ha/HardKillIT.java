@@ -41,7 +41,6 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
-import org.neo4j.cluster.member.ClusterMemberEvents;
 import org.neo4j.cluster.member.paxos.MemberIsAvailable;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher;
 import org.neo4j.test.ProcessStreamHandler;

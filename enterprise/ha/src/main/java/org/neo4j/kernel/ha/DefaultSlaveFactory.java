@@ -20,11 +20,6 @@
 
 package org.neo4j.kernel.ha;
 
-import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.getServerId;
-
-import java.net.URI;
-
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.cluster.member.ClusterMember;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;

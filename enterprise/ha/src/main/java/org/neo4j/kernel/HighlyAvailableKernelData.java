@@ -21,13 +21,10 @@ package org.neo4j.kernel;
 
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.helpers.collection.Iterables.toArray;
-import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
-
 import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.helpers.Functions;
-import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.ha.ClusterDatabaseInfoProvider;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.cluster.member.ClusterMember;

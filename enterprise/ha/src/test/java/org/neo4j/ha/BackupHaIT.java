@@ -27,7 +27,6 @@ import static org.neo4j.backup.BackupEmbeddedIT.createSomeData;
 import static org.neo4j.backup.BackupEmbeddedIT.runBackupToolFromOtherJvmToGetExitCode;
 import static org.neo4j.test.ha.ClusterManager.fromXml;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -37,7 +36,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
-import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.helpers.Settings;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.test.DbRepresentation;
