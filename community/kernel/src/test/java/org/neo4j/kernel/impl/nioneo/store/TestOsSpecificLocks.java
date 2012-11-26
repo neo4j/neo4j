@@ -30,37 +30,40 @@ import java.io.File;
 import java.nio.channels.FileChannel;
 
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestName;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.Settings;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
-import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
+import org.neo4j.test.TargetDirectory;
 
 public class TestOsSpecificLocks
 {
-    private String path;
-    
+    private File path;
+
+    @Rule
+    public TestName name = new TestName();
+
     @Before
     public void doBefore()
     {
-        path = AbstractNeo4jTestCase.getStorePath( "checkLocks" );
-        AbstractNeo4jTestCase.deleteFileOrDirectory( path );
-        new File( path ).mkdirs();
+        path = TargetDirectory.forTest( getClass() ).directory( name.getMethodName(), true );
     }
-    
+
     @Test
     public void sanityCheck() throws Exception
     {
         assumeTrue( Settings.osIsWindows() );
         FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
         // Must end in neostore to get the lock
-        File fileName = new File( path + "\\1neostore");
+        File fileName = new File( path, "neostore");
         FileChannel channel = fs.open( fileName, "rw" );
         // Lock this sucker!
         FileLock lock = fs.tryLock( fileName, channel );
-        assertTrue( new File( path + "\\lock" ).exists() );
+        assertTrue( new File( path, "lock" ).exists() );
         // If we try to lock with the lock held, a null should be served
         assertNull( fs.tryLock( fileName, channel ) );
 
@@ -74,24 +77,24 @@ public class TestOsSpecificLocks
 
         // Release and retry, should succeed
         lock.release();
-        assertFalse( new File( path + "\\lock" ).exists() );
+        assertFalse( new File( path, "lock" ).exists() );
         fs.tryLock( fileName, channel ).release(); // NPE on fail here
-        assertFalse( new File( path + "\\lock" ).exists() );
+        assertFalse( new File( path, "lock" ).exists() );
     }
 
     @Test
     public void testDatabaseLocking()
     {
         assumeTrue( Settings.osIsWindows() );
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( path );
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( path.getPath() );
         Transaction tx = db.beginTx();
         db.createNode();
         tx.success();
         tx.finish();
-        assertTrue( new File( path + "\\lock" ).exists() );
+        assertTrue( new File( path, "lock" ).exists() );
         try
         {
-            new GraphDatabaseFactory().newEmbeddedDatabase( path );
+            new GraphDatabaseFactory().newEmbeddedDatabase( path.getPath() );
             fail("Should not be able to start up another db in the same dir");
         }
         catch ( Exception e )
