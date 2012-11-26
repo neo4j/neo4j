@@ -20,28 +20,32 @@
 
 package org.neo4j.shell;
 
-import org.neo4j.graphdb.factory.Default;
-import org.neo4j.graphdb.factory.Description;
-import org.neo4j.graphdb.factory.GraphDatabaseSetting;
+import static org.neo4j.graphdb.factory.GraphDatabaseSetting.ANY;
+import static org.neo4j.graphdb.factory.GraphDatabaseSetting.FALSE;
+import static org.neo4j.helpers.Settings.BOOLEAN;
+import static org.neo4j.helpers.Settings.INTEGER;
+import static org.neo4j.helpers.Settings.STRING;
+import static org.neo4j.helpers.Settings.illegalValueMessage;
+import static org.neo4j.helpers.Settings.matches;
+import static org.neo4j.helpers.Settings.port;
+import static org.neo4j.helpers.Settings.setting;
 
-import static org.neo4j.graphdb.factory.GraphDatabaseSetting.*;
+import org.neo4j.graphdb.config.Setting;
+import org.neo4j.graphdb.factory.Description;
 
 /**
  * Settings for the shell extension
  */
-@Description( "Settings for the remote shell extension" )
+@Description("Settings for the remote shell extension")
 public class ShellSettings
 {
     @Description("Enable a remote shell server which shell clients can log in to")
-    @Default( FALSE )
-    public static final GraphDatabaseSetting.BooleanSetting remote_shell_enabled = new GraphDatabaseSetting.BooleanSetting( "remote_shell_enabled" );
+    public static final Setting<Boolean> remote_shell_enabled = setting( "remote_shell_enabled", BOOLEAN, FALSE );
 
-    @Default( "1337" )
-    public static final PortSetting remote_shell_port = new GraphDatabaseSetting.PortSetting( "remote_shell_port" );
+    public static final Setting<Integer> remote_shell_port = setting( "remote_shell_port", INTEGER, "1337", port );
 
-    @Default( FALSE )
-    public static final GraphDatabaseSetting.BooleanSetting remote_shell_read_only = new GraphDatabaseSetting.BooleanSetting( "remote_shell_read_only" );
+    public static final Setting<Boolean> remote_shell_read_only = setting( "remote_shell_read_only", BOOLEAN, FALSE );
 
-    @Default( "shell" )
-    public static final GraphDatabaseSetting.StringSetting remote_shell_name = new GraphDatabaseSetting.StringSetting( "remote_shell_name", ANY, "Must be a valid name" );
+    public static final Setting<String> remote_shell_name = setting( "remote_shell_name", STRING, "shell",
+            illegalValueMessage( "must be a valid name", matches( ANY ) ) );
 }

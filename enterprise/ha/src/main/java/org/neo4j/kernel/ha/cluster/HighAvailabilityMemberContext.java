@@ -21,6 +21,7 @@ package org.neo4j.kernel.ha.cluster;
 
 import java.net.URI;
 
+import org.neo4j.cluster.Binding;
 import org.neo4j.cluster.BindingListener;
 import org.neo4j.cluster.client.ClusterClient;
 
@@ -34,9 +35,9 @@ public class HighAvailabilityMemberContext
     private URI availableHaMasterId;
     private URI myId;
 
-    public HighAvailabilityMemberContext( ClusterClient clusterClient )
+    public HighAvailabilityMemberContext( Binding binding )
     {
-        clusterClient.addBindingListener( new BindingListener()
+        binding.addBindingListener( new BindingListener()
         {
             @Override
             public void listeningAt( URI me )

@@ -60,6 +60,7 @@ import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageProcessor;
 import org.neo4j.cluster.com.message.MessageSource;
 import org.neo4j.cluster.com.message.MessageType;
+import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.Listeners;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -75,9 +76,7 @@ public class NetworkInstance
 {
     public interface Configuration
     {
-        int[] getPorts();
-
-        String getAddress();
+        HostnamePort clusterServer();
     }
 
     public interface NetworkChannelsListener
@@ -137,7 +136,7 @@ public class NetworkInstance
         serverBootstrap = new ServerBootstrap( nioChannelFactory );
         serverBootstrap.setPipelineFactory( new NetworkNodePipelineFactory() );
 
-        int[] ports = config.getPorts();
+        int[] ports = config.clusterServer().getPorts();
 
         int minPort = ports[0];
         int maxPort = ports.length == 2 ? ports[1] : minPort;
@@ -182,7 +181,7 @@ public class NetworkInstance
             try
             {
                 InetAddress host;
-                String address = config.getAddress();
+                String address = config.clusterServer().getHost();
                 if ( address == null )
                 {
                     host = InetAddress.getLocalHost();

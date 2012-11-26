@@ -22,11 +22,13 @@ package org.neo4j.kernel.impl.nioneo.store;
 
 import static org.neo4j.helpers.Exceptions.launderedException;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.OverlappingFileLockException;
 
+import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.UTF8;
@@ -47,8 +49,8 @@ public abstract class CommonAbstractStore
 {
     public static abstract class Configuration
     {
-        public static final GraphDatabaseSetting.StringSetting store_dir = InternalAbstractGraphDatabase.Configuration.store_dir;
-        public static final GraphDatabaseSetting.StringSetting neo_store = InternalAbstractGraphDatabase.Configuration.neo_store;
+        public static final Setting<File> store_dir = InternalAbstractGraphDatabase.Configuration.store_dir;
+        public static final Setting<File> neo_store = InternalAbstractGraphDatabase.Configuration.neo_store;
         
         public static final GraphDatabaseSetting.BooleanSetting grab_file_lock = GraphDatabaseSettings.grab_file_lock;
         public static final GraphDatabaseSetting.BooleanSetting read_only = GraphDatabaseSettings.read_only;
@@ -64,7 +66,7 @@ public abstract class CommonAbstractStore
     private final WindowPoolFactory windowPoolFactory;
     protected FileSystemAbstraction fileSystemAbstraction;
 
-    protected final String storageFileName;
+    protected final File storageFileName;
     protected final IdType idType;
     protected StringLogger stringLogger;
     private IdGenerator idGenerator = null;
@@ -96,7 +98,7 @@ public abstract class CommonAbstractStore
      *            The Id used to index into this store
      * @param windowPoolFactory
      */
-    public CommonAbstractStore( String fileName, Config configuration, IdType idType,
+    public CommonAbstractStore( File fileName, Config configuration, IdType idType,
                                 IdGeneratorFactory idGeneratorFactory, WindowPoolFactory windowPoolFactory,
                                 FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger )
     {
@@ -424,7 +426,7 @@ public abstract class CommonAbstractStore
     /**
      * @return the store directory from config.
      */
-    protected String getStoreDir()
+    protected File getStoreDir()
     {
         return configuration.get( Configuration.store_dir );
     }
@@ -490,7 +492,7 @@ public abstract class CommonAbstractStore
      *
      * @return The name of this store
      */
-    public String getStorageFileName()
+    public File getStorageFileName()
     {
         return storageFileName;
     }
@@ -500,7 +502,7 @@ public abstract class CommonAbstractStore
      */
     protected void openIdGenerator( boolean firstTime )
     {
-        idGenerator = openIdGenerator( storageFileName + ".id", idType.getGrabSize(), firstTime );
+        idGenerator = openIdGenerator( new File( storageFileName.getPath() + ".id"), idType.getGrabSize(), firstTime );
 
         /* MP: 2011-11-23
          * There may have been some migration done in the startup process, so if there have been some
@@ -510,7 +512,7 @@ public abstract class CommonAbstractStore
         updateHighId();
     }
 
-    protected IdGenerator openIdGenerator( String fileName, int grabSize, boolean firstTime )
+    protected IdGenerator openIdGenerator( File fileName, int grabSize, boolean firstTime )
     {
         return idGeneratorFactory.open( fileSystemAbstraction, fileName, grabSize, getIdType()
         );
@@ -518,7 +520,7 @@ public abstract class CommonAbstractStore
 
     protected abstract long figureOutHighestIdInUse();
 
-    protected void createIdGenerator( String fileName )
+    protected void createIdGenerator( File fileName )
     {
         idGeneratorFactory.create( fileSystemAbstraction, fileName, 0 );
     }

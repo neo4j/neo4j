@@ -37,7 +37,6 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.configuration.ConfigurationDefaults;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
 import org.neo4j.kernel.impl.util.FileUtils;
 
@@ -47,16 +46,17 @@ public class MigrationTestUtils
     {
         return defaultConfig( MapUtil.stringMap() );
     }
-    
+
     public static Config defaultConfig( Map<String, String> inputParams )
     {
-        return new Config( new ConfigurationDefaults( GraphDatabaseSettings.class ).apply( inputParams ) );
+        return new Config( inputParams, GraphDatabaseSettings.class );
     }
 
     public static int[] makeLongArray()
     {
         int[] longArray = new int[100];
-        for (int i = 0; i < 100; i++) {
+        for ( int i = 0; i < 100; i++ )
+        {
             longArray[i] = i;
         }
         return longArray;
@@ -65,8 +65,9 @@ public class MigrationTestUtils
     static String makeLongString()
     {
         StringBuilder builder = new StringBuilder();
-        for (int i = 0; i < 100; i++) {
-            builder.append("characters");
+        for ( int i = 0; i < 100; i++ )
+        {
+            builder.append( "characters" );
         }
         return builder.toString();
     }

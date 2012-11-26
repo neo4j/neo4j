@@ -29,7 +29,6 @@ import org.neo4j.consistency.store.DiffStore;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.configuration.ConfigurationDefaults;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 public class FullDiffCheck extends DiffCheck
@@ -42,8 +41,8 @@ public class FullDiffCheck extends DiffCheck
     @Override
     public ConsistencySummaryStatistics execute( DiffStore diffs ) throws ConsistencyCheckIncompleteException
     {
-        Config tuningConfiguration = new Config( new ConfigurationDefaults(
-                GraphDatabaseSettings.class, ConsistencyCheckSettings.class ).apply( stringMap() ) );
+        Config tuningConfiguration = new Config( stringMap(), GraphDatabaseSettings.class,
+                ConsistencyCheckSettings.class );
         return new FullCheck( tuningConfiguration, ProgressMonitorFactory.NONE ).execute( diffs, logger );
     }
 }

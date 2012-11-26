@@ -20,6 +20,7 @@
 
 package org.neo4j.kernel.impl.nioneo.store;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
@@ -76,19 +77,19 @@ public class StoreFactory
     {
         boolean readOnly = config.get( GraphDatabaseSettings.read_only );
 
-        String store = config.get( GraphDatabaseSettings.neo_store );
+        File store = config.get( GraphDatabaseSettings.neo_store );
         boolean created = false;
         if ( !readOnly && !fileSystemAbstraction.fileExists( store ))
         {
             stringLogger.logMessage( "Creating new db @ " + store, true );
-            fileSystemAbstraction.autoCreatePath( store );
+            fileSystemAbstraction.autoCreatePath( store.getParentFile() );
             createNeoStore( store ).close();
             created = true;
         }
         return created;
     }
 
-    public NeoStore newNeoStore(String fileName)
+    public NeoStore newNeoStore(File fileName)
     {
         try
         {
@@ -101,81 +102,81 @@ public class StoreFactory
         }
     }
 
-    NeoStore attemptNewNeoStore( String fileName )
+    NeoStore attemptNewNeoStore( File fileName )
     {
         return new NeoStore( fileName, config, idGeneratorFactory, windowPoolFactory, fileSystemAbstraction,
                 stringLogger, txHook,
-                newRelationshipTypeStore(fileName + ".relationshiptypestore.db"),
-                newPropertyStore(fileName + ".propertystore.db"),
-                newRelationshipStore(fileName + ".relationshipstore.db"),
-                newNodeStore(fileName + ".nodestore.db"));
+                newRelationshipTypeStore(new File(fileName.getPath() + ".relationshiptypestore.db")),
+                newPropertyStore(new File( fileName.getPath() + ".propertystore.db")),
+                newRelationshipStore(new File( fileName.getPath() + ".relationshipstore.db")),
+                newNodeStore(new File( fileName.getPath() + ".nodestore.db")));
     }
 
-    private void tryToUpgradeStores( String fileName )
+    private void tryToUpgradeStores( File fileName )
     {
         new StoreUpgrader(config, stringLogger, new ConfigMapUpgradeConfiguration(config),
                 new UpgradableDatabase(), new StoreMigrator( new VisibleMigrationProgressMonitor( System.out ) ),
                 new DatabaseFiles(), idGeneratorFactory, fileSystemAbstraction ).attemptUpgrade( fileName );
     }
 
-    private DynamicStringStore newDynamicStringStore(String s, IdType nameIdType)
+    private DynamicStringStore newDynamicStringStore(File fileName, IdType nameIdType)
     {
-        return new DynamicStringStore( s, config, nameIdType, idGeneratorFactory, windowPoolFactory,
+        return new DynamicStringStore( fileName, config, nameIdType, idGeneratorFactory, windowPoolFactory,
                 fileSystemAbstraction, stringLogger);
     }
 
-    private RelationshipTypeStore newRelationshipTypeStore(String s)
+    private RelationshipTypeStore newRelationshipTypeStore(File baseFileName)
     {
-        DynamicStringStore nameStore = newDynamicStringStore( s + ".names", IdType.RELATIONSHIP_TYPE_BLOCK );
-        return new RelationshipTypeStore( s, config, idGeneratorFactory, windowPoolFactory,
+        DynamicStringStore nameStore = newDynamicStringStore( new File( baseFileName.getPath() + ".names"), IdType.RELATIONSHIP_TYPE_BLOCK );
+        return new RelationshipTypeStore( baseFileName, config, idGeneratorFactory, windowPoolFactory,
                 fileSystemAbstraction, stringLogger, nameStore );
     }
 
-    private PropertyStore newPropertyStore(String s)
+    private PropertyStore newPropertyStore(File baseFileName)
     {
-        DynamicStringStore stringPropertyStore = newDynamicStringStore(s + ".strings", IdType.STRING_BLOCK);
-        PropertyIndexStore propertyIndexStore = newPropertyIndexStore(s + ".index");
-        DynamicArrayStore arrayPropertyStore = newDynamicArrayStore( s + ".arrays" );
-        return new PropertyStore( s, config, idGeneratorFactory, windowPoolFactory, fileSystemAbstraction, stringLogger,
+        DynamicStringStore stringPropertyStore = newDynamicStringStore(new File( baseFileName.getPath() + ".strings"), IdType.STRING_BLOCK);
+        PropertyIndexStore propertyIndexStore = newPropertyIndexStore(new File( baseFileName.getPath() + ".index"));
+        DynamicArrayStore arrayPropertyStore = newDynamicArrayStore( new File( baseFileName.getPath() + ".arrays" ));
+        return new PropertyStore( baseFileName, config, idGeneratorFactory, windowPoolFactory, fileSystemAbstraction, stringLogger,
                 stringPropertyStore, propertyIndexStore, arrayPropertyStore);
     }
 
-    private PropertyIndexStore newPropertyIndexStore(String s)
+    private PropertyIndexStore newPropertyIndexStore(File baseFileName)
     {
-        DynamicStringStore nameStore = newDynamicStringStore(s + ".keys", IdType.PROPERTY_INDEX_BLOCK);
-        return new PropertyIndexStore( s, config, idGeneratorFactory, windowPoolFactory,
+        DynamicStringStore nameStore = newDynamicStringStore(new File( baseFileName.getPath() + ".keys"), IdType.PROPERTY_INDEX_BLOCK);
+        return new PropertyIndexStore( baseFileName, config, idGeneratorFactory, windowPoolFactory,
                 fileSystemAbstraction, stringLogger, nameStore );
     }
 
-    private RelationshipStore newRelationshipStore(String s)
+    private RelationshipStore newRelationshipStore(File baseFileName)
     {
-        return new RelationshipStore( s, config, idGeneratorFactory, windowPoolFactory,
+        return new RelationshipStore( baseFileName, config, idGeneratorFactory, windowPoolFactory,
                 fileSystemAbstraction, stringLogger);
     }
 
-    private DynamicArrayStore newDynamicArrayStore(String s)
+    private DynamicArrayStore newDynamicArrayStore(File baseFileName)
     {
-        return new DynamicArrayStore( s, config, IdType.ARRAY_BLOCK, idGeneratorFactory, windowPoolFactory,
+        return new DynamicArrayStore( baseFileName, config, IdType.ARRAY_BLOCK, idGeneratorFactory, windowPoolFactory,
                 fileSystemAbstraction, stringLogger);
     }
 
-    private NodeStore newNodeStore(String s)
+    private NodeStore newNodeStore(File baseFileName)
     {
-        return new NodeStore( s, config, idGeneratorFactory, windowPoolFactory, fileSystemAbstraction, stringLogger );
+        return new NodeStore( baseFileName, config, idGeneratorFactory, windowPoolFactory, fileSystemAbstraction, stringLogger );
     }
 
-    public NeoStore createNeoStore(String fileName)
+    public NeoStore createNeoStore(File fileName)
     {
         return createNeoStore( fileName, new StoreId() );
     }
 
-    public NeoStore createNeoStore(String fileName, StoreId storeId)
+    public NeoStore createNeoStore(File fileName, StoreId storeId)
     {
         createEmptyStore( fileName, buildTypeDescriptorAndVersion( NeoStore.TYPE_DESCRIPTOR ) );
-        createNodeStore(fileName + ".nodestore.db");
-        createRelationshipStore(fileName + ".relationshipstore.db");
-        createPropertyStore(fileName + ".propertystore.db");
-        createRelationshipTypeStore(fileName + ".relationshiptypestore.db");
+        createNodeStore(new File( fileName.getPath() + ".nodestore.db"));
+        createRelationshipStore(new File( fileName.getPath() + ".relationshipstore.db"));
+        createPropertyStore(new File( fileName.getPath() + ".propertystore.db"));
+        createRelationshipTypeStore(new File( fileName.getPath() + ".relationshiptypestore.db"));
 /*
         if ( !config.containsKey( "neo_store" ) )
         {
@@ -207,7 +208,7 @@ public class StoreFactory
      * @param fileName
      *            File name of the new node store
      */
-    private void createNodeStore( String fileName )
+    private void createNodeStore( File fileName )
     {
         createEmptyStore( fileName, buildTypeDescriptorAndVersion( NodeStore.TYPE_DESCRIPTOR ) );
         NodeStore store = newNodeStore( fileName );
@@ -227,7 +228,7 @@ public class StoreFactory
      * @throws IOException
      *             If unable to create relationship store or name null
      */
-    private void createRelationshipStore( String fileName)
+    private void createRelationshipStore( File fileName)
     {
         createEmptyStore( fileName, buildTypeDescriptorAndVersion( RelationshipStore.TYPE_DESCRIPTOR )  );
     }
@@ -242,15 +243,15 @@ public class StoreFactory
      * @throws IOException
      *             If unable to create property store or name null
      */
-    private void createPropertyStore( String fileName )
+    private void createPropertyStore( File fileName )
     {
         createEmptyStore( fileName, buildTypeDescriptorAndVersion( PropertyStore.TYPE_DESCRIPTOR ));
         int stringStoreBlockSize = config.get( Configuration.string_block_size );
         int arrayStoreBlockSize = config.get( Configuration.array_block_size );
 
-        createDynamicStringStore(fileName + ".strings", stringStoreBlockSize, IdType.STRING_BLOCK);
-        createPropertyIndexStore(fileName + ".index");
-        createDynamicArrayStore(fileName + ".arrays", arrayStoreBlockSize);
+        createDynamicStringStore(new File( fileName.getPath() + ".strings"), stringStoreBlockSize, IdType.STRING_BLOCK);
+        createPropertyIndexStore(new File( fileName.getPath() + ".index"));
+        createDynamicArrayStore(new File( fileName.getPath() + ".arrays"), arrayStoreBlockSize);
     }
 
     /**
@@ -263,26 +264,26 @@ public class StoreFactory
      * @throws IOException
      *             If unable to create store or name null
      */
-    private void createRelationshipTypeStore( String fileName )
+    private void createRelationshipTypeStore( File fileName )
     {
         createEmptyStore( fileName, buildTypeDescriptorAndVersion( RelationshipTypeStore.TYPE_DESCRIPTOR ));
-        createDynamicStringStore( fileName + ".names", AbstractNameStore.NAME_STORE_BLOCK_SIZE, IdType.RELATIONSHIP_TYPE_BLOCK);
+        createDynamicStringStore( new File( fileName.getPath() + ".names"), AbstractNameStore.NAME_STORE_BLOCK_SIZE, IdType.RELATIONSHIP_TYPE_BLOCK);
         RelationshipTypeStore store = newRelationshipTypeStore( fileName );
         store.close();
     }
 
-    private void createDynamicStringStore( String fileName, int blockSize, IdType idType )
+    private void createDynamicStringStore( File fileName, int blockSize, IdType idType )
     {
         createEmptyDynamicStore(fileName, blockSize, DynamicStringStore.VERSION, idType);
     }
 
-    private void createPropertyIndexStore( String fileName)
+    private void createPropertyIndexStore( File fileName)
     {
         createEmptyStore( fileName, buildTypeDescriptorAndVersion( PropertyIndexStore.TYPE_DESCRIPTOR ));
-        createDynamicStringStore(fileName + ".keys", PropertyIndexStore.NAME_STORE_BLOCK_SIZE, IdType.PROPERTY_INDEX_BLOCK);
+        createDynamicStringStore(new File( fileName.getPath() + ".keys"), PropertyIndexStore.NAME_STORE_BLOCK_SIZE, IdType.PROPERTY_INDEX_BLOCK);
     }
 
-    public void createDynamicArrayStore( String fileName, int blockSize)
+    public void createDynamicArrayStore( File fileName, int blockSize)
     {
         createEmptyDynamicStore(fileName, blockSize, DynamicArrayStore.VERSION, IdType.ARRAY_BLOCK);
     }
@@ -309,7 +310,7 @@ public class StoreFactory
      * @throws IOException
      *             If fileName is null or if file exists or illegal block size
      */
-    public void createEmptyDynamicStore( String fileName, int baseBlockSize,
+    public void createEmptyDynamicStore( File fileName, int baseBlockSize,
                                             String typeAndVersionDescriptor, IdType idType)
     {
         int blockSize = baseBlockSize;
@@ -353,15 +354,15 @@ public class StoreFactory
             throw new UnderlyingStorageException( "Unable to create store "
                     + fileName, e );
         }
-        idGeneratorFactory.create( fileSystemAbstraction, fileName + ".id", 0 );
+        idGeneratorFactory.create( fileSystemAbstraction, new File( fileName.getPath() + ".id"), 0 );
         // TODO highestIdInUse = 0 works now, but not when slave can create store files.
-        IdGenerator idGenerator = idGeneratorFactory.open(fileSystemAbstraction, fileName + ".id", 1, idType );
+        IdGenerator idGenerator = idGeneratorFactory.open(fileSystemAbstraction, new File( fileName.getPath() + ".id"), 1, idType );
         idGenerator.nextId(); // reserv first for blockSize
         idGenerator.close();
     }
 
 
-    public void createEmptyStore( String fileName, String typeAndVersionDescriptor)
+    public void createEmptyStore( File fileName, String typeAndVersionDescriptor)
     {
         // sanity checks
         if ( fileName == null )
@@ -390,7 +391,7 @@ public class StoreFactory
             throw new UnderlyingStorageException( "Unable to create store "
                     + fileName, e );
         }
-        idGeneratorFactory.create( fileSystemAbstraction, fileName + ".id", 0 );
+        idGeneratorFactory.create( fileSystemAbstraction, new File( fileName.getPath() + ".id"), 0 );
     }
 
     public String buildTypeDescriptorAndVersion( String typeDescriptor )

@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
+import java.io.File;
+
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
@@ -39,7 +41,7 @@ public class PropertyIndexStore extends AbstractNameStore<PropertyIndexRecord>
     public static final String TYPE_DESCRIPTOR = "PropertyIndexStore";
     private static final int RECORD_SIZE = 1/*inUse*/ + 4/*prop count*/ + 4/*nameId*/;
 
-    public PropertyIndexStore(String fileName, Config config,
+    public PropertyIndexStore(File fileName, Config config,
                               IdGeneratorFactory idGeneratorFactory, WindowPoolFactory windowPoolFactory,
                               FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger,
                               DynamicStringStore nameStore)

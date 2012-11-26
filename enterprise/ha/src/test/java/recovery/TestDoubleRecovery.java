@@ -306,7 +306,7 @@ public class TestDoubleRecovery extends AbstractSubProcessTestBase
             graphdb.shutdown();
         }
 
-        TxLog log = new TxLog( args[0], new DefaultFileSystemAbstraction(), StringLogger.DEV_NULL );
+        TxLog log = new TxLog( new File(args[0]), new DefaultFileSystemAbstraction(), StringLogger.DEV_NULL );
         byte globalId[] = new byte[NEOKERNL.length + 16];
         System.arraycopy( NEOKERNL, 0, globalId, 0, NEOKERNL.length );
         ByteBuffer byteBuf = ByteBuffer.wrap( globalId );

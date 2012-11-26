@@ -35,6 +35,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.junit.Ignore;
 import org.junit.Test;
+import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.consistency.ConsistencyCheckTool;
 import org.neo4j.consistency.checking.incremental.intercept.VerifyingTransactionInterceptorProvider;
 import org.neo4j.graphdb.Direction;
@@ -61,7 +62,10 @@ public class SmokeTest
         dbs[0] = startDb( 0 );
         final List<Node> nodes = Collections.synchronizedList( new LinkedList() );
         final List<Relationship> rels = Collections.synchronizedList( new LinkedList<Relationship>() );
-        for (int i = 0;i < 10; i++) createInitial(dbs[0], nodes, rels);
+        for ( int i = 0; i < 10; i++ )
+        {
+            createInitial( dbs[0], nodes, rels );
+        }
 
         dbs[1] = startDb( 1 );
         assertExists( dbs[1], nodes, rels );
@@ -71,7 +75,7 @@ public class SmokeTest
         // Case 1: Cluster is running, do stuff on each instance, see they are there
         System.out.println( "============== Case simple create on all ================" );
         ExecutorService threadPool = Executors.newFixedThreadPool( 30 );
-        for (int i = 0; i < 1000; i++)
+        for ( int i = 0; i < 1000; i++ )
         {
             for ( final HighlyAvailableGraphDatabase db : dbs )
             {
@@ -90,7 +94,10 @@ public class SmokeTest
         }
 
         threadPool.shutdown();
-        while (!threadPool.awaitTermination( 10, TimeUnit.SECONDS ));
+        while ( !threadPool.awaitTermination( 10, TimeUnit.SECONDS ) )
+        {
+            ;
+        }
 
 //        for ( HighlyAvailableGraphDatabase db : dbs )
 //        {
@@ -105,7 +112,10 @@ public class SmokeTest
         for ( int i = 0; i < dbs.length; i++ )
         {
             HighlyAvailableGraphDatabase db = dbs[i];
-            if (!db.isMaster()) db.getDependencyResolver().resolveDependency( UpdatePuller.class ).pullUpdates();
+            if ( !db.isMaster() )
+            {
+                db.getDependencyResolver().resolveDependency( UpdatePuller.class ).pullUpdates();
+            }
             db.shutdown();
             Thread.sleep( 3000 );
             ConsistencyCheckTool.main( new String[]{db.getStoreDir(), "-recovery"} );
@@ -164,15 +174,15 @@ public class SmokeTest
         HighlyAvailableGraphDatabase master = dbs[currentMaster];
         assertExists( master, nodes, rels );
 
-        HighlyAvailableGraphDatabase db1 = dbs[(currentMaster+1)%dbs.length];
+        HighlyAvailableGraphDatabase db1 = dbs[(currentMaster + 1) % dbs.length];
         db1.getDependencyResolver().resolveDependency( UpdatePuller.class ).pullUpdates();
         assertExists( db1, nodes, rels );
 
-        HighlyAvailableGraphDatabase db2 = dbs[(currentMaster+2)%dbs.length];
+        HighlyAvailableGraphDatabase db2 = dbs[(currentMaster + 2) % dbs.length];
         db2.getDependencyResolver().resolveDependency( UpdatePuller.class ).pullUpdates();
         assertExists( db2, nodes, rels );
 
-        for (HighlyAvailableGraphDatabase db : dbs)
+        for ( HighlyAvailableGraphDatabase db : dbs )
         {
             db.shutdown();
             Thread.sleep( 1000 );
@@ -228,7 +238,7 @@ public class SmokeTest
         {
             try
             {
-                 createNodeAndRelationship( dbs[2], nodes, rels );
+                createNodeAndRelationship( dbs[2], nodes, rels );
                 break;
             }
             catch ( Exception e )
@@ -285,7 +295,7 @@ public class SmokeTest
                 {
                     tx.finish();
                 }
-                catch (Exception e)
+                catch ( Exception e )
                 {
                     e.printStackTrace();
                 }
@@ -299,11 +309,11 @@ public class SmokeTest
         {
             if ( dbs[i].isMaster() )
             {
-                System.out.println("Found master as "+i);
+                System.out.println( "Found master as " + i );
                 return i;
             }
         }
-        System.out.println("Fuck me sideways, no master present");
+        System.out.println( "Fuck me sideways, no master present" );
         return -1;
     }
 
@@ -324,12 +334,12 @@ public class SmokeTest
         for ( Node n : db.getAllNodes() )
         {
             nodeCount++;
-            for (Relationship rel : n.getRelationships( Direction.OUTGOING ))
+            for ( Relationship rel : n.getRelationships( Direction.OUTGOING ) )
             {
                 relCount++;
             }
         }
-        assertEquals( nodes.size()+1/*ref node*/, nodeCount );
+        assertEquals( nodes.size() + 1/*ref node*/, nodeCount );
         assertEquals( rels.size(), relCount );
     }
 
@@ -385,7 +395,7 @@ public class SmokeTest
                 {
                     tx.finish();
                 }
-                catch (Exception e)
+                catch ( Exception e )
                 {
                     e.printStackTrace();
                 }
@@ -408,16 +418,15 @@ public class SmokeTest
     {
         GraphDatabaseBuilder builder = new HighlyAvailableGraphDatabaseFactory()
                 .newHighlyAvailableDatabaseBuilder( path( serverId ) )
+                .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:5001,127.0.0.1:5002,127.0.0.1:5003" )
+                .setConfig( ClusterSettings.cluster_server, "127.0.0.1:" + (5001 + serverId) )
                 .setConfig( HaSettings.server_id, "" + serverId )
                 .setConfig( HaSettings.ha_server, ":" + (8001 + serverId) )
-                .setConfig( HaSettings.initial_hosts, "127.0.0.1:5001,127.0.0.1:5002,127.0.0.1:5003" )
-                .setConfig( HaSettings.cluster_server, "127.0.0.1:" + (5001 + serverId) )
                 .setConfig( HaSettings.tx_push_factor, "0" )
                 .setConfig( GraphDatabaseSettings.intercept_committing_transactions, "true" )
                 .setConfig( GraphDatabaseSettings.intercept_deserialized_transactions, "true" )
-                .setConfig(TransactionInterceptorProvider.class.getSimpleName() + "." +
-                        VerifyingTransactionInterceptorProvider.NAME, "true" )
-                ;
+                .setConfig( TransactionInterceptorProvider.class.getSimpleName() + "." +
+                        VerifyingTransactionInterceptorProvider.NAME, "true" );
         HighlyAvailableGraphDatabase db = (HighlyAvailableGraphDatabase) builder.newGraphDatabase();
         Transaction tx = db.beginTx();
         tx.finish();

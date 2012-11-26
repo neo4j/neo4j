@@ -22,8 +22,6 @@ package org.neo4j.kernel.ha;
 import static org.neo4j.com.Protocol.VOID_SERIALIZER;
 import static org.neo4j.com.Protocol.readString;
 import static org.neo4j.com.Protocol.writeString;
-import static org.neo4j.kernel.configuration.ConfigurationDefaults.getDefault;
-import static org.neo4j.kernel.ha.HaSettings.read_timeout;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -37,18 +35,22 @@ import org.neo4j.com.RequestType;
 import org.neo4j.com.Response;
 import org.neo4j.com.Serializer;
 import org.neo4j.com.TargetCaller;
+import org.neo4j.graphdb.config.Setting;
+import org.neo4j.graphdb.factory.GraphDatabaseSetting;
+import org.neo4j.helpers.Functions;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 public class SlaveClient extends Client<Slave> implements Slave
 {
     private final int machineId;
-    
+
     public SlaveClient( int machineId, String hostNameOrIp, int port, StringLogger logger, StoreId storeId,
-            int maxConcurrentChannels, int chunkSize )
+                        int maxConcurrentChannels, int chunkSize )
     {
-        super( hostNameOrIp, port, logger, storeId, Protocol.DEFAULT_FRAME_LENGTH, SlaveServer.APPLICATION_PROTOCOL_VERSION,
-                HaSettings.read_timeout.valueOf( getDefault( read_timeout, HaSettings.class ), null ),
+        super( hostNameOrIp, port, logger, storeId, Protocol.DEFAULT_FRAME_LENGTH,
+                SlaveServer.APPLICATION_PROTOCOL_VERSION,
+                HaSettings.read_timeout.apply( Functions.<String, String>nullFunction() ),
                 maxConcurrentChannels, maxConcurrentChannels, chunkSize );
         this.machineId = machineId;
     }
@@ -73,12 +75,12 @@ public class SlaveClient extends Client<Slave> implements Slave
         {
             @Override
             public Response<Void> call( Slave master, RequestContext context, ChannelBuffer input,
-                    ChannelBuffer target )
+                                        ChannelBuffer target )
             {
                 return master.pullUpdates( readString( input ), input.readLong() );
             }
         }, VOID_SERIALIZER );
-        
+
         private final TargetCaller caller;
         private final ObjectSerializer serializer;
 

@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
@@ -52,7 +53,7 @@ import org.neo4j.kernel.impl.util.StringLogger;
  */
 public class TxLog
 {
-    private String name = null;
+    private File name = null;
     private LogBuffer logBuffer;
     private int recordCount = 0;
 
@@ -75,7 +76,7 @@ public class TxLog
      * @throws IOException
      *             If unable to open file
      */
-    public TxLog( String fileName, FileSystemAbstraction fileSystem, StringLogger msgLog ) throws IOException
+    public TxLog( File fileName, FileSystemAbstraction fileSystem, StringLogger msgLog ) throws IOException
     {
         if ( fileName == null )
         {
@@ -94,7 +95,7 @@ public class TxLog
      */
     public String getName()
     {
-        return name;
+        return name.getPath();
     }
 
     /**
@@ -467,7 +468,7 @@ public class TxLog
      * @throws IOException
      *             If unable to switch log file
      */
-    public synchronized void switchToLogFile( String newFile )
+    public synchronized void switchToLogFile( File newFile )
         throws IOException
     {
         rotationCounter++;
@@ -483,7 +484,7 @@ public class TxLog
         {
             try
             {
-                fileSystem.copyFile( name, name+"_"+rotationCounter );
+                fileSystem.copyFile( name, new File( name.getPath()+"_"+rotationCounter ));
             }
             catch (Throwable t)
             {

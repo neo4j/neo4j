@@ -25,8 +25,9 @@ import java.util.Map;
 import org.junit.Test;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.com.NetworkInstance;
+import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.configuration.ConfigurationDefaults;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -83,26 +84,13 @@ public class NetworkSendReceiveTest
 
         private Server( final Map<String, String> config )
         {
+            final Config conf = new Config( config, ClusterSettings.class );
             node = new NetworkInstance( new NetworkInstance.Configuration()
             {
                 @Override
-                public int[] getPorts()
+                public HostnamePort clusterServer()
                 {
-                    int[] port = ClusterSettings.cluster_server.getPorts( config );
-                    if ( port != null )
-                    {
-                        return port;
-                    }
-
-                    // If not specified, use the default
-                    return ClusterSettings.cluster_server.getPorts( MapUtil.stringMap( ClusterSettings.cluster_server.name(),
-                            ConfigurationDefaults.getDefault(ClusterSettings.cluster_server, ClusterSettings.class) ) );
-                }
-
-                @Override
-                public String getAddress()
-                {
-                    return ClusterSettings.cluster_server.getAddress( config );
+                    return conf.get( ClusterSettings.cluster_server );
                 }
             }, StringLogger.SYSTEM );
 

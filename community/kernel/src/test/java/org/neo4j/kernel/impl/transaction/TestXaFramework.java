@@ -49,7 +49,6 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.TransactionInterceptorProviders;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.configuration.ConfigurationDefaults;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
@@ -79,27 +78,28 @@ public class TestXaFramework extends AbstractNeo4jTestCase
     private TransactionManager tm;
     private XaDataSourceManager xaDsMgr;
 
-    private String path()
+    private File path()
     {
         String path = getStorePath( "xafrmwrk" );
+        File file = new File( path );
         try
         {
-            FileUtils.deleteRecursively( new File( path ) );
+            FileUtils.deleteRecursively( file );
         }
         catch ( IOException e )
         {
             throw new RuntimeException( e );
         }
-        new File( path ).mkdirs();
-        return path;
+        file.mkdirs();
+        return file;
     }
 
-    private String file( String name )
+    private File file( String name )
     {
-        return path() + File.separator + name;
+        return new File( path(), name);
     }
 
-    private String resourceFile()
+    private File resourceFile()
     {
         return file( "dummy_resource" );
     }
@@ -142,7 +142,7 @@ public class TestXaFramework extends AbstractNeo4jTestCase
     {
         @Override
         public XaCommand readCommand( ReadableByteChannel byteChannel,
-            ByteBuffer buffer ) throws IOException
+                                      ByteBuffer buffer ) throws IOException
         {
             buffer.clear();
             buffer.limit( 4 );
@@ -223,7 +223,7 @@ public class TestXaFramework extends AbstractNeo4jTestCase
         {
             return 0;
         }
-        
+
         @Override
         public void setVersion( long version )
         {
@@ -240,13 +240,13 @@ public class TestXaFramework extends AbstractNeo4jTestCase
     {
         private XaContainer xaContainer = null;
 
-        public DummyXaDataSource( java.util.Map<String,String> map, byte[] branchId, String name, XaFactory xaFactory)
-            throws InstantiationException
+        public DummyXaDataSource( java.util.Map<String, String> map, byte[] branchId, String name, XaFactory xaFactory )
+                throws InstantiationException
         {
             super( branchId, name );
             try
             {
-                map.put( "store_dir", path() );
+                map.put( "store_dir", path().getPath() );
                 xaContainer = xaFactory.newXaContainer( this, resourceFile(),
                         new DummyCommandFactory(),
                         new DummyTransactionFactory(), NO_STATE_FACTORY, new TransactionInterceptorProviders(
@@ -261,9 +261,9 @@ public class TestXaFramework extends AbstractNeo4jTestCase
                                         GraphDatabaseSetting.FALSE,
                                         GraphDatabaseSettings.intercept_deserialized_transactions.name(),
                                         GraphDatabaseSetting.FALSE
-                                        ));
+                                ) );
                             }
-                        }));
+                        } ) );
                 xaContainer.openLogicalLog();
             }
             catch ( IOException e )
@@ -291,7 +291,7 @@ public class TestXaFramework extends AbstractNeo4jTestCase
             {
                 public boolean accept( File dir, String fileName )
                 {
-                    return fileName.startsWith( resourceFile() );
+                    return fileName.startsWith( resourceFile().getPath() );
                 }
             } );
             for ( int i = 0; i < files.length; i++ )
@@ -373,7 +373,7 @@ public class TestXaFramework extends AbstractNeo4jTestCase
         public void delistFromTx() throws Exception
         {
             tm.getTransaction().delistResource( xaResource,
-                XAResource.TMSUCCESS );
+                    XAResource.TMSUCCESS );
         }
 
         public int getTransactionId() throws Exception
@@ -385,15 +385,15 @@ public class TestXaFramework extends AbstractNeo4jTestCase
     @Test
     public void testCreateXaResource() throws Exception
     {
-        Map<String,String> config = new HashMap<String,String>();
+        Map<String, String> config = new HashMap<String, String>();
         config.put( "store_dir", "target/var" );
         FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
         xaDsMgr.registerDataSource( new DummyXaDataSource(
                 config, UTF8.encode( "DDDDDD" ), "dummy_datasource",
-                new XaFactory(new Config( new ConfigurationDefaults(GraphDatabaseSettings.class ).apply( config )),
+                new XaFactory( new Config( config, GraphDatabaseSettings.class ),
                         TxIdGenerator.DEFAULT, new PlaceboTm(), new DefaultLogBufferFactory(),
                         fileSystem, StringLogger.DEV_NULL,
-                        RecoveryVerifier.ALWAYS_VALID, LogPruneStrategies.NO_PRUNING )) );
+                        RecoveryVerifier.ALWAYS_VALID, LogPruneStrategies.NO_PRUNING ) ) );
         XaDataSource xaDs = xaDsMgr.getXaDataSource( "dummy_datasource" );
         DummyXaConnection xaC = null;
         try
@@ -424,7 +424,7 @@ public class TestXaFramework extends AbstractNeo4jTestCase
         }
         finally
         {
-            
+
             xaDsMgr.unregisterDataSource( "dummy_datasource" );
             if ( xaC != null )
             {
@@ -437,7 +437,7 @@ public class TestXaFramework extends AbstractNeo4jTestCase
         {
             public boolean accept( File dir, String fileName )
             {
-                return fileName.startsWith( resourceFile() );
+                return fileName.startsWith( resourceFile().getPath() );
             }
         } );
         for ( int i = 0; i < files.length; i++ )
@@ -453,12 +453,15 @@ public class TestXaFramework extends AbstractNeo4jTestCase
         DummyXaConnection xaC1 = null;
         try
         {
-            Map<String,String> config = new HashMap<String,String>();
+            Map<String, String> config = new HashMap<String, String>();
             config.put( "store_dir", "target/var" );
             FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
-            xaDsMgr.registerDataSource(new DummyXaDataSource( config, UTF8.encode( "DDDDDD" ),"dummy_datasource1" , new XaFactory(new Config( new ConfigurationDefaults(GraphDatabaseSettings.class ).apply( config )), TxIdGenerator.DEFAULT, new PlaceboTm(), new DefaultLogBufferFactory(), fileSystem, StringLogger.DEV_NULL, RecoveryVerifier.ALWAYS_VALID, LogPruneStrategies.NO_PRUNING )) );
+            xaDsMgr.registerDataSource( new DummyXaDataSource( config, UTF8.encode( "DDDDDD" ), "dummy_datasource1",
+                    new XaFactory( new Config( config, GraphDatabaseSettings.class ), TxIdGenerator.DEFAULT,
+                            new PlaceboTm(), new DefaultLogBufferFactory(), fileSystem, StringLogger.DEV_NULL,
+                            RecoveryVerifier.ALWAYS_VALID, LogPruneStrategies.NO_PRUNING ) ) );
             xaDs1 = (DummyXaDataSource) xaDsMgr
-                .getXaDataSource( "dummy_datasource1" );
+                    .getXaDataSource( "dummy_datasource1" );
             xaC1 = (DummyXaConnection) xaDs1.getXaConnection();
             tm.begin(); // get
             xaC1.enlistWithTx();
@@ -498,7 +501,7 @@ public class TestXaFramework extends AbstractNeo4jTestCase
         {
             public boolean accept( File dir, String fileName )
             {
-                return fileName.startsWith( resourceFile() );
+                return fileName.startsWith( resourceFile().getPath() );
             }
         } );
         for ( int i = 0; i < files.length; i++ )

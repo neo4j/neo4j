@@ -123,7 +123,7 @@ public class LogExtractor
         
         long getHighestLogVersion();
         
-        String getFileName( long version );
+        File getFileName( long version );
         
         /**
          * @param version the log version to get first committed tx for.
@@ -133,7 +133,6 @@ public class LogExtractor
         Long getFirstCommittedTxId( long version );
         
         /**
-         * @param version the log version to get first committed tx for.
          * @return the first committed transaction id for the log with {@code version}.
          * If that log doesn't exist {@code null} is returned.
          */
@@ -514,71 +513,71 @@ public class LogExtractor
         }
     }
     
-    public static LogExtractor from( final String storeDir ) throws IOException
+    public static LogExtractor from( final File storeDir ) throws IOException
     {
         return from( storeDir, NIONEO_COMMAND_FACTORY );
     }
     
-    public static LogExtractor from( final String storeDir, long startTxId ) throws IOException
+    public static LogExtractor from( final File storeDir, long startTxId ) throws IOException
     {
         return from( storeDir, NIONEO_COMMAND_FACTORY, startTxId );
     }
     
-    public static LogExtractor from( final String storeDir, XaCommandFactory commandFactory ) throws IOException
+    public static LogExtractor from( final File storeDir, XaCommandFactory commandFactory ) throws IOException
     {
         // 2 is a "magic" first tx :)
         return from( storeDir, commandFactory, 2 );
     }
     
-    public static LogExtractor from( final String storeDir, XaCommandFactory commandFactory,
+    public static LogExtractor from( final File storeDir, XaCommandFactory commandFactory,
             long startTxId ) throws IOException
     {
         LogLoader loader = new LogLoader()
         {
             private final FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
-            private final Map<Long, String> activeLogFiles = getActiveLogs( storeDir );
-            private final long highestLogVersion = max( getHighestHistoryLogVersion( new File( storeDir ),
+            private final Map<Long, File> activeLogFiles = getActiveLogs( storeDir );
+            private final long highestLogVersion = max( getHighestHistoryLogVersion( storeDir,
                     LOGICAL_LOG_DEFAULT_NAME ), maxKey( activeLogFiles ) );
             
             @Override
             public ReadableByteChannel getLogicalLogOrMyselfCommitted( long version, long position )
                     throws IOException
             {
-                String name = getFileName( version );
+                File name = getFileName( version );
                 if ( !fileSystem.fileExists( name ) )
                 {
                     name = activeLogFiles.get( version );
-                    if ( name == null ) throw new NoSuchLogVersionException( version, name );
+                    if ( name == null ) throw new NoSuchLogVersionException( version, name.getPath() );
                 }
                 FileChannel channel = fileSystem.open( name, "r" );
                 channel.position( position );
                 return new BufferedFileChannel( channel );
             }
             
-            private long maxKey( Map<Long, String> activeLogFiles )
+            private long maxKey( Map<Long, File> activeLogFiles )
             {
                 long max = 0;
                 for ( Long key : activeLogFiles.keySet() ) max = max( max, key );
                 return max;
             }
 
-            private Map<Long, String> getActiveLogs( String storeDir ) throws IOException
+            private Map<Long, File> getActiveLogs( File storeDir ) throws IOException
             {
-                Map<Long, String> result = new HashMap<Long, String>();
+                Map<Long, File> result = new HashMap<Long, File>();
                 for ( String postfix : ACTIVE_POSTFIXES )
                 {
                     File candidateFile = new File( storeDir, LOGICAL_LOG_DEFAULT_NAME + postfix );
                     if ( !candidateFile.exists() ) continue;
                     long[] header = LogIoUtils.readLogHeader( fileSystem, candidateFile );
-                    result.put( header[0], candidateFile.getAbsolutePath() );
+                    result.put( header[0], candidateFile );
                 }
                 return result;
             }
             
             @Override
-            public String getFileName( long version )
+            public File getFileName( long version )
             {
-                return new File( storeDir, LOGICAL_LOG_DEFAULT_NAME + ".v" + version ).getAbsolutePath();
+                return new File( storeDir, LOGICAL_LOG_DEFAULT_NAME + ".v" + version );
             }
 
             @Override

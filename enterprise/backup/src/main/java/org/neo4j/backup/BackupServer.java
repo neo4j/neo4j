@@ -29,6 +29,7 @@ import org.neo4j.com.RequestContext;
 import org.neo4j.com.RequestType;
 import org.neo4j.com.Server;
 import org.neo4j.com.TxChecksumVerifier;
+import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 class BackupServer extends Server<TheBackupInterface, Object>
@@ -36,7 +37,7 @@ class BackupServer extends Server<TheBackupInterface, Object>
     static final byte PROTOCOL_VERSION = 1;
     private final BackupRequestType[] contexts = BackupRequestType.values();
     static int DEFAULT_PORT = DEFAULT_BACKUP_PORT;
-    static final int FRAME_LENGTH = Protocol.MEGA*4;
+    static final int FRAME_LENGTH = Protocol.MEGA * 4;
 
     public BackupServer( TheBackupInterface requestTarget, final int port, StringLogger logger ) throws IOException
     {
@@ -45,7 +46,7 @@ class BackupServer extends Server<TheBackupInterface, Object>
             @Override
             public long getOldChannelThreshold()
             {
-                return Client.DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS*1000;
+                return Client.DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS * 1000;
             }
 
             @Override
@@ -55,21 +56,15 @@ class BackupServer extends Server<TheBackupInterface, Object>
             }
 
             @Override
-            public int getPort()
-            {
-                return port;
-            }
-
-            @Override
             public int getChunkSize()
             {
                 return FRAME_LENGTH;
             }
 
             @Override
-            public String getServerAddress()
+            public HostnamePort getServerAddress()
             {
-                return null;
+                return new HostnamePort( null, port );
             }
         }, logger, FRAME_LENGTH, PROTOCOL_VERSION,
                 TxChecksumVerifier.ALWAYS_MATCH );
@@ -77,7 +72,7 @@ class BackupServer extends Server<TheBackupInterface, Object>
 
     @Override
     protected void responseWritten( RequestType<TheBackupInterface> type, Channel channel,
-            RequestContext context )
+                                    RequestContext context )
     {
     }
 

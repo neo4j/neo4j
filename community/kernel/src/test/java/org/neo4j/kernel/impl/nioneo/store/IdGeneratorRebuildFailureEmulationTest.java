@@ -46,7 +46,6 @@ import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.configuration.ConfigurationDefaults;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
@@ -116,11 +115,11 @@ public class IdGeneratorRebuildFailureEmulationTest
         String file = prefix + File.separator + Thread.currentThread().getStackTrace()[2].getMethodName().replace(
                 '_', '.' );
         // emulate the need for rebuilding id generators by deleting it
-        fs.deleteFile( file + ".id" );
+        fs.deleteFile( new File( file + ".id") );
         NeoStore neostore = null;
         try
         {
-            neostore = factory.newNeoStore( prefix + File.separator + "neostore" );
+            neostore = factory.newNeoStore( new File( prefix + File.separator + "neostore") );
             // emulate a failure during rebuild:
             emulateFailureOnRebuildOf( neostore );
         }
@@ -158,8 +157,8 @@ public class IdGeneratorRebuildFailureEmulationTest
         graphdb.shutdown();
         Map<String, String> config = new HashMap<String, String>();
         config.put( GraphDatabaseSettings.rebuild_idgenerators_fast.name(), GraphDatabaseSetting.FALSE );
-        factory = new StoreFactory( new Config(
-                new ConfigurationDefaults(GraphDatabaseSettings.class ).apply( config )),
+        config.put( GraphDatabaseSettings.store_dir.name(), prefix );
+        factory = new StoreFactory( new Config( config, GraphDatabaseSettings.class ),
                 new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(), fs, StringLogger.SYSTEM, null );
     }
 

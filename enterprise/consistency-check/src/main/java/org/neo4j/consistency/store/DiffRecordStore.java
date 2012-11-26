@@ -19,6 +19,7 @@
  */
 package org.neo4j.consistency.store;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -97,7 +98,7 @@ public class DiffRecordStore<R extends AbstractBaseRecord> implements RecordStor
     }
 
     @Override
-    public String getStorageFileName()
+    public File getStorageFileName()
     {
         return actual.getStorageFileName();
     }

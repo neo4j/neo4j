@@ -377,4 +377,18 @@ public abstract class MapUtil
         }
         return reversedMap;
     }
+
+    public static <K, V> Map<K, V> copyAndPut(Map<K, V> map, K key, V value)
+    {
+        Map<K, V> copy = new HashMap<K, V>( map );
+        copy.put( key,  value);
+        return copy;
+    }
+
+    public static <K, V> Map<K, V> copyAndRemove(Map<K, V> map, K key)
+    {
+        Map<K, V> copy = new HashMap<K, V>( map );
+        copy.remove( key );
+        return copy;
+    }
 }

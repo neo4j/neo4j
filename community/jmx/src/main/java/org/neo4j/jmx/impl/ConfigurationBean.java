@@ -38,6 +38,8 @@ import javax.management.MBeanInfo;
 import javax.management.MBeanOperationInfo;
 import javax.management.NotCompliantMBeanException;
 import javax.management.ReflectionException;
+
+import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.jmx.Description;
@@ -70,34 +72,14 @@ public final class ConfigurationBean extends Neo4jMBean
             if ( Modifier.isStatic( field.getModifiers() ) && Modifier.isFinal( field.getModifiers() ) )
             {
                 final org.neo4j.graphdb.factory.Description documentation = field.getAnnotation( org.neo4j.graphdb.factory.Description.class );
-                if ( documentation == null || !GraphDatabaseSetting.class.isAssignableFrom(field.getType()) ) continue;
+                if ( documentation == null || !Setting.class.isAssignableFrom(field.getType()) ) continue;
                 try
                 {
                     if ( !field.isAccessible() ) field.setAccessible( true );
                     
                     String description = documentation.value();
-                    GraphDatabaseSetting setting = (GraphDatabaseSetting) field.get( null );
-                    if (setting instanceof GraphDatabaseSetting.OptionsSetting)
-                    {
-                        GraphDatabaseSetting.OptionsSetting optionsSetting = ( GraphDatabaseSetting.OptionsSetting) setting;
-                        description += ". Valid options:"+ Arrays.asList( optionsSetting.options() );
-                    }
-                    
-                    if (setting instanceof GraphDatabaseSetting.NumberSetting )
-                    {
-                        GraphDatabaseSetting.NumberSetting numberSetting = ( GraphDatabaseSetting.NumberSetting) setting;
-                        if (numberSetting.getMin() != null || numberSetting.getMax() != null)
-                        {
-                            description += ". ";
-                            if (numberSetting.getMin() != null)
-                                description+=numberSetting.getMin()+" < ";
-                            description += setting.name();
-                            if (numberSetting.getMax() != null)
-                                description+=" < "+numberSetting.getMax();
-                        }
+                    Setting setting = (Setting) field.get( null );
 
-                    }
-                    
                     descriptions.put( setting.name(), description );
                 }
                 catch ( Exception e )

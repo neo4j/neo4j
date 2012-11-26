@@ -66,14 +66,14 @@ public abstract class StringLogger
         }
     }
 
-    public static StringLogger logger( String storeDir )
+    public static StringLogger loggerDirectory( File logDirectory )
     {
-        return logger( storeDir, DEFAULT_THRESHOLD_FOR_ROTATION );
+        return loggerDirectory( logDirectory, DEFAULT_THRESHOLD_FOR_ROTATION );
     }
 
-    public static StringLogger logger( String storeDir, int rotationThreshold )
+    public static StringLogger loggerDirectory( File logDirectory, int rotationThreshold )
     {
-        return new ActualStringLogger( new File( storeDir, DEFAULT_NAME ).getAbsolutePath(),
+        return new ActualStringLogger( new File( logDirectory, DEFAULT_NAME ).getAbsolutePath(),
                 rotationThreshold );
     }
 

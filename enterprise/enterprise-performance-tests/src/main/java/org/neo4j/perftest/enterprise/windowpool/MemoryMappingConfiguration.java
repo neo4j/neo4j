@@ -22,13 +22,13 @@ package org.neo4j.perftest.enterprise.windowpool;
 import java.util.Map;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.Settings;
 
 public class MemoryMappingConfiguration
 {
     public static void addLegacyMemoryMappingConfiguration( Map<String, String> config, String totalMappedMemory )
     {
-        long mappedMemory = GraphDatabaseSettings.all_stores_total_mapped_memory_size
-                .valueOf( totalMappedMemory, null );
+        long mappedMemory = Settings.BYTES.apply( totalMappedMemory );
         long memoryUnit = mappedMemory / 472;
 
         config.put( "neostore.nodestore.db.mapped_memory", mega( 20 * memoryUnit ) );

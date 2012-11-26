@@ -45,25 +45,25 @@ public abstract class FileLock
         };
     }
 
-    public static FileLock getOsSpecificFileLock( String fileName, FileChannel channel )
+    public static FileLock getOsSpecificFileLock( File fileName, FileChannel channel )
             throws IOException
     {
         if ( GraphDatabaseSetting.osIsWindows() )
         {
             // Only grab one lock, say for the "neostore" file
-            if ( fileName.endsWith( NeoStore.DEFAULT_NAME ) )
+            if ( fileName.getName().equals( NeoStore.DEFAULT_NAME ) )
             {
-                return getLockFileBasedFileLock( new File( fileName ).getParentFile() );
+                return getLockFileBasedFileLock( fileName.getParentFile() );
             }
 
             // For the rest just return placebo locks
             return new PlaceboFileLock();
         }
-        else if ( fileName.endsWith( NeoStore.DEFAULT_NAME ) )
+        else if ( fileName.getName().equals( NeoStore.DEFAULT_NAME ) )
         {
             FileLock regular = wrapOrNull( channel.tryLock() );
             if ( regular == null ) return null;
-            FileLock extra = getLockFileBasedFileLock( new File( fileName ).getParentFile() );
+            FileLock extra = getLockFileBasedFileLock( fileName.getParentFile() );
             if ( extra == null )
             {
                 regular.release();

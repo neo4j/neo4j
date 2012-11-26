@@ -35,7 +35,7 @@ import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.LearnerContext;
 import org.neo4j.cluster.protocol.cluster.ClusterContext;
 import org.neo4j.helpers.Listeners;
-import org.neo4j.helpers.Specification;
+import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.Iterables;
 
 /**
@@ -133,10 +133,10 @@ public class HeartbeatContext
 
     public Iterable<URI> getAlive()
     {
-        return Iterables.filter( new Specification<URI>()
+        return Iterables.filter( new Predicate<URI>()
         {
             @Override
-            public boolean satisfiedBy( URI item )
+            public boolean accept( URI item )
             {
                 return !isFailed( item );
             }

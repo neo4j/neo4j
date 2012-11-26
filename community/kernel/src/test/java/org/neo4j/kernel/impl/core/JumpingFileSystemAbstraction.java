@@ -46,13 +46,13 @@ public class JumpingFileSystemAbstraction implements FileSystemAbstraction
     }
     
     @Override
-    public FileChannel open( String fileName, String mode ) throws IOException
+    public FileChannel open( File fileName, String mode ) throws IOException
     {
-        if ( fileName.endsWith( "neostore.nodestore.db" ) ||
-                fileName.endsWith( "neostore.relationshipstore.db" ) ||
-                fileName.endsWith( "neostore.propertystore.db" ) ||
-                fileName.endsWith( "neostore.propertystore.db.strings" ) ||
-                fileName.endsWith( "neostore.propertystore.db.arrays" ) )
+        if ( fileName.getName().equals( "neostore.nodestore.db" ) ||
+                fileName.getName().equals( "neostore.relationshipstore.db" ) ||
+                fileName.getName().equals( "neostore.propertystore.db" ) ||
+                fileName.getName().equals( "neostore.propertystore.db.strings" ) ||
+                fileName.getName().equals( "neostore.propertystore.db.arrays" ) )
         {        
             return new JumpingFileChannel( new RandomAccessFile( fileName, mode ).getChannel(),
                     recordSizeFor( fileName ) );
@@ -61,84 +61,83 @@ public class JumpingFileSystemAbstraction implements FileSystemAbstraction
     }
     
     @Override
-    public FileChannel create( String fileName ) throws IOException
+    public FileChannel create( File fileName ) throws IOException
     {
         return open( fileName, "rw" );
     }
     
     @Override
-    public boolean fileExists( String fileName )
+    public boolean fileExists( File fileName )
     {
-        return new File( fileName ).exists();
+        return fileName.exists();
     }
     
     @Override
-    public long getFileSize( String fileName )
+    public long getFileSize( File fileName )
     {
-        return new File( fileName ).length();
+        return fileName.length();
     }
     
     @Override
-    public boolean deleteFile( String fileName )
+    public boolean deleteFile( File fileName )
     {
-        return FileUtils.deleteFile( new File( fileName ) );
+        return FileUtils.deleteFile( fileName );
     }
     
     @Override
-    public boolean renameFile( String from, String to ) throws IOException
+    public boolean renameFile( File from, File to ) throws IOException
     {
-        return FileUtils.renameFile( new File( from ), new File( to ) );
+        return FileUtils.renameFile( from, to );
     }
     
     @Override
-    public void copyFile( String from, String to ) throws IOException
+    public void copyFile( File from, File to ) throws IOException
     {
-        FileUtils.copyRecursively( new File( from ), new File( to ) );
+        FileUtils.copyRecursively( from, to );
     }
 
     @Override
-    public void autoCreatePath( String store ) throws IOException
+    public void autoCreatePath( File path ) throws IOException
     {
-        String fileSeparator = System.getProperty( "file.separator" );
-        int index = store.lastIndexOf( fileSeparator );
-        String dirs = store.substring( 0, index );
-        File directories = new File( dirs );
-        if ( !directories.exists() )
+        if (path.isFile())
+            path = path.getParentFile();
+
+        if ( !path.exists() )
         {
-            if ( !directories.mkdirs() )
+            if ( !path.mkdirs() )
             {
                 throw new IOException( "Unable to create directory path["
-                        + dirs + "] for Neo4j store." );
+                        + path.getPath() + "] for Neo4j store." );
             }
         }
     }
 
     @Override
-    public FileLock tryLock( String fileName, FileChannel channel ) throws IOException
+    public FileLock tryLock( File fileName, FileChannel channel ) throws IOException
     {
         return FileLock.getOsSpecificFileLock( fileName, channel );
     }
     
-    private int recordSizeFor( String fileName )
+    private int recordSizeFor( File fileName )
     {
-        if ( fileName.endsWith( "nodestore.db" ) )
+        if ( fileName.getName().endsWith( "nodestore.db" ) )
         {
             return NodeStore.RECORD_SIZE;
         }
-        else if ( fileName.endsWith( "relationshipstore.db" ) )
+        else if ( fileName.getName().endsWith( "relationshipstore.db" ) )
         {
             return RelationshipStore.RECORD_SIZE;
         }
-        else if ( fileName.endsWith( "propertystore.db.strings" ) ||
-                fileName.endsWith( "propertystore.db.arrays" ) )
+        else if ( fileName.getName().endsWith( "propertystore.db.strings" ) ||
+                fileName.getName().endsWith( "propertystore.db.arrays" ) )
         {
             return AbstractDynamicStore.getRecordSize( PropertyStore.DEFAULT_DATA_BLOCK_SIZE );
         }
-        else if ( fileName.endsWith( "propertystore.db" ) )
+        else if ( fileName.getName().endsWith( "propertystore.db" ) )
         {
             return PropertyStore.RECORD_SIZE;
         }
-        throw new IllegalArgumentException( fileName );
+        throw new IllegalArgumentException( fileName.getPath() );
     }
     
     public class JumpingFileChannel extends FileChannel

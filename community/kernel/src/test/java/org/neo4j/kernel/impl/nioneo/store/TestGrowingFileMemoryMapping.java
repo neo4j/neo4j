@@ -21,18 +21,18 @@ package org.neo4j.kernel.impl.nioneo.store;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeTrue;
-import static org.neo4j.graphdb.factory.GraphDatabaseSetting.osIsWindows;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.nodestore_mapped_memory_size;
+import static org.neo4j.helpers.Settings.osIsWindows;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 import java.io.File;
 
 import org.junit.Test;
+import org.neo4j.helpers.Settings;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.DefaultTxHook;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.configuration.ConfigurationDefaults;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.TargetDirectory;
 
@@ -44,24 +44,22 @@ public class TestGrowingFileMemoryMapping
     public void shouldGrowAFileWhileContinuingToMemoryMapNewRegions() throws Exception
     {
         // don't run on windows because memory mapping doesn't work properly there
-        assumeTrue(!osIsWindows());
+        assumeTrue( !osIsWindows() );
 
         // given
         int NUMBER_OF_RECORDS = 1000000;
 
         File storeDir = TargetDirectory.forTest( getClass() ).graphDbDir( true );
-        Config config = new Config( new ConfigurationDefaults( NodeStore.Configuration.class ).apply( stringMap(
+        Config config = new Config( stringMap(
                 nodestore_mapped_memory_size.name(), mmapSize( NUMBER_OF_RECORDS, NodeStore.RECORD_SIZE ),
                 NodeStore.Configuration.use_memory_mapped_buffers.name(), "true",
-                NodeStore.Configuration.store_dir.name(), storeDir.getPath(),
-                NodeStore.Configuration.neo_store.name(), new File( storeDir, NeoStore.DEFAULT_NAME ).getPath()
-        ) ) );
+                NodeStore.Configuration.store_dir.name(), storeDir.getPath() ), NodeStore.Configuration.class );
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory();
         StoreFactory storeFactory = new StoreFactory( config, idGeneratorFactory,
                 new DefaultWindowPoolFactory(), new DefaultFileSystemAbstraction(), StringLogger.SYSTEM,
                 new DefaultTxHook() );
 
-        String fileName = new File( storeDir, NeoStore.DEFAULT_NAME + ".nodestore.db" ).getPath();
+        File fileName = new File( storeDir, NeoStore.DEFAULT_NAME + ".nodestore.db" );
         storeFactory.createEmptyStore( fileName, storeFactory.buildTypeDescriptorAndVersion(
                 NodeStore.TYPE_DESCRIPTOR ) );
 
@@ -87,7 +85,8 @@ public class TestGrowingFileMemoryMapping
     private String mmapSize( int numberOfRecords, int recordSize )
     {
         int bytes = numberOfRecords * recordSize;
-        if (bytes < MEGA) {
+        if ( bytes < MEGA )
+        {
             throw new IllegalArgumentException( "too few records: " + numberOfRecords );
         }
         return bytes / MEGA + "M";

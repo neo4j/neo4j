@@ -20,10 +20,12 @@
 package org.neo4j.backup;
 
 import static org.neo4j.graphdb.factory.GraphDatabaseSetting.FALSE;
+import static org.neo4j.helpers.Settings.BOOLEAN;
+import static org.neo4j.helpers.Settings.INTEGER;
+import static org.neo4j.helpers.Settings.setting;
 
-import org.neo4j.graphdb.factory.Default;
+import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.Description;
-import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 
 /**
  * Settings for online backup
@@ -31,12 +33,8 @@ import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 public class OnlineBackupSettings
 {
     @Description("Enable support for running online backups")
-    @Default( FALSE)
-    public static final GraphDatabaseSetting.BooleanSetting online_backup_enabled =
-            new GraphDatabaseSetting.BooleanSetting( "online_backup_enabled" );
+    public static final Setting<Boolean> online_backup_enabled = setting( "online_backup_enabled", BOOLEAN, FALSE );
 
-    @Description( "Listening port for online backups" )
-    @Default("6362")
-    public static final GraphDatabaseSetting.PortSetting online_backup_port =
-            new GraphDatabaseSetting.PortSetting( "online_backup_port" );
+    @Description("Listening port for online backups")
+    public static final Setting<Integer> online_backup_port = setting( "online_backup_port", INTEGER, "6362" );
 }

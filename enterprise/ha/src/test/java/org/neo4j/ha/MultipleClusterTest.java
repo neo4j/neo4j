@@ -28,6 +28,7 @@ import junit.framework.Assert;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -44,61 +45,69 @@ import org.neo4j.test.ha.ClusterManager.ManagedCluster;
 public class MultipleClusterTest
 {
     @Rule
+    public TemporaryFolder folder = new TemporaryFolder();
+
+    @Rule
     public LoggerRule logging = new LoggerRule();
 
     @Test
     public void runTwoClusters() throws Throwable
     {
-        File root = new File( "target/cluster" );
+        File root = folder.getRoot();
 
-        ClusterManager clusterManager = new ClusterManager( fromXml( getClass().getResource( "/twoclustertest.xml" ).toURI() ),
-                root, MapUtil.stringMap() );
-        clusterManager.start();
-        ManagedCluster clusterOne = clusterManager.getCluster( "neo4j.ha" );
-        ManagedCluster clusterTwo = clusterManager.getCluster( "neo4j.ha2" );
+        ClusterManager clusterManager = new ClusterManager( fromXml( getClass().getResource( "/twoclustertest.xml" ).toURI() ), root, MapUtil.stringMap() );
 
-        long cluster1;
+        try
         {
-            GraphDatabaseService master = clusterOne.getMaster();
-            logging.getLogger().info( "CREATE NODE" );
-            Transaction tx = master.beginTx();
-            Node node = master.createNode();
-            node.setProperty( "cluster", "neo4j.ha" );
-            cluster1 = node.getId();
-            logging.getLogger().info( "CREATED NODE" );
-            tx.success();
-            tx.finish();
-        }
+            clusterManager.start();
+            ManagedCluster cluster = clusterManager.getDefaultCluster();
 
-        long cluster2;
+            long cluster1NodeId;
+            {
+                GraphDatabaseService master = cluster.getMaster();
+                logging.getLogger().info( "CREATE NODE" );
+                Transaction tx = master.beginTx();
+                Node node = master.createNode();
+                node.setProperty( "cluster", "neo4j.ha" );
+                cluster1NodeId = node.getId();
+                logging.getLogger().info( "CREATED NODE" );
+                tx.success();
+                tx.finish();
+            }
+
+            ManagedCluster cluster2 = clusterManager.getCluster( "neo4j.ha2" );
+            long cluster2NodeId;
+            {
+                GraphDatabaseService master = cluster2.getMaster();
+                logging.getLogger().info( "CREATE NODE" );
+                Transaction tx = master.beginTx();
+                Node node = master.createNode();
+                node.setProperty( "cluster", "neo4j.ha2" );
+                cluster2NodeId = node.getId();
+                logging.getLogger().info( "CREATED NODE" );
+                tx.success();
+                tx.finish();
+            }
+
+            // Verify properties in all cluster nodes
+            for ( HighlyAvailableGraphDatabase highlyAvailableGraphDatabase : cluster.getAllMembers() )
+            {
+                highlyAvailableGraphDatabase.getDependencyResolver().resolveDependency( UpdatePuller.class ).pullUpdates();
+                Assert.assertEquals( "neo4j.ha", highlyAvailableGraphDatabase.getNodeById( cluster1NodeId ).getProperty(
+                        "cluster" ) );
+            }
+
+            for ( HighlyAvailableGraphDatabase highlyAvailableGraphDatabase : cluster2.getAllMembers() )
+            {
+                highlyAvailableGraphDatabase.getDependencyResolver().resolveDependency( UpdatePuller.class ).pullUpdates();
+                Assert.assertEquals( "neo4j.ha2", highlyAvailableGraphDatabase.getNodeById( cluster2NodeId ).getProperty(
+                        "cluster" ) );
+            }
+        }
+        finally
         {
-            GraphDatabaseService master = clusterTwo.getMaster();
-            logging.getLogger().info( "CREATE NODE" );
-            Transaction tx = master.beginTx();
-            Node node = master.createNode();
-            node.setProperty( "cluster", "neo4j.ha2" );
-            cluster2 = node.getId();
-            logging.getLogger().info( "CREATED NODE" );
-            tx.success();
-            tx.finish();
+            clusterManager.stop();
         }
-
-        // Verify properties in all cluster nodes
-        for ( HighlyAvailableGraphDatabase highlyAvailableGraphDatabase : clusterOne.getAllMembers() )
-        {
-            highlyAvailableGraphDatabase.getDependencyResolver().resolveDependency( UpdatePuller.class ).pullUpdates();
-            Assert.assertEquals( "neo4j.ha", highlyAvailableGraphDatabase.getNodeById( cluster1 ).getProperty(
-                    "cluster" ) );
-        }
-
-        for ( HighlyAvailableGraphDatabase highlyAvailableGraphDatabase : clusterTwo.getAllMembers() )
-        {
-            highlyAvailableGraphDatabase.getDependencyResolver().resolveDependency( UpdatePuller.class ).pullUpdates();
-            Assert.assertEquals( "neo4j.ha2", highlyAvailableGraphDatabase.getNodeById( cluster2 ).getProperty(
-                    "cluster" ) );
-        }
-
-        clusterManager.stop();
     }
 
 }

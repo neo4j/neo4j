@@ -49,9 +49,9 @@ import org.neo4j.com.TransactionStream;
 import org.neo4j.com.TxExtractor;
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
-import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.ProgressIndicator;
+import org.neo4j.helpers.Settings;
 import org.neo4j.helpers.Triplet;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
@@ -244,7 +244,7 @@ class BackupService
     }
 
     BackupOutcome doIncrementalBackup( String sourceHostNameOrIp, int sourcePort, String targetDirectory,
-                                              boolean verification )
+                                       boolean verification )
     {
         if ( !directoryContainsDb( targetDirectory ) )
         {
@@ -257,7 +257,7 @@ class BackupService
             @Override
             public void configure( Map<String, String> config )
             {
-                config.put( GraphDatabaseSettings.keep_logical_logs.name(), GraphDatabaseSetting.TRUE );
+                config.put( GraphDatabaseSettings.keep_logical_logs.name(), Settings.TRUE );
             }
         };
 

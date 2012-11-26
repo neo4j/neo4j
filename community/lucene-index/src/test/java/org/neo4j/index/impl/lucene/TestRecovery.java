@@ -40,7 +40,6 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.index.Neo4jTestCase;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.configuration.ConfigurationDefaults;
 import org.neo4j.kernel.impl.index.IndexStore;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.PlaceboTm;
@@ -53,22 +52,22 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.ProcessStreamHandler;
 
 /**
- * Don't extend Neo4jTestCase since these tests restarts the db in the tests. 
+ * Don't extend Neo4jTestCase since these tests restarts the db in the tests.
  */
 public class TestRecovery
 {
-    private String getDbPath()
+    private File getDbPath()
     {
-        return "target/var/recovery";
+        return new File("target/var/recovery");
     }
-    
+
     private GraphDatabaseService newGraphDbService()
     {
-        String path = getDbPath();
-        Neo4jTestCase.deleteFileOrDirectory( new File( path ) );
-        return new GraphDatabaseFactory().newEmbeddedDatabase( path );
+        File path = getDbPath();
+        Neo4jTestCase.deleteFileOrDirectory( path );
+        return new GraphDatabaseFactory().newEmbeddedDatabase( path.getPath() );
     }
-    
+
     @Test
     public void testRecovery() throws Exception
     {
@@ -76,22 +75,22 @@ public class TestRecovery
         Index<Node> nodeIndex = graphDb.index().forNodes( "node-index" );
         Index<Relationship> relIndex = graphDb.index().forRelationships( "rel-index" );
         RelationshipType relType = DynamicRelationshipType.withName( "recovery" );
-        
+
         graphDb.beginTx();
         Node node = graphDb.createNode();
         Node otherNode = graphDb.createNode();
         Relationship rel = node.createRelationshipTo( otherNode, relType );
-        nodeIndex.add( node, "key1", "string value" ); 
-        nodeIndex.add( node, "key2", 12345 ); 
-        relIndex.add( rel, "key1", "string value" ); 
-        relIndex.add( rel, "key2", 12345 ); 
+        nodeIndex.add( node, "key1", "string value" );
+        nodeIndex.add( node, "key2", 12345 );
+        relIndex.add( rel, "key1", "string value" );
+        relIndex.add( rel, "key2", 12345 );
         graphDb.shutdown();
-        
+
         // Start up and let it recover
-        final GraphDatabaseService newGraphDb = new GraphDatabaseFactory().newEmbeddedDatabase( getDbPath() );
+        final GraphDatabaseService newGraphDb = new GraphDatabaseFactory().newEmbeddedDatabase( getDbPath().getPath() );
         newGraphDb.shutdown();
     }
-    
+
     @Test
     public void testAsLittleAsPossibleRecoveryScenario() throws Exception
     {
@@ -101,11 +100,11 @@ public class TestRecovery
         Node node = db.createNode();
         index.add( node, "key", "value" );
         db.shutdown();
-        
+
         // This doesn't seem to trigger recovery... it really should
-        new GraphDatabaseFactory().newEmbeddedDatabase( getDbPath() ).shutdown();
+        new GraphDatabaseFactory().newEmbeddedDatabase( getDbPath().getPath() ).shutdown();
     }
-    
+
     @Test
     public void testIndexDeleteIssue() throws Exception
     {
@@ -114,38 +113,41 @@ public class TestRecovery
         db.shutdown();
 
         Process process = Runtime.getRuntime().exec( new String[]{
-            "java", "-cp", System.getProperty( "java.class.path" ),
-            AddDeleteQuit.class.getName(), getDbPath()
+                "java", "-cp", System.getProperty( "java.class.path" ),
+                AddDeleteQuit.class.getName(), getDbPath().getPath()
         } );
         assertEquals( 0, new ProcessStreamHandler( process, true ).waitForResult() );
-        
-        new GraphDatabaseFactory().newEmbeddedDatabase( getDbPath() ).shutdown();
+
+        new GraphDatabaseFactory().newEmbeddedDatabase( getDbPath().getPath() ).shutdown();
         db.shutdown();
     }
 
     @Test
     public void recoveryForRelationshipCommandsOnly() throws Exception
     {
-        String path = getDbPath();
-        Neo4jTestCase.deleteFileOrDirectory( new File( path ) );
+        File path = getDbPath();
+        Neo4jTestCase.deleteFileOrDirectory( path );
         Process process = Runtime.getRuntime().exec( new String[]{
-            "java", "-Xdebug", "-Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=5005", "-cp", System.getProperty( "java.class.path" ),
-            AddRelToIndex.class.getName(), getDbPath()
+                "java", "-Xdebug", "-Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=5005", "-cp",
+                System.getProperty( "java.class.path" ),
+                AddRelToIndex.class.getName(), getDbPath().getPath()
         } );
         assertEquals( 0, new ProcessStreamHandler( process, true ).waitForResult() );
-        
+
         // I would like to do this, but there's no exception propagated out from the constructor
         // if the recovery fails.
         // new EmbeddedGraphDatabase( getDbPath() ).shutdown();
-        
+
         // Instead I have to do this
         FileSystemAbstraction fileSystemAbstraction = new DefaultFileSystemAbstraction();
         FileSystemAbstraction fileSystem = fileSystemAbstraction;
         Map<String, String> params = MapUtil.stringMap(
-                "store_dir", getDbPath());
-        Config config = new Config( new ConfigurationDefaults(GraphDatabaseSettings.class ).apply(params ));
+                "store_dir", getDbPath().getPath() );
+        Config config = new Config( params, GraphDatabaseSettings.class );
         LuceneDataSource ds = new LuceneDataSource( config, new IndexStore( getDbPath(), fileSystem ), fileSystem,
-                                                   new XaFactory( config, TxIdGenerator.DEFAULT, new PlaceboTm(), new DefaultLogBufferFactory(), fileSystemAbstraction, StringLogger.DEV_NULL, RecoveryVerifier.ALWAYS_VALID, LogPruneStrategies.NO_PRUNING ));
+                new XaFactory( config, TxIdGenerator.DEFAULT, new PlaceboTm(), new DefaultLogBufferFactory(),
+                        fileSystemAbstraction, StringLogger.DEV_NULL, RecoveryVerifier.ALWAYS_VALID,
+                        LogPruneStrategies.NO_PRUNING ) );
         ds.start();
         ds.stop();
     }
@@ -158,12 +160,12 @@ public class TestRecovery
         db.shutdown();
 
         Process process = Runtime.getRuntime().exec( new String[]{
-            "java", "-cp", System.getProperty( "java.class.path" ),
-            AddThenDeleteInAnotherTxAndQuit.class.getName(), getDbPath()
+                "java", "-cp", System.getProperty( "java.class.path" ),
+                AddThenDeleteInAnotherTxAndQuit.class.getName(), getDbPath().getPath()
         } );
         assertEquals( 0, new ProcessStreamHandler( process, true ).waitForResult() );
-        
-        db = new GraphDatabaseFactory().newEmbeddedDatabase( getDbPath() );
+
+        db = new GraphDatabaseFactory().newEmbeddedDatabase( getDbPath().getPath() );
         assertFalse( db.index().existsForNodes( "index" ) );
         assertNotNull( db.index().forNodes( "index2" ).get( "key", "value" ).getSingle() );
         db.shutdown();

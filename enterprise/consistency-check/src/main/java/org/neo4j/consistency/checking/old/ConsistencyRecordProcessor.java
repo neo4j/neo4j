@@ -63,6 +63,7 @@ import static org.neo4j.consistency.checking.old.InconsistencyType.ReferenceInco
 import static org.neo4j.consistency.checking.old.InconsistencyType.ReferenceInconsistency.UNUSED_KEY_NAME;
 import static org.neo4j.consistency.checking.old.InconsistencyType.ReferenceInconsistency.UNUSED_TYPE_NAME;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -649,8 +650,8 @@ public class ConsistencyRecordProcessor extends RecordStore.Processor implements
         private StoreProcessor( RecordStore<R> store, ProgressMonitorFactory.MultiPartBuilder builder )
         {
             this.store = store;
-            String name = store.getStorageFileName();
-            this.progressListener = builder.progressForPart( name.substring( name.lastIndexOf( '/' ) + 1 ), store.getHighId() );
+            File name = store.getStorageFileName();
+            this.progressListener = builder.progressForPart( name.getName(), store.getHighId() );
         }
 
         @Override

@@ -19,7 +19,12 @@
  */
 package org.neo4j.cluster.client;
 
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.net.URI;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -36,19 +41,27 @@ import org.neo4j.cluster.com.NetworkInstance;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcast;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastListener;
 import org.neo4j.cluster.protocol.atomicbroadcast.Payload;
+import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.AtomicBroadcastMessage;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InMemoryAcceptorInstanceStore;
+import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.LearnerMessage;
+import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.ProposerMessage;
 import org.neo4j.cluster.protocol.cluster.Cluster;
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.protocol.cluster.ClusterListener;
+import org.neo4j.cluster.protocol.cluster.ClusterMessage;
 import org.neo4j.cluster.protocol.election.ElectionCredentialsProvider;
+import org.neo4j.cluster.protocol.election.ElectionMessage;
 import org.neo4j.cluster.protocol.heartbeat.Heartbeat;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatListener;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatMessage;
+import org.neo4j.cluster.protocol.snapshot.Snapshot;
+import org.neo4j.cluster.protocol.snapshot.SnapshotProvider;
 import org.neo4j.cluster.statemachine.StateMachine;
 import org.neo4j.cluster.statemachine.StateTransitionLogger;
 import org.neo4j.cluster.timeout.FixedTimeoutStrategy;
 import org.neo4j.cluster.timeout.MessageTimeoutStrategy;
 import org.neo4j.cluster.timeout.Timeouts;
+import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.DaemonThreadFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -57,75 +70,62 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.Logging;
 
-public class ClusterClient extends LifecycleAdapter implements ClusterMonitor, Cluster, AtomicBroadcast
+public class ClusterClient extends LifecycleAdapter implements ClusterMonitor, Cluster, AtomicBroadcast, Snapshot
 {
-    private final LifeSupport life = new LifeSupport();
-    private final Cluster cluster;
-    private final AtomicBroadcast broadcast;
-    private final Heartbeat heartbeat;
-    private final ProtocolServer server;
-
     public interface Configuration
     {
-        long getHeartbeatTimeout();
+        HostnamePort getAddress();
 
-        long getHeartbeatInterval();
+        boolean clusterDiscoveryEnabled();
 
-        ElectionCredentialsProvider getElectionCredentialsProvider();
-
-        int[] getPorts();
-
-        String getAddress();
-
-        boolean isDiscoveryEnabled();
-
-        String[] getInitialHosts();
+        List<HostnamePort> getInitialHosts();
 
         String getDiscoveryUrl();
 
         String getClusterName();
+
+        boolean isAllowedToCreateCluster();
+
+        // Cluster timeout settings
+        long defaultTimeout(); // default is 5s
+
+        long heartbeatInterval(); // inherits defaultTimeout
+
+        long heartbeatTimeout(); // heartbeatInterval * 2 by default
+
+        long broadcastTimeout(); // default is 30s
+
+        long learnTimeout(); // inherits defaultTimeout
+
+        long paxosTimeout(); // inherits defaultTimeout
+
+        long phase1Timeout(); // inherits paxosTimeout
+
+        long phase2Timeout(); // inherits paxosTimeout
+
+        long joinTimeout(); // inherits defaultTimeout
+
+        long configurationTimeout(); // inherits defaultTimeout
+
+        long leaveTimeout(); // inherits paxosTimeout
+
+        long electionTimeout(); // inherits paxosTimeout
     }
 
-    public static Configuration adapt( final Config config,
-            final ElectionCredentialsProvider electionCredentialsProvider )
+    public static Configuration adapt( final Config config )
     {
         return new Configuration()
         {
             @Override
-            public boolean isDiscoveryEnabled()
+            public boolean clusterDiscoveryEnabled()
             {
                 return config.get( ClusterSettings.cluster_discovery_enabled );
             }
 
             @Override
-            public int[] getPorts()
+            public List<HostnamePort> getInitialHosts()
             {
-                return ClusterSettings.cluster_server.getPorts( config.getParams() );
-            }
-
-            @Override
-            public String[] getInitialHosts()
-            {
-                String hosts = config.get( ClusterSettings.initial_hosts );
-                return hosts != null ? hosts.split( "," ) : new String[0];
-            }
-
-            @Override
-            public long getHeartbeatTimeout()
-            {
-                return 5000;
-            }
-
-            @Override
-            public long getHeartbeatInterval()
-            {
-                return 10000;
-            }
-
-            @Override
-            public ElectionCredentialsProvider getElectionCredentialsProvider()
-            {
-                return electionCredentialsProvider;
+                return config.get( ClusterSettings.initial_hosts );
             }
 
             @Override
@@ -141,36 +141,125 @@ public class ClusterClient extends LifecycleAdapter implements ClusterMonitor, C
             }
 
             @Override
-            public String getAddress()
+            public HostnamePort getAddress()
             {
-                return ClusterSettings.cluster_server.getAddress( config.getParams() );
+                return config.get( ClusterSettings.cluster_server );
+            }
+
+            @Override
+            public boolean isAllowedToCreateCluster()
+            {
+                return config.get( ClusterSettings.allow_init_cluster );
+            }
+
+            // Timeouts
+            @Override
+            public long defaultTimeout()
+            {
+                return config.get( ClusterSettings.default_timeout );
+            }
+
+            @Override
+            public long heartbeatTimeout()
+            {
+                return config.get( ClusterSettings.heartbeat_timeout );
+            }
+
+            @Override
+            public long heartbeatInterval()
+            {
+                return config.get( ClusterSettings.heartbeat_interval );
+            }
+
+            @Override
+            public long joinTimeout()
+            {
+                return config.get( ClusterSettings.join_timeout );
+            }
+
+            @Override
+            public long configurationTimeout()
+            {
+                return config.get( ClusterSettings.configuration_timeout );
+            }
+
+            @Override
+            public long leaveTimeout()
+            {
+                return config.get( ClusterSettings.leave_timeout );
+            }
+
+            @Override
+            public long electionTimeout()
+            {
+                return config.get( ClusterSettings.election_timeout );
+            }
+
+            @Override
+            public long broadcastTimeout()
+            {
+                return config.get( ClusterSettings.broadcast_timeout );
+            }
+
+            @Override
+            public long paxosTimeout()
+            {
+                return config.get( ClusterSettings.paxos_timeout );
+            }
+
+            @Override
+            public long phase1Timeout()
+            {
+                return config.get( ClusterSettings.phase1_timeout );
+            }
+
+            @Override
+            public long phase2Timeout()
+            {
+                return config.get( ClusterSettings.phase2_timeout );
+            }
+
+            @Override
+            public long learnTimeout()
+            {
+                return config.get( ClusterSettings.learn_timeout );
             }
         };
     }
 
-    public ClusterClient( final Configuration config, final Logging logging )
-    {
-        MessageTimeoutStrategy timeoutStrategy = new MessageTimeoutStrategy( new FixedTimeoutStrategy(
-                config.getHeartbeatTimeout() ) )
-                .timeout( HeartbeatMessage.sendHeartbeat, config.getHeartbeatInterval() ).relativeTimeout(
-                        HeartbeatMessage.timed_out, HeartbeatMessage.sendHeartbeat, config.getHeartbeatInterval() );
+    private final LifeSupport life = new LifeSupport();
+    private final Cluster cluster;
+    private final AtomicBroadcast broadcast;
+    private final Heartbeat heartbeat;
+    private final Snapshot snapshot;
 
-        MultiPaxosServerFactory protocolServerFactory = new MultiPaxosServerFactory( new ClusterConfiguration(
-                "neo4j.ha" ), logging );
+    private final ProtocolServer server;
+
+    public ClusterClient( final Configuration config, final Logging logging,
+                          ElectionCredentialsProvider electionCredentialsProvider )
+    {
+        MessageTimeoutStrategy timeoutStrategy = new MessageTimeoutStrategy(
+                new FixedTimeoutStrategy( config.defaultTimeout() ) )
+                .timeout( HeartbeatMessage.sendHeartbeat, config.heartbeatInterval() )
+                .timeout( HeartbeatMessage.timed_out, config.heartbeatTimeout() )
+                .timeout( AtomicBroadcastMessage.broadcastTimeout, config.broadcastTimeout() )
+                .timeout( LearnerMessage.learnTimedout, config.learnTimeout() )
+                .timeout( ProposerMessage.phase1Timeout, config.phase1Timeout() )
+                .timeout( ProposerMessage.phase2Timeout, config.phase2Timeout() )
+                .timeout( ClusterMessage.joiningTimeout, config.joinTimeout() )
+                .timeout( ClusterMessage.configurationTimeout, config.configurationTimeout() )
+                .timeout( ClusterMessage.leaveTimedout, config.leaveTimeout() )
+                .timeout( ElectionMessage.electionTimeout, config.electionTimeout() );
+
+        MultiPaxosServerFactory protocolServerFactory = new MultiPaxosServerFactory( new ClusterConfiguration( config
+                .getClusterName() ), logging );
 
         InMemoryAcceptorInstanceStore acceptorInstanceStore = new InMemoryAcceptorInstanceStore();
-        ElectionCredentialsProvider electionCredentialsProvider = config.getElectionCredentialsProvider();
 
         NetworkInstance networkNodeTCP = new NetworkInstance( new NetworkInstance.Configuration()
         {
             @Override
-            public int[] getPorts()
-            {
-                return config.getPorts();
-            }
-
-            @Override
-            public String getAddress()
+            public HostnamePort clusterServer()
             {
                 return config.getAddress();
             }
@@ -246,11 +335,11 @@ public class ClusterClient extends LifecycleAdapter implements ClusterMonitor, C
             @Override
             public boolean isDiscoveryEnabled()
             {
-                return config.isDiscoveryEnabled();
+                return config.clusterDiscoveryEnabled();
             }
 
             @Override
-            public String[] getInitialHosts()
+            public List<HostnamePort> getInitialHosts()
             {
                 return config.getInitialHosts();
             }
@@ -266,11 +355,18 @@ public class ClusterClient extends LifecycleAdapter implements ClusterMonitor, C
             {
                 return config.getClusterName();
             }
+
+            @Override
+            public boolean isAllowedToCreateCluster()
+            {
+                return config.isAllowedToCreateCluster();
+            }
         }, server, logging ) );
-        
+
         cluster = server.newClient( Cluster.class );
         broadcast = server.newClient( AtomicBroadcast.class );
         heartbeat = server.newClient( Heartbeat.class );
+        snapshot = server.newClient( Snapshot.class );
     }
 
     @Override
@@ -346,6 +442,17 @@ public class ClusterClient extends LifecycleAdapter implements ClusterMonitor, C
     }
 
     @Override
+    public void setSnapshotProvider( SnapshotProvider snapshotProvider )
+    {
+        snapshot.setSnapshotProvider( snapshotProvider );
+    }
+
+    @Override
+    public void refreshSnapshot()
+    {
+        snapshot.refreshSnapshot();
+    }
+
     public void addBindingListener( BindingListener bindingListener )
     {
         server.addBindingListener( bindingListener );
@@ -374,7 +481,7 @@ public class ClusterClient extends LifecycleAdapter implements ClusterMonitor, C
                     .append( objectTimeoutEntry.getValue().getTimeoutMessage().toString() );
         }
     }
-    
+
     public URI getServerUri()
     {
         return server.getServerId();

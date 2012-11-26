@@ -142,6 +142,7 @@ public abstract class SubProcess<T, P> implements Serializable
                         SubProcess.class.getName(), serialize( callback ) );
             }
             pid = getPid( process );
+//            new ProcessStreamHandler( process, false, "[" + toString() + ":" + pid + "] " ).launch();
             pipe( "[" + toString() + ":" + pid + "] ", process.getErrorStream(), errorStreamTarget() );
             pipe( "[" + toString() + ":" + pid + "] ", process.getInputStream(), inputStreamTarget() );
             if ( debugger != null )

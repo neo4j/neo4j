@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
@@ -64,7 +65,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
     private Config conf;
     private int blockSize;
 
-    public AbstractDynamicStore( String fileName, Config conf, IdType idType,
+    public AbstractDynamicStore( File fileName, Config conf, IdType idType,
                                  IdGeneratorFactory idGeneratorFactory, WindowPoolFactory windowPoolFactory,
                                  FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger )
     {
@@ -478,12 +479,12 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
         }
         stringLogger.debug( "Rebuilding id generator for[" + getStorageFileName() + "] ..." );
         closeIdGenerator();
-        if ( fileSystemAbstraction.fileExists( getStorageFileName() + ".id" ) )
+        if ( fileSystemAbstraction.fileExists( new File( getStorageFileName().getPath() + ".id" )) )
         {
-            boolean success = fileSystemAbstraction.deleteFile( getStorageFileName() + ".id" );
+            boolean success = fileSystemAbstraction.deleteFile( new File( getStorageFileName().getPath() + ".id" ));
             assert success;
         }
-        createIdGenerator( getStorageFileName() + ".id" );
+        createIdGenerator( new File( getStorageFileName().getPath() + ".id" ));
         openIdGenerator( false );
         setHighId( 1 ); // reserved first block containing blockSize
         FileChannel fileChannel = getFileChannel();

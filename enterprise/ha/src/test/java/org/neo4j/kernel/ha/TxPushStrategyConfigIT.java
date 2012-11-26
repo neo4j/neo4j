@@ -57,7 +57,7 @@ public class TxPushStrategyConfigIT
     {
         life.shutdown();
     }
-    
+
     private void startCluster( int memberCount, final int pushFactor, final String pushStrategy )
     {
         ClusterManager clusterManager = life.add( new ClusterManager( clusterOfSize( memberCount ), dir.directory( name.getMethodName(), true ), stringMap() )
@@ -153,7 +153,7 @@ public class TxPushStrategyConfigIT
         cluster.shutdown( cluster.getAnySlave() );
         cluster.await( masterSeesSlavesAsAvailable( 1 ) );
     }
-    
+
     @Test
     public void slaveListIsCorrectAfterMasterSwitch() throws Exception
     {
@@ -179,7 +179,8 @@ public class TxPushStrategyConfigIT
 
     private void assertLastTxId( long tx, int serverId )
     {
-        GraphDatabaseAPI db = cluster.getMemberByServerId( serverId );  // serverId == 1 ? master : getSlave( serverId );
+        GraphDatabaseAPI db = cluster.getMemberByServerId( serverId );  // serverId == 1 ? master : getSlave(
+        // serverId );
         assertEquals( tx, db.getXaDataSourceManager().getNeoStoreDataSource().getLastCommittedTxId() );
     }
 

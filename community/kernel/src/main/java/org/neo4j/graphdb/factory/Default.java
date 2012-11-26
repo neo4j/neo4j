@@ -27,12 +27,12 @@ import java.lang.annotation.Target;
 
 /**
  * Specify a default value, as a string, for a GraphDatabaseSetting.
- *
- * This is deprecated, it will be moved out of the public API in 1.11.
+ * <p/>
+ * This is deprecated. Use the Settings class to create settings.
  */
 @Deprecated
-@Retention( RetentionPolicy.RUNTIME )
-@Target( ElementType.FIELD )
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.FIELD)
 public @interface Default
 {
     String value();

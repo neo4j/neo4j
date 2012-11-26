@@ -62,9 +62,8 @@ public class NeoStore extends AbstractStore
 
     public static boolean isStorePresent( FileSystemAbstraction fs, Config config )
     {
-        String store = config.get( Configuration.neo_store );
-        File neoStore = new File( store );
-        return fs.fileExists( neoStore.getAbsolutePath() );
+        File neoStore = config.get( Configuration.neo_store );
+        return fs.fileExists( neoStore );
     }
 
     private NodeStore nodeStore;
@@ -76,10 +75,10 @@ public class NeoStore extends AbstractStore
     private long lastCommittedTx = -1;
 
     private final int REL_GRAB_SIZE;
-    private final String fileName;
+    private final File fileName;
     private final Config conf;
 
-    public NeoStore(String fileName, Config conf,
+    public NeoStore(File fileName, Config conf,
                     IdGeneratorFactory idGeneratorFactory, WindowPoolFactory windowPoolFactory,
                     FileSystemAbstraction fileSystemAbstraction,
                     StringLogger stringLogger, TxHook txHook,
@@ -316,17 +315,17 @@ public class NeoStore extends AbstractStore
         }
     }
 
-    public static long getStoreVersion( FileSystemAbstraction fs, String storeDir )
+    public static long getStoreVersion( FileSystemAbstraction fs, File storeDir )
     {
         return getRecord( fs, storeDir, 4 );
     }
 
-    public static long getTxId( FileSystemAbstraction fs, String storeDir )
+    public static long getTxId( FileSystemAbstraction fs, File storeDir )
     {
         return getRecord( fs, storeDir, 3 );
     }
 
-    private static long getRecord( FileSystemAbstraction fs, String storeDir, long recordPosition )
+    private static long getRecord( FileSystemAbstraction fs, File storeDir, long recordPosition )
     {
         FileChannel channel = null;
         try

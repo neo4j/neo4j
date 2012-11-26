@@ -53,7 +53,6 @@ import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.configuration.ConfigurationDefaults;
 import org.neo4j.kernel.impl.core.GraphProperties;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.ImpermanentGraphDatabase;
@@ -224,10 +223,10 @@ public class TestGraphProperties
         db.shutdown();
 
         FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
-        NeoStore neoStore = new StoreFactory( new Config(
-                new ConfigurationDefaults(GraphDatabaseSettings.class ).apply(Collections.<String,String>emptyMap())),
+        NeoStore neoStore = new StoreFactory( new Config( Collections.<String, String>emptyMap(),
+                GraphDatabaseSettings.class ),
                 new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(), fileSystem, StringLogger.DEV_NULL,
-                null ).newNeoStore(new File( storeDir, NeoStore.DEFAULT_NAME ).getAbsolutePath());
+                null ).newNeoStore( new File( storeDir, NeoStore.DEFAULT_NAME ) );
         long prop = neoStore.getGraphNextProp();
         assertTrue( prop != 0 );
         neoStore.close();

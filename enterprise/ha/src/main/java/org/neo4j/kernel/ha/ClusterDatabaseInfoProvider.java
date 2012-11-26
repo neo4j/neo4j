@@ -21,41 +21,31 @@ package org.neo4j.kernel.ha;
 
 import java.net.URI;
 
+import org.neo4j.cluster.Binding;
 import org.neo4j.cluster.BindingListener;
-import org.neo4j.cluster.client.ClusterClient;
-import org.neo4j.kernel.ha.cluster.member.HighAvailabilityMembers;
+import org.neo4j.helpers.Functions;
+import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.kernel.ha.cluster.member.ClusterMember;
+import org.neo4j.kernel.ha.cluster.member.ClusterMembers;
 import org.neo4j.management.ClusterDatabaseInfo;
 import org.neo4j.management.ClusterMemberInfo;
 
 public class ClusterDatabaseInfoProvider
 {
-    private URI me;
-    private final HighAvailabilityMembers members;
+    private final ClusterMembers members;
 
-    public ClusterDatabaseInfoProvider( ClusterClient clusterClient, HighAvailabilityMembers members )
+    public ClusterDatabaseInfoProvider( ClusterMembers members )
     {
         this.members = members;
-        clusterClient.addBindingListener( new BindingListener()
-        {
-            @Override
-            public void listeningAt( URI uri )
-            {
-                me = uri;
-            }
-        } );
     }
 
     public ClusterDatabaseInfo getInfo()
     {
-        for ( ClusterMemberInfo member : members.getMembers() )
-        {
-            if ( member.getInstanceId().equals( me.toString() ) )
-            {
-                return new ClusterDatabaseInfo( member, 0, 0 );
-            }
-        }
-        
-        // TODO return something instead of throwing exception, right?
-        throw new IllegalStateException( "Couldn't find any information about myself, can't be right" );
+        ClusterMember self = members.getSelf();
+        if (self == null)
+            return null;
+
+        return new ClusterDatabaseInfo( new ClusterMemberInfo( self.getClusterUri().toString(), self.getHAUri() != null, true, self.getHARole(),
+                Iterables.toArray(String.class, Iterables.map( Functions.TO_STRING, self.getRoleURIs() ))), 0, 0 );
     }
 }

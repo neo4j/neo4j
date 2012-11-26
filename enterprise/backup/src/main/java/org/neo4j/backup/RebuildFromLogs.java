@@ -19,6 +19,11 @@
  */
 package org.neo4j.backup;
 
+import static org.neo4j.helpers.ProgressIndicator.SimpleProgress.textual;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME;
+import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.getHighestHistoryLogVersion;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -39,7 +44,6 @@ import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConfigParam;
-import org.neo4j.kernel.configuration.ConfigurationDefaults;
 import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
 import org.neo4j.kernel.impl.nioneo.xa.Command;
 import org.neo4j.kernel.impl.transaction.xaframework.InMemoryLogBuffer;
@@ -50,11 +54,6 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommandFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.util.StringLogger;
-
-import static org.neo4j.helpers.ProgressIndicator.SimpleProgress.textual;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME;
-import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.getHighestHistoryLogVersion;
 
 class RebuildFromLogs
 {
@@ -76,18 +75,27 @@ class RebuildFromLogs
         LogExtractor extractor = null;
         try
         {
-            extractor = LogExtractor.from( sourceDir.getAbsolutePath() );
-            for ( InMemoryLogBuffer buffer = new InMemoryLogBuffer();; buffer.reset() )
+            extractor = LogExtractor.from( sourceDir );
+            for ( InMemoryLogBuffer buffer = new InMemoryLogBuffer(); ; buffer.reset() )
             {
                 long txId = extractor.extractNext( buffer );
-                if ( txId == -1 ) break;
+                if ( txId == -1 )
+                {
+                    break;
+                }
                 applyTransaction( txId, buffer );
-                if ( progress != null ) progress.update( false, txId );
+                if ( progress != null )
+                {
+                    progress.update( false, txId );
+                }
             }
         }
         finally
         {
-            if ( extractor != null ) extractor.close();
+            if ( extractor != null )
+            {
+                extractor.close();
+            }
         }
         return this;
     }
@@ -100,7 +108,10 @@ class RebuildFromLogs
     private static XaDataSource getDataSource( InternalAbstractGraphDatabase graphdb, String name )
     {
         XaDataSource datasource = graphdb.getXaDataSourceManager().getXaDataSource( name );
-        if ( datasource == null ) throw new NullPointerException( "Could not access " + name );
+        if ( datasource == null )
+        {
+            throw new NullPointerException( "Could not access " + name );
+        }
         return datasource;
     }
 
@@ -112,13 +123,13 @@ class RebuildFromLogs
             return;
         }
         Args params = new Args( args );
-        @SuppressWarnings( "boxing" )
+        @SuppressWarnings("boxing")
         boolean full = params.getBoolean( "full", false, true );
         args = params.orphans().toArray( new String[0] );
         if ( args.length != 2 )
         {
             printUsage( "Exactly two positional arguments expected: "
-                        + "<source dir with logs> <target dir for graphdb>, got " + args.length );
+                    + "<source dir with logs> <target dir for graphdb>, got " + args.length );
             System.exit( -1 );
             return;
         }
@@ -161,9 +172,9 @@ class RebuildFromLogs
         long txCount = findLastTransactionId( source, LOGICAL_LOG_DEFAULT_NAME + ".v" + maxFileId );
         String txdifflog = params.get( "txdifflog", null, new File( target, "txdiff.log" ).getAbsolutePath() );
         InternalAbstractGraphDatabase graphdb = BackupService.startTemporaryDb( target.getAbsolutePath(),
-                                                                       new TxDiffLogConfig( full
-                                                                               ? VerificationLevel.FULL_WITH_LOGGING
-                                                                               : VerificationLevel.LOGGING, txdifflog ) );
+                new TxDiffLogConfig( full
+                        ? VerificationLevel.FULL_WITH_LOGGING
+                        : VerificationLevel.LOGGING, txdifflog ) );
 
         ProgressIndicator progress;
         if ( txCount < 0 )
@@ -181,9 +192,15 @@ class RebuildFromLogs
             try
             {
                 RebuildFromLogs rebuilder = new RebuildFromLogs( graphdb ).applyTransactionsFrom( progress, source );
-                if ( progress != null ) progress.done( txCount );
+                if ( progress != null )
+                {
+                    progress.done( txCount );
+                }
                 // if we didn't run the full checker for each transaction, run it afterwards
-                if ( !full ) rebuilder.checkConsistency();
+                if ( !full )
+                {
+                    rebuilder.checkConsistency();
+                }
             }
             finally
             {
@@ -210,17 +227,20 @@ class RebuildFromLogs
                 ByteBuffer buffer = ByteBuffer.allocateDirect( 9 + Xid.MAXGTRIDSIZE + Xid.MAXBQUALSIZE * 10 );
                 txId = LogIoUtils.readLogHeader( buffer, channel, true )[1];
                 XaCommandFactory cf = new CommandFactory();
-                for ( LogEntry entry; ( entry = LogIoUtils.readEntry( buffer, channel, cf ) ) != null; )
+                for ( LogEntry entry; (entry = LogIoUtils.readEntry( buffer, channel, cf )) != null; )
                 {
                     if ( entry instanceof LogEntry.Commit )
                     {
-                        txId = ( (LogEntry.Commit) entry ).getTxId();
+                        txId = ((LogEntry.Commit) entry).getTxId();
                     }
                 }
             }
             finally
             {
-                if ( channel != null ) channel.close();
+                if ( channel != null )
+                {
+                    channel.close();
+                }
             }
         }
         catch ( IOException e )
@@ -232,16 +252,20 @@ class RebuildFromLogs
 
     private void checkConsistency() throws ConsistencyCheckIncompleteException
     {
-        Config tuningConfiguration = new Config( new ConfigurationDefaults(
-                GraphDatabaseSettings.class, ConsistencyCheckSettings.class ).apply( stringMap() ) );
+        Config tuningConfiguration = new Config( stringMap(),
+                GraphDatabaseSettings.class, ConsistencyCheckSettings.class );
         new FullCheck( tuningConfiguration, ProgressMonitorFactory.textual( System.err ) )
                 .execute( stores, StringLogger.SYSTEM );
     }
 
     private static void printUsage( String... msgLines )
     {
-        for ( String line : msgLines ) System.err.println( line );
-        System.err.println( Args.jarUsage( RebuildFromLogs.class, "[-full] <source dir with logs> <target dir for graphdb>" ) );
+        for ( String line : msgLines )
+        {
+            System.err.println( line );
+        }
+        System.err.println( Args.jarUsage( RebuildFromLogs.class, "[-full] <source dir with logs> <target dir for " +
+                "graphdb>" ) );
         System.err.println( "WHERE:   <source dir>  is the path for where transactions to rebuild from are stored" );
         System.err.println( "         <target dir>  is the path for where to create the new graph database" );
         System.err.println( "         -full     --  to run a full check over the entire store for each transaction" );

@@ -20,7 +20,7 @@
 
 package org.neo4j.kernel.configuration;
 
-import static org.neo4j.helpers.Specifications.or;
+import static org.neo4j.helpers.Predicates.or;
 import static org.neo4j.helpers.collection.Iterables.map;
 
 import java.lang.reflect.Field;
@@ -28,55 +28,55 @@ import java.util.Arrays;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.helpers.Function;
-import org.neo4j.helpers.Specification;
-import org.neo4j.helpers.Specifications;
+import org.neo4j.helpers.Predicate;
+import org.neo4j.helpers.Predicates;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
 /**
-* When a specified change happens, restart the given LifeSupport instance.
- * 
+ * When a specified change happens, restart the given LifeSupport instance.
+ * <p/>
  * Typically, provide a specification for the settings that a service uses, and then set it to restart
  * an internal LifeSupport instance when any of those settings change.
-*/
+ */
 public class RestartOnChange
-    implements ConfigurationChangeListener
+        implements ConfigurationChangeListener
 {
-    private final Specification<String> restartSpecification;
+    private final Predicate<String> restartSpecification;
     private final Lifecycle life;
 
-    public RestartOnChange(Class<?> settingsClass, Lifecycle life)
+    public RestartOnChange( Class<?> settingsClass, Lifecycle life )
     {
-        this( or( map( new Function<Field, Specification<String>>()
+        this( or( map( new Function<Field, Predicate<String>>()
         {
             @Override
-            public Specification<String> map( Field method )
+            public Predicate<String> apply( Field method )
             {
                 try
                 {
                     GraphDatabaseSetting setting = (GraphDatabaseSetting) method.get( null );
-                    return Specifications.in( setting.name() );
+                    return Predicates.in( setting.name() );
                 }
-                catch( IllegalAccessException e )
+                catch ( IllegalAccessException e )
                 {
-                    return Specifications.not( Specifications.<String>TRUE() );
+                    return Predicates.not( Predicates.<String>TRUE() );
                 }
             }
-        }, Arrays.asList( settingsClass.getFields() ) ) ), life);
+        }, Arrays.asList( settingsClass.getFields() ) ) ), life );
     }
-    
-    public RestartOnChange( final String configurationNamePrefix, Lifecycle life)
+
+    public RestartOnChange( final String configurationNamePrefix, Lifecycle life )
     {
-        this( new Specification<String>()
+        this( new Predicate<String>()
         {
             @Override
-            public boolean satisfiedBy( String item )
+            public boolean accept( String item )
             {
                 return item.startsWith( configurationNamePrefix );
             }
-        }, life);
+        }, life );
     }
-    
-    public RestartOnChange( Specification<String> restartSpecification, Lifecycle life )
+
+    public RestartOnChange( Predicate<String> restartSpecification, Lifecycle life )
     {
         this.restartSpecification = restartSpecification;
         this.life = life;
@@ -86,19 +86,19 @@ public class RestartOnChange
     public void notifyConfigurationChanges( Iterable<ConfigurationChange> change )
     {
         boolean restart = false;
-        for( ConfigurationChange configurationChange : change )
+        for ( ConfigurationChange configurationChange : change )
         {
-            restart |= restartSpecification.satisfiedBy( configurationChange.getName() );
+            restart |= restartSpecification.accept( configurationChange.getName() );
         }
 
-        if (restart)
+        if ( restart )
         {
             try
             {
                 life.stop();
                 life.start();
             }
-            catch( Throwable throwable )
+            catch ( Throwable throwable )
             {
                 throwable.printStackTrace();
             }

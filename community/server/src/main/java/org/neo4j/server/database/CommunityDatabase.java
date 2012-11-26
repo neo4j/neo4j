@@ -26,8 +26,8 @@ import java.util.Map;
 
 import org.apache.commons.configuration.Configuration;
 import org.neo4j.ext.udc.UdcSettings;
-import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.Settings;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.server.configuration.Configurator;
@@ -105,9 +105,17 @@ public class CommunityDatabase extends/* implements */ Database
             neo4jProperties = new HashMap<String, String>();
         }
 
-        putIfAbsent( neo4jProperties, ShellSettings.remote_shell_enabled.name(), GraphDatabaseSetting.TRUE );
-        putIfAbsent( neo4jProperties, GraphDatabaseSettings.keep_logical_logs.name(), GraphDatabaseSetting.TRUE );
-        neo4jProperties.put( UdcSettings.udc_source.name(), "server" );
+        putIfAbsent( neo4jProperties, ShellSettings.remote_shell_enabled.name(), Settings.TRUE );
+        putIfAbsent( neo4jProperties, GraphDatabaseSettings.keep_logical_logs.name(), Settings.TRUE );
+
+        try
+        {
+            neo4jProperties.put( UdcSettings.udc_source.name(), "server" );
+        }
+        catch ( NoClassDefFoundError e )
+        {
+            // UDC is not on classpath, ignore
+        }
 
         return neo4jProperties;
     }

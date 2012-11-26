@@ -27,6 +27,7 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Transaction;
@@ -68,8 +69,8 @@ public class TestPartialPullUpdates
         master = (HighlyAvailableGraphDatabase) new HighlyAvailableGraphDatabaseFactory().
                 newHighlyAvailableDatabaseBuilder( TargetDirectory.forTest( TestPartialPullUpdates.class ).directory(
                         "master", true ).getAbsolutePath() ).
+                setConfig( ClusterSettings.cluster_server, "127.0.0.1:5001" ).
                 setConfig( HaSettings.server_id, "1" ).
-                setConfig( HaSettings.cluster_server, "127.0.0.1:5001" ).
                 setConfig( HaSettings.tx_push_factor, "0" ).
                 newGraphDatabase();
         Transaction tx = master.beginTx();
@@ -82,9 +83,9 @@ public class TestPartialPullUpdates
         slave1 = (HighlyAvailableGraphDatabase) new HighlyAvailableGraphDatabaseFactory().
                 newHighlyAvailableDatabaseBuilder( TargetDirectory.forTest( TestPartialPullUpdates.class ).directory(
                         "slave1", true ).getAbsolutePath() ).
+                setConfig( ClusterSettings.cluster_server, "127.0.0.1:5002" ).
+                setConfig( ClusterSettings.initial_hosts, "127.0.0.1:5001" ).
                 setConfig( HaSettings.server_id, "2" ).
-                setConfig( HaSettings.cluster_server, "127.0.0.1:5002" ).
-                setConfig( HaSettings.initial_hosts, "127.0.0.1:5001" ).
                 setConfig( HaSettings.ha_server, "localhost:6362" ).
                 setConfig( HaSettings.pull_interval, "0" ).
                 newGraphDatabase();

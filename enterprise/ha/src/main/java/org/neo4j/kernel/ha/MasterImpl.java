@@ -101,8 +101,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
     @Override
     public void start() throws Throwable
     {
-        this.unfinishedTransactionThresholdMillis = config.isSet( HaSettings.lock_read_timeout ) ?
-                config.get( HaSettings.lock_read_timeout ) : config.get( HaSettings.read_timeout );
+        this.unfinishedTransactionThresholdMillis = config.get( HaSettings.lock_read_timeout );
         this.unfinishedTransactionsExecutor =
                 Executors.newSingleThreadScheduledExecutor( new NamedThreadFactory( "Unfinished transaction reaper" ) );
         this.unfinishedTransactionsExecutor.scheduleWithFixedDelay( new Runnable()
@@ -121,7 +120,8 @@ public class MasterImpl extends LifecycleAdapter implements Master
                     for ( Map.Entry<RequestContext, MasterTransaction> entry : safeTransactions.entrySet() )
                     {
                         long time = entry.getValue().timeLastSuspended.get();
-                        if ( (time != 0 && System.currentTimeMillis() - time >= unfinishedTransactionThresholdMillis) || entry.getValue().finishAsap() )
+                        if ( (time != 0 && System.currentTimeMillis() - time >= unfinishedTransactionThresholdMillis)
+                                || entry.getValue().finishAsap() )
                         {
                             long displayableTime = (time == 0 ? 0 : (System.currentTimeMillis() - time));
                             msgLog.logMessage( "Found old tx " + entry.getKey() + ", " +
@@ -593,7 +593,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
         @Override
         public String toString()
         {
-            return transaction+"[lastSuspended="+timeLastSuspended+", finishAsap="+finishAsap+"]";
+            return transaction + "[lastSuspended=" + timeLastSuspended + ", finishAsap=" + finishAsap + "]";
         }
 
         boolean finishAsap()

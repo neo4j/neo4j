@@ -17,13 +17,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.neo4j.helpers;
 
-/**
- * Specification interface
- */
-public interface Specification<T>
+import static org.junit.Assert.assertEquals;
+import static org.neo4j.helpers.Strings.decamelize;
+
+import org.junit.Test;
+
+public class StringsTest
 {
-    boolean satisfiedBy( T item );
+    @Test
+    public void testDecamelize()
+    {
+        assertEquals( "foo", decamelize.apply( "foo" ) );
+        assertEquals( "foo", decamelize.apply( "Foo" ) );
+        assertEquals( "foo_bar", decamelize.apply( "FooBar" ) );
+        assertEquals( "f_b", decamelize.apply( "FB" ) );
+        assertEquals("_", decamelize.apply( "_" ) );
+        // What is expected behaviour here?
+//        assertEquals( "f_b", decamelize.apply( "F_B" ) );
+    }
 }

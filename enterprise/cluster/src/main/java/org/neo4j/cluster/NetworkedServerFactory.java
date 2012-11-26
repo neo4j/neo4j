@@ -30,10 +30,9 @@ import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.AcceptorInstanceSto
 import org.neo4j.cluster.protocol.election.ElectionCredentialsProvider;
 import org.neo4j.cluster.statemachine.StateTransitionLogger;
 import org.neo4j.cluster.timeout.TimeoutStrategy;
+import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.DaemonThreadFactory;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.configuration.ConfigurationDefaults;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.logging.Logging;
@@ -63,24 +62,9 @@ public class NetworkedServerFactory
         final NetworkInstance node = new NetworkInstance( new NetworkInstance.Configuration()
         {
             @Override
-            public int[] getPorts()
+            public HostnamePort clusterServer()
             {
-                int[] port = ClusterSettings.cluster_server.getPorts( config.getParams() );
-                if ( port != null )
-                {
-                    return port;
-                }
-
-                // If not specified, use the default
-                return ClusterSettings.cluster_server.getPorts( MapUtil.stringMap( ClusterSettings.cluster_server
-                        .name(),
-                        ConfigurationDefaults.getDefault( ClusterSettings.cluster_server, ClusterSettings.class ) ) );
-            }
-
-            @Override
-            public String getAddress()
-            {
-                return ClusterSettings.cluster_server.getAddress( config.getParams() );
+                return config.get( ClusterSettings.cluster_server );
             }
         }, logging.getLogger( NetworkInstance.class ) );
 

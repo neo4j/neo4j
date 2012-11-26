@@ -43,11 +43,13 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.ext.udc.UdcConstants;
+import org.neo4j.helpers.HostnamePort;
 
 /**
  * Unit tests for the UDC statistics pinger.
  */
-public class PingerTest {
+public class PingerTest
+{
     private final String EXPECTED_KERNEL_VERSION = "1.0";
     private final String EXPECTED_STORE_ID = "CAFE";
     private String hostname = "localhost";
@@ -58,15 +60,16 @@ public class PingerTest {
     PingerHandler handler;
 
     @Before
-    public void setUp() throws Exception {
+    public void setUp() throws Exception
+    {
         handler = new PingerHandler();
-        server = new LocalTestServer(null, null);
-        server.register("/*", handler);
+        server = new LocalTestServer( null, null );
+        server.register( "/*", handler );
         server.start();
 
         hostname = server.getServiceHostName();
         serverUrl = "http://" + hostname + ":" + server.getServicePort();
-        System.out.println("LocalTestServer available at " + serverUrl);
+        System.out.println( "LocalTestServer available at " + serverUrl );
     }
 
     /**
@@ -75,24 +78,28 @@ public class PingerTest {
      * @throws Exception
      */
     @Test
-    public void shouldRespondToHttpClientGet() throws Exception {
+    public void shouldRespondToHttpClientGet() throws Exception
+    {
         HttpClient httpclient = new DefaultHttpClient();
-        HttpGet httpget = new HttpGet(serverUrl + "/?id=storeId+v=kernelVersion");
-        System.out.println("HttpClient: http-get " + httpget.getURI());
-        HttpResponse response = httpclient.execute(httpget);
+        HttpGet httpget = new HttpGet( serverUrl + "/?id=storeId+v=kernelVersion" );
+        System.out.println( "HttpClient: http-get " + httpget.getURI() );
+        HttpResponse response = httpclient.execute( httpget );
         HttpEntity entity = response.getEntity();
-        if (entity != null) {
+        if ( entity != null )
+        {
             InputStream instream = entity.getContent();
             int l;
             byte[] tmp = new byte[2048];
-            while ((l = instream.read(tmp)) != -1) {
+            while ( (l = instream.read( tmp )) != -1 )
+            {
             }
         }
-        assertThat(response, notNullValue());
-        assertThat(response.getStatusLine().getStatusCode(), is(HttpStatus.SC_OK));
+        assertThat( response, notNullValue() );
+        assertThat( response.getStatusLine().getStatusCode(), is( HttpStatus.SC_OK ) );
     }
 
-    static class TestUdcCollector implements UdcInformationCollector {
+    static class TestUdcCollector implements UdcInformationCollector
+    {
         private final Map<String, String> params;
         private boolean crashed;
 
@@ -111,7 +118,7 @@ public class PingerTest {
         @Override
         public String getStoreId()
         {
-            return getUdcParams().get(ID);
+            return getUdcParams().get( ID );
         }
 
         @Override
@@ -122,56 +129,62 @@ public class PingerTest {
 
         public UdcInformationCollector withCrash()
         {
-            crashed=true;
+            crashed = true;
             return this;
         }
     }
 
     @Test
-    public void shouldPingServer() {
-        final String hostURL = hostname + ":" + server.getServicePort();
-        final Map<String,String> udcFields = new HashMap<String, String>();
-        udcFields.put(ID, EXPECTED_STORE_ID);
-        udcFields.put(UdcConstants.VERSION, EXPECTED_KERNEL_VERSION );
+    public void shouldPingServer()
+    {
+        final HostnamePort hostURL = new HostnamePort( hostname, server.getServicePort() );
+        final Map<String, String> udcFields = new HashMap<String, String>();
+        udcFields.put( ID, EXPECTED_STORE_ID );
+        udcFields.put( UdcConstants.VERSION, EXPECTED_KERNEL_VERSION );
 
         Pinger p = new Pinger( hostURL, new TestUdcCollector( udcFields ) );
         Exception thrownException = null;
-        try {
+        try
+        {
             p.ping();
-        } catch (IOException e) {
+        }
+        catch ( IOException e )
+        {
             thrownException = e;
             e.printStackTrace();
         }
-        assertThat(thrownException, nullValue());
+        assertThat( thrownException, nullValue() );
 
         Map<String, String> actualQueryMap = handler.getQueryMap();
-        assertThat(actualQueryMap, notNullValue());
-        assertThat(actualQueryMap.get(ID), is(EXPECTED_STORE_ID));
+        assertThat( actualQueryMap, notNullValue() );
+        assertThat( actualQueryMap.get( ID ), is( EXPECTED_STORE_ID ) );
 
     }
 
     @Test
-    public void shouldIncludePingCountInURI() throws IOException {
+    public void shouldIncludePingCountInURI() throws IOException
+    {
         final int EXPECTED_PING_COUNT = 16;
-        final String hostURL = hostname + ":" + server.getServicePort();
-        final Map<String,String> udcFields = new HashMap<String, String>();
+        final HostnamePort hostURL = new HostnamePort( hostname, server.getServicePort() );
+        final Map<String, String> udcFields = new HashMap<String, String>();
 
         Pinger p = new Pinger( hostURL, new TestUdcCollector( udcFields ) );
-        for (int i=0; i<EXPECTED_PING_COUNT; i++) {
+        for ( int i = 0; i < EXPECTED_PING_COUNT; i++ )
+        {
             p.ping();
         }
 
-        assertThat(p.getPingCount(), is(equalTo(EXPECTED_PING_COUNT)));
+        assertThat( p.getPingCount(), is( equalTo( EXPECTED_PING_COUNT ) ) );
 
         Map<String, String> actualQueryMap = handler.getQueryMap();
-        assertThat(actualQueryMap.get(UdcConstants.PING), is(Integer.toString(EXPECTED_PING_COUNT)));
+        assertThat( actualQueryMap.get( UdcConstants.PING ), is( Integer.toString( EXPECTED_PING_COUNT ) ) );
     }
 
     @Test
     public void normalPingSequenceShouldBeOneThenTwoThenThreeEtc() throws Exception
     {
-        int[] expectedSequence = { 1, 2, 3, 4 };
-        final String hostURL = hostname + ":" + server.getServicePort();
+        int[] expectedSequence = {1, 2, 3, 4};
+        final HostnamePort hostURL = new HostnamePort( hostname, server.getServicePort() );
         final Map<String, String> udcFields = new HashMap<String, String>();
 
         Pinger p = new Pinger( hostURL, new TestUdcCollector( udcFields ) );
@@ -186,8 +199,8 @@ public class PingerTest {
     @Test
     public void crashPingSequenceShouldBeMinusOneThenTwoThenThreeEtc() throws Exception
     {
-        int[] expectedSequence = { -1, 2, 3, 4 };
-        final String hostURL = hostname + ":" + server.getServicePort();
+        int[] expectedSequence = {-1, 2, 3, 4};
+        final HostnamePort hostURL = new HostnamePort( hostname, server.getServicePort() );
         final Map<String, String> udcFields = new HashMap<String, String>();
 
         Pinger p = new Pinger( hostURL, new TestUdcCollector( udcFields ).withCrash() );
@@ -200,7 +213,8 @@ public class PingerTest {
     }
 
     @After
-    public void tearDown() throws Exception {
+    public void tearDown() throws Exception
+    {
         server.stop();
     }
 }

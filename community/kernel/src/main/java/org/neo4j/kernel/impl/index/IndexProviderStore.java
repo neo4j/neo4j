@@ -55,11 +55,11 @@ public class IndexProviderStore
         try
         {
             // Create it if it doesn't exist
-            if ( !fileSystem.fileExists( file.getAbsolutePath() ) )
+            if ( !fileSystem.fileExists( file ) )
                 create( file, fileSystem, expectedVersion );
             
             // Read all the records in the file
-            channel = fileSystem.open( file.getAbsolutePath(), "rw" );
+            channel = fileSystem.open( file, "rw" );
             Long[] records = readRecordsWithNullDefaults( channel, RECORD_COUNT, allowUpgrade );
             creationTime = records[0].longValue();
             randomIdentifier = records[1].longValue();
@@ -141,19 +141,20 @@ public class IndexProviderStore
     
     private void create( File file, FileSystemAbstraction fileSystem, long indexVersion ) throws IOException
     {
-        if ( fileSystem.fileExists( file.getAbsolutePath() ) )
+        if ( fileSystem.fileExists( file ) )
             throw new IllegalArgumentException( file + " already exist" );
         
         FileChannel fileChannel = null;
         try
         {
-            fileChannel = fileSystem.open( file.getAbsolutePath(), "rw" );
+            fileChannel = fileSystem.open( file, "rw" );
             write( fileChannel, System.currentTimeMillis(), new Random( System.currentTimeMillis() ).nextLong(),
                     0, 1, indexVersion );
         }
         finally
         {
-            fileChannel.close();
+            if (fileChannel != null)
+                fileChannel.close();
         }
     }
 

@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
@@ -79,7 +80,7 @@ public class IdGeneratorImpl implements IdGenerator
     // used to calculate number of ids actually in use
     private long defraggedIdCount = -1;
 
-    private final String fileName;
+    private final File fileName;
     private final FileSystemAbstraction fs;
     private FileChannel fileChannel = null;
     // defragged ids read from file (freed in a previous session).
@@ -115,7 +116,7 @@ public class IdGeneratorImpl implements IdGenerator
      * @throws UnderlyingStorageException
      *             If no such file exist or if the id generator is sticky
      */
-    public IdGeneratorImpl( FileSystemAbstraction fs, String fileName, int grabSize, long max, boolean aggressiveReuse )
+    public IdGeneratorImpl( FileSystemAbstraction fs, File fileName, int grabSize, long max, boolean aggressiveReuse )
     {
         this.fs = fs;
         this.aggressiveReuse = aggressiveReuse;
@@ -396,17 +397,7 @@ public class IdGeneratorImpl implements IdGenerator
         fileChannel.write( buffer );
     }
 
-    /**
-     * Returns the file associated with this id generator.
-     *
-     * @return The id generator's file name
-     */
-    public String getFileName()
-    {
-        return this.fileName;
-    }
-
-    public static void createGenerator( FileSystemAbstraction fs, String fileName )
+    public static void createGenerator( FileSystemAbstraction fs, File fileName )
     {
         createGenerator( fs, fileName, 0 );
     }
@@ -419,7 +410,7 @@ public class IdGeneratorImpl implements IdGenerator
      * @throws IOException
      *             If unable to create the id generator
      */
-    public static void createGenerator( FileSystemAbstraction fs, String fileName, long highId )
+    public static void createGenerator( FileSystemAbstraction fs, File fileName, long highId )
     {
         // sanity checks
         if ( fs == null )

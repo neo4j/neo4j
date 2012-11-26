@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
+import java.io.File;
 import java.nio.channels.ReadableByteChannel;
 import java.util.List;
 
@@ -33,7 +34,7 @@ public class InterceptingXaLogicalLog extends XaLogicalLog
     private final XaDataSource ds;
     private final TransactionInterceptorProviders providers;
 
-    public InterceptingXaLogicalLog( String fileName, XaResourceManager xaRm,
+    public InterceptingXaLogicalLog( File fileName, XaResourceManager xaRm,
             XaCommandFactory cf, XaTransactionFactory xaTf,
             TransactionInterceptorProviders providers, LogBufferFactory logBufferFactory,
             FileSystemAbstraction fileSystem, StringLogger stringLogger,

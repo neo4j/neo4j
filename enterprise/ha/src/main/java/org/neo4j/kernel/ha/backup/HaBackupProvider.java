@@ -26,20 +26,21 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.backup.BackupExtensionService;
+import org.neo4j.backup.OnlineBackupKernelExtension;
 import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.client.ClusterClient;
-import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
+import org.neo4j.cluster.member.ClusterMemberListener;
+import org.neo4j.cluster.member.paxos.PaxosClusterMemberEvents;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.configuration.ConfigurationDefaults;
 import org.neo4j.kernel.ha.HaSettings;
-import org.neo4j.kernel.ha.cluster.HighAvailabilityEvents;
-import org.neo4j.kernel.ha.cluster.HighAvailabilityListener;
-import org.neo4j.kernel.ha.cluster.paxos.PaxosHighAvailabilityEvents;
+import org.neo4j.cluster.member.ClusterMemberEvents;
+import org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.Logging;
@@ -63,8 +64,7 @@ public final class HaBackupProvider extends BackupExtensionService
         String clusterName = args.get( ClusterSettings.cluster_name.name(), null );
         if ( clusterName == null )
         {
-            clusterName = args.get( ClusterSettings.cluster_name.name(),
-                    ConfigurationDefaults.getDefault( ClusterSettings.cluster_name, ClusterSettings.class ) );
+            clusterName = args.get( ClusterSettings.cluster_name.name(), ClusterSettings.cluster_name.getDefaultValue() );
         }
 
         master = getMasterServerInCluster( address.getSchemeSpecificPart().substring(
@@ -86,34 +86,40 @@ public final class HaBackupProvider extends BackupExtensionService
     private static String getMasterServerInCluster( String from, String clusterName, final Logging logging )
     {
         LifeSupport life = new LifeSupport();
-        Map<String, String> params = new ConfigurationDefaults( ClusterSettings.class,
-                OnlineBackupSettings.class ).apply( new HashMap<String, String>() );
+        Map<String, String> params = new HashMap<String, String>();
         params.put( HaSettings.server_id.name(), "-1" );
         params.put( ClusterSettings.cluster_name.name(), clusterName );
-        params.put( HaSettings.initial_hosts.name(), from );
-        params.put( HaSettings.cluster_discovery_enabled.name(), "false" );
-        final Config config = new Config( params );
+        params.put( ClusterSettings.initial_hosts.name(), from );
+        params.put( ClusterSettings.cluster_discovery_enabled.name(), "false" );
+        final Config config = new Config( params,
+                ClusterSettings.class, OnlineBackupSettings.class );
 
-        ClusterClient clusterClient = life.add( new ClusterClient( ClusterClient.adapt( config,
-                new BackupElectionCredentialsProvider() ), logging ) );
-        HighAvailabilityEvents events = life.add( new PaxosHighAvailabilityEvents( PaxosHighAvailabilityEvents.adapt(
-                config ), clusterClient, StringLogger.SYSTEM ) );
+        ClusterClient clusterClient = life.add( new ClusterClient( ClusterClient.adapt( config ), logging,
+                new BackupElectionCredentialsProvider() ) );
+        ClusterMemberEvents events = life.add( new PaxosClusterMemberEvents( clusterClient, clusterClient, clusterClient, StringLogger.SYSTEM ) );
+
         final Semaphore infoReceivedLatch = new Semaphore( 0 );
-        final ClusterInfoHolder addresses = new ClusterInfoHolder();
-
-        events.addClusterEventListener( new HighAvailabilityListener()
+        final AtomicReference<URI> backupUri = new AtomicReference<URI>(  );
+        events.addClusterMemberListener( new ClusterMemberListener.Adapter()
         {
-            @Override
-            public void masterIsElected( URI masterUri )
-            {
-            }
+            Map<URI, URI> backupUris = new HashMap<URI, URI>();
+            URI master = null;
 
             @Override
-            public void memberIsAvailable( String role, URI masterClusterUri, Iterable<URI> masterURIs )
+            public void memberIsAvailable( String role, URI clusterUri, URI roleUri )
             {
-                if ( ClusterConfiguration.COORDINATOR.equals( role ) )
+                if ( OnlineBackupKernelExtension.BACKUP.equals( role ) )
                 {
-                    addresses.held = masterURIs;
+                    backupUris.put( clusterUri, roleUri );
+                }
+                else if ( HighAvailabilityModeSwitcher.MASTER.equals( role ) )
+                {
+                    master = clusterUri;
+                }
+
+                if ( master != null && backupUris.containsKey( master ) )
+                {
+                    backupUri.set( backupUris.get( master ) );
                     infoReceivedLatch.release();
                 }
             }
@@ -139,20 +145,6 @@ public final class HaBackupProvider extends BackupExtensionService
             life.shutdown();
         }
 
-        String backupAddress = null;
-        for ( URI uri : addresses.held )
-        {
-            if ( "backup".equals( uri.getScheme() ) )
-            {
-                backupAddress = uri.toString();
-                break;
-            }
-        }
-        return backupAddress;
-    }
-
-    private static final class ClusterInfoHolder
-    {
-        public Iterable<URI> held;
+        return backupUri.get().toString();
     }
 }

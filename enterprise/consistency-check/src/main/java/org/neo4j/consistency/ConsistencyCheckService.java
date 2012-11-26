@@ -22,10 +22,12 @@ package org.neo4j.consistency;
 import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Map;
 
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.full.FullCheck;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
@@ -45,6 +47,10 @@ public class ConsistencyCheckService
                                          ProgressMonitorFactory progressFactory,
                                          StringLogger logger ) throws ConsistencyCheckIncompleteException
     {
+        Map<String, String> params = tuningConfiguration.getParams();
+        params.put( GraphDatabaseSettings.store_dir.name(), storeDir );
+        tuningConfiguration.applyChanges( params );
+
         StoreFactory factory = new StoreFactory(
                 tuningConfiguration,
                 new DefaultIdGeneratorFactory(),
@@ -53,10 +59,10 @@ public class ConsistencyCheckService
                 new DefaultTxHook() );
 
         ConsistencySummaryStatistics summary;
-        File reportFile = chooseReportPath( storeDir, tuningConfiguration );
+        File reportFile = chooseReportPath( tuningConfiguration );
         StringLogger report = StringLogger.lazyLogger( reportFile );
 
-        NeoStore neoStore = factory.newNeoStore( new File( storeDir, NeoStore.DEFAULT_NAME ).getAbsolutePath() );
+        NeoStore neoStore = factory.newNeoStore( new File( storeDir, NeoStore.DEFAULT_NAME ) );
         try
         {
             StoreAccess store = new StoreAccess( neoStore );
@@ -74,17 +80,20 @@ public class ConsistencyCheckService
         }
     }
 
-    private File chooseReportPath( String storeDir, Config tuningConfiguration )
+    private File chooseReportPath( Config tuningConfiguration )
     {
-        String reportPath = tuningConfiguration.get( ConsistencyCheckSettings.consistency_check_report_file );
-        File reportFile = new File( storeDir );
-        if ( reportPath != null )
+        File reportPath = tuningConfiguration.get( ConsistencyCheckSettings.consistency_check_report_file );
+        File reportFile;
+        if ( reportPath == null )
         {
-            reportFile = new File( reportPath );
-        }
-        if ( reportFile.isDirectory() )
+            reportFile = new File( tuningConfiguration.get( GraphDatabaseSettings.store_dir ), defaultLogFileName() );
+        } else
         {
-            reportFile = new File( reportFile, defaultLogFileName() );
+            if ( reportPath.isDirectory() )
+            {
+                reportFile = new File( reportPath, defaultLogFileName() );
+            } else
+                reportFile = reportPath;
         }
         return reportFile;
     }

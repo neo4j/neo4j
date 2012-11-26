@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
+import java.io.File;
 import java.util.Iterator;
 
 import org.neo4j.helpers.Predicate;
@@ -29,7 +30,7 @@ import org.neo4j.kernel.IdType;
 
 public interface RecordStore<R extends AbstractBaseRecord>
 {
-    String getStorageFileName();
+    File getStorageFileName();
 
     WindowPoolStats getWindowPoolStats();
 

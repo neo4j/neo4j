@@ -19,21 +19,29 @@
  */
 package org.neo4j.kernel;
 
+import static org.neo4j.helpers.collection.Iterables.map;
+import static org.neo4j.helpers.collection.Iterables.toArray;
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import org.neo4j.helpers.Functions;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.ha.ClusterDatabaseInfoProvider;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
-import org.neo4j.kernel.ha.cluster.member.HighAvailabilityMembers;
+import org.neo4j.kernel.ha.cluster.member.ClusterMember;
+import org.neo4j.kernel.ha.cluster.member.ClusterMembers;
 import org.neo4j.management.ClusterDatabaseInfo;
 import org.neo4j.management.ClusterMemberInfo;
 
 public class HighlyAvailableKernelData extends KernelData
 {
     private final HighlyAvailableGraphDatabase db;
-    private final HighAvailabilityMembers memberInfo;
+    private final ClusterMembers memberInfo;
     private final ClusterDatabaseInfoProvider memberInfoProvider;
 
-    public HighlyAvailableKernelData( HighlyAvailableGraphDatabase db, HighAvailabilityMembers memberInfo,
+    public HighlyAvailableKernelData( HighlyAvailableGraphDatabase db, ClusterMembers memberInfo,
             ClusterDatabaseInfoProvider databaseInfo )
     {
         super( db.getConfig() );
@@ -56,7 +64,16 @@ public class HighlyAvailableKernelData extends KernelData
 
     public ClusterMemberInfo[] getClusterInfo()
     {
-        return asCollection( memberInfo.getMembers() ).toArray( new ClusterMemberInfo[0] );
+        List<ClusterMemberInfo> clusterMemberInfos = new ArrayList<ClusterMemberInfo>(  );
+        for ( ClusterMember clusterMember : memberInfo.getMembers() )
+        {
+            ClusterMemberInfo clusterMemberInfo = new ClusterMemberInfo( clusterMember.getClusterUri().toString(),
+                    clusterMember.getHAUri() != null, clusterMember.isAlive(), clusterMember.getHARole(),
+                    toArray( String.class, map( Functions.TO_STRING, clusterMember.getRoleURIs() ) ));
+            clusterMemberInfos.add( clusterMemberInfo );
+        }
+
+        return clusterMemberInfos.toArray( new ClusterMemberInfo[clusterMemberInfos.size()] );
     }
 
     public ClusterDatabaseInfo getMemberInfo()

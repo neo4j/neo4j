@@ -32,8 +32,8 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.index.Index;
+import org.neo4j.helpers.Settings;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.shell.ShellLobby;
 import org.neo4j.shell.ShellServer;
@@ -55,9 +55,9 @@ public class Neo4jShell
     {
         registerShutdownHookForNeo();
         boolean trueForLocal = waitForUserInput(
-            "Would you like to start a "
-                + "local shell instance or enable neo4j to accept remote "
-                + "connections [l/r]? " ).equalsIgnoreCase( "l" );
+                "Would you like to start a "
+                        + "local shell instance or enable neo4j to accept remote "
+                        + "connections [l/r]? " ).equalsIgnoreCase( "l" );
         if ( trueForLocal )
         {
             startLocalShell();
@@ -81,23 +81,23 @@ public class Neo4jShell
     private static void startRemoteShellAndWait() throws Exception
     {
         graphDb = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( DB_PATH ).
-            setConfig( ShellSettings.remote_shell_enabled, GraphDatabaseSetting.TRUE ).
-            newGraphDatabase();
+                setConfig( ShellSettings.remote_shell_enabled, Settings.TRUE ).
+                newGraphDatabase();
 
         createExampleNodeSpace();
         waitForUserInput( "Remote shell enabled, connect to it by executing\n"
-                          + "the shell-client script in a separate terminal."
-                          + "The script is located in the bin directory.\n"
-                          + "\nWhen you're done playing around, just press [Enter] "
-                          + "in this terminal " );
+                + "the shell-client script in a separate terminal."
+                + "The script is located in the bin directory.\n"
+                + "\nWhen you're done playing around, just press [Enter] "
+                + "in this terminal " );
     }
 
     private static String waitForUserInput( final String textToSystemOut )
-        throws Exception
+            throws Exception
     {
         System.out.print( textToSystemOut );
         return new BufferedReader( new InputStreamReader( System.in ) )
-            .readLine();
+                .readLine();
     }
 
     private static void createExampleNodeSpace()
@@ -118,7 +118,7 @@ public class Neo4jShell
             {
                 Node userNode = createUser( formUserName( id ) );
                 usersReferenceNode.createRelationshipTo( userNode,
-                    RelTypes.USER );
+                        RelTypes.USER );
                 if ( id > 10 )
                 {
                     int numberOfFriends = random.nextInt( 5 );
@@ -126,11 +126,11 @@ public class Neo4jShell
                     for ( int i = 0; i < numberOfFriends; i++ )
                     {
                         Node friend = users
-                            .get( random.nextInt( users.size() ) );
+                                .get( random.nextInt( users.size() ) );
                         if ( knows.add( friend ) )
                         {
                             userNode.createRelationshipTo( friend,
-                                RelTypes.KNOWS );
+                                    RelTypes.KNOWS );
                         }
                     }
                 }
@@ -153,11 +153,11 @@ public class Neo4jShell
             System.out.println( "Deleting example node space ..." );
             Node usersReferenceNode = graphDb.index().forNodes( "references" ).get( "reference", "users" ).getSingle();
             for ( Relationship relationship : usersReferenceNode
-                .getRelationships( RelTypes.USER, Direction.OUTGOING ) )
+                    .getRelationships( RelTypes.USER, Direction.OUTGOING ) )
             {
                 Node user = relationship.getEndNode();
                 for ( Relationship knowsRelationship : user
-                    .getRelationships( RelTypes.KNOWS ) )
+                        .getRelationships( RelTypes.KNOWS ) )
                 {
                     knowsRelationship.delete();
                 }
@@ -165,7 +165,7 @@ public class Neo4jShell
                 relationship.delete();
             }
             usersReferenceNode.getSingleRelationship( RelTypes.USERS_REFERENCE,
-                Direction.INCOMING ).delete();
+                    Direction.INCOMING ).delete();
             usersReferenceNode.delete();
             tx.success();
         }

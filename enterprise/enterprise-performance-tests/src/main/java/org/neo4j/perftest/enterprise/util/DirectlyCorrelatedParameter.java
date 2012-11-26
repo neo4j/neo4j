@@ -22,8 +22,6 @@ package org.neo4j.perftest.enterprise.util;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.graphdb.factory.GraphDatabaseSetting;
-
 public class DirectlyCorrelatedParameter
 {
     public static Map<String, String> passOn( Configuration configuration, DirectlyCorrelatedParameter... parameters )
@@ -37,9 +35,10 @@ public class DirectlyCorrelatedParameter
         return map;
     }
 
-    public static DirectlyCorrelatedParameter param( GraphDatabaseSetting<?> databaseSetting, Setting<?> localSetting )
+    public static DirectlyCorrelatedParameter param( org.neo4j.graphdb.config.Setting<?> databaseSetting,
+                                                     Setting<?> localSetting )
     {
-        return new DirectlyCorrelatedParameter(localSetting, databaseSetting);
+        return new DirectlyCorrelatedParameter( localSetting, databaseSetting );
     }
 
     private static <T> String asString( Configuration configuration, Setting<T> localSetting )
@@ -48,9 +47,9 @@ public class DirectlyCorrelatedParameter
     }
 
     private final Setting<?> localSetting;
-    private final GraphDatabaseSetting<?> databaseSetting;
+    private final org.neo4j.graphdb.config.Setting<?> databaseSetting;
 
-    DirectlyCorrelatedParameter( Setting<?> localSetting, GraphDatabaseSetting<?> databaseSetting )
+    DirectlyCorrelatedParameter( Setting<?> localSetting, org.neo4j.graphdb.config.Setting<?> databaseSetting )
     {
         this.localSetting = localSetting;
         this.databaseSetting = databaseSetting;

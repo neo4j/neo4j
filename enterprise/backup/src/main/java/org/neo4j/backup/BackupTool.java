@@ -37,7 +37,6 @@ import org.neo4j.helpers.Args;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.configuration.ConfigurationDefaults;
 import org.neo4j.kernel.impl.storemigration.LogFiles;
 import org.neo4j.kernel.impl.storemigration.StoreFiles;
 import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedByConfigurationException;
@@ -178,8 +177,7 @@ public class BackupTool
             }
         }
         specifiedProperties.put( GraphDatabaseSettings.store_dir.name(), storeDir );
-        return new Config( new ConfigurationDefaults( GraphDatabaseSettings.class, ConsistencyCheckSettings.class )
-                .apply( specifiedProperties ) );
+        return new Config( specifiedProperties, GraphDatabaseSettings.class, ConsistencyCheckSettings.class );
     }
 
     private void doBackup( boolean trueForFullFalseForIncremental, URI from, String to, boolean checkConsistency,

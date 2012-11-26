@@ -46,7 +46,6 @@ import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.configuration.ConfigurationDefaults;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -60,24 +59,25 @@ public class TestDynamicStore
     public static FileSystemAbstraction FILE_SYSTEM =
             new DefaultFileSystemAbstraction();
 
-    private String path()
+    private File path()
     {
         String path = AbstractNeo4jTestCase.getStorePath( "dynamicstore" );
-        new File( path ).mkdirs();
-        return path;
+        File file = new File( path );
+        file.mkdirs();
+        return file;
     }
 
-    private String file( String name )
+    private File file( String name )
     {
-        return path() + File.separator + name;
+        return new File( path(), name);
     }
 
-    private String dynamicStoreFile()
+    private File dynamicStoreFile()
     {
         return file( "testDynamicStore.db" );
     }
 
-    private String dynamicStoreIdFile()
+    private File dynamicStoreIdFile()
     {
         return file( "testDynamicStore.db.id" );
     }
@@ -119,26 +119,26 @@ public class TestDynamicStore
         }
     }
 
-    private void createEmptyStore( String fileName, int blockSize )
+    private void createEmptyStore( File fileName, int blockSize )
     {
-        new StoreFactory(config(), ID_GENERATOR_FACTORY, new DefaultWindowPoolFactory(), FILE_SYSTEM,
-                StringLogger.SYSTEM, null ).createDynamicArrayStore(fileName, blockSize);
+        new StoreFactory( config(), ID_GENERATOR_FACTORY, new DefaultWindowPoolFactory(), FILE_SYSTEM,
+                StringLogger.SYSTEM, null ).createDynamicArrayStore( fileName, blockSize );
     }
 
     private DynamicArrayStore newStore()
     {
         return new DynamicArrayStore( dynamicStoreFile(), config(), IdType.ARRAY_BLOCK, ID_GENERATOR_FACTORY,
-                WINDOW_POOL_FACTORY, FILE_SYSTEM, StringLogger.SYSTEM);
+                WINDOW_POOL_FACTORY, FILE_SYSTEM, StringLogger.SYSTEM );
     }
 
     private void deleteBothFiles()
     {
-        File file = new File( dynamicStoreFile() );
+        File file = dynamicStoreFile();
         if ( file.exists() )
         {
             assertTrue( file.delete() );
         }
-        file = new File( dynamicStoreIdFile() );
+        file = dynamicStoreIdFile();
         if ( file.exists() )
         {
             assertTrue( file.delete() );
@@ -170,9 +170,9 @@ public class TestDynamicStore
 
     private Config config()
     {
-        return new Config( new ConfigurationDefaults( GraphDatabaseSettings.class ).apply( MapUtil.stringMap(
-                "neo_store", dynamicStoreFile(),
-                "store_dir", path() ) ) );
+        return new Config( MapUtil.stringMap(
+                "neo_store", dynamicStoreFile().getPath(),
+                "store_dir", path().getPath() ), GraphDatabaseSettings.class );
     }
 
     @Test

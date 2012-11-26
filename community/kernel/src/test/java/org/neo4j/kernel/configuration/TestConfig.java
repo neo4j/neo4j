@@ -22,95 +22,104 @@ package org.neo4j.kernel.configuration;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+import static org.neo4j.helpers.Settings.BOOLEAN;
+import static org.neo4j.helpers.Settings.STRING;
+import static org.neo4j.helpers.Settings.setting;
 
 import java.util.HashMap;
 import java.util.Map;
 
 import org.junit.Test;
-import org.neo4j.graphdb.factory.Default;
+import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 
-public class TestConfig {
+public class TestConfig
+{
 
-	public static class MyMigratingSettings
-	{
-		@Migrator
-		public static ConfigurationMigrator migrator = new BaseConfigurationMigrator(){
-			{
-				add(new SpecificPropertyMigration("old", "Old has been replaced by newer!")
-				{
-					@Override
-					public void setValueWithOldSetting(String value,
-							Map<String, String> rawConfiguration) {
-						rawConfiguration.put(newer.name(), value);
-					}
-				});
-			}
-		};
-		
-		public static GraphDatabaseSetting.StringSetting newer = new GraphDatabaseSetting.StringSetting("hello", ".*", "");
-	}
-	
-	public static class MySettingsWithDefaults
-	{
-		@Default("Hello, World!")
-		public static GraphDatabaseSetting.StringSetting hello = new GraphDatabaseSetting.StringSetting("hello", ".*", "");
-		
-		@Default("true")
-		public static GraphDatabaseSetting.BooleanSetting boolSetting = new GraphDatabaseSetting.BooleanSetting("bool_setting");
-		
-	}
-	
-	@Test
-	public void shouldApplyDefaults()
-	{
-		Config config = new Config(new HashMap<String,String>(), MySettingsWithDefaults.class);
-		
-		assertThat(config.get(MySettingsWithDefaults.hello), is("Hello, World!"));
-	}
-	
-	@Test
-	public void shouldApplyMigrations()
-	{
-		
-		Map<String, String> params = new HashMap<String,String>();
-		params.put("old", "hello!");
-		
-		Config config = new Config(params, MyMigratingSettings.class);
-		assertThat(config.get(MyMigratingSettings.newer), is("hello!"));
-	}
-	
-	@Test
-	public void shouldNotAllowSettingInvalidValues()
-	{
-		Config config = new Config(new HashMap<String,String>(), MySettingsWithDefaults.class);
-		
-		try {
-			
-			Map<String,String> params = config.getParams();
-			params.put(MySettingsWithDefaults.boolSetting.name(), "asd");
-			
-			config.applyChanges(params);
-			
-			fail("Expected validation to fail.");
-		} catch(IllegalArgumentException e)
-		{
-		}
-	}
-	
-	@Test
-	public void shouldNotAllowInvalidValuesInConstructor()
-	{
-		try {
-			new Config(new HashMap<String,String>(){{
-				put(MySettingsWithDefaults.boolSetting.name(), "asd");
-				}}, 
-				MySettingsWithDefaults.class);
-			
-			fail("Expected validation to fail.");
-		} catch(IllegalArgumentException e)
-		{
-		}
-	}
-	
+    public static class MyMigratingSettings
+    {
+        @Migrator
+        public static ConfigurationMigrator migrator = new BaseConfigurationMigrator()
+        {
+            {
+                add( new SpecificPropertyMigration( "old", "Old has been replaced by newer!" )
+                {
+                    @Override
+                    public void setValueWithOldSetting( String value,
+                                                        Map<String, String> rawConfiguration )
+                    {
+                        rawConfiguration.put( newer.name(), value );
+                    }
+                } );
+            }
+        };
+
+        public static Setting<String> newer = setting( "hello", STRING, "" );
+    }
+
+    public static class MySettingsWithDefaults
+    {
+        public static Setting<String> hello = setting( "hello", STRING, "Hello, World!" );
+
+        public static Setting<Boolean> boolSetting = setting( "bool_setting", BOOLEAN, GraphDatabaseSetting.TRUE );
+
+    }
+
+    @Test
+    public void shouldApplyDefaults()
+    {
+        Config config = new Config( new HashMap<String, String>(), MySettingsWithDefaults.class );
+
+        assertThat( config.get( MySettingsWithDefaults.hello ), is( "Hello, World!" ) );
+    }
+
+    @Test
+    public void shouldApplyMigrations()
+    {
+
+        Map<String, String> params = new HashMap<String, String>();
+        params.put( "old", "hello!" );
+
+        Config config = new Config( params, MyMigratingSettings.class );
+        assertThat( config.get( MyMigratingSettings.newer ), is( "hello!" ) );
+    }
+
+    @Test
+    public void shouldNotAllowSettingInvalidValues()
+    {
+        Config config = new Config( new HashMap<String, String>(), MySettingsWithDefaults.class );
+
+        try
+        {
+
+            Map<String, String> params = config.getParams();
+            params.put( MySettingsWithDefaults.boolSetting.name(), "asd" );
+
+            config.applyChanges( params );
+
+            fail( "Expected validation to fail." );
+        }
+        catch ( IllegalArgumentException e )
+        {
+        }
+    }
+
+    @Test
+    public void shouldNotAllowInvalidValuesInConstructor()
+    {
+        try
+        {
+            new Config( new HashMap<String, String>()
+            {{
+                    put( MySettingsWithDefaults.boolSetting.name(), "asd" );
+                }},
+                    MySettingsWithDefaults.class );
+
+            fail( "Expected validation to fail." );
+        }
+        catch ( IllegalArgumentException e )
+        {
+        }
+    }
+
 }

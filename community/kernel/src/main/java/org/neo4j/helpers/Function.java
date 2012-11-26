@@ -22,20 +22,19 @@ package org.neo4j.helpers;
 
 /**
  * Generic function interface to map from one type to another.
- *
+ * <p/>
  * This can be used with the Iterables methods to transform lists of objects.
  *
- * @param <From>
- * @param <To>
+ * @param <T>
+ * @param <R>
  */
-public interface Function<From, To>
+public interface Function<T, R>
 {
     /**
-     * Map a single item from one type to another
+     * Apply a value to this function
      *
      * @param from the input item
-     *
      * @return the mapped item
      */
-    To map( From from );
+    R apply( T from );
 }

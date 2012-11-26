@@ -19,49 +19,59 @@
  */
 package org.neo4j.ext.udc;
 
-import static org.neo4j.graphdb.factory.GraphDatabaseSetting.ANY;
+import static org.neo4j.helpers.Settings.ANY;
+import static org.neo4j.helpers.Settings.BOOLEAN;
+import static org.neo4j.helpers.Settings.HOSTNAME_PORT;
+import static org.neo4j.helpers.Settings.INTEGER;
+import static org.neo4j.helpers.Settings.STRING;
+import static org.neo4j.helpers.Settings.TRUE;
+import static org.neo4j.helpers.Settings.illegalValueMessage;
+import static org.neo4j.helpers.Settings.matches;
+import static org.neo4j.helpers.Settings.min;
+import static org.neo4j.helpers.Settings.setting;
 
-import org.neo4j.graphdb.factory.Default;
-import org.neo4j.graphdb.factory.GraphDatabaseSetting;
+import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.HostnamePort;
+import org.neo4j.helpers.Settings;
 
 public class UdcSettings
 {
-    // This is a work around for GraphDatabaseSettings no longer containing type information.
-    // We should introduce an internal list of settings with type information in the kernel,
-    // then we would not have to duplicate settings here.
-
-    public static final GraphDatabaseSetting<String> udc_source = new GraphDatabaseSetting.StringSetting(
-            GraphDatabaseSettings.udc_source.name(), ANY, "Must be a valid source");
-
-    public static final GraphDatabaseSetting<Boolean> udc_enabled = new GraphDatabaseSetting.BooleanSetting(
-            GraphDatabaseSettings.udc_enabled.name());
+    /**
+     * Configuration key for enabling the UDC extension.
+     */
+    public static final Setting<Boolean> udc_enabled = setting( "neo4j.ext.udc.enabled", BOOLEAN, TRUE );
 
     /**
      * Configuration key for the first delay, expressed
      * in milliseconds.
      */
-    @Default( ""+10 * 1000 * 60 )
-    public static final GraphDatabaseSetting<Integer> first_delay = new GraphDatabaseSetting.IntegerSetting("neo4j.ext.udc.first_delay", "Must be nr of milliseconds to delay", 1, null);
+    public static final Setting<Integer> first_delay =
+            setting( "neo4j.ext.udc.first_delay", INTEGER, Integer.toString( 10 * 1000 * 60 ), min( 1 ) );
 
     /**
      * Configuration key for the interval for regular updates,
      * expressed in milliseconds.
      */
-    @Default(""+1000 * 60 * 60 * 24)
-    public static final GraphDatabaseSetting<Integer> interval = new GraphDatabaseSetting.IntegerSetting("neo4j.ext.udc.interval", "Must be nr of milliseconds of the interval for checking", 1, null);
+    public static final Setting<Integer> interval = setting( "neo4j.ext.udc.interval", INTEGER, Integer.toString(
+            1000 * 60 * 60 * 24 ), min( 1 ) );
 
     /**
      * The host address to which UDC updates will be sent.
      * Should be of the form hostname[:port].
      */
-    @Default( "udc.neo4j.org" )
-    public static final GraphDatabaseSetting<String> udc_host = new GraphDatabaseSetting.StringSetting(  "neo4j.ext.udc.host", ANY, "Must be a valid hostname");
+    public static final Setting<HostnamePort> udc_host = setting( "neo4j.ext.udc.host", HOSTNAME_PORT,
+            "udc.neo4j.org" );
+
+    /**
+     * Configuration key for overriding the source parameter in UDC
+     */
+    public static final Setting<String> udc_source = setting( "neo4j.ext.udc.source", STRING, Settings.NO_DEFAULT,
+            illegalValueMessage( "Must be a valid source", matches( ANY ) ) );
 
     /**
      * Unique registration id
      */
-    @Default( "unreg" )
-    public static final GraphDatabaseSetting<String> udc_registration_key = new GraphDatabaseSetting.StringSetting( "neo4j.ext.udc.reg", ANY, "Must be a valid registration id" );
-
+    public static final Setting<String> udc_registration_key = setting( "neo4j.ext.udc.source", STRING, "unreg",
+            illegalValueMessage( "Must be a valid registration id", matches( ANY ) ) );
 }

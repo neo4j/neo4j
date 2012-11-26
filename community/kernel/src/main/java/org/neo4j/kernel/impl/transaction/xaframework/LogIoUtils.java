@@ -37,7 +37,7 @@ public class LogIoUtils
     
     public static long[] readLogHeader( FileSystemAbstraction fileSystem, File file ) throws IOException
     {
-        FileChannel channel = fileSystem.open( file.getAbsolutePath(), "r" );
+        FileChannel channel = fileSystem.open( file, "r" );
         try
         {
             return readLogHeader( ByteBuffer.allocateDirect( 100*1000 ), channel, true );

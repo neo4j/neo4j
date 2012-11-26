@@ -41,7 +41,7 @@ public class TestStringLogger
         File logFile = new File( path, StringLogger.DEFAULT_NAME );
         File oldFile = new File( path, StringLogger.DEFAULT_NAME + ".1" );
         File oldestFile = new File( path, StringLogger.DEFAULT_NAME + ".2" );
-        StringLogger logger = StringLogger.logger( path, 200*1024 );
+        StringLogger logger = StringLogger.loggerDirectory( new File( path), 200 * 1024 );
         assertFalse( oldFile.exists() );
         int counter = 0;
         String prefix = "Bogus message ";
@@ -89,7 +89,8 @@ public class TestStringLogger
     {
         final String baseMessage = "base message";
         File target = TargetDirectory.forTest( TestStringLogger.class ).directory( "recursionTest", true );
-        final StringLogger logger = StringLogger.logger( target.getAbsolutePath(), baseMessage.length() /*rotation threshold*/);
+        final StringLogger logger = StringLogger.loggerDirectory( target, baseMessage.length()
+        /*rotation threshold*/ );
 
         /*
          * The trigger that will log more than the threshold during rotation, possibly causing another rotation

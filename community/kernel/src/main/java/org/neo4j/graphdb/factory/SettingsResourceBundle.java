@@ -26,18 +26,18 @@ import java.util.Enumeration;
 import java.util.LinkedHashSet;
 import java.util.ResourceBundle;
 import java.util.Set;
+
+import org.neo4j.graphdb.config.Setting;
+import org.neo4j.helpers.Functions;
 import org.neo4j.kernel.impl.transaction.IllegalResourceException;
 
 /**
  * ResourceBundle for classes that use GraphDatabaseSetting, which use reflection to find its values.
- *
+ * <p/>
  * This allows us to keep the descriptions in the Java code, so they are available in JavaDoc.
- *
- * This is deprecated, because it is due to be moved to the internal API.
  */
-@Deprecated
 public class SettingsResourceBundle
-    extends ResourceBundle
+        extends ResourceBundle
 {
     private final Class settingsClass;
 
@@ -49,13 +49,15 @@ public class SettingsResourceBundle
     @Override
     protected Object handleGetObject( String key )
     {
-        if (key.equals( "description" ))
+        if ( key.equals( "description" ) )
         {
             Description description = (Description) settingsClass.getAnnotation( Description.class );
             return description.value();
         }
 
-        if( key.contains( ".option." ) )
+        String name = key.substring( 0, key.lastIndexOf( "." ) );
+
+/*        if ( key.contains( ".option." ) )
         {
             String name = key.substring( 0, key.lastIndexOf( ".option." ) );
             String option = key.substring( key.lastIndexOf( ".option." ) + ".option.".length() );
@@ -64,46 +66,50 @@ public class SettingsResourceBundle
             StringBuffer optionsBuilder = new StringBuffer();
             try
             {
-                GraphDatabaseSetting.OptionsSetting optionsSetting = (GraphDatabaseSetting.OptionsSetting) settingField.get( null );
+                GraphDatabaseSetting.OptionsSetting optionsSetting = (GraphDatabaseSetting.OptionsSetting)
+                        settingField.get( null );
                 Field optionField = findOptionField( option, optionsSetting.getClass() );
                 Description description = optionField.getAnnotation( Description.class );
-                if( description != null )
+                if ( description != null )
                 {
                     return description.value();
                 }
                 throw new IllegalResourceException( "Could not find resource for property " + key );
             }
-            catch( Exception e )
+            catch ( Exception e )
             {
                 // Ignore
             }
         }
 
-        String name = key.substring( 0, key.lastIndexOf( "." ) );
-        if( key.endsWith( ".description" ) )
-        {
-            Field settingField = getField( name );
-            return settingField.getAnnotation( Description.class ).value();
-        }
-        
-        if (key.endsWith( ".validationmessage" ))
+        if ( key.endsWith( ".validationmessage" ) )
         {
             Field settingField = getField( name );
             StringBuffer optionsBuilder = new StringBuffer();
             try
             {
-                GraphDatabaseSetting.OptionsSetting optionsSetting = (GraphDatabaseSetting.OptionsSetting) settingField.get( null );
-            } catch (Exception ex)
+                GraphDatabaseSetting.OptionsSetting optionsSetting = (GraphDatabaseSetting.OptionsSetting)
+                        settingField.get( null );
+            }
+            catch ( Exception ex )
             {
                 // Ignore
             }
         }
 
-        if( key.endsWith( ".title" ) )
+*/
+
+        if ( key.endsWith( ".description" ) )
+        {
+            Field settingField = getField( name );
+            return settingField.getAnnotation( Description.class ).value();
+        }
+
+        if ( key.endsWith( ".title" ) )
         {
             Field settingField = getField( name );
             Title annotation = settingField.getAnnotation( Title.class );
-            if( annotation != null )
+            if ( annotation != null )
             {
                 return annotation.value();
             }
@@ -116,21 +122,29 @@ public class SettingsResourceBundle
             }
         }
 
-        if( key.endsWith( ".default" ) )
+        if ( key.endsWith( ".default" ) )
         {
             Field settingField = getField( name );
-            return settingField.getAnnotation( Default.class ).value();
+            try
+            {
+                return ((Setting) settingField.get( null )).apply( Functions.<String,
+                        String>nullFunction() ).toString();
+            }
+            catch ( Exception e )
+            {
+                // Ignore
+            }
         }
 
-        if( key.endsWith( ".options" ) )
+/*        if ( key.endsWith( ".options" ) )
         {
             Field settingField = getField( name );
             StringBuffer optionsBuilder = new StringBuffer();
             try
             {
-                for( String option : ( (GraphDatabaseSetting.OptionsSetting) settingField.get( null ) ).options() )
+                for ( String option : ((GraphDatabaseSetting.OptionsSetting) settingField.get( null )).options() )
                 {
-                    if( optionsBuilder.length() > 0 )
+                    if ( optionsBuilder.length() > 0 )
                     {
                         optionsBuilder.append( ',' );
                     }
@@ -138,56 +152,56 @@ public class SettingsResourceBundle
                 }
                 return optionsBuilder.toString();
             }
-            catch( Exception e )
+            catch ( Exception e )
             {
                 // Ignore
             }
         }
 
-        if( key.endsWith( ".min" ) )
+        if ( key.endsWith( ".min" ) )
         {
             try
             {
                 Field settingField = getField( name );
-                return ( (GraphDatabaseSetting.NumberSetting) settingField.get( null ) ).getMin().toString();
+                return ((GraphDatabaseSetting.NumberSetting) settingField.get( null )).getMin().toString();
             }
-            catch( IllegalAccessException e )
+            catch ( IllegalAccessException e )
             {
                 // Ignore
             }
         }
 
-        if( key.endsWith( ".max" ) )
+        if ( key.endsWith( ".max" ) )
         {
             try
             {
                 Field settingField = getField( name );
-                return ( (GraphDatabaseSetting.NumberSetting) settingField.get( null ) ).getMax().toString();
+                return ((GraphDatabaseSetting.NumberSetting) settingField.get( null )).getMax().toString();
             }
-            catch( IllegalAccessException e )
+            catch ( IllegalAccessException e )
             {
                 // Ignore
             }
-        }
+        }*/
 
         throw new IllegalResourceException( "Could not find resource for property " + key );
     }
 
     private Field getField( String name )
     {
-        for( Field field : settingsClass.getFields() )
+        for ( Field field : settingsClass.getFields() )
         {
-            if( GraphDatabaseSetting.class.isAssignableFrom( field.getType() ) )
+            if ( GraphDatabaseSetting.class.isAssignableFrom( field.getType() ) )
             {
                 try
                 {
                     GraphDatabaseSetting setting = (GraphDatabaseSetting) field.get( null );
-                    if( setting.name().equals( name ) )
+                    if ( setting.name().equals( name ) )
                     {
                         return field;
                     }
                 }
-                catch( Exception e )
+                catch ( Exception e )
                 {
                     // Ignore
                 }
@@ -209,53 +223,61 @@ public class SettingsResourceBundle
 
         {
             Description description = (Description) settingsClass.getAnnotation( Description.class );
-            if (description != null)
+            if ( description != null )
+            {
                 keys.add( "description" );
+            }
         }
 
-        for( Field field : settingsClass.getFields() )
+        for ( Field field : settingsClass.getFields() )
         {
             try
             {
                 GraphDatabaseSetting setting = (GraphDatabaseSetting) field.get( null );
-                if( field.getAnnotation( Description.class ) != null )
+                if ( field.getAnnotation( Description.class ) != null )
                 {
                     keys.add( setting.name() + ".description" );
-                    keys.add( setting.name() + ".title" );
-                    if( field.getAnnotation( Default.class ) != null )
+//                    keys.add( setting.name() + ".title" );
+                    if ( setting.apply( Functions.<String, String>nullFunction() ) != null )
                     {
                         keys.add( setting.name() + ".default" );
                     }
-                    if( setting instanceof GraphDatabaseSetting.OptionsSetting )
+/*
+                    if ( setting instanceof GraphDatabaseSetting.OptionsSetting )
                     {
                         keys.add( setting.name() + ".options" );
                         try
                         {
-                            for( String option : ( (GraphDatabaseSetting.OptionsSetting) setting ).options() )
+                            for ( String option : ((GraphDatabaseSetting.OptionsSetting) setting).options() )
                             {
                                 Field optionField = findOptionField( option, setting.getClass() );
                                 Description description = optionField.getAnnotation( Description.class );
-                                if( description != null )
+                                if ( description != null )
                                 {
                                     keys.add( setting.name() + ".option." + option );
                                 }
                             }
                         }
-                        catch( NoSuchFieldException e )
+                        catch ( NoSuchFieldException e )
                         {
                         }
                     }
-                    if (setting instanceof GraphDatabaseSetting.NumberSetting)
+                    if ( setting instanceof GraphDatabaseSetting.NumberSetting )
                     {
-                        GraphDatabaseSetting.NumberSetting numberSetting = ( GraphDatabaseSetting.NumberSetting) setting;
-                        if (numberSetting.getMin() != null)
-                            keys.add( setting.name()+".min" );
-                        if (numberSetting.getMax() != null)
-                            keys.add( setting.name()+".max" );
+                        GraphDatabaseSetting.NumberSetting numberSetting = (GraphDatabaseSetting.NumberSetting) setting;
+                        if ( numberSetting.getMin() != null )
+                        {
+                            keys.add( setting.name() + ".min" );
+                        }
+                        if ( numberSetting.getMax() != null )
+                        {
+                            keys.add( setting.name() + ".max" );
+                        }
                     }
+*/
                 }
             }
-            catch( Exception e )
+            catch ( Exception e )
             {
                 // Ignore
             }
@@ -264,18 +286,18 @@ public class SettingsResourceBundle
     }
 
     private Field findOptionField( String option, Class<? extends GraphDatabaseSetting> optionsClass )
-        throws NoSuchFieldException
+            throws NoSuchFieldException
     {
-        for( Field optionField : optionsClass.getFields() )
+        for ( Field optionField : optionsClass.getFields() )
         {
             try
             {
-                if( option.equals( optionField.get( null ) ) )
+                if ( option.equals( optionField.get( null ) ) )
                 {
                     return optionField;
                 }
             }
-            catch( IllegalAccessException e )
+            catch ( IllegalAccessException e )
             {
                 // Ignore
             }

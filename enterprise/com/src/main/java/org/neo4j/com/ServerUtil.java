@@ -42,7 +42,6 @@ import org.neo4j.graphdb.event.ErrorState;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Predicate;
-import org.neo4j.helpers.Specification;
 import org.neo4j.helpers.Triplet;
 import org.neo4j.helpers.collection.ClosableIterable;
 import org.neo4j.helpers.collection.IteratorUtil;
@@ -75,9 +74,9 @@ public class ServerUtil
      * Given a directory and a path under it, return filename of the path
      * relative to the directory.
      *
-     * @param baseDir The base directory, containing the storeFile
+     * @param baseDir   The base directory, containing the storeFile
      * @param storeFile The store file path, must be contained under
-     *            <code>baseDir</code>
+     *                  <code>baseDir</code>
      * @return The relative path of <code>storeFile</code> to
      *         <code>baseDir</code>
      * @throws IOException As per {@link File#getCanonicalPath()}
@@ -88,10 +87,14 @@ public class ServerUtil
         String prefix = baseDir.getCanonicalPath();
         String path = storeFile.getCanonicalPath();
         if ( !path.startsWith( prefix ) )
+        {
             throw new FileNotFoundException();
+        }
         path = path.substring( prefix.length() );
         if ( path.startsWith( File.separator ) )
+        {
             return path.substring( 1 );
+        }
         return path;
     }
 
@@ -124,13 +127,13 @@ public class ServerUtil
     }
 
     public static RequestContext rotateLogsAndStreamStoreFiles( GraphDatabaseAPI graphDb,
-            boolean includeLogicalLogs, StoreWriter writer )
+                                                                boolean includeLogicalLogs, StoreWriter writer )
     {
         File baseDir = getBaseDir( graphDb );
         XaDataSourceManager dsManager =
                 graphDb.getXaDataSourceManager();
         RequestContext context = RequestContext.anonymous( rotateLogs( graphDb ) );
-        ByteBuffer temporaryBuffer = ByteBuffer.allocateDirect( 1024*1024 );
+        ByteBuffer temporaryBuffer = ByteBuffer.allocateDirect( 1024 * 1024 );
         for ( XaDataSource ds : dsManager.getAllRegisteredDataSources() )
         {
             try
@@ -171,11 +174,11 @@ public class ServerUtil
      * returns the {@link LogExtractor} used to create the stream.
      *
      * @param dataSource The {@link XaDataSource} from which to extract the
-     *            transactions
-     * @param startTxId The first tx id in the stream
-     * @param endTxId The last tx id in the stream
-     * @param stream A list to contain the transaction stream - can already
-     *            contain transactions from other data sources.
+     *                   transactions
+     * @param startTxId  The first tx id in the stream
+     * @param endTxId    The last tx id in the stream
+     * @param stream     A list to contain the transaction stream - can already
+     *                   contain transactions from other data sources.
      * @return The {@link LogExtractor} used to create the transaction stream.
      */
     private static LogExtractor getTransactionStreamForDatasource(
@@ -265,7 +268,10 @@ public class ServerUtil
              * If there's an error in here then close the log extractors,
              * otherwise if we're successful the TransactionStream will close it.
              */
-            if ( logExtractor != null ) logExtractor.close();
+            if ( logExtractor != null )
+            {
+                logExtractor.close();
+            }
             throw Exceptions.launderedException( t );
         }
     }
@@ -276,16 +282,16 @@ public class ServerUtil
      * stream containing all the transactions the slave does not currently
      * have. This way every response returned acts as an update for the slave.
      *
-     * @param <T> The type of the response
-     * @param graphDb The graph database to use
-     * @param context The slave context
+     * @param <T>      The type of the response
+     * @param graphDb  The graph database to use
+     * @param context  The slave context
      * @param response The response being packed
-     * @param filter A {@link Predicate} to apply on each txid, selecting only
-     *            those that evaluate to true
+     * @param filter   A {@link Predicate} to apply on each txid, selecting only
+     *                 those that evaluate to true
      * @return The response, packed with the latest transactions
      */
     public static <T> Response<T> packResponse( GraphDatabaseAPI graphDb,
-            RequestContext context, T response, Predicate<Long> filter )
+                                                RequestContext context, T response, Predicate<Long> filter )
     {
         List<Triplet<String, Long, TxExtractor>> stream = new ArrayList<Triplet<String, Long, TxExtractor>>();
         Set<String> resourceNames = new HashSet<String>();
@@ -303,7 +309,10 @@ public class ServerUtil
                 }
                 resourceNames.add( resourceName );
                 final long serverLastTx = dataSource.getLastCommittedTxId();
-                if ( txEntry.getTxId() >= serverLastTx ) continue;
+                if ( txEntry.getTxId() >= serverLastTx )
+                {
+                    continue;
+                }
                 LogExtractor logExtractor = getTransactionStreamForDatasource(
                         dataSource, txEntry.getTxId() + 1, serverLastTx, stream,
                         filter );
@@ -315,7 +324,10 @@ public class ServerUtil
         catch ( Throwable t )
         {   // If there's an error in here then close the log extractors, otherwise if we're
             // successful the TransactionStream will close it.
-            for ( LogExtractor extractor : logExtractors ) extractor.close();
+            for ( LogExtractor extractor : logExtractors )
+            {
+                extractor.close();
+            }
             throw Exceptions.launderedException( t );
         }
     }
@@ -325,16 +337,16 @@ public class ServerUtil
      * these transactions (inclusive) in a transaction stream and encapsulates
      * them in a {@link Response} object, ready to be returned to the slave.
      *
-     * @param graphDb The graph database to use
+     * @param graphDb        The graph database to use
      * @param dataSourceName The name of the data source to extract transactions
-     *            from
-     * @param startTx The first tx in the returned stream
-     * @param endTx The last tx in the returned stream
+     *                       from
+     * @param startTx        The first tx in the returned stream
+     * @param endTx          The last tx in the returned stream
      * @return A {@link Response} object containing a transaction stream with
      *         the requested transactions from the specified data source.
      */
     public static Response<Void> getTransactions( GraphDatabaseAPI graphDb,
-            String dataSourceName, long startTx, long endTx )
+                                                  String dataSourceName, long startTx, long endTx )
     {
         List<Triplet<String, Long, TxExtractor>> stream = new ArrayList<Triplet<String, Long, TxExtractor>>();
         XaDataSourceManager dsManager = graphDb.getXaDataSourceManager();
@@ -342,20 +354,21 @@ public class ServerUtil
         if ( dataSource == null )
         {
             throw new RuntimeException( "No data source '" + dataSourceName
-                                        + "' found" );
+                    + "' found" );
         }
 
         List<LogExtractor> extractors = startTx < endTx ? Collections.singletonList(
                 getTransactionStreamForDatasource( dataSource, startTx, endTx, stream, ServerUtil.ALL ) ) :
                 Collections.<LogExtractor>emptyList();
         return new Response<Void>( null, graphDb.getStoreId(), createTransactionStream(
-                        Collections.singletonList( dataSourceName ), stream,
-                        extractors ), ResourceReleaser.NO_OP );
+                Collections.singletonList( dataSourceName ), stream,
+                extractors ), ResourceReleaser.NO_OP );
 
     }
 
     private static TransactionStream createTransactionStream( Collection<String> resourceNames,
-            final List<Triplet<String, Long, TxExtractor>> stream, final List<LogExtractor> logExtractors )
+                                                              final List<Triplet<String, Long, TxExtractor>> stream,
+                                                              final List<LogExtractor> logExtractors )
     {
         return new TransactionStream( resourceNames.toArray( new String[resourceNames.size()] ) )
         {
@@ -370,7 +383,10 @@ public class ServerUtil
             @Override
             public void close()
             {
-                for ( LogExtractor extractor : logExtractors ) extractor.close();
+                for ( LogExtractor extractor : logExtractors )
+                {
+                    extractor.close();
+                }
             }
         };
     }
@@ -390,7 +406,8 @@ public class ServerUtil
         }
     };
 
-    public static <T> void applyReceivedTransactions( Response<T> response, XaDataSourceManager xaDsm, TxHandler txHandler ) throws IOException
+    public static <T> void applyReceivedTransactions( Response<T> response, XaDataSourceManager xaDsm,
+                                                      TxHandler txHandler ) throws IOException
     {
         try
         {
@@ -417,7 +434,8 @@ public class ServerUtil
         }
     }
 
-    public static RequestContext onlyIncludeResource( RequestContext context, XaDataSourceManager dataSources, String resource )
+    public static RequestContext onlyIncludeResource( RequestContext context, XaDataSourceManager dataSources,
+                                                      String resource )
     {
         return onlyIncludeResource( context, dataSources.getXaDataSource( resource ) );
     }
@@ -439,7 +457,7 @@ public class ServerUtil
                     " didn't have the XA data source we are commiting (" + dataSource.getName() + ")" );
         }
         return new RequestContext( context.getSessionId(), context.machineId(),
-                context.getEventIdentifier(), new Tx[] {txForDs}, context.getMasterId(),
+                context.getEventIdentifier(), new Tx[]{txForDs}, context.getMasterId(),
                 context.getChecksum() );
     }
 
@@ -473,7 +491,7 @@ public class ServerUtil
             {
                 if ( visitedDataSources.add( tx.first() ) )
                 {
-                    dataSource.setLastCommittedTxId( tx.second()-1 );
+                    dataSource.setLastCommittedTxId( tx.second() - 1 );
                 }
             }
 
@@ -484,18 +502,19 @@ public class ServerUtil
         };
     }
 
-    public static RequestContext getRequestContext( XaDataSourceManager dsManager, long sessionId, int machineId, int eventIdentifier )
+    public static RequestContext getRequestContext( XaDataSourceManager dsManager, long sessionId, int machineId,
+                                                    int eventIdentifier )
     {
         try
         {
             Collection<XaDataSource> dataSources = dsManager.getAllRegisteredDataSources();
             Tx[] txs = new Tx[dataSources.size()];
             int i = 0;
-            Pair<Integer,Long> master = null;
+            Pair<Integer, Long> master = null;
             for ( XaDataSource dataSource : dataSources )
             {
                 long txId = dataSource.getLastCommittedTxId();
-                if( dataSource.getName().equals( Config.DEFAULT_DATA_SOURCE_NAME ) )
+                if ( dataSource.getName().equals( Config.DEFAULT_DATA_SOURCE_NAME ) )
                 {
                     master = dataSource.getMasterForCommittedTx( txId );
                 }
@@ -509,14 +528,16 @@ public class ServerUtil
         }
     }
 
-    public static RequestContext getRequestContext( XaDataSource dataSource, long sessionId, int machineId, int eventIdentifier )
+    public static RequestContext getRequestContext( XaDataSource dataSource, long sessionId, int machineId,
+                                                    int eventIdentifier )
     {
         try
         {
             long txId = dataSource.getLastCommittedTxId();
-            Tx[] txs = new Tx[] { RequestContext.lastAppliedTx( dataSource.getName(), txId ) };
-            Pair<Integer,Long> master = dataSource.getName().equals( Config.DEFAULT_DATA_SOURCE_NAME ) ?
-                    dataSource.getMasterForCommittedTx( txId ) : Pair.of( XaLogicalLog.MASTER_ID_REPRESENTING_NO_MASTER, 0L );
+            Tx[] txs = new Tx[]{RequestContext.lastAppliedTx( dataSource.getName(), txId )};
+            Pair<Integer, Long> master = dataSource.getName().equals( Config.DEFAULT_DATA_SOURCE_NAME ) ?
+                    dataSource.getMasterForCommittedTx( txId ) : Pair.of( XaLogicalLog
+                    .MASTER_ID_REPRESENTING_NO_MASTER, 0L );
             return new RequestContext( sessionId, machineId, eventIdentifier, txs, master.first(), master.other() );
         }
         catch ( IOException e )
@@ -527,10 +548,10 @@ public class ServerUtil
 
     public static URI getUriForScheme( final String scheme, Iterable<URI> uris )
     {
-        return first( filter( new Specification<URI>()
+        return first( filter( new Predicate<URI>()
         {
             @Override
-            public boolean satisfiedBy( URI item )
+            public boolean accept( URI item )
             {
                 return item.getScheme().equals( scheme );
             }

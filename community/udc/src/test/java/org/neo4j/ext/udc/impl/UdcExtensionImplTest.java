@@ -57,6 +57,7 @@ public class UdcExtensionImplTest
     private PingerHandler handler;
     private String serverAddress;
     private Map<String, String> config;
+    private File possibleDirectory;
 
     @Before
     public void resetUdcState()
@@ -108,8 +109,10 @@ public class UdcExtensionImplTest
     @Test
     public void shouldRecordFailuresWhenThereIsNoServer() throws Exception
     {
+        possibleDirectory = new File( "target" + File.separator + "should-record-failures" );
+
         GraphDatabaseService graphdb = new GraphDatabaseFactory().
-                newEmbeddedDatabaseBuilder( "should-record-failures" ).
+                newEmbeddedDatabaseBuilder( possibleDirectory.getPath() ).
                 loadPropertiesFromURL( getClass().getResource( "/org/neo4j/ext/udc/udc.properties" ) ).
                 setConfig( UdcSettings.first_delay, "100" ).
                 setConfig( UdcSettings.udc_host, "127.0.0.1:1" ).
@@ -166,7 +169,7 @@ public class UdcExtensionImplTest
 
         GraphDatabaseService graphdb = createTempDatabase( config );
         assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
-        assertEquals( "test-reg", handler.getQueryMap().get( REGISTRATION ) );
+        assertEquals( "unit-testing", handler.getQueryMap().get( REGISTRATION ) );
 
         destroy( graphdb );
     }
@@ -178,7 +181,7 @@ public class UdcExtensionImplTest
 
         GraphDatabaseService graphdb = createTempDatabase( config );
         assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
-        assertEquals( "test-reg", handler.getQueryMap().get( REGISTRATION ) );
+        assertEquals( "unit-testing", handler.getQueryMap().get( REGISTRATION ) );
 
         destroy( graphdb );
     }
@@ -436,15 +439,14 @@ public class UdcExtensionImplTest
     private GraphDatabaseService createTempDatabase( Map<String, String> config ) throws IOException
     {
         String randomDbName = "tmpdb-" + rnd.nextInt();
-        File possibleDirectory = new File( "target" + File.separator
-                + randomDbName );
+        possibleDirectory = new File( "target" + File.separator + randomDbName );
         if ( possibleDirectory.exists() )
         {
             FileUtils.deleteDirectory( possibleDirectory );
         }
 
         GraphDatabaseBuilder graphDatabaseBuilder = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(
-                randomDbName );
+                possibleDirectory.getPath() );
         graphDatabaseBuilder.loadPropertiesFromURL( getClass().getResource( "/org/neo4j/ext/udc/udc.properties" ) );
 
         if ( config != null )
@@ -458,7 +460,7 @@ public class UdcExtensionImplTest
     private void destroy( GraphDatabaseService dbToDestroy ) throws IOException
     {
         dbToDestroy.shutdown();
-        FileUtils.deleteDirectory( new File( ((GraphDatabaseAPI) dbToDestroy).getStoreDir() ) );
+        FileUtils.deleteDirectory( possibleDirectory );
     }
 
 }

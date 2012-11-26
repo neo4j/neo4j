@@ -20,6 +20,10 @@
 
 package org.neo4j.kernel.ha.cluster;
 
+import static org.neo4j.helpers.Functions.withDefaults;
+import static org.neo4j.helpers.Settings.INTEGER;
+import static org.neo4j.helpers.Uris.parameter;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
@@ -28,20 +32,18 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.cluster.ClusterSettings;
-import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
-import org.neo4j.com.ComSettings;
+import org.neo4j.cluster.member.ClusterMemberAvailability;
 import org.neo4j.com.Response;
 import org.neo4j.com.Server;
 import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.helpers.Functions;
+import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.helpers.Pair;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.TransactionInterceptorProviders;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.configuration.ConfigurationDefaults;
 import org.neo4j.kernel.ha.BranchDetectingTxVerifier;
 import org.neo4j.kernel.ha.BranchedDataException;
 import org.neo4j.kernel.ha.BranchedDataPolicy;
@@ -80,27 +82,23 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 
 /**
  * Performs the internal switches from pending to slave/master, by listening for
- * ClusterMemberChangeEvents. When finished it will invoke {@link HighAvailabilityEvents#memberIsAvailable(String)} to announce
+ * ClusterMemberChangeEvents. When finished it will invoke {@link org.neo4j.cluster.member.ClusterMemberAvailability#memberIsAvailable(String, URI)} to announce
  * to the cluster it's new status.
  */
 public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListener, Lifecycle
 {
-    public static int getServerId( URI serverId )
+    public static final String MASTER = "master";
+    public static final String SLAVE = "slave";
+
+    public static int getServerId( URI haUri )
     {
-        String query = serverId.getQuery();
-        for ( String param : query.split( "&" ) )
-        {
-            if ( param.startsWith( "serverId" ) )
-            {
-                return Integer.parseInt( param.substring( "serverId=".length() ) );
-            }
-        }
-        return -1;
+        // Get serverId parameter, default to -1 if it is missing, and parse to integer
+        return INTEGER.apply( withDefaults( Functions.<URI, String>constant( "-1" ), parameter( "serverId" ) ).apply( haUri ));
     }
 
     private URI availableMasterId;
     private final DelegateInvocationHandler delegateHandler;
-    private final HighAvailabilityEvents clusterEvents;
+    private final ClusterMemberAvailability clusterMemberAvailability;
     private final GraphDatabaseAPI graphDb;
     private final Config config;
     private LifeSupport life;
@@ -109,12 +107,13 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
     private Future<?> toMasterTask;
     private Future<?> toSlaveTask;
 
-    public HighAvailabilityModeSwitcher( DelegateInvocationHandler delegateHandler, HighAvailabilityEvents clusterEvents,
-                                      HighAvailabilityMemberStateMachine stateHandler, GraphDatabaseAPI graphDb,
-                                      Config config, StringLogger msgLog )
+    public HighAvailabilityModeSwitcher( DelegateInvocationHandler delegateHandler,
+                                         ClusterMemberAvailability clusterMemberAvailability,
+                                         HighAvailabilityMemberStateMachine stateHandler, GraphDatabaseAPI graphDb,
+                                         Config config, StringLogger msgLog )
     {
         this.delegateHandler = delegateHandler;
-        this.clusterEvents = clusterEvents;
+        this.clusterMemberAvailability = clusterMemberAvailability;
         this.graphDb = graphDb;
         this.config = config;
         this.msgLog = msgLog;
@@ -184,6 +183,12 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
             case TO_MASTER:
                 life.shutdown();
                 life = new LifeSupport();
+
+                if ( event.getOldState().equals( HighAvailabilityMemberState.SLAVE ) )
+                {
+                    clusterMemberAvailability.memberIsUnavailable( SLAVE );
+                }
+
                 switchToMaster();
                 break;
             case TO_SLAVE:
@@ -192,6 +197,16 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                 switchToSlave();
                 break;
             case PENDING:
+
+                if ( event.getOldState().equals( HighAvailabilityMemberState.SLAVE ) )
+                {
+                    clusterMemberAvailability.memberIsUnavailable( SLAVE );
+                }
+                else if ( event.getOldState().equals( HighAvailabilityMemberState.MASTER ) )
+                {
+                    clusterMemberAvailability.memberIsUnavailable( MASTER );
+                }
+
                 life.shutdown();
                 life = new LifeSupport();
                 break;
@@ -215,9 +230,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                         @Override
                         public long getOldChannelThreshold()
                         {
-                            return config.isSet( HaSettings.lock_read_timeout ) ?
-                                    config.get( HaSettings.lock_read_timeout ) : config.get( ClusterSettings
-                                    .read_timeout );
+                            return config.get( HaSettings.lock_read_timeout );
                         }
 
                         @Override
@@ -227,32 +240,15 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                         }
 
                         @Override
-                        public int getPort()
-                        {
-                            int port = HaSettings.ha_server.getPort( config.getParams() );
-                            if ( port > 0 )
-                            {
-                                return port;
-                            }
-
-                            // If not specified, use the default
-                            return HaSettings.ha_server.getPort( MapUtil.stringMap( HaSettings.ha_server.name(),
-                                    ConfigurationDefaults.getDefault( HaSettings.ha_server, HaSettings.class ) ) );
-                        }
-
-                        @Override
                         public int getChunkSize()
                         {
-                            return config.isSet( ComSettings.com_chunk_size ) ? config.get( ComSettings
-                                    .com_chunk_size ) :
-                                    ComSettings.com_chunk_size.valueOf( ConfigurationDefaults.getDefault(
-                                            ComSettings.com_chunk_size, ComSettings.class ), config );
+                            return config.get( HaSettings.com_chunk_size ).intValue();
                         }
 
                         @Override
-                        public String getServerAddress()
+                        public HostnamePort getServerAddress()
                         {
-                            return HaSettings.ha_server.getAddressWithLocalhostDefault( config.getParams() );
+                            return config.get( HaSettings.ha_server );
                         }
                     };
                     MasterServer masterServer = new MasterServer( masterImpl, msgLog, serverConfig,
@@ -287,13 +283,17 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                         }
                     }
                     life.start();
+
+                    URI haUri = URI.create( "ha://" + masterServer.getSocketAddress().getHostName() + ":" +
+                            masterServer.getSocketAddress().getPort() + "?serverId=" +
+                            config.get( HaSettings.server_id ) );
+                    clusterMemberAvailability.memberIsAvailable( MASTER, haUri );
                 }
                 catch ( Throwable e )
                 {
                     msgLog.logMessage( "Failed to switch to master", e );
                     return;
                 }
-                clusterEvents.memberIsAvailable( ClusterConfiguration.COORDINATOR );
             }
         } );
     }
@@ -434,32 +434,15 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                             }
 
                             @Override
-                            public int getPort()
-                            {
-                                int port = HaSettings.ha_server.getPort( config.getParams() );
-                                if ( port > 0 )
-                                {
-                                    return port;
-                                }
-
-                                // If not specified, use the default
-                                return HaSettings.ha_server.getPort( MapUtil.stringMap( HaSettings.ha_server.name(),
-                                        ConfigurationDefaults.getDefault( HaSettings.ha_server, HaSettings.class ) ) );
-                            }
-
-                            @Override
                             public int getChunkSize()
                             {
-                                return config.isSet( ComSettings.com_chunk_size ) ? config.get( ComSettings
-                                        .com_chunk_size ) :
-                                        ComSettings.com_chunk_size.valueOf( ConfigurationDefaults.getDefault(
-                                                ComSettings.com_chunk_size, ComSettings.class ), config );
+                                return config.get( HaSettings.com_chunk_size ).intValue();
                             }
 
                             @Override
-                            public String getServerAddress()
+                            public HostnamePort getServerAddress()
                             {
-                                return HaSettings.ha_server.getAddressWithLocalhostDefault( config.getParams() );
+                                return config.get( HaSettings.ha_server );
                             }
                         };
                         SlaveServer server = new SlaveServer( slaveImpl, serverConfig, msgLog );
@@ -468,7 +451,11 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                         life.add( slaveImpl );
                         life.add( server );
                         life.start();
-                        clusterEvents.memberIsAvailable( ClusterConfiguration.SLAVE );
+
+                        URI haUri = URI.create( "ha://" + server.getSocketAddress().getHostName() + ":" +
+                                server.getSocketAddress().getPort() + "?serverId=" +
+                                config.get( HaSettings.server_id ) );
+                        clusterMemberAvailability.memberIsAvailable( SLAVE, haUri );
 
                         msgLog.logMessage( "I am " + config.get( HaSettings.server_id ) +
                                 ", successfully moved to slave for master " + masterUri );
@@ -500,12 +487,13 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                 graphDb.getDependencyResolver().resolveDependency( XaDataSourceManager.class ).start();
             }
 
-            private void stopServicesAndHandleBranchedStore( BranchedDataPolicy branchPolicy, boolean deleteIndexes ) throws Throwable
+            private void stopServicesAndHandleBranchedStore( BranchedDataPolicy branchPolicy, boolean deleteIndexes )
+                    throws Throwable
             {
                 graphDb.getDependencyResolver().resolveDependency( XaDataSourceManager.class ).stop();
                 graphDb.getDependencyResolver().resolveDependency( TxManager.class ).stop();
                 graphDb.getDependencyResolver().resolveDependency( NodeManager.class ).stop();
-                branchPolicy.handle( new File( config.get( InternalAbstractGraphDatabase.Configuration.store_dir ) ) );
+                branchPolicy.handle( config.get( InternalAbstractGraphDatabase.Configuration.store_dir ) );
                 if ( deleteIndexes )
                 {
                     FileUtils.deleteRecursively( new File(

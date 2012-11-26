@@ -18,7 +18,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.neo4j.kernel.ha.cluster;
+package org.neo4j.cluster.member;
 
 import java.net.URI;
 
@@ -27,7 +27,7 @@ import java.net.URI;
  * <p/>
  * These are invoked by translating atomic broadcast messages to methods on this interface.
  */
-public interface HighAvailabilityListener
+public interface ClusterMemberListener
 {
     /**
      * Called when new master has been elected. The new master may not be available a.t.m.
@@ -44,12 +44,14 @@ public interface HighAvailabilityListener
      *
      * @param role
      * @param instanceClusterUri
-     * @param instanceUris
+     * @param roleUri
      */
-    void memberIsAvailable( String role, URI instanceClusterUri, Iterable<URI> instanceUris );
+    void memberIsAvailable( String role, URI instanceClusterUri, URI roleUri );
+
+    void memberIsUnavailable(String role, URI instanceClusterUri);
 
     public abstract class Adapter
-            implements HighAvailabilityListener
+            implements ClusterMemberListener
     {
         @Override
         public void masterIsElected( URI masterUri )
@@ -57,7 +59,12 @@ public interface HighAvailabilityListener
         }
 
         @Override
-        public void memberIsAvailable( String role, URI instanceClusterUri, Iterable<URI> instanceUris )
+        public void memberIsAvailable( String role, URI instanceClusterUri, URI roleUri )
+        {
+        }
+
+        @Override
+        public void memberIsUnavailable( String role, URI instanceClusterUri )
         {
         }
     }
