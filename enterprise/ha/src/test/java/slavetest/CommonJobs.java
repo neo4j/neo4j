@@ -24,6 +24,8 @@ import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.util.Map;
 
+import javax.transaction.SystemException;
+
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Lock;
@@ -647,15 +649,22 @@ public abstract class CommonJobs
         @Override
         protected Void executeInTransaction( GraphDatabaseAPI db, Transaction tx )
         {
-            LockManager lockManager = db.getLockManager();
-            TransactionState state = ((AbstractTransactionManager)db.getTxManager()).getTransactionState();
-            for ( int i = 0; i < amount; i++ )
+            try
             {
-                Object resource = new LockableNode( i );
-                lockManager.getWriteLock( resource );
-                state.addLockToTransaction( lockManager, resource, LockType.WRITE );
+                LockManager lockManager = db.getLockManager();
+                TransactionState state = ((AbstractTransactionManager)db.getTxManager()).getTransactionState();
+                for ( int i = 0; i < amount; i++ )
+                {
+                    Object resource = new LockableNode( i );
+                    lockManager.getWriteLock( resource );
+                    state.addLockToTransaction( lockManager, resource, LockType.WRITE );
+                }
+                return null;
             }
-            return null;
+            catch ( SystemException e )
+            {
+                throw new RuntimeException( e );
+            }
         }
     }
 

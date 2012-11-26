@@ -188,6 +188,10 @@ public class MasterImpl extends LifecycleAdapter implements Master
             }
             return packResponse( context, new LockResult( LockStatus.OK_LOCKED ) );
         }
+        catch ( SystemException e )
+        {
+            throw new RuntimeException( e );
+        }
         catch ( DeadlockDetectedException e )
         {
             return packResponse( context, new LockResult( e.getMessage() ) );

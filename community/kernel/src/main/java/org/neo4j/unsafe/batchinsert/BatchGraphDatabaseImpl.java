@@ -41,7 +41,6 @@ import org.neo4j.graphdb.Traverser.Order;
 import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.graphdb.index.IndexManager;
-import org.neo4j.kernel.PlaceboTransaction;
 import org.neo4j.kernel.impl.cache.LruCache;
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
 
@@ -193,7 +192,7 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
         clearCaches();
         batchInserter.shutdown();
     }
-
+    
     static class FakeTransaction implements Transaction
     {
         @Override
@@ -216,13 +215,13 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
         @Override
         public Lock acquireWriteLock( PropertyContainer entity )
         {
-            return PlaceboTransaction.NO_LOCK;
+            return Lock.NO_LOCK;
         }
         
         @Override
         public Lock acquireReadLock( PropertyContainer entity )
         {
-            return PlaceboTransaction.NO_LOCK;
+            return Lock.NO_LOCK;
         }
     }
 

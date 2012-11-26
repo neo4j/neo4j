@@ -970,17 +970,9 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
     }
 
     @Override
-    public TransactionState getTransactionState()
+    public TransactionState getTransactionState() throws SystemException
     {
-        Transaction tx;
-        try
-        {
-            tx = getTransaction();
-        }
-        catch ( SystemException e )
-        {
-            throw new RuntimeException( e );
-        }
+        Transaction tx = getTransaction();
         return tx != null ? ((TransactionImpl)tx).getState() : TransactionState.NO_STATE;
     }
     

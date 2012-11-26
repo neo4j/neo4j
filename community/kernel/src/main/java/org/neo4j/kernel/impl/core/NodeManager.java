@@ -30,6 +30,8 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import javax.transaction.SystemException;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
@@ -1179,7 +1181,14 @@ public class NodeManager
     
     TransactionState getTransactionState()
     {
-        return transactionManager.getTransactionState();
+        try
+        {
+            return transactionManager.getTransactionState();
+        }
+        catch ( SystemException e )
+        {
+            throw new RuntimeException( e );
+        }
     }
     
     private class NodeManagerDatasourceListener implements DataSourceRegistrationListener

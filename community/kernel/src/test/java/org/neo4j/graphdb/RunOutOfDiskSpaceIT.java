@@ -20,7 +20,8 @@
 package org.neo4j.graphdb;
 
 import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 
 import java.io.IOException;
 
@@ -33,7 +34,6 @@ import org.neo4j.test.TargetDirectory;
 
 public class RunOutOfDiskSpaceIT
 {
-
     public TargetDirectory targetDir = TargetDirectory.forTest( RunOutOfDiskSpaceIT.class );
 
     @Rule
@@ -53,10 +53,12 @@ public class RunOutOfDiskSpaceIT
         db.createNode();
         tx.success();
 
-        try {
+        try
+        {
             tx.finish();
-            fail("Expected tx finish to throw TransactionFailureException when filesystem is full.");
-        } catch(TransactionFailureException e)
+            fail( "Expected tx finish to throw TransactionFailureException when filesystem is full." );
+        }
+        catch ( TransactionFailureException e )
         {
             exceptionThrown = e;
         }
@@ -65,7 +67,6 @@ public class RunOutOfDiskSpaceIT
         assertThat(exceptionThrown.getCause(), is( Throwable.class ));
         assertThat(exceptionThrown.getCause().getCause(), is( Throwable.class ));
         assertThat(exceptionThrown.getCause().getCause().getCause(), is( IOException.class ));
-
     }
 
     @Test
@@ -81,26 +82,28 @@ public class RunOutOfDiskSpaceIT
         db.createNode();
         tx.success();
 
-        try {
+        try
+        {
             tx.finish();
-            fail("Expected tx finish to throw TransactionFailureException when filesystem is full.");
-        } catch(TransactionFailureException e)
+            fail( "Expected tx finish to throw TransactionFailureException when filesystem is full." );
+        }
+        catch ( TransactionFailureException e )
         {
             // Expected
         }
 
         // When
-        try {
+        try
+        {
             db.beginTx();
             fail( "Expected tx begin to throw TransactionFailureException when tx manager breaks." );
-        } catch(TransactionFailureException e)
+        }
+        catch ( TransactionFailureException e )
         {
             errorCaught = e;
         }
 
         // Then
         assertThat( errorCaught.getCause(), is( SystemException.class ) );
-
     }
-
 }

@@ -27,7 +27,6 @@ import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
-import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.core.WritableTransactionState.LockElement;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.transaction.LockManager;
@@ -62,21 +61,23 @@ public class TopLevelTransaction implements Transaction
     }
     
     private final AbstractTransactionManager transactionManager;
-    private final TransactionOutcome transactionOutcome = new TransactionOutcome();
+    protected final TransactionOutcome transactionOutcome = new TransactionOutcome();
     private final LockManager lockManager;
-    private final TransactionState state;
 
-    public TopLevelTransaction( AbstractTransactionManager transactionManager, LockManager lockManager,
-            TransactionState state )
+    public TopLevelTransaction( AbstractTransactionManager transactionManager, LockManager lockManager )
     {
         this.transactionManager = transactionManager;
         this.lockManager = lockManager;
-        this.state = state;
     }
 
     public void failure()
     {
         transactionOutcome.failed();
+        markAsRollbackOnly();
+    }
+
+    protected void markAsRollbackOnly()
+    {
         try
         {
             transactionManager.getTransaction().setRollbackOnly();
@@ -146,16 +147,30 @@ public class TopLevelTransaction implements Transaction
     @Override
     public Lock acquireWriteLock( PropertyContainer entity )
     {
-        lockManager.getWriteLock( entity );
-        LockElement lockElement = state.addLockToTransaction( lockManager, entity, LockType.WRITE );
-        return new LockImpl( lockManager, lockElement );
+        try
+        {
+            lockManager.getWriteLock( entity );
+            LockElement lockElement = transactionManager.getTransactionState().addLockToTransaction( lockManager, entity, LockType.WRITE );
+            return new LockImpl( lockManager, lockElement );
+        }
+        catch ( SystemException e )
+        {
+            throw new TransactionFailureException( "Unable to get transaction state", e );
+        }
     }
 
     @Override
     public Lock acquireReadLock( PropertyContainer entity )
     {
-        lockManager.getReadLock( entity );
-        LockElement lockElement = state.addLockToTransaction( lockManager, entity, LockType.READ );
-        return new LockImpl( lockManager, lockElement );
+        try
+        {
+            lockManager.getReadLock( entity );
+            LockElement lockElement = transactionManager.getTransactionState().addLockToTransaction( lockManager, entity, LockType.READ );
+            return new LockImpl( lockManager, lockElement );
+        }
+        catch ( SystemException e )
+        {
+            throw new TransactionFailureException( "Unable to get transaction state", e );
+        }
     }
 }

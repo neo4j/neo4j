@@ -57,7 +57,6 @@ import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.KernelData;
-import org.neo4j.kernel.PlaceboTransaction;
 import org.neo4j.kernel.TransactionBuilder;
 import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
@@ -95,27 +94,13 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
         @Override
         public Lock acquireWriteLock( PropertyContainer entity )
         {
-            return PlaceboTransaction.NO_LOCK;
+            return Lock.NO_LOCK;
         }
 
         @Override
         public Lock acquireReadLock( PropertyContainer entity )
         {
-            return PlaceboTransaction.NO_LOCK;
-        }
-    };
-    private final TransactionBuilder txBuilder = new TransactionBuilder()
-    {
-        @Override
-        public TransactionBuilder unforced()
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public Transaction begin()
-        {
-            return beginTx();
+            return Lock.NO_LOCK;
         }
     };
     private final AbstractTransactionManager txManager = new AbstractTransactionManager()
