@@ -111,8 +111,8 @@ public class MultiPaxosServerFactory
         final MultiPaxosContext context = new MultiPaxosContext( clusterContext, proposerContext, learnerContext,
                 heartbeatContext, timeouts );
         ElectionContext electionContext = new ElectionContext( Iterables.iterable( new ElectionRole(
-                ClusterConfiguration
-                        .COORDINATOR ) ), clusterContext, heartbeatContext );
+                ClusterConfiguration.COORDINATOR ) ),
+                clusterContext, heartbeatContext );
         SnapshotContext snapshotContext = new SnapshotContext( clusterContext, learnerContext );
         AtomicBroadcastContext atomicBroadcastContext = new AtomicBroadcastContext( clusterContext, executor );
 

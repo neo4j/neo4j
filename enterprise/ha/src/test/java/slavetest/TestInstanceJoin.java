@@ -28,6 +28,7 @@ import static org.neo4j.test.TargetDirectory.forTest;
 import java.util.Map;
 
 import org.junit.Test;
+import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
@@ -115,10 +116,10 @@ public class TestInstanceJoin
     {
         HighlyAvailableGraphDatabase db = (HighlyAvailableGraphDatabase) new HighlyAvailableGraphDatabaseFactory().
                 newHighlyAvailableDatabaseBuilder( storeDir )
+                .setConfig( ClusterSettings.cluster_server, "127.0.0.1:" + (5001 + i) )
+                .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:5001" )
                 .setConfig( HaSettings.server_id, i + "" )
                 .setConfig( HaSettings.ha_server, "127.0.0.1:" + (6666 + i) )
-                .setConfig( HaSettings.cluster_server, "127.0.0.1:" + (5001 + i) )
-                .setConfig( HaSettings.initial_hosts, "127.0.0.1:5001" )
                 .setConfig( HaSettings.pull_interval, "0ms" )
                 .setConfig( additionalConfig )
                 .newGraphDatabase();

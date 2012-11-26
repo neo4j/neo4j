@@ -22,6 +22,7 @@ package org.neo4j.metatest;
 import static java.nio.ByteBuffer.allocateDirect;
 import static org.junit.Assert.assertEquals;
 
+import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 
@@ -34,14 +35,14 @@ public class TestEphemeralFileChannel
     public void smoke() throws Exception
     {
         EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
-        FileChannel channel = fs.open( "yo", "rw" );
+        FileChannel channel = fs.open( new File("yo"), "rw" );
         
         // Clear it because we depend on it to be zeros where we haven't written
         ByteBuffer buffer = allocateDirect( 23 );
         buffer.put( new byte[23] ); // zeros
         buffer.flip();
         channel.write( buffer );
-        channel = fs.open( "yo", "rw" );
+        channel = fs.open( new File("yo"), "rw" );
         long longValue = 1234567890L;
         
         // [1].....[2]........[1234567890L]...

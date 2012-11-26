@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.storemigration.legacystore;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
@@ -38,7 +39,7 @@ public class LegacyRelationshipStoreReader
     private final FileChannel fileChannel;
     private final long maxId;
 
-    public LegacyRelationshipStoreReader( String fileName ) throws IOException
+    public LegacyRelationshipStoreReader( File fileName ) throws IOException
     {
         fileChannel = new RandomAccessFile( fileName, "r" ).getChannel();
         int endHeaderSize = UTF8.encode( FROM_VERSION ).length;

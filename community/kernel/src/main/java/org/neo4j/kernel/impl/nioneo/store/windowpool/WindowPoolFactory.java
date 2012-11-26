@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.nioneo.store.windowpool;
 
+import java.io.File;
 import java.nio.channels.FileChannel;
 
 import org.neo4j.kernel.configuration.Config;
@@ -26,6 +27,6 @@ import org.neo4j.kernel.impl.util.StringLogger;
 
 public interface WindowPoolFactory
 {
-    WindowPool create( String storageFileName, int recordSize, FileChannel fileChannel,
+    WindowPool create( File storageFileName, int recordSize, FileChannel fileChannel,
                        Config configuration, StringLogger log );
 }

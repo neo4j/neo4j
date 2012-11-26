@@ -33,7 +33,7 @@ import java.util.Map;
 import org.neo4j.cluster.protocol.cluster.ClusterContext;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatContext;
 import org.neo4j.helpers.Function;
-import org.neo4j.helpers.Specification;
+import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.Iterables;
 
 /**
@@ -224,17 +224,17 @@ public class ElectionContext
 
     public Iterable<String> getRolesRequiringElection()
     {
-        return filter( new Specification<String>() // Only include roles that are not elected
+        return filter( new Predicate<String>() // Only include roles that are not elected
         {
             @Override
-            public boolean satisfiedBy( String role )
+            public boolean accept( String role )
             {
                 return clusterContext.getConfiguration().getElected( role ) == null;
             }
         }, map( new Function<ElectionRole, String>() // Convert ElectionRole to String
         {
             @Override
-            public String map( ElectionRole role )
+            public String apply( ElectionRole role )
             {
                 return role.getName();
             }

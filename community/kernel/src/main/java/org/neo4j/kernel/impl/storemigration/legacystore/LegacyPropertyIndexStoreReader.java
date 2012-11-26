@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.storemigration.legacystore;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
@@ -32,9 +33,9 @@ import org.neo4j.kernel.impl.nioneo.store.Record;
 public class LegacyPropertyIndexStoreReader
 {
     public static final String FROM_VERSION = "PropertyIndex v0.9.9";
-    private String fileName;
+    private File fileName;
 
-    public LegacyPropertyIndexStoreReader( String fileName )
+    public LegacyPropertyIndexStoreReader( File fileName )
     {
         this.fileName = fileName;
     }

@@ -22,10 +22,8 @@ package org.neo4j.graphdb.factory;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.InetAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumSet;
@@ -37,19 +35,19 @@ import java.util.ResourceBundle;
 import java.util.regex.Pattern;
 
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.helpers.Function;
+import org.neo4j.helpers.Functions;
+import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.TimeUtil;
-import org.neo4j.kernel.configuration.Config;
+import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.impl.util.FileUtils;
 
 /**
  * Setting types for Neo4j. Actual settings are in GraphDatabaseSettings.
- *
+ * <p/>
  * This is a usage-only class, backwards compatibility is retained for using implementations
  * of it, but not for implementing it.
- *
- * This is deprecated, please use {@link org.neo4j.graphdb.config.Setting} instead.
  */
-// Deprecated because we want to make this internal. Users should use Setting<T> instead.
 @Deprecated
 public abstract class GraphDatabaseSetting<T> implements Setting<T>
 {
@@ -58,1167 +56,187 @@ public abstract class GraphDatabaseSetting<T> implements Setting<T>
 
     public static final String ANY = ".+";
 
-    // Deprecated because this is to be removed
-    @Deprecated
     public static final String SIZE = "\\d+[kmgKMG]";
 
-    // Deprecated because this is to be removed
-    @Deprecated
     public static final String DURATION = "\\d+(ms|s|m)";
-
-    public interface DefaultValue
-    {
-        String getDefaultValue();
-    }
 
     //
     // Implementations of GraphDatabaseSetting
     //
 
-    /**
-     * This is deprecated, because it is going to be moved out of the public API. Please use {@link Setting} instead.
-     */
-    @Deprecated
     public static class StringSetting
-            extends GraphDatabaseSetting<String>
+            extends SettingWrapper<String>
     {
-        private Pattern regex;
-
-        public StringSetting()
+        public StringSetting( Setting<String> setting )
         {
-            this( "", ANY, "Must be a non-empty string." );
-        }
-
-        public StringSetting( String name, String regex, String formatMessage )
-        {
-            super( name, formatMessage );
-            this.regex = Pattern.compile( regex );
-        }
-
-        @Override
-        public void validate( Locale locale, String value )
-        {
-            if ( value == null )
-            {
-                throw illegalValue( locale, value );
-            }
-
-            if ( !regex.matcher( value ).matches() )
-            {
-                throw illegalValue( locale, value );
-            }
-        }
-
-        @Override
-        public String valueOf( String rawValue, Config config )
-        {
-            return rawValue;
+            super( setting );
         }
     }
 
-    /**
-     * This is deprecated, because it is going to be moved out of the public API. Please use {@link Setting} instead.
-     */
-    @Deprecated
-    public static abstract class NumberSetting<T extends Number>
-            extends GraphDatabaseSetting<T>
-    {
-        protected T min;
-        protected T max;
-
-        protected NumberSetting( String name, String validationMessage )
-        {
-            super( name, validationMessage );
-        }
-
-        protected NumberSetting( String name, String validationMessage, T min, T max )
-        {
-            super( name, validationMessage );
-            this.min = min;
-            this.max = max;
-        }
-
-        @SuppressWarnings({"unchecked", "rawtypes"})
-        protected void rangeCheck( Locale locale, Comparable value )
-        {
-            // Check range
-            if ( min != null && value.compareTo( min ) < 0 )
-            {
-                throw illegalValue( locale, value + "", "Minimum allowed value is: %s", new String[]{min + ""} );
-            }
-
-            if ( max != null && value.compareTo( max ) > 0 )
-            {
-                throw illegalValue( locale, value + "", "Maximum allowed value is: %s", new String[]{max + ""} );
-            }
-        }
-
-        public T getMin()
-        {
-            return min;
-        }
-
-        public T getMax()
-        {
-            return max;
-        }
-    }
-
-    /**
-     * This is deprecated, because it is going to be moved out of the public API. Please use {@link Setting} instead.
-     */
-    @Deprecated
     public static class IntegerSetting
-            extends NumberSetting<Integer>
+            extends SettingWrapper<Integer>
     {
-        public IntegerSetting( String name, String formatMessage )
+        public IntegerSetting( Setting<Integer> setting )
         {
-            super( name, formatMessage );
-        }
-
-        public IntegerSetting( String name, String formatMessage, Integer min, Integer max )
-        {
-            super( name, formatMessage, min, max );
-        }
-
-        @Override
-        public void validate( Locale locale, String value )
-        {
-            if ( value == null )
-            {
-                throw illegalValue( locale, value );
-            }
-
-            int val;
-            try
-            {
-                val = Integer.parseInt( value );
-            }
-            catch ( Exception e )
-            {
-                throw illegalValue( locale, value );
-            }
-
-            rangeCheck( locale, val );
-        }
-
-        @Override
-        public Integer valueOf( String rawValue, Config config )
-        {
-            return Integer.valueOf( rawValue );
+            super( setting );
         }
     }
 
-    /**
-     * This is deprecated, because it is going to be moved out of the public API. Please use {@link Setting} instead.
-     */
-    @Deprecated
     public static class LongSetting
-            extends NumberSetting<Long>
+            extends SettingWrapper<Long>
     {
-        public LongSetting( String name, String formatMessage )
+        public LongSetting( Setting<Long> setting )
         {
-            super( name, formatMessage );
-        }
-
-        public LongSetting( String name, String formatMessage, Long min, Long max )
-        {
-            super( name, formatMessage, min, max );
-        }
-
-        @Override
-        public void validate( Locale locale, String value )
-        {
-            if ( value == null )
-            {
-                throw illegalValue( locale, value );
-            }
-
-            long val;
-            try
-            {
-                val = Long.parseLong( value );
-            }
-            catch ( Exception e )
-            {
-                throw illegalValue( locale, value );
-            }
-
-            rangeCheck( locale, val );
-        }
-
-        @Override
-        public Long valueOf( String rawValue, Config config )
-        {
-            return Long.valueOf( rawValue );
+            super( setting );
         }
     }
 
-    /**
-     * This is deprecated, because it is going to be moved out of the public API. Please use {@link Setting} instead.
-     */
-    @Deprecated
     public static class FloatSetting
-            extends NumberSetting<Float>
+            extends SettingWrapper<Float>
     {
-        public FloatSetting( String name, String formatMessage )
+        public FloatSetting( Setting<Float> setting )
         {
-            super( name, formatMessage );
-        }
-
-        public FloatSetting( String name, String formatMessage, Float min, Float max )
-        {
-            super( name, formatMessage, min, max );
-        }
-
-        @Override
-        public void validate( Locale locale, String value )
-        {
-            if ( value == null )
-            {
-                throw illegalValue( locale, value );
-            }
-
-            float val;
-            try
-            {
-                val = Float.parseFloat( value );
-            }
-            catch ( Exception e )
-            {
-                throw illegalValue( locale, value );
-            }
-
-            rangeCheck( locale, val );
-        }
-
-        @Override
-        public Float valueOf( String rawValue, Config config )
-        {
-            return Float.valueOf( rawValue );
+            super( setting );
         }
     }
 
-    /**
-     * This is deprecated, because it is going to be moved out of the public API. Please use {@link Setting} instead.
-     */
-    @Deprecated
     public static class DoubleSetting
-            extends NumberSetting<Double>
+            extends SettingWrapper<Double>
     {
-        public DoubleSetting( String name, String formatMessage )
+        public DoubleSetting( Setting<Double> setting )
         {
-            super( name, formatMessage );
-        }
-
-        public DoubleSetting( String name, String formatMessage, Double min, Double max )
-        {
-            super( name, formatMessage, min, max );
-        }
-
-        @Override
-        public void validate( Locale locale, String value )
-        {
-            if ( value == null )
-            {
-                throw illegalValue( locale, value );
-            }
-
-            double val;
-            try
-            {
-                val = Double.parseDouble( value );
-            }
-            catch ( Exception e )
-            {
-                throw illegalValue( locale, value );
-            }
-
-            rangeCheck( locale, val );
-        }
-
-        @Override
-        public Double valueOf( String rawValue, Config config )
-        {
-            return Double.valueOf( rawValue );
+            super( setting );
         }
     }
 
-    /**
-     * This is deprecated, because it is going to be moved out of the public API. Please use {@link Setting} instead.
-     */
-    @Deprecated
     public static class PortSetting
             extends IntegerSetting
     {
-        public PortSetting( String name )
+        public PortSetting( Setting<Integer> setting )
         {
-            super( name, "Must be a valid port number", 1, 65535 );
-        }
-
-        @Override
-        public void validate( Locale locale, String values )
-        {
-            String[] ports = values.split( "-" );
-            for ( String value : ports )
-            {
-
-                if ( value == null )
-                {
-                    throw illegalValue( locale, value );
-                }
-
-                int val;
-                try
-                {
-                    val = Integer.parseInt( value );
-                }
-                catch ( Exception e )
-                {
-                    throw illegalValue( locale, value );
-                }
-
-                rangeCheck( val );
-            }
-        }
-
-        public int[] getPorts( Map<String, String> config )
-        {
-            String[] ports = config.get( name() ).split( "-" );
-            int[] portInts = new int[ports.length];
-
-            for ( int i = 0; i < ports.length; i++ )
-            {
-                String port = ports[i];
-                portInts[i] = Integer.parseInt( port );
-            }
-            return portInts;
-        }
-
-        public int getPort( Map<String, String> config )
-        {
-            return Integer.parseInt( config.get( name() ) );
-        }
-
-        protected void rangeCheck( Comparable value )
-        {
-            // Check range
-            if ( value.compareTo( new Integer( 1 ) ) < 0 )
-            {
-                throw new IllegalArgumentException( "Minimum allowed value is: 0" );
-            }
-
-            if ( value.compareTo( new Integer( 65535 ) ) > 0 )
-            {
-                throw new IllegalArgumentException( "Maximum allowed value is: 65535" );
-            }
-        }
-
-        @Override
-        public Integer valueOf( String rawValue, Config config )
-        {
-            return Integer.parseInt( rawValue );
+            super( setting );
         }
     }
 
-    /**
-     * This is deprecated, because it is going to be moved out of the public API. Please use {@link Setting} instead.
-     */
-    @Deprecated
     public static class HostnamePortSetting
-            extends StringSetting
+            extends SettingWrapper<HostnamePort>
     {
-        public HostnamePortSetting( String name )
+        public HostnamePortSetting( Setting<HostnamePort> setting )
         {
-            super( name, ANY, "Must be a valid host name and optional port number" );
-        }
-
-        @Override
-        public void validate( Locale locale, String values )
-        {
-            String[] parts = values.split( ":" );
-
-            if ( parts.length == 2 )
-            {
-                String[] ports = parts[1].split( "-" );
-                for ( String value : ports )
-                {
-
-                    if ( value == null )
-                    {
-                        throw illegalValue( locale, value );
-                    }
-
-                    int val;
-                    try
-                    {
-                        val = Integer.parseInt( value );
-                    }
-                    catch ( Exception e )
-                    {
-                        throw illegalValue( locale, value );
-                    }
-
-                    rangeCheck( val );
-                }
-            }
-        }
-
-        public int[] getPorts( Map<String, String> config )
-        {
-            String value = config.get( name() );
-            String[] parts = value.split( ":" );
-            if ( parts.length == 2 )
-            {
-                String[] ports = parts[1].split( "-" );
-                int[] portInts = new int[ports.length];
-
-                for ( int i = 0; i < ports.length; i++ )
-                {
-                    String port = ports[i];
-                    portInts[i] = Integer.parseInt( port );
-                }
-                return portInts;
-            }
-            else
-            {
-                return null;
-            }
-        }
-
-        public int getPort( Map<String, String> config )
-        {
-            int[] ports = getPorts( config );
-            if ( ports != null )
-            {
-                return ports[0];
-            }
-            else
-            {
-                return 0;
-            }
-        }
-
-        public String getAddress( Map<String, String> config )
-        {
-            return getAddress( config, null );
-        }
-        
-        public String getAddressWithLocalhostDefault( Map<String, String> config )
-        {
-            try
-            {
-                return getAddress( config, InetAddress.getLocalHost().getHostAddress() );
-            }
-            catch ( UnknownHostException e )
-            {
-                throw new RuntimeException( "Unable to get localhost address", e );
-            }
-        }
-        
-        public String getAddressAndPortWithLocalhostDefault( Map<String, String> config )
-        {
-            String address = getAddressWithLocalhostDefault( config );
-            int port = getPort( config );
-            return port > 0 ? address + ":" + port : address;
-        }
-        
-        public String getAddress( Map<String, String> config, String defaultValue )
-        {
-            String value = config.get( name() );
-            String[] parts = value.split( ":" );
-            if ( parts[0].length() > 0 )
-            {
-                return parts[0];
-            }
-            else
-            {
-                if ( defaultValue != null && defaultValue.contains( ":" ) )
-                {
-                    throw new IllegalArgumentException( "Default address '" + defaultValue +
-                            "' most likely contains a port, it shouldn't" ); 
-                }
-                return defaultValue;
-            }
-        }
-
-        protected void rangeCheck( Comparable value )
-        {
-            // Check range
-            if ( value.compareTo( new Integer( 1 ) ) < 0 )
-            {
-                throw new IllegalArgumentException( "Minimum allowed value is: 0" );
-            }
-
-            if ( value.compareTo( new Integer( 65535 ) ) > 0 )
-            {
-                throw new IllegalArgumentException( "Maximum allowed value is: 65535" );
-            }
-        }
-
-        @Override
-        public String valueOf( String rawValue, Config config )
-        {
-            return rawValue;
+            super( setting );
         }
     }
 
-    /**
-     * This is deprecated, because it is going to be moved out of the public API. Please use {@link Setting} instead.
-     */
-    @Deprecated
-    public static class TimeSpanSetting extends NumberSetting<Long>
+    public static class TimeSpanSetting extends SettingWrapper<Long>
     {
-        // Regular expression that matches a duration e.g. 10ms or 5s
-        private final Pattern timeSpanRegex = Pattern.compile( "\\d+(ms|s|m)?" );
-
-        public TimeSpanSetting( String name )
+        public TimeSpanSetting( Setting<Long> setting )
         {
-            super( name, "Must be a valid time span" );
-        }
-
-        public TimeSpanSetting( String name, Long min, Long max )
-        {
-            super( name, "Must be a valid time span", min, max );
-        }
-
-        @Override
-        public void validate( Locale locale, String value )
-                throws IllegalArgumentException
-        {
-            if ( value == null )
-            {
-                throw illegalValue( locale, value );
-            }
-
-            if ( !timeSpanRegex.matcher( value ).matches() )
-            {
-                throw illegalValue( locale, value );
-            }
-            rangeCheck( locale, TimeUtil.parseTimeMillis( value ) );
-        }
-
-        @Override
-        public Long valueOf( String rawValue, Config config )
-        {
-            return TimeUtil.parseTimeMillis( rawValue );
+            super( setting );
         }
     }
 
-    /**
-     * This is deprecated, because it is going to be moved out of the public API. Please use {@link Setting} instead.
-     */
-    @Deprecated
-    public static abstract class BaseOptionsSetting<ST>
-            extends GraphDatabaseSetting<ST>
+    public static class OptionsSetting extends SettingWrapper<String>
     {
-        String[] options;
-
-        protected BaseOptionsSetting( String name, String... options )
+        public OptionsSetting( Setting<String> setting )
         {
-            super( name, "Invalid option. Valid options are:%s" );
-
-            this.options = options;
-        }
-
-        @Override
-        public void validate( Locale locale, String value )
-                throws IllegalArgumentException
-        {
-            for ( String option : options() )
-            {
-                if ( option.equalsIgnoreCase( value ) )
-                {
-                    return;
-                }
-            }
-
-            throw illegalValue( locale, value, Arrays.asList( options() ).toString() );
-        }
-
-        public String[] options()
-        {
-            return options;
+            super( setting );
         }
     }
 
-    /**
-     * This is deprecated, because it is going to be moved out of the public API. Please use {@link Setting} instead.
-     */
-    @Deprecated
-    public static class OptionsSetting extends BaseOptionsSetting<String>
-    {
-
-        protected OptionsSetting( String name, String... options )
-        {
-            super( name, options );
-        }
-
-        @Override
-        public String valueOf( String rawValue, Config config )
-        {
-            return rawValue;
-        }
-
-    }
-
-    /**
-     * This is deprecated, because it is going to be moved out of the public API. Please use {@link Setting} instead.
-     */
-    @Deprecated
-    public static class EnumerableSetting<ET extends Enum<ET>> extends BaseOptionsSetting<ET>
-    {
-
-        private static String[] enumSetToStringArray( EnumSet<?> enums )
-        {
-            String[] stringValues = new String[enums.size()];
-            int i = 0;
-            for ( Enum<?> v : enums )
-            {
-                stringValues[i++] = v.name().toLowerCase();
-            }
-            return stringValues;
-        }
-
-        private final Class<ET> backingEnum;
-
-        public EnumerableSetting( String name, Class<ET> theEnum )
-        {
-            super( name, enumSetToStringArray( EnumSet.allOf( theEnum ) ) );
-            this.backingEnum = theEnum;
-        }
-
-        @Override
-        public ET valueOf( String rawValue, Config config )
-        {
-            return Enum.valueOf( backingEnum, rawValue );
-        }
-
-    }
-
-    /**
-     * This is deprecated, because it is going to be moved out of the public API. Please use {@link Setting} instead.
-     */
-    @Deprecated
     public static class BooleanSetting
-            extends BaseOptionsSetting<Boolean>
+        extends SettingWrapper<Boolean>
     {
-        public BooleanSetting( String name )
+        public BooleanSetting( Setting<Boolean> setting )
         {
-            super( name, TRUE, FALSE );
-        }
-
-        @Override
-        public Boolean valueOf( String rawValue, Config config )
-        {
-            return Boolean.parseBoolean( rawValue );
+            super( setting );
         }
     }
 
-    /**
-     * This is deprecated, because it is going to be moved out of the public API. Please use {@link Setting} instead.
-     */
-    @Deprecated
-    public static class AbstractPathSetting
-            extends StringSetting
-    {
-        private DirectorySetting relativeTo;
-        private boolean makeCanonical;
-        private boolean fixIncorrectPathSeparators;
-
-        public AbstractPathSetting( String name )
-        {
-            this( name, null, false, false );
-        }
-
-        /**
-         * @param name
-         * @param makeCanonical              Resolve symbolic links and clean up the path string before returning it.
-         * @param fixIncorrectPathSeparators Ensure that path separators are correct for the current platform.
-         */
-        public AbstractPathSetting( String name, boolean makeCanonical, boolean fixIncorrectPathSeparators )
-        {
-            this( name, null, makeCanonical, fixIncorrectPathSeparators );
-        }
-
-        /**
-         * @param name
-         * @param relativeTo                 If the configured value is a relative path,
-         *                                   make it relative to this config setting.
-         * @param makeCanonical              Resolve symbolic links and clean up the path string before returning it.
-         * @param fixIncorrectPathSeparators Ensure that path separators are correct for the current platform.
-         */
-        public AbstractPathSetting( String name, DirectorySetting relativeTo, boolean makeCanonical,
-                                    boolean fixIncorrectPathSeparators )
-        {
-            super( name, ".*", "Must be a valid file path." );
-            this.relativeTo = relativeTo;
-            this.makeCanonical = makeCanonical;
-            this.fixIncorrectPathSeparators = fixIncorrectPathSeparators;
-        }
-
-        @Override
-        public void validate( Locale locale, String value )
-        {
-            if ( value == null )
-            {
-                throw illegalValue( locale, value );
-            }
-        }
-
-        @Override
-        public String valueOf( String rawValue, Config config )
-        {
-            if ( fixIncorrectPathSeparators )
-            {
-                rawValue = FileUtils.fixSeparatorsInPath( rawValue );
-            }
-
-            File path = new File( rawValue );
-
-            if ( !path.isAbsolute() && relativeTo != null )
-            {
-                File baseDir = new File( config.get( relativeTo ) );
-                path = new File( baseDir, rawValue );
-            }
-
-            if ( makeCanonical )
-            {
-                try
-                {
-                    return path.getCanonicalPath();
-                }
-                catch ( IOException e )
-                {
-                    if ( path.isAbsolute() )
-                    {
-                        return path.getAbsolutePath();
-                    }
-
-                    throw new IllegalArgumentException( name() + ": unable to resolve canonical path for " + rawValue
-                            + ".", e );
-                }
-            }
-            else if ( path.isAbsolute() )
-            {
-                return path.getAbsolutePath();
-            }
-            else
-            {
-                return rawValue;
-            }
-        }
-    }
-
-    /**
-     * This is deprecated, because it is going to be moved out of the public API. Please use {@link Setting} instead.
-     */
-    @Deprecated
     public static class FileSetting
-            extends AbstractPathSetting
+            extends SettingWrapper<File>
     {
-
-        public FileSetting( String name )
+        public FileSetting( Setting<File> setting )
         {
-            super( name, null, false, false );
-        }
-
-        /**
-         * @param name
-         * @param makeCanonical              Resolve symbolic links and clean up the path string before returning it.
-         * @param fixIncorrectPathSeparators Ensure that path separators are correct for the current platform.
-         */
-        public FileSetting( String name, boolean makeCanonical, boolean fixIncorrectPathSeparators )
-        {
-            super( name, null, makeCanonical, fixIncorrectPathSeparators );
-        }
-
-        /**
-         * @param name
-         * @param relativeTo                 If the configured value is a relative path,
-         *                                   make it relative to this config setting.
-         * @param makeCanonical              Resolve symbolic links and clean up the path string before returning it.
-         * @param fixIncorrectPathSeparators Ensure that path separators are correct for the current platform.
-         */
-        public FileSetting( String name, DirectorySetting relativeTo, boolean makeCanonical,
-                            boolean fixIncorrectPathSeparators )
-        {
-            super( name, relativeTo, makeCanonical, fixIncorrectPathSeparators );
-        }
-
-        @Override
-        public void validate( Locale locale, String value )
-        {
-            if ( value == null )
-            {
-                throw illegalValue( locale, value );
-            }
-
-            File file = new File( value );
-            if ( file.exists() && !file.isFile() )
-            {
-                throw illegalValue( locale, value );
-            }
+            super( setting );
         }
     }
 
-    /**
-     * This is deprecated, because it is going to be moved out of the public API. Please use {@link Setting} instead.
-     */
-    @Deprecated
     public static class DirectorySetting
-            extends AbstractPathSetting
+            extends SettingWrapper<File>
     {
-
-        public DirectorySetting( String name )
+        public DirectorySetting( Setting<File> setting )
         {
-            super( name, null, false, false );
-        }
-
-        /**
-         * @param name
-         * @param makeCanonical              Resolve symbolic links and clean up the path string before returning it.
-         * @param fixIncorrectPathSeparators Ensure that path separators are correct for the current platform.
-         */
-        public DirectorySetting( String name, boolean makeCanonical, boolean fixIncorrectPathSeparators )
-        {
-            super( name, null, makeCanonical, fixIncorrectPathSeparators );
-        }
-
-        /**
-         * @param name
-         * @param relativeTo                 If the configured value is a relative path,
-         *                                   make it relative to this config setting.
-         * @param makeCanonical              Resolve symbolic links and clean up the path string before returning it.
-         * @param fixIncorrectPathSeparators Ensure that path separators are correct for the current platform.
-         */
-        public DirectorySetting( String name, DirectorySetting relativeTo, boolean makeCanonical,
-                                 boolean fixIncorrectPathSeparators )
-        {
-            super( name, relativeTo, makeCanonical, fixIncorrectPathSeparators );
-        }
-
-        @Override
-        public void validate( Locale locale, String value )
-        {
-            if ( value == null )
-            {
-                throw illegalValue( locale, value );
-            }
-
-            File dir = new File( value );
-            if ( dir.exists() && !dir.isDirectory() )
-            {
-                throw illegalValue( locale, value );
-            }
+            super( setting );
         }
     }
 
-    /**
-     * This is deprecated, because it is going to be moved out of the public API. Please use {@link Setting} instead.
-     */
-    @Deprecated
     public static class NumberOfBytesSetting
-            extends GraphDatabaseSetting<Long>
+            extends SettingWrapper<Long>
     {
-        // Regular expression that matches a size e.g. 512M or 2G
-        private final Pattern sizeRegex = Pattern.compile( "\\d+ *[kmgKMG]?" );
-
-        public NumberOfBytesSetting( String name )
+        public NumberOfBytesSetting( Setting<Long> setting )
         {
-            super( name, "%s is not a valid size, must be e.g. 10, 5K, 1M, 11G" );
+            super( setting );
         }
+    }
 
-        @Override
-        public void validate( Locale locale, String value )
+    public static class IntegerRangeNumberOfBytesSetting extends SettingWrapper<Integer>
+    {
+        public IntegerRangeNumberOfBytesSetting( Setting<Integer> setting )
         {
-            if ( value == null )
-            {
-                throw illegalValue( locale, value );
-            }
-
-            if ( !sizeRegex.matcher( value ).matches() )
-            {
-                throw illegalValue( locale, value );
-            }
+            super( setting );
         }
+    }
 
-        @Override
-        public Long valueOf( String rawValue, Config config )
+    public static class URISetting extends SettingWrapper<URI>
+    {
+        public URISetting( Setting<URI> setting )
         {
-            String mem = rawValue.toLowerCase();
-            long multiplier = 1;
-            if ( mem.endsWith( "k" ) )
-            {
-                multiplier = 1024;
-                mem = mem.substring( 0, mem.length() - 1 );
-            }
-            else if ( mem.endsWith( "m" ) )
-            {
-                multiplier = 1024 * 1024;
-                mem = mem.substring( 0, mem.length() - 1 );
-            }
-            else if ( mem.endsWith( "g" ) )
-            {
-                multiplier = 1024 * 1024 * 1024;
-                mem = mem.substring( 0, mem.length() - 1 );
-            }
-
-            return Long.parseLong( mem.trim() ) * multiplier;
+            super( setting );
         }
     }
 
     /**
-     * This is deprecated, because it is going to be moved out of the public API. Please use {@link Setting} instead.
-     */
-    @Deprecated
-    public static class IntegerRangeNumberOfBytesSetting extends GraphDatabaseSetting<Integer>
-    {
-        private final GraphDatabaseSetting<Long> fullRange;
-        private final int atLeast;
-
-        public IntegerRangeNumberOfBytesSetting( String name )
-        {
-            this( name, 0 );
-        }
-
-        public IntegerRangeNumberOfBytesSetting( String name, int atLeast )
-        {
-            super( name, "" );
-            this.atLeast = atLeast;
-            this.fullRange = new NumberOfBytesSetting( name );
-        }
-
-        @Override
-        public void validate( Locale locale, String value )
-        {
-            fullRange.validate( locale, value );
-            Long bytes = fullRange.valueOf( value, null );
-            if ( bytes.longValue() > Integer.MAX_VALUE )
-            {
-                throw illegalValue( locale, value, "Size too big, keep withing interger range (2^32-1)", "" + bytes );
-            }
-            int result = bytes.intValue();
-            if ( result < atLeast )
-            {
-                throw illegalValue( locale, value, "Size too low, must be at least " + atLeast );
-            }
-        }
-
-        @Override
-        public Integer valueOf( String rawValue, Config config )
-        {
-            return fullRange.valueOf( rawValue, config ).intValue();
-        }
-    }
-
-    /**
-     * This is deprecated, because it is going to be moved out of the public API. Please use {@link Setting} instead.
-     */
-    @Deprecated
-    public static class ListSetting<T>
-            extends GraphDatabaseSetting<List<T>>
-    {
-        private GraphDatabaseSetting<T> itemSetting;
-        private String separator;
-
-        public ListSetting( String name, GraphDatabaseSetting<T> itemSetting )
-        {
-            this( name, itemSetting, "," );
-        }
-
-        public ListSetting( String name, GraphDatabaseSetting<T> itemSetting, String separator )
-        {
-            super( name, "%s is not a valid list, must be '" + separator + "' separated list of values." );
-            this.itemSetting = itemSetting;
-            this.separator = separator;
-        }
-
-        @Override
-        public void validate( Locale locale, String value )
-        {
-            if ( value == null )
-            {
-                throw illegalValue( locale, value );
-            }
-
-            if ( value.length() == 0 )
-            {
-                return;
-            }
-
-            for ( String item : value.split( separator ) )
-            {
-                itemSetting.validate( item );
-            }
-        }
-
-        @Override
-        public List<T> valueOf( String rawValue, Config config )
-        {
-            List<T> list = new ArrayList<T>();
-            if ( rawValue.length() > 0 )
-            {
-                for ( String item : rawValue.split( separator ) )
-                {
-                    list.add( itemSetting.valueOf( item, config ) );
-                }
-            }
-            return list;
-        }
-    }
-
-    /**
-     * This is deprecated, because it is going to be moved out of the public API. Please use {@link Setting} instead.
-     */
-    @Deprecated
-    public static class URISetting extends GraphDatabaseSetting<URI>
-    {
-        private boolean normalize;
-
-        public URISetting( String name )
-        {
-            this( name, false );
-        }
-
-        public URISetting( String name, boolean normalize )
-        {
-            super( name, "'%s' does not validate as a proper URI." );
-            this.normalize = normalize;
-        }
-
-        @Override
-        public void validate( Locale locale, String value )
-        {
-            if ( value == null )
-            {
-                throw illegalValue( locale, "" );
-            }
-
-            try
-            {
-                new URI( value ).normalize();
-            }
-            catch ( URISyntaxException e )
-            {
-                throw illegalValue( locale, value );
-            }
-        }
-
-        @Override
-        public URI valueOf( String rawValue, Config config )
-        {
-            URI uri = null;
-            try
-            {
-                uri = new URI( rawValue );
-
-                if ( normalize )
-                {
-                    String resultStr = uri.normalize().toString();
-                    if ( resultStr.endsWith( "/" ) )
-                    {
-                        uri = new URI( resultStr.substring( 0, resultStr.length() - 1 ) );
-                    }
-                }
-            }
-            catch ( URISyntaxException e )
-            {
-                throw new RuntimeException( "Unable to get URI value from config, see nested exception", e );
-            }
-
-            return uri;
-        }
-    }
-
-    //
-    // Actual class implementation
-    //
-
-
-    private final String name;
-    private final String validationMessage;
-
-    protected GraphDatabaseSetting( String name, String validationMessage )
-    {
-        this.name = name;
-        this.validationMessage = validationMessage;
-    }
-
-    public String name()
-    {
-        return name;
-    }
-
-    public String validationMessage()
-    {
-        return validationMessage;
-    }
-
-    public void validate( String value )
-            throws IllegalArgumentException
-    {
-        validate( Locale.getDefault(), value );
-    }
-
-    /**
-     * Validate a raw string value, called when configuration is set.
-     * Throws IllegalArgumentException if the provided value is not valid.
+     * Wrapper of Setting<T> created by Setttings.setting method.
      *
-     * @param locale
-     * @param value
-     */
-    public abstract void validate( Locale locale, String value );
-
-    /**
-     * Create a typed value from a raw string value. This is to be called
-     * when a value is fetched from configuration.
+     * This should go away when we can delete this class due to deprecation
      *
-     * @param rawValue The raw string value stored in configuration
-     * @param config   The config instance, allows having config values that depend on each other.
-     * @return
-     */
-    public abstract T valueOf( String rawValue, Config config );
-
-    protected String getMessage( Locale locale, String defaultMessage )
-    {
-        if ( locale.getLanguage().equals( Locale.ENGLISH.getLanguage() ) )
-        {
-            return defaultMessage;
-        }
-
-        try
-        {
-            ResourceBundle bundle = ResourceBundle.getBundle( getClass().getName() );
-            return bundle.getString( name() );
-        }
-        catch ( Exception e )
-        {
-            return defaultMessage;
-        }
-    }
-
-    /**
-     * This is deprecated, because it is going to be moved out of the public API. Please use {@link Setting} instead.
+     *
+     * @param <T>
      */
     @Deprecated
-    protected IllegalArgumentException illegalValue( Locale locale, String value, Object... args )
-            throws IllegalArgumentException
+    public static class SettingWrapper<T>
+        extends GraphDatabaseSetting<T>
     {
-        return illegalValue( locale, value, validationMessage, args );
-    }
+        private Setting<T> setting;
 
-    protected IllegalArgumentException illegalValue( Locale locale, String value, String rawMessage, Object[] args )
-            throws IllegalArgumentException
-    {
-        String message = getMessage( locale, rawMessage );
-        String errorMessage = new Formatter( locale ).format( message, args ).toString();
+        public SettingWrapper( Setting<T> setting )
+        {
+            this.setting = setting;
+        }
 
-        String settingNameMessage = getMessage( locale, "Invalid value %s for config property '%s': " );
-        String settingMessage = new Formatter( locale ).format( settingNameMessage,
-                value == null ? "[null]" : "'" + value + "'", name() ).toString();
+        @Override
+        public String name()
+        {
+            return setting.name();
+        }
 
-        return new IllegalArgumentException( settingMessage + errorMessage );
+        @Override
+        public String getDefaultValue()
+        {
+            return setting.getDefaultValue();
+        }
+
+        @Override
+        public T apply( Function<String, String> settings )
+        {
+            return setting.apply( settings );
+        }
+
+        @Override
+        public String toString()
+        {
+            return setting.toString();
+        }
     }
 
     public static boolean osIsWindows()

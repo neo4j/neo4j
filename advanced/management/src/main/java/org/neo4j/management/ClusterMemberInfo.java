@@ -40,18 +40,15 @@ public class ClusterMemberInfo implements Serializable
     private final boolean available;
     private final boolean alive;
     private final String haRole;
-    private final String[] clusterRoles;
     private final String[] uris;
 
-    @ConstructorProperties( { "instanceId", "available", "alive", "haRole", "clusterRoles", "uris" } )
-    public ClusterMemberInfo( String instanceId, boolean available, boolean alive, String haRole,
-            String[] clusterRoles, String[] uris )
+    @ConstructorProperties( { "instanceId", "available", "alive", "haRole", "uris" } )
+    public ClusterMemberInfo( String instanceId, boolean available, boolean alive, String haRole, String[] uris )
     {
         this.instanceId = instanceId;
         this.available = available;
         this.alive = alive;
         this.haRole = haRole;
-        this.clusterRoles = clusterRoles;
         this.uris = uris;
     }
 
@@ -75,12 +72,7 @@ public class ClusterMemberInfo implements Serializable
         return haRole;
     }
 
-    public String[] getClusterRoles()
-    {
-        return clusterRoles;
-    }
-
-    public String[] getUris()
+    public String[] getURIs()
     {
         return uris;
     }
@@ -89,8 +81,7 @@ public class ClusterMemberInfo implements Serializable
     @SuppressWarnings( "boxing" )
     public String toString()
     {
-        return String.format( "Neo4jHaInstance[id=%s,available=%s,haRole=%s,clusterRoles=%s,URI List=%s]",
-                instanceId, available, haRole, Arrays.toString( clusterRoles ), Arrays.toString( uris ) );
+        return String.format( "Neo4jHaInstance[id=%s,available=%s,haRole=%s,HA URI=%s]", instanceId, available, haRole, Arrays.toString(uris) );
     }
 
     public Pair<Neo4jManager, HighAvailability> connect()

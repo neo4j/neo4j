@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
@@ -44,7 +45,7 @@ public class RelationshipTypeStore extends AbstractNameStore<RelationshipTypeRec
     public static final String TYPE_DESCRIPTOR = "RelationshipTypeStore";
     private static final int RECORD_SIZE = 1/*inUse*/ + 4/*nameId*/;
 
-    public RelationshipTypeStore(String fileName, Config config,
+    public RelationshipTypeStore(File fileName, Config config,
                                  IdGeneratorFactory idGeneratorFactory, WindowPoolFactory windowPoolFactory,
                                  FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger,
                                  DynamicStringStore nameStore)
@@ -85,12 +86,12 @@ public class RelationshipTypeStore extends AbstractNameStore<RelationshipTypeRec
         stringLogger.debug( "Rebuilding id generator for[" + getStorageFileName()
             + "] ..." );
         closeIdGenerator();
-        if ( fileSystemAbstraction.fileExists( getStorageFileName() + ".id" ) )
+        if ( fileSystemAbstraction.fileExists( new File( getStorageFileName().getPath() + ".id" )) )
         {
-            boolean success = fileSystemAbstraction.deleteFile( getStorageFileName() + ".id" );
+            boolean success = fileSystemAbstraction.deleteFile( new File( getStorageFileName().getPath() + ".id" ));
             assert success;
         }
-        createIdGenerator( getStorageFileName() + ".id" );
+        createIdGenerator( new File( getStorageFileName().getPath() + ".id" ));
         openIdGenerator( false );
         FileChannel fileChannel = getFileChannel();
         long highId = -1;

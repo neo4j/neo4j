@@ -19,10 +19,10 @@
  */
 package org.neo4j.perftest.enterprise.ccheck;
 
-import static org.neo4j.perftest.enterprise.util.DirectlyCorrelatedParameter.param;
-import static org.neo4j.perftest.enterprise.util.DirectlyCorrelatedParameter.passOn;
 import static org.neo4j.perftest.enterprise.util.Configuration.SYSTEM_PROPERTIES;
 import static org.neo4j.perftest.enterprise.util.Configuration.settingsOf;
+import static org.neo4j.perftest.enterprise.util.DirectlyCorrelatedParameter.param;
+import static org.neo4j.perftest.enterprise.util.DirectlyCorrelatedParameter.passOn;
 import static org.neo4j.perftest.enterprise.util.Setting.booleanSetting;
 import static org.neo4j.perftest.enterprise.util.Setting.enumSetting;
 import static org.neo4j.perftest.enterprise.util.Setting.integerSetting;
@@ -42,7 +42,6 @@ import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.DefaultTxHook;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.configuration.ConfigurationDefaults;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
@@ -75,13 +74,13 @@ public class ConsistencyPerformanceCheck
     /**
      * Sample execution:
      * java -cp ... org.neo4j.perftest.enterprise.ccheck.ConsistencyPerformanceCheck
-     *    -generate_graph
-     *    -report_file target/ccheck_performance.json
-     *    -neo4j.store_dir target/ccheck_perf_graph
-     *    -report_progress
-     *    -node_count 10000000
-     *    -relationships FOO:2,BAR:1
-     *    -node_properties INTEGER:2,STRING:1,BYTE_ARRAY:1
+     * -generate_graph
+     * -report_file target/ccheck_performance.json
+     * -neo4j.store_dir target/ccheck_perf_graph
+     * -report_progress
+     * -node_count 10000000
+     * -relationships FOO:2,BAR:1
+     * -node_properties INTEGER:2,STRING:1,BYTE_ARRAY:1
      */
     public static void main( String... args ) throws Exception
     {
@@ -116,7 +115,8 @@ public class ConsistencyPerformanceCheck
         }
 
         Config tuningConfiguration = buildTuningConfiguration( configuration );
-        StoreAccess storeAccess = createStoreAccess( configuration.get( DataGenerator.store_dir ), tuningConfiguration );
+        StoreAccess storeAccess = createStoreAccess( configuration.get( DataGenerator.store_dir ),
+                tuningConfiguration );
 
         JsonReportWriter reportWriter = new JsonReportWriter( configuration, tuningConfiguration );
         TimingProgress progressMonitor = new TimingProgress( new TimeLogger( reportWriter ), progress );
@@ -134,7 +134,7 @@ public class ConsistencyPerformanceCheck
                         .windowPoolFactory( tuningConfiguration, logger ),
                 new DefaultFileSystemAbstraction(), logger, new DefaultTxHook() );
 
-        NeoStore neoStore = factory.newNeoStore( new File( storeDir, NeoStore.DEFAULT_NAME ).getAbsolutePath() );
+        NeoStore neoStore = factory.newNeoStore( new File( storeDir, NeoStore.DEFAULT_NAME ) );
 
         return new StoreAccess( neoStore );
     }
@@ -155,7 +155,7 @@ public class ConsistencyPerformanceCheck
         addLegacyMemoryMappingConfiguration( passedOnConfiguration,
                 configuration.get( all_stores_total_mapped_memory_size ) );
 
-        return new Config( new ConfigurationDefaults( GraphDatabaseSettings.class ).apply( passedOnConfiguration ) );
+        return new Config( passedOnConfiguration, GraphDatabaseSettings.class );
     }
 
 }

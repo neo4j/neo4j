@@ -35,8 +35,7 @@ class StoreProcessorTask<R extends AbstractBaseRecord> implements Runnable
                         StoreProcessor... multiPassProcessors )
     {
         this.store = store;
-        String storeFileName = store.getStorageFileName().substring(
-                store.getStorageFileName().lastIndexOf( '/' ) + 1 );
+        String storeFileName = store.getStorageFileName().getName();
 
         if ( order == TaskExecutionOrder.MULTI_PASS )
         {

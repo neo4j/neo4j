@@ -32,6 +32,7 @@ import java.util.List;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
 import org.neo4j.kernel.ha.HaSettings;
@@ -76,10 +77,10 @@ public class TestPullUpdatesApplied
     {
         return (HighlyAvailableGraphDatabase) new HighlyAvailableGraphDatabaseFactory().
                 newHighlyAvailableDatabaseBuilder( dir.directory( "" + i, clear ).getAbsolutePath() )
+                .setConfig( ClusterSettings.cluster_server, "127.0.0.1:" + (5001 + i) )
+                .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:5001" )
                 .setConfig( HaSettings.server_id, "" + i )
                 .setConfig( HaSettings.ha_server, "localhost:" + (6666 + i) )
-                .setConfig( HaSettings.cluster_server, "127.0.0.1:" + (5001 + i) )
-                .setConfig( HaSettings.initial_hosts, "127.0.0.1:5001" )
                 .setConfig( HaSettings.pull_interval, "0ms" )
                 .newGraphDatabase();
     }
@@ -123,9 +124,9 @@ public class TestPullUpdatesApplied
                 newHighlyAvailableDatabaseBuilder( args[0] )
                 .setConfig( HaSettings.server_id, "" + i )
                 .setConfig( HaSettings.ha_server, "localhost:" + (6666 + i) )
-                .setConfig( HaSettings.cluster_server, "127.0.0.1:" + (5001 + i) + "" )
-                .setConfig( HaSettings.initial_hosts, "127.0.0.1:5001" )
                 .setConfig( HaSettings.pull_interval, "0ms" )
+                .setConfig( ClusterSettings.cluster_server, "127.0.0.1:" + (5001 + i) + "" )
+                .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:5001" )
                 .newGraphDatabase();
         db.getDependencyResolver().resolveDependency( UpdatePuller.class ).pullUpdates();
         ; // this is the bug trigger

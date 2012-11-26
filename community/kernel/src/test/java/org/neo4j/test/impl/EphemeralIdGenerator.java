@@ -19,6 +19,7 @@
  */
 package org.neo4j.test.impl;
 
+import java.io.File;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.Queue;
@@ -38,7 +39,7 @@ public class EphemeralIdGenerator implements IdGenerator
         private final Map<IdType, IdGenerator> generators = new EnumMap<IdType, IdGenerator>( IdType.class );
 
         @Override
-        public IdGenerator open( FileSystemAbstraction fs, String fileName, int grabSize, IdType idType )
+        public IdGenerator open( FileSystemAbstraction fs, File fileName, int grabSize, IdType idType )
         {
             IdGenerator generator = generators.get( idType );
             if ( generator == null )
@@ -50,7 +51,7 @@ public class EphemeralIdGenerator implements IdGenerator
         }
 
         @Override
-        public void create( FileSystemAbstraction fs, String fileName, long highId )
+        public void create( FileSystemAbstraction fs, File fileName, long highId )
         {
         }
 

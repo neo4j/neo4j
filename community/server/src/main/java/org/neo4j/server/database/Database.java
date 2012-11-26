@@ -25,10 +25,10 @@ import java.util.Map;
 import org.neo4j.ext.udc.UdcSettings;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.graphdb.index.RelationshipIndex;
+import org.neo4j.helpers.Settings;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -114,9 +114,17 @@ public class Database implements Lifecycle
             databaseProperties = new HashMap<String, String>();
         }
 
-        putIfAbsent( databaseProperties, ShellSettings.remote_shell_enabled.name(), GraphDatabaseSetting.TRUE );
-        putIfAbsent( databaseProperties, GraphDatabaseSettings.keep_logical_logs.name(), GraphDatabaseSetting.TRUE );
-        databaseProperties.put( UdcSettings.udc_source.name(), "server" );
+        putIfAbsent( databaseProperties, ShellSettings.remote_shell_enabled.name(), Settings.TRUE );
+        putIfAbsent( databaseProperties, GraphDatabaseSettings.keep_logical_logs.name(), Settings.TRUE );
+
+        try
+        {
+            databaseProperties.put( UdcSettings.udc_source.name(), "server" );
+        }
+        catch ( NoClassDefFoundError e )
+        {
+            // UDC is not on classpath, ignore
+        }
 
         return factory.createDatabase( databaseStoreDirectory, databaseProperties );
     }

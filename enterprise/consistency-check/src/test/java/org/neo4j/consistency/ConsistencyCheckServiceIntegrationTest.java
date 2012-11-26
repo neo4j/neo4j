@@ -17,6 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.neo4j.consistency;
 
 import static org.junit.Assert.assertFalse;
@@ -36,7 +37,6 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.configuration.ConfigurationDefaults;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.GraphStoreFixture;
@@ -51,9 +51,8 @@ public class ConsistencyCheckServiceIntegrationTest
         ConsistencyCheckService service = new ConsistencyCheckService();
 
         // when
-        service.runFullConsistencyCheck( fixture.directory().getPath(), new Config( new ConfigurationDefaults(
-                GraphDatabaseSettings.class, ConsistencyCheckSettings.class )
-                .apply( stringMap() ) ), ProgressMonitorFactory.NONE, StringLogger.DEV_NULL );
+        service.runFullConsistencyCheck( fixture.directory().getPath(),
+                new Config( stringMap(  ), GraphDatabaseSettings.class, ConsistencyCheckSettings.class ), ProgressMonitorFactory.NONE, StringLogger.DEV_NULL );
 
         // then
         assertFalse( new File( fixture.directory(), service.defaultLogFileName() ).exists() );
@@ -67,9 +66,8 @@ public class ConsistencyCheckServiceIntegrationTest
         ConsistencyCheckService service = new ConsistencyCheckService();
 
         // when
-        service.runFullConsistencyCheck( fixture.directory().getPath(), new Config( new ConfigurationDefaults(
-                GraphDatabaseSettings.class, ConsistencyCheckSettings.class )
-                .apply( stringMap() ) ), ProgressMonitorFactory.NONE, StringLogger.DEV_NULL );
+        service.runFullConsistencyCheck( fixture.directory().getPath(),
+                new Config( stringMap(  ), GraphDatabaseSettings.class, ConsistencyCheckSettings.class ), ProgressMonitorFactory.NONE, StringLogger.DEV_NULL );
 
         // then
         assertTrue( new File(fixture.directory(), service.defaultLogFileName()).exists() );
@@ -84,10 +82,9 @@ public class ConsistencyCheckServiceIntegrationTest
         File specificLogFile = new File( testDirectory.directory(), "specific_logfile.txt" );
 
         // when
-        service.runFullConsistencyCheck( fixture.directory().getPath(), new Config( new ConfigurationDefaults(
-                GraphDatabaseSettings.class, ConsistencyCheckSettings.class )
-                .apply( stringMap( ConsistencyCheckSettings.consistency_check_report_file.name(),
-                        specificLogFile.getPath()) ) ),
+        service.runFullConsistencyCheck( fixture.directory().getPath(),
+                new Config( stringMap( ConsistencyCheckSettings.consistency_check_report_file.name(),specificLogFile.getPath()),
+                        GraphDatabaseSettings.class, ConsistencyCheckSettings.class ),
                 ProgressMonitorFactory.NONE, StringLogger.DEV_NULL );
 
         // then

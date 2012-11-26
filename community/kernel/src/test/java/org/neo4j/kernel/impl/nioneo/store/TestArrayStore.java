@@ -60,7 +60,7 @@ public class TestArrayStore
         DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
         StoreFactory factory = new StoreFactory( config,
                 idGeneratorFactory, new DefaultWindowPoolFactory(), fs, StringLogger.DEV_NULL, new DefaultTxHook() );
-        String fileName = new File( dir, "arraystore" ).getAbsolutePath();
+        File fileName = new File( dir, "arraystore" );
         factory.createDynamicArrayStore( fileName, 120 );
         arrayStore = new DynamicArrayStore( fileName, config, IdType.ARRAY_BLOCK, idGeneratorFactory,
                 new DefaultWindowPoolFactory(), fs, StringLogger.DEV_NULL );

@@ -28,7 +28,6 @@ import org.neo4j.consistency.ConsistencyCheckSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.configuration.ConfigurationDefaults;
 
 public class OnlineBackup
 {
@@ -60,7 +59,8 @@ public class OnlineBackup
 
     public OnlineBackup full( String targetDirectory, boolean verification )
     {
-        outcome = new BackupService().doFullBackup( hostNameOrIp, port, targetDirectory, verification, defaultConfig() );
+        outcome = new BackupService().doFullBackup( hostNameOrIp, port, targetDirectory, verification,
+                defaultConfig() );
         return this;
     }
 
@@ -96,7 +96,6 @@ public class OnlineBackup
 
     private Config defaultConfig()
     {
-        return new Config( new ConfigurationDefaults( GraphDatabaseSettings.class, ConsistencyCheckSettings.class )
-                .apply( stringMap() ) );
+        return new Config( stringMap(), GraphDatabaseSettings.class, ConsistencyCheckSettings.class );
     }
 }

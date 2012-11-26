@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.transaction.xaframework;
 
 import static org.neo4j.kernel.configuration.Config.parseLongWithUnit;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
@@ -46,7 +47,7 @@ public class LogPruneStrategies
     
     private static interface Threshold
     {
-        boolean reached( String file, long version, LogLoader source );
+        boolean reached( File file, long version, LogLoader source );
     }
     
     private abstract static class AbstractPruneStrategy implements LogPruneStrategy
@@ -69,7 +70,7 @@ public class LogPruneStrategies
             boolean exceeded = false;
             while ( upper >= 0 )
             {
-                String file = source.getFileName( upper );
+                File file = source.getFileName( upper );
                 if ( !fileSystem.fileExists( file ) )
                     // There aren't logs to prune anything. Just return
                     return;
@@ -129,7 +130,7 @@ public class LogPruneStrategies
                 int nonEmptyLogCount = 0;
                 
                 @Override
-                public boolean reached( String file, long version, LogLoader source )
+                public boolean reached( File file, long version, LogLoader source )
                 {
                     return ++nonEmptyLogCount >= maxNonEmptyLogCount;
                 }
@@ -166,7 +167,7 @@ public class LogPruneStrategies
                 private int size;
                 
                 @Override
-                public boolean reached( String file, long version, LogLoader source )
+                public boolean reached( File file, long version, LogLoader source )
                 {
                     size += fileSystem.getFileSize( file );
                     return size >= maxSize;
@@ -198,7 +199,7 @@ public class LogPruneStrategies
                 private Long highest;
                 
                 @Override
-                public boolean reached( String file, long version, LogLoader source )
+                public boolean reached( File file, long version, LogLoader source )
                 {
                     // Here we know that the log version exists (checked in AbstractPruneStrategy#prune)
                     long tx = source.getFirstCommittedTxId( version ).longValue();
@@ -238,7 +239,7 @@ public class LogPruneStrategies
                 private long lowerLimit = System.currentTimeMillis() - unit.toMillis( timeToKeep );
                 
                 @Override
-                public boolean reached( String file, long version, LogLoader source )
+                public boolean reached( File file, long version, LogLoader source )
                 {
                     try
                     {

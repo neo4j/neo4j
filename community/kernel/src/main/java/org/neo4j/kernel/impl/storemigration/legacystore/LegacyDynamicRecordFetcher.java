@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.storemigration.legacystore;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
@@ -36,12 +37,12 @@ public class LegacyDynamicRecordFetcher
     private LegacyDynamicStoreReader stringPropertyStore;
     private LegacyDynamicStoreReader arrayPropertyStore;
 
-    public LegacyDynamicRecordFetcher(String stringStoreFileName, String arrayStoreFileName) throws IOException
+    public LegacyDynamicRecordFetcher(File stringStoreFileName, File arrayStoreFileName) throws IOException
     {
         this(stringStoreFileName, arrayStoreFileName, StringLogger.DEV_NULL);
     }
 
-    public LegacyDynamicRecordFetcher( String stringStoreFileName, String arrayStoreFileName, StringLogger log ) throws IOException
+    public LegacyDynamicRecordFetcher( File stringStoreFileName, File arrayStoreFileName, StringLogger log ) throws IOException
     {
         stringPropertyStore = new LegacyDynamicStoreReader( stringStoreFileName, LegacyDynamicStoreReader.FROM_VERSION_STRING, log );
         arrayPropertyStore = new LegacyDynamicStoreReader( arrayStoreFileName, LegacyDynamicStoreReader.FROM_VERSION_ARRAY, log );

@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileChannel.MapMode;
@@ -48,7 +49,7 @@ public class PersistenceWindowPool implements WindowPool
 {
     private static final int MAX_BRICK_COUNT = 100000;
 
-    private final String storeName;
+    private final File storeName;
     // == recordSize
     private final int blockSize;
     private FileChannel fileChannel;
@@ -92,7 +93,7 @@ public class PersistenceWindowPool implements WindowPool
      * @throws IOException
      *             If unable to create pool
      */
-    public PersistenceWindowPool( String storeName, int blockSize,
+    public PersistenceWindowPool( File storeName, int blockSize,
         FileChannel fileChannel, long mappedMem,
         boolean useMemoryMappedBuffers, boolean readOnly, StringLogger log )
     {

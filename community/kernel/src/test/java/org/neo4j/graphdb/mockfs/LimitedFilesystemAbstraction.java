@@ -19,6 +19,7 @@
  */
 package org.neo4j.graphdb.mockfs;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
 
@@ -38,58 +39,58 @@ public class LimitedFilesystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
-    public FileChannel open( String fileName, String mode ) throws IOException
+    public FileChannel open( File fileName, String mode ) throws IOException
     {
         return new LimitedFileChannel( inner.open( fileName, mode ), this );
     }
 
     @Override
-    public FileLock tryLock( String fileName, FileChannel channel ) throws IOException
+    public FileLock tryLock( File fileName, FileChannel channel ) throws IOException
     {
         return inner.tryLock( fileName, channel );
     }
 
     @Override
-    public FileChannel create( String fileName ) throws IOException
+    public FileChannel create( File fileName ) throws IOException
     {
         ensureHasSpace();
         return new LimitedFileChannel( inner.create( fileName ), this );
     }
 
     @Override
-    public boolean fileExists( String fileName )
+    public boolean fileExists( File fileName )
     {
         return inner.fileExists( fileName );
     }
 
     @Override
-    public long getFileSize( String fileName )
+    public long getFileSize( File fileName )
     {
         return inner.getFileSize( fileName );
     }
 
     @Override
-    public boolean deleteFile( String fileName )
+    public boolean deleteFile( File fileName )
     {
         return inner.deleteFile( fileName );
     }
 
     @Override
-    public boolean renameFile( String from, String to ) throws IOException
+    public boolean renameFile( File from, File to ) throws IOException
     {
         ensureHasSpace();
         return inner.renameFile( from, to );
     }
 
     @Override
-    public void copyFile( String from, String to ) throws IOException
+    public void copyFile( File from, File to ) throws IOException
     {
         ensureHasSpace();
         inner.copyFile( from, to );
     }
 
     @Override
-    public void autoCreatePath( String path ) throws IOException
+    public void autoCreatePath( File path ) throws IOException
     {
         ensureHasSpace();
         inner.autoCreatePath( path );

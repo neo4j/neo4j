@@ -226,11 +226,11 @@ public class TestLogPruneStrategy
         assertTrue( log.getHighestLogVersion() >= to );
         for ( long i = 0; i < from; i++ )
             assertFalse( "Log v" + i + " shouldn't exist when highest version is " + log.getHighestLogVersion() +
-                    " and prune strategy " + log.pruning, new File( log.getFileName( i ) ).exists() );
+                    " and prune strategy " + log.pruning, log.getFileName( i ).exists() );
         
         for ( long i = from; i <= to; i++ )
         {
-            File file = new File( log.getFileName( i ) );
+            File file = log.getFileName( i );
             assertTrue( "Log v" + i + " should exist when highest version is " + log.getHighestLogVersion() +
                     " and prune strategy " + log.pruning, file.exists() );
             if ( empty.contains( i ) )
@@ -317,10 +317,10 @@ public class TestLogPruneStrategy
         }
 
         @Override
-        public String getFileName( long version )
+        public File getFileName( long version )
         {
             File file = new File( baseFile + ".v" + version );
-            return file.getAbsolutePath();
+            return file;
         }
         
         /**
@@ -366,7 +366,7 @@ public class TestLogPruneStrategy
             clearAndWriteHeader();
         }
 
-        private void writeBufferToFile( ByteBuffer buffer, String fileName ) throws IOException
+        private void writeBufferToFile( ByteBuffer buffer, File fileName ) throws IOException
         {
             FileChannel channel = null;
             try
@@ -387,7 +387,7 @@ public class TestLogPruneStrategy
             int size = 0;
             for ( long version = getHighestLogVersion()-1; version >= 0; version-- )
             {
-                File file = new File( getFileName( version ) );
+                File file = getFileName( version );
                 if ( file.exists() )
                     size += file.length();
                 else
@@ -404,7 +404,7 @@ public class TestLogPruneStrategy
             long lower = upper;
             while ( lower >= 0 )
             {
-                File file = new File( getFileName( lower-1 ) );
+                File file = getFileName( lower-1 );
                 if ( !file.exists() )
                     break;
                 else

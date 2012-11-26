@@ -29,59 +29,57 @@ import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.util.FileUtils;
 
 /**
-* TODO
+* Default file system abstraction that creates files using the underlying file system.
 */
 public class DefaultFileSystemAbstraction
     implements FileSystemAbstraction
 {
     @Override
-    public FileChannel open( String fileName, String mode ) throws IOException
+    public FileChannel open( File fileName, String mode ) throws IOException
     {
         // Returning only the channel is ok, because the channel, when close()d will close its parent File.
         return new RandomAccessFile( fileName, mode ).getChannel();
     }
 
     @Override
-    public FileLock tryLock( String fileName, FileChannel channel ) throws IOException
+    public FileLock tryLock( File fileName, FileChannel channel ) throws IOException
     {
         return FileLock.getOsSpecificFileLock( fileName, channel );
     }
 
     @Override
-    public FileChannel create( String fileName ) throws IOException
+    public FileChannel create( File fileName ) throws IOException
     {
         return open( fileName, "rw" );
     }
 
     @Override
-    public boolean fileExists( String fileName )
+    public boolean fileExists( File fileName )
     {
-        return new File( fileName ).exists();
+        return fileName.exists();
     }
 
     @Override
-    public long getFileSize( String fileName )
+    public long getFileSize( File fileName )
     {
-        return new File( fileName ).length();
+        return fileName.length();
     }
 
     @Override
-    public boolean deleteFile( String fileName )
+    public boolean deleteFile( File fileName )
     {
-        return FileUtils.deleteFile( new File( fileName ) );
+        return FileUtils.deleteFile( fileName );
     }
 
     @Override
-    public boolean renameFile( String from, String to ) throws IOException
+    public boolean renameFile( File from, File to ) throws IOException
     {
-        return FileUtils.renameFile( new File( from ), new File( to ) );
+        return FileUtils.renameFile( from, to );
     }
     
     @Override
-    public void copyFile( String from, String to ) throws IOException
+    public void copyFile( File fromFile, File toFile ) throws IOException
     {
-        File fromFile = new File( from );
-        File toFile = new File( to );
         if ( fromFile.isDirectory() )
         {
             FileUtils.copyRecursively( fromFile, toFile );
@@ -93,18 +91,17 @@ public class DefaultFileSystemAbstraction
     }
 
     @Override
-    public void autoCreatePath( String store ) throws IOException
+    public void autoCreatePath( File path ) throws IOException
     {
-        String fileSeparator = System.getProperty( "file.separator" );
-        int index = store.lastIndexOf( fileSeparator );
-        String dirs = store.substring( 0, index );
-        File directories = new File( dirs );
-        if ( !directories.exists() )
+        if (!path.isDirectory())
+            path = path.getParentFile();
+
+        if ( !path.exists() )
         {
-            if ( !directories.mkdirs() )
+            if ( !path.mkdirs() )
             {
                 throw new IOException( "Unable to create directory path["
-                        + dirs + "] for Neo4j store." );
+                        + path + "] for Neo4j store." );
             }
         }
     }

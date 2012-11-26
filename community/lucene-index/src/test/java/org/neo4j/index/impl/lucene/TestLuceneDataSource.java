@@ -41,7 +41,6 @@ import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.configuration.ConfigurationDefaults;
 import org.neo4j.kernel.impl.index.IndexStore;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.PlaceboTm;
@@ -58,46 +57,47 @@ public class TestLuceneDataSource
     private final FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
 
     private IndexStore indexStore;
-    private File datasourceDirectory;
     private LuceneDataSource dataSource;
-    String dbPath = getDbPath();
+    File dbPath = getDbPath();
 
-    private String getDbPath()
+    private File getDbPath()
     {
-        return "target/var/datasource"+System.currentTimeMillis();
+        return new File("target/var/datasource" + System.currentTimeMillis());
     }
 
     @Before
     public void setup()
     {
-        datasourceDirectory = new File( dbPath );
-        datasourceDirectory.mkdirs();
+        dbPath.mkdirs();
         indexStore = new IndexStore( dbPath, new DefaultFileSystemAbstraction() );
         addIndex( "foo" );
     }
 
-    private void addIndex(String name)
+    private void addIndex( String name )
     {
         indexStore.set( Node.class, name, MapUtil.stringMap( IndexManager.PROVIDER, "lucene", "type", "fulltext" ) );
     }
 
-    private IndexIdentifier identifier(String name)
+    private IndexIdentifier identifier( String name )
     {
-        return new IndexIdentifier( LuceneCommand.NODE, dataSource.nodeEntityType, name);
+        return new IndexIdentifier( LuceneCommand.NODE, dataSource.nodeEntityType, name );
     }
 
     @After
     public void teardown() throws IOException
     {
         dataSource.stop();
-        FileUtils.deleteRecursively( datasourceDirectory );
+        FileUtils.deleteRecursively( dbPath );
     }
 
     @Test
     public void testShouldReturnIndexWriterFromLRUCache() throws InstantiationException
     {
-        dataSource = new LuceneDataSource(new Config( new ConfigurationDefaults(GraphDatabaseSettings.class ).apply(config() )), indexStore, new DefaultFileSystemAbstraction(),
-                                          new XaFactory(new Config( new ConfigurationDefaults( GraphDatabaseSettings.class ).apply( config()  )), TxIdGenerator.DEFAULT, new PlaceboTm(), new DefaultLogBufferFactory(), new DefaultFileSystemAbstraction(), StringLogger.DEV_NULL, RecoveryVerifier.ALWAYS_VALID, LogPruneStrategies.NO_PRUNING ) );
+        dataSource = new LuceneDataSource( new Config( config(), GraphDatabaseSettings.class ), indexStore,
+                new DefaultFileSystemAbstraction(),
+                new XaFactory( new Config( config(), GraphDatabaseSettings.class ), TxIdGenerator.DEFAULT,
+                        new PlaceboTm(), new DefaultLogBufferFactory(), new DefaultFileSystemAbstraction(),
+                        StringLogger.DEV_NULL, RecoveryVerifier.ALWAYS_VALID, LogPruneStrategies.NO_PRUNING ) );
         dataSource.start();
         IndexIdentifier identifier = identifier( "foo" );
         IndexWriter writer = dataSource.getIndexSearcher( identifier ).getWriter();
@@ -107,9 +107,11 @@ public class TestLuceneDataSource
     @Test
     public void testShouldReturnIndexSearcherFromLRUCache() throws InstantiationException, IOException
     {
-        Config config = new Config( new ConfigurationDefaults(GraphDatabaseSettings.class ).apply( config()) );
+        Config config = new Config( config(), GraphDatabaseSettings.class );
         dataSource = new LuceneDataSource( config, indexStore, new DefaultFileSystemAbstraction(),
-                                           new XaFactory( config, TxIdGenerator.DEFAULT, new PlaceboTm(), new DefaultLogBufferFactory(), new DefaultFileSystemAbstraction(), StringLogger.DEV_NULL, RecoveryVerifier.ALWAYS_VALID, LogPruneStrategies.NO_PRUNING ) );
+                new XaFactory( config, TxIdGenerator.DEFAULT, new PlaceboTm(), new DefaultLogBufferFactory(),
+                        new DefaultFileSystemAbstraction(), StringLogger.DEV_NULL, RecoveryVerifier.ALWAYS_VALID,
+                        LogPruneStrategies.NO_PRUNING ) );
         dataSource.start();
         IndexIdentifier identifier = identifier( "foo" );
         IndexReference searcher = dataSource.getIndexSearcher( identifier );
@@ -122,11 +124,13 @@ public class TestLuceneDataSource
     {
         addIndex( "bar" );
         addIndex( "baz" );
-        Map<String,String> config = config();
-        config.put( GraphDatabaseSettings.lucene_searcher_cache_size.name(), "2");
-        Config config1 = new Config( new ConfigurationDefaults(GraphDatabaseSettings.class ).apply( config) );
+        Map<String, String> config = config();
+        config.put( GraphDatabaseSettings.lucene_searcher_cache_size.name(), "2" );
+        Config config1 = new Config( config, GraphDatabaseSettings.class );
         dataSource = new LuceneDataSource( config1, indexStore, new DefaultFileSystemAbstraction(),
-                                           new XaFactory(config1, TxIdGenerator.DEFAULT, new PlaceboTm(), new DefaultLogBufferFactory(), new DefaultFileSystemAbstraction(), StringLogger.DEV_NULL, RecoveryVerifier.ALWAYS_VALID, LogPruneStrategies.NO_PRUNING ) );
+                new XaFactory( config1, TxIdGenerator.DEFAULT, new PlaceboTm(), new DefaultLogBufferFactory(),
+                        new DefaultFileSystemAbstraction(), StringLogger.DEV_NULL, RecoveryVerifier.ALWAYS_VALID,
+                        LogPruneStrategies.NO_PRUNING ) );
         dataSource.start();
         IndexIdentifier fooIdentifier = identifier( "foo" );
         IndexIdentifier barIdentifier = identifier( "bar" );
@@ -143,11 +147,13 @@ public class TestLuceneDataSource
     {
         addIndex( "bar" );
         addIndex( "baz" );
-        Map<String,String> config = config();
-        config.put( GraphDatabaseSettings.lucene_searcher_cache_size.name(), "2");
-        Config config1 = new Config( new ConfigurationDefaults(GraphDatabaseSettings.class ).apply( config) );
+        Map<String, String> config = config();
+        config.put( GraphDatabaseSettings.lucene_searcher_cache_size.name(), "2" );
+        Config config1 = new Config( config, GraphDatabaseSettings.class );
         dataSource = new LuceneDataSource( config1, indexStore, new DefaultFileSystemAbstraction(),
-                                           new XaFactory( config1, TxIdGenerator.DEFAULT, new PlaceboTm(), new DefaultLogBufferFactory(), fileSystem, StringLogger.DEV_NULL, RecoveryVerifier.ALWAYS_VALID, LogPruneStrategies.NO_PRUNING ) );
+                new XaFactory( config1, TxIdGenerator.DEFAULT, new PlaceboTm(), new DefaultLogBufferFactory(),
+                        fileSystem, StringLogger.DEV_NULL, RecoveryVerifier.ALWAYS_VALID,
+                        LogPruneStrategies.NO_PRUNING ) );
         dataSource.start();
         IndexIdentifier fooIdentifier = identifier( "foo" );
         IndexIdentifier barIdentifier = identifier( "bar" );
@@ -166,11 +172,13 @@ public class TestLuceneDataSource
     {
         addIndex( "bar" );
         addIndex( "baz" );
-        Map<String,String> config = config();
-        config.put( GraphDatabaseSettings.lucene_searcher_cache_size.name(), "2");
-        Config config1 = new Config( new ConfigurationDefaults(GraphDatabaseSettings.class ).apply( config) );
+        Map<String, String> config = config();
+        config.put( GraphDatabaseSettings.lucene_searcher_cache_size.name(), "2" );
+        Config config1 = new Config( config, GraphDatabaseSettings.class );
         dataSource = new LuceneDataSource( config1, indexStore, new DefaultFileSystemAbstraction(),
-                                           new XaFactory( config1, TxIdGenerator.DEFAULT, new PlaceboTm(), new DefaultLogBufferFactory(), new DefaultFileSystemAbstraction(), StringLogger.DEV_NULL, RecoveryVerifier.ALWAYS_VALID, LogPruneStrategies.NO_PRUNING ) );
+                new XaFactory( config1, TxIdGenerator.DEFAULT, new PlaceboTm(), new DefaultLogBufferFactory(),
+                        new DefaultFileSystemAbstraction(), StringLogger.DEV_NULL, RecoveryVerifier.ALWAYS_VALID,
+                        LogPruneStrategies.NO_PRUNING ) );
         dataSource.start();
         IndexIdentifier fooIdentifier = identifier( "foo" );
         IndexIdentifier barIdentifier = identifier( "bar" );
@@ -192,11 +200,13 @@ public class TestLuceneDataSource
     {
         addIndex( "bar" );
         addIndex( "baz" );
-        Map<String,String> config = config();
-        config.put( GraphDatabaseSettings.lucene_searcher_cache_size.name(), "2");
-        Config config1 = new Config( new ConfigurationDefaults(GraphDatabaseSettings.class ).apply( config) );
+        Map<String, String> config = config();
+        config.put( GraphDatabaseSettings.lucene_searcher_cache_size.name(), "2" );
+        Config config1 = new Config( config, GraphDatabaseSettings.class );
         dataSource = new LuceneDataSource( config1, indexStore, new DefaultFileSystemAbstraction(),
-                                           new XaFactory( config1, TxIdGenerator.DEFAULT, new PlaceboTm(), new DefaultLogBufferFactory(), new DefaultFileSystemAbstraction(), StringLogger.DEV_NULL, RecoveryVerifier.ALWAYS_VALID, LogPruneStrategies.NO_PRUNING ) );
+                new XaFactory( config1, TxIdGenerator.DEFAULT, new PlaceboTm(), new DefaultLogBufferFactory(),
+                        new DefaultFileSystemAbstraction(), StringLogger.DEV_NULL, RecoveryVerifier.ALWAYS_VALID,
+                        LogPruneStrategies.NO_PRUNING ) );
         dataSource.start();
         IndexIdentifier fooIdentifier = identifier( "foo" );
         IndexIdentifier barIdentifier = identifier( "bar" );
@@ -209,13 +219,15 @@ public class TestLuceneDataSource
         assertFalse( IndexWriterAccessor.isClosed( newFooIndexWriter ) );
     }
 
-    @Ignore( "No longer valid since Lucene 3.5" )
+    @Ignore("No longer valid since Lucene 3.5")
     @Test
     public void testInvalidatingSearcherCreatesANewOne() throws InstantiationException, IOException
     {
-        Config config = new Config( new ConfigurationDefaults(GraphDatabaseSettings.class ).apply( config()) );
+        Config config = new Config( config(), GraphDatabaseSettings.class );
         dataSource = new LuceneDataSource( config, indexStore, new DefaultFileSystemAbstraction(),
-            new XaFactory( config, TxIdGenerator.DEFAULT, new PlaceboTm(), new DefaultLogBufferFactory(), new DefaultFileSystemAbstraction(), StringLogger.DEV_NULL, RecoveryVerifier.ALWAYS_VALID, LogPruneStrategies.NO_PRUNING ) );
+                new XaFactory( config, TxIdGenerator.DEFAULT, new PlaceboTm(), new DefaultLogBufferFactory(),
+                        new DefaultFileSystemAbstraction(), StringLogger.DEV_NULL, RecoveryVerifier.ALWAYS_VALID,
+                        LogPruneStrategies.NO_PRUNING ) );
         dataSource.start();
         IndexIdentifier identifier = new IndexIdentifier( LuceneCommand.NODE, dataSource.nodeEntityType, "foo" );
         IndexReference oldSearcher = dataSource.getIndexSearcher( identifier );
@@ -228,9 +240,8 @@ public class TestLuceneDataSource
         newSearcher.close();
     }
 
-    private Map<String,String> config()
+    private Map<String, String> config()
     {
-        return MapUtil.stringMap(
-                "store_dir", getDbPath());
+        return MapUtil.stringMap("store_dir", getDbPath().getPath() );
     }
 }

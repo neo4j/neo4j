@@ -23,14 +23,15 @@ package org.neo4j.kernel.impl.nioneo.store;
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
+
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.InternalAbstractGraphDatabase;
+import org.neo4j.helpers.Settings;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.DefaultTxHook;
+import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.configuration.ConfigurationDefaults;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
@@ -71,7 +72,7 @@ public class StoreAccess
     }
 
     public StoreAccess( NodeStore nodeStore, RelationshipStore relStore, PropertyStore propStore,
-            RelationshipTypeStore typeStore )
+                        RelationshipTypeStore typeStore )
     {
         this.nodeStore = wrapStore( nodeStore );
         this.relStore = wrapStore( relStore );
@@ -92,17 +93,15 @@ public class StoreAccess
     public StoreAccess( String path, Map<String, String> params )
     {
         this(
-            new StoreFactory( new Config( new ConfigurationDefaults( GraphDatabaseSettings.class )
-                                              .apply( requiredParams( params, path ) ) ), new DefaultIdGeneratorFactory(),
-
-                    new DefaultWindowPoolFactory(), new DefaultFileSystemAbstraction(), initLogger( path ),
-                              new DefaultTxHook() ).attemptNewNeoStore( new File( path, "neostore" ).getAbsolutePath() ) );
+                new StoreFactory( new Config( requiredParams( params, path ) ), new DefaultIdGeneratorFactory(),
+                        new DefaultWindowPoolFactory(), new DefaultFileSystemAbstraction(), initLogger( path ),
+                        new DefaultTxHook() ).attemptNewNeoStore( new File( path, "neostore" ) ) );
         this.closeable = true;
     }
 
     private static StringLogger initLogger( String path )
     {
-        StringLogger logger = StringLogger.logger( path );
+        StringLogger logger = StringLogger.loggerDirectory( new File( path ));
         logger.logMessage( "Starting " + StoreAccess.class.getSimpleName() );
         return logger;
     }
@@ -166,7 +165,7 @@ public class StoreAccess
 
     public final <P extends RecordStore.Processor> P applyToAll( P processor )
     {
-        for( RecordStore<?> store : allStores() )
+        for ( RecordStore<?> store : allStores() )
         {
             apply( processor, store );
         }
@@ -175,16 +174,16 @@ public class StoreAccess
 
     protected RecordStore<?>[] allStores()
     {
-        if( propStore == null )
+        if ( propStore == null )
         {
             return new RecordStore<?>[]{ // no property stores
-                                         nodeStore, relStore, relTypeStore, typeNameStore
+                    nodeStore, relStore, relTypeStore, typeNameStore
             };
         }
-        return new RecordStore<?>[] {
+        return new RecordStore<?>[]{
                 nodeStore, relStore, propStore, stringStore, arrayStore, // basic
                 relTypeStore, propIndexStore, typeNameStore, propKeyStore, // internal
-                };
+        };
     }
 
     protected <R extends AbstractBaseRecord> RecordStore<R> wrapStore( RecordStore<R> store )
@@ -192,7 +191,7 @@ public class StoreAccess
         return store;
     }
 
-    @SuppressWarnings( "unchecked" )
+    @SuppressWarnings("unchecked")
     protected void apply( RecordStore.Processor processor, RecordStore<?> store )
     {
         processor.applyFiltered( store, RecordStore.IN_USE );
@@ -213,7 +212,7 @@ public class StoreAccess
         {
             params.put( GraphDatabaseSettings.use_memory_mapped_buffers.name(), "false" );
         }
-        params.put( GraphDatabaseSettings.rebuild_idgenerators_fast.name(), GraphDatabaseSetting.TRUE );
+        params.put( GraphDatabaseSettings.rebuild_idgenerators_fast.name(), Settings.TRUE );
         return params;
     }
 

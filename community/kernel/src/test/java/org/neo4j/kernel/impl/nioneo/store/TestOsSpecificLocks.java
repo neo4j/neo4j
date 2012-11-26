@@ -19,19 +19,24 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
+
 import java.io.File;
 import java.nio.channels.FileChannel;
+
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.graphdb.factory.GraphDatabaseSetting;
+import org.neo4j.helpers.Settings;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
-
-import static org.junit.Assert.*;
-import static org.junit.Assume.*;
 
 public class TestOsSpecificLocks
 {
@@ -48,10 +53,10 @@ public class TestOsSpecificLocks
     @Test
     public void sanityCheck() throws Exception
     {
-        assumeTrue( GraphDatabaseSetting.osIsWindows() );
+        assumeTrue( Settings.osIsWindows() );
         FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
         // Must end in neostore to get the lock
-        String fileName = path + "\\1neostore";
+        File fileName = new File( path + "\\1neostore");
         FileChannel channel = fs.open( fileName, "rw" );
         // Lock this sucker!
         FileLock lock = fs.tryLock( fileName, channel );
@@ -61,8 +66,8 @@ public class TestOsSpecificLocks
 
         // But the rest of the files should return non null (placebos,
         // actually)
-        FileChannel tempChannel = fs.open( fileName + "1", "rw" );
-        FileLock tempLock = fs.tryLock( fileName + "1", tempChannel );
+        FileChannel tempChannel = fs.open( new File( fileName.getPath() + "1"), "rw" );
+        FileLock tempLock = fs.tryLock( new File( fileName.getPath() + "1"), tempChannel );
         assertNotNull( tempLock );
         tempLock.release();
         tempChannel.close();
@@ -77,7 +82,7 @@ public class TestOsSpecificLocks
     @Test
     public void testDatabaseLocking()
     {
-        assumeTrue( GraphDatabaseSetting.osIsWindows() );
+        assumeTrue( Settings.osIsWindows() );
         GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( path );
         Transaction tx = db.beginTx();
         db.createNode();

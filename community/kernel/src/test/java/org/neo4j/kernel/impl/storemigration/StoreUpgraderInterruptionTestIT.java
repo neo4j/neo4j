@@ -60,7 +60,7 @@ public class StoreUpgraderInterruptionTestIT
 
         try
         {
-            newUpgrader( failingStoreMigrator, new DatabaseFiles() ).attemptUpgrade( new File( workingDirectory, NeoStore.DEFAULT_NAME ).getPath() );
+            newUpgrader( failingStoreMigrator, new DatabaseFiles() ).attemptUpgrade( new File( workingDirectory, NeoStore.DEFAULT_NAME ) );
             fail( "Should throw exception" );
         }
         catch ( RuntimeException e )
@@ -70,7 +70,7 @@ public class StoreUpgraderInterruptionTestIT
 
         assertTrue( allStoreFilesHaveVersion( workingDirectory, "v0.9.9" ) );
 
-        newUpgrader( new StoreMigrator( new SilentMigrationProgressMonitor() ), new DatabaseFiles() ).attemptUpgrade( new File( workingDirectory, NeoStore.DEFAULT_NAME ).getPath() );
+        newUpgrader( new StoreMigrator( new SilentMigrationProgressMonitor() ), new DatabaseFiles() ).attemptUpgrade( new File( workingDirectory, NeoStore.DEFAULT_NAME ) );
 
         assertTrue( allStoreFilesHaveVersion( workingDirectory, ALL_STORES_VERSION ) );
     }
@@ -101,7 +101,7 @@ public class StoreUpgraderInterruptionTestIT
 
         try
         {
-            newUpgrader( new StoreMigrator( new SilentMigrationProgressMonitor() ), failsOnBackup ).attemptUpgrade( new File( workingDirectory, NeoStore.DEFAULT_NAME ).getPath() );
+            newUpgrader( new StoreMigrator( new SilentMigrationProgressMonitor() ), failsOnBackup ).attemptUpgrade( new File( workingDirectory, NeoStore.DEFAULT_NAME ) );
             fail( "Should throw exception" );
         }
         catch ( RuntimeException e )
@@ -111,7 +111,7 @@ public class StoreUpgraderInterruptionTestIT
 
         try
         {
-            newUpgrader( new StoreMigrator( new SilentMigrationProgressMonitor() ) , new DatabaseFiles() ).attemptUpgrade( new File( workingDirectory, NeoStore.DEFAULT_NAME ).getPath() );
+            newUpgrader( new StoreMigrator( new SilentMigrationProgressMonitor() ) , new DatabaseFiles() ).attemptUpgrade( new File( workingDirectory, NeoStore.DEFAULT_NAME ) );
             fail( "Should throw exception" );
         }
         catch ( Exception e )

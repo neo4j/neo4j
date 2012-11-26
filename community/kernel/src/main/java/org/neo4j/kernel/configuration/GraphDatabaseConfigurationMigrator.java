@@ -24,91 +24,95 @@ import static java.util.regex.Pattern.quote;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
-import org.neo4j.kernel.configuration.BaseConfigurationMigrator;
-import org.neo4j.kernel.configuration.Config;
+import org.neo4j.helpers.Settings;
 
-public class GraphDatabaseConfigurationMigrator extends BaseConfigurationMigrator 
+public class GraphDatabaseConfigurationMigrator extends BaseConfigurationMigrator
 {
     {
-        add(new SpecificPropertyMigration("enable_online_backup", "enable_online_backup has been replaced with online_backup_enabled and online_backup_port")
+        add( new SpecificPropertyMigration( "enable_online_backup", "enable_online_backup has been replaced with " +
+                "online_backup_enabled and online_backup_port" )
         {
             @Override
-            public void setValueWithOldSetting(String value, Map<String, String> rawConfiguration)
+            public void setValueWithOldSetting( String value, Map<String, String> rawConfiguration )
             {
                 if ( value != null )
                 {
                     String port = null;
-                    
+
                     // Backup is configured
-                    if ( value.contains("=") )
+                    if ( value.contains( "=" ) )
                     {   // Multi-value config, which means we have to parse the port
                         Args args = parseMapFromConfigValue( "enable_online_backup", value );
-                        port = args.get("port", "6362" );
+                        port = args.get( "port", "6362" );
                     }
                     else if ( Boolean.parseBoolean( value ) == true )
                     {   // Single-value config, true/false
                         port = "6362";
                     }
-                    
-                    if( port != null) 
+
+                    if ( port != null )
                     {
                         rawConfiguration.put( "online_backup_port", port );
-                        rawConfiguration.put( GraphDatabaseSettings.online_backup_enabled.name(), GraphDatabaseSetting.TRUE );
+                        rawConfiguration.put( GraphDatabaseSettings.online_backup_enabled.name(), Settings.TRUE );
                     }
                 }
             }
-        });
-        
-        add(new SpecificPropertyMigration("neo4j.ext.udc.disable", "neo4j.ext.udc.disable has been replaced with neo4j.ext.udc.enabled")
+        } );
+
+        add( new SpecificPropertyMigration( "neo4j.ext.udc.disable", "neo4j.ext.udc.disable has been replaced with " +
+                "neo4j.ext.udc.enabled" )
         {
             @Override
-            public void setValueWithOldSetting(String value, Map<String, String> rawConfiguration)
+            public void setValueWithOldSetting( String value, Map<String, String> rawConfiguration )
             {
-                if ("true".equalsIgnoreCase( value ))
+                if ( "true".equalsIgnoreCase( value ) )
                 {
                     rawConfiguration.put( "neo4j.ext.udc.enabled", "false" );
-                } else
+                }
+                else
                 {
                     rawConfiguration.put( "neo4j.ext.udc.enabled", "true" );
                 }
             }
-        });
-        
-        add(new SpecificPropertyMigration("enable_remote_shell", "neo4j.ext.udc.disable has been replaced with neo4j.ext.udc.enabled")
+        } );
+
+        add( new SpecificPropertyMigration( "enable_remote_shell", "neo4j.ext.udc.disable has been replaced with " +
+                "neo4j.ext.udc.enabled" )
         {
             @Override
-            public void setValueWithOldSetting(String value, Map<String, String> rawConfiguration)
+            public void setValueWithOldSetting( String value, Map<String, String> rawConfiguration )
             {
                 if ( configValueContainsMultipleParameters( value ) )
                 {
-                    rawConfiguration.put( "remote_shell_enabled", GraphDatabaseSetting.TRUE );
-                    
+                    rawConfiguration.put( "remote_shell_enabled", Settings.TRUE );
+
                     Args parsed = parseMapFromConfigValue( "enable_remote_shell", value );
                     Map<String, String> map = new HashMap<String, String>();
                     map.put( "remote_shell_port", parsed.get( "port", "1337" ) );
                     map.put( "remote_shell_name", parsed.get( "name", "shell" ) );
                     map.put( "remote_shell_read_only", parsed.get( "readonly", "false" ) );
-                    
-                    rawConfiguration.putAll(map);
+
+                    rawConfiguration.putAll( map );
                 }
                 else
                 {
-                    rawConfiguration.put( "remote_shell_enabled", Boolean.parseBoolean( value ) ? GraphDatabaseSetting.TRUE : GraphDatabaseSetting.FALSE );
+                    rawConfiguration.put( "remote_shell_enabled", Boolean.parseBoolean( value ) ? Settings.TRUE :
+                            Settings.FALSE );
                 }
             }
-        });
-        
-        add( new SpecificPropertyMigration( Config.KEEP_LOGICAL_LOGS, "multi-value configuration of keep_logical_logs has been removed, any configuration specified will apply to all data sources" )
+        } );
+
+        add( new SpecificPropertyMigration( Config.KEEP_LOGICAL_LOGS, "multi-value configuration of keep_logical_logs" +
+                " has been removed, any configuration specified will apply to all data sources" )
         {
             @Override
             public boolean appliesTo( Map<String, String> rawConfiguration )
             {
                 return configValueContainsMultipleParameters( rawConfiguration.get( Config.KEEP_LOGICAL_LOGS ) );
             }
-            
+
             @Override
             public void setValueWithOldSetting( String value, Map<String, String> rawConfiguration )
             {
@@ -125,8 +129,9 @@ public class GraphDatabaseConfigurationMigrator extends BaseConfigurationMigrato
                 rawConfiguration.put( Config.KEEP_LOGICAL_LOGS, String.valueOf( keep ) );
             }
         } );
-        
-        add( new SpecificPropertyMigration( "lucene_writer_cache_size", "cannot configure writers and searchers individually since they go together" )
+
+        add( new SpecificPropertyMigration( "lucene_writer_cache_size", "cannot configure writers and searchers " +
+                "individually since they go together" )
         {
             @Override
             public void setValueWithOldSetting( String value, Map<String, String> rawConfiguration )
@@ -134,13 +139,13 @@ public class GraphDatabaseConfigurationMigrator extends BaseConfigurationMigrato
             }
         } );
     }
-    
+
     @Deprecated
     public static boolean configValueContainsMultipleParameters( String configValue )
     {
         return configValue != null && configValue.contains( "=" );
     }
-    
+
     @Deprecated
     public static Args parseMapFromConfigValue( String name, String configValue )
     {

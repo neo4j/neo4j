@@ -60,10 +60,10 @@ class LuceneBatchInserterIndex implements BatchInserterIndex,
     private int updateCount;
     private int commitBatchSize = 500000;
 
-    LuceneBatchInserterIndex( String dbStoreDir,
+    LuceneBatchInserterIndex( File dbStoreDir,
             IndexIdentifier identifier, Map<String, String> config )
     {
-        String storeDir = getStoreDir( dbStoreDir );
+        File storeDir = getStoreDir( dbStoreDir );
         this.createdNow = !LuceneDataSource.getFileDirectory( storeDir, identifier ).exists();
         this.identifier = identifier;
         this.type = IndexType.getIndexType( identifier, config );
@@ -229,7 +229,7 @@ class LuceneBatchInserterIndex implements BatchInserterIndex,
         }
     }
 
-    private IndexWriter instantiateWriter( String directory )
+    private IndexWriter instantiateWriter( File directory )
     {
         try
         {
@@ -378,9 +378,9 @@ class LuceneBatchInserterIndex implements BatchInserterIndex,
         closeWriter();
     }
 
-    private String getStoreDir( String dbStoreDir )
+    private File getStoreDir( File dbStoreDir )
     {
-        File dir = new File( new File( dbStoreDir ), "index" );
+        File dir = new File( dbStoreDir, "index" );
         if ( !dir.exists() )
         {
             if ( !dir.mkdirs() )
@@ -389,7 +389,7 @@ class LuceneBatchInserterIndex implements BatchInserterIndex,
                         + dir.getAbsolutePath() + "] for Neo4j store." );
             }
         }
-        return dir.getAbsolutePath();
+        return dir;
     }
     
     @Override

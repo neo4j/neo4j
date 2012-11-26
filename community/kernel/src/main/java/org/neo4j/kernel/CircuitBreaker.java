@@ -26,204 +26,219 @@ import java.beans.PropertyVetoException;
 import java.beans.VetoableChangeListener;
 import java.beans.VetoableChangeSupport;
 import java.util.Date;
-import org.neo4j.helpers.Specification;
-import org.neo4j.helpers.Specifications;
+
+import org.neo4j.helpers.Predicate;
+import org.neo4j.helpers.Predicates;
 
 /**
  * Implementation of the CircuitBreaker pattern
  */
 public class CircuitBreaker
 {
-   public enum Status
-   {
-      off,
-      on
-   }
+    public enum Status
+    {
+        off,
+        on
+    }
 
-   private int threshold;
-   private long timeout;
-   private Specification<Throwable> allowedThrowables;
+    private int threshold;
+    private long timeout;
+    private Predicate<Throwable> allowedThrowables;
 
-   private int countDown;
-   private long trippedOn = -1;
-   private long enableOn = -1;
+    private int countDown;
+    private long trippedOn = -1;
+    private long enableOn = -1;
 
-   private Status status = Status.on;
+    private Status status = Status.on;
 
-   private Throwable lastThrowable;
+    private Throwable lastThrowable;
 
-   PropertyChangeSupport pcs = new PropertyChangeSupport(this);
-   VetoableChangeSupport vcs = new VetoableChangeSupport(this);
+    PropertyChangeSupport pcs = new PropertyChangeSupport( this );
+    VetoableChangeSupport vcs = new VetoableChangeSupport( this );
 
-   public CircuitBreaker( int threshold, long timeout, Specification<Throwable> allowedThrowables )
-   {
-      this.threshold = threshold;
-      this.countDown = threshold;
-      this.timeout = timeout;
-      this.allowedThrowables = allowedThrowables;
-   }
+    public CircuitBreaker( int threshold, long timeout, Predicate<Throwable> allowedThrowables )
+    {
+        this.threshold = threshold;
+        this.countDown = threshold;
+        this.timeout = timeout;
+        this.allowedThrowables = allowedThrowables;
+    }
 
-   public CircuitBreaker(int threshold, long timeout)
-   {
-      this(threshold, timeout, Specifications.not( Specifications.<Throwable>TRUE())); // Trip on all exceptions as default
-   }
+    public CircuitBreaker( int threshold, long timeout )
+    {
+        this( threshold, timeout, Predicates.not( Predicates.<Throwable>TRUE() ) ); // Trip on all exceptions as default
+    }
 
-   public CircuitBreaker()
-   {
-      this(1, 1000*60*5); // 5 minute timeout as default
-   }
+    public CircuitBreaker()
+    {
+        this( 1, 1000 * 60 * 5 ); // 5 minute timeout as default
+    }
 
-   public synchronized void trip()
-   {
-      if (status == Status.on)
-      {
-         if (countDown != 0)
-         {
-            // If this was invoked manually, then set countDown to zero automatically
-            int oldCountDown = countDown;
-            countDown = 0;
-            pcs.firePropertyChange( "serviceLevel", (oldCountDown)/((double)threshold), countDown/((double)threshold) );
-         }
+    public synchronized void trip()
+    {
+        if ( status == Status.on )
+        {
+            if ( countDown != 0 )
+            {
+                // If this was invoked manually, then set countDown to zero automatically
+                int oldCountDown = countDown;
+                countDown = 0;
+                pcs.firePropertyChange( "serviceLevel", (oldCountDown) / ((double) threshold),
+                        countDown / ((double) threshold) );
+            }
 
-         status = Status.off;
-         pcs.firePropertyChange( "status", Status.on, Status.off );
+            status = Status.off;
+            pcs.firePropertyChange( "status", Status.on, Status.off );
 
-         trippedOn = System.currentTimeMillis();
-         enableOn = trippedOn+timeout;
-      }
-   }
+            trippedOn = System.currentTimeMillis();
+            enableOn = trippedOn + timeout;
+        }
+    }
 
-   public synchronized void turnOn() throws PropertyVetoException
-   {
-      if (status == Status.off)
-      {
-         try
-         {
-            vcs.fireVetoableChange( "status", Status.off, Status.on );
-            status = Status.on;
-            countDown = threshold;
-            trippedOn = -1;
-            enableOn = -1;
-            lastThrowable = null;
-
-            pcs.firePropertyChange( "status", Status.off, Status.on );
-         } catch (PropertyVetoException e)
-         {
-            // Reset timeout
-            enableOn = System.currentTimeMillis()+timeout;
-
-            if (e.getCause() != null)
-               lastThrowable = e.getCause();
-            else
-               lastThrowable = e;
-            throw e;
-         }
-      }
-   }
-
-   public int getThreshold()
-   {
-      return threshold;
-   }
-
-   public synchronized Throwable getLastThrowable()
-   {
-      return lastThrowable;
-   }
-
-   public synchronized double getServiceLevel()
-   {
-      return countDown/((double)threshold);
-   }
-
-   public synchronized Status getStatus()
-   {
-      if (status == Status.off)
-      {
-         if (System.currentTimeMillis() > enableOn)
-         {
+    public synchronized void turnOn() throws PropertyVetoException
+    {
+        if ( status == Status.off )
+        {
             try
             {
-               turnOn();
-            } catch (PropertyVetoException e)
-            {
-               if (e.getCause() != null)
-                  lastThrowable = e.getCause();
-               else
-                  lastThrowable = e;
+                vcs.fireVetoableChange( "status", Status.off, Status.on );
+                status = Status.on;
+                countDown = threshold;
+                trippedOn = -1;
+                enableOn = -1;
+                lastThrowable = null;
+
+                pcs.firePropertyChange( "status", Status.off, Status.on );
             }
-         }
-      }
-
-      return status;
-   }
-
-   public Date getTrippedOn()
-   {
-      return trippedOn == -1 ? null : new Date(trippedOn);
-   }
-
-   public Date getEnableOn()
-   {
-      return enableOn == -1 ? null : new Date(enableOn);
-   }
-
-   public boolean isOn()
-   {
-      return getStatus().equals( Status.on );
-   }
-
-   public synchronized void throwable(Throwable throwable)
-   {
-      if ( status == Status.on)
-      {
-         if (allowedThrowables.satisfiedBy( throwable ))
-         {
-            // Allowed throwable, so counts as success
-            success();
-         } else
-         {
-            countDown--;
-
-            lastThrowable = throwable;
-
-            pcs.firePropertyChange( "serviceLevel", (countDown+1)/((double)threshold), countDown/((double)threshold) );
-
-            if (countDown == 0)
+            catch ( PropertyVetoException e )
             {
-               trip();
+                // Reset timeout
+                enableOn = System.currentTimeMillis() + timeout;
+
+                if ( e.getCause() != null )
+                {
+                    lastThrowable = e.getCause();
+                }
+                else
+                {
+                    lastThrowable = e;
+                }
+                throw e;
             }
-         }
-      }
-   }
+        }
+    }
 
-   public synchronized void success()
-   {
-      if (status == Status.on && countDown < threshold)
-      {
-         countDown++;
+    public int getThreshold()
+    {
+        return threshold;
+    }
 
-         pcs.firePropertyChange( "serviceLevel", (countDown-1)/((double)threshold), countDown/((double)threshold) );
-      }
-   }
+    public synchronized Throwable getLastThrowable()
+    {
+        return lastThrowable;
+    }
 
-   public void addVetoableChangeListener( VetoableChangeListener vcl)
-   {
-      vcs.addVetoableChangeListener( vcl );
-   }
+    public synchronized double getServiceLevel()
+    {
+        return countDown / ((double) threshold);
+    }
 
-   public void removeVetoableChangeListener( VetoableChangeListener vcl)
-   {
-      vcs.removeVetoableChangeListener( vcl );
-   }
+    public synchronized Status getStatus()
+    {
+        if ( status == Status.off )
+        {
+            if ( System.currentTimeMillis() > enableOn )
+            {
+                try
+                {
+                    turnOn();
+                }
+                catch ( PropertyVetoException e )
+                {
+                    if ( e.getCause() != null )
+                    {
+                        lastThrowable = e.getCause();
+                    }
+                    else
+                    {
+                        lastThrowable = e;
+                    }
+                }
+            }
+        }
 
-   public void addPropertyChangeListener( PropertyChangeListener pcl)
-   {
-      pcs.addPropertyChangeListener( pcl );
-   }
+        return status;
+    }
 
-   public void removePropertyChangeListener( PropertyChangeListener pcl)
-   {
-      pcs.removePropertyChangeListener( pcl );
-   }
+    public Date getTrippedOn()
+    {
+        return trippedOn == -1 ? null : new Date( trippedOn );
+    }
+
+    public Date getEnableOn()
+    {
+        return enableOn == -1 ? null : new Date( enableOn );
+    }
+
+    public boolean isOn()
+    {
+        return getStatus().equals( Status.on );
+    }
+
+    public synchronized void throwable( Throwable throwable )
+    {
+        if ( status == Status.on )
+        {
+            if ( allowedThrowables.accept( throwable ) )
+            {
+                // Allowed throwable, so counts as success
+                success();
+            }
+            else
+            {
+                countDown--;
+
+                lastThrowable = throwable;
+
+                pcs.firePropertyChange( "serviceLevel", (countDown + 1) / ((double) threshold),
+                        countDown / ((double) threshold) );
+
+                if ( countDown == 0 )
+                {
+                    trip();
+                }
+            }
+        }
+    }
+
+    public synchronized void success()
+    {
+        if ( status == Status.on && countDown < threshold )
+        {
+            countDown++;
+
+            pcs.firePropertyChange( "serviceLevel", (countDown - 1) / ((double) threshold),
+                    countDown / ((double) threshold) );
+        }
+    }
+
+    public void addVetoableChangeListener( VetoableChangeListener vcl )
+    {
+        vcs.addVetoableChangeListener( vcl );
+    }
+
+    public void removeVetoableChangeListener( VetoableChangeListener vcl )
+    {
+        vcs.removeVetoableChangeListener( vcl );
+    }
+
+    public void addPropertyChangeListener( PropertyChangeListener pcl )
+    {
+        pcs.addPropertyChangeListener( pcl );
+    }
+
+    public void removePropertyChangeListener( PropertyChangeListener pcl )
+    {
+        pcs.removePropertyChangeListener( pcl );
+    }
 }

@@ -67,17 +67,17 @@ public class TestRecoveryLogTimingIssues extends AbstractSubProcessTestBase
     private final BreakPoint RELEASE_CURRENT_LOG_FILE = BreakPoint.thatCrashesTheProcess( breakpointNotification, 0,
             XaLogicalLog.class, "releaseCurrentLogFile" );
     private final BreakPoint RENAME_LOG_FILE = BreakPoint.thatCrashesTheProcess( breakpointNotification, 0,
-            XaLogicalLog.class, "renameLogFileToRightVersion", String.class, long.class );
+            XaLogicalLog.class, "renameLogFileToRightVersion", File.class, long.class );
     private final BreakPoint SET_VERSION_2 = BreakPoint.thatCrashesTheProcess( breakpointNotification, 1,
             NeoStore.class, "setVersion", long.class );
     private final BreakPoint RELEASE_CURRENT_LOG_FILE_2 = BreakPoint.thatCrashesTheProcess( breakpointNotification, 1,
             XaLogicalLog.class, "releaseCurrentLogFile" );
     private final BreakPoint RENAME_LOG_FILE_2 = BreakPoint.thatCrashesTheProcess( breakpointNotification, 1,
-            XaLogicalLog.class, "renameLogFileToRightVersion", String.class, long.class );
+            XaLogicalLog.class, "renameLogFileToRightVersion", File.class, long.class );
     private final BreakPoint EXIT_RENAME_LOG_FILE_LUCENE = BreakPoint.thatCrashesTheProcess( Event.EXIT, breakpointNotification, 0,
-            BreakPoint.stackTraceMustContainClass( LuceneDataSource.class ), XaLogicalLog.class, "renameLogFileToRightVersion", String.class, long.class );
+            BreakPoint.stackTraceMustContainClass( LuceneDataSource.class ), XaLogicalLog.class, "renameLogFileToRightVersion", File.class, long.class );
     private final BreakPoint EXIT_RENAME_LOG_FILE_NIONEO = BreakPoint.thatCrashesTheProcess( Event.EXIT, breakpointNotification, 0,
-            BreakPoint.stackTraceMustNotContainClass( LuceneDataSource.class ), XaLogicalLog.class, "renameLogFileToRightVersion", String.class, long.class );
+            BreakPoint.stackTraceMustNotContainClass( LuceneDataSource.class ), XaLogicalLog.class, "renameLogFileToRightVersion", File.class, long.class );
     
     private final BreakPoint[] breakpoints = new BreakPoint[] {
             SET_VERSION, RELEASE_CURRENT_LOG_FILE, RENAME_LOG_FILE,

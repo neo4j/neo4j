@@ -25,10 +25,10 @@ import java.util.Map;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
-import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.IndexProvider;
 import org.neo4j.helpers.Service;
+import org.neo4j.helpers.Settings;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.cache.CacheProvider;
@@ -43,7 +43,7 @@ public final class EmbeddedReadOnlyGraphDatabase extends InternalAbstractGraphDa
 
     static
     {
-        readOnlyParams.put( GraphDatabaseSettings.read_only.name(), GraphDatabaseSetting.TRUE );
+        readOnlyParams.put( GraphDatabaseSettings.read_only.name(), Settings.TRUE );
     }
 
     /**
@@ -79,12 +79,13 @@ public final class EmbeddedReadOnlyGraphDatabase extends InternalAbstractGraphDa
     }
 
     public EmbeddedReadOnlyGraphDatabase( String storeDir,
-                                          Map<String, String> params, Iterable<IndexProvider> indeProviders,
+                                          Map<String, String> params, Iterable<IndexProvider> indexProviders,
                                           Iterable<KernelExtensionFactory<?>> kernelExtensions,
                                           Iterable<CacheProvider> cacheProviders,
                                           Iterable<TransactionInterceptorProvider> transactionInterceptorProviders )
     {
-        super( storeDir, addReadOnly( params ), indeProviders, kernelExtensions, cacheProviders,
+        super( storeDir, addReadOnly( params ), Iterables.<Class<?>, Class<?>>iterable( (Class<?>)
+                GraphDatabaseSettings.class ), indexProviders, kernelExtensions, cacheProviders,
                 transactionInterceptorProviders );
         run();
     }

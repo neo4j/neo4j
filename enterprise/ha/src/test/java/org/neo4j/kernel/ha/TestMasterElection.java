@@ -27,13 +27,14 @@ import java.net.URI;
 import java.util.concurrent.CountDownLatch;
 
 import org.junit.Test;
-import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
+import org.neo4j.cluster.ClusterSettings;
+import org.neo4j.cluster.member.ClusterMemberListener;
 import org.neo4j.consistency.checking.incremental.intercept.VerifyingTransactionInterceptorProvider;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
-import org.neo4j.kernel.ha.cluster.HighAvailabilityEvents;
-import org.neo4j.kernel.ha.cluster.HighAvailabilityListener;
+import org.neo4j.cluster.member.ClusterMemberEvents;
+import org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
 import org.neo4j.test.TargetDirectory;
 
@@ -66,16 +67,16 @@ public class TestMasterElection
     private void startListenForNewMaster( HighlyAvailableGraphDatabase db )
     {
         masterElectedLatch = new CountDownLatch( 1 );
-        final HighAvailabilityEvents events = db.getDependencyResolver().resolveDependency( HighAvailabilityEvents.class );
-        events.addClusterEventListener( new HighAvailabilityListener.Adapter()
+        final ClusterMemberEvents events = db.getDependencyResolver().resolveDependency( ClusterMemberEvents.class );
+        events.addClusterMemberListener( new ClusterMemberListener.Adapter()
         {
             @Override
-            public void memberIsAvailable( String role, URI instanceClusterUri, Iterable<URI> instanceUris )
+            public void memberIsAvailable( String role, URI instanceClusterUri, URI roleUri )
             {
-                if ( role.equals( ClusterConfiguration.COORDINATOR ) )
+                if ( role.equals( HighAvailabilityModeSwitcher.MASTER ) )
                 {
                     masterElectedLatch.countDown();
-                    events.removeClusterEventListener( this );
+                    events.removeClusterMemberListener( this );
                 }
             }
         } );
@@ -87,9 +88,10 @@ public class TestMasterElection
     {
         GraphDatabaseBuilder builder = new HighlyAvailableGraphDatabaseFactory()
                 .newHighlyAvailableDatabaseBuilder( path( serverId ) )
+                .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:5001,127.0.0.1:5002,127.0.0.1:5003" )
+                .setConfig( ClusterSettings.cluster_server, "127.0.0.1:" + (5001 + serverId) )
                 .setConfig( HaSettings.server_id, "" + serverId )
                 .setConfig( HaSettings.ha_server, ":" + (8001 + serverId) )
-                .setConfig( HaSettings.initial_hosts, ":5001,:5002,:5003" )
                 .setConfig( HaSettings.tx_push_factor, "0" )
                 .setConfig( GraphDatabaseSettings.intercept_committing_transactions, "true" )
                 .setConfig( GraphDatabaseSettings.intercept_deserialized_transactions, "true" )

@@ -17,12 +17,16 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.ha.cluster;
 
-import org.neo4j.cluster.Binding;
-import org.neo4j.cluster.protocol.cluster.Cluster;
-import org.neo4j.cluster.protocol.heartbeat.Heartbeat;
+package org.neo4j.cluster.member;
 
-public interface HighAvailabilityMonitor extends HighAvailability, Cluster, Heartbeat, Binding
+/**
+ * Register listeners here to get callbacks when cluster members
+ * are able to play various roles, such as "master" and "slave".
+ */
+public interface ClusterMemberEvents
 {
+    void addClusterMemberListener( ClusterMemberListener listener );
+
+    void removeClusterMemberListener( ClusterMemberListener listener );
 }

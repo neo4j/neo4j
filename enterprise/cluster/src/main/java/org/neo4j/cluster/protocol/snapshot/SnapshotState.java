@@ -91,8 +91,7 @@ public enum SnapshotState
                         {
                             SnapshotMessage.SnapshotState state = message.getPayload();
                             state.setState( context.getSnapshotProvider() );
-                            context.getLearnerContext().setLastDeliveredInstanceId( state.getLastDeliveredInstanceId
-                                    () );
+                            context.getLearnerContext().setLastDeliveredInstanceId( state.getLastDeliveredInstanceId() );
                             return ready;
                         }
                     }

@@ -23,6 +23,7 @@ import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static org.neo4j.helpers.collection.IteratorUtil.loop;
 
+import java.io.File;
 import java.io.IOException;
 import java.lang.ref.Reference;
 import java.lang.ref.SoftReference;
@@ -52,7 +53,7 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 
 public class EphemeralFileSystemAbstraction implements FileSystemAbstraction, Lifecycle
 {
-    private final Map<String, EphemeralFileData> files = new HashMap<String, EphemeralFileData>();
+    private final Map<File, EphemeralFileData> files = new HashMap<File, EphemeralFileData>();
 
     @Override
     public void init()
@@ -113,14 +114,14 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction, Li
     }
 
     @Override
-    public synchronized FileChannel open( String fileName, String mode ) throws IOException
+    public synchronized FileChannel open( File fileName, String mode ) throws IOException
     {
         EphemeralFileData data = files.get( fileName );
-        return data != null ? new EphemeralFileChannel( data, new FileStillOpenException( fileName ) ) : create( fileName );
+        return data != null ? new EphemeralFileChannel( data, new FileStillOpenException( fileName.getPath() ) ) : create( fileName );
     }
 
     @Override
-    public FileLock tryLock(String fileName, FileChannel channel) throws IOException
+    public FileLock tryLock(File fileName, FileChannel channel) throws IOException
     {
         if ( channel instanceof EphemeralFileChannel )
         {
@@ -140,35 +141,35 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction, Li
     }
 
     @Override
-    public synchronized FileChannel create(String fileName) throws IOException
+    public synchronized FileChannel create(File fileName) throws IOException
     {
         EphemeralFileData data = new EphemeralFileData();
         free(files.put(fileName, data));
-        return new EphemeralFileChannel( data, new FileStillOpenException( fileName ) );
+        return new EphemeralFileChannel( data, new FileStillOpenException( fileName.getPath() ) );
     }
 
     @Override
-    public long getFileSize(String fileName)
+    public long getFileSize(File fileName)
     {
         EphemeralFileData file = files.get(fileName);
         return file == null ? 0 : file.size();
     }
 
     @Override
-    public boolean fileExists(String fileName)
+    public boolean fileExists(File fileName)
     {
         return files.containsKey(fileName);
     }
 
     @Override
-    public boolean deleteFile(String fileName)
+    public boolean deleteFile(File fileName)
     {
         free(files.remove(fileName));
         return true;
     }
 
     @Override
-    public boolean renameFile(String from, String to) throws IOException
+    public boolean renameFile(File from, File to) throws IOException
     {
         if (!files.containsKey( from )) throw new IOException("'" + from + "' doesn't exist");
         if (files.containsKey(to)) throw new IOException("'" + to + "' already exists");
@@ -177,7 +178,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction, Li
     }
 
     @Override
-    public void copyFile( String from, String to ) throws IOException
+    public void copyFile( File from, File to ) throws IOException
     {
         if ( !files.containsKey( from ) )
             throw new IOException( "'" + from + "' doesn't exist" );
@@ -187,7 +188,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction, Li
     }
 
     @Override
-    public void autoCreatePath( String path )
+    public void autoCreatePath( File path )
     {
         // no op, all paths exist
     }

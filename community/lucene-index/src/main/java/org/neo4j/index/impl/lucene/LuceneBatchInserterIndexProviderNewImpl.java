@@ -19,6 +19,7 @@
  */
 package org.neo4j.index.impl.lucene;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -146,7 +147,7 @@ public class LuceneBatchInserterIndexProviderNewImpl implements BatchInserterInd
         LuceneBatchInserterIndex index = indexes.get( identifier );
         if ( index == null )
         {
-            index = new LuceneBatchInserterIndex( inserter.getStoreDir(),
+            index = new LuceneBatchInserterIndex( new File(inserter.getStoreDir()),
                     identifier,
                     config );
             indexes.put( identifier, index );

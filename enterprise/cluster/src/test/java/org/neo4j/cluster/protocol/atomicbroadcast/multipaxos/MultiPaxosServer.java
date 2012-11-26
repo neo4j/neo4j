@@ -37,7 +37,6 @@ import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.MultiPaxosServerFactory;
 import org.neo4j.cluster.NetworkedServerFactory;
 import org.neo4j.cluster.ProtocolServer;
-import org.neo4j.cluster.com.NetworkInstance;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcast;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastListener;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastSerializer;
@@ -57,7 +56,6 @@ import org.neo4j.cluster.timeout.FixedTimeoutStrategy;
 import org.neo4j.cluster.timeout.MessageTimeoutStrategy;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.configuration.ConfigurationDefaults;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.LogbackService;
 import org.slf4j.impl.StaticLoggerBinder;
@@ -97,10 +95,7 @@ public class MultiPaxosServer
 
             ServerIdElectionCredentialsProvider electionCredentialsProvider = new ServerIdElectionCredentialsProvider();
             server = serverFactory.newNetworkedServer(
-                    new Config(
-                            new ConfigurationDefaults(
-                                    NetworkInstance.Configuration.class ).apply(
-                                    MapUtil.stringMap( ClusterSettings.cluster_server.name(), ":5001-5003" ) ) ),
+                    new Config( MapUtil.stringMap(), ClusterSettings.class ),
                     new InMemoryAcceptorInstanceStore(),
                     electionCredentialsProvider );
             server.addBindingListener( electionCredentialsProvider );

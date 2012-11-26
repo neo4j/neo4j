@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
+import java.io.File;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -62,7 +63,7 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
     private PropertyIndexStore propertyIndexStore;
     private DynamicArrayStore arrayPropertyStore;
 
-    public PropertyStore(String fileName, Config configuration,
+    public PropertyStore(File fileName, Config configuration,
                          IdGeneratorFactory idGeneratorFactory, WindowPoolFactory windowPoolFactory,
                          FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger,
                          DynamicStringStore stringPropertyStore, PropertyIndexStore propertyIndexStore,

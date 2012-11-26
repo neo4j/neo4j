@@ -39,7 +39,7 @@ import org.neo4j.helpers.Triplet;
 import org.neo4j.jmx.impl.JmxKernelExtension;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.ha.HaSettings;
-import org.neo4j.kernel.ha.cluster.ClusterMemberState;
+import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState;
 import org.neo4j.management.HighAvailability;
 import org.neo4j.server.Bootstrapper;
 import org.neo4j.server.configuration.Configurator;
@@ -189,8 +189,8 @@ public final class ServerCluster
         // Kernel (and HA) configuration
         config( dbConfig, //
                 Pair.of( ClusterSettings.cluster_name.name(), name ),//
-                Pair.of( ClusterSettings.ha_server.name(), "localhost:" + ports.first() ),//
-                Pair.of( ClusterSettings.server_id.name(), Integer.toString( id ) ) );
+                Pair.of( HaSettings.ha_server.name(), "localhost:" + ports.first() ),//
+                Pair.of( HaSettings.server_id.name(), Integer.toString( id ) ) );
 
         return Pair.of( serverConfig.getAbsolutePath(), serverDir );
     }
@@ -354,7 +354,7 @@ public final class ServerCluster
         @Override
         public boolean isMaster()
         {
-            return ClusterMemberState.MASTER.toString().equals( ha().getInstanceState() );
+            return HighAvailabilityMemberState.MASTER.toString().equals( ha().getRole() );
         }
 
         @Override

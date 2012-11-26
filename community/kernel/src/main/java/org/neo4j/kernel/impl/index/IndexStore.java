@@ -49,10 +49,10 @@ public class IndexStore
     private ByteBuffer dontUseBuffer = ByteBuffer.allocate( 100 );
     private final FileSystemAbstraction fileSystem;
     
-    public IndexStore( String graphDbStoreDir, FileSystemAbstraction fileSystem )
+    public IndexStore( File graphDbStoreDir, FileSystemAbstraction fileSystem )
     {
         this.fileSystem = fileSystem;
-        this.file = new File( new File( graphDbStoreDir ), INDEX_DB_FILE_NAME );
+        this.file = new File( graphDbStoreDir, INDEX_DB_FILE_NAME );
         this.oldFile = new File( file.getParentFile(), file.getName() + ".old" );
         read();
     }
@@ -69,7 +69,7 @@ public class IndexStore
     private void read()
     {
         File fileToReadFrom = file.exists() ? file : oldFile;
-        if ( !fileSystem.fileExists( fileToReadFrom.getAbsolutePath() ) )
+        if ( !fileSystem.fileExists( fileToReadFrom ) )
         {
             return;
         }
@@ -77,12 +77,12 @@ public class IndexStore
         FileChannel channel = null;
         try
         {
-            channel = fileSystem.open( fileToReadFrom.getAbsolutePath(), "r" );
+            channel = fileSystem.open( fileToReadFrom, "r" );
             Integer version = tryToReadVersion( channel );
             if ( version == null )
             {
                 close( channel );
-                channel = fileSystem.open( fileToReadFrom.getAbsolutePath(), "r" );
+                channel = fileSystem.open( fileToReadFrom, "r" );
                 // Legacy format, TODO
                 readMap( channel, nodeConfig, version );
                 relConfig.putAll( nodeConfig );
@@ -246,10 +246,10 @@ public class IndexStore
         write( tmpFile );
         
         // Make sure the .old file doesn't exist, then rename the current one to .old
-        fileSystem.deleteFile( oldFile.getAbsolutePath() );
+        fileSystem.deleteFile( oldFile );
         try
         {
-            if ( fileSystem.fileExists( file.getAbsolutePath() ) && !fileSystem.renameFile( file.getAbsolutePath(), oldFile.getAbsolutePath() ) )
+            if ( fileSystem.fileExists( file ) && !fileSystem.renameFile( file, oldFile ) )
             {
                 throw new RuntimeException( "Couldn't rename " + file + " -> " + oldFile );
             }
@@ -262,7 +262,7 @@ public class IndexStore
         // Rename the .tmp file to the current name
         try
         {
-            if ( !fileSystem.renameFile( tmpFile.getAbsolutePath(), this.file.getAbsolutePath() ) )
+            if ( !fileSystem.renameFile( tmpFile, this.file ) )
             {
                 throw new RuntimeException( "Couldn't rename " + tmpFile + " -> " + file );
             }
@@ -271,7 +271,7 @@ public class IndexStore
         {
             throw new RuntimeException( "Couldn't rename " + tmpFile + " -> " + file );
         }
-        fileSystem.deleteFile( oldFile.getAbsolutePath() );
+        fileSystem.deleteFile( oldFile );
     }
     
     private void write( File file )
@@ -279,7 +279,7 @@ public class IndexStore
         FileChannel channel = null;
         try
         {
-            channel = fileSystem.open( file.getAbsolutePath(), "rw" );
+            channel = fileSystem.open( file, "rw" );
             channel.write( ByteBuffer.wrap( MAGICK ) );
             IoPrimitiveUtils.writeInt( channel, buffer( 4 ), VERSION );
             writeMap( channel, nodeConfig );

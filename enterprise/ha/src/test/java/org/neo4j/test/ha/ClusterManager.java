@@ -66,9 +66,10 @@ public class ClusterManager
     {
         Clusters clusters() throws Throwable;
     }
-    
+
     /**
      * Provider pointing out an XML file to read.
+     *
      * @param clustersXml the XML file containing the cluster specifications.
      */
     public static Provider fromXml( final URI clustersXml )
@@ -84,9 +85,10 @@ public class ClusterManager
             }
         };
     }
-    
+
     /**
      * Provides a cluster specification with default values
+     *
      * @param memberCount the total number of members in the cluster to start.
      */
     public static Provider clusterOfSize( int memberCount )
@@ -96,10 +98,10 @@ public class ClusterManager
         {
             cluster.getMembers().add( new Clusters.Member( 5001 + i ) );
         }
-        
+
         final Clusters clusters = new Clusters();
         clusters.getClusters().add( cluster );
-        
+
         return new Provider()
         {
             @Override
@@ -109,7 +111,7 @@ public class ClusterManager
             }
         };
     }
-    
+
     LifeSupport life;
     private final File root;
     private final Map<String, String> commonConfig;
@@ -142,13 +144,13 @@ public class ClusterManager
 
         life.start();
     }
-    
+
     @Override
     public void stop() throws Throwable
     {
         life.stop();
     }
-    
+
     /**
      * Represent one cluster. It can retrieve the current master, random slave
      * or all members. It can also temporarily fail an instance or shut it down.
@@ -157,7 +159,8 @@ public class ClusterManager
     {
         private final Clusters.Cluster spec;
         private final String name;
-        private final Map<Integer, HighlyAvailableGraphDatabase> members = new HashMap<Integer, HighlyAvailableGraphDatabase>();
+        private final Map<Integer, HighlyAvailableGraphDatabase> members = new HashMap<Integer,
+                HighlyAvailableGraphDatabase>();
 
         ManagedCluster( Clusters.Cluster spec ) throws URISyntaxException
         {
@@ -165,17 +168,19 @@ public class ClusterManager
             this.name = spec.getName();
             for ( int i = 0; i < spec.getMembers().size(); i++ )
             {
-                startMember( i+1 );
+                startMember( i + 1 );
             }
         }
-        
+
         @Override
         public void stop() throws Throwable
         {
             for ( HighlyAvailableGraphDatabase member : members.values() )
+            {
                 member.shutdown();
+            }
         }
-        
+
         /**
          * @return all started members in this cluster.
          */
@@ -183,10 +188,10 @@ public class ClusterManager
         {
             return members.values();
         }
-        
+
         /**
          * @return the current master in the cluster.
-         * @throws IllegalStateException if there's no current master. 
+         * @throws IllegalStateException if there's no current master.
          */
         public HighlyAvailableGraphDatabase getMaster()
         {
@@ -199,7 +204,7 @@ public class ClusterManager
             }
             throw new IllegalStateException( "No master found in cluster " + name );
         }
-        
+
         /**
          * @param except do not return any of the dbs found in this array
          * @return a slave in this cluster.
@@ -210,7 +215,8 @@ public class ClusterManager
             Set<HighlyAvailableGraphDatabase> exceptSet = new HashSet<HighlyAvailableGraphDatabase>( asList( except ) );
             for ( HighlyAvailableGraphDatabase graphDatabaseService : getAllMembers() )
             {
-                if ( graphDatabaseService.getInstanceState().equals( "SLAVE" ) && !exceptSet.contains( graphDatabaseService ) )
+                if ( graphDatabaseService.getInstanceState().equals( "SLAVE" ) && !exceptSet.contains(
+                        graphDatabaseService ) )
                 {
                     return graphDatabaseService;
                 }
@@ -218,24 +224,27 @@ public class ClusterManager
 
             throw new IllegalStateException( "No slave found in cluster " + name );
         }
-        
+
         /**
          * @param serverId the server id to return the db for.
          * @return the {@link HighlyAvailableGraphDatabase} with the given server id.
          * @throws IllegalStateException if that db isn't started or no such
-         * db exists in the cluster.
+         *                               db exists in the cluster.
          */
         public HighlyAvailableGraphDatabase getMemberByServerId( int serverId )
         {
             HighlyAvailableGraphDatabase db = members.get( serverId );
             if ( db == null )
+            {
                 throw new IllegalStateException( "Db " + serverId + " not found at the moment in " + name );
+            }
             return db;
         }
-        
+
         /**
          * Shuts down a member of this cluster. A {@link RepairKit} is returned
          * which is able to restore the instance (i.e. start it again).
+         *
          * @param db the {@link HighlyAvailableGraphDatabase} to shut down.
          * @return a {@link RepairKit} which can start it again.
          * @throws IllegalArgumentException if the given db isn't a member of this cluster.
@@ -253,15 +262,18 @@ public class ClusterManager
         private void assertMember( HighlyAvailableGraphDatabase db )
         {
             if ( !members.values().contains( db ) )
+            {
                 throw new IllegalArgumentException( "Db " + db + " not a member of this cluster " + name );
+            }
         }
-        
+
         /**
          * WARNING: beware of hacks.
-         * 
+         * <p/>
          * Fails a member of this cluster by making it not respond to heart beats.
          * A {@link RepairKit} is returned which is able to repair the instance
          * (i.e start the network) again.
+         *
          * @param db the {@link HighlyAvailableGraphDatabase} to fail.
          * @return a {@link RepairKit} which can repair the failure.
          * @throws IllegalArgumentException if the given db isn't a member of this cluster.
@@ -270,24 +282,25 @@ public class ClusterManager
         {
             assertMember( db );
             ClusterClient clusterClient = db.getDependencyResolver().resolveDependency( ClusterClient.class );
-            LifeSupport clusterClientLife = (LifeSupport) accessible( clusterClient.getClass().getDeclaredField( "life" ) ).get( clusterClient );
+            LifeSupport clusterClientLife = (LifeSupport) accessible( clusterClient.getClass().getDeclaredField(
+                    "life" ) ).get( clusterClient );
             NetworkInstance network = instance( NetworkInstance.class, clusterClientLife.getLifecycleInstances() );
             network.stop();
             return new StartNetworkAgainKit( network );
         }
-        
+
         private void startMember( int serverId ) throws URISyntaxException
         {
-            Clusters.Member member = spec.getMembers().get( serverId-1 );
+            Clusters.Member member = spec.getMembers().get( serverId - 1 );
             int haPort = new URI( "cluster://" + member.getHost() ).getPort() + 3000;
 
             GraphDatabaseBuilder graphDatabaseBuilder = new HighlyAvailableGraphDatabaseFactory()
                     .newHighlyAvailableDatabaseBuilder( new File( new File( root, name ),
                             "server" + serverId ).getAbsolutePath() ).
                             setConfig( ClusterSettings.cluster_name, name ).
-                            setConfig( HaSettings.initial_hosts, spec.getMembers().get( 0 ).getHost() ).
+                            setConfig( ClusterSettings.initial_hosts, spec.getMembers().get( 0 ).getHost() ).
+                            setConfig( ClusterSettings.cluster_server, member.getHost() ).
                             setConfig( HaSettings.server_id, serverId + "" ).
-                            setConfig( HaSettings.cluster_server, member.getHost() ).
                             setConfig( HaSettings.ha_server, ":" + haPort ).
                             setConfig( commonConfig );
 
@@ -312,25 +325,27 @@ public class ClusterManager
             // logger.info( "Started cluster node " + serverId + " in cluster "
             // + name );
         }
-        
+
         /**
          * Will await a condition for the default max time.
+         *
          * @param predicate {@link Predicate} that should return true
-         * signalling that the condition has been met.
+         *                  signalling that the condition has been met.
          * @throws IllegalStateException if the condition wasn't met
-         * during within the max time.
+         *                               during within the max time.
          */
         public void await( Predicate<ManagedCluster> predicate )
         {
             await( predicate, 60 );
         }
-        
+
         /**
          * Will await a condition for the given max time.
+         *
          * @param predicate {@link Predicate} that should return true
-         * signalling that the condition has been met.
+         *                  signalling that the condition has been met.
          * @throws IllegalStateException if the condition wasn't met
-         * during within the max time.
+         *                               during within the max time.
          */
         public void await( Predicate<ManagedCluster> predicate, int maxSeconds )
         {
@@ -338,8 +353,10 @@ public class ClusterManager
             while ( System.currentTimeMillis() < end )
             {
                 if ( predicate.accept( this ) )
+                {
                     return;
-                
+                }
+
                 try
                 {
                     Thread.sleep( 100 );
@@ -348,7 +365,7 @@ public class ClusterManager
                 {
                     // Ignore
                 }
-            }      
+            }
             throw new IllegalStateException( "Awaited condition never met, waited " + maxSeconds );
         }
 
@@ -360,9 +377,10 @@ public class ClusterManager
             return spec.getMembers().size();
         }
     }
-    
+
     /**
      * The current master sees this many slaves as available.
+     *
      * @param count number of slaves to see as available.
      */
     public static Predicate<ManagedCluster> masterSeesSlavesAsAvailable( final int count )
@@ -372,11 +390,12 @@ public class ClusterManager
             @Override
             public boolean accept( ManagedCluster cluster )
             {
-                return count( cluster.getMaster().getDependencyResolver().resolveDependency( Slaves.class ).getSlaves() ) >= count;
+                return count( cluster.getMaster().getDependencyResolver().resolveDependency( Slaves.class ).getSlaves
+                        () ) >= count;
             }
         };
     }
-    
+
     /**
      * The current master sees all slaves in the cluster as available.
      * Based on the total number of members in the cluster.
@@ -388,11 +407,12 @@ public class ClusterManager
             @Override
             public boolean accept( ManagedCluster cluster )
             {
-                return count( cluster.getMaster().getDependencyResolver().resolveDependency( Slaves.class ).getSlaves() ) >= cluster.size() - 1;
+                return count( cluster.getMaster().getDependencyResolver().resolveDependency( Slaves.class ).getSlaves
+                        () ) >= cluster.size() - 1;
             }
         };
     }
-    
+
     /**
      * There must be a master available.
      */
@@ -414,29 +434,35 @@ public class ClusterManager
             }
         };
     }
-    
+
     private <T> T instance( Class<T> classToFind, Iterable<?> from )
     {
         for ( Object item : from )
+        {
             if ( classToFind.isAssignableFrom( item.getClass() ) )
+            {
                 return (T) item;
+            }
+        }
         fail( "Couldn't find the network instance to fail. Internal field, so fragile sensitive to changes though" );
         return null; // it will never get here.
     }
-    
+
     private Field accessible( Field field )
     {
         field.setAccessible( true );
         return field;
     }
-    
+
     public ManagedCluster getCluster( String name )
     {
         if ( !clusterMap.containsKey( name ) )
+        {
             throw new IllegalArgumentException( name );
+        }
         return clusterMap.get( name );
     }
-    
+
     public ManagedCluster getDefaultCluster()
     {
         return getCluster( "neo4j.ha" );
@@ -445,12 +471,12 @@ public class ClusterManager
     protected void config( GraphDatabaseBuilder builder, String clusterName, int serverId )
     {
     }
-    
+
     public interface RepairKit
     {
         void repair() throws Throwable;
     }
-    
+
     private class StartNetworkAgainKit implements RepairKit
     {
         private NetworkInstance network;
@@ -459,14 +485,14 @@ public class ClusterManager
         {
             this.network = network;
         }
-        
+
         @Override
         public void repair() throws Throwable
         {
             network.start();
         }
     }
-    
+
     private class StartDatabaseAgainKit implements RepairKit
     {
         private int serverId;
@@ -477,7 +503,7 @@ public class ClusterManager
             this.cluster = cluster;
             this.serverId = serverId;
         }
-        
+
         @Override
         public void repair() throws Throwable
         {

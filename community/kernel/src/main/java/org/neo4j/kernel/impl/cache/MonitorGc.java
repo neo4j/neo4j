@@ -20,7 +20,11 @@
 
 package org.neo4j.kernel.impl.cache;
 
+import static org.neo4j.helpers.Settings.DURATION;
+import static org.neo4j.helpers.Settings.setting;
+
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
+import org.neo4j.helpers.Settings;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -29,20 +33,22 @@ public class MonitorGc implements Lifecycle
 {
     public static class Configuration
     {
-        public static final GraphDatabaseSetting<Long> gc_monitor_wait_time = new GraphDatabaseSetting.TimeSpanSetting( "gc_monitor_wait_time" );
-        public static final GraphDatabaseSetting<Long> gc_monitor_threshold = new GraphDatabaseSetting.TimeSpanSetting( "gc_monitor_threshold" );
+        public static final GraphDatabaseSetting<Long> gc_monitor_wait_time =
+                new GraphDatabaseSetting.TimeSpanSetting( setting( "gc_monitor_wait_time", DURATION, "100ms" ));
+        public static final GraphDatabaseSetting<Long> gc_monitor_threshold =
+                new GraphDatabaseSetting.TimeSpanSetting( setting("gc_monitor_threshold", DURATION, "200ms" ));
     }
-    
+
     private final Config config;
     private final StringLogger logger;
     private volatile MeasureDoNothing monitorGc;
-    
+
     public MonitorGc( Config config, StringLogger logger )
     {
         this.config = config;
         this.logger = logger;
     }
-    
+
     @Override
     public void init() throws Throwable
     {
@@ -51,7 +57,8 @@ public class MonitorGc implements Lifecycle
     @Override
     public void start() throws Throwable
     {
-        monitorGc = new MeasureDoNothing( "GC-Monitor", logger, config.get( Configuration.gc_monitor_wait_time ), config.get( Configuration.gc_monitor_threshold ) );
+        monitorGc = new MeasureDoNothing( "GC-Monitor", logger, config.get( Configuration.gc_monitor_wait_time ),
+                config.get( Configuration.gc_monitor_threshold ) );
         monitorGc.start();
     }
 
@@ -66,7 +73,7 @@ public class MonitorGc implements Lifecycle
     public void shutdown() throws Throwable
     {
         // TODO Auto-generated method stub
-        
+
     }
 
 }

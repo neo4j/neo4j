@@ -19,6 +19,7 @@
  */
 package org.neo4j.test;
 
+import java.io.File;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -57,9 +58,9 @@ public class DbRepresentation implements Serializable
         return result;
     }
 
-    public static DbRepresentation of( String storeDir )
+    public static DbRepresentation of( File storeDir )
     {
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( storeDir );
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( storeDir.getPath() );
         try
         {
             return of( db );

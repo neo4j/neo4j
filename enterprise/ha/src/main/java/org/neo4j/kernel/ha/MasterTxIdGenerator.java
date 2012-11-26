@@ -73,16 +73,17 @@ public class MasterTxIdGenerator implements TxIdGenerator, Lifecycle
             @Override
             public SlavePriority getReplicationStrategy()
             {
-                String value = config.get( HaSettings.tx_push_strategy );
-                if ( HaSettings.TxPushStrategySetting.fixed.equals( value ) )
+                switch ( config.get( HaSettings.tx_push_strategy ) )
                 {
-                    return SlavePriorities.fixed();
+                    case fixed:
+                        return SlavePriorities.fixed();
+
+                    case round_robin:
+                        return SlavePriorities.roundRobin();
+
+                    default:
+                        throw new RuntimeException( "Unknown replication strategy " );
                 }
-                else if ( HaSettings.TxPushStrategySetting.roundRobin.equals( value ) )
-                {
-                    return SlavePriorities.roundRobin();
-                }
-                throw new RuntimeException( "Unknown replication strategy " + value );
             }
         };
     }

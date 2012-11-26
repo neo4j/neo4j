@@ -19,6 +19,7 @@
  */
 package org.neo4j.consistency.store.windowpool;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.PrintWriter;
@@ -29,17 +30,17 @@ public class LoggingStatisticsListener implements MappingStatisticsListener
 {
     private final PrintWriter logWriter;
 
-    public LoggingStatisticsListener( String fileName ) throws FileNotFoundException
+    public LoggingStatisticsListener( File fileName ) throws FileNotFoundException
     {
         this.logWriter = new PrintWriter( new FileOutputStream( fileName, true ) );
     }
 
     @Override
-    public void onStatistics( String storeFileName, int acquiredPages, int mappedPages, long
+    public void onStatistics( File storeFileName, int acquiredPages, int mappedPages, long
             samplePeriod )
     {
         logWriter.printf( "%s: In %s: %d pages acquired, %d pages mapped (%.2f%%) in %d ms%n",
-                Format.date(), storeFileName, acquiredPages, mappedPages,
+                Format.date(), storeFileName.getName(), acquiredPages, mappedPages,
                 (100.0 * mappedPages) / acquiredPages, samplePeriod );
         logWriter.flush();
     }

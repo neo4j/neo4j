@@ -117,7 +117,7 @@ public enum ElectionState
                                         {
                                             context.getClusterContext().getLogger( ElectionState.class ).debug(
                                                     "Starting election process" +
-                                                    " for role " + role );
+                                                            " for role " + role );
 
                                             int voterCount = 0;
                                             context.startDemotionProcess( role, demoteNode );
@@ -143,7 +143,7 @@ public enum ElectionState
                                         {
                                             context.getClusterContext().getLogger( ElectionState.class ).debug(
                                                     "Election already in " +
-                                                    "progress for role " + role );
+                                                            "progress for role " + role );
                                         }
                                     }
                                 }

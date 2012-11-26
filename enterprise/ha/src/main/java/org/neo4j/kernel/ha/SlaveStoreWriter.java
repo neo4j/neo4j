@@ -30,13 +30,11 @@ import org.neo4j.com.Response;
 import org.neo4j.com.ServerUtil;
 import org.neo4j.com.ToFileStoreWriter;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.Settings;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.ha.HaSettings;
-import org.neo4j.kernel.ha.Master;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
 import org.neo4j.kernel.impl.util.FileUtils;
@@ -55,7 +53,7 @@ public class SlaveStoreWriter
     public void copyStore( Master master ) throws IOException
     {
         // Clear up the current temp directory if there
-        File storeDir = new File( config.get( InternalAbstractGraphDatabase.Configuration.store_dir ) );
+        File storeDir = config.get( InternalAbstractGraphDatabase.Configuration.store_dir );
         File tempStore = new File( storeDir, COPY_FROM_MASTER_TEMP );
         if ( !tempStore.mkdir() )
         {
@@ -74,7 +72,7 @@ public class SlaveStoreWriter
         }
         GraphDatabaseAPI copiedDb = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(
                 tempStore.getAbsolutePath() ).setConfig(
-                GraphDatabaseSettings.keep_logical_logs, GraphDatabaseSetting.TRUE ).setConfig(
+                GraphDatabaseSettings.keep_logical_logs, Settings.TRUE ).setConfig(
                 GraphDatabaseSettings.allow_store_upgrade,
                 config.get( GraphDatabaseSettings.allow_store_upgrade ).toString() ).
 

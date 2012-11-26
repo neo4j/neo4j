@@ -22,24 +22,19 @@ package org.neo4j.kernel;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.graphdb.factory.GraphDatabaseSetting;
+import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
 
 public abstract class KernelData
 {
-    public static final GraphDatabaseSetting<String> forced_id = GraphDatabaseSettings.forced_kernel_id;
+    public static final Setting<String> forced_id = GraphDatabaseSettings.forced_kernel_id;
     private static final Map<String, KernelData> instances = new HashMap<String, KernelData>();
 
     private static synchronized String newInstance( KernelData instance )
     {
         String instanceId = instance.configuration.get( forced_id );
-        if ( instanceId == null )
-        {
-            instanceId = "";
-        }
-        instanceId = instanceId.trim();
-        if ( instanceId.equals( "" ) )
+        if ( instanceId == null || instanceId.equals( "" ) )
         {
             for ( int i = 0; i < instances.size() + 1; i++ )
             {

@@ -53,9 +53,9 @@ import org.neo4j.test.subprocess.SubProcess;
 
 public class TestBackup
 {
-    private String serverPath;
-    private String otherServerPath;
-    private String backupPath;
+    private File serverPath;
+    private File otherServerPath;
+    private File backupPath;
 
     @Rule
     public TestName testName = new TestName();
@@ -64,9 +64,9 @@ public class TestBackup
     public void before() throws Exception
     {
         File base = TargetDirectory.forTest( getClass() ).directory( testName.getMethodName(), true );
-        serverPath = new File( base, "server" ).getAbsolutePath();
-        otherServerPath = new File( base, "server2" ).getAbsolutePath();
-        backupPath = new File( base, "backuedup-serverdb" ).getAbsolutePath();
+        serverPath = new File( base, "server" );
+        otherServerPath = new File( base, "server2" );
+        backupPath = new File( base, "backuedup-serverdb" );
     }
 
     // TODO MP: What happens if the server database keeps growing, virtually making the files endless?
@@ -80,7 +80,7 @@ public class TestBackup
         createInitialDataSet( backupPath );
         try
         {
-            backup.full( backupPath );
+            backup.full( backupPath.getPath() );
             fail( "Shouldn't be able to do full backup into existing db" );
         }
         catch ( Exception e )
@@ -98,7 +98,7 @@ public class TestBackup
         OnlineBackup backup = OnlineBackup.from( "localhost" );
         try
         {
-            backup.incremental( backupPath );
+            backup.incremental( backupPath.getPath() );
             fail( "Shouldn't be able to do incremental backup into non-existing db" );
         }
         catch ( Exception e )
@@ -118,11 +118,11 @@ public class TestBackup
             createInitialDataSet( serverPath );
             server = startServer( serverPath );
             OnlineBackup backup = OnlineBackup.from( "localhost" );
-            backup.full( backupPath );
+            backup.full( backupPath.getPath() );
             shutdownServer( server );
             server = null;
 
-            db = new EmbeddedGraphDatabase( backupPath );
+            db = new EmbeddedGraphDatabase( backupPath.getPath() );
             for ( XaDataSource ds : db.getXaDataSourceManager().getAllRegisteredDataSources() )
             {
                 ds.getMasterForCommittedTx( ds.getLastCommittedTxId() );
@@ -131,11 +131,11 @@ public class TestBackup
 
             addMoreData( serverPath );
             server = startServer( serverPath );
-            backup.incremental( backupPath );
+            backup.incremental( backupPath.getPath() );
             shutdownServer( server );
             server = null;
 
-            db = new EmbeddedGraphDatabase( backupPath );
+            db = new EmbeddedGraphDatabase( backupPath.getPath() );
             for ( XaDataSource ds : db.getXaDataSourceManager().getAllRegisteredDataSources() )
             {
                 ds.getMasterForCommittedTx( ds.getLastCommittedTxId() );
@@ -164,27 +164,27 @@ public class TestBackup
             createInitialDataSet( serverPath );
             server = startServer( serverPath );
             OnlineBackup backup = OnlineBackup.from( "localhost" );
-            backup.full( backupPath );
+            backup.full( backupPath.getPath() );
             shutdownServer( server );
             server = null;
 
             addMoreData( serverPath );
             server = startServer( serverPath );
-            backup.incremental( backupPath );
+            backup.incremental( backupPath.getPath() );
             shutdownServer( server );
             server = null;
 
             // do 2 rotations, add two empty logs
-            new EmbeddedGraphDatabase( backupPath ).shutdown();
-            new EmbeddedGraphDatabase( backupPath ).shutdown();
+            new EmbeddedGraphDatabase( backupPath.getPath() ).shutdown();
+            new EmbeddedGraphDatabase( backupPath.getPath() ).shutdown();
 
             addMoreData( serverPath );
             server = startServer( serverPath );
-            backup.incremental( backupPath );
+            backup.incremental( backupPath.getPath() );
             shutdownServer( server );
             server = null;
 
-            int logsFound = new File( backupPath ).listFiles( new FilenameFilter()
+            int logsFound = backupPath.listFiles( new FilenameFilter()
             {
                 @Override
                 public boolean accept( File dir, String name )
@@ -197,7 +197,7 @@ public class TestBackup
             // 2 one the real and the other from the rotation of shutdown
             assertEquals( 2, logsFound );
 
-            db = new EmbeddedGraphDatabase( backupPath );
+            db = new EmbeddedGraphDatabase( backupPath.getPath() );
 
             for ( XaDataSource ds : db.getXaDataSourceManager().getAllRegisteredDataSources() )
             {
@@ -225,7 +225,7 @@ public class TestBackup
 
         // START SNIPPET: onlineBackup
         OnlineBackup backup = OnlineBackup.from( "localhost" );
-        backup.full( backupPath );
+        backup.full( backupPath.getPath() );
         // END SNIPPET: onlineBackup
         assertEquals( initialDataSetRepresentation, DbRepresentation.of( backupPath ) );
         shutdownServer( server );
@@ -233,7 +233,7 @@ public class TestBackup
         DbRepresentation furtherRepresentation = addMoreData( serverPath );
         server = startServer( serverPath );
         // START SNIPPET: onlineBackup
-        backup.incremental( backupPath );
+        backup.incremental( backupPath.getPath() );
         // END SNIPPET: onlineBackup
         assertEquals( furtherRepresentation, DbRepresentation.of( backupPath ) );
         shutdownServer( server );
@@ -247,17 +247,17 @@ public class TestBackup
         OnlineBackup backup = OnlineBackup.from( "localhost" );
 
         // First check full
-        backup.full( backupPath );
-        assertFalse( checkLogFileExistence( backupPath ) );
+        backup.full( backupPath.getPath() );
+        assertFalse( checkLogFileExistence( backupPath.getPath() ) );
         // Then check empty incremental
-        backup.incremental( backupPath );
-        assertFalse( checkLogFileExistence( backupPath ) );
+        backup.incremental( backupPath.getPath() );
+        assertFalse( checkLogFileExistence( backupPath.getPath() ) );
         // Then check real incremental
         shutdownServer( server );
         addMoreData( serverPath );
         server = startServer( serverPath );
-        backup.incremental( backupPath );
-        assertFalse( checkLogFileExistence( backupPath ) );
+        backup.incremental( backupPath.getPath() );
+        assertFalse( checkLogFileExistence( backupPath.getPath() ) );
         shutdownServer( server );
     }
 
@@ -270,7 +270,7 @@ public class TestBackup
 
         // Grab initial backup from server A
         OnlineBackup backup = OnlineBackup.from( "localhost" );
-        backup.full( backupPath );
+        backup.full( backupPath.getPath() );
         assertEquals( initialDataSetRepresentation, DbRepresentation.of( backupPath ) );
         shutdownServer( server );
 
@@ -283,7 +283,7 @@ public class TestBackup
         // Data should be OK, but store id check should prevent that.
         try
         {
-            backup.incremental( backupPath );
+            backup.incremental( backupPath.getPath() );
             fail( "Shouldn't work" );
         }
         catch ( ComException e )
@@ -294,12 +294,12 @@ public class TestBackup
         // server A, even after a failed attempt from server B
         DbRepresentation furtherRepresentation = addMoreData( serverPath );
         server = startServer( serverPath );
-        backup.incremental( backupPath );
+        backup.incremental( backupPath.getPath() );
         assertEquals( furtherRepresentation, DbRepresentation.of( backupPath ) );
         shutdownServer( server );
     }
 
-    private ServerInterface startServer( String path ) throws Exception
+    private ServerInterface startServer( File path ) throws Exception
     {
         /*
         ServerProcess server = new ServerProcess();
@@ -313,7 +313,7 @@ public class TestBackup
             throw new RuntimeException( e );
         }
         */
-        ServerInterface server = new EmbeddedServer( path );
+        ServerInterface server = new EmbeddedServer( path.getPath() );
         server.awaitStarted();
         return server;
     }
@@ -324,7 +324,7 @@ public class TestBackup
         Thread.sleep( 1000 );
     }
 
-    private DbRepresentation addMoreData( String path )
+    private DbRepresentation addMoreData( File path )
     {
         GraphDatabaseService db = startGraphDatabase( path );
         Transaction tx = db.beginTx();
@@ -339,15 +339,15 @@ public class TestBackup
         return result;
     }
 
-    private GraphDatabaseService startGraphDatabase( String path )
+    private GraphDatabaseService startGraphDatabase( File path )
     {
         return new GraphDatabaseFactory().
-            newEmbeddedDatabaseBuilder( path ).
+            newEmbeddedDatabaseBuilder( path.getPath() ).
             setConfig( GraphDatabaseSettings.keep_logical_logs, GraphDatabaseSetting.TRUE ).
             newGraphDatabase();
     }
 
-    private DbRepresentation createInitialDataSet( String path )
+    private DbRepresentation createInitialDataSet( File path )
     {
         GraphDatabaseService db = startGraphDatabase( path );
         Transaction tx = db.beginTx();
@@ -370,7 +370,7 @@ public class TestBackup
         GraphDatabaseService db = null;
         try
         {
-            db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( serverPath ).
+            db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( serverPath.getPath() ).
                 setConfig( OnlineBackupSettings.online_backup_enabled, GraphDatabaseSetting.TRUE ).
                 newGraphDatabase();
 
@@ -381,8 +381,8 @@ public class TestBackup
             tx.finish();
 
             OnlineBackup backup = OnlineBackup.from( "localhost" );
-            backup.full( backupPath );
-            long lastCommittedTxForLucene = getLastCommittedTx( backupPath );
+            backup.full( backupPath.getPath() );
+            long lastCommittedTxForLucene = getLastCommittedTx( backupPath.getPath() );
 
             for ( int i = 0; i < 5; i++ )
             {
@@ -391,9 +391,9 @@ public class TestBackup
                 index.add( node, "key", "value" + i );
                 tx.success();
                 tx.finish();
-                backup.incremental( backupPath );
+                backup.incremental( backupPath.getPath() );
                 assertEquals( lastCommittedTxForLucene + i + 1,
-                        getLastCommittedTx( backupPath ) );
+                        getLastCommittedTx( backupPath.getPath() ) );
             }
         }
         finally
@@ -411,14 +411,14 @@ public class TestBackup
         GraphDatabaseService db = null;
         try
         {
-            db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( serverPath ).
+            db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( serverPath.getPath() ).
                 setConfig( OnlineBackupSettings.online_backup_enabled, GraphDatabaseSetting.TRUE ).
                 newGraphDatabase();
 
             db.index().forNodes( "created-no-commits" );
 
             OnlineBackup backup = OnlineBackup.from( "localhost" );
-            backup.full( backupPath );
+            backup.full( backupPath.getPath() );
         }
         finally
         {
@@ -448,7 +448,7 @@ public class TestBackup
     {
         String key = "name";
         String value = "Neo";
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( serverPath ).
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( serverPath.getPath() ).
             setConfig( OnlineBackupSettings.online_backup_enabled, GraphDatabaseSetting.TRUE ).
             newGraphDatabase();
 
@@ -458,18 +458,18 @@ public class TestBackup
         node.setProperty( key, value );
         tx.success();
         tx.finish();
-        OnlineBackup.from( "localhost" ).full( backupPath );
+        OnlineBackup.from( "localhost" ).full( backupPath.getPath() );
         assertEquals( DbRepresentation.of( db ), DbRepresentation.of( backupPath ) );
-        FileUtils.deleteDirectory( new File( backupPath ) );
-        OnlineBackup.from( "localhost" ).full( backupPath );
+        FileUtils.deleteDirectory( new File( backupPath.getPath() ) );
+        OnlineBackup.from( "localhost" ).full( backupPath.getPath() );
         assertEquals( DbRepresentation.of( db ), DbRepresentation.of( backupPath ) );
 
         tx = db.beginTx();
         index.add( node, key, value );
         tx.success();
         tx.finish();
-        FileUtils.deleteDirectory( new File( backupPath ) );
-        OnlineBackup.from( "localhost" ).full( backupPath );
+        FileUtils.deleteDirectory( new File( backupPath.getPath() ) );
+        OnlineBackup.from( "localhost" ).full( backupPath.getPath() );
         assertEquals( DbRepresentation.of( db ), DbRepresentation.of( backupPath ) );
         db.shutdown();
     }
@@ -486,7 +486,7 @@ public class TestBackup
         try
         {
             assertStoreIsLocked( sourcePath );
-            OnlineBackup.from( "localhost" ).full( backupPath );
+            OnlineBackup.from( "localhost" ).full( backupPath.getPath() );
             assertStoreIsLocked( sourcePath );
         }
         finally

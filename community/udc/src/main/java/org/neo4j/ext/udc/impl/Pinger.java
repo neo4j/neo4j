@@ -19,64 +19,73 @@
  */
 package org.neo4j.ext.udc.impl;
 
+import static org.neo4j.ext.udc.UdcConstants.PING;
+
 import java.io.IOException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.Map;
 
-import static org.neo4j.ext.udc.UdcConstants.PING;
+import org.neo4j.helpers.HostnamePort;
 
-public class Pinger {
+public class Pinger
+{
 
-    private final String address;
+    private final HostnamePort address;
     private final UdcInformationCollector collector;
     private int pingCount = 0;
 
-    public Pinger( String address, UdcInformationCollector collector )
+    public Pinger( HostnamePort address, UdcInformationCollector collector )
     {
         this.address = address;
         this.collector = collector;
-        if ( collector.getCrashPing() ) pingCount = -1;
+        if ( collector.getCrashPing() )
+        {
+            pingCount = -1;
+        }
     }
 
 
-    public void ping() throws IOException {
+    public void ping() throws IOException
+    {
         pingCount++;
 
         Map<String, String> usageDataMap = collector.getUdcParams();
 
-        StringBuilder uri = new StringBuilder("http://" + address + "/" + "?");
+        StringBuilder uri = new StringBuilder( "http://" + address + "/" + "?" );
 
-        for (String key : usageDataMap.keySet()) {
-            uri.append(key);
-            uri.append("=");
-            uri.append( usageDataMap.get( key ));
-            uri.append("+");
+        for ( String key : usageDataMap.keySet() )
+        {
+            uri.append( key );
+            uri.append( "=" );
+            uri.append( usageDataMap.get( key ) );
+            uri.append( "+" );
         }
 
         // append counts
         if ( pingCount == 0 )
         {
-            uri.append( PING+"=-1" );
+            uri.append( PING + "=-1" );
             pingCount++;
         }
         else
         {
-            uri.append( PING+"=" ).append( pingCount );
+            uri.append( PING + "=" ).append( pingCount );
         }
 
-        URL url = new URL(uri.toString());
+        URL url = new URL( uri.toString() );
         URLConnection con = url.openConnection();
 
-        con.setDoInput(true);
-        con.setDoOutput(false);
-        con.setUseCaches(false);
+        con.setDoInput( true );
+        con.setDoOutput( false );
+        con.setUseCaches( false );
         con.connect();
 
         con.getInputStream();
     }
 
-   public Integer getPingCount() {
+    public Integer getPingCount()
+    {
         return pingCount;
     }
 }

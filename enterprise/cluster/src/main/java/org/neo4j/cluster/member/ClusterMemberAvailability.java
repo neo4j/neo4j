@@ -17,21 +17,30 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.com;
 
-import org.neo4j.graphdb.factory.Default;
-import org.neo4j.graphdb.factory.Description;
-import org.neo4j.graphdb.factory.GraphDatabaseSetting;
+package org.neo4j.cluster.member;
+
+import java.net.URI;
 
 /**
- * Settings for high availability mode
+ * This can be used to signal that a cluster member can now actively
+ * participate with a given role, accompanied by a URI for accessing that role.
  */
-public class ComSettings
+public interface ClusterMemberAvailability
 {
-    @Description( "Max size of the data chunks that flows between master and slaves in HA. Bigger size may increase throughput," +
-            "but may be more sensitive to variations in bandwidth, whereas lower size increases tolerance for bandwidth variations. " +
-            "Examples: 500k or 3M. Must be within 1k-16M" )
-    @Default( "2M" )
-    public static final GraphDatabaseSetting<Integer> com_chunk_size =
-            new GraphDatabaseSetting.IntegerRangeNumberOfBytesSetting( "ha.com_chunk_size", 1 * 1024 );
+    /**
+     * When a member has finished a transition to a particular role, i.e. master or slave,
+     * then it should call this which will broadcast the new status to the cluster.
+     *
+     * @param role
+     */
+    void memberIsAvailable( String role, URI roleUri );
+
+    /**
+     * When a member is no longer available in a particular role it should call this
+     * to announce it to the other members of the cluster.
+     *
+     * @param role
+     */
+    void memberIsUnavailable( String role );
 }

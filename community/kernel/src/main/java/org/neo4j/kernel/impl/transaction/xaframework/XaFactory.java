@@ -20,6 +20,8 @@
 
 package org.neo4j.kernel.impl.transaction.xaframework;
 
+import java.io.File;
+
 import org.neo4j.kernel.TransactionInterceptorProviders;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
@@ -55,7 +57,7 @@ public class XaFactory
         this.pruneStrategy = pruneStrategy;
     }
 
-    public XaContainer newXaContainer( XaDataSource xaDataSource, String logicalLog, XaCommandFactory cf,
+    public XaContainer newXaContainer( XaDataSource xaDataSource, File logicalLog, XaCommandFactory cf,
             XaTransactionFactory tf, TransactionStateFactory stateFactory, TransactionInterceptorProviders providers )
     {
         if ( logicalLog == null || cf == null || tf == null )
@@ -66,7 +68,7 @@ public class XaFactory
         }
 
         // TODO The dependencies between XaRM, LogicalLog and XaTF should be resolved to avoid the setter
-        XaResourceManager rm = new XaResourceManager( xaDataSource, tf, txIdGenerator, txManager, recoveryVerifier, logicalLog );
+        XaResourceManager rm = new XaResourceManager( xaDataSource, tf, txIdGenerator, txManager, recoveryVerifier, logicalLog.getName() );
 
         XaLogicalLog log;
         if ( providers.shouldInterceptDeserialized() && providers.hasAnyInterceptorConfigured() )

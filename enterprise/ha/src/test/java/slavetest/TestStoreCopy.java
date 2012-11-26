@@ -28,6 +28,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
@@ -55,13 +56,13 @@ public class TestStoreCopy
             return !("active_tx_log tm_tx_log.1 tm_tx_log.2").contains( file.getName() );
         }
     };
-    
+
     private HighlyAvailableGraphDatabase master;
     private HighlyAvailableGraphDatabase slave;
     private File slaveDir;
     private File sandboxed;
     private long nodeId;
-    
+
     /**
      * Starts a master, creates a node and sets a property, starts the slave and
      * checks successful copy of the store.
@@ -78,8 +79,8 @@ public class TestStoreCopy
         master = (HighlyAvailableGraphDatabase) new HighlyAvailableGraphDatabaseFactory().
                 newHighlyAvailableDatabaseBuilder( TargetDirectory.forTest( TestStoreCopy.class ).directory(
                         "master-sandboxed", true ).getAbsolutePath() ).
+                setConfig( ClusterSettings.cluster_server, "localhost" ).
                 setConfig( HaSettings.server_id, "1" ).
-                setConfig( HaSettings.cluster_server, "localhost" ).
                 newGraphDatabase();
 
         Transaction masterTx = master.beginTx();
@@ -107,9 +108,9 @@ public class TestStoreCopy
                 newHighlyAvailableDatabaseBuilder( slaveDir.getAbsolutePath() ).
                 setConfig( HaSettings.server_id, "2" ).
                 setConfig( HaSettings.ha_server, ":6362" ).
-                setConfig( HaSettings.cluster_server, ":5002" ).
-                setConfig( HaSettings.cluster_discovery_enabled, "false" ).
-                setConfig( HaSettings.initial_hosts, "localhost:5001" ).
+                setConfig( ClusterSettings.cluster_server, ":5002" ).
+                setConfig( ClusterSettings.cluster_discovery_enabled, "false" ).
+                setConfig( ClusterSettings.initial_hosts, "localhost:5001" ).
                 newGraphDatabase();
     }
 
@@ -163,7 +164,8 @@ public class TestStoreCopy
                 false );
         FileUtils.moveToDirectory( new File( slaveDir,
                 "neostore.propertystore.db" ), sandboxed, false );
-        Assert.assertEquals( "Found these files:" + filesAsString( sandboxed ), 3, sandboxed.listFiles( DISREGARD_ACTIVE_LOG_FILES ).length );
+        Assert.assertEquals( "Found these files:" + filesAsString( sandboxed ), 3,
+                sandboxed.listFiles( DISREGARD_ACTIVE_LOG_FILES ).length );
 
         startSlave();
 
@@ -182,7 +184,9 @@ public class TestStoreCopy
     {
         StringBuilder builder = new StringBuilder();
         for ( File file : directory.listFiles( DISREGARD_ACTIVE_LOG_FILES ) )
+        {
             builder.append( "\n" ).append( file.isDirectory() ? "/" : "" ).append( file.getName() );
+        }
         return builder.toString();
     }
 }

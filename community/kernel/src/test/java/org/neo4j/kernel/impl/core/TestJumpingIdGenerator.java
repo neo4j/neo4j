@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.core;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.kernel.impl.AbstractNeo4jTestCase.deleteFileOrDirectory;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
@@ -69,7 +70,7 @@ public class TestJumpingIdGenerator
     @Test
     public void testOffsettedFileChannel() throws Exception
     {
-        String fileName = "target/var/neostore.nodestore.db";
+        File fileName = new File("target/var/neostore.nodestore.db");
         deleteFileOrDirectory( fileName );
         FileSystemAbstraction offsettedFileSystem = new JumpingFileSystemAbstraction( 10 );
         IdGenerator idGenerator = new JumpingIdGeneratorFactory( 10 ).get( IdType.NODE );

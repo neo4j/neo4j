@@ -36,7 +36,6 @@ import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.configuration.ConfigurationDefaults;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -50,24 +49,25 @@ public class TestStore
     public static FileSystemAbstraction FILE_SYSTEM =
             new DefaultFileSystemAbstraction();
 
-    private String path()
+    private File path()
     {
         String path = AbstractNeo4jTestCase.getStorePath( "teststore" );
-        new File( path ).mkdirs();
-        return path;
+        File file = new File( path );
+        file.mkdirs();
+        return file;
     }
 
-    private String file( String name )
+    private File file( String name )
     {
-        return path() + File.separator + name;
+        return new File( path() , name);
     }
 
-    private String storeFile()
+    private File storeFile()
     {
         return file( "testStore.db" );
     }
 
-    private String storeIdFile()
+    private File storeIdFile()
     {
         return file( "testStore.db.id" );
     }
@@ -104,12 +104,12 @@ public class TestStore
 
     private void deleteBothFiles()
     {
-        File file = new File( storeFile() );
+        File file = storeFile();
         if ( file.exists() )
         {
             assertTrue( file.delete() );
         }
-        file = new File( storeIdFile() );
+        file = storeIdFile();
         if ( file.exists() )
         {
             assertTrue( file.delete() );
@@ -155,11 +155,11 @@ public class TestStore
         public static final String TYPE_DESCRIPTOR = "TestVersion";
         private static final int RECORD_SIZE = 1;
 
-        public Store( String fileName ) throws IOException
+        public Store( File fileName ) throws IOException
         {
-            super( fileName, new Config( new ConfigurationDefaults( GraphDatabaseSettings.class ).apply(
-                    MapUtil.stringMap( "store_dir", "target/var/teststore" ) )),
-                    IdType.NODE, ID_GENERATOR_FACTORY, WINDOW_POOL_FACTORY, FILE_SYSTEM, StringLogger.DEV_NULL);
+            super( fileName, new Config( MapUtil.stringMap( "store_dir", "target/var/teststore" ),
+                    GraphDatabaseSettings.class ),
+                    IdType.NODE, ID_GENERATOR_FACTORY, WINDOW_POOL_FACTORY, FILE_SYSTEM, StringLogger.DEV_NULL );
         }
 
         public int getRecordSize()
@@ -172,12 +172,12 @@ public class TestStore
             return TYPE_DESCRIPTOR;
         }
 
-        public static Store createStore( String fileName ) throws IOException
+        public static Store createStore( File fileName ) throws IOException
         {
-            new StoreFactory(new Config(new ConfigurationDefaults(GraphDatabaseSettings.class ).apply(
-                    Collections.<String,String>emptyMap() )), ID_GENERATOR_FACTORY, new DefaultWindowPoolFactory(),
+            new StoreFactory( new Config( Collections.<String, String>emptyMap(), GraphDatabaseSettings.class ),
+                    ID_GENERATOR_FACTORY, new DefaultWindowPoolFactory(),
                     FILE_SYSTEM, StringLogger.DEV_NULL, null ).
-                    createEmptyStore(fileName, buildTypeDescriptorAndVersion( TYPE_DESCRIPTOR ));
+                    createEmptyStore( fileName, buildTypeDescriptorAndVersion( TYPE_DESCRIPTOR ) );
             return new Store( fileName );
         }
 

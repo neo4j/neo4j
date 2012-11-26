@@ -20,6 +20,10 @@
 
 package org.neo4j.graphdb.factory;
 
+import static org.neo4j.helpers.Functions.map;
+import static org.neo4j.helpers.Functions.withDefaults;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+
 import java.io.File;
 import java.io.InputStream;
 import java.net.MalformedURLException;
@@ -30,6 +34,7 @@ import java.util.Properties;
 import java.util.Set;
 
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.config.Setting;
 
 /**
  * Builder for GraphDatabaseServices that allows for setting and loading configuration.
@@ -38,14 +43,14 @@ public class GraphDatabaseBuilder
 {
     public interface DatabaseCreator
     {
-        GraphDatabaseService newDatabase(Map<String, String> config);
+        GraphDatabaseService newDatabase( Map<String, String> config );
     }
 
     DatabaseCreator creator;
 
     Map<String, String> config = new HashMap<String, String>();
 
-    public GraphDatabaseBuilder(DatabaseCreator creator)
+    public GraphDatabaseBuilder( DatabaseCreator creator )
     {
         this.creator = creator;
     }
@@ -57,7 +62,7 @@ public class GraphDatabaseBuilder
      * @param value
      * @return the builder
      */
-    public GraphDatabaseBuilder setConfig( GraphDatabaseSetting setting, String value )
+    public GraphDatabaseBuilder setConfig( Setting<?> setting, String value )
     {
         if ( value == null )
         {
@@ -65,28 +70,31 @@ public class GraphDatabaseBuilder
         }
         else
         {
-            setting.validate( value );
+            // Test if we can get this setting with an updated config
+            Map<String, String> testValue = stringMap( setting.name(), value );
+            setting.apply( withDefaults( map( config ), map( testValue ) ) );
+
+            // No exception thrown, add it to existing config
             config.put( setting.name(), value );
         }
         return this;
     }
 
     /**
-     * @deprecated
-     * Use setConfig with explicit GraphDatabaseSetting instead
-     *
-     * Set unvalidated config option
-     *
      * @param name
      * @param value
      * @return the builder
+     * @deprecated Use setConfig with explicit GraphDatabaseSetting instead
+     *             <p/>
+     *             Set unvalidated config option
      */
     public GraphDatabaseBuilder setConfig( String name, String value )
     {
-        if (value == null)
+        if ( value == null )
         {
             config.remove( name );
-        } else
+        }
+        else
         {
             config.put( name, value );
         }
@@ -95,7 +103,8 @@ public class GraphDatabaseBuilder
 /* TODO When all settings are in GraphDatabaseSettings, then use this instead
         try
         {
-            GraphDatabaseSetting setting = (GraphDatabaseSetting) CommunityGraphDatabaseSetting.class.getField( name ).get( null );
+            GraphDatabaseSetting setting = (GraphDatabaseSetting) CommunityGraphDatabaseSetting.class.getField( name
+            ).get( null );
             setConfig( setting, value );
             return this;
         }
@@ -117,9 +126,9 @@ public class GraphDatabaseBuilder
      * @return the builder
      */
 
-    public GraphDatabaseBuilder setConfig(Map<String, String> config)
+    public GraphDatabaseBuilder setConfig( Map<String, String> config )
     {
-        for( Map.Entry<String, String> stringStringEntry : config.entrySet() )
+        for ( Map.Entry<String, String> stringStringEntry : config.entrySet() )
         {
             setConfig( stringStringEntry.getKey(), stringStringEntry.getValue() );
         }
@@ -136,15 +145,15 @@ public class GraphDatabaseBuilder
      */
 
     public GraphDatabaseBuilder loadPropertiesFromFile( String fileName )
-        throws IllegalArgumentException
+            throws IllegalArgumentException
     {
         try
         {
             return loadPropertiesFromURL( new File( fileName ).toURL() );
         }
-        catch( MalformedURLException e )
+        catch ( MalformedURLException e )
         {
-            throw new IllegalArgumentException( "Illegal filename:"+fileName );
+            throw new IllegalArgumentException( "Illegal filename:" + fileName );
         }
     }
 
@@ -156,7 +165,7 @@ public class GraphDatabaseBuilder
      * @return the builder
      */
     public GraphDatabaseBuilder loadPropertiesFromURL( URL url )
-        throws IllegalArgumentException
+            throws IllegalArgumentException
     {
         Properties props = new Properties();
         try
@@ -175,8 +184,8 @@ public class GraphDatabaseBuilder
         {
             throw new IllegalArgumentException( "Unable to load " + url, e );
         }
-        Set<Map.Entry<Object,Object>> entries = props.entrySet();
-        for ( Map.Entry<Object,Object> entry : entries )
+        Set<Map.Entry<Object, Object>> entries = props.entrySet();
+        for ( Map.Entry<Object, Object> entry : entries )
         {
             String key = (String) entry.getKey();
             String value = (String) entry.getValue();
@@ -194,6 +203,6 @@ public class GraphDatabaseBuilder
      */
     public GraphDatabaseService newGraphDatabase()
     {
-        return creator.newDatabase(config);
+        return creator.newDatabase( config );
     }
 }

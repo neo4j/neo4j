@@ -36,7 +36,6 @@ import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.MultiPaxosServerFactory;
 import org.neo4j.cluster.NetworkedServerFactory;
 import org.neo4j.cluster.ProtocolServer;
-import org.neo4j.cluster.com.NetworkInstance;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcast;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastMap;
 import org.neo4j.cluster.protocol.cluster.Cluster;
@@ -51,7 +50,6 @@ import org.neo4j.cluster.timeout.MessageTimeoutStrategy;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.configuration.ConfigurationDefaults;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.LogbackService;
 
@@ -65,8 +63,8 @@ public class MultiPaxosNetworkTest
             throws ExecutionException, InterruptedException, URISyntaxException, BrokenBarrierException
     {
         final LifeSupport life = new LifeSupport();
-        Config config = new Config( new ConfigurationDefaults( GraphDatabaseSettings.class ).apply( MapUtil.stringMap
-                ( GraphDatabaseSettings.store_dir.name(), "test" ) ) );
+        Config config = new Config( MapUtil.stringMap( GraphDatabaseSettings.store_dir.name(), "test" ),
+                GraphDatabaseSettings.class );
 
         final LoggerContext loggerContext = new LoggerContext();
         loggerContext.putProperty( "host", "none" );
@@ -89,22 +87,24 @@ public class MultiPaxosNetworkTest
 
         ServerIdElectionCredentialsProvider serverIdElectionCredentialsProvider = new
                 ServerIdElectionCredentialsProvider();
-        final ProtocolServer server1 = serverFactory.newNetworkedServer( new Config( new ConfigurationDefaults(
-                NetworkInstance.Configuration.class ).apply( MapUtil.stringMap( ClusterSettings.cluster_server.name(),
-                ":5001" ) ) ),
+        final ProtocolServer server1 = serverFactory.newNetworkedServer( new Config( MapUtil.stringMap(
+                ClusterSettings.cluster_server.name(),
+                ":5001" ), ClusterSettings.class ),
                 new InMemoryAcceptorInstanceStore(), serverIdElectionCredentialsProvider );
         server1.addBindingListener( serverIdElectionCredentialsProvider );
 
         serverIdElectionCredentialsProvider = new ServerIdElectionCredentialsProvider();
-        final ProtocolServer server2 = serverFactory.newNetworkedServer( new Config( new ConfigurationDefaults(
-                NetworkInstance.Configuration.class ).apply( MapUtil.stringMap( ClusterSettings.cluster_server
-                .name(), ":5002" ) ) ), new InMemoryAcceptorInstanceStore(), serverIdElectionCredentialsProvider );
+        final ProtocolServer server2 = serverFactory.newNetworkedServer( new Config( MapUtil.stringMap(
+                ClusterSettings.cluster_server.name(),
+                ":5002" ), ClusterSettings.class ), new InMemoryAcceptorInstanceStore(),
+                serverIdElectionCredentialsProvider );
         server2.addBindingListener( serverIdElectionCredentialsProvider );
 
         serverIdElectionCredentialsProvider = new ServerIdElectionCredentialsProvider();
-        final ProtocolServer server3 = serverFactory.newNetworkedServer( new Config( new ConfigurationDefaults(
-                NetworkInstance.Configuration.class ).apply( MapUtil.stringMap( ClusterSettings.cluster_server
-                .name(), ":5003" ) ) ), new InMemoryAcceptorInstanceStore(), serverIdElectionCredentialsProvider );
+        final ProtocolServer server3 = serverFactory.newNetworkedServer( new Config( MapUtil.stringMap(
+                ClusterSettings.cluster_server.name(),
+                ":5003" ), ClusterSettings.class ), new InMemoryAcceptorInstanceStore(),
+                serverIdElectionCredentialsProvider );
         server3.addBindingListener( serverIdElectionCredentialsProvider );
 
         server1.addBindingListener( new BindingListener()

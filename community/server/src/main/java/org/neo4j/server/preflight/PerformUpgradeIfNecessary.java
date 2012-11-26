@@ -28,7 +28,6 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.configuration.ConfigurationDefaults;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.storemigration.ConfigMapUpgradeConfiguration;
@@ -43,45 +42,48 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.logging.Logger;
 
-public class PerformUpgradeIfNecessary implements PreflightTask {
+public class PerformUpgradeIfNecessary implements PreflightTask
+{
 
-	private final Logger logger = Logger.getLogger( PerformUpgradeIfNecessary.class );
-	private String failureMessage = "Unable to upgrade database";
-	private Configuration config;
-	private PrintStream out;
-	private Map<String, String> dbConfig;
+    private final Logger logger = Logger.getLogger( PerformUpgradeIfNecessary.class );
+    private String failureMessage = "Unable to upgrade database";
+    private Configuration config;
+    private PrintStream out;
+    private Map<String, String> dbConfig;
 
-	public PerformUpgradeIfNecessary(Configuration serverConfig, Map<String,String> dbConfig, PrintStream out)
-	{
-		this.config = serverConfig;
-		this.dbConfig = dbConfig;
-		this.out = out;
-	}
-	
-	@Override
-	public boolean run() {
-		try
+    public PerformUpgradeIfNecessary( Configuration serverConfig, Map<String, String> dbConfig, PrintStream out )
+    {
+        this.config = serverConfig;
+        this.dbConfig = dbConfig;
+        this.out = out;
+    }
+
+    @Override
+    public boolean run()
+    {
+        try
         {
-            String dbLocation = new File( config.getString( Configurator.DATABASE_LOCATION_PROPERTY_KEY ) ).getAbsolutePath();
+            String dbLocation = new File( config.getString( Configurator.DATABASE_LOCATION_PROPERTY_KEY ) )
+                    .getAbsolutePath();
 
             if ( new CurrentDatabase().storeFilesAtCurrentVersion( new File( dbLocation ) ) )
             {
                 return true;
             }
 
-            String separator = System.getProperty( "file.separator" );
-            String store = dbLocation + separator + NeoStore.DEFAULT_NAME;
+            File store = new File( dbLocation, NeoStore.DEFAULT_NAME);
             dbConfig.put( "store_dir", dbLocation );
-            dbConfig.put( "neo_store", store );
+            dbConfig.put( "neo_store", store.getPath() );
 
-            if ( !new UpgradableDatabase().storeFilesUpgradeable( new File( store ) ) )
+            if ( !new UpgradableDatabase().storeFilesUpgradeable( store ) )
             {
                 return true;
             }
-            
+
             FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
-            Config conf = new Config(new ConfigurationDefaults(GraphDatabaseSettings.class ).apply(dbConfig) );
-            StoreUpgrader storeUpgrader = new StoreUpgrader( conf, StringLogger.SYSTEM,new ConfigMapUpgradeConfiguration( conf ),
+            Config conf = new Config( dbConfig, GraphDatabaseSettings.class );
+            StoreUpgrader storeUpgrader = new StoreUpgrader( conf, StringLogger.SYSTEM,
+                    new ConfigMapUpgradeConfiguration( conf ),
                     new UpgradableDatabase(), new StoreMigrator( new VisibleMigrationProgressMonitor( out ) ),
                     new DatabaseFiles(), new DefaultIdGeneratorFactory(), fileSystem );
 
@@ -92,7 +94,7 @@ public class PerformUpgradeIfNecessary implements PreflightTask {
             catch ( UpgradeNotAllowedByConfigurationException e )
             {
                 logger.info( e.getMessage() );
-                out.println(e.getMessage());
+                out.println( e.getMessage() );
                 failureMessage = e.getMessage();
                 return false;
             }
@@ -108,11 +110,12 @@ public class PerformUpgradeIfNecessary implements PreflightTask {
             logger.error( e );
             return false;
         }
-	}
+    }
 
-	@Override
-	public String getFailureMessage() {
-		return failureMessage;
-	}
+    @Override
+    public String getFailureMessage()
+    {
+        return failureMessage;
+    }
 
 }

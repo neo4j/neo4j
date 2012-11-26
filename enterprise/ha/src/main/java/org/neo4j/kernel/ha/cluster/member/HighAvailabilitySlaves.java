@@ -19,113 +19,80 @@
  */
 package org.neo4j.kernel.ha.cluster.member;
 
+import static org.neo4j.helpers.Functions.withDefaults;
+import static org.neo4j.helpers.collection.Iterables.filter;
+import static org.neo4j.helpers.collection.Iterables.map;
+import static org.neo4j.kernel.ha.cluster.member.ClusterMembers.inRole;
+
 import java.net.URI;
 import java.util.Map;
 
-import org.neo4j.cluster.ClusterMonitor;
-import org.neo4j.cluster.protocol.heartbeat.HeartbeatListener;
-import org.neo4j.helpers.Predicate;
-import org.neo4j.helpers.collection.FilteringIterable;
-import org.neo4j.helpers.collection.IterableWrapper;
+import org.neo4j.cluster.protocol.cluster.Cluster;
+import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
+import org.neo4j.cluster.protocol.cluster.ClusterListener;
+import org.neo4j.helpers.Function;
+import org.neo4j.helpers.Functions;
 import org.neo4j.kernel.ha.Slave;
 import org.neo4j.kernel.ha.SlaveFactory;
 import org.neo4j.kernel.ha.Slaves;
-import org.neo4j.kernel.ha.cluster.HighAvailability;
+import org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher;
 import org.neo4j.kernel.impl.util.CopyOnWriteHashMap;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.kernel.logging.Logging;
 
 /**
  * Keeps active connections to {@link Slave slaves} for a master to communicate to
  * when so needed.
- * 
- * @author Mattias Persson
  */
-public class HighAvailabilitySlaves extends AbstractHighAvailabilityMembers implements Lifecycle, Slaves
+public class HighAvailabilitySlaves implements Lifecycle, Slaves
 {
-    private static final Predicate<SlaveContext> AVAILABLE = new Predicate<HighAvailabilitySlaves.SlaveContext>()
-    {
-        @Override
-        public boolean accept( SlaveContext item )
-        {
-            return item.available;
-        }
-    };
-    
     private final LifeSupport life = new LifeSupport();
-    private final Map<URI, SlaveContext> slaves = new CopyOnWriteHashMap<URI, SlaveContext>();
+    private final Map<ClusterMember, Slave> slaves = new CopyOnWriteHashMap<ClusterMember, Slave>();
+    private ClusterMembers clusterMembers;
+    private Cluster cluster;
     private SlaveFactory slaveFactory;
-    
-    public HighAvailabilitySlaves( ClusterMonitor clusterMonitor, HighAvailability highAvailability,
-            SlaveFactory slaveFactory, Logging logging )
-    {
-        super( clusterMonitor, highAvailability );
-        this.slaveFactory = slaveFactory;
-        clusterMonitor.addHeartbeatListener( new LocalHeartbeatListener() );
-    }
-    
-    private static class SlaveContext
-    {
-        private final Slave slave;
-        private volatile boolean available = true;
-        
-        protected SlaveContext( Slave slave )
-        {
-            this.slave = slave;
-        }
-    }
-    
-    private class LocalHeartbeatListener extends HeartbeatListener.Adapter
-    {
-        @Override
-        public void failed( URI server )
-        {
-            getSlave( server ).available = false;
-        }
+    private HighAvailabilitySlaves.HASClusterListener clusterListener;
 
-        @Override
-        public void alive( URI server )
+    public HighAvailabilitySlaves( ClusterMembers clusterMembers, Cluster cluster, SlaveFactory slaveFactory)
+    {
+        this.clusterMembers = clusterMembers;
+        this.cluster = cluster;
+        this.slaveFactory = slaveFactory;
+
+    }
+
+    private Function<ClusterMember, Slave> slaveForMember()
+    {
+        return new Function<ClusterMember, Slave>()
         {
-            getSlave( server ).available = true;
-        }
+            @Override
+            public Slave apply( ClusterMember from )
+            {
+                Slave slave = life.add( slaveFactory.newSlave( from ));
+                slaves.put( from, slave );
+                return slave;
+            }
+        };
     }
 
     @Override
     public Iterable<Slave> getSlaves()
     {
-        return new IterableWrapper<Slave, SlaveContext>( new FilteringIterable<SlaveContext>( slaves.values(), AVAILABLE ) )
-        {
-            @Override
-            protected Slave underlyingObjectToObject( SlaveContext context )
-            {
-                return context.slave;
-            }
-        };
+        // Return all cluster members which are currently SLAVEs,
+        // are alive, and convert to Slave with a cache if possible
+        return map( withDefaults( slaveForMember(), Functions.map( slaves ) ),
+                filter( ClusterMembers.ALIVE,
+                        filter( inRole( HighAvailabilityModeSwitcher.SLAVE ),
+                                clusterMembers.getMembers() ) ) );
     }
     
-    public SlaveContext getSlave( URI server )
-    {
-        SlaveContext slave = slaves.get( server );
-        if ( slave == null )
-            throw new IllegalStateException( "Slave for '" + server + "' not found" );
-        return slave;
-    }
-
-    @Override
-    protected void slaveIsAvailable( URI serverClusterUri, URI serverHaUri, boolean iAmMaster )
-    {
-        if ( iAmMaster )
-        {
-            Slave slave = life.add( slaveFactory.newSlave( serverHaUri ) );
-            slaves.put( serverClusterUri, new SlaveContext( slave ) );
-        }
-    }
-
     @Override
     public void init() throws Throwable
     {
         life.init();
+
+        clusterListener = new HASClusterListener();
+        cluster.addClusterListener( clusterListener );
     }
 
     @Override
@@ -143,13 +110,22 @@ public class HighAvailabilitySlaves extends AbstractHighAvailabilityMembers impl
     @Override
     public void shutdown() throws Throwable
     {
+        cluster.removeClusterListener( clusterListener );
+
         life.shutdown();
+        slaves.clear();
     }
 
-    @Override
-    protected void newMasterElected()
+    private class HASClusterListener extends ClusterListener.Adapter
     {
-        life.clear();
-        slaves.clear();
+        @Override
+        public void elected( String role, URI electedMember )
+        {
+            if ( role.equals( ClusterConfiguration.COORDINATOR ) )
+            {
+                life.clear();
+                slaves.clear();
+            }
+        }
     }
 }

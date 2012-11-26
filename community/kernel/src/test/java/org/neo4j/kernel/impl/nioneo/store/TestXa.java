@@ -57,7 +57,6 @@ import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.TransactionInterceptorProviders;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.configuration.ConfigurationDefaults;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.core.PropertyIndex;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaConnection;
@@ -99,16 +98,17 @@ public class TestXa extends AbstractNeo4jTestCase
 
     private LockManager lockManager;
 
-    private String path()
+    private File path()
     {
         String path = getStorePath( "xatest" );
-        new File( path ).mkdirs();
-        return path;
+        File file = new File( path );
+        file.mkdirs();
+        return file;
     }
 
-    private String file( String name )
+    private File file( String name )
     {
-        return path() + File.separator + name;
+        return new File( path(), name);
     }
 
     @BeforeClass
@@ -128,14 +128,14 @@ public class TestXa extends AbstractNeo4jTestCase
         log = Logger
                 .getLogger( "org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource" );
         log.setLevel( Level.OFF );
-        deleteFileOrDirectory( new File( path() ) );
+        deleteFileOrDirectory( path() );
         propertyIndexes = new HashMap<String, PropertyIndex>();
 
         FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
-        StoreFactory sf = new StoreFactory(new Config( new ConfigurationDefaults(GraphDatabaseSettings.class ).apply(
-                Collections.<String,String>emptyMap() )), new DefaultIdGeneratorFactory(),
+        StoreFactory sf = new StoreFactory( new Config( Collections.<String, String>emptyMap(),
+                GraphDatabaseSettings.class ), new DefaultIdGeneratorFactory(),
                 new DefaultWindowPoolFactory(), fileSystem, StringLogger.DEV_NULL, null );
-        sf.createNeoStore(file( "neo" )).close();
+        sf.createNeoStore( file( "neo" ) ).close();
 
         lockManager = getEmbeddedGraphDb().getLockManager();
         ds = newNeoStore();
@@ -154,107 +154,107 @@ public class TestXa extends AbstractNeo4jTestCase
         log = Logger
                 .getLogger( "org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource" );
         log.setLevel( level );
-        File file = new File( file( "neo" ) );
+        File file = file( "neo" );
         if ( file.exists() )
         {
             assertTrue( file.delete() );
         }
-        file = new File( file( "neo.id" ) );
+        file = file( "neo.id" );
         if ( file.exists() )
         {
             assertTrue( file.delete() );
         }
-        file = new File( file( "neo.nodestore.db" ) );
+        file = file( "neo.nodestore.db" );
         if ( file.exists() )
         {
             assertTrue( file.delete() );
         }
-        file = new File( file( "neo.nodestore.db.id" ) );
+        file = file( "neo.nodestore.db.id" );
         if ( file.exists() )
         {
             assertTrue( file.delete() );
         }
-        file = new File( file( "neo.propertystore.db" ) );
+        file = file( "neo.propertystore.db" );
         if ( file.exists() )
         {
             assertTrue( file.delete() );
         }
-        file = new File( file( "neo.propertystore.db.id" ) );
+        file = file( "neo.propertystore.db.id" );
         if ( file.exists() )
         {
             assertTrue( file.delete() );
         }
-        file = new File( file( "neo.propertystore.db.index" ) );
+        file =file( "neo.propertystore.db.index" );
         if ( file.exists() )
         {
             assertTrue( file.delete() );
         }
-        file = new File( file( "neo.propertystore.db.index.id" ) );
+        file = file( "neo.propertystore.db.index.id" );
         if ( file.exists() )
         {
             assertTrue( file.delete() );
         }
-        file = new File( file( "neo.propertystore.db.index.keys" ) );
+        file = file( "neo.propertystore.db.index.keys" );
         if ( file.exists() )
         {
             assertTrue( file.delete() );
         }
-        file = new File( file( "neo.propertystore.db.index.keys.id" ) );
+        file = file( "neo.propertystore.db.index.keys.id" );
         if ( file.exists() )
         {
             assertTrue( file.delete() );
         }
-        file = new File( file( "neo.propertystore.db.strings" ) );
+        file = file( "neo.propertystore.db.strings" );
         if ( file.exists() )
         {
             assertTrue( file.delete() );
         }
-        file = new File( file( "neo.propertystore.db.strings.id" ) );
+        file = file( "neo.propertystore.db.strings.id" );
         if ( file.exists() )
         {
             assertTrue( file.delete() );
         }
-        file = new File( file( "neo.propertystore.db.arrays" ) );
+        file = file( "neo.propertystore.db.arrays" );
         if ( file.exists() )
         {
             assertTrue( file.delete() );
         }
-        file = new File( file( "neo.propertystore.db.arrays.id" ) );
+        file = file( "neo.propertystore.db.arrays.id" );
         if ( file.exists() )
         {
             assertTrue( file.delete() );
         }
-        file = new File( file( "neo.relationshipstore.db" ) );
+        file = file( "neo.relationshipstore.db" );
         if ( file.exists() )
         {
             assertTrue( file.delete() );
         }
-        file = new File( file( "neo.relationshipstore.db.id" ) );
+        file = file( "neo.relationshipstore.db.id" );
         if ( file.exists() )
         {
             assertTrue( file.delete() );
         }
-        file = new File( file( "neo.relationshiptypestore.db" ) );
+        file = file( "neo.relationshiptypestore.db" );
         if ( file.exists() )
         {
             assertTrue( file.delete() );
         }
-        file = new File( file( "neo.relationshiptypestore.db.id" ) );
+        file = file( "neo.relationshiptypestore.db.id" );
         if ( file.exists() )
         {
             assertTrue( file.delete() );
         }
-        file = new File( file( "neo.relationshiptypestore.db.names" ) );
+        file = file( "neo.relationshiptypestore.db.names" );
         if ( file.exists() )
         {
             assertTrue( file.delete() );
         }
-        file = new File( file( "neo.relationshiptypestore.db.names.id" ) );
+        file =  file( "neo.relationshiptypestore.db.names.id" );
         if ( file.exists() )
         {
             assertTrue( file.delete() );
         }
-        file = new File( path() );
+        file = path();
         for ( File nioFile : file.listFiles() )
         {
             if ( nioFile.getName().startsWith( "nioneo_logical.log" ) )
@@ -266,23 +266,23 @@ public class TestXa extends AbstractNeo4jTestCase
 
     private void deleteLogicalLogIfExist()
     {
-        File file = new File( file( "nioneo_logical.log.1" ) );
+        File file = file( "nioneo_logical.log.1" );
         if ( file.exists() )
         {
             assertTrue( file.delete() );
         }
-        file = new File( file( "nioneo_logical.log.2" ) );
+        file = file( "nioneo_logical.log.2" );
         if ( file.exists() )
         {
             assertTrue( file.delete() );
         }
-        file = new File( file( "nioneo_logical.log.active" ) );
+        file = file( "nioneo_logical.log.active" );
         assertTrue( file.delete() );
     }
 
-    public static void renameCopiedLogicalLog( String storeDir )
+    public static void renameCopiedLogicalLog( File storeDir )
     {
-        for ( File file : new File( storeDir ).listFiles() )
+        for ( File file : storeDir.listFiles() )
         {
             if ( file.getName().contains( ".bak." ) )
             {
@@ -326,7 +326,7 @@ public class TestXa extends AbstractNeo4jTestCase
         fileChannel.close();
     }
 
-    public static Pair<Pair<File, File>, Pair<File, File>> copyLogicalLog( String storeDir ) throws IOException
+    public static Pair<Pair<File, File>, Pair<File, File>> copyLogicalLog( File storeDir ) throws IOException
     {
         char active = '1';
         File activeLog = new File( storeDir, "nioneo_logical.log.active" );
@@ -426,14 +426,14 @@ public class TestXa extends AbstractNeo4jTestCase
             IOException
     {
         FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
-        final Config config = new Config( new ConfigurationDefaults( GraphDatabaseSettings.class ).apply( MapUtil
+        final Config config = new Config( MapUtil
                 .stringMap(
-                        InternalAbstractGraphDatabase.Configuration.store_dir.name(), path(),
-                        InternalAbstractGraphDatabase.Configuration.neo_store.name(), file( "neo" ),
+                        InternalAbstractGraphDatabase.Configuration.store_dir.name(), path().getPath(),
+                        InternalAbstractGraphDatabase.Configuration.neo_store.name(), file( "neo" ).getPath(),
                         InternalAbstractGraphDatabase.Configuration.logical_log.name(),
-                        file( LOGICAL_LOG_DEFAULT_NAME ) ) ) );
+                        file( LOGICAL_LOG_DEFAULT_NAME ).getPath() ), GraphDatabaseSettings.class );
 
-        StoreFactory sf = new StoreFactory(config, new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(),
+        StoreFactory sf = new StoreFactory( config, new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(),
                 fileSystem, StringLogger.DEV_NULL, null );
 
         PlaceboTm txManager = new PlaceboTm();
@@ -441,7 +441,7 @@ public class TestXa extends AbstractNeo4jTestCase
 
         // Since these tests fiddle with copying logical logs and such themselves
         // make sure all history logs are removed before opening the store
-        for ( File file : new File( path() ).listFiles() )
+        for ( File file : path().listFiles() )
         {
             if ( file.isFile() && file.getName().startsWith( LOGICAL_LOG_DEFAULT_NAME + ".v" ) )
             {
