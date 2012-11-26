@@ -5,7 +5,6 @@ Logical logs
 Logical logs in Neo4j are the journal of which operations happens and are the source of truth in scenarios where the database needs to be recovered after a crash or similar.
 Logs are rotated every now and then (defaults to when they surpass 25 Mb in size) and the amount of legacy logs to keep can be configured.
 Purpose of keeping a history of logical logs include being able to serve incremental backups as well as keeping an HA cluster running.
-Regardless of configuration at least the latest non-empty logical log be kept.
 
 For any given configuration at least the latest non-empty logical log will be kept, but configuration can be supplied to control how much more to keep.
 There are several different means of controlling it and the format in which configuration is supplied is:
@@ -35,7 +34,7 @@ keep_logical_logs=500k txs
 
 Full list:
 
-[options="header",grid="none",frame="none",cols="<,>m,<", width="50%"]
+[options="header",cols="<15,<60,<25", width="50%"]
 |============================================
 | Type      | Description | Example
 | files     | Number of most recent logical log files to keep | "10 files"
@@ -44,3 +43,4 @@ Full list:
 | hours     | Keep logs which contains any transaction committed within N hours from current time | "10 hours"
 | days      | Keep logs which contains any transaction committed within N days from current time | "50 days"
 |============================================
+
