@@ -788,7 +788,7 @@ public abstract class InternalAbstractGraphDatabase
     {
         if ( transactionRunning() )
         {
-            return new PlaceboTransaction( txManager );
+            return new PlaceboTransaction( txManager, lockManager, txManager.getTransactionState() );
         }
         Transaction result = null;
         try

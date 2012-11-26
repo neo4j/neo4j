@@ -43,6 +43,7 @@ public class OtherThreadExecutor<T> implements ThreadFactory
     private final ExecutorService commandExecutor = newSingleThreadExecutor(this);
     private final T state;
     private volatile Thread thread;
+    private boolean executingCommand;
 
     public OtherThreadExecutor( T initialState )
     {
@@ -56,7 +57,15 @@ public class OtherThreadExecutor<T> implements ThreadFactory
             @Override
             public R call()
             {
-                return cmd.doWork( state );
+                executingCommand = true;
+                try
+                {
+                    return cmd.doWork( state );
+                }
+                finally
+                {
+                    executingCommand = false;
+                }
             }
         } );
     }
@@ -111,8 +120,14 @@ public class OtherThreadExecutor<T> implements ThreadFactory
 
     public void waitUntilWaiting()
     {
+        waitUntilWaiting( 0, TimeUnit.SECONDS );
+    }
+
+    public void waitUntilWaiting( long timeout, TimeUnit unit )
+    {
+        long end = timeout == 0 ? Long.MAX_VALUE : System.currentTimeMillis() + unit.toMillis( timeout );
         Thread thread = getThread();
-        while ( thread.getState() != Thread.State.WAITING )
+        while ( thread.getState() != Thread.State.WAITING || !executingCommand )
         {
             try
             {
@@ -122,9 +137,13 @@ public class OtherThreadExecutor<T> implements ThreadFactory
             {
                 // whatever
             }
+            
+            if ( System.currentTimeMillis() > end )
+                throw new IllegalStateException( "The executor didn't wait inside an executing command for " +
+                        timeout + " " + unit );
         }
     }
-
+    
     private Thread getThread()
     {
         Thread thread = null;
