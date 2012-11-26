@@ -19,15 +19,12 @@
  */
 package org.neo4j.kernel;
 
-import javax.transaction.TransactionManager;
-
 import org.neo4j.graphdb.Lock;
-import org.neo4j.graphdb.PropertyContainer;
-import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.TransactionFailureException;
-import org.neo4j.kernel.TopLevelTransaction.TransactionOutcome;
+import org.neo4j.kernel.impl.core.TransactionState;
+import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
+import org.neo4j.kernel.impl.transaction.LockManager;
 
-public class PlaceboTransaction implements Transaction
+public class PlaceboTransaction extends TopLevelTransaction
 {
     public final static Lock NO_LOCK = new Lock()
     {
@@ -37,62 +34,18 @@ public class PlaceboTransaction implements Transaction
         }
     };
     
-    private final TransactionManager transactionManager;
-    private final TransactionOutcome outcome = new TransactionOutcome();
-    
-    public PlaceboTransaction( TransactionManager transactionManager )
+    public PlaceboTransaction( AbstractTransactionManager transactionManager, LockManager lockManager,
+            TransactionState state )
     {
-        // we should override all so null is ok
-        this.transactionManager = transactionManager;
-    }
-
-    @Override
-    public void failure()
-    {
-        outcome.failed();
-    }
-
-    @Override
-    public void success()
-    {
-        outcome.success();
+        super( transactionManager, lockManager, state );
     }
 
     @Override
     public void finish()
     {
-        if ( !outcome.canCommit() )
+        if ( !transactionOutcome.successCalled() && !transactionOutcome.failureCalled() )
         {
-            markAsRollback();
+            markAsRollbackOnly();
         }
-    }
-
-    private void markAsRollback()
-    {
-        try
-        {
-            transactionManager.getTransaction().setRollbackOnly();
-        }
-        catch ( Exception e )
-        {
-            throw new TransactionFailureException(
-                "Failed to mark transaction as rollback only.", e );
-        }
-    }
-    
-    @Override
-    public Lock acquireWriteLock( PropertyContainer entity )
-    {
-        // TODO: Would it be possible to retrieve a lock via the parent
-        // transaction here? It seems that this renders acquireXLock methods
-        // moot on nested tx's, a tx state the calling code may not know it
-        // is in.
-        return NO_LOCK;
-    }
-    
-    @Override
-    public Lock acquireReadLock( PropertyContainer entity )
-    {
-        return NO_LOCK;
     }
 }
