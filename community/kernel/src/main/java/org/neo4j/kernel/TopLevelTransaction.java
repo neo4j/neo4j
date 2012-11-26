@@ -55,14 +55,19 @@ public class TopLevelTransaction implements Transaction
             return success && !failure;
         }
 
-        public boolean triedToSucceed()
+        public boolean successCalled()
         {
             return success;
+        }
+        
+        public boolean failureCalled()
+        {
+            return failure;
         }
     }
     
     private final AbstractTransactionManager transactionManager;
-    private final TransactionOutcome transactionOutcome = new TransactionOutcome();
+    protected final TransactionOutcome transactionOutcome = new TransactionOutcome();
     private final LockManager lockManager;
     private final TransactionState state;
 
@@ -77,6 +82,11 @@ public class TopLevelTransaction implements Transaction
     public void failure()
     {
         transactionOutcome.failed();
+        markAsRollbackOnly();
+    }
+
+    protected void markAsRollbackOnly()
+    {
         try
         {
             transactionManager.getTransaction().setRollbackOnly();
@@ -130,7 +140,7 @@ public class TopLevelTransaction implements Transaction
         }
         catch ( Exception e )
         {
-            if ( transactionOutcome.triedToSucceed() )
+            if ( transactionOutcome.successCalled() )
             {
                 throw new TransactionFailureException(
                     "Unable to commit transaction", e );
