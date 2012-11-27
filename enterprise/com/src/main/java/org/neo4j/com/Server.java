@@ -224,10 +224,10 @@ public abstract class Server<T, R> extends Protocol implements ChannelPipelineFa
     public void shutdown() throws Throwable
     {
     }
-
-    public InetSocketAddress getSocketAddress()
+    
+    public HostnamePort getBoundAddress()
     {
-        return socketAddress;
+        return new HostnamePort( socketAddress.getAddress().getHostAddress(), socketAddress.getPort() );
     }
 
     private Runnable silentChannelFinisher()
