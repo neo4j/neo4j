@@ -26,6 +26,8 @@ import static org.neo4j.com.RequestContext.lastAppliedTx;
 import static org.neo4j.kernel.configuration.Config.DEFAULT_DATA_SOURCE_NAME;
 
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 
@@ -41,11 +43,23 @@ public class MadeUpClient extends Client<MadeUpCommunicationInterface> implement
     public MadeUpClient( int port, StoreId storeIdToExpect,
             byte internalProtocolVersion, byte applicationProtocolVersion, int chunkSize )
     {
-        super( "localhost", port, StringLogger.DEV_NULL, storeIdToExpect, FRAME_LENGTH,
+        super( localhost(), port, StringLogger.DEV_NULL, storeIdToExpect, FRAME_LENGTH,
                 applicationProtocolVersion, Client.DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS,
                 Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT,
                 Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT, chunkSize );
         this.internalProtocolVersion = internalProtocolVersion;
+    }
+
+    private static String localhost()
+    {
+        try
+        {
+            return InetAddress.getLocalHost().getHostAddress();
+        }
+        catch ( UnknownHostException e )
+        {
+            throw new RuntimeException( e );
+        }
     }
 
     @Override
