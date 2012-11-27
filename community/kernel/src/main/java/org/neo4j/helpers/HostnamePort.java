@@ -28,20 +28,20 @@ import static java.lang.String.format;
  */
 public class HostnamePort
 {
-    private String host;
-    private int[] ports;
+    private final String host;
+    private final int[] ports;
 
     public HostnamePort( String hostnamePort ) throws IllegalArgumentException
     {
         String[] parts = hostnamePort.split( ":" );
         if ( parts.length == 1 )
         {
-            host = parts[0];
+            host = zeroLengthMeansNull( parts[0] );
             ports = new int[]{0, 0};
         }
         else if ( parts.length == 2 )
         {
-            host = parts[0];
+            host = zeroLengthMeansNull( parts[0] );
 
             String[] portStrings = parts[1].split( "-" );
             ports = new int[2];
@@ -66,6 +66,13 @@ public class HostnamePort
         {
             throw new IllegalArgumentException( hostnamePort );
         }
+    }
+
+    private String zeroLengthMeansNull( String string )
+    {
+        if ( string == null || string.length() == 0 )
+            return null;
+        return string;
     }
 
     public HostnamePort( String host, int port )
@@ -123,7 +130,13 @@ public class HostnamePort
     @Override
     public String toString()
     {
+        return toString( null /*no default host*/ );
+    }
+    
+    public String toString( String defaultHost )
+    {
         StringBuilder builder = new StringBuilder();
+        String host = getHost( defaultHost );
         if ( host != null )
         {
             builder.append( host );

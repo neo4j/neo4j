@@ -386,14 +386,7 @@ public class ClusterJoin
     {
         try
         {
-            if ( host.getHost() == null )
-            {
-                return InetAddress.getLocalHost().getHostAddress() + ":" + host.getPort();
-            }
-            else
-            {
-                return host.toString();
-            }
+            return host.toString( InetAddress.getLocalHost().getHostAddress() );
         }
         catch ( UnknownHostException e )
         {
