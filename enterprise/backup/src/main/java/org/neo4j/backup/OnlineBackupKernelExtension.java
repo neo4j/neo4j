@@ -67,7 +67,7 @@ public class OnlineBackupKernelExtension implements Lifecycle
                 try
                 {
                     ClusterMemberAvailability ha = graphDatabaseAPI.getDependencyResolver().resolveDependency( ClusterMemberAvailability.class );
-                    backupUri = URI.create( "backup://" + server.getSocketAddress().getHostName() + ":" + server.getSocketAddress().getPort() );
+                    backupUri = URI.create( "backup://" + server.getSocketAddress().getHostString() + ":" + server.getSocketAddress().getPort() );
                     ha.memberIsAvailable( BACKUP, backupUri );
                 }
                 catch ( NoClassDefFoundError e )
