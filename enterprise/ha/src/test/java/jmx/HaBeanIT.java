@@ -41,7 +41,6 @@ import org.neo4j.jmx.Kernel;
 import org.neo4j.jmx.impl.JmxKernelExtension;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
-import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher;
 import org.neo4j.management.BranchedStore;
 import org.neo4j.management.ClusterMemberInfo;
@@ -205,16 +204,16 @@ public class HaBeanIT
     {
         ClusterMemberInfo master = member( instancesInCluster, 5001 );
         assertTrue( master.getInstanceId().endsWith( ":5001" ) );
-        assertEquals( HighAvailabilityMemberState.MASTER.name(), master.getHaRole() );
-        assertTrue( "Unexpected start of HA URI " + uri( "ha", master.getURIs() ),
-                uri( "ha", master.getURIs() ).startsWith( "ha://" + InetAddress.getLocalHost().getHostAddress() + ":1137" ) );
+        assertEquals( HighAvailabilityModeSwitcher.MASTER, master.getHaRole() );
+        assertTrue( "Unexpected start of HA URI " + uri( "ha", master.getUris() ),
+                uri( "ha", master.getUris() ).startsWith( "ha://" + InetAddress.getLocalHost().getHostAddress() + ":1137" ) );
         assertTrue( "Master not available", master.isAvailable() );
 
         ClusterMemberInfo slave = member( instancesInCluster, 5002 );
         assertTrue( slave.getInstanceId().endsWith( ":5002" ) );
-        assertEquals( HighAvailabilityMemberState.SLAVE.name(), slave.getHaRole() );
-        assertTrue( "Unexpected start of HA URI" + uri( "ha", slave.getURIs() ),
-                uri( "ha", slave.getURIs() ).startsWith( "ha://" + InetAddress.getLocalHost().getHostAddress() + ":1138" ) );
+        assertEquals( HighAvailabilityModeSwitcher.SLAVE, slave.getHaRole() );
+        assertTrue( "Unexpected start of HA URI " + uri( "ha", slave.getUris() ),
+                uri( "ha", slave.getUris() ).startsWith( "ha://" + InetAddress.getLocalHost().getHostAddress() + ":1138" ) );
         assertTrue( "Slave not available", slave.isAvailable() );
     }
 

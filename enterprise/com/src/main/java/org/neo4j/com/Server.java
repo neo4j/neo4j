@@ -24,6 +24,7 @@ import static org.neo4j.com.DechunkingChannelBuffer.assertSameProtocolVersion;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.Map;
@@ -53,8 +54,8 @@ import org.jboss.netty.channel.group.ChannelGroup;
 import org.jboss.netty.channel.group.DefaultChannelGroup;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
 import org.neo4j.com.RequestContext.Tx;
-import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.Exceptions;
+import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Triplet;
@@ -180,15 +181,7 @@ public abstract class Server<T, R> extends Protocol implements ChannelPipelineFa
 
         for ( int port = ports[0]; port <= ports[1]; port++ )
         {
-
-            if ( config.getServerAddress().getHost() == null )
-            {
-                socketAddress = new InetSocketAddress( port );
-            }
-            else
-            {
-                socketAddress = new InetSocketAddress( config.getServerAddress().getHost(), port );
-            }
+            socketAddress = new InetSocketAddress( config.getServerAddress().getHost( InetAddress.getLocalHost().getHostAddress() ), port );
             try
             {
                 channel = bootstrap.bind( socketAddress );

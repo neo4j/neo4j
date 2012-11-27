@@ -26,7 +26,7 @@ public class ClusterDatabaseInfo extends ClusterMemberInfo
 
     public ClusterDatabaseInfo( ClusterMemberInfo memberInfo, long lastCommittedTxId, long lastUpdateTime )
     {
-        super( memberInfo.getInstanceId(), memberInfo.isAvailable(), memberInfo.isAlive(), memberInfo.getHaRole(),memberInfo.getURIs() );
+        super( memberInfo.getInstanceId(), memberInfo.isAvailable(), memberInfo.isAlive(), memberInfo.getHaRole(),memberInfo.getUris() );
         this.lastCommittedTxId = lastCommittedTxId;
         this.lastUpdateTime = lastUpdateTime;
     }

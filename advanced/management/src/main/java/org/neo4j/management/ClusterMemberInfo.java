@@ -72,7 +72,7 @@ public class ClusterMemberInfo implements Serializable
         return haRole;
     }
 
-    public String[] getURIs()
+    public String[] getUris()
     {
         return uris;
     }
