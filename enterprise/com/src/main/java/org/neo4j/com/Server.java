@@ -24,7 +24,6 @@ import static org.neo4j.com.DechunkingChannelBuffer.assertSameProtocolVersion;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.Map;
@@ -181,7 +180,14 @@ public abstract class Server<T, R> extends Protocol implements ChannelPipelineFa
 
         for ( int port = ports[0]; port <= ports[1]; port++ )
         {
-            socketAddress = new InetSocketAddress( config.getServerAddress().getHost( InetAddress.getLocalHost().getHostAddress() ), port );
+            if ( config.getServerAddress().getHost() == null )
+            {
+                socketAddress = new InetSocketAddress( port );
+            }
+            else
+            {
+                socketAddress = new InetSocketAddress( config.getServerAddress().getHost(), port );
+            }
             try
             {
                 channel = bootstrap.bind( socketAddress );
@@ -225,9 +231,9 @@ public abstract class Server<T, R> extends Protocol implements ChannelPipelineFa
     {
     }
     
-    public HostnamePort getBoundAddress()
+    public InetSocketAddress getSocketAddress()
     {
-        return new HostnamePort( socketAddress.getAddress().getHostAddress(), socketAddress.getPort() );
+        return socketAddress;
     }
 
     private Runnable silentChannelFinisher()

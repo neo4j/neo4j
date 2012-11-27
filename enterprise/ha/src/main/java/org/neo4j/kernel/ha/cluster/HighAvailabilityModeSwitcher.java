@@ -284,8 +284,8 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                     }
                     life.start();
 
-                    URI haUri = URI.create( "ha://" + masterServer.getBoundAddress().getHost() + ":" +
-                            masterServer.getBoundAddress().getPort() + "?serverId=" +
+                    URI haUri = URI.create( "ha://" + masterServer.getSocketAddress().getHostName() + ":" +
+                            masterServer.getSocketAddress().getPort() + "?serverId=" +
                             config.get( HaSettings.server_id ) );
                     clusterMemberAvailability.memberIsAvailable( MASTER, haUri );
                 }
@@ -452,8 +452,8 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                         life.add( server );
                         life.start();
 
-                        URI haUri = URI.create( "ha://" + server.getBoundAddress().getHost() + ":" +
-                                server.getBoundAddress().getPort() + "?serverId=" +
+                        URI haUri = URI.create( "ha://" + server.getSocketAddress().getHostName() + ":" +
+                                server.getSocketAddress().getPort() + "?serverId=" +
                                 config.get( HaSettings.server_id ) );
                         clusterMemberAvailability.memberIsAvailable( SLAVE, haUri );
 
