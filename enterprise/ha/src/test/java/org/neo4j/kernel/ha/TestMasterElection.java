@@ -26,14 +26,16 @@ import java.io.File;
 import java.net.URI;
 import java.util.concurrent.CountDownLatch;
 
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.cluster.ClusterSettings;
+import org.neo4j.cluster.member.ClusterMemberEvents;
 import org.neo4j.cluster.member.ClusterMemberListener;
 import org.neo4j.consistency.checking.incremental.intercept.VerifyingTransactionInterceptorProvider;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
-import org.neo4j.cluster.member.ClusterMemberEvents;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
 import org.neo4j.test.TargetDirectory;
@@ -42,13 +44,40 @@ public class TestMasterElection
 {
     private final File path = TargetDirectory.forTest( getClass() ).graphDbDir( true );
 
+    private HighlyAvailableGraphDatabase master;
+    private HighlyAvailableGraphDatabase slave1;
+    private HighlyAvailableGraphDatabase slave2;
+
+    private CountDownLatch masterElectedLatch;
+
+    @Before
+    public void buildDbs()
+    {
+        master = startDb( 0 );
+        slave1 = startDb( 1 );
+        slave2 = startDb( 2 );
+    }
+
+    @After
+    public void killDbs()
+    {
+        if ( slave2 != null )
+        {
+            slave2.shutdown();
+        }
+        if ( slave1 != null )
+        {
+            slave1.shutdown();
+        }
+        if ( master != null )
+        {
+            master.shutdown();
+        }
+    }
+
     @Test
     public void testBasicFailover() throws Exception
     {
-        HighlyAvailableGraphDatabase master = startDb( 0 );
-        HighlyAvailableGraphDatabase slave1 = startDb( 1 );
-        HighlyAvailableGraphDatabase slave2 = startDb( 2 );
-
         assertTrue( master.isMaster() );
         assertTrue( !slave1.isMaster() );
         assertTrue( !slave2.isMaster() );
@@ -56,12 +85,10 @@ public class TestMasterElection
         startListenForNewMaster( slave2 );
 
         master.shutdown();
-        assertTrue( masterElectedLatch.await( 20, SECONDS ) );
+        master = null;
+        assertTrue( masterElectedLatch.await( 30, SECONDS ) );
         assertTrue( slave1.isMaster() );
         assertTrue( !slave2.isMaster() );
-
-        slave2.shutdown();
-        slave1.shutdown();
     }
 
     private void startListenForNewMaster( HighlyAvailableGraphDatabase db )
@@ -81,8 +108,6 @@ public class TestMasterElection
             }
         } );
     }
-
-    private CountDownLatch masterElectedLatch;
 
     private HighlyAvailableGraphDatabase startDb( int serverId )
     {
