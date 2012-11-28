@@ -96,7 +96,8 @@ public final class HaBackupProvider extends BackupExtensionService
 
         ClusterClient clusterClient = life.add( new ClusterClient( ClusterClient.adapt( config ), logging,
                 new BackupElectionCredentialsProvider() ) );
-        ClusterMemberEvents events = life.add( new PaxosClusterMemberEvents( clusterClient, clusterClient, clusterClient, StringLogger.SYSTEM ) );
+        ClusterMemberEvents events = life.add( new PaxosClusterMemberEvents( clusterClient, clusterClient,
+                clusterClient, StringLogger.SYSTEM ) );
 
         final Semaphore infoReceivedLatch = new Semaphore( 0 );
         final AtomicReference<URI> backupUri = new AtomicReference<URI>(  );

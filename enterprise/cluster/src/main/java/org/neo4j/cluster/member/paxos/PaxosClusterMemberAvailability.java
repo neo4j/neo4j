@@ -21,8 +21,9 @@
 package org.neo4j.cluster.member.paxos;
 
 import java.net.URI;
-import org.neo4j.cluster.Binding;
+
 import org.neo4j.cluster.BindingListener;
+import org.neo4j.cluster.com.BindingNotifier;
 import org.neo4j.cluster.member.ClusterMemberAvailability;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcast;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastSerializer;
@@ -38,11 +39,11 @@ public class PaxosClusterMemberAvailability implements ClusterMemberAvailability
     private URI serverClusterId;
     private StringLogger logger;
     protected AtomicBroadcastSerializer serializer;
-    private Binding binding;
+    private BindingNotifier binding;
     private AtomicBroadcast atomicBroadcast;
     private BindingListener bindingListener;
 
-    public PaxosClusterMemberAvailability( Binding binding, AtomicBroadcast atomicBroadcast, StringLogger logger)
+    public PaxosClusterMemberAvailability( BindingNotifier binding, AtomicBroadcast atomicBroadcast, StringLogger logger)
     {
         this.binding = binding;
         this.atomicBroadcast = atomicBroadcast;

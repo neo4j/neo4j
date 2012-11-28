@@ -23,7 +23,7 @@ import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.cluster.Binding;
+import org.neo4j.cluster.com.BindingNotifier;
 import org.neo4j.cluster.BindingListener;
 import org.neo4j.cluster.member.ClusterMemberEvents;
 import org.neo4j.cluster.member.ClusterMemberListener;
@@ -67,7 +67,7 @@ public class ClusterMembers
 
     private final Map<URI, ClusterMember> members = new CopyOnWriteHashMap<URI, ClusterMember>();
 
-    public ClusterMembers( Cluster cluster, Binding binding, Heartbeat heartbeat, ClusterMemberEvents clusterMemberEvents )
+    public ClusterMembers( Cluster cluster, BindingNotifier binding, Heartbeat heartbeat, ClusterMemberEvents clusterMemberEvents )
     {
         cluster.addClusterListener( new HAMClusterListener() );
         heartbeat.addHeartbeatListener( new HAMHeartbeatListener() );
