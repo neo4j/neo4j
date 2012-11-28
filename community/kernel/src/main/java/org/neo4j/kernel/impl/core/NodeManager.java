@@ -932,11 +932,29 @@ public class NodeManager
         return relTypeHolder.getRelationshipTypes();
     }
 
-    ArrayMap<Integer,PropertyData> deleteNode( NodeImpl node )
-    {
-        deletePrimitive( node );
+    private <T extends PropertyContainer> void deleteFromTrackers( Primitive primitive, List<PropertyTracker<T>>
+            trackers ) {
+        if ( !trackers.isEmpty() )
+        {
+            Iterable<String> propertyKeys = primitive.getPropertyKeys( this );
+            T proxy = (T) primitive.asProxy( this );
+
+            for ( String key : propertyKeys )
+            {
+                Object value = primitive.getProperty( this, key );
+                for ( PropertyTracker<T> tracker : trackers )
+                {
+                    tracker.propertyRemoved( proxy, key, value );
+                }
+            }
+        }
+
+    }
+
+    ArrayMap<Integer, PropertyData> deleteNode(NodeImpl node) {
+        deleteFromTrackers(node, nodePropertyTrackers);
+        deletePrimitive(node);
         return persistenceManager.nodeDelete( node.getId() );
-        // remove from node cache done via event
     }
 
     PropertyData nodeAddProperty( NodeImpl node, PropertyIndex index, Object value )
@@ -998,11 +1016,12 @@ public class NodeManager
     {
         persistenceManager.graphRemoveProperty( property );
     }
-    
+
     ArrayMap<Integer,PropertyData> deleteRelationship( RelationshipImpl rel )
     {
+        deleteFromTrackers(rel, relationshipPropertyTrackers);
         deletePrimitive( rel );
-        return persistenceManager.relDelete( rel.getId() );
+        return persistenceManager.relDelete(rel.getId());
         // remove in rel cache done via event
     }
 
