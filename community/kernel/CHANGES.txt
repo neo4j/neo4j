@@ -1,3 +1,7 @@
+1.9.M02
+--------------------
+o Made sure that auto-indexing removed graph elements from indexes when they are deleted
+
 1.9.M01 (2012-10-23)
 --------------------
 o XaDatasources now implement lifecycle and their registration with XaDatasourceManager triggers TxManager recovery

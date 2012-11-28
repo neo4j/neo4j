@@ -27,7 +27,5 @@ public interface PropertyTracker<T extends PropertyContainer>
 
     void propertyRemoved( T primitive, String propertyName, Object propertyValue );
 
-    void propertyChanged( T primitive, String propertyName, Object oldValue,
-            Object newValue );
-
+    void propertyChanged( T primitive, String propertyName, Object oldValue, Object newValue );
 }
