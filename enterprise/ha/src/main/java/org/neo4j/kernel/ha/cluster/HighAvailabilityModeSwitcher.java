@@ -30,7 +30,6 @@ import java.net.URI;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 import org.neo4j.cluster.member.ClusterMemberAvailability;
 import org.neo4j.com.Response;
@@ -221,11 +220,11 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
 
     private void switchToMaster()
     {
-        toMasterTask = executor.submit( new Runnable()
-        {
-            @Override
-            public void run()
-            {
+//        toMasterTask = executor.submit( new Runnable()
+//        {
+//            @Override
+//            public void run()
+//            {
                 try
                 {
 //                    Thread.sleep( 3000 );
@@ -299,20 +298,20 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                     msgLog.logMessage( "Failed to switch to master", e );
                     return;
                 }
-            }
-        } );
+//            }
+//        } );
     }
 
     private void switchToSlave()
     {
         // TODO factor out switch tasks to named methods
-        toSlaveTask = executor.submit( new Runnable()
-        {
-            public int tries;
+//        toSlaveTask = executor.submit( new Runnable()
+//        {
+//            public int tries;
 
-            @Override
-            public void run()
-            {
+//            @Override
+//            public void run()
+//            {
                 try
                 {
                     URI masterUri = availableMasterId;
@@ -350,7 +349,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                         catch ( Throwable e )
                         {
                             msgLog.logMessage( "Failed to copy store from master", e );
-                            retryLater( true );
+//                            retryLater( true );
                             return;
                         }
                         finally
@@ -403,7 +402,8 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                         {
                             msgLog.logMessage( "Failed while trying to handle branched data", e );
                         }
-                        retryLater( false );
+//                        retryLater( false );
+                        switchToSlave();
                         return;
                     }
                     catch ( Throwable throwable )
@@ -473,7 +473,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                         life = new LifeSupport();
                         nioneoDataSource.stop();
 
-                        retryLater( true );
+//                        retryLater( true );
 
                         return;
                     }
@@ -484,6 +484,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                     msgLog.logMessage( "Unable to switch to slave", t );
                 }
             }
+
 
             private void startServicesAgain() throws Throwable
             {
@@ -522,7 +523,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                         KernelExtensions.class ).resolveDependency( LuceneKernelExtension.class );
                 lucene.stop();
             }
-            */
+
             private void retryLater( boolean wayLater )
             {
                 if ( ++tries < 5 )
@@ -535,7 +536,8 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                 }
             }
         } );
-    }
+        */
+//    }
 
     private void checkDataConsistencyWithMaster( Master master, NeoStoreXaDataSource nioneoDataSource )
     {

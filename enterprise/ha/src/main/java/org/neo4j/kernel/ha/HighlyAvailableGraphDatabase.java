@@ -314,6 +314,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                 }
                 catch ( Throwable throwable )
                 {
+                    msgLog.error( "Error while trying to do recovery", throwable );
                     try
                     {
                         memberStateMachine.stop();
