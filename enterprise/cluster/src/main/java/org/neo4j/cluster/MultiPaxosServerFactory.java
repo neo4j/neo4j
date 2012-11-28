@@ -129,13 +129,11 @@ public class MultiPaxosServerFactory
                 ElectionState.start ) );
         connectedStateMachines.addStateMachine( new StateMachine( snapshotContext, SnapshotMessage.class,
                 SnapshotState.start ) );
+        connectedStateMachines.addStateMachine( new StateMachine( clusterContext, ClusterMessage.class,
+                ClusterState.start ) );
 
         final ProtocolServer server = new ProtocolServer( connectedStateMachines, logging.getLogger( ProtocolServer
-                .class ) );
-
-        StateMachine cluster = new StateMachine( clusterContext, ClusterMessage.class, ClusterState.start );
-
-        connectedStateMachines.addStateMachine( cluster );
+        .class ) );
 
         server.addBindingListener( new BindingListener()
         {

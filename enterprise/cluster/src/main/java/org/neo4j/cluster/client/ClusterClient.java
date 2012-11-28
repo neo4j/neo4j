@@ -33,6 +33,7 @@ import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.ConnectedStateMachines;
 import org.neo4j.cluster.MultiPaxosServerFactory;
 import org.neo4j.cluster.ProtocolServer;
+import org.neo4j.cluster.com.BindingNotifier;
 import org.neo4j.cluster.com.NetworkInstance;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcast;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastListener;
@@ -57,8 +58,8 @@ import org.neo4j.cluster.statemachine.StateTransitionLogger;
 import org.neo4j.cluster.timeout.FixedTimeoutStrategy;
 import org.neo4j.cluster.timeout.MessageTimeoutStrategy;
 import org.neo4j.cluster.timeout.Timeouts;
-import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.DaemonThreadFactory;
+import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -66,7 +67,8 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.Logging;
 
-public class ClusterClient extends LifecycleAdapter implements ClusterMonitor, Cluster, AtomicBroadcast, Snapshot
+public class ClusterClient extends LifecycleAdapter
+        implements ClusterMonitor, Cluster, AtomicBroadcast, Snapshot, BindingNotifier
 {
     public interface Configuration
     {
@@ -363,6 +365,12 @@ public class ClusterClient extends LifecycleAdapter implements ClusterMonitor, C
         broadcast = server.newClient( AtomicBroadcast.class );
         heartbeat = server.newClient( Heartbeat.class );
         snapshot = server.newClient( Snapshot.class );
+    }
+
+    @Override
+    public void init() throws Throwable
+    {
+        life.init();
     }
 
     @Override

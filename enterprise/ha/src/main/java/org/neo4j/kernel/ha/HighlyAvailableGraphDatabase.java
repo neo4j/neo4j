@@ -27,10 +27,12 @@ import java.lang.reflect.Proxy;
 import java.util.List;
 import java.util.Map;
 
+import ch.qos.logback.classic.LoggerContext;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.com.NetworkInstance;
 import org.neo4j.cluster.member.ClusterMemberAvailability;
+import org.neo4j.cluster.member.ClusterMemberEvents;
 import org.neo4j.cluster.member.paxos.PaxosClusterMemberAvailability;
 import org.neo4j.cluster.member.paxos.PaxosClusterMemberEvents;
 import org.neo4j.cluster.protocol.election.DefaultElectionCredentialsProvider;
@@ -42,13 +44,13 @@ import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.KernelData;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
-import org.neo4j.cluster.member.ClusterMemberEvents;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberChangeEvent;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberContext;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberListener;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberStateMachine;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher;
+import org.neo4j.kernel.ha.cluster.SimpleHighAvailabilityMemberContext;
 import org.neo4j.kernel.ha.cluster.member.ClusterMembers;
 import org.neo4j.kernel.ha.cluster.member.HighAvailabilitySlaves;
 import org.neo4j.kernel.impl.cache.CacheProvider;
@@ -65,8 +67,6 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.ClassicLoggingService;
 import org.neo4j.kernel.logging.LogbackService;
 import org.neo4j.kernel.logging.Logging;
-
-import ch.qos.logback.classic.LoggerContext;
 
 public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
 {
@@ -179,7 +179,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         clusterMemberAvailability = life.add( new PaxosClusterMemberAvailability( clusterClient, clusterClient,
                 logging.getLogger( PaxosClusterMemberEvents.class ) ) );
 
-        memberContext = new HighAvailabilityMemberContext( clusterClient );
+        memberContext = new SimpleHighAvailabilityMemberContext( clusterClient );
 
         memberStateMachine = new HighAvailabilityMemberStateMachine( memberContext, accessGuard, clusterEvents,
                 logging.getLogger( HighAvailabilityMemberStateMachine.class ) );

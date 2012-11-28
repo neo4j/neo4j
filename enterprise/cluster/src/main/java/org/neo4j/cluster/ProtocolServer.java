@@ -22,6 +22,7 @@ package org.neo4j.cluster;
 
 import java.net.URI;
 
+import org.neo4j.cluster.com.BindingNotifier;
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageProcessor;
 import org.neo4j.cluster.com.message.MessageType;
@@ -37,7 +38,7 @@ import org.neo4j.kernel.impl.util.StringLogger;
  * A ProtocolServer ties together the underlying ConnectedStateMachines with an understanding of ones
  * own server address (me), and provides a proxy factory for creating clients to invoke the CSM.
  */
-public class ProtocolServer
+public class ProtocolServer implements BindingNotifier
 {
     private URI me;
     protected StateMachineProxyFactory proxyFactory;

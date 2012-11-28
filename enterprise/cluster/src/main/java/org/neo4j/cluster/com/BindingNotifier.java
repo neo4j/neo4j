@@ -17,19 +17,13 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.ha.cluster;
+package org.neo4j.cluster.com;
 
-import java.net.URI;
+import org.neo4j.cluster.BindingListener;
 
-public interface HighAvailabilityMemberContext
+public interface BindingNotifier
 {
-    URI getMyId();
+    public void addBindingListener( BindingListener listener );
 
-    URI getElectedMasterId();
-
-    void setElectedMasterId( URI electedMasterId );
-
-    URI getAvailableHaMaster();
-
-    void setAvailableHaMasterId( URI availableHaMasterId );
+    public void removeBindingListener( BindingListener listener );
 }
