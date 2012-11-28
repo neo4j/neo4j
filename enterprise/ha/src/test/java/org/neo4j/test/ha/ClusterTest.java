@@ -64,17 +64,15 @@ public class ClusterTest
         clusterManager.getDefaultCluster().getMaster().stop();
         logging.getLogger().info( "STOPPED MASTER" );
 
-        Thread.sleep( 60000 );
+        Thread.sleep( 30000 ); // OMG!!!! My Eyes!!!! It Burns Us!!!!
 
-/*
-        GraphDatabaseService master = clusterManager.getMaster( "neo4j.ha" );
+        GraphDatabaseService master = clusterManager.getCluster( "neo4j.ha" ).getMaster();
         logging.getLogger().info( "CREATE NODE" );
         Transaction tx = master.beginTx();
         master.createNode();
         logging.getLogger().info( "CREATED NODE" );
         tx.success();
         tx.finish();
-*/
 
         logging.getLogger().info( "STOPPING CLUSTER" );
         clusterManager.stop();

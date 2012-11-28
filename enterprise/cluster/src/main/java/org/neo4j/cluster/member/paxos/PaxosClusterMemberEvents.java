@@ -109,7 +109,6 @@ public class PaxosClusterMemberEvents implements ClusterMemberEvents, Lifecycle
             throws Throwable
     {
         executor = Executors.newSingleThreadExecutor();
-
     }
 
     @Override

@@ -87,14 +87,14 @@ public class HighAvailabilitySlaves implements Lifecycle, Slaves
     }
     
     @Override
-    public void init() throws Throwable
+    public void init()
     {
         life.init();
 
         clusterListener = new HASClusterListener();
         cluster.addClusterListener( clusterListener );
     }
-
+    
     @Override
     public void start() throws Throwable
     {

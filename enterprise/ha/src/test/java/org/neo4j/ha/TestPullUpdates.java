@@ -27,7 +27,9 @@ import java.net.URI;
 import java.util.concurrent.CountDownLatch;
 
 import org.junit.After;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestName;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.member.ClusterMemberListener;
 import org.neo4j.graphdb.Transaction;
@@ -44,6 +46,9 @@ import org.neo4j.test.TargetDirectory;
 
 public class TestPullUpdates
 {
+    @Rule
+    public TestName testName = new TestName();
+
     private final TargetDirectory dir = forTest( getClass() );
     private HighlyAvailableGraphDatabase[] dbs;
     private static final int PULL_INTERVAL = 100;
@@ -61,7 +66,8 @@ public class TestPullUpdates
     private HighlyAvailableGraphDatabase newDb( int i, int pullInterval )
     {
         HighlyAvailableGraphDatabase db = (HighlyAvailableGraphDatabase) new HighlyAvailableGraphDatabaseFactory().
-                newHighlyAvailableDatabaseBuilder( dir.directory( "" + (i + 1), true ).getAbsolutePath() ).
+                newHighlyAvailableDatabaseBuilder( dir.directory(
+                        testName.getMethodName() + (i + 1), true ).getAbsolutePath() ).
                 setConfig( ClusterSettings.cluster_server, "127.0.0.1:" + (5001 + i) ).
                 setConfig( ClusterSettings.initial_hosts, "127.0.0.1:5001,127.0.0.1:5002,127.0.0.1:5003" ).
                 setConfig( HaSettings.server_id, "" + (i + 1) ).
@@ -79,12 +85,9 @@ public class TestPullUpdates
     @After
     public void doAfter() throws Exception
     {
-        for ( HighlyAvailableGraphDatabase db : dbs )
+        for ( int i = dbs.length - 1; i >= 0; i-- )
         {
-            if ( db != null )
-            {
-                db.shutdown();
-            }
+            dbs[i].shutdown();
         }
     }
 
@@ -119,7 +122,6 @@ public class TestPullUpdates
 
     private void callPullUpdatesViaShell( int i ) throws ShellException
     {
-        HighlyAvailableGraphDatabase db = dbs[i];
         ShellClient client = ShellLobby.newClient( SHELL_PORT + i );
         client.evaluate( "pullupdates" );
     }

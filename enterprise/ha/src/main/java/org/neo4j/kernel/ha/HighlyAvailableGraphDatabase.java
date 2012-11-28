@@ -110,13 +110,8 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
 
         kernelEventHandlers.registerKernelEventHandler( new TxManagerCheckKernelEventHandler( xaDataSourceManager,
                 (TxManager) txManager ) );
-        life.add( memberStateMachine );
         life.add( updatePuller = new UpdatePuller( (HaXaDataSourceManager) xaDataSourceManager, master,
                 requestContextFactory, txManager, accessGuard, config, msgLog ) );
-
-        // Add this just before cluster join to ensure that it is up and running as late as possible
-        // and is shut down as early as possible
-        life.add( clusterClient );
 
         life.add( new StartupWaiter() );
 
@@ -172,17 +167,18 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         DefaultElectionCredentialsProvider electionCredentialsProvider = new DefaultElectionCredentialsProvider(
                 config.get( HaSettings.server_id ), new OnDiskLastTxIdGetter( new File( getStoreDir() ) ) );
         // Add if to lifecycle later, as late as possible really
-        clusterClient = new ClusterClient( ClusterClient.adapt( config ), logging, electionCredentialsProvider );
+        clusterClient = life.add(
+                new ClusterClient( ClusterClient.adapt( config ), logging, electionCredentialsProvider ) );
 
-        clusterEvents = life.add( new PaxosClusterMemberEvents( clusterClient, clusterClient, clusterClient,
-                logging.getLogger( PaxosClusterMemberEvents.class ) ) );
         clusterMemberAvailability = life.add( new PaxosClusterMemberAvailability( clusterClient, clusterClient,
+                logging.getLogger( PaxosClusterMemberEvents.class ) ) );
+        clusterEvents = life.add( new PaxosClusterMemberEvents( clusterClient, clusterClient, clusterClient,
                 logging.getLogger( PaxosClusterMemberEvents.class ) ) );
 
         memberContext = new SimpleHighAvailabilityMemberContext( clusterClient );
 
-        memberStateMachine = new HighAvailabilityMemberStateMachine( memberContext, accessGuard, clusterEvents,
-                logging.getLogger( HighAvailabilityMemberStateMachine.class ) );
+        memberStateMachine = life.add( new HighAvailabilityMemberStateMachine( memberContext, accessGuard,
+                clusterEvents, logging.getLogger( HighAvailabilityMemberStateMachine.class ) ) );
         life.add( new HighAvailabilityModeSwitcher( delegateInvocationHandler, clusterMemberAvailability,
                 memberStateMachine, this,
                 config, logging.getLogger( HighAvailabilityModeSwitcher.class ) ) );
@@ -213,6 +209,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         slaves = life.add( new HighAvailabilitySlaves( members, clusterClient, new DefaultSlaveFactory(
                 xaDataSourceManager, msgLog, config.get( HaSettings.max_concurrent_channels_per_slave ),
                 config.get( HaSettings.com_chunk_size ).intValue() ) ) );
+
         new TxIdGeneratorModeSwitcher( memberStateMachine, txIdGeneratorDelegate,
                 (HaXaDataSourceManager) xaDataSourceManager, master, requestContextFactory, msgLog, config, slaves );
         return txIdGenerator;
@@ -419,4 +416,5 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
             accessGuard.await( 30000 );
         }
     }
+
 }

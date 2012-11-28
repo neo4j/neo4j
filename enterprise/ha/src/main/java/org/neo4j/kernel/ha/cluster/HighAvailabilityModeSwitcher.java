@@ -93,10 +93,13 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
     public static int getServerId( URI haUri )
     {
         // Get serverId parameter, default to -1 if it is missing, and parse to integer
-        return INTEGER.apply( withDefaults( Functions.<URI, String>constant( "-1" ), parameter( "serverId" ) ).apply( haUri ));
+        return INTEGER.apply( withDefaults(
+                Functions.<URI, String>constant( "-1" ), parameter( "serverId" ) ).apply( haUri ));
     }
 
     private URI availableMasterId;
+
+    private final HighAvailabilityMemberStateMachine stateHandler;
     private final DelegateInvocationHandler delegateHandler;
     private final ClusterMemberAvailability clusterMemberAvailability;
     private final GraphDatabaseAPI graphDb;
@@ -118,32 +121,34 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
         this.config = config;
         this.msgLog = msgLog;
         this.life = new LifeSupport();
-        stateHandler.addHighAvailabilityMemberListener( this );
+        this.stateHandler = stateHandler;
     }
 
     @Override
-    public void init() throws Throwable
+    public synchronized void init() throws Throwable
     {
+        executor = Executors.newSingleThreadScheduledExecutor( new NamedThreadFactory( "Mode switcher" ) );
+        stateHandler.addHighAvailabilityMemberListener( this );
         life.init();
     }
 
     @Override
-    public void start() throws Throwable
+    public synchronized void start() throws Throwable
     {
-        executor = Executors.newSingleThreadScheduledExecutor( new NamedThreadFactory( "Mode switcher" ) );
         life.start();
     }
 
     @Override
-    public void stop() throws Throwable
+    public synchronized void stop() throws Throwable
     {
-        executor.shutdownNow();
         life.stop();
     }
 
     @Override
-    public void shutdown() throws Throwable
+    public synchronized void shutdown() throws Throwable
     {
+        stateHandler.removeHighAvailabilityMemberListener( this );
+        executor.shutdownNow();
         life.shutdown();
     }
 
@@ -171,7 +176,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
         stateChanged( event );
     }
 
-    private void stateChanged( HighAvailabilityMemberChangeEvent event )
+    private synchronized void stateChanged( HighAvailabilityMemberChangeEvent event )
     {
         availableMasterId = event.getServerHaUri();
         if ( event.getNewState() == event.getOldState() )
@@ -197,7 +202,6 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                 switchToSlave();
                 break;
             case PENDING:
-
                 if ( event.getOldState().equals( HighAvailabilityMemberState.SLAVE ) )
                 {
                     clusterMemberAvailability.memberIsUnavailable( SLAVE );
@@ -215,7 +219,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
         }
     }
 
-    public void switchToMaster()
+    private void switchToMaster()
     {
         toMasterTask = executor.submit( new Runnable()
         {
@@ -224,6 +228,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
             {
                 try
                 {
+//                    Thread.sleep( 3000 );
                     MasterImpl masterImpl = new MasterImpl( graphDb, graphDb.getMessageLog(), config );
                     Server.Configuration serverConfig = new Server.Configuration()
                     {
@@ -298,7 +303,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
         } );
     }
 
-    public void switchToSlave()
+    private void switchToSlave()
     {
         // TODO factor out switch tasks to named methods
         toSlaveTask = executor.submit( new Runnable()
@@ -463,10 +468,10 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                     }
                     catch ( Throwable t )
                     {
+                        msgLog.logMessage( "Got exception while trying to verify consistency with master", t );
                         life.shutdown();
                         life = new LifeSupport();
                         nioneoDataSource.stop();
-                        msgLog.logMessage( "Got exception while trying to verify consistency with master", t );
 
                         retryLater( true );
 

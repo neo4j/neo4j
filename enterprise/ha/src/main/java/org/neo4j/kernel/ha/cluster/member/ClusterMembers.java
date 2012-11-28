@@ -137,10 +137,11 @@ public class ClusterMembers
             Map<URI, ClusterMember> newMembers = new CopyOnWriteHashMap<URI, ClusterMember>();
             for ( Map.Entry<URI, ClusterMember> memberEntry : members.entrySet() )
             {
-                newMembers.put( memberEntry.getKey(), memberEntry.getValue().unavailableAs( HighAvailabilityModeSwitcher.MASTER ).unavailableAs( HighAvailabilityModeSwitcher.SLAVE ) );
+                newMembers.put( memberEntry.getKey(), memberEntry.getValue().unavailableAs(
+                        HighAvailabilityModeSwitcher.MASTER ).unavailableAs( HighAvailabilityModeSwitcher.SLAVE ) );
             }
             members.clear();
-            members.putAll(newMembers);
+            members.putAll( newMembers );
         }
 
         @Override

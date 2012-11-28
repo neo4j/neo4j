@@ -99,7 +99,7 @@ public class HardKillIT
 
             assertTrue( dbWithId2.isMaster() );
             assertTrue( !dbWithId3.isMaster() );
-            
+
             oldMaster = startDb( 1 );
             long oldMasterNode = createNamedNode( oldMaster, "Old master" );
             assertEquals( oldMasterNode, getNamedNode( dbWithId2, "Old master" ) );

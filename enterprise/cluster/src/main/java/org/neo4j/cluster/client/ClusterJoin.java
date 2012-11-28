@@ -97,13 +97,12 @@ public class ClusterJoin
     {
         builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
         transformer = TransformerFactory.newInstance().newTransformer();
+        cluster = protocolServer.newClient( Cluster.class );
     }
 
     @Override
     public void start() throws Throwable
     {
-        cluster = protocolServer.newClient( Cluster.class );
-
         acquireServerId();
 
         // Now that we have our own id, do cluster join

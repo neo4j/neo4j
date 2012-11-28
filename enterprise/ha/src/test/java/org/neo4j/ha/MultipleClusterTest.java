@@ -25,10 +25,8 @@ import static org.neo4j.test.ha.ClusterManager.fromXml;
 import java.io.File;
 
 import junit.framework.Assert;
-
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -36,6 +34,7 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.UpdatePuller;
 import org.neo4j.test.LoggerRule;
+import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.ClusterManager;
 import org.neo4j.test.ha.ClusterManager.ManagedCluster;
 
@@ -45,17 +44,15 @@ import org.neo4j.test.ha.ClusterManager.ManagedCluster;
 public class MultipleClusterTest
 {
     @Rule
-    public TemporaryFolder folder = new TemporaryFolder();
-
-    @Rule
     public LoggerRule logging = new LoggerRule();
 
     @Test
     public void runTwoClusters() throws Throwable
     {
-        File root = folder.getRoot();
+        File root = TargetDirectory.forTest( getClass() ).directory( "cluster", true );
 
-        ClusterManager clusterManager = new ClusterManager( fromXml( getClass().getResource( "/twoclustertest.xml" ).toURI() ), root, MapUtil.stringMap() );
+        ClusterManager clusterManager = new ClusterManager(
+                fromXml( getClass().getResource( "/twoclustertest.xml" ).toURI() ), root, MapUtil.stringMap() );
 
         try
         {

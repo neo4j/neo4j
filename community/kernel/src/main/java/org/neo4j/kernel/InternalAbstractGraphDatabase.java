@@ -278,8 +278,6 @@ public abstract class InternalAbstractGraphDatabase
 
     protected void doRecovery()
     {
-//        txManager.doRecovery();
-
         NeoStoreXaDataSource neoStoreDataSource = xaDataSourceManager.getNeoStoreDataSource();
         storeId = neoStoreDataSource.getStoreId();
         KernelDiagnostics.register( diagnosticsManager, InternalAbstractGraphDatabase.this,
@@ -336,9 +334,9 @@ public abstract class InternalAbstractGraphDatabase
 
         kernelPanicEventGenerator = new KernelPanicEventGenerator( kernelEventHandlers );
 
-        txHook = createTxHook();
-
         xaDataSourceManager = life.add( createXaDataSourceManager() );
+
+        txHook = createTxHook();
 
         guard = config.get( Configuration.execution_guard_enabled ) ? new Guard( msgLog ) : null;
 

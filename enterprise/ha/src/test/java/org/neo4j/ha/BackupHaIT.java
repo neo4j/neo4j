@@ -93,12 +93,12 @@ public class BackupHaIT
     private void testBackupFromCluster( String askForCluster ) throws Throwable
     {
         assertEquals( 0, runBackupToolFromOtherJvmToGetExitCode(
-                backupArguments( true, "ha://127.0.0.1:5001", BACKUP_PATH.getPath(), askForCluster ) ) );
+                backupArguments( true, "ha://localhost:5001", BACKUP_PATH.getPath(), askForCluster ) ) );
         assertEquals( representation, DbRepresentation.of( BACKUP_PATH ) );
         ManagedCluster cluster = clusterManager.getCluster( askForCluster == null ? "neo4j.ha" : askForCluster );
         DbRepresentation newRepresentation = createSomeData( cluster.getAnySlave() );
         assertEquals( 0, runBackupToolFromOtherJvmToGetExitCode(
-                backupArguments( false, "ha://127.0.0.1:5002", BACKUP_PATH.getPath(), askForCluster ) ) );
+                backupArguments( false, "ha://localhost:5002", BACKUP_PATH.getPath(), askForCluster ) ) );
         assertEquals( newRepresentation, DbRepresentation.of( BACKUP_PATH ) );
     }
 
