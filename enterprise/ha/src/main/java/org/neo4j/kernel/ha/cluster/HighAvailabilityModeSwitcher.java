@@ -27,9 +27,6 @@ import static org.neo4j.helpers.Uris.parameter;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.ScheduledExecutorService;
 
 import org.neo4j.cluster.member.ClusterMemberAvailability;
 import org.neo4j.com.Response;
@@ -37,7 +34,6 @@ import org.neo4j.com.Server;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.Functions;
 import org.neo4j.helpers.HostnamePort;
-import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
@@ -105,9 +101,6 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
     private final Config config;
     private LifeSupport life;
     private final StringLogger msgLog;
-    private ScheduledExecutorService executor;
-    private Future<?> toMasterTask;
-    private Future<?> toSlaveTask;
 
     public HighAvailabilityModeSwitcher( DelegateInvocationHandler delegateHandler,
                                          ClusterMemberAvailability clusterMemberAvailability,
@@ -126,7 +119,6 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
     @Override
     public synchronized void init() throws Throwable
     {
-        executor = Executors.newSingleThreadScheduledExecutor( new NamedThreadFactory( "Mode switcher" ) );
         stateHandler.addHighAvailabilityMemberListener( this );
         life.init();
     }
@@ -147,7 +139,6 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
     public synchronized void shutdown() throws Throwable
     {
         stateHandler.removeHighAvailabilityMemberListener( this );
-        executor.shutdownNow();
         life.shutdown();
     }
 
@@ -220,112 +211,99 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
 
     private void switchToMaster()
     {
-//        toMasterTask = executor.submit( new Runnable()
-//        {
-//            @Override
-//            public void run()
-//            {
-                try
+        try
+        {
+            MasterImpl masterImpl = new MasterImpl( graphDb, graphDb.getMessageLog(), config );
+            Server.Configuration serverConfig = new Server.Configuration()
+            {
+                @Override
+                public long getOldChannelThreshold()
                 {
-//                    Thread.sleep( 3000 );
-                    MasterImpl masterImpl = new MasterImpl( graphDb, graphDb.getMessageLog(), config );
-                    Server.Configuration serverConfig = new Server.Configuration()
+                    return config.get( HaSettings.lock_read_timeout );
+                }
+
+                @Override
+                public int getMaxConcurrentTransactions()
+                {
+                    return config.get( HaSettings.max_concurrent_channels_per_slave );
+                }
+
+                @Override
+                public int getChunkSize()
+                {
+                    return config.get( HaSettings.com_chunk_size ).intValue();
+                }
+
+                @Override
+                public HostnamePort getServerAddress()
+                {
+                    return config.get( HaSettings.ha_server );
+                }
+            };
+            MasterServer masterServer = new MasterServer( masterImpl, msgLog, serverConfig,
+                    new BranchDetectingTxVerifier( graphDb ) );
+            life.add( masterImpl );
+            life.add( masterServer );
+            delegateHandler.setDelegate( masterImpl );
+            DependencyResolver resolver = graphDb.getDependencyResolver();
+            HaXaDataSourceManager xaDsm = resolver.resolveDependency( HaXaDataSourceManager.class );
+            synchronized ( xaDsm )
+            {
+                XaDataSource nioneoDataSource = xaDsm.getXaDataSource( Config.DEFAULT_DATA_SOURCE_NAME );
+                if ( nioneoDataSource == null )
+                {
+                    try
                     {
-                        @Override
-                        public long getOldChannelThreshold()
-                        {
-                            return config.get( HaSettings.lock_read_timeout );
-                        }
-
-                        @Override
-                        public int getMaxConcurrentTransactions()
-                        {
-                            return config.get( HaSettings.max_concurrent_channels_per_slave );
-                        }
-
-                        @Override
-                        public int getChunkSize()
-                        {
-                            return config.get( HaSettings.com_chunk_size ).intValue();
-                        }
-
-                        @Override
-                        public HostnamePort getServerAddress()
-                        {
-                            return config.get( HaSettings.ha_server );
-                        }
-                    };
-                    MasterServer masterServer = new MasterServer( masterImpl, msgLog, serverConfig,
-                            new BranchDetectingTxVerifier( graphDb ) );
-                    life.add( masterImpl );
-                    life.add( masterServer );
-                    delegateHandler.setDelegate( masterImpl );
-                    DependencyResolver resolver = graphDb.getDependencyResolver();
-                    HaXaDataSourceManager xaDsm = resolver.resolveDependency( HaXaDataSourceManager.class );
-                    synchronized ( xaDsm )
-                    {
-                        XaDataSource nioneoDataSource = xaDsm.getXaDataSource( Config.DEFAULT_DATA_SOURCE_NAME );
-                        if ( nioneoDataSource == null )
-                        {
-                            try
-                            {
-                                nioneoDataSource = new NeoStoreXaDataSource( config,
-                                        resolver.resolveDependency( StoreFactory.class ),
-                                        resolver.resolveDependency( LockManager.class ),
-                                        resolver.resolveDependency( StringLogger.class ),
-                                        resolver.resolveDependency( XaFactory.class ),
-                                        resolver.resolveDependency( TransactionStateFactory.class ),
-                                        resolver.resolveDependency( TransactionInterceptorProviders.class ),
-                                        resolver );
-                                xaDsm.registerDataSource( nioneoDataSource );
-                            }
-                            catch ( IOException e )
-                            {
-                                msgLog.logMessage( "Failed while trying to create datasource", e );
-                                return;
-                            }
-                        }
+                        nioneoDataSource = new NeoStoreXaDataSource( config,
+                                resolver.resolveDependency( StoreFactory.class ),
+                                resolver.resolveDependency( LockManager.class ),
+                                resolver.resolveDependency( StringLogger.class ),
+                                resolver.resolveDependency( XaFactory.class ),
+                                resolver.resolveDependency( TransactionStateFactory.class ),
+                                resolver.resolveDependency( TransactionInterceptorProviders.class ),
+                                resolver );
+                        xaDsm.registerDataSource( nioneoDataSource );
                     }
-                    life.start();
+                    catch ( IOException e )
+                    {
+                        msgLog.logMessage( "Failed while trying to create datasource", e );
+                        return;
+                    }
+                }
+            }
+            life.start();
 
-                    URI haUri = URI.create( "ha://" + masterServer.getSocketAddress().getHostName() + ":" +
-                            masterServer.getSocketAddress().getPort() + "?serverId=" +
-                            config.get( HaSettings.server_id ) );
-                    clusterMemberAvailability.memberIsAvailable( MASTER, haUri );
-                }
-                catch ( Throwable e )
-                {
-                    msgLog.logMessage( "Failed to switch to master", e );
-                    return;
-                }
-//            }
-//        } );
+            URI haUri = URI.create( "ha://" + masterServer.getSocketAddress().getHostName() + ":" +
+                    masterServer.getSocketAddress().getPort() + "?serverId=" +
+                    config.get( HaSettings.server_id ) );
+            clusterMemberAvailability.memberIsAvailable( MASTER, haUri );
+        }
+        catch ( Throwable e )
+        {
+            msgLog.logMessage( "Failed to switch to master", e );
+            return;
+        }
     }
 
     private void switchToSlave()
     {
+        int tries = 5;
         // TODO factor out switch tasks to named methods
-//        toSlaveTask = executor.submit( new Runnable()
-//        {
-//            public int tries;
+        while ( tries-- > 0 )
+        {
+            try
+            {
+                URI masterUri = availableMasterId;
 
-//            @Override
-//            public void run()
-//            {
-                try
+                msgLog.logMessage( "I am " + config.get( HaSettings.server_id ) + ", moving to slave for master " +
+                        masterUri );
+
+                assert masterUri != null; // since we are here it must already have been set from outside
+                DependencyResolver resolver = graphDb.getDependencyResolver();
+                HaXaDataSourceManager xaDataSourceManager = resolver.resolveDependency(
+                        HaXaDataSourceManager.class );
+                synchronized ( xaDataSourceManager )
                 {
-                    URI masterUri = availableMasterId;
-
-                    msgLog.logMessage( "I am " + config.get( HaSettings.server_id ) + ", moving to slave for master " +
-                            masterUri );
-
-                    assert masterUri != null; // since we are here it must already have been set from outside
-                    DependencyResolver resolver = graphDb.getDependencyResolver();
-                    HaXaDataSourceManager xaDataSourceManager = resolver.resolveDependency(
-                            HaXaDataSourceManager.class );
-                    synchronized ( xaDataSourceManager )
-                    {
-
                     if ( !NeoStore.isStorePresent( resolver.resolveDependency( FileSystemAbstraction.class ), config ) )
                     {
                         LifeSupport life = new LifeSupport();
@@ -349,8 +327,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                         catch ( Throwable e )
                         {
                             msgLog.logMessage( "Failed to copy store from master", e );
-//                            retryLater( true );
-                            return;
+                            continue; // outer while true;
                         }
                         finally
                         {
@@ -402,9 +379,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                         {
                             msgLog.logMessage( "Failed while trying to handle branched data", e );
                         }
-//                        retryLater( false );
-                        switchToSlave();
-                        return;
+                        continue;
                     }
                     catch ( Throwable throwable )
                     {
@@ -472,69 +447,67 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                         life.shutdown();
                         life = new LifeSupport();
                         nioneoDataSource.stop();
-
-//                        retryLater( true );
-
-                        return;
+                        continue;
                     }
                 }
-                }
-                catch ( Throwable t )
-                {
-                    msgLog.logMessage( "Unable to switch to slave", t );
-                }
             }
-
-
-            private void startServicesAgain() throws Throwable
+            catch ( Throwable t )
             {
-                graphDb.getDependencyResolver().resolveDependency( NodeManager.class ).start();
-                graphDb.getDependencyResolver().resolveDependency( TxManager.class ).start();
-                graphDb.getDependencyResolver().resolveDependency( XaDataSourceManager.class ).start();
+                msgLog.logMessage( "Unable to switch to slave", t );
             }
+        }
+    }
 
-            private void stopServicesAndHandleBranchedStore( BranchedDataPolicy branchPolicy, boolean deleteIndexes )
-                    throws Throwable
+
+        private void startServicesAgain() throws Throwable
+        {
+            graphDb.getDependencyResolver().resolveDependency( NodeManager.class ).start();
+            graphDb.getDependencyResolver().resolveDependency( TxManager.class ).start();
+            graphDb.getDependencyResolver().resolveDependency( XaDataSourceManager.class ).start();
+        }
+
+        private void stopServicesAndHandleBranchedStore( BranchedDataPolicy branchPolicy, boolean deleteIndexes )
+                throws Throwable
+        {
+            graphDb.getDependencyResolver().resolveDependency( XaDataSourceManager.class ).stop();
+            graphDb.getDependencyResolver().resolveDependency( TxManager.class ).stop();
+            graphDb.getDependencyResolver().resolveDependency( NodeManager.class ).stop();
+            branchPolicy.handle( config.get( InternalAbstractGraphDatabase.Configuration.store_dir ) );
+            if ( deleteIndexes )
             {
-                graphDb.getDependencyResolver().resolveDependency( XaDataSourceManager.class ).stop();
-                graphDb.getDependencyResolver().resolveDependency( TxManager.class ).stop();
-                graphDb.getDependencyResolver().resolveDependency( NodeManager.class ).stop();
-                branchPolicy.handle( config.get( InternalAbstractGraphDatabase.Configuration.store_dir ) );
-                if ( deleteIndexes )
-                {
-                    FileUtils.deleteRecursively( new File(
-                            config.get( InternalAbstractGraphDatabase.Configuration.store_dir ), "index" ) );
-                }
+                FileUtils.deleteRecursively( new File(
+                        config.get( InternalAbstractGraphDatabase.Configuration.store_dir ), "index" ) );
             }
+        }
 
-            /*
+        /*
 
-            // Those left here for posterity, all data source start-stop cycles must happen through XaDSManager
-            private void startOtherDataSources() throws Throwable
+        // Those left here for posterity, all data source start-stop cycles must happen through XaDSManager
+        private void startOtherDataSources() throws Throwable
+        {
+            LuceneKernelExtension lucene = graphDb.getDependencyResolver().resolveDependency(
+                    KernelExtensions.class ).resolveDependency( LuceneKernelExtension.class );
+            lucene.start();
+        }
+
+        private void stopOtherDataSources() throws Throwable
+        {
+            LuceneKernelExtension lucene = graphDb.getDependencyResolver().resolveDependency(
+                    KernelExtensions.class ).resolveDependency( LuceneKernelExtension.class );
+            lucene.stop();
+        }
+
+        private void retryLater( boolean wayLater )
+        {
+            if ( ++tries < 5 )
             {
-                LuceneKernelExtension lucene = graphDb.getDependencyResolver().resolveDependency(
-                        KernelExtensions.class ).resolveDependency( LuceneKernelExtension.class );
-                lucene.start();
+                executor.schedule( this, wayLater ? 15 : 1, TimeUnit.SECONDS );
             }
-
-            private void stopOtherDataSources() throws Throwable
+            else
             {
-                LuceneKernelExtension lucene = graphDb.getDependencyResolver().resolveDependency(
-                        KernelExtensions.class ).resolveDependency( LuceneKernelExtension.class );
-                lucene.stop();
+                msgLog.error( "Giving up trying to switch to slave" );
             }
-
-            private void retryLater( boolean wayLater )
-            {
-                if ( ++tries < 5 )
-                {
-                    executor.schedule( this, wayLater ? 15 : 1, TimeUnit.SECONDS );
-                }
-                else
-                {
-                    msgLog.error( "Giving up trying to switch to slave" );
-                }
-            }
+        }
         } );
         */
 //    }
