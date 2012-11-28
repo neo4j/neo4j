@@ -24,6 +24,7 @@ import static org.neo4j.com.DechunkingChannelBuffer.assertSameProtocolVersion;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.Map;
@@ -182,7 +183,7 @@ public abstract class Server<T, R> extends Protocol implements ChannelPipelineFa
         {
             if ( config.getServerAddress().getHost() == null )
             {
-                socketAddress = new InetSocketAddress( port );
+                socketAddress = new InetSocketAddress( InetAddress.getLocalHost().getHostAddress(), port );
             }
             else
             {

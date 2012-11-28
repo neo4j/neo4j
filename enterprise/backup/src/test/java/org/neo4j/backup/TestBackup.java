@@ -27,6 +27,7 @@ import static org.junit.Assert.fail;
 
 import java.io.File;
 import java.io.FilenameFilter;
+import java.net.InetAddress;
 
 import org.apache.commons.io.FileUtils;
 import org.junit.Before;
@@ -117,7 +118,7 @@ public class TestBackup
         {
             createInitialDataSet( serverPath );
             server = startServer( serverPath );
-            OnlineBackup backup = OnlineBackup.from( "localhost" );
+            OnlineBackup backup = OnlineBackup.from( InetAddress.getLocalHost().getHostAddress() );
             backup.full( backupPath.getPath() );
             shutdownServer( server );
             server = null;
@@ -163,7 +164,7 @@ public class TestBackup
         {
             createInitialDataSet( serverPath );
             server = startServer( serverPath );
-            OnlineBackup backup = OnlineBackup.from( "localhost" );
+            OnlineBackup backup = OnlineBackup.from( InetAddress.getLocalHost().getHostAddress() );
             backup.full( backupPath.getPath() );
             shutdownServer( server );
             server = null;
@@ -224,7 +225,7 @@ public class TestBackup
         ServerInterface server = startServer( serverPath );
 
         // START SNIPPET: onlineBackup
-        OnlineBackup backup = OnlineBackup.from( "localhost" );
+        OnlineBackup backup = OnlineBackup.from( InetAddress.getLocalHost().getHostAddress() );
         backup.full( backupPath.getPath() );
         // END SNIPPET: onlineBackup
         assertEquals( initialDataSetRepresentation, DbRepresentation.of( backupPath ) );
@@ -244,7 +245,7 @@ public class TestBackup
     {
         createInitialDataSet( serverPath );
         ServerInterface server = startServer( serverPath );
-        OnlineBackup backup = OnlineBackup.from( "localhost" );
+        OnlineBackup backup = OnlineBackup.from( InetAddress.getLocalHost().getHostAddress() );
 
         // First check full
         backup.full( backupPath.getPath() );
@@ -269,7 +270,7 @@ public class TestBackup
         ServerInterface server = startServer( serverPath );
 
         // Grab initial backup from server A
-        OnlineBackup backup = OnlineBackup.from( "localhost" );
+        OnlineBackup backup = OnlineBackup.from( InetAddress.getLocalHost().getHostAddress() );
         backup.full( backupPath.getPath() );
         assertEquals( initialDataSetRepresentation, DbRepresentation.of( backupPath ) );
         shutdownServer( server );
@@ -380,7 +381,7 @@ public class TestBackup
             tx.success();
             tx.finish();
 
-            OnlineBackup backup = OnlineBackup.from( "localhost" );
+            OnlineBackup backup = OnlineBackup.from( InetAddress.getLocalHost().getHostAddress() );
             backup.full( backupPath.getPath() );
             long lastCommittedTxForLucene = getLastCommittedTx( backupPath.getPath() );
 
@@ -417,7 +418,7 @@ public class TestBackup
 
             db.index().forNodes( "created-no-commits" );
 
-            OnlineBackup backup = OnlineBackup.from( "localhost" );
+            OnlineBackup backup = OnlineBackup.from( InetAddress.getLocalHost().getHostAddress() );
             backup.full( backupPath.getPath() );
         }
         finally
@@ -458,10 +459,10 @@ public class TestBackup
         node.setProperty( key, value );
         tx.success();
         tx.finish();
-        OnlineBackup.from( "localhost" ).full( backupPath.getPath() );
+        OnlineBackup.from( InetAddress.getLocalHost().getHostAddress() ).full( backupPath.getPath() );
         assertEquals( DbRepresentation.of( db ), DbRepresentation.of( backupPath ) );
         FileUtils.deleteDirectory( new File( backupPath.getPath() ) );
-        OnlineBackup.from( "localhost" ).full( backupPath.getPath() );
+        OnlineBackup.from( InetAddress.getLocalHost().getHostAddress() ).full( backupPath.getPath() );
         assertEquals( DbRepresentation.of( db ), DbRepresentation.of( backupPath ) );
 
         tx = db.beginTx();
@@ -469,7 +470,7 @@ public class TestBackup
         tx.success();
         tx.finish();
         FileUtils.deleteDirectory( new File( backupPath.getPath() ) );
-        OnlineBackup.from( "localhost" ).full( backupPath.getPath() );
+        OnlineBackup.from( InetAddress.getLocalHost().getHostAddress() ).full( backupPath.getPath() );
         assertEquals( DbRepresentation.of( db ), DbRepresentation.of( backupPath ) );
         db.shutdown();
     }
@@ -486,7 +487,7 @@ public class TestBackup
         try
         {
             assertStoreIsLocked( sourcePath );
-            OnlineBackup.from( "localhost" ).full( backupPath.getPath() );
+            OnlineBackup.from( InetAddress.getLocalHost().getHostAddress() ).full( backupPath.getPath() );
             assertStoreIsLocked( sourcePath );
         }
         finally

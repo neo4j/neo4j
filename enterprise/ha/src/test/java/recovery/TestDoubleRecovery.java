@@ -25,6 +25,7 @@ import static org.junit.Assert.assertNotNull;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.InetAddress;
 import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -75,7 +76,7 @@ public class TestDoubleRecovery extends AbstractSubProcessTestBase
     {
         String backupDirectory = "target/var/backup-db";
         FileUtils.deleteRecursively( new File( backupDirectory ) );
-        OnlineBackup.from( "localhost" ).full( backupDirectory );
+        OnlineBackup.from( InetAddress.getLocalHost().getHostAddress() ).full( backupDirectory );
         for ( BreakPoint bp : breakpoints( 0 ) )
             bp.enable();
         runInThread( new WriteTransaction() );
@@ -84,7 +85,7 @@ public class TestDoubleRecovery extends AbstractSubProcessTestBase
         runInThread( new Crash() );
         afterCrash.await();
         startSubprocesses();
-        OnlineBackup.from( "localhost" ).incremental( backupDirectory );
+        OnlineBackup.from( InetAddress.getLocalHost().getHostAddress() ).incremental( backupDirectory );
         run( new Verification() );
 
         EmbeddedGraphDatabase db = new EmbeddedGraphDatabase( backupDirectory );
