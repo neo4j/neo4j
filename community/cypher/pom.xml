@@ -114,6 +114,13 @@
       <artifactId>concurrentlinkedhashmap-lru</artifactId>
       <version>1.3.1</version>
     </dependency>
+
+    <dependency>
+      <groupId>org.neo4j.performance</groupId>
+      <artifactId>performance-framework</artifactId>
+      <version>1.9-SNAPSHOT</version>
+    </dependency>
+
   </dependencies>
   <build>
     <plugins>
