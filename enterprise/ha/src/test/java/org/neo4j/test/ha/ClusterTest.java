@@ -24,17 +24,14 @@ import static org.neo4j.test.ha.ClusterManager.fromXml;
 
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.test.LoggerRule;
+import org.neo4j.test.TargetDirectory;
 
 public class ClusterTest
 {
-    @Rule
-    public TemporaryFolder folder = new TemporaryFolder();
-
     @Rule
     public LoggerRule logging = new LoggerRule();
 
@@ -42,7 +39,7 @@ public class ClusterTest
     public void testCluster() throws Throwable
     {
         ClusterManager clusterManager = new ClusterManager( fromXml( getClass().getResource( "/threeinstances.xml" ).toURI() ),
-                folder.getRoot(), MapUtil.stringMap() );
+                TargetDirectory.forTest( getClass() ).directory( "testCluster", true ), MapUtil.stringMap() );
         clusterManager.start();
         
         GraphDatabaseService master = clusterManager.getDefaultCluster().getMaster();
@@ -60,7 +57,7 @@ public class ClusterTest
     public void given4instanceclusterWhenMasterGoesDownThenElectNewMaster() throws Throwable
     {
         ClusterManager clusterManager = new ClusterManager( fromXml( getClass().getResource( "/fourinstances.xml" ).toURI() ),
-                folder.getRoot(), MapUtil.stringMap() );
+                TargetDirectory.forTest( getClass() ).directory( "4instances", true ), MapUtil.stringMap() );
         clusterManager.start();
 
         logging.getLogger().info( "STOPPING MASTER" );

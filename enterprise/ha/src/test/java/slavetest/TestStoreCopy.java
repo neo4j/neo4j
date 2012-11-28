@@ -26,7 +26,6 @@ import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.graphdb.Node;
@@ -43,7 +42,6 @@ import org.neo4j.test.TargetDirectory;
  * as they are form a complete test, so a test method with an empty
  * body would still perform a valid test.
  */
-@Ignore
 public class TestStoreCopy
 {
 
@@ -79,7 +77,7 @@ public class TestStoreCopy
         master = (HighlyAvailableGraphDatabase) new HighlyAvailableGraphDatabaseFactory().
                 newHighlyAvailableDatabaseBuilder( TargetDirectory.forTest( TestStoreCopy.class ).directory(
                         "master-sandboxed", true ).getAbsolutePath() ).
-                setConfig( ClusterSettings.cluster_server, "localhost" ).
+                setConfig( ClusterSettings.cluster_server, "localhost:5001" ).
                 setConfig( HaSettings.server_id, "1" ).
                 newGraphDatabase();
 
@@ -111,6 +109,7 @@ public class TestStoreCopy
                 setConfig( ClusterSettings.cluster_server, ":5002" ).
                 setConfig( ClusterSettings.cluster_discovery_enabled, "false" ).
                 setConfig( ClusterSettings.initial_hosts, "localhost:5001" ).
+                setConfig( ClusterSettings.allow_init_cluster, "false" ).
                 newGraphDatabase();
     }
 

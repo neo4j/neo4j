@@ -52,6 +52,7 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.LogbackService;
+import org.neo4j.test.TargetDirectory;
 
 /**
  * TODO
@@ -63,7 +64,8 @@ public class MultiPaxosNetworkTest
             throws ExecutionException, InterruptedException, URISyntaxException, BrokenBarrierException
     {
         final LifeSupport life = new LifeSupport();
-        Config config = new Config( MapUtil.stringMap( GraphDatabaseSettings.store_dir.name(), "test" ),
+        Config config = new Config( MapUtil.stringMap( GraphDatabaseSettings.store_dir.name(),
+                TargetDirectory.forTest( getClass() ).directory( "cluster" ).getAbsolutePath() ),
                 GraphDatabaseSettings.class );
 
         final LoggerContext loggerContext = new LoggerContext();

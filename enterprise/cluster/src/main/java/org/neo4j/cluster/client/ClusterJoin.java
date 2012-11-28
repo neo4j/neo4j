@@ -75,9 +75,9 @@ public class ClusterJoin
         boolean isAllowedToCreateCluster();
     }
 
-    private Configuration config;
-    private ProtocolServer protocolServer;
-    private StringLogger logger;
+    private final Configuration config;
+    private final ProtocolServer protocolServer;
+    private final StringLogger logger;
     private URI clustersUri;
     private Clusters clusters;
     private Cluster cluster;
@@ -95,7 +95,6 @@ public class ClusterJoin
     @Override
     public void init() throws Throwable
     {
-        cluster = protocolServer.newClient( Cluster.class );
         builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
         transformer = TransformerFactory.newInstance().newTransformer();
     }
@@ -103,6 +102,8 @@ public class ClusterJoin
     @Override
     public void start() throws Throwable
     {
+        cluster = protocolServer.newClient( Cluster.class );
+
         acquireServerId();
 
         // Now that we have our own id, do cluster join
@@ -346,33 +347,41 @@ public class ClusterJoin
         {
             try
             {
-                for ( HostnamePort host : hosts )
+                while( true )
                 {
-                    if ( serverId.toString().endsWith( host.toString() ) )
+                    for ( HostnamePort host : hosts )
                     {
-                        continue; // Don't try to join myself
+                        if ( serverId.toString().endsWith( host.toString() ) )
+                        {
+                                continue; // Don't try to join myself
+                        }
+
+                        String hostString = resolvePortOnlyHost( host );
+                        logger.info( "Attempting to join " + hostString );
+                        Future<ClusterConfiguration> clusterConfig = cluster.join( new URI( "cluster://" + hostString ) );
+                        try
+                        {
+                            logger.info( "Joined cluster:" + clusterConfig.get() );
+                            return;
+                        }
+                        catch ( InterruptedException e )
+                        {
+                            e.printStackTrace();
+                        }
+                        catch ( ExecutionException e )
+                        {
+                            logger.error( "Could not join cluster member " + hostString );
+                        }
                     }
 
-                    String hostString = resolvePortOnlyHost( host );
-                    logger.info( "Attempting to join " + hostString );
-                    Future<ClusterConfiguration> clusterConfig = cluster.join( new URI( "cluster://" + hostString ) );
-                    try
+                    if ( config.isAllowedToCreateCluster() )
                     {
-                        logger.info( "Joined cluster:" + clusterConfig.get() );
-                        return;
+                        // Failed to join cluster, create new one
+                        cluster.create( config.getClusterName() );
+                        break;
                     }
-                    catch ( InterruptedException e )
-                    {
-                        e.printStackTrace();
-                    }
-                    catch ( ExecutionException e )
-                    {
-                        logger.error( "Could not join cluster member " + hostString );
-                    }
+                    // else retry the list from the top
                 }
-
-                // Failed to join cluster, create new one
-                cluster.create( config.getClusterName() );
             }
             catch ( URISyntaxException e )
             {

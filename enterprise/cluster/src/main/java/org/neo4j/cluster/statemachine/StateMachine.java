@@ -100,7 +100,6 @@ public class StateMachine
                     e.printStackTrace();
                 }
             }
-
         }
         catch ( Throwable throwable )
         {

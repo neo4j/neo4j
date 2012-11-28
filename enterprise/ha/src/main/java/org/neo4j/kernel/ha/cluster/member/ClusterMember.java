@@ -114,12 +114,12 @@ public class ClusterMember
         return new ClusterMember( this.clusterUri, MapUtil.copyAndRemove( roles, role ), this.alive );
     }
 
-    ClusterMember alive(  )
+    ClusterMember alive()
     {
         return new ClusterMember( this.clusterUri, roles, true );
     }
 
-    ClusterMember failed(  )
+    ClusterMember failed()
     {
         return new ClusterMember( this.clusterUri, roles, false );
     }
