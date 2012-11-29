@@ -17,26 +17,15 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.management;
+package org.neo4j.kernel.ha;
 
-public class ClusterDatabaseInfo extends ClusterMemberInfo
+public class LastUpdateTime
 {
-    private final long lastCommittedTxId;
-    private final long lastUpdateTime;
-    private final int serverId;
+    private long lastUpdateTime;
 
-    public ClusterDatabaseInfo( ClusterMemberInfo memberInfo, long lastCommittedTxId, long lastUpdateTime, int serverId )
+    public LastUpdateTime()
     {
-        super( memberInfo.getClusterId(), memberInfo.isAvailable(), memberInfo.isAlive(), memberInfo.getHaRole(),
-                memberInfo.getUris(), memberInfo.getRoles() );
-        this.lastCommittedTxId = lastCommittedTxId;
-        this.lastUpdateTime = lastUpdateTime;
-        this.serverId = serverId;
-    }
-
-    public long getLastCommittedTxId()
-    {
-        return lastCommittedTxId;
+        lastUpdateTime = 0;
     }
 
     public long getLastUpdateTime()
@@ -44,8 +33,8 @@ public class ClusterDatabaseInfo extends ClusterMemberInfo
         return lastUpdateTime;
     }
 
-    public int getServerId()
+    public void setLastUpdateTime( long lastUpdateTime )
     {
-        return serverId;
+        this.lastUpdateTime = lastUpdateTime;
     }
 }

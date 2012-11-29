@@ -81,6 +81,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     private InstanceAccessGuard accessGuard;
     private HighAvailabilityMemberStateMachine memberStateMachine;
     private UpdatePuller updatePuller;
+    private LastUpdateTime lastUpdateTime;
     private HighAvailabilityMemberContext memberContext;
     private ClusterClient clusterClient;
     private ClusterMemberEvents clusterEvents;
@@ -112,7 +113,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         kernelEventHandlers.registerKernelEventHandler( new TxManagerCheckKernelEventHandler( xaDataSourceManager,
                 (TxManager) txManager ) );
         life.add( updatePuller = new UpdatePuller( (HaXaDataSourceManager) xaDataSourceManager, master,
-                requestContextFactory, txManager, accessGuard, config, msgLog ) );
+                requestContextFactory, txManager, accessGuard, lastUpdateTime, config, msgLog ) );
 
         life.add( new StartupWaiter() );
 
@@ -266,8 +267,10 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     @Override
     protected KernelData createKernelData()
     {
+        this.lastUpdateTime = new LastUpdateTime();
         return new HighlyAvailableKernelData( this, members,
-                new ClusterDatabaseInfoProvider( members ) );
+                new ClusterDatabaseInfoProvider( members, new OnDiskLastTxIdGetter( new File( getStoreDir() ) ),
+                        lastUpdateTime ) );
     }
 
     @Override
@@ -347,12 +350,6 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     public String getInstanceState()
     {
         return memberStateMachine.getCurrentState().name();
-    }
-
-    public long lastUpdateTime()
-    {
-        //TODO implement this as a transaction interceptor
-        return 0;
     }
 
     public boolean isMaster()

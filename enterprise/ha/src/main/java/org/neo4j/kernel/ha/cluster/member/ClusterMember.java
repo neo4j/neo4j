@@ -59,39 +59,52 @@ public class ClusterMember
     {
         URI haURI = getHAUri();
 
-        if (haURI != null)
+        if ( haURI != null )
         {
             // Get serverId parameter, default to -1 if it is missing, and parse to integer
             return INTEGER.apply( withDefaults( Functions.<URI, String>constant( "-1" ), parameter( "serverId" ) ).apply( haURI ));
         } else
+        {
             return -1;
+        }
     }
 
     public URI getHAUri()
     {
         URI haURI = roles.get( HighAvailabilityModeSwitcher.MASTER );
-        if (haURI == null)
+        if ( haURI == null )
+        {
             haURI = roles.get( HighAvailabilityModeSwitcher.SLAVE );
-
+        }
         return haURI;
     }
 
     public String getHARole()
     {
-        if (roles.containsKey( HighAvailabilityModeSwitcher.MASTER ))
+        if ( roles.containsKey( HighAvailabilityModeSwitcher.MASTER ) )
+        {
             return HighAvailabilityModeSwitcher.MASTER;
-        if (roles.containsKey( HighAvailabilityModeSwitcher.SLAVE ))
+        }
+        if ( roles.containsKey( HighAvailabilityModeSwitcher.SLAVE ) )
+        {
             return HighAvailabilityModeSwitcher.SLAVE;
+        }
         return "UNKNOWN";
     }
 
-    public boolean hasRole(String role)
+    public boolean hasRole( String role )
     {
         return roles.containsKey( role );
     }
-    public URI getRoleURI(String role)
+
+    public URI getRoleURI( String role )
     {
         return roles.get( role );
+    }
+
+    public Iterable<String> getRoles()
+    {
+        return roles.keySet();
     }
 
     public Iterable<URI> getRoleURIs()
