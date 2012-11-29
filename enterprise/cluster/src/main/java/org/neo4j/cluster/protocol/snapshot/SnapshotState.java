@@ -24,6 +24,7 @@ import java.net.URI;
 
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageProcessor;
+import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.statemachine.State;
 
 /**
@@ -59,16 +60,21 @@ public enum SnapshotState
 
                         case join:
                         {
-                            if ( context.getClusterContext().isMe( context.getClusterContext().getConfiguration()
-                                    .getMembers().get( 0 ) ) || context.getSnapshotProvider() == null )
+                            if ( context.getClusterContext().getConfiguration().getMembers().size() <= 1 || context.getSnapshotProvider() == null )
                             {
                                 return ready;
                             }
                             else
                             {
-                                URI coordinator = context.getClusterContext().getConfiguration().getMembers().get( 0 );
-                                outgoing.process( Message.to( SnapshotMessage.sendSnapshot, coordinator ) );
-                                return refreshing;
+                                URI coordinator = context.getClusterContext().getConfiguration().getElected(ClusterConfiguration.COORDINATOR );
+                                if (coordinator != null)
+                                {
+                                    outgoing.process( Message.to( SnapshotMessage.sendSnapshot, coordinator ) );
+                                    return refreshing;
+                                } else
+                                {
+                                    return ready;
+                                }
                             }
                         }
                     }

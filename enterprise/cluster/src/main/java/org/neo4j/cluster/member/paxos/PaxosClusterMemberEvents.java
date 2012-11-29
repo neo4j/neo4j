@@ -220,8 +220,6 @@ public class PaxosClusterMemberEvents implements ClusterMemberEvents, Lifecycle
         @Override
         public void enteredCluster( ClusterConfiguration clusterConfiguration )
         {
-            snapshot.refreshSnapshot();
-
             // Catch up with elections
             for ( Map.Entry<String, URI> memberRoles : clusterConfiguration.getRoles().entrySet() )
             {
