@@ -286,7 +286,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                 if ( event.getOldState().equals( HighAvailabilityMemberState.TO_MASTER ) && event.getNewState().equals(
                         HighAvailabilityMemberState.MASTER ) )
                 {
-                    doRecovery();
+                    doAfterRecoveryAndStartup();
                 }
             }
 
@@ -296,7 +296,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                 if ( event.getOldState().equals( HighAvailabilityMemberState.TO_SLAVE ) && event.getNewState().equals(
                         HighAvailabilityMemberState.SLAVE ) )
                 {
-                    doRecovery();
+                    doAfterRecoveryAndStartup();
                 }
             }
 
@@ -305,7 +305,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
             {
             }
 
-            private void doRecovery()
+            private void doAfterRecoveryAndStartup()
             {
                 try
                 {
