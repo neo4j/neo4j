@@ -34,18 +34,23 @@ import org.neo4j.performance.domain.benchmark.concurrent.SimpleBenchmarkWorker;
 import org.neo4j.performance.domain.benchmark.concurrent.WorkerMetric;
 
 /**
- * This is just to show how you would add a main method to run your benchmark stand-alone.
+ * A set of example benchmarks. Any class that implements the Benchmark interface will
+ * get picked up by the dashboard, where regression tracking and run history is kept.
  */
 public class Examples
 {
 
     /**
      * Dead-simple operations/second test. The {@link SimpleBenchmark} expects
-     * you to implement a method that loops over and executes the operation you are benchmarking
-     * a number of times, enough for you to feel that you should get meningful results.
+     * you to implement a method that executes the operation you want to benchmark.
      *
-     * The parent class then takes care of timing and figuring out how many operations per second
-     * where executed.
+     * The parent class then takes care of iterating over that operation, timing it
+     * and figuring out how many operations per second where executed.
+     *
+     * Right now, the number of iterations is hard coded, and you can override it by
+     * passing a parameter to the parent constructor. Later on, the idea is that simple
+     * benchmark will be smarter, running the operation until the standard deviation is within
+     * some reasonable limit.
      */
     public static class Simple extends SimpleBenchmark
     {
@@ -53,28 +58,23 @@ public class Examples
         // setUp and tearDown are available for override if you want to do those things outside
         // of your benchmark code.
 
-        // Simplebenchmark will run your operation an unspecified number of times by default
-        // (intentially vague in order to allow it to be clever in the future, running long enough
-        // for a value to stabilize, for instance).
-        // However, you can override it and explicitly set the number of times to run the operation
-        // by calling the parent constructor.
-
         @Override
         public void runOperation()
         {
             int a = 10000 * 10000;
         }
 
+        // A simple main method, to allow you to run this test locally while debugging or
+        // doing performance improvements.
         public static void main(String ... args) throws IOException
         {
             PerformanceProfiler.runAndDumpReport( new Simple() );
         }
     }
 
-    /**
-     * If you want to report more than just a basic operations-per-second, you can use
-     * a {@link BenchmarkAdapter} extending class to write a more complex benchmark.
-     */
+    // If you want to report more than just a basic operations-per-second, you can use
+    // a {@link BenchmarkAdapter} extending class to write a more complex benchmark.
+
     public static class StandardBenchmark extends BenchmarkAdapter
     {
 
@@ -93,13 +93,23 @@ public class Examples
                     new BenchmarkResult.Metric( "total time", 10253.0, MILLISECOND )
             );
         }
+
+        // Main method to run locally
+
+        public static void main(String ... args) throws IOException
+        {
+            PerformanceProfiler.runAndDumpReport( new Simple() );
+        }
     }
+
+    // An example concurrent benchmark
 
     public static class SimpleConcurrent extends ConcurrentBenchmark
     {
 
         public SimpleConcurrent()
         {
+            // Specify the number of concurrent workers we want
             super( 10 );
         }
 
@@ -109,7 +119,7 @@ public class Examples
             return new SimpleBenchmarkWorker()
             {
                 // You can call the parent constructor here to hard-code how many times the operation
-                // should be invoked.
+                // should be invoked, just like with the Simple benchmark
 
                 @Override
                 public void runOperation()
@@ -119,17 +129,18 @@ public class Examples
             };
         }
 
+        // And a main method again
+
         public static void main(String ... args) throws IOException
         {
             PerformanceProfiler.runAndDumpReport( new SimpleConcurrent() );
         }
     }
 
-    /**
-     * This shows how you would write a test that tests concurrent load, where we use the raw BenchmarkWorker
-     * interface, rather than the SimpleBenchmarkWorker. This gives us the power to define custom metrics, but
-     * it means we need to write our own timing code.
-     */
+    // This shows how you would write a test that tests concurrent load, where we use the raw BenchmarkWorker
+    // interface, rather than the SimpleBenchmarkWorker. This gives us the power to define custom metrics, but
+    // it means we need to write our own timing code.
+
     public static class ConcurrentWithMainMethod extends ConcurrentBenchmark
     {
 
@@ -137,6 +148,7 @@ public class Examples
 
         public ConcurrentWithMainMethod( )
         {
+            // Number of concurrent workers
             super( 10 );
         }
 
@@ -177,6 +189,8 @@ public class Examples
                 }
             };
         }
+
+        // And, main method again
 
         public static void main(String ... args) throws IOException
         {
