@@ -102,35 +102,38 @@ public class PaxosClusterMemberEvents implements ClusterMemberEvents, Lifecycle
         atomicBroadcast.addAtomicBroadcastListener( atomicBroadcastListener );
 
         snapshot.setSnapshotProvider( new HighAvailabilitySnapshotProvider() );
+
+        executor = Executors.newSingleThreadExecutor();
     }
 
     @Override
     public void start()
             throws Throwable
     {
-        executor = Executors.newSingleThreadExecutor();
     }
 
     @Override
     public void stop()
             throws Throwable
     {
-        if ( executor != null )
-        {
-            executor.shutdown();
-            executor = null;
-        }
+
     }
 
     @Override
     public void shutdown()
             throws Throwable
     {
+        snapshot.setSnapshotProvider( null );
+
+        if ( executor != null )
+        {
+            executor.shutdown();
+            executor = null;
+        }
+
         cluster.removeClusterListener( clusterListener );
 
         atomicBroadcast.removeAtomicBroadcastListener( atomicBroadcastListener );
-
-        snapshot.setSnapshotProvider( null );
     }
 
     private class HighAvailabilitySnapshotProvider implements SnapshotProvider
