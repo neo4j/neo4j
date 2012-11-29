@@ -51,6 +51,7 @@ import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.BufferedFileChannel;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.logging.Logging;
 
 /**
  * <CODE>XaLogicalLog</CODE> is a transaction and logical log combined. In
@@ -113,7 +114,7 @@ public class XaLogicalLog implements LogLoader
 
     public XaLogicalLog( File fileName, XaResourceManager xaRm, XaCommandFactory cf,
                          XaTransactionFactory xaTf, LogBufferFactory logBufferFactory, FileSystemAbstraction fileSystem,
-                         StringLogger stringLogger, LogPruneStrategy pruneStrategy, TransactionStateFactory stateFactory )
+                         Logging logging, LogPruneStrategy pruneStrategy, TransactionStateFactory stateFactory )
     {
         this.fileName = fileName;
         this.xaRm = xaRm;
@@ -127,7 +128,7 @@ public class XaLogicalLog implements LogLoader
 
         sharedBuffer = ByteBuffer.allocateDirect( 9 + Xid.MAXGTRIDSIZE
                 + Xid.MAXBQUALSIZE * 10 );
-        msgLog = stringLogger;
+        msgLog = logging.getLogger( getClass() );
 
         this.partialTransactionCopier = new PartialTransactionCopier( sharedBuffer, cf, msgLog, positionCache, this, xidIdentMap );
     }

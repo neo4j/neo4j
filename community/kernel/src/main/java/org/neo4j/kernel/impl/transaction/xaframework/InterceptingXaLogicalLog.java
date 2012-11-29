@@ -27,7 +27,7 @@ import org.neo4j.kernel.TransactionInterceptorProviders;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.xa.Command;
 import org.neo4j.kernel.impl.transaction.TransactionStateFactory;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.logging.Logging;
 
 public class InterceptingXaLogicalLog extends XaLogicalLog
 {
@@ -37,10 +37,10 @@ public class InterceptingXaLogicalLog extends XaLogicalLog
     public InterceptingXaLogicalLog( File fileName, XaResourceManager xaRm,
             XaCommandFactory cf, XaTransactionFactory xaTf,
             TransactionInterceptorProviders providers, LogBufferFactory logBufferFactory,
-            FileSystemAbstraction fileSystem, StringLogger stringLogger,
+            FileSystemAbstraction fileSystem, Logging logging,
             LogPruneStrategy pruneStrategy, TransactionStateFactory stateFactory )
     {
-        super( fileName, xaRm, cf, xaTf, logBufferFactory, fileSystem, stringLogger, pruneStrategy, stateFactory );
+        super( fileName, xaRm, cf, xaTf, logBufferFactory, fileSystem, logging, pruneStrategy, stateFactory );
         this.providers = providers;
         this.ds = xaRm.getDataSource();
     }

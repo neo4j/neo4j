@@ -444,7 +444,7 @@ public abstract class InternalAbstractGraphDatabase
         storeFactory = createStoreFactory();
         String keepLogicalLogsConfig = config.get( GraphDatabaseSettings.keep_logical_logs );
         xaFactory = new XaFactory( config, txIdGenerator, txManager, logBufferFactory, fileSystem,
-                logging.getLogger( XaFactory.class ), recoveryVerifier, LogPruneStrategies.fromConfigValue(
+                logging, recoveryVerifier, LogPruneStrategies.fromConfigValue(
                 fileSystem, keepLogicalLogsConfig ) );
 
         createNeoDataSource();

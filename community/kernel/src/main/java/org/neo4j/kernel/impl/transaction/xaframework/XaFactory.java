@@ -27,7 +27,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.transaction.TransactionStateFactory;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.logging.Logging;
 
 /**
 * TODO
@@ -35,24 +35,24 @@ import org.neo4j.kernel.impl.util.StringLogger;
 public class XaFactory
 {
     private final Config config;
-    private TxIdGenerator txIdGenerator;
-    private AbstractTransactionManager txManager;
-    private LogBufferFactory logBufferFactory;
-    private FileSystemAbstraction fileSystemAbstraction;
-    private StringLogger stringLogger;
+    private final TxIdGenerator txIdGenerator;
+    private final AbstractTransactionManager txManager;
+    private final LogBufferFactory logBufferFactory;
+    private final FileSystemAbstraction fileSystemAbstraction;
+    private final Logging logging;
     private final RecoveryVerifier recoveryVerifier;
     private final LogPruneStrategy pruneStrategy;
 
     public XaFactory(Config config, TxIdGenerator txIdGenerator, AbstractTransactionManager txManager,
             LogBufferFactory logBufferFactory, FileSystemAbstraction fileSystemAbstraction,
-            StringLogger stringLogger, RecoveryVerifier recoveryVerifier, LogPruneStrategy pruneStrategy )
+            Logging logging, RecoveryVerifier recoveryVerifier, LogPruneStrategy pruneStrategy )
     {
         this.config = config;
         this.txIdGenerator = txIdGenerator;
         this.txManager = txManager;
         this.logBufferFactory = logBufferFactory;
         this.fileSystemAbstraction = fileSystemAbstraction;
-        this.stringLogger = stringLogger;
+        this.logging = logging;
         this.recoveryVerifier = recoveryVerifier;
         this.pruneStrategy = pruneStrategy;
     }
@@ -74,11 +74,11 @@ public class XaFactory
         if ( providers.shouldInterceptDeserialized() && providers.hasAnyInterceptorConfigured() )
         {
             log = new InterceptingXaLogicalLog( logicalLog, rm, cf, tf, providers, logBufferFactory,
-                    fileSystemAbstraction, stringLogger, pruneStrategy, stateFactory );
+                    fileSystemAbstraction, logging, pruneStrategy, stateFactory );
         }
         else
         {
-            log = new XaLogicalLog( logicalLog, rm, cf, tf, logBufferFactory, fileSystemAbstraction, stringLogger, pruneStrategy, stateFactory );
+            log = new XaLogicalLog( logicalLog, rm, cf, tf, logBufferFactory, fileSystemAbstraction, logging, pruneStrategy, stateFactory );
         }
 
         // TODO These setters should be removed somehow

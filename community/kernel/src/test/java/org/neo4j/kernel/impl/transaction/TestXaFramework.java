@@ -71,7 +71,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaResourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.XaTransaction;
 import org.neo4j.kernel.impl.transaction.xaframework.XaTransactionFactory;
 import org.neo4j.kernel.impl.util.FileUtils;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.logging.DevNullLoggingService;
 
 public class TestXaFramework extends AbstractNeo4jTestCase
 {
@@ -392,7 +392,7 @@ public class TestXaFramework extends AbstractNeo4jTestCase
                 config, UTF8.encode( "DDDDDD" ), "dummy_datasource",
                 new XaFactory( new Config( config, GraphDatabaseSettings.class ),
                         TxIdGenerator.DEFAULT, new PlaceboTm(), new DefaultLogBufferFactory(),
-                        fileSystem, StringLogger.DEV_NULL,
+                        fileSystem, new DevNullLoggingService(),
                         RecoveryVerifier.ALWAYS_VALID, LogPruneStrategies.NO_PRUNING ) ) );
         XaDataSource xaDs = xaDsMgr.getXaDataSource( "dummy_datasource" );
         DummyXaConnection xaC = null;
@@ -458,7 +458,7 @@ public class TestXaFramework extends AbstractNeo4jTestCase
             FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
             xaDsMgr.registerDataSource( new DummyXaDataSource( config, UTF8.encode( "DDDDDD" ), "dummy_datasource1",
                     new XaFactory( new Config( config, GraphDatabaseSettings.class ), TxIdGenerator.DEFAULT,
-                            new PlaceboTm(), new DefaultLogBufferFactory(), fileSystem, StringLogger.DEV_NULL,
+                            new PlaceboTm(), new DefaultLogBufferFactory(), fileSystem, new DevNullLoggingService(),
                             RecoveryVerifier.ALWAYS_VALID, LogPruneStrategies.NO_PRUNING ) ) );
             xaDs1 = (DummyXaDataSource) xaDsMgr
                     .getXaDataSource( "dummy_datasource1" );
