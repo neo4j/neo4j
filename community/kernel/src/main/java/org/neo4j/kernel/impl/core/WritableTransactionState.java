@@ -400,6 +400,8 @@ public class WritableTransactionState implements TransactionState
                 throw new RuntimeException( e );
             }
             
+            Collection<LockElement> releaseFailures = null;
+            Exception releaseException = null;
             for ( LockElement lockElement : lockElements )
             {
                 try
@@ -408,9 +410,16 @@ public class WritableTransactionState implements TransactionState
                 }
                 catch ( Exception e )
                 {
-                    log.log( Level.SEVERE, "Unable to release lock[" + lockElement.lockType + "] on resource["
-                            + lockElement.resource + "]", e );
+                    releaseException = e;
+                    if ( releaseFailures == null )
+                        releaseFailures = new ArrayList<LockElement>();
+                    releaseFailures.add( lockElement );
                 }
+            }
+            
+            if ( releaseException != null )
+            {
+                log.log( Level.SEVERE, "Unable to release locks: " + releaseFailures + ". Example of exception:" + releaseException );
             }
         }
     }
