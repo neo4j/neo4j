@@ -244,8 +244,11 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
 //        log.logMessage( "Active txlog set to " + newFileName, true );
     }
 
-    void setTmNotOk( Throwable cause )
+    synchronized void setTmNotOk( Throwable cause )
     {
+        if ( !tmOk )
+            return;
+        
         tmOk = false;
         log.logMessage( "setting TM not OK", cause );
         kpe.generateEvent( ErrorState.TX_MANAGER_NOT_OK );

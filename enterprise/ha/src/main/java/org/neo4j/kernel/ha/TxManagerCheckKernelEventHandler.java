@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.ha;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.neo4j.graphdb.event.ErrorState;
 import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.kernel.impl.transaction.TxManager;
@@ -26,9 +28,9 @@ import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 
 public class TxManagerCheckKernelEventHandler implements KernelEventHandler
 {
-
     private final XaDataSourceManager dataSourceManager;
     private final TxManager txManager;
+    private final AtomicInteger epoch = new AtomicInteger();
 
     public TxManagerCheckKernelEventHandler( XaDataSourceManager dataSourceManager, TxManager txManager )
     {
@@ -48,14 +50,18 @@ public class TxManagerCheckKernelEventHandler implements KernelEventHandler
         {
             try
             {
+                int myEpoch = epoch.get();
                 synchronized ( dataSourceManager )
                 {
+                    if ( myEpoch != epoch.get() )
+                        return;
+                    
                     txManager.stop();
                     dataSourceManager.stop();
                     dataSourceManager.start();
                     txManager.start();
                     txManager.doRecovery();
-
+                    epoch.incrementAndGet();
                 }
             }
             catch (Throwable t)
