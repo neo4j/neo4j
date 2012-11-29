@@ -65,6 +65,7 @@ import org.neo4j.helpers.Listeners;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.kernel.logging.Logging;
 
 /**
  * TCP version of a Networked Instance. This handles receiving messages to be consumed by local statemachines and
@@ -109,10 +110,10 @@ public class NetworkInstance
     private Map<URI, Channel> connections = new ConcurrentHashMap<URI, Channel>();
     private Iterable<NetworkChannelsListener> listeners = Listeners.newListeners();
 
-    public NetworkInstance( Configuration config, StringLogger logger )
+    public NetworkInstance( Configuration config, Logging logging )
     {
         this.config = config;
-        this.msgLog = logger;
+        this.msgLog = logging.getLogger( getClass() );
     }
 
     @Override

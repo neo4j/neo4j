@@ -28,10 +28,10 @@ import org.neo4j.cluster.com.NetworkInstance;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.kernel.logging.DevNullLoggingService;
 
 /**
  * TODO
@@ -92,7 +92,7 @@ public class NetworkSendReceiveTest
                 {
                     return conf.get( ClusterSettings.cluster_server );
                 }
-            }, StringLogger.SYSTEM );
+            }, new DevNullLoggingService() );
 
             life.add( node );
             life.add( new LifecycleAdapter()

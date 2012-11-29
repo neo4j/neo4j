@@ -61,7 +61,6 @@ import org.neo4j.cluster.timeout.Timeouts;
 import org.neo4j.helpers.DaemonThreadFactory;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -261,7 +260,7 @@ public class ClusterClient extends LifecycleAdapter
             {
                 return config.getAddress();
             }
-        }, StringLogger.SYSTEM );
+        }, logging );
 
         server = protocolServerFactory.newProtocolServer( timeoutStrategy, networkNodeTCP, networkNodeTCP,
                 acceptorInstanceStore, electionCredentialsProvider );
