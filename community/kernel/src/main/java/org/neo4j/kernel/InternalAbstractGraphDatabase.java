@@ -270,13 +270,13 @@ public abstract class InternalAbstractGraphDatabase
                 if ( instance instanceof KernelExtensions && to.equals( LifecycleStatus.STARTED ) && txManager
                         instanceof TxManager )
                 {
-                    InternalAbstractGraphDatabase.this.doRecovery();
+                    InternalAbstractGraphDatabase.this.doAfterRecoveryAndStartup();
                 }
             }
         } );
     }
 
-    protected void doRecovery()
+    protected void doAfterRecoveryAndStartup()
     {
         NeoStoreXaDataSource neoStoreDataSource = xaDataSourceManager.getNeoStoreDataSource();
         storeId = neoStoreDataSource.getStoreId();

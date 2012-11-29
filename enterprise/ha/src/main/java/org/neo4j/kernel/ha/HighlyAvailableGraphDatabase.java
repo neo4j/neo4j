@@ -311,7 +311,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                 {
                     synchronized ( xaDataSourceManager )
                     {
-                        HighlyAvailableGraphDatabase.this.doRecovery();
+                        HighlyAvailableGraphDatabase.this.doAfterRecoveryAndStartup();
                     }
                 }
                 catch ( Throwable throwable )
