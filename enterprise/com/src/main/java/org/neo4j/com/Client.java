@@ -77,8 +77,7 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
     private ResourcePool<Triplet<Channel, ChannelBuffer, ByteBuffer>> channelPool;
     private final int frameLength;
     private final long readTimeout;
-    private final int maxConcurrentChannels;
-    private final int maxUnusedPoolSize;
+    private final int maxUnusedChannels;
     private final byte applicationProtocolVersion;
     private final StoreId storeId;
     private ResourceReleaser resourcePoolReleaser;
@@ -98,8 +97,8 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
         this.frameLength = frameLength;
         this.applicationProtocolVersion = applicationProtocolVersion;
         this.readTimeout = readTimeout;
-        this.maxConcurrentChannels = maxConcurrentChannels;
-        this.maxUnusedPoolSize = maxUnusedPoolSize;
+        // ResourcePool no longer controls max concurrent channels. Use this value for the pool size
+        this.maxUnusedChannels = maxConcurrentChannels;
         this.chunkSize = chunkSize;
         this.mismatchingVersionHandlers = new ArrayList<MismatchingVersionHandler>( 2 );
         address = new InetSocketAddress( hostNameOrIp, port );
@@ -113,8 +112,7 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
         executor = Executors.newCachedThreadPool( new NamedThreadFactory( getClass().getSimpleName() + "@" + address ) );
         bootstrap = new ClientBootstrap( new NioClientSocketChannelFactory( executor, executor ) );
         bootstrap.setPipelineFactory( this );
-        channelPool = new ResourcePool<Triplet<Channel, ChannelBuffer, ByteBuffer>>(
-                maxConcurrentChannels, maxUnusedPoolSize )
+        channelPool = new ResourcePool<Triplet<Channel, ChannelBuffer, ByteBuffer>>( maxUnusedChannels )
         {
             @Override
             protected Triplet<Channel, ChannelBuffer, ByteBuffer> create()

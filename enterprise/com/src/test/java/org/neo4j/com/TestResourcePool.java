@@ -29,7 +29,7 @@ public class TestResourcePool
     @Test
     public void dontReuseBrokenInstances() throws Exception
     {
-        ResourcePool<Something> pool = new ResourcePool<Something>( 10, 5 )
+        ResourcePool<Something> pool = new ResourcePool<Something>( 5 )
         {
             @Override
             protected Something create()
