@@ -28,6 +28,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.TreeMap;
+
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -267,13 +268,13 @@ public class DbRepresentation implements Serializable
     private static class PropertiesRep implements Serializable
     {
         private final Map<String, Serializable> props = new HashMap<String, Serializable>();
-        private final PropertyContainer entity;
+        private final String entityToString;
         private final long entityId;
 
         PropertiesRep( PropertyContainer entity, long id )
         {
             this.entityId = id;
-            this.entity = entity;
+            this.entityToString = entity.toString();
             for ( String key : entity.getPropertyKeys() )
             {
                 Serializable value = (Serializable) entity.getProperty( key, null );
@@ -296,7 +297,7 @@ public class DbRepresentation implements Serializable
         {
             boolean equals = props.equals( other.props );
             if ( !equals )
-                diff.add( "Properties diff for " + entity + " mine:" + props + ", other:" + other.props );
+                diff.add( "Properties diff for " + entityToString + " mine:" + props + ", other:" + other.props );
             return equals;
         }
 
