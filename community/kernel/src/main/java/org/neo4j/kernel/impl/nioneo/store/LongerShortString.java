@@ -427,6 +427,69 @@ public enum LongerShortString
                 throw cannotEncode( b );
             }
         }
+    },
+    // ENCODING_LATIN1 is 10th
+    /**
+     * Lower-case characters a-f and digits.
+     *
+     * <pre>
+     *    -0 -1 -2 -3 -4 -5 -6 -7 -8 -9 -A -B -C -D -E -F
+     * 0-  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f
+     * </pre>
+     */
+    LOWERHEX( 11, 4 )
+    {
+        @Override
+        int encTranslate( byte b ) 
+        {
+            if ( b >= '0' && b <= '9' ) return b - '0';
+            if ( b >= 'a' && b <= 'f' ) return b - 'a' + 10;
+            throw cannotEncode( b );
+        }
+        
+        @Override
+        int encPunctuation( byte b ) 
+        {
+            throw cannotEncode( b );
+        }
+        
+        @Override
+        char decTranslate( byte codePoint )
+        {
+            if ( codePoint < 10 ) return (char) ( codePoint + '0' );
+            return (char) ( codePoint + 'a' - 10 );
+        }
+    },
+    /**
+     * Upper-case characters A-F and digits.
+     *
+     * <pre>
+     *    -0 -1 -2 -3 -4 -5 -6 -7 -8 -9 -A -B -C -D -E -F
+     * 0-  0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
+     * </pre>
+     */
+    UPPERHEX( 12, 4 )
+    {
+        @Override
+        int encTranslate( byte b ) 
+        {
+            if ( b >= '0' && b <= '9' ) return b - '0';
+            if ( b >= 'A' && b <= 'F' ) return b - 'A' + 10;
+            throw cannotEncode( b );
+        }
+        
+        @Override
+        int encPunctuation( byte b ) 
+        {
+            throw cannotEncode( b );
+        }
+        
+        @Override
+        char decTranslate( byte codePoint )
+        {
+            if ( codePoint < 10 ) return (char) ( codePoint + '0' );
+            return (char) ( codePoint + 'A' - 10 );
+        }
     };
     public static final int REMOVE_LARGE_ENCODINGS_MASK = invertedBitMask( ALPHANUM, ALPHASYM, URI, EUROPEAN );
     public static final LongerShortString[] ENCODINGS = values();
@@ -597,18 +660,18 @@ public enum LongerShortString
     {
         Arrays.fill( TRANSLATION, (byte) 0xFF );
         Arrays.fill( REMOVE_MASK, invertedBitMask( ENCODINGS ) );
-        setUp( ' ', 0, EMAIL );
-        setUp( '_', 1, NUMERICAL, DATE );
-        setUp( '.', 2, DATE, ALPHANUM );
-        setUp( '-', 3, ALPHANUM );
-        setUp( ':', 4, ALPHANUM, NUMERICAL, EUROPEAN, EMAIL );
-        setUp( '/', 5, ALPHANUM, NUMERICAL, EUROPEAN, EMAIL );
-        setUp( '+', 6, UPPER, LOWER, ALPHANUM, EUROPEAN );
-        setUp( ',', 7, UPPER, LOWER, ALPHANUM, EUROPEAN );
-        setUp( '\'', 8, DATE, UPPER, LOWER, EMAIL, ALPHANUM, EUROPEAN );
-        setUp( '@', 9, NUMERICAL, DATE, UPPER, LOWER, ALPHANUM, EUROPEAN );
-        setUp( '|', 0xA, NUMERICAL, DATE, UPPER, LOWER, EMAIL, URI, ALPHANUM, EUROPEAN );
-        final LongerShortString[] retainUri = {NUMERICAL, DATE, UPPER, LOWER, EMAIL, ALPHANUM, ALPHASYM, EUROPEAN};
+        setUp( ' ', 0, EMAIL, LOWERHEX, UPPERHEX );
+        setUp( '_', 1, NUMERICAL, DATE, LOWERHEX, UPPERHEX );
+        setUp( '.', 2, DATE, ALPHANUM, LOWERHEX, UPPERHEX );
+        setUp( '-', 3, ALPHANUM, LOWERHEX, UPPERHEX );
+        setUp( ':', 4, ALPHANUM, NUMERICAL, EUROPEAN, EMAIL, LOWERHEX, UPPERHEX );
+        setUp( '/', 5, ALPHANUM, NUMERICAL, EUROPEAN, EMAIL, LOWERHEX, UPPERHEX );
+        setUp( '+', 6, UPPER, LOWER, ALPHANUM, EUROPEAN, LOWERHEX, UPPERHEX );
+        setUp( ',', 7, UPPER, LOWER, ALPHANUM, EUROPEAN, LOWERHEX, UPPERHEX );
+        setUp( '\'', 8, DATE, UPPER, LOWER, EMAIL, ALPHANUM, EUROPEAN, LOWERHEX, UPPERHEX );
+        setUp( '@', 9, NUMERICAL, DATE, UPPER, LOWER, ALPHANUM, EUROPEAN, LOWERHEX, UPPERHEX );
+        setUp( '|', 0xA, NUMERICAL, DATE, UPPER, LOWER, EMAIL, URI, ALPHANUM, EUROPEAN, LOWERHEX, UPPERHEX );
+        final LongerShortString[] retainUri = {NUMERICAL, DATE, UPPER, LOWER, EMAIL, ALPHANUM, ALPHASYM, EUROPEAN, LOWERHEX, UPPERHEX};
         setUp( ';', 0xB, retainUri );
         setUp( '*', 0xC, retainUri );
         setUp( '?', 0xD, retainUri );
@@ -623,11 +686,11 @@ public enum LongerShortString
         setUp( '=', 0x16, retainUri );
         for ( char c = 'A'; c <= 'Z'; c++ )
         {
-            setUp( c, (byte) c, NUMERICAL, DATE, LOWER, EMAIL, URI );
+            setUp( c, (byte) c, NUMERICAL, DATE, LOWER, EMAIL, URI, LOWERHEX );
         }
         for ( char c = 'a'; c <= 'z'; c++ )
         {
-            setUp( c, (byte) c, NUMERICAL, DATE, UPPER );
+            setUp( c, (byte) c, NUMERICAL, DATE, UPPER, UPPERHEX );
         }
         for ( char c = '0'; c <= '9'; c++ )
         {
@@ -637,7 +700,7 @@ public enum LongerShortString
         {
             if ( c != 0xD7 && c != 0xF7 )
             {
-                setUp( c, (byte) c, NUMERICAL, DATE, UPPER, LOWER, EMAIL, URI, ALPHANUM, ALPHASYM );
+                setUp( c, (byte) c, NUMERICAL, DATE, UPPER, LOWER, EMAIL, URI, ALPHANUM, ALPHASYM, LOWERHEX, UPPERHEX );
             }
         }
     }
@@ -716,7 +779,8 @@ public enum LongerShortString
     }
 
     // lookup table by encoding header
-    private final static LongerShortString[] ENCODINGS_BY_ENCODING = new LongerShortString[ENCODING_COUNT + 1];
+    // +2 because of ENCODING_LATIN1 gap and one based index
+    private final static LongerShortString[] ENCODINGS_BY_ENCODING = new LongerShortString[ENCODING_COUNT + 2];
 
     static
     {
