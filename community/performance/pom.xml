@@ -16,8 +16,8 @@
   <version>1.9-SNAPSHOT</version>
 
   <modules>
-    <module>allocation-tracker</module>
     <module>performance-framework</module>
+    <module>performance-dashboard</module>
   </modules>
 
 	<build>

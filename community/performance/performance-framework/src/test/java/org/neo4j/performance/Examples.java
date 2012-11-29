@@ -32,7 +32,6 @@ import org.neo4j.performance.domain.benchmark.concurrent.BenchmarkWorker;
 import org.neo4j.performance.domain.benchmark.concurrent.ConcurrentBenchmark;
 import org.neo4j.performance.domain.benchmark.concurrent.SimpleBenchmarkWorker;
 import org.neo4j.performance.domain.benchmark.concurrent.WorkerMetric;
-import org.neo4j.performance.domain.benchmark.memory.MemoryBenchmark;
 
 /**
  * This is just to show how you would add a main method to run your benchmark stand-alone.
@@ -182,20 +181,6 @@ public class Examples
         public static void main(String ... args) throws IOException
         {
             PerformanceProfiler.runAndDumpReport( new ConcurrentWithMainMethod() );
-        }
-    }
-
-    public static class MemoryProfiling extends MemoryBenchmark
-    {
-        @Override
-        public void operationToProfile()
-        {
-            new Object();
-        }
-
-        public static void main(String ... args) throws IOException
-        {
-            PerformanceProfiler.runAndDumpReport( new MemoryProfiling() );
         }
     }
 }

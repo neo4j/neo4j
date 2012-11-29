@@ -12,7 +12,7 @@
 
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>org.neo4j.performance</groupId>
-	<artifactId>performance-framework</artifactId>
+	<artifactId>performance-dashboard</artifactId>
   <version>1.9-SNAPSHOT</version>
 
 	<dependencies>

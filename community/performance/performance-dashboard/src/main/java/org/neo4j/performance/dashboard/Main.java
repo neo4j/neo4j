@@ -17,30 +17,11 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.performance.domain.benchmark.memory;
+package org.neo4j.performance.dashboard;
 
-import org.neo4j.performance.domain.benchmark.BenchmarkAdapter;
-import org.neo4j.performance.domain.benchmark.BenchmarkResult;
-import org.neo4j.performance.domain.benchmark.BenchmarkRunner;
-import org.neo4j.performance.domain.benchmark.RunnerProvider;
-
-public abstract class MemoryBenchmark extends BenchmarkAdapter implements RunnerProvider
+public class Main
 {
 
-    public abstract void operationToProfile();
 
-    @Override
-    public BenchmarkRunner getBenchmarkRunner()
-    {
-        return new MemoryBenchmarkRunner();
-    }
 
-    @Override
-    public BenchmarkResult run()
-    {
-        operationToProfile();
-
-        // The memory profiling runner will ignore the result we return here
-        return null;
-    }
 }
