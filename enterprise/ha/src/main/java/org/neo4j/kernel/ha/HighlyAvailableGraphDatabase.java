@@ -27,7 +27,6 @@ import java.lang.reflect.Proxy;
 import java.util.List;
 import java.util.Map;
 
-import ch.qos.logback.classic.LoggerContext;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.com.NetworkInstance;
@@ -67,6 +66,8 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.ClassicLoggingService;
 import org.neo4j.kernel.logging.LogbackService;
 import org.neo4j.kernel.logging.Logging;
+
+import ch.qos.logback.classic.LoggerContext;
 
 public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
 {
@@ -179,9 +180,6 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
 
         memberStateMachine = life.add( new HighAvailabilityMemberStateMachine( memberContext, accessGuard,
                 clusterEvents, logging.getLogger( HighAvailabilityMemberStateMachine.class ) ) );
-        life.add( new HighAvailabilityModeSwitcher( delegateInvocationHandler, clusterMemberAvailability,
-                memberStateMachine, this,
-                config, logging.getLogger( HighAvailabilityModeSwitcher.class ) ) );
 
         DelegateInvocationHandler<TxHook> txHookDelegate = new DelegateInvocationHandler<TxHook>();
         TxHook txHook = (TxHook) Proxy.newProxyInstance( TxHook.class.getClassLoader(), new Class[]{TxHook.class},
@@ -218,7 +216,11 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     @Override
     protected IdGeneratorFactory createIdGeneratorFactory()
     {
-        return new HaIdGeneratorFactory( master, memberStateMachine );
+        HaIdGeneratorFactory idGeneratorFactory = new HaIdGeneratorFactory( master, memberStateMachine, logging );
+        life.add( new HighAvailabilityModeSwitcher( delegateInvocationHandler, clusterMemberAvailability,
+                memberStateMachine, this, idGeneratorFactory,
+                config, logging.getLogger( HighAvailabilityModeSwitcher.class ) ) );
+        return idGeneratorFactory;
     }
 
     @Override

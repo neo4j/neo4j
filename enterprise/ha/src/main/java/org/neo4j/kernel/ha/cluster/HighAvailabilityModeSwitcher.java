@@ -43,6 +43,7 @@ import org.neo4j.kernel.ha.BranchDetectingTxVerifier;
 import org.neo4j.kernel.ha.BranchedDataException;
 import org.neo4j.kernel.ha.BranchedDataPolicy;
 import org.neo4j.kernel.ha.DelegateInvocationHandler;
+import org.neo4j.kernel.ha.HaIdGeneratorFactory;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HaXaDataSourceManager;
 import org.neo4j.kernel.ha.Master;
@@ -101,15 +102,17 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
     private final Config config;
     private LifeSupport life;
     private final StringLogger msgLog;
+    private final HaIdGeneratorFactory idGeneratorFactory;
 
     public HighAvailabilityModeSwitcher( DelegateInvocationHandler delegateHandler,
                                          ClusterMemberAvailability clusterMemberAvailability,
                                          HighAvailabilityMemberStateMachine stateHandler, GraphDatabaseAPI graphDb,
-                                         Config config, StringLogger msgLog )
+                                         HaIdGeneratorFactory idGeneratorFactory, Config config, StringLogger msgLog )
     {
         this.delegateHandler = delegateHandler;
         this.clusterMemberAvailability = clusterMemberAvailability;
         this.graphDb = graphDb;
+        this.idGeneratorFactory = idGeneratorFactory;
         this.config = config;
         this.msgLog = msgLog;
         this.life = new LifeSupport();
@@ -247,6 +250,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
             delegateHandler.setDelegate( masterImpl );
             DependencyResolver resolver = graphDb.getDependencyResolver();
             HaXaDataSourceManager xaDsm = resolver.resolveDependency( HaXaDataSourceManager.class );
+            idGeneratorFactory.switchToMaster();
             synchronized ( xaDsm )
             {
                 XaDataSource nioneoDataSource = xaDsm.getXaDataSource( Config.DEFAULT_DATA_SOURCE_NAME );
@@ -302,6 +306,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                 DependencyResolver resolver = graphDb.getDependencyResolver();
                 HaXaDataSourceManager xaDataSourceManager = resolver.resolveDependency(
                         HaXaDataSourceManager.class );
+                idGeneratorFactory.switchToSlave();
                 synchronized ( xaDataSourceManager )
                 {
                     if ( !NeoStore.isStorePresent( resolver.resolveDependency( FileSystemAbstraction.class ), config ) )
@@ -334,6 +339,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                             life.stop();
                         }
                     }
+                    idGeneratorFactory.switchToSlave();
                     NeoStoreXaDataSource nioneoDataSource = (NeoStoreXaDataSource) resolver.resolveDependency(
                             HaXaDataSourceManager.class ).getXaDataSource( Config.DEFAULT_DATA_SOURCE_NAME );
                     if ( nioneoDataSource == null )

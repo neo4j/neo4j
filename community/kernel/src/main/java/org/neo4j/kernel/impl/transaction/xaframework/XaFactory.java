@@ -43,7 +43,7 @@ public class XaFactory
     private final RecoveryVerifier recoveryVerifier;
     private final LogPruneStrategy pruneStrategy;
 
-    public XaFactory(Config config, TxIdGenerator txIdGenerator, AbstractTransactionManager txManager,
+    public XaFactory( Config config, TxIdGenerator txIdGenerator, AbstractTransactionManager txManager,
             LogBufferFactory logBufferFactory, FileSystemAbstraction fileSystemAbstraction,
             Logging logging, RecoveryVerifier recoveryVerifier, LogPruneStrategy pruneStrategy )
     {

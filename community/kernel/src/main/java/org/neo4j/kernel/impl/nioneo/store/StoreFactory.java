@@ -356,7 +356,8 @@ public class StoreFactory
         }
         idGeneratorFactory.create( fileSystemAbstraction, new File( fileName.getPath() + ".id"), 0 );
         // TODO highestIdInUse = 0 works now, but not when slave can create store files.
-        IdGenerator idGenerator = idGeneratorFactory.open(fileSystemAbstraction, new File( fileName.getPath() + ".id"), 1, idType );
+        IdGenerator idGenerator = idGeneratorFactory.open(fileSystemAbstraction, new File( fileName.getPath() + ".id"),
+                idType.getGrabSize(), idType, 0 );
         idGenerator.nextId(); // reserv first for blockSize
         idGenerator.close();
     }

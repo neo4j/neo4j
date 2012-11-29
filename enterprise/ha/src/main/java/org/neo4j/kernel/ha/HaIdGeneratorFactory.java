@@ -21,6 +21,7 @@
 package org.neo4j.kernel.ha;
 
 import java.io.File;
+import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.Map;
 
@@ -29,12 +30,11 @@ import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.ha.cluster.HighAvailability;
-import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberChangeEvent;
-import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberListener;
-import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.IdGenerator;
 import org.neo4j.kernel.impl.nioneo.store.IdRange;
+import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.logging.Logging;
 
 public class HaIdGeneratorFactory implements IdGeneratorFactory
 {
@@ -42,18 +42,32 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
             new EnumMap<IdType, HaIdGenerator>( IdType.class );
     private final IdGeneratorFactory localFactory = new DefaultIdGeneratorFactory();
     private final Master master;
+    private final StringLogger logger;
+    private IdGeneratorState globalState = IdGeneratorState.PENDING;
 
-    public HaIdGeneratorFactory( Master master, HighAvailability highAvailability )
+    public HaIdGeneratorFactory( Master master, HighAvailability highAvailability, Logging logging )
     {
         this.master = master;
-        highAvailability.addHighAvailabilityMemberListener( new HaIdGeneratorFactoryClusterMemberListener() );
+        this.logger = logging.getLogger( getClass() );
+//        highAvailability.addHighAvailabilityMemberListener( new HaIdGeneratorFactoryClusterMemberListener() );
     }
 
     @Override
-    public IdGenerator open( FileSystemAbstraction fs, File fileName, int grabSize, IdType idType )
+    public IdGenerator open( FileSystemAbstraction fs, File fileName, int grabSize, IdType idType, long highId )
     {
-        IdGenerator initialIdGenerator = localFactory.open( fs, fileName, grabSize, idType );
-        HaIdGenerator haIdGenerator = new HaIdGenerator( initialIdGenerator, fs, fileName, grabSize, idType );
+        IdGenerator initialIdGenerator = null;
+        switch ( globalState )
+        {
+        case MASTER:
+            initialIdGenerator = localFactory.open( fs, fileName, grabSize, idType, highId );
+            break;
+        case SLAVE:
+            initialIdGenerator = new SlaveIdGenerator( idType, highId, master, logger );
+            break;
+        default:
+            throw new IllegalStateException( globalState.name() );
+        }
+        HaIdGenerator haIdGenerator = new HaIdGenerator( initialIdGenerator, fs, fileName, grabSize, idType, globalState );
         generators.put( idType, haIdGenerator );
         return haIdGenerator;
     }
@@ -69,59 +83,77 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
     {
         return generators.get( idType );
     }
-
-    private class HaIdGeneratorFactoryClusterMemberListener implements HighAvailabilityMemberListener
+    
+//    private class HaIdGeneratorFactoryClusterMemberListener implements HighAvailabilityMemberListener
+//    {
+//        @Override
+//        public void masterIsElected( HighAvailabilityMemberChangeEvent event )
+//        {
+//            if ( event.getNewState() == event.getOldState() )
+//            {
+//                return;
+//            }
+//            for ( HaIdGenerator generator : generators.values() )
+//            {
+//                generator.stateChanged( event );
+//            }
+//        }
+//
+//        @Override
+//        public void masterIsAvailable( HighAvailabilityMemberChangeEvent event )
+//        {
+//            if ( event.getNewState() == event.getOldState() )
+//            {
+//                return;
+//            }
+//            for ( HaIdGenerator generator : generators.values() )
+//            {
+//                generator.stateChanged( event );
+//            }
+//        }
+//
+//        @Override
+//        public void slaveIsAvailable( HighAvailabilityMemberChangeEvent event )
+//        {
+//            if ( event.getNewState() == event.getOldState() )
+//            {
+//                return;
+//            }
+//            for ( HaIdGenerator generator : generators.values() )
+//            {
+//                generator.stateChanged( event );
+//            }
+//        }
+//
+//        @Override
+//        public void instanceStops( HighAvailabilityMemberChangeEvent event )
+//        {
+//            if ( event.getNewState() == event.getOldState() )
+//            {
+//                return;
+//            }
+//            for ( HaIdGenerator generator : generators.values() )
+//            {
+//                generator.stateChanged( event );
+//            }
+//        }
+//    }
+    
+    public void switchToMaster()
     {
-        @Override
-        public void masterIsElected( HighAvailabilityMemberChangeEvent event )
+        globalState = IdGeneratorState.MASTER;
+        for ( HaIdGenerator generator : generators.values() )
         {
-            if ( event.getNewState() == event.getOldState() )
-            {
-                return;
-            }
-            for ( HaIdGenerator generator : generators.values() )
-            {
-                generator.stateChanged( event );
-            }
+            generator.switchToMaster();
         }
-
-        @Override
-        public void masterIsAvailable( HighAvailabilityMemberChangeEvent event )
+    }
+    
+    public void switchToSlave()
+    {
+        globalState = IdGeneratorState.SLAVE;
+        for ( HaIdGenerator generator : generators.values() )
         {
-            if ( event.getNewState() == event.getOldState() )
-            {
-                return;
-            }
-            for ( HaIdGenerator generator : generators.values() )
-            {
-                generator.stateChanged( event );
-            }
-        }
-
-        @Override
-        public void slaveIsAvailable( HighAvailabilityMemberChangeEvent event )
-        {
-            if ( event.getNewState() == event.getOldState() )
-            {
-                return;
-            }
-            for ( HaIdGenerator generator : generators.values() )
-            {
-                generator.stateChanged( event );
-            }
-        }
-
-        @Override
-        public void instanceStops( HighAvailabilityMemberChangeEvent event )
-        {
-            if ( event.getNewState() == event.getOldState() )
-            {
-                return;
-            }
-            for ( HaIdGenerator generator : generators.values() )
-            {
-                generator.stateChanged( event );
-            }
+            generator.switchToSlave();
         }
     }
 
@@ -129,7 +161,7 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
 
     private enum IdGeneratorState
     {
-        TBD, SLAVE, MASTER;
+        PENDING, SLAVE, MASTER;
     }
 
     private class HaIdGenerator implements IdGenerator
@@ -139,16 +171,18 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
         private final File fileName;
         private final int grabSize;
         private final IdType idType;
-        private volatile IdGeneratorState state = IdGeneratorState.TBD;
+        private volatile IdGeneratorState state;
 
         HaIdGenerator( IdGenerator initialDelegate, FileSystemAbstraction fs, File fileName, int grabSize,
-                       IdType idType )
+                       IdType idType, IdGeneratorState initialState )
         {
             delegate = initialDelegate;
             this.fs = fs;
             this.fileName = fileName;
             this.grabSize = grabSize;
             this.idType = idType;
+            this.state = initialState;
+            logger.debug( "New " + this + ", " + initialDelegate + " " + idType + ", " + initialState );
         }
 
         /*
@@ -162,47 +196,54 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
          * not only on the member state we are moving to but also the previous state of the IdGenerator - if it
           * was a slave or a master IdGenerator. For that reason, it is implemented completely separately.
          */
-        public void stateChanged( HighAvailabilityMemberChangeEvent event )
+//        public void stateChanged( HighAvailabilityMemberChangeEvent event )
+//        {
+//            
+//            // Assume blockade is up and no active threads are running here
+//            if ( event.getNewState() == HighAvailabilityMemberState.TO_MASTER ||
+//                    // When the first PENDING --> TO_MASTER event comes there are no HaIdGenerator
+//                    // instances available because that event reaches HighAvailabilityModeSwitcher
+//                    // first, which starts the data sources and in turn instantiates these id generators.
+//                    event.getNewState() == HighAvailabilityMemberState.MASTER )
+//            {
+//                switchToMaster();
+//            }
+//            else if ( event.getNewState() == HighAvailabilityMemberState.TO_SLAVE
+//                    // When the first PENDING --> TO_SLAVE event comes there are no HaIdGenerator
+//                    // instances available because that event reaches HighAvailabilityModeSwitcher
+//                    // first, which starts the data sources and in turn instantiates these id generators.
+//                    || event.getNewState() == HighAvailabilityMemberState.SLAVE )
+//            {
+//                switchToSlave();
+//            }
+//        }
+
+        private void switchToSlave()
         {
-            // Assume blockade is up and no active threads are running here
-
-            if ( event.getNewState() == HighAvailabilityMemberState.PENDING
-                    || event.getNewState() == HighAvailabilityMemberState.MASTER )
-            {
-                return;
-            }
             long highId = delegate.getHighId();
-            if ( event.getNewState() == HighAvailabilityMemberState.TO_MASTER )
-            {
-                if ( state == IdGeneratorState.SLAVE )
-                {
-                    delegate.close();
-                    if ( !fs.fileExists( fileName ) )
-                    {
-                        localFactory.create( fs, fileName, highId );
-                    }
-                    delegate = localFactory.open( fs, fileName, grabSize, idType );
-                }
-                // Otherwise we're master or TBD (initial state) which is the same
-                state = IdGeneratorState.MASTER;
-            }
-            else if ( event.getNewState() == HighAvailabilityMemberState.TO_SLAVE
-                    || event.getNewState() == HighAvailabilityMemberState.SLAVE )
-            {
+            delegate.close();
+            delegate = new SlaveIdGenerator( idType, highId, master, logger );
+            logger.debug( "Instantiated " + delegate + " with highid " + highId );
+            state = IdGeneratorState.SLAVE;
+        }
 
-                if ( state == IdGeneratorState.SLAVE )
-                {
-                    // I'm already slave, just forget about ids from the previous master
-                    ((SlaveIdGenerator) delegate).forgetIdAllocationFromMaster( master );
-                }
-                else
-                {
-                    delegate.close();
-                    delegate.delete();
-                    delegate = new SlaveIdGenerator( idType, highId, master );
-                }
-                state = IdGeneratorState.SLAVE;
+        private void switchToMaster()
+        {
+            if ( state == IdGeneratorState.SLAVE )
+            {
+                long highId = delegate.getHighId();
+                delegate.close();
+                if ( fs.fileExists( fileName ) )
+                    fs.deleteFile( fileName );
+                    
+                localFactory.create( fs, fileName, highId );
+                delegate = localFactory.open( fs, fileName, grabSize, idType, highId );
+                logger.debug( "Instantiated " + delegate + " of type " + idType + " with highid " + highId );
             }
+            else
+                logger.debug( "Keeps " + delegate );
+            // Otherwise we're master or TBD (initial state) which is the same
+            state = IdGeneratorState.MASTER;
         }
 
         public String toString()
@@ -222,11 +263,19 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
 
         public long nextId()
         {
-            return delegate.nextId();
+            if ( state == IdGeneratorState.PENDING )
+                throw new IllegalStateException( state.name() );
+            
+            long result = delegate.nextId();
+            logger.debug( "Using id " + result + " from " + delegate + " of type " + idType );
+            return result;
         }
 
         public IdRange nextIdBatch( int size )
         {
+            if ( state == IdGeneratorState.PENDING )
+                throw new IllegalStateException( state.name() );
+            
             return delegate.nextIdBatch( size );
         }
 
@@ -271,25 +320,16 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
         private volatile long highestIdInUse;
         private volatile long defragCount;
         private volatile IdRangeIterator idQueue = EMPTY_ID_RANGE_ITERATOR;
-        private volatile Master master;
+        private final Master master;
         private final IdType idType;
+        private final StringLogger logger;
 
-        SlaveIdGenerator( IdType idType, long highId, Master master )
+        SlaveIdGenerator( IdType idType, long highId, Master master, StringLogger logger )
         {
             this.idType = idType;
             this.highestIdInUse = highId;
             this.master = master;
-        }
-
-        void forgetIdAllocationFromMaster( Master master )
-        {
-            if ( this.master.equals( master ) )
-            {
-                return;
-            }
-
-            this.idQueue = EMPTY_ID_RANGE_ITERATOR;
-            this.master = master;
+            this.logger = logger;
         }
 
         @Override
@@ -318,9 +358,16 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
             {
                 // If we dont have anymore grabbed ids from master, grab a bunch
                 Response<IdAllocation> response = master.allocateIds( idType );
-                IdAllocation allocation = response.response();
-                response.close();
-                nextId = storeLocally( allocation );
+                try
+                {
+                    IdAllocation allocation = response.response();
+                    logger.info( "Received id allocation " + allocation + " from master " + master + " for " + idType );
+                    nextId = storeLocally( allocation );
+                }
+                finally
+                {
+                    response.close();
+                }
             }
             // TODO necessary check?
 //            else if ( !master.equals( stuff.getMaster() ) )
@@ -361,6 +408,12 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
         public void delete()
         {
         }
+        
+        @Override
+        public String toString()
+        {
+            return getClass().getSimpleName() + "[" + this.idQueue + "]";
+        }
     }
 
     private static class IdRangeIterator
@@ -395,6 +448,12 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
             {
                 ++position;
             }
+        }
+        
+        @Override
+        public String toString()
+        {
+            return "IdRangeIterator[start:" + start + ", length:" + length + ", position:" + position + ", defrag:" + Arrays.toString( defrag ) + "]";
         }
     }
 
