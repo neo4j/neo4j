@@ -48,6 +48,8 @@ function findBaseDirAndCdThere {
   done
   NEO4J_HOME=`cd $( dirname "$SCRIPT" )/.. && dirs -l +0`
   NEO4J_INSTANCE=$NEO4J_HOME
+  NEO4J_CONFIG=$NEO4J_INSTANCE/conf
+  NEO4J_LOG=$NEO4J_INSTANCE/data/log
 
   cd "$NEO4J_HOME"
 }
@@ -55,20 +57,20 @@ function findBaseDirAndCdThere {
 function parseConfig {
   if [ ${BASH_VERSINFO[0]} -eq 3 ] ; then
     if [ ${BASH_VERSINFO[1]} -lt 2 ] ; then
-      getconfigquoted "${NEO4J_INSTANCE}/conf/neo4j-wrapper.conf"
-      getconfigquoted "${NEO4J_INSTANCE}/conf/neo4j-server.properties"
+      getconfigquoted "${NEO4J_CONFIG}/neo4j-wrapper.conf"
+      getconfigquoted "${NEO4J_CONFIG}/neo4j-server.properties"
       return
     fi
   fi
-  getconfig "${NEO4J_INSTANCE}/conf/neo4j-wrapper.conf"
-  getconfig "${NEO4J_INSTANCE}/conf/neo4j-server.properties"
+  getconfig "${NEO4J_CONFIG}/neo4j-wrapper.conf"
+  getconfig "${NEO4J_CONFIG}/neo4j-server.properties"
 }
 
 findBaseDirAndCdThere
 source bin/utils
 parseConfig
 
-NEO4J_OPTS="-Dlog4j.configuration=file:conf/log4j.properties -Dorg.neo4j.server.properties="${NEO4J_INSTANCE}"/conf/neo4j-server.properties -Djava.util.logging.config.file="${NEO4J_INSTANCE}/conf/logging.properties" -Dneo4j.home="${NEO4J_HOME}" -Dneo4j.instance="${NEO4J_INSTANCE}""
+NEO4J_OPTS="-Dlog4j.configuration=file:conf/log4j.properties -Dorg.neo4j.server.properties="${NEO4J_CONFIG}"/neo4j-server.properties -Djava.util.logging.config.file="${NEO4J_CONFIG}/logging.properties" -Dneo4j.home="${NEO4J_HOME}" -Dneo4j.instance="${NEO4J_INSTANCE}""
 
 JAVA_OPTS="-server -XX:+DisableExplicitGC ${wrapper_java_additional}"
 [ -z "${wrapper_java_initmemory}" ] || JAVA_OPTS="$JAVA_OPTS -Xms${wrapper_java_initmemory}m"
@@ -185,19 +187,19 @@ startit() {
 
     if [ $UID == 0 ] ; then
       su $NEO4J_USER -c "$JAVACMD -cp '$CLASSPATH' $JAVA_OPTS -Dlog4j.configuration=file:conf/log4j.properties \
-        -Dorg.neo4j.server.properties=\"${NEO4J_INSTANCE}/conf/neo4j-server.properties\" \
-        -Djava.util.logging.config.file=\"${NEO4J_INSTANCE}/conf/logging.properties\" \
+        -Dorg.neo4j.server.properties=\"${NEO4J_CONFIG}/neo4j-server.properties\" \
+        -Djava.util.logging.config.file=\"${NEO4J_CONFIG}/logging.properties\" \
         -Dneo4j.home=\"${NEO4J_HOME}\" -Dneo4j.instance=\"${NEO4J_INSTANCE}\" \
         -Dfile.encoding=UTF-8 \
-        org.neo4j.server.Bootstrapper >> \"$NEO4J_INSTANCE/data/log/console.log\" 2>&1 & echo \$! > \"$PID_FILE\" "
+        org.neo4j.server.Bootstrapper >> \"$NEO4J_LOG/console.log\" 2>&1 & echo \$! > \"$PID_FILE\" "
     else
       checkwriteaccess
       echo "WARNING: not changing user"
       $JAVACMD -cp "${CLASSPATH}" $JAVA_OPTS -Dlog4j.configuration=file:conf/log4j.properties \
-        -Dorg.neo4j.server.properties="${NEO4J_INSTANCE}/conf/neo4j-server.properties" \
-        -Djava.util.logging.config.file="${NEO4J_INSTANCE}/conf/logging.properties" \
+        -Dorg.neo4j.server.properties="${NEO4J_CONFIG}/neo4j-server.properties" \
+        -Djava.util.logging.config.file="${NEO4J_CONFIG}/logging.properties" \
         -Dneo4j.home="${NEO4J_HOME}" -Dneo4j.instance="${NEO4J_INSTANCE}" \
-        org.neo4j.server.Bootstrapper >> "${NEO4J_INSTANCE}/data/log/console.log" 2>&1 & echo $! > "${PID_FILE}"
+        org.neo4j.server.Bootstrapper >> "${NEO4J_LOG}/console.log" 2>&1 & echo $! > "${PID_FILE}"
     fi
     STARTED_PID=$( cat "$PID_FILE" )
 
@@ -258,8 +260,8 @@ console() {
     checkandrepairenv
 
     $JAVACMD -cp "${CLASSPATH}" $JAVA_OPTS -Dlog4j.configuration=file:conf/log4j.properties \
-        -Dorg.neo4j.server.properties="${NEO4J_INSTANCE}/conf/neo4j-server.properties" \
-        -Djava.util.logging.config.file="${NEO4J_INSTANCE}/conf/logging.properties" \
+        -Dorg.neo4j.server.properties="${NEO4J_CONFIG}/neo4j-server.properties" \
+        -Djava.util.logging.config.file="${NEO4J_CONFIG}/logging.properties" \
         -Dneo4j.home="${NEO4J_HOME}" -Dneo4j.instance="${NEO4J_INSTANCE}" \
         org.neo4j.server.Bootstrapper
 
