@@ -150,6 +150,31 @@ public class Args
     {
         return new ArrayList<String>( this.orphans );
     }
+    
+    public String[] asArgs()
+    {
+        List<String> list = new ArrayList<String>();
+        for ( String orphan : orphans )
+        {
+            String quote = orphan.contains( " " ) ? " " : "";
+            list.add( quote + orphan + quote );
+        }
+        for ( Map.Entry<String, String> entry : map.entrySet() )
+        {
+            String quote = entry.getKey().contains( " " ) || entry.getValue().contains( " " ) ? " " : "";
+            list.add( quote + (entry.getKey().length() > 1 ? "--" : "-") + entry.getKey() + "=" + entry.getValue() + quote );
+        }
+        return list.toArray( new String[0] );
+    }
+    
+    @Override
+    public String toString()
+    {
+        StringBuilder builder = new StringBuilder();
+        for ( String arg : asArgs() )
+            builder.append( builder.length() > 0 ? " " : "" ).append( arg );
+        return builder.toString();
+    }
 
     private static boolean isOption( String arg )
     {

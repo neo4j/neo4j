@@ -59,6 +59,8 @@ import org.w3c.dom.Document;
 public class ClusterManager
         extends LifecycleAdapter
 {
+    private static final Logger logger = LoggerFactory.getLogger( "clustermanager" );
+    
     /**
      * Provides a specification of which clusters to start in {@link ClusterManager#start()}.
      */
@@ -117,7 +119,6 @@ public class ClusterManager
     private final Map<String, String> commonConfig;
     private final Map<String, ManagedCluster> clusterMap = new HashMap<String, ManagedCluster>();
     private final Provider clustersProvider;
-    private Logger logger;
 
     public ClusterManager( Provider clustersProvider, File root, Map<String, String> commonConfig )
     {
@@ -133,7 +134,6 @@ public class ClusterManager
 
         life = new LifeSupport();
 
-        logger = LoggerFactory.getLogger( "clustermanager" );
         for ( int i = 0; i < clusters.getClusters().size(); i++ )
         {
             Clusters.Cluster cluster = clusters.getClusters().get( i );
@@ -375,6 +375,12 @@ public class ClusterManager
         public int size()
         {
             return spec.getMembers().size();
+        }
+        
+        public int getServerId( HighlyAvailableGraphDatabase db )
+        {
+            assertMember( db );
+            return db.getConfig().get( HaSettings.server_id );
         }
     }
 

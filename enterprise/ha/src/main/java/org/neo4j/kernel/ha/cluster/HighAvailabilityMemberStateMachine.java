@@ -79,12 +79,6 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
         accessGuard.setState( state );
     }
 
-    @Override
-    public void shutdown() throws Throwable
-    {
-        events.removeClusterMemberListener( eventsListener );
-    }
-
     public void addHighAvailabilityMemberListener( HighAvailabilityMemberListener toAdd )
     {
         memberListeners = Listeners.addListener( toAdd, memberListeners );

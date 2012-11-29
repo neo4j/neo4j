@@ -166,7 +166,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
         stateChanged( event );
     }
 
-    private synchronized void stateChanged( HighAvailabilityMemberChangeEvent event )
+    private void stateChanged( HighAvailabilityMemberChangeEvent event )
     {
         availableMasterId = event.getServerHaUri();
         if ( event.getNewState() == event.getOldState() )
@@ -447,7 +447,6 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                         life.shutdown();
                         life = new LifeSupport();
                         nioneoDataSource.stop();
-                        continue;
                     }
                 }
             }

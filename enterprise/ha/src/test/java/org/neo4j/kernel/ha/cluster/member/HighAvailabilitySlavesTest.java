@@ -49,7 +49,7 @@ public class HighAvailabilitySlavesTest
     private static URI haUri2 = create( "ha://server2?serverId=2" );
     private static URI clusterUri3 = create( "cluster://server3" );
     private static URI haUri3 = create( "ha://server3?serverId=3" );
-    
+
     @Test
     public void shouldRegisterItselfOnMonitors() throws Throwable
     {
@@ -60,7 +60,7 @@ public class HighAvailabilitySlavesTest
         
         // when
         new HighAvailabilitySlaves( clusterMembers, cluster, slaveFactory).init();
-        
+
         // then
         verify( cluster ).addClusterListener( Mockito.<ClusterListener>any() );
     }

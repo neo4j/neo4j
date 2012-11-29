@@ -199,7 +199,7 @@ public class HaBeanIT
         for ( HighlyAvailableGraphDatabase db : cluster.getAllMembers() )
             await( ha( db ), dbAvailability( true ) );
     }
-    
+
     private void assertMasterAndSlaveInformation( ClusterMemberInfo[] instancesInCluster ) throws Exception
     {
         ClusterMemberInfo master = member( instancesInCluster, 5001 );

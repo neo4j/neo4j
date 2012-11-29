@@ -154,7 +154,8 @@ public class PaxosClusterMemberEvents implements ClusterMemberEvents, Lifecycle
                 {
                     for ( MemberIsAvailable memberIsAvailable : clusterMembersSnapshot.getCurrentAvailableMembers() )
                     {
-                        listener.memberIsAvailable( memberIsAvailable.getRole(), memberIsAvailable.getClusterUri(), memberIsAvailable.getRoleUri() );
+                        listener.memberIsAvailable( memberIsAvailable.getRole(), memberIsAvailable.getClusterUri(),
+                                memberIsAvailable.getRoleUri() );
                     }
                 }
             } );
