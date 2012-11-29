@@ -19,30 +19,18 @@
  */
 package org.neo4j.kernel.ha;
 
-import java.io.File;
+import static org.junit.Assert.assertEquals;
 
-import org.neo4j.kernel.impl.core.LastTxIdGetter;
-import org.neo4j.kernel.impl.nioneo.store.NeoStore;
+import org.junit.Test;
+import org.neo4j.test.TargetDirectory;
 
-public class OnDiskLastTxIdGetter implements LastTxIdGetter
+public class OnDiskLastTxIdGetterTest
 {
-    private final File storeDirectory;
-
-    public OnDiskLastTxIdGetter( File storeDirectory )
+    @Test
+    public void testGetLastTxIdNoFilePresent() throws Exception
     {
-        this.storeDirectory = storeDirectory;
-    }
-
-    @Override
-    public long getLastTxId()
-    {
-        if ( new File(storeDirectory, NeoStore.DEFAULT_NAME).exists() )
-        {
-            return new NeoStoreUtil(storeDirectory).getLastCommittedTx();
-        }
-        else
-        {
-            return -1;
-        }
+        OnDiskLastTxIdGetter getter = new OnDiskLastTxIdGetter(
+                TargetDirectory.forTest( getClass() ).directory( "no-store" ) );
+        assertEquals( -1, getter.getLastTxId() );
     }
 }
