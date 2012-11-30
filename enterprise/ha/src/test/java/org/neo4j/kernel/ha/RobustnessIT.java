@@ -45,7 +45,7 @@ import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
 import org.neo4j.test.TargetDirectory;
 
-public class SmokeTest
+public class RobustnessIT
 {
     private final File path = TargetDirectory.forTest( getClass() ).graphDbDir( true );
     private HighlyAvailableGraphDatabase[] dbs;
