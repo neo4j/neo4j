@@ -319,17 +319,13 @@ public class NetworkInstance
         }
         catch ( Exception e )
         {
-            msgLog.error( "Could not connect to:" + to, e );
+            msgLog.debug( "Could not connect to:" + to, e );
             return;
         }
 
         try
         {
-            if ( msgLog.isDebugEnabled() )
-            {
-                msgLog.debug( "Sending to " + to + ": " + message );
-            }
-            
+            msgLog.debug( "Sending to " + to + ": " + message );
             ChannelFuture future = channel.write( message );
             future.addListener( new ChannelFutureListener()
             {
@@ -337,7 +333,7 @@ public class NetworkInstance
                 public void operationComplete( ChannelFuture future ) throws Exception
                 {
                     if ( !future.isSuccess() )
-                        msgLog.error( "Unable to write " + message + " to " + future.getChannel(), future.getCause() );
+                        msgLog.debug( "Unable to write " + message + " to " + future.getChannel(), future.getCause() );
                 }
             } );
         }
