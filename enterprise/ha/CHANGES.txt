@@ -1,3 +1,11 @@
+1.9.M02 (2012-11-30)
+--------------------
+o Lifecycle improvements, with proper removal of listeners on shutdown
+o Cluster snapshot synchronization used for HA cluster membership
+o Implements JMX changes  
+o IdGenerators instantiated properly in ModeSwitcher
+o ZooKeeper compatibility layer introduced, allows for rolling upgrades from 1.8
+
 1.9.M01 (2012-10-23)
 --------------------
 o Massive changes to stop using ZooKeeper as a coordination service and instead move to a custom Paxos implementation.
