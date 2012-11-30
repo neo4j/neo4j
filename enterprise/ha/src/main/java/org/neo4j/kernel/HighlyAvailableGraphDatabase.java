@@ -221,7 +221,6 @@ public class HighlyAvailableGraphDatabase
         this.kernelExtensions = kernelExtensions;
         this.cacheProviders = cacheProviders;
 
-        config.put( GraphDatabaseSettings.keep_logical_logs.name(), GraphDatabaseSetting.TRUE);
         config.put( InternalAbstractGraphDatabase.Configuration.store_dir.name(), storeDir );
         if ( !config.containsKey( GraphDatabaseSettings.cache_type.name() ) )
             config.put( GraphDatabaseSettings.cache_type.name(), GCResistantCacheProvider.NAME );
