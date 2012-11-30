@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher.internal.commands
 
-import expressions.{Identifier, Literal, Expression}
+import expressions.{Literal, Expression}
 import org.neo4j.cypher.internal.pipes.{QueryState, ExecutionContext}
 import org.neo4j.cypher.internal.mutation.{GraphElementPropertyFunctions, UpdateAction}
 import scala.Long
 import collection.Map
-import org.neo4j.graphdb.{DynamicRelationshipType, Node}
+import org.neo4j.graphdb.Node
 import org.neo4j.cypher.internal.symbols._
 import org.neo4j.cypher.internal.helpers.CollectionSupport
 
@@ -70,7 +70,6 @@ case class CreateNodeStartItem(key: String, props: Map[String, Expression])
   with GraphElementPropertyFunctions
   with CollectionSupport {
   def exec(context: ExecutionContext, state: QueryState) = {
-    val db = state.db
     if (props.size == 1 && props.head._1 == "*") {
       makeTraversable(props.head._2(context)).map(x => {
         val m: Map[String, Expression] = x.asInstanceOf[Map[String, Any]].map {
@@ -134,9 +133,13 @@ case class CreateRelationshipStartItem(key: String,
     checkTypes(props, symbols)
   }
 
-  def symbolTableDependencies = (from._2.flatMap(_._2.symbolTableDependencies) ++
-                                to._2.flatMap(_._2.symbolTableDependencies) ++
-                                props.flatMap(_._2.symbolTableDependencies)).toSet
+  def symbolTableDependencies = {
+    val fromNodePropsDeps = from._2.flatMap(_._2.symbolTableDependencies)
+    val toNodePropsDeps = to._2.flatMap(_._2.symbolTableDependencies)
+    val relationshipPropsDeps = props.flatMap(_._2.symbolTableDependencies)
+
+    (fromNodePropsDeps ++ toNodePropsDeps ++ relationshipPropsDeps).toSet
+  }
 }
 
 trait Mutator extends StartItem {

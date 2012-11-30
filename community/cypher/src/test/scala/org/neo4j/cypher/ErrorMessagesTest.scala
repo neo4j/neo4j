@@ -23,7 +23,6 @@ import internal.StringExtras
 import org.scalatest.Assertions
 import org.junit.Assert._
 import org.junit.{Ignore, Test}
-import org.neo4j.graphdb.NotFoundException
 
 class ErrorMessagesTest extends ExecutionEngineHelper with Assertions with StringExtras {
   @Test def noReturnColumns() {
@@ -255,7 +254,7 @@ Expected: %s
   }
 
   private def expectNotFoundError(query: String, expectedError: String)  {
-    val error = intercept[NotFoundException](engine.execute(query).toList)
+    val error = intercept[CypherException](engine.execute(query).toList)
     val s = """
 Wrong error message produced: %s
 Expected: %s
