@@ -74,7 +74,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     private RequestContextFactory requestContextFactory;
     private Slaves slaves;
     private ClusterMembers members;
-    private DelegateInvocationHandler delegateInvocationHandler;
+    private DelegateInvocationHandler masterDelegateInvocationHandler;
     private LoggerContext loggerContext;
     private DefaultTransactionSupport transactionSupport;
     private Master master;
@@ -104,9 +104,9 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     protected void create()
     {
         life.add( new BranchedDataMigrator( storeDir ) );
-        delegateInvocationHandler = new DelegateInvocationHandler();
+        masterDelegateInvocationHandler = new DelegateInvocationHandler();
         master = (Master) Proxy.newProxyInstance( Master.class.getClassLoader(), new Class[]{Master.class},
-                delegateInvocationHandler );
+                masterDelegateInvocationHandler );
         accessGuard = new InstanceAccessGuard();
 
         super.create();
@@ -220,7 +220,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     protected IdGeneratorFactory createIdGeneratorFactory()
     {
         HaIdGeneratorFactory idGeneratorFactory = new HaIdGeneratorFactory( master, memberStateMachine, logging );
-        life.add( new HighAvailabilityModeSwitcher( delegateInvocationHandler, clusterMemberAvailability,
+        life.add( new HighAvailabilityModeSwitcher( masterDelegateInvocationHandler, clusterMemberAvailability,
                 memberStateMachine, this, idGeneratorFactory,
                 config, logging.getLogger( HighAvailabilityModeSwitcher.class ) ) );
         return idGeneratorFactory;
