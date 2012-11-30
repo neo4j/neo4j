@@ -52,7 +52,7 @@ class ColumnFilterPipe(source: Pipe, val returnItems: Seq[ReturnItem])
 
   def dependencies = Seq()
 
-  def assertTypes(symbols: SymbolTable) {
-    returnItems.foreach(_.expression.assertTypes(symbols))
+  def throwIfSymbolsMissing(symbols: SymbolTable) {
+    returnItems.foreach(_.expression.throwIfSymbolsMissing(symbols))
   }
 }

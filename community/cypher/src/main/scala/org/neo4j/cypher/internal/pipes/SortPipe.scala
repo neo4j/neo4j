@@ -29,9 +29,9 @@ import org.neo4j.cypher.internal.symbols.SymbolTable
 class SortPipe(source: Pipe, sortDescription: List[SortItem]) extends PipeWithSource(source) with ExecutionContextComparer {
   def symbols = source.symbols
 
-  def assertTypes(symbols: SymbolTable) {
+  def throwIfSymbolsMissing(symbols: SymbolTable) {
     sortDescription.foreach {
-      case SortItem(e,_) => e.assertTypes(source.symbols)
+      case SortItem(e,_) => e.throwIfSymbolsMissing(source.symbols)
     }
   }
 

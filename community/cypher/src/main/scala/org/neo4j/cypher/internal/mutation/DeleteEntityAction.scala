@@ -65,17 +65,8 @@ case class DeleteEntityAction(elementToDelete: Expression)
 
   def filter(f: (Expression) => Boolean) = elementToDelete.filter(f)
 
-  def assertTypes(symbols: SymbolTable) {
-    val elementType = elementToDelete.getType(symbols)
-
-    checkTypes(elementType)
-  }
-
-  private def checkTypes(t:CypherType) {
-    t match {
-      case x:MapType =>
-      case x:CollectionType => checkTypes(x.iteratedType)
-    }
+  def throwIfSymbolsMissing(symbols: SymbolTable) {
+    elementToDelete.throwIfSymbolsMissing(symbols)
   }
 
   def symbolTableDependencies = elementToDelete.symbolTableDependencies

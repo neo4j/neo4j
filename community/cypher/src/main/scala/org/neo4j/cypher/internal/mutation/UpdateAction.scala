@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.mutation
 
 import org.neo4j.cypher.CypherTypeException
 import org.neo4j.cypher.internal.symbols._
-import org.neo4j.graphdb.{RelationshipType => KernelRelType, _}
 import org.neo4j.cypher.internal.pipes.{QueryState, ExecutionContext}
 
 import java.util.{Map => JavaMap}
@@ -29,11 +28,12 @@ import scala.collection.JavaConverters._
 import collection.Map
 import org.neo4j.cypher.internal.helpers.CollectionSupport
 import org.neo4j.cypher.internal.commands.expressions.Expression
+import org.neo4j.graphdb.{Node, Relationship, PropertyContainer}
 
 trait UpdateAction extends TypeSafe {
   def exec(context: ExecutionContext, state: QueryState): Traversable[ExecutionContext]
 
-  def assertTypes(symbols: SymbolTable)
+  def throwIfSymbolsMissing(symbols: SymbolTable)
 
   def identifiers: Seq[(String, CypherType)]
 
@@ -50,8 +50,8 @@ trait GraphElementPropertyFunctions extends CollectionSupport {
     }
   }
 
-  def checkTypes(props: Map[String, Expression], symbols: SymbolTable) {
-    props.values.foreach(_.assertTypes(symbols))
+  def throwIfSymbolsMissing(props: Map[String, Expression], symbols: SymbolTable) {
+    props.values.foreach(_.throwIfSymbolsMissing(symbols))
   }
 
   def symbolTableDependencies(props: Map[String, Expression]): Set[String] = props.values.flatMap(_.symbolTableDependencies).toSet

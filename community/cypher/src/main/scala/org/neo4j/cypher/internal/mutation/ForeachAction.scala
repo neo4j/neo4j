@@ -55,12 +55,12 @@ case class ForeachAction(collection: Expression, id: String, actions: Seq[Update
 
   def identifiers = Seq.empty
 
-  def assertTypes(symbols: SymbolTable) {
+  def throwIfSymbolsMissing(symbols: SymbolTable) {
     val t = collection.evaluateType(AnyCollectionType(), symbols).iteratedType
 
     val innerSymbols: SymbolTable = symbols.add(id, t)
 
-    actions.foreach(_.assertTypes(innerSymbols))
+    actions.foreach(_.throwIfSymbolsMissing(innerSymbols))
   }
 
   def symbolTableDependencies = {

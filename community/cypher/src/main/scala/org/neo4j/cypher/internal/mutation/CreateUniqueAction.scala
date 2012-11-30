@@ -169,7 +169,7 @@ case class CreateUniqueAction(incomingLinks: UniqueLink*) extends StartItem("noo
 
   def rewrite(f: (Expression) => Expression): UpdateAction = CreateUniqueAction(links.map(_.rewrite(f)): _*)
 
-  def assertTypes(symbols: SymbolTable) {links.foreach(l=>l.assertTypes(symbols))}
+  def throwIfSymbolsMissing(symbols: SymbolTable) {links.foreach(l=>l.throwIfSymbolsMissing(symbols))}
 
   def symbolTableDependencies = links.flatMap(_.symbolTableDependencies).toSet
 }

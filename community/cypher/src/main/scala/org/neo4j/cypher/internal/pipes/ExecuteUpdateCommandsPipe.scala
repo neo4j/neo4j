@@ -88,7 +88,7 @@ class ExecuteUpdateCommandsPipe(source: Pipe, db: GraphDatabaseService, commands
 
   def symbols = source.symbols.add(commands.flatMap(_.identifiers).toMap)
 
-  def assertTypes(symbols: SymbolTable) {
-    commands.foreach(_.assertTypes(symbols))
+  def throwIfSymbolsMissing(symbols: SymbolTable) {
+    commands.foreach(_.throwIfSymbolsMissing(symbols))
   }
 }

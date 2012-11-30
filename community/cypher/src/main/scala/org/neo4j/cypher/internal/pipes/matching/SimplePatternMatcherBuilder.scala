@@ -21,11 +21,11 @@ package org.neo4j.cypher.internal.pipes.matching
 
 import collection.{immutable, Map}
 import org.neo4j.graphdb.{Relationship, Node, DynamicRelationshipType}
-import org.neo4j.graphmatching.{PatternMatcher => SimplePatternMatcher, PatternNode => SimplePatternNode, PatternRelationship=>SimplePatternRelationship, PatternGroup}
+import org.neo4j.graphmatching.{PatternMatcher => SimplePatternMatcher, PatternNode => SimplePatternNode, PatternRelationship=>SimplePatternRelationship}
 import collection.JavaConverters._
 import org.neo4j.cypher.internal.commands.{Predicate, True}
 import org.neo4j.cypher.internal.symbols.SymbolTable
-import org.neo4j.cypher.internal.pipes.{ExecutionContext, MutableMaps}
+import org.neo4j.cypher.internal.pipes.ExecutionContext
 
 class SimplePatternMatcherBuilder(pattern: PatternGraph, predicates: Seq[Predicate], symbolTable: SymbolTable) extends MatcherBuilder {
   def createPatternNodes: immutable.Map[String, SimplePatternNode] = {
@@ -79,7 +79,7 @@ class SimplePatternMatcherBuilder(pattern: PatternGraph, predicates: Seq[Predica
 
   def getMatches(ctx: ExecutionContext) = {
     val (patternNodes, patternRels) = setAssociations(ctx)
-    val validPredicates = predicates.filter(p => p.checkTypes(symbolTable))
+    val validPredicates = predicates.filter(p => p.symbolDependenciesMet(symbolTable))
     val startPoint = patternNodes.values.find(_.getAssociation != null).get
     SimplePatternMatcher.getMatcher.`match`(startPoint, startPoint.getAssociation).asScala.flatMap(patternMatch => {
       val result = ctx.clone

@@ -44,6 +44,6 @@ class TraversalMatchPipe(source: Pipe, matcher: TraversalMatcher, trail: Trail) 
 
   def executionPlan() = "TraversalMatcher()"
 
-  def assertTypes(symbols: SymbolTable) {
+  def throwIfSymbolsMissing(symbols: SymbolTable) {
   }
 }

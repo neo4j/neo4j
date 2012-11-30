@@ -52,9 +52,8 @@ class CreateNodesAndRelationshipsBuilder(db: GraphDatabaseService) extends PlanB
 
 
   def applicableTo(pipe: Pipe)(start: QueryToken[StartItem]): Boolean = start match {
-    case Unsolved(x: CreateNodeStartItem)         => x.checkTypes(pipe.symbols)
-    case Unsolved(x: CreateRelationshipStartItem) => val apa = x.checkTypes(pipe.symbols)
-      apa
+    case Unsolved(x: CreateNodeStartItem)         => x.symbolDependenciesMet(pipe.symbols)
+    case Unsolved(x: CreateRelationshipStartItem) => x.symbolDependenciesMet(pipe.symbols)
     case _                                        => false
   }
 

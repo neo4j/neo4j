@@ -38,5 +38,5 @@ class TransactionStartPipe(source: Pipe, graph: GraphDatabaseService) extends Pi
 
   def symbols = source.symbols
 
-  def assertTypes(symbols: SymbolTable) {}
+  def throwIfSymbolsMissing(symbols: SymbolTable) {}
 }

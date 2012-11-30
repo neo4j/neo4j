@@ -34,7 +34,7 @@ abstract class StartItem(val identifierName: String) extends TypeSafe {
 }
 
 trait ReadOnlyStartItem extends TypeSafe {
-  def assertTypes(symbols: SymbolTable) {}
+  def throwIfSymbolsMissing(symbols: SymbolTable) {}
 
   def symbolTableDependencies = Set()
 }
@@ -95,8 +95,8 @@ case class CreateNodeStartItem(key: String, props: Map[String, Expression])
 
   def rewrite(f: (Expression) => Expression): UpdateAction = CreateNodeStartItem(key, rewrite(props, f))
 
-  def assertTypes(symbols: SymbolTable) {
-    checkTypes(props, symbols)
+  def throwIfSymbolsMissing(symbols: SymbolTable) {
+    throwIfSymbolsMissing(props, symbols)
   }
 
   def symbolTableDependencies = symbolTableDependencies(props)
@@ -127,10 +127,10 @@ case class CreateRelationshipStartItem(key: String,
 
   def identifiers = Seq(key-> RelationshipType())
 
-  def assertTypes(symbols: SymbolTable) {
-    checkTypes(from._2, symbols)
-    checkTypes(to._2, symbols)
-    checkTypes(props, symbols)
+  def throwIfSymbolsMissing(symbols: SymbolTable) {
+    throwIfSymbolsMissing(from._2, symbols)
+    throwIfSymbolsMissing(to._2, symbols)
+    throwIfSymbolsMissing(props, symbols)
   }
 
   def symbolTableDependencies = {

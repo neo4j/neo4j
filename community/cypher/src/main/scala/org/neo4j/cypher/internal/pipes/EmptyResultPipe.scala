@@ -41,5 +41,5 @@ class EmptyResultPipe(source: Pipe)
 
   def symbols = new SymbolTable()
 
-  def assertTypes(symbols: SymbolTable) {}
+  def throwIfSymbolsMissing(symbols: SymbolTable) {}
 }

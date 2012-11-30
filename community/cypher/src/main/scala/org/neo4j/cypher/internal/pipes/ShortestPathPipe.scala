@@ -23,7 +23,6 @@ import java.lang.String
 import collection.Seq
 import org.neo4j.cypher.internal.symbols._
 import org.neo4j.graphdb.Path
-import org.neo4j.cypher.internal.commands.ReturnItem
 import org.neo4j.cypher.internal.commands.expressions.ShortestPathExpression
 import org.neo4j.cypher.internal.commands.ShortestPath
 
@@ -55,7 +54,7 @@ class ShortestPathPipe(source: Pipe, ast: ShortestPath) extends PipeWithSource(s
 
   override def executionPlan(): String = source.executionPlan() + "\r\n" + "ShortestPath(" + ast + ")"
 
-  def assertTypes(symbols: SymbolTable) {
-    ast.assertTypes(symbols)
+  def throwIfSymbolsMissing(symbols: SymbolTable) {
+    ast.throwIfSymbolsMissing(symbols)
   }
 }
