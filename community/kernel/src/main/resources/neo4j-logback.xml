@@ -46,8 +46,6 @@
     <appender-ref ref="FILE"/>
   </logger>
 
-  <logger name="org.neo4j.kernel.info.DiagnosticsManager" level="warn"/>
-
   <include resource="custom-logback.xml"/>
 
 </configuration>
