@@ -214,6 +214,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
 
     private void switchToMaster()
     {
+        msgLog.logMessage( "I am " + config.get( HaSettings.server_id ) + ", moving to master" );
         try
         {
             MasterImpl masterImpl = new MasterImpl( graphDb, graphDb.getMessageLog(), config );

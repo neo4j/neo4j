@@ -186,7 +186,7 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
             this.grabSize = grabSize;
             this.idType = idType;
             this.state = initialState;
-            logger.debug( "New " + this + ", " + initialDelegate + " " + idType + ", " + initialState );
+            logger.debug( "Instantiated HaIdGenerator for " + initialDelegate + " " + idType + ", " + initialState );
         }
 
         /*
@@ -227,7 +227,7 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
             long highId = delegate.getHighId();
             delegate.close();
             delegate = new SlaveIdGenerator( idType, highId, master, logger );
-            logger.debug( "Instantiated " + delegate + " with highid " + highId );
+            logger.debug( "Instantiated slave delegate " + delegate + " of type " + idType + " with highid " + highId );
             state = IdGeneratorState.SLAVE;
         }
 
@@ -242,11 +242,11 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
                     
                 localFactory.create( fs, fileName, highId );
                 delegate = localFactory.open( fs, fileName, grabSize, idType, highId );
-                logger.debug( "Instantiated " + delegate + " of type " + idType + " with highid " + highId );
+                logger.debug( "Instantiated master delegate " + delegate + " of type " + idType + " with highid " + highId );
             }
             else
                 logger.debug( "Keeps " + delegate );
-            // Otherwise we're master or TBD (initial state) which is the same
+
             state = IdGeneratorState.MASTER;
         }
 
@@ -271,7 +271,6 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
                 throw new IllegalStateException( state.name() );
             
             long result = delegate.nextId();
-            logger.debug( "Using id " + result + " from " + delegate + " of type " + idType );
             return result;
         }
 
