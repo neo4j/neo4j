@@ -55,6 +55,10 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
     @Override
     public IdGenerator open( FileSystemAbstraction fs, File fileName, int grabSize, IdType idType, long highId )
     {
+        HaIdGenerator previous = generators.remove( idType );
+        if ( previous != null )
+            previous.close();
+        
         IdGenerator initialIdGenerator = null;
         switch ( globalState )
         {
