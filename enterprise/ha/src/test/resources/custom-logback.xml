@@ -20,7 +20,7 @@
 
 -->
 <included>
-  <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+  <appender name="CONSOLE2" class="ch.qos.logback.core.ConsoleAppender">
     <encoder>
       <pattern>%property{host} %-5level %25c{0}: %message%n</pattern>
     </encoder>
@@ -38,15 +38,18 @@
   <logger name="ha2.protocol.atomicbroadcast.AtomicBroadcastMap" level="warn">
   </logger>
 
+  <logger name="org.neo4j.kernel.info.DiagnosticsManager" level="warn">
+  </logger>
+
   <logger name="org.neo4j.cluster.ha2.ha2.protocol" level="info" additive="true">
   </logger>
 
   <root level="debug">
-    <appender-ref ref="CONSOLE"/>
+    <appender-ref ref="CONSOLE2"/>
   </root>
 
-  <logger name="org.neo4j" level="debug">
-    <appender-ref ref="CONSOLE"/>
+  <logger name="org.neo4j">
+    <appender-ref ref="CONSOLE2"/>
   </logger>
 
 </included>
