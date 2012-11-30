@@ -50,6 +50,7 @@ import org.neo4j.com.RequestContext.Tx;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.helpers.Triplet;
+import org.neo4j.kernel.impl.nioneo.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -289,7 +290,7 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
     {
         if ( !myStoreId.equals( storeId ) )
         {
-            throw new ComException( storeId + " from response doesn't match my " + myStoreId );
+            throw new MismatchingStoreIdException( myStoreId, storeId );
         }
     }
 

@@ -5,6 +5,8 @@ o Cluster snapshot synchronization used for HA cluster membership
 o Implements JMX changes  
 o IdGenerators instantiated properly in ModeSwitcher
 o ZooKeeper compatibility layer introduced, allows for rolling upgrades from 1.8
+o Ability to join a cluster even if there's an existing and empty database with a mismatching store ID.
+  If the existing database isn't empty an error will be logged and database unable to start.
 
 1.9.M01 (2012-10-23)
 --------------------

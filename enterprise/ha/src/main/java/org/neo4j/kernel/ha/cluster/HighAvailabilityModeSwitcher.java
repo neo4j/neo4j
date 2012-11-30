@@ -25,7 +25,6 @@ import static org.neo4j.helpers.Settings.INTEGER;
 import static org.neo4j.helpers.Uris.parameter;
 import static org.neo4j.kernel.impl.nioneo.store.NeoStore.isStorePresent;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 
@@ -60,6 +59,7 @@ import org.neo4j.kernel.ha.StoreOutOfDateException;
 import org.neo4j.kernel.ha.StoreUnableToParticipateInClusterException;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.kernel.impl.nioneo.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.LockManager;
@@ -70,7 +70,6 @@ import org.neo4j.kernel.impl.transaction.xaframework.MissingLogDataException;
 import org.neo4j.kernel.impl.transaction.xaframework.NoSuchLogVersionException;
 import org.neo4j.kernel.impl.transaction.xaframework.XaFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
-import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -373,11 +372,24 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
             {
                 // Unregistering from a running DSManager stops the datasource
                 xaDataSourceManager.unregisterDataSource( Config.DEFAULT_DATA_SOURCE_NAME );
-                stopServicesAndHandleBranchedStore( config.get( HaSettings.branched_data_policy ), false );
+                stopServicesAndHandleBranchedStore( config.get( HaSettings.branched_data_policy ) );
             }
             catch ( IOException e )
             {
                 msgLog.warn( "Failed while trying to handle branched data", e );
+            }
+        }
+        catch ( MismatchingStoreIdException e )
+        {
+            if ( nioneoDataSource.getNeoStore().getLastCommittedTx() == 1 )
+            {
+                msgLog.warn( "Found and deleting empty store with mismatching store id " + e.getMessage() );
+                stopServicesAndHandleBranchedStore( BranchedDataPolicy.keep_none );
+            }
+            else
+            {
+                msgLog.error( "Store cannot participate in cluster due to mismatching store IDs" );
+                throw e;
             }
         }
         catch ( Throwable throwable )
@@ -426,7 +438,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
         try
         {
             // Remove the current store - neostore file is missing, nothing we can really do
-            stopServicesAndHandleBranchedStore( BranchedDataPolicy.keep_none, true );
+            stopServicesAndHandleBranchedStore( BranchedDataPolicy.keep_none );
             MasterClient18 copyMaster =
                     new MasterClient18( masterUri, graphDb.getMessageLog(), null, config );
 
@@ -459,18 +471,13 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
             graphDb.getDependencyResolver().resolveDependency( XaDataSourceManager.class ).start();
         }
 
-        private void stopServicesAndHandleBranchedStore( BranchedDataPolicy branchPolicy, boolean deleteIndexes )
+        private void stopServicesAndHandleBranchedStore( BranchedDataPolicy branchPolicy )
                 throws Throwable
         {
             graphDb.getDependencyResolver().resolveDependency( XaDataSourceManager.class ).stop();
             graphDb.getDependencyResolver().resolveDependency( TxManager.class ).stop();
             graphDb.getDependencyResolver().resolveDependency( NodeManager.class ).stop();
             branchPolicy.handle( config.get( InternalAbstractGraphDatabase.Configuration.store_dir ) );
-            if ( deleteIndexes )
-            {
-                FileUtils.deleteRecursively( new File(
-                        config.get( InternalAbstractGraphDatabase.Configuration.store_dir ), "index" ) );
-            }
         }
 
         /*

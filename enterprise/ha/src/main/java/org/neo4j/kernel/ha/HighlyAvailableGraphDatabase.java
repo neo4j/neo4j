@@ -86,6 +86,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     private ClusterClient clusterClient;
     private ClusterMemberEvents clusterEvents;
     private ClusterMemberAvailability clusterMemberAvailability;
+    private long stateSwitchTimeoutMillis;
 
     public HighlyAvailableGraphDatabase( String storeDir, Map<String, String> params,
                                          List<IndexProvider> indexProviders, List<KernelExtensionFactory<?>>
@@ -115,6 +116,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         life.add( updatePuller = new UpdatePuller( (HaXaDataSourceManager) xaDataSourceManager, master,
                 requestContextFactory, txManager, accessGuard, lastUpdateTime, config, msgLog ) );
 
+        stateSwitchTimeoutMillis = config.get( HaSettings.state_switch_timeout );
         life.add( new StartupWaiter() );
 
         diagnosticsManager.appendProvider( new HighAvailabilityDiagnostics( memberStateMachine, clusterClient ) );
@@ -136,7 +138,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         // TODO first startup ever we don't have a proper db, so don't even serve read requests
         // if this is a startup for where we have been a member of this cluster before we
         // can server (possibly quite outdated) read requests.
-        accessGuard.await( 1000 * 60 );
+        accessGuard.await( stateSwitchTimeoutMillis );
         return super.beginTx( forceMode );
     }
 
@@ -413,7 +415,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         @Override
         public void start() throws Throwable
         {
-            accessGuard.await( 30000 );
+            accessGuard.await( stateSwitchTimeoutMillis );
         }
     }
 
