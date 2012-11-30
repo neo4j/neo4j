@@ -72,6 +72,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvi
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.impl.transaction.xaframework.XaFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.logging.DevNullLoggingService;
 
 @AbstractNeo4jTestCase.RequiresPersistentGraphDatabase
 public class TestXa extends AbstractNeo4jTestCase
@@ -452,7 +453,7 @@ public class TestXa extends AbstractNeo4jTestCase
         NeoStoreXaDataSource neoStoreXaDataSource = new NeoStoreXaDataSource( config, sf, lockManager,
                 StringLogger.DEV_NULL,
                 new XaFactory( config, TxIdGenerator.DEFAULT, txManager,
-                        logBufferFactory, fileSystem, StringLogger.DEV_NULL, RecoveryVerifier.ALWAYS_VALID,
+                        logBufferFactory, fileSystem, new DevNullLoggingService(), RecoveryVerifier.ALWAYS_VALID,
                         LogPruneStrategies.NO_PRUNING ), NO_STATE_FACTORY,
                         new TransactionInterceptorProviders( Collections.<TransactionInterceptorProvider>emptyList(),
                         new DependencyResolver()

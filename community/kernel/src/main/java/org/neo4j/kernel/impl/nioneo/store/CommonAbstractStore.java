@@ -514,8 +514,7 @@ public abstract class CommonAbstractStore
 
     protected IdGenerator openIdGenerator( File fileName, int grabSize, boolean firstTime )
     {
-        return idGeneratorFactory.open( fileSystemAbstraction, fileName, grabSize, getIdType()
-        );
+        return idGeneratorFactory.open( fileSystemAbstraction, fileName, grabSize, getIdType(), figureOutHighestIdInUse() );
     }
 
     protected abstract long figureOutHighestIdInUse();
@@ -599,6 +598,7 @@ public abstract class CommonAbstractStore
                     ByteBuffer buffer = ByteBuffer.wrap(
                         UTF8.encode( getTypeAndVersionDescriptor() ) );
                     fileChannel.write( buffer );
+                    stringLogger.debug( "Closing " + storageFileName + ", truncating at " + fileChannel.position() + " vs file size " + fileChannel.size() );
                     fileChannel.truncate( fileChannel.position() );
                     fileChannel.force( false );
                     releaseFileLockAndCloseFileChannel();

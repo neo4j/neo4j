@@ -38,6 +38,7 @@ import org.jboss.netty.bootstrap.ServerBootstrap;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelException;
 import org.jboss.netty.channel.ChannelFuture;
+import org.jboss.netty.channel.ChannelFutureListener;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.channel.ChannelPipelineFactory;
@@ -293,7 +294,7 @@ public class NetworkInstance
         }
     }
 
-    private synchronized void send( Message message )
+    private synchronized void send( final Message message )
     {
         URI to = null;
         try
@@ -318,7 +319,7 @@ public class NetworkInstance
         }
         catch ( Exception e )
         {
-//            msgLog.error("Could not connect to:" + to, true);
+            msgLog.error( "Could not connect to:" + to, e );
             return;
         }
 
@@ -328,7 +329,17 @@ public class NetworkInstance
             {
                 msgLog.debug( "Sending to " + to + ": " + message );
             }
-            channel.write( message );
+            
+            ChannelFuture future = channel.write( message );
+            future.addListener( new ChannelFutureListener()
+            {
+                @Override
+                public void operationComplete( ChannelFuture future ) throws Exception
+                {
+                    if ( !future.isSuccess() )
+                        msgLog.error( "Unable to write " + message + " to " + future.getChannel(), future.getCause() );
+                }
+            } );
         }
         catch ( Exception e )
         {

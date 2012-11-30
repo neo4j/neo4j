@@ -31,7 +31,7 @@ public interface HighAvailabilityMemberListener
     void slaveIsAvailable( HighAvailabilityMemberChangeEvent event );
 
     void instanceStops( HighAvailabilityMemberChangeEvent event );
-    
+
     public static class Adapter implements HighAvailabilityMemberListener
     {
         @Override

@@ -26,7 +26,7 @@ import org.neo4j.kernel.impl.nioneo.store.IdGenerator;
 
 public interface IdGeneratorFactory
 {
-    IdGenerator open( FileSystemAbstraction fs, File fileName, int grabSize, IdType idType );
+    IdGenerator open( FileSystemAbstraction fs, File fileName, int grabSize, IdType idType, long highId );
 
     void create( FileSystemAbstraction fs, File fileName, long highId );
 

@@ -23,6 +23,7 @@ package org.neo4j.kernel;
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
+
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.IdGenerator;
 import org.neo4j.kernel.impl.nioneo.store.IdGeneratorImpl;
@@ -35,9 +36,10 @@ public class DefaultIdGeneratorFactory
 {
     private final Map<IdType, IdGenerator> generators = new HashMap<IdType, IdGenerator>();
 
-    public IdGenerator open( FileSystemAbstraction fs, File fileName, int grabSize, IdType idType )
+    public IdGenerator open( FileSystemAbstraction fs, File fileName, int grabSize, IdType idType, long highId )
     {
-        IdGenerator generator = new IdGeneratorImpl( fs, fileName, grabSize, idType.getMaxValue(), idType.allowAggressiveReuse() );
+        IdGenerator generator = new IdGeneratorImpl( fs, fileName, grabSize, idType.getMaxValue(),
+                idType.allowAggressiveReuse(), highId );
         generators.put( idType, generator );
         return generator;
     }

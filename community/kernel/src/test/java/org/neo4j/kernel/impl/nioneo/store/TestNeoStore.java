@@ -75,6 +75,7 @@ import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.logging.DevNullLoggingService;
 
 public class TestNeoStore extends AbstractNeo4jTestCase
 {
@@ -171,7 +172,7 @@ public class TestNeoStore extends AbstractNeo4jTestCase
 
         ds = new NeoStoreXaDataSource(config, sf, lockManager, StringLogger.DEV_NULL,
                 new XaFactory(config, TxIdGenerator.DEFAULT, new PlaceboTm(),
-                        new DefaultLogBufferFactory(), fileSystem, StringLogger.DEV_NULL, RecoveryVerifier.ALWAYS_VALID,
+                        new DefaultLogBufferFactory(), fileSystem, new DevNullLoggingService(), RecoveryVerifier.ALWAYS_VALID,
                         LogPruneStrategies.NO_PRUNING ), NO_STATE_FACTORY, new TransactionInterceptorProviders( Collections.<TransactionInterceptorProvider>emptyList(), new DependencyResolver()
 
         {

@@ -23,6 +23,7 @@ import java.io.File;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
+
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
@@ -43,7 +44,7 @@ public class JumpingIdGeneratorFactory implements IdGeneratorFactory
         this.sizePerJump = sizePerJump;
     }
 
-    public IdGenerator open( FileSystemAbstraction fs, File fileName, int grabSize, IdType idType )
+    public IdGenerator open( FileSystemAbstraction fs, File fileName, int grabSize, IdType idType, long highId )
     {
         return get( idType );
     }

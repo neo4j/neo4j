@@ -2,6 +2,7 @@
 \#*
 target
 *.swp
+.svn
 .project
 .classpath
 .settings

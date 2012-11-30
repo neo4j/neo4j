@@ -270,13 +270,13 @@ public abstract class InternalAbstractGraphDatabase
                 if ( instance instanceof KernelExtensions && to.equals( LifecycleStatus.STARTED ) && txManager
                         instanceof TxManager )
                 {
-                    InternalAbstractGraphDatabase.this.doRecovery();
+                    InternalAbstractGraphDatabase.this.doAfterRecoveryAndStartup();
                 }
             }
         } );
     }
 
-    protected void doRecovery()
+    protected void doAfterRecoveryAndStartup()
     {
         NeoStoreXaDataSource neoStoreDataSource = xaDataSourceManager.getNeoStoreDataSource();
         storeId = neoStoreDataSource.getStoreId();
@@ -444,7 +444,7 @@ public abstract class InternalAbstractGraphDatabase
         storeFactory = createStoreFactory();
         String keepLogicalLogsConfig = config.get( GraphDatabaseSettings.keep_logical_logs );
         xaFactory = new XaFactory( config, txIdGenerator, txManager, logBufferFactory, fileSystem,
-                logging.getLogger( XaFactory.class ), recoveryVerifier, LogPruneStrategies.fromConfigValue(
+                logging, recoveryVerifier, LogPruneStrategies.fromConfigValue(
                 fileSystem, keepLogicalLogsConfig ) );
 
         createNeoDataSource();

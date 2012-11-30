@@ -11,52 +11,14 @@
 
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>org.neo4j</groupId>
-	<artifactId>neo4j-perftest-harness</artifactId>
+	<artifactId>neo4j-performance-build</artifactId>
+  <packaging>pom</packaging>
   <version>1.9-SNAPSHOT</version>
 
-	<dependencies>
-
-    <dependency>
-      <groupId>org.reflections</groupId>
-      <artifactId>reflections</artifactId>
-      <version>0.9.8</version>
-    </dependency>
-
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j</artifactId>
-      <version>1.9.M01</version>
-    </dependency>
-
-    <dependency>
-      <groupId>org.codehaus.jackson</groupId>
-      <artifactId>jackson-mapper-lgpl</artifactId>
-      <version>1.9.10</version>
-    </dependency>
-
-    <dependency>
-      <groupId>com.google.code.java-allocation-instrumenter</groupId>
-      <artifactId>java-allocation-instrumenter</artifactId>
-      <version>2.0</version>
-    </dependency>
-
-    <dependency>
-        <groupId>junit</groupId>
-        <artifactId>junit</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.codehaus.jackson</groupId>
-      <artifactId>jackson-mapper-asl</artifactId>
-      <version>1.8.5</version>
-    </dependency>
-
-    <dependency>
-      <groupId>org.apache.commons</groupId>
-      <artifactId>commons-lang3</artifactId>
-      <version>3.1</version>
-    </dependency>
-  </dependencies>
+  <modules>
+    <module>performance-framework</module>
+    <module>performance-dashboard</module>
+  </modules>
 
 	<build>
 		<plugins>

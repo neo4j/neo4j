@@ -67,7 +67,8 @@ public class ClusterMembers
 
     private final Map<URI, ClusterMember> members = new CopyOnWriteHashMap<URI, ClusterMember>();
 
-    public ClusterMembers( Cluster cluster, BindingNotifier binding, Heartbeat heartbeat, ClusterMemberEvents clusterMemberEvents )
+    public ClusterMembers( Cluster cluster, BindingNotifier binding, Heartbeat heartbeat,
+                           ClusterMemberEvents clusterMemberEvents )
     {
         cluster.addClusterListener( new HAMClusterListener() );
         heartbeat.addHeartbeatListener( new HAMHeartbeatListener() );
@@ -84,8 +85,10 @@ public class ClusterMembers
     {
         for ( ClusterMember clusterMember : getMembers() )
         {
-            if (clusterMember.getClusterUri().equals( clusterUri ))
+            if ( clusterMember.getClusterUri().equals( clusterUri ) )
+            {
                 return clusterMember;
+            }
         }
         return null;
     }
@@ -131,9 +134,16 @@ public class ClusterMembers
 
     private class HAMClusterMemberListener extends ClusterMemberListener.Adapter
     {
+        private URI masterURI = null;
+
         @Override
         public void masterIsElected( URI masterUri )
         {
+            if ( masterUri.equals( this.masterURI ) )
+            {
+                return;
+            }
+            this.masterURI = masterUri;
             Map<URI, ClusterMember> newMembers = new CopyOnWriteHashMap<URI, ClusterMember>();
             for ( Map.Entry<URI, ClusterMember> memberEntry : members.entrySet() )
             {

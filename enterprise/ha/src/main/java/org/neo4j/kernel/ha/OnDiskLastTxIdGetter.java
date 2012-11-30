@@ -22,6 +22,7 @@ package org.neo4j.kernel.ha;
 import java.io.File;
 
 import org.neo4j.kernel.impl.core.LastTxIdGetter;
+import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 
 public class OnDiskLastTxIdGetter implements LastTxIdGetter
 {
@@ -35,6 +36,13 @@ public class OnDiskLastTxIdGetter implements LastTxIdGetter
     @Override
     public long getLastTxId()
     {
-        return new NeoStoreUtil(storeDirectory).getLastCommittedTx();
+        if ( new File(storeDirectory, NeoStore.DEFAULT_NAME).exists() )
+        {
+            return new NeoStoreUtil(storeDirectory).getLastCommittedTx();
+        }
+        else
+        {
+            return -1;
+        }
     }
 }

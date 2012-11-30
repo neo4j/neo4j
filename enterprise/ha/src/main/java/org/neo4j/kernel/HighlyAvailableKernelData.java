@@ -66,7 +66,8 @@ public class HighlyAvailableKernelData extends KernelData
         {
             ClusterMemberInfo clusterMemberInfo = new ClusterMemberInfo( clusterMember.getClusterUri().toString(),
                     clusterMember.getHAUri() != null, clusterMember.isAlive(), clusterMember.getHARole(),
-                    toArray( String.class, map( Functions.TO_STRING, clusterMember.getRoleURIs() ) ));
+                    toArray( String.class, map( Functions.TO_STRING, clusterMember.getRoleURIs() ) ),
+                    toArray( String.class, map( Functions.TO_STRING, clusterMember.getRoles() ) ) );
             clusterMemberInfos.add( clusterMemberInfo );
         }
 

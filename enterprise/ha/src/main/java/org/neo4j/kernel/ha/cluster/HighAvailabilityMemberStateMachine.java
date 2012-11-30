@@ -97,7 +97,7 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
     private class StateMachineClusterEventListener extends ClusterMemberListener.Adapter
     {
         @Override
-        public void masterIsElected( URI masterUri )
+        public synchronized void masterIsElected( URI masterUri )
         {
             try
             {
@@ -129,7 +129,7 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
         }
 
         @Override
-        public void memberIsAvailable( String role, URI instanceClusterUri, URI roleUri )
+        public synchronized void memberIsAvailable( String role, URI instanceClusterUri, URI roleUri )
         {
             try
             {
