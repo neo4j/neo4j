@@ -684,13 +684,21 @@ public enum LongerShortString
         setUp( '<', 0x14, retainUri );
         setUp( '>', 0x15, retainUri );
         setUp( '=', 0x16, retainUri );
-        for ( char c = 'A'; c <= 'Z'; c++ )
+        for ( char c = 'A'; c <= 'F'; c++ )
         {
             setUp( c, (byte) c, NUMERICAL, DATE, LOWER, EMAIL, URI, LOWERHEX );
         }
-        for ( char c = 'a'; c <= 'z'; c++ )
+        for ( char c = 'G'; c <= 'Z'; c++ )
+        {
+            setUp( c, (byte) c, NUMERICAL, DATE, LOWER, EMAIL, URI, LOWERHEX, UPPERHEX );
+        }
+        for ( char c = 'a'; c <= 'f'; c++ )
         {
             setUp( c, (byte) c, NUMERICAL, DATE, UPPER, UPPERHEX );
+        }
+        for ( char c = 'g'; c <= 'z'; c++ )
+        {
+            setUp( c, (byte) c, NUMERICAL, DATE, UPPER, UPPERHEX, LOWERHEX );
         }
         for ( char c = '0'; c <= '9'; c++ )
         {
