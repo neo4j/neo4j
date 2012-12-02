@@ -179,6 +179,10 @@ public class HaBeanIT
                     assertEquals( "instance " + info.getClusterId() + " is cluster slave but HA master",
                             HighAvailabilityModeSwitcher.SLAVE, info.getHaRole() );
                 }
+                for (String uri : info.getUris())
+                {
+                    assertTrue( "roles should contain URIs", uri.startsWith( "ha://" ) );
+                }
             }
         }
     }

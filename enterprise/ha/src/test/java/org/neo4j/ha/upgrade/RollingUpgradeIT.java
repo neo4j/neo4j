@@ -158,10 +158,10 @@ public class RollingUpgradeIT
                 HaSettings.server_id.name(), "" + serverId,
                 HaSettings.ha_server.name(), localhost + ":" + ( 6000+serverId ),
                 ClusterSettings.cluster_server.name(), localhost+":"+( 5000+serverId ),
-                "ha.coordinators", localhost + ":2181",
+                HaSettings.coordinators.name(), "localhost:2181",
                 ClusterSettings.initial_hosts.name(),
                 localhost + ":" + 5000 + "," + localhost + ":" + 5001 + "," + localhost + ":" + 5002);
-        if ( !forOneEight && serverId != 0 ) // TODO master election algo favors low serverId, default push factor favors high serverId
+        if ( !forOneEight && serverId != 1 ) // TODO master election algo favors low serverId, default push factor favors high serverId
             result.put( ClusterSettings.allow_init_cluster.name(), Boolean.FALSE.toString() );
         return result;
     }
@@ -190,10 +190,12 @@ public class RollingUpgradeIT
                     .setConfig( config( i, false ) )
                     .newGraphDatabase();
             debug( "Started as 1.9" );
+            Thread.sleep( 5000 );
 
             // issue transaction and see that it propagates
             String name = "upgraded-" + i;
             long node = createNodeWithRetry( newDbs[i], name );
+            System.out.println("===> Created on "+i);
             for ( int j = 0; j < i; j++ )
             {
                 legacyDbs[j].verifyNodeExists( node, name );
@@ -202,7 +204,7 @@ public class RollingUpgradeIT
             for ( int j = i; j < newDbs.length; j++ )
             {
                 verifyNodeExists( newDbs[j], node, name );
-                debug( "Verified on new db " + j );
+                debug( "==> Verified on new db " + j );
             }
         }
     }

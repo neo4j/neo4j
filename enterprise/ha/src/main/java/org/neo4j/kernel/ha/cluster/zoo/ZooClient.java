@@ -1137,6 +1137,19 @@ public class ZooClient implements Lifecycle, CompatibilityMonitor
                                             "is removed" );
                             updater = new CompatibilitySlaveOnlyTxIdUpdater();
                         }
+                        else
+                        {
+                            msgLog.logMessage( "Was the only one in the cluster, restarting in Paxos mode" );
+                            Listeners.notifyListeners( compatibilityListeners,
+                                    new Listeners.Notification<CompatibilityModeListener>()
+                                    {
+                                        @Override
+                                        public void notify( CompatibilityModeListener listener )
+                                        {
+                                            listener.leftCompatibilityMode();
+                                        }
+                                    } );
+                        }
                     }
                     else
                     {
@@ -1186,7 +1199,7 @@ public class ZooClient implements Lifecycle, CompatibilityMonitor
                     }
                     if ( !checkCompatibilityMode() )
                     {
-                        msgLog.logMessage( "It's now or never, baby" );
+                        msgLog.logMessage( "No longer in compatibility mode, notifying listeners" );
                         Listeners.notifyListeners( compatibilityListeners,
                                 new Listeners.Notification<CompatibilityModeListener>()
                                 {
