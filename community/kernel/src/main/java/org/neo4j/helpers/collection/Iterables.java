@@ -871,4 +871,36 @@ public final class Iterables
             };
         }
     }
+    
+    /**
+     * Returns the index of the first occurrence of the specified element
+     * in this iterable, or -1 if this iterable does not contain the element.
+     * More formally, returns the lowest index <tt>i</tt> such that
+     * <tt>(o==null&nbsp;?&nbsp;get(i)==null&nbsp;:&nbsp;o.equals(get(i)))</tt>,
+     * or -1 if there is no such index.
+     */
+    public static <T> int indexOf( T itemToFind, Iterable<T> iterable )
+    {
+        if ( itemToFind == null )
+        {
+            int index = 0;
+            for ( T item : iterable )
+            {
+                if ( item == null )
+                    return index;
+                index++;
+            }
+        }
+        else
+        {
+            int index = 0;
+            for ( T item : iterable )
+            {
+                if ( itemToFind.equals( item ) )
+                    return index;
+                index++;
+            }
+        }
+        return -1;
+    }
 }

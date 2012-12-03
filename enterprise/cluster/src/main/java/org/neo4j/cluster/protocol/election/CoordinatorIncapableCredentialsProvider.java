@@ -17,15 +17,12 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.ha.backup;
-
-import org.neo4j.cluster.protocol.election.DefaultElectionCredentials;
-import org.neo4j.cluster.protocol.election.ElectionCredentialsProvider;
+package org.neo4j.cluster.protocol.election;
 
 /**
- * Election credentials for backup, ensuring that it is never elected as master.
+ * Election credentials ensuring that it is never elected as coordinator.
  */
-public class BackupElectionCredentialsProvider implements ElectionCredentialsProvider
+public class CoordinatorIncapableCredentialsProvider implements ElectionCredentialsProvider
 {
     @Override
     public DefaultElectionCredentials getCredentials( String role )
