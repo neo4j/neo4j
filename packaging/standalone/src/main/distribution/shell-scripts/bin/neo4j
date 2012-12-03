@@ -125,7 +125,7 @@ buildclasspath() {
       ALL_JARS="$ALL_JARS":"$jar"
     fi
   done
-  
+
   # add any plugin jars in nested folders
   for jar in "$NEO4J_HOME"/plugins/**/*.jar ; do
     if [ -e "$jar" ] ; then
@@ -133,15 +133,10 @@ buildclasspath() {
     fi
   done
 
-  if [ -e "$NEO4J_HOME"/system/coordinator/lib ]; then
-    for jar in "$NEO4J_HOME"/system/coordinator/lib/*.jar ; do
-      if [ -e "$jar" ] ; then
-        ALL_JARS="$ALL_JARS":"$jar"
-      fi
-    done
-  fi
-
   CLASSPATH=${ALL_JARS}
+
+  # add useful conf stuff to classpath - always a good idea
+  CLASSPATH="$CLASSPATH":"$NEO4J_HOME"/conf/
 }
 
 detectrunning() {
