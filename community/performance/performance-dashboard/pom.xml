@@ -1,19 +1,22 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-	<parent>
-		<groupId>org.neo4j</groupId>
-		<artifactId>parent-central</artifactId>
-		<version>17</version>
+  <parent>
+    <groupId>org.neo4j.build</groupId>
+    <artifactId>parent-central</artifactId>
+    <version>35</version>
     <relativePath />
-	</parent>
+  </parent>
 
-	<properties>
-	</properties>
+  <properties>
+  </properties>
 
-	<modelVersion>4.0.0</modelVersion>
-	<groupId>org.neo4j.performance</groupId>
-	<artifactId>performance-dashboard</artifactId>
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>org.neo4j.performance</groupId>
+  <artifactId>neo4j-performance-test-dashboard</artifactId>
   <version>1.9-SNAPSHOT</version>
+
+  <name>Neo4j Performance Testing Dashboard</name>
+  <description>A dashboard for monitoring performance tests.</description>
 
 	<dependencies>
 
@@ -32,6 +35,7 @@
     <dependency>
         <groupId>junit</groupId>
         <artifactId>junit</artifactId>
+        <scope>test</scope>
     </dependency>
 
     <dependency>

@@ -10,10 +10,12 @@
 	</properties>
 
 	<modelVersion>4.0.0</modelVersion>
-	<groupId>org.neo4j</groupId>
+	<groupId>org.neo4j.build</groupId>
 	<artifactId>neo4j-performance-build</artifactId>
   <packaging>pom</packaging>
   <version>1.9-SNAPSHOT</version>
+
+  <name>Neo4j Performance Test Framework Build</name>
 
   <modules>
     <module>performance-framework</module>
