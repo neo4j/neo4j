@@ -21,7 +21,6 @@ package jmx;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -191,20 +190,16 @@ public class HaBeanIT
     public void testAfterHardMasterSwitchClusterInfoIsCorrect() throws Throwable
     {
         startCluster( 3 );
-        cluster.fail( cluster.getMaster() );
         RepairKit masterShutdown = cluster.shutdown( cluster.getMaster() );
         cluster.await( ClusterManager.masterAvailable() );
         cluster.await( ClusterManager.masterSeesSlavesAsAvailable( 1 ) );
         for ( HighlyAvailableGraphDatabase db : cluster.getAllMembers() )
         {
-            assertEquals( 3, ha( db ).getInstancesInCluster().length );
+            assertEquals( 2, ha( db ).getInstancesInCluster().length );
         }
-        assertEquals( "2", ha( cluster.getMaster() ).getInstanceId() );
         masterShutdown.repair();
         cluster.await( ClusterManager.masterAvailable() );
-        cluster.await( ClusterManager.masterSeesAllSlavesAsAvailable() );
-        assertEquals( "2", ha( cluster.getMaster() ).getInstanceId() );
-        assertFalse( cluster.getMemberByServerId( 1 ).isMaster() );
+        cluster.await( ClusterManager.masterSeesSlavesAsAvailable( 2 ) );
         for ( HighlyAvailableGraphDatabase db : cluster.getAllMembers() )
         {
             HighAvailability bean = ha( db );
@@ -304,13 +299,14 @@ public class HaBeanIT
         HighlyAvailableGraphDatabase failedDb = cluster.getAnySlave();
         RepairKit dbFailure = cluster.fail( failedDb );
         await( ha( cluster.getMaster() ), dbAlive( false ) );
-        await( ha( cluster.getAnySlave( failedDb ) ), dbAlive( false ) );
+        await( ha( cluster.getAnySlave( failedDb )), dbAlive( false ) );
 
         // Repair the failure and come back
         dbFailure.repair();
         for ( HighlyAvailableGraphDatabase db : cluster.getAllMembers() )
         {
             await( ha( db ), dbAvailability( true ) );
+            await( ha( db ), dbAlive( true ) );
         }
     }
 

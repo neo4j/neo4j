@@ -33,13 +33,14 @@ import org.neo4j.backup.OnlineBackupKernelExtension;
 import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.client.ClusterClient;
+import org.neo4j.cluster.member.ClusterMemberEvents;
 import org.neo4j.cluster.member.ClusterMemberListener;
 import org.neo4j.cluster.member.paxos.PaxosClusterMemberEvents;
+import org.neo4j.cluster.protocol.election.CoordinatorIncapableCredentialsProvider;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.HaSettings;
-import org.neo4j.cluster.member.ClusterMemberEvents;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -95,7 +96,7 @@ public final class HaBackupProvider extends BackupExtensionService
                 ClusterSettings.class, OnlineBackupSettings.class );
 
         ClusterClient clusterClient = life.add( new ClusterClient( ClusterClient.adapt( config ), logging,
-                new BackupElectionCredentialsProvider() ) );
+                new CoordinatorIncapableCredentialsProvider() ) );
         ClusterMemberEvents events = life.add( new PaxosClusterMemberEvents( clusterClient, clusterClient,
                 clusterClient, StringLogger.SYSTEM ) );
 
