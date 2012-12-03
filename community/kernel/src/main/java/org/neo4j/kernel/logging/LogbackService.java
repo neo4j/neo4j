@@ -22,9 +22,6 @@ package org.neo4j.kernel.logging;
 
 import java.io.File;
 
-import ch.qos.logback.classic.LoggerContext;
-import ch.qos.logback.classic.joran.JoranConfigurator;
-import ch.qos.logback.core.joran.spi.JoranException;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
@@ -34,6 +31,10 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.slf4j.Logger;
+
+import ch.qos.logback.classic.LoggerContext;
+import ch.qos.logback.classic.joran.JoranConfigurator;
+import ch.qos.logback.core.joran.spi.JoranException;
 
 /**
  * Logging service that uses Logback as backend.
@@ -131,7 +132,7 @@ public class LogbackService
     {
         Logger logger;
 
-        Slf4jStringLogger( Logger logger )
+        public Slf4jStringLogger( Logger logger )
         {
             this.logger = logger;
         }

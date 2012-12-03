@@ -27,6 +27,7 @@ import org.neo4j.cluster.com.message.MessageProcessor;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.ProposerMessage;
 import org.neo4j.cluster.protocol.cluster.ClusterMessage;
 import org.neo4j.cluster.statemachine.State;
+import org.neo4j.helpers.collection.Iterables;
 
 /**
  * State machine that implements the {@link Election} API.
@@ -88,13 +89,14 @@ public enum ElectionState
                                 else
                                 {
                                     // Should we delay this so that someone else can give it a go?
-                                    remainingDelays = context.getClusterContext().getConfiguration().getMembers()
-                                            .indexOf( context.getClusterContext().getMe() );
+                                    // Delay is based on my index in the *alive* member list.
+                                    remainingDelays = Iterables.indexOf( context.getClusterContext().getMe(),
+                                            context.getHeartbeatContext().getAlive() );
                                     if ( remainingDelays > 0 )
                                     {
-                                        context.getClusterContext().getLogger( ElectionState.class ).debug( "Delay " +
-                                                "demotion of " + demoteNode
-                                                .toString() + " " + remainingDelays + " times" );
+                                        context.getClusterContext().getLogger( ElectionState.class ).debug(
+                                                "Delay demotion of " + demoteNode.toString() + " " +
+                                                remainingDelays + " times" );
                                     }
                                 }
 

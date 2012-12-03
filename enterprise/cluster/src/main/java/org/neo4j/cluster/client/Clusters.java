@@ -61,7 +61,6 @@ public class Clusters
         return null;
     }
 
-
     @Override
     public boolean equals( Object o )
     {
@@ -180,10 +179,27 @@ public class Clusters
     public static class Member
     {
         private String host;
+        private boolean fullHaMember;
         
-        public Member( int port )
+        public Member( int port, boolean fullHaMember )
         {
-            this( localhost() + ":" + port );
+            this( localhost() + ":" + port, fullHaMember );
+        }
+
+        public Member( String host )
+        {
+            this( host, true );
+        }
+        
+        public Member( String host, boolean fullHaMember )
+        {
+            this.host = host;
+            this.fullHaMember = fullHaMember;
+        }
+        
+        public boolean isFullHaMember()
+        {
+            return fullHaMember;
         }
 
         private static String localhost()
@@ -197,12 +213,7 @@ public class Clusters
                 throw new RuntimeException( e );
             }
         }
-
-        public Member( String host )
-        {
-            this.host = host;
-        }
-
+        
         public String getHost()
         {
             return host;

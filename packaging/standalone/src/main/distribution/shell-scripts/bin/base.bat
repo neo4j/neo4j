@@ -190,7 +190,7 @@ rem
 rem function install
 rem
 :install
-set binPath="%javaPath%\bin\java.exe -Djava.util.logging.config.file=conf/windows-wrapper-logging.properties -DworkingDir="%~dps0.." -DconfigFile=%configFile% %classpath% %mainclass% -jar %~dps0%wrapperJarFilename% %serviceName%"
+set binPath="%javaPath%\bin\java.exe -Djava.util.logging.config.file=conf\windows-wrapper-logging.properties -DworkingDir="%~dps0.." -DconfigFile=%configFile% %classpath% %mainclass% -Dorg.neo4j.cluster.logdirectory="%~dps0..\data\log" -jar %~dps0%wrapperJarFilename% %serviceName%"
 sc create "%serviceName%" binPath= %binPath% DisplayName= "%serviceDisplayName%" start= %serviceStartType%
 call:start
 goto:eof

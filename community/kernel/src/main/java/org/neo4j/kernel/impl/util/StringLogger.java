@@ -272,12 +272,14 @@ public abstract class StringLogger
 
     public void debug( String msg )
     {
-        // Ignore
+        if ( isDebugEnabled() )
+            logMessage( msg );
     }
 
     public void debug( String msg, Throwable cause )
     {
-        // Ignore
+        if ( isDebugEnabled() )
+            logMessage( msg, cause );
     }
 
     public boolean isDebugEnabled()
@@ -608,6 +610,29 @@ public abstract class StringLogger
         public void logLine( String line )
         {
             target.logLine( line );
+        }
+    }
+    
+    protected static class SystemLogger extends ActualStringLogger
+    {
+        private boolean debugEnabled;
+
+        private SystemLogger( boolean debugEnabled )
+        {
+            super( new PrintWriter( System.out ) );
+            this.debugEnabled = debugEnabled;
+        }
+        
+        @Override
+        public boolean isDebugEnabled()
+        {
+            return debugEnabled;
+        }
+
+        @Override
+        public void close()
+        {
+            // don't close System.out
         }
     }
 }
