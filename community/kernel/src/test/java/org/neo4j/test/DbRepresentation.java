@@ -48,10 +48,15 @@ public class DbRepresentation implements Serializable
 
     public static DbRepresentation of( GraphDatabaseService db )
     {
+        return of( db, true );
+    }
+    
+    public static DbRepresentation of( GraphDatabaseService db, boolean includeIndexes )
+    {
         DbRepresentation result = new DbRepresentation();
         for ( Node node : GlobalGraphOperations.at( db ).getAllNodes() )
         {
-            NodeRep nodeRep = new NodeRep( db, node );
+            NodeRep nodeRep = new NodeRep( db, node, includeIndexes );
             result.nodes.put( node.getId(), nodeRep );
             result.highestNodeId = Math.max( node.getId(), result.highestNodeId );
             result.highestRelationshipId = Math.max( nodeRep.highestRelationshipId, result.highestRelationshipId );
@@ -61,10 +66,15 @@ public class DbRepresentation implements Serializable
 
     public static DbRepresentation of( File storeDir )
     {
+        return of( storeDir, true );
+    }
+    
+    public static DbRepresentation of( File storeDir, boolean includeIndexes )
+    {
         GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( storeDir.getPath() );
         try
         {
-            return of( db );
+            return of( db, includeIndexes );
         }
         finally
         {
@@ -131,7 +141,7 @@ public class DbRepresentation implements Serializable
         private final long id;
         private final Map<String, Map<String, Serializable>> index;
 
-        NodeRep( GraphDatabaseService db, Node node )
+        NodeRep( GraphDatabaseService db, Node node, boolean includeIndexes )
         {
             id = node.getId();
             properties = new PropertiesRep( node, node.getId() );
@@ -142,12 +152,12 @@ public class DbRepresentation implements Serializable
                 highestRel = Math.max( highestRel, rel.getId() );
             }
             this.highestRelationshipId = highestRel;
-            index = new HashMap<String, Map<String, Serializable>>();
-            fillIndex(db);
+            this.index = includeIndexes ? checkIndex( db ) : null;
         }
 
-        private void fillIndex(GraphDatabaseService db)
+        private Map<String, Map<String, Serializable>> checkIndex( GraphDatabaseService db )
         {
+            Map<String, Map<String, Serializable>> result = new HashMap<String, Map<String,Serializable>>();
             for (String indexName : db.index().nodeIndexNames())
             {
                 Map<String, Serializable> thisIndex = new HashMap<String, Serializable>();
@@ -167,8 +177,9 @@ public class DbRepresentation implements Serializable
                         }
                     }
                 }
-                index.put( indexName, thisIndex );
+                result.put( indexName, thisIndex );
             }
+            return result;
         }
 
         /*
@@ -206,7 +217,7 @@ public class DbRepresentation implements Serializable
                     continue;
                 }
                 
-                for (Map.Entry<String, Serializable> indexEntry : thisIndex.entrySet())
+                for ( Map.Entry<String, Serializable> indexEntry : thisIndex.entrySet() )
                 {
                     if ( !indexEntry.getValue().equals(
                             otherIndex.get( indexEntry.getKey() ) ) )
@@ -223,7 +234,8 @@ public class DbRepresentation implements Serializable
             if ( other.id != id )
                 diff.add( "Id differs mine:" + id + ", other:" + other.id );
             properties.compareWith( other.properties, diff );
-            compareIndex( other, diff );
+            if ( index != null && other.index != null )
+                compareIndex( other, diff );
             compareRelationships( other, diff );
         }
 
@@ -254,7 +266,8 @@ public class DbRepresentation implements Serializable
             result += properties.hashCode()*7;
             result += outRelationships.hashCode()*13;
             result += id * 17;
-            result += index.hashCode() * 19;
+            if ( index != null )
+                result += index.hashCode() * 19;
             return result;
         }
 
@@ -318,17 +331,6 @@ public class DbRepresentation implements Serializable
     {
         void add( String report );
     }
-    
-    private static class EqualsDiffReport implements DiffReport
-    {
-        private boolean diffing;
-        
-        @Override
-        public void add( String report )
-        {
-            diffing = true;
-        }
-    };
     
     private static class CollectionDiffReport implements DiffReport
     {
