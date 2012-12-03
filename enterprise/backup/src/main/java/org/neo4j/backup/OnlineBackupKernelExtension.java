@@ -22,7 +22,10 @@ package org.neo4j.backup;
 
 import java.net.URI;
 
+import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.member.ClusterMemberAvailability;
+import org.neo4j.cluster.member.ClusterMemberEvents;
+import org.neo4j.cluster.member.ClusterMemberListener;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -66,9 +69,8 @@ public class OnlineBackupKernelExtension implements Lifecycle
 
                 try
                 {
-                    ClusterMemberAvailability ha = graphDatabaseAPI.getDependencyResolver().resolveDependency( ClusterMemberAvailability.class );
-                    backupUri = URI.create( "backup://" + server.getSocketAddress().getHostName() + ":" + server.getSocketAddress().getPort() );
-                    ha.memberIsAvailable( BACKUP, backupUri );
+                    graphDatabaseAPI.getDependencyResolver().resolveDependency( ClusterMemberEvents.class).addClusterMemberListener(
+                            new StartBindingListener() );
                 }
                 catch ( NoClassDefFoundError e )
                 {
@@ -114,5 +116,59 @@ public class OnlineBackupKernelExtension implements Lifecycle
     @Override
     public void shutdown() throws Throwable
     {
+    }
+
+    private class StartBindingListener implements ClusterMemberListener
+    {
+
+
+        @Override
+        public void masterIsElected( URI masterUri )
+        {
+        }
+
+        @Override
+        public void memberIsAvailable( String role, URI instanceClusterUri, URI roleUri )
+        {
+            if ( graphDatabaseAPI.getDependencyResolver().resolveDependency( ClusterClient.class ).
+                    getServerUri().equals( instanceClusterUri ) && "master".equals( role ) )
+            {
+                // It was me and i am master - yey!
+                {
+                    try
+                    {
+                        ClusterMemberAvailability ha = graphDatabaseAPI.getDependencyResolver().resolveDependency( ClusterMemberAvailability.class );
+                        backupUri = URI.create( "backup://" + server.getSocketAddress().getHostName() + ":" + server.getSocketAddress().getPort() );
+                        ha.memberIsAvailable( BACKUP, backupUri );
+                    }
+                    catch ( Throwable t )
+                    {
+                        throw new RuntimeException( t );
+                    }
+                }
+            }
+        }
+
+        @Override
+        public void memberIsUnavailable( String role, URI instanceClusterUri )
+        {
+            if ( graphDatabaseAPI.getDependencyResolver().resolveDependency( ClusterClient.class ).
+                    getServerUri().equals( instanceClusterUri ) && "master".equals( role ) )
+            {
+                // It was me and i am master - yey!
+                {
+                    try
+                    {
+                        ClusterMemberAvailability ha = graphDatabaseAPI.getDependencyResolver().resolveDependency( ClusterMemberAvailability.class );
+                        backupUri = URI.create( "backup://" + server.getSocketAddress().getHostName() + ":" + server.getSocketAddress().getPort() );
+                        ha.memberIsUnavailable( BACKUP );
+                    }
+                    catch ( Throwable t )
+                    {
+                        throw new RuntimeException( t );
+                    }
+                }
+            }
+        }
     }
 }
