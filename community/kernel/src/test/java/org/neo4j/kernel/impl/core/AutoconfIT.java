@@ -51,8 +51,11 @@ public class AutoconfIT
         createBigDb( storeDir );
         Map<Class<? extends Store>, Long> configForBigDb = getConfigForDb( storeDir );
         for ( Map.Entry<Class<? extends Store>, Long> entry : configForEmptyDb.entrySet() )
-            assertTrue( configForBigDb.get( entry.getKey() ).longValue() > entry.getValue().longValue() );
-        
+        {
+           long bigDbValue=configForBigDb.get( entry.getKey() ).longValue();
+           long dbValue=entry.getValue().longValue();
+           assertTrue(String.format("%d > %d",bigDbValue,dbValue), bigDbValue > dbValue );
+        } 
         long specificNodeBytes = 1234567;
         Map<Class<? extends Store>, Long> configForSpecific = getConfigForDb( storeDir,
                 stringMap( "neostore.nodestore.db.mapped_memory", "" + specificNodeBytes ) );
@@ -64,7 +67,7 @@ public class AutoconfIT
         BatchInserter inserter = new BatchInserterImpl( storeDir );
         try
         {
-            inserter.createNode( 100000000, null );
+            inserter.createNode( 200000000, null );
         }
         finally
         {

@@ -58,7 +58,7 @@ public class Config implements DiagnosticsProvider
     // Messages to this log get replayed into a real logger once logging has been
     // instantiated.
     private StringLogger log = new BufferingLogger();
-	private final ConfigurationValidator validator;
+    private final ConfigurationValidator validator;
     
     public Config()
     {
@@ -72,7 +72,7 @@ public class Config implements DiagnosticsProvider
     
     public Config(Map<String, String> inputParams, Class<?> ... settingsClasses)
     {
-        this(inputParams, Iterables.iterable(settingsClasses));
+        this(inputParams, Iterables.<Class<?>,Class<?>>iterable(settingsClasses));
     }
     
     public Config(Map<String, String> inputParams, Iterable<Class<?>> settingsClasses)
@@ -175,26 +175,26 @@ public class Config implements DiagnosticsProvider
     }
     
     @Override
-	public String getDiagnosticsIdentifier()
+    public String getDiagnosticsIdentifier()
     {
         return getClass().getName();
     }
 
     @Override
-	public void acceptDiagnosticsVisitor( Object visitor )
+    public void acceptDiagnosticsVisitor( Object visitor )
     {
         // nothing visits configuration
     }
 
     @Override
-	public void dump( DiagnosticsPhase phase, StringLogger log )
+    public void dump( DiagnosticsPhase phase, StringLogger log )
     {
         if ( phase.isInitialization() || phase.isExplicitlyRequested() )
         {
             log.logLongMessage("Neo4j Kernel properties:", Iterables.map( new Function<Map.Entry<String, String>, String>()
             {
                 @Override
-				public String map( Map.Entry<String, String> stringStringEntry )
+                public String map( Map.Entry<String, String> stringStringEntry )
                 {
                     return stringStringEntry.getKey()+"="+stringStringEntry.getValue();
                 }

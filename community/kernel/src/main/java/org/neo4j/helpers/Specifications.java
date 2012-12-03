@@ -51,7 +51,7 @@ public class Specifications
 
     public static <T> AndSpecification<T> and( final Specification<T>... specifications )
     {
-        return and( Iterables.iterable( specifications ));
+        return and( Iterables.<Specification<T>,Specification<T>>iterable( specifications ));
     }
 
     public static <T> AndSpecification<T> and( final Iterable<Specification<T>> specifications )
@@ -61,7 +61,7 @@ public class Specifications
 
     public static <T> OrSpecification<T> or( final Specification<T>... specifications )
     {
-        return or( Iterables.iterable( specifications ) );
+        return or( Iterables.<Specification<T>,Specification<T>>iterable( specifications ) );
     }
 
     public static <T> OrSpecification<T> or( final Iterable<Specification<T>> specifications )
@@ -71,7 +71,7 @@ public class Specifications
 
     public static <T> Specification<T> in( final T... allowed )
     {
-        return in( Iterables.iterable( allowed ) );
+        return in( Iterables.<T,T>iterable( allowed ) );
     }
 
     public static <T> Specification<T> in( final Iterable<T> allowed )
@@ -140,14 +140,14 @@ public class Specifications
 
         public AndSpecification<T> and(Specification<T>... specifications)
         {
-            Iterable<Specification<T>> iterable = Iterables.iterable( specifications );
+            Iterable<Specification<T>> iterable = Iterables.<Specification<T>,Specification<T>>iterable( specifications );
             Iterable<Specification<T>> flatten = Iterables.flatten( this.specifications, iterable );
             return Specifications.and( flatten );
         }
 
         public OrSpecification<T> or(Specification<T>... specifications)
         {
-            return Specifications.or( Iterables.prepend( this, Iterables.iterable( specifications ) ) );
+            return Specifications.or( Iterables.prepend( this, Iterables.<Specification<T>,Specification<T>>iterable( specifications ) ) );
         }
     }
 
@@ -175,12 +175,12 @@ public class Specifications
 
         public AndSpecification<T> and(Specification<T>... specifications)
         {
-            return Specifications.and( Iterables.prepend( this, Iterables.iterable( specifications ) ) );
+            return Specifications.and( Iterables.prepend( this, Iterables.<Specification<T>,Specification<T>>iterable( specifications ) ) );
         }
 
         public OrSpecification<T> or(Specification<T>... specifications)
         {
-            Iterable<Specification<T>> iterable = Iterables.iterable( specifications );
+            Iterable<Specification<T>> iterable = Iterables.<Specification<T>,Specification<T>>iterable( specifications );
             Iterable<Specification<T>> flatten = Iterables.flatten( this.specifications, iterable );
             return Specifications.or( flatten );
         }
