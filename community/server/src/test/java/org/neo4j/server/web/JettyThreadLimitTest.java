@@ -41,9 +41,9 @@ public class JettyThreadLimitTest
 	        QueuedThreadPool threadPool = (QueuedThreadPool) server.getJetty()
 	                .getThreadPool();
 	        threadPool.start();
-	        loadThreadPool( threadPool );
-	        assertEquals( 10 * Runtime.getRuntime()
-	                .availableProcessors(), threadPool.getThreads() );
+            int configuredMaxThreads = 10 * Runtime.getRuntime().availableProcessors();
+            loadThreadPool( threadPool, configuredMaxThreads + 1 );
+            assertEquals(configuredMaxThreads, threadPool.getThreads() );
 	    } finally 
 	    {
 	    	server.stop();
@@ -62,7 +62,8 @@ public class JettyThreadLimitTest
 	        QueuedThreadPool threadPool = (QueuedThreadPool) server.getJetty()
 	                .getThreadPool();
 	        threadPool.start();
-	        loadThreadPool( threadPool );
+            int configuredMaxThreads = maxThreads * Runtime.getRuntime().availableProcessors();
+            loadThreadPool( threadPool, configuredMaxThreads + 1);
 	        int threads = threadPool.getThreads();
 	        assertTrue( threads <= maxThreads );
         } finally 
@@ -71,10 +72,10 @@ public class JettyThreadLimitTest
         }
     }
 
-    private void loadThreadPool( QueuedThreadPool threadPool )
+    private void loadThreadPool(QueuedThreadPool threadPool, int tasksToSubmit)
     {
-        final CyclicBarrier cb = new CyclicBarrier( 100 );
-        for ( int i = 0; i < 100; i++ )
+        final CyclicBarrier cb = new CyclicBarrier(tasksToSubmit);
+        for ( int i = 0; i < tasksToSubmit; i++ )
         {
             threadPool.dispatch( new Runnable()
             {
