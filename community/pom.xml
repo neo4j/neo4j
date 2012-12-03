@@ -29,7 +29,7 @@
   </scm>
 
   <modules>
-    <module>performance</module>
+    <!--module>performance</module-->
     <module>kernel</module>
     <module>jmx</module>
     <module>udc</module>
