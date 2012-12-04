@@ -550,12 +550,18 @@ public class IdGeneratorImpl implements IdGenerator
                 if ( writeBuffer.position() == writeBuffer.capacity() )
                 {
                     writeBuffer.flip();
-                    fileChannel.write( writeBuffer );
+                    while ( writeBuffer.hasRemaining() )
+                    {
+                        fileChannel.write( writeBuffer );
+                    }
                     writeBuffer.clear();
                 }
             }
             writeBuffer.flip();
-            fileChannel.write( writeBuffer );
+            while ( writeBuffer.hasRemaining() )
+            {
+                fileChannel.write( writeBuffer );
+            }
             // position for next readIdBatch
             fileChannel.position( readPosition );
             if ( aggressiveReuse )
