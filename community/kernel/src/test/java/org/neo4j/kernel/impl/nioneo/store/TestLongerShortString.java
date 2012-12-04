@@ -95,6 +95,26 @@ public class TestLongerShortString
     }
 
     @Test
+    public void canEncodeLowerHex() throws Exception
+    {
+        assertCanEncodeAndDecodeToSame( "da39a3ee5e6b4b0d3255bfef95601890afd80709" ); // sha1hex('') len=40
+        assertCanEncodeAndDecodeToSame( "0123456789" + "abcdefabcd" + "0a0b0c0d0e" + "1a1b1c1d1e" + "f9e8d7c6b5" + "a4f3" ); // len=54
+        assertCannotEncode( "da39a3ee5e6b4b0d3255bfef95601890afd80709" + "0123456789" + "abcde" ); // len=55
+        // test not failing on long illegal hex
+        assertCannotEncode( "aaaaaaaaaa" + "bbbbbbbbbb" + "cccccccccc" + "dddddddddd" + "eeeeeeeeee" + "x");
+    }
+    
+    @Test
+    public void canEncodeUpperHex() throws Exception
+    {
+        assertCanEncodeAndDecodeToSame( "DA39A3EE5E6B4B0D3255BFEF95601890AFD80709" ); // sha1HEX('') len=40
+        assertCanEncodeAndDecodeToSame( "0123456789" + "ABCDEFABCD" + "0A0B0C0D0E" + "1A1B1C1D1E" + "F9E8D7C6B5" + "A4F3" ); // len=54
+        assertCannotEncode( "DA39A3EE5E6B4B0D3255BFEF95601890AFD80709" + "0123456789" + "ABCDE" ); // len=55
+        // test not failing on long illegal HEX
+        assertCannotEncode( "AAAAAAAAAA" + "BBBBBBBBBB" + "CCCCCCCCCC" + "DDDDDDDDDD" + "EEEEEEEEEE" + "X");
+    }
+    
+    @Test
     public void checkMarginalFit() throws Exception
     {
         assertCanEncodeAndDecodeToSame( "^aaaaaaaaaaaaaaaaaaaaaaaaaa" );
