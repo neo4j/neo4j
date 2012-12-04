@@ -26,7 +26,7 @@ From Version,To Version,Upgrade Type
 1.5,1.6,Explicit
 1.6,1.7,Automatic
 1.7,1.8,Automatic
-1.8,1.9.M01,Automatic
+1.8,1.9.M02,Automatic
 |====
 
 == Automatic Upgrade ==
@@ -48,11 +48,12 @@ To perform a special upgrade (for significant changes to the database store):
 . "+allow_store_upgrade=true+" configuration parameter should be removed, set to "+false+" or commented out
 
 [[deployment-upgrading-one-nine]]
-== Upgrade 1.8 -> 1.9.M01 ==
+== Upgrade 1.8 -> 1.9.M02 ==
 
 There are no store format changes between these versions so upgrading standalone instances simply consists of starting the database with the newer version.
-
-In the case of High Availability (HA) installations, the "rolling upgrade" feature is not supported yet by the 1.9 series milestone releases.
+In the case of High Availability (HA) installations, the communication protocol and the master election algorithm have changed and a new "rolling upgrade"
+feature has been added, removing the need to shut down the entire cluster. For more information, refer to the "Upgrading a Neo4j HA Cluster" chapter
+of the HA section of the Neo4j manual.
 
 [[deployment-upgrading-one-eight]]
 == Upgrade 1.7 -> 1.8 ==
