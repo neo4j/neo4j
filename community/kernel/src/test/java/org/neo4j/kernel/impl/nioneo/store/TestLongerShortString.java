@@ -120,6 +120,12 @@ public class TestLongerShortString
         assertCanEncodeAndDecodeToSame( "^aaaaaaaaaaaaaaaaaaaaaaaaaa" );
         assertCannotEncode( "^aaaaaaaaaaaaaaaaaaaaaaaaaaa" );
     }
+    
+    @Test
+    public void canEncodeUUIDString() throws Exception
+    {
+        assertCanEncodeAndDecodeToSame( "81fe144f-484b-4a34-8e36-17a021540318" );
+    }
 
     private void assertCanEncodeAndDecodeToSame( String string )
     {
