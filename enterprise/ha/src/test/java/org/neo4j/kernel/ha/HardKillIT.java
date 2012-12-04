@@ -31,7 +31,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
-import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.client.ClusterClient;
@@ -48,7 +47,6 @@ import org.neo4j.test.ProcessStreamHandler;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.tooling.GlobalGraphOperations;
 
-@Ignore
 public class HardKillIT
 {
     private static final File path = TargetDirectory.forTest( HardKillIT.class ).graphDbDir( true );
