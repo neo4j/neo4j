@@ -6,18 +6,20 @@ Neo4j will try to classify your strings in a short string class and if it manage
 In that case, it will be stored without indirection in the property store, inlining it instead in the property record,
 meaning that the dynamic string store will not be involved in storing that value, leading to reduced disk footprint. 
 Additionally, when no string record is needed to store the property, it can be read and written in a single lookup, 
-leading to performance improvements.
+leading to performance improvements and less disk space required.
 
 The various classes for short strings are:
 
 * Numerical, consisting of digits 0..9 and the punctuation space, period, dash, plus, comma and apostrophe.
 * Date, consisting of digits 0..9 and the punctuation space dash, colon, slash, plus and comma.
-* Uppercase, consisting of uppercase letters A..Z, and the punctuation space, underscore, period, dash, colon and slash.
-* Lowercase, like upper but with lowercase letters a..z instead of uppercase
-* E-mail, consisting of lowercase letters a..z and the punctuation comma, underscore, period, dash, plus and the at sign (@).
-* URI, consisting of lowercase letters a..z, digits 0..9 and most punctuation available.
-* Alphanumerical, consisting of both upper and lowercase letters a..zA..z, digits 0..9 and punctuation space and underscore.
-* Alphasymbolical, consisting of both upper and lowercase letters a..zA..Z and the punctuation space, underscore, period, dash, colon, slash, plus, comma, apostrophe, at sign, pipe and semicolon.
+* Upper case, consisting of upper case letters A..Z, and the punctuation space, underscore, period, dash, colon and slash.
+* Lower case, like upper but with lower case letters a..z instead of upper case
+* E-mail, consisting of lower case letters a..z and the punctuation comma, underscore, period, dash, plus and the at sign (@).
+* URI, consisting of lower case letters a..z, digits 0..9 and most punctuation available.
+* Alpha-numerical, consisting of both upper and lower case letters a..zA..z, digits 0..9 and punctuation space and underscore.
+* Alpha-symbolical, consisting of both upper and lower case letters a..zA..Z and the punctuation space, underscore, period, dash, colon, slash, plus, comma, apostrophe, at sign, pipe and semicolon.
+* Hex (lower case), consisting of digits 0..9 and lower case letters a..f
+* Hex (upper case), consisting of digits 0..9 and upper case letters a..f
 * European, consisting of most accented european characters and digits plus punctuation space, dash, underscore and period -- like latin1 but with less punctuation.
 * Latin 1.
 * UTF-8.
@@ -30,7 +32,7 @@ In addition to the string's contents, the number of characters also determines i
 | String class | Character count limit
 | Numerical and Date | 54
 | Uppercase, Lowercase and E-mail | 43
-| URI, Alphanumerical and Alphasymbolical | 36
+| URI, Alphanumerical, Alphasymbolical and Hex | 36
 | European | 31
 | Latin1 | 27
 | UTF-8 | 14
