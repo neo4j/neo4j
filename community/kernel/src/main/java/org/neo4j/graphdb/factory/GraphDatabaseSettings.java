@@ -20,6 +20,7 @@
 
 package org.neo4j.graphdb.factory;
 
+import static java.util.Arrays.asList;
 import static org.neo4j.helpers.Settings.ANY;
 import static org.neo4j.helpers.Settings.BOOLEAN;
 import static org.neo4j.helpers.Settings.BYTES;
@@ -36,9 +37,13 @@ import static org.neo4j.helpers.Settings.basePath;
 import static org.neo4j.helpers.Settings.illegalValueMessage;
 import static org.neo4j.helpers.Settings.matches;
 import static org.neo4j.helpers.Settings.min;
+import static org.neo4j.helpers.Settings.options;
 import static org.neo4j.helpers.Settings.port;
 import static org.neo4j.helpers.Settings.range;
 import static org.neo4j.helpers.Settings.setting;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting.BooleanSetting;
@@ -70,7 +75,8 @@ public abstract class GraphDatabaseSettings
     @Description("The type of cache to use for nodes and relationships. "
             + "Note that the Neo4j Enterprise Edition has the additional 'gcr' cache type. "
             + "See the chapter on caches in the manual for more information.")
-    public static final CacheTypeSetting cache_type = new CacheTypeSetting( setting( "cache_type", Settings.options( CacheTypeSetting.availableCaches() ), CacheTypeSetting.soft ));
+    public static final CacheTypeSetting cache_type = new CacheTypeSetting( setting( "cache_type",
+            options( CacheTypeSetting.availableCaches() ), CacheTypeSetting.availableCaches()[0] ) );
 
     public static final BooleanSetting load_kernel_extensions = new BooleanSetting( setting("load_kernel_extensions", BOOLEAN, TRUE ));
 
@@ -389,16 +395,19 @@ public abstract class GraphDatabaseSettings
 
         public static String[] availableCaches()
         {
+            // TODO Use CacheProvider somehow
+            List<String> listOfCaches = new ArrayList<String>( asList( soft, weak, strong, none ) );
             try
             {
                 GraphDatabaseSettings.class.getClassLoader().loadClass( "org.neo4j.kernel.impl.cache" +
                         ".GCResistantCacheProvider" );
-                return new String[]{gcr, soft, weak, strong, none};
+                listOfCaches.add( 0, gcr );
             }
             catch ( ClassNotFoundException e )
             {
-                return new String[]{soft, weak, strong, none};
+                // OK, just don't add it to the list
             }
+            return listOfCaches.toArray( new String[0] );
         }
     }
 
