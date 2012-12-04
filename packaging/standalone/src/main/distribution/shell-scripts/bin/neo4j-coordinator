@@ -82,20 +82,9 @@ TIMEOUT=20
 PID_FILE=${NEO4J_INSTANCE}/data/neo4j-coord.pid
 
 buildclasspath() {
-  # confirm library jars
-  LIBDIR="$NEO4J_HOME"/lib
-  if [ ! -e "$LIBDIR" ] ; then
-    echo "Error: missing Neo4j Library, expected at $LIBDIR"
-    exit 1
-  fi
-
-  ALL_JARS=""
-  for jar in "$LIBDIR"/*.jar "$SYSLIBDIR"/*.jar ; do
-    [ -z "$ALL_JARS" ] && ALL_JARS="$jar" || ALL_JARS="$ALL_JARS":"$jar"
-  done
-
-  CLASSPATH=${ALL_JARS}
+  CLASSPATH="$NEO4J_HOME/lib/*:$NEO4J_HOME/system/lib/*:$NEO4J_HOME/conf/"
 }
+
 
 startit() {
 
@@ -123,21 +112,21 @@ startit() {
     checkandrepairenv
 
     if [ $UID == 0 ] ; then
-      su $NEO4J_USER -c "$JAVACMD -cp '$CLASSPATH' $JAVA_OPTS
+      su $NEO4J_USER -c "$JAVACMD -cp '$CLASSPATH' $JAVA_OPTS \
 	  -DconfigFile=conf\coord-wrapper.conf \
       -Dorg.neo4j.server.properties="${NEO4J_INSTANCE}/conf/neo4j-server.properties" \
 	  -Dorg.neo4j.cluster.logdirectory="${NEO4J_INSTANCE}/data/log" \
       -Dneo4j.home=\"${NEO4J_HOME}\" -Dneo4j.instance=\"${NEO4J_INSTANCE}\" \
-      org.neo4j.server.enterprise.StandaloneClusterClient >> \"$NEO4J_INSTANCE/data/log/coord-console.log\" 2>&1 & echo \$! > \"$PID_FILE\" "
-    else
+      org.neo4j.server.enterprise.StandaloneClusterClient >> "$NEO4J_INSTANCE/data/log/coord-console.log" 2>&1 & echo \$! > \"$PID_FILE\" "
+          else
       checkwriteaccess
       echo "WARNING: not changing user"
-      $JAVACMD -cp "${CLASSPATH}" $JAVA_OPTS
-	  -DconfigFile=conf\coord-wrapper.conf \
+      $JAVACMD -cp ${CLASSPATH} $JAVA_OPTS \
+	    -DconfigFile=conf\coord-wrapper.conf \
       -Dorg.neo4j.server.properties="${NEO4J_INSTANCE}/conf/neo4j-server.properties" \
-	  -Dorg.neo4j.cluster.logdirectory="${NEO4J_INSTANCE}/data/log" \
-      -Dneo4j.home="${NEO4J_HOME}" -Dneo4j.instance="${NEO4J_INSTANCE}" \
-      org.neo4j.server.enterprise.StandaloneClusterClient >> \"$NEO4J_INSTANCE/data/log/coord-console.log\" 2>&1 & echo \$! > \"$PID_FILE\" "
+	    -Dorg.neo4j.cluster.logdirectory="${NEO4J_INSTANCE}/data/log" \
+      -Dneo4j.home="${NEO4J_HOME}" \
+      -Dneo4j.instance="${NEO4J_INSTANCE}" org.neo4j.server.enterprise.StandaloneClusterClient  >> "$NEO4J_INSTANCE/data/log/coord-console.log" 2>&1 & echo $! > "${PID_FILE}"
     fi
     STARTED_PID=$( cat "$PID_FILE" )
 
