@@ -139,13 +139,13 @@ public class ClusterJoin
         {
             if ( !semaphore.tryAcquire( 5, TimeUnit.SECONDS ) )
             {
-                logger.logMessage( "Unable to leave cluster, timeout" );
+                logger.info( "Unable to leave cluster, timeout" );
             }
         }
         catch ( InterruptedException e )
         {
             Thread.interrupted();
-            logger.logMessage( "Unable to leave cluster, interrupted", e );
+            logger.warn( "Unable to leave cluster, interrupted", e );
         }
     }
 
@@ -197,7 +197,7 @@ public class ClusterJoin
                         Future<ClusterConfiguration> config = cluster.join( joinUri );
                         try
                         {
-                            logger.logMessage( "Joined cluster:" + config.get() );
+                            logger.info( "Joined cluster:" + config.get() );
 
                             try
                             {
@@ -216,7 +216,7 @@ public class ClusterJoin
                         }
                         catch ( ExecutionException e )
                         {
-                            logger.logMessage( "Could not join cluster member " + member.getHost() );
+                            logger.info( "Could not join cluster member " + member.getHost() );
                         }
                     }
                 }
@@ -243,13 +243,13 @@ public class ClusterJoin
                     }
                     catch ( TransformerException e )
                     {
-                        logger.logMessage( "Could not update cluster discovery file:" + clustersUri, e );
+                        logger.warn( "Could not update cluster discovery file:" + clustersUri, e );
                     }
                 }
             }
             else
             {
-                logger.warn( "Could not join cluster, and is not allowed to create one" );
+                logger.info( "Could not join cluster, and is not allowed to create one" );
             }
         }
     }
@@ -341,7 +341,7 @@ public class ClusterJoin
 
         if ( hosts == null || hosts.size() == 0 )
         {
-            logger.logMessage( "Creating cluster " + config.getClusterName() );
+            logger.info( "Creating cluster " + config.getClusterName() );
             cluster.create( config.getClusterName() );
         }
         else
@@ -371,7 +371,7 @@ public class ClusterJoin
                         }
                         catch ( ExecutionException e )
                         {
-                            logger.error( "Could not join cluster member " + hostString );
+                            logger.info( "Could not join cluster member " + hostString );
                         }
                     }
 
