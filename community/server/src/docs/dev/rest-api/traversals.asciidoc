@@ -51,19 +51,19 @@ Out of the box, the REST API supports JavaScript code in filters and evaluators.
 The script body will be executed in a Java context which has access to the full Neo4j http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/[Java API].
 See the examples for the exact syntax of the request.
 
-include::traversal-using-a-return-filter.txt[]
+include::traversal-using-a-return-filter.asciidoc[]
 
-include::return-relationships-from-a-traversal.txt[]
+include::return-relationships-from-a-traversal.asciidoc[]
 
-include::return-paths-from-a-traversal.txt[]
+include::return-paths-from-a-traversal.asciidoc[]
 
-include::traversal-returning-nodes-below-a-certain-depth.txt[]
+include::traversal-returning-nodes-below-a-certain-depth.asciidoc[]
 
-include::creating-a-paged-traverser.txt[]
+include::creating-a-paged-traverser.asciidoc[]
 
-include::paging-through-the-results-of-a-paged-traverser.txt[]
+include::paging-through-the-results-of-a-paged-traverser.asciidoc[]
 
-include::paged-traverser-page-size.txt[]
+include::paged-traverser-page-size.asciidoc[]
 
-include::paged-traverser-timeout.txt[]
+include::paged-traverser-timeout.asciidoc[]
 

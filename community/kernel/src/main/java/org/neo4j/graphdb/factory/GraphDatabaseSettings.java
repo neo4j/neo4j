@@ -24,7 +24,6 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSetting.ANY;
 import static org.neo4j.graphdb.factory.GraphDatabaseSetting.FALSE;
 import static org.neo4j.graphdb.factory.GraphDatabaseSetting.TRUE;
 
-import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting.BooleanSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting.DefaultValue;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting.FloatSetting;

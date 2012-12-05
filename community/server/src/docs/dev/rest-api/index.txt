@@ -2,37 +2,37 @@
 REST API
 ========
 
-include::introduction.txt[]
+include::introduction.asciidoc[]
 
-include::service-root.txt[]
+include::service-root.asciidoc[]
 
-include::streaming.txt[]
+include::streaming.asciidoc[]
 
-include::cypher.txt[]
+include::cypher.asciidoc[]
 
-include::nodes.txt[]
+include::nodes.asciidoc[]
 
-include::relationships.txt[]
+include::relationships.asciidoc[]
 
-include::relationship-types.txt[]
+include::relationship-types.asciidoc[]
 
-include::node-properties.txt[]
+include::node-properties.asciidoc[]
 
-include::relationship-properties.txt[]
+include::relationship-properties.asciidoc[]
 
-include::indexes.txt[]
+include::indexes.asciidoc[]
 
-include::indexes-unique.txt[]
+include::indexes-unique.asciidoc[]
 
-include::indexes-auto.txt[]
+include::indexes-auto.asciidoc[]
 
-include::indexes-configurable-auto.txt[]
+include::indexes-configurable-auto.asciidoc[]
 
-include::traversals.txt[]
+include::traversals.asciidoc[]
 
-include::graph-algos.txt[]
+include::graph-algos.asciidoc[]
 
-include::batch-operations.txt[]
+include::batch-operations.asciidoc[]
 
-include::wadl.txt[]
+include::wadl.asciidoc[]
 

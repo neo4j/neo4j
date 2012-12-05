@@ -102,7 +102,7 @@ tag=addData
 
 We now have a graph that looks like this: 
 
-include::hello-world-java-graph.txt[]
+include::hello-world-java-graph.asciidoc[]
 
 == Print the result ==
 
@@ -118,7 +118,7 @@ tag=readData
 
 Which will output:
 
-include::hello-world-java-output.txt[]
+include::hello-world-java-output.asciidoc[]
 
 == Remove the data ==
 

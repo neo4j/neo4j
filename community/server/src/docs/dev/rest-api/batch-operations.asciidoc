@@ -1,0 +1,9 @@
+[[rest-api-batch-ops]]
+== Batch operations ==
+
+include::execute-multiple-operations-in-batch.asciidoc[]
+
+include::refer-to-items-created-earlier-in-the-same-batch-job.asciidoc[]
+
+include::execute-multiple-operations-in-batch-streaming.asciidoc[]
+
