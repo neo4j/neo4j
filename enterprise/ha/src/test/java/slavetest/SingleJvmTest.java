@@ -34,8 +34,10 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.IndexProvider;
+import org.neo4j.ha.FakeClusterChecker;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.kernel.ClusterChecker;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.HighlyAvailableGraphDatabase;
@@ -145,16 +147,25 @@ public class SingleJvmTest extends AbstractHaTest
         HighlyAvailableGraphDatabase haGraphDb = new HighlyAvailableGraphDatabase(slavePath.getAbsolutePath(), cfg, 
                 Service.load( IndexProvider.class ), Service.load( KernelExtension.class ), Service.load( CacheProvider.class ) )
         {
+            public Broker slaveBroker;
+
             @Override
             protected Broker createBroker()
             {
-                return makeSlaveBroker( master, 0, machineId, this, cfg );
+                return slaveBroker;
             }
             
             @Override
             protected ClusterClient createClusterClient()
             {
-                return makeMasterClusterClientFromBroker( getBroker() );
+                slaveBroker = makeSlaveBroker( master, 0, machineId, this, cfg );
+                return makeMasterClusterClientFromBroker( slaveBroker );
+            }
+
+            @Override
+            protected ClusterChecker createClusterChecker()
+            {
+                return new FakeClusterChecker();
             }
         };
         
@@ -196,19 +207,27 @@ public class SingleJvmTest extends AbstractHaTest
             @Override
             protected Broker createBroker()
             {
-                return (masterBroker = makeMasterBroker( masterId, this, config ));
+                return masterBroker;
             }
             
             @Override
             protected ClusterClient createClusterClient()
             {
-                return makeMasterClusterClientFromBroker( getBroker() );
+                masterBroker = makeMasterBroker( config );
+
+                return makeMasterClusterClientFromBroker( masterBroker );
+            }
+
+            @Override
+            protected ClusterChecker createClusterChecker()
+            {
+                return new FakeClusterChecker();
             }
         };
         return haGraphDb;
     }
 
-    protected FakeMasterBroker makeMasterBroker( int masterId, GraphDatabaseAPI graphDb, Map<String, String> config )
+    protected FakeMasterBroker makeMasterBroker( Map<String, String> config )
     {
         config = new ConfigurationDefaults(GraphDatabaseSettings.class, HaSettings.class ).apply( config );
         Config configuration = new Config( config );

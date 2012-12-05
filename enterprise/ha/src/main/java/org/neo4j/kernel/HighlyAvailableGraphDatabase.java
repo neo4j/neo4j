@@ -124,6 +124,7 @@ import org.neo4j.kernel.logging.Logging;
 public class HighlyAvailableGraphDatabase
         extends AbstractGraphDatabase implements GraphDatabaseService, GraphDatabaseAPI
 {
+    public static final String NOT_ALLOWED_TO_JOIN_CLUSTER_WITH_EMPTY_STORE = "Joining an existing cluster with an empty store is not allowed.";
     private static final int NEW_MASTER_STARTUP_RETRIES = 3;
     public static final String COPY_FROM_MASTER_TEMP = "temp-copy";
     private static final int STORE_COPY_RETRIES = 3;
@@ -267,15 +268,29 @@ public class HighlyAvailableGraphDatabase
                 configuration.get( HaSettings.max_concurrent_channels_per_slave ),
                 configuration.get( HaSettings.com_chunk_size ) );
         masterClientResolver.getDefault();
-        // TODO The dependency from BrokerFactory to 'this' is completely
-        // broken. Needs rethinking
-        this.broker = createBroker();
-        this.pullUpdates = false;
-        this.clusterClient = createClusterClient();
 
         migrateBranchedDataDirectoriesToRootDirectory();
 
+        this.clusterClient = createClusterClient();
+
+        ClusterChecker clusterChecker = createClusterChecker();
+
+        if (storeDoesNotExist() && clusterChecker.clusterAlreadyExistsAndThereIsNoMaster())
+        {
+            throw new IllegalStateException( NOT_ALLOWED_TO_JOIN_CLUSTER_WITH_EMPTY_STORE );
+        }
+
+        this.broker = createBroker();
+        this.pullUpdates = false;
+
         start();
+    }
+
+    protected ClusterChecker createClusterChecker()
+    {
+        return new ClusterChecker(
+                configuration.get( HaSettings.cluster_name ),
+                (ZooKeeperClusterClient) clusterClient );
     }
 
     private void migrateBranchedDataDirectoriesToRootDirectory()
@@ -574,7 +589,7 @@ public class HighlyAvailableGraphDatabase
 
         getMessageLog().logMessage( "Starting up highly available graph database '" + getStoreDir() + "'" );
 
-        if ( !new File( storeDir, NeoStore.DEFAULT_NAME ).exists() )
+        if ( storeDoesNotExist() )
         {   // Try for
             long endTime = System.currentTimeMillis()+60000;
             Exception exception = null;
@@ -621,6 +636,11 @@ public class HighlyAvailableGraphDatabase
         newMaster( new InformativeStackTrace( "Starting up [" + machineId + "] for the first time" ) );
         localGraph();
         masterClientResolver.enableDowngradeBarrier();
+    }
+
+    private boolean storeDoesNotExist()
+    {
+        return !new File( storeDir, NeoStore.DEFAULT_NAME ).exists();
     }
 
     private void checkAndRecoverCorruptLogs( InternalAbstractGraphDatabase localDb,

@@ -73,13 +73,18 @@ public class ZooKeeperClusterClient extends AbstractZooKeeperManager implements 
         this.clusterName = clusterName;
         try
         {
-            zooKeeper = new ZooKeeper( zooKeeperServers, SESSION_TIME_OUT, new WatcherImpl() );
+            zooKeeper = createZooKeeper( zooKeeperServers );
         }
         catch ( IOException e )
         {
             throw new ZooKeeperException(
                 "Unable to create zoo keeper client", e );
         }
+    }
+
+    protected ZooKeeper createZooKeeper( String zooKeeperServers ) throws IOException
+    {
+        return new ZooKeeper( zooKeeperServers, SESSION_TIME_OUT, new WatcherImpl() );
     }
 
     @Override

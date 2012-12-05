@@ -75,7 +75,7 @@ public class TestSlaveOnlyCluster
          */
         master.shutdown();
         Thread.sleep( 1000 ); // Make sure everything is shut down, including ZK threads
-        master = new HighlyAvailableGraphDatabase( dir.directory( "master", true ).getAbsolutePath(), stringMap(
+        master = new HighlyAvailableGraphDatabase( dir.directory( "master", false ).getAbsolutePath(), stringMap(
                 HaSettings.server_id.name(), "0", HaSettings.server.name(), "localhost:" + 6666,
                 HaSettings.coordinators.name(), zoo.getConnectionString(), HaSettings.pull_interval.name(),
                 0 + "ms" ) );

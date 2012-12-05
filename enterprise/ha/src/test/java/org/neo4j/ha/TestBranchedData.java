@@ -27,6 +27,7 @@ import java.io.File;
 
 import org.junit.Test;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.ClusterChecker;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.HighlyAvailableGraphDatabase.BranchedDataPolicy;
@@ -66,6 +67,12 @@ public class TestBranchedData
             protected ClusterClient createClusterClient()
             {
                 return new FakeClusterClient( getBroker() );
+            }
+
+            @Override
+            protected ClusterChecker createClusterChecker()
+            {
+                return new FakeClusterChecker(  );
             }
         };
         db.shutdown();

@@ -19,8 +19,10 @@
  */
 package org.neo4j.ha;
 
+import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.neo4j.com.Protocol.DEFAULT_FRAME_LENGTH;
 import static org.neo4j.helpers.collection.IteratorUtil.first;
@@ -134,26 +136,35 @@ public class TestConfig
             if ( i != master )
                 dbs.get( i ).shutdown();
     }
-    
+
     @Test
-    public void configureChunkSize() throws Exception
+    public void shouldOperateWhenChunkSizeIsSmallerThanFrameLength() throws Exception
     {
-        testSimpleCommunicationWithConfiguredChunkSize( "" + (DEFAULT_FRAME_LENGTH-10) );
-        testSimpleCommunicationWithConfiguredChunkSize( "1M" );
-        
+        testSimpleCommunicationWithConfiguredChunkSize( "" + (DEFAULT_FRAME_LENGTH -1) );
+    }
+
+    @Test
+    public void shouldOperateWhenChunkSizeIsEqualToFrameLength() throws Exception
+    {
+        testSimpleCommunicationWithConfiguredChunkSize( "" + DEFAULT_FRAME_LENGTH );
+    }
+
+    @Test
+    public void shouldNotOperateWhenChunkSizeIsLargerThanFrameLength() throws Exception
+    {
         try
         {
             new EnterpriseGraphDatabaseFactory()
                 .newHighlyAvailableDatabaseBuilder( dir.directory( "chunk_size", true ).getAbsolutePath() )
-                .setConfig( HaSettings.com_chunk_size, "" + (DEFAULT_FRAME_LENGTH+10) )
+                .setConfig( HaSettings.com_chunk_size, "" + (DEFAULT_FRAME_LENGTH+1) )
                 .setConfig( HaSettings.coordinators, zoo.getConnectionString() )
                 .setConfig( HaSettings.server_id, "1" )
                 .newGraphDatabase();
             fail( "Shouldn't be able to operate with such a high chunk size" );
         }
-        catch ( Exception e )
-        {   // Good
-            e.printStackTrace();
+        catch ( IllegalArgumentException e )
+        {
+            assertThat( e.getMessage(), is("Chunk size 16777217 needs to be equal or less than frame length 16777216") );
         }
     }
 
