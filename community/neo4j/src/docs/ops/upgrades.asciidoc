@@ -29,6 +29,13 @@ From Version,To Version,Upgrade Type
 1.8,1.9.M02,Automatic
 |====
 
+[NOTE]
+Downgrade is supported only between versions which do not have incompatible store layouts.
+That means that if you did an upgrade where you didn't have to explicitly set the +allow_store_upgrade+ flag to false then you can downgrade without any problems to the previous version used.
+Otherwise downgrading is not supported.
+In any case, downgrading currently cannot be done in a rolling fashion, even in HA deployments.
+Instead, the whole cluster must be shutdown and each machine downgraded individually and then service can be resumed.
+
 == Automatic Upgrade ==
 
 To perform a normal upgrade (for minor changes to the database store):
