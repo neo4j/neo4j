@@ -14,7 +14,7 @@ include::{importdir}/neo4j-examples-docs-jar/dev/index.txt[]
 
 :leveloffset: 2
 
-include::{importdir}/neo4j-cypher-docs-jar/dev/java/index.txt[]
+include::{importdir}/neo4j-cypher-docs-jar/dev/java/index.asciidoc[]
 
 :leveloffset: 1
 

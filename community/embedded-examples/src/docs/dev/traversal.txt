@@ -35,7 +35,7 @@ tag=friends-usage
 
 Which will give us the following output:
 
-include::matrix-traversal-java-new-friends.txt[]
+include::matrix-traversal-java-new-friends.asciidoc[]
 
 .Who coded the Matrix?
 [snippet,java]
@@ -58,7 +58,7 @@ tag=find--hackers-usage
 
 Now we know who coded the Matrix:
 
-include::matrix-traversal-java-new-hackers.txt[]
+include::matrix-traversal-java-new-hackers.asciidoc[]
 
 
 === Walking an ordered path ===
@@ -113,7 +113,7 @@ tag=printPath
 
 Which will output:
 
-include::ordered-path-java-output.txt[]
+include::ordered-path-java-output.asciidoc[]
 
 In this case we use a custom class to format the path output.
 This is how it's done:
@@ -166,7 +166,7 @@ tag=friends-usage
 
 Which will give us the following output:
 
-include::matrix-traversal-java-friends.txt[]
+include::matrix-traversal-java-friends.asciidoc[]
 
 .Who coded the Matrix?
 [snippet,java]
@@ -189,4 +189,4 @@ tag=find--hackers-usage
 
 Now we know who coded the Matrix:
 
-include::matrix-traversal-java-hackers.txt[]
+include::matrix-traversal-java-hackers.asciidoc[]

@@ -25,11 +25,11 @@ Next start the server as usual by invoking the start script as described in <<se
 
 Next we have to pre-empt the creation of an auto-index, by telling the server to create an apparently manual index which has the same name as the node (or relationship) auto-index. For example, in this case we'll create a node auto index whose name is +node_auto_index+, like so:
 
-include::create-an-auto-index-for-nodes-with-specific-configuration.txt[]
+include::create-an-auto-index-for-nodes-with-specific-configuration.asciidoc[]
 
 If you require configured auto-indexes for relationships, the approach is similar:
 
-include::create-an-auto-index-for-relationships-with-specific-configuration.txt[]
+include::create-an-auto-index-for-relationships-with-specific-configuration.asciidoc[]
 
 In case you're curious how this works, on the server side it triggers the creation of an index which happens to have the same name as the auto index that the database would create for itself. Now when we interact with the database, the index thinks the index is already created so the state machine skips over that step and just gets on with normal day-to-day auto-indexing.
 
@@ -38,13 +38,13 @@ You have to do this early in your server lifecycle, before any normal auto index
 
 There are a few REST calls providing a REST interface to the http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/index/AutoIndexer.html[AutoIndexer] component. The following REST calls work both, for `node` and `relationship` by simply changing the respective part of the URL.
 
-include::get-current-status-for-autoindexing-on-nodes.txt[]
+include::get-current-status-for-autoindexing-on-nodes.asciidoc[]
 
-include::enable-node-autoindexing.txt[]
+include::enable-node-autoindexing.asciidoc[]
 
-include::lookup-list-of-properties-being-autoindexed.txt[]
+include::lookup-list-of-properties-being-autoindexed.asciidoc[]
 
-include::add-a-property-for-autoindexing-on-nodes.txt[]
+include::add-a-property-for-autoindexing-on-nodes.asciidoc[]
 
-include::remove-a-property-for-autoindexing-on-nodes.txt[]
+include::remove-a-property-for-autoindexing-on-nodes.asciidoc[]
 

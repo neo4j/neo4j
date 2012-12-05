@@ -301,14 +301,14 @@ Know that the apps reside server-side so if you have a running server and starts
 [[shell-sample-session]]
 == An example shell session ==
 
-include::shell/sample-session.txt[]
+include::shell/sample-session.asciidoc[]
 
 [[shell-matrix-example]]
 == A Matrix example ==
 
 This example is creating a graph of the characters in the Matrix via the shell and then executing Cypher queries against it:
 
-include::shell/shell-matrix-example-graph.txt[]
+include::shell/shell-matrix-example-graph.asciidoc[]
 
 ////
 ["dot", "shell-matrix.svg"]
@@ -338,6 +338,6 @@ include::../autoindex.properties[]
 
 The following is a sample shell session creating the Matrix graph and querying it.
 
-include::shell/a-matrix-example.txt[]
+include::shell/a-matrix-example.asciidoc[]
 
 

@@ -447,7 +447,7 @@ To illustrate this, look at the following documentation that generates the Ascii
 
 [source]
 ------------------------------
-include::{importdir}/neo4j-examples-docs-jar/dev/examples/hello-world-sample-chapter.txt[]
+include::{importdir}/neo4j-examples-docs-jar/dev/examples/hello-world-sample-chapter.asciidoc[]
 ------------------------------
 
 this file is included in this documentation via
@@ -455,14 +455,14 @@ this file is included in this documentation via
 [source]
 ----
   :leveloffset: 3
-  include::{importdir}/neo4j-examples-docs-jar/dev/examples/hello-world-sample-chapter.txt[] 
+  include::{importdir}/neo4j-examples-docs-jar/dev/examples/hello-world-sample-chapter.asciidoc[] 
 ----
 
 which renders the following chapter: 
 
 :leveloffset: 3
 
-include::{importdir}/neo4j-examples-docs-jar/dev/examples/hello-world-sample-chapter.txt[]
+include::{importdir}/neo4j-examples-docs-jar/dev/examples/hello-world-sample-chapter.asciidoc[]
 
 :leveloffset: 2
 

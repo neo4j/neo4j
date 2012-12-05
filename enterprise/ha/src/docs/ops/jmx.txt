@@ -1,34 +1,34 @@
 
-include::jmx-list.txt[]
+include::jmx-list.asciidoc[]
 
 [NOTE]
 For additional information on the primitive datatypes (+int+, +long+ etc.) used in the JMX attributes,
 please see <<property-value-types>>.
 
-include::jmx-branched-store.txt[]
+include::jmx-branched-store.asciidoc[]
 
-include::jmx-cache-nodecache.txt[]
+include::jmx-cache-nodecache.asciidoc[]
 
-include::jmx-cache-relationshipcache.txt[]
+include::jmx-cache-relationshipcache.asciidoc[]
 
-include::jmx-configuration.txt[]
+include::jmx-configuration.asciidoc[]
 
-include::jmx-diagnostics.txt[]
+include::jmx-diagnostics.asciidoc[]
 
-include::jmx-high-availability.txt[]
+include::jmx-high-availability.asciidoc[]
 
-include::jmx-kernel.txt[]
+include::jmx-kernel.asciidoc[]
 
-include::jmx-locking.txt[]
+include::jmx-locking.asciidoc[]
 
-include::jmx-memory-mapping.txt[]
+include::jmx-memory-mapping.asciidoc[]
 
-include::jmx-primitive-count.txt[]
+include::jmx-primitive-count.asciidoc[]
 
-include::jmx-store-file-sizes.txt[]
+include::jmx-store-file-sizes.asciidoc[]
 
-include::jmx-transactions.txt[]
+include::jmx-transactions.asciidoc[]
 
-include::jmx-xa-resources.txt[]
+include::jmx-xa-resources.asciidoc[]
 
 

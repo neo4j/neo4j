@@ -184,5 +184,5 @@ For a user of the traversal API it is easier to implement the PathExpander/Relat
 
 :leveloffset: 3
 
-include::{importdir}/neo4j-examples-docs-jar/dev/examples/how-to-use-the-traversal-framework.txt[]
+include::{importdir}/neo4j-examples-docs-jar/dev/examples/how-to-use-the-traversal-framework.asciidoc[]
 
