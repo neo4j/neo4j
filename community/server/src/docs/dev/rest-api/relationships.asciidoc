@@ -1,0 +1,40 @@
+[[rest-api-relationships]]
+== Relationships ==
+
+Relationships are a first class citizen in the Neo4j REST API. They can be accessed either
+stand-alone or through the nodes they are attached to.
+
+The general pattern to get relationships from a node is:
+[source]
+GET http://localhost:7474/db/data/node/123/relationships/{dir}/{-list|&|types}
+
+Where +dir+ is one of +all+, +in+, +out+ and +types+ is an ampersand-separated list of types.
+See the examples below for more information.
+
+include::get-relationship-by-id.asciidoc[]
+
+include::create-relationship.asciidoc[]
+
+include::create-a-relationship-with-properties.asciidoc[]
+
+include::delete-relationship.asciidoc[]
+
+include::get-all-properties-on-a-relationship.asciidoc[]
+
+include::set-all-properties-on-a-relationship.asciidoc[]
+
+include::get-single-property-on-a-relationship.asciidoc[]
+
+include::set-single-property-on-a-relationship.asciidoc[]
+
+include::get-all-relationships.asciidoc[]
+
+include::get-incoming-relationships.asciidoc[]
+
+include::get-outgoing-relationships.asciidoc[]
+
+include::get-typed-relationships.asciidoc[]
+
+include::get-relationships-on-a-node-without-relationships.asciidoc[]
+
+

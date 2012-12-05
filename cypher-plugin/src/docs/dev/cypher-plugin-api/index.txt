@@ -13,11 +13,11 @@ of the field value - +Node+, +Relationship+ or any simple value like +String+.
 
 :leveloffset: 1
 
-include::send-a-query.txt[]
+include::send-a-query.asciidoc[]
 
-include::return-paths.txt[]
+include::return-paths.asciidoc[]
 
-include::send-queries-with-parameters.txt[]
+include::send-queries-with-parameters.asciidoc[]
 
-include::server-errors.txt[]
+include::server-errors.asciidoc[]
 

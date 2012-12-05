@@ -25,7 +25,7 @@ include::{importdir}/neo4j-lucene-index-docs-jar/dev/index.txt[]
 
 :leveloffset: 1
 
-include::{importdir}/neo4j-cypher-docs-jar/dev/index.txt[]
+include::{importdir}/neo4j-cypher-docs-jar/dev/index.asciidoc[]
 
 :leveloffset: 1
 

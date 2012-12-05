@@ -1,6 +1,6 @@
 [[rest-api-service-root]]
 == Service root ==
 
-include::get-service-root.txt[]
+include::get-service-root.asciidoc[]
 
 

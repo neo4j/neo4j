@@ -103,7 +103,7 @@ tag=createRelationships
 
 After these operations, our example graph looks like this:
 
-include::movie-and-actor-graph.txt[]
+include::movie-and-actor-graph.asciidoc[]
 
 [[indexing-remove]]
 == Remove ==
