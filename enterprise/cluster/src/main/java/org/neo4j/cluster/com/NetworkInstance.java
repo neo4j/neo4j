@@ -134,7 +134,7 @@ public class NetworkInstance
         // Listen for incoming connections
         nioChannelFactory = new NioServerSocketChannelFactory(
                 Executors.newCachedThreadPool( new NamedThreadFactory( "Cluster boss" ) ),
-                Executors.newFixedThreadPool( 10, new NamedThreadFactory( "Cluster worker" ) ) );
+                Executors.newFixedThreadPool( 2, new NamedThreadFactory( "Cluster worker" ) ), 2 );
         serverBootstrap = new ServerBootstrap( nioChannelFactory );
         serverBootstrap.setPipelineFactory( new NetworkNodePipelineFactory() );
 
@@ -146,7 +146,7 @@ public class NetworkInstance
         // Start client bootstrap
         clientBootstrap = new ClientBootstrap( new NioClientSocketChannelFactory(
                 Executors.newSingleThreadExecutor( new NamedThreadFactory( "Cluster client boss" ) ),
-                Executors.newFixedThreadPool( 10, new NamedThreadFactory( "Cluster client worker" ) ) ) );
+                Executors.newFixedThreadPool( 2, new NamedThreadFactory( "Cluster client worker" ) ), 2 ) );
         clientBootstrap.setPipelineFactory( new NetworkNodePipelineFactory() );
 
         // Try all ports in the given range
