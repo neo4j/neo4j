@@ -110,7 +110,7 @@ public class MultiPaxosServerFactory
         final HeartbeatContext heartbeatContext = new HeartbeatContext( clusterContext, learnerContext, executor );
         final MultiPaxosContext context = new MultiPaxosContext( clusterContext, proposerContext, learnerContext,
                 heartbeatContext, timeouts );
-        ElectionContext electionContext = new ElectionContext( Iterables.iterable( new ElectionRole(
+        ElectionContext electionContext = new ElectionContext( Iterables.<ElectionRole,ElectionRole>iterable( new ElectionRole(
                 ClusterConfiguration.COORDINATOR ) ),
                 clusterContext, heartbeatContext );
         SnapshotContext snapshotContext = new SnapshotContext( clusterContext, learnerContext );
