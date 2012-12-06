@@ -13,7 +13,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.neo4j.performance</groupId>
   <artifactId>neo4j-performance-test-dashboard</artifactId>
-  <version>1.9-SNAPSHOT</version>
+  <version>1.9.M02</version>
 
   <name>Neo4j Performance Testing Dashboard</name>
   <description>A dashboard for monitoring performance tests.</description>
