@@ -42,6 +42,10 @@
     <artifact id="org.scala-lang:scala-library:">
       <license>BSD - Scala License</license>
     </artifact>
+    <artifact id="org.mozilla:rhino:jar:1.7R3">
+      <license>GNU General Public License, version 2 or later</license>
+      <license>Mozilla Public License, Version 1.1</license>
+    </artifact>
   </override-licenses>
   <coalesced-licenses>
     <license name="Academic Free License version 3.0">
@@ -59,6 +63,7 @@
       <aka>Apache Software License - Version 2.0</aka>
       <aka>Apache Software Licenses</aka>
       <aka>Apache 2</aka>
+      <aka>Apache License, Version 2.0</aka>
     </license>
     <license name="BSD License">
       <aka>BSD</aka>
@@ -86,6 +91,7 @@
     </license>
     <license name="GNU General Public License, version 2">
       <aka>GPL2</aka>
+      <aka>GNU General Public License, Version 2</aka>
     </license>
     <license name="GNU General Public License, version 2 with the Classpath Exception">
       <aka>GPL2/CPE</aka>

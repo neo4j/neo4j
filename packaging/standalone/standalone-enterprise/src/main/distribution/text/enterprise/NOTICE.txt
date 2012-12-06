@@ -43,6 +43,7 @@ Apache Software License, Version 2.0
   Commons IO
   Commons Lang
   Commons Logging
+  ConcurrentLinkedHashMap
   Data Mapper for Jackson
   ExplorerCanvas
   Groovy
