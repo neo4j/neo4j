@@ -20,7 +20,6 @@
 
 package org.neo4j.graphdb.factory;
 
-import static java.util.Arrays.asList;
 import static org.neo4j.helpers.Settings.ANY;
 import static org.neo4j.helpers.Settings.BOOLEAN;
 import static org.neo4j.helpers.Settings.BYTES;
@@ -53,10 +52,12 @@ import org.neo4j.graphdb.factory.GraphDatabaseSetting.NumberOfBytesSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting.OptionsSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting.PortSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting.StringSetting;
+import org.neo4j.helpers.Service;
 import org.neo4j.helpers.Settings;
 import org.neo4j.kernel.configuration.ConfigurationMigrator;
 import org.neo4j.kernel.configuration.GraphDatabaseConfigurationMigrator;
 import org.neo4j.kernel.configuration.Migrator;
+import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.cache.MonitorGc;
 
 /**
@@ -395,19 +396,14 @@ public abstract class GraphDatabaseSettings
 
         public static String[] availableCaches()
         {
-            // TODO Use CacheProvider somehow
-            List<String> listOfCaches = new ArrayList<String>( asList( soft, weak, strong, none ) );
-            try
-            {
-                GraphDatabaseSettings.class.getClassLoader().loadClass( "org.neo4j.kernel.impl.cache" +
-                        ".GCResistantCacheProvider" );
-                listOfCaches.add( 0, gcr );
-            }
-            catch ( ClassNotFoundException e )
-            {
-                // OK, just don't add it to the list
-            }
-            return listOfCaches.toArray( new String[0] );
+            List<String> available = new ArrayList<String>();
+            for ( CacheProvider cacheProvider : Service.load( CacheProvider.class ) )
+                available.add( cacheProvider.getName() );
+                                               // --- higher prio ---->
+            for ( String prioritized : new String[] { "soft", "gcr" } )
+                if ( available.remove( prioritized ) )
+                    available.add( 0, prioritized );
+            return available.toArray( new String[0] );
         }
     }
 
