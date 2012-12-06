@@ -13,7 +13,7 @@
 	<groupId>org.neo4j.build</groupId>
 	<artifactId>neo4j-performance-build</artifactId>
   <packaging>pom</packaging>
-  <version>1.9.M02</version>
+  <version>1.9-SNAPSHOT</version>
 
   <name>Neo4j Performance Test Framework Build</name>
 
