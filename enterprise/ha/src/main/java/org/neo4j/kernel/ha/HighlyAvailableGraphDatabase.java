@@ -20,15 +20,12 @@
 
 package org.neo4j.kernel.ha;
 
-import org.neo4j.helpers.collection.Iterables;
-
 import java.io.File;
 import java.lang.reflect.Proxy;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import ch.qos.logback.classic.LoggerContext;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.com.NetworkInstance;
@@ -38,9 +35,9 @@ import org.neo4j.cluster.member.paxos.PaxosClusterMemberAvailability;
 import org.neo4j.cluster.member.paxos.PaxosClusterMemberEvents;
 import org.neo4j.cluster.protocol.election.DefaultElectionCredentialsProvider;
 import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.IndexProvider;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.HighlyAvailableKernelData;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
@@ -73,6 +70,8 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.ClassicLoggingService;
 import org.neo4j.kernel.logging.LogbackService;
 import org.neo4j.kernel.logging.Logging;
+
+import ch.qos.logback.classic.LoggerContext;
 
 public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
 {
