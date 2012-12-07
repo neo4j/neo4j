@@ -507,7 +507,7 @@ public class ProgressMonitorTest
         ProgressListener progressListener = builder.progressForPart( "only part", 1 );
         Completion completion = builder.build();
         Runnable callback = mock( Runnable.class );
-        doThrow( RuntimeException.class ).doNothing().when( callback ).run();
+        doThrow( new RuntimeException()).doNothing().when( callback ).run();
         completion.notify( callback );
         completion.notify( callback );
 
@@ -515,7 +515,7 @@ public class ProgressMonitorTest
         PrintStream sysErr = System.out;
         try
         {
-            System.setErr( new PrintStream( out ) );
+            System.setErr(new PrintStream(out));
 
             // when
             progressListener.done();

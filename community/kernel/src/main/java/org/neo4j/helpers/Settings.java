@@ -410,7 +410,7 @@ public final class Settings
 
     public static <T> Function<String, T> options( T... optionValues )
     {
-        return options( Iterables.iterable( optionValues ) );
+        return Settings.<T>options( Iterables.<T,T>iterable( optionValues ) );
     }
 
     public static <T> Function<String, T> options( final Iterable<T> optionValues )
