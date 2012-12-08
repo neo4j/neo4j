@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.pipes.ExecutionContext
 
 class ExpressionTest extends Assertions {
   @Test def replacePropWithCache() {
-    val a = Collect(Nullable(Property("r", "age")))
+    val a = Collect(Nullable(Property(Identifier("r"), "age")))
 
     val b = a.rewrite {
       case Property(n, p) => Literal(n + "." + p)

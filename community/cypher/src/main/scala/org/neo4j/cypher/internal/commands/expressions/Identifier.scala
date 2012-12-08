@@ -34,7 +34,7 @@ object Identifier {
 
 
 case class Identifier(entityName: String) extends Expression with Typed {
-  def apply(ctx: ExecutionContext): Any = ctx.getOrElse(entityName, throw new NotFoundException("Unknown identifier `%s`".format(entityName)))
+  def apply(ctx: ExecutionContext): Any = ctx.getOrElse(entityName, throw new NotFoundException("Unknown identifier `%s`.".format(entityName)))
 
   override def toString(): String = entityName
 
