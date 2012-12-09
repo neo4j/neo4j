@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.commands.expressions
 
 import org.neo4j.cypher._
+import internal.commands.AstNode
 import internal.helpers.TypeSafeMathSupport
 import internal.pipes.ExecutionContext
 import internal.symbols._
@@ -27,10 +28,9 @@ import collection.Map
 
 abstract class Expression extends (ExecutionContext => Any)
 with Typed
-with TypeSafe {
+with TypeSafe
+with AstNode[Expression] {
   def rewrite(f: Expression => Expression): Expression
-  def exists(f: Expression => Boolean) = filter(f).nonEmpty
-  def filter(f: Expression => Boolean): Seq[Expression]
   def subExpressions = filter( _ != this)
   def containsAggregate = exists(_.isInstanceOf[AggregationExpression])
 
@@ -60,7 +60,8 @@ case class CachedExpression(key:String, typ:CypherType) extends Expression {
   def apply(ctx: ExecutionContext) = ctx(key)
 
   def rewrite(f: (Expression) => Expression) = f(this)
-  def filter(f: (Expression) => Boolean) = if(f(this)) Seq(this) else Seq()
+
+  def children = Seq()
 
   def calculateType(symbols: SymbolTable) = typ
 
@@ -87,16 +88,13 @@ abstract class Arithmetics(left: Expression, right: Expression)
 
   def calc(a: Number, b: Number): Any
 
-  def filter(f: (Expression) => Boolean) = if(f(this))
-    Seq(this) ++ left.filter(f) ++ right.filter(f)
-  else
-    left.filter(f) ++ right.filter(f)
-
   def calculateType(symbols: SymbolTable): CypherType = {
     left.evaluateType(NumberType(), symbols)
     right.evaluateType(NumberType(), symbols)
     NumberType()
   }
+
+  def children = Seq(left, right)
 }
 
 trait ExpressionWInnerExpression extends Expression {

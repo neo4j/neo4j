@@ -34,10 +34,7 @@ case class NodesFunction(path: Expression) extends NullInNullOutExpression(path)
 
   def rewrite(f: (Expression) => Expression) = f(NodesFunction(path.rewrite(f)))
 
-  def filter(f: (Expression) => Boolean) = if (f(this))
-    Seq(this) ++ path.filter(f)
-  else
-    path.filter(f)
+  def children = Seq(path)
 
   def calculateType(symbols: SymbolTable) = {
     path.evaluateType(new CollectionType(MapType()), symbols)

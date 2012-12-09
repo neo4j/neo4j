@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.pipes._
 import org.neo4j.cypher._
 import internal.ClosingIterator
 import internal.commands._
+import internal.mutation.{CreateNode, CreateRelationship}
 import internal.spi.gdsimpl.{GDSBackedLocker, RepeatableReadQueryContext, GDSBackedQueryContext}
 import internal.symbols.{NodeType, RelationshipType, SymbolTable}
 import org.neo4j.kernel.InternalAbstractGraphDatabase
@@ -94,17 +95,17 @@ class ExecutionPlanImpl(inputQuery: Query, graph: GraphDatabaseService) extends 
 
   private def getStartPointsFromPlan(query: PartiallySolvedQuery): SymbolTable = {
     val startMap = query.start.map(_.token).map {
-      case RelationshipById(varName, _)                     => varName -> RelationshipType()
-      case RelationshipByIndex(varName, _, _, _)            => varName -> RelationshipType()
-      case RelationshipByIndexQuery(varName, _, _)          => varName -> RelationshipType()
-      case AllRelationships(varName: String)                => varName -> RelationshipType()
-      case CreateRelationshipStartItem(varName, _, _, _, _) => varName -> RelationshipType()
+      case RelationshipById(varName, _)                                         => varName -> RelationshipType()
+      case RelationshipByIndex(varName, _, _, _)                                => varName -> RelationshipType()
+      case RelationshipByIndexQuery(varName, _, _)                              => varName -> RelationshipType()
+      case AllRelationships(varName: String)                                    => varName -> RelationshipType()
+      case CreateRelationshipStartItem(CreateRelationship(varName, _, _, _, _)) => varName -> RelationshipType()
 
-      case NodeByIndex(varName: String, _, _, _)   => varName -> NodeType()
-      case NodeByIndexQuery(varName: String, _, _) => varName -> NodeType()
-      case NodeById(varName: String, _)            => varName -> NodeType()
-      case AllNodes(varName: String)               => varName -> NodeType()
-      case CreateNodeStartItem(varName: String, _) => varName -> NodeType()
+      case NodeByIndex(varName: String, _, _, _)       => varName -> NodeType()
+      case NodeByIndexQuery(varName: String, _, _)     => varName -> NodeType()
+      case NodeById(varName: String, _)                => varName -> NodeType()
+      case AllNodes(varName: String)                   => varName -> NodeType()
+      case CreateNodeStartItem(CreateNode(varName, _)) => varName -> RelationshipType()
     }.toMap
 
     val symbols = new SymbolTable(startMap)

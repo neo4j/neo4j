@@ -25,7 +25,7 @@ import org.neo4j.graphdb.Direction
 import collection.Seq
 import org.neo4j.cypher.internal.symbols._
 
-trait Pattern extends TypeSafe {
+trait Pattern extends TypeSafe with AstNode[Pattern] {
   def optional: Boolean
   def predicate: Predicate
   def possibleStartPoints: Seq[(String,CypherType)]
@@ -77,6 +77,10 @@ case class RelatedTo(left: String,
   }
 
   def symbolTableDependencies = predicate.symbolTableDependencies
+
+  def children = Seq(predicate)
+
+  override def addsToRow() = Seq(left, right, relName)
 }
 
 abstract class PathPattern extends Pattern {
@@ -138,6 +142,8 @@ case class VarLengthRelatedTo(pathName: String,
   def assertTypes(symbols: SymbolTable) {
     predicate.assertTypes(symbols)
   }
+
+  def children = Seq(predicate)
 }
 
 case class ShortestPath(pathName: String,
@@ -180,4 +186,6 @@ case class ShortestPath(pathName: String,
     possibleStartPoints.foreach(p => symbols.evaluateType(p._1, p._2))
     predicate.assertTypes(symbols)
   }
+
+  def children = Seq(predicate)
 }

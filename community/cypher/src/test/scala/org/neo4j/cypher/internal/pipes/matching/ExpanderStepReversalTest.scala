@@ -124,7 +124,7 @@ case class Pred(identifier: String) extends Predicate {
 
   def containsIsNull = false
 
-  def filter(f: (Expression) => Boolean) = null
+  def children = Seq.empty
 
   def assertInnerTypes(symbols: SymbolTable) {}
 

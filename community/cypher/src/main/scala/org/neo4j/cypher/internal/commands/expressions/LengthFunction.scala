@@ -37,10 +37,7 @@ with ExpressionWInnerExpression {
 
   def rewrite(f: (Expression) => Expression) = f(LengthFunction(inner.rewrite(f)))
 
-  def filter(f: (Expression) => Boolean) = if (f(this))
-    Seq(this) ++ inner.filter(f)
-  else
-    inner.filter(f)
+  def children = Seq(inner)
 
   val myType = LongType()
   val expectedInnerType = AnyCollectionType()

@@ -28,10 +28,7 @@ import org.neo4j.cypher.internal.pipes.ExecutionContext
 abstract class MathFunction(arg: Expression) extends Expression with NumericHelper {
   def innerExpectedType = NumberType()
 
-  def filter(f: (Expression) => Boolean) = if (f(this))
-    Seq(this) ++ arg.filter(f)
-  else
-    arg.filter(f)
+  def children = Seq(arg)
 
   def calculateType(symbols: SymbolTable) = arg.evaluateType(NumberType(), symbols)
 
@@ -64,15 +61,7 @@ case class RangeFunction(start: Expression, end: Expression, step: Expression) e
     new Range(startVal, endVal + 1, stepVal).toList
   }
 
-  def filter(f: (Expression) => Boolean) = {
-    val inner = start.filter(f) ++ end.filter(f) ++ step.filter(f)
-    if (f(this)) {
-      Seq(this) ++ inner
-    }
-    else {
-      inner
-    }
-  }
+  def children = Seq(start, end, step)
 
   def rewrite(f: (Expression) => Expression) = f(RangeFunction(start.rewrite(f), end.rewrite(f), step.rewrite(f)))
 

@@ -1,5 +1,3 @@
-package org.neo4j.cypher
-
 /**
  * Copyright (c) 2002-2012 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
@@ -19,6 +17,7 @@ package org.neo4j.cypher
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+package org.neo4j.cypher
 
 import org.junit.Test
 import collection.JavaConverters._

@@ -53,7 +53,7 @@ trait ReturnClause extends Base with Expressions {
       }
 
       val aggregationExpressions = returnItems.filter(_.isInstanceOf[ReturnItem]).map(_.asInstanceOf[ReturnItem]).
-        flatMap(_.expression.filter(_.isInstanceOf[AggregationExpression])).
+        flatMap(returnItem => returnItem.expression.filter(_.isInstanceOf[AggregationExpression])).
         map(_.asInstanceOf[AggregationExpression])
 
       val aggregation = aggregationExpressions match {

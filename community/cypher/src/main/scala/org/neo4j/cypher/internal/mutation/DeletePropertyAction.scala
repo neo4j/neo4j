@@ -48,7 +48,7 @@ case class DeletePropertyAction(element: Expression, property: String)
 
   def identifiers = Seq.empty
 
-  def filter(f: (Expression) => Boolean): Seq[Expression] = element.filter(f)
+  def children = Seq(element)
 
   def rewrite(f: (Expression) => Expression): UpdateAction = DeletePropertyAction(element.rewrite(f), property: String)
 

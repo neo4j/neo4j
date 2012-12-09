@@ -26,6 +26,7 @@ import expressions.{Expression, AggregationExpression}
 import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.cypher.internal.pipes.Pipe
 import org.neo4j.cypher.internal.mutation.UpdateAction
+import org.neo4j.cypher.internal.symbols.SymbolTable
 
 
 object PartiallySolvedQuery {
@@ -85,7 +86,7 @@ case class PartiallySolvedQuery(returns: Seq[QueryToken[ReturnColumn]],
                                 namedPaths: Seq[QueryToken[NamedPath]],
                                 aggregateQuery: QueryToken[Boolean],
                                 extracted: Boolean,
-                                tail: Option[PartiallySolvedQuery]) {
+                                tail: Option[PartiallySolvedQuery]) extends AstNode[PartiallySolvedQuery] {
 
   def isSolved = returns.forall(_.solved) &&
     start.forall(_.solved) &&
@@ -103,7 +104,7 @@ case class PartiallySolvedQuery(returns: Seq[QueryToken[ReturnColumn]],
     namedPaths.exists(_.unsolved) ||
     updates.exists(_.unsolved))
 
-  def rewrite(f: Expression => Expression):PartiallySolvedQuery = {
+  def rewrite(f: Expression => Expression): PartiallySolvedQuery = {
     this.copy(
       returns = returns.map {
         case Unsolved(ReturnItem(expression, name, renamed)) => Unsolved[ReturnColumn](ReturnItem(expression.rewrite(f), name, renamed))
@@ -127,8 +128,8 @@ case class PartiallySolvedQuery(returns: Seq[QueryToken[ReturnColumn]],
       },
       aggregation = aggregation.map {
         case Unsolved(exp) => Unsolved(exp.rewrite(f) match {
-                  case x: AggregationExpression => x
-                  case _ => throw new ThisShouldNotHappenError("Andrés & Michael","aggregation expressions should never be rewritten to non-aggregation-expressions")
+          case x: AggregationExpression => x
+          case _                        => throw new ThisShouldNotHappenError("Andrés & Michael", "aggregation expressions should never be rewritten to non-aggregation-expressions")
         })
         case x => x
       },
@@ -162,6 +163,19 @@ case class PartiallySolvedQuery(returns: Seq[QueryToken[ReturnColumn]],
 
    rExpressions ++ wExpressions ++ aExpressions ++ updateExpressions
   }
+
+  def children = {
+    val returnExpressions = returns.flatMap(_.token.expressions(new SymbolTable()).map(_._2))
+    val wherePredicates = where.map(_.token)
+    val aggregateExpressions = aggregation.map(_.token)
+    val sortExpressions = sort.map(_.token.expression)
+    val tailNodes = tail.toSeq.flatMap(_.children)
+    val startItems = start.map(_.token)
+    val patternsX = patterns.map(_.token)
+
+    returnExpressions ++ wherePredicates ++ aggregateExpressions ++ sortExpressions ++ tailNodes ++ startItems ++ patternsX
+  }
+
 }
 
 case class ExecutionPlanInProgress(query: PartiallySolvedQuery, pipe: Pipe, containsTransaction: Boolean=false)
