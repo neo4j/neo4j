@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.commands.expressions
 import org.neo4j.cypher.internal.helpers.CollectionSupport
 import org.neo4j.cypher.internal.commands.Predicate
 import org.neo4j.cypher.internal.symbols._
-import collection.Map
 import org.neo4j.cypher.internal.pipes.ExecutionContext
 
 case class FilterFunction(collection: Expression, id: String, predicate: Predicate)
@@ -41,7 +40,7 @@ case class FilterFunction(collection: Expression, id: String, predicate: Predica
   def calculateType(symbols: SymbolTable): CypherType = {
     val t = collection.evaluateType(AnyCollectionType(), symbols)
 
-    predicate.assertTypes(symbols.add(id, t.iteratedType))
+    predicate.throwIfSymbolsMissing(symbols.add(id, t.iteratedType))
 
     t
   }

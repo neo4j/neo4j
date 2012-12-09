@@ -79,8 +79,8 @@ class TopPipe(source: Pipe, sortDescription: List[SortItem], countExpression: Ex
 
   def symbols = source.symbols
 
-  def assertTypes(symbols: SymbolTable) {
-    sortDescription.foreach(_.expression.assertTypes(symbols))
+  def throwIfSymbolsMissing(symbols: SymbolTable) {
+    sortDescription.foreach(_.expression.throwIfSymbolsMissing(symbols))
     countExpression.evaluateType(NumberType(), symbols)
   }
 }

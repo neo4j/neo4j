@@ -23,7 +23,6 @@ import org.neo4j.cypher._
 import internal.helpers.TypeSafeMathSupport
 import internal.pipes.ExecutionContext
 import internal.symbols._
-import collection.Map
 
 abstract class Expression extends (ExecutionContext => Any)
 with Typed
@@ -49,7 +48,7 @@ with TypeSafe {
     t
   }
 
-  def assertTypes(symbols: SymbolTable) {
+  def throwIfSymbolsMissing(symbols: SymbolTable) {
     evaluateType(AnyType(), symbols)
   }
 

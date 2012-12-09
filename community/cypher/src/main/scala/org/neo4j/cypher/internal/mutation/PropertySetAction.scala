@@ -50,8 +50,8 @@ case class PropertySetAction(prop: Property, e: Expression)
 
   def rewrite(f: (Expression) => Expression): UpdateAction = PropertySetAction(prop, e.rewrite(f))
 
-  def assertTypes(symbols: SymbolTable) {
-    e.checkTypes(symbols)
+  def throwIfSymbolsMissing(symbols: SymbolTable) {
+    e.symbolDependenciesMet(symbols)
   }
 
   def symbolTableDependencies = prop.symbolTableDependencies ++ e.symbolTableDependencies

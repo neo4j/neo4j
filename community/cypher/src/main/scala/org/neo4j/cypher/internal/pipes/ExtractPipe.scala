@@ -41,8 +41,8 @@ class ExtractPipe(source: Pipe, val expressions: Map[String, Expression]) extend
 
   override def executionPlan(): String = source.executionPlan() + "\r\nExtract([" + source.symbols.keys.mkString(",") + "] => [" + expressions.keys.mkString(", ") + "])"
 
-  def assertTypes(symbols: SymbolTable) {
-    expressions.foreach(_._2.assertTypes(symbols))
+  def throwIfSymbolsMissing(symbols: SymbolTable) {
+    expressions.foreach(_._2.throwIfSymbolsMissing(symbols))
   }
 }
 
