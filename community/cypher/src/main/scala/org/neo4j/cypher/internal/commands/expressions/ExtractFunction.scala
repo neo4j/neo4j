@@ -37,11 +37,7 @@ case class ExtractFunction(collection: Expression, id: String, expression: Expre
 
   def rewrite(f: (Expression) => Expression) = f(ExtractFunction(collection.rewrite(f), id, expression.rewrite(f)))
 
-  def filter(f: (Expression) => Boolean) = if (f(this))
-    Seq(this) ++ collection.filter(f) ++ expression.filter(f)
-  else
-    collection.filter(f) ++ expression.filter(f)
-
+  def children = Seq(collection, expression)
 
   def calculateType(symbols: SymbolTable): CypherType = collection.evaluateType(AnyCollectionType(), symbols)
 

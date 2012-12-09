@@ -49,7 +49,7 @@ abstract class InCollection(collection: Expression, id: String, predicate: Predi
 
   def containsIsNull = predicate.containsIsNull
 
-  def filter(f: (Expression) => Boolean): Seq[Expression] = collection.filter(f) ++ predicate.filter(f)
+  def children = Seq(collection, predicate)
 
   def assertInnerTypes(symbols: SymbolTable) {
     val innerType = collection.evaluateType(AnyCollectionType(), symbols).iteratedType

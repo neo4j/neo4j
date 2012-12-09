@@ -46,7 +46,7 @@ case class PropertySetAction(prop: Property, e: Expression)
 
   def identifiers = Seq.empty
 
-  def filter(f: (Expression) => Boolean): Seq[Expression] = prop.filter(f) ++ e.filter(f)
+  def children = Seq(prop, e)
 
   def rewrite(f: (Expression) => Expression): UpdateAction = PropertySetAction(prop, e.rewrite(f))
 

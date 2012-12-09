@@ -28,10 +28,7 @@ case class Literal(v: Any) extends Expression {
 
   def rewrite(f: (Expression) => Expression) = f(this)
 
-  def filter(f: (Expression) => Boolean) = if (f(this))
-    Seq(this)
-  else
-    Seq()
+  def children = Seq.empty
 
   def calculateType(symbols: SymbolTable): CypherType = CypherType.fromJava(v)
 

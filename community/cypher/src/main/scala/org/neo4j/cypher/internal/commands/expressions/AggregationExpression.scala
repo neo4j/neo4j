@@ -38,11 +38,8 @@ abstract class AggregationWithInnerExpression(inner:Expression) extends Aggregat
     throw new SyntaxException("Can't use aggregate functions inside of aggregate functions.")
   
   def expectedInnerType: CypherType
-  
-  def filter(f: (Expression) => Boolean) = if (f(this))
-    Seq(this) ++ inner.filter(f)
-  else
-    inner.filter(f)
+
+  def children = Seq(inner)
 
   def symbolTableDependencies = inner.symbolTableDependencies
 }

@@ -28,7 +28,7 @@ case class Null() extends Expression {
 
   def rewrite(f: (Expression) => Expression): Expression = f(this)
 
-  def filter(f: (Expression) => Boolean): Seq[Expression] = if (f(this)) Seq(this) else Seq()
+  def children = Seq()
 
   def calculateType(symbols: SymbolTable): CypherType = ScalarType()
 

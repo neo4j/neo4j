@@ -35,10 +35,7 @@ case class Nullable(expression: Expression) extends Expression {
 
   def rewrite(f: (Expression) => Expression) = f(Nullable(expression.rewrite(f)))
 
-  def filter(f: (Expression) => Boolean) = if (f(this))
-    Seq(this) ++ expression.filter(f)
-  else
-    expression.filter(f)
+  def children = Seq(expression)
 
   def calculateType(symbols: SymbolTable): CypherType = expression.getType(symbols)
 

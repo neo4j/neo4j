@@ -26,7 +26,7 @@ import org.neo4j.cypher.{CypherTypeException, ExecutionEngineHelper}
 import collection.mutable.{Map => MutableMap}
 import org.neo4j.graphdb.{Node, NotFoundException}
 import org.neo4j.cypher.internal.symbols.{SymbolTable, CypherType, NodeType}
-import collection.{Map => CollectionMap}
+import collection.{Map => CollectionMap, mutable}
 import org.neo4j.cypher.internal.commands.{CreateRelationshipStartItem, CreateNodeStartItem}
 import org.neo4j.cypher.internal.commands.expressions.{Expression, Literal}
 import org.neo4j.cypher.internal.spi.gdsimpl.GDSBackedQueryContext
@@ -135,7 +135,7 @@ class MutationTest extends ExecutionEngineHelper with Assertions {
 case class InjectValue(value:Any, typ:CypherType) extends Expression {
   def apply(v1: ExecutionContext) = value
 
-  def filter(f: (Expression) => Boolean) = Seq(this)
+  def children = Seq()
 
   def rewrite(f: (Expression) => Expression) = this
 

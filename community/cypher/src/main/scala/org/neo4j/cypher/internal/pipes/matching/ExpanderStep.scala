@@ -90,7 +90,7 @@ trait ExpanderStep {
 abstract class MiniMapProperty(originalName: String, prop: String) extends Expression {
   protected def calculateType(symbols: SymbolTable) = fail()
 
-  def filter(f: (Expression) => Boolean) = fail()
+  def children = Seq.empty
 
   def rewrite(f: (Expression) => Expression) = fail()
 
@@ -123,7 +123,7 @@ abstract class MiniMapProperty(originalName: String, prop: String) extends Expre
 abstract class MiniMapIdentifier() extends Expression {
   protected def calculateType(symbols: SymbolTable) = fail()
 
-  def filter(f: (Expression) => Boolean) = fail()
+  def children = Seq.empty
 
   def rewrite(f: (Expression) => Expression) = fail()
 

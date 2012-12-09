@@ -156,8 +156,7 @@ case class UniqueLink(start: NamedExpectation, end: NamedExpectation, rel: Named
     node(start.name) + leftArrow(dir) + relInfo + rightArrow(dir) + node(end.name)
   }
 
-
-  def filter(f: (Expression) => Boolean) = Seq.empty
+  def children = Seq(start.e, end.e, rel.e)
 
   def assertTypes(symbols: SymbolTable) {
     checkTypes(start.properties, symbols)

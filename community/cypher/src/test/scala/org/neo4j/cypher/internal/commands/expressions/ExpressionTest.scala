@@ -26,6 +26,7 @@ import collection.Map
 import org.neo4j.cypher.CypherTypeException
 import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.cypher.internal.pipes.ExecutionContext
+import org.neo4j.cypher.internal.commands.{ReturnItem, Return}
 
 class ExpressionTest extends Assertions {
   @Test def replacePropWithCache() {
@@ -69,6 +70,30 @@ class ExpressionTest extends Assertions {
       Map("a" -> NumberType()))
   }
 
+  @Test
+  def should_find_inner_aggregations() {
+    //GIVEN
+    val e = LengthFunction(Collect(Property(Identifier("n"), "bar")))
+
+    //WHEN
+    val aggregates = e.filter(e => e.isInstanceOf[AggregationExpression])
+
+    //THEN
+    assert(aggregates.toList ===  List(Collect(Property(Identifier("n"), "bar"))))
+  }
+
+  @Test
+  def should_find_inner_aggregations2() {
+    //GIVEN
+    val r = ReturnItem(Avg(Property(Identifier("a"), "age")), "avg(a.age)")
+
+    //WHEN
+    val aggregates = r.expression.filter(e => e.isInstanceOf[AggregationExpression])
+
+    //THEN
+    assert(aggregates.toList ===  List(Avg(Property(Identifier("a"), "age"))))
+  }
+
   private def expectFailure(a: Map[String, CypherType], b: Map[String, CypherType]) {
     intercept[CypherTypeException](merge(a, b, a))
     intercept[CypherTypeException](merge(a, b, a))
@@ -109,7 +134,7 @@ Expected: %s""".format(a, b, result, expected))
 }
 
 class TestExpression extends Expression {
-  def filter(f: (Expression) => Boolean): Seq[Expression] = null
+  def children = Seq.empty
 
   def rewrite(f: (Expression) => Expression): Expression = null
 

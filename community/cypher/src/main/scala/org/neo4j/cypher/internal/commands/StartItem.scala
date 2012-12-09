@@ -92,7 +92,7 @@ case class CreateNodeStartItem(key: String, props: Map[String, Expression])
 
   def identifiers = Seq(key -> NodeType())
 
-  def filter(f: (Expression) => Boolean): Seq[Expression] = props.values.flatMap(_.filter(f)).toSeq
+  def children = props.map(_._2).toSeq
 
   def rewrite(f: (Expression) => Expression): UpdateAction = CreateNodeStartItem(key, rewrite(props, f))
 
@@ -112,7 +112,7 @@ case class CreateRelationshipStartItem(key: String,
   with UpdateAction
   with GraphElementPropertyFunctions {
 
-  def filter(f: (Expression) => Boolean): Seq[Expression] = from._1.filter(f) ++ props.values.flatMap(_.filter(f))
+  def children = props.map(_._2).toSeq ++ Seq(from._1, to._1) ++ from._2.map(_._2) ++ to._2.map(_._2)
 
   def rewrite(f: (Expression) => Expression) = CreateRelationshipStartItem(key, (f(from._1), from._2), (f(to._1), to._2), typ, props.map(mapRewrite(f)))
 

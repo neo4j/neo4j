@@ -63,7 +63,7 @@ case class DeleteEntityAction(elementToDelete: Expression)
 
   def rewrite(f: (Expression) => Expression) = DeleteEntityAction(elementToDelete.rewrite(f))
 
-  def filter(f: (Expression) => Boolean) = elementToDelete.filter(f)
+  def children = Seq(elementToDelete)
 
   def assertTypes(symbols: SymbolTable) {
     val elementType = elementToDelete.getType(symbols)

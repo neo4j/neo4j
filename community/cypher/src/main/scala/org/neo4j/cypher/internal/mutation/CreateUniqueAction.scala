@@ -163,7 +163,7 @@ case class CreateUniqueAction(incomingLinks: UniqueLink*) extends StartItem("noo
 
   private def canNotAdvanced(results: scala.Seq[(UniqueLink, CreateUniqueResult)]) = results.forall(_._2 == CanNotAdvance())
 
-  def filter(f: (Expression) => Boolean): Seq[Expression] = links.flatMap(_.filter(f)).distinct
+  def children = links.flatMap(_.children)
 
   def identifiers: Seq[(String,CypherType)] = links.flatMap(_.identifier2).distinct
 

@@ -32,7 +32,6 @@ object Identifier {
   def notNamed(x: String) = x.startsWith("  UNNAMED")
 }
 
-
 case class Identifier(entityName: String) extends Expression with Typed {
   def apply(ctx: ExecutionContext): Any = ctx.getOrElse(entityName, throw new NotFoundException("Unknown identifier `%s`.".format(entityName)))
 
@@ -40,10 +39,7 @@ case class Identifier(entityName: String) extends Expression with Typed {
 
   def rewrite(f: (Expression) => Expression) = f(this)
 
-  def filter(f: (Expression) => Boolean) = if (f(this))
-    Seq(this)
-  else
-    Seq()
+  def children = Seq()
 
   def calculateType(symbols: SymbolTable) =
     throw new ThisShouldNotHappenError("Andres", "This class should override evaluateType, and this method should never be run")

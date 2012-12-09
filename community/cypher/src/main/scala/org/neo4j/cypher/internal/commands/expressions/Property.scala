@@ -33,14 +33,7 @@ case class Property(mapExpr: Expression, property: String) extends Expression {
 
   def rewrite(f: (Expression) => Expression) = f(Property(mapExpr.rewrite(f), property))
 
-  def filter(f: (Expression) => Boolean) = {
-    val thisMatch = if (f(this))
-      Seq(this)
-    else
-      Seq()
-
-    mapExpr.filter(f) ++ thisMatch
-  }
+  def children = Seq(mapExpr)
 
   def calculateType(symbols: SymbolTable) =
     throw new ThisShouldNotHappenError("Andres", "This class should override evaluateType, and this method should never be run")

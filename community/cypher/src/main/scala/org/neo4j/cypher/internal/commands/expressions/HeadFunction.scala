@@ -33,10 +33,7 @@ case class HeadFunction(collection: Expression) extends NullInNullOutExpression(
 
   def rewrite(f: (Expression) => Expression) = f(HeadFunction(collection.rewrite(f)))
 
-  def filter(f: (Expression) => Boolean) = if (f(this))
-    Seq(this) ++ collection.filter(f)
-  else
-    collection.filter(f)
+  def children = Seq(collection)
 
   def identifierDependencies(expectedType: CypherType) = null
 
