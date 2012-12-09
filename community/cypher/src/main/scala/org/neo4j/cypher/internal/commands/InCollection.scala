@@ -30,15 +30,13 @@ abstract class InCollection(collection: Expression, id: String, predicate: Predi
   extends Predicate
   with CollectionSupport
   with Closure {
+
   def seqMethod[U](f: Seq[U]): ((U) => Boolean) => Boolean
 
   def isMatch(m: ExecutionContext): Boolean = {
     val seq = makeTraversable(collection(m)).toSeq
 
-    seqMethod(seq)(item => {
-      val innerMap = m.newWith(id -> item)
-      predicate.isMatch(innerMap)
-    })
+    seqMethod(seq)(item =>predicate.isMatch(m.newWith(id -> item)))
   }
 
   def atoms: Seq[Predicate] = Seq(this)
@@ -57,9 +55,12 @@ abstract class InCollection(collection: Expression, id: String, predicate: Predi
   }
 
   def symbolTableDependencies = symbolTableDependencies(collection, predicate, id)
+
+  override def addsToRow() = Seq(id)
 }
 
-case class AllInCollection(collection: Expression, symbolName: String, inner: Predicate) extends InCollection(collection, symbolName, inner) {
+case class AllInCollection(collection: Expression, symbolName: String, inner: Predicate)
+  extends InCollection(collection, symbolName, inner) {
   def seqMethod[U](f: Seq[U]): ((U) => Boolean) => Boolean = f.forall _
 
   def name = "all"
@@ -67,7 +68,8 @@ case class AllInCollection(collection: Expression, symbolName: String, inner: Pr
   def rewrite(f: (Expression) => Expression) = AllInCollection(collection.rewrite(f), symbolName, inner.rewrite(f))
 }
 
-case class AnyInCollection(collection: Expression, symbolName: String, inner: Predicate) extends InCollection(collection, symbolName, inner) {
+case class AnyInCollection(collection: Expression, symbolName: String, inner: Predicate)
+  extends InCollection(collection, symbolName, inner) {
   def seqMethod[U](f: Seq[U]): ((U) => Boolean) => Boolean = f.exists _
 
   def name = "any"
@@ -75,7 +77,8 @@ case class AnyInCollection(collection: Expression, symbolName: String, inner: Pr
   def rewrite(f: (Expression) => Expression) = AnyInCollection(collection.rewrite(f), symbolName, inner.rewrite(f))
 }
 
-case class NoneInCollection(collection: Expression, symbolName: String, inner: Predicate) extends InCollection(collection, symbolName, inner) {
+case class NoneInCollection(collection: Expression, symbolName: String, inner: Predicate)
+  extends InCollection(collection, symbolName, inner) {
   def seqMethod[U](f: Seq[U]): ((U) => Boolean) => Boolean = x => !f.exists(x)
 
   def name = "none"
@@ -83,7 +86,8 @@ case class NoneInCollection(collection: Expression, symbolName: String, inner: P
   def rewrite(f: (Expression) => Expression) = NoneInCollection(collection.rewrite(f), symbolName, inner.rewrite(f))
 }
 
-case class SingleInCollection(collection: Expression, symbolName: String, inner: Predicate) extends InCollection(collection, symbolName, inner) {
+case class SingleInCollection(collection: Expression, symbolName: String, inner: Predicate)
+  extends InCollection(collection, symbolName, inner) {
   def seqMethod[U](f: Seq[U]): ((U) => Boolean) => Boolean = x => f.filter(x).length == 1
 
   def name = "single"

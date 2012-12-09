@@ -29,6 +29,8 @@ trait AstNode[T] {
 
   def exists(f: Expression => Boolean) = filter(f).nonEmpty
 
+  def addsToRow():Seq[String] = Seq.empty
+
   def filter(isMatch: Expression => Boolean): Seq[Expression] =
   // We use our visit method to create an traversable, from which we create the Seq
     new Traversable[Expression] {
