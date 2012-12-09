@@ -79,6 +79,8 @@ case class RelatedTo(left: String,
   def symbolTableDependencies = predicate.symbolTableDependencies
 
   def children = Seq(predicate)
+
+  override def addsToRow() = Seq(left, right, relName)
 }
 
 abstract class PathPattern extends Pattern {

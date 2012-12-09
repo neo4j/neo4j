@@ -19,25 +19,28 @@
  */
 package org.neo4j.cypher.internal.commands
 
-import expressions.{Identifier, Literal, Expression}
-import org.neo4j.cypher.internal.pipes.{QueryState, ExecutionContext}
-import org.neo4j.cypher.internal.mutation.{GraphElementPropertyFunctions, UpdateAction}
-import scala.Long
-import collection.Map
-import org.neo4j.graphdb.{DynamicRelationshipType, Node}
+import expressions.{Literal, Expression}
+import org.neo4j.cypher.internal.mutation._
 import org.neo4j.cypher.internal.symbols._
-import org.neo4j.cypher.internal.helpers.CollectionSupport
+import org.neo4j.cypher.internal.mutation.CreateNode
+import org.neo4j.cypher.internal.mutation.CreateRelationship
 
 
-abstract class StartItem(val identifierName: String) extends TypeSafe {
+abstract class StartItem(val identifierName: String) extends TypeSafe with AstNode[StartItem] {
   def mutating = false
-}
 
-trait ReadOnlyStartItem extends TypeSafe {
+  def children:Seq[AstNode[_]] = Seq.empty
+
+  def rewrite(f: (Expression) => Expression) = this
+
   def assertTypes(symbols: SymbolTable) {}
 
-  def symbolTableDependencies = Set()
+  def symbolTableDependencies = Set.empty
+
+  override def addsToRow() = Seq(identifierName)
 }
+
+trait ReadOnlyStartItem extends TypeSafe
 
 case class RelationshipById(varName: String, expression: Expression)
   extends StartItem(varName) with ReadOnlyStartItem
@@ -63,88 +66,34 @@ case class AllNodes(columnName: String)
 case class AllRelationships(columnName: String)
   extends StartItem(columnName) with ReadOnlyStartItem
 
-case class CreateNodeStartItem(key: String, props: Map[String, Expression])
-  extends StartItem(key)
-  with Mutator
-  with UpdateAction
-  with GraphElementPropertyFunctions
-  with CollectionSupport {
-  def exec(context: ExecutionContext, state: QueryState) = {
-    val db = state.db
-    if (props.size == 1 && props.head._1 == "*") {
-      makeTraversable(props.head._2(context)).map(x => {
-        val m: Map[String, Expression] = x.asInstanceOf[Map[String, Any]].map {
-          case (k, v) => (k -> Literal(v))
-        }
-        val node = state.query.createNode()
-        state.createdNodes.increase()
-        setProperties(node, m, context, state)
-        context.newWith(key -> node)
-      })
-    } else {
-      val node = state.query.createNode()
-      state.createdNodes.increase()
-      setProperties(node, props, context, state)
-
-      Stream(context.newWith(key -> node))
-    }
-  }
-
-  def identifiers = Seq(key -> NodeType())
-
-  def children = props.map(_._2).toSeq
-
-  def rewrite(f: (Expression) => Expression): UpdateAction = CreateNodeStartItem(key, rewrite(props, f))
-
-  def assertTypes(symbols: SymbolTable) {
-    checkTypes(props, symbols)
-  }
-
-  def symbolTableDependencies = symbolTableDependencies(props)
-}
-
-case class CreateRelationshipStartItem(key: String,
-                                       from: (Expression, Map[String, Expression]),
-                                       to: (Expression, Map[String, Expression]),
-                                       typ: String, props: Map[String, Expression])
-  extends StartItem(key)
-  with Mutator
-  with UpdateAction
-  with GraphElementPropertyFunctions {
-
-  def children = props.map(_._2).toSeq ++ Seq(from._1, to._1) ++ from._2.map(_._2) ++ to._2.map(_._2)
-
-  def rewrite(f: (Expression) => Expression) = CreateRelationshipStartItem(key, (f(from._1), from._2), (f(to._1), to._2), typ, props.map(mapRewrite(f)))
-
-  def exec(context: ExecutionContext, state: QueryState) = {
-    val f = from._1(context).asInstanceOf[Node]
-    val t = to._1(context).asInstanceOf[Node]
-    val relationship = state.query.createRelationship(f, t, typ)
-    state.createdRelationships.increase()
-    setProperties(relationship, props, context, state)
-    context.put(key, relationship)
-    Stream(context)
-  }
-
-  def identifiers = Seq(key-> RelationshipType())
-
-  def assertTypes(symbols: SymbolTable) {
-    checkTypes(from._2, symbols)
-    checkTypes(to._2, symbols)
-    checkTypes(props, symbols)
-  }
-
-  def symbolTableDependencies = (from._2.flatMap(_._2.symbolTableDependencies) ++
-                                to._2.flatMap(_._2.symbolTableDependencies) ++
-                                props.flatMap(_._2.symbolTableDependencies)).toSet
-}
-
-trait Mutator extends StartItem {
+class UpdatingStartItem(val updateAction:UpdateAction, name:String) extends StartItem(name) {
   override def mutating = true
-
-  def mapRewrite(f: (Expression) => Expression)(kv: (String, Expression)): (String, Expression) = kv match {
-    case (k, v) => (k, f(v))
+  override def children = Seq(updateAction)
+  override def assertTypes(symbols: SymbolTable) {
+    updateAction.assertTypes(symbols)
   }
+}
+
+//We need to wrap the inner classes to be able to have to different rewrite methods
+case class CreateNodeStartItem(inner: CreateNode) extends UpdatingStartItem(inner, inner.key) {
+  override def rewrite(f: (Expression) => Expression) = CreateNodeStartItem(inner.rewrite(f))
+
+  override def symbolTableDependencies = inner.symbolTableDependencies
+}
+
+//We need to wrap the inner classes to be able to have to different rewrite methods
+case class CreateRelationshipStartItem(inner: CreateRelationship) extends UpdatingStartItem(inner, inner.key) {
+
+  override def rewrite(f: (Expression) => Expression) = CreateRelationshipStartItem(inner.rewrite(f))
+
+  override def symbolTableDependencies = inner.symbolTableDependencies
+}
+
+case class CreateUniqueStartItem(inner: CreateUniqueAction) extends UpdatingStartItem(inner, "oh noes")  {
+
+  override def rewrite(f: (Expression) => Expression) = CreateUniqueStartItem(inner.rewrite(f))
+
+  override def symbolTableDependencies = inner.symbolTableDependencies
 }
 
 object NodeById {
@@ -154,4 +103,3 @@ object NodeById {
 object RelationshipById {
   def apply(varName: String, id: Long*) = new RelationshipById(varName, Literal(id))
 }
-

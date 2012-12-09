@@ -25,7 +25,7 @@ import expressions.{Expression, AggregationExpression}
 object Query {
   def start(startItems: StartItem*) = new QueryBuilder(startItems)
   def updates(cmds:UpdateAction*) = new QueryBuilder(Seq()).updates(cmds:_*)
-  def unique(cmds:UniqueLink*) = new QueryBuilder(Seq(CreateUniqueAction(cmds:_*)))
+  def unique(cmds:UniqueLink*) = new QueryBuilder(Seq(CreateUniqueStartItem(CreateUniqueAction(cmds:_*))))
 }
 
 case class Query(returns: Return,

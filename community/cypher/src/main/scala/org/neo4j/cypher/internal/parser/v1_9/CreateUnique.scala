@@ -37,7 +37,7 @@ trait CreateUnique extends Base with ParserPattern {
         case PathAndRelateLink(p, l) => (l, p.toSeq)
       })
 
-      (Seq(CreateUniqueAction(links: _*)), path)
+      (Seq(CreateUniqueStartItem(CreateUniqueAction(links: _*))), path)
     })
 
   private def translate(abstractPattern: AbstractPattern): Maybe[PathAndRelateLink] = {

@@ -49,19 +49,19 @@ final class TrailBuilder(patterns: Seq[Pattern], boundPoints: Seq[String], predi
 
     def transformToTrail(p: Pattern, done: Trail, patternsToDo: Seq[Pattern]): (Trail, Seq[Pattern]) = {
 
-      def rewriteTo(originalName: String, newExpr:Expression)(pred: Predicate) = pred.rewrite {
-        case Identifier(name) if name == originalName     => newExpr
-        case e                                            => e
+      def rewriteTo(originalName: String, newExpr: Expression)(pred: Predicate) = pred.rewrite {
+        case Identifier(name) if name == originalName => newExpr
+        case e                                        => e
       }
 
       def relPred(k: String) = predicates.find(createFinder(k)).map(rewriteTo(k, RelationshipIdentifier()))
 
       def nodePred(k: String) = predicates.find(createFinder(k)).map(rewriteTo(k, NodeIdentifier()))
 
-
       def singleStep(rel: RelatedTo, end: String, dir: Direction) = {
         done.add(start => SingleStepTrail(EndPoint(end), dir, rel.relName, rel.relTypes, start, relPred(rel.relName), nodePred(end), rel))
       }
+
       def multiStep(rel: VarLengthRelatedTo, end: String, dir: Direction) =
         done.add(start => VariableLengthStepTrail(EndPoint(end), dir, rel.relTypes, rel.minHops.getOrElse(1), rel.maxHops, rel.pathName, rel.relIterator, start, rel))
 

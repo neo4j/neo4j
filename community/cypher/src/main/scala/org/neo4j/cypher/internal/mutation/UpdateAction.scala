@@ -39,8 +39,6 @@ trait UpdateAction extends TypeSafe with AstNode[UpdateAction] {
   def identifiers: Seq[(String, CypherType)]
 
   def rewrite(f: Expression => Expression): UpdateAction
-
-  def filter(f: Expression => Boolean): Seq[Expression]
 }
 
 trait GraphElementPropertyFunctions extends CollectionSupport {

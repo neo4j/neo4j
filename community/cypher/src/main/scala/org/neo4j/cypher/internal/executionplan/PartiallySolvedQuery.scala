@@ -128,8 +128,8 @@ case class PartiallySolvedQuery(returns: Seq[QueryToken[ReturnColumn]],
       },
       aggregation = aggregation.map {
         case Unsolved(exp) => Unsolved(exp.rewrite(f) match {
-                  case x: AggregationExpression => x
-                  case _ => throw new ThisShouldNotHappenError("Andrés & Michael","aggregation expressions should never be rewritten to non-aggregation-expressions")
+          case x: AggregationExpression => x
+          case _                        => throw new ThisShouldNotHappenError("Andrés & Michael", "aggregation expressions should never be rewritten to non-aggregation-expressions")
         })
         case x => x
       },
@@ -170,8 +170,10 @@ case class PartiallySolvedQuery(returns: Seq[QueryToken[ReturnColumn]],
     val aggregateExpressions = aggregation.map(_.token)
     val sortExpressions = sort.map(_.token.expression)
     val tailNodes = tail.toSeq.flatMap(_.children)
+    val startItems = start.map(_.token)
+    val patternsX = patterns.map(_.token)
 
-    returnExpressions ++ wherePredicates ++ aggregateExpressions ++ sortExpressions ++ tailNodes
+    returnExpressions ++ wherePredicates ++ aggregateExpressions ++ sortExpressions ++ tailNodes ++ startItems ++ patternsX
   }
 
 }
