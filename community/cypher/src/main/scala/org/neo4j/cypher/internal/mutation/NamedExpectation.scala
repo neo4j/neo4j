@@ -91,7 +91,7 @@ case class NamedExpectation(name: String, e: Expression, properties: Map[String,
 
   def symbolTableDependencies = symbolTableDependencies(properties)
 
-  def assertTypes(symbols: SymbolTable) {
-    checkTypes(properties, symbols)
+  def throwIfSymbolsMissing(symbols: SymbolTable) {
+    throwIfSymbolsMissing(properties, symbols)
   }
 }

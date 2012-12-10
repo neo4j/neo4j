@@ -33,7 +33,7 @@ class InsertStatusUpdateTest extends DocumentingTestBase {
       executeQuery("""
 create 
 (bob{name:'Bob'})-[:STATUS]->(bob_s1{name:'bob_s1', text:'bobs status1',date:1})-[:NEXT]->(bob_s2{name:'bob_s2', text:'bobs status2',date:4})
-          """);
+          """)
     testQuery(
       title = "Insert a new status update for a user",
       text =

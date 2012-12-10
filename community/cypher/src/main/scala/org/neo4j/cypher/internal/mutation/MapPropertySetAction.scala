@@ -88,7 +88,7 @@ case class MapPropertySetAction(element: Expression, mapExpression: Expression)
 
   def rewrite(f: (Expression) => Expression): UpdateAction = MapPropertySetAction(element.rewrite(f), mapExpression.rewrite(f))
 
-  def assertTypes(symbols: SymbolTable) {
+  def throwIfSymbolsMissing(symbols: SymbolTable) {
     element.evaluateType(MapType(), symbols)
     mapExpression.evaluateType(MapType(), symbols)
   }

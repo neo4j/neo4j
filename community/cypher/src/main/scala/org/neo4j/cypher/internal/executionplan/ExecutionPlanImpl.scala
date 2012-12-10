@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.pipes._
 import org.neo4j.cypher._
 import internal.ClosingIterator
 import internal.commands._
-import internal.spi.gdsimpl.{GDSBackedLocker, RepeatableReadQueryContext, GDSBackedQueryContext}
+import internal.spi.gdsimpl.GDSBackedQueryContext
 import internal.symbols.{NodeType, RelationshipType, SymbolTable}
 import org.neo4j.kernel.InternalAbstractGraphDatabase
 import org.neo4j.graphdb.GraphDatabaseService
@@ -69,7 +69,7 @@ class ExecutionPlanImpl(inputQuery: Query, graph: GraphDatabaseService) extends 
 
     val columns = getQueryResultColumns(inputQuery, planInProgress.pipe.symbols)
     val (pipe, func) = if (planInProgress.containsTransaction) {
-      val p = planInProgress.pipe//new CommitPipe(planInProgress.pipe, graph)
+      val p = planInProgress.pipe
       (p, getEagerReadWriteQuery(p, columns))
     } else {
       (planInProgress.pipe, getLazyReadonlyQuery(planInProgress.pipe, columns))
@@ -180,7 +180,7 @@ The Neo4j Team""")
     }
 
     val prio = errors.head._1.priority
-    val errorsOfHighestPrio = errors.filter(_._1.priority == prio).map("Unknown identifier `" + _._2 + "`")
+    val errorsOfHighestPrio = errors.filter(_._1.priority == prio).map("Unknown identifier `" + _._2 + "`").distinct
 
     val errorMessage = errorsOfHighestPrio.mkString("\n")
     throw new SyntaxException(errorMessage)

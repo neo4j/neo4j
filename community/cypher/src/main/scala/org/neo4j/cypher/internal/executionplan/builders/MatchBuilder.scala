@@ -71,7 +71,7 @@ class MatchBuilder extends PlanBuilder with PatternGraphBuilder {
       })
 
       val resolvedStartPoints =  apa.foldLeft(true)(_ && _)
-      val pipeSatisfied = x.predicate.checkTypes(p.symbols)
+      val pipeSatisfied = x.predicate.symbolDependenciesMet(p.symbols)
 
       resolvedStartPoints && pipeSatisfied
     }

@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.pipes
 import org.neo4j.cypher.internal.symbols.SymbolTable
 
 abstract class PipeWithSource(val source: Pipe) extends Pipe {
-  def assertTypes(symbols: SymbolTable)
+  def throwIfSymbolsMissing(symbols: SymbolTable)
 
-  assertTypes(source.symbols)
+  throwIfSymbolsMissing(source.symbols)
 }

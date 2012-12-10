@@ -68,7 +68,7 @@ case class NullablePredicate(inner: Predicate, exp: Seq[(Expression, Boolean)]) 
   def filter(f: (Expression) => Boolean) = exp.flatMap { case (e,_) => e.filter(f)  }
 
   def assertInnerTypes(symbols: SymbolTable) {
-    inner.assertTypes(symbols)
+    inner.throwIfSymbolsMissing(symbols)
   }
 
   def symbolTableDependencies = inner.symbolTableDependencies ++ exp.flatMap(_._1.symbolTableDependencies).toSet
@@ -84,8 +84,8 @@ case class And(a: Predicate, b: Predicate) extends Predicate {
   def filter(f: (Expression) => Boolean) = a.filter(f) ++ b.filter(f)
 
   def assertInnerTypes(symbols: SymbolTable) {
-    a.assertTypes(symbols)
-    b.assertTypes(symbols)
+    a.throwIfSymbolsMissing(symbols)
+    b.throwIfSymbolsMissing(symbols)
   }
 
   def symbolTableDependencies = a.symbolTableDependencies ++ b.symbolTableDependencies
@@ -100,8 +100,8 @@ case class Or(a: Predicate, b: Predicate) extends Predicate {
   def filter(f: (Expression) => Boolean) = a.filter(f) ++ b.filter(f)
 
   def assertInnerTypes(symbols: SymbolTable) {
-    a.assertTypes(symbols)
-    b.assertTypes(symbols)
+    a.throwIfSymbolsMissing(symbols)
+    b.throwIfSymbolsMissing(symbols)
   }
 
   def symbolTableDependencies = a.symbolTableDependencies ++ b.symbolTableDependencies
@@ -115,7 +115,7 @@ case class Not(a: Predicate) extends Predicate {
   def rewrite(f: (Expression) => Expression) = Not(a.rewrite(f))
   def filter(f: (Expression) => Boolean) = a.filter(f)
   def assertInnerTypes(symbols: SymbolTable) {
-    a.assertTypes(symbols)
+    a.throwIfSymbolsMissing(symbols)
   }
 
   def symbolTableDependencies = a.symbolTableDependencies
@@ -140,8 +140,8 @@ case class HasRelationshipTo(from: Expression, to: Expression, dir: Direction, r
   def filter(f: (Expression) => Boolean) = from.filter(f) ++ to.filter(f)
 
   def assertInnerTypes(symbols: SymbolTable) {
-    from.assertTypes(symbols)
-    to.assertTypes(symbols)
+    from.throwIfSymbolsMissing(symbols)
+    to.throwIfSymbolsMissing(symbols)
   }
   def symbolTableDependencies = from.symbolTableDependencies ++ to.symbolTableDependencies
 }
@@ -164,7 +164,7 @@ case class HasRelationship(from: Expression, dir: Direction, relType: Seq[String
   def filter(f: (Expression) => Boolean) = from.filter(f)
   def rewrite(f: (Expression) => Expression) = HasRelationship(from.rewrite(f), dir, relType)
   def assertInnerTypes(symbols: SymbolTable) {
-    from.assertTypes(symbols)
+    from.throwIfSymbolsMissing(symbols)
   }
 
   def symbolTableDependencies = from.symbolTableDependencies
@@ -178,7 +178,7 @@ case class IsNull(expression: Expression) extends Predicate {
   def rewrite(f: (Expression) => Expression) = IsNull(expression.rewrite(f))
   def filter(f: (Expression) => Boolean) = expression.filter(f)
   def assertInnerTypes(symbols: SymbolTable) {
-    expression.assertTypes(symbols)
+    expression.throwIfSymbolsMissing(symbols)
   }
   def symbolTableDependencies = expression.symbolTableDependencies
 }

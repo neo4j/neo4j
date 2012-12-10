@@ -25,7 +25,7 @@ import expressions.Identifier
 import expressions.Identifier._
 import expressions.Literal
 import org.neo4j.cypher.internal.symbols.{RelationshipType, NodeType, SymbolTable}
-import org.neo4j.graphdb.{Node, DynamicRelationshipType, Direction}
+import org.neo4j.graphdb.{Node, Direction}
 import org.neo4j.cypher.internal.pipes.{QueryState, ExecutionContext}
 import org.neo4j.cypher.{SyntaxException, CypherTypeException, UniquePathNotUniqueException}
 import collection.JavaConverters._
@@ -159,10 +159,10 @@ case class UniqueLink(start: NamedExpectation, end: NamedExpectation, rel: Named
 
   def filter(f: (Expression) => Boolean) = Seq.empty
 
-  def assertTypes(symbols: SymbolTable) {
-    checkTypes(start.properties, symbols)
-    checkTypes(end.properties, symbols)
-    checkTypes(rel.properties, symbols)
+  def throwIfSymbolsMissing(symbols: SymbolTable) {
+    throwIfSymbolsMissing(start.properties, symbols)
+    throwIfSymbolsMissing(end.properties, symbols)
+    throwIfSymbolsMissing(rel.properties, symbols)
   }
 
   def optional: Boolean = false

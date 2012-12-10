@@ -55,18 +55,19 @@ case class ForeachAction(collection: Expression, id: String, actions: Seq[Update
 
   def identifiers = Seq.empty
 
-  def assertTypes(symbols: SymbolTable) {
+  def throwIfSymbolsMissing(symbols: SymbolTable) {
     val t = collection.evaluateType(AnyCollectionType(), symbols).iteratedType
 
     val innerSymbols: SymbolTable = symbols.add(id, t)
 
-    actions.foreach(_.assertTypes(innerSymbols))
+    actions.foreach(_.throwIfSymbolsMissing(innerSymbols))
   }
 
   def symbolTableDependencies = {
+    val updateActionsDeps: Set[String] = actions.flatMap(_.symbolTableDependencies).toSet
     val updateActionIdentifiers: Set[String] = actions.flatMap(_.identifiers.map(_._1)).toSet
-    val updateActionsDeps = actions.flatMap(_.symbolTableDependencies).filterNot(_ == id).toSet
     val collectionDeps = collection.symbolTableDependencies
-    (updateActionsDeps -- updateActionIdentifiers) ++ collectionDeps
+
+    (updateActionsDeps -- updateActionIdentifiers) ++ collectionDeps -- Some(id)
   }
 }

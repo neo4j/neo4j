@@ -90,8 +90,8 @@ class EagerAggregationPipe(source: Pipe, val keyExpressions: Map[String, Express
 
   override def executionPlan(): String = source.executionPlan() + "\r\n" + "EagerAggregation( keys: [" + oldKeyExpressions.mkString(", ") + "], aggregates: [" + aggregations.mkString(", ") + "])"
 
-  def assertTypes(symbols: SymbolTable) {
-    keyExpressions.foreach(_._2.assertTypes(symbols))
-    aggregations.foreach(_._2.assertTypes(symbols))
+  def throwIfSymbolsMissing(symbols: SymbolTable) {
+    keyExpressions.foreach(_._2.throwIfSymbolsMissing(symbols))
+    aggregations.foreach(_._2.throwIfSymbolsMissing(symbols))
   }
 }

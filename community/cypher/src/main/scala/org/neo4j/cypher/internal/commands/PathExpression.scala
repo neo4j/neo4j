@@ -67,7 +67,7 @@ case class PathExpression(pathPattern: Seq[Pattern])
   def rewrite(f: (Expression) => Expression): Expression = f(PathExpression(pathPattern.map(_.rewrite(f))))
 
   def calculateType(symbols: SymbolTable): CypherType = {
-    pathPattern.foreach(_.assertTypes(symbols))
+    pathPattern.foreach(_.throwIfSymbolsMissing(symbols))
     new CollectionType(PathType())
   }
 
