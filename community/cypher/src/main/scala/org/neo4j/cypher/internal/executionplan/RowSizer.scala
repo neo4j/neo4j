@@ -17,27 +17,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.commands.expressions
+package org.neo4j.cypher.internal.executionplan
 
-import org.neo4j.cypher.internal.symbols.{SymbolTable, CypherType}
-import org.neo4j.cypher.EntityNotFoundException
-import collection.Map
-import org.neo4j.cypher.internal.pipes.ExecutionContext
-import org.neo4j.graphdb.NotFoundException
 
-case class Nullable(expression: Expression) extends Expression {
-  def apply(ctx: ExecutionContext) = try {
-    expression.apply(ctx)
-  } catch {
-    case x: EntityNotFoundException => null
-    case x: NotFoundException       => null
+class RowSizer {
+  var maxSize: Int = 0
+  var seen: Set[String] = Set.empty
+
+  def push(key: String) {
+    if (!seen.contains(key)) {
+      seen = seen + key
+      maxSize = maxSize + 1
+    }
   }
-
-  def rewrite(f: (Expression) => Expression) = f(Nullable(expression.rewrite(f)))
-
-  def children = Seq(expression)
-
-  def calculateType(symbols: SymbolTable): CypherType = expression.getType(symbols)
-
-  def symbolTableDependencies = expression.symbolTableDependencies
 }
+
+case class RowSizingResult(maxSize: Int)

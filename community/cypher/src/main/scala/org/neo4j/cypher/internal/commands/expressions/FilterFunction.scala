@@ -33,10 +33,7 @@ case class FilterFunction(collection: Expression, id: String, predicate: Predica
 
   def rewrite(f: (Expression) => Expression) = f(FilterFunction(collection.rewrite(f), id, predicate.rewrite(f)))
 
-  def filter(f: (Expression) => Boolean) = if (f(this))
-    Seq(this) ++ collection.filter(f)
-  else
-    collection.filter(f)
+  def children = Seq(collection, predicate)
 
   def calculateType(symbols: SymbolTable): CypherType = {
     val t = collection.evaluateType(AnyCollectionType(), symbols)

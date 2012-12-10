@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.executionplan.builders
 import org.neo4j.cypher.internal.executionplan.{ExecutionPlanInProgress, PlanBuilder}
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.cypher.internal.pipes.{Pipe, ExecuteUpdateCommandsPipe, TransactionStartPipe}
-import org.neo4j.cypher.internal.mutation.UpdateAction
+import org.neo4j.cypher.internal.mutation.{CreateRelationship, CreateNode, UpdateAction}
 import org.neo4j.cypher.internal.symbols.{NodeType, SymbolTable}
 import org.neo4j.cypher.internal.commands._
 import collection.Map
@@ -34,7 +34,8 @@ class CreateNodesAndRelationshipsBuilder(db: GraphDatabaseService) extends PlanB
   def apply(plan: ExecutionPlanInProgress) = {
     val q = plan.query
     val mutatingQueryTokens = q.start.filter(applicableTo(plan.pipe))
-    val commands = mutatingQueryTokens.map(_.token.asInstanceOf[UpdateAction])
+
+    val commands = mutatingQueryTokens.map(_.token.asInstanceOf[UpdatingStartItem].updateAction)
     val allCommands = expandCommands(commands, plan.pipe.symbols)
 
     val p = if (plan.containsTransaction) {
@@ -51,7 +52,7 @@ class CreateNodesAndRelationshipsBuilder(db: GraphDatabaseService) extends PlanB
 
   private def expandCommands(commands: Seq[UpdateAction], symbols: SymbolTable): Seq[UpdateAction] = {
     val missingCreateNodeActions = commands.flatMap {
-      case createRel: CreateRelationshipStartItem =>
+      case createRel: CreateRelationship =>
         alsoCreateNode(createRel.from, symbols, commands) ++
         alsoCreateNode(createRel.to, symbols, commands)
       case _                                      => Seq()
@@ -60,32 +61,32 @@ class CreateNodesAndRelationshipsBuilder(db: GraphDatabaseService) extends PlanB
     distinctify(missingCreateNodeActions) ++ commands
   }
 
-  private def distinctify(nodes: Seq[CreateNodeStartItem]): Seq[CreateNodeStartItem] = {
+  private def distinctify(nodes: Seq[CreateNode]): Seq[CreateNode] = {
     val createdNodes = mutable.Set[String]()
     nodes.flatMap {
-      case CreateNodeStartItem(key, props)
+      case CreateNode(key, props)
         if createdNodes.contains(key) && props.nonEmpty              =>
         throw new SyntaxException("Node `%s` has already been created. Can't assign properties to it again.".format(key))
 
-      case CreateNodeStartItem(key, _) if createdNodes.contains(key) => None
+      case CreateNode(key, _) if createdNodes.contains(key) => None
 
-      case x@CreateNodeStartItem(key, _)                             =>
+      case x@CreateNode(key, _)                             =>
         createdNodes += key
         Some(x)
     }
   }
 
-  private def alsoCreateNode(e: (Expression, Map[String, Expression]), symbols: SymbolTable, commands: Seq[UpdateAction]): Seq[CreateNodeStartItem] = e._1 match {
+  private def alsoCreateNode(e: (Expression, Map[String, Expression]), symbols: SymbolTable, commands: Seq[UpdateAction]): Seq[CreateNode] = e._1 match {
     case Identifier(name) =>
       val nodeFromUnderlyingPipe = symbols.checkType(name, NodeType())
 
       val nodeFromOtherCommand = commands.exists {
-        case CreateNodeStartItem(n, _) => n == name
+        case CreateNode(n, _) => n == name
         case _                         => false
       }
 
       if (!nodeFromUnderlyingPipe && !nodeFromOtherCommand)
-        Seq(CreateNodeStartItem(name, e._2))
+        Seq(CreateNode(name, e._2))
       else
         Seq()
 

@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.commands._
 import expressions.Expression
 import org.neo4j.cypher.internal.helpers.CollectionSupport
 
-trait UpdateAction extends TypeSafe {
+trait UpdateAction extends TypeSafe with AstNode[UpdateAction] {
   def exec(context: ExecutionContext, state: QueryState): Traversable[ExecutionContext]
 
   def assertTypes(symbols: SymbolTable)
@@ -39,8 +39,6 @@ trait UpdateAction extends TypeSafe {
   def identifiers: Seq[(String, CypherType)]
 
   def rewrite(f: Expression => Expression): UpdateAction
-
-  def filter(f: Expression => Boolean): Seq[Expression]
 }
 
 trait GraphElementPropertyFunctions extends CollectionSupport {

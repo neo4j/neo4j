@@ -31,10 +31,7 @@ case class ParameterExpression(parameterName: String) extends Expression {
 
   def rewrite(f: (Expression) => Expression) = f(this)
 
-  def filter(f: (Expression) => Boolean) = if (f(this))
-    Seq(this)
-  else
-    Seq()
+  def children = Seq()
 
   def calculateType(symbols: SymbolTable) = AnyType()
 

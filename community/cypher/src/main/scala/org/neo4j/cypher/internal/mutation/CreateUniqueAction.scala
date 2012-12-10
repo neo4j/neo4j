@@ -22,12 +22,12 @@ package org.neo4j.cypher.internal.mutation
 import org.neo4j.cypher.internal.symbols.{CypherType, SymbolTable}
 import org.neo4j.cypher.internal.pipes.{QueryState, ExecutionContext}
 import org.neo4j.helpers.ThisShouldNotHappenError
-import org.neo4j.cypher.internal.commands.{Mutator, StartItem}
+import org.neo4j.cypher.internal.commands.StartItem
 import org.neo4j.cypher.UniquePathNotUniqueException
 import org.neo4j.graphdb.{Lock, PropertyContainer}
 import org.neo4j.cypher.internal.commands.expressions.Expression
 
-case class CreateUniqueAction(incomingLinks: UniqueLink*) extends StartItem("noooes") with Mutator with UpdateAction {
+case class CreateUniqueAction(incomingLinks: UniqueLink*) extends UpdateAction {
 
   def exec(context: ExecutionContext, state: QueryState): Traversable[ExecutionContext] = {
     var linksToDo: Seq[UniqueLink] = links
@@ -58,6 +58,8 @@ case class CreateUniqueAction(incomingLinks: UniqueLink*) extends StartItem("noo
 
     Stream(ctx)
   }
+
+  override def addsToRow(): Seq[String] = Seq()
 
   /**
    * Here we take the incoming links and prepare them to be used, by making sure that
@@ -126,8 +128,8 @@ case class CreateUniqueAction(incomingLinks: UniqueLink*) extends StartItem("noo
       val (unfiltered, temp) = todo.partition(_.canRun(context))
       todo = temp
 
-      val current = unfiltered.filterNot(cmd => done.contains(cmd.cmd.identifierName))
-      done = done ++ current.map(_.cmd.identifierName)
+      val current = unfiltered.filterNot(cmd => done.contains(cmd.key))
+      done = done ++ current.map(_.key)
 
       context = current.foldLeft(context) {
         case (currentContext, updateCommand) => {
@@ -163,15 +165,15 @@ case class CreateUniqueAction(incomingLinks: UniqueLink*) extends StartItem("noo
 
   private def canNotAdvanced(results: scala.Seq[(UniqueLink, CreateUniqueResult)]) = results.forall(_._2 == CanNotAdvance())
 
-  def filter(f: (Expression) => Boolean): Seq[Expression] = links.flatMap(_.filter(f)).distinct
+  override def children = links.flatMap(_.children)
 
   def identifiers: Seq[(String,CypherType)] = links.flatMap(_.identifier2).distinct
 
-  def rewrite(f: (Expression) => Expression): UpdateAction = CreateUniqueAction(links.map(_.rewrite(f)): _*)
+  override def rewrite(f: (Expression) => Expression) = CreateUniqueAction(links.map(_.rewrite(f)): _*)
 
-  def assertTypes(symbols: SymbolTable) {links.foreach(l=>l.assertTypes(symbols))}
+  override def assertTypes(symbols: SymbolTable) {links.foreach(l=>l.assertTypes(symbols))}
 
-  def symbolTableDependencies = links.flatMap(_.symbolTableDependencies).toSet
+  override def symbolTableDependencies = links.flatMap(_.symbolTableDependencies).toSet
 }
 
 sealed abstract class CreateUniqueResult
@@ -184,7 +186,7 @@ case class Update(cmds: Seq[UpdateWrapper], locker: () => Seq[Lock]) extends Cre
   def lock(): Seq[Lock] = locker()
 }
 
-case class UpdateWrapper(needs: Seq[String], cmd: StartItem with UpdateAction) {
+case class UpdateWrapper(needs: Seq[String], cmd: UpdateAction, key: String) {
   def canRun(context: ExecutionContext) = {
     lazy val keySet = context.keySet
     val forall = needs.forall(keySet.contains)

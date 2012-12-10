@@ -21,13 +21,11 @@ package org.neo4j.cypher.internal.pipes
 
 import org.scalatest.Assertions
 import org.junit.Test
-import org.neo4j.cypher.internal.mutation.DeleteEntityAction
+import org.neo4j.cypher.internal.mutation.{CreateRelationship, CreateNode, DeleteEntityAction}
 import org.neo4j.cypher.{CypherTypeException, ExecutionEngineHelper}
 import collection.mutable.{Map => MutableMap}
 import org.neo4j.graphdb.{Node, NotFoundException}
 import org.neo4j.cypher.internal.symbols.{SymbolTable, CypherType, NodeType}
-import collection.{Map => CollectionMap}
-import org.neo4j.cypher.internal.commands.{CreateRelationshipStartItem, CreateNodeStartItem}
 import org.neo4j.cypher.internal.commands.expressions.{Expression, Literal}
 import org.neo4j.cypher.internal.spi.gdsimpl.GDSBackedQueryContext
 
@@ -40,7 +38,7 @@ class MutationTest extends ExecutionEngineHelper with Assertions {
   def create_node() {
     val start = new NullPipe
     val txBegin = new TransactionStartPipe(start, graph)
-    val createNode = new ExecuteUpdateCommandsPipe(txBegin, graph, Seq(CreateNodeStartItem("n", Map("name" -> Literal("Andres")))))
+    val createNode = new ExecuteUpdateCommandsPipe(txBegin, graph, Seq(CreateNode("n", Map("name" -> Literal("Andres")))))
 
     val queryState = createQueryState
     createNode.createResults(queryState).toList
@@ -57,7 +55,7 @@ class MutationTest extends ExecutionEngineHelper with Assertions {
     val tx = graph.beginTx()
     val start = new NullPipe
     val txBegin = new TransactionStartPipe(start, graph)
-    val createNode = new ExecuteUpdateCommandsPipe(txBegin, graph, Seq(CreateNodeStartItem("n", Map("name" -> Literal("Andres")))))
+    val createNode = new ExecuteUpdateCommandsPipe(txBegin, graph, Seq(CreateNode("n", Map("name" -> Literal("Andres")))))
 
     createNode.createResults(createQueryState).toList
 
@@ -72,7 +70,7 @@ class MutationTest extends ExecutionEngineHelper with Assertions {
     val tx = graph.beginTx()
     val start = new NullPipe
     val txBegin = new TransactionStartPipe(start, graph)
-    val createNode = new ExecuteUpdateCommandsPipe(txBegin, graph, Seq(CreateNodeStartItem("n", Map("name" -> Literal("Andres")))))
+    val createNode = new ExecuteUpdateCommandsPipe(txBegin, graph, Seq(CreateNode("n", Map("name" -> Literal("Andres")))))
 
     createNode.createResults(createQueryState).toList
 
@@ -90,7 +88,7 @@ class MutationTest extends ExecutionEngineHelper with Assertions {
     val a = createNode()
     val b = createNode()
 
-    val createRel = CreateRelationshipStartItem("r", (getNode("a", a),Map()), (getNode("b", b),Map()), "REL", Map("I" -> Literal("was here")))
+    val createRel = CreateRelationship("r", (getNode("a", a),Map()), (getNode("b", b),Map()), "REL", Map("I" -> Literal("was here")))
 
     val startPipe = new NullPipe
     val txBeginPipe = new TransactionStartPipe(startPipe, graph)
@@ -135,7 +133,7 @@ class MutationTest extends ExecutionEngineHelper with Assertions {
 case class InjectValue(value:Any, typ:CypherType) extends Expression {
   def apply(v1: ExecutionContext) = value
 
-  def filter(f: (Expression) => Boolean) = Seq(this)
+  def children = Seq()
 
   def rewrite(f: (Expression) => Expression) = this
 

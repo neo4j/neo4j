@@ -28,10 +28,7 @@ case class LastFunction(collection: Expression) extends NullInNullOutExpression(
 
   def rewrite(f: (Expression) => Expression) = f(LastFunction(collection.rewrite(f)))
 
-  def filter(f: (Expression) => Boolean) = if (f(this))
-    Seq(this) ++ collection.filter(f)
-  else
-    collection.filter(f)
+  def children = Seq(collection)
 
   def calculateType(symbols: SymbolTable) = collection.evaluateType(AnyCollectionType(), symbols).iteratedType
 

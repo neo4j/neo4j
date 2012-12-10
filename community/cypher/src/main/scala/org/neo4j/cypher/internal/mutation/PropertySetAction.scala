@@ -26,11 +26,11 @@ import org.neo4j.cypher.internal.commands.expressions.{Expression, Property}
 
 case class PropertySetAction(prop: Property, e: Expression)
   extends UpdateAction with GraphElementPropertyFunctions {
-  val Property(entityKey, propertyKey) = prop
+  val Property(mapExpr, propertyKey) = prop
 
   def exec(context: ExecutionContext, state: QueryState) = {
     val value = makeValueNeoSafe(e(context))
-    val entity = context(entityKey).asInstanceOf[PropertyContainer]
+    val entity = mapExpr(context).asInstanceOf[PropertyContainer]
 
     (value, entity) match {
       case (null, n: Node)         => state.query.nodeOps().removeProperty(n, propertyKey)
@@ -46,7 +46,7 @@ case class PropertySetAction(prop: Property, e: Expression)
 
   def identifiers = Seq.empty
 
-  def filter(f: (Expression) => Boolean): Seq[Expression] = prop.filter(f) ++ e.filter(f)
+  def children = Seq(prop, e)
 
   def rewrite(f: (Expression) => Expression): UpdateAction = PropertySetAction(prop, e.rewrite(f))
 

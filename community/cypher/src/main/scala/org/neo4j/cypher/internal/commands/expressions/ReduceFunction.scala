@@ -34,12 +34,10 @@ case class ReduceFunction(collection: Expression, id: String, expression: Expres
     computedMap(acc)
   }
                     
-  def rewrite(f: (Expression) => Expression) = f(ReduceFunction(collection.rewrite(f), id, expression.rewrite(f), acc, init.rewrite(f)))
+  def rewrite(f: (Expression) => Expression) =
+    f(ReduceFunction(collection.rewrite(f), id, expression.rewrite(f), acc, init.rewrite(f)))
 
-  def filter(f: (Expression) => Boolean) = if (f(this))
-    Seq(this) ++ collection.filter(f)
-  else
-    collection.filter(f)
+  def children = Seq(collection, expression, init)
 
   def identifierDependencies(expectedType: CypherType) = AnyType
 
