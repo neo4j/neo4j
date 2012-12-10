@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.ha;
 
+import javax.transaction.SystemException;
 import javax.transaction.Transaction;
 
 import org.neo4j.com.RequestContext;
@@ -97,9 +98,13 @@ public class SlaveLockManager extends LockManager
             databaseOperations.exceptionHappened( e );
             throw e;
         }
+        catch ( SystemException e )
+        {
+            throw new RuntimeException( e );
+        }
     }
 
-    private void initializeTxIfFirst()
+    private void initializeTxIfFirst() throws SystemException
     {
         // The main point of initializing transaction (for HA) is in TransactionImpl, so this is
         // for that extra point where grabbing a lock
@@ -148,6 +153,10 @@ public class SlaveLockManager extends LockManager
         {
             databaseOperations.exceptionHappened( e );
             throw e;
+        }
+        catch ( SystemException e )
+        {
+            throw new RuntimeException( e );
         }
     }
 

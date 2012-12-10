@@ -115,11 +115,6 @@ terms of the relevant Commercial Agreement.
     </dependency>
 
     <dependency>
-      <groupId>cuke4duke</groupId>
-      <artifactId>cuke4duke</artifactId>
-    </dependency>
-
-    <dependency>
       <groupId>org.picocontainer</groupId>
       <artifactId>picocontainer</artifactId>
     </dependency>
