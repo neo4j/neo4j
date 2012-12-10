@@ -39,48 +39,50 @@ case class MapPropertySetAction(element: Expression, mapExpression: Expression)
         throw new CypherTypeException("Expected %s to be a node or a relationship, but it was :`%s`".format(element, x))
     }
 
-    /*Make the map expression look like a map*/
-    val map: Map[String, Any] = mapExpression(context) match {
-      case null     => Map.empty
-      case IsMap(f) => f(state.query)
-      case x        =>
-        throw new CypherTypeException("Expected %s to be a map, but it was :`%s`".format(element, x))
+    def setProperties(map:Map[String, Any]) {
+      /*Set all map values on the property container*/
+      map.foreach(kv => {
+        state.propertySet.increase()
+
+        kv match {
+          case (k, v) =>
+            (v, pc) match {
+              case (null, r: Relationship) => state.query.relationshipOps().removeProperty(r, k)
+              case (null, n: Node)         => state.query.nodeOps().removeProperty(n, k)
+              case (_, n: Node)            => state.query.nodeOps().setProperty(n, k, makeValueNeoSafe(v))
+              case (_, r: Relationship)    => state.query.relationshipOps().setProperty(r, k, makeValueNeoSafe(v))
+            }
+        }
+      })
+
+      /*Remove all other properties from the property container*/
+      pc match {
+        case n:Node=> state.query.nodeOps().propertyKeys(n).asScala.foreach {
+          case k if map.contains(k) => //Do nothing
+          case k                    =>
+            state.query.nodeOps().removeProperty(n, k)
+            state.propertySet.increase()
+        }
+
+        case r:Relationship=> state.query.relationshipOps().propertyKeys(r).asScala.foreach {
+          case k if map.contains(k) => //Do nothing
+          case k                    =>
+            state.query.relationshipOps().removeProperty(r, k)
+            state.propertySet.increase()
+        }
+      }
     }
 
-    /*Set all map values on the property container*/
-    map.foreach(kv => {
-      state.propertySet.increase()
-
-      kv match {
-        case (k, v) =>
-          (v, pc) match {
-            case (null, r: Relationship) => state.query.relationshipOps().delete(r)
-            case (null, n: Node)         => state.query.nodeOps().delete(n)
-            case (_, n: Node)            => state.query.nodeOps().setProperty(n, k, makeValueNeoSafe(v))
-            case (_, r: Relationship)    => state.query.relationshipOps().setProperty(r, k, makeValueNeoSafe(v))
-          }
-      }
-    })
-
-    /*Remove all other properties from the property container*/
-    pc match {
-      case n:Node=> state.query.nodeOps().propertyKeys(n).asScala.foreach {
-        case k if map.contains(k) => //Do nothing
-        case k                    =>
-          state.query.nodeOps().removeProperty(n, k)
-          state.propertySet.increase()
-      }
-
-      case r:Relationship=> state.query.relationshipOps().propertyKeys(r).asScala.foreach {
-        case k if map.contains(k) => //Do nothing
-        case k                    =>
-          state.query.relationshipOps().removeProperty(r, k)
-          state.propertySet.increase()
-      }
+    /*Make the map expression look like a map*/
+    mapExpression(context) match {
+      case IsMap(createMapFrom) => setProperties(createMapFrom(state.query))
+      case x                    =>
+        throw new CypherTypeException("Expected %s to be a map, but it was :`%s`".format(element, x))
     }
 
     Stream(context)
   }
+
 
   def identifiers = Seq.empty
 
