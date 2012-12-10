@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.docgen
 
-import org.neo4j.cypher.internal.commands.expressions.Literal
 import org.junit.Test
 import org.neo4j.graphdb.Node
 import org.junit.Assert._
