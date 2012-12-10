@@ -181,7 +181,7 @@ public class RagManager
             {
                 continue;
             }
-            graphStack.push( tx );
+            graphStack.push( lockingTx );
             checkWaitOnRecursive( lockingTx, tx, checkedTransactions,
                 graphStack );
             graphStack.pop();
