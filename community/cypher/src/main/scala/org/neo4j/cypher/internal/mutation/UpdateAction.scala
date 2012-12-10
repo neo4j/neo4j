@@ -29,8 +29,9 @@ import collection.Map
 import org.neo4j.cypher.internal.helpers.CollectionSupport
 import org.neo4j.cypher.internal.commands.expressions.Expression
 import org.neo4j.graphdb.{Node, Relationship, PropertyContainer}
+import org.neo4j.cypher.internal.commands.AstNode
 
-trait UpdateAction extends TypeSafe {
+trait UpdateAction extends TypeSafe with AstNode[UpdateAction] {
   def exec(context: ExecutionContext, state: QueryState): Traversable[ExecutionContext]
 
   def throwIfSymbolsMissing(symbols: SymbolTable)
@@ -38,8 +39,6 @@ trait UpdateAction extends TypeSafe {
   def identifiers: Seq[(String, CypherType)]
 
   def rewrite(f: Expression => Expression): UpdateAction
-
-  def filter(f: Expression => Boolean): Seq[Expression]
 }
 
 trait GraphElementPropertyFunctions extends CollectionSupport {

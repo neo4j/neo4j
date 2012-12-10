@@ -32,10 +32,7 @@ import org.neo4j.cypher.internal.spi.QueryContext
 abstract class StringFunction(arg: Expression) extends NullInNullOutExpression(arg) with StringHelper with CollectionSupport {
   def innerExpectedType = StringType()
 
-  def filter(f: (Expression) => Boolean) = if (f(this))
-    Seq(this) ++ arg.filter(f)
-  else
-    arg.filter(f)
+  def children = Seq(arg)
 
   def calculateType(symbols: SymbolTable) = StringType()
 
@@ -106,7 +103,8 @@ case class TrimFunction(argument: Expression) extends StringFunction(argument) w
   def rewrite(f: (Expression) => Expression) = f(TrimFunction(argument.rewrite(f)))
 }
 
-case class SubstringFunction(orig: Expression, start: Expression, length: Expression) extends NullInNullOutExpression(orig) with StringHelper with NumericHelper {
+case class SubstringFunction(orig: Expression, start: Expression, length: Expression)
+  extends NullInNullOutExpression(orig) with StringHelper with NumericHelper {
   def compute(value: Any, m: ExecutionContext): Any = {
     val origVal = asString(orig(m))
     // if start goes off the end of the string, let's be nice and handle that.
@@ -118,15 +116,8 @@ case class SubstringFunction(orig: Expression, start: Expression, length: Expres
     origVal.substring(startVal, startVal + lengthVal)
   }
 
-  def filter(f: (Expression) => Boolean) = {
-    val inner = orig.filter(f) ++ start.filter(f) ++ length.filter(f)
-    if (f(this)) {
-      Seq(this) ++ inner
-    }
-    else {
-      inner
-    }
-  }
+
+  def children = Seq(orig, start, length)
 
   def rewrite(f: (Expression) => Expression) = f(SubstringFunction(orig.rewrite(f), start.rewrite(f), length.rewrite(f)))
 
@@ -137,7 +128,8 @@ case class SubstringFunction(orig: Expression, start: Expression, length: Expres
     length.symbolTableDependencies
 }
 
-case class ReplaceFunction(orig: Expression, search: Expression, replaceWith: Expression) extends NullInNullOutExpression(orig) with StringHelper {
+case class ReplaceFunction(orig: Expression, search: Expression, replaceWith: Expression)
+  extends NullInNullOutExpression(orig) with StringHelper {
   def compute(value: Any, m: ExecutionContext): Any = {
     val origVal = asString(value)
     val searchVal = asString(search(m))
@@ -150,15 +142,7 @@ case class ReplaceFunction(orig: Expression, search: Expression, replaceWith: Ex
     }
   }
 
-  def filter(f: (Expression) => Boolean) = {
-    val inner = orig.filter(f) ++ search.filter(f) ++ replaceWith.filter(f)
-    if (f(this)) {
-      Seq(this) ++ inner
-    }
-    else {
-      inner
-    }
-  }
+  def children = Seq(orig, search, replaceWith)
 
   def rewrite(f: (Expression) => Expression) = f(ReplaceFunction(orig.rewrite(f), search.rewrite(f), replaceWith.rewrite(f)))
 
@@ -169,7 +153,8 @@ case class ReplaceFunction(orig: Expression, search: Expression, replaceWith: Ex
     replaceWith.symbolTableDependencies
 }
 
-case class LeftFunction(orig: Expression, length: Expression) extends NullInNullOutExpression(orig) with StringHelper with NumericHelper {
+case class LeftFunction(orig: Expression, length: Expression)
+  extends NullInNullOutExpression(orig) with StringHelper with NumericHelper {
   def compute(value: Any, m: ExecutionContext): Any = {
     val origVal = asString(orig(m))
     val startVal = asInt(0)
@@ -179,15 +164,7 @@ case class LeftFunction(orig: Expression, length: Expression) extends NullInNull
     origVal.substring(startVal, startVal + lengthVal)
   }
 
-  def filter(f: (Expression) => Boolean) = {
-    val inner = orig.filter(f) ++ length.filter(f)
-    if (f(this)) {
-      Seq(this) ++ inner
-    }
-    else {
-      inner
-    }
-  }
+  def children = Seq(orig, length)
 
   def rewrite(f: (Expression) => Expression) = f(LeftFunction(orig.rewrite(f), length.rewrite(f)))
 
@@ -197,7 +174,8 @@ case class LeftFunction(orig: Expression, length: Expression) extends NullInNull
     length.symbolTableDependencies
 }
 
-case class RightFunction(orig: Expression, length: Expression) extends NullInNullOutExpression(orig) with StringHelper with NumericHelper {
+case class RightFunction(orig: Expression, length: Expression)
+  extends NullInNullOutExpression(orig) with StringHelper with NumericHelper {
   def compute(value: Any, m: ExecutionContext): Any = {
     val origVal = asString(orig(m))
     // if length goes off the end of the string, let's be nice and handle that.
@@ -207,15 +185,7 @@ case class RightFunction(orig: Expression, length: Expression) extends NullInNul
     origVal.substring(startVal, startVal + lengthVal)
   }
 
-  def filter(f: (Expression) => Boolean) = {
-    val inner = orig.filter(f) ++ length.filter(f)
-    if (f(this)) {
-      Seq(this) ++ inner
-    }
-    else {
-      inner
-    }
-  }
+  def children = Seq(orig, length)
 
   def rewrite(f: (Expression) => Expression) = f(RightFunction(orig.rewrite(f), length.rewrite(f)))
 

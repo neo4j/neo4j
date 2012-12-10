@@ -181,7 +181,7 @@ trait Expressions extends Base {
   def hasProperty = ignoreCase("has") ~> parens(property) ^^ {
     case x =>
       val prop = x.asInstanceOf[Property]
-      Has(Identifier(prop.entity), prop.property)
+      Has(prop.mapExpr, prop.property)
   }
 
   def sequencePredicate: Parser[Predicate] = allInSeq | anyInSeq | noneInSeq | singleInSeq | in

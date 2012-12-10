@@ -19,10 +19,12 @@
  */
 package org.neo4j.cypher.internal.pipes
 
-import org.neo4j.cypher.internal.mutation.{CreateUniqueAction, NamedExpectation, UpdateAction}
+import org.neo4j.cypher.internal.mutation._
 import org.neo4j.graphdb.{GraphDatabaseService, NotInTransactionException}
 import org.neo4j.cypher.{SyntaxException, ParameterWrongTypeException, InternalException}
-import org.neo4j.cypher.internal.commands.{CreateRelationshipStartItem, CreateNodeStartItem}
+import org.neo4j.cypher.internal.mutation.CreateUniqueAction
+import scala.Some
+import org.neo4j.cypher.internal.mutation.CreateNode
 import collection.Map
 import org.neo4j.cypher.internal.commands.expressions.{Identifier, Expression}
 import org.neo4j.cypher.internal.symbols.SymbolTable
@@ -61,8 +63,8 @@ class ExecuteUpdateCommandsPipe(source: Pipe, db: GraphDatabaseService, commands
 
 
   private def extractEntitiesWithProperties(action: UpdateAction): Seq[NamedExpectation] = action match {
-    case CreateNodeStartItem(key, props)                      => Seq(NamedExpectation(key, props))
-    case CreateRelationshipStartItem(key, from, to, _, props) => Seq(NamedExpectation(key, props)) ++ extractIfEntity(from) ++ extractIfEntity(to)
+    case CreateNode(key, props)                      => Seq(NamedExpectation(key, props))
+    case CreateRelationship(key, from, to, _, props) => Seq(NamedExpectation(key, props)) ++ extractIfEntity(from) ++ extractIfEntity(to)
     case CreateUniqueAction(links@_*)                         => links.flatMap(l => Seq(l.start, l.end, l.rel))
     case _                                                    => Seq()
   }

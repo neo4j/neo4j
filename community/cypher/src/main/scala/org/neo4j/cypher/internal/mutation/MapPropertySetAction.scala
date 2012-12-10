@@ -86,7 +86,7 @@ case class MapPropertySetAction(element: Expression, mapExpression: Expression)
 
   def identifiers = Seq.empty
 
-  def filter(f: (Expression) => Boolean): Seq[Expression] = element.filter(f) ++ mapExpression.filter(f)
+  def children = Seq(element, mapExpression)
 
   def rewrite(f: (Expression) => Expression): UpdateAction = MapPropertySetAction(element.rewrite(f), mapExpression.rewrite(f))
 

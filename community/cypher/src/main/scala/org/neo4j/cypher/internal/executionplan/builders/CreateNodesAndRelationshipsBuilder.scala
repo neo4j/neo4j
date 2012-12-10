@@ -22,20 +22,26 @@ package org.neo4j.cypher.internal.executionplan.builders
 import org.neo4j.cypher.internal.executionplan.{ExecutionPlanInProgress, PlanBuilder}
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.cypher.internal.pipes.{Pipe, ExecuteUpdateCommandsPipe, TransactionStartPipe}
-import org.neo4j.cypher.internal.mutation.{GraphElementPropertyFunctions, ForeachAction, UpdateAction}
-import org.neo4j.cypher.internal.symbols.{AnyCollectionType, NodeType, SymbolTable}
+import org.neo4j.cypher.internal.mutation._
+import org.neo4j.cypher.internal.symbols.{TypeSafe, AnyCollectionType, NodeType, SymbolTable}
 import org.neo4j.cypher.internal.commands._
 import collection.Map
 import collection.mutable
 import expressions.{Identifier, Expression}
 import org.neo4j.cypher.SyntaxException
 import org.neo4j.helpers.ThisShouldNotHappenError
+import org.neo4j.cypher.internal.commands.CreateNodeStartItem
+import org.neo4j.cypher.internal.commands.CreateRelationshipStartItem
+import org.neo4j.cypher.internal.executionplan.ExecutionPlanInProgress
+import org.neo4j.cypher.internal.mutation.CreateNode
+import org.neo4j.cypher.internal.mutation.ForeachAction
 
 class CreateNodesAndRelationshipsBuilder(db: GraphDatabaseService) extends PlanBuilder with UpdateCommandExpander with GraphElementPropertyFunctions {
   def apply(plan: ExecutionPlanInProgress) = {
     val q = plan.query
     val mutatingQueryTokens = q.start.filter(applicableTo(plan.pipe))
-    val commands = mutatingQueryTokens.map(_.token.asInstanceOf[UpdateAction])
+
+    val commands = mutatingQueryTokens.map(_.token.asInstanceOf[UpdatingStartItem].updateAction)
     val allCommands = expandCommands(commands, plan.pipe.symbols)
 
     val p = if (plan.containsTransaction) {
@@ -49,7 +55,6 @@ class CreateNodesAndRelationshipsBuilder(db: GraphDatabaseService) extends PlanB
 
     plan.copy(query = q.copy(start = resultQuery), pipe = resultPipe, containsTransaction = true)
   }
-
 
   def applicableTo(pipe: Pipe)(start: QueryToken[StartItem]): Boolean = start match {
     case Unsolved(x: CreateNodeStartItem)         => x.symbolDependenciesMet(pipe.symbols)
@@ -74,13 +79,13 @@ trait UpdateCommandExpander {
       val createdNodes = mutable.Set[String]()
 
       nodes.flatMap {
-        case CreateNodeStartItem(key, props)
+        case CreateNode(key, props)
           if createdNodes.contains(key) && props.nonEmpty =>
           throw new SyntaxException("Node `%s` has already been created. Can't assign properties to it again.".format(key))
 
-        case CreateNodeStartItem(key, _) if createdNodes.contains(key) => None
+        case CreateNode(key, _) if createdNodes.contains(key) => None
 
-        case x@CreateNodeStartItem(key, _) =>
+        case x@CreateNode(key, _) =>
           createdNodes += key
           Some(x)
 
@@ -88,17 +93,17 @@ trait UpdateCommandExpander {
       }
     }
 
-    def alsoCreateNode(e: (Expression, Map[String, Expression]), symbols: SymbolTable, commands: Seq[UpdateAction]): Seq[CreateNodeStartItem] = e._1 match {
+    def alsoCreateNode(e: (Expression, Map[String, Expression]), symbols: SymbolTable, commands: Seq[UpdateAction]): Seq[CreateNode] = e._1 match {
       case Identifier(name) =>
         val nodeFromUnderlyingPipe = symbols.checkType(name, NodeType())
 
         val nodeFromOtherCommand = commands.exists {
-          case CreateNodeStartItem(n, _) => n == name
+          case CreateNode(n, _) => n == name
           case _                         => false
         }
 
         if (!nodeFromUnderlyingPipe && !nodeFromOtherCommand)
-          Seq(CreateNodeStartItem(name, e._2))
+          Seq(CreateNode(name, e._2))
         else
           Seq()
 
@@ -110,7 +115,7 @@ trait UpdateCommandExpander {
         val expandedCommands = expandCommands(actions, symbols.add(id, coll.evaluateType(AnyCollectionType(), symbols)))
         Seq(ForeachAction(coll, id, expandedCommands))
 
-      case createRel: CreateRelationshipStartItem =>
+      case createRel: CreateRelationship =>
         alsoCreateNode(createRel.from, symbols, commands) ++
         alsoCreateNode(createRel.to, symbols, commands) ++ commands
       case _                                      => commands
@@ -131,8 +136,8 @@ trait UpdateCommandExpander {
         //Let's get all the commands that are ready to run, and sort them so node creation happens before
         //relationship creation
         val nextCommands = commandsLeft.filter(action => action.symbolDependenciesMet(symbols)).sortWith {
-          case (a: CreateNodeStartItem, _) => true
-          case (_, a: CreateNodeStartItem) => false
+          case (a: CreateNode, _) => true
+          case (_, a: CreateNode) => false
           case _                           => false
         }
 

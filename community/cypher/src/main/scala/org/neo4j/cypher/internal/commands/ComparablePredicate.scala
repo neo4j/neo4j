@@ -43,7 +43,8 @@ abstract sealed class ComparablePredicate(left: Expression, right: Expression) e
   def atoms: Seq[Predicate] = Seq(this)
   override def toString() = left.toString() + " " + sign + " " + right.toString()
   def containsIsNull = false
-  def filter(f: (Expression) => Boolean): Seq[Expression] = left.filter(f) ++ right.filter(f)
+
+  def children = Seq(left, right)
 
   def assertInnerTypes(symbols: SymbolTable) {
     left.throwIfSymbolsMissing(symbols)
@@ -69,7 +70,8 @@ case class Equals(a: Expression, b: Expression) extends Predicate with Comparer 
   override def toString() = a.toString() + " == " + b.toString()
   def containsIsNull = false
   def rewrite(f: (Expression) => Expression) = Equals(a.rewrite(f), b.rewrite(f))
-  def filter(f: (Expression) => Boolean): Seq[Expression] = a.filter(f) ++ b.filter(f)
+
+  def children = Seq(a, b)
 
   def assertInnerTypes(symbols: SymbolTable) {
     a.throwIfSymbolsMissing(symbols)

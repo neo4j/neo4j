@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.executionplan.{ExecutionPlanInProgress, PlanBui
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.cypher.internal.pipes.{Pipe, ExecuteUpdateCommandsPipe, TransactionStartPipe}
 import org.neo4j.cypher.internal.mutation.UpdateAction
-import org.neo4j.cypher.internal.commands.StartItem
+import org.neo4j.cypher.internal.commands.{UpdatingStartItem, StartItem}
 
 class UpdateActionBuilder(db: GraphDatabaseService) extends PlanBuilder with UpdateCommandExpander {
   def apply(plan: ExecutionPlanInProgress) = {
@@ -36,7 +36,7 @@ class UpdateActionBuilder(db: GraphDatabaseService) extends PlanBuilder with Upd
 
     val updateCmds: Seq[QueryToken[UpdateAction]] = extractValidUpdateActions(plan, p)
     val startItems: Seq[QueryToken[StartItem]] = extractValidStartItems(plan, p)
-    val startCmds = startItems.map(_.map(_.asInstanceOf[UpdateAction]))
+    val startCmds = startItems.map(_.map(_.asInstanceOf[UpdatingStartItem].updateAction))
 
     val updateActions = (startCmds ++ updateCmds).map(_.token)
     val commands = expandCommands(updateActions, p.symbols)
