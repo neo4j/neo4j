@@ -27,8 +27,8 @@ import java.net.URI;
 import java.util.Map;
 
 import org.junit.Test;
-import org.neo4j.server.webadmin.rest.ConsoleService;
-import org.neo4j.server.webadmin.rest.ConsoleSessionFactory;
+import org.neo4j.server.webadmin.rest.console.ConsoleService;
+import org.neo4j.server.webadmin.console.ConsoleSessionFactory;
 
 public class ServerRootRepresentationTest
 {

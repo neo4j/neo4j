@@ -51,8 +51,6 @@
 
         <felix-fileinstall.version>3.0.2</felix-fileinstall.version>
         <java.io.tmpdir>${project.build.directory}</java.io.tmpdir>
-        <blueprints.version>1.2</blueprints.version>
-        <gremlin.version>1.5</gremlin.version>
 
         <!-- Run integration tests against a server that is started elsewhere. -->
         <neo-server.external>false</neo-server.external>
@@ -185,54 +183,6 @@
           <artifactId>jackson-jaxrs</artifactId>
           <version>1.9.7</version>
         </dependency>
-
-        <dependency>
-            <groupId>com.tinkerpop.gremlin</groupId>
-            <artifactId>gremlin-groovy</artifactId>
-            <version>${gremlin.version}</version>
-            <type>jar</type>
-            <exclusions>
-                <!-- Sail support not needed -->
-                <exclusion>
-                    <groupId>com.tinkerpop.blueprints</groupId>
-                    <artifactId>blueprints-sail-graph</artifactId>
-                </exclusion>
-                <!-- Maven support in groovy not needed -->
-                <exclusion>
-                    <groupId>org.codehaus.groovy.maven</groupId>
-                    <artifactId>gmaven-plugin</artifactId>
-                </exclusion>
-                <!-- "readline" not needed - we only expose gremlin through webadmin -->
-                <exclusion>
-                    <groupId>jline</groupId>
-                    <artifactId>jline</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>com.tinkerpop.blueprints</groupId>
-            <artifactId>blueprints-neo4j-graph</artifactId>
-            <version>${blueprints.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.neo4j</groupId>
-                    <artifactId>neo4j</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.neo4j</groupId>
-                    <artifactId>neo4j-ha</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.neo4j</groupId>
-                    <artifactId>neo4j-management</artifactId>
-                </exclusion>
-                <exclusion>
-                  <artifactId>jackson-jaxrs</artifactId>
-                  <groupId>org.codehaus.jackson</groupId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-
 
         <dependency>
             <groupId>org.rrd4j</groupId>
