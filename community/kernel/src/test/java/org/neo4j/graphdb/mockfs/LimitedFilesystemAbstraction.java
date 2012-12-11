@@ -27,6 +27,7 @@ import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 
 public class LimitedFilesystemAbstraction implements FileSystemAbstraction
 {
+
     private FileSystemAbstraction inner;
     private boolean outOfSpace;
     private Integer bytesAtATime = null;
@@ -94,7 +95,7 @@ public class LimitedFilesystemAbstraction implements FileSystemAbstraction
 
     public void ensureHasSpace() throws IOException
     {
-        if( outOfSpace )
+        if(outOfSpace)
         {
             throw new IOException( "No space left on device" );
         }
