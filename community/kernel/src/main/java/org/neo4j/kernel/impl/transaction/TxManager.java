@@ -458,7 +458,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
                     default:
                         setTmNotOk( e );
                         throw logAndReturn("TM error tx commit",new TransactionFailureException(
-                                "commit threw exception but status is committed?", e ));
+                                "commit threw exception", e ));
                 }
             }
             catch ( Throwable t )
