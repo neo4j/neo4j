@@ -58,6 +58,64 @@ class TrailDecomposeTest extends GraphDatabaseTestBase with Assertions with Buil
     assert(resultMap === List(Map("a" -> nodeA, "b" -> nodeB, "c" -> nodeC, "link1" -> rel1, "link2" -> rel2)))
   }
 
+  @Test def should_not_return_maps_that_have_contradicting_values_in_pattern_points_endpoint() {
+    // When a pattern has the same pattern node in multiple places in the pattern,
+    // we need to exclude it from the results
+
+    //a-[r1]->b-[r2]->c-[r3]->b
+
+    val nodeA = createNode("A")
+    val nodeB = createNode("B")
+    val nodeC = createNode("C")
+    val nodeD = createNode("D")
+
+    val rel1 = relate(nodeA, nodeB)
+    val rel2 = relate(nodeB, nodeC)
+    val rel3 = relate(nodeC, nodeD)
+
+
+    val kernPath = Seq(nodeA, rel1, nodeB, rel2, nodeC, rel3, nodeD)
+
+    val cPoint = EndPoint("b")
+    val cToB = SingleStepTrail(cPoint, Direction.OUTGOING, "r3", Seq(), "c", None, None, null)
+    val bToC = SingleStepTrail(cToB, Direction.OUTGOING, "r2", Seq(), "b", None, None, null)
+    val aToB = SingleStepTrail(bToC, Direction.OUTGOING, "r1", Seq(), "a", None, None, null)
+
+    val resultMap = aToB.decompose(kernPath).toList
+
+    assert(resultMap === List())
+  }
+
+  @Test def should_not_return_maps_that_have_contradicting_values_in_pattern_points_single() {
+    // When a pattern has the same pattern node in multiple places in the pattern,
+    // we need to exclude it from the results
+
+    //a-[r1]->b-[r2]->c-[r3]->b-[r4]->x
+
+    val nodeA = createNode("A")
+    val nodeB = createNode("B")
+    val nodeC = createNode("C")
+    val nodeD = createNode("D")
+    val nodeX = createNode("X")
+
+    val rel1 = relate(nodeA, nodeB)
+    val rel2 = relate(nodeB, nodeC)
+    val rel3 = relate(nodeC, nodeD)
+    val rel4 = relate(nodeD, nodeX)
+
+    val kernPath = Seq(nodeA, rel1, nodeB, rel2, nodeC, rel3, nodeD, rel4, nodeX)
+
+    val dPoint = EndPoint("x")
+    val bToD = SingleStepTrail(dPoint, Direction.OUTGOING, "r4", Seq(), "b", None, None, null)
+    val cToB = SingleStepTrail(bToD, Direction.OUTGOING, "r3", Seq(), "c", None, None, null)
+    val bToC = SingleStepTrail(cToB, Direction.OUTGOING, "r2", Seq(), "b", None, None, null)
+    val aToB = SingleStepTrail(bToC, Direction.OUTGOING, "r1", Seq(), "a", None, None, null)
+
+    val resultMap = aToB.decompose(kernPath).toList
+
+    assert(resultMap === List())
+  }
+
   @Test def decompose_single_varlength_step() {
     //Given:
     //Pattern: a-[:A*1..2]->b
