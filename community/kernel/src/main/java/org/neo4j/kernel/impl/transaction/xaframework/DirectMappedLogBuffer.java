@@ -151,19 +151,8 @@ public class DirectMappedLogBuffer implements LogBuffer
     public void writeOut() throws IOException
     {
         byteBuffer.flip();
-
-        // We use .clear() to reset this buffer, so position will always be 0
-        long expectedEndPosition = bufferStartPosition + byteBuffer.limit();
-        long bytesWritten;
-
-        while((bufferStartPosition += (bytesWritten = fileChannel.write( byteBuffer, bufferStartPosition ))) < expectedEndPosition)
-        {
-            if(bytesWritten <= 0)
-            {
-                throw new IOException( "Unable to write to disk, reported bytes written was " + bytesWritten );
-            }
-        }
-
+        bufferStartPosition += fileChannel.write( byteBuffer,
+                bufferStartPosition );
         byteBuffer.clear();
     }
 

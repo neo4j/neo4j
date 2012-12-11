@@ -19,9 +19,6 @@
  */
 package org.neo4j.test;
 
-import static junit.framework.Assert.fail;
-import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertThat;
 import static org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils.readEntry;
 import static org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils.writeLogEntry;
 
@@ -60,10 +57,10 @@ public class LogTestUtils
     public static interface LogHook<RECORD> extends Predicate<RECORD>
     {
         void file( File file );
-
+        
         void done( File file );
     }
-
+    
     public static final LogHook<Pair<Byte, List<byte[]>>> EVERYTHING_BUT_DONE_RECORDS = new LogHook<Pair<Byte,List<byte[]>>>()
     {
         @Override
@@ -222,47 +219,6 @@ public class LogTestUtils
         }
         replace( tempFile, file );
     }
-
-    public static void assertLogContains( String logPath, LogEntry ... expectedEntries ) throws IOException
-    {
-        FileChannel fileChannel = new RandomAccessFile( logPath, "r" ).getChannel();
-        ByteBuffer buffer = ByteBuffer.allocateDirect( 9 + Xid.MAXGTRIDSIZE
-                + Xid.MAXBQUALSIZE * 10 );
-
-        try {
-            // Always a header
-            LogIoUtils.readLogHeader( buffer, fileChannel, true );
-
-            // Read all log entries
-            List<LogEntry> entries = new ArrayList<LogEntry>(  );
-            CommandFactory cmdFactory = new CommandFactory();
-            LogEntry entry;
-            while ( (entry = LogIoUtils.readEntry( buffer, fileChannel, cmdFactory )) != null )
-            {
-                entries.add( entry );
-            }
-
-            // Assert entries are what we expected
-            for(int entryNo=0;entryNo < expectedEntries.length; entryNo++)
-            {
-                LogEntry expectedEntry = expectedEntries[entryNo];
-                if(entries.size() <= entryNo)
-                {
-                    fail("Log ended prematurely. Expected to find '" + expectedEntry.toString() + "' as log entry number "+entryNo+", instead there were no more log entries." );
-                }
-
-                LogEntry actualEntry = entries.get( entryNo );
-
-                assertThat( "Unexpected entry at entry number " + entryNo, actualEntry, is( expectedEntry ) );
-            }
-
-            // And assert log does not contain more entries
-            assertThat( "The log contained more entries than we expected!", entries.size(), is( expectedEntries.length ) );
-        } finally {
-            fileChannel.close();
-        }
-    }
-
     
     private static void replace( File tempFile, File file )
     {
@@ -270,19 +226,13 @@ public class LogTestUtils
         tempFile.renameTo( file );
     }
 
-    public static File[] filterNeostoreLogicalLog( String storeDir, LogHook<LogEntry> filter ) throws IOException
+    public static void filterNeostoreLogicalLog( String storeDir, LogHook<LogEntry> filter ) throws IOException
     {
-        File[] logFiles = oneOrTwo( new File( storeDir, NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME ) );
-        for ( File file : logFiles )
-        {
-            File filteredLog = filterNeostoreLogicalLog( file, filter );
-            replace( filteredLog, file );
-        }
-
-        return logFiles;
+        for ( File file : oneOrTwo( new File( storeDir, NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME ) ) )
+            filterNeostoreLogicalLog( file, filter );
     }
 
-    public static File filterNeostoreLogicalLog( File file, LogHook<LogEntry> filter )
+    private static void filterNeostoreLogicalLog( File file, LogHook<LogEntry> filter )
             throws IOException
     {
         filter.file( file );
@@ -309,8 +259,8 @@ public class LogTestUtils
             safeClose( out );
             filter.done( file );
         }
-
-        return tempFile;
+   
+        replace( tempFile, file );
     }
 
     private static void transferLogicalLogHeader( FileChannel in, LogBuffer outBuffer,
