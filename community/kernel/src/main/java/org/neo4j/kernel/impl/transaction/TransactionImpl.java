@@ -42,6 +42,7 @@ import javax.transaction.xa.Xid;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
+import org.neo4j.kernel.impl.transaction.Period.Epoch;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
 import org.neo4j.kernel.impl.util.MultipleCauseException;
 
@@ -72,12 +73,14 @@ class TransactionImpl implements Transaction
     private final ForceMode forceMode;
     private Thread owner;
 
-    private TransactionState state;
+    private final TransactionState state;
+    private final Epoch epoch;
 
-    TransactionImpl( TxManager txManager, ForceMode forceMode, TransactionState state )
+    TransactionImpl( TxManager txManager, ForceMode forceMode, TransactionState state, Epoch epoch )
     {
         this.txManager = txManager;
         this.state = state;
+        this.epoch = epoch;
         globalId = XidImpl.getNewGlobalId();
         eventIdentifier = txManager.getNextEventIdentifier();
         this.forceMode = forceMode;
@@ -107,6 +110,11 @@ class TransactionImpl implements Transaction
     public TransactionState getState()
     {
         return state;
+    }
+    
+    boolean matchesEpoch( Epoch epoch )
+    {
+        return this.epoch.equals( epoch );
     }
 
     @Override

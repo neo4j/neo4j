@@ -28,6 +28,7 @@ import javax.transaction.Synchronization;
 
 import org.junit.Test;
 import org.neo4j.kernel.impl.core.TransactionState;
+import org.neo4j.kernel.impl.transaction.Period.Epoch;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
 import org.neo4j.kernel.impl.util.MultipleCauseException;
 
@@ -38,7 +39,7 @@ public class TestTransactionImpl
             throws IllegalStateException, RollbackException
     {
         TxManager mockedTxManager = mock( TxManager.class );
-        TransactionImpl tx = new TransactionImpl( mockedTxManager, ForceMode.forced, TransactionState.NO_STATE );
+        TransactionImpl tx = new TransactionImpl( mockedTxManager, ForceMode.forced, TransactionState.NO_STATE, mock( Epoch.class ) );
 
         // Evil synchronizations
         final RuntimeException firstException = new RuntimeException( "Ex1" );
@@ -91,7 +92,7 @@ public class TestTransactionImpl
             RollbackException
     {
         TxManager mockedTxManager = mock( TxManager.class );
-        TransactionImpl tx = new TransactionImpl( mockedTxManager, ForceMode.forced, TransactionState.NO_STATE );
+        TransactionImpl tx = new TransactionImpl( mockedTxManager, ForceMode.forced, TransactionState.NO_STATE, mock( Epoch.class ) );
 
         // Evil synchronizations
         final RuntimeException firstException = new RuntimeException( "Ex1" );
