@@ -62,35 +62,42 @@ final case class VariableLengthStepTrail(next: Trail,
     left = x._2
 
     var result: Seq[(Seq[PropertyContainer], Map[String, Any])] = Seq.empty
-    val map = MutableMaps.create(m)
-    map += (start -> p.head)
 
-    var validRelationship = checkPath(curr)
+    val newNode = p.head
+    val oldNode = m.get(start)
 
-    while (validRelationship &&
-           idx <= max.getOrElse(idx) &&
-           left.nonEmpty) {
+    if (oldNode.isEmpty || oldNode.get == newNode) {
+      val map = MutableMaps.create(m)
 
-      val currentPath = curr :+ left.head
-      map += (path -> PathImpl(currentPath:_*))
+      map += (start -> newNode)
 
-      relIterator.foreach {
-        key => map += (key -> currentPath.filter(_.isInstanceOf[Relationship]))
+      var validRelationship = checkPath(curr)
+
+      while (validRelationship &&
+             idx <= max.getOrElse(idx) &&
+             left.nonEmpty) {
+
+        val currentPath = curr :+ left.head
+        map += (path -> PathImpl(currentPath: _*))
+
+        relIterator.foreach {
+          key => map += (key -> currentPath.filter(_.isInstanceOf[Relationship]))
+        }
+
+        //Add this result to the stack
+        //if our downstreams trail doesn't return anything,
+        //we'll also not return anything
+        result = result ++ next.decompose(left, map.toMap)
+
+        //Get more stuff from the remaining path
+        idx += 1
+
+        val x = p.splitAt(idx * 2)
+        curr = x._1
+        left = x._2
+
+        validRelationship = checkPath(curr)
       }
-
-      //Add this result to the stack
-      //if our downstreams trail doesn't return anything,
-      //we'll also not return anything
-      result = result ++ next.decompose(left, map.toMap)
-
-      //Get more stuff from the remaining path
-      idx += 1
-
-      val x = p.splitAt(idx * 2)
-      curr = x._1
-      left = x._2
-
-      validRelationship = checkPath(curr)
     }
 
     result.toIterator
