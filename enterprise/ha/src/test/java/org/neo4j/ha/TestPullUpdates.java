@@ -20,104 +20,91 @@
 package org.neo4j.ha;
 
 import static java.lang.System.currentTimeMillis;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.test.TargetDirectory.forTest;
+import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
+import static org.neo4j.test.ha.ClusterManager.masterAvailable;
+import static org.neo4j.test.ha.ClusterManager.masterSeesSlavesAsAvailable;
 
-import java.net.URI;
-import java.util.concurrent.CountDownLatch;
+import java.io.File;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.junit.After;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TestName;
-import org.neo4j.cluster.ClusterSettings;
-import org.neo4j.cluster.member.ClusterMemberListener;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
+import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
-import org.neo4j.cluster.member.ClusterMemberEvents;
-import org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher;
 import org.neo4j.shell.ShellClient;
 import org.neo4j.shell.ShellException;
 import org.neo4j.shell.ShellLobby;
 import org.neo4j.shell.ShellSettings;
 import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.ha.ClusterManager;
 
 public class TestPullUpdates
 {
-    @Rule
-    public TestName testName = new TestName();
-
-    private final TargetDirectory dir = forTest( getClass() );
-    private HighlyAvailableGraphDatabase[] dbs;
+    private ClusterManager.ManagedCluster cluster;
     private static final int PULL_INTERVAL = 100;
     private static final int SHELL_PORT = 6370;
 
-    private void startDbs( int size, int pullInterval ) throws Exception
-    {
-        dbs = new HighlyAvailableGraphDatabase[size];
-        for ( int i = 0; i < dbs.length; i++ )
-        {
-            dbs[i] = newDb( i, pullInterval );
-        }
-    }
-
-    private HighlyAvailableGraphDatabase newDb( int i, int pullInterval )
-    {
-        HighlyAvailableGraphDatabase db = (HighlyAvailableGraphDatabase) new HighlyAvailableGraphDatabaseFactory().
-                newHighlyAvailableDatabaseBuilder( dir.directory(
-                        testName.getMethodName() + (i + 1), true ).getAbsolutePath() ).
-                setConfig( ClusterSettings.cluster_server, "127.0.0.1:" + (5001 + i) ).
-                setConfig( ClusterSettings.initial_hosts, "127.0.0.1:5001,127.0.0.1:5002,127.0.0.1:5003" ).
-                setConfig( HaSettings.server_id, "" + (i + 1) ).
-                setConfig( HaSettings.ha_server, "127.0.0.1:" + (6361 + i) ).
-                setConfig( HaSettings.pull_interval, pullInterval + "ms" ).
-                setConfig( HaSettings.tx_push_factor, "0" ).
-                setConfig( ShellSettings.remote_shell_enabled, "true" ).
-                setConfig( ShellSettings.remote_shell_port, "" + (SHELL_PORT + 1) ).
-                newGraphDatabase();
-        Transaction tx = db.beginTx();
-        tx.finish();
-        return db;
-    }
-
     @After
-    public void doAfter() throws Exception
+    public void doAfter() throws Throwable
     {
-        for ( int i = dbs.length - 1; i >= 0; i-- )
+        if ( cluster != null )
         {
-            dbs[i].shutdown();
+            cluster.stop();
         }
     }
 
     @Test
-    public void makeSureUpdatePullerGetsGoingAfterMasterSwitch() throws Exception
+    public void makeSureUpdatePullerGetsGoingAfterMasterSwitch() throws Throwable
     {
-        startDbs( 3, PULL_INTERVAL );
-        int master = getCurrentMaster();
+        File root = TargetDirectory.forTest( getClass() ).directory( "makeSureUpdatePullerGetsGoingAfterMasterSwitch" );
+        ClusterManager clusterManager = new ClusterManager( clusterOfSize( 3 ), root, MapUtil.stringMap(
+                HaSettings.pull_interval.name(), PULL_INTERVAL+"ms") );
+        clusterManager.start();
+        cluster = clusterManager.getDefaultCluster();
+
+        HighlyAvailableGraphDatabase master = cluster.getMaster();
         setProperty( master, 1 );
-        awaitPropagation( 1 );
-        CountDownLatch masterAvailable = awaitMemberIsAvailable( (master + 1) % dbs.length, HighAvailabilityModeSwitcher.MASTER );
-        kill( master );
-        masterAvailable.await();
-        setProperty( getCurrentMaster(), 2 );
+        awaitPropagation( 1, cluster );
+        ClusterManager.RepairKit masterShutdownRK = cluster.shutdown( master );
+        cluster.await( masterAvailable() );
+        setProperty( cluster.getMaster(), 2 );
 
-        CountDownLatch slaveAvailable = awaitMemberIsAvailable( getCurrentMaster(), HighAvailabilityModeSwitcher.SLAVE );
-        start( master, PULL_INTERVAL );
-        slaveAvailable.await();
+        masterShutdownRK.repair();
+        cluster.await( masterAvailable() );
 
-        awaitPropagation( 2 );
+        cluster.await( masterSeesSlavesAsAvailable( 2 ) );
+
+        awaitPropagation( 2, cluster );
     }
 
     @Test
-    public void pullupdatesShellAppPullsUpdates() throws Exception
+    public void pullupdatesShellAppPullsUpdates() throws Throwable
     {
-        startDbs( 2, 0 );
-        int master = getCurrentMaster();
-        setProperty( master, 1 );
-        callPullUpdatesViaShell( (master + 1) % dbs.length );
-        awaitPropagation( 1 );
+        File root = TargetDirectory.forTest( getClass() ).directory( "pullupdatesShellAppPullsUpdates" );
+        Map<Integer, Map<String, String>> instanceConfig = new HashMap<Integer, Map<String, String>>();
+        for (int i = 1; i <= 2; i++)
+        {
+            Map<String, String> thisInstance =
+                    MapUtil.stringMap( ShellSettings.remote_shell_port.name(), "" + (SHELL_PORT + i) );
+            instanceConfig.put( i, thisInstance );
+        }
+        ClusterManager clusterManager = new ClusterManager( clusterOfSize( 2 ), root, MapUtil.stringMap(
+                HaSettings.pull_interval.name(), "0",
+                HaSettings.tx_push_factor.name(), "0" ,
+                ShellSettings.remote_shell_enabled.name(), "true"
+                ), instanceConfig );
+        clusterManager.start();
+        cluster = clusterManager.getDefaultCluster();
+
+        setProperty( cluster.getMaster(), 1 );
+        callPullUpdatesViaShell( 2 );
+        assertEquals( 1, cluster.getAnySlave().getReferenceNode().getProperty( "i" ) );
+
     }
 
     private void callPullUpdatesViaShell( int i ) throws ShellException
@@ -126,52 +113,19 @@ public class TestPullUpdates
         client.evaluate( "pullupdates" );
     }
 
-    private CountDownLatch awaitMemberIsAvailable( int instance, final String waitForRole )
-    {
-        final CountDownLatch memberIsAvailable = new CountDownLatch( 1 );
-        final ClusterMemberEvents events = dbs[instance].getDependencyResolver().resolveDependency(
-                ClusterMemberEvents.class );
-        events.addClusterMemberListener(
-                new ClusterMemberListener.Adapter()
-                {
-                    @Override
-                    public void memberIsAvailable( String role, URI instanceClusterUri, URI roleUri )
-                    {
-                        if ( role.equals( waitForRole ) )
-                        {
-                            memberIsAvailable.countDown();
-                            events.removeClusterMemberListener( this );
-                        }
-                    }
-                } );
-
-        return memberIsAvailable;
-    }
-
     private void powerNap() throws InterruptedException
     {
         Thread.sleep( 50 );
     }
 
-    private void start( int master, int pullInterval )
+    private void awaitPropagation( int i, ClusterManager.ManagedCluster cluster ) throws Exception
     {
-        dbs[master] = newDb( master, pullInterval );
-    }
-
-    private void kill( int master )
-    {
-        dbs[master].shutdown();
-        dbs[master] = null;
-    }
-
-    private void awaitPropagation( int i ) throws Exception
-    {
-        long endTime = currentTimeMillis() + 10000;
+        long endTime = currentTimeMillis() + PULL_INTERVAL * 20;
         boolean ok = false;
         while ( !ok && currentTimeMillis() < endTime )
         {
             ok = true;
-            for ( HighlyAvailableGraphDatabase db : dbs )
+            for ( HighlyAvailableGraphDatabase db : cluster.getAllMembers() )
             {
                 Object value = db.getReferenceNode().getProperty( "i", null );
                 if ( value == null || ((Integer) value).intValue() != i )
@@ -187,9 +141,8 @@ public class TestPullUpdates
         assertTrue( "Change wasn't propagated by pulling updates", ok );
     }
 
-    private void setProperty( int dbId, int i ) throws Exception
+    private void setProperty( HighlyAvailableGraphDatabase db, int i ) throws Exception
     {
-        HighlyAvailableGraphDatabase db = dbs[dbId];
         Transaction tx = db.beginTx();
         try
         {
@@ -200,18 +153,5 @@ public class TestPullUpdates
         {
             tx.finish();
         }
-    }
-
-    private int getCurrentMaster() throws Exception
-    {
-        for ( int i = 0; i < dbs.length; i++ )
-        {
-            HighlyAvailableGraphDatabase db = dbs[i];
-            if ( db != null && db.isMaster() )
-            {
-                return i;
-            }
-        }
-        return -1;
     }
 }
