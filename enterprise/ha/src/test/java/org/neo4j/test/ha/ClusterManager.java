@@ -28,6 +28,7 @@ import java.io.File;
 import java.lang.reflect.Field;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -68,7 +69,7 @@ public class ClusterManager
         extends LifecycleAdapter
 {
     private static final Logger logger = LoggerFactory.getLogger( "clustermanager" );
-    
+
     /**
      * Provides a specification of which clusters to start in {@link ClusterManager#start()}.
      */
@@ -113,10 +114,11 @@ public class ClusterManager
         clusters.getClusters().add( cluster );
         return provided( clusters );
     }
-    
+
+
     /**
      * Provides a cluster specification with default values
-     * @param memberCount the total number of members in the cluster to start.
+     * @param haMemberCount the total number of members in the cluster to start.
      */
     public static Provider clusterWithAdditionalClients( int haMemberCount, int additionalClientCount )
     {
@@ -151,14 +153,22 @@ public class ClusterManager
     LifeSupport life;
     private final File root;
     private final Map<String, String> commonConfig;
+    private final Map<Integer, Map<String, String>> instanceConfig;
     private final Map<String, ManagedCluster> clusterMap = new HashMap<String, ManagedCluster>();
     private final Provider clustersProvider;
 
-    public ClusterManager( Provider clustersProvider, File root, Map<String, String> commonConfig )
+    public ClusterManager( Provider clustersProvider, File root, Map<String, String> commonConfig,
+                           Map<Integer, Map<String, String>> instanceConfig )
     {
         this.clustersProvider = clustersProvider;
         this.root = root;
         this.commonConfig = commonConfig;
+        this.instanceConfig = instanceConfig;
+    }
+
+    public ClusterManager( Provider clustersProvider, File root, Map<String, String> commonConfig )
+    {
+        this( clustersProvider, root, commonConfig, Collections.<Integer, Map<String, String>>emptyMap() );
     }
     
     @Override
@@ -210,7 +220,9 @@ public class ClusterManager
         {
             StringBuilder result = new StringBuilder();
             for ( HighlyAvailableGraphDatabase member : getAllMembers() )
-                result.append( result.length() > 0 ? "," : "" ).append( ":" + member.getDependencyResolver().resolveDependency( ClusterClient.class ).getServerUri().getPort() );
+                result.append( result.length() > 0 ? "," : "" ).append( ":" +
+                        member.getDependencyResolver().resolveDependency(
+                                ClusterClient.class ).getServerUri().getPort() );
             return result.toString();
         }
         
@@ -352,7 +364,11 @@ public class ClusterManager
                                 setConfig( ClusterSettings.cluster_server, member.getHost() ).
                                 setConfig( HaSettings.ha_server, ":" + haPort ).
                                 setConfig( commonConfig );
-    
+                if ( instanceConfig.containsKey( serverId ) )
+                {
+                   graphDatabaseBuilder.setConfig( instanceConfig.get( serverId ) );
+                }
+
                 config( graphDatabaseBuilder, name, serverId );
     
                 logger.info( "Starting cluster node " + serverId + " in cluster " + name );

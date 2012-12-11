@@ -180,7 +180,7 @@ public class Clusters
     {
         private String host;
         private boolean fullHaMember;
-        
+
         public Member( int port, boolean fullHaMember )
         {
             this( localhost() + ":" + port, fullHaMember );
@@ -190,7 +190,7 @@ public class Clusters
         {
             this( host, true );
         }
-        
+
         public Member( String host, boolean fullHaMember )
         {
             this.host = host;
