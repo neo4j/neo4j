@@ -36,7 +36,7 @@ import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.test.GraphDescription;
 import org.neo4j.test.GraphDescription.Graph;
-import org.neo4j.test.GraphDescription.NODE;
+import org.neo4j.test.GraphDescription.NODE;                         ◊
 import org.neo4j.test.GraphDescription.PROP;
 import org.neo4j.test.GraphDescription.REL;
 import org.neo4j.test.TestData.Title;

@@ -29,6 +29,8 @@ import java.util.ArrayList;
 
 import javax.ws.rs.core.Response;
 
+import org.hamcrest.MatcherAssert;
+import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -53,7 +55,7 @@ public class GremlinConsoleServiceTest implements ConsoleSessionFactory
 
         assertEquals( 200, evaluatedGremlinResponse.getStatus() );
         String response = decode( evaluatedGremlinResponse );
-        assertThat( response, containsString( "v[1]" ) );
+        MatcherAssert.assertThat(response, Matchers.containsString("v[1]"));
     }
 
     private String decode( final Response response ) throws UnsupportedEncodingException
@@ -69,12 +71,12 @@ public class GremlinConsoleServiceTest implements ConsoleSessionFactory
 
         assertEquals( 200, evaluatedGremlinResponse.getStatus() );
         String response = decode( evaluatedGremlinResponse );
-        assertThat( response, containsString( "v[1]" ) );
+        MatcherAssert.assertThat(response, Matchers.containsString("v[1]"));
 
         evaluatedGremlinResponse = consoleService.exec( new JsonFormat(), "{ \"command\" : \"g.addVertex(null)\" }" );
         response = decode( evaluatedGremlinResponse );
         assertEquals( 200, evaluatedGremlinResponse.getStatus() );
-        assertThat( response, containsString( "v[2]" ) );
+        MatcherAssert.assertThat(response, Matchers.containsString("v[2]"));
     }
     
     @Before

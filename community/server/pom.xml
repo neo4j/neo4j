@@ -51,8 +51,8 @@
 
         <felix-fileinstall.version>3.0.2</felix-fileinstall.version>
         <java.io.tmpdir>${project.build.directory}</java.io.tmpdir>
-        <blueprints.version>1.2</blueprints.version>
-        <gremlin.version>1.5</gremlin.version>
+        <!--<blueprints.version>1.2</blueprints.version>
+        <gremlin.version>1.5</gremlin.version>-->
 
         <!-- Run integration tests against a server that is started elsewhere. -->
         <neo-server.external>false</neo-server.external>
@@ -186,29 +186,30 @@
           <version>1.9.7</version>
         </dependency>
 
-        <dependency>
+        <!--<dependency>
             <groupId>com.tinkerpop.gremlin</groupId>
             <artifactId>gremlin-groovy</artifactId>
             <version>${gremlin.version}</version>
             <type>jar</type>
             <exclusions>
-                <!-- Sail support not needed -->
+                &lt;!&ndash; Sail support not needed &ndash;&gt;
                 <exclusion>
                     <groupId>com.tinkerpop.blueprints</groupId>
                     <artifactId>blueprints-sail-graph</artifactId>
                 </exclusion>
-                <!-- Maven support in groovy not needed -->
+                &lt;!&ndash; Maven support in groovy not needed &ndash;&gt;
                 <exclusion>
                     <groupId>org.codehaus.groovy.maven</groupId>
                     <artifactId>gmaven-plugin</artifactId>
                 </exclusion>
-                <!-- "readline" not needed - we only expose gremlin through webadmin -->
+                &lt;!&ndash; "readline" not needed - we only expose gremlin through webadmin &ndash;&gt;
                 <exclusion>
                     <groupId>jline</groupId>
                     <artifactId>jline</artifactId>
                 </exclusion>
             </exclusions>
-        </dependency>
+        </dependency>-->
+<!--
         <dependency>
             <groupId>com.tinkerpop.blueprints</groupId>
             <artifactId>blueprints-neo4j-graph</artifactId>
@@ -232,6 +233,7 @@
                 </exclusion>
             </exclusions>
         </dependency>
+-->
 
 
         <dependency>

@@ -22,7 +22,7 @@ package org.neo4j.server.webadmin.rest;
 import org.neo4j.server.database.CypherExecutor;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.webadmin.console.CypherSession;
-import org.neo4j.server.webadmin.console.GremlinSession;
+//import org.neo4j.server.webadmin.console.GremlinSession;
 import org.neo4j.server.webadmin.console.ScriptSession;
 
 import javax.servlet.http.HttpSession;
@@ -76,14 +76,14 @@ public class SessionFactoryImpl implements ConsoleSessionFactory
     
     public static enum ConsoleEngineCreator
     {
-        GREMLIN
-        {
-            @Override
-            ScriptSession newSession( Database database, CypherExecutor cypherExecutor )
-            {
-                return new GremlinSession( database );
-            }
-        },
+//        GREMLIN
+//        {
+//            @Override
+//            ScriptSession newSession( Database database, CypherExecutor cypherExecutor )
+//            {
+//                return new GremlinSession( database );
+//            }
+//        },
         CYPHER
         {
             @Override

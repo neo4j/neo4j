@@ -72,7 +72,7 @@ public interface Configurator
         private static final long serialVersionUID = 6621747998288594121L;
     {
         add(SessionFactoryImpl.ConsoleEngineCreator.SHELL.name().toLowerCase());
-        add(SessionFactoryImpl.ConsoleEngineCreator.GREMLIN.name().toLowerCase());
+//        add(SessionFactoryImpl.ConsoleEngineCreator.GREMLIN.name().toLowerCase());
     }};
 
     String THIRD_PARTY_PACKAGES_KEY = "org.neo4j.server.thirdparty_jaxrs_classes";
