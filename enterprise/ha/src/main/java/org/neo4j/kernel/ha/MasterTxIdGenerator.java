@@ -30,6 +30,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
+import javax.transaction.xa.XAException;
+
 import org.neo4j.com.Response;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.helpers.Predicate;
@@ -55,7 +57,7 @@ public class MasterTxIdGenerator implements TxIdGenerator
         this.log = log;
     }
     
-    public long generate( final XaDataSource dataSource, final int identifier )
+    public long generate( final XaDataSource dataSource, final int identifier ) throws XAException
     {
         return TxIdGenerator.DEFAULT.generate( dataSource, identifier );
     }

@@ -35,6 +35,7 @@ import javax.transaction.NotSupportedException;
 import javax.transaction.SystemException;
 import javax.transaction.Transaction;
 import javax.transaction.TransactionManager;
+import javax.transaction.xa.XAException;
 
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.ResourceReleaser;
@@ -406,6 +407,10 @@ public class MasterImpl implements Master
             return packResponse( context, txId, upUntilThisTx );
         }
         catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
+        catch ( XAException e )
         {
             throw new RuntimeException( e );
         }

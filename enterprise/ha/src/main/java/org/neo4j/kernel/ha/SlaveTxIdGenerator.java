@@ -25,9 +25,13 @@ import java.io.IOException;
 import java.nio.channels.ReadableByteChannel;
 
 import javax.transaction.TransactionManager;
+import javax.transaction.xa.XAException;
 
+import org.neo4j.com.ComException;
 import org.neo4j.com.Response;
 import org.neo4j.com.TxExtractor;
+import org.neo4j.helpers.Exceptions;
+import org.neo4j.kernel.ha.zookeeper.ZooKeeperException;
 import org.neo4j.kernel.impl.transaction.TxManager;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
@@ -64,7 +68,7 @@ public class SlaveTxIdGenerator implements TxIdGenerator
         this.txManager = (TxManager) txManager;
     }
 
-    public long generate( final XaDataSource dataSource, final int identifier )
+    public long generate( final XaDataSource dataSource, final int identifier ) throws XAException
     {
         try
         {
@@ -103,7 +107,25 @@ public class SlaveTxIdGenerator implements TxIdGenerator
         }
         catch ( RuntimeException e )
         {
-            databaseOperations.exceptionHappened( e );
+            // This inner catch is here because this method needs to throw
+            // an appropriate XAException when something goes wrong, and it needs to do so
+            // by tomorrow morning. DatabaseOperaions.exceptionHappened() seems to hide a business rule
+            // about when to do master re-election, as well as rethrowing whatever exception you give it.
+            // Given the time constraints, I have no space to refactor this, and so that is why this ugly try
+            // sits here.
+
+            // This is only present in the 1.8 branch. Consider it technical debt for a potential 1.8.2 release.
+            try
+            {
+                databaseOperations.exceptionHappened( e );
+            } catch(ZooKeeperException exception)
+            {
+                throw Exceptions.withCause( new XAException( XAException.XA_HEURCOM ), exception);
+            } catch(ComException exception)
+            {
+                throw Exceptions.withCause( new XAException( XAException.XA_HEURCOM ), exception);
+            }
+
             throw e;
         }
     }

@@ -766,19 +766,12 @@ public class XaResourceManager
     }
 
     public synchronized long applyPreparedTransaction(
-            ReadableByteChannel transaction ) throws IOException
+            ReadableByteChannel transaction ) throws IOException, XAException
     {
-        try
-        {
-            long txId = TxIdGenerator.DEFAULT.generate( dataSource, 0 );
+        long txId = TxIdGenerator.DEFAULT.generate( dataSource, 0 );
 
-            log.applyTransactionWithoutTxId( transaction, txId, getForceMode() );
-            return txId;
-        }
-        catch ( XAException e )
-        {
-            throw new RuntimeException( e );
-        }
+        log.applyTransactionWithoutTxId( transaction, txId, getForceMode() );
+        return txId;
     }
     
     public synchronized long rotateLogicalLog() throws IOException

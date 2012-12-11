@@ -1,5 +1,5 @@
-1.9
----
+1.8.1
+-----
 o Neo4j logical log now handles running out of disk space at a critical point gracefully.
 
 1.8.RC1 (2012-09-05)

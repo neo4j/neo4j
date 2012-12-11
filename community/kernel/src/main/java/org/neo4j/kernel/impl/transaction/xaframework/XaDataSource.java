@@ -250,7 +250,7 @@ public abstract class XaDataSource
         getXaContainer().getResourceManager().applyCommittedTransaction( transaction, txId );
     }
 
-    public long applyPreparedTransaction( ReadableByteChannel transaction ) throws IOException
+    public long applyPreparedTransaction( ReadableByteChannel transaction ) throws IOException, XAException
     {
         return getXaContainer().getResourceManager().applyPreparedTransaction( transaction );
     }
