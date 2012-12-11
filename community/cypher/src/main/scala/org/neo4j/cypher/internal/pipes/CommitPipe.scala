@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.pipes
 
 import org.neo4j.graphdb.{Transaction, TransactionFailureException, GraphDatabaseService}
-import org.neo4j.kernel.impl.nioneo.store.{ConstraintViolationException, InvalidRecordException}
+import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException
 import org.neo4j.cypher.{NodeStillHasRelationshipsException, InternalException}
 import org.neo4j.cypher.internal.symbols.SymbolTable
 
@@ -52,7 +52,7 @@ class CommitPipe(source: Pipe, graph: GraphDatabaseService) extends PipeWithSour
           while(cause.getCause != null)
           {
             cause = cause.getCause
-            if(cause.isInstanceOf[ConstraintViolationException])
+            if(cause.isInstanceOf[InvalidRecordException])
             {
               cause.getMessage match {
                 case still_has_relationships(id) => throw new NodeStillHasRelationshipsException(id.toLong, e)
