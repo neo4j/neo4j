@@ -1,5 +1,9 @@
+1.9.M03
+-------
+o Fixes #336 - Patterns that re-use a pattern node can produce non-existing matches
+
 1.9.M02
--------------------
+-------
 o The traversal pattern matcher now supports variable length relationship patterns
 o Fixes #946 - HAS(...) fails with ThisShouldNotHappenException for some patterns
 o Made Cypher better at keeping a numeric type. Adding two integers now returns an integer, and not a double.
