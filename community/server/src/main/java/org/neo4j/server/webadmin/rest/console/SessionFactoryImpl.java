@@ -80,7 +80,6 @@ public class SessionFactoryImpl implements ConsoleSessionFactory {
     private void enableEngines(List<String> supportedEngines) {
         for (ConsoleSessionCreator creator : creators) {
             for (String engineName : supportedEngines) {
-                log.info("Enabling console engine: " + engineName);
                 if (creator.name().equalsIgnoreCase(engineName)) {
                     engineCreators.put(engineName.toLowerCase(), creator);
                 }
