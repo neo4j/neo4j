@@ -31,7 +31,7 @@ import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RestRequest;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 
-public class ConfigureEnabledManagementConsolesTest extends ExclusiveServerTestBase {
+public class shellConsoleShouldNotBeEnabledByDefault extends ExclusiveServerTestBase {
 
     private NeoServer server;
 
@@ -42,32 +42,19 @@ public class ConfigureEnabledManagementConsolesTest extends ExclusiveServerTestB
     }
     
     @Test
-    public void shouldBeAbleToDisableGremlinConsole() throws Exception {
-        server = server().withProperty(Configurator.MANAGEMENT_CONSOLE_ENGINES, "shell").build();
-        server.start();
-
-        assertThat(exec("g","gremlin").getStatus(), is(400));
-        assertThat(exec("ls","shell").getStatus(),  is(200));
-    }
-    
-    @Test
     public void shouldBeAbleToExplicitlySetConsolesToEnabled() throws Exception 
     {
         server = server().withProperty(Configurator.MANAGEMENT_CONSOLE_ENGINES, "").build();
         server.start();
         
-//        assertThat(exec("g","gremlin").getStatus(), is(200));
         assertThat(exec("ls","shell").getStatus(),  is(400));
     }
     
-
-    
     @Test
-    public void gremlinAndShellConsolesShouldNotBeEnabledByDefault() throws Exception {
+    public void shellConsoleShouldBeEnabledByDefault) throws Exception {
         server = server().build();
         server.start();
         
-        assertThat(exec("g","gremlin").getStatus(), is(400));
         assertThat(exec("ls","shell").getStatus(),  is(200));
     }
 

@@ -25,6 +25,7 @@ import static org.junit.Assert.assertEquals;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 
 import javax.ws.rs.core.Response;
@@ -38,8 +39,10 @@ import org.neo4j.server.database.Database;
 import org.neo4j.server.database.WrappingDatabase;
 import org.neo4j.server.rest.repr.OutputFormat;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
+import org.neo4j.server.webadmin.console.ConsoleSessionFactory;
 import org.neo4j.server.webadmin.console.GremlinSession;
 import org.neo4j.server.webadmin.console.ScriptSession;
+import org.neo4j.server.webadmin.rest.console.ConsoleService;
 import org.neo4j.test.ImpermanentGraphDatabase;
 
 public class GremlinConsoleServiceTest implements ConsoleSessionFactory
@@ -77,6 +80,36 @@ public class GremlinConsoleServiceTest implements ConsoleSessionFactory
         response = decode( evaluatedGremlinResponse );
         assertEquals( 200, evaluatedGremlinResponse.getStatus() );
         MatcherAssert.assertThat(response, Matchers.containsString("v[2]"));
+    }
+    
+    @Test
+    public void advertisesAvailableConsoleEngines() throws URISyntaxException, UnsupportedEncodingException
+    {
+        
+        ConsoleService consoleServiceWithShellAndGremlin = new ConsoleService( new GremlinAndShellConsoleSessionFactory(), null, new OutputFormat( new JsonFormat(), uri, null ) );
+        
+        String response = decode( consoleServiceWithShellAndGremlin.getServiceDefinition());
+
+        assertThat( response, containsString( "\"engines\" : [ \"shell\", \"gremlin\" ]" ) );
+    }
+    
+    
+    private static class GremlinAndShellConsoleSessionFactory implements ConsoleSessionFactory
+    {
+        @Override
+        public ScriptSession createSession(String engineName, Database database)
+        {
+            return null;
+        }
+    
+        @Override
+        public Iterable<String> supportedEngines()
+        {
+            return new ArrayList<String>(){{
+                add("shell");
+                add("gremlin");
+            }};
+        }
     }
     
     @Before

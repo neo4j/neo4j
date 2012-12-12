@@ -26,6 +26,8 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
 import org.neo4j.server.rest.repr.OutputFormat;
+import org.neo4j.server.webadmin.rest.console.ConsoleService;
+import org.neo4j.server.webadmin.console.ConsoleSessionFactory;
 import org.neo4j.server.webadmin.rest.representations.ServerRootRepresentation;
 
 @Path( "/" )

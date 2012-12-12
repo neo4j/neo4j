@@ -49,6 +49,15 @@ public class ConfigureEnabledManagementConsolesGremlinTest extends ExclusiveServ
         assertThat(exec("g","gremlin").getStatus(), is(400));
         assertThat(exec("ls","shell").getStatus(),  is(200));
     }
+
+    @Test
+    public void shouldBeAbleToEnableGremlinConsole() throws Exception {
+        server = server().withProperty(Configurator.MANAGEMENT_CONSOLE_ENGINES, "shell,gremlin").build();
+        server.start();
+
+        assertThat(exec("g","gremlin").getStatus(), is(200));
+        assertThat(exec("ls","shell").getStatus(),  is(200));
+    }
     
     @Test
     public void shouldBeAbleToExplicitlySetConsolesToEnabled() throws Exception 
@@ -56,7 +65,7 @@ public class ConfigureEnabledManagementConsolesGremlinTest extends ExclusiveServ
         server = server().withProperty(Configurator.MANAGEMENT_CONSOLE_ENGINES, "").build();
         server.start();
         
-//        assertThat(exec("g","gremlin").getStatus(), is(200));
+        assertThat(exec("g","gremlin").getStatus(), is(400));
         assertThat(exec("ls","shell").getStatus(),  is(400));
     }
     

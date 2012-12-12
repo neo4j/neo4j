@@ -17,25 +17,35 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.webadmin.rest;
+package org.neo4j.server.webadmin.rest.console;
 
+import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.server.database.CypherExecutor;
 import org.neo4j.server.database.Database;
-import org.neo4j.server.webadmin.console.CypherSession;
-//import org.neo4j.server.webadmin.console.GremlinSession;
+import org.neo4j.server.logging.Logger;
+import org.neo4j.server.webadmin.console.ConsoleSessionCreator;
+import org.neo4j.server.webadmin.console.ConsoleSessionFactory;
 import org.neo4j.server.webadmin.console.ScriptSession;
 
 import javax.servlet.http.HttpSession;
-import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class SessionFactoryImpl implements ConsoleSessionFactory
 {
+    private static final Collection<ConsoleSessionCreator> creators = IteratorUtil.asCollection(ServiceLoader.load(ConsoleSessionCreator.class));
+    private static final Logger log = Logger.getLogger( SessionFactoryImpl.class );
+    
+    static {
+        String info = "Available console sessions: ";
+        for (ConsoleSessionCreator creator : creators) {
+            info += creator.name()+": "+creator.getClass()+"\n";
+        }
+        log.info(info);        
+    }
+
     private HttpSession httpSession;
     private final CypherExecutor cypherExecutor;
-    private Map<String, ConsoleEngineCreator> engineCreators = new HashMap<String, ConsoleEngineCreator>();
+    private Map<String, ConsoleSessionCreator> engineCreators = new HashMap<String, ConsoleSessionCreator>();
 
     public SessionFactoryImpl( HttpSession httpSession, List<String> supportedEngines, CypherExecutor cypherExecutor )
     {
@@ -63,7 +73,7 @@ public class SessionFactoryImpl implements ConsoleSessionFactory
         return engineCreators.keySet();
     }
 
-    private ScriptSession getOrInstantiateSession( Database database, String key, ConsoleEngineCreator creator )
+    private ScriptSession getOrInstantiateSession( Database database, String key, ConsoleSessionCreator creator )
     {
         Object session = httpSession.getAttribute( key );
         if ( session == null )
@@ -73,43 +83,12 @@ public class SessionFactoryImpl implements ConsoleSessionFactory
         }
         return (ScriptSession) session;
     }
-    
-    public static enum ConsoleEngineCreator
-    {
-//        GREMLIN
-//        {
-//            @Override
-//            ScriptSession newSession( Database database, CypherExecutor cypherExecutor )
-//            {
-//                return new GremlinSession( database );
-//            }
-//        },
-        CYPHER
-        {
-            @Override
-            ScriptSession newSession( Database database , CypherExecutor cypherExecutor)
-            {
-                return new CypherSession( cypherExecutor );
-            }
-        },
-        SHELL
-        {
-            @Override
-            ScriptSession newSession( Database database, CypherExecutor cypherExecutor )
-            {
-                return new ShellSession( database.getGraph() );
-            }
-        };
-        
-        abstract ScriptSession newSession( Database database, CypherExecutor cypherExecutor );
-    }
-
 
     private void enableEngines(List<String> supportedEngines)
     {
-        for(String engineName : supportedEngines) 
+        for (ConsoleSessionCreator creator : creators) 
         {
-            for(ConsoleEngineCreator creator : EnumSet.allOf(ConsoleEngineCreator.class)) 
+            for (String engineName : supportedEngines) 
             {
                 if(creator.name().equalsIgnoreCase(engineName)) 
                 {

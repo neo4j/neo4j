@@ -19,6 +19,7 @@
  */
 package org.neo4j.server.rest.repr;
 
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
 
@@ -29,31 +30,27 @@ import org.neo4j.helpers.collection.FirstItemIterable;
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.helpers.collection.IteratorWrapper;
 
-public class ObjectToRepresentationConverter
+import com.tinkerpop.blueprints.pgm.impls.neo4j.Neo4jEdge;
+import com.tinkerpop.blueprints.pgm.impls.neo4j.Neo4jGraph;
+import com.tinkerpop.blueprints.pgm.impls.neo4j.Neo4jVertex;
+import com.tinkerpop.pipes.util.structures.Table;
+
+public class GremlinObjectToRepresentationConverter
 {
     public static Representation convert( final Object data )
     {
-        if ( data instanceof Iterable )
-        {
-            return getListRepresentation( (Iterable) data );
-        }
-        if ( data instanceof Iterator )
-        {
-            Iterator iterator = (Iterator) data;
-            return getIteratorRepresentation( iterator );
-        }
-        if ( data instanceof Map )
-        {
-            
-            return getMapRepresentation( (Map) data );
-        }
+        if ( data instanceof Table ) return new GremlinTableRepresentation( (Table) data );
+        
+        if ( data instanceof Iterable ) return getListRepresentation( (Iterable) data );
+        if ( data instanceof Iterator ) return getIteratorRepresentation((Iterator) data);
+        if ( data instanceof Map ) return getMapRepresentation( (Map) data );
+        
         return getSingleRepresentation( data );
     }
 
     public static MappingRepresentation getMapRepresentation( Map data )
     {
-        
-        return new MapRepresentation( data );
+        return new GremlinMapRepresentation( data );
     }
 
     static Representation getIteratorRepresentation( Iterator data )
@@ -81,6 +78,10 @@ public class ObjectToRepresentationConverter
 
     static FirstItemIterable<Representation> convertValuesToRepresentations( Iterable data )
     {
+        if ( data instanceof Table )
+        {
+            return new FirstItemIterable<Representation>(Collections.<Representation>singleton(new GremlinTableRepresentation( (Table) data )));
+        }
         return new FirstItemIterable<Representation>(new IterableWrapper<Representation,Object>(data) {
             @Override
             protected Representation underlyingObjectToObject(Object value) {
@@ -98,34 +99,12 @@ public class ObjectToRepresentationConverter
 
     static Representation getSingleRepresentation( Object result )
     {
-        if ( result == null ) return ValueRepresentation.string( "null" );
-        else if ( result instanceof GraphDatabaseService )
-        {
-            return new DatabaseRepresentation( ( (GraphDatabaseService) result ) );
-        }
-        else if ( result instanceof Node )
-        {
-            return new NodeRepresentation( (Node) result );
-        }
-        else if ( result instanceof Relationship )
-        {
-            return new RelationshipRepresentation( (Relationship) result );
-        }
-        else if ( result instanceof Double || result instanceof Float )
-        {
-            return ValueRepresentation.number( ( (Number) result ).doubleValue() );
-        }
-        else if ( result instanceof Long )
-        {
-            return ValueRepresentation.number( ( (Long) result ).longValue() );
-        }
-        else if ( result instanceof Integer )
-        {
-            return ValueRepresentation.number( ( (Integer) result ).intValue() );
-        }
-        else
-        {
-            return ValueRepresentation.string( result.toString() );
-        }
+        if ( result == null ) return ObjectToRepresentationConverter.getSingleRepresentation(result);
+        
+        if ( result instanceof Neo4jVertex ) return new NodeRepresentation(((Neo4jVertex) result ).getRawVertex() );
+        if ( result instanceof Neo4jEdge ) return new RelationshipRepresentation(((Neo4jEdge) result ).getRawEdge() );
+        if ( result instanceof Neo4jGraph ) return ValueRepresentation.string( ( (Neo4jGraph) result ).getRawGraph().toString() );
+        
+        return ObjectToRepresentationConverter.getSingleRepresentation(result);
     }
 }

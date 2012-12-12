@@ -34,7 +34,7 @@ import org.neo4j.server.plugins.PluginTarget;
 import org.neo4j.server.plugins.ServerPlugin;
 import org.neo4j.server.plugins.Source;
 import org.neo4j.server.rest.repr.BadInputException;
-import org.neo4j.server.rest.repr.ObjectToRepresentationConverter;
+import org.neo4j.server.rest.repr.GremlinObjectToRepresentationConverter;
 import org.neo4j.server.rest.repr.Representation;
 
 import com.tinkerpop.blueprints.pgm.impls.neo4j.Neo4jGraph;
@@ -57,8 +57,7 @@ public class GremlinPlugin extends ServerPlugin
 
     private final String g = "g";
     private volatile ScriptEngine engine;
-    private final EngineReplacementDecision engineReplacementDecision = new CountingEngineReplacementDecision(
-            500 );
+    private final EngineReplacementDecision engineReplacementDecision = new ScriptCountingEngineReplacementDecision(500);
 
     private ScriptEngine createQueryEngine()
     {
@@ -81,7 +80,7 @@ public class GremlinPlugin extends ServerPlugin
             final Bindings bindings = createBindings( neo4j, params );
 
             final Object result = engine().eval( script, bindings );
-            return ObjectToRepresentationConverter.convert( result );
+            return GremlinObjectToRepresentationConverter.convert(result);
         }
         catch ( final Exception e )
         {
@@ -119,7 +118,7 @@ public class GremlinPlugin extends ServerPlugin
 
     public Representation getRepresentation( final Object data )
     {
-        return ObjectToRepresentationConverter.convert( data );
+        return GremlinObjectToRepresentationConverter.convert( data );
     }
 
 }
