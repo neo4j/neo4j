@@ -19,12 +19,15 @@
  */
 package slavetest;
 
-import static org.junit.Assert.assertEquals;
+import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.HighlyAvailableGraphDatabase.NOT_ALLOWED_TO_JOIN_CLUSTER_WITH_EMPTY_STORE;
 import static org.neo4j.test.TargetDirectory.forTest;
 
-import java.io.File;
-
+import org.junit.After;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.neo4j.graphdb.Transaction;
@@ -33,98 +36,145 @@ import org.neo4j.kernel.HighlyAvailableGraphDatabase;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.LocalhostZooKeeperCluster;
 
-/*
- * This test case ensures that instances with the same store id but very old txids
- * will successfully join with a full version of the store.
- */
 public class TestInstanceJoin
 {
     private static LocalhostZooKeeperCluster zoo;
     private final TargetDirectory dir = forTest( getClass() );
+    private HighlyAvailableGraphDatabase master, slave;
 
     @BeforeClass
     public static void startZoo() throws Exception
     {
-        zoo = LocalhostZooKeeperCluster.singleton().clearDataAndVerifyConnection();
+        zoo = LocalhostZooKeeperCluster.singleton();
+    }
+
+    @Before
+    public void cleanZoo() throws Exception
+    {
+        zoo.clearDataAndVerifyConnection();
     }
 
     @Test
-    public void testIt() throws Exception
+    public void shouldAllowSlaveToJoinWithEmptyStore() throws Exception
     {
-        /*
-         * First create a cluster. Then have some txs on the master. Rotate to create history logs so we
-         * can delete them and make them inaccessible to the slave, making it like they are very old.
-         */
+        startAndPopulateMaster();
+
+        startSlave( true );
+
+        assertThat( (String) master.getReferenceNode().getProperty( "someProperty" ), is( "someValue" ) );
+        assertThat( (String) slave.getReferenceNode().getProperty( "someProperty" ), is( "someValue" ) );
+    }
+
+    @Test
+    public void shouldAllowSlaveToJoinWithOutdatedData() throws Exception
+    {
+        startAndPopulateMaster();
+        startSlave( true );
+        slave.shutdown();
+        updateMaster();
+
+        startSlave( false );
+
+        assertThat( (String) master.getReferenceNode().getProperty( "someProperty" ), is( "AnUpdatedValue" ) );
+        assertThat( (String) slave.getReferenceNode().getProperty( "someProperty" ), is( "AnUpdatedValue" ) );
+    }
+
+    @Test
+    public void shouldAllowSlaveToJoinWithOutdatedDataEvenWhenPeersUnavailable() throws Exception
+    {
+        startAndPopulateMaster();
+        startSlave( true );
+        slave.shutdown();
+        updateMaster();
+        assertThat( (String) master.getReferenceNode().getProperty( "someProperty" ), is( "AnUpdatedValue" ) );
+        master.shutdown();
+
+        startSlave( false );
+
+        assertThat( (String) slave.getReferenceNode().getProperty( "someProperty" ), is( "someValue" ) );
+    }
+
+    @Test
+    public void shouldNotAllowSlaveToJoinWithEmptyStoreWhenPeersUnavailable() throws Exception
+    {
+        startAndPopulateMaster();
+        master.shutdown();
+
+        try
+        {
+            startSlave( true );
+
+            fail();
+        }
+        catch ( IllegalStateException e )
+        {
+            assertThat( e.getMessage(), is( NOT_ALLOWED_TO_JOIN_CLUSTER_WITH_EMPTY_STORE ) );
+        }
+    }
+
+    @After
+    public void shutDownInstances() throws Exception
+    {
+        try
+        {
+            if ( slave != null )
+            {
+                slave.shutdown();
+            }
+        }
+        catch ( IllegalStateException e )
+        {
+
+        }
+
+        try
+        {
+            if ( master != null )
+            {
+                master.shutdown();
+            }
+        }
+        catch ( IllegalStateException e )
+        {
+
+        }
+    }
+
+    private void startAndPopulateMaster()
+    {
         HighlyAvailableGraphDatabase master = start( dir.directory( "master", true ).getAbsolutePath(), 1,
                 zoo.getConnectionString() );
         Transaction tx = master.beginTx();
-        master.getReferenceNode().setProperty( "foo", "bar" );
+        master.getReferenceNode().setProperty( "someProperty", "someValue" );
         tx.success();
         tx.finish();
 
-        master.shutdown(); // rotate FTW
+        this.master = master;
+    }
 
-        /*
-         * This second transaction is so this instance will win in the upcoming election.
-         */
-        master = start( dir.directory( "master", false ).getAbsolutePath(), 1, zoo.getConnectionString() );
-        tx = master.beginTx();
-        master.createNode();
-        tx.success();
-        tx.finish();
-
-        master.shutdown();
-
-        /*
-         * Delete the logical logs, thus faking old entries no longer present.
-         */
-        new File( dir.directory( "master", false ), "nioneo_logical.log.v0" ).delete();
-        new File( dir.directory( "master", false ), "nioneo_logical.log.v1" ).delete();
-
-        /*
-         * Slave starts, finds itself alone in a cluster with an existing store id. Uses that, becomes master
-         * for now.
-         */
-        HighlyAvailableGraphDatabase slave = start( dir.directory( "slave", true ).getAbsolutePath(), 2,
+    private void startSlave( boolean clean ) throws InterruptedException
+    {
+        HighlyAvailableGraphDatabase slave = start( dir.directory( "slave", clean ).getAbsolutePath(), 2,
                 zoo.getConnectionString() );
 
-        /*
-         * Do a tx so we have something to ask for.
-         */
-        tx = slave.beginTx();
-        slave.createNode();
+        // let it catch up
+        Thread.sleep( 100 );
+
+        this.slave = slave;
+    }
+
+    private void updateMaster()
+    {
+        Transaction tx = master.beginTx();
+        master.getReferenceNode().setProperty( "someProperty", "AnUpdatedValue" );
         tx.success();
         tx.finish();
-
-        /*
-         * Why shutdown here since a master switch is enough? Well, i am glad you asked. If we
-         * just startup the master, indeed it will do a master switch and fail on ensureDataConsistency.
-         * BUT, this will happen after the test case is over, since it is asynchronous. So we would have
-         * to Thread.sleep() for around 5 seconds, which is ugly. Instead, we shutdown, allow the master
-         * to come up and then try to join, which is synchronous and will fail in the constructor, making
-         * the test failure clear and reproducible. Downside, it has an additional shutdown/startup cycle
-         * which takes some time.
-         */
-        slave.shutdown();
-
-        master = start( dir.directory( "master", false ).getAbsolutePath(), 1,
-                zoo.getConnectionString() );
-
-        /*
-         * The slave should successfully start up and get the proper store.
-         */
-        slave = start( dir.directory( "slave", false ).getAbsolutePath(), 2, zoo.getConnectionString() );
-
-        assertEquals( "store contents don't seem to be the same", "bar", slave.getReferenceNode().getProperty( "foo" ) );
-
-        slave.shutdown();
-        master.shutdown();
     }
 
     private static HighlyAvailableGraphDatabase start( String storeDir, int i, String zkConnectString )
     {
         return new HighlyAvailableGraphDatabase( storeDir, stringMap( HaConfig.CONFIG_KEY_SERVER_ID, "" + i,
-                HaConfig.CONFIG_KEY_SERVER, "localhost:" + ( 6666 + i ), HaConfig.CONFIG_KEY_COORDINATORS,
-                zkConnectString, HaConfig.CONFIG_KEY_PULL_INTERVAL, 0 + "ms" ) );
+                HaConfig.CONFIG_KEY_SERVER, "localhost:" + (6666 + i), HaConfig.CONFIG_KEY_COORDINATORS,
+                zkConnectString, HaConfig.CONFIG_KEY_PULL_INTERVAL, 10 + "ms" ) );
     }
 }
