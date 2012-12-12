@@ -71,7 +71,7 @@ public class ConfigurationDefaults
 
     public ConfigurationDefaults(Class<?>... settingsClasses)
     {
-        this( Iterables.iterable( settingsClasses ));
+        this( Iterables.<Class<?>,Class<?>>iterable( settingsClasses ));
     }
 
     public ConfigurationDefaults( Iterable<Class<?>> settingsClasses )
