@@ -72,30 +72,6 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
         return gen().post( endpoint ).entity();
     }
     
-    protected String doGremlinRestCall( String endpoint, String scriptTemplate, Status status, Pair<String, String>... params ) {
-        data.get();
-        String parameterString = createParameterString( params );
-
-
-        String script = createScript( scriptTemplate );
-        String queryString = "{\"script\": \"" + script + "\"," + parameterString+"},"  ;
-
-        gen().expectedStatus( status.getStatusCode() ).payload(
-                queryString ).description(formatGroovy( script ) );
-        return gen().post( endpoint ).entity();
-    }
-    
-    protected String formatGroovy( String script )
-    {
-        script = script.replace( ";", "\n" );
-        if ( !script.endsWith( "\n" ) )
-        {
-            script += "\n";
-        }
-        return "_Raw script source_\n\n" + "[source, groovy]\n" + "----\n"
-               + script + "----\n";
-    }
-    
     protected String formatJavaScript( String script )
     {
         script = script.replace( ";", "\n" );

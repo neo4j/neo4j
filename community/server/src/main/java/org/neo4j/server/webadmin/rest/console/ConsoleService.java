@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.webadmin.rest;
+package org.neo4j.server.webadmin.rest.console;
 
 import org.apache.commons.configuration.Configuration;
 import org.neo4j.helpers.Pair;
@@ -25,7 +25,9 @@ import org.neo4j.server.database.CypherExecutor;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.logging.Logger;
 import org.neo4j.server.rest.repr.*;
+import org.neo4j.server.webadmin.console.ConsoleSessionFactory;
 import org.neo4j.server.webadmin.console.ScriptSession;
+import org.neo4j.server.webadmin.rest.AdvertisableService;
 import org.neo4j.server.webadmin.rest.representations.ConsoleServiceRepresentation;
 
 import javax.servlet.http.HttpServletRequest;

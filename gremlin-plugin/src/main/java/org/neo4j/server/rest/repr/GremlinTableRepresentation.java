@@ -30,7 +30,6 @@ public class GremlinTableRepresentation extends ObjectRepresentation
 {
 
     private final Table queryResult;
-    private final ObjectToRepresentationConverter converter = new ObjectToRepresentationConverter();
 
     public GremlinTableRepresentation(Table result)
     {
@@ -64,7 +63,7 @@ public class GremlinTableRepresentation extends ObjectRepresentation
             protected Representation underlyingObjectToObject(String column)
             {
                 final Object fieldValue = row.getColumn(column);
-                return converter.convert(fieldValue);
+                return GremlinObjectToRepresentationConverter.convert(fieldValue);
             }
         };
     }
