@@ -60,7 +60,7 @@ public class RestartOnChange
                     return Specifications.not( Specifications.<String>TRUE() );
                 }
             }
-        }, Iterables.iterable( settingsClass.getFields() ) ) ), life);
+        }, Iterables.<Field,Field>iterable( settingsClass.getFields() ) ) ), life);
     }
     
     public RestartOnChange( final String configurationNamePrefix, Lifecycle life)

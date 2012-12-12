@@ -36,7 +36,7 @@ public class SystemPropertiesConfiguration
 
     public SystemPropertiesConfiguration(Class<?>... settingsClasses)
     {
-        this( Iterables.iterable( settingsClasses ));
+        this( Iterables.<Class<?>,Class<?>>iterable( settingsClasses ));
     }
 
     public SystemPropertiesConfiguration( Iterable<Class<?>> settingsClasses )
