@@ -79,12 +79,12 @@ public class NestedTransactionLocksIT
         Transaction realTx = db.beginTx();
         Transaction nestedTx = db.beginTx();
         assertNotSame( realTx, nestedTx );
-        OtherThreadExecutor<Void> otherTx = new OtherThreadExecutor<Void>( null );
+        OtherThreadExecutor<Void> otherTx = new OtherThreadExecutor<Void>( "other thread", null );
         
         // when
         Lock lock = nestedTx.acquireWriteLock( resource );
         Future<Lock> future = otherTx.executeDontWait( acquireWriteLock( resource ) );
-        otherTx.waitUntilWaiting( 1, SECONDS );
+        otherTx.waitUntilWaiting();
         
         // then
         try

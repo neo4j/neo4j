@@ -129,7 +129,7 @@ public class TestManualAcquireLock extends AbstractNeo4jTestCase
     {
         public Worker()
         {
-            super( new State( getGraphDb() ) );
+            super( "other thread", new State( getGraphDb() ) );
         }
         
         void beginTx() throws Exception

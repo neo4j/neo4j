@@ -27,9 +27,9 @@ import org.neo4j.test.OtherThreadExecutor;
 
 public class Worker extends OtherThreadExecutor<WorkerState>
 {
-    public Worker( GraphDatabaseService db )
+    public Worker( String name, GraphDatabaseService db )
     {
-        super( new WorkerState( db ) );
+        super( name, new WorkerState( db ) );
     }
 
     public void beginTx() throws Exception
