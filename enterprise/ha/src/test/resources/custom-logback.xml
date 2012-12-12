@@ -20,11 +20,6 @@
 
 -->
 <included>
-  <appender name="CONSOLE2" class="ch.qos.logback.core.ConsoleAppender">
-    <encoder>
-      <pattern>%property{host} %-5level %25c{0}: %message%n</pattern>
-    </encoder>
-  </appender>
 
   <logger name="neo4j.diagnostics" level="debug">
   </logger>
@@ -45,11 +40,5 @@
   </logger>
 
   <root level="debug">
-    <appender-ref ref="CONSOLE2"/>
   </root>
-
-  <logger name="org.neo4j">
-    <appender-ref ref="CONSOLE2"/>
-  </logger>
-
 </included>

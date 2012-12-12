@@ -21,6 +21,9 @@
 
 -->
 <configuration>
+
+  <property resource="logback.properties" />
+
   <appender name="FILE" class="ch.qos.logback.core.FileAppender">
     <file>${neo_store}/messages.log</file>
     <encoder>
@@ -30,7 +33,7 @@
 
   <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
     <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
-      <level>WARN</level>
+      <level>${CONSOLE_LEVEL:-WARN}</level>
     </filter>
     <encoder>
       <pattern>%date{yyyy-MM-dd HH:mm:ss.SSSZ,UTC} %-5level [%logger{15}]: %message%n</pattern>
