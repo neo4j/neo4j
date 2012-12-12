@@ -418,6 +418,9 @@ public class NetworkInstance
         catch ( InterruptedException e )
         {
             msgLog.warn( "Interrupted", e );
+            // Restore the interrupt status since we are not rethrowing InterruptedException
+            // We may be running in an executor and we could fail to be terminated
+            Thread.currentThread().interrupt();
             throw new ChannelOpenFailedException( e );
         }
     }
