@@ -211,22 +211,24 @@ class PatternGraph(val patternNodes: Map[String, PatternNode],
     var visited = Seq[PatternElement]()
     var loop = false
 
-    val follow = (element: PatternElement) => element match {
+    def follow(element: PatternElement) = element match {
       case n: PatternNode         => true
       case r: PatternRelationship => !visited.contains(r)
     }
 
-    val vNode = (n: PatternNode, x: Unit) => {
+    def visit_node(n: PatternNode, x: Unit) {
       if (visited.contains(n))
         loop = true
       visited = visited :+ n
     }
 
-    val vRel = (r: PatternRelationship, x: Unit) => visited :+= r
+    def visit_relationship(r: PatternRelationship, x: Unit) {
+      visited :+= r
+    }
 
     boundPatternElements.foreach {
-      case pr: PatternRelationship => pr.startNode.traverse(follow, vNode, vRel, (), Seq())
-      case pn: PatternNode         => pn.traverse(follow, vNode, vRel, (), Seq())
+      case pr: PatternRelationship => pr.startNode.traverse(follow, visit_node, visit_relationship, (), Seq())
+      case pn: PatternNode         => pn.traverse(follow, visit_node, visit_relationship, (), Seq())
     }
 
     val notVisitedElements = allPatternElements.filterNot(visited contains)
