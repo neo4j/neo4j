@@ -128,9 +128,25 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
     private String doRestCall( String script, Status status,
             Pair<String, String>... params )
     {
-        // TODO Auto-generated method stub
-        return super.doGremlinRestCall( ENDPOINT, script, status, params );
+           return doGremlinRestCall(ENDPOINT, script, status, params);
     }
+
+    protected String doGremlinRestCall( String endpoint, String scriptTemplate, Status status, Pair<String, String>... params ) {
+        data.get();
+        String parameterString = createParameterString( params );
+
+
+        String script = createScript( scriptTemplate );
+        String queryString = "{\"script\": \"" + script + "\"," + parameterString+"},"  ;
+
+        gen().expectedStatus( status.getStatusCode() ).payload(
+                queryString ).description(formatGroovy( script ) );
+        return gen().post( endpoint ).entity();
+    }
+
+
+
+
 
     /**
      * Import a graph form a http://graphml.graphdrawing.org/[GraphML] file can
@@ -156,6 +172,8 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
         String response = doRestCall( script, OK );
         assertTrue( response.contains( "you" ) );
     }
+    
+    
     
     @Test
     public void return_map() throws UnsupportedEncodingException
@@ -661,18 +679,7 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
     }
 
        
-    protected String doGremlinRestCall( String endpoint, String scriptTemplate, Status status, Pair<String, String>... params ) {
-        data.get();
-        String parameterString = createParameterString( params );
-
-
-        String script = createScript( scriptTemplate );
-        String queryString = "{\"script\": \"" + script + "\"," + parameterString+"},"  ;
-
-        gen().expectedStatus( status.getStatusCode() ).payload(
-                queryString ).description(formatGroovy( script ) );
-        return gen().post( endpoint ).entity();
-    }
+    
     
     protected String formatGroovy( String script )
     {

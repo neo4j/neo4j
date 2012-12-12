@@ -31,7 +31,7 @@ import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RestRequest;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 
-public class shellConsoleShouldNotBeEnabledByDefault extends ExclusiveServerTestBase {
+public class ConfigureEnabledManagementConsolesTest extends ExclusiveServerTestBase {
 
     private NeoServer server;
 
@@ -51,7 +51,7 @@ public class shellConsoleShouldNotBeEnabledByDefault extends ExclusiveServerTest
     }
     
     @Test
-    public void shellConsoleShouldBeEnabledByDefault) throws Exception {
+    public void shellConsoleShouldBeEnabledByDefault() throws Exception {
         server = server().build();
         server.start();
         

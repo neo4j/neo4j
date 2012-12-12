@@ -49,10 +49,10 @@ import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.repr.OutputFormat;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
+import org.neo4j.server.webadmin.console.ConsoleSessionFactory;
 import org.neo4j.server.webadmin.console.ScriptSession;
-import org.neo4j.server.webadmin.rest.ConsoleService;
-import org.neo4j.server.webadmin.rest.ConsoleSessionFactory;
-import org.neo4j.server.webadmin.rest.ShellSession;
+import org.neo4j.server.webadmin.console.ShellSession;
+import org.neo4j.server.webadmin.rest.console.ConsoleService;
 import org.neo4j.shell.ShellSettings;
 import org.neo4j.test.TargetDirectory;
 
