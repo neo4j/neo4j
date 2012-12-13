@@ -92,13 +92,15 @@ public class StoreAccess
 
     public StoreAccess( String path, Map<String, String> params )
     {
-        this(
-            new StoreFactory( new Config( new ConfigurationDefaults( GraphDatabaseSettings.class )
-                                              .apply( requiredParams( params, path ) ) ), new DefaultIdGeneratorFactory(),
-
-                    new DefaultWindowPoolFactory(), new DefaultFileSystemAbstraction(),
-                    new DefaultLastCommittedTxIdSetter(), initLogger( path ),
-                              new DefaultTxHook() ).attemptNewNeoStore( new File( path, "neostore" ).getAbsolutePath() ) );
+        this( new StoreFactory( new Config( new ConfigurationDefaults( GraphDatabaseSettings.class )
+                                                    .apply( requiredParams( params, path ) ) ),
+                                new DefaultIdGeneratorFactory(),
+                                new DefaultWindowPoolFactory(),
+                                new DefaultFileSystemAbstraction(),
+                                new DefaultLastCommittedTxIdSetter(),
+                                initLogger( path ),
+                                new DefaultTxHook() )
+                      .attemptNewNeoStore( new File( path, "neostore" ).getAbsolutePath() ) );
         this.closeable = true;
     }
 

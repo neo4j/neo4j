@@ -63,6 +63,7 @@ public class ConsistencyCheckService
         NeoStore neoStore = factory.newNeoStore( new File( storeDir, NeoStore.DEFAULT_NAME ).getAbsolutePath() );
         try
         {
+            neoStore.makeStoreOk();
             StoreAccess store = new StoreAccess( neoStore );
             summary = new FullCheck( tuningConfiguration, progressFactory )
                     .execute( store, StringLogger.tee( logger, report ) );
