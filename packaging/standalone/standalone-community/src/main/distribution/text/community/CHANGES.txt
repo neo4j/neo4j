@@ -1,5 +1,24 @@
 For Release Notes, see http://neo4j.org/release-notes
 
+1.8.1 (2012-12-13)
+--------------------
+Java 7 Support:
+ o We now compile and test with Java 7 on both Oracle JVM and OpenJDK (however, we still only officially support Sun JDK6).
+ o JVM compatibility checking will warn when you use incompatible JVMs or incompatible Java versions.
+
+Cypher:
+ o Numerous bug fixes:
+   + Fixes #304, bug that stops renaming of identifiers that are used as key expressions when aggregating
+   + Fix for problems when using patterns with multiple unnamed nodes
+   + Fixes problems when doing ORDER BY ... LIMIT x
+   + Fixed problem with dependencies inside foreach statements being reported wrongly
+   + Fixes #336 - Patterns that re-use a pattern node can produce non-existing matches
+ o Integration with Bidirectional Traverser Framework
+ o Improvements to memory consumption
+
+Graph Algorithms:
+ o Fixed issue with bi-directional shortest path
+
 1.8.GA (2012-09-24)
 --------------------
 Kernel:
