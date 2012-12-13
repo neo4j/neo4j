@@ -80,7 +80,7 @@ public class PersistenceWindowPoolTest
         // Verify that what T1 wrote is on disk
         
         final PersistenceWindow t1Row = pool.acquire( 0, OperationType.WRITE );
-        OtherThreadExecutor<Void> otherThread = new OtherThreadExecutor<Void>( null ); 
+        OtherThreadExecutor<Void> otherThread = new OtherThreadExecutor<Void>( "other thread", null ); 
         Future<Throwable> future = otherThread.executeDontWait( new WorkerCommand<Void, Throwable>()
         {
             @Override

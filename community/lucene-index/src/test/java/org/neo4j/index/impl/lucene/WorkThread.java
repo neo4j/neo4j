@@ -34,9 +34,9 @@ public class WorkThread extends OtherThreadExecutor<CommandState>
 {
     private volatile boolean txOngoing;
 
-    public WorkThread( Index<Node> index, GraphDatabaseService graphDb, Node node )
+    public WorkThread( String name, Index<Node> index, GraphDatabaseService graphDb, Node node )
     {
-        super( new CommandState( index, graphDb, node ) );
+        super( name, new CommandState( index, graphDb, node ) );
     }
 
     public void createNodeAndIndexBy( String key, String value ) throws Exception

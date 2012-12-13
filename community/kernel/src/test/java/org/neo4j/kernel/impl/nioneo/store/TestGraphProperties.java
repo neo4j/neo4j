@@ -235,8 +235,8 @@ public class TestGraphProperties
     @Test
     public void graphPropertiesAreLockedPerTx() throws Exception
     {
-        Worker worker1 = new Worker( new State( db ) );
-        Worker worker2 = new Worker( new State( db ) );
+        Worker worker1 = new Worker( "W1", new State( db ) );
+        Worker worker2 = new Worker( "W2", new State( db ) );
 
         PropertyContainer properties = getGraphProperties( db );
         worker1.beginTx();
@@ -433,9 +433,9 @@ public class TestGraphProperties
 
     private static class Worker extends OtherThreadExecutor<State>
     {
-        public Worker( State initialState )
+        public Worker( String name, State initialState )
         {
-            super( initialState );
+            super( name, initialState );
         }
 
         public boolean hasProperty( final String key ) throws Exception

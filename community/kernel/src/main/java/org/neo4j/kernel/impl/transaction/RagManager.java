@@ -19,13 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
-import org.neo4j.graphdb.TransactionFailureException;
-import org.neo4j.kernel.DeadlockDetectedException;
-import org.neo4j.kernel.impl.util.ArrayMap;
-
-import javax.transaction.SystemException;
-import javax.transaction.Transaction;
-import javax.transaction.TransactionManager;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -33,6 +26,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Stack;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import javax.transaction.SystemException;
+import javax.transaction.Transaction;
+import javax.transaction.TransactionManager;
+
+import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.kernel.DeadlockDetectedException;
+import org.neo4j.kernel.impl.util.ArrayMap;
+import org.neo4j.kernel.impl.util.StringLogger.LineLogger;
 
 /**
  * The Resource Allocation Graph manager is used for deadlock detection. It
@@ -56,7 +59,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * to the tx ( T1 wants to wait on R1 and R1->T2->R2->T3->R8->T1 <==>
  * deadlock!).
  */
-public class RagManager
+public class RagManager implements Visitor<LineLogger>
 {
     // if a runtime exception is thrown from any method it means that the
     // RWLock class hasn't kept the contract to the RagManager
@@ -253,55 +256,57 @@ public class RagManager
         }
     }
 
-    synchronized void dumpStack()
+    @Override
+    public synchronized boolean visit( LineLogger logger )
     {
-        System.out.print( "Waiting list: " );
+        logger.logLine( "Waiting list: " );
         Iterator<Transaction> transactions = waitingTxMap.keySet().iterator();
         if ( !transactions.hasNext() )
         {
-            System.out.println( "No transactions waiting on resources" );
+            logger.logLine( "No transactions waiting on resources" );
         }
         else
         {
-            System.out.println();
+            logger.logLine( "" ); // new line
         }
         while ( transactions.hasNext() )
         {
             Transaction tx = transactions.next();
-            System.out.println( "" + tx + "->" + waitingTxMap.get( tx ) );
+            logger.logLine( "" + tx + "->" + waitingTxMap.get( tx ) );
         }
-        System.out.print( "Resource lock list: " );
+        logger.logLine( "Resource lock list: " );
         Iterator<?> resources = resourceMap.keySet().iterator();
         if ( !resources.hasNext() )
         {
-            System.out.println( "No locked resources found" );
+            logger.logLine( "No locked resources found" );
         }
         else
         {
-            System.out.println();
+            logger.logLine( "" );
         }
         while ( resources.hasNext() )
         {
             Object resource = resources.next();
-            System.out.print( "" + resource + "->" );
+            logger.logLine( "" + resource + "->" );
             Iterator<Transaction> itr = resourceMap.get( resource ).iterator();
             if ( !itr.hasNext() )
             {
-                System.out.println( " Error empty list found" );
+                logger.logLine( " Error empty list found" );
             }
             while ( itr.hasNext() )
             {
-                System.out.print( "" + itr.next() );
+                logger.logLine( "" + itr.next() );
                 if ( itr.hasNext() )
                 {
-                    System.out.print( "," );
+                    logger.logLine( "," );
                 }
                 else
                 {
-                    System.out.println();
+                    logger.logLine( "" );
                 }
             }
         }
+        return true;
     }
 
     Transaction getCurrentTransaction()

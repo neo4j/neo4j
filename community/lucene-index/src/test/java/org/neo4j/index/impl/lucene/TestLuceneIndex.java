@@ -1450,7 +1450,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         String key = "noob";
         String value = "Johan";
 
-        WorkThread thread = new WorkThread( index, graphDb, node );
+        WorkThread thread = new WorkThread( "other thread", index, graphDb, node );
         thread.beginTransaction();
         try
         {
@@ -1490,8 +1490,8 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         String key = "name";
         String value = "Mattias";
 
-        WorkThread t1 = new WorkThread( index, graphDb, node );
-        WorkThread t2 = new WorkThread( index, graphDb, node );
+        WorkThread t1 = new WorkThread( "t1", index, graphDb, node );
+        WorkThread t2 = new WorkThread( "t2", index, graphDb, node );
         t1.beginTransaction();
         t2.beginTransaction();
         assertNull( t2.putIfAbsent( node, key, value ).get() );
@@ -1517,8 +1517,8 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         String value = "Mattias";
         String otherValue = "Tobias";
 
-        WorkThread t1 = new WorkThread( index, graphDb, node );
-        WorkThread t2 = new WorkThread( index, graphDb, node );
+        WorkThread t1 = new WorkThread( "t1", index, graphDb, node );
+        WorkThread t2 = new WorkThread( "t2", index, graphDb, node );
         t1.beginTransaction();
         t2.beginTransaction();
         assertNull( t2.putIfAbsent( node, key, value ).get() );
@@ -1544,8 +1544,8 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         String otherKey = "friend";
         String value = "Mattias";
 
-        WorkThread t1 = new WorkThread( index, graphDb, node );
-        WorkThread t2 = new WorkThread( index, graphDb, node );
+        WorkThread t1 = new WorkThread( "t1", index, graphDb, node );
+        WorkThread t2 = new WorkThread( "t2", index, graphDb, node );
         t1.beginTransaction();
         t2.beginTransaction();
         assertNull( t2.putIfAbsent( node, key, value ).get() );
@@ -1570,7 +1570,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         index.add( node, key, value );
         restartTx();
 
-        WorkThread otherThread = new WorkThread( index, graphDb, node );
+        WorkThread otherThread = new WorkThread( "other thread", index, graphDb, node );
         otherThread.beginTransaction();
 
         // Should not grab lock
@@ -1653,8 +1653,8 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         String key = "name";
         String value = "Mattias";
 
-        WorkThread t1 = new WorkThread( index, graphDb, null );
-        WorkThread t2 = new WorkThread( index, graphDb, null );
+        WorkThread t1 = new WorkThread( "t1", index, graphDb, null );
+        WorkThread t2 = new WorkThread( "t2", index, graphDb, null );
         t1.beginTransaction();
         t2.beginTransaction();
         Node node = t2.getOrCreate( key, value, 0 ).get();

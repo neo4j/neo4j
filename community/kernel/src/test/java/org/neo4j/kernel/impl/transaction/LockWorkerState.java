@@ -17,20 +17,31 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+package org.neo4j.kernel.impl.transaction;
 
-package org.neo4j.kernel.logging;
+import java.util.ArrayList;
+import java.util.List;
 
-import org.neo4j.kernel.InternalAbstractGraphDatabase;
-import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.util.StringLogger;
-
-/**
- * Implements the old-style logging with just one logger regardless of name.
- */
-public class ClassicLoggingService extends SingleLoggingService
+class LockWorkerState
 {
-    public ClassicLoggingService( Config config )
+    final LockManager grabber;
+    volatile boolean deadlockOnLastWait;
+    final List<String> completedOperations = new ArrayList<String>();
+    String doing;
+    
+    public LockWorkerState( LockManager grabber )
     {
-        super( StringLogger.loggerDirectory( config.get( InternalAbstractGraphDatabase.Configuration.store_dir ) ) );
+        this.grabber = grabber;
+    }
+    
+    public void doing( String doing )
+    {
+        this.doing = doing;
+    }
+    
+    public void done()
+    {
+        this.completedOperations.add( this.doing );
+        this.doing = null;
     }
 }
