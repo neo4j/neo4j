@@ -19,11 +19,21 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
+import static java.lang.System.currentTimeMillis;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.neo4j.kernel.impl.transaction.LockWorker.newResourceObject;
+
+import java.io.File;
+import java.util.Random;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Future;
 
 import org.junit.Test;
 import org.neo4j.kernel.DeadlockDetectedException;
+import org.neo4j.kernel.impl.transaction.LockWorker.ResourceObject;
 
 public class TestRWLock
 {
@@ -61,7 +71,7 @@ public class TestRWLock
         }
         try
         {
-            lm.releaseWriteLock( null , null);
+            lm.releaseWriteLock( null, null);
             fail( "Null parameter should throw exception" );
         }
         catch ( Exception e )
@@ -72,7 +82,7 @@ public class TestRWLock
         Object entity = new Object();
         try
         {
-            lm.releaseWriteLock( entity , null);
+            lm.releaseWriteLock( entity, null);
             fail( "Invalid release should throw exception" );
         }
         catch ( Exception e )
@@ -92,7 +102,7 @@ public class TestRWLock
         lm.getReadLock( entity );
         try
         {
-            lm.releaseWriteLock( entity , null );
+            lm.releaseWriteLock( entity, null );
             fail( "Invalid release should throw exception" );
         }
         catch ( Exception e )
@@ -110,17 +120,17 @@ public class TestRWLock
         {
             // good
         }
-        lm.releaseWriteLock( entity , null );
+        lm.releaseWriteLock( entity, null );
 
         lm.getReadLock( entity );
         lm.getWriteLock( entity );
-        lm.releaseWriteLock( entity , null );
+        lm.releaseWriteLock( entity, null );
         lm.releaseReadLock( entity, null );
 
         lm.getWriteLock( entity );
         lm.getReadLock( entity );
         lm.releaseReadLock( entity, null );
-        lm.releaseWriteLock( entity , null );
+        lm.releaseWriteLock( entity, null );
 
         for ( int i = 0; i < 10; i++ )
         {
@@ -146,306 +156,95 @@ public class TestRWLock
         }
     }
 
-    private class HelperThread extends Thread
-    {
-        private static final long MAX_WAIT_LOOPS = 40;
-
-        private static final int DO_NOTHING_TASK = 0;
-        private static final int GET_READLOCK_TASK = 1;
-        private static final int GET_WRITELOCK_TASK = 2;
-        private static final int RELEASE_READLOCK_TASK = 3;
-        private static final int RELEASE_WRITELOCK_TASK = 4;
-        private static final int QUIT_TASK = 5;
-
-        private String name = null;
-        private int nextTask = 0;
-        private boolean taskCompleted = true;
-        private Object resource = null;
-
-        HelperThread( String name )
-        {
-            super();
-            this.name = name;
-        }
-
-        public void run()
-        {
-            try
-            {
-                while ( nextTask != QUIT_TASK )
-                {
-                    switch ( nextTask )
-                    {
-                        case DO_NOTHING_TASK:
-                            synchronized ( this )
-                            {
-                                wait( 15 );
-                            }
-                            break;
-                        case GET_READLOCK_TASK:
-                            lm.getReadLock( resource );
-                            taskCompleted = true;
-                            nextTask = DO_NOTHING_TASK;
-                            break;
-                        case RELEASE_READLOCK_TASK:
-                            lm.releaseReadLock( resource, null );
-                            taskCompleted = true;
-                            nextTask = DO_NOTHING_TASK;
-                            break;
-                        case GET_WRITELOCK_TASK:
-                            lm.getWriteLock( resource );
-                            taskCompleted = true;
-                            nextTask = DO_NOTHING_TASK;
-                            break;
-                        case RELEASE_WRITELOCK_TASK:
-                            lm.releaseWriteLock( resource , null);
-                            taskCompleted = true;
-                            nextTask = DO_NOTHING_TASK;
-                            break;
-                        default:
-                            throw new RuntimeException( "Argh" );
-                    }
-                }
-            }
-            catch ( Exception e )
-            {
-                taskCompleted = true;
-                System.out
-                    .println( "" + this + " unable to execute task, " + e );
-                e.printStackTrace();
-                throw new RuntimeException( e );
-            }
-        }
-
-        synchronized void waitForCompletionOfTask()
-        {
-            int count = 0;
-            while ( !taskCompleted )
-            {
-                if ( count > MAX_WAIT_LOOPS )
-                {
-                    throw new RuntimeException( "Task timed out" );
-                }
-
-                try
-                {
-                    wait( 25 );
-                }
-                catch ( InterruptedException e )
-                {
-                }
-                count++;
-            }
-        }
-
-        boolean isTaskCompleted()
-        {
-            return taskCompleted;
-        }
-
-        synchronized void getReadLock( Object resource )
-        {
-            if ( !taskCompleted )
-            {
-                throw new RuntimeException( "Task not completed" );
-            }
-            taskCompleted = false;
-            this.resource = resource;
-            nextTask = GET_READLOCK_TASK;
-        }
-
-        synchronized void releaseReadLock( Object resource )
-        {
-            if ( !taskCompleted )
-            {
-                throw new RuntimeException( "Task not completed" );
-            }
-            taskCompleted = false;
-            this.resource = resource;
-            nextTask = RELEASE_READLOCK_TASK;
-        }
-
-        synchronized void getWriteLock( Object resource )
-        {
-            if ( !taskCompleted )
-            {
-                throw new RuntimeException( "Task not completed" );
-            }
-            taskCompleted = false;
-            this.resource = resource;
-            nextTask = GET_WRITELOCK_TASK;
-        }
-
-        synchronized void releaseWriteLock( Object resource )
-        {
-            if ( !taskCompleted )
-            {
-                throw new RuntimeException( "Task not completed" );
-            }
-            taskCompleted = false;
-            this.resource = resource;
-            nextTask = RELEASE_WRITELOCK_TASK;
-        }
-
-        void quit()
-        {
-            taskCompleted = false;
-            nextTask = QUIT_TASK;
-        }
-
-        public String toString()
-        {
-            return name;
-        }
-    }
-
-    private static class ResourceObject
-    {
-        private String name = null;
-
-        ResourceObject( String name )
-        {
-            this.name = name;
-        }
-
-        public String toString()
-        {
-            return this.name;
-        }
-    }
-
     @Test
     public void testMultipleThreads()
     {
-        HelperThread t1 = new HelperThread( "T1" );
-        HelperThread t2 = new HelperThread( "T2" );
-        HelperThread t3 = new HelperThread( "T3" );
-        HelperThread t4 = new HelperThread( "T4" );
-        ResourceObject r1 = new ResourceObject( "R1" );
+        LockWorker t1 = new LockWorker( "T1", lm );
+        LockWorker t2 = new LockWorker( "T2", lm );
+        LockWorker t3 = new LockWorker( "T3", lm );
+        LockWorker t4 = new LockWorker( "T4", lm );
+        ResourceObject r1 = newResourceObject( "R1" );
         try
         {
-            t1.start();
-            t2.start();
-            t3.start();
-            t4.start();
-
-            t1.getReadLock( r1 );
-            t1.waitForCompletionOfTask();
-            t2.getReadLock( r1 );
-            t2.waitForCompletionOfTask();
-            t3.getReadLock( r1 );
-            t3.waitForCompletionOfTask();
-            t4.getWriteLock( r1 );
+            t1.getReadLock( r1, true );
+            t2.getReadLock( r1, true );
+            t3.getReadLock( r1, true );
+            Future<Void> t4Wait = t4.getWriteLock( r1, false );
             t3.releaseReadLock( r1 );
-            t3.waitForCompletionOfTask();
             t2.releaseReadLock( r1 );
-            t2.waitForCompletionOfTask();
-            assertTrue( !t4.isTaskCompleted() );
+            assertTrue( !t4Wait.isDone() );
             t1.releaseReadLock( r1 );
-            t1.waitForCompletionOfTask();
             // now we can wait for write lock since it can be acquired
             // get write lock
-            t4.waitForCompletionOfTask();
-            t4.getReadLock( r1 );
-            t4.waitForCompletionOfTask();
-            t4.getReadLock( r1 );
-            t4.waitForCompletionOfTask();
+            t4.awaitFuture( t4Wait );
+            t4.getReadLock( r1, true );
+            t4.getReadLock( r1, true );
             // put readlock in queue
-            t1.getReadLock( r1 );
-            t4.getReadLock( r1 );
-            t4.waitForCompletionOfTask();
+            Future<Void> t1Wait = t1.getReadLock( r1, false );
+            t4.getReadLock( r1, true );
             t4.releaseReadLock( r1 );
-            t4.waitForCompletionOfTask();
-            t4.getWriteLock( r1 );
-            t4.waitForCompletionOfTask();
+            t4.getWriteLock( r1, true );
             t4.releaseWriteLock( r1 );
-            t4.waitForCompletionOfTask();
-            assertTrue( !t1.isTaskCompleted() );
+            assertTrue( !t1Wait.isDone() );
             t4.releaseWriteLock( r1 );
-            t4.waitForCompletionOfTask();
             // get read lock
-            t1.waitForCompletionOfTask();
+            t1.awaitFuture( t1Wait );
             t4.releaseReadLock( r1 );
-            t4.waitForCompletionOfTask();
             // t4 now has 1 readlock and t1 one readlock
             // let t1 drop readlock and t4 get write lock
-            t4.getWriteLock( r1 );
+            t4Wait = t4.getWriteLock( r1, false );
             t1.releaseReadLock( r1 );
-            t1.waitForCompletionOfTask();
-            t4.waitForCompletionOfTask();
+            t4.awaitFuture( t4Wait );
 
             t4.releaseReadLock( r1 );
-            t4.waitForCompletionOfTask();
             t4.releaseWriteLock( r1 );
-            t4.waitForCompletionOfTask();
 
-            t4.getWriteLock( r1 );
-            t4.waitForCompletionOfTask();
-            t1.getReadLock( r1 );
-            t2.getReadLock( r1 );
-            t3.getReadLock( r1 );
-            t4.getReadLock( r1 );
-            t4.waitForCompletionOfTask();
+            t4.getWriteLock( r1, true );
+            t1Wait = t1.getReadLock( r1, false );
+            Future<Void> t2Wait = t2.getReadLock( r1, false );
+            Future<Void> t3Wait = t3.getReadLock( r1, false );
+            t4.getReadLock( r1, true );
             t4.releaseWriteLock( r1 );
-            t4.waitForCompletionOfTask();
-            t1.waitForCompletionOfTask();
-            t2.waitForCompletionOfTask();
-            t3.waitForCompletionOfTask();
+            t1.awaitFuture( t1Wait );
+            t2.awaitFuture( t2Wait );
+            t3.awaitFuture( t3Wait );
 
-            t1.getWriteLock( r1 );
+            t1Wait = t1.getWriteLock( r1, false );
             t2.releaseReadLock( r1 );
-            t2.waitForCompletionOfTask();
             t4.releaseReadLock( r1 );
-            t4.waitForCompletionOfTask();
             t3.releaseReadLock( r1 );
-            t3.waitForCompletionOfTask();
 
-            t1.waitForCompletionOfTask();
+            t1.awaitFuture( t1Wait );
             t1.releaseWriteLock( r1 );
-            t1.waitForCompletionOfTask();
-            t2.getReadLock( r1 );
-            t2.waitForCompletionOfTask();
+            t2.getReadLock( r1, true );
             t1.releaseReadLock( r1 );
-            t1.waitForCompletionOfTask();
-            t2.getWriteLock( r1 );
-            t2.waitForCompletionOfTask();
+            t2.getWriteLock( r1, true );
             t2.releaseWriteLock( r1 );
-            t2.waitForCompletionOfTask();
             t2.releaseReadLock( r1 );
-            t2.waitForCompletionOfTask();
         }
         catch ( Exception e )
         {
-            lm.dumpLocksOnResource( r1 );
-            e.printStackTrace();
-            fail( "Multiple thread rw lock test failed, " + e );
-        }
-        finally
-        {
-            t1.quit();
-            t2.quit();
-            t3.quit();
-            t4.quit();
+            File file = new LockWorkFailureDump( getClass() ).dumpState( lm, new LockWorker[] { t1, t2, t3, t4 } );
+            throw new RuntimeException( "Failed, forensics information dumped to " + file.getAbsolutePath(), e );
         }
     }
 
-    private static boolean go = false;
-
     public class StressThread extends Thread
     {
-        private java.util.Random rand = new java.util.Random( System
-            .currentTimeMillis() );
+        private Random rand = new Random( currentTimeMillis() );
         private final Object READ = new Object();
         private final Object WRITE = new Object();
 
-        private String name;
-        private int numberOfIterations;
-        private int depthCount;
-        private float readWriteRatio;
-        private Object resource;
+        private final String name;
+        private final int numberOfIterations;
+        private final int depthCount;
+        private final float readWriteRatio;
+        private final Object resource;
+        private final CountDownLatch startSignal;
+        private Exception error;
 
         StressThread( String name, int numberOfIterations, int depthCount,
-            float readWriteRatio, Object resource )
+            float readWriteRatio, Object resource, CountDownLatch startSignal )
         {
             super();
             this.name = name;
@@ -453,26 +252,18 @@ public class TestRWLock
             this.depthCount = depthCount;
             this.readWriteRatio = readWriteRatio;
             this.resource = resource;
+            this.startSignal = startSignal;
         }
 
         public void run()
         {
             try
             {
-                while ( !go )
+                startSignal.await();
+                java.util.Stack<Object> lockStack = new java.util.Stack<Object>();
+                for ( int i = 0; i < numberOfIterations; i++ )
                 {
                     try
-                    {
-                        sleep( 100 );
-                    }
-                    catch ( InterruptedException e )
-                    {
-                    }
-                }
-                java.util.Stack<Object> lockStack = new java.util.Stack<Object>();
-                try
-                {
-                    for ( int i = 0; i < numberOfIterations; i++ )
                     {
                         int depth = depthCount;
                         do
@@ -503,30 +294,29 @@ public class TestRWLock
                             }
                         }
                     }
-                }
-                catch ( DeadlockDetectedException e )
-                {
-                    
-                }
-                finally
-                {
-                    while ( !lockStack.isEmpty() )
+                    catch ( DeadlockDetectedException e )
                     {
-                        if ( lockStack.pop() == READ )
+                        
+                    }
+                    finally
+                    {
+                        while ( !lockStack.isEmpty() )
                         {
-                            lm.releaseReadLock( resource, null );
-                        }
-                        else
-                        {
-                            lm.releaseWriteLock( resource , null );
+                            if ( lockStack.pop() == READ )
+                            {
+                                lm.releaseReadLock( resource, null );
+                            }
+                            else
+                            {
+                                lm.releaseWriteLock( resource , null );
+                            }
                         }
                     }
                 }
             }
             catch ( Exception e )
             {
-                e.printStackTrace();
-                throw new RuntimeException( e );
+                error = e;
             }
         }
 
@@ -537,20 +327,55 @@ public class TestRWLock
     }
 
     @Test
-    public void testStressMultipleThreads()
+    public void testStressMultipleThreads() throws Exception
     {
         ResourceObject r1 = new ResourceObject( "R1" );
-        Thread stressThreads[] = new Thread[100];
-        go = false;
+        StressThread stressThreads[] = new StressThread[100];
+        CountDownLatch startSignal = new CountDownLatch( 1 );
         for ( int i = 0; i < 100; i++ )
         {
-            stressThreads[i] = new StressThread( "Thread" + i, 100, 9, 0.50f,
-                r1 );
+            stressThreads[i] = new StressThread( "Thread" + i, 100, 9, 0.50f, r1, startSignal );
         }
         for ( int i = 0; i < 100; i++ )
         {
             stressThreads[i].start();
         }
-        go = true;
+        startSignal.countDown();
+
+        long end = currentTimeMillis() + SECONDS.toMillis( 20 );
+        boolean anyAlive = true;
+        while ( (anyAlive = anyAliveAndAllWell( stressThreads )) && currentTimeMillis() < end )
+        {
+            sleepALittle();
+        }
+        
+        assertFalse( anyAlive );
+        for ( StressThread stressThread : stressThreads )
+            if ( stressThread.error != null )
+                throw stressThread.error;
+    }
+
+    private void sleepALittle()
+    {
+        try
+        {
+            Thread.sleep( 100 );
+        }
+        catch ( InterruptedException e )
+        {
+            Thread.interrupted();
+        }
+    }
+
+    private boolean anyAliveAndAllWell( StressThread[] stressThreads )
+    {
+        for ( StressThread stressThread : stressThreads )
+        {
+            if ( stressThread.error != null )
+                return false;
+            if ( stressThread.isAlive() )
+                return true;
+        }
+        return false;
     }
 }

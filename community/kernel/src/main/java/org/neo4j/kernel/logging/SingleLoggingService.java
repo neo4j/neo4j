@@ -17,20 +17,29 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.neo4j.kernel.logging;
 
-import org.neo4j.kernel.InternalAbstractGraphDatabase;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
-/**
- * Implements the old-style logging with just one logger regardless of name.
- */
-public class ClassicLoggingService extends SingleLoggingService
+public class SingleLoggingService extends LifecycleAdapter implements Logging
 {
-    public ClassicLoggingService( Config config )
+    private final StringLogger logger;
+
+    public SingleLoggingService( StringLogger logger )
     {
-        super( StringLogger.loggerDirectory( config.get( InternalAbstractGraphDatabase.Configuration.store_dir ) ) );
+        this.logger = logger;
+    }
+    
+    @Override
+    public StringLogger getLogger( Class loggingClass )
+    {
+        return logger;
+    }
+    
+    @Override
+    public void shutdown() throws Throwable
+    {
+        logger.close();
     }
 }
