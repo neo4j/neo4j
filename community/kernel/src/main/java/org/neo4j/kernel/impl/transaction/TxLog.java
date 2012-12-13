@@ -39,7 +39,6 @@ import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.xaframework.DirectMappedLogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
-import org.neo4j.kernel.impl.util.StringLogger;
 
 // TODO: fixed sized logs (pre-initialize them)
 // keep dangling records in memory for log switch
@@ -62,8 +61,6 @@ public class TxLog
     public static final byte MARK_COMMIT = 3;
     public static final byte TX_DONE = 4;
     private final FileSystemAbstraction fileSystem;
-    private final StringLogger msgLog;
-    private int rotationCounter;
 
     /**
      * Initializes a transaction log using <CODE>filename</CODE>. If the file
@@ -76,14 +73,13 @@ public class TxLog
      * @throws IOException
      *             If unable to open file
      */
-    public TxLog( File fileName, FileSystemAbstraction fileSystem, StringLogger msgLog ) throws IOException
+    public TxLog( File fileName, FileSystemAbstraction fileSystem ) throws IOException
     {
         if ( fileName == null )
         {
             throw new IllegalArgumentException( "Null filename" );
         }
         this.fileSystem = fileSystem;
-        this.msgLog = msgLog;
         FileChannel fileChannel = fileSystem.open( fileName, "rw" );
         fileChannel.position( fileChannel.size() );
         logBuffer = new DirectMappedLogBuffer( fileChannel );
@@ -471,7 +467,6 @@ public class TxLog
     public synchronized void switchToLogFile( File newFile )
         throws IOException
     {
-        rotationCounter++;
         if ( newFile == null )
         {
             throw new IllegalArgumentException( "Null filename" );
@@ -480,17 +475,6 @@ public class TxLog
         force();
         Iterable<List<Record>> itr = getDanglingRecords();
         close();
-        if ( fileSystem.fileExists( name ) )
-        {
-            try
-            {
-                fileSystem.copyFile( name, new File( name.getPath()+"_"+rotationCounter ));
-            }
-            catch (Throwable t)
-            {
-                t.printStackTrace();
-            }
-        }
         List<Record> records = new ArrayList<Record>();
         for ( List<Record> tx : itr )
         {
@@ -503,7 +487,6 @@ public class TxLog
                 return r1.getSequenceNumber() - r2.getSequenceNumber();
             }
         } );
-//        msgLog.logMessage( "About to rotate " + name + " to " + newFile + " with dangling records " + records, true );
         Iterator<Record> recordItr = records.iterator();
         FileChannel fileChannel = fileSystem.open( newFile, "rw" );
         fileChannel.position( fileChannel.size() );
@@ -516,6 +499,5 @@ public class TxLog
             writeRecord( record, ForceMode.forced );
         }
         force();
-//        msgLog.logMessage( "Rotated " + name + " to, file channel now at " + fileChannel.position(), true );
     }
 }

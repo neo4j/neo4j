@@ -768,7 +768,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
                                     "Unable to start TM, " + "active tx log file[" +
                                             currentTxLog + "] not found." ) );
                 }
-                txLog = new TxLog( currentTxLog, fileSystem, log );
+                txLog = new TxLog( currentTxLog, fileSystem );
                 log.logMessage( "TM opening log: " + currentTxLog, true );
             }
             else
@@ -788,7 +788,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
                         .getBytes( "UTF-8" ) );
                 FileChannel fc = fileSystem.open( logSwitcherFileName, "rw" );
                 fc.write( buf );
-                txLog = new TxLog( new File( txLogDir, txLog1FileName), fileSystem, log );
+                txLog = new TxLog( new File( txLogDir, txLog1FileName), fileSystem );
                 log.logMessage( "TM new log: " + txLog1FileName, true );
                 fc.force( true );
                 fc.close();
