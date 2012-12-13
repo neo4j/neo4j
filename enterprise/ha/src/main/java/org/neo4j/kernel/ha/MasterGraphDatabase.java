@@ -31,6 +31,7 @@ import org.neo4j.kernel.impl.core.Caches;
 import org.neo4j.kernel.impl.core.LastCommittedTxIdSetter;
 import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
+import org.neo4j.kernel.impl.nioneo.store.DefaultWindowPoolFactory;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
@@ -64,7 +65,7 @@ public class MasterGraphDatabase
     @Override
     protected StoreFactory createStoreFactory()
     {
-        return new StoreFactory(config, idGeneratorFactory, fileSystem, lastCommittedTxIdSetter, msgLog, txHook)
+        return new StoreFactory(config, idGeneratorFactory, new DefaultWindowPoolFactory(), fileSystem, lastCommittedTxIdSetter, msgLog, txHook)
         {
             @Override
             public NeoStore createNeoStore( String fileName )

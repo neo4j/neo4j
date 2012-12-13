@@ -697,6 +697,11 @@ public abstract class GraphDatabaseSetting<T> implements Setting<T>
         @Override
         public Long valueOf(String rawValue, Config config) 
         {
+            return parseNumberOfBytes( rawValue );
+        }
+
+        public static Long parseNumberOfBytes( String rawValue )
+        {
             String mem = rawValue.toLowerCase();
             long multiplier = 1;
             if ( mem.endsWith( "k" ) )
@@ -714,7 +719,7 @@ public abstract class GraphDatabaseSetting<T> implements Setting<T>
                 multiplier = 1024 * 1024 * 1024;
                 mem = mem.substring( 0, mem.length() - 1 );
             }
-    
+
             return Long.parseLong( mem.trim() ) * multiplier;
         }
     }

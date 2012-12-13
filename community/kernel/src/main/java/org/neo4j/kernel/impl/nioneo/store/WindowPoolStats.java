@@ -58,7 +58,7 @@ public class WindowPoolStats
         this.avertedRefreshCount = avertedRefreshCount;
     }
     
-    private String extractName( String name )
+    public static String extractName( String name )
     {
         return new File( name ).getName();
     }

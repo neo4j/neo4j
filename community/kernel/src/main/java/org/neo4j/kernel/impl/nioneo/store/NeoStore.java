@@ -33,6 +33,7 @@ import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.LastCommittedTxIdSetter;
+import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
 import org.neo4j.kernel.impl.transaction.TxHook;
 import org.neo4j.kernel.impl.util.Bits;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -75,11 +76,13 @@ public class NeoStore extends AbstractStore
 
     public NeoStore(String fileName, Config conf,
                     LastCommittedTxIdSetter lastCommittedTxIdSetter,
-                    IdGeneratorFactory idGeneratorFactory, FileSystemAbstraction fileSystemAbstraction,
+                    IdGeneratorFactory idGeneratorFactory, WindowPoolFactory windowPoolFactory,
+                    FileSystemAbstraction fileSystemAbstraction,
                     StringLogger stringLogger, TxHook txHook,
                     RelationshipTypeStore relTypeStore, PropertyStore propStore, RelationshipStore relStore, NodeStore nodeStore)
     {
-        super( fileName, conf, IdType.NEOSTORE_BLOCK, idGeneratorFactory, fileSystemAbstraction, stringLogger);
+        super( fileName, conf, IdType.NEOSTORE_BLOCK, idGeneratorFactory, windowPoolFactory,
+                fileSystemAbstraction, stringLogger);
         this.fileName = fileName;
         this.conf = conf;
         this.lastCommittedTxIdSetter = lastCommittedTxIdSetter;

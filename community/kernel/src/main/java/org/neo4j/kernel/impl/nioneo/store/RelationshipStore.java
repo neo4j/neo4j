@@ -21,9 +21,11 @@ package org.neo4j.kernel.impl.nioneo.store;
 
 import java.util.ArrayList;
 import java.util.List;
+
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
@@ -44,9 +46,11 @@ public class RelationshipStore extends AbstractStore implements Store, RecordSto
     // second_next_rel_id+next_prop_id(int)
     public static final int RECORD_SIZE = 33;
 
-    public RelationshipStore(String fileName, Config configuration, IdGeneratorFactory idGeneratorFactory, FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger)
+    public RelationshipStore(String fileName, Config configuration, IdGeneratorFactory idGeneratorFactory,
+                             WindowPoolFactory windowPoolFactory, FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger)
     {
-        super(fileName, configuration, IdType.RELATIONSHIP, idGeneratorFactory, fileSystemAbstraction, stringLogger);
+        super(fileName, configuration, IdType.RELATIONSHIP, idGeneratorFactory,
+                windowPoolFactory, fileSystemAbstraction, stringLogger);
     }
 
     @Override
@@ -113,6 +117,12 @@ public class RelationshipStore extends AbstractStore implements Store, RecordSto
         {
             releaseWindow( window );
         }
+    }
+
+    @Override
+    public RelationshipRecord forceGetRaw( RelationshipRecord record )
+    {
+        return record;
     }
 
     @Override

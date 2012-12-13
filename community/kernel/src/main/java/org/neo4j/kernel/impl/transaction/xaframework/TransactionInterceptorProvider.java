@@ -33,9 +33,12 @@ import org.neo4j.helpers.Service;
  */
 public abstract class TransactionInterceptorProvider extends Service
 {
+    private final String name;
+
     public TransactionInterceptorProvider( String name )
     {
         super( name );
+        this.name = name;
     }
 
     /**
@@ -43,7 +46,10 @@ public abstract class TransactionInterceptorProvider extends Service
      *
      * @return The name of this provider
      */
-    public abstract String name();
+    public final String name()
+    {
+        return name;
+    }
 
     /**
      * Creates a TransactionInterceptor with the given datasource and options.

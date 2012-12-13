@@ -44,7 +44,7 @@ public class PropertyBlock
 
     private PropertyType getType( boolean force )
     {
-        return valueBlocks == null ? null : PropertyType.getPropertyType( valueBlocks[0], false );
+        return valueBlocks == null ? null : PropertyType.getPropertyType( valueBlocks[0], force );
     }
 
     public int getKeyIndexId()
@@ -172,7 +172,7 @@ public class PropertyBlock
         {
         case STRING:
         case ARRAY:
-            result.append( ",firstDynamic=" ).append( getSingleValueBlock() );
+            result.append( ",firstDynamic=" ).append( getSingleValueLong() );
             break;
         default:
             Object value = type.getValue( this, null );

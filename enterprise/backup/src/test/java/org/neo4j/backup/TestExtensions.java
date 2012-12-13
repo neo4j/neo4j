@@ -30,7 +30,7 @@ public class TestExtensions
     public void testLoadDummyOk() throws Exception
     {
         assertEquals( 125,
-                TestBackupToolEmbedded.runBackupToolFromOtherJvmToGetExitCode(
+                BackupEmbeddedIT.runBackupToolFromOtherJvmToGetExitCode(
                         "-full", "-from", "exit://localhost:125", "-to",
                         "foobar/123" ) );
     }

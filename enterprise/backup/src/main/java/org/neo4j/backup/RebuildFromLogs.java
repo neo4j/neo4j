@@ -26,13 +26,20 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 import java.util.Map;
+
 import javax.transaction.xa.Xid;
-import org.neo4j.backup.check.ConsistencyCheck;
+
+import org.neo4j.consistency.ConsistencyCheckSettings;
+import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
+import org.neo4j.consistency.checking.full.FullCheck;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.ProgressIndicator;
+import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConfigParam;
+import org.neo4j.kernel.configuration.ConfigurationDefaults;
 import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
 import org.neo4j.kernel.impl.nioneo.xa.Command;
 import org.neo4j.kernel.impl.transaction.xaframework.InMemoryLogBuffer;
@@ -42,10 +49,12 @@ import org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommandFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
+import org.neo4j.kernel.impl.util.StringLogger;
 
-import static org.neo4j.helpers.ProgressIndicator.SimpleProgress.*;
-import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.*;
-import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.*;
+import static org.neo4j.helpers.ProgressIndicator.SimpleProgress.textual;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME;
+import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.getHighestHistoryLogVersion;
 
 class RebuildFromLogs
 {
@@ -61,6 +70,7 @@ class RebuildFromLogs
         this.stores = new StoreAccess( graphdb );
     }
 
+    // TODO: rewrite to use the new progress indication API
     RebuildFromLogs applyTransactionsFrom( ProgressIndicator progress, File sourceDir ) throws IOException
     {
         LogExtractor extractor = null;
@@ -123,7 +133,7 @@ class RebuildFromLogs
         {
             if ( target.isDirectory() )
             {
-                if ( OnlineBackup.directoryContainsDb( target.getAbsolutePath() ) )
+                if ( BackupService.directoryContainsDb( target.getAbsolutePath() ) )
                 {
                     printUsage( "target graph database already exists" );
                     System.exit( -1 );
@@ -150,7 +160,7 @@ class RebuildFromLogs
         }
         long txCount = findLastTransactionId( source, LOGICAL_LOG_DEFAULT_NAME + ".v" + maxFileId );
         String txdifflog = params.get( "txdifflog", null, new File( target, "txdiff.log" ).getAbsolutePath() );
-        InternalAbstractGraphDatabase graphdb = OnlineBackup.startTemporaryDb( target.getAbsolutePath(),
+        InternalAbstractGraphDatabase graphdb = BackupService.startTemporaryDb( target.getAbsolutePath(),
                                                                        new TxDiffLogConfig( full
                                                                                ? VerificationLevel.FULL_WITH_LOGGING
                                                                                : VerificationLevel.LOGGING, txdifflog ) );
@@ -164,7 +174,7 @@ class RebuildFromLogs
         else
         {
             progress = textual( System.err, txCount );
-            System.err.printf( "Rebuilding store from %s transactions %n", Long.valueOf( txCount ) );
+            System.err.printf( "Rebuilding store from %s transactions %n", txCount );
         }
         try
         {
@@ -180,7 +190,7 @@ class RebuildFromLogs
                 graphdb.shutdown();
             }
         }
-        catch ( IOException e )
+        catch ( Exception e )
         {
             System.err.println();
             e.printStackTrace( System.err );
@@ -220,16 +230,12 @@ class RebuildFromLogs
         return txId;
     }
 
-    private void checkConsistency()
+    private void checkConsistency() throws ConsistencyCheckIncompleteException
     {
-        try
-        {
-            ConsistencyCheck.run( stores, true );
-        }
-        catch ( AssertionError summary )
-        {
-            System.err.println( summary.getMessage() );
-        }
+        Config tuningConfiguration = new Config( new ConfigurationDefaults( GraphDatabaseSettings.class,
+                ConsistencyCheckSettings.class ).apply( stringMap() ) );
+        new FullCheck( tuningConfiguration, ProgressMonitorFactory.textual( System.err ) )
+                .execute( stores, StringLogger.SYSTEM );
     }
 
     private static void printUsage( String... msgLines )

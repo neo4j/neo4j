@@ -19,34 +19,59 @@
  */
 package org.neo4j.perftest.enterprise.ccheck;
 
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
+import static org.neo4j.perftest.enterprise.util.DirectlyCorrelatedParameter.param;
+import static org.neo4j.perftest.enterprise.util.DirectlyCorrelatedParameter.passOn;
+import static org.neo4j.perftest.enterprise.util.Configuration.SYSTEM_PROPERTIES;
+import static org.neo4j.perftest.enterprise.util.Configuration.settingsOf;
+import static org.neo4j.perftest.enterprise.util.Setting.booleanSetting;
+import static org.neo4j.perftest.enterprise.util.Setting.enumSetting;
+import static org.neo4j.perftest.enterprise.util.Setting.integerSetting;
+import static org.neo4j.perftest.enterprise.util.Setting.stringSetting;
+import static org.neo4j.perftest.enterprise.windowpool.MemoryMappingConfiguration.addLegacyMemoryMappingConfiguration;
 
-import org.codehaus.jackson.JsonFactory;
-import org.codehaus.jackson.JsonGenerator;
-import org.codehaus.jackson.util.DefaultPrettyPrinter;
-import org.neo4j.backup.check.ConsistencyCheck;
+import java.io.File;
+import java.util.Map;
+
+import org.neo4j.consistency.ConsistencyCheckSettings;
+import org.neo4j.consistency.checking.full.TaskExecutionOrder;
+import org.neo4j.consistency.store.windowpool.WindowPoolImplementation;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.ProgressIndicator;
+import org.neo4j.helpers.progress.ProgressMonitorFactory;
+import org.neo4j.kernel.DefaultFileSystemAbstraction;
+import org.neo4j.kernel.DefaultIdGeneratorFactory;
+import org.neo4j.kernel.DefaultLastCommittedTxIdSetter;
+import org.neo4j.kernel.DefaultTxHook;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConfigurationDefaults;
-import org.neo4j.kernel.impl.util.FileUtils;
+import org.neo4j.kernel.impl.nioneo.store.NeoStore;
+import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
+import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
+import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.perftest.enterprise.generator.DataGenerator;
 import org.neo4j.perftest.enterprise.util.Configuration;
 import org.neo4j.perftest.enterprise.util.Parameters;
 import org.neo4j.perftest.enterprise.util.Setting;
 
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.perftest.enterprise.util.Configuration.SYSTEM_PROPERTIES;
-import static org.neo4j.perftest.enterprise.util.Configuration.settingsOf;
-import static org.neo4j.perftest.enterprise.util.Setting.booleanSetting;
-import static org.neo4j.perftest.enterprise.util.Setting.stringSetting;
-
 public class ConsistencyPerformanceCheck
 {
-    private static final Setting<Boolean> generate_graph = booleanSetting( "generate_graph", false );
-    private static final Setting<String> report_file = stringSetting( "report_file" );
+    static final Setting<Boolean> generate_graph = booleanSetting( "generate_graph", false );
+    static final Setting<String> report_file = stringSetting( "report_file", "target/report.json" );
+    static final Setting<CheckerVersion> checker_version = enumSetting( "checker_version", CheckerVersion.NEW );
+    static final Setting<WindowPoolImplementation> window_pool_implementation =
+            enumSetting( "window_pool_implementation", WindowPoolImplementation.SCAN_RESISTANT );
+    static final Setting<TaskExecutionOrder> execution_order =
+            enumSetting( "execution_order", TaskExecutionOrder.SINGLE_THREADED );
+    static final Setting<Boolean> wait_before_check = booleanSetting( "wait_before_check", false );
+    static final Setting<String> all_stores_total_mapped_memory_size =
+            stringSetting( "all_stores_total_mapped_memory_size", "2G" );
+    static final Setting<String> mapped_memory_page_size = stringSetting( "mapped_memory_page_size", "4k" );
+    static final Setting<Boolean> log_mapped_memory_stats =
+            booleanSetting( "log_mapped_memory_stats", true );
+    static final Setting<String> log_mapped_memory_stats_filename =
+            stringSetting( "log_mapped_memory_stats_filename", "mapped_memory_stats.log" );
+    static final Setting<Long> log_mapped_memory_stats_interval =
+            integerSetting( "log_mapped_memory_stats_interval", 1000000 );
 
     /**
      * Sample execution:
@@ -57,107 +82,81 @@ public class ConsistencyPerformanceCheck
      *    -report_progress
      *    -node_count 10000000
      *    -relationships FOO:2,BAR:1
-     *    -node_properties SINGLE_STRING,SINGLE_STRING,SINGLE_STRING,SINGLE_STRING,SINGLE_STRING
+     *    -node_properties INTEGER:2,STRING:1,BYTE_ARRAY:1
      */
     public static void main( String... args ) throws Exception
     {
         run( Parameters.configuration( SYSTEM_PROPERTIES,
-                                       settingsOf( DataGenerator.class, ConsistencyPerformanceCheck.class ) )
-                       .convert( args ) );
+                settingsOf( DataGenerator.class, ConsistencyPerformanceCheck.class ) )
+                .convert( args ) );
     }
 
-    private static void run( Configuration configuration ) throws IOException
+    private static void run( Configuration configuration ) throws Exception
     {
-        File reportFile = new File( configuration.get( report_file ) );
         if ( configuration.get( generate_graph ) )
         {
-            File storeDir = new File( configuration.get( DataGenerator.store_dir ) );
-            if ( storeDir.isDirectory() )
-            {
-                FileUtils.deleteRecursively( storeDir );
-            }
             DataGenerator.run( configuration );
         }
         // ensure that the store is recovered
         new EmbeddedGraphDatabase( configuration.get( DataGenerator.store_dir ) ).shutdown();
 
         // run the consistency check
-        ProgressIndicator.Factory progress;
+        ProgressMonitorFactory progress;
         if ( configuration.get( DataGenerator.report_progress ) )
         {
-            progress = new ProgressIndicator.Textual( System.out );
+            progress = ProgressMonitorFactory.textual( System.out );
         }
         else
         {
-            progress = ProgressIndicator.Factory.NONE;
+            progress = ProgressMonitorFactory.NONE;
         }
-        ConsistencyCheck.run( new TimingProgress( new JsonReportWriter( reportFile ), progress ),
-                              configuration.get( DataGenerator.store_dir ),
-                              new Config( new ConfigurationDefaults( GraphDatabaseSettings.class )
-                                                  .apply( stringMap() ) ) );
+        if ( configuration.get( wait_before_check ) )
+        {
+            System.out.println( "Press return to start the checker..." );
+            System.in.read();
+        }
+
+        Config tuningConfiguration = buildTuningConfiguration( configuration );
+        StoreAccess storeAccess = createStoreAccess( configuration.get( DataGenerator.store_dir ), tuningConfiguration );
+
+        JsonReportWriter reportWriter = new JsonReportWriter( configuration, tuningConfiguration );
+        TimingProgress progressMonitor = new TimingProgress( new TimeLogger( reportWriter ), progress );
+
+        configuration.get( checker_version ).run( progressMonitor, storeAccess, tuningConfiguration );
     }
 
-    private static class JsonReportWriter implements TimingProgress.Visitor
+    private static StoreAccess createStoreAccess( String storeDir, Config tuningConfiguration )
     {
-        private final File target;
-        private JsonGenerator json;
+        StringLogger logger = StringLogger.DEV_NULL;
+        StoreFactory factory = new StoreFactory(
+                tuningConfiguration,
+                new DefaultIdGeneratorFactory(),
+                tuningConfiguration.get( ConsistencyCheckSettings.consistency_check_window_pool_implementation )
+                        .windowPoolFactory( tuningConfiguration, logger ),
+                new DefaultFileSystemAbstraction(), new DefaultLastCommittedTxIdSetter(), logger, new DefaultTxHook() );
 
-        JsonReportWriter( File target )
-        {
-            this.target = target;
-        }
+        NeoStore neoStore = factory.newNeoStore( new File( storeDir, NeoStore.DEFAULT_NAME ).getAbsolutePath() );
 
-        @Override
-        public void beginTimingProgress( long totalElementCount, long totalTimeNanos ) throws IOException
-        {
-            ensureOpen( false );
-            json = new JsonFactory().configure( JsonGenerator.Feature.AUTO_CLOSE_TARGET, true )
-                                    .createJsonGenerator( new FileWriter( target ) );
-            json.setPrettyPrinter( new DefaultPrettyPrinter() );
-            json.writeStartObject();
-            {
-                json.writeFieldName( "total" );
-                json.writeStartObject();
-                json.writeNumberField( "elementCount", totalElementCount );
-                json.writeNumberField( "time", nanosToMillis( totalTimeNanos ) );
-                json.writeEndObject();
-            }
-            json.writeFieldName( "phases" );
-            json.writeStartArray();
-        }
-
-        @Override
-        public void phaseTimingProgress( String phase, long elementCount, long timeNanos ) throws IOException
-        {
-            ensureOpen( true );
-            json.writeStartObject();
-            json.writeStringField( "name", phase );
-            json.writeNumberField( "elementCount", elementCount );
-            json.writeNumberField( "time", nanosToMillis( timeNanos ) );
-            json.writeEndObject();
-        }
-
-        @Override
-        public void endTimingProgress() throws IOException
-        {
-            ensureOpen( true );
-            json.writeEndArray();
-            json.writeEndObject();
-            json.close();
-        }
-
-        private static double nanosToMillis( long nanoTime )
-        {
-            return nanoTime / 1000000.0;
-        }
-
-        private void ensureOpen( boolean open ) throws IOException
-        {
-            if ( (json == null) == open )
-            {
-                throw new IOException(
-                        new IllegalStateException( String.format( "Writing %s started.", open ? "not" : "already" ) ) );
-            }
-        }
+        return new StoreAccess( neoStore );
     }
+
+    private static Config buildTuningConfiguration( Configuration configuration )
+    {
+        Map<String, String> passedOnConfiguration = passOn( configuration,
+                param( GraphDatabaseSettings.store_dir, DataGenerator.store_dir ),
+                param( GraphDatabaseSettings.all_stores_total_mapped_memory_size, all_stores_total_mapped_memory_size ),
+                param( ConsistencyCheckSettings.consistency_check_execution_order, execution_order ),
+                param( ConsistencyCheckSettings.consistency_check_window_pool_implementation,
+                        window_pool_implementation ),
+                param( GraphDatabaseSettings.mapped_memory_page_size, mapped_memory_page_size ),
+                param( GraphDatabaseSettings.log_mapped_memory_stats, log_mapped_memory_stats ),
+                param( GraphDatabaseSettings.log_mapped_memory_stats_filename, log_mapped_memory_stats_filename ),
+                param( GraphDatabaseSettings.log_mapped_memory_stats_interval, log_mapped_memory_stats_interval ) );
+
+        addLegacyMemoryMappingConfiguration( passedOnConfiguration,
+                configuration.get( all_stores_total_mapped_memory_size ) );
+
+        return new Config( new ConfigurationDefaults( GraphDatabaseSettings.class ).apply( passedOnConfiguration ) );
+    }
+
 }

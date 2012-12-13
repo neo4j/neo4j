@@ -31,6 +31,7 @@ import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.ReadOnlyDbException;
+import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
@@ -72,9 +73,11 @@ public abstract class AbstractStore extends CommonAbstractStore
         }
     }
 
-    public AbstractStore( String fileName, Config conf, IdType idType, IdGeneratorFactory idGeneratorFactory, FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger )
+    public AbstractStore( String fileName, Config conf, IdType idType,
+                          IdGeneratorFactory idGeneratorFactory, WindowPoolFactory windowPoolFactory,
+                          FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger )
     {
-        super( fileName, conf, idType, idGeneratorFactory, fileSystemAbstraction, stringLogger );
+        super( fileName, conf, idType, idGeneratorFactory, windowPoolFactory, fileSystemAbstraction, stringLogger );
         this.conf = conf;
     }
 

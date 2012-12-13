@@ -23,8 +23,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.CommonFactories.defaultFileSystemAbstraction;
-import static org.neo4j.kernel.CommonFactories.defaultIdGeneratorFactory;
 import static org.neo4j.kernel.impl.AbstractNeo4jTestCase.deleteFileOrDirectory;
 
 import java.io.File;
@@ -42,7 +40,8 @@ import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.UTF8;
-import org.neo4j.kernel.CommonFactories;
+import org.neo4j.kernel.DefaultFileSystemAbstraction;
+import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
@@ -305,8 +304,8 @@ public class UpgradeStoreIT
     {
         String fileName = new File( path, "neostore.relationshiptypestore.db" ).getAbsolutePath();
         DynamicStringStore stringStore = new DynamicStringStore( fileName + ".names", null, IdType.RELATIONSHIP_TYPE_BLOCK,
-                CommonFactories.defaultIdGeneratorFactory(), defaultFileSystemAbstraction(), StringLogger.SYSTEM );
-        RelationshipTypeStore store = new RelationshipTypeStoreWithOneOlderVersion( fileName, defaultIdGeneratorFactory(), stringStore );
+                new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(), new DefaultFileSystemAbstraction(), StringLogger.SYSTEM );
+        RelationshipTypeStore store = new RelationshipTypeStoreWithOneOlderVersion( fileName, stringStore );
         for ( int i = 0; i < numberOfTypes; i++ )
         {
             String name = "type" + i;
@@ -330,10 +329,10 @@ public class UpgradeStoreIT
     {
         private boolean versionCalled;
 
-        public RelationshipTypeStoreWithOneOlderVersion( String fileName, IdGeneratorFactory idGenFactory, DynamicStringStore stringStore )
+        public RelationshipTypeStoreWithOneOlderVersion( String fileName, DynamicStringStore stringStore )
         {
-            super( fileName, new Config( stringMap() ), new NoLimitIdGeneratorFactory(),
-                    defaultFileSystemAbstraction(), StringLogger.SYSTEM, stringStore );
+            super( fileName, new Config( stringMap() ), new NoLimitIdGeneratorFactory(), new DefaultWindowPoolFactory(),
+                    new DefaultFileSystemAbstraction(), StringLogger.SYSTEM, stringStore );
         }
 
         @Override

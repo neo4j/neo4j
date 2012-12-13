@@ -52,6 +52,11 @@ terms of the relevant Commercial Agreement.
       <version>1.8-SNAPSHOT</version>
     </dependency>
     <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-consistency-check</artifactId>
+      <version>1.8-SNAPSHOT</version>
+    </dependency>
+    <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
     </dependency>
@@ -71,6 +76,12 @@ terms of the relevant Commercial Agreement.
       <artifactId>neo4j-kernel</artifactId>
       <version>${neo4j.version}</version>
       <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-core</artifactId>
+      <version>1.9.0</version>
       <scope>test</scope>
     </dependency>
   </dependencies>

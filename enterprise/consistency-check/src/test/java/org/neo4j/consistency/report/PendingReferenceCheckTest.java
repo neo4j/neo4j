@@ -1,0 +1,192 @@
+/**
+ * Copyright (c) 2002-2012 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+package org.neo4j.consistency.report;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+import static org.mockito.Mockito.mock;
+
+import java.lang.reflect.Proxy;
+
+import org.junit.Test;
+import org.neo4j.consistency.RecordType;
+import org.neo4j.consistency.checking.ComparativeRecordChecker;
+import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
+
+public class PendingReferenceCheckTest
+{
+    // given
+    {
+        ConsistencyReporter.ReportHandler handler =
+                new ConsistencyReporter.ReportHandler(
+                        mock( InconsistencyReport.class ),
+                        RecordType.PROPERTY,
+                        new PropertyRecord( 0 ) );
+        ConsistencyReport.PropertyConsistencyReport report =
+                (ConsistencyReport.PropertyConsistencyReport) Proxy.newProxyInstance(
+                        getClass().getClassLoader(),
+                        new Class[]{ConsistencyReport.PropertyConsistencyReport.class},
+                        handler );
+        this.referenceCheck = new PendingReferenceCheck<PropertyRecord>( report, mock( ComparativeRecordChecker.class ) );
+    }
+
+    private final PendingReferenceCheck<PropertyRecord> referenceCheck;
+
+    @Test
+    public void shouldAllowSkipAfterSkip() throws Exception
+    {
+        // given
+        referenceCheck.skip();
+        // when
+        referenceCheck.skip();
+    }
+
+    @Test
+    public void shouldAllowSkipAfterCheckReference() throws Exception
+    {
+        // given
+        referenceCheck.checkReference( new PropertyRecord( 0 ), null );
+        // when
+        referenceCheck.skip();
+    }
+
+    @Test
+    public void shouldAllowSkipAfterCheckDiffReference() throws Exception
+    {
+        // given
+        referenceCheck.checkDiffReference( new PropertyRecord( 0 ), new PropertyRecord( 0 ), null );
+        // when
+        referenceCheck.skip();
+    }
+
+    @Test
+    public void shouldNotAllowCheckReferenceAfterSkip() throws Exception
+    {
+        // given
+        referenceCheck.skip();
+
+        // when
+        try
+        {
+            referenceCheck.checkReference( new PropertyRecord( 0 ), null );
+            fail( "expected exception" );
+        }
+        // then
+        catch ( IllegalStateException expected )
+        {
+            assertEquals( "Reference has already been checked.", expected.getMessage() );
+        }
+    }
+
+    @Test
+    public void shouldNotAllowCheckDiffReferenceAfterSkip() throws Exception
+    {
+        // given
+        referenceCheck.skip();
+
+        // when
+        try
+        {
+            referenceCheck.checkDiffReference( new PropertyRecord( 0 ), new PropertyRecord( 0 ), null );
+            fail( "expected exception" );
+        }
+        // then
+        catch ( IllegalStateException expected )
+        {
+            assertEquals( "Reference has already been checked.", expected.getMessage() );
+        }
+    }
+
+    @Test
+    public void shouldNotAllowCheckReferenceAfterCheckReference() throws Exception
+    {
+        // given
+        referenceCheck.checkReference( new PropertyRecord( 0 ), null );
+
+        // when
+        try
+        {
+            referenceCheck.checkReference( new PropertyRecord( 0 ), null );
+            fail( "expected exception" );
+        }
+        // then
+        catch ( IllegalStateException expected )
+        {
+            assertEquals( "Reference has already been checked.", expected.getMessage() );
+        }
+    }
+
+    @Test
+    public void shouldNotAllowCheckDiffReferenceAfterCheckReference() throws Exception
+    {
+        // given
+        referenceCheck.checkReference( new PropertyRecord( 0 ), null );
+
+        // when
+        try
+        {
+            referenceCheck.checkDiffReference( new PropertyRecord( 0 ), new PropertyRecord( 0 ), null );
+            fail( "expected exception" );
+        }
+        // then
+        catch ( IllegalStateException expected )
+        {
+            assertEquals( "Reference has already been checked.", expected.getMessage() );
+        }
+    }
+
+    @Test
+    public void shouldNotAllowCheckReferenceAfterCheckDiffReference() throws Exception
+    {
+        // given
+        referenceCheck.checkDiffReference( new PropertyRecord( 0 ), new PropertyRecord( 0 ), null );
+
+        // when
+        try
+        {
+            referenceCheck.checkReference( new PropertyRecord( 0 ), null );
+            fail( "expected exception" );
+        }
+        // then
+        catch ( IllegalStateException expected )
+        {
+            assertEquals( "Reference has already been checked.", expected.getMessage() );
+        }
+    }
+
+    @Test
+    public void shouldNotAllowCheckDiffReferenceAfterCheckDiffReference() throws Exception
+    {
+        // given
+        referenceCheck.checkDiffReference( new PropertyRecord( 0 ), new PropertyRecord( 0 ), null );
+
+        // when
+        try
+        {
+            referenceCheck.checkDiffReference( new PropertyRecord( 0 ), new PropertyRecord( 0 ), null );
+            fail( "expected exception" );
+        }
+        // then
+        catch ( IllegalStateException expected )
+        {
+            assertEquals( "Reference has already been checked.", expected.getMessage() );
+        }
+    }
+}

@@ -43,6 +43,7 @@ import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConfigurationDefaults;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
+import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 import static org.junit.Assert.*;
@@ -51,6 +52,8 @@ public class TestDynamicStore
 {
     public static IdGeneratorFactory ID_GENERATOR_FACTORY =
             new DefaultIdGeneratorFactory();
+    public static WindowPoolFactory WINDOW_POOL_FACTORY =
+            new DefaultWindowPoolFactory();
     public static FileSystemAbstraction FILE_SYSTEM =
             new DefaultFileSystemAbstraction();
 
@@ -115,12 +118,13 @@ public class TestDynamicStore
 
     private void createEmptyStore( String fileName, int blockSize )
     {
-        new StoreFactory(config(), ID_GENERATOR_FACTORY, FILE_SYSTEM, null, StringLogger.SYSTEM, null).createDynamicArrayStore(fileName, blockSize);
+        new StoreFactory(config(), ID_GENERATOR_FACTORY, new DefaultWindowPoolFactory(), FILE_SYSTEM, null, StringLogger.SYSTEM, null ).createDynamicArrayStore(fileName, blockSize);
     }
 
     private DynamicArrayStore newStore()
     {
-        return new DynamicArrayStore( dynamicStoreFile(), config(), IdType.ARRAY_BLOCK, ID_GENERATOR_FACTORY, FILE_SYSTEM, StringLogger.SYSTEM);
+        return new DynamicArrayStore( dynamicStoreFile(), config(), IdType.ARRAY_BLOCK, ID_GENERATOR_FACTORY,
+                WINDOW_POOL_FACTORY, FILE_SYSTEM, StringLogger.SYSTEM);
     }
 
     private void deleteBothFiles()

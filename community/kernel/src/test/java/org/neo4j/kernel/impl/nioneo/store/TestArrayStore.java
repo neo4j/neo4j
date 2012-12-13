@@ -57,14 +57,15 @@ public class TestArrayStore
         dir = TargetDirectory.forTest( getClass() ).directory( "db", true );
         Map<String, String> configParams = MapUtil.stringMap();
         Config config = new Config( configParams );
-        DefaultIdGeneratorFactory idGenFactory = new DefaultIdGeneratorFactory();
+        DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory();
         DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
         StoreFactory factory = new StoreFactory( config,
-                idGenFactory, fs,
+                idGeneratorFactory, new DefaultWindowPoolFactory(), fs,
                 new DefaultLastCommittedTxIdSetter(), StringLogger.DEV_NULL, new DefaultTxHook() );
         String fileName = new File( dir, "arraystore" ).getAbsolutePath();
         factory.createDynamicArrayStore( fileName, 120 );
-        arrayStore = new DynamicArrayStore( fileName, config, IdType.ARRAY_BLOCK, idGenFactory, fs, StringLogger.DEV_NULL );
+        arrayStore = new DynamicArrayStore( fileName, config, IdType.ARRAY_BLOCK, idGeneratorFactory,
+                new DefaultWindowPoolFactory(), fs, StringLogger.DEV_NULL );
     }
 
     @After

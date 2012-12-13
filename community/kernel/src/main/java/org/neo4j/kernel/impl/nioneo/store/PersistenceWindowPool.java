@@ -33,6 +33,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.helpers.Pair;
+import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPool;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
@@ -43,7 +44,7 @@ import org.neo4j.kernel.impl.util.StringLogger;
  * that the most frequently used records/blocks (be it for read or write
  * operations) are encapsulated by a memory mapped persistence window.
  */
-public class PersistenceWindowPool
+public class PersistenceWindowPool implements WindowPool
 {
     private static final int MAX_BRICK_COUNT = 100000;
 
@@ -119,6 +120,7 @@ public class PersistenceWindowPool
      * @throws IOException
      *             If unable to acquire the window
      */
+    @Override
     public PersistenceWindow acquire( long position, OperationType operationType )
     {
         LockableWindow window = null;
@@ -219,6 +221,7 @@ public class PersistenceWindowPool
      * @throws IOException
      *             If unable to release window
      */
+    @Override
     public void release( PersistenceWindow window )
     {
         if ( window instanceof PersistenceRow )
@@ -269,7 +272,8 @@ public class PersistenceWindowPool
         }
     }
 
-    synchronized void close()
+    @Override
+    public synchronized void close()
     {
         flushAll();
         for ( BrickElement element : brickArray )
@@ -285,7 +289,8 @@ public class PersistenceWindowPool
         dumpStatistics();
     }
 
-    void flushAll()
+    @Override
+    public void flushAll()
     {
         if ( readOnly )
             return;
@@ -650,7 +655,8 @@ public class PersistenceWindowPool
         log.logMessage( "[" + storeName + "] " + logMessage, cause );
     }
 
-    WindowPoolStats getStats()
+    @Override
+    public WindowPoolStats getStats()
     {
         int avgRefreshTime = refreshes.get() == 0 ? 0 : (int)(refreshTime.get()/refreshes.get());
         return new WindowPoolStats( storeName, availableMem, memUsed, brickCount,

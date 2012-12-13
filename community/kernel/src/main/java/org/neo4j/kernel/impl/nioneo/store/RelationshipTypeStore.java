@@ -25,6 +25,7 @@ import java.nio.channels.FileChannel;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
@@ -42,10 +43,13 @@ public class RelationshipTypeStore extends AbstractNameStore<RelationshipTypeRec
     public static final String TYPE_DESCRIPTOR = "RelationshipTypeStore";
     private static final int RECORD_SIZE = 1/*inUse*/ + 4/*nameId*/;
 
-    public RelationshipTypeStore(String fileName, Config config, IdGeneratorFactory idGeneratorFactory, FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger,
+    public RelationshipTypeStore(String fileName, Config config,
+                                 IdGeneratorFactory idGeneratorFactory, WindowPoolFactory windowPoolFactory,
+                                 FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger,
                                  DynamicStringStore nameStore)
     {
-        super(fileName, config, IdType.RELATIONSHIP_TYPE, idGeneratorFactory, fileSystemAbstraction, stringLogger, nameStore);
+        super(fileName, config, IdType.RELATIONSHIP_TYPE, idGeneratorFactory, windowPoolFactory,
+                fileSystemAbstraction, stringLogger, nameStore);
     }
 
     @Override

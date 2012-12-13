@@ -17,7 +17,6 @@
         <module>enterprise</module>
         <module>gremlin-plugin</module>
         <module>cypher-plugin</module>
-        <module>python-embedded</module>
     </modules>
 
     <profiles>
@@ -30,6 +29,7 @@
                 </property>
             </activation>
             <modules>
+                <module>python-embedded</module>
                 <module>manual</module>
                 <module>packaging</module>
                 <module>packaging/installer-linux</module>

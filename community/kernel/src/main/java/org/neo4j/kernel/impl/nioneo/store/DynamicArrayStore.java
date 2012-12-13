@@ -31,6 +31,7 @@ import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
 import org.neo4j.kernel.impl.util.Bits;
 import org.neo4j.kernel.impl.util.StringLogger;
 
@@ -51,9 +52,12 @@ public class DynamicArrayStore extends AbstractDynamicStore
     public static final String VERSION = "ArrayPropertyStore v0.A.0";
     public static final String TYPE_DESCRIPTOR = "ArrayPropertyStore";
 
-    public DynamicArrayStore(String fileName, Config configuration, IdType idType, IdGeneratorFactory idGeneratorFactory, FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger)
+    public DynamicArrayStore(String fileName, Config configuration, IdType idType,
+                             IdGeneratorFactory idGeneratorFactory, WindowPoolFactory windowPoolFactory,
+                             FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger)
     {
-        super( fileName, configuration, idType, idGeneratorFactory, fileSystemAbstraction, stringLogger);
+        super( fileName, configuration, idType, idGeneratorFactory, windowPoolFactory,
+                fileSystemAbstraction, stringLogger);
     }
     
     @Override

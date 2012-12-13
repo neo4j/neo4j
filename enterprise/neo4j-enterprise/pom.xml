@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.neo4j.build</groupId>
     <artifactId>parent-central</artifactId>
     <version>35</version>
-    <relativePath />
+    <relativePath/>
   </parent>
 
   <groupId>org.neo4j</groupId>
@@ -19,7 +20,6 @@
   <properties>
     <short-name>neo4j-enterprise</short-name>
     <bundle.namespace>org.neo4j</bundle.namespace>
-    <neo4j.version>1.8-SNAPSHOT</neo4j.version>
     <docs.url>http://docs.neo4j.org/chunked/${project.version}/deployment-installation.html#editions</docs.url>
     <docs-plugin.skip>true</docs-plugin.skip>
   </properties>
@@ -33,22 +33,22 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-advanced</artifactId>
-      <version>${neo4j.version}</version>
+      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-com</artifactId>
-      <version>1.8-SNAPSHOT</version>
+      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-backup</artifactId>
-      <version>1.8-SNAPSHOT</version>
+      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-ha</artifactId>
-      <version>1.8-SNAPSHOT</version>
+      <version>${project.version}</version>
     </dependency>
   </dependencies>
 
@@ -57,17 +57,17 @@
       <name>GNU Affero General Public License, Version 3</name>
       <url>http://www.gnu.org/licenses/agpl-3.0-standalone.html</url>
       <comments>The software ("Software") developed and owned by Network Engine for
-Objects in Lund AB (referred to in this notice as "Neo Technology") is
-licensed under the GNU AFFERO GENERAL PUBLIC LICENSE Version 3 to all
-third parties and that license is included below.
+        Objects in Lund AB (referred to in this notice as "Neo Technology") is
+        licensed under the GNU AFFERO GENERAL PUBLIC LICENSE Version 3 to all
+        third parties and that license is included below.
 
-However, if you have executed an End User Software License and Services
-Agreement or an OEM Software License and Support Services Agreement, or
-another commercial license agreement with Neo Technology or one of its
-affiliates (each, a "Commercial Agreement"), the terms of the license in
-such Commercial Agreement will supersede the GNU AFFERO GENERAL PUBLIC
-LICENSE Version 3 and you may use the Software solely pursuant to the
-terms of the relevant Commercial Agreement.
+        However, if you have executed an End User Software License and Services
+        Agreement or an OEM Software License and Support Services Agreement, or
+        another commercial license agreement with Neo Technology or one of its
+        affiliates (each, a "Commercial Agreement"), the terms of the license in
+        such Commercial Agreement will supersede the GNU AFFERO GENERAL PUBLIC
+        LICENSE Version 3 and you may use the Software solely pursuant to the
+        terms of the relevant Commercial Agreement.
       </comments>
     </license>
   </licenses>
@@ -103,36 +103,46 @@ terms of the relevant Commercial Agreement.
               <outputDirectory>${project.build.directory}/javadoc-sources</outputDirectory>
               <resources>
                 <resource>
-                  <directory>../backup/src/main/java/</directory>
+                  <directory>${project.build.directory}/../../backup/src/main/java/</directory>
                   <filtering>false</filtering>
                 </resource>
                 <resource>
-                  <directory>../com/src/main/java/</directory>
+                  <directory>${project.build.directory}/../../com/src/main/java/</directory>
                   <filtering>false</filtering>
                 </resource>
                 <resource>
-                  <directory>../ha/src/main/java/</directory>
+                  <directory>${project.build.directory}/../../ha/src/main/java/</directory>
+                  <filtering>false</filtering>
+                </resource>
+                <resource>
+                  <directory>${project.build.directory}/../../../advanced/management/src/main/java/</directory>
+                  <filtering>false</filtering>
+                </resource>
+                <resource>
+                  <directory>${project.build.directory}/../../../community/lucene-index/src/main/java/</directory>
+                  <filtering>false</filtering>
+                </resource>
+                <resource>
+                  <directory>${project.build.directory}/../../../community/graph-algo/src/main/java/</directory>
+                  <filtering>false</filtering>
+                </resource>
+                <resource>
+                  <directory>${project.build.directory}/../../../community/kernel/src/main/java/</directory>
+                  <filtering>false</filtering>
+                </resource>
+                <resource>
+                  <directory>${project.build.directory}/../../../community/jmx/src/main/java/</directory>
+                  <filtering>false</filtering>
+                </resource>
+                <resource>
+                  <directory>${project.build.directory}/../../../community/graph-matching/src/main/java/</directory>
+                  <filtering>false</filtering>
+                </resource>
+                <resource>
+                  <directory>${project.build.directory}/../../../community/cypher/src/main/java/</directory>
                   <filtering>false</filtering>
                 </resource>
               </resources>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <artifactId>maven-dependency-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>get-javadoc-sources</id>
-            <goals>
-              <goal>unpack-dependencies</goal>
-            </goals>
-            <configuration>
-              <excludeTransitive>false</excludeTransitive>
-              <classifier>sources</classifier>
-              <outputDirectory>${project.build.directory}/javadoc-sources</outputDirectory>
-              <includeGroupIds>org.neo4j</includeGroupIds>
-              <excludeArtifactIds>neo4j-com,neo4j-backup,neo4j-ha</excludeArtifactIds>
             </configuration>
           </execution>
         </executions>
@@ -152,7 +162,9 @@ terms of the relevant Commercial Agreement.
               <header>${project.name}</header>
               <doctitle>${project.name} ${project.version} API</doctitle>
               <windowtitle>${project.name} ${project.version} API</windowtitle>
-               <excludePackageNames>*.impl.*:org.neo4j.ext.udc:org.neo4j.kernel.ha:org.neo4j.kernel.ha.*:org.neo4j.com:org.neo4j.com.*</excludePackageNames>
+              <excludePackageNames>
+                *.impl.*:org.neo4j.ext.udc:org.neo4j.kernel.ha:org.neo4j.kernel.ha.*:org.neo4j.com:org.neo4j.com.*:org.apache.lucene.index:org.neo4j.consistency:org.neo4j.consistency.*
+              </excludePackageNames>
               <groups>
                 <group>
                   <title>Graph database</title>
@@ -227,7 +239,9 @@ terms of the relevant Commercial Agreement.
           <header>${project.name}</header>
           <doctitle>${project.name} ${project.version} API</doctitle>
           <windowtitle>${project.name} ${project.version} API</windowtitle>
-           <excludePackageNames>*.impl.*:org.neo4j.ext.udc:org.neo4j.kernel.ha:org.neo4j.kernel.ha.*:org.neo4j.com:org.neo4j.com.*</excludePackageNames>
+          <excludePackageNames>
+            *.impl.*:org.neo4j.ext.udc:org.neo4j.kernel.ha:org.neo4j.kernel.ha.*:org.neo4j.com:org.neo4j.com.*:org.apache.lucene.index:org.neo4j.consistency:org.neo4j.consistency.*
+          </excludePackageNames>
           <groups>
             <group>
               <title>Graph database</title>

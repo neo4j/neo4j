@@ -31,6 +31,7 @@ import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConfigurationDefaults;
+import org.neo4j.kernel.impl.nioneo.store.DefaultWindowPoolFactory;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
@@ -71,7 +72,7 @@ public class StoreMigrationTool
 
         config = new ConfigurationDefaults(GraphDatabaseSettings.class ).apply( config );
 
-        NeoStore neoStore = new StoreFactory(new Config( config ), new DefaultIdGeneratorFactory(), fileSystem, null, log, null).createNeoStore(targetStoreFile.getPath());
+        NeoStore neoStore = new StoreFactory(new Config( config ), new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(), fileSystem, null, log, null ).createNeoStore(targetStoreFile.getPath());
 
         long startTime = System.currentTimeMillis();
 

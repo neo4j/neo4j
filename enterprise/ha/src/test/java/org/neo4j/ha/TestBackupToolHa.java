@@ -21,10 +21,10 @@
 package org.neo4j.ha;
 
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.backup.TestBackupToolEmbedded.BACKUP_PATH;
-import static org.neo4j.backup.TestBackupToolEmbedded.PATH;
-import static org.neo4j.backup.TestBackupToolEmbedded.createSomeData;
-import static org.neo4j.backup.TestBackupToolEmbedded.runBackupToolFromOtherJvmToGetExitCode;
+import static org.neo4j.backup.BackupEmbeddedIT.BACKUP_PATH;
+import static org.neo4j.backup.BackupEmbeddedIT.PATH;
+import static org.neo4j.backup.BackupEmbeddedIT.createSomeData;
+import static org.neo4j.backup.BackupEmbeddedIT.runBackupToolFromOtherJvmToGetExitCode;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 import java.io.File;

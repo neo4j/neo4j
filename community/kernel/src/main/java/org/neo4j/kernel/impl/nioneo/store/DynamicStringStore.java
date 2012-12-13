@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.nioneo.store;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
@@ -40,15 +41,17 @@ public class DynamicStringStore extends AbstractDynamicStore
     public static final String TYPE_DESCRIPTOR = "StringPropertyStore";
 
     public DynamicStringStore( String fileName, Config configuration, IdType idType,
-                               IdGeneratorFactory idGeneratorFactory, FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger)
+                               IdGeneratorFactory idGeneratorFactory, WindowPoolFactory windowPoolFactory,
+                               FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger)
     {
-        super( fileName, configuration, idType, idGeneratorFactory, fileSystemAbstraction, stringLogger);
+        super( fileName, configuration, idType, idGeneratorFactory, windowPoolFactory,
+                fileSystemAbstraction, stringLogger);
     }
     
     @Override
     public void accept( RecordStore.Processor processor, DynamicRecord record )
     {
-        processor.processString( this, record );
+        processor.processString( this, record, idType );
     }
 
     @Override

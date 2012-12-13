@@ -52,10 +52,10 @@ public class AutoconfIT
         Map<Class<? extends Store>, Long> configForBigDb = getConfigForDb( storeDir );
         for ( Map.Entry<Class<? extends Store>, Long> entry : configForEmptyDb.entrySet() )
         {
-           long bigDbValue=configForBigDb.get( entry.getKey() ).longValue();
-           long dbValue=entry.getValue().longValue();
-           assertTrue(String.format("%d > %d",bigDbValue,dbValue), bigDbValue > dbValue );
-        } 
+            long bigDbValue=configForBigDb.get( entry.getKey() ).longValue();
+            long dbValue=entry.getValue().longValue();
+            assertTrue(String.format("%d > %d",bigDbValue,dbValue), bigDbValue > dbValue );
+        }
         long specificNodeBytes = 1234567;
         Map<Class<? extends Store>, Long> configForSpecific = getConfigForDb( storeDir,
                 stringMap( "neostore.nodestore.db.mapped_memory", "" + specificNodeBytes ) );
@@ -79,7 +79,7 @@ public class AutoconfIT
     {
         return getConfigForDb( storeDir, stringMap() );
     }
-    
+
     private Map<Class<? extends Store>,Long> getConfigForDb( String storeDir, Map<String, String> config )
     {
         EmbeddedGraphDatabase db = new EmbeddedGraphDatabase( storeDir, config );
@@ -93,7 +93,7 @@ public class AutoconfIT
                     NodeStore.class, asBytes( readConfig, "neostore.nodestore.db.mapped_memory" )
 //                    RelationshipStore.class, asBytes( params.get( "neostore.relationshipstore.db.mapped_memory" ) ),
 //                    PropertyStore.class, asBytes( params.get( "neostore.propertystore.db.mapped_memory" ) )
-                    );
+            );
         }
         finally
         {
@@ -124,9 +124,9 @@ public class AutoconfIT
         {
             switch ( toUpperCase( lastChar ) )
             {
-            case 'M': factor = 1024*1024; break;
-            case 'G': factor = 1024*1024*1024; break;
-            default: throw new IllegalArgumentException( "Unknown unit for '" + conf + "'" );
+                case 'M': factor = 1024*1024; break;
+                case 'G': factor = 1024*1024*1024; break;
+                default: throw new IllegalArgumentException( "Unknown unit for '" + conf + "'" );
             }
             conf = conf.substring( 0, conf.length()-1 );
         }
