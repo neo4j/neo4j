@@ -11,7 +11,7 @@
 
   <groupId>org.neo4j</groupId>
   <artifactId>neo4j-enterprise</artifactId>
-  <version>1.8-SNAPSHOT</version>
+  <version>1.8.1</version>
   <name>Neo4j Enterprise</name>
   <packaging>jar</packaging>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
