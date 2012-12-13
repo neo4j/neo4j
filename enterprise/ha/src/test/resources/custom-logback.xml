@@ -24,19 +24,16 @@
   <logger name="neo4j.diagnostics" level="debug">
   </logger>
 
-  <logger name="neo4j.cluster" level="debug">
+  <logger name="org.neo4j.cluster" level="debug">
   </logger>
 
   <logger name="org.neo4j.cluster.NetworkMock" level="warn">
   </logger>
 
-  <logger name="ha2.protocol.atomicbroadcast.AtomicBroadcastMap" level="warn">
+  <logger name="org.neo4j.kernel.ha" level="debug">
   </logger>
 
   <logger name="org.neo4j.kernel.info.DiagnosticsManager" level="warn">
-  </logger>
-
-  <logger name="org.neo4j.cluster.ha2.ha2.protocol" level="info" additive="true">
   </logger>
 
   <root level="debug">
