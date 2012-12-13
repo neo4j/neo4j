@@ -92,16 +92,18 @@ public class StoreAccess
 
     public StoreAccess( String path, Map<String, String> params )
     {
-        this(
-                new StoreFactory( new Config( requiredParams( params, path ) ), new DefaultIdGeneratorFactory(),
-                        new DefaultWindowPoolFactory(), new DefaultFileSystemAbstraction(), initLogger( path ),
-                        new DefaultTxHook() ).attemptNewNeoStore( new File( path, "neostore" ) ) );
+        this( new StoreFactory( new Config( requiredParams( params, path ) ),
+                                new DefaultIdGeneratorFactory(),
+                                new DefaultWindowPoolFactory(),
+                                new DefaultFileSystemAbstraction(),
+                                initLogger( path ),
+                                new DefaultTxHook() ).attemptNewNeoStore( new File( path, "neostore" ) ) );
         this.closeable = true;
     }
 
     private static StringLogger initLogger( String path )
     {
-        StringLogger logger = StringLogger.loggerDirectory( new File( path ));
+        StringLogger logger = StringLogger.loggerDirectory( new File( path ) );
         logger.logMessage( "Starting " + StoreAccess.class.getSimpleName() );
         return logger;
     }
