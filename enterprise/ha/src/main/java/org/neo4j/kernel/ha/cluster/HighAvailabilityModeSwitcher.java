@@ -235,6 +235,8 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                     masterServer.getSocketAddress().getPort() + "?serverId=" +
                     config.get( HaSettings.server_id ) );
             clusterMemberAvailability.memberIsAvailable( MASTER, haUri );
+            msgLog.logMessage( "I am " + config.get( HaSettings.server_id ) +
+                    ", successfully moved to master" );
         }
         catch ( Throwable e )
         {
