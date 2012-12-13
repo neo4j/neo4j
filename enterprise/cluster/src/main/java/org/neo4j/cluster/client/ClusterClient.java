@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.cluster.BindingListener;
@@ -291,6 +292,7 @@ public class ClusterClient extends LifecycleAdapter
         life.add( new Lifecycle()
         {
             private ScheduledExecutorService scheduler;
+            private ScheduledFuture<?> tickFuture;
 
             @Override
             public void init() throws Throwable
@@ -301,9 +303,10 @@ public class ClusterClient extends LifecycleAdapter
             @Override
             public void start() throws Throwable
             {
-                scheduler = Executors.newSingleThreadScheduledExecutor( new DaemonThreadFactory( "timeout" ) );
+                scheduler = Executors.newSingleThreadScheduledExecutor(
+                        new DaemonThreadFactory( "timeout-clusterClient" ) );
 
-                scheduler.scheduleWithFixedDelay( new Runnable()
+                tickFuture = scheduler.scheduleWithFixedDelay( new Runnable()
                 {
                     @Override
                     public void run()
@@ -318,6 +321,7 @@ public class ClusterClient extends LifecycleAdapter
             @Override
             public void stop() throws Throwable
             {
+                tickFuture.cancel( true );
                 scheduler.shutdownNow();
             }
 
