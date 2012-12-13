@@ -71,6 +71,6 @@ public class UdcSettings
     /**
      * Unique registration id
      */
-    public static final Setting<String> udc_registration_key = setting( "neo4j.ext.udc.source", STRING, "unreg",
+    public static final Setting<String> udc_registration_key = setting( "neo4j.ext.udc.reg", STRING, "unreg",
             illegalValueMessage( "Must be a valid registration id", matches( ANY ) ) );
 }
