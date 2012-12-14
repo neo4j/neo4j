@@ -224,6 +224,11 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
             delegateHandler.setDelegate( masterImpl );
             DependencyResolver resolver = graphDb.getDependencyResolver();
             HaXaDataSourceManager xaDsm = resolver.resolveDependency( HaXaDataSourceManager.class );
+            
+            TxManager txManager = resolver.resolveDependency( TxManager.class );
+            txManager.stop();
+            txManager.start();
+            
             idGeneratorFactory.switchToMaster();
             synchronized ( xaDsm )
             {
