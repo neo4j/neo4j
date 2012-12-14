@@ -10,7 +10,7 @@
 
   <groupId>org.neo4j</groupId>
   <artifactId>neo4j-advanced</artifactId>
-  <version>1.8.1</version>
+  <version>1.8.2-SNAPSHOT</version>
   <name>Neo4j Advanced</name>
   <packaging>jar</packaging>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
@@ -19,7 +19,7 @@
   <properties>
     <short-name>neo4j-advanced</short-name>
     <bundle.namespace>org.neo4j</bundle.namespace>
-    <neo4j.version>1.8.1</neo4j.version>
+    <neo4j.version>1.8.2-SNAPSHOT</neo4j.version>
     <docs.url>http://docs.neo4j.org/chunked/${project.version}/deployment-installation.html#editions</docs.url>
     <docs-plugin.skip>true</docs-plugin.skip>
   </properties>
@@ -37,7 +37,7 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-management</artifactId>
-      <version>1.8.1</version>
+      <version>1.8.2-SNAPSHOT</version>
     </dependency>
   </dependencies>
 
