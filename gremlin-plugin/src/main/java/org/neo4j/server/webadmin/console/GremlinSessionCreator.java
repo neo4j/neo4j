@@ -22,11 +22,13 @@ package org.neo4j.server.webadmin.console;
 import org.neo4j.server.database.CypherExecutor;
 import org.neo4j.server.database.Database;
 
-public class GremlinSessionCreator implements ConsoleSessionCreator {
-    public String name() {
+public class GremlinSessionCreator implements ConsoleSessionCreator
+{
+    public String name()
+    {
         return "GREMLIN";
     }
-    
+
     @Override
     public ScriptSession newSession( Database database, CypherExecutor cypherExecutor )
     {

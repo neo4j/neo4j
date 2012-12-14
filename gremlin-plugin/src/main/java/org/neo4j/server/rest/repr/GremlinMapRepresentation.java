@@ -26,7 +26,7 @@ public class GremlinMapRepresentation extends MappingRepresentation
 
     private final Map value;
 
-    public GremlinMapRepresentation(Map value)
+    public GremlinMapRepresentation( Map value )
     {
         super( RepresentationType.MAP );
         this.value = value;
@@ -35,18 +35,30 @@ public class GremlinMapRepresentation extends MappingRepresentation
     @Override
     protected void serialize( MappingSerializer serializer )
     {
-        for (Object key : value.keySet())
+        for ( Object key : value.keySet() )
         {
             Object val = value.get( key );
-            if (val instanceof Number) serializer.putNumber( key.toString(),  (Number) val );
-            else if (val instanceof String) serializer.putString( key.toString(),  (String) val );
-            else if (val instanceof Iterable) serializer.putList( key.toString(), GremlinObjectToRepresentationConverter.getListRepresentation( (Iterable) val ) );
-            else if (val instanceof Map) serializer.putMapping( key.toString(), GremlinObjectToRepresentationConverter.getMapRepresentation( (Map) val ) );
+            if ( val instanceof Number )
+            {
+                serializer.putNumber( key.toString(), (Number) val );
+            } else if ( val instanceof String )
+            {
+                serializer.putString( key.toString(), (String) val );
+            } else if ( val instanceof Iterable )
+            {
+                serializer.putList( key.toString(), GremlinObjectToRepresentationConverter.getListRepresentation( (Iterable) val ) );
+            } else if ( val instanceof Map )
+            {
+                serializer.putMapping( key.toString(), GremlinObjectToRepresentationConverter.getMapRepresentation( (Map) val ) );
+            }
             //default
-            else serializer.putString( key.toString(),  val.toString() );
+            else
+            {
+                serializer.putString( key.toString(), val.toString() );
+            }
         }
-        
+
     }
 
-    
+
 }

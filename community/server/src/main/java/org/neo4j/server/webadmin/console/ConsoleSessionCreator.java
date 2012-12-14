@@ -22,7 +22,9 @@ package org.neo4j.server.webadmin.console;
 import org.neo4j.server.database.CypherExecutor;
 import org.neo4j.server.database.Database;
 
-public interface ConsoleSessionCreator {
+public interface ConsoleSessionCreator
+{
     String name();
-    ScriptSession newSession(Database database, CypherExecutor cypherExecutor);
+
+    ScriptSession newSession( Database database, CypherExecutor cypherExecutor );
 }

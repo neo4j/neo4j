@@ -19,27 +19,26 @@
  */
 package org.neo4j.server.webadmin.console;
 
-import groovy.lang.Closure;
-
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
 
+import groovy.lang.Closure;
 import org.codehaus.groovy.tools.shell.IO;
 
 /**
  * Version of ResultHookClosure that does not add ==> to the output. This is
  * instead moved to the console or print stream to handle, so that all content
  * printed to the output stream gets the same prompt.
- * 
+ *
  * @author Marko A. Rodriguez (http://markorodriguez.com), Jacob Hansson
  *         <jacob@voltvoodoo.com>
  */
 public class GremlinResultHook extends Closure
 {
     /**
-     * 
+     *
      */
     private static final long serialVersionUID = -8258126015903649440L;
     private final IO io;
@@ -50,7 +49,7 @@ public class GremlinResultHook extends Closure
         this.io = io;
     }
 
-    @SuppressWarnings( "rawtypes" )
+    @SuppressWarnings("rawtypes")
     public Object call( final Object[] args )
     {
         Object result = args[0];
@@ -58,27 +57,22 @@ public class GremlinResultHook extends Closure
         if ( result instanceof Iterator )
         {
             itty = (Iterator) result;
-        }
-        else if ( result instanceof Iterable )
+        } else if ( result instanceof Iterable )
         {
-            itty = ( (Iterable) result ).iterator();
-        }
-        else if ( result instanceof Object[] )
+            itty = ((Iterable) result).iterator();
+        } else if ( result instanceof Object[] )
         {
             itty = Arrays.asList( (Object[]) result )
                     .iterator();
-        }
-        else if ( result instanceof Map )
+        } else if ( result instanceof Map )
         {
-            itty = ( (Map) result ).entrySet()
+            itty = ((Map) result).entrySet()
                     .iterator();
-        }
-        else if ( result == null )
+        } else if ( result == null )
         {
             itty = Collections.singleton( "" )
                     .iterator();
-        }
-        else
+        } else
         {
             itty = Collections.singleton( result )
                     .iterator();

@@ -27,11 +27,11 @@ public class Neo4jGroovyImports
 
     public static List<String> getImports()
     {
-        String[] result = { "org.neo4j.graphdb.index.*",
+        String[] result = {"org.neo4j.graphdb.index.*",
                 "org.neo4j.graphdb.event.*", "org.neo4j.graphdb.traversal.*",
                 "org.neo4j.graphdb.helpers.*",
                 "org.neo4j.graphdb.helpers.collection.*",
-                "org.neo4j.graphdb.kernel.*", "org.neo4j.graphdb.*" };
+                "org.neo4j.graphdb.kernel.*", "org.neo4j.graphdb.*"};
         return Arrays.asList( result );
     }
 

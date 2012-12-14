@@ -23,28 +23,36 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
 
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Relationship;
-import org.neo4j.helpers.collection.FirstItemIterable;
-import org.neo4j.helpers.collection.IterableWrapper;
-import org.neo4j.helpers.collection.IteratorWrapper;
-
 import com.tinkerpop.blueprints.pgm.impls.neo4j.Neo4jEdge;
 import com.tinkerpop.blueprints.pgm.impls.neo4j.Neo4jGraph;
 import com.tinkerpop.blueprints.pgm.impls.neo4j.Neo4jVertex;
 import com.tinkerpop.pipes.util.structures.Table;
+import org.neo4j.helpers.collection.FirstItemIterable;
+import org.neo4j.helpers.collection.IterableWrapper;
+import org.neo4j.helpers.collection.IteratorWrapper;
 
 public class GremlinObjectToRepresentationConverter
 {
     public static Representation convert( final Object data )
     {
-        if ( data instanceof Table ) return new GremlinTableRepresentation( (Table) data );
-        
-        if ( data instanceof Iterable ) return getListRepresentation( (Iterable) data );
-        if ( data instanceof Iterator ) return getIteratorRepresentation((Iterator) data);
-        if ( data instanceof Map ) return getMapRepresentation( (Map) data );
-        
+        if ( data instanceof Table )
+        {
+            return new GremlinTableRepresentation( (Table) data );
+        }
+
+        if ( data instanceof Iterable )
+        {
+            return getListRepresentation( (Iterable) data );
+        }
+        if ( data instanceof Iterator )
+        {
+            return getIteratorRepresentation( (Iterator) data );
+        }
+        if ( data instanceof Map )
+        {
+            return getMapRepresentation( (Map) data );
+        }
+
         return getSingleRepresentation( data );
     }
 
@@ -55,18 +63,21 @@ public class GremlinObjectToRepresentationConverter
 
     static Representation getIteratorRepresentation( Iterator data )
     {
-        final FirstItemIterable<Representation> results = new FirstItemIterable<Representation>(new IteratorWrapper<Representation, Object>(data) {
+        final FirstItemIterable<Representation> results = new FirstItemIterable<Representation>( new IteratorWrapper<Representation, Object>( data )
+        {
             @Override
-            protected Representation underlyingObjectToObject(Object value) {
+            protected Representation underlyingObjectToObject( Object value )
+            {
                 if ( value instanceof Iterable )
                 {
                     FirstItemIterable<Representation> nested = convertValuesToRepresentations( (Iterable) value );
                     return new ListRepresentation( getType( nested ), nested );
-                } else {
+                } else
+                {
                     return getSingleRepresentation( value );
                 }
             }
-        });
+        } );
         return new ListRepresentation( getType( results ), results );
     }
 
@@ -80,31 +91,48 @@ public class GremlinObjectToRepresentationConverter
     {
         if ( data instanceof Table )
         {
-            return new FirstItemIterable<Representation>(Collections.<Representation>singleton(new GremlinTableRepresentation( (Table) data )));
+            return new FirstItemIterable<Representation>( Collections.<Representation>singleton( new GremlinTableRepresentation( (Table) data ) ) );
         }
-        return new FirstItemIterable<Representation>(new IterableWrapper<Representation,Object>(data) {
+        return new FirstItemIterable<Representation>( new IterableWrapper<Representation, Object>( data )
+        {
             @Override
-            protected Representation underlyingObjectToObject(Object value) {
-               return convert(value);
+            protected Representation underlyingObjectToObject( Object value )
+            {
+                return convert( value );
             }
-        });
+        } );
     }
 
     static RepresentationType getType( FirstItemIterable<Representation> representations )
     {
-        Representation  representation = representations.getFirst();
-        if ( representation == null ) return RepresentationType.STRING;
+        Representation representation = representations.getFirst();
+        if ( representation == null )
+        {
+            return RepresentationType.STRING;
+        }
         return representation.getRepresentationType();
     }
 
     static Representation getSingleRepresentation( Object result )
     {
-        if ( result == null ) return ObjectToRepresentationConverter.getSingleRepresentation(result);
-        
-        if ( result instanceof Neo4jVertex ) return new NodeRepresentation(((Neo4jVertex) result ).getRawVertex() );
-        if ( result instanceof Neo4jEdge ) return new RelationshipRepresentation(((Neo4jEdge) result ).getRawEdge() );
-        if ( result instanceof Neo4jGraph ) return ValueRepresentation.string( ( (Neo4jGraph) result ).getRawGraph().toString() );
-        
-        return ObjectToRepresentationConverter.getSingleRepresentation(result);
+        if ( result == null )
+        {
+            return ObjectToRepresentationConverter.getSingleRepresentation( result );
+        }
+
+        if ( result instanceof Neo4jVertex )
+        {
+            return new NodeRepresentation( ((Neo4jVertex) result).getRawVertex() );
+        }
+        if ( result instanceof Neo4jEdge )
+        {
+            return new RelationshipRepresentation( ((Neo4jEdge) result).getRawEdge() );
+        }
+        if ( result instanceof Neo4jGraph )
+        {
+            return ValueRepresentation.string( ((Neo4jGraph) result).getRawGraph().toString() );
+        }
+
+        return ObjectToRepresentationConverter.getSingleRepresentation( result );
     }
 }

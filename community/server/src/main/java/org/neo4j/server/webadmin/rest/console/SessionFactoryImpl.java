@@ -19,6 +19,14 @@
  */
 package org.neo4j.server.webadmin.rest.console;
 
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.ServiceLoader;
+
+import javax.servlet.http.HttpSession;
+
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.server.database.CypherExecutor;
 import org.neo4j.server.database.Database;
@@ -27,61 +35,71 @@ import org.neo4j.server.webadmin.console.ConsoleSessionCreator;
 import org.neo4j.server.webadmin.console.ConsoleSessionFactory;
 import org.neo4j.server.webadmin.console.ScriptSession;
 
-import javax.servlet.http.HttpSession;
-import java.util.*;
+public class SessionFactoryImpl implements ConsoleSessionFactory
+{
+    private static final Collection<ConsoleSessionCreator> creators = IteratorUtil.asCollection( ServiceLoader.load( ConsoleSessionCreator.class ) );
+    private static final Logger log = Logger.getLogger( SessionFactoryImpl.class );
 
-public class SessionFactoryImpl implements ConsoleSessionFactory {
-    private static final Collection<ConsoleSessionCreator> creators = IteratorUtil.asCollection(ServiceLoader.load(ConsoleSessionCreator.class));
-    private static final Logger log = Logger.getLogger(SessionFactoryImpl.class);
-
-    static {
+    static
+    {
         String info = "Available console sessions: ";
-        for (ConsoleSessionCreator creator : creators) {
+        for ( ConsoleSessionCreator creator : creators )
+        {
             info += creator.name() + ": " + creator.getClass() + "\n";
         }
-        log.info(info);
+        log.info( info );
     }
 
     private HttpSession httpSession;
     private final CypherExecutor cypherExecutor;
     private Map<String, ConsoleSessionCreator> engineCreators = new HashMap<String, ConsoleSessionCreator>();
 
-    public SessionFactoryImpl(HttpSession httpSession, List<String> supportedEngines, CypherExecutor cypherExecutor) {
+    public SessionFactoryImpl( HttpSession httpSession, List<String> supportedEngines, CypherExecutor cypherExecutor )
+    {
         this.httpSession = httpSession;
         this.cypherExecutor = cypherExecutor;
 
-        enableEngines(supportedEngines);
+        enableEngines( supportedEngines );
     }
 
     @Override
-    public ScriptSession createSession(String engineName, Database database) {
+    public ScriptSession createSession( String engineName, Database database )
+    {
         engineName = engineName.toLowerCase();
-        if (engineCreators.containsKey(engineName)) {
-            return getOrInstantiateSession(database, engineName + "-console-session", engineCreators.get(engineName));
+        if ( engineCreators.containsKey( engineName ) )
+        {
+            return getOrInstantiateSession( database, engineName + "-console-session", engineCreators.get( engineName ) );
         }
 
-        throw new IllegalArgumentException("Unknown console engine '" + engineName + "'.");
+        throw new IllegalArgumentException( "Unknown console engine '" + engineName + "'." );
     }
 
     @Override
-    public Iterable<String> supportedEngines() {
+    public Iterable<String> supportedEngines()
+    {
         return engineCreators.keySet();
     }
 
-    private ScriptSession getOrInstantiateSession(Database database, String key, ConsoleSessionCreator creator) {
-        Object session = httpSession.getAttribute(key);
-        if (session == null) {
-            session = creator.newSession(database, cypherExecutor);
-            httpSession.setAttribute(key, session);
+    private ScriptSession getOrInstantiateSession( Database database, String key, ConsoleSessionCreator creator )
+    {
+        Object session = httpSession.getAttribute( key );
+        if ( session == null )
+        {
+            session = creator.newSession( database, cypherExecutor );
+            httpSession.setAttribute( key, session );
         }
         return (ScriptSession) session;
     }
 
-    private void enableEngines(List<String> supportedEngines) {
-        for (ConsoleSessionCreator creator : creators) {
-            for (String engineName : supportedEngines) {
-                if (creator.name().equalsIgnoreCase(engineName)) {
-                    engineCreators.put(engineName.toLowerCase(), creator);
+    private void enableEngines( List<String> supportedEngines )
+    {
+        for ( ConsoleSessionCreator creator : creators )
+        {
+            for ( String engineName : supportedEngines )
+            {
+                if ( creator.name().equalsIgnoreCase( engineName ) )
+                {
+                    engineCreators.put( engineName.toLowerCase(), creator );
                 }
             }
         }

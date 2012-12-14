@@ -22,14 +22,16 @@ package org.neo4j.server.webadmin.console;
 import org.neo4j.server.database.CypherExecutor;
 import org.neo4j.server.database.Database;
 
-public class CypherSessionCreator implements ConsoleSessionCreator {
+public class CypherSessionCreator implements ConsoleSessionCreator
+{
     @Override
-    public String name() {
+    public String name()
+    {
         return "CYPHER";
     }
 
     @Override
-    public ScriptSession newSession(Database database, CypherExecutor cypherExecutor)
+    public ScriptSession newSession( Database database, CypherExecutor cypherExecutor )
     {
         return new CypherSession( cypherExecutor );
     }
