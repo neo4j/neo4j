@@ -66,11 +66,14 @@ class StringFunctionsTest extends Assertions {
   @Test def substringTests() {
     def substring(orig: Any, from: Any, to: Any) =
       SubstringFunction(Literal(orig), Literal(from), Literal(to)).apply(ExecutionContext.empty)
+    def substringFrom(orig: Any, from: Any) =
+      SubstringStartFunction(Literal(orig), Literal(from)).apply(ExecutionContext.empty)
 
     assert(substring("hello", 2, 5) === "llo")
     assert(substring("hello", 4, 5) === "o")
     assert(substring("hello", 1, 3) === "ell")
     assert(substring("hello", 8, 5) === "")
+    assert(substringFrom("0123456789", 1) === "123456789")
     assert(substring(null, 8, 5) === null)
     intercept[CypherTypeException](assert(substring(1024, 1, 2) === null))
     intercept[StringIndexOutOfBoundsException](assert(substring("hello", -4, 2) === null))
