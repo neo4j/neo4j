@@ -108,6 +108,7 @@ public class TransactionConstraintsIT extends AbstractClusterTest
         Transaction tx = aSlave.beginTx();
         try
         {
+            // Deleting this node isn't allowed since it still has relationships
             node.delete();
             tx.success();
         }
@@ -129,6 +130,7 @@ public class TransactionConstraintsIT extends AbstractClusterTest
         Transaction tx = master.beginTx();
         try
         {
+            // Deleting this node isn't allowed since it still has relationships
             node.delete();
             tx.success();
         }
