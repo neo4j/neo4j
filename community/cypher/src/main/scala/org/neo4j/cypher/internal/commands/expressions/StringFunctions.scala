@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.commands.expressions
 
 import org.neo4j.cypher.CypherTypeException
 import scala.collection.JavaConverters._
-import collection.Map
 import org.neo4j.cypher.internal.helpers.{IsCollection, CollectionSupport}
 import org.neo4j.graphdb.{PropertyContainer, Relationship, Node}
 import org.neo4j.cypher.internal.symbols._
@@ -103,29 +102,45 @@ case class TrimFunction(argument: Expression) extends StringFunction(argument) w
   def rewrite(f: (Expression) => Expression) = f(TrimFunction(argument.rewrite(f)))
 }
 
-case class SubstringFunction(orig: Expression, start: Expression, length: Expression)
+case class SubstringFunction(orig: Expression, start: Expression, length: Option[Expression])
   extends NullInNullOutExpression(orig) with StringHelper with NumericHelper {
   def compute(value: Any, m: ExecutionContext): Any = {
     val origVal = asString(orig(m))
+
+    def noMoreThanMax(maxLength: Int, length: Int): Int =
+      if (length > maxLength) {
+        maxLength
+      } else {
+        length
+      }
+
     // if start goes off the end of the string, let's be nice and handle that.
-    val startVal = if (origVal.length < asInt(start(m))) origVal.length
-    else asInt(start(m))
+    val startVal = noMoreThanMax(origVal.length, asInt(start(m)))
+
     // if length goes off the end of the string, let's be nice and handle that.
-    val lengthVal = if (origVal.length < asInt(length(m)) + startVal) origVal.length - startVal
-    else asInt(length(m))
+    val lengthVal = length match {
+      case None       => origVal.length - startVal
+      case Some(func) => noMoreThanMax(origVal.length - startVal, asInt(func(m)))
+    }
+
     origVal.substring(startVal, startVal + lengthVal)
   }
 
 
-  def children = Seq(orig, start, length)
+  def children = Seq(orig, start) ++ length
 
-  def rewrite(f: (Expression) => Expression) = f(SubstringFunction(orig.rewrite(f), start.rewrite(f), length.rewrite(f)))
+  def rewrite(f: (Expression) => Expression) = f(SubstringFunction(orig.rewrite(f), start.rewrite(f), length.map(_.rewrite(f))))
 
   def calculateType(symbols: SymbolTable) = StringType()
 
-  def symbolTableDependencies = orig.symbolTableDependencies ++
-    start.symbolTableDependencies ++
-    length.symbolTableDependencies
+  def symbolTableDependencies = {
+    val a = orig.symbolTableDependencies ++
+            start.symbolTableDependencies
+
+    val b = length.toSeq.flatMap(_.symbolTableDependencies.toSeq).toSet
+
+    a ++ b
+  }
 }
 
 case class ReplaceFunction(orig: Expression, search: Expression, replaceWith: Expression)
@@ -149,8 +164,8 @@ case class ReplaceFunction(orig: Expression, search: Expression, replaceWith: Ex
   def calculateType(symbols: SymbolTable) = StringType()
 
   def symbolTableDependencies = orig.symbolTableDependencies ++
-    search.symbolTableDependencies ++
-    replaceWith.symbolTableDependencies
+                                search.symbolTableDependencies ++
+                                replaceWith.symbolTableDependencies
 }
 
 case class LeftFunction(orig: Expression, length: Expression)
@@ -171,7 +186,7 @@ case class LeftFunction(orig: Expression, length: Expression)
   def calculateType(symbols: SymbolTable) = StringType()
 
   def symbolTableDependencies = orig.symbolTableDependencies ++
-    length.symbolTableDependencies
+                                length.symbolTableDependencies
 }
 
 case class RightFunction(orig: Expression, length: Expression)
@@ -192,5 +207,5 @@ case class RightFunction(orig: Expression, length: Expression)
   def calculateType(symbols: SymbolTable) = StringType()
 
   def symbolTableDependencies = orig.symbolTableDependencies ++
-    length.symbolTableDependencies
+                                length.symbolTableDependencies
 }

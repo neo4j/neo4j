@@ -2318,5 +2318,11 @@ RETURN x0.name?
 
     assert(result.toList === List(Map("test" -> "atest")))
   }
+  
+  @Test
+  def substring_with_default_length() {
+    val result = parseAndExecute("""START a=node(0) return substring("0123456789", 1) as s""")
 
+    assert(result.toList === List(Map("s" -> "123456789")))
+  }
 }
