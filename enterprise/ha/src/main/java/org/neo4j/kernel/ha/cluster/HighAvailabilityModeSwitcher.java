@@ -369,7 +369,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
         }
         catch ( StoreUnableToParticipateInClusterException upe )
         {
-            msgLog.warn( "Current store is unable to participate in the cluster", upe );
+            msgLog.warn( "Current store is unable to participate in the cluster; fetching new store from master", upe );
             try
             {
                 // Unregistering from a running DSManager stops the datasource
