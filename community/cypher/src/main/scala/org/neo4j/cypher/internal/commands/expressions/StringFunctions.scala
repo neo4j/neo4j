@@ -110,8 +110,7 @@ case class SubstringFromFunction(orig: Expression, start: Expression)
     // if start goes off the end of the string, let's be nice and handle that.
     val startVal = if (origVal.length < asInt(start(m))) origVal.length
     else asInt(start(m))
-    val lengthVal = origVal.length - startVal
-    origVal.substring(startVal, startVal + lengthVal)
+    origVal.substring(startVal)
   }
 
 
