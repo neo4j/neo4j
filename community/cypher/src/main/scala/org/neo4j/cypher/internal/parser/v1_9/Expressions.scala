@@ -155,8 +155,8 @@ trait Expressions extends Base with ParserPattern with Predicates with StringLit
     "left" -> func(2, args => LeftFunction(args(0), args(1))),
     "right" -> func(2, args => RightFunction(args(0), args(1))),
     "substring" -> Function(x => x == 2 || x == 3, args => {
-      val length = if(args.size == 2) Literal(args(0).toString.length) else args(2)
-      SubstringFunction(args(0), args(1), length)
+      if(args.size == 2) SubstringFromFunction(args(0), args(1))
+      else SubstringFunction(args(0), args(1), args(2))
     }),
     "lower" -> func(1, args => LowerFunction(args.head)),
     "upper" -> func(1, args => UpperFunction(args.head)),

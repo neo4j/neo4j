@@ -103,6 +103,27 @@ case class TrimFunction(argument: Expression) extends StringFunction(argument) w
   def rewrite(f: (Expression) => Expression) = f(TrimFunction(argument.rewrite(f)))
 }
 
+case class SubstringFromFunction(orig: Expression, start: Expression)
+  extends NullInNullOutExpression(orig) with StringHelper with NumericHelper {
+  def compute(value: Any, m: ExecutionContext): Any = {
+    val origVal = asString(orig(m))
+    // if start goes off the end of the string, let's be nice and handle that.
+    val startVal = if (origVal.length < asInt(start(m))) origVal.length
+    else asInt(start(m))
+    origVal.substring(startVal)
+  }
+
+
+  def children = Seq(orig, start)
+
+  def rewrite(f: (Expression) => Expression) = f(SubstringFromFunction(orig.rewrite(f), start.rewrite(f)))
+
+  def calculateType(symbols: SymbolTable) = StringType()
+
+  def symbolTableDependencies = orig.symbolTableDependencies ++
+    start.symbolTableDependencies
+}
+
 case class SubstringFunction(orig: Expression, start: Expression, length: Expression)
   extends NullInNullOutExpression(orig) with StringHelper with NumericHelper {
   def compute(value: Any, m: ExecutionContext): Any = {
