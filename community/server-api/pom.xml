@@ -52,7 +52,7 @@ the relevant Commercial Agreement.
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-kernel</artifactId>
-      <version>1.8.2-SNAPSHOT</version>
+      <version>${project.version}</version>
     </dependency>
 
     <dependency>
@@ -84,7 +84,7 @@ the relevant Commercial Agreement.
     <dependency>
       <groupId>commons-digester</groupId>
       <artifactId>commons-digester</artifactId>
-      <version>1.8.2-SNAPSHOT</version>
+      <version>1.8.1</version>
       <type>jar</type>
       <scope>compile</scope>
     </dependency>
