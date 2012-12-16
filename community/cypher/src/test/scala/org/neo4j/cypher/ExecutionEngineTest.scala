@@ -2309,4 +2309,14 @@ RETURN x0.name?
       Map("a.count" -> 15)
     ))
   }
+
+  @Test
+  def extract_string_from_node_collection() {
+    val a = createNode("name"->"a")
+
+    val result = parseAndExecute("""START n=node(1) with collect(n) as nodes return head(extract(x in nodes: x.name)) + "test" as test """)
+
+    assert(result.toList === List(Map("test" -> "atest")))
+  }
+
 }
