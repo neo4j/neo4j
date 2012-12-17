@@ -31,7 +31,7 @@ import java.util.List;
 import java.util.concurrent.TimeoutException;
 
 import org.neo4j.cluster.com.message.Message;
-import org.neo4j.cluster.com.message.MessageProcessor;
+import org.neo4j.cluster.com.message.MessageHolder;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.AtomicBroadcastMessage;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.ProposerMessage;
@@ -50,7 +50,7 @@ public enum ClusterState
             {
                 @Override
                 public State<?, ?> handle( ClusterContext context, Message<ClusterMessage> message,
-                                           MessageProcessor outgoing ) throws Throwable
+                                           MessageHolder outgoing ) throws Throwable
                 {
                     switch ( message.getMessageType() )
                     {
@@ -93,7 +93,7 @@ public enum ClusterState
             {
                 @Override
                 public State<?, ?> handle( ClusterContext context, Message<ClusterMessage> message,
-                                           MessageProcessor outgoing ) throws Throwable
+                                           MessageHolder outgoing ) throws Throwable
                 {
                     switch ( message.getMessageType() )
                     {
@@ -201,7 +201,7 @@ public enum ClusterState
                 @Override
                 public State<?, ?> handle( ClusterContext context,
                                            Message<ClusterMessage> message,
-                                           MessageProcessor outgoing
+                                           MessageHolder outgoing
                 )
                         throws Throwable
                 {
@@ -258,7 +258,7 @@ public enum ClusterState
             {
                 @Override
                 public State<?, ?> handle( ClusterContext context, Message<ClusterMessage> message,
-                                           MessageProcessor outgoing ) throws Throwable
+                                           MessageHolder outgoing ) throws Throwable
                 {
                     switch ( message.getMessageType() )
                     {
@@ -332,7 +332,7 @@ public enum ClusterState
                 @Override
                 public State<?, ?> handle( ClusterContext context,
                                            Message<ClusterMessage> message,
-                                           MessageProcessor outgoing
+                                           MessageHolder outgoing
                 )
                         throws Throwable
                 {

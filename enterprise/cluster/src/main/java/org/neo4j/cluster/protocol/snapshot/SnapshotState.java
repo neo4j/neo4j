@@ -23,7 +23,7 @@ package org.neo4j.cluster.protocol.snapshot;
 import java.net.URI;
 
 import org.neo4j.cluster.com.message.Message;
-import org.neo4j.cluster.com.message.MessageProcessor;
+import org.neo4j.cluster.com.message.MessageHolder;
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.statemachine.State;
 
@@ -38,7 +38,7 @@ public enum SnapshotState
                 @Override
                 public State<?, ?> handle( SnapshotContext context,
                                            Message<SnapshotMessage> message,
-                                           MessageProcessor outgoing
+                                           MessageHolder outgoing
                 )
                         throws Throwable
                 {
@@ -87,7 +87,7 @@ public enum SnapshotState
                 @Override
                 public State<?, ?> handle( SnapshotContext context,
                                            Message<SnapshotMessage> message,
-                                           MessageProcessor outgoing
+                                           MessageHolder outgoing
                 )
                         throws Throwable
                 {
@@ -111,7 +111,7 @@ public enum SnapshotState
                 @Override
                 public State<?, ?> handle( SnapshotContext context,
                                            Message<SnapshotMessage> message,
-                                           MessageProcessor outgoing
+                                           MessageHolder outgoing
                 )
                         throws Throwable
                 {

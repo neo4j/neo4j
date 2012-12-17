@@ -26,7 +26,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.cluster.com.message.Message;
-import org.neo4j.cluster.com.message.MessageProcessor;
+import org.neo4j.cluster.com.message.MessageHolder;
 import org.neo4j.cluster.com.message.MessageType;
 
 /**
@@ -35,11 +35,11 @@ import org.neo4j.cluster.com.message.MessageType;
 public class StateMachineRules
     implements StateTransitionListener
 {
-    private final MessageProcessor outgoing;
+    private final MessageHolder outgoing;
 
     private Map<State<?,?>,List<StateMachineRule>> rules = new HashMap<State<?, ?>, List<StateMachineRule>>(  );
 
-    public StateMachineRules( MessageProcessor outgoing )
+    public StateMachineRules( MessageHolder outgoing )
     {
         this.outgoing = outgoing;
     }

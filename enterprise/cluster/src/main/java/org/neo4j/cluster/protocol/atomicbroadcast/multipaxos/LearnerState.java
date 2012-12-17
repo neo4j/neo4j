@@ -24,7 +24,7 @@ import java.net.URI;
 import java.util.List;
 
 import org.neo4j.cluster.com.message.Message;
-import org.neo4j.cluster.com.message.MessageProcessor;
+import org.neo4j.cluster.com.message.MessageHolder;
 import org.neo4j.cluster.statemachine.State;
 
 /**
@@ -38,7 +38,7 @@ public enum LearnerState
                 @Override
                 public LearnerState handle( MultiPaxosContext context,
                                             Message<LearnerMessage> message,
-                                            MessageProcessor outgoing
+                                            MessageHolder outgoing
                 )
                         throws Throwable
                 {
@@ -59,7 +59,7 @@ public enum LearnerState
                 @Override
                 public LearnerState handle( MultiPaxosContext context,
                                             Message<LearnerMessage> message,
-                                            MessageProcessor outgoing
+                                            MessageHolder outgoing
                 )
                         throws Throwable
                 {

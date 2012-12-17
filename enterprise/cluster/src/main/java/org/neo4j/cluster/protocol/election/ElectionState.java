@@ -23,7 +23,7 @@ package org.neo4j.cluster.protocol.election;
 import java.net.URI;
 
 import org.neo4j.cluster.com.message.Message;
-import org.neo4j.cluster.com.message.MessageProcessor;
+import org.neo4j.cluster.com.message.MessageHolder;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.ProposerMessage;
 import org.neo4j.cluster.protocol.cluster.ClusterMessage;
 import org.neo4j.cluster.statemachine.State;
@@ -40,7 +40,7 @@ public enum ElectionState
                 @Override
                 public State<?, ?> handle( ElectionContext context,
                                            Message<ElectionMessage> message,
-                                           MessageProcessor outgoing
+                                           MessageHolder outgoing
                 )
                         throws Throwable
                 {
@@ -67,7 +67,7 @@ public enum ElectionState
                 @Override
                 public State<?, ?> handle( ElectionContext context,
                                            Message<ElectionMessage> message,
-                                           MessageProcessor outgoing
+                                           MessageHolder outgoing
                 )
                         throws Throwable
                 {

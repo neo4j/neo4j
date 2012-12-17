@@ -24,18 +24,18 @@ import java.net.URI;
 import java.net.URISyntaxException;
 
 import org.neo4j.cluster.com.message.Message;
+import org.neo4j.cluster.com.message.MessageHolder;
 import org.neo4j.cluster.com.message.MessageProcessor;
 import org.neo4j.cluster.com.message.MessageType;
 
 /**
  * When a message is received, create an I Am Alive message as well, since we know that the sending instance is up
  */
-public class HeartbeatIAmAliveProcessor
-    implements MessageProcessor
+public class HeartbeatIAmAliveProcessor implements MessageProcessor
 {
-    private MessageProcessor output;
+    private MessageHolder output;
 
-    public HeartbeatIAmAliveProcessor( MessageProcessor output )
+    public HeartbeatIAmAliveProcessor( MessageHolder output )
     {
         this.output = output;
     }
@@ -43,13 +43,16 @@ public class HeartbeatIAmAliveProcessor
     @Override
     public void process( Message<? extends MessageType> message )
     {
-        if (!message.isInternal() && !message.isBroadcast() && !message.getMessageType().equals( HeartbeatMessage.i_am_alive ))
+        if (!message.isInternal() && !message.isBroadcast() &&
+                !message.getMessageType().equals( HeartbeatMessage.i_am_alive ))
         {
             try
             {
                 String from = message.getHeader( Message.FROM );
                 if (!from.equals( message.getHeader( Message.TO ) ))
-                    output.process( message.copyHeadersTo( Message.internal( HeartbeatMessage.i_am_alive, new HeartbeatMessage.IAmAliveState( new URI( from ) ) ), Message.FROM ) );
+                    output.process( message.copyHeadersTo(
+                            Message.internal( HeartbeatMessage.i_am_alive,
+                                    new HeartbeatMessage.IAmAliveState( new URI( from ) ) ), Message.FROM ) );
             }
             catch( URISyntaxException e )
             {

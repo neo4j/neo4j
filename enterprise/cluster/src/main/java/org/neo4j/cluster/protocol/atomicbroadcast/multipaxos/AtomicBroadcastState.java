@@ -28,7 +28,7 @@ import java.net.URI;
 import java.util.concurrent.TimeoutException;
 
 import org.neo4j.cluster.com.message.Message;
-import org.neo4j.cluster.com.message.MessageProcessor;
+import org.neo4j.cluster.com.message.MessageHolder;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastListener;
 import org.neo4j.cluster.protocol.atomicbroadcast.Payload;
 import org.neo4j.cluster.protocol.cluster.ClusterMessage;
@@ -46,7 +46,7 @@ public enum AtomicBroadcastState
                 @Override
                 public AtomicBroadcastState handle( AtomicBroadcastContext context,
                                                     Message<AtomicBroadcastMessage> message,
-                                                    MessageProcessor outgoing
+                                                    MessageHolder outgoing
                 )
                         throws Throwable
                 {
@@ -78,7 +78,7 @@ public enum AtomicBroadcastState
                 @Override
                 public State<?, ?> handle( AtomicBroadcastContext context,
                                            Message<AtomicBroadcastMessage> message,
-                                           MessageProcessor outgoing
+                                           MessageHolder outgoing
                 )
                         throws Throwable
                 {
@@ -124,7 +124,7 @@ public enum AtomicBroadcastState
                 @Override
                 public AtomicBroadcastState handle( AtomicBroadcastContext context,
                                                     Message<AtomicBroadcastMessage> message,
-                                                    MessageProcessor outgoing
+                                                    MessageHolder outgoing
                 )
                         throws Throwable
                 {
@@ -191,7 +191,7 @@ public enum AtomicBroadcastState
             };
 
     private static void defaultHandling( AtomicBroadcastContext context, Message<AtomicBroadcastMessage> message,
-                                         MessageProcessor outgoing )
+                                         MessageHolder outgoing )
     {
         switch ( message.getMessageType() )
         {

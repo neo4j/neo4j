@@ -25,7 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.cluster.com.message.Message;
-import org.neo4j.cluster.com.message.MessageProcessor;
+import org.neo4j.cluster.com.message.MessageHolder;
 import org.neo4j.cluster.protocol.cluster.ClusterMessage;
 import org.neo4j.cluster.statemachine.State;
 
@@ -40,7 +40,7 @@ public enum ProposerState
                 @Override
                 public ProposerState handle( MultiPaxosContext context,
                                              Message<ProposerMessage> message,
-                                             MessageProcessor outgoing
+                                             MessageHolder outgoing
                 )
                         throws Throwable
                 {
@@ -61,7 +61,7 @@ public enum ProposerState
                 @Override
                 public ProposerState handle( MultiPaxosContext context,
                                              Message<ProposerMessage> message,
-                                             MessageProcessor outgoing
+                                             MessageHolder outgoing
                 )
                         throws Throwable
                 {
@@ -386,7 +386,7 @@ public enum ProposerState
 
     public final int MAX_CONCURRENT_INSTANCES = 10;
 
-    private static void propose( MultiPaxosContext context, Message message, MessageProcessor outgoing,
+    private static void propose( MultiPaxosContext context, Message message, MessageHolder outgoing,
                                  Object payload, List<URI> acceptors )
     {
         InstanceId instanceId = context.proposerContext.newInstanceId( context.learnerContext

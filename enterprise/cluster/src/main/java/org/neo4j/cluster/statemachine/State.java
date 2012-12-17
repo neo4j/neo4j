@@ -21,7 +21,7 @@
 package org.neo4j.cluster.statemachine;
 
 import org.neo4j.cluster.com.message.Message;
-import org.neo4j.cluster.com.message.MessageProcessor;
+import org.neo4j.cluster.com.message.MessageHolder;
 import org.neo4j.cluster.com.message.MessageType;
 
 /**
@@ -38,12 +38,13 @@ public interface State<CONTEXT, MESSAGETYPE extends MessageType>
      * as a facade to the rest of the system. The MessageProcessor is used to trigger new messages.
      * When the handling is done the state returns the next state of the state machine.
      *
+     *
      * @param context  that contains state and methods to access other parts of the system
      * @param message  that needs to be handled
      * @param outgoing processor for new messages created by the handling of this message
      * @return the new state
      * @throws Throwable
      */
-    public State<?, ?> handle( CONTEXT context, Message<MESSAGETYPE> message, MessageProcessor outgoing ) throws
+    public State<?, ?> handle( CONTEXT context, Message<MESSAGETYPE> message, MessageHolder outgoing ) throws
             Throwable;
 }

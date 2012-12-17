@@ -21,11 +21,11 @@ package org.neo4j.cluster.protocol.omega;
 
 import java.net.URI;
 
+import org.neo4j.cluster.com.message.MessageHolder;
 import org.neo4j.cluster.protocol.omega.payload.CollectResponsePayload;
 import org.neo4j.cluster.protocol.omega.payload.RefreshAckPayload;
 import org.neo4j.cluster.protocol.omega.payload.RefreshPayload;
 import org.neo4j.cluster.com.message.Message;
-import org.neo4j.cluster.com.message.MessageProcessor;
 import org.neo4j.cluster.protocol.omega.payload.CollectPayload;
 import org.neo4j.cluster.statemachine.State;
 
@@ -35,7 +35,7 @@ public enum OmegaState implements State<OmegaContext, OmegaMessage>
             {
                 @Override
                 public OmegaState handle( OmegaContext context, Message<OmegaMessage> message,
-                                          MessageProcessor outgoing ) throws Throwable
+                                          MessageHolder outgoing ) throws Throwable
                 {
                     switch ( message.getMessageType() )
                     {
@@ -56,7 +56,7 @@ public enum OmegaState implements State<OmegaContext, OmegaMessage>
             {
                 @Override
                 public State<?, ?> handle( OmegaContext context, Message<OmegaMessage> message,
-                                           MessageProcessor outgoing ) throws Throwable
+                                           MessageHolder outgoing ) throws Throwable
                 {
                     switch ( message.getMessageType() )
                     {

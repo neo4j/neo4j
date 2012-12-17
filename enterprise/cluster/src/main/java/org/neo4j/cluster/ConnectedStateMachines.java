@@ -32,6 +32,7 @@ import java.util.Queue;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.neo4j.cluster.com.message.Message;
+import org.neo4j.cluster.com.message.MessageHolder;
 import org.neo4j.cluster.com.message.MessageProcessor;
 import org.neo4j.cluster.com.message.MessageSource;
 import org.neo4j.cluster.com.message.MessageType;
@@ -60,7 +61,7 @@ public class ConnectedStateMachines
             MessageType>, StateMachine>();
 
     private final List<MessageProcessor> outgoingProcessors = new ArrayList<MessageProcessor>();
-    private final OutgoingMessageProcessor outgoing;
+    private final OutgoingMessageHolder outgoing;
 
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock( true );
 
@@ -73,7 +74,7 @@ public class ConnectedStateMachines
         this.executor = executor;
         this.timeouts = new Timeouts( this, timeoutStrategy );
 
-        outgoing = new OutgoingMessageProcessor();
+        outgoing = new OutgoingMessageHolder();
         source.addMessageProcessor( this );
     }
 
@@ -103,7 +104,7 @@ public class ConnectedStateMachines
         outgoingProcessors.add( messageProcessor );
     }
 
-    public OutgoingMessageProcessor getOutgoing()
+    public OutgoingMessageHolder getOutgoing()
     {
         return outgoing;
     }
@@ -131,7 +132,7 @@ public class ConnectedStateMachines
                 Message<? extends MessageType> outgoingMessage;
                 try
                 {
-                    while ( (outgoingMessage = outgoing.nextOutgoingMessage()) != null )
+                    while ( ( outgoingMessage = outgoing.nextOutgoingMessage() ) != null )
                     {
                         message.copyHeadersTo( outgoingMessage, CONVERSATION_ID, CREATED_BY );
 
@@ -220,8 +221,7 @@ public class ConnectedStateMachines
         return stateMachines.get( messageType );
     }
 
-    private class OutgoingMessageProcessor
-            implements MessageProcessor
+    private class OutgoingMessageHolder implements MessageHolder
     {
         private Queue<Message<? extends MessageType>> outgoingMessages = new LinkedList<Message<? extends
                 MessageType>>();

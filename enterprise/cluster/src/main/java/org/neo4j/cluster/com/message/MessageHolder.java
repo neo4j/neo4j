@@ -18,29 +18,14 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.neo4j.cluster.protocol.heartbeat;
-
-import java.net.URI;
-
-import org.neo4j.cluster.com.message.Message;
-import org.neo4j.cluster.com.message.MessageHolder;
-import org.neo4j.cluster.protocol.cluster.ClusterListener;
+package org.neo4j.cluster.com.message;
 
 /**
- * When an instance joins a cluster, setup a heartbeat for it
+ * This is used to store messages generated from a StateMachine in response to an incoming message.
+ * Messages stored here from a State message handling method are guaranteed to not be processed while the method
+ * is running.
  */
-public class HeartbeatJoinListener extends ClusterListener.Adapter
+public interface MessageHolder
 {
-    private MessageHolder outgoing;
-
-    public HeartbeatJoinListener( MessageHolder outgoing )
-    {
-        this.outgoing = outgoing;
-    }
-
-    @Override
-    public void joinedCluster( URI member )
-    {
-        outgoing.process( Message.internal( HeartbeatMessage.reset_send_heartbeat, member ) );
-    }
+    void process( Message<? extends MessageType> message );
 }

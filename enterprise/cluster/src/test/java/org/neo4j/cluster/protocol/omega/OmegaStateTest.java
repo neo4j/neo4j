@@ -33,7 +33,7 @@ import org.junit.Test;
 import org.mockito.Matchers;
 import org.mockito.Mockito;
 import org.neo4j.cluster.com.message.Message;
-import org.neo4j.cluster.com.message.MessageProcessor;
+import org.neo4j.cluster.com.message.MessageHolder;
 import org.neo4j.cluster.protocol.omega.payload.CollectPayload;
 import org.neo4j.cluster.protocol.omega.payload.CollectResponsePayload;
 import org.neo4j.cluster.protocol.omega.payload.RefreshAckPayload;
@@ -49,7 +49,7 @@ public class OmegaStateTest
     {
         OmegaContext context = Mockito.mock( OmegaContext.class );
         Message<OmegaMessage> message = Message.internal( OmegaMessage.start );
-        MessageProcessor outgoing = Mockito.mock( MessageProcessor.class );
+        MessageHolder outgoing = Mockito.mock( MessageHolder.class );
         OmegaState result = (OmegaState) OmegaState.start.handle( context, message, outgoing );
         // Assert we move to operational state
         assertEquals( OmegaState.omega, result );
@@ -62,7 +62,7 @@ public class OmegaStateTest
     {
         OmegaContext context = Mockito.mock( OmegaContext.class );
         Message<OmegaMessage> message = Message.internal( OmegaMessage.refresh_timeout );
-        MessageProcessor outgoing = Mockito.mock( MessageProcessor.class );
+        MessageHolder outgoing = Mockito.mock( MessageHolder.class );
 
         State state = new State( new EpochNumber() );
         Mockito.when( context.getMyState() ).thenReturn( state );
@@ -86,7 +86,7 @@ public class OmegaStateTest
         OmegaContext context = Mockito.mock( OmegaContext.class );
         Message<OmegaMessage> message = Message.internal( OmegaMessage.refresh_ack, RefreshAckPayload.forRefresh( new
                 RefreshPayload( 1, 2, 3, 1 ) ) );
-        MessageProcessor outgoing = Mockito.mock( MessageProcessor.class );
+        MessageHolder outgoing = Mockito.mock( MessageHolder.class );
 
         Mockito.when( context.getClusterNodeCount() ).thenReturn( 3 );
         Mockito.when( context.getAckCount( 1 ) ).thenReturn( 2 );
@@ -105,7 +105,7 @@ public class OmegaStateTest
     {
         OmegaContext context = Mockito.mock( OmegaContext.class );
         Message<OmegaMessage> message = Message.internal( OmegaMessage.round_trip_timeout );
-        MessageProcessor outgoing = Mockito.mock( MessageProcessor.class );
+        MessageHolder outgoing = Mockito.mock( MessageHolder.class );
 
         State state = new State( new EpochNumber() );
         Mockito.when( context.getMyState() ).thenReturn( state );
@@ -133,7 +133,7 @@ public class OmegaStateTest
     {
         OmegaContext context = Mockito.mock( OmegaContext.class );
         Message<OmegaMessage> message = Mockito.mock( Message.class );
-        MessageProcessor outgoing = Mockito.mock( MessageProcessor.class );
+        MessageHolder outgoing = Mockito.mock( MessageHolder.class );
 
         // Value here is not important, we override the compareTo() method anyway
         RefreshPayload payload = new RefreshPayload( 1, 1, 1, 1 );
@@ -193,7 +193,7 @@ public class OmegaStateTest
     {
         OmegaContext context = Mockito.mock( OmegaContext.class );
         Message<OmegaMessage> message = Mockito.mock( Message.class );
-        MessageProcessor outgoing = Mockito.mock( MessageProcessor.class );
+        MessageHolder outgoing = Mockito.mock( MessageHolder.class );
 
         Set<URI> servers = new HashSet<URI>();
         servers.add( new URI( "localhost:80" ) );
@@ -221,7 +221,7 @@ public class OmegaStateTest
     {
         OmegaContext context = Mockito.mock( OmegaContext.class );
         Message<OmegaMessage> message = Mockito.mock( Message.class );
-        MessageProcessor outgoing = Mockito.mock( MessageProcessor.class );
+        MessageHolder outgoing = Mockito.mock( MessageHolder.class );
 
         Map<URI, State> dummyState = new HashMap<URI, State>();
         Mockito.when( context.getRegistry() ).thenReturn( dummyState );
@@ -243,7 +243,7 @@ public class OmegaStateTest
     {
         OmegaContext context = Mockito.mock( OmegaContext.class );
         Message<OmegaMessage> message = Mockito.mock( Message.class );
-        MessageProcessor outgoing = Mockito.mock( MessageProcessor.class );
+        MessageHolder outgoing = Mockito.mock( MessageHolder.class );
 
         URI fromUri = new URI( fromString );
 

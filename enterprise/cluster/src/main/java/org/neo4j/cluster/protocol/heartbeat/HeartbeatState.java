@@ -27,7 +27,7 @@ import static org.neo4j.cluster.com.message.Message.to;
 import java.net.URI;
 
 import org.neo4j.cluster.com.message.Message;
-import org.neo4j.cluster.com.message.MessageProcessor;
+import org.neo4j.cluster.com.message.MessageHolder;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.LearnerMessage;
 import org.neo4j.cluster.statemachine.State;
 
@@ -42,7 +42,7 @@ public enum HeartbeatState
                 @Override
                 public HeartbeatState handle( HeartbeatContext context,
                                               Message<HeartbeatMessage> message,
-                                              MessageProcessor outgoing
+                                              MessageHolder outgoing
                 )
                         throws Throwable
                 {
@@ -77,7 +77,7 @@ public enum HeartbeatState
                 @Override
                 public HeartbeatState handle( HeartbeatContext context,
                                               Message<HeartbeatMessage> message,
-                                              MessageProcessor outgoing
+                                              MessageHolder outgoing
                 )
                         throws Throwable
                 {

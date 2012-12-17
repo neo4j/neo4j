@@ -24,6 +24,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 
 import org.neo4j.cluster.com.message.Message;
+import org.neo4j.cluster.com.message.MessageHolder;
 import org.neo4j.cluster.com.message.MessageProcessor;
 import org.neo4j.cluster.com.message.MessageType;
 
@@ -31,12 +32,11 @@ import org.neo4j.cluster.com.message.MessageType;
  * When a message is sent out, reset the timeout for sending heartbeat to the TO host, since we only have to send i_am_alive if
  * nothing else is going on.
  */
-public class HeartbeatRefreshProcessor
-    implements MessageProcessor
+public class HeartbeatRefreshProcessor implements MessageProcessor
 {
-    private MessageProcessor outgoing;
+    private MessageHolder outgoing;
 
-    public HeartbeatRefreshProcessor(MessageProcessor outgoing )
+    public HeartbeatRefreshProcessor( MessageHolder outgoing )
     {
         this.outgoing = outgoing;
     }
@@ -44,7 +44,8 @@ public class HeartbeatRefreshProcessor
     @Override
     public void process( Message<? extends MessageType> message )
     {
-        if (!message.isInternal() && !message.isBroadcast() && !message.getMessageType().equals( HeartbeatMessage.i_am_alive ))
+        if ( !message.isInternal() && !message.isBroadcast() &&
+                !message.getMessageType().equals( HeartbeatMessage.i_am_alive ) )
         {
             try
             {

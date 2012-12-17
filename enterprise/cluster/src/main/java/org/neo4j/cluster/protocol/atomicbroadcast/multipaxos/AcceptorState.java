@@ -21,7 +21,7 @@
 package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos;
 
 import org.neo4j.cluster.com.message.Message;
-import org.neo4j.cluster.com.message.MessageProcessor;
+import org.neo4j.cluster.com.message.MessageHolder;
 import org.neo4j.cluster.statemachine.State;
 
 /**
@@ -35,7 +35,7 @@ public enum AcceptorState
                 @Override
                 public AcceptorState handle( AcceptorContext context,
                                              Message<AcceptorMessage> message,
-                                             MessageProcessor outgoing
+                                             MessageHolder outgoing
                 )
                         throws Throwable
                 {
@@ -56,7 +56,7 @@ public enum AcceptorState
                 @Override
                 public AcceptorState handle( AcceptorContext context,
                                              Message<AcceptorMessage> message,
-                                             MessageProcessor outgoing
+                                             MessageHolder outgoing
                 )
                         throws Throwable
                 {

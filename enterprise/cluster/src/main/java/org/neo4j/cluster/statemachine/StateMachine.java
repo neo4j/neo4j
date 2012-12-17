@@ -24,7 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.cluster.com.message.Message;
-import org.neo4j.cluster.com.message.MessageProcessor;
+import org.neo4j.cluster.com.message.MessageHolder;
 import org.neo4j.cluster.com.message.MessageType;
 
 /**
@@ -77,7 +77,7 @@ public class StateMachine
         listeners = newlisteners;
     }
 
-    public synchronized void handle( Message<? extends MessageType> message, MessageProcessor outgoing )
+    public synchronized void handle( Message<? extends MessageType> message, MessageHolder outgoing )
     {
         try
         {
