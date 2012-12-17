@@ -66,8 +66,6 @@ import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeStore;
 import org.neo4j.kernel.impl.nioneo.xa.Command.PropertyCommand;
 import org.neo4j.kernel.impl.persistence.NeoStoreTransaction;
-import org.neo4j.kernel.impl.transaction.LockManager;
-import org.neo4j.kernel.impl.transaction.LockType;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
 import org.neo4j.kernel.impl.transaction.xaframework.XaConnection;
 import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
@@ -101,16 +99,14 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
     private boolean prepared = false;
 
     private final TransactionState state;
-    private final LockManager lockManager;
     private XaConnection xaConnection;
 
     WriteTransaction( int identifier, XaLogicalLog log, NeoStore neoStore,
-            TransactionState state, LockManager lockManager )
+            TransactionState state )
     {
         super( identifier, log );
         this.neoStore = neoStore;
         this.state = state;
-        this.lockManager = lockManager;
     }
 
     @Override
@@ -869,8 +865,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
 
     private void getWriteLock( Relationship lockableRel )
     {
-        lockManager.getWriteLock( lockableRel );
-        state.addLockToTransaction( lockManager, lockableRel, LockType.WRITE );
+        state.acquireWriteLock( lockableRel );
     }
 
     public long getRelationshipChainPosition( long nodeId )

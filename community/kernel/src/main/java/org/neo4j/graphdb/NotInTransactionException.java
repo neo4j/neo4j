@@ -46,9 +46,4 @@ public class NotInTransactionException extends RuntimeException
     {
         super( message, cause );
     }
-
-    public NotInTransactionException( Throwable cause )
-    {
-        super( cause );
-    }
 }

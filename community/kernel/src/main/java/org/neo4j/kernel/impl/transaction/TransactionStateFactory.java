@@ -19,39 +19,49 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
+import javax.transaction.Transaction;
+
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.PropertyIndexManager;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.core.WritableTransactionState;
+import org.neo4j.kernel.logging.Logging;
 
 public class TransactionStateFactory
 {
     private LockManager lockManager;
     private PropertyIndexManager propertyIndexManager;
     private NodeManager nodeManager;
-    private AbstractTransactionManager transactionManager;
+    private final Logging logging;
+    
+    public TransactionStateFactory( Logging logging )
+    {
+        this.logging = logging;
+    }
     
     public void setDependencies( LockManager lockManager, PropertyIndexManager propertyIndexManager,
-            NodeManager nodeManager, AbstractTransactionManager transactionManager )
+            NodeManager nodeManager )
     {
         this.lockManager = lockManager;
         this.propertyIndexManager = propertyIndexManager;
         this.nodeManager = nodeManager;
-        this.transactionManager = transactionManager;
     }
     
-    public TransactionState create()
+    public TransactionState create( Transaction tx )
     {
         return new WritableTransactionState( lockManager, propertyIndexManager, nodeManager,
-                transactionManager );
+                logging, tx );
     }
     
-    public static final TransactionStateFactory NO_STATE_FACTORY = new TransactionStateFactory()
+    public static TransactionStateFactory noStateFactory( Logging logging )
     {
-        @Override
-        public TransactionState create()
+        return new TransactionStateFactory( logging )
         {
-            return TransactionState.NO_STATE;
-        }
-    };
+            @Override
+            public TransactionState create( Transaction tx )
+            {
+                return TransactionState.NO_STATE;
+            }
+        };
+    }
 }

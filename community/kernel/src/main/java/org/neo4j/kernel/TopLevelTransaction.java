@@ -28,10 +28,8 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.kernel.impl.core.TransactionState;
-import org.neo4j.kernel.impl.core.WritableTransactionState.LockElement;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.transaction.LockManager;
-import org.neo4j.kernel.impl.transaction.LockType;
 
 public class TopLevelTransaction implements Transaction
 {
@@ -156,16 +154,12 @@ public class TopLevelTransaction implements Transaction
     @Override
     public Lock acquireWriteLock( PropertyContainer entity )
     {
-        lockManager.getWriteLock( entity );
-        LockElement lockElement = state.addLockToTransaction( lockManager, entity, LockType.WRITE );
-        return new LockImpl( lockManager, lockElement );
+        return state.acquireWriteLock( entity );
     }
 
     @Override
     public Lock acquireReadLock( PropertyContainer entity )
     {
-        lockManager.getReadLock( entity );
-        LockElement lockElement = state.addLockToTransaction( lockManager, entity, LockType.READ );
-        return new LockImpl( lockManager, lockElement );
+        return state.acquireReadLock( entity );
     }
 }

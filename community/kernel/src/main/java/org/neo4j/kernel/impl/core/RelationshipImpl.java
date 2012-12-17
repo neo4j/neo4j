@@ -24,8 +24,6 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.kernel.impl.core.WritableTransactionState.CowEntityElement;
 import org.neo4j.kernel.impl.core.WritableTransactionState.PrimitiveElement;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
-import org.neo4j.kernel.impl.transaction.LockException;
-import org.neo4j.kernel.impl.transaction.LockType;
 import org.neo4j.kernel.impl.util.ArrayMap;
 
 public class RelationshipImpl extends ArrayBasedPrimitive
@@ -116,31 +114,25 @@ public class RelationshipImpl extends ArrayBasedPrimitive
     {
         NodeImpl startNode = null;
         NodeImpl endNode = null;
-        boolean startNodeLocked = false;
-        boolean endNodeLocked = false;
-        boolean thisLocked = false;
         boolean success = false;
         TransactionState tx = null;
         try
         {
+            tx = nodeManager.getTransactionState();
             startNode = nodeManager.getLightNode( getStartNodeId() );
             if ( startNode != null )
             {
-                nodeManager.acquireLock( startNode, LockType.WRITE );
-                startNodeLocked = true;
+                tx.acquireWriteLock( nodeManager.newNodeProxyById( getStartNodeId() ) );
             }
             endNode = nodeManager.getLightNode( getEndNodeId() );
             if ( endNode != null )
             {
-                nodeManager.acquireLock( endNode, LockType.WRITE );
-                endNodeLocked = true;
+                tx.acquireWriteLock( nodeManager.newNodeProxyById( getEndNodeId() ) );
             }
-            nodeManager.acquireLock( proxy, LockType.WRITE );
-            thisLocked = true;
+            tx.acquireWriteLock( proxy );
             // no need to load full relationship, all properties will be
             // deleted when relationship is deleted
 
-            tx = nodeManager.getTransactionState();
             ArrayMap<Integer,PropertyData> skipMap =
                 tx.getOrCreateCowPropertyRemoveMap( this );
             ArrayMap<Integer,PropertyData> removedProps =
@@ -167,52 +159,9 @@ public class RelationshipImpl extends ArrayBasedPrimitive
         }
         finally
         {
-            boolean releaseFailed = false;
-            try
-            {
-                if ( thisLocked )
-                {
-                    nodeManager.releaseLock( proxy, LockType.WRITE, tx );
-                }
-            }
-            catch ( Exception e )
-            {
-                releaseFailed = true;
-                e.printStackTrace();
-            }
-            try
-            {
-                if ( startNodeLocked )
-                {
-                    nodeManager.releaseLock( startNode, LockType.WRITE, tx );
-                }
-            }
-            catch ( Exception e )
-            {
-                releaseFailed = true;
-                e.printStackTrace();
-            }
-            try
-            {
-                if ( endNodeLocked )
-                {
-                    nodeManager.releaseLock( endNode, LockType.WRITE, tx );
-                }
-            }
-            catch ( Exception e )
-            {
-                releaseFailed = true;
-                e.printStackTrace();
-            }
             if ( !success )
             {
                 nodeManager.setRollbackOnly();
-            }
-            if ( releaseFailed )
-            {
-                throw new LockException( "Unable to release locks ["
-                    + startNode + "," + endNode + "] in relationship delete->"
-                    + this );
             }
         }
     }

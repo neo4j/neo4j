@@ -38,17 +38,19 @@ import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.XaFactory;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.kernel.logging.Logging;
 
 public class LuceneKernelExtension extends LifecycleAdapter
 {
-    private Config config;
-    private GraphDatabaseService gdb;
-    private TransactionManager txManager;
-    private IndexStore indexStore;
-    private XaFactory xaFactory;
-    private FileSystemAbstraction fileSystemAbstraction;
-    private XaDataSourceManager xaDataSourceManager;
-    private IndexProviders indexProviders;
+    private final Config config;
+    private final GraphDatabaseService gdb;
+    private final TransactionManager txManager;
+    private final IndexStore indexStore;
+    private final XaFactory xaFactory;
+    private final FileSystemAbstraction fileSystemAbstraction;
+    private final XaDataSourceManager xaDataSourceManager;
+    private final IndexProviders indexProviders;
+    private final Logging logging;
 
 
     public static abstract class Configuration
@@ -59,7 +61,8 @@ public class LuceneKernelExtension extends LifecycleAdapter
     public LuceneKernelExtension( Config config, GraphDatabaseService gdb, TransactionManager txManager,
                                   IndexStore indexStore, XaFactory xaFactory,
                                   FileSystemAbstraction fileSystemAbstraction,
-                                  XaDataSourceManager xaDataSourceManager, IndexProviders indexProviders )
+                                  XaDataSourceManager xaDataSourceManager, IndexProviders indexProviders,
+                                  Logging logging )
     {
         this.config = config;
         this.gdb = gdb;
@@ -69,13 +72,14 @@ public class LuceneKernelExtension extends LifecycleAdapter
         this.fileSystemAbstraction = fileSystemAbstraction;
         this.xaDataSourceManager = xaDataSourceManager;
         this.indexProviders = indexProviders;
+        this.logging = logging;
     }
 
     @Override
     public void start() throws Throwable
     {
         LuceneDataSource luceneDataSource = new LuceneDataSource( config, indexStore, fileSystemAbstraction,
-                xaFactory );
+                xaFactory, logging );
 
         xaDataSourceManager.registerDataSource( luceneDataSource );
 

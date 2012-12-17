@@ -102,7 +102,6 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
         NeoStoreXaDataSource.class.getName() );
 
     private StoreFactory storeFactory;
-    private DependencyResolver dependencyResolver;
     private XaFactory xaFactory;
 
     private Config config;
@@ -217,7 +216,6 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
         this.lockManager = lockManager;
         msgLog = stringLogger;
         this.storeFactory = sf;
-        this.dependencyResolver = dependencyResolver;
         this.xaFactory = xaFactory;
     }
 
@@ -377,7 +375,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
         public XaTransaction create( int identifier, TransactionState state )
         {
             return new WriteTransaction( identifier, getLogicalLog(), neoStore,
-                state, lockManager );
+                state );
         }
 
         @Override

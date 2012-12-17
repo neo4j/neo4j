@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.transaction;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
-import static org.neo4j.kernel.impl.transaction.TransactionStateFactory.NO_STATE_FACTORY;
 
 import java.io.File;
 import java.io.FilenameFilter;
@@ -249,7 +248,7 @@ public class TestXaFramework extends AbstractNeo4jTestCase
                 map.put( "store_dir", path().getPath() );
                 xaContainer = xaFactory.newXaContainer( this, resourceFile(),
                         new DummyCommandFactory(),
-                        new DummyTransactionFactory(), NO_STATE_FACTORY, new TransactionInterceptorProviders(
+                        new DummyTransactionFactory(), TransactionStateFactory.noStateFactory( new DevNullLoggingService() ), new TransactionInterceptorProviders(
                         Iterables.<TransactionInterceptorProvider>empty(),
                         new DependencyResolver()
                         {
@@ -391,7 +390,7 @@ public class TestXaFramework extends AbstractNeo4jTestCase
         xaDsMgr.registerDataSource( new DummyXaDataSource(
                 config, UTF8.encode( "DDDDDD" ), "dummy_datasource",
                 new XaFactory( new Config( config, GraphDatabaseSettings.class ),
-                        TxIdGenerator.DEFAULT, new PlaceboTm(), new DefaultLogBufferFactory(),
+                        TxIdGenerator.DEFAULT, new PlaceboTm( null ), new DefaultLogBufferFactory(),
                         fileSystem, new DevNullLoggingService(),
                         RecoveryVerifier.ALWAYS_VALID, LogPruneStrategies.NO_PRUNING ) ) );
         XaDataSource xaDs = xaDsMgr.getXaDataSource( "dummy_datasource" );
@@ -458,7 +457,7 @@ public class TestXaFramework extends AbstractNeo4jTestCase
             FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
             xaDsMgr.registerDataSource( new DummyXaDataSource( config, UTF8.encode( "DDDDDD" ), "dummy_datasource1",
                     new XaFactory( new Config( config, GraphDatabaseSettings.class ), TxIdGenerator.DEFAULT,
-                            new PlaceboTm(), new DefaultLogBufferFactory(), fileSystem, new DevNullLoggingService(),
+                            new PlaceboTm( null ), new DefaultLogBufferFactory(), fileSystem, new DevNullLoggingService(),
                             RecoveryVerifier.ALWAYS_VALID, LogPruneStrategies.NO_PRUNING ) ) );
             xaDs1 = (DummyXaDataSource) xaDsMgr
                     .getXaDataSource( "dummy_datasource1" );

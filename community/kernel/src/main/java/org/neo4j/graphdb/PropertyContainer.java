@@ -19,6 +19,7 @@
  */
 package org.neo4j.graphdb;
 
+
 /**
  * Defines a common API for handling properties on both {@link Node nodes} and
  * {@link Relationship relationships}.

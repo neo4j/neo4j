@@ -23,7 +23,6 @@ package org.neo4j.kernel.impl.nioneo.store;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.kernel.impl.transaction.TransactionStateFactory.NO_STATE_FACTORY;
 
 import java.io.File;
 import java.io.IOException;
@@ -64,6 +63,7 @@ import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaConnection;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.PlaceboTm;
+import org.neo4j.kernel.impl.transaction.TransactionStateFactory;
 import org.neo4j.kernel.impl.transaction.XidImpl;
 import org.neo4j.kernel.impl.transaction.xaframework.DefaultLogBufferFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.LogPruneStrategies;
@@ -171,9 +171,10 @@ public class TestNeoStore extends AbstractNeo4jTestCase
                 fileSystem, StringLogger.DEV_NULL, null );
 
         ds = new NeoStoreXaDataSource(config, sf, lockManager, StringLogger.DEV_NULL,
-                new XaFactory(config, TxIdGenerator.DEFAULT, new PlaceboTm(),
+                new XaFactory(config, TxIdGenerator.DEFAULT, new PlaceboTm(lockManager),
                         new DefaultLogBufferFactory(), fileSystem, new DevNullLoggingService(), RecoveryVerifier.ALWAYS_VALID,
-                        LogPruneStrategies.NO_PRUNING ), NO_STATE_FACTORY, new TransactionInterceptorProviders( Collections.<TransactionInterceptorProvider>emptyList(), new DependencyResolver()
+                        LogPruneStrategies.NO_PRUNING ), TransactionStateFactory.noStateFactory( new DevNullLoggingService() ),
+                        new TransactionInterceptorProviders( Collections.<TransactionInterceptorProvider>emptyList(), new DependencyResolver()
 
         {
             @Override

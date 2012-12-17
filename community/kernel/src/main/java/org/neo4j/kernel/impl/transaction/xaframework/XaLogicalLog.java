@@ -456,7 +456,7 @@ public class XaLogicalLog implements LogLoader
         // re-create the transaction
         Xid xid = entry.getXid();
         xidIdentMap.put( identifier, entry );
-        XaTransaction xaTx = xaTf.create( identifier, stateFactory.create() );
+        XaTransaction xaTx = xaTf.create( identifier, stateFactory.create( null ) );
         xaTx.setRecovered();
         recoveredTxMap.put( identifier, xaTx );
         xaRm.injectStart( xid, xaTx );

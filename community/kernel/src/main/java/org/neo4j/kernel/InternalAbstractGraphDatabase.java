@@ -340,7 +340,7 @@ public abstract class InternalAbstractGraphDatabase
 
         guard = config.get( Configuration.execution_guard_enabled ) ? new Guard( msgLog ) : null;
 
-        stateFactory = new TransactionStateFactory();
+        stateFactory = new TransactionStateFactory( logging );
 
         if ( readOnly )
         {
@@ -401,7 +401,7 @@ public abstract class InternalAbstractGraphDatabase
                 createNodeManager( readOnly, cacheProvider, nodeCache, relCache );
 
         life.add( nodeManager );
-        stateFactory.setDependencies( lockManager, propertyIndexManager, nodeManager, txManager );
+        stateFactory.setDependencies( lockManager, propertyIndexManager, nodeManager );
 
         indexStore = new IndexStore( this.storeDir, fileSystem );
 
@@ -482,12 +482,12 @@ public abstract class InternalAbstractGraphDatabase
     {
         if ( readOnly )
         {
-            return new ReadOnlyNodeManager( config, this, lockManager, txManager, persistenceManager,
+            return new ReadOnlyNodeManager( config, this, txManager, persistenceManager,
                     persistenceSource, relationshipTypeHolder, cacheType, propertyIndexManager, createNodeLookup(),
                     createRelationshipLookups(), nodeCache, relCache, xaDataSourceManager );
         }
 
-        return new NodeManager( config, this, lockManager, txManager, persistenceManager,
+        return new NodeManager( config, this, txManager, persistenceManager,
                 persistenceSource, relationshipTypeHolder, cacheType, propertyIndexManager, createNodeLookup(),
                 createRelationshipLookups(), nodeCache, relCache, xaDataSourceManager );
     }
@@ -497,7 +497,7 @@ public abstract class InternalAbstractGraphDatabase
     {
         if ( readOnly )
         {
-            return new ReadOnlyNodeManager( config, this, lockManager, txManager, persistenceManager,
+            return new ReadOnlyNodeManager( config, this, txManager, persistenceManager,
                     persistenceSource, relationshipTypeHolder, cacheType, propertyIndexManager, createNodeLookup(),
                     createRelationshipLookups(), nodeCache, relCache, xaDataSourceManager )
             {
@@ -546,7 +546,7 @@ public abstract class InternalAbstractGraphDatabase
             };
         }
 
-        return new NodeManager( config, this, lockManager, txManager, persistenceManager,
+        return new NodeManager( config, this, txManager, persistenceManager,
                 persistenceSource, relationshipTypeHolder, cacheType, propertyIndexManager, createNodeLookup(),
                 createRelationshipLookups(), nodeCache, relCache, xaDataSourceManager )
         {
@@ -1230,6 +1230,10 @@ public abstract class InternalAbstractGraphDatabase
             else if ( StringLogger.class.isAssignableFrom( type ) )
             {
                 return (T) msgLog;
+            }
+            else if ( Logging.class.isAssignableFrom( type ) )
+            {
+                return (T) logging;
             }
             else if ( IndexStore.class.isAssignableFrom( type ) )
             {

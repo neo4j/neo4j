@@ -53,7 +53,7 @@ public class TestUpgradeOneDotFourToFiveIT
 //        config.put( LogBufferFactory.class, CommonFactories.defaultLogBufferFactory() );
         
         XaLogicalLog log = new XaLogicalLog( resourceFile(), null, null, null, defaultLogBufferFactory(), defaultFileSystemAbstraction(), new DevNullLoggingService(),
-                LogPruneStrategies.NO_PRUNING, TransactionStateFactory.NO_STATE_FACTORY );
+                LogPruneStrategies.NO_PRUNING, TransactionStateFactory.noStateFactory( new DevNullLoggingService() ) );
         log.open();
         fail( "Shouldn't be able to start" );
     }

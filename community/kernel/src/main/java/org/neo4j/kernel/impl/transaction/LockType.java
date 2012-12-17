@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.transaction;
 
 import javax.transaction.Transaction;
 
+import org.neo4j.kernel.impl.core.LockElement;
 import org.neo4j.kernel.impl.core.TransactionState;
 
 /**
@@ -31,19 +32,13 @@ public enum LockType
     READ
     {
         @Override
-        public void acquire( Object resource, LockManager lockManager, Transaction tx )
+        public LockElement acquire( TransactionState state, Object resource )
         {
-            lockManager.getReadLock( resource, tx );
+            return state.acquireReadLock( resource );
         }
-
+        
         @Override
-        public void unacquire( Object resource, LockManager lockManager, TransactionState state, Transaction tx )
-        {
-            lockManager.releaseReadLock( resource, tx );
-        }
-
-        @Override
-        public void release( Object resource, LockManager lockManager, Transaction tx )
+        public void release( LockManager lockManager, Object resource, Transaction tx )
         {
             lockManager.releaseReadLock( resource, tx );
         }
@@ -51,47 +46,19 @@ public enum LockType
     WRITE
     {
         @Override
-        public void acquire( Object resource, LockManager lockManager, Transaction tx )
+        public LockElement acquire( TransactionState state, Object resource )
         {
-            lockManager.getWriteLock( resource, tx );
+            return state.acquireWriteLock( resource );
         }
-
+        
         @Override
-        public void unacquire( Object resource, LockManager lockManager, TransactionState state, Transaction tx )
-        {
-            state.addLockToTransaction( lockManager, resource, this );
-        }
-
-        @Override
-        public void release( Object resource, LockManager lockManager, Transaction tx )
+        public void release( LockManager lockManager, Object resource, Transaction tx )
         {
             lockManager.releaseWriteLock( resource, tx );
         }
     };
     
-    public abstract void acquire( Object resource, LockManager lockManager, Transaction tx );
-
-    public abstract void unacquire( Object resource, LockManager lockManager, TransactionState state, Transaction tx );
+    public abstract LockElement acquire( TransactionState state, Object resource );
     
-    public abstract void release( Object resource, LockManager lockManager, Transaction tx );
-    
-    // Below methods are shortcuts, passing Transaction as null.
-    // They expect code further down the stack to pick up the current
-    // transaction from the transaction manager.
-    // TODO: Perhaps we can figure out the current TX here directly instead?
-    
-    public void acquire( Object resource, LockManager lockManager)
-    {
-        acquire( resource, lockManager, null);
-    }
-    
-    public void unacquire( Object resource, LockManager lockManager, TransactionState state )
-    {
-        unacquire( resource, lockManager, state, null);
-    }
-    
-    public void release( Object resource, LockManager lockManager ) 
-    {
-        release( resource, lockManager, null);
-    }
+    public abstract void release( LockManager lockManager, Object resource, Transaction tx );
 }

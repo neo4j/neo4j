@@ -27,10 +27,24 @@ import javax.transaction.RollbackException;
 import javax.transaction.SystemException;
 import javax.transaction.Transaction;
 
+import org.neo4j.kernel.impl.core.LockElement;
+import org.neo4j.kernel.impl.core.NoTransactionState;
 import org.neo4j.kernel.impl.core.TransactionState;
 
 public class PlaceboTm extends AbstractTransactionManager
 {
+    private LockManager lockManager;
+
+    public PlaceboTm( LockManager lockManager )
+    {
+        this.lockManager = lockManager;
+    }
+    
+    public void setLockManager( LockManager lockManager )
+    {
+        this.lockManager = lockManager;
+    }
+    
     public void begin() throws NotSupportedException, SystemException
     {
         // TODO Auto-generated method stub
@@ -129,6 +143,21 @@ public class PlaceboTm extends AbstractTransactionManager
     @Override
     public TransactionState getTransactionState()
     {
-        return TransactionState.NO_STATE;
+        return new NoTransactionState()
+        {
+            @Override
+            public LockElement acquireReadLock( Object resource )
+            {
+                lockManager.getReadLock( resource );
+                return new LockElement( resource, LockType.READ, lockManager );
+            }
+            
+            @Override
+            public LockElement acquireWriteLock( Object resource )
+            {
+                lockManager.getWriteLock( resource );
+                return new LockElement( resource, LockType.WRITE, lockManager );
+            }
+        };
     }
 }

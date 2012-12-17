@@ -54,7 +54,8 @@ public class TestOperationsOnDeletedPrimitive
     private NodeManager mockTheNodeManager()
     {
         NodeManager mock = mock( NodeManager.class );
-        when( mock.getTransactionState() ).thenReturn( TransactionState.NO_STATE );
+        TransactionState transactionState = mock( TransactionState.class );
+        when( mock.getTransactionState() ).thenReturn( transactionState );
         return mock;
     }
     

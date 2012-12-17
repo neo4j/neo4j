@@ -23,7 +23,6 @@ package org.neo4j.kernel.impl.nioneo.store;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME;
-import static org.neo4j.kernel.impl.transaction.TransactionStateFactory.NO_STATE_FACTORY;
 
 import java.io.File;
 import java.io.IOException;
@@ -63,6 +62,7 @@ import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaConnection;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.PlaceboTm;
+import org.neo4j.kernel.impl.transaction.TransactionStateFactory;
 import org.neo4j.kernel.impl.transaction.XidImpl;
 import org.neo4j.kernel.impl.transaction.xaframework.DefaultLogBufferFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBufferFactory;
@@ -437,7 +437,7 @@ public class TestXa extends AbstractNeo4jTestCase
         StoreFactory sf = new StoreFactory( config, new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(),
                 fileSystem, StringLogger.DEV_NULL, null );
 
-        PlaceboTm txManager = new PlaceboTm();
+        PlaceboTm txManager = new PlaceboTm( lockManager );
         LogBufferFactory logBufferFactory = new DefaultLogBufferFactory();
 
         // Since these tests fiddle with copying logical logs and such themselves
@@ -454,7 +454,7 @@ public class TestXa extends AbstractNeo4jTestCase
                 StringLogger.DEV_NULL,
                 new XaFactory( config, TxIdGenerator.DEFAULT, txManager,
                         logBufferFactory, fileSystem, new DevNullLoggingService(), RecoveryVerifier.ALWAYS_VALID,
-                        LogPruneStrategies.NO_PRUNING ), NO_STATE_FACTORY,
+                        LogPruneStrategies.NO_PRUNING ), TransactionStateFactory.noStateFactory( new DevNullLoggingService() ),
                         new TransactionInterceptorProviders( Collections.<TransactionInterceptorProvider>emptyList(),
                         new DependencyResolver()
 

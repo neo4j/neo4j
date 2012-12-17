@@ -95,6 +95,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
 import org.neo4j.kernel.impl.transaction.xaframework.XaTransaction;
 import org.neo4j.kernel.impl.transaction.xaframework.XaTransactionFactory;
+import org.neo4j.kernel.logging.Logging;
 
 /**
  * An {@link XaDataSource} optimized for the {@link LuceneIndexImplementation}.
@@ -177,20 +178,23 @@ public class LuceneDataSource extends LogBackedXaDataSource
 
     // Used for assertion after recovery has been completed.
     private final Set<IndexIdentifier> expectedFutureRecoveryDeletions = new HashSet<IndexIdentifier>();
+    private final Logging logging;
 
     /**
      * Constructs this data source.
+     * @param logging 
      *
      * @throws InstantiationException if the data source couldn't be
      *                                instantiated
      */
     public LuceneDataSource( Config config, IndexStore indexStore, FileSystemAbstraction fileSystemAbstraction,
-                             XaFactory xaFactory )
+                             XaFactory xaFactory, Logging logging )
     {
         super( DEFAULT_BRANCH_ID, DEFAULT_NAME );
         this.config = config;
         this.indexStore = indexStore;
         this.xaFactory = xaFactory;
+        this.logging = logging;
         this.typeCache = new IndexTypeCache( indexStore );
         this.fileSystemAbstraction = fileSystemAbstraction;
     }
@@ -257,7 +261,7 @@ public class LuceneDataSource extends LogBackedXaDataSource
             }
         };
         xaContainer = xaFactory.newXaContainer( this, new File( this.baseStorePath, "lucene.log"), cf, tf,
-                TransactionStateFactory.NO_STATE_FACTORY, new TransactionInterceptorProviders( new HashSet<TransactionInterceptorProvider>(), dummy ) );
+                TransactionStateFactory.noStateFactory( null ), new TransactionInterceptorProviders( new HashSet<TransactionInterceptorProvider>(), dummy ) );
         closed = false;
         if ( !isReadOnly )
         {

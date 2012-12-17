@@ -43,6 +43,7 @@ import org.neo4j.kernel.impl.index.ReadOnlyIndexConnectionBroker;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.XaFactory;
+import org.neo4j.kernel.logging.Logging;
 
 public class LuceneIndexProvider extends IndexProvider
 {
@@ -68,8 +69,9 @@ public class LuceneIndexProvider extends IndexProvider
         XaFactory xaFactory = dependencyResolver.resolveDependency(XaFactory.class);
         FileSystemAbstraction fileSystemAbstraction = dependencyResolver.resolveDependency(FileSystemAbstraction.class);
         XaDataSourceManager xaDataSourceManager = dependencyResolver.resolveDependency( XaDataSourceManager.class );
+        Logging logging = dependencyResolver.resolveDependency( Logging.class );
 
-        LuceneDataSource luceneDataSource = new LuceneDataSource(config, indexStore, fileSystemAbstraction, xaFactory);
+        LuceneDataSource luceneDataSource = new LuceneDataSource(config, indexStore, fileSystemAbstraction, xaFactory, logging);
 
         xaDataSourceManager.registerDataSource(luceneDataSource);
 

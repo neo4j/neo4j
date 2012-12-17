@@ -72,12 +72,12 @@ class TransactionImpl implements Transaction
     private final ForceMode forceMode;
     private Thread owner;
 
-    private TransactionState state;
+    private final TransactionState state;
 
-    TransactionImpl( TxManager txManager, ForceMode forceMode, TransactionState state )
+    TransactionImpl( TxManager txManager, ForceMode forceMode, TransactionStateFactory stateFactory )
     {
         this.txManager = txManager;
-        this.state = state;
+        this.state = stateFactory.create( this );
         globalId = XidImpl.getNewGlobalId();
         eventIdentifier = txManager.getNextEventIdentifier();
         this.forceMode = forceMode;

@@ -132,7 +132,7 @@ public class JOTMTransactionManager extends AbstractTransactionManager
     {
         current.begin();
         Transaction tx = getTransaction();
-        states.put( tx, stateFactory.create() );
+        states.put( tx, stateFactory.create( tx ) );
     }
 
     @Override

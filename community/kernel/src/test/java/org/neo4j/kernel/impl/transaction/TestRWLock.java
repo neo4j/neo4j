@@ -31,13 +31,22 @@ import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 
+import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.impl.transaction.LockWorker.ResourceObject;
 
 public class TestRWLock
 {
-    private LockManagerImpl lm = new LockManagerImpl( new RagManager(new PlaceboTm()) );
+    private LockManagerImpl lm;
+    
+    @Before
+    public void before() throws Exception
+    {
+        PlaceboTm tm = new PlaceboTm( null );
+        lm = new LockManagerImpl( new RagManager( tm ) );
+        tm.setLockManager( lm );
+    }
 
     @Test
     public void testSingleThread() throws Exception

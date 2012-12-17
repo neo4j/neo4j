@@ -314,7 +314,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
             throw logAndReturn( "TM error tx begin", new NotSupportedException(
                     "Nested transactions not supported" ) );
         }
-        tx = new TransactionImpl( this, forceMode, stateFactory.create() );
+        tx = new TransactionImpl( this, forceMode, stateFactory );
         txThreadMap.set( tx );
         int concurrentTxCount = txThreadMap.size();
         if ( concurrentTxCount > peakConcurrentTransactions )
