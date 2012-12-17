@@ -87,7 +87,7 @@ public enum LearnerState
                             if ( instanceId.getId() == context.learnerContext.getLastDeliveredInstanceId() + 1 )
                             {
                                 instance.delivered();
-                                outgoing.process( Message.internal( AtomicBroadcastMessage.broadcastResponse,
+                                outgoing.offer( Message.internal( AtomicBroadcastMessage.broadcastResponse,
                                         learnState.getValue() ) );
                                 context.learnerContext.setLastDeliveredInstanceId( instanceId.getId() );
 
@@ -101,7 +101,7 @@ public enum LearnerState
                                             AtomicBroadcastMessage.broadcastResponse, instance.value_2 )
                                             .setHeader( InstanceId.INSTANCE, instance.id.toString() )
                                             .setHeader( Message.CONVERSATION_ID, instance.conversationIdHeader );
-                                    outgoing.process( learnMessage );
+                                    outgoing.offer( learnMessage );
 
                                     checkInstanceId++;
                                 }
@@ -151,7 +151,7 @@ public enum LearnerState
                                         {
                                             if ( !node.equals( context.clusterContext.getMe() ) )
                                             {
-                                                outgoing.process( Message.to( LearnerMessage.learnRequest, node,
+                                                outgoing.offer( Message.to( LearnerMessage.learnRequest, node,
                                                         new LearnerMessage.LearnRequestState() ).setHeader(
                                                         InstanceId.INSTANCE,
                                                         id.toString() ) );
@@ -177,7 +177,7 @@ public enum LearnerState
                             if ( instance.isState( PaxosInstance.State.closed ) || instance.isState( PaxosInstance
                                     .State.delivered ) )
                             {
-                                outgoing.process( Message.respond( LearnerMessage.learn, message,
+                                outgoing.offer( Message.respond( LearnerMessage.learn, message,
                                         new LearnerMessage.LearnState( instance.value_2 ) ).setHeader( InstanceId
                                         .INSTANCE,
                                         instanceId.toString() ) );
@@ -188,7 +188,7 @@ public enum LearnerState
                                         "value for" +
                                         " " +
                                         "instance " + instanceId );
-                                outgoing.process( message.copyHeadersTo( Message.respond( LearnerMessage.learnFailed,
+                                outgoing.offer( message.copyHeadersTo( Message.respond( LearnerMessage.learnFailed,
                                         message,
                                         new LearnerMessage.LearnFailedState() ), InstanceId.INSTANCE ) );
                             }
@@ -209,7 +209,7 @@ public enum LearnerState
                                 URI learnerNode = context.clusterContext.getConfiguration().getMembers().get(
                                         nextPotentialLearnerIndex );
 
-                                outgoing.process( message.copyHeadersTo( Message.to( LearnerMessage.learnRequest,
+                                outgoing.offer( message.copyHeadersTo( Message.to( LearnerMessage.learnRequest,
                                         learnerNode,
                                         new LearnerMessage.LearnRequestState() ), InstanceId.INSTANCE ) );
                             }
@@ -238,7 +238,7 @@ public enum LearnerState
                                         {
                                             if ( !node.equals( context.clusterContext.getMe() ) )
                                             {
-                                                outgoing.process( Message.to( LearnerMessage.learnRequest, node,
+                                                outgoing.offer( Message.to( LearnerMessage.learnRequest, node,
                                                         new LearnerMessage.LearnRequestState() ).setHeader(
                                                         InstanceId.INSTANCE,
                                                         id.toString() ) );

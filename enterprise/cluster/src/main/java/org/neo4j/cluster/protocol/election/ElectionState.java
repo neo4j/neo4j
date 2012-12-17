@@ -131,7 +131,7 @@ public enum ElectionState
                                                 if ( !context.getHeartbeatContext().getFailed().contains( uri ) )
                                                 {
                                                     // This is a candidate - allow it to vote itself for promotion
-                                                    outgoing.process( Message.to( ElectionMessage.vote, uri, role ) );
+                                                    outgoing.offer( Message.to( ElectionMessage.vote, uri, role ) );
                                                     voterCount++;
                                                 }
                                             }
@@ -172,7 +172,7 @@ public enum ElectionState
                                         if ( !context.getHeartbeatContext().getFailed().contains( uri ) )
                                         {
                                             // This is a candidate - allow it to vote itself for promotion
-                                            outgoing.process( Message.to( ElectionMessage.vote, uri, role ) );
+                                            outgoing.offer( Message.to( ElectionMessage.vote, uri, role ) );
                                         }
                                     }
                                     context.getClusterContext()
@@ -187,7 +187,7 @@ public enum ElectionState
                         case vote:
                         {
                             String role = message.getPayload();
-                            outgoing.process( Message.respond( ElectionMessage.voted, message,
+                            outgoing.offer( Message.respond( ElectionMessage.voted, message,
                                     new ElectionMessage.VotedData( role, context
                                             .getCredentialsForRole( role ) ) ) );
                             break;
@@ -214,7 +214,7 @@ public enum ElectionState
                                     ClusterMessage.ConfigurationChangeState configurationChangeState = new
                                             ClusterMessage.ConfigurationChangeState();
                                     configurationChangeState.elected( data.getRole(), winner );
-                                    outgoing.process( Message.internal( ProposerMessage.propose,
+                                    outgoing.offer( Message.internal( ProposerMessage.propose,
                                             configurationChangeState ) );
                                 }
                                 else

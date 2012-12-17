@@ -41,6 +41,6 @@ public class HeartbeatJoinListener extends ClusterListener.Adapter
     @Override
     public void joinedCluster( URI member )
     {
-        outgoing.process( Message.internal( HeartbeatMessage.reset_send_heartbeat, member ) );
+        outgoing.offer( Message.internal( HeartbeatMessage.reset_send_heartbeat, member ) );
     }
 }

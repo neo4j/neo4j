@@ -79,7 +79,7 @@ public enum ClusterState
                         case join:
                         {
                             URI clusterNodeUri = message.getPayload();
-                            outgoing.process( to( ClusterMessage.configurationRequest, clusterNodeUri ) );
+                            outgoing.offer( to( ClusterMessage.configurationRequest, clusterNodeUri ) );
                             context.timeouts.setTimeout( clusterNodeUri,
                                     timeout( ClusterMessage.configurationTimeout, message, clusterNodeUri ) );
                             return acquiringConfiguration;
@@ -136,11 +136,11 @@ public enum ClusterState
                                 URI coordinator = state.getRoles().get( ClusterConfiguration.COORDINATOR );
                                 if ( coordinator != null )
                                 {
-                                    outgoing.process( to( ProposerMessage.propose, coordinator, newState ) );
+                                    outgoing.offer( to( ProposerMessage.propose, coordinator, newState ) );
                                 }
                                 else
                                 {
-                                    outgoing.process( to( ProposerMessage.propose, new URI( message.getHeader(
+                                    outgoing.offer( to( ProposerMessage.propose, new URI( message.getHeader(
                                             Message.FROM ) ), newState ) );
                                 }
 
@@ -163,7 +163,7 @@ public enum ClusterState
 
                                 context.acquiredConfiguration( memberList, state.getRoles() );
                                 context.joined();
-                                outgoing.process( internal( ClusterMessage.joinResponse, context.getConfiguration() ) );
+                                outgoing.offer( internal( ClusterMessage.joinResponse, context.getConfiguration() ) );
 
                                 return entered;
                             }
@@ -178,7 +178,7 @@ public enum ClusterState
 
                             if ( context.getConfiguration().getMembers().isEmpty() )
                             {
-                                outgoing.process( internal( ClusterMessage.joinFailure,
+                                outgoing.offer( internal( ClusterMessage.joinFailure,
                                         new TimeoutException( "Join failed, timeout waiting for configuration" ) ) );
                                 return start;
                             }
@@ -186,7 +186,7 @@ public enum ClusterState
                             {
                                 URI nextMember = members.get( 0 );
 
-                                outgoing.process( internal( ClusterMessage.join, nextMember ) );
+                                outgoing.offer( internal( ClusterMessage.join, nextMember ) );
                                 return start;
                             }
                         }
@@ -216,7 +216,7 @@ public enum ClusterState
                                 context.timeouts.cancelTimeout( "join" );
 
                                 context.joined();
-                                outgoing.process( internal( ClusterMessage.joinResponse, context.getConfiguration() ) );
+                                outgoing.offer( internal( ClusterMessage.joinResponse, context.getConfiguration() ) );
                                 return entered;
                             }
                             else
@@ -239,7 +239,7 @@ public enum ClusterState
                             members.add( message.<URI>getPayload() );
                             URI nextMember = members.get( 0 );
 
-                            outgoing.process( internal( ClusterMessage.join, nextMember ) );
+                            outgoing.offer( internal( ClusterMessage.join, nextMember ) );
                             return start;
                         }
 
@@ -278,7 +278,7 @@ public enum ClusterState
 
                         case configurationRequest:
                         {
-                            outgoing.process( respond( ClusterMessage.configurationResponse, message,
+                            outgoing.offer( respond( ClusterMessage.configurationResponse, message,
                                     new ClusterMessage.ConfigurationResponseState( context.getConfiguration()
                                             .getRoles(),
                                             context.getConfiguration().getMembers(),
@@ -314,7 +314,7 @@ public enum ClusterState
                                         .ConfigurationChangeState();
                                 newState.leave( context.me );
 
-                                outgoing.process( internal( AtomicBroadcastMessage.broadcast, newState ) );
+                                outgoing.offer( internal( AtomicBroadcastMessage.broadcast, newState ) );
                                 context.timeouts.setTimeout( "leave", timeout( ClusterMessage.leaveTimedout,
                                         message ) );
 

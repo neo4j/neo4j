@@ -27,5 +27,5 @@ package org.neo4j.cluster.com.message;
  */
 public interface MessageHolder
 {
-    void process( Message<? extends MessageType> message );
+    void offer( Message<? extends MessageType> message );
 }

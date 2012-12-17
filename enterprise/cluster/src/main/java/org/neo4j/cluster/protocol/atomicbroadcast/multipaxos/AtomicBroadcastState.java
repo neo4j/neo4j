@@ -87,7 +87,7 @@ public enum AtomicBroadcastState
                         case failed:
                         {
                             // Joining failed
-                            outgoing.process( internal( ClusterMessage.joinFailure,
+                            outgoing.offer( internal( ClusterMessage.joinFailure,
                                     new TimeoutException( "Could not join cluster" ) ) );
 
                             return start;
@@ -97,7 +97,7 @@ public enum AtomicBroadcastState
                         {
                             if ( message.getPayload() instanceof ClusterMessage.ConfigurationChangeState )
                             {
-                                outgoing.process( internal( ClusterMessage.configurationChanged,
+                                outgoing.offer( internal( ClusterMessage.configurationChanged,
                                         message.getPayload() ) );
                             }
 
@@ -135,7 +135,7 @@ public enum AtomicBroadcastState
                             URI coordinator = context.getCoordinator();
                             if ( coordinator != null )
                             {
-                                outgoing.process( to( ProposerMessage.propose, coordinator, message.getPayload() ) );
+                                outgoing.offer( to( ProposerMessage.propose, coordinator, message.getPayload() ) );
                                 Timeouts timeouts = context.getClusterContext().timeouts;
                                 timeouts.setTimeout( "broadcast-" + message.getHeader( Message.CONVERSATION_ID ),
                                         timeout( AtomicBroadcastMessage.broadcastTimeout, message,
@@ -143,7 +143,7 @@ public enum AtomicBroadcastState
                             }
                             else
                             {
-                                outgoing.process( message.copyHeadersTo( internal( ProposerMessage.propose,
+                                outgoing.offer( message.copyHeadersTo( internal( ProposerMessage.propose,
                                         message.getPayload() ), Message.CONVERSATION_ID ) );
                             }
                             break;
@@ -158,7 +158,7 @@ public enum AtomicBroadcastState
 
                             if ( message.getPayload() instanceof ClusterMessage.ConfigurationChangeState )
                             {
-                                outgoing.process( internal( ClusterMessage.configurationChanged,
+                                outgoing.offer( internal( ClusterMessage.configurationChanged,
                                         message.getPayload() ) );
                             }
                             else
@@ -171,7 +171,7 @@ public enum AtomicBroadcastState
 
                         case broadcastTimeout:
                         {
-                            outgoing.process( internal( AtomicBroadcastMessage.broadcast, message.getPayload() ) );
+                            outgoing.offer( internal( AtomicBroadcastMessage.broadcast, message.getPayload() ) );
                             break;
                         }
 

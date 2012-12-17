@@ -51,7 +51,7 @@ public class HeartbeatRefreshProcessor implements MessageProcessor
             {
                 String to = message.getHeader( Message.TO );
                 if (!to.equals( message.getHeader( Message.FROM ) ))
-                    outgoing.process( Message.internal( HeartbeatMessage.reset_send_heartbeat, new URI( to ) ) );
+                    outgoing.offer( Message.internal( HeartbeatMessage.reset_send_heartbeat, new URI( to ) ) );
             }
             catch( URISyntaxException e )
             {

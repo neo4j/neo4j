@@ -95,7 +95,7 @@ public enum HeartbeatState
                                 {
                                     if ( !aliveServer.equals( context.getClusterContext().getMe() ) )
                                     {
-                                        outgoing.process( Message.to( HeartbeatMessage.suspicions, aliveServer,
+                                        outgoing.offer( Message.to( HeartbeatMessage.suspicions, aliveServer,
                                                 new HeartbeatMessage.SuspicionsState( context.getSuspicionsFor( context
                                                         .getClusterContext()
                                                         .getMe() ) ) ) );
@@ -115,7 +115,7 @@ public enum HeartbeatState
                                 long lastLearned = Long.parseLong( message.getHeader( "last-learned" ) );
                                 if ( lastLearned > context.getLearnerContext().getLastKnownLearnedInstanceInCluster() )
                                 {
-                                    outgoing.process( internal( LearnerMessage.catchUp, lastLearned ) );
+                                    outgoing.offer( internal( LearnerMessage.catchUp, lastLearned ) );
                                 }
                             }
 
@@ -138,7 +138,7 @@ public enum HeartbeatState
                                 {
                                     if ( !aliveServer.equals( context.getClusterContext().getMe() ) )
                                     {
-                                        outgoing.process( Message.to( HeartbeatMessage.suspicions, aliveServer,
+                                        outgoing.offer( Message.to( HeartbeatMessage.suspicions, aliveServer,
                                                 new HeartbeatMessage.SuspicionsState( context.getSuspicionsFor( context
                                                         .getClusterContext()
                                                         .getMe() ) ) ) );
@@ -162,7 +162,7 @@ public enum HeartbeatState
                             if ( context.getClusterContext().getConfiguration().getMembers().contains( to ) )
                             {
                                 // Send heartbeat message to given server
-                                outgoing.process( to( HeartbeatMessage.i_am_alive, to,
+                                outgoing.offer( to( HeartbeatMessage.i_am_alive, to,
                                         new HeartbeatMessage.IAmAliveState( context.getClusterContext().getMe() ) )
                                         .setHeader( "last-learned",
                                                 context.getLearnerContext().getLastLearnedInstanceId() + "" ) );

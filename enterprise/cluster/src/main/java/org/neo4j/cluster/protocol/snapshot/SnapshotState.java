@@ -54,7 +54,7 @@ public enum SnapshotState
                         case refreshSnapshot:
                         {
                             URI coordinator = context.getClusterContext().getConfiguration().getMembers().get( 0 );
-                            outgoing.process( Message.to( SnapshotMessage.sendSnapshot, coordinator ) );
+                            outgoing.offer( Message.to( SnapshotMessage.sendSnapshot, coordinator ) );
                             return refreshing;
                         }
 
@@ -69,7 +69,7 @@ public enum SnapshotState
                                 URI coordinator = context.getClusterContext().getConfiguration().getElected(ClusterConfiguration.COORDINATOR );
                                 if (coordinator != null)
                                 {
-                                    outgoing.process( Message.to( SnapshotMessage.sendSnapshot, coordinator ) );
+                                    outgoing.offer( Message.to( SnapshotMessage.sendSnapshot, coordinator ) );
                                     return refreshing;
                                 } else
                                 {
@@ -119,7 +119,9 @@ public enum SnapshotState
                     {
                         case sendSnapshot:
                         {
-                            outgoing.process( Message.respond( SnapshotMessage.snapshot, message, new SnapshotMessage.SnapshotState( context.getLearnerContext().getLastDeliveredInstanceId(), context.getSnapshotProvider() ) ) );
+                            outgoing.offer( Message.respond( SnapshotMessage.snapshot, message,
+                                    new SnapshotMessage.SnapshotState( context.getLearnerContext()
+                                            .getLastDeliveredInstanceId(), context.getSnapshotProvider() ) ) );
                             break;
                         }
 

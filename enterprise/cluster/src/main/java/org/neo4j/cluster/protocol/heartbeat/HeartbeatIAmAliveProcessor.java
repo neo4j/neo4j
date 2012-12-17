@@ -50,7 +50,7 @@ public class HeartbeatIAmAliveProcessor implements MessageProcessor
             {
                 String from = message.getHeader( Message.FROM );
                 if (!from.equals( message.getHeader( Message.TO ) ))
-                    output.process( message.copyHeadersTo(
+                    output.offer( message.copyHeadersTo(
                             Message.internal( HeartbeatMessage.i_am_alive,
                                     new HeartbeatMessage.IAmAliveState( new URI( from ) ) ), Message.FROM ) );
             }

@@ -76,7 +76,7 @@ public class OmegaStateTest
 
         assertEquals( OmegaState.omega, result );
         Mockito.verify( context ).getServers();
-        Mockito.verify( outgoing, Mockito.times( servers.size() ) ).process( Matchers.isA( Message.class ) );
+        Mockito.verify( outgoing, Mockito.times( servers.size() ) ).offer( Matchers.isA( Message.class ) );
         Mockito.verify( context ).startRefreshRound();
     }
 
@@ -171,7 +171,7 @@ public class OmegaStateTest
             Mockito.verify( registry, Mockito.never() ).put( Matchers.eq( fromURI ), Matchers.isA( State.class ) );
         }
 
-        Mockito.verify( outgoing ).process( Matchers.argThat( new MessageArgumentMatcher<OmegaMessage>().to( fromURI
+        Mockito.verify( outgoing ).offer( Matchers.argThat( new MessageArgumentMatcher<OmegaMessage>().to( fromURI
         ).onMessageType(
                 OmegaMessage.refresh_ack ) ) );
     }
@@ -210,7 +210,7 @@ public class OmegaStateTest
         Mockito.verify( context ).startCollectionRound();
         for ( URI server : servers )
         {
-            Mockito.verify( outgoing ).process( Matchers.argThat( new MessageArgumentMatcher<OmegaMessage>().to(
+            Mockito.verify( outgoing ).offer( Matchers.argThat( new MessageArgumentMatcher<OmegaMessage>().to(
                     server )
                     .onMessageType( OmegaMessage.collect ).withPayload( new CollectPayload( 0 ) ) ) );
         }
@@ -233,9 +233,10 @@ public class OmegaStateTest
         OmegaState.omega.handle( context, message, outgoing );
 
         Mockito.verify( context ).getRegistry();
-        Mockito.verify( outgoing ).process( Matchers.argThat( new MessageArgumentMatcher<OmegaMessage>().to( new URI(
+        Mockito.verify( outgoing ).offer( Matchers.argThat( new MessageArgumentMatcher<OmegaMessage>().to( new URI(
                 fromString ) )
-                .onMessageType( OmegaMessage.status ).withPayload( new CollectResponsePayload( new URI[]{}, new RefreshPayload[]{}, 1 ) ) ));
+                .onMessageType( OmegaMessage.status ).withPayload( new CollectResponsePayload( new URI[]{},
+                        new RefreshPayload[]{}, 1 ) ) ) );
     }
 
 

@@ -100,7 +100,7 @@ public class StateMachineRules
             {
                 for( Message<?> message : messages )
                 {
-                    outgoing.process( message );
+                    outgoing.offer( message );
                 }
             }
         }

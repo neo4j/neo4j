@@ -227,7 +227,7 @@ public class ConnectedStateMachines
                 MessageType>>();
 
         @Override
-        public synchronized void process( Message<? extends MessageType> message )
+        public synchronized void offer( Message<? extends MessageType> message )
         {
             outgoingMessages.offer( message );
         }

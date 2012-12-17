@@ -116,7 +116,7 @@ public enum ProposerState
                                     }
                                     else
                                     {
-                                        outgoing.process( message.copyHeadersTo( Message.to( AcceptorMessage.prepare,
+                                        outgoing.offer( message.copyHeadersTo( Message.to( AcceptorMessage.prepare,
                                                 acceptor, new AcceptorMessage.PrepareState( ballot ) ),
                                                 InstanceId.INSTANCE ) );
                                     }
@@ -140,7 +140,7 @@ public enum ProposerState
                                             " to phase 1 timeout" );
 
                                     // Fail this propose
-                                    outgoing.process( Message.internal( AtomicBroadcastMessage.failed,
+                                    outgoing.offer( Message.internal( AtomicBroadcastMessage.failed,
                                             context.proposerContext.bookedInstances.get( instance.id ) ) );
                                 }
                                 else
@@ -151,7 +151,7 @@ public enum ProposerState
 
                                     for ( URI acceptor : instance.getAcceptors() )
                                     {
-                                        outgoing.process( message.copyHeadersTo( Message.to( AcceptorMessage.prepare,
+                                        outgoing.offer( message.copyHeadersTo( Message.to( AcceptorMessage.prepare,
                                                 acceptor, new AcceptorMessage.PrepareState( ballot ) ),
                                                 InstanceId.INSTANCE ) );
                                     }
@@ -227,7 +227,7 @@ public enum ProposerState
                                     instance.pending();
                                     for ( URI acceptor : instance.getAcceptors() )
                                     {
-                                        outgoing.process( message.copyHeadersTo( Message.to( AcceptorMessage.accept,
+                                        outgoing.offer( message.copyHeadersTo( Message.to( AcceptorMessage.accept,
                                                 acceptor,
                                                 new AcceptorMessage.AcceptState( instance.ballot,
                                                         instance.value_2 ) ), InstanceId.INSTANCE ) );
@@ -286,7 +286,7 @@ public enum ProposerState
 
                                 for ( URI acceptor : instance.getAcceptors() )
                                 {
-                                    outgoing.process( message.copyHeadersTo( Message.to( AcceptorMessage.prepare,
+                                    outgoing.offer( message.copyHeadersTo( Message.to( AcceptorMessage.prepare,
                                             acceptor, new AcceptorMessage.PrepareState( ballot ) ),
                                             InstanceId.INSTANCE ) );
                                 }
@@ -324,7 +324,7 @@ public enum ProposerState
                                         // configuration changes
                                         for ( URI learner : context.getLearners() )
                                         {
-                                            outgoing.process( message.copyHeadersTo( Message.to( LearnerMessage
+                                            outgoing.offer( message.copyHeadersTo( Message.to( LearnerMessage
                                                     .learn, learner,
                                                     new LearnerMessage.LearnState( instance.value_2 ) ),
                                                     InstanceId.INSTANCE ) );
@@ -333,7 +333,7 @@ public enum ProposerState
                                         // Tell joiner of this cluster configuration change
                                         if ( state.getJoin() != null )
                                         {
-                                            outgoing.process( message.copyHeadersTo( Message.to( LearnerMessage
+                                            outgoing.offer( message.copyHeadersTo( Message.to( LearnerMessage
                                                     .learn, state.getJoin(),
                                                     new LearnerMessage.LearnState( instance.value_2 ) ),
                                                     InstanceId.INSTANCE ) );
@@ -344,7 +344,7 @@ public enum ProposerState
                                         // Tell learners
                                         for ( URI learner : context.getLearners() )
                                         {
-                                            outgoing.process( message.copyHeadersTo( Message.to( LearnerMessage
+                                            outgoing.offer( message.copyHeadersTo( Message.to( LearnerMessage
                                                     .learn, learner,
                                                     new LearnerMessage.LearnState( instance.value_2 ) ),
                                                     InstanceId.INSTANCE ) );
@@ -361,7 +361,7 @@ public enum ProposerState
                                         context.clusterContext.getLogger( ProposerState.class ).debug( "Restarting "
                                                 + value + " booked:"
                                                 + context.proposerContext.bookedInstances.size() );
-                                        outgoing.process( Message.internal( ProposerMessage.propose, value ) );
+                                        outgoing.offer( Message.internal( ProposerMessage.propose, value ) );
                                     }
                                 }
                                 else
@@ -404,7 +404,7 @@ public enum ProposerState
 
             for ( URI acceptor : acceptors )
             {
-                outgoing.process( Message.to( AcceptorMessage.prepare, acceptor, new AcceptorMessage.PrepareState(
+                outgoing.offer( Message.to( AcceptorMessage.prepare, acceptor, new AcceptorMessage.PrepareState(
                         ballot ) ).setHeader( InstanceId.INSTANCE, instanceId.toString() ) );
             }
 

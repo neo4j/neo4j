@@ -72,7 +72,7 @@ public enum AcceptorState
                             {
                                 context.promise( instance, prepareState.getBallot() );
 
-                                outgoing.process( message.copyHeadersTo( Message.respond( ProposerMessage.promise,
+                                outgoing.offer( message.copyHeadersTo( Message.respond( ProposerMessage.promise,
                                         message,
                                         new ProposerMessage.PromiseState( prepareState.getBallot(),
                                                 instance.getValue() ) ), InstanceId.INSTANCE ) );
@@ -82,7 +82,7 @@ public enum AcceptorState
                                 // Optimization - explicit reject
                                 context.getLogger( AcceptorState.class ).debug( "Reject " + instanceId
                                         + " ballot:" + instance.getBallot() );
-                                outgoing.process( message.copyHeadersTo( Message.respond( ProposerMessage
+                                outgoing.offer( message.copyHeadersTo( Message.respond( ProposerMessage
                                         .rejectPrepare, message,
                                         new ProposerMessage.RejectPrepare( instance.getBallot() ) ),
                                         InstanceId.INSTANCE ) );
@@ -102,7 +102,7 @@ public enum AcceptorState
                                 context.accept( instance, acceptState.getValue() );
                                 instance.accept( acceptState.getValue() );
 
-                                outgoing.process( message.copyHeadersTo( Message.respond( ProposerMessage.accepted,
+                                outgoing.offer( message.copyHeadersTo( Message.respond( ProposerMessage.accepted,
                                         message,
                                         new ProposerMessage.AcceptedState() ), InstanceId.INSTANCE ) );
                             }
@@ -111,7 +111,7 @@ public enum AcceptorState
                                 context.getLogger( AcceptorState.class ).debug( "Reject " + instanceId
                                         + " accept ballot:" + acceptState.getBallot() + " actual ballot:" +
                                         instance.getBallot() );
-                                outgoing.process( message.copyHeadersTo( Message.respond( ProposerMessage
+                                outgoing.offer( message.copyHeadersTo( Message.respond( ProposerMessage
                                         .rejectAccept, message,
                                         new ProposerMessage.RejectAcceptState() ), InstanceId.INSTANCE ) );
                             }

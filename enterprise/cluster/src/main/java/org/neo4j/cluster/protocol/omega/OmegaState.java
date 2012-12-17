@@ -65,9 +65,9 @@ public enum OmegaState implements State<OmegaContext, OmegaMessage>
                             int refreshRoundId = context.startRefreshRound();
                             for ( URI server : context.getServers() )
                             {
-                                outgoing.process( Message.to(  OmegaMessage.refresh, server,
-                                         RefreshPayload.fromState( context.getMyState(),
-                                                 refreshRoundId ) ) );
+                                outgoing.offer( Message.to( OmegaMessage.refresh, server,
+                                        RefreshPayload.fromState( context.getMyState(),
+                                                refreshRoundId ) ) );
                             }
                         }
                         break;
@@ -81,7 +81,7 @@ public enum OmegaState implements State<OmegaContext, OmegaMessage>
                             {
                                 context.getRegistry().put( from, state );
                             }
-                            outgoing.process( Message.to(
+                            outgoing.offer( Message.to(
                                     OmegaMessage.refresh_ack,
                                     from,
                                     RefreshAckPayload.forRefresh( (RefreshPayload) message
@@ -112,7 +112,7 @@ public enum OmegaState implements State<OmegaContext, OmegaMessage>
                             int collectRound = context.startCollectionRound();
                             for ( URI server : context.getServers() )
                             {
-                                outgoing.process( Message.to(
+                                outgoing.offer( Message.to(
                                         OmegaMessage.collect,
                                         server,
                                         new CollectPayload( collectRound ) ) );
@@ -124,7 +124,7 @@ public enum OmegaState implements State<OmegaContext, OmegaMessage>
                             CollectPayload payload = message.getPayload();
                             URI from = new URI( message.getHeader( Message.FROM ) );
                             int readNum = payload.getReadNum();
-                            outgoing.process( Message.to( OmegaMessage.status,
+                            outgoing.offer( Message.to( OmegaMessage.status,
                                     from,
                                     CollectResponsePayload.fromRegistry( context.getRegistry(), readNum ) ) );
                         }
