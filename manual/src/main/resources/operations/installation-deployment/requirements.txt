@@ -37,7 +37,7 @@ Recommended::  ext4, ZFS
 
 Neo4j is Java-based.
 
-Java:: 1.6+
+Java:: Oracle Java 6
 Operating Systems:: Linux, Windows XP, Mac OS X
 
 == JDK Version ==
