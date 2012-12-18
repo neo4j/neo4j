@@ -88,8 +88,8 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
     private TxManager.TxManagerDataSourceRegistrationListener dataSourceRegistrationListener;
 
     private Throwable recoveryError;
-
     private TransactionStateFactory stateFactory;
+    private final Period period = new IntegerBasedPeriod();
 
     public TxManager( File txLogDir,
                       XaDataSourceManager xaDataSourceManager,
@@ -132,6 +132,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
     @Override
     public void init()
     {
+        txThreadMap = new ThreadLocalWithSize<TransactionImpl>();
     }
 
     @Override
@@ -176,6 +177,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
     @Override
     public synchronized void stop()
     {
+        period.nextEpoch();
         recovered = false;
         xaDataSourceManager.removeDataSourceRegistrationListener( dataSourceRegistrationListener );
         closeLog();
@@ -314,7 +316,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
             throw logAndReturn( "TM error tx begin", new NotSupportedException(
                     "Nested transactions not supported" ) );
         }
-        tx = new TransactionImpl( this, forceMode, stateFactory );
+        tx = new TransactionImpl( this, forceMode, stateFactory, period.currentEpoch() );
         txThreadMap.set( tx );
         int concurrentTxCount = txThreadMap.size();
         if ( concurrentTxCount > peakConcurrentTransactions )
@@ -352,7 +354,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
     }
 
     @Override
-    public void commit() throws RollbackException, HeuristicMixedException,
+    public synchronized void commit() throws RollbackException, HeuristicMixedException,
             HeuristicRollbackException, IllegalStateException, SystemException
     {
         assertTmOk( "tx commit" );
@@ -361,6 +363,12 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
         if ( tx == null )
         {
             throw logAndReturn( "TM error tx commit", new IllegalStateException( "Not in transaction" ) );
+        }
+        if ( !tx.matchesEpoch( period.currentEpoch() ) )
+        {
+            // This transaction was started in a previous epoch. Set to rollback, so that
+            // it can complete as normal, release locks and call tx hooks and what not.
+            tx.setRollbackOnly();
         }
 
         boolean hasAnyLocks = false;
@@ -817,7 +825,6 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
             // Assuming here that the last datasource to register is the Neo one
 //            if ( !tmOk )
             {
-                txThreadMap = new ThreadLocalWithSize<TransactionImpl>();
                 // Do recovery on start - all Resources should be registered by now
                 Iterable<List<TxLog.Record>> knownDanglingRecordList = txLog.getDanglingRecords();
                 if ( knownDanglingRecordList.iterator().hasNext() )

@@ -24,6 +24,7 @@ import static java.util.concurrent.Executors.newSingleThreadExecutor;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.Callable;
@@ -179,7 +180,8 @@ public class OtherThreadExecutor<T> implements ThreadFactory, Visitor<LineLogger
             
             if ( System.currentTimeMillis() > end )
             {
-                throw new TimeoutException( "The executor didn't wait inside an executing command for " +
+                throw new TimeoutException( "The executor didn't enter any of states " +
+                        Arrays.toString( possibleStates ) + " inside an executing command for " +
                         timeout + " ms" );
             }
         }
