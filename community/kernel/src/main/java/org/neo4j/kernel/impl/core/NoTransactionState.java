@@ -28,6 +28,8 @@ import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.kernel.impl.core.WritableTransactionState.PrimitiveElement;
 import org.neo4j.kernel.impl.nioneo.store.NameData;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
+import org.neo4j.kernel.impl.transaction.TxHook;
+import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.RelIdArray;
 
@@ -224,5 +226,17 @@ public class NoTransactionState implements TransactionState
     @Override
     public void setRollbackOnly()
     {
+    }
+    
+    @Override
+    public TxHook getTxHook()
+    {
+        return null;
+    }
+    
+    @Override
+    public TxIdGenerator getTxIdGenerator()
+    {
+        return null;
     }
 }

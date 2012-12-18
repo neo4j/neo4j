@@ -36,6 +36,7 @@ import org.neo4j.kernel.impl.index.IndexStore;
 import org.neo4j.kernel.impl.index.ReadOnlyIndexConnectionBroker;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
+import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.impl.transaction.xaframework.XaFactory;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.Logging;
@@ -51,6 +52,7 @@ public class LuceneKernelExtension extends LifecycleAdapter
     private final XaDataSourceManager xaDataSourceManager;
     private final IndexProviders indexProviders;
     private final Logging logging;
+    private final TxIdGenerator txIdGenerator;
 
 
     public static abstract class Configuration
@@ -62,7 +64,7 @@ public class LuceneKernelExtension extends LifecycleAdapter
                                   IndexStore indexStore, XaFactory xaFactory,
                                   FileSystemAbstraction fileSystemAbstraction,
                                   XaDataSourceManager xaDataSourceManager, IndexProviders indexProviders,
-                                  Logging logging )
+                                  TxIdGenerator txIdGenerator, Logging logging )
     {
         this.config = config;
         this.gdb = gdb;
@@ -72,6 +74,7 @@ public class LuceneKernelExtension extends LifecycleAdapter
         this.fileSystemAbstraction = fileSystemAbstraction;
         this.xaDataSourceManager = xaDataSourceManager;
         this.indexProviders = indexProviders;
+        this.txIdGenerator = txIdGenerator;
         this.logging = logging;
     }
 
@@ -79,7 +82,7 @@ public class LuceneKernelExtension extends LifecycleAdapter
     public void start() throws Throwable
     {
         LuceneDataSource luceneDataSource = new LuceneDataSource( config, indexStore, fileSystemAbstraction,
-                xaFactory, logging );
+                xaFactory, txIdGenerator, logging );
 
         xaDataSourceManager.registerDataSource( luceneDataSource );
 

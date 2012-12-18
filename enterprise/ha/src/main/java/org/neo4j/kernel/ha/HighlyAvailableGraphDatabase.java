@@ -20,11 +20,15 @@
 
 package org.neo4j.kernel.ha;
 
+import static org.neo4j.kernel.ha.DelegateInvocationHandler.snapshot;
+
 import java.io.File;
 import java.lang.reflect.Proxy;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+
+import javax.transaction.Transaction;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.client.ClusterClient;
@@ -57,7 +61,10 @@ import org.neo4j.kernel.ha.switchover.Switchover;
 import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.core.Caches;
 import org.neo4j.kernel.impl.core.RelationshipTypeCreator;
+import org.neo4j.kernel.impl.core.TransactionState;
+import org.neo4j.kernel.impl.core.WritableTransactionState;
 import org.neo4j.kernel.impl.transaction.LockManager;
+import org.neo4j.kernel.impl.transaction.TransactionStateFactory;
 import org.neo4j.kernel.impl.transaction.TxHook;
 import org.neo4j.kernel.impl.transaction.TxManager;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
@@ -137,7 +144,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
 
         super.create();
 
-        kernelEventHandlers.registerKernelEventHandler( new TxManagerCheckKernelEventHandler( xaDataSourceManager,
+        kernelEventHandlers.registerKernelEventHandler( new HaKernelPanicHandler( xaDataSourceManager,
                 (TxManager) txManager ) );
         life.add( updatePuller = new UpdatePuller( (HaXaDataSourceManager) xaDataSourceManager, master,
                 requestContextFactory, txManager, accessGuard, lastUpdateTime, config, msgLog ) );
@@ -185,6 +192,21 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         {
             return life.add( new ClassicLoggingService( config ) );
         }
+    }
+    
+    @Override
+    protected TransactionStateFactory createTransactionStateFactory()
+    {
+        return new TransactionStateFactory( logging )
+        {
+            @Override
+            public TransactionState create( Transaction tx )
+            {
+                return new WritableTransactionState( snapshot( lockManager ),
+                        propertyIndexManager, nodeManager, logging, tx, snapshot( txHook ),
+                        snapshot( txIdGenerator ) );
+            }
+        };
     }
 
     @Override
@@ -326,7 +348,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         idGeneratorFactory = new HaIdGeneratorFactory( master, memberStateMachine, logging );
         HighAvailabilityModeSwitcher highAvailabilityModeSwitcher = new HighAvailabilityModeSwitcher( masterDelegateInvocationHandler,
                 clusterMemberAvailability, memberStateMachine, this, (HaIdGeneratorFactory) idGeneratorFactory, config,
-                logging.getLogger( HighAvailabilityModeSwitcher.class ) );
+                logging );
         /*
         * We always need the mode switcher and we need it to restart on switchover. So:
         * 1) if in compatibility mode, it must be added in all 3 - to start on start and restart on switchover

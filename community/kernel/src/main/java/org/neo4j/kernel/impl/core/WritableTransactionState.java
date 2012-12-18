@@ -41,6 +41,8 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.LockType;
+import org.neo4j.kernel.impl.transaction.TxHook;
+import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.RelIdArray;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
@@ -57,6 +59,8 @@ public class WritableTransactionState implements TransactionState
     private final NodeManager nodeManager;
     private final StringLogger log;
     private final Transaction tx;
+    private final TxHook txHook;
+    private final TxIdGenerator txIdGenerator;
     
     // State
     private List<LockElement> lockElements;
@@ -228,12 +232,14 @@ public class WritableTransactionState implements TransactionState
 
     public WritableTransactionState( LockManager lockManager,
             PropertyIndexManager propertyIndexManager, NodeManager nodeManager,
-            Logging logging, Transaction tx )
+            Logging logging, Transaction tx, TxHook txHook, TxIdGenerator txIdGenerator )
     {
         this.lockManager = lockManager;
         this.propertyIndexManager = propertyIndexManager;
         this.nodeManager = nodeManager;
         this.tx = tx;
+        this.txHook = txHook;
+        this.txIdGenerator = txIdGenerator;
         this.log = logging.getLogger( getClass() );
     }
 
@@ -820,5 +826,17 @@ public class WritableTransactionState implements TransactionState
             // our TM never throws this exception
             log.warn( "Failed to set transaction rollback only", se );
         }
+    }
+    
+    @Override
+    public TxHook getTxHook()
+    {
+        return txHook;
+    }
+    
+    @Override
+    public TxIdGenerator getTxIdGenerator()
+    {
+        return txIdGenerator;
     }
 }

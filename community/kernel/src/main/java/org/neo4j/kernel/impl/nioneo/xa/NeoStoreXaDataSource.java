@@ -374,8 +374,8 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
         @Override
         public XaTransaction create( int identifier, TransactionState state )
         {
-            return new WriteTransaction( identifier, getLogicalLog(), neoStore,
-                state );
+            return new WriteTransaction( identifier, getLogicalLog(), state,
+                neoStore );
         }
 
         @Override

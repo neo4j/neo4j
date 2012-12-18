@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
+import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
 
 import org.neo4j.graphdb.DependencyResolver;
@@ -340,7 +341,7 @@ public abstract class InternalAbstractGraphDatabase
 
         guard = config.get( Configuration.execution_guard_enabled ) ? new Guard( msgLog ) : null;
 
-        stateFactory = new TransactionStateFactory( logging );
+        stateFactory = createTransactionStateFactory();
 
         if ( readOnly )
         {
@@ -351,7 +352,7 @@ public abstract class InternalAbstractGraphDatabase
             String serviceName = config.get( GraphDatabaseSettings.tx_manager_impl );
             if ( serviceName == null )
             {
-                txManager = new TxManager( this.storeDir, xaDataSourceManager, kernelPanicEventGenerator, txHook,
+                txManager = new TxManager( this.storeDir, xaDataSourceManager, kernelPanicEventGenerator,
                         logging.getLogger( TxManager.class ), fileSystem, stateFactory );
             }
             else
@@ -401,7 +402,7 @@ public abstract class InternalAbstractGraphDatabase
                 createNodeManager( readOnly, cacheProvider, nodeCache, relCache );
 
         life.add( nodeManager );
-        stateFactory.setDependencies( lockManager, propertyIndexManager, nodeManager );
+        stateFactory.setDependencies( lockManager, propertyIndexManager, nodeManager, txHook, txIdGenerator );
 
         indexStore = new IndexStore( this.storeDir, fileSystem );
 
@@ -459,6 +460,11 @@ public abstract class InternalAbstractGraphDatabase
 
         // TODO This is probably too coarse-grained and we should have some strategy per user of config instead
         life.add( new ConfigurationChangedRestarter() );
+    }
+
+    protected TransactionStateFactory createTransactionStateFactory()
+    {
+        return new TransactionStateFactory( logging );
     }
 
     protected XaDataSourceManager createXaDataSourceManager()
@@ -809,7 +815,7 @@ public abstract class InternalAbstractGraphDatabase
         {
             return txManager.getTransaction() != null;
         }
-        catch ( Exception e )
+        catch ( SystemException e )
         {
             throw new TransactionFailureException(
                     "Unable to get transaction.", e );
@@ -1282,6 +1288,10 @@ public abstract class InternalAbstractGraphDatabase
             else if ( TransactionStateFactory.class.isAssignableFrom( type ) )
             {
                 return (T) stateFactory;
+            }
+            else if ( TxIdGenerator.class.isAssignableFrom( type ) )
+            {
+                return (T) txIdGenerator;
             }
             else
             {

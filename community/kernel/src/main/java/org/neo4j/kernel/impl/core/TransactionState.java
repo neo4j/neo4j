@@ -27,6 +27,8 @@ import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.kernel.impl.core.WritableTransactionState.PrimitiveElement;
 import org.neo4j.kernel.impl.nioneo.store.NameData;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
+import org.neo4j.kernel.impl.transaction.TxHook;
+import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.RelIdArray;
 
@@ -112,6 +114,10 @@ public interface TransactionState
     boolean hasChanges();
     
     void setRollbackOnly();
+    
+    public TxHook getTxHook();
+    
+    public TxIdGenerator getTxIdGenerator();
     
     public static final TransactionState NO_STATE = new NoTransactionState();
 }

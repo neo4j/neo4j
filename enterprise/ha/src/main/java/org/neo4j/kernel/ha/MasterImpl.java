@@ -64,6 +64,7 @@ import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.kernel.logging.Logging;
 
 /**
  * This is the real master code that executes on a master. The actual
@@ -79,21 +80,19 @@ public class MasterImpl extends LifecycleAdapter implements Master
     private final StringLogger msgLog;
     private final Config config;
 
-    private final Map<RequestContext, MasterTransaction> transactions = new ConcurrentHashMap<RequestContext,
+    private Map<RequestContext, MasterTransaction> transactions = new ConcurrentHashMap<RequestContext,
             MasterTransaction>();
     private ScheduledExecutorService unfinishedTransactionsExecutor;
     private long unfinishedTransactionThresholdMillis;
     private GraphProperties graphProperties;
-    private final LockManager lockManager;
     private final TransactionManager txManager;
 
-    public MasterImpl( GraphDatabaseAPI db, StringLogger logger, Config config )
+    public MasterImpl( GraphDatabaseAPI db, Logging logging, Config config )
     {
         this.graphDb = db;
-        this.msgLog = logger;
+        this.msgLog = logging.getLogger( getClass() );
         this.config = config;
         graphProperties = graphDb.getDependencyResolver().resolveDependency( NodeManager.class ).getGraphProperties();
-        lockManager = graphDb.getDependencyResolver().resolveDependency( LockManager.class );
         txManager = graphDb.getDependencyResolver().resolveDependency( TransactionManager.class );
     }
 
@@ -157,6 +156,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
     public void stop()
     {
         unfinishedTransactionsExecutor.shutdown();
+        transactions = null;
     }
 
     @Override

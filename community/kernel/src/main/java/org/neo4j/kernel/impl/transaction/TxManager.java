@@ -82,7 +82,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
 
     private final StringLogger log;
 
-    final TxHook finishHook;
+//    final TxHook finishHook;
     private XaDataSourceManager xaDataSourceManager;
     private final FileSystemAbstraction fileSystem;
     private TxManager.TxManagerDataSourceRegistrationListener dataSourceRegistrationListener;
@@ -94,7 +94,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
     public TxManager( File txLogDir,
                       XaDataSourceManager xaDataSourceManager,
                       KernelPanicEventGenerator kpe,
-                      TxHook finishHook,
+//                      TxHook finishHook,
                       StringLogger log,
                       FileSystemAbstraction fileSystem,
                       TransactionStateFactory stateFactory
@@ -105,7 +105,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
         this.fileSystem = fileSystem;
         this.log = log;
         this.kpe = kpe;
-        this.finishHook = finishHook;
+//        this.finishHook = finishHook;
         this.stateFactory = stateFactory;
     }
 
@@ -132,13 +132,13 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
     @Override
     public void init()
     {
-        txThreadMap = new ThreadLocalWithSize<TransactionImpl>();
     }
 
     @Override
     public synchronized void start()
             throws Throwable
     {
+        txThreadMap = new ThreadLocalWithSize<TransactionImpl>();
         openLog();
         findPendingDatasources();
         dataSourceRegistrationListener = new TxManagerDataSourceRegistrationListener();
@@ -354,28 +354,29 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
     }
 
     @Override
-    public synchronized void commit() throws RollbackException, HeuristicMixedException,
+    public void commit() throws RollbackException, HeuristicMixedException,
             HeuristicRollbackException, IllegalStateException, SystemException
     {
-        assertTmOk( "tx commit" );
-        Thread thread = Thread.currentThread();
         TransactionImpl tx = txThreadMap.get();
         if ( tx == null )
         {
             throw logAndReturn( "TM error tx commit", new IllegalStateException( "Not in transaction" ) );
         }
-        if ( !tx.matchesEpoch( period.currentEpoch() ) )
-        {
-            // This transaction was started in a previous epoch. Set to rollback, so that
-            // it can complete as normal, release locks and call tx hooks and what not.
-            tx.setRollbackOnly();
-        }
+        
+//        if ( !tx.matchesEpoch( period.currentEpoch() ) )
+//        {
+//            // This transaction was started in a previous epoch. Set to rollback, so that
+//            // it can complete as normal, release locks and call tx hooks and what not.
+//            tx.setRollbackOnly();
+//        }
 
         boolean hasAnyLocks = false;
         boolean successful = false;
         try
         {
-            hasAnyLocks = finishHook.hasAnyLocks( tx );
+            assertTmOk( "tx commit" );
+            Thread thread = Thread.currentThread();
+            hasAnyLocks = tx.hasAnyLocks();
             if ( tx.getStatus() != Status.STATUS_ACTIVE
                     && tx.getStatus() != Status.STATUS_MARKED_ROLLBACK )
             {
@@ -405,9 +406,10 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
         }
         finally
         {
+            txThreadMap.remove();
             if ( hasAnyLocks )
             {
-                finishHook.finishTransaction( tx.getEventIdentifier(), successful );
+                tx.finish( successful );
             }
         }
     }
@@ -513,7 +515,6 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
                         + rollbackErrorCode ), e ) );
             }
             tx.doAfterCompletion();
-            txThreadMap.remove();
             try
             {
                 if ( tx.isGlobalStartRecordWritten() )
@@ -544,7 +545,6 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
             }
         }
         tx.doAfterCompletion();
-        txThreadMap.remove();
         try
         {
             if ( tx.isGlobalStartRecordWritten() )
@@ -583,7 +583,6 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
         }
 
         tx.doAfterCompletion();
-        txThreadMap.remove();
         try
         {
             if ( tx.isGlobalStartRecordWritten() )
@@ -609,17 +608,17 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
     @Override
     public void rollback() throws IllegalStateException, SystemException
     {
-        assertTmOk( "tx rollback" );
         TransactionImpl tx = txThreadMap.get();
         if ( tx == null )
         {
-            throw new IllegalStateException( "Not in transaction" );
+            throw logAndReturn( "TM error tx commit", new IllegalStateException( "Not in transaction" ) );
         }
 
         boolean hasAnyLocks = false;
         try
         {
-            hasAnyLocks = finishHook.hasAnyLocks( tx );
+            assertTmOk( "tx rollback" );
+            hasAnyLocks = tx.hasAnyLocks();
             if ( tx.getStatus() == Status.STATUS_ACTIVE ||
                     tx.getStatus() == Status.STATUS_MARKED_ROLLBACK ||
                     tx.getStatus() == Status.STATUS_PREPARING )
@@ -644,7 +643,6 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
                                     + e.errorCode ), e ) );
                 }
                 tx.doAfterCompletion();
-                txThreadMap.remove();
                 try
                 {
                     if ( tx.isGlobalStartRecordWritten() )
@@ -670,9 +668,10 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
         }
         finally
         {
+            txThreadMap.remove();
             if ( hasAnyLocks )
             {
-                finishHook.finishTransaction( tx.getEventIdentifier(), false );
+                tx.finish( false );
             }
         }
     }

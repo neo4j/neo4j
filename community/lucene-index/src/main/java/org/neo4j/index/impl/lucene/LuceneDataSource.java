@@ -86,6 +86,7 @@ import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.TransactionStateFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBackedXaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
+import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommandFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.XaConnection;
@@ -178,7 +179,7 @@ public class LuceneDataSource extends LogBackedXaDataSource
 
     // Used for assertion after recovery has been completed.
     private final Set<IndexIdentifier> expectedFutureRecoveryDeletions = new HashSet<IndexIdentifier>();
-    private final Logging logging;
+    private final TxIdGenerator txIdGenerator;
 
     /**
      * Constructs this data source.
@@ -188,13 +189,13 @@ public class LuceneDataSource extends LogBackedXaDataSource
      *                                instantiated
      */
     public LuceneDataSource( Config config, IndexStore indexStore, FileSystemAbstraction fileSystemAbstraction,
-                             XaFactory xaFactory, Logging logging )
+                             XaFactory xaFactory, TxIdGenerator txIdGenerator, Logging logging )
     {
         super( DEFAULT_BRANCH_ID, DEFAULT_NAME );
         this.config = config;
         this.indexStore = indexStore;
         this.xaFactory = xaFactory;
-        this.logging = logging;
+        this.txIdGenerator = txIdGenerator;
         this.typeCache = new IndexTypeCache( indexStore );
         this.fileSystemAbstraction = fileSystemAbstraction;
     }
@@ -390,7 +391,7 @@ public class LuceneDataSource extends LogBackedXaDataSource
         @Override
         public XaTransaction create( int identifier, TransactionState state )
         {
-            return createTransaction( identifier, this.getLogicalLog() );
+            return createTransaction( identifier, this.getLogicalLog(), state );
         }
 
         @Override
@@ -619,10 +620,9 @@ public class LuceneDataSource extends LogBackedXaDataSource
         return searcher;
     }
 
-    XaTransaction createTransaction( int identifier,
-                                     XaLogicalLog logicalLog )
+    XaTransaction createTransaction( int identifier, XaLogicalLog logicalLog, TransactionState state )
     {
-        return new LuceneTransaction( identifier, logicalLog, this );
+        return new LuceneTransaction( identifier, logicalLog, state, this );
     }
 
     void invalidateIndexSearcher( IndexIdentifier identifier )

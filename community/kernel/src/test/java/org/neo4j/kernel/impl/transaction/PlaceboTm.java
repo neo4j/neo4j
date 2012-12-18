@@ -30,14 +30,17 @@ import javax.transaction.Transaction;
 import org.neo4j.kernel.impl.core.LockElement;
 import org.neo4j.kernel.impl.core.NoTransactionState;
 import org.neo4j.kernel.impl.core.TransactionState;
+import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 
 public class PlaceboTm extends AbstractTransactionManager
 {
     private LockManager lockManager;
+    private TxIdGenerator txIdGenerator;
 
-    public PlaceboTm( LockManager lockManager )
+    public PlaceboTm( LockManager lockManager, TxIdGenerator txIdGenerator )
     {
         this.lockManager = lockManager;
+        this.txIdGenerator = txIdGenerator;
     }
     
     public void setLockManager( LockManager lockManager )
@@ -157,6 +160,12 @@ public class PlaceboTm extends AbstractTransactionManager
             {
                 lockManager.getWriteLock( resource );
                 return new LockElement( resource, LockType.WRITE, lockManager );
+            }
+            
+            @Override
+            public TxIdGenerator getTxIdGenerator()
+            {
+                return txIdGenerator;
             }
         };
     }
