@@ -107,7 +107,7 @@ public class RelationshipImpl extends ArrayBasedPrimitive
     
     int getTypeId()
     {
-        return (int)((idAndMore&0xFFFF000000000000L)>>48);
+        return (int)((idAndMore&0xFFFF000000000000L)>>>48);
     }
     
     public void delete( NodeManager nodeManager, Relationship proxy )
