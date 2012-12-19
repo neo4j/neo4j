@@ -89,7 +89,6 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
 
     private Throwable recoveryError;
     private TransactionStateFactory stateFactory;
-    private final Period period = new IntegerBasedPeriod();
 
     public TxManager( File txLogDir,
                       XaDataSourceManager xaDataSourceManager,
@@ -177,7 +176,6 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
     @Override
     public synchronized void stop()
     {
-        period.nextEpoch();
         recovered = false;
         xaDataSourceManager.removeDataSourceRegistrationListener( dataSourceRegistrationListener );
         closeLog();
@@ -316,7 +314,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
             throw logAndReturn( "TM error tx begin", new NotSupportedException(
                     "Nested transactions not supported" ) );
         }
-        tx = new TransactionImpl( this, forceMode, stateFactory, period.currentEpoch() );
+        tx = new TransactionImpl( this, forceMode, stateFactory );
         txThreadMap.set( tx );
         int concurrentTxCount = txThreadMap.size();
         if ( concurrentTxCount > peakConcurrentTransactions )
