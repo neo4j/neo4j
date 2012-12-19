@@ -24,7 +24,7 @@ import static org.neo4j.cluster.com.message.Message.internal;
 
 import java.net.URI;
 
-import org.neo4j.cluster.com.message.MessageProcessor;
+import org.neo4j.cluster.com.message.MessageSender;
 import org.neo4j.cluster.com.message.MessageSource;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.AcceptorContext;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.AcceptorInstanceStore;
@@ -87,7 +87,7 @@ public class MultiPaxosServerFactory
 
     @Override
     public ProtocolServer newProtocolServer( TimeoutStrategy timeoutStrategy, MessageSource input,
-                                             MessageProcessor output,
+                                             MessageSender output,
                                              AcceptorInstanceStore acceptorInstanceStore,
                                              ElectionCredentialsProvider electionCredentialsProvider )
     {

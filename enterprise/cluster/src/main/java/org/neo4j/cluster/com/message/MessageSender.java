@@ -17,23 +17,11 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
+package org.neo4j.cluster.com.message;
 
-package org.neo4j.cluster;
+import java.util.List;
 
-import org.neo4j.cluster.com.message.MessageSender;
-import org.neo4j.cluster.com.message.MessageSource;
-import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.AcceptorInstanceStore;
-import org.neo4j.cluster.protocol.election.ElectionCredentialsProvider;
-import org.neo4j.cluster.timeout.TimeoutStrategy;
-
-/**
- * Factory for instantiating ProtocolServers.
- *
- * @see ProtocolServer
- */
-public interface ProtocolServerFactory
+public interface MessageSender extends MessageProcessor
 {
-    ProtocolServer newProtocolServer( TimeoutStrategy timeouts, MessageSource input, MessageSender output,
-                                      AcceptorInstanceStore acceptorInstanceStore,
-                                      ElectionCredentialsProvider electionCredentialsProvider );
+    void process( List<Message<? extends MessageType>> message );
 }

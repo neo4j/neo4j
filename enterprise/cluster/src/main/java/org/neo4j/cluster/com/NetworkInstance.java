@@ -27,6 +27,7 @@ import java.net.SocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.UnknownHostException;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -59,6 +60,7 @@ import org.jboss.netty.util.ThreadNameDeterminer;
 import org.jboss.netty.util.ThreadRenamingRunnable;
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageProcessor;
+import org.neo4j.cluster.com.message.MessageSender;
 import org.neo4j.cluster.com.message.MessageSource;
 import org.neo4j.cluster.com.message.MessageType;
 import org.neo4j.helpers.HostnamePort;
@@ -74,7 +76,7 @@ import org.neo4j.kernel.logging.Logging;
  * outgoing messages
  */
 public class NetworkInstance
-        implements MessageProcessor, MessageSource, Lifecycle
+        implements MessageSource, MessageSender, Lifecycle
 {
     public interface Configuration
     {
@@ -232,7 +234,16 @@ public class NetworkInstance
         }
     }
 
-    // MessageProcessor implementation
+    // MessageSender implementation
+    @Override
+    public void process( List<Message<? extends MessageType>> messages )
+    {
+        for ( Message<? extends MessageType> message : messages )
+        {
+            process( message );
+        }
+    }
+
     @Override
     public void process( Message<? extends MessageType> message )
     {

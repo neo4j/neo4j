@@ -34,6 +34,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageHolder;
 import org.neo4j.cluster.com.message.MessageProcessor;
+import org.neo4j.cluster.com.message.MessageSender;
 import org.neo4j.cluster.com.message.MessageSource;
 import org.neo4j.cluster.com.message.MessageType;
 import org.neo4j.cluster.statemachine.StateMachine;
@@ -54,7 +55,7 @@ public class ConnectedStateMachines
 {
     private final Logger logger = LoggerFactory.getLogger( ConnectedStateMachines.class );
 
-    private final MessageProcessor sender;
+    private final MessageSender sender;
     private DelayedDirectExecutor executor;
     private Timeouts timeouts;
     private final Map<Class<? extends MessageType>, StateMachine> stateMachines = new LinkedHashMap<Class<? extends
@@ -66,7 +67,7 @@ public class ConnectedStateMachines
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock( true );
 
     public ConnectedStateMachines( MessageSource source,
-                                   final MessageProcessor sender,
+                                   final MessageSender sender,
                                    TimeoutStrategy timeoutStrategy,
                                    DelayedDirectExecutor executor )
     {

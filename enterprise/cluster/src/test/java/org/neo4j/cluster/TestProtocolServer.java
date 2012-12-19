@@ -26,6 +26,7 @@ import java.util.List;
 
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageProcessor;
+import org.neo4j.cluster.com.message.MessageSender;
 import org.neo4j.cluster.com.message.MessageSource;
 import org.neo4j.cluster.com.message.MessageType;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.AcceptorInstanceStore;
@@ -103,10 +104,18 @@ public class TestProtocolServer
         return server.getServerId() + ": " + sender.getMessages().size() + server.toString();
     }
 
-    public class TestMessageSender
-            implements MessageProcessor
+    public class TestMessageSender implements MessageSender
     {
         List<Message> messages = new ArrayList<Message>();
+
+        @Override
+        public void process( List<Message<? extends MessageType>> messages )
+        {
+            for ( Message<? extends MessageType> message : messages )
+            {
+                process( message );
+            }
+        }
 
         @Override
         public void process( Message<? extends MessageType> message )

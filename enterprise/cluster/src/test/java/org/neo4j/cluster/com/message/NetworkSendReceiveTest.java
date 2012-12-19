@@ -77,7 +77,6 @@ public class NetworkSendReceiveTest
     private static class Server
             implements Lifecycle, MessageProcessor
     {
-
         protected NetworkInstance node;
 
         private final LifeSupport life = new LifeSupport();
