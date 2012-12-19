@@ -43,7 +43,7 @@ public class TestDeadlockDetection
         ResourceObject r3 = newResourceObject( "R3" );
         ResourceObject r4 = newResourceObject( "R4" );
         
-        PlaceboTm tm = new PlaceboTm( null );
+        PlaceboTm tm = new PlaceboTm( null, null );
         LockManager lm = new LockManagerImpl( new RagManager( tm ) );
         tm.setLockManager( lm );
         
@@ -241,7 +241,7 @@ public class TestDeadlockDetection
             StressThread.resources[i] = new ResourceObject( "RX" + i );
         }
         StressThread stressThreads[] = new StressThread[50];
-        PlaceboTm tm = new PlaceboTm( null );
+        PlaceboTm tm = new PlaceboTm( null, null );
         LockManager lm = new LockManagerImpl( new RagManager( tm ) );
         tm.setLockManager( lm );
         CountDownLatch startSignal = new CountDownLatch( 1 );

@@ -73,6 +73,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.kernel.logging.Logging;
 
 /**
  * Performs the internal switches from pending to slave/master, by listening for
@@ -101,18 +102,20 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
     private LifeSupport life;
     private final StringLogger msgLog;
     private final HaIdGeneratorFactory idGeneratorFactory;
+    private final Logging logging;
 
     public HighAvailabilityModeSwitcher( DelegateInvocationHandler delegateHandler,
                                          ClusterMemberAvailability clusterMemberAvailability,
                                          HighAvailabilityMemberStateMachine stateHandler, GraphDatabaseAPI graphDb,
-                                         HaIdGeneratorFactory idGeneratorFactory, Config config, StringLogger msgLog )
+                                         HaIdGeneratorFactory idGeneratorFactory, Config config, Logging logging )
     {
         this.delegateHandler = delegateHandler;
         this.clusterMemberAvailability = clusterMemberAvailability;
         this.graphDb = graphDb;
         this.idGeneratorFactory = idGeneratorFactory;
         this.config = config;
-        this.msgLog = msgLog;
+        this.logging = logging;
+        this.msgLog = logging.getLogger( getClass() );
         this.life = new LifeSupport();
         this.stateHandler = stateHandler;
     }
@@ -215,7 +218,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
         msgLog.logMessage( "I am " + config.get( HaSettings.server_id ) + ", moving to master" );
         try
         {
-            MasterImpl masterImpl = new MasterImpl( graphDb, graphDb.getMessageLog(), config );
+            MasterImpl masterImpl = new MasterImpl( graphDb, logging, config );
             
             MasterServer masterServer = new MasterServer( masterImpl, msgLog, serverConfig(),
                     new BranchDetectingTxVerifier( graphDb ) );
@@ -224,6 +227,11 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
             delegateHandler.setDelegate( masterImpl );
             DependencyResolver resolver = graphDb.getDependencyResolver();
             HaXaDataSourceManager xaDsm = resolver.resolveDependency( HaXaDataSourceManager.class );
+            
+//            TxManager txManager = resolver.resolveDependency( TxManager.class );
+//            txManager.stop();
+//            txManager.start();
+            
             idGeneratorFactory.switchToMaster();
             synchronized ( xaDsm )
             {

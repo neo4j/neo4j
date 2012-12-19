@@ -437,7 +437,7 @@ public class TestXa extends AbstractNeo4jTestCase
         StoreFactory sf = new StoreFactory( config, new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(),
                 fileSystem, StringLogger.DEV_NULL, null );
 
-        PlaceboTm txManager = new PlaceboTm( lockManager );
+        PlaceboTm txManager = new PlaceboTm( lockManager, getEmbeddedGraphDb().getTxIdGenerator() );
         LogBufferFactory logBufferFactory = new DefaultLogBufferFactory();
 
         // Since these tests fiddle with copying logical logs and such themselves

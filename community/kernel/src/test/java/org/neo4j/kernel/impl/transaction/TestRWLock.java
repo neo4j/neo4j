@@ -43,7 +43,7 @@ public class TestRWLock
     @Before
     public void before() throws Exception
     {
-        PlaceboTm tm = new PlaceboTm( null );
+        PlaceboTm tm = new PlaceboTm( null, null );
         lm = new LockManagerImpl( new RagManager( tm ) );
         tm.setLockManager( lm );
     }

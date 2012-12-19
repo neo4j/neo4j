@@ -40,6 +40,7 @@ import org.neo4j.index.impl.lucene.LuceneCommand.DeleteCommand;
 import org.neo4j.index.impl.lucene.LuceneCommand.RemoveCommand;
 import org.neo4j.index.lucene.QueryContext;
 import org.neo4j.index.lucene.ValueContext;
+import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
 import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
 import org.neo4j.kernel.impl.transaction.xaframework.XaTransaction;
@@ -53,10 +54,10 @@ class LuceneTransaction extends XaTransaction
     private final Map<IndexIdentifier,CommandList> commandMap =
             new HashMap<IndexIdentifier,CommandList>();
 
-    LuceneTransaction( int identifier, XaLogicalLog xaLog,
+    LuceneTransaction( int identifier, XaLogicalLog xaLog, TransactionState state,
         LuceneDataSource luceneDs )
     {
-        super( identifier, xaLog );
+        super( identifier, xaLog, state );
         this.dataSource = luceneDs;
     }
 

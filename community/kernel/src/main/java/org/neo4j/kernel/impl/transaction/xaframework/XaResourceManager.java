@@ -429,6 +429,7 @@ public class XaResourceManager
             }
             TransactionStatus txStatus = status.getTransactionStatus();
             xaTransaction = txStatus.getTransaction();
+            TxIdGenerator txIdGenerator = xaTransaction.getTxIdGenerator();
             checkStartWritten( txStatus, xaTransaction );
             isReadOnly = xaTransaction.isReadOnly();
             if ( onePhase )

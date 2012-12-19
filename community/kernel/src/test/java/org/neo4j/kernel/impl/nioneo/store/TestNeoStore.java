@@ -171,7 +171,7 @@ public class TestNeoStore extends AbstractNeo4jTestCase
                 fileSystem, StringLogger.DEV_NULL, null );
 
         ds = new NeoStoreXaDataSource(config, sf, lockManager, StringLogger.DEV_NULL,
-                new XaFactory(config, TxIdGenerator.DEFAULT, new PlaceboTm(lockManager),
+                new XaFactory(config, TxIdGenerator.DEFAULT, new PlaceboTm( lockManager, getEmbeddedGraphDb().getTxIdGenerator() ),
                         new DefaultLogBufferFactory(), fileSystem, new DevNullLoggingService(), RecoveryVerifier.ALWAYS_VALID,
                         LogPruneStrategies.NO_PRUNING ), TransactionStateFactory.noStateFactory( new DevNullLoggingService() ),
                         new TransactionInterceptorProviders( Collections.<TransactionInterceptorProvider>emptyList(), new DependencyResolver()

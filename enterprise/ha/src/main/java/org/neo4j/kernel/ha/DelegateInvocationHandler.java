@@ -23,6 +23,7 @@ package org.neo4j.kernel.ha;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
 
 import org.neo4j.graphdb.TransactionFailureException;
 
@@ -56,5 +57,12 @@ public class DelegateInvocationHandler<T> implements InvocationHandler
         {
             throw e.getCause();
         }
+    }
+    
+    public static <T> T snapshot( T proxiedInstance )
+    {
+        @SuppressWarnings( "unchecked" )
+        DelegateInvocationHandler<T> delegateHandler = (DelegateInvocationHandler<T>) Proxy.getInvocationHandler( proxiedInstance );
+        return delegateHandler.delegate;
     }
 }
