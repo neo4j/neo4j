@@ -26,6 +26,7 @@ import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.SimpleBindings;
 
+import com.tinkerpop.blueprints.pgm.impls.neo4j.Neo4jGraph;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.server.plugins.Description;
 import org.neo4j.server.plugins.Name;
@@ -34,10 +35,8 @@ import org.neo4j.server.plugins.PluginTarget;
 import org.neo4j.server.plugins.ServerPlugin;
 import org.neo4j.server.plugins.Source;
 import org.neo4j.server.rest.repr.BadInputException;
-import org.neo4j.server.rest.repr.ObjectToRepresentationConverter;
+import org.neo4j.server.rest.repr.GremlinObjectToRepresentationConverter;
 import org.neo4j.server.rest.repr.Representation;
-
-import com.tinkerpop.blueprints.pgm.impls.neo4j.Neo4jGraph;
 
 /* This is a class that will represent a server side
  * Gremlin plugin and will return JSON
@@ -50,28 +49,26 @@ import com.tinkerpop.blueprints.pgm.impls.neo4j.Neo4jGraph;
  * Make use of SPARQL queries over OpenRDF-based graphs.
  * and much, much more.
  */
-
-@Description( "A server side Gremlin plugin for the Neo4j REST server" )
+@Description("A server side Gremlin plugin for the Neo4j REST server")
 public class GremlinPlugin extends ServerPlugin
 {
 
     private final String g = "g";
     private volatile ScriptEngine engine;
-    private final EngineReplacementDecision engineReplacementDecision = new CountingEngineReplacementDecision(
-            500 );
+    private final EngineReplacementDecision engineReplacementDecision = new ScriptCountingEngineReplacementDecision( 500 );
 
     private ScriptEngine createQueryEngine()
     {
         return new ScriptEngineManager().getEngineByName( "gremlin-groovy" );
     }
 
-    @Name( "execute_script" )
-    @Description( "execute a Gremlin script with 'g' set to the Neo4jGraph and 'results' containing the results. Only results of one object type is supported." )
-    @PluginTarget( GraphDatabaseService.class )
+    @Name("execute_script")
+    @Description("execute a Gremlin script with 'g' set to the Neo4jGraph and 'results' containing the results. Only results of one object type is supported.")
+    @PluginTarget(GraphDatabaseService.class)
     public Representation executeScript(
             @Source final GraphDatabaseService neo4j,
-            @Description( "The Gremlin script" ) @Parameter( name = "script", optional = false ) final String script,
-            @Description( "JSON Map of additional parameters for script variables" ) @Parameter( name = "params", optional = true ) final Map params ) throws BadInputException
+            @Description("The Gremlin script") @Parameter(name = "script", optional = false) final String script,
+            @Description("JSON Map of additional parameters for script variables") @Parameter(name = "params", optional = true) final Map params ) throws BadInputException
     {
 
         try
@@ -81,9 +78,8 @@ public class GremlinPlugin extends ServerPlugin
             final Bindings bindings = createBindings( neo4j, params );
 
             final Object result = engine().eval( script, bindings );
-            return ObjectToRepresentationConverter.convert( result );
-        }
-        catch ( final Exception e )
+            return GremlinObjectToRepresentationConverter.convert( result );
+        } catch ( final Exception e )
         {
             throw new BadInputException( e.getMessage() );
         }
@@ -110,7 +106,7 @@ public class GremlinPlugin extends ServerPlugin
     private ScriptEngine engine()
     {
         if ( this.engine == null
-             || engineReplacementDecision.mustReplaceEngine() )
+                || engineReplacementDecision.mustReplaceEngine() )
         {
             this.engine = createQueryEngine();
         }
@@ -119,7 +115,7 @@ public class GremlinPlugin extends ServerPlugin
 
     public Representation getRepresentation( final Object data )
     {
-        return ObjectToRepresentationConverter.convert( data );
+        return GremlinObjectToRepresentationConverter.convert( data );
     }
 
 }

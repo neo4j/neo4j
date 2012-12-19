@@ -17,35 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.plugin.gremlin;
+package org.neo4j.server.webadmin.console;
 
-import java.util.HashSet;
-import java.util.Set;
+import org.neo4j.server.database.CypherExecutor;
+import org.neo4j.server.database.Database;
 
-public class ScriptCountingEngineReplacementDecision implements EngineReplacementDecision
+public interface ConsoleSessionCreator
 {
-    private final Set<String> scripts = new HashSet<String>();
-    private final int maxScriptCount;
+    String name();
 
-    public ScriptCountingEngineReplacementDecision( int maxScriptCount )
-    {
-        this.maxScriptCount = maxScriptCount;
-    }
-
-    @Override
-    public boolean mustReplaceEngine()
-    {
-        if ( scripts.size() < maxScriptCount )
-        {
-            return false;
-        }
-        scripts.clear();
-        return true;
-    }
-
-    @Override
-    public void beforeExecution( String script )
-    {
-        scripts.add( script );
-    }
+    ScriptSession newSession( Database database, CypherExecutor cypherExecutor );
 }

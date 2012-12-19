@@ -74,9 +74,6 @@ MIT License:
 
 BSD licence:
  ASM:   ASM Core, ASM Tree, ASM Commons, ASM Util, ASM Analysis,
- Blueprints: Data Models and their Implementations,
- Gremlin: A Graph-Based Programming Language,
- Pipes: A Data Flow Framework using Process Graphs,
  JLine, Scala library
 
 provided without support or warranty: JSON (JavaScript Object Notation)

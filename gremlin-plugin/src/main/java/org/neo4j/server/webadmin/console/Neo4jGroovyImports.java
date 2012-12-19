@@ -17,35 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.plugin.gremlin;
+package org.neo4j.server.webadmin.console;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.Arrays;
+import java.util.List;
 
-public class ScriptCountingEngineReplacementDecision implements EngineReplacementDecision
+public class Neo4jGroovyImports
 {
-    private final Set<String> scripts = new HashSet<String>();
-    private final int maxScriptCount;
 
-    public ScriptCountingEngineReplacementDecision( int maxScriptCount )
+    public static List<String> getImports()
     {
-        this.maxScriptCount = maxScriptCount;
+        String[] result = {"org.neo4j.graphdb.index.*",
+                "org.neo4j.graphdb.event.*", "org.neo4j.graphdb.traversal.*",
+                "org.neo4j.graphdb.helpers.*",
+                "org.neo4j.graphdb.helpers.collection.*",
+                "org.neo4j.graphdb.kernel.*", "org.neo4j.graphdb.*"};
+        return Arrays.asList( result );
     }
 
-    @Override
-    public boolean mustReplaceEngine()
-    {
-        if ( scripts.size() < maxScriptCount )
-        {
-            return false;
-        }
-        scripts.clear();
-        return true;
-    }
-
-    @Override
-    public void beforeExecution( String script )
-    {
-        scripts.add( script );
-    }
 }

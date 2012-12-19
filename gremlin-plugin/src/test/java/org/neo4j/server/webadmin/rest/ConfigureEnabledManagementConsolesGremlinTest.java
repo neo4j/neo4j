@@ -19,10 +19,6 @@
  */
 package org.neo4j.server.webadmin.rest;
 
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
-import static org.neo4j.server.helpers.ServerBuilder.server;
-
 import org.junit.After;
 import org.junit.Test;
 import org.neo4j.server.NeoServer;
@@ -31,7 +27,11 @@ import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RestRequest;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 
-public class ConfigureEnabledManagementConsolesTest extends ExclusiveServerTestBase {
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
+import static org.neo4j.server.helpers.ServerBuilder.server;
+
+public class ConfigureEnabledManagementConsolesGremlinTest extends ExclusiveServerTestBase {
 
     private NeoServer server;
 
@@ -42,19 +42,41 @@ public class ConfigureEnabledManagementConsolesTest extends ExclusiveServerTestB
     }
     
     @Test
+    public void shouldBeAbleToDisableGremlinConsole() throws Exception {
+        server = server().withProperty(Configurator.MANAGEMENT_CONSOLE_ENGINES, "shell").build();
+        server.start();
+
+        assertThat(exec("g","gremlin").getStatus(), is(400));
+        assertThat(exec("ls","shell").getStatus(),  is(200));
+    }
+
+    @Test
+    public void shouldBeAbleToEnableGremlinConsole() throws Exception {
+        server = server().withProperty(Configurator.MANAGEMENT_CONSOLE_ENGINES, "shell,gremlin").build();
+        server.start();
+
+        assertThat(exec("g","gremlin").getStatus(), is(200));
+        assertThat(exec("ls","shell").getStatus(),  is(200));
+    }
+    
+    @Test
     public void shouldBeAbleToExplicitlySetConsolesToEnabled() throws Exception 
     {
         server = server().withProperty(Configurator.MANAGEMENT_CONSOLE_ENGINES, "").build();
         server.start();
         
+        assertThat(exec("g","gremlin").getStatus(), is(400));
         assertThat(exec("ls","shell").getStatus(),  is(400));
     }
     
+
+    
     @Test
-    public void shellConsoleShouldBeEnabledByDefault() throws Exception {
+    public void gremlinAndShellConsolesShouldNotBeEnabledByDefault() throws Exception {
         server = server().build();
         server.start();
         
+        assertThat(exec("g","gremlin").getStatus(), is(400));
         assertThat(exec("ls","shell").getStatus(),  is(200));
     }
 
