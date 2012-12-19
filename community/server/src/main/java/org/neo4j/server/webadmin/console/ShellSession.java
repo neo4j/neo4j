@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.webadmin.rest;
+package org.neo4j.server.webadmin.console;
 
 import java.io.Serializable;
 import java.rmi.RemoteException;
@@ -27,7 +27,6 @@ import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.extension.KernelExtensions;
 import org.neo4j.server.logging.Logger;
-import org.neo4j.server.webadmin.console.ScriptSession;
 import org.neo4j.shell.ShellClient;
 import org.neo4j.shell.ShellException;
 import org.neo4j.shell.ShellServer;

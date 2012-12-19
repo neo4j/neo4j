@@ -19,9 +19,6 @@
  */
 package org.neo4j.server.webadmin.console;
 
-import groovy.lang.Binding;
-import groovy.lang.GroovyRuntimeException;
-
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
@@ -30,21 +27,22 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.tinkerpop.blueprints.pgm.TransactionalGraph;
+import com.tinkerpop.blueprints.pgm.impls.neo4j.Neo4jGraph;
+import groovy.lang.Binding;
+import groovy.lang.GroovyRuntimeException;
 import org.codehaus.groovy.tools.shell.IO;
 import org.neo4j.helpers.Pair;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.DatabaseBlockedException;
 import org.neo4j.server.logging.Logger;
 
-import com.tinkerpop.blueprints.pgm.TransactionalGraph;
-import com.tinkerpop.blueprints.pgm.impls.neo4j.Neo4jGraph;
-
 public class GremlinSession implements ScriptSession
 {
     private static final String INIT_FUNCTION = "init()";
 
-    private static final Logger log = Logger.getLogger(GremlinSession.class);
-    
+    private static final Logger log = Logger.getLogger( GremlinSession.class );
+
     protected GremlinWebConsole scriptEngine;
     private final Database database;
     private final IO io;
@@ -67,8 +65,7 @@ public class GremlinSession implements ScriptSession
         try
         {
             scriptEngine = new GremlinWebConsole( new Binding( bindings ), io );
-        }
-        catch ( final Exception failure )
+        } catch ( final Exception failure )
         {
             scriptEngine = new GremlinWebConsole()
             {
@@ -85,7 +82,7 @@ public class GremlinSession implements ScriptSession
     /**
      * Take some gremlin script, evaluate it in the context of this gremlin
      * session, and return the result.
-     * 
+     *
      * @param script
      * @return the return string of the evaluation result, or the exception
      *         message.
@@ -99,20 +96,20 @@ public class GremlinSession implements ScriptSession
             if ( script.equals( INIT_FUNCTION ) )
             {
                 result = init();
-            }
-            else
+            } else
             {
-                try {
+                try
+                {
                     scriptEngine.execute( script );
                     result = baos.toString();
-                } finally {
+                } finally
+                {
                     resetIO();
                 }
             }
-        }
-        catch ( GroovyRuntimeException ex )
+        } catch ( GroovyRuntimeException ex )
         {
-            log.error(ex);
+            log.error( ex );
             result = ex.getMessage();
         }
         return Pair.of( result, null );

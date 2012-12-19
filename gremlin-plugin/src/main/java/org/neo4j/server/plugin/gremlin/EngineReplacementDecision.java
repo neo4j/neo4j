@@ -19,8 +19,9 @@
  */
 package org.neo4j.server.plugin.gremlin;
 
-public interface EngineReplacementDecision {
+public interface EngineReplacementDecision
+{
     boolean mustReplaceEngine();
 
-    void beforeExecution(String script);
+    void beforeExecution( String script );
 }

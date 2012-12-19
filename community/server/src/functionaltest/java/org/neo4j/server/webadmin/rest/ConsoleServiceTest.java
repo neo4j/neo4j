@@ -35,6 +35,8 @@ import org.neo4j.server.database.Database;
 import org.neo4j.server.rest.repr.OutputFormat;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
 import org.neo4j.server.webadmin.console.ScriptSession;
+import org.neo4j.server.webadmin.rest.console.ConsoleService;
+import org.neo4j.server.webadmin.console.ConsoleSessionFactory;
 
 public class ConsoleServiceTest
 {
@@ -62,11 +64,6 @@ public class ConsoleServiceTest
 
         assertThat( response, containsString( "\"engines\" : [ \"shell\" ]" ) );
         
-        ConsoleService consoleServiceWithShellAndGremlin = new ConsoleService( new GremlinAndShellConsoleSessionFactory(), null, new OutputFormat( new JsonFormat(), uri, null ) );
-        
-        response = decode( consoleServiceWithShellAndGremlin.getServiceDefinition());
-
-        assertThat( response, containsString( "\"engines\" : [ \"shell\", \"gremlin\" ]" ) );
     }
     
     private String decode( final Response response ) throws UnsupportedEncodingException
@@ -87,24 +84,6 @@ public class ConsoleServiceTest
         {
             return new ArrayList<String>(){{
                 add("shell");
-            }};
-        }
-    }
-
-    private static class GremlinAndShellConsoleSessionFactory implements ConsoleSessionFactory
-    {
-        @Override
-        public ScriptSession createSession(String engineName, Database database)
-        {
-            return null;
-        }
-    
-        @Override
-        public Iterable<String> supportedEngines()
-        {
-            return new ArrayList<String>(){{
-                add("shell");
-                add("gremlin");
             }};
         }
     }

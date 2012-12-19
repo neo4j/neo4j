@@ -17,13 +17,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.webadmin.rest;
+package org.neo4j.server.webadmin.console;
 
+import org.neo4j.server.database.CypherExecutor;
 import org.neo4j.server.database.Database;
-import org.neo4j.server.webadmin.console.ScriptSession;
 
-public interface ConsoleSessionFactory
+public class GremlinSessionCreator implements ConsoleSessionCreator
 {
-    ScriptSession createSession( String engineName, Database database );
-    Iterable<String> supportedEngines();
+    public String name()
+    {
+        return "GREMLIN";
+    }
+
+    @Override
+    public ScriptSession newSession( Database database, CypherExecutor cypherExecutor )
+    {
+        return new GremlinSession( database );
+    }
 }
