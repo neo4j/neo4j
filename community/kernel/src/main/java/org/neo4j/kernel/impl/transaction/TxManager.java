@@ -360,13 +360,6 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
         {
             throw logAndReturn( "TM error tx commit", new IllegalStateException( "Not in transaction" ) );
         }
-        
-//        if ( !tx.matchesEpoch( period.currentEpoch() ) )
-//        {
-//            // This transaction was started in a previous epoch. Set to rollback, so that
-//            // it can complete as normal, release locks and call tx hooks and what not.
-//            tx.setRollbackOnly();
-//        }
 
         boolean hasAnyLocks = false;
         boolean successful = false;
