@@ -26,13 +26,13 @@ import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.kernel.impl.transaction.TxManager;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 
-public class TxManagerCheckKernelEventHandler implements KernelEventHandler
+public class HaKernelPanicHandler implements KernelEventHandler
 {
     private final XaDataSourceManager dataSourceManager;
     private final TxManager txManager;
     private final AtomicInteger epoch = new AtomicInteger();
 
-    public TxManagerCheckKernelEventHandler( XaDataSourceManager dataSourceManager, TxManager txManager )
+    public HaKernelPanicHandler( XaDataSourceManager dataSourceManager, TxManager txManager )
     {
         this.dataSourceManager = dataSourceManager;
         this.txManager = txManager;

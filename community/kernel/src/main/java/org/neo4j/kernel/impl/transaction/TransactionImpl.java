@@ -187,7 +187,8 @@ class TransactionImpl implements Transaction
                                                                          + " error writing transaction log" ), e );
                     }
                     // TODO ties HA to our TxManager
-                    if ( !txManager.finishHook.hasAnyLocks( this ) ) txManager.finishHook.initializeTransaction( eventIdentifier );
+                    if ( !hasAnyLocks() )
+                        getState().getTxHook().initializeTransaction( eventIdentifier );
                     return true;
                 }
                 Xid sameRmXid = null;
@@ -710,5 +711,15 @@ class TransactionImpl implements Transaction
             }
             ((MultipleCauseException) rollbackCause).addCause( cause );
         }
+    }
+
+    public boolean hasAnyLocks()
+    {
+        return getState().getTxHook().hasAnyLocks( this );
+    }
+
+    public void finish( boolean successful )
+    {
+        getState().getTxHook().finishTransaction( getEventIdentifier(), successful );
     }
 }

@@ -35,7 +35,7 @@ public class InterceptingWriteTransaction extends WriteTransaction
             NeoStore neoStore, TransactionState state,
             LockManager lockManager, TransactionInterceptor interceptor )
     {
-        super( identifier, log, neoStore, state );
+        super( identifier, log, state, neoStore );
         this.interceptor = interceptor;
     }
 

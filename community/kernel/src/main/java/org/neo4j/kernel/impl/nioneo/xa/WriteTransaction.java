@@ -101,10 +101,9 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
     private final TransactionState state;
     private XaConnection xaConnection;
 
-    WriteTransaction( int identifier, XaLogicalLog log, NeoStore neoStore,
-            TransactionState state )
+    WriteTransaction( int identifier, XaLogicalLog log, TransactionState state, NeoStore neoStore )
     {
-        super( identifier, log );
+        super( identifier, log, state );
         this.neoStore = neoStore;
         this.state = state;
     }

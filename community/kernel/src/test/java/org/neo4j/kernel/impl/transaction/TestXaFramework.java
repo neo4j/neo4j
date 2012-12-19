@@ -31,6 +31,7 @@ import java.nio.channels.ReadableByteChannel;
 import java.util.HashMap;
 import java.util.Map;
 
+import javax.transaction.Transaction;
 import javax.transaction.TransactionManager;
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
@@ -49,6 +50,7 @@ import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.TransactionInterceptorProviders;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
+import org.neo4j.kernel.impl.core.NoTransactionState;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.xaframework.DefaultLogBufferFactory;
@@ -158,9 +160,9 @@ public class TestXaFramework extends AbstractNeo4jTestCase
     {
         private java.util.List<XaCommand> commandList = new java.util.ArrayList<XaCommand>();
 
-        public DummyTransaction( int identifier, XaLogicalLog log )
+        public DummyTransaction( int identifier, XaLogicalLog log, TransactionState state )
         {
-            super( identifier, log );
+            super( identifier, log, state );
             setCommitTxId( 0 );
         }
 
@@ -203,7 +205,7 @@ public class TestXaFramework extends AbstractNeo4jTestCase
         @Override
         public XaTransaction create( int identifier, TransactionState state )
         {
-            return new DummyTransaction( identifier, getLogicalLog() );
+            return new DummyTransaction( identifier, getLogicalLog(), state );
         }
 
         @Override
@@ -245,15 +247,31 @@ public class TestXaFramework extends AbstractNeo4jTestCase
             super( branchId, name );
             try
             {
+                TransactionStateFactory stateFactory = new TransactionStateFactory( new DevNullLoggingService() )
+                {
+                    @Override
+                    public TransactionState create( Transaction tx )
+                    {
+                        return new NoTransactionState()
+                        {
+                            @Override
+                            public TxIdGenerator getTxIdGenerator()
+                            {
+                                return getEmbeddedGraphDb().getTxIdGenerator();
+                            }
+                        };
+                    }
+                };
+                
                 map.put( "store_dir", path().getPath() );
                 xaContainer = xaFactory.newXaContainer( this, resourceFile(),
                         new DummyCommandFactory(),
-                        new DummyTransactionFactory(), TransactionStateFactory.noStateFactory( new DevNullLoggingService() ), new TransactionInterceptorProviders(
+                        new DummyTransactionFactory(), stateFactory, new TransactionInterceptorProviders(
                         Iterables.<TransactionInterceptorProvider>empty(),
                         new DependencyResolver()
                         {
                             @Override
-                            public <T> T resolveDependency( Class<T> type ) throws IllegalArgumentException
+                            public <T> T resolveDependency( Class<T> type )
                             {
                                 return (T) new Config( MapUtil.stringMap(
                                         GraphDatabaseSettings.intercept_committing_transactions.name(),
@@ -390,7 +408,7 @@ public class TestXaFramework extends AbstractNeo4jTestCase
         xaDsMgr.registerDataSource( new DummyXaDataSource(
                 config, UTF8.encode( "DDDDDD" ), "dummy_datasource",
                 new XaFactory( new Config( config, GraphDatabaseSettings.class ),
-                        TxIdGenerator.DEFAULT, new PlaceboTm( null ), new DefaultLogBufferFactory(),
+                        TxIdGenerator.DEFAULT, new PlaceboTm( null, getEmbeddedGraphDb().getTxIdGenerator() ), new DefaultLogBufferFactory(),
                         fileSystem, new DevNullLoggingService(),
                         RecoveryVerifier.ALWAYS_VALID, LogPruneStrategies.NO_PRUNING ) ) );
         XaDataSource xaDs = xaDsMgr.getXaDataSource( "dummy_datasource" );
@@ -457,7 +475,7 @@ public class TestXaFramework extends AbstractNeo4jTestCase
             FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
             xaDsMgr.registerDataSource( new DummyXaDataSource( config, UTF8.encode( "DDDDDD" ), "dummy_datasource1",
                     new XaFactory( new Config( config, GraphDatabaseSettings.class ), TxIdGenerator.DEFAULT,
-                            new PlaceboTm( null ), new DefaultLogBufferFactory(), fileSystem, new DevNullLoggingService(),
+                            (AbstractTransactionManager)tm, new DefaultLogBufferFactory(), fileSystem, new DevNullLoggingService(),
                             RecoveryVerifier.ALWAYS_VALID, LogPruneStrategies.NO_PRUNING ) ) );
             xaDs1 = (DummyXaDataSource) xaDsMgr
                     .getXaDataSource( "dummy_datasource1" );
