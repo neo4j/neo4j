@@ -37,16 +37,16 @@ import org.neo4j.com.Serializer;
 import org.neo4j.com.TargetCaller;
 import org.neo4j.helpers.Functions;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.logging.Logging;
 
 public class SlaveClient extends Client<Slave> implements Slave
 {
     private final int machineId;
 
-    public SlaveClient( int machineId, String hostNameOrIp, int port, StringLogger logger, StoreId storeId,
+    public SlaveClient( int machineId, String hostNameOrIp, int port, Logging logging, StoreId storeId,
                         int maxConcurrentChannels, int chunkSize )
     {
-        super( hostNameOrIp, port, logger, storeId, Protocol.DEFAULT_FRAME_LENGTH,
+        super( hostNameOrIp, port, logging, storeId, Protocol.DEFAULT_FRAME_LENGTH,
                 SlaveServer.APPLICATION_PROTOCOL_VERSION,
                 HaSettings.read_timeout.apply( Functions.<String, String>nullFunction() ),
                 maxConcurrentChannels, maxConcurrentChannels, chunkSize );

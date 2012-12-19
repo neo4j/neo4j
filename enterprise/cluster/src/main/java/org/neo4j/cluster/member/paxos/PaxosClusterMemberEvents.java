@@ -50,6 +50,7 @@ import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.kernel.logging.Logging;
 
 /**
  * Paxos based implementation of {@link org.neo4j.cluster.member.ClusterMemberEvents}
@@ -67,12 +68,12 @@ public class PaxosClusterMemberEvents implements ClusterMemberEvents, Lifecycle
     private AtomicBroadcastListener atomicBroadcastListener;
     private ExecutorService executor;
 
-    public PaxosClusterMemberEvents( final Snapshot snapshot, Cluster cluster, AtomicBroadcast atomicBroadcast, StringLogger logger )
+    public PaxosClusterMemberEvents( final Snapshot snapshot, Cluster cluster, AtomicBroadcast atomicBroadcast, Logging logging )
     {
         this.snapshot = snapshot;
         this.cluster = cluster;
         this.atomicBroadcast = atomicBroadcast;
-        this.logger = logger;
+        this.logger = logging.getLogger( getClass() );
 
         clusterListener = new ClusterListenerImpl();
 

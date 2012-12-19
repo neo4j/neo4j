@@ -44,7 +44,7 @@ import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.nioneo.store.IdRange;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.logging.Logging;
 
 /**
  * The {@link Master} a slave should use to communicate with its master. It
@@ -61,10 +61,10 @@ public class MasterClient17 extends Client<Master> implements MasterClient
 
     private final int lockReadTimeout;
 
-    public MasterClient17( String hostNameOrIp, int port, StringLogger stringLogger, StoreId storeId,
+    public MasterClient17( String hostNameOrIp, int port, Logging logging, StoreId storeId,
             int readTimeoutSeconds, int lockReadTimeout, int maxConcurrentChannels, int chunkSize )
     {
-        super( hostNameOrIp, port, stringLogger, storeId, MasterServer.FRAME_LENGTH, PROTOCOL_VERSION,
+        super( hostNameOrIp, port, logging, storeId, MasterServer.FRAME_LENGTH, PROTOCOL_VERSION,
                 readTimeoutSeconds, maxConcurrentChannels, Math.min( maxConcurrentChannels,
                         DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT ), chunkSize );
         this.lockReadTimeout = lockReadTimeout;

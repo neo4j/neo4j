@@ -30,6 +30,7 @@ import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastSerializer;
 import org.neo4j.cluster.protocol.atomicbroadcast.Payload;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.kernel.logging.Logging;
 
 /**
  * Paxos based implementation of {@link org.neo4j.cluster.member.ClusterMemberAvailability}
@@ -43,11 +44,11 @@ public class PaxosClusterMemberAvailability implements ClusterMemberAvailability
     private AtomicBroadcast atomicBroadcast;
     private BindingListener bindingListener;
 
-    public PaxosClusterMemberAvailability( BindingNotifier binding, AtomicBroadcast atomicBroadcast, StringLogger logger)
+    public PaxosClusterMemberAvailability( BindingNotifier binding, AtomicBroadcast atomicBroadcast, Logging logging )
     {
         this.binding = binding;
         this.atomicBroadcast = atomicBroadcast;
-        this.logger = logger;
+        this.logger = logging.getLogger( getClass() );
 
         bindingListener = new BindingListener()
         {

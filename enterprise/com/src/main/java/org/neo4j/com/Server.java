@@ -64,6 +64,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.kernel.logging.Logging;
 
 /**
  * Receives requests from {@link Client clients}. Delegates actual work to an instance
@@ -135,14 +136,14 @@ public abstract class Server<T, R> extends Protocol implements ChannelPipelineFa
     private TxChecksumVerifier txVerifier;
     private int chunkSize;
 
-    public Server( T requestTarget, Configuration config, StringLogger logger, int frameLength,
+    public Server( T requestTarget, Configuration config, Logging logging, int frameLength,
                    byte applicationProtocolVersion, TxChecksumVerifier txVerifier )
     {
         this.requestTarget = requestTarget;
         this.config = config;
         this.frameLength = frameLength;
         this.applicationProtocolVersion = applicationProtocolVersion;
-        this.msgLog = logger;
+        this.msgLog = logging.getLogger( getClass() );
         this.txVerifier = txVerifier;
     }
 

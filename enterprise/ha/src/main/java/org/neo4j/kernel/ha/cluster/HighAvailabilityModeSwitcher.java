@@ -220,17 +220,13 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
         {
             MasterImpl masterImpl = new MasterImpl( graphDb, logging, config );
             
-            MasterServer masterServer = new MasterServer( masterImpl, msgLog, serverConfig(),
+            MasterServer masterServer = new MasterServer( masterImpl, logging, serverConfig(),
                     new BranchDetectingTxVerifier( graphDb ) );
             life.add( masterImpl );
             life.add( masterServer );
             delegateHandler.setDelegate( masterImpl );
             DependencyResolver resolver = graphDb.getDependencyResolver();
             HaXaDataSourceManager xaDsm = resolver.resolveDependency( HaXaDataSourceManager.class );
-            
-//            TxManager txManager = resolver.resolveDependency( TxManager.class );
-//            txManager.stop();
-//            txManager.start();
             
             idGeneratorFactory.switchToMaster();
             synchronized ( xaDsm )
@@ -300,14 +296,14 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
     {
         try
         {
-            MasterClient18 master = new MasterClient18( masterUri, graphDb.getMessageLog(),
+            MasterClient18 master = new MasterClient18( masterUri, logging,
                     nioneoDataSource.getStoreId(), config );
 
             Slave slaveImpl = new SlaveImpl( nioneoDataSource.getStoreId(), master,
                     new RequestContextFactory( getServerId( masterUri ), xaDataSourceManager,
                             graphDb.getDependencyResolver() ), xaDataSourceManager );
             
-            SlaveServer server = new SlaveServer( slaveImpl, serverConfig(), msgLog );
+            SlaveServer server = new SlaveServer( slaveImpl, serverConfig(), logging );
             delegateHandler.setDelegate( master );
             life.add( master );
             life.add( slaveImpl );
@@ -369,7 +365,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
         try
         {
             MasterClient18 checkConsistencyMaster = new MasterClient18( masterUri,
-                    graphDb.getMessageLog(), nioneoDataSource.getStoreId(), config );
+                    logging, nioneoDataSource.getStoreId(), config );
             checkConsistencyLife.add( checkConsistencyMaster );
             checkConsistencyLife.start();
             checkDataConsistencyWithMaster( checkConsistencyMaster, nioneoDataSource );
@@ -450,7 +446,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
             // Remove the current store - neostore file is missing, nothing we can really do
             stopServicesAndHandleBranchedStore( BranchedDataPolicy.keep_none );
             MasterClient18 copyMaster =
-                    new MasterClient18( masterUri, graphDb.getMessageLog(), null, config );
+                    new MasterClient18( masterUri, logging, null, config );
 
             life.add( copyMaster );
             life.start();

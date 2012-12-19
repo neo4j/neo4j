@@ -46,7 +46,7 @@ import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.IdRange;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.logging.Logging;
 
 /**
  * The {@link Master} a slave should use to communicate with its master. It
@@ -65,18 +65,18 @@ public class MasterClient18 extends Client<Master> implements MasterClient
     private final long lockReadTimeout;
     private Config config;
 
-    public MasterClient18( String hostNameOrIp, int port, StringLogger stringLogger, StoreId storeId,
+    public MasterClient18( String hostNameOrIp, int port, Logging logging, StoreId storeId,
                            long readTimeoutSeconds, long lockReadTimeout, int maxConcurrentChannels, int chunkSize )
     {
-        super( hostNameOrIp, port, stringLogger, storeId, MasterServer.FRAME_LENGTH, PROTOCOL_VERSION,
+        super( hostNameOrIp, port, logging, storeId, MasterServer.FRAME_LENGTH, PROTOCOL_VERSION,
                 readTimeoutSeconds, maxConcurrentChannels, Math.min( maxConcurrentChannels,
                 DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT ), chunkSize );
         this.lockReadTimeout = lockReadTimeout;
     }
 
-    public MasterClient18( URI masterUri, StringLogger stringLogger, StoreId storeId, Config config )
+    public MasterClient18( URI masterUri, Logging logging, StoreId storeId, Config config )
     {
-        this( masterUri.getHost(), masterUri.getPort(), stringLogger, storeId,
+        this( masterUri.getHost(), masterUri.getPort(), logging, storeId,
                 config.get( HaSettings.read_timeout ),
                 config.get( HaSettings.lock_read_timeout ),
                 config.get( HaSettings.max_concurrent_channels_per_slave ),

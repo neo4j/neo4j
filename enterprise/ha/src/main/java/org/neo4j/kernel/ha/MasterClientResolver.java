@@ -24,8 +24,8 @@ import java.util.Map;
 
 import org.neo4j.com.MismatchingVersionHandler;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.kernel.logging.Logging;
 
 public class MasterClientResolver implements MasterClientFactory, MismatchingVersionHandler
 {
@@ -93,15 +93,15 @@ public class MasterClientResolver implements MasterClientFactory, MismatchingVer
 
     private final Map<ProtocolVersionCombo, MasterClientFactory> protocolToFactoryMapping;
 
-    public MasterClientResolver( StringLogger messageLogger, int readTimeout, int lockReadTimeout, int channels,
+    public MasterClientResolver( Logging logging, int readTimeout, int lockReadTimeout, int channels,
             int chunkSize )
     {
         protocolToFactoryMapping = new HashMap<ProtocolVersionCombo, MasterClientFactory>();
-        protocolToFactoryMapping.put( ProtocolVersionCombo.PC_153, new F153( messageLogger, readTimeout, lockReadTimeout,
+        protocolToFactoryMapping.put( ProtocolVersionCombo.PC_153, new F153( logging, readTimeout, lockReadTimeout,
                 channels, chunkSize ) );
-        protocolToFactoryMapping.put( ProtocolVersionCombo.PC_17, new F17( messageLogger, readTimeout, lockReadTimeout,
+        protocolToFactoryMapping.put( ProtocolVersionCombo.PC_17, new F17( logging, readTimeout, lockReadTimeout,
                 channels, chunkSize ) );
-        protocolToFactoryMapping.put( ProtocolVersionCombo.PC_18, new F18( messageLogger, readTimeout, lockReadTimeout,
+        protocolToFactoryMapping.put( ProtocolVersionCombo.PC_18, new F18( logging, readTimeout, lockReadTimeout,
                 channels, chunkSize ) );
     }
 
@@ -132,16 +132,16 @@ public class MasterClientResolver implements MasterClientFactory, MismatchingVer
 
     protected static abstract class StaticMasterClientFactory implements MasterClientFactory
     {
-        protected final StringLogger stringLogger;
+        protected final Logging logging;
         protected final int readTimeoutSeconds;
         protected final int lockReadTimeout;
         protected final int maxConcurrentChannels;
         protected final int chunkSize;
 
-        StaticMasterClientFactory( StringLogger stringLogger, int readTimeoutSeconds, int lockReadTimeout,
+        StaticMasterClientFactory( Logging logging, int readTimeoutSeconds, int lockReadTimeout,
                 int maxConcurrentChannels, int chunkSize )
         {
-            this.stringLogger = stringLogger;
+            this.logging = logging;
             this.readTimeoutSeconds = readTimeoutSeconds;
             this.lockReadTimeout = lockReadTimeout;
             this.maxConcurrentChannels = maxConcurrentChannels;
@@ -151,48 +151,48 @@ public class MasterClientResolver implements MasterClientFactory, MismatchingVer
 
     public static final class F153 extends StaticMasterClientFactory
     {
-        public F153( StringLogger stringLogger, int readTimeoutSeconds, int lockReadTimeout, int maxConcurrentChannels,
+        public F153( Logging logging, int readTimeoutSeconds, int lockReadTimeout, int maxConcurrentChannels,
                 int chunkSize )
         {
-            super( stringLogger, readTimeoutSeconds, lockReadTimeout, maxConcurrentChannels, chunkSize );
+            super( logging, readTimeoutSeconds, lockReadTimeout, maxConcurrentChannels, chunkSize );
         }
 
         @Override
         public MasterClient instantiate( String hostNameOrIp, int port, StoreId storeId, LifeSupport life )
         {
-            return life.add(  new MasterClient153( hostNameOrIp, port, stringLogger, storeId,
+            return life.add(  new MasterClient153( hostNameOrIp, port, logging, storeId,
                     readTimeoutSeconds, lockReadTimeout, maxConcurrentChannels, chunkSize ) );
         }
     };
 
     public static final class F17 extends StaticMasterClientFactory
     {
-        public F17( StringLogger stringLogger, int readTimeoutSeconds, int lockReadTimeout, int maxConcurrentChannels,
+        public F17( Logging logging, int readTimeoutSeconds, int lockReadTimeout, int maxConcurrentChannels,
                 int chunkSize )
         {
-            super( stringLogger, readTimeoutSeconds, lockReadTimeout, maxConcurrentChannels, chunkSize );
+            super( logging, readTimeoutSeconds, lockReadTimeout, maxConcurrentChannels, chunkSize );
         }
 
         @Override
         public MasterClient instantiate( String hostNameOrIp, int port, StoreId storeId, LifeSupport life )
         {
-            return life.add(  new MasterClient17( hostNameOrIp, port, stringLogger, storeId,
+            return life.add(  new MasterClient17( hostNameOrIp, port, logging, storeId,
                     readTimeoutSeconds, lockReadTimeout, maxConcurrentChannels, chunkSize ) );
         }
     };
 
     public static final class F18 extends StaticMasterClientFactory
     {
-        public F18( StringLogger stringLogger, int readTimeoutSeconds, int lockReadTimeout, int maxConcurrentChannels,
+        public F18( Logging logging, int readTimeoutSeconds, int lockReadTimeout, int maxConcurrentChannels,
                 int chunkSize )
         {
-            super( stringLogger, readTimeoutSeconds, lockReadTimeout, maxConcurrentChannels, chunkSize );
+            super( logging, readTimeoutSeconds, lockReadTimeout, maxConcurrentChannels, chunkSize );
         }
 
         @Override
         public MasterClient instantiate( String hostNameOrIp, int port, StoreId storeId, LifeSupport life )
         {
-            return life.add( new MasterClient18( hostNameOrIp, port, stringLogger, storeId,
+            return life.add( new MasterClient18( hostNameOrIp, port, logging, storeId,
                     readTimeoutSeconds, lockReadTimeout, maxConcurrentChannels, chunkSize ) );
         }
     }

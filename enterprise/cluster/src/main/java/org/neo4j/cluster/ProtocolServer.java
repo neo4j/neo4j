@@ -33,6 +33,7 @@ import org.neo4j.cluster.statemachine.StateTransitionListener;
 import org.neo4j.cluster.timeout.Timeouts;
 import org.neo4j.helpers.Listeners;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.logging.Logging;
 
 /**
  * A ProtocolServer ties together the underlying ConnectedStateMachines with an understanding of ones
@@ -46,10 +47,10 @@ public class ProtocolServer implements BindingNotifier
     private Iterable<BindingListener> bindingListeners = Listeners.newListeners();
     private final StringLogger msgLog;
 
-    public ProtocolServer( ConnectedStateMachines connectedStateMachines, StringLogger msgLog )
+    public ProtocolServer( ConnectedStateMachines connectedStateMachines, Logging logging )
     {
         this.connectedStateMachines = connectedStateMachines;
-        this.msgLog = msgLog;
+        this.msgLog = logging.getLogger( getClass() );
 
         FromHeaderMessageProcessor fromHeaderMessageProcessor = new FromHeaderMessageProcessor();
         addBindingListener( fromHeaderMessageProcessor );

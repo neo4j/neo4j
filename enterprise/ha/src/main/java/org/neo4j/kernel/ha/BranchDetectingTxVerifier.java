@@ -27,10 +27,13 @@ import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
+import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.logging.Logging;
 
 public class BranchDetectingTxVerifier implements TxChecksumVerifier
 {
     private final GraphDatabaseAPI db;
+    private final StringLogger logger;
     private XaDataSource dataSource;
 
     public BranchDetectingTxVerifier( GraphDatabaseAPI db /* I'd like to get in StringLogger, XaDataSource instead */ )
@@ -39,6 +42,7 @@ public class BranchDetectingTxVerifier implements TxChecksumVerifier
          * proper db, merely the HA graph db which is a layer around a not-yet-started db
          * Rickards restructuring will of course fix this */
         this.db = db;
+        this.logger = db.getDependencyResolver().resolveDependency( Logging.class ).getLogger( getClass() );
     }
     
     @Override
@@ -58,7 +62,7 @@ public class BranchDetectingTxVerifier implements TxChecksumVerifier
         }
         catch ( IOException e )
         {
-            db.getMessageLog().logMessage( "Couldn't verify checksum for " + stringify( txId, masterId, checksum ), e );
+            logger.logMessage( "Couldn't verify checksum for " + stringify( txId, masterId, checksum ), e );
             throw new BranchedDataException( e );
         }
     }

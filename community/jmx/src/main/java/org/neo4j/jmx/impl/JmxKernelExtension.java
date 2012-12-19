@@ -34,6 +34,7 @@ import org.neo4j.helpers.Service;
 import org.neo4j.kernel.KernelData;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.kernel.logging.Logging;
 
 public class JmxKernelExtension implements Lifecycle
 {
@@ -44,10 +45,10 @@ public class JmxKernelExtension implements Lifecycle
     private ManagementSupport support;
     private JMXServiceURL url;
 
-    public JmxKernelExtension( KernelData kernelData, StringLogger logger )
+    public JmxKernelExtension( KernelData kernelData, Logging logging )
     {
         this.kernelData = kernelData;
-        this.logger = logger;
+        this.logger = logging.getLogger( getClass() );
     }
 
     @Override

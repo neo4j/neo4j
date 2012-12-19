@@ -62,8 +62,7 @@ public class OnlineBackupKernelExtension implements Lifecycle
             {
                 server = new BackupServer( backup,
                         config.get( OnlineBackupSettings.online_backup_port ),
-                        graphDatabaseAPI.getDependencyResolver().resolveDependency( Logging.class ).getLogger(
-                                OnlineBackupKernelExtension.class ) );
+                        graphDatabaseAPI.getDependencyResolver().resolveDependency( Logging.class ) );
                 server.init();
                 server.start();
 

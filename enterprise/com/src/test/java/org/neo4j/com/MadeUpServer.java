@@ -24,7 +24,7 @@ import java.io.IOException;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.channel.Channel;
 import org.neo4j.helpers.HostnamePort;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.logging.DevNullLoggingService;
 
 public class MadeUpServer extends Server<MadeUpCommunicationInterface, Void>
 {
@@ -61,7 +61,7 @@ public class MadeUpServer extends Server<MadeUpCommunicationInterface, Void>
             {
                 return new HostnamePort( null, port );
             }
-        }, StringLogger.DEV_NULL, FRAME_LENGTH, applicationProtocolVersion, txVerifier );
+        }, new DevNullLoggingService(), FRAME_LENGTH, applicationProtocolVersion, txVerifier );
         this.internalProtocolVersion = internalProtocolVersion;
     }
 

@@ -64,6 +64,8 @@ import org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils;
 import org.neo4j.kernel.impl.transaction.xaframework.NoSuchLogVersionException;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.logging.DevNullLoggingService;
+import org.neo4j.kernel.logging.Logging;
 
 class BackupService
 {
@@ -90,7 +92,7 @@ class BackupService
             throw new RuntimeException( targetDirectory + " already contains a database" );
         }
 
-        BackupClient client = new BackupClient( sourceHostNameOrIp, sourcePort, StringLogger.DEV_NULL, null );
+        BackupClient client = new BackupClient( sourceHostNameOrIp, sourcePort, new DevNullLoggingService(), null );
         client.start();
         long timestamp = System.currentTimeMillis();
         Map<String, Long> lastCommittedTxs = emptyMap();
@@ -133,7 +135,7 @@ class BackupService
                      * span the next-to-last up to the latest for each datasource
                      */
                     BackupClient recoveryClient = new BackupClient(
-                            sourceHostNameOrIp, sourcePort, targetDb.getMessageLog(), targetDb.getStoreId() );
+                            sourceHostNameOrIp, sourcePort, targetDb.getDependencyResolver().resolveDependency( Logging.class ), targetDb.getStoreId() );
                     recoveryClient.start();
                     Response<Void> recoveryResponse = null;
                     Map<String, Long> recoveryDiff = new HashMap<String, Long>();
@@ -383,7 +385,7 @@ class BackupService
     private BackupOutcome incrementalWithContext( String sourceHostNameOrIp, int sourcePort, GraphDatabaseAPI targetDb,
                                                   RequestContext context )
     {
-        BackupClient client = new BackupClient( sourceHostNameOrIp, sourcePort, targetDb.getMessageLog(),
+        BackupClient client = new BackupClient( sourceHostNameOrIp, sourcePort, targetDb.getDependencyResolver().resolveDependency( Logging.class ),
                 targetDb.getStoreId() );
         client.start();
         Map<String, Long> lastCommittedTxs;

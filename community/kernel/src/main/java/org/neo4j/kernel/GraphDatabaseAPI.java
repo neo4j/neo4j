@@ -61,7 +61,7 @@ public interface GraphDatabaseAPI
 
     @Deprecated
     DiagnosticsManager getDiagnosticsManager();
-
+    
     @Deprecated
     StringLogger getMessageLog();
 

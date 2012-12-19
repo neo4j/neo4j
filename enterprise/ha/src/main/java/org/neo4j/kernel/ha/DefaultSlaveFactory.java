@@ -26,19 +26,19 @@ import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.DataSourceRegistrationListener;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.logging.Logging;
 
 public class DefaultSlaveFactory implements SlaveFactory
 {
-    private StringLogger logger;
-    private int maxConcurrentChannelsPerSlave;
-    private int chunkSize;
+    private final Logging logging;
+    private final int maxConcurrentChannelsPerSlave;
+    private final int chunkSize;
     private StoreId storeId;
 
-    public DefaultSlaveFactory( XaDataSourceManager xaDsm, StringLogger logger,
+    public DefaultSlaveFactory( XaDataSourceManager xaDsm, Logging logging,
             int maxConcurrentChannelsPerSlave, int chunkSize )
     {
-        this.logger = logger;
+        this.logging = logging;
         this.maxConcurrentChannelsPerSlave = maxConcurrentChannelsPerSlave;
         this.chunkSize = chunkSize;
         xaDsm.addDataSourceRegistrationListener( new StoreIdSettingListener() );
@@ -47,8 +47,8 @@ public class DefaultSlaveFactory implements SlaveFactory
     @Override
     public Slave newSlave( ClusterMember clusterMember )
     {
-        return new SlaveClient( clusterMember.getInstanceId(), clusterMember.getHAUri().getHost(), clusterMember.getHAUri().getPort(), logger, storeId,
-                maxConcurrentChannelsPerSlave, chunkSize );
+        return new SlaveClient( clusterMember.getInstanceId(), clusterMember.getHAUri().getHost(),
+                clusterMember.getHAUri().getPort(), logging, storeId, maxConcurrentChannelsPerSlave, chunkSize );
     }
 
     private class StoreIdSettingListener extends DataSourceRegistrationListener.Adapter

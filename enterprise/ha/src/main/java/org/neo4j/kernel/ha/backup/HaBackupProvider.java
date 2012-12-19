@@ -45,6 +45,7 @@ import org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.Logging;
+import org.neo4j.kernel.logging.SystemOutLogging;
 
 @Service.Implementation(BackupExtensionService.class)
 public final class HaBackupProvider extends BackupExtensionService
@@ -98,7 +99,7 @@ public final class HaBackupProvider extends BackupExtensionService
         ClusterClient clusterClient = life.add( new ClusterClient( ClusterClient.adapt( config ), logging,
                 new CoordinatorIncapableCredentialsProvider() ) );
         ClusterMemberEvents events = life.add( new PaxosClusterMemberEvents( clusterClient, clusterClient,
-                clusterClient, StringLogger.SYSTEM ) );
+                clusterClient, new SystemOutLogging() ) );
 
         final Semaphore infoReceivedLatch = new Semaphore( 0 );
         final AtomicReference<URI> backupUri = new AtomicReference<URI>(  );

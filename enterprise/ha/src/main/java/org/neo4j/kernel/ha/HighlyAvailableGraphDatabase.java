@@ -244,11 +244,11 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
 
         clusterClient = new ClusterClient( ClusterClient.adapt( config ), logging, electionCredentialsProvider );
         PaxosClusterMemberEvents localClusterEvents = new PaxosClusterMemberEvents( clusterClient, clusterClient,
-            clusterClient, logging.getLogger( PaxosClusterMemberEvents.class ) );
+            clusterClient, logging );
 
         HighAvailabilityMemberContext localMemberContext = new SimpleHighAvailabilityMemberContext( clusterClient );
         PaxosClusterMemberAvailability localClusterMemberAvailability = new PaxosClusterMemberAvailability(
-            clusterClient, clusterClient, logging.getLogger( PaxosClusterMemberEvents.class ) );
+            clusterClient, clusterClient, logging );
 
         // Here we decide whether to start in compatibility mode or mode or not
         if ( !config.get( HaSettings.coordinators ).isEmpty() &&
@@ -333,7 +333,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                         new Class[]{TxIdGenerator.class}, txIdGeneratorDelegate );
         members = new ClusterMembers( clusterClient, clusterClient, clusterClient, clusterEvents );
         slaves = life.add( new HighAvailabilitySlaves( members, clusterClient, new DefaultSlaveFactory(
-                xaDataSourceManager, msgLog, config.get( HaSettings.max_concurrent_channels_per_slave ),
+                xaDataSourceManager, logging, config.get( HaSettings.max_concurrent_channels_per_slave ),
                 config.get( HaSettings.com_chunk_size ).intValue() ) ) );
 
         new TxIdGeneratorModeSwitcher( memberStateMachine, txIdGeneratorDelegate,

@@ -31,6 +31,7 @@ import org.neo4j.jmx.impl.Neo4jMBean;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.kernel.info.DiagnosticsProvider;
+import org.neo4j.kernel.logging.Logging;
 import org.neo4j.management.Diagnostics;
 
 @Service.Implementation( ManagementBeanProvider.class )
@@ -56,7 +57,7 @@ public class DiagnosticsBean extends ManagementBeanProvider
         {
             super( management );
             this.diagnostics = management.getKernelData().graphDatabase().getDiagnosticsManager();
-            this.log = management.getKernelData().graphDatabase().getMessageLog();
+            this.log = management.getKernelData().graphDatabase().getDependencyResolver().resolveDependency( Logging.class ).getLogger( getClass() );
         }
 
         @Override

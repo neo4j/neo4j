@@ -54,6 +54,7 @@ import org.neo4j.kernel.impl.nioneo.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.kernel.logging.Logging;
 
 /**
  * A means for a client to communicate with a {@link Server}. It
@@ -86,14 +87,14 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
 
     private int chunkSize;
 
-    public Client( String hostNameOrIp, int port, StringLogger logger,
+    public Client( String hostNameOrIp, int port, Logging logging,
             StoreId storeId, int frameLength,
             byte applicationProtocolVersion, long readTimeout,
             int maxConcurrentChannels, int maxUnusedPoolSize, int chunkSize )
     {
         assertChunkSizeIsWithinFrameSize( chunkSize, frameLength );
         
-        this.msgLog = logger;
+        this.msgLog = logging.getLogger( getClass() );
         this.storeId = storeId;
         this.frameLength = frameLength;
         this.applicationProtocolVersion = applicationProtocolVersion;

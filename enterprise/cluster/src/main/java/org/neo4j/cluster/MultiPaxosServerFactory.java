@@ -132,8 +132,7 @@ public class MultiPaxosServerFactory
         connectedStateMachines.addStateMachine( new StateMachine( clusterContext, ClusterMessage.class,
                 ClusterState.start ) );
 
-        final ProtocolServer server = new ProtocolServer( connectedStateMachines, logging.getLogger( ProtocolServer
-        .class ) );
+        final ProtocolServer server = new ProtocolServer( connectedStateMachines, logging );
 
         server.addBindingListener( new BindingListener()
         {
