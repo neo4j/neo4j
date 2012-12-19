@@ -131,6 +131,7 @@ public class ConnectedStateMachines
                 // Process and send messages
                 // Allow state machines to send messages to each other as well in this loop
                 Message<? extends MessageType> outgoingMessage;
+                List<Message<? extends MessageType>> toSend = new LinkedList<Message<? extends MessageType>>();
                 try
                 {
                     while ( ( outgoingMessage = outgoing.nextOutgoingMessage() ) != null )
@@ -151,14 +152,15 @@ public class ConnectedStateMachines
 
                         if ( outgoingMessage.hasHeader( Message.TO ) )
                         {
-                            try
-                            {
-                                sender.process( outgoingMessage );
-                            }
-                            catch ( Throwable e )
-                            {
-                                logger.warn( "Message sending threw exception", e );
-                            }
+//                            try
+//                            {
+//                                sender.process( outgoingMessage );
+//                            }
+//                            catch ( Throwable e )
+//                            {
+//                                logger.warn( "Message sending threw exception", e );
+//                            }
+                            toSend.add( outgoingMessage );
                         }
                         else
                         {
@@ -171,6 +173,10 @@ public class ConnectedStateMachines
                                 internalStatemachine.handle( (Message) outgoingMessage, outgoing );
                             }
                         }
+                    }
+                    if ( !toSend.isEmpty() ) // the check is necessary, sender may not have started yet
+                    {
+                        sender.process( toSend );
                     }
                 }
                 catch ( Exception e )

@@ -97,7 +97,8 @@ public class NetworkInstance
     private ChannelGroup channels;
 
     // Receiving
-    private ExecutorService executor;
+    private ExecutorService receiveExecutor;
+    private ExecutorService sendExecutor;
     private ServerBootstrap serverBootstrap;
     private ServerSocketChannelFactory nioChannelFactory;
     //    private Channel channel;
@@ -130,7 +131,8 @@ public class NetworkInstance
     public void start()
             throws Throwable
     {
-        executor = Executors.newSingleThreadExecutor( new NamedThreadFactory( "Cluster messenger" ) );
+        receiveExecutor = Executors.newSingleThreadExecutor( new NamedThreadFactory( "Cluster Receiver" ) );
+        sendExecutor = Executors.newSingleThreadExecutor( new NamedThreadFactory( "Cluster Sender" ) );
         channels = new DefaultChannelGroup();
 
         // Listen for incoming connections
@@ -159,14 +161,20 @@ public class NetworkInstance
     public void stop()
             throws Throwable
     {
+        sendExecutor.shutdownNow();
+        if ( !sendExecutor.awaitTermination( 10, TimeUnit.SECONDS ) )
+        {
+            msgLog.warn( "Could not shut down send executor" );
+        }
+
         channels.close().awaitUninterruptibly();
         nioChannelFactory.releaseExternalResources();
         clientBootstrap.releaseExternalResources();
 
-        executor.shutdownNow();
-        if ( !executor.awaitTermination( 10, TimeUnit.SECONDS ) )
+        receiveExecutor.shutdownNow();
+        if ( !receiveExecutor.awaitTermination( 10, TimeUnit.SECONDS ) )
         {
-            msgLog.warn( "Could not shut down executor" );
+            msgLog.warn( "Could not shut down receive executor" );
         }
     }
 
@@ -236,12 +244,26 @@ public class NetworkInstance
 
     // MessageSender implementation
     @Override
-    public void process( List<Message<? extends MessageType>> messages )
+    public void process( final List<Message<? extends MessageType>> messages )
     {
-        for ( Message<? extends MessageType> message : messages )
+        sendExecutor.submit( new Runnable()
         {
-            process( message );
-        }
+            @Override
+            public void run()
+            {
+                for ( Message<? extends MessageType> message : messages )
+                {
+                    try
+                    {
+                        process( message );
+                    }
+                    catch ( Exception e )
+                    {
+                        msgLog.warn( "Error sending message " + message, e );
+                    }
+                }
+            }
+        });
     }
 
     @Override
@@ -474,7 +496,7 @@ public class NetworkInstance
             final Message message = (Message) event.getMessage();
 //            msgLog.logMessage("Received:" + message, true);
 //            receive( message );
-            executor.submit( new Runnable()
+            receiveExecutor.submit( new Runnable()
             {
                 @Override
                 public void run()
@@ -482,7 +504,6 @@ public class NetworkInstance
                     receive( message );
                 }
             } );
-
         }
 
         @Override
