@@ -534,7 +534,6 @@ BSD License
   ASM Tree
   ASM Util
   Blueprints-Core
-  Blueprints-Neo4jGraph
   Easing Equations (in easing.js)
   Gremlin-Groovy: Gremlin for the Groovy Language
   Gremlin-Java: Gremlin for the Java Language
