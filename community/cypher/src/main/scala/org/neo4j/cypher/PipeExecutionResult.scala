@@ -25,8 +25,8 @@ import internal.StringExtras
 import internal.commands.expressions.StringHelper
 import scala.collection.JavaConverters._
 import java.io.{StringWriter, PrintWriter}
-import collection.Map
 import collection.immutable.{Map => ImmutableMap}
+import collection.Map
 
 class PipeExecutionResult(result: Iterator[Map[String, Any]], val columns: List[String], state:QueryState)
   extends ExecutionResult
