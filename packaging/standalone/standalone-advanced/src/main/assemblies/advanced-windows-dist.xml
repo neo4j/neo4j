@@ -98,6 +98,7 @@
         <include>org.apache.servicemix.bundles:org.apache.servicemix.bundles.lucene</include>
         <include>org.apache.lucene:lucene-core</include>
         <include>org.scala-lang:scala-library</include>
+        <include>com.googlecode.concurrentlinkedhashmap:concurrentlinkedhashmap-lru</include>
       </includes>
       <excludes>
         <exclude>*:javadoc:*</exclude>
@@ -139,6 +140,7 @@
         <exclude>*:neo4j-server-enterprise</exclude>
         <exclude>org.scala-lang:scala-library</exclude>
         <exclude>org.neo4j.app:windows-service-wrapper:*</exclude>
+        <exclude>com.googlecode.concurrentlinkedhashmap:concurrentlinkedhashmap-lru</exclude>
       </excludes>
     </dependencySet>
     <!-- java api docs -->
