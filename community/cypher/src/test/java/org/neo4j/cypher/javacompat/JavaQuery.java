@@ -19,16 +19,16 @@
  */
 package org.neo4j.cypher.javacompat;
 
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.collection.IteratorUtil;
+
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 
 public class JavaQuery
 {
@@ -91,7 +91,7 @@ public class JavaQuery
             rows += "\n";
         }
         // END SNIPPET: rows
-        resultString = engine.execute( "start n=node("+id+") return n, n.name" ).toString();
+        resultString = engine.execute( "start n=node("+id+") return n, n.name" ).dumpToString();
         columnsString = columns.toString();
         db.shutdown();
     }

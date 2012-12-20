@@ -66,7 +66,7 @@ public class CypherSession implements ScriptSession
         try
         {
             ExecutionResult result = cypherExecutor.getExecutionEngine().execute( script );
-            resultString = result.toString();
+            resultString = result.dumpToString();
         }
         catch ( SyntaxException error )
         {

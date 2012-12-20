@@ -1,6 +1,8 @@
 1.9.M03
 -------
 o Fixes #336 - Patterns that re-use a pattern node can produce non-existing matches
+o Fixes #369 - The substring-function sometimes fails when no length is specified
+o Deprecated the Iterable implementation for ExecutionResult
 
 1.9.M02
 -------
