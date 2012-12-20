@@ -124,7 +124,7 @@ public class JavaExecutionEngineTest
                 "seven=node(7), eight=node(8), nine=node(9), ten=node(10) " +
                 "return one, two, three, four, five, six, seven, eight, nine, ten";
         ExecutionResult result = engine.execute( q );
-        assertThat( result.toString(), matchesPattern( "one.*two.*three.*four.*five.*six.*seven.*eight.*nine.*ten" ) );
+        assertThat( result.dumpToString(), matchesPattern( "one.*two.*three.*four.*five.*six.*seven.*eight.*nine.*ten" ) );
 
     }
 
@@ -271,7 +271,7 @@ public class JavaExecutionEngineTest
         // END SNIPPET: create_node_from_map
 
         ExecutionResult result = engine.execute( "start n=node(*) where n.name = 'Andres' and n.position = 'Developer' return n" );
-        assertThat( count( result ), is( 1 ) );
+        assertThat( count( result.iterator() ), is( 1 ) );
     }
 
     @Test
@@ -293,7 +293,7 @@ public class JavaExecutionEngineTest
         // END SNIPPET: create_multiple_nodes_from_map
 
         ExecutionResult result = engine.execute( "start n=node(*) where n.name in ['Andres', 'Michael'] and n.position = 'Developer' return n" );
-        assertThat( count( result ), is( 2 ) );
+        assertThat( count( result.iterator() ), is( 2 ) );
     }
 
     @Test
@@ -324,7 +324,7 @@ public class JavaExecutionEngineTest
         params.put( "props", props );
 
         ExecutionResult result = engine.execute( "start n=node(0) create unique p = n-[:REL]->({props}) return last(p) as X", params );
-        assertThat( count( result ), is( 1 ) );
+        assertThat( count( result.iterator() ), is( 1 ) );
     }
 
     @Test
@@ -343,7 +343,7 @@ public class JavaExecutionEngineTest
         params.put( "props2", props2 );
 
         ExecutionResult result = engine.execute( "start n=node(0) create unique p = n-[:REL]->({props1})-[:LER]->({props2}) return p", params );
-        assertThat( count( result ), is( 1 ) );
+        assertThat( count( result.iterator() ), is( 1 ) );
     }
 
     private void makeFriends( Node a, Node b )

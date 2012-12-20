@@ -36,8 +36,10 @@ import java.util.Map;
  * set, or use <code>columnAs()</code> to access a single column with result objects
  * cast to a type.
  *
+ * WARNING: The Iterable<> implementation has been deprecated, and will not work for long.
+ * We strongly encourage you to use this object as an Iterator instead.
  */
-public class ExecutionResult implements Iterable<Map<String,Object>>
+public class ExecutionResult implements Iterable<Map<String,Object>>, Iterator<Map<String,Object>>
 {
     private org.neo4j.cypher.ExecutionResult inner;
 
@@ -81,11 +83,33 @@ public class ExecutionResult implements Iterable<Map<String,Object>>
     @Override
     public Iterator<Map<String, Object>> iterator()
     {
-        return inner.javaIterator();
+        return this;
     }
 
     @Override
     public String toString()
+    {
+        return inner.toString();
+    }
+
+    @Override
+    public boolean hasNext() {
+        return inner.hasNext();
+    }
+
+    @Override
+    public Map<String, Object> next() {
+        return inner.nextAsJava();
+    }
+
+    @Override
+    public void remove() {
+    }
+
+    /**
+     * @return Returns the execution result
+     */
+    public String dumpToString()
     {
         return inner.dumpToString();
     }

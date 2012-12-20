@@ -1,9 +1,12 @@
-1.9-SNAPSHOT
-------------
+1.9.M03
+-------
+o Pulled out Gremlin as separate plugin to support different versions
+
+1.9.M02
+-------
 o Server now allows - under some specific circumstances - setting empty arrays as properties. Specifically, it is allowed if there is a pre-existing
   array property on the entity from which the server can infer the type of array to store.
 o Traversal Javascript is now security sandboxed. It is possible to turn the sandbox off for the next two releases, for backwards compatibility.
-o pulled out Gremlin as separate plugin to support different versions
 
 1.8.RC1 (2012-09-05)
 --------------------

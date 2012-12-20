@@ -25,8 +25,8 @@ import internal.StringExtras
 import internal.commands.expressions.StringHelper
 import scala.collection.JavaConverters._
 import java.io.{StringWriter, PrintWriter}
-import collection.Map
 import collection.immutable.{Map => ImmutableMap}
+import collection.Map
 
 class PipeExecutionResult(result: Iterator[Map[String, Any]], val columns: List[String], state:QueryState)
   extends ExecutionResult
@@ -49,6 +49,10 @@ class PipeExecutionResult(result: Iterator[Map[String, Any]], val columns: List[
     case iter: Seq[_] => iter.asJava
     case x => x
   }
+
+  def nextAsJava(): java.util.Map[String, Any] = next().map {
+    case (k,v) => k->makeValueJavaCompatible(v)
+  }.asJava
 
   def javaIterator: java.util.Iterator[java.util.Map[String, Any]] = this.map(m => {
     m.map(kv => kv._1 -> makeValueJavaCompatible(kv._2)).asJava

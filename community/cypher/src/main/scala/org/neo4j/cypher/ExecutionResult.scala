@@ -31,6 +31,7 @@ trait ExecutionResult extends Iterator[Map[String, Any]] {
   def dumpToString(writer: PrintWriter)
   def dumpToString(): String
   def queryStatistics():QueryStatistics
+  def nextAsJava(): java.util.Map[String, Any]
 }
 
 
