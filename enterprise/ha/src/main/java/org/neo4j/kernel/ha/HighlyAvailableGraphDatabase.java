@@ -510,7 +510,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     @Override
     public String toString()
     {
-        return getClass().getSimpleName() + "[" + 0 + ", " + storeDir + "]";
+        return getClass().getSimpleName() + "[" + storeDir + "]";
     }
 
     public String getInstanceState()
