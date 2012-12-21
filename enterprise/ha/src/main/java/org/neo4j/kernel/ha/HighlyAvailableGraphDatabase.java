@@ -39,6 +39,7 @@ import org.neo4j.cluster.member.paxos.PaxosClusterMemberAvailability;
 import org.neo4j.cluster.member.paxos.PaxosClusterMemberEvents;
 import org.neo4j.cluster.protocol.election.DefaultElectionCredentialsProvider;
 import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.IndexProvider;
 import org.neo4j.helpers.collection.Iterables;
@@ -176,7 +177,11 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         // TODO first startup ever we don't have a proper db, so don't even serve read requests
         // if this is a startup for where we have been a member of this cluster before we
         // can server (possibly quite outdated) read requests.
-        accessGuard.await( stateSwitchTimeoutMillis );
+        if (!accessGuard.await( stateSwitchTimeoutMillis ))
+        {
+            throw new TransactionFailureException( "Timeout waiting for cluster to elect master" );
+        }
+
         return super.beginTx( forceMode );
     }
 
