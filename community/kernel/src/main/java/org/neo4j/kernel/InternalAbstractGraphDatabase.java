@@ -1293,6 +1293,10 @@ public abstract class InternalAbstractGraphDatabase
             {
                 return (T) txIdGenerator;
             }
+            else if ( DiagnosticsManager.class.isAssignableFrom( type ) )
+            {
+                return (T) diagnosticsManager;
+            }
             else
             {
                 // Try with kernel extensions
