@@ -11,7 +11,7 @@
     <groupId>org.neo4j.server.plugin</groupId>
     <artifactId>neo4j-gremlin-plugin</artifactId>
     <packaging>jar</packaging>
-    <version>1.9.M03</version>
+    <version>1.9-SNAPSHOT</version>
     <name>neo4j-gremlin-plugin</name>
 
     <properties>
@@ -20,7 +20,7 @@
         <jackson.version>1.8.3</jackson.version>
         <cxf.version>2.3.1</cxf.version>
         <servlet-api.version>2.5</servlet-api.version>
-        <neo4j.version>1.9.M03</neo4j.version>
+        <neo4j.version>1.9-SNAPSHOT</neo4j.version>
         <blueprints.version>1.2</blueprints.version>
         <gremlin.version>1.5</gremlin.version>
         <jersey.server.version>1.6</jersey.server.version>
