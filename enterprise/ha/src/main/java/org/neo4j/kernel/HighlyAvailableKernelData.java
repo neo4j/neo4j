@@ -29,10 +29,11 @@ import org.neo4j.kernel.ha.ClusterDatabaseInfoProvider;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.cluster.member.ClusterMember;
 import org.neo4j.kernel.ha.cluster.member.ClusterMembers;
+import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.management.ClusterDatabaseInfo;
 import org.neo4j.management.ClusterMemberInfo;
 
-public class HighlyAvailableKernelData extends KernelData
+public class HighlyAvailableKernelData extends KernelData implements Lifecycle
 {
     private final HighlyAvailableGraphDatabase db;
     private final ClusterMembers memberInfo;
@@ -45,6 +46,27 @@ public class HighlyAvailableKernelData extends KernelData
         this.db = db;
         this.memberInfo = memberInfo;
         this.memberInfoProvider = databaseInfo;
+    }
+
+    @Override
+    public void init() throws Throwable
+    {
+    }
+
+    @Override
+    public void start() throws Throwable
+    {
+    }
+
+    @Override
+    public void stop() throws Throwable
+    {
+    }
+
+    @Override
+    public void shutdown()
+    {
+        super.shutdown();
     }
 
     @Override
