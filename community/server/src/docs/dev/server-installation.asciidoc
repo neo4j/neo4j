@@ -63,7 +63,13 @@ You are encouraged to create a dedicated user for running the service and for th
 After installation you may have to do some platform specific configuration and performance tuning.
 For that, refer to  <<configuration-linux-notes>>.
 
-Finally, note that if you chose to create a new user account, on uninstall you will be prompted to remove it from the system.
+To remove the server from the set of startup services, the proper command is
+
+`service neo4j-service remove`
++
+which will stop the server, if running, and remove it.
+
+Note that if you chose to create a new user account, on uninstall you will be prompted to remove it from the system.
 
 == Mac OSX ==
 
@@ -100,7 +106,11 @@ should stop the server.
 6. `launchctl start org.neo4j.server.7474`
 +
 should start the server again.
-   
+
+To remove the launchctl service, issue the command
+
+`./bin/neo4j remove`
+
 == Multiple Server instances on one machine ==
 
 Neo4j can be set up to run as several instances on one machine, providing for instance several databases for development.

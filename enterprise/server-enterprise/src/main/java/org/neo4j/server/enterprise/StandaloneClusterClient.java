@@ -69,8 +69,26 @@ public class StandaloneClusterClient
     private StandaloneClusterClient( ClusterClient clusterClient )
     {
         life.add( clusterClient );
+        addShutdownHook();
         life.start();
     }
+
+    protected void addShutdownHook()
+    {
+        Runtime.getRuntime()
+                .addShutdownHook( new Thread()
+                {
+                    @Override
+                    public void run()
+                    {
+                        if ( life != null )
+                        {
+                            life.shutdown();
+                        }
+                    }
+                } );
+    }
+
 
     public static void main( String[] args )
     {
@@ -97,7 +115,7 @@ public class StandaloneClusterClient
                 System.err.println( "ERROR: " + cause.getMessage() + (cause.getCause() != null ? ", caused by:" + cause.getCause().getMessage() : "") );
             else
             {
-                System.err.println( "ERROR: Uknown error" );
+                System.err.println( "ERROR: Unknown error" );
                 throw e;
             }
         }
