@@ -18,7 +18,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
-require(
+define(
   ["lib/jquery"
    "lib/neo4js"
    "lib/backbone"
@@ -35,21 +35,40 @@ require(
    "neo4j/webadmin/Bootstrapper"]
   (a,b,c,DashboardRouter, DataBrowserRouter, ConsoleRouter, ServerInfoRouter, IndexManagerRouter, BaseUI, MoreInfo, SplashScreen, GlobalLoadingIndicator, ConnectionMonitor, Bootstrapper) ->
 
-    modules = [
-        new BaseUI
-        new DashboardRouter
-        new DataBrowserRouter
-        new ConsoleRouter
-        new IndexManagerRouter
-        new ServerInfoRouter
 
-        new ConnectionMonitor
-        new SplashScreen
-        new GlobalLoadingIndicator
-        new MoreInfo
-    ]
+    modules = {
+        baseui: new BaseUI
+        dashboard: new DashboardRouter
+        browser: new DataBrowserRouter
+        console: new ConsoleRouter
+        indexes: new IndexManagerRouter
+        info: new ServerInfoRouter
+
+        connection: new ConnectionMonitor
+        splash: new SplashScreen
+        loading: new GlobalLoadingIndicator
+        more: new MoreInfo
+    }
     
     boot = new Bootstrapper
-    boot.bootstrap modules
+    boot.bootstrap [
+      modules.baseui
+      modules.dashboard
+      modules.browser
+      modules.console
+      modules.indexes
+      modules.info
 
+      modules.connection
+      modules.splash
+      modules.loading
+      modules.more
+    ]
+      
+    return {
+      boot: boot
+      modules: modules
+    }
 )
+
+
