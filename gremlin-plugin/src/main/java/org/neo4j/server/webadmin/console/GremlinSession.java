@@ -27,8 +27,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.tinkerpop.blueprints.pgm.TransactionalGraph;
-import com.tinkerpop.blueprints.pgm.impls.neo4j.Neo4jGraph;
+import com.tinkerpop.blueprints.TransactionalGraph;
+import com.tinkerpop.blueprints.impls.neo4j.Neo4jGraph;
 import groovy.lang.Binding;
 import groovy.lang.GroovyRuntimeException;
 import org.codehaus.groovy.tools.shell.IO;

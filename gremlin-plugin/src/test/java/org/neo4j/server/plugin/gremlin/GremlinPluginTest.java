@@ -27,6 +27,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+import com.tinkerpop.blueprints.Graph;
+import com.tinkerpop.blueprints.Vertex;
+import com.tinkerpop.blueprints.impls.neo4j.Neo4jGraph;
 import junit.framework.Assert;
 
 import org.json.simple.JSONArray;
@@ -43,9 +46,6 @@ import org.neo4j.server.rest.repr.Representation;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
 import org.neo4j.test.ImpermanentGraphDatabase;
 
-import com.tinkerpop.blueprints.pgm.Graph;
-import com.tinkerpop.blueprints.pgm.Vertex;
-import com.tinkerpop.blueprints.pgm.impls.neo4j.Neo4jGraph;
 
 public class GremlinPluginTest
 {
@@ -62,7 +62,7 @@ public class GremlinPluginTest
         neo4j = new ImpermanentGraphDatabase();
         plugin = new GremlinPlugin();
         Graph graph = new Neo4jGraph( neo4j );
-        graph.clear();
+//        graph.clear();
         Vertex marko = graph.addVertex( "1" );
         marko.setProperty( "name", "marko" );
         marko.setProperty( "age", 29 );
@@ -130,14 +130,16 @@ public class GremlinPluginTest
         JSONArray array = (JSONArray) parser.parse( json.format( GremlinPluginTest.executeTestScript( "g.V", null) ) );
         List<String> ids = new ArrayList<String>( Arrays.asList( "1", "2", "3",
                 "4", "5", "6" ) );
-        Assert.assertEquals( 6, array.size() );
+        Assert.assertEquals( 7, array.size() );
         for ( Object object : array )
         {
             String self = (String) ( (JSONObject) object ).get( "self" );
             String id = self.substring( self.lastIndexOf( "/" ) + 1 );
             ids.remove( id );
             String name = (String) ( (JSONObject) ( (JSONObject) object ).get( "data" ) ).get( "name" );
-            if ( id.equals( "1" ) )
+            if ( id.equals( "0" ) )
+            {
+            } else if ( id.equals( "1" ) )
             {
                 Assert.assertEquals( name, "marko" );
             }

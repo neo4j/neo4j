@@ -23,9 +23,9 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
 
-import com.tinkerpop.blueprints.pgm.impls.neo4j.Neo4jEdge;
-import com.tinkerpop.blueprints.pgm.impls.neo4j.Neo4jGraph;
-import com.tinkerpop.blueprints.pgm.impls.neo4j.Neo4jVertex;
+import com.tinkerpop.blueprints.impls.neo4j.Neo4jEdge;
+import com.tinkerpop.blueprints.impls.neo4j.Neo4jGraph;
+import com.tinkerpop.blueprints.impls.neo4j.Neo4jVertex;
 import com.tinkerpop.pipes.util.structures.Table;
 import org.neo4j.helpers.collection.FirstItemIterable;
 import org.neo4j.helpers.collection.IterableWrapper;
@@ -120,15 +120,15 @@ public class GremlinObjectToRepresentationConverter
             return ObjectToRepresentationConverter.getSingleRepresentation( result );
         }
 
-        if ( result instanceof Neo4jVertex )
+        if ( result instanceof Neo4jVertex)
         {
             return new NodeRepresentation( ((Neo4jVertex) result).getRawVertex() );
         }
-        if ( result instanceof Neo4jEdge )
+        if ( result instanceof Neo4jEdge)
         {
             return new RelationshipRepresentation( ((Neo4jEdge) result).getRawEdge() );
         }
-        if ( result instanceof Neo4jGraph )
+        if ( result instanceof Neo4jGraph)
         {
             return ValueRepresentation.string( ((Neo4jGraph) result).getRawGraph().toString() );
         }

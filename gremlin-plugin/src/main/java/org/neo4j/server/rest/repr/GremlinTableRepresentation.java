@@ -21,49 +21,41 @@ package org.neo4j.server.rest.repr;
 
 import java.util.List;
 
+import com.sun.tools.javac.util.Name;
 import com.tinkerpop.pipes.util.structures.Row;
 import com.tinkerpop.pipes.util.structures.Table;
 import org.neo4j.helpers.collection.IterableWrapper;
 
-public class GremlinTableRepresentation extends ObjectRepresentation
-{
+public class GremlinTableRepresentation extends ObjectRepresentation {
 
     private final Table queryResult;
 
-    public GremlinTableRepresentation( Table result )
-    {
-        super( RepresentationType.STRING );
+    public GremlinTableRepresentation(Table result) {
+        super(RepresentationType.STRING);
         this.queryResult = result;
     }
 
     @Mapping("columns")
-    public Representation columns()
-    {
-        return ListRepresentation.string( queryResult.getColumnNames() );
+    public Representation columns() {
+        return ListRepresentation.string(queryResult.getColumnNames());
     }
 
     @Mapping("data")
-    public Representation data()
-    {
+    public Representation data() {
         final List<String> columnNames = queryResult.getColumnNames();
-        final IterableWrapper<Representation, Row> rows = new IterableWrapper<Representation, Row>( queryResult )
-        {
-            protected Representation underlyingObjectToObject( Row row )
-            {
-                return new ListRepresentation( "row", convertRow( row, columnNames ) );
+        final IterableWrapper<Representation, Row> rows = new IterableWrapper<Representation, Row>(queryResult) {
+            protected Representation underlyingObjectToObject(Row row) {
+                return new ListRepresentation("row", convertRow(row, columnNames));
             }
         };
-        return new ListRepresentation( "data", rows );
+        return new ListRepresentation("data", rows);
     }
 
-    private Iterable<Representation> convertRow( final Row row, final List<String> columnNames )
-    {
-        return new IterableWrapper<Representation, String>( columnNames )
-        {
-            protected Representation underlyingObjectToObject( String column )
-            {
-                final Object fieldValue = row.getColumn( column );
-                return GremlinObjectToRepresentationConverter.convert( fieldValue );
+    private Iterable<Representation> convertRow(final Row row, final List<String> columnNames) {
+        return new IterableWrapper<Representation, String>(columnNames) {
+            protected Representation underlyingObjectToObject(String column) {
+                final Object fieldValue = row.getColumn(column);
+                return GremlinObjectToRepresentationConverter.convert(fieldValue);
             }
         };
     }
