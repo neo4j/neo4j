@@ -24,22 +24,17 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.io.UnsupportedEncodingException;
-import java.net.URL;
 import java.net.URLEncoder;
 
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response.Status;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.annotations.Documented;
-import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
 import org.neo4j.server.rest.JSONPrettifier;
-import org.neo4j.server.webadmin.console.GremlinSessionCreator;
 import org.neo4j.test.GraphDescription.Graph;
 import org.neo4j.test.GraphDescription.NODE;
 import org.neo4j.test.GraphDescription.PROP;
@@ -51,6 +46,31 @@ import org.neo4j.visualization.asciidoc.AsciidocHelper;
 public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
 {
     private static final String ENDPOINT = "http://localhost:7474/db/data/ext/GremlinPlugin/graphdb/execute_script";
+
+
+    protected String doGremlinRestCall( String endpoint, String scriptTemplate, Status status, Pair<String, String>... params ) {
+        data.get();
+        String parameterString = createParameterString( params );
+
+
+        String script = createScript( scriptTemplate );
+        String queryString = "{\"script\": \"" + script + "\"," + parameterString+"},"  ;
+
+        gen().expectedStatus( status.getStatusCode() ).payload(
+                queryString ).description(formatGroovy( script ) );
+        return gen().post( endpoint ).entity();
+    }
+
+    protected String formatGroovy( String script )
+    {
+        script = script.replace( ";", "\n" );
+        if ( !script.endsWith( "\n" ) )
+        {
+            script += "\n";
+        }
+        return "_Raw script source_\n\n" + "[source, groovy]\n" + "----\n"
+                + script + "----\n";
+    }
     
     /**
      * Scripts can be sent as URL-encoded In this example, the graph has been
@@ -63,7 +83,7 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
     public void testGremlinPostURLEncoded() throws UnsupportedEncodingException
     {
         data.get();
-        String script = "g.idx('node_auto_index')[[name:'I']].out";
+        String script = "g.getIndex('node_auto_index', Vertex.class).get('name','I')_().out()";
         gen().expectedStatus( OK.getStatusCode() ).description(
                 formatGroovy( script ) );
         String response = gen().payload(
@@ -71,7 +91,7 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
                 MediaType.APPLICATION_FORM_URLENCODED_TYPE ).post( ENDPOINT ).entity();
         assertTrue( response.contains( "you" ) );
     }
-    
+
     /**
      * Sample docs
      */
@@ -80,7 +100,7 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
     public void testIndexIteration() throws UnsupportedEncodingException
     {
         data.get();
-        String script = "g.idx('node_auto_index')[[name:'I']]";
+        String script = "g.getIndex('node_auto_index', Vertex.class).get('name','I')._()";
         gen().expectedStatus( OK.getStatusCode() ).description(
                 formatGroovy( script ) );
         String response = doRestCall( script, OK);
@@ -99,14 +119,14 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
     {
         final String script = "g.v(me).out;";
         final String params = "{ \"me\" : " + data.get().get( "I" ).getId()
-                              + " }";
+                + " }";
         gen().description( formatGroovy( script ) );
         String response = gen().expectedStatus( OK.getStatusCode() ).payload(
                 "script=" + URLEncoder.encode( script, "UTF-8" ) + "&params="
                         + URLEncoder.encode( params, "UTF-8" ) )
 
-        .payloadType( MediaType.APPLICATION_FORM_URLENCODED_TYPE ).post(
-                ENDPOINT ).entity();
+                .payloadType( MediaType.APPLICATION_FORM_URLENCODED_TYPE ).post(
+                        ENDPOINT ).entity();
         assertTrue( response.contains( "you" ) );
     }
 
@@ -126,27 +146,10 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
     }
 
     private String doRestCall( String script, Status status,
-            Pair<String, String>... params )
+                               Pair<String, String>... params )
     {
-           return doGremlinRestCall(ENDPOINT, script, status, params);
+        return doGremlinRestCall( ENDPOINT, script, status, params );
     }
-
-    protected String doGremlinRestCall( String endpoint, String scriptTemplate, Status status, Pair<String, String>... params ) {
-        data.get();
-        String parameterString = createParameterString( params );
-
-
-        String script = createScript( scriptTemplate );
-        String queryString = "{\"script\": \"" + script + "\"," + parameterString+"},"  ;
-
-        gen().expectedStatus( status.getStatusCode() ).payload(
-                queryString ).description(formatGroovy( script ) );
-        return gen().post( endpoint ).entity();
-    }
-
-
-
-
 
     /**
      * Import a graph form a http://graphml.graphdrawing.org/[GraphML] file can
@@ -162,19 +165,13 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
     public void testGremlinImportGraph() throws UnsupportedEncodingException
     {
         data.get().clear();
-
-        URL graphML = GremlinPluginFunctionalTest.class.getResource( "/graphml.xml" );
-
         String script = "" +
-        		"g.clear();" +
-        		"g.loadGraphML('" + graphML + "');" +
-        		"g.idx('node_auto_index')[[name:'you']];";
+                "g.loadGraphML('https://raw.github.com/neo4j/neo4j/master/gremlin-plugin/src/data/graphml1.xml');" +
+                "g.getIndex('node_auto_index', Vertex.class).get('name','you');";
         String response = doRestCall( script, OK );
         assertTrue( response.contains( "you" ) );
     }
-    
-    
-    
+
     @Test
     public void return_map() throws UnsupportedEncodingException
     {
@@ -192,9 +189,9 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
     public void emitGraph() throws UnsupportedEncodingException
     {
         String script = "writer = new GraphMLWriter(g);"
-                        + "out = new java.io.ByteArrayOutputStream();"
-                        + "writer.outputGraph(out);"
-                        + "result = out.toString();";
+                + "out = new java.io.ByteArrayOutputStream();"
+                + "writer.outputGraph(out);"
+                + "result = out.toString();";
         String response = doRestCall( script, OK );
         assertTrue( response.contains( "graphml" ) );
         assertTrue( response.contains( "you" ) );
@@ -213,7 +210,7 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
     {
         String script = "meaning_of_life";
         String payload = "{\"script\":\"" + script + "\","
-                         + "\"params\":{\"meaning_of_life\" : 42.0}}";
+                + "\"params\":{\"meaning_of_life\" : 42.0}}";
         description( formatGroovy( script ) );
         String response = gen().expectedStatus( OK.getStatusCode() ).payload(
                 JSONPrettifier.parse( payload ) ).payloadType(
@@ -232,7 +229,7 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
     public void testSortResults() throws UnsupportedEncodingException
     {
         data.get();
-        String script = "g.idx('node_auto_index')[[name:'I']].out.sort{it.name}";
+        String script = "g.getIndex('node_auto_index', Vertex.class).get('name','I')._().out.sort{it.name}";
         String response = doRestCall( script, OK );
         assertTrue( response.contains( "you" ) );
         assertTrue( response.contains( "him" ) );
@@ -250,7 +247,7 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
     @Graph( value = { "I know you", "I know him" } )
     public void testScriptWithPaths()
     {
-        String script = "g.v(%I%).out.name.paths";
+        String script = "g.v(%I%).out.name.path";
         String response = doRestCall( script, OK );
         assertTrue( response.contains( "you" ) );
         assertTrue( response.contains( "him" ) );
@@ -283,7 +280,7 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
     public void testGremlinPostJSONWithTableResult()
     {
         String script = "t= new Table();"
-                        + "g.v(%I%).as('I').out('know').as('friend').out('like').as('likes').table(t,['friend','likes']){it.name}{it.name}.iterate();t;";
+                + "g.v(%I%).as('I').out('know').as('friend').out('like').as('likes').table(t,['friend','likes']){it.name}{it.name}.iterate();t;";
         String response = doRestCall( script, OK );
         assertTrue( response.contains( "cats" ) );
     }
@@ -305,7 +302,7 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
 
     /**
      * Send an arbitrary Groovy script - Lucene sorting.
-     * 
+     *
      * This example demonstrates that you via the Groovy runtime embedded with
      * the server have full access to all of the servers Java APIs. The below
      * example creates Nodes in the database both via the Blueprints and the
@@ -320,38 +317,38 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
     {
         String script = ""
 
-                        + "'******** Additional imports *********';"
-                        + "import org.neo4j.graphdb.index.*;"
-                        + "import org.neo4j.graphdb.*;"
-                        + "import org.neo4j.index.lucene.*;"
-                        + "import org.apache.lucene.search.*;"
-                        + ";"
-                        + "'**** Blueprints API methods on the injected Neo4jGraph at variable g ****';"
-                        + "meVertex = g.addVertex([name:'me']);"
-                        + "meNode = meVertex.getRawVertex();"
-                        + ";"
-                        + "'*** get the Neo4j raw instance ***';"
-                        + "neo4j = g.getRawGraph();"
-                        + ";"
-                        + ";"
-                        + "'******** Neo4j API methods: *********';"
-                        + "tx = neo4j.beginTx();"
-                        + " youNode = neo4j.createNode();"
-                        + " youNode.setProperty('name','you');"
-                        + " youNode.createRelationshipTo(meNode,DynamicRelationshipType.withName('knows'));"
-                        + ";"
-                        + "'*** index using Neo4j APIs ***';"
-                        + " idxManager = neo4j.index();"
-                        + " personIndex = idxManager.forNodes('persons');"
-                        + " personIndex.add(meNode,'name',meNode.getProperty('name'));"
-                        + " personIndex.add(youNode,'name',youNode.getProperty('name'));"
-                        + "tx.success();"
-                        + "tx.finish();"
-                        + ";"
-                        + ";"
-                        + "'*** Prepare a custom Lucene query context with Neo4j API ***';"
-                        + "query = new QueryContext( 'name:*' ).sort( new Sort(new SortField( 'name',SortField.STRING, true ) ) );"
-                        + "results = personIndex.query( query );";
+                + "'******** Additional imports *********';"
+                + "import org.neo4j.graphdb.index.*;"
+                + "import org.neo4j.graphdb.*;"
+                + "import org.neo4j.index.lucene.*;"
+                + "import org.apache.lucene.search.*;"
+                + ";"
+                + "'**** Blueprints API methods on the injected Neo4jGraph at variable g ****';"
+                + "meVertex = g.addVertex([name:'me']);"
+                + "meNode = meVertex.getRawVertex();"
+                + ";"
+                + "'*** get the Neo4j raw instance ***';"
+                + "neo4j = g.getRawGraph();"
+                + ";"
+                + ";"
+                + "'******** Neo4j API methods: *********';"
+                + "tx = neo4j.beginTx();"
+                + " youNode = neo4j.createNode();"
+                + " youNode.setProperty('name','you');"
+                + " youNode.createRelationshipTo(meNode,DynamicRelationshipType.withName('knows'));"
+                + ";"
+                + "'*** index using Neo4j APIs ***';"
+                + " idxManager = neo4j.index();"
+                + " personIndex = idxManager.forNodes('persons');"
+                + " personIndex.add(meNode,'name',meNode.getProperty('name'));"
+                + " personIndex.add(youNode,'name',youNode.getProperty('name'));"
+                + "tx.success();"
+                + "tx.finish();"
+                + "g.stopTransaction(SUCCESS);"
+                + ";"
+                + "'*** Prepare a custom Lucene query context with Neo4j API ***';"
+                + "query = new QueryContext( 'name:*' ).sort( new Sort(new SortField( 'name',SortField.STRING, true ) ) );"
+                + "results = personIndex.query( query );";
         String response = doRestCall( script, OK );
         assertTrue( response.contains( "me" ) );
 
@@ -365,7 +362,7 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
      * _HyperEdge_. However, it can be easily modeled in a property graph as a
      * node that captures this n-ary relationship, as depicted below in the
      * +U1G2R1+ node.
-     * 
+     *
      * To find out in what roles a user is for a particular groups (here
      * 'Group2'), the following script can traverse this HyperEdge node and
      * provide answers.
@@ -383,9 +380,9 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
     public void findGroups()
     {
         String script = "" + "g.v(%User1%)"
-                        + ".out('hasRoleInGroup').as('hyperedge')."
-                        + "out('hasGroup').filter{it.name=='Group2'}."
-                        + "back('hyperedge').out('hasRole').name";
+                + ".out('hasRoleInGroup').as('hyperedge')."
+                + "out('hasGroup').filter{it.name=='Group2'}."
+                + "back('hyperedge').out('hasRole').name";
         String response = doRestCall( script, OK );
         assertTrue( response.contains( "Role1" ) );
         assertFalse( response.contains( "Role2" ) );
@@ -403,7 +400,7 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
     public void group_count() throws UnsupportedEncodingException, Exception
     {
         String script = "m = [:];"
-                        + "g.v(%Peter%).bothE().label.groupCount(m).iterate();m";
+                + "g.v(%Peter%).bothE().label.groupCount(m).iterate();m";
         String response = doRestCall( script, OK );
         assertTrue( response.contains( "\"knows\" : 2" ) );
     }
@@ -412,7 +409,7 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
      * This example is showing a group count in Gremlin, for instance the
      * counting of the different relationship types connected to some the start
      * node. The result is collected into a variable that then is returned.
-     * 
+     *
      * @@graph1
      */
     @Test
@@ -427,7 +424,7 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
                 AsciidocHelper.createGraphViz( "Starting Graph", graphdb(),
                         "starting_graph" + gen.get().getTitle() ) );
         assertTrue( getNode( "Peter" ).hasRelationship() );
-        String script = "g.v(%Peter%).bothE.each{g.removeEdge(it)}";
+        String script = "g.v(%Peter%).bothE.each{g.removeEdge(it)};g.stopTransaction(SUCCESS);";
         String response = doRestCall( script, OK );
         assertFalse( getNode( "Peter" ).hasRelationship() );
     }
@@ -442,7 +439,7 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
     public void collect_multiple_traversal_results()
             throws UnsupportedEncodingException, Exception
     {
-        String script = "g.idx('node_auto_index')[[name:'Peter']].copySplit(_().out('knows'), _().in('likes')).fairMerge.name";
+        String script = "g.getIndex('node_auto_index', Vertex.class).get('name','Peter')._().copySplit(_().out('knows'), _().in('likes')).fairMerge.name";
         String response = doRestCall( script, OK );
         assertTrue( response.contains( "Marie" ) );
         assertTrue( response.contains( "Ian" ) );
@@ -463,7 +460,7 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
      * the result set. However, these are not lazy and will build up memory. It
      * is better to use the Gremlin +[start..end]+ pipe instead, providing a
      * lazy way for doing this.
-     * 
+     *
      * Also, note the use of the +filter{}+ closure to filter nodes.
      */
     @Test
@@ -492,13 +489,13 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
     }
 
     /**
-     * 
+     *
      */
     @Test
     @Graph( value = { "George knows Sara", "George knows Ian" }, autoIndexNodes = true )
     public void returning_paths() throws UnsupportedEncodingException
     {
-        String script = "g.v(%George%).out().paths()";
+        String script = "g.v(%George%).out().path()";
         String response = doRestCall( script, OK );
         assertTrue( response.contains( "Ian" ) );
         assertTrue( response.contains( "Sara" ) );
@@ -508,7 +505,7 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
      * This example demonstrates basic collaborative filtering - ordering a
      * traversal after occurence counts and substracting objects that are not
      * interesting in the final result.
-     * 
+     *
      * Here, we are finding Friends-of-Friends that are not Joes friends
      * already. The same can be applied to graphs of users that +LIKE+ things
      * and others.
@@ -521,37 +518,37 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
     public void collaborative_filtering() throws UnsupportedEncodingException
     {
         String script = "x=[];fof=[:];"
-                        + "g.v(%Joe%).out('knows').aggregate(x).out('knows').except(x).groupCount(fof).iterate();fof.sort{a,b -> b.value <=> a.value}";
+                + "g.v(%Joe%).out('knows').aggregate(x).out('knows').except(x).groupCount(fof).iterate();fof.sort{a,b -> b.value <=> a.value}";
         String response = doRestCall( script, OK );
         assertFalse( response.contains( "v[" + data.get().get( "Bill" ).getId() ) );
         assertFalse( response.contains( "v[" + data.get().get( "Sara" ).getId() ) );
         assertTrue( response.contains( "v[" + data.get().get( "Ian" ).getId() ) );
         assertTrue( response.contains( "v[" + data.get().get( "Jill" ).getId() ) );
         assertTrue( response.contains( "v["
-                                       + data.get().get( "Derrick" ).getId() ) );
+                + data.get().get( "Derrick" ).getId() ) );
     }
-    
+
     /**
      */
     @Documented
     @Test
-    @Graph( value = { 
-            "Root AllFriends John", 
-            "Root AllFriends Jack", 
-            "Root AllFriends Jill", 
+    @Graph( value = {
+            "Root AllFriends John",
+            "Root AllFriends Jack",
+            "Root AllFriends Jill",
             "John HasPet ScoobieDoo",
             "Jack HasPet Garfield",
             "ScoobieDoo HasCareTaker Bob",
             "Garfield HasCareTaker Harry" }
-    , autoIndexNodes = true )
+            , autoIndexNodes = true )
     public void table_projections() throws UnsupportedEncodingException
     {
         data.get();
         String script = "g.v(%Root%).out('AllFriends').as('Friend').ifThenElse" +
-        		"{it.out('HasPet').hasNext()}" +
-        		"{it.out('HasPet')}" +
-        		"{it}" +
-        		".as('Pet').out('HasCareTaker').as('CareTaker').table(new Table()){it['name']}{it['name']}{it['name']}.cap";
+                "{it.out('HasPet').hasNext()}" +
+                "{it.out('HasPet')}" +
+                "{it}" +
+                ".as('Pet').out('HasCareTaker').as('CareTaker').table(new Table()){it['name']}{it['name']}{it['name']}.cap";
         String response = doRestCall( script, OK );
         System.out.println(response);
     }
@@ -562,7 +559,7 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
      * pipes-based approach and scripting, here between +source+ and +sink+
      * using the +capacity+ property on relationships as the base for the flow
      * function and modifying the graph during calculation.
-     * 
+     *
      * @@graph1
      */
     @Documented
@@ -583,10 +580,10 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
                 AsciidocHelper.createGraphViz( "Starting Graph", graphdb(),
                         "starting_graph" + gen.get().getTitle() ) );
         String script = "source=g.v(%source%);sink=g.v(%sink%);maxFlow = 0;"
-                        + "source.outE.inV.loop(2){!it.object.equals(sink)}.paths.each{"
-                        + "flow = it.capacity.min(); "
-                        + "maxFlow += flow;"
-                        + "it.findAll{it.capacity}.each{it.capacity -= flow}};maxFlow";
+                + "source.outE.inV.loop(2){!it.object.equals(sink)}.path.each{"
+                + "flow = it.capacity.min(); "
+                + "maxFlow += flow;"
+                + "it.findAll{it.capacity}.each{it.capacity -= flow}};g.stopTransaction(SUCCESS);maxFlow";
         String response = doRestCall( script, OK );
         assertTrue( response.contains( "4" ) );
     }
@@ -598,27 +595,27 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
     {
         data.get();
         String script = "nodeIndex = g.idx('node_auto_index');"
-                        + "edgeIndex = g.idx('relationship_auto_index');"
-                        + ""
-                        + "node = { uri, properties -> "
-                        + "existing = nodeIndex.get('uri', uri);"
-                        + "properties['uri'] = uri;"
-                        + "if (existing) {    "
-                        + "return existing[0];  "
-                        + "}  else {"
-                        + "    return g.addVertex(properties);"
-                        + "};"
-                        + "};"
-                        + "Object.metaClass.makeNode = node;"
-                        + "edge = { type, source_uri, target_uri, properties ->"
-                        + "  source = nodeIndex.get('uri', source_uri).iterate();"
-                        + "  target = nodeIndex.get('uri', target_uri).iterate();"
-                        + "  nodeKey = source.id + '-' + target.id;"
-                        + "  existing = edgeIndex.get('nodes', nodeKey);"
-                        + "  if (existing) {" + "    return existing;" + "  };"
-                        + "  properties['nodes'] = nodeKey;"
-                        + "  g.addEdge(source, target, type, properties);"
-                        + "};" + "Object.metaClass.makeEdge = edge;";
+                + "edgeIndex = g.idx('relationship_auto_index');"
+                + ""
+                + "node = { uri, properties -> "
+                + "existing = nodeIndex.get('uri', uri);"
+                + "properties['uri'] = uri;"
+                + "if (existing) {    "
+                + "return existing[0];  "
+                + "}  else {"
+                + "    return g.addVertex(properties);"
+                + "};"
+                + "};"
+                + "Object.metaClass.makeNode = node;"
+                + "edge = { type, source_uri, target_uri, properties ->"
+                + "  source = nodeIndex.get('uri', source_uri).iterate();"
+                + "  target = nodeIndex.get('uri', target_uri).iterate();"
+                + "  nodeKey = source.id + '-' + target.id;"
+                + "  existing = edgeIndex.get('nodes', nodeKey);"
+                + "  if (existing) {" + "    return existing;" + "  };"
+                + "  properties['nodes'] = nodeKey;"
+                + "  g.addEdge(source, target, type, properties);"
+                + "};" + "Object.metaClass.makeEdge = edge;";
         String payload = "{\"script\":\"" + script + "\"}";
         description( formatGroovy( script ) );
         gen.get().expectedStatus( OK.getStatusCode() ).payload(
@@ -628,7 +625,7 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
         {
             String uri = "uri" + i;
             payload = "{\"script\":\"n = Object.metaClass.makeNode('" + uri
-                      + "',[:]\"}";
+                    + "',[:]\"}";
             gen.get().expectedStatus( OK.getStatusCode() ).payload(
                     JSONPrettifier.parse( payload ) );
             response = gen.get().post( ENDPOINT ).entity();
@@ -638,7 +635,7 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
         {
             String uri = "uri";
             payload = "{\"script\":\"n = Object.metaClass.makeEdge('knows','"
-                      + uri + i + "','" + uri + ( i + 1 ) + "'[:]\"}";
+                    + uri + i + "','" + uri + ( i + 1 ) + "'[:]\"}";
             gen.get().expectedStatus( OK.getStatusCode() ).payload(
                     JSONPrettifier.parse( payload ) );
             response = gen.get().post( ENDPOINT ).entity();
@@ -654,16 +651,15 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
     @Documented
     @Title( "Send a Query" )
     @Graph( "I know you" )
+    @Ignore
     public void testMixedAccessPatterns() throws UnsupportedEncodingException {
         data.get();
-        String response = gen().expectedStatus(OK.getStatusCode()).payload("{\"command\":\"g.clear();g.addVertex([name:'foo']);\",\"engine\":\"gremlin\"}").post("http://localhost:7474/db/manage/server/console/").entity();
-        response = gen().expectedStatus(OK.getStatusCode()).payload("{\"script\":\"g.clear()\"}").post(ENDPOINT).entity();
-        //response = gen().expectedStatus(OK.getStatusCode()).payload("{\"command\":\"init()\",\"engine\":\"gremlin\"}").post("http://localhost:7474/db/manage/server/console/").entity();
-        response = gen().expectedStatus(OK.getStatusCode()).payload("{\"command\":\"g.addVertex([name:'foo'])\",\"engine\":\"gremlin\"}").post("http://localhost:7474/db/manage/server/console/").entity();
+        String response = gen().expectedStatus(OK.getStatusCode()).payload("{\"command\":\"g.addVertex([name:'foo']);g.stopTransaction(SUCCESS);\",\"engine\":\"gremlin\"}").post("http://localhost:7474/db/manage/server/console/").entity();
+        response = gen().expectedStatus(OK.getStatusCode()).payload("{\"command\":\"g.addVertex([name:'foo']);g.stopTransaction(SUCCESS);\",\"engine\":\"gremlin\"}").post("http://localhost:7474/db/manage/server/console/").entity();
 
     }
-    
-    
+
+
     /**
      * Script errors
      * will result in an HTTP error response code.
@@ -674,31 +670,8 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
     public void script_execution_errors() throws UnsupportedEncodingException {
         data.get();
         String response = gen().expectedStatus(Status.BAD_REQUEST.getStatusCode()).
-                payload("{\"script\":\"g.addVertex([name:{}])\"}").post(ENDPOINT).entity();
+                payload("{\"script\":\"g.blah\"}").post(ENDPOINT).entity();
         assertTrue( response.contains( "BadInputException" ) );
     }
 
-       
-    
-    
-    protected String formatGroovy( String script )
-    {
-        script = script.replace( ";", "\n" );
-        if ( !script.endsWith( "\n" ) )
-        {
-            script += "\n";
-        }
-        return "_Raw script source_\n\n" + "[source, groovy]\n" + "----\n"
-               + script + "----\n";
-    }
-    
-    @BeforeClass
-    public static void addGremlinShellConfig() {
-        Configurator.DEFAULT_MANAGEMENT_CONSOLE_ENGINES.add(new GremlinSessionCreator().name());
-    }
-    
-    @AfterClass
-    public static void removeGremlinShellConfig() {
-        Configurator.DEFAULT_MANAGEMENT_CONSOLE_ENGINES.remove(new GremlinSessionCreator().name());
-    }
 }

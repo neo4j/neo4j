@@ -21,8 +21,8 @@
         <cxf.version>2.3.1</cxf.version>
         <servlet-api.version>2.5</servlet-api.version>
         <neo4j.version>1.9-SNAPSHOT</neo4j.version>
-        <blueprints.version>1.2</blueprints.version>
-        <gremlin.version>1.5</gremlin.version>
+        <blueprints.version>2.2.0</blueprints.version>
+        <gremlin.version>2.2.0</gremlin.version>
         <jersey.server.version>1.6</jersey.server.version>
         <license-text.header>GPL-3-header.txt</license-text.header>
         <docs.url>http://docs.neo4j.org/chunked/${project.version}/gremlin-plugin.html</docs.url>
