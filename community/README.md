@@ -60,7 +60,7 @@ prepare the repo:
 
 build community:
 
-    git clone git@github.com:neo4j/community.git
+    git clone git://github.com/neo4j/community.git
     cd community
     git pull origin master
     mvn clean install -Dmaven.test.skip=true
@@ -68,7 +68,7 @@ build community:
 
 build advanced
 
-    git clone git@github.com:neo4j/advanced.git
+    git clone git://github.com/neo4j/advanced.git
     cd advanced
     git pull origin master
     mvn clean install -Dmaven.test.skip=true
@@ -76,7 +76,7 @@ build advanced
 
 build enterprise
 
-    git clone git@github.com:neo4j/enterprise.git
+    git clone git://github.com/neo4j/enterprise.git
     cd enterprise
     git pull origin master
     mvn clean install -Dmaven.test.skip=true
@@ -88,7 +88,7 @@ install the ASCIIDOC toolchain
 
 build the manual
 
-    git clone git@github.com:neo4j/manual.git
+    git clone git://github.com/neo4j/manual.git
     cd manual
     git pull origin master
     mvn clean install -Dmaven.test.skip=true
@@ -96,7 +96,7 @@ build the manual
 
 Build the standalone distributions
 
-    git clone git@github.com:neo4j/packaging.git
+    git clone git://github.com/neo4j/packaging.git
     cd packaging
     git pull origin master
     cd standalone
