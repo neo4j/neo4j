@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -17,7 +17,6 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.neo4j.cluster.com.message;
 
 import java.util.Map;
@@ -28,10 +27,10 @@ import org.neo4j.cluster.com.NetworkInstance;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.kernel.logging.DevNullLoggingService;
 
 /**
  * TODO
@@ -77,7 +76,6 @@ public class NetworkSendReceiveTest
     private static class Server
             implements Lifecycle, MessageProcessor
     {
-
         protected NetworkInstance node;
 
         private final LifeSupport life = new LifeSupport();
@@ -92,7 +90,7 @@ public class NetworkSendReceiveTest
                 {
                     return conf.get( ClusterSettings.cluster_server );
                 }
-            }, StringLogger.SYSTEM );
+            }, new DevNullLoggingService() );
 
             life.add( node );
             life.add( new LifecycleAdapter()

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -29,7 +29,7 @@ import org.openqa.selenium.By;
 public class DiscoverAvailableConsolesWebIT extends AbstractExclusiveServerWebadminTest {
 
     @Test
-    public void shouldShowBothGremlinAndShellIfAvailable() throws Exception {
+    public void shouldShowOnlyShellIfAvailable() throws Exception {
         NeoServer server = server().build();
         try {
             server.start();
@@ -37,7 +37,7 @@ public class DiscoverAvailableConsolesWebIT extends AbstractExclusiveServerWebad
             
             wl.goToWebadminStartPage();
             wl.clickOnTab("Console");
-            wl.waitForElementToAppear(By
+            wl.waitForElementToDisappear(By
                 .xpath("//div[@id='console-tabs']//a[contains(.,'Gremlin')]"));
             wl.waitForElementToAppear(By
                     .xpath("//div[@id='console-tabs']//a[contains(.,'Neo4j Shell')]"));

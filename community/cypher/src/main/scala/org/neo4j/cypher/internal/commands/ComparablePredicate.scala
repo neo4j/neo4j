@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -24,7 +24,6 @@ import expressions.Expression
 import org.neo4j.cypher.internal.Comparer
 import java.lang.String
 import org.neo4j.cypher.internal.symbols._
-import collection.Map
 import org.neo4j.cypher.internal.helpers.IsCollection
 import org.neo4j.cypher.internal.pipes.ExecutionContext
 
@@ -44,11 +43,12 @@ abstract sealed class ComparablePredicate(left: Expression, right: Expression) e
   def atoms: Seq[Predicate] = Seq(this)
   override def toString() = left.toString() + " " + sign + " " + right.toString()
   def containsIsNull = false
-  def filter(f: (Expression) => Boolean): Seq[Expression] = left.filter(f) ++ right.filter(f)
+
+  def children = Seq(left, right)
 
   def assertInnerTypes(symbols: SymbolTable) {
-    left.assertTypes(symbols)
-    right.assertTypes(symbols)
+    left.throwIfSymbolsMissing(symbols)
+    right.throwIfSymbolsMissing(symbols)
   }
 
   def symbolTableDependencies = left.symbolTableDependencies ++ right.symbolTableDependencies
@@ -70,11 +70,12 @@ case class Equals(a: Expression, b: Expression) extends Predicate with Comparer 
   override def toString() = a.toString() + " == " + b.toString()
   def containsIsNull = false
   def rewrite(f: (Expression) => Expression) = Equals(a.rewrite(f), b.rewrite(f))
-  def filter(f: (Expression) => Boolean): Seq[Expression] = a.filter(f) ++ b.filter(f)
+
+  def children = Seq(a, b)
 
   def assertInnerTypes(symbols: SymbolTable) {
-    a.assertTypes(symbols)
-    b.assertTypes(symbols)
+    a.throwIfSymbolsMissing(symbols)
+    b.throwIfSymbolsMissing(symbols)
   }
 
   def symbolTableDependencies = a.symbolTableDependencies ++ b.symbolTableDependencies

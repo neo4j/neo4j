@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -17,7 +17,6 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.neo4j.kernel.ha.cluster.member;
 
 import static org.neo4j.helpers.Functions.withDefaults;
@@ -59,39 +58,52 @@ public class ClusterMember
     {
         URI haURI = getHAUri();
 
-        if (haURI != null)
+        if ( haURI != null )
         {
             // Get serverId parameter, default to -1 if it is missing, and parse to integer
             return INTEGER.apply( withDefaults( Functions.<URI, String>constant( "-1" ), parameter( "serverId" ) ).apply( haURI ));
         } else
+        {
             return -1;
+        }
     }
 
     public URI getHAUri()
     {
         URI haURI = roles.get( HighAvailabilityModeSwitcher.MASTER );
-        if (haURI == null)
+        if ( haURI == null )
+        {
             haURI = roles.get( HighAvailabilityModeSwitcher.SLAVE );
-
+        }
         return haURI;
     }
 
     public String getHARole()
     {
-        if (roles.containsKey( HighAvailabilityModeSwitcher.MASTER ))
+        if ( roles.containsKey( HighAvailabilityModeSwitcher.MASTER ) )
+        {
             return HighAvailabilityModeSwitcher.MASTER;
-        if (roles.containsKey( HighAvailabilityModeSwitcher.SLAVE ))
+        }
+        if ( roles.containsKey( HighAvailabilityModeSwitcher.SLAVE ) )
+        {
             return HighAvailabilityModeSwitcher.SLAVE;
+        }
         return "UNKNOWN";
     }
 
-    public boolean hasRole(String role)
+    public boolean hasRole( String role )
     {
         return roles.containsKey( role );
     }
-    public URI getRoleURI(String role)
+
+    public URI getRoleURI( String role )
     {
         return roles.get( role );
+    }
+
+    public Iterable<String> getRoles()
+    {
+        return roles.keySet();
     }
 
     public Iterable<URI> getRoleURIs()
@@ -114,12 +126,12 @@ public class ClusterMember
         return new ClusterMember( this.clusterUri, MapUtil.copyAndRemove( roles, role ), this.alive );
     }
 
-    ClusterMember alive(  )
+    ClusterMember alive()
     {
         return new ClusterMember( this.clusterUri, roles, true );
     }
 
-    ClusterMember failed(  )
+    ClusterMember failed()
     {
         return new ClusterMember( this.clusterUri, roles, false );
     }

@@ -192,7 +192,7 @@ public class RolesTest extends AbstractJavaDocTestbase
                        + ") match admins<-[:PART_OF*0..]-group<-[:MEMBER_OF]-user return user.name, group.name";
         gen.get().addSnippet( "query-get-admins", createCypherSnippet( query ) );
         String result = engine.execute( query )
-                .toString();
+                .dumpToString();
         assertTrue( result.contains("Engin") );
         gen.get().addSnippet( "o-query-get-admins", createQueryResultSnippet( result ) );
         
@@ -212,7 +212,7 @@ public class RolesTest extends AbstractJavaDocTestbase
                 + ") match jale-[:MEMBER_OF]->()-[:PART_OF*0..]->group return group.name";
         gen.get().addSnippet( "query-get-user-memberships", createCypherSnippet( query ) );
         result = engine.execute( query )
-                .toString();
+                .dumpToString();
         assertTrue( result.contains("Users") );
         gen.get()
                 .addSnippet( "o-query-get-user-memberships",
@@ -234,7 +234,7 @@ public class RolesTest extends AbstractJavaDocTestbase
                 + ") match refNode<-[:ROOT]->()<-[:PART_OF*0..]-group return group.name";
         gen.get().addSnippet( "query-get-groups", createCypherSnippet( query ) );
         result = engine.execute( query )
-                .toString();
+                .dumpToString();
         assertTrue( result.contains("Users") );
         gen.get()
                 .addSnippet( "o-query-get-groups",
@@ -270,7 +270,7 @@ public class RolesTest extends AbstractJavaDocTestbase
         		"order by min(length(p)), user.name";
         gen.get().addSnippet( "query-get-members", createCypherSnippet( query ) );
         result = engine.execute( query )
-                .toString();
+                .dumpToString();
         assertTrue( result.contains("Engin") );
         gen.get()
                 .addSnippet( "o-query-get-members",

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -17,7 +17,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.neo4j.helpers;
 
 import static java.lang.String.format;
@@ -28,20 +27,20 @@ import static java.lang.String.format;
  */
 public class HostnamePort
 {
-    private String host;
-    private int[] ports;
+    private final String host;
+    private final int[] ports;
 
     public HostnamePort( String hostnamePort ) throws IllegalArgumentException
     {
         String[] parts = hostnamePort.split( ":" );
         if ( parts.length == 1 )
         {
-            host = parts[0];
+            host = zeroLengthMeansNull( parts[0] );
             ports = new int[]{0, 0};
         }
         else if ( parts.length == 2 )
         {
-            host = parts[0];
+            host = zeroLengthMeansNull( parts[0] );
 
             String[] portStrings = parts[1].split( "-" );
             ports = new int[2];
@@ -66,6 +65,13 @@ public class HostnamePort
         {
             throw new IllegalArgumentException( hostnamePort );
         }
+    }
+
+    private String zeroLengthMeansNull( String string )
+    {
+        if ( string == null || string.length() == 0 )
+            return null;
+        return string;
     }
 
     public HostnamePort( String host, int port )
@@ -123,7 +129,13 @@ public class HostnamePort
     @Override
     public String toString()
     {
+        return toString( null /*no default host*/ );
+    }
+    
+    public String toString( String defaultHost )
+    {
         StringBuilder builder = new StringBuilder();
+        String host = getHost( defaultHost );
         if ( host != null )
         {
             builder.append( host );

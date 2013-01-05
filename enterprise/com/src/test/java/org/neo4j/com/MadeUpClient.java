@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -26,13 +26,15 @@ import static org.neo4j.com.RequestContext.lastAppliedTx;
 import static org.neo4j.kernel.configuration.Config.DEFAULT_DATA_SOURCE_NAME;
 
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.neo4j.com.MadeUpServer.MadeUpRequestType;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.logging.DevNullLoggingService;
 
 public class MadeUpClient extends Client<MadeUpCommunicationInterface> implements MadeUpCommunicationInterface
 {
@@ -41,11 +43,23 @@ public class MadeUpClient extends Client<MadeUpCommunicationInterface> implement
     public MadeUpClient( int port, StoreId storeIdToExpect,
             byte internalProtocolVersion, byte applicationProtocolVersion, int chunkSize )
     {
-        super( "localhost", port, StringLogger.DEV_NULL, storeIdToExpect, FRAME_LENGTH,
+        super( localhost(), port, new DevNullLoggingService(), storeIdToExpect, FRAME_LENGTH,
                 applicationProtocolVersion, Client.DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS,
                 Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT,
                 Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT, chunkSize );
         this.internalProtocolVersion = internalProtocolVersion;
+    }
+
+    private static String localhost()
+    {
+        try
+        {
+            return InetAddress.getLocalHost().getHostAddress();
+        }
+        catch ( UnknownHostException e )
+        {
+            throw new RuntimeException( e );
+        }
     }
 
     @Override

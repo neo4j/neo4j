@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -21,53 +21,15 @@ package org.neo4j.kernel.ha.cluster;
 
 import java.net.URI;
 
-import org.neo4j.cluster.Binding;
-import org.neo4j.cluster.BindingListener;
-
-/**
- * Context used by the {@link HighAvailabilityMemberStateMachine}. Keeps track of what elections and previously
- * available master this cluster member has seen.
- */
-public class HighAvailabilityMemberContext
+public interface HighAvailabilityMemberContext
 {
-    private URI electedMasterId;
-    private URI availableHaMasterId;
-    private URI myId;
+    URI getMyId();
 
-    public HighAvailabilityMemberContext( Binding binding )
-    {
-        binding.addBindingListener( new BindingListener()
-        {
-            @Override
-            public void listeningAt( URI me )
-            {
-                myId = me;
-            }
-        } );
-    }
+    URI getElectedMasterId();
 
-    public URI getMyId()
-    {
-        return myId;
-    }
+    void setElectedMasterId( URI electedMasterId );
 
-    public URI getElectedMasterId()
-    {
-        return electedMasterId;
-    }
+    URI getAvailableHaMaster();
 
-    public void setElectedMasterId( URI electedMasterId )
-    {
-        this.electedMasterId = electedMasterId;
-    }
-
-    public URI getAvailableHaMaster()
-    {
-        return availableHaMasterId;
-    }
-
-    public void setAvailableHaMasterId( URI availableHaMasterId )
-    {
-        this.availableHaMasterId = availableHaMasterId;
-    }
+    void setAvailableHaMasterId( URI availableHaMasterId );
 }

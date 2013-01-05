@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -17,7 +17,6 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.neo4j.kernel.ha.cluster;
 
 import java.net.URI;
@@ -61,5 +60,12 @@ public class HighAvailabilityMemberChangeEvent
     public URI getServerHaUri()
     {
         return serverHaUri;
+    }
+
+    @Override
+    public String toString()
+    {
+        return "HA Member State Event[ old state: "+oldState+", new state: "+newState+", server cluster URI: "+
+                serverClusterUri+", server HA URI: "+serverHaUri+"]";
     }
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -17,7 +17,6 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.neo4j.cluster.protocol.heartbeat;
 
 import static org.neo4j.cluster.com.message.Message.internal;
@@ -27,7 +26,7 @@ import static org.neo4j.cluster.com.message.Message.to;
 import java.net.URI;
 
 import org.neo4j.cluster.com.message.Message;
-import org.neo4j.cluster.com.message.MessageProcessor;
+import org.neo4j.cluster.com.message.MessageHolder;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.LearnerMessage;
 import org.neo4j.cluster.statemachine.State;
 
@@ -42,7 +41,7 @@ public enum HeartbeatState
                 @Override
                 public HeartbeatState handle( HeartbeatContext context,
                                               Message<HeartbeatMessage> message,
-                                              MessageProcessor outgoing
+                                              MessageHolder outgoing
                 )
                         throws Throwable
                 {
@@ -77,7 +76,7 @@ public enum HeartbeatState
                 @Override
                 public HeartbeatState handle( HeartbeatContext context,
                                               Message<HeartbeatMessage> message,
-                                              MessageProcessor outgoing
+                                              MessageHolder outgoing
                 )
                         throws Throwable
                 {
@@ -95,7 +94,7 @@ public enum HeartbeatState
                                 {
                                     if ( !aliveServer.equals( context.getClusterContext().getMe() ) )
                                     {
-                                        outgoing.process( Message.to( HeartbeatMessage.suspicions, aliveServer,
+                                        outgoing.offer( Message.to( HeartbeatMessage.suspicions, aliveServer,
                                                 new HeartbeatMessage.SuspicionsState( context.getSuspicionsFor( context
                                                         .getClusterContext()
                                                         .getMe() ) ) ) );
@@ -115,7 +114,7 @@ public enum HeartbeatState
                                 long lastLearned = Long.parseLong( message.getHeader( "last-learned" ) );
                                 if ( lastLearned > context.getLearnerContext().getLastKnownLearnedInstanceInCluster() )
                                 {
-                                    outgoing.process( internal( LearnerMessage.catchUp, lastLearned ) );
+                                    outgoing.offer( internal( LearnerMessage.catchUp, lastLearned ) );
                                 }
                             }
 
@@ -138,7 +137,7 @@ public enum HeartbeatState
                                 {
                                     if ( !aliveServer.equals( context.getClusterContext().getMe() ) )
                                     {
-                                        outgoing.process( Message.to( HeartbeatMessage.suspicions, aliveServer,
+                                        outgoing.offer( Message.to( HeartbeatMessage.suspicions, aliveServer,
                                                 new HeartbeatMessage.SuspicionsState( context.getSuspicionsFor( context
                                                         .getClusterContext()
                                                         .getMe() ) ) ) );
@@ -162,7 +161,7 @@ public enum HeartbeatState
                             if ( context.getClusterContext().getConfiguration().getMembers().contains( to ) )
                             {
                                 // Send heartbeat message to given server
-                                outgoing.process( to( HeartbeatMessage.i_am_alive, to,
+                                outgoing.offer( to( HeartbeatMessage.i_am_alive, to,
                                         new HeartbeatMessage.IAmAliveState( context.getClusterContext().getMe() ) )
                                         .setHeader( "last-learned",
                                                 context.getLearnerContext().getLastLearnedInstanceId() + "" ) );

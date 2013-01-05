@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -87,7 +87,7 @@ public class PersistenceWindowPoolTest
         // Verify that what T1 wrote is on disk
         
         final PersistenceWindow t1Row = pool.acquire( 0, OperationType.WRITE );
-        OtherThreadExecutor<Void> otherThread = new OtherThreadExecutor<Void>( null ); 
+        OtherThreadExecutor<Void> otherThread = new OtherThreadExecutor<Void>( "other thread", null ); 
         Future<Throwable> future = otherThread.executeDontWait( new WorkerCommand<Void, Throwable>()
         {
             @Override

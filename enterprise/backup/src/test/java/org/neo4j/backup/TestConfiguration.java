@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -19,15 +19,17 @@
  */
 package org.neo4j.backup;
 
+import static org.junit.Assert.fail;
+
 import java.io.File;
+import java.net.InetAddress;
+
 import org.apache.commons.io.FileUtils;
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
-
-import static org.junit.Assert.*;
 
 public class TestConfiguration
 {
@@ -47,7 +49,7 @@ public class TestConfiguration
         GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( SOURCE_DIR );
         try
         {
-            OnlineBackup.from( "localhost" ).full( BACKUP_DIR );
+            OnlineBackup.from( InetAddress.getLocalHost().getHostAddress() ).full( BACKUP_DIR );
             fail( "Shouldn't be possible" );
         }
         catch ( Exception e )
@@ -64,7 +66,7 @@ public class TestConfiguration
             newGraphDatabase();
         try
         {
-            OnlineBackup.from( "localhost" ).full( BACKUP_DIR );
+            OnlineBackup.from( InetAddress.getLocalHost().getHostAddress() ).full( BACKUP_DIR );
             fail( "Shouldn't be possible" );
         }
         catch ( Exception e )
@@ -80,7 +82,7 @@ public class TestConfiguration
             setConfig( OnlineBackupSettings.online_backup_enabled, GraphDatabaseSetting.TRUE ).
             newGraphDatabase();
 
-        OnlineBackup.from( "localhost" ).full( BACKUP_DIR );
+        OnlineBackup.from( InetAddress.getLocalHost().getHostAddress() ).full( BACKUP_DIR );
         db.shutdown();
     }
 
@@ -93,14 +95,14 @@ public class TestConfiguration
             setConfig( OnlineBackupSettings.online_backup_port, customPort ).newGraphDatabase(); 
         try
         {
-            OnlineBackup.from( "localhost" ).full( BACKUP_DIR );
+            OnlineBackup.from( InetAddress.getLocalHost().getHostAddress() ).full( BACKUP_DIR );
             fail( "Shouldn't be possible" );
         }
         catch ( Exception e )
         { // Good
         }
         
-        OnlineBackup.from( "localhost", Integer.parseInt(customPort) ).full( BACKUP_DIR );
+        OnlineBackup.from( InetAddress.getLocalHost().getHostAddress(), Integer.parseInt(customPort) ).full( BACKUP_DIR );
         db.shutdown();
     }
 }

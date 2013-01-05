@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -23,9 +23,9 @@ import org.neo4j.cypher.internal.executionplan.{ExecutionPlanInProgress, PlanBui
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.cypher.internal.pipes.{Pipe, ExecuteUpdateCommandsPipe, TransactionStartPipe}
 import org.neo4j.cypher.internal.mutation.UpdateAction
-import org.neo4j.cypher.internal.commands.StartItem
+import org.neo4j.cypher.internal.commands.{UpdatingStartItem, StartItem}
 
-class UpdateActionBuilder(db: GraphDatabaseService) extends PlanBuilder {
+class UpdateActionBuilder(db: GraphDatabaseService) extends PlanBuilder with UpdateCommandExpander {
   def apply(plan: ExecutionPlanInProgress) = {
 
     val p = if (plan.containsTransaction) {
@@ -36,10 +36,12 @@ class UpdateActionBuilder(db: GraphDatabaseService) extends PlanBuilder {
 
     val updateCmds: Seq[QueryToken[UpdateAction]] = extractValidUpdateActions(plan, p)
     val startItems: Seq[QueryToken[StartItem]] = extractValidStartItems(plan, p)
-    val startCmds = startItems.map(_.map(_.asInstanceOf[UpdateAction]))
-    val commands = startCmds ++ updateCmds
+    val startCmds = startItems.map(_.map(_.asInstanceOf[UpdatingStartItem].updateAction))
 
-    val resultPipe = new ExecuteUpdateCommandsPipe(p, db, commands.map(_.token))
+    val updateActions = (startCmds ++ updateCmds).map(_.token)
+    val commands = expandCommands(updateActions, p.symbols)
+
+    val resultPipe = new ExecuteUpdateCommandsPipe(p, db, commands)
 
     plan.copy(
       containsTransaction = true,
@@ -58,22 +60,25 @@ class UpdateActionBuilder(db: GraphDatabaseService) extends PlanBuilder {
     plan.query.updates.filter(cmd => cmd.unsolved && cmd.token.symbolDependenciesMet(p.symbols))
   }
 
-  def canWorkWith(plan: ExecutionPlanInProgress) =
-    {
-      val uas = extractValidUpdateActions(plan, plan.pipe).toSeq
-      val sitems = extractValidStartItems(plan, plan.pipe).toSeq
+  def canWorkWith(plan: ExecutionPlanInProgress) = {
+    val uas = extractValidUpdateActions(plan, plan.pipe).toSeq
+    val sitems = extractValidStartItems(plan, plan.pipe).toSeq
 
-      uas.nonEmpty || sitems.nonEmpty
-    }
-
+    uas.nonEmpty || sitems.nonEmpty
+  }
 
   def priority = PlanBuilder.Mutation
 
-  override def missingDependencies(plan: ExecutionPlanInProgress): Seq[String] = plan.query.updates.flatMap {
-    case Unsolved(cmd) => plan.pipe.symbols.missingSymbolTableDependencies(cmd)
-    case _ => None
-  } ++ plan.query.start.flatMap {
-    case Unsolved(cmd) if cmd.mutating => plan.pipe.symbols.missingSymbolTableDependencies(cmd)
-    case _ => None
+  override def missingDependencies(plan: ExecutionPlanInProgress): Seq[String] = {
+    val updateDeps = plan.query.updates.flatMap {
+      case Unsolved(cmd) => plan.pipe.symbols.missingSymbolTableDependencies(cmd)
+      case _             => None
+    }
+    val startDeps = plan.query.start.flatMap {
+      case Unsolved(cmd) if cmd.mutating => plan.pipe.symbols.missingSymbolTableDependencies(cmd)
+      case _                             => None
+    }
+
+    (updateDeps ++ startDeps).distinct
   }
 }

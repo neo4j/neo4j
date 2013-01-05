@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -158,6 +158,7 @@ public class DechunkingChannelBuffer implements ChannelBuffer
             throw new ComException( "Couldn't read failure response", e );
         }
 
+        
         if ( cause instanceof RuntimeException ) throw (RuntimeException) cause;
         if ( cause instanceof Error ) throw (Error) cause;
         throw new ComException( cause );

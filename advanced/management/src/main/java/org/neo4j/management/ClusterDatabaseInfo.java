@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -23,12 +23,15 @@ public class ClusterDatabaseInfo extends ClusterMemberInfo
 {
     private final long lastCommittedTxId;
     private final long lastUpdateTime;
+    private final int serverId;
 
-    public ClusterDatabaseInfo( ClusterMemberInfo memberInfo, long lastCommittedTxId, long lastUpdateTime )
+    public ClusterDatabaseInfo( ClusterMemberInfo memberInfo, long lastCommittedTxId, long lastUpdateTime, int serverId )
     {
-        super( memberInfo.getInstanceId(), memberInfo.isAvailable(), memberInfo.isAlive(), memberInfo.getHaRole(),memberInfo.getURIs() );
+        super( memberInfo.getClusterId(), memberInfo.isAvailable(), memberInfo.isAlive(), memberInfo.getHaRole(),
+                memberInfo.getUris(), memberInfo.getRoles() );
         this.lastCommittedTxId = lastCommittedTxId;
         this.lastUpdateTime = lastUpdateTime;
+        this.serverId = serverId;
     }
 
     public long getLastCommittedTxId()
@@ -39,5 +42,10 @@ public class ClusterDatabaseInfo extends ClusterMemberInfo
     public long getLastUpdateTime()
     {
         return lastUpdateTime;
+    }
+
+    public int getServerId()
+    {
+        return serverId;
     }
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.mutation
 
 import org.neo4j.cypher.internal.pipes.{QueryState, ExecutionContext}
-import org.neo4j.graphdb.{Relationship, Node, PropertyContainer}
-import org.neo4j.cypher.internal.symbols.{SymbolTable, ScalarType, MapType}
+import org.neo4j.graphdb.{Relationship, Node}
+import org.neo4j.cypher.internal.symbols.{SymbolTable, MapType}
 import org.neo4j.cypher.internal.commands.expressions.Expression
 import org.neo4j.helpers.ThisShouldNotHappenError
 
@@ -48,11 +48,11 @@ case class DeletePropertyAction(element: Expression, property: String)
 
   def identifiers = Seq.empty
 
-  def filter(f: (Expression) => Boolean): Seq[Expression] = element.filter(f)
+  def children = Seq(element)
 
   def rewrite(f: (Expression) => Expression): UpdateAction = DeletePropertyAction(element.rewrite(f), property: String)
 
-  def assertTypes(symbols: SymbolTable) {
+  def throwIfSymbolsMissing(symbols: SymbolTable) {
     element.evaluateType(MapType(), symbols)
   }
 

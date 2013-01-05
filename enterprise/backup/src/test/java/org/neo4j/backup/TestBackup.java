@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -17,7 +17,6 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.neo4j.backup;
 
 import static org.junit.Assert.assertEquals;
@@ -27,13 +26,13 @@ import static org.junit.Assert.fail;
 
 import java.io.File;
 import java.io.FilenameFilter;
+import java.net.InetAddress;
 
 import org.apache.commons.io.FileUtils;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
-import org.neo4j.com.ComException;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -45,6 +44,7 @@ import org.neo4j.graphdb.index.Index;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
+import org.neo4j.kernel.impl.nioneo.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.DbRepresentation;
@@ -117,7 +117,7 @@ public class TestBackup
         {
             createInitialDataSet( serverPath );
             server = startServer( serverPath );
-            OnlineBackup backup = OnlineBackup.from( "localhost" );
+            OnlineBackup backup = OnlineBackup.from( InetAddress.getLocalHost().getHostAddress() );
             backup.full( backupPath.getPath() );
             shutdownServer( server );
             server = null;
@@ -163,7 +163,7 @@ public class TestBackup
         {
             createInitialDataSet( serverPath );
             server = startServer( serverPath );
-            OnlineBackup backup = OnlineBackup.from( "localhost" );
+            OnlineBackup backup = OnlineBackup.from( InetAddress.getLocalHost().getHostAddress() );
             backup.full( backupPath.getPath() );
             shutdownServer( server );
             server = null;
@@ -224,7 +224,7 @@ public class TestBackup
         ServerInterface server = startServer( serverPath );
 
         // START SNIPPET: onlineBackup
-        OnlineBackup backup = OnlineBackup.from( "localhost" );
+        OnlineBackup backup = OnlineBackup.from( InetAddress.getLocalHost().getHostAddress() );
         backup.full( backupPath.getPath() );
         // END SNIPPET: onlineBackup
         assertEquals( initialDataSetRepresentation, DbRepresentation.of( backupPath ) );
@@ -244,7 +244,7 @@ public class TestBackup
     {
         createInitialDataSet( serverPath );
         ServerInterface server = startServer( serverPath );
-        OnlineBackup backup = OnlineBackup.from( "localhost" );
+        OnlineBackup backup = OnlineBackup.from( InetAddress.getLocalHost().getHostAddress() );
 
         // First check full
         backup.full( backupPath.getPath() );
@@ -269,7 +269,7 @@ public class TestBackup
         ServerInterface server = startServer( serverPath );
 
         // Grab initial backup from server A
-        OnlineBackup backup = OnlineBackup.from( "localhost" );
+        OnlineBackup backup = OnlineBackup.from( InetAddress.getLocalHost().getHostAddress() );
         backup.full( backupPath.getPath() );
         assertEquals( initialDataSetRepresentation, DbRepresentation.of( backupPath ) );
         shutdownServer( server );
@@ -286,7 +286,7 @@ public class TestBackup
             backup.incremental( backupPath.getPath() );
             fail( "Shouldn't work" );
         }
-        catch ( ComException e )
+        catch ( MismatchingStoreIdException e )
         { // Good
         }
         shutdownServer( server );
@@ -380,7 +380,7 @@ public class TestBackup
             tx.success();
             tx.finish();
 
-            OnlineBackup backup = OnlineBackup.from( "localhost" );
+            OnlineBackup backup = OnlineBackup.from( InetAddress.getLocalHost().getHostAddress() );
             backup.full( backupPath.getPath() );
             long lastCommittedTxForLucene = getLastCommittedTx( backupPath.getPath() );
 
@@ -417,7 +417,7 @@ public class TestBackup
 
             db.index().forNodes( "created-no-commits" );
 
-            OnlineBackup backup = OnlineBackup.from( "localhost" );
+            OnlineBackup backup = OnlineBackup.from( InetAddress.getLocalHost().getHostAddress() );
             backup.full( backupPath.getPath() );
         }
         finally
@@ -458,10 +458,10 @@ public class TestBackup
         node.setProperty( key, value );
         tx.success();
         tx.finish();
-        OnlineBackup.from( "localhost" ).full( backupPath.getPath() );
+        OnlineBackup.from( InetAddress.getLocalHost().getHostAddress() ).full( backupPath.getPath() );
         assertEquals( DbRepresentation.of( db ), DbRepresentation.of( backupPath ) );
         FileUtils.deleteDirectory( new File( backupPath.getPath() ) );
-        OnlineBackup.from( "localhost" ).full( backupPath.getPath() );
+        OnlineBackup.from( InetAddress.getLocalHost().getHostAddress() ).full( backupPath.getPath() );
         assertEquals( DbRepresentation.of( db ), DbRepresentation.of( backupPath ) );
 
         tx = db.beginTx();
@@ -469,7 +469,7 @@ public class TestBackup
         tx.success();
         tx.finish();
         FileUtils.deleteDirectory( new File( backupPath.getPath() ) );
-        OnlineBackup.from( "localhost" ).full( backupPath.getPath() );
+        OnlineBackup.from( InetAddress.getLocalHost().getHostAddress() ).full( backupPath.getPath() );
         assertEquals( DbRepresentation.of( db ), DbRepresentation.of( backupPath ) );
         db.shutdown();
     }
@@ -486,7 +486,7 @@ public class TestBackup
         try
         {
             assertStoreIsLocked( sourcePath );
-            OnlineBackup.from( "localhost" ).full( backupPath.getPath() );
+            OnlineBackup.from( InetAddress.getLocalHost().getHostAddress() ).full( backupPath.getPath() );
             assertStoreIsLocked( sourcePath );
         }
         finally

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -17,7 +17,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.neo4j.index.impl.lucene;
 
 import static org.junit.Assert.assertEquals;
@@ -48,7 +47,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.LogPruneStrategies;
 import org.neo4j.kernel.impl.transaction.xaframework.RecoveryVerifier;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.impl.transaction.xaframework.XaFactory;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.test.ProcessStreamHandler;
 
 /**
@@ -145,9 +144,9 @@ public class TestRecovery
                 "store_dir", getDbPath().getPath() );
         Config config = new Config( params, GraphDatabaseSettings.class );
         LuceneDataSource ds = new LuceneDataSource( config, new IndexStore( getDbPath(), fileSystem ), fileSystem,
-                new XaFactory( config, TxIdGenerator.DEFAULT, new PlaceboTm(), new DefaultLogBufferFactory(),
-                        fileSystemAbstraction, StringLogger.DEV_NULL, RecoveryVerifier.ALWAYS_VALID,
-                        LogPruneStrategies.NO_PRUNING ) );
+                new XaFactory( config, TxIdGenerator.DEFAULT, new PlaceboTm( null, null ), new DefaultLogBufferFactory(),
+                        fileSystemAbstraction, new DevNullLoggingService(), RecoveryVerifier.ALWAYS_VALID,
+                        LogPruneStrategies.NO_PRUNING ), null, new DevNullLoggingService() );
         ds.start();
         ds.stop();
     }

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -28,16 +28,16 @@ import org.neo4j.com.RequestContext;
 import org.neo4j.com.RequestType;
 import org.neo4j.com.Server;
 import org.neo4j.kernel.ha.SlaveClient.SlaveRequestType;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.logging.Logging;
 
 public class SlaveServer extends Server<Slave, Void>
 {
     public static final byte APPLICATION_PROTOCOL_VERSION = 1;
 
-    public SlaveServer( Slave requestTarget, Configuration config, StringLogger logger )
+    public SlaveServer( Slave requestTarget, Configuration config, Logging logging )
             throws IOException
     {
-        super( requestTarget, config, logger, DEFAULT_FRAME_LENGTH, APPLICATION_PROTOCOL_VERSION, ALWAYS_MATCH );
+        super( requestTarget, config, logging, DEFAULT_FRAME_LENGTH, APPLICATION_PROTOCOL_VERSION, ALWAYS_MATCH );
     }
 
     @Override

@@ -91,6 +91,12 @@ FOR /F "usebackq skip=2 tokens=3" %%a IN (`REG QUERY "%keyName%" /v %valueName% 
 )
 
 if "%javaVersion%" == "" (
+  FOR /F "usebackq skip=2 tokens=3" %%a IN (`REG QUERY "%keyName%" /v %valueName% /reg:32 2^>nul`) DO (
+    set javaVersion=%%a
+  )
+)
+
+if "%javaVersion%" == "" (
   set javaHomeError=Unable to locate jvm. Could not find %keyName%/%valueName% entry in windows registry. Please make sure you either have %JAVA_HOME% environment variable defined and pointing to a JRE installation, or the registry key defined.
   goto:eof
 )
@@ -98,9 +104,16 @@ if "%javaVersion%" == "" (
 set javaCurrentKey=HKLM\SOFTWARE\JavaSoft\Java Runtime Environment\%javaVersion%
 set javaHomeKey=JavaHome
 
-FOR /F "usebackq skip=2 tokens=3,4" %%a IN (`REG QUERY "%javaCurrentKey%" /v %javaHomeKey% 2^>nul`) DO (
-  set javaPath="%%a %%b"
+FOR /F "usebackq skip=2 tokens=2,*" %%a IN (`REG QUERY "%javaCurrentKey%" /v %javaHomeKey% 2^>nul`) DO (
+  set javaPath="%%b"
 )
+
+if ""%javaPath% == "" (
+  FOR /F "usebackq skip=2 tokens=2,*" %%a IN (`REG QUERY "%javaCurrentKey%" /v %javaHomeKey% /reg:32 2^>nul`) DO (
+    set javaPath="%%b"
+  )
+)
+
 goto:eof
 
 rem end function findJavaHome
@@ -190,7 +203,7 @@ rem
 rem function install
 rem
 :install
-set binPath="%javaPath%\bin\java.exe -Djava.util.logging.config.file=conf/windows-wrapper-logging.properties -DworkingDir="%~dps0.." -DconfigFile=%configFile% %classpath% %mainclass% -jar %~dps0%wrapperJarFilename% %serviceName%"
+set binPath="%javaPath%\bin\java.exe -Djava.util.logging.config.file=conf\windows-wrapper-logging.properties -DworkingDir="%~dps0.." -DconfigFile=%configFile% %classpath% %mainclass% -Dorg.neo4j.cluster.logdirectory="%~dps0..\data\log" -jar %~dps0%wrapperJarFilename% %serviceName%"
 sc create "%serviceName%" binPath= %binPath% DisplayName= "%serviceDisplayName%" start= %serviceStartType%
 call:start
 goto:eof
@@ -251,7 +264,7 @@ rem
 rem function console
 rem
 :console
-java -DworkingDir="%~dp0.." -Djava.util.logging.config.file=conf/windows-wrapper-logging.properties -DconfigFile=%configFile% %classpath% %mainclass% -jar %~dps0%wrapperJarFilename%
+"%javapath%\bin\java.exe" -DworkingDir="%~dp0.." -Djava.util.logging.config.file=conf/windows-wrapper-logging.properties -DconfigFile=%configFile% %classpath% %mainclass% -jar %~dps0%wrapperJarFilename%
 goto:eof
 
 rem end function console

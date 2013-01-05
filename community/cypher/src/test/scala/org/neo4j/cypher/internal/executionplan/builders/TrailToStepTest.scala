@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -21,9 +21,9 @@ package org.neo4j.cypher.internal.executionplan.builders
 
 import org.junit.Test
 import org.neo4j.cypher.internal.commands._
+import expressions._
 import expressions.Literal
 import expressions.Property
-import expressions.{Literal, Property}
 import org.neo4j.graphdb.{RelationshipType, Direction}
 import org.scalatest.Assertions
 import org.neo4j.graphdb.Direction._
@@ -34,6 +34,14 @@ import org.neo4j.cypher.internal.commands.True
 import org.neo4j.cypher.internal.pipes.matching.VarLengthStep
 import scala.Some
 import org.neo4j.cypher.internal.pipes.matching.SingleStep
+import org.neo4j.cypher.internal.commands.Equals
+import org.neo4j.cypher.internal.pipes.matching.SingleStepTrail
+import org.neo4j.cypher.internal.commands.True
+import org.neo4j.cypher.internal.pipes.matching.VarLengthStep
+import org.neo4j.cypher.internal.pipes.matching.VariableLengthStepTrail
+import scala.Some
+import org.neo4j.cypher.internal.pipes.matching.SingleStep
+import org.neo4j.cypher.internal.pipes.matching.EndPoint
 import org.neo4j.cypher.internal.commands.Equals
 import org.neo4j.cypher.internal.pipes.matching.SingleStepTrail
 import org.neo4j.cypher.internal.commands.True
@@ -87,8 +95,8 @@ class TrailToStepTest extends GraphDatabaseTestBase with Assertions with Builder
     //()<-[r1:A]-(a)<-[r2:B]-()
     //WHERE r1.prop = 42 AND r2.prop = "FOO"
 
-    val r1Pred = Equals(Property("pr1", "prop"), Literal(42))
-    val r2Pred = Equals(Property("pr2", "prop"), Literal("FOO"))
+    val r1Pred = Equals(Property(Identifier("pr1"), "prop"), Literal(42))
+    val r2Pred = Equals(Property(Identifier("pr2"), "prop"), Literal("FOO"))
 
     val boundPoint = EndPoint("c")
     val second = SingleStepTrail(boundPoint, Direction.INCOMING, "pr2", Seq("B"), "b", Some(r2Pred), None, BtoC)
@@ -104,7 +112,7 @@ class TrailToStepTest extends GraphDatabaseTestBase with Assertions with Builder
     //()-[pr1:A]->(a)-[pr2:B]->()
     //WHERE r1.prop = 42 AND r2.prop = "FOO"
 
-    val nodePred = Equals(Property("b", "prop"), Literal(42))
+    val nodePred = Equals(Property(Identifier("b"), "prop"), Literal(42))
 
     val forward2 = step(1, Seq(B), Direction.INCOMING, None, nodePredicate = nodePred)
     val forward1 = step(0, Seq(A), Direction.INCOMING, Some(forward2))

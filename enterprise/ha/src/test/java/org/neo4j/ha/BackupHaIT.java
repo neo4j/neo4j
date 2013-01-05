@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -17,7 +17,6 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.neo4j.ha;
 
 import static org.junit.Assert.assertEquals;
@@ -93,12 +92,12 @@ public class BackupHaIT
     private void testBackupFromCluster( String askForCluster ) throws Throwable
     {
         assertEquals( 0, runBackupToolFromOtherJvmToGetExitCode(
-                backupArguments( true, "ha://127.0.0.1:5001", BACKUP_PATH.getPath(), askForCluster ) ) );
+                backupArguments( true, "ha://localhost:5001", BACKUP_PATH.getPath(), askForCluster ) ) );
         assertEquals( representation, DbRepresentation.of( BACKUP_PATH ) );
         ManagedCluster cluster = clusterManager.getCluster( askForCluster == null ? "neo4j.ha" : askForCluster );
         DbRepresentation newRepresentation = createSomeData( cluster.getAnySlave() );
         assertEquals( 0, runBackupToolFromOtherJvmToGetExitCode(
-                backupArguments( false, "ha://127.0.0.1:5002", BACKUP_PATH.getPath(), askForCluster ) ) );
+                backupArguments( false, "ha://localhost:5002", BACKUP_PATH.getPath(), askForCluster ) ) );
         assertEquals( newRepresentation, DbRepresentation.of( BACKUP_PATH ) );
     }
 

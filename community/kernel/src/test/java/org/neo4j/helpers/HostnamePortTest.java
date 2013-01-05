@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -17,11 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.neo4j.helpers;
 
-import org.hamcrest.CoreMatchers;
-import org.junit.Assert;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
+
 import org.junit.Test;
 
 public class HostnamePortTest
@@ -30,35 +31,60 @@ public class HostnamePortTest
     public void testHostnameOnly()
     {
         HostnamePort hostnamePort = new HostnamePort( "myhost" );
-        Assert.assertThat( hostnamePort.getHost(), CoreMatchers.equalTo( "myhost" ) );
-        Assert.assertThat( hostnamePort.getPort(), CoreMatchers.equalTo( 0 ) );
-        Assert.assertThat( hostnamePort.getPorts(), CoreMatchers.equalTo( new int[]{0, 0} ) );
+        assertThat( hostnamePort.getHost(), equalTo( "myhost" ) );
+        assertThat( hostnamePort.getPort(), equalTo( 0 ) );
+        assertThat( hostnamePort.getPorts(), equalTo( new int[]{0, 0} ) );
     }
 
     @Test
     public void testHostnamePort()
     {
         HostnamePort hostnamePort = new HostnamePort( "myhost:1234" );
-        Assert.assertThat( hostnamePort.getHost(), CoreMatchers.equalTo( "myhost" ) );
-        Assert.assertThat( hostnamePort.getPort(), CoreMatchers.equalTo( 1234 ) );
-        Assert.assertThat( hostnamePort.getPorts(), CoreMatchers.equalTo( new int[] {1234, 1234} ) );
+        assertThat( hostnamePort.getHost(), equalTo( "myhost" ) );
+        assertThat( hostnamePort.getPort(), equalTo( 1234 ) );
+        assertThat( hostnamePort.getPorts(), equalTo( new int[] {1234, 1234} ) );
     }
 
     @Test
     public void testHostnamePortRange()
     {
         HostnamePort hostnamePort = new HostnamePort( "myhost:1234-1243" );
-        Assert.assertThat( hostnamePort.getHost(), CoreMatchers.equalTo( "myhost" ) );
-        Assert.assertThat( hostnamePort.getPort(), CoreMatchers.equalTo( 1234 ) );
-        Assert.assertThat( hostnamePort.getPorts(), CoreMatchers.equalTo( new int[] {1234, 1243} ) );
+        assertThat( hostnamePort.getHost(), equalTo( "myhost" ) );
+        assertThat( hostnamePort.getPort(), equalTo( 1234 ) );
+        assertThat( hostnamePort.getPorts(), equalTo( new int[] {1234, 1243} ) );
     }
 
     @Test
     public void testHostnamePortRangeInversed()
     {
         HostnamePort hostnamePort = new HostnamePort( "myhost:1243-1234" );
-        Assert.assertThat( hostnamePort.getHost(), CoreMatchers.equalTo( "myhost" ) );
-        Assert.assertThat( hostnamePort.getPort(), CoreMatchers.equalTo( 1243 ) );
-        Assert.assertThat( hostnamePort.getPorts(), CoreMatchers.equalTo( new int[] {1243, 1234} ) );
+        assertThat( hostnamePort.getHost(), equalTo( "myhost" ) );
+        assertThat( hostnamePort.getPort(), equalTo( 1243 ) );
+        assertThat( hostnamePort.getPorts(), equalTo( new int[] {1243, 1234} ) );
+    }
+    
+    @Test
+    public void testSinglePortOnly() throws Exception
+    {
+        HostnamePort hostnamePort = new HostnamePort( ":1234" );
+        assertNull( hostnamePort.getHost() );
+        assertThat( hostnamePort.getPort(), equalTo( 1234 ) );
+        assertThat( hostnamePort.getPorts(), equalTo( new int[] { 1234, 1234 } ) );
+    }
+
+    @Test
+    public void testPortRangeOnly() throws Exception
+    {
+        HostnamePort hostnamePort = new HostnamePort( ":1230-1240" );
+        assertNull( hostnamePort.getHost() );
+        assertThat( hostnamePort.getPort(), equalTo( 1230 ) );
+        assertThat( hostnamePort.getPorts(), equalTo( new int[] { 1230, 1240 } ) );
+    }
+    
+    @Test
+    public void testDefaultHost() throws Exception
+    {
+        HostnamePort hostnamePort = new HostnamePort( ":1234" );
+        assertThat( hostnamePort.getHost( "1.2.3.4" ), equalTo( "1.2.3.4" ) );
     }
 }

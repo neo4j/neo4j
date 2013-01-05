@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -17,7 +17,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.neo4j.ext.udc.impl;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -55,6 +54,7 @@ import org.neo4j.ext.udc.UdcSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.server.rest.web.CollectUserAgentFilter;
 import org.neo4j.test.TargetDirectory;
@@ -189,7 +189,7 @@ public class UdcExtensionImplTest
 
         GraphDatabaseService graphdb = createDatabase( config );
         assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
-        assertEquals( "unit-testing", handler.getQueryMap().get( REGISTRATION ) );
+        assertEquals( "test-reg", handler.getQueryMap().get( REGISTRATION ) );
 
         destroy( graphdb );
     }
@@ -201,7 +201,7 @@ public class UdcExtensionImplTest
 
         GraphDatabaseService graphdb = createDatabase( config );
         assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
-        assertEquals( "unit-testing", handler.getQueryMap().get( REGISTRATION ) );
+        assertEquals( "test-reg", handler.getQueryMap().get( REGISTRATION ) );
 
         destroy( graphdb );
     }
@@ -390,6 +390,14 @@ public class UdcExtensionImplTest
         assertTrue( "1.10".matches( pattern ) );
         assertTrue( "1.10-SNAPSHOT".matches( pattern ) );
         assertTrue( "1.10.M01".matches( pattern ) );
+    }
+
+    @Test
+    public void testUdcPropertyFileKeysMatchSettings() throws Exception 
+    {
+        Map<String, String> config = MapUtil.load( getClass().getResourceAsStream( "/org/neo4j/ext/udc/udc.properties" ) );
+        assertEquals( "test-reg", config.get(UdcSettings.udc_registration_key.name() ) );
+        assertEquals( "unit-testing", config.get( UdcSettings.udc_source.name() ) );
     }
 
     @Test

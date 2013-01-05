@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -17,7 +17,6 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.neo4j.cluster.protocol.cluster;
 
 import static org.neo4j.cluster.com.message.Message.internal;
@@ -31,7 +30,7 @@ import java.util.List;
 import java.util.concurrent.TimeoutException;
 
 import org.neo4j.cluster.com.message.Message;
-import org.neo4j.cluster.com.message.MessageProcessor;
+import org.neo4j.cluster.com.message.MessageHolder;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.AtomicBroadcastMessage;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.ProposerMessage;
@@ -50,7 +49,7 @@ public enum ClusterState
             {
                 @Override
                 public State<?, ?> handle( ClusterContext context, Message<ClusterMessage> message,
-                                           MessageProcessor outgoing ) throws Throwable
+                                           MessageHolder outgoing ) throws Throwable
                 {
                     switch ( message.getMessageType() )
                     {
@@ -79,7 +78,7 @@ public enum ClusterState
                         case join:
                         {
                             URI clusterNodeUri = message.getPayload();
-                            outgoing.process( to( ClusterMessage.configurationRequest, clusterNodeUri ) );
+                            outgoing.offer( to( ClusterMessage.configurationRequest, clusterNodeUri ) );
                             context.timeouts.setTimeout( clusterNodeUri,
                                     timeout( ClusterMessage.configurationTimeout, message, clusterNodeUri ) );
                             return acquiringConfiguration;
@@ -93,7 +92,7 @@ public enum ClusterState
             {
                 @Override
                 public State<?, ?> handle( ClusterContext context, Message<ClusterMessage> message,
-                                           MessageProcessor outgoing ) throws Throwable
+                                           MessageHolder outgoing ) throws Throwable
                 {
                     switch ( message.getMessageType() )
                     {
@@ -136,11 +135,11 @@ public enum ClusterState
                                 URI coordinator = state.getRoles().get( ClusterConfiguration.COORDINATOR );
                                 if ( coordinator != null )
                                 {
-                                    outgoing.process( to( ProposerMessage.propose, coordinator, newState ) );
+                                    outgoing.offer( to( ProposerMessage.propose, coordinator, newState ) );
                                 }
                                 else
                                 {
-                                    outgoing.process( to( ProposerMessage.propose, new URI( message.getHeader(
+                                    outgoing.offer( to( ProposerMessage.propose, new URI( message.getHeader(
                                             Message.FROM ) ), newState ) );
                                 }
 
@@ -163,7 +162,7 @@ public enum ClusterState
 
                                 context.acquiredConfiguration( memberList, state.getRoles() );
                                 context.joined();
-                                outgoing.process( internal( ClusterMessage.joinResponse, context.getConfiguration() ) );
+                                outgoing.offer( internal( ClusterMessage.joinResponse, context.getConfiguration() ) );
 
                                 return entered;
                             }
@@ -178,7 +177,7 @@ public enum ClusterState
 
                             if ( context.getConfiguration().getMembers().isEmpty() )
                             {
-                                outgoing.process( internal( ClusterMessage.joinFailure,
+                                outgoing.offer( internal( ClusterMessage.joinFailure,
                                         new TimeoutException( "Join failed, timeout waiting for configuration" ) ) );
                                 return start;
                             }
@@ -186,7 +185,7 @@ public enum ClusterState
                             {
                                 URI nextMember = members.get( 0 );
 
-                                outgoing.process( internal( ClusterMessage.join, nextMember ) );
+                                outgoing.offer( internal( ClusterMessage.join, nextMember ) );
                                 return start;
                             }
                         }
@@ -201,7 +200,7 @@ public enum ClusterState
                 @Override
                 public State<?, ?> handle( ClusterContext context,
                                            Message<ClusterMessage> message,
-                                           MessageProcessor outgoing
+                                           MessageHolder outgoing
                 )
                         throws Throwable
                 {
@@ -216,7 +215,7 @@ public enum ClusterState
                                 context.timeouts.cancelTimeout( "join" );
 
                                 context.joined();
-                                outgoing.process( internal( ClusterMessage.joinResponse, context.getConfiguration() ) );
+                                outgoing.offer( internal( ClusterMessage.joinResponse, context.getConfiguration() ) );
                                 return entered;
                             }
                             else
@@ -239,7 +238,7 @@ public enum ClusterState
                             members.add( message.<URI>getPayload() );
                             URI nextMember = members.get( 0 );
 
-                            outgoing.process( internal( ClusterMessage.join, nextMember ) );
+                            outgoing.offer( internal( ClusterMessage.join, nextMember ) );
                             return start;
                         }
 
@@ -258,7 +257,7 @@ public enum ClusterState
             {
                 @Override
                 public State<?, ?> handle( ClusterContext context, Message<ClusterMessage> message,
-                                           MessageProcessor outgoing ) throws Throwable
+                                           MessageHolder outgoing ) throws Throwable
                 {
                     switch ( message.getMessageType() )
                     {
@@ -278,7 +277,7 @@ public enum ClusterState
 
                         case configurationRequest:
                         {
-                            outgoing.process( respond( ClusterMessage.configurationResponse, message,
+                            outgoing.offer( respond( ClusterMessage.configurationResponse, message,
                                     new ClusterMessage.ConfigurationResponseState( context.getConfiguration()
                                             .getRoles(),
                                             context.getConfiguration().getMembers(),
@@ -314,7 +313,7 @@ public enum ClusterState
                                         .ConfigurationChangeState();
                                 newState.leave( context.me );
 
-                                outgoing.process( internal( AtomicBroadcastMessage.broadcast, newState ) );
+                                outgoing.offer( internal( AtomicBroadcastMessage.broadcast, newState ) );
                                 context.timeouts.setTimeout( "leave", timeout( ClusterMessage.leaveTimedout,
                                         message ) );
 
@@ -332,7 +331,7 @@ public enum ClusterState
                 @Override
                 public State<?, ?> handle( ClusterContext context,
                                            Message<ClusterMessage> message,
-                                           MessageProcessor outgoing
+                                           MessageHolder outgoing
                 )
                         throws Throwable
                 {

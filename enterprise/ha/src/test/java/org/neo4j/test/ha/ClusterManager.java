@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -17,7 +17,6 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.neo4j.test.ha;
 
 import static java.util.Arrays.asList;
@@ -28,6 +27,7 @@ import java.io.File;
 import java.lang.reflect.Field;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -42,16 +42,24 @@ import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.client.Clusters;
 import org.neo4j.cluster.client.ClustersXMLSerializer;
 import org.neo4j.cluster.com.NetworkInstance;
+import org.neo4j.cluster.protocol.election.CoordinatorIncapableCredentialsProvider;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
 import org.neo4j.helpers.Predicate;
+import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.jmx.Kernel;
+import org.neo4j.jmx.impl.JmxKernelExtension;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.Slaves;
+import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.kernel.logging.LogbackService.Slf4jStringLogger;
+import org.neo4j.kernel.logging.Logging;
+import org.neo4j.management.Neo4jManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -59,6 +67,8 @@ import org.w3c.dom.Document;
 public class ClusterManager
         extends LifecycleAdapter
 {
+    private static final Logger logger = LoggerFactory.getLogger( "clustermanager" );
+
     /**
      * Provides a specification of which clusters to start in {@link ClusterManager#start()}.
      */
@@ -96,12 +106,39 @@ public class ClusterManager
         Clusters.Cluster cluster = new Clusters.Cluster( "neo4j.ha" );
         for ( int i = 0; i < memberCount; i++ )
         {
-            cluster.getMembers().add( new Clusters.Member( 5001 + i ) );
+            cluster.getMembers().add( new Clusters.Member( 5001 + i, true ) );
         }
 
         final Clusters clusters = new Clusters();
         clusters.getClusters().add( cluster );
+        return provided( clusters );
+    }
 
+
+    /**
+     * Provides a cluster specification with default values
+     * @param haMemberCount the total number of members in the cluster to start.
+     */
+    public static Provider clusterWithAdditionalClients( int haMemberCount, int additionalClientCount )
+    {
+        Clusters.Cluster cluster = new Clusters.Cluster( "neo4j.ha" );
+        int counter = 0;
+        for ( int i = 0; i < haMemberCount; i++, counter++ )
+        {
+            cluster.getMembers().add( new Clusters.Member( 5001 + counter, true ) );
+        }
+        for ( int i = 0; i < additionalClientCount; i++, counter++ )
+        {
+            cluster.getMembers().add( new Clusters.Member( 5001 + counter, false ) );
+        }
+        
+        final Clusters clusters = new Clusters();
+        clusters.getClusters().add( cluster );
+        return provided( clusters );
+    }
+    
+    public static Provider provided( final Clusters clusters )
+    {
         return new Provider()
         {
             @Override
@@ -111,21 +148,28 @@ public class ClusterManager
             }
         };
     }
-
+    
     LifeSupport life;
     private final File root;
     private final Map<String, String> commonConfig;
+    private final Map<Integer, Map<String, String>> instanceConfig;
     private final Map<String, ManagedCluster> clusterMap = new HashMap<String, ManagedCluster>();
     private final Provider clustersProvider;
-    private Logger logger;
 
-    public ClusterManager( Provider clustersProvider, File root, Map<String, String> commonConfig )
+    public ClusterManager( Provider clustersProvider, File root, Map<String, String> commonConfig,
+                           Map<Integer, Map<String, String>> instanceConfig )
     {
         this.clustersProvider = clustersProvider;
         this.root = root;
         this.commonConfig = commonConfig;
+        this.instanceConfig = instanceConfig;
     }
 
+    public ClusterManager( Provider clustersProvider, File root, Map<String, String> commonConfig )
+    {
+        this( clustersProvider, root, commonConfig, Collections.<Integer, Map<String, String>>emptyMap() );
+    }
+    
     @Override
     public void start() throws Throwable
     {
@@ -133,7 +177,6 @@ public class ClusterManager
 
         life = new LifeSupport();
 
-        logger = LoggerFactory.getLogger( "clustermanager" );
         for ( int i = 0; i < clusters.getClusters().size(); i++ )
         {
             Clusters.Cluster cluster = clusters.getClusters().get( i );
@@ -171,7 +214,17 @@ public class ClusterManager
                 startMember( i + 1 );
             }
         }
-
+        
+        public String getInitialHostsConfigString()
+        {
+            StringBuilder result = new StringBuilder();
+            for ( HighlyAvailableGraphDatabase member : getAllMembers() )
+                result.append( result.length() > 0 ? "," : "" ).append( ":" +
+                        member.getDependencyResolver().resolveDependency(
+                                ClusterClient.class ).getServerUri().getPort() );
+            return result.toString();
+        }
+        
         @Override
         public void stop() throws Throwable
         {
@@ -253,7 +306,7 @@ public class ClusterManager
         {
             assertMember( db );
             int serverId = db.getDependencyResolver().resolveDependency( Config.class ).get( HaSettings.server_id );
-            members.remove( db );
+            members.remove( serverId );
             life.remove( db );
             db.shutdown();
             return new StartDatabaseAgainKit( this, serverId );
@@ -286,41 +339,69 @@ public class ClusterManager
                     "life" ) ).get( clusterClient );
             NetworkInstance network = instance( NetworkInstance.class, clusterClientLife.getLifecycleInstances() );
             network.stop();
-            return new StartNetworkAgainKit( network );
+            
+            int serverId = db.getDependencyResolver().resolveDependency( Config.class ).get( HaSettings.server_id );
+            db.shutdown();
+            return new StartDatabaseAgainKit( this, serverId );
         }
 
         private void startMember( int serverId ) throws URISyntaxException
         {
-            Clusters.Member member = spec.getMembers().get( serverId - 1 );
-            int haPort = new URI( "cluster://" + member.getHost() ).getPort() + 3000;
-
-            GraphDatabaseBuilder graphDatabaseBuilder = new HighlyAvailableGraphDatabaseFactory()
-                    .newHighlyAvailableDatabaseBuilder( new File( new File( root, name ),
-                            "server" + serverId ).getAbsolutePath() ).
-                            setConfig( ClusterSettings.cluster_name, name ).
-                            setConfig( ClusterSettings.initial_hosts, spec.getMembers().get( 0 ).getHost() ).
-                            setConfig( ClusterSettings.cluster_server, member.getHost() ).
-                            setConfig( HaSettings.server_id, serverId + "" ).
-                            setConfig( HaSettings.ha_server, ":" + haPort ).
-                            setConfig( commonConfig );
-
-            config( graphDatabaseBuilder, name, serverId );
-
-            // logger.info( "Starting cluster node " + serverId + " in cluster "
-            // + name );
-            final GraphDatabaseService graphDatabase = graphDatabaseBuilder.
-                    newGraphDatabase();
-
-            members.put( serverId, (HighlyAvailableGraphDatabase) graphDatabase );
-
-            life.add( new LifecycleAdapter()
+            Clusters.Member member = spec.getMembers().get( serverId-1 );
+            StringBuilder initialHosts = new StringBuilder( spec.getMembers().get( 0 ).getHost() );
+            for (int i = 1; i < spec.getMembers().size(); i++)
+                initialHosts.append( "," ).append( spec.getMembers().get( i ).getHost() );
+            if ( member.isFullHaMember() )
             {
-                @Override
-                public void stop() throws Throwable
+                int haPort = new URI( "cluster://" + member.getHost() ).getPort() + 3000;
+                GraphDatabaseBuilder graphDatabaseBuilder = new HighlyAvailableGraphDatabaseFactory()
+                        .newHighlyAvailableDatabaseBuilder( new File( new File( root, name ),
+                                "server" + serverId ).getAbsolutePath() ).
+                                setConfig( ClusterSettings.cluster_name, name ).
+                                setConfig( ClusterSettings.initial_hosts, initialHosts.toString() ).
+                                setConfig( HaSettings.server_id, serverId + "" ).
+                                setConfig( ClusterSettings.cluster_server, member.getHost() ).
+                                setConfig( HaSettings.ha_server, ":" + haPort ).
+                                setConfig( commonConfig );
+                if ( instanceConfig.containsKey( serverId ) )
                 {
-                    graphDatabase.shutdown();
+                   graphDatabaseBuilder.setConfig( instanceConfig.get( serverId ) );
                 }
-            } );
+
+                config( graphDatabaseBuilder, name, serverId );
+    
+                logger.info( "Starting cluster node " + serverId + " in cluster " + name );
+                final GraphDatabaseService graphDatabase = graphDatabaseBuilder.
+                        newGraphDatabase();
+    
+                members.put( serverId, (HighlyAvailableGraphDatabase) graphDatabase );
+    
+                life.add( new LifecycleAdapter()
+                {
+                    @Override
+                    public void stop() throws Throwable
+                    {
+                        graphDatabase.shutdown();
+                    }
+                } );
+            }
+            else
+            {
+                Map<String, String> config = MapUtil.stringMap(
+                        ClusterSettings.cluster_name.name(), name,
+                        ClusterSettings.initial_hosts.name(), initialHosts.toString(),
+                        ClusterSettings.cluster_server.name(), member.getHost() );
+                Logging clientLogging = new Logging()
+                {
+                    @Override
+                    public StringLogger getLogger( Class loggingClass )
+                    {
+                        return new Slf4jStringLogger( logger );
+                    }
+                };
+                life.add( new ClusterClient( ClusterClient.adapt( new Config( config ) ),
+                        clientLogging, new CoordinatorIncapableCredentialsProvider() ) );
+            }
 
             // logger.info( "Started cluster node " + serverId + " in cluster "
             // + name );
@@ -365,8 +446,8 @@ public class ClusterManager
                 {
                     // Ignore
                 }
-            }
-            throw new IllegalStateException( "Awaited condition never met, waited " + maxSeconds );
+            }      
+            throw new IllegalStateException( "Awaited condition never met, waited " + maxSeconds + " for " + predicate );
         }
 
         /**
@@ -375,6 +456,12 @@ public class ClusterManager
         public int size()
         {
             return spec.getMembers().size();
+        }
+        
+        public int getServerId( HighlyAvailableGraphDatabase db )
+        {
+            assertMember( db );
+            return db.getConfig().get( HaSettings.server_id );
         }
     }
 
@@ -393,6 +480,12 @@ public class ClusterManager
                 return count( cluster.getMaster().getDependencyResolver().resolveDependency( Slaves.class ).getSlaves
                         () ) >= count;
             }
+            
+            @Override
+            public String toString()
+            {
+                return "Master should see " + count + " slaves as available";
+            }
         };
     }
 
@@ -410,14 +503,22 @@ public class ClusterManager
                 return count( cluster.getMaster().getDependencyResolver().resolveDependency( Slaves.class ).getSlaves
                         () ) >= cluster.size() - 1;
             }
+            
+            @Override
+            public String toString()
+            {
+                return "Master should see all slaves as available";
+            }
         };
     }
 
     /**
-     * There must be a master available.
+     * There must be a master available. Optionally exceptions, useful for when awaiting a
+     * re-election of a different master.
      */
-    public static Predicate<ManagedCluster> masterAvailable()
+    public static Predicate<ManagedCluster> masterAvailable( HighlyAvailableGraphDatabase... except )
     {
+        final Set<HighlyAvailableGraphDatabase> exceptSet = new HashSet<HighlyAvailableGraphDatabase>( asList( except ) );
         return new Predicate<ClusterManager.ManagedCluster>()
         {
             @Override
@@ -425,12 +526,43 @@ public class ClusterManager
             {
                 for ( HighlyAvailableGraphDatabase graphDatabaseService : cluster.getAllMembers() )
                 {
-                    if ( graphDatabaseService.isMaster() )
+                    if ( !exceptSet.contains( graphDatabaseService ) && graphDatabaseService.isMaster() )
                     {
                         return true;
                     }
                 }
                 return false;
+            }
+            
+            @Override
+            public String toString()
+            {
+                return "There's an available master";
+            }
+        };
+    }
+    
+    /**
+     * The current master sees this many slaves as available.
+     * @param count number of slaves to see as available.
+     */
+    public static Predicate<ManagedCluster> masterSeesMembers( final int count )
+    {
+        return new Predicate<ClusterManager.ManagedCluster>()
+        {
+            @Override
+            public boolean accept( ManagedCluster cluster )
+            {
+//                return ((ClusterMembers)cluster.getMaster().getDependencyResolver().resolveDependency( Slaves.class )).getMembers().length >= count;
+                Neo4jManager jmx = new Neo4jManager( cluster.getMaster().getDependencyResolver().resolveDependency( JmxKernelExtension
+                        .class ).getSingleManagementBean( Kernel.class ) );
+                return jmx.getHighAvailabilityBean().getInstancesInCluster().length >= count;
+            }
+            
+            @Override
+            public String toString()
+            {
+                return "Master should see " + count + " members";
             }
         };
     }

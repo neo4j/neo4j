@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -17,14 +17,13 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos;
 
 import java.net.URI;
 import java.util.List;
 
 import org.neo4j.cluster.com.message.Message;
-import org.neo4j.cluster.com.message.MessageProcessor;
+import org.neo4j.cluster.com.message.MessageHolder;
 import org.neo4j.cluster.statemachine.State;
 
 /**
@@ -38,7 +37,7 @@ public enum LearnerState
                 @Override
                 public LearnerState handle( MultiPaxosContext context,
                                             Message<LearnerMessage> message,
-                                            MessageProcessor outgoing
+                                            MessageHolder outgoing
                 )
                         throws Throwable
                 {
@@ -59,7 +58,7 @@ public enum LearnerState
                 @Override
                 public LearnerState handle( MultiPaxosContext context,
                                             Message<LearnerMessage> message,
-                                            MessageProcessor outgoing
+                                            MessageHolder outgoing
                 )
                         throws Throwable
                 {
@@ -87,7 +86,7 @@ public enum LearnerState
                             if ( instanceId.getId() == context.learnerContext.getLastDeliveredInstanceId() + 1 )
                             {
                                 instance.delivered();
-                                outgoing.process( Message.internal( AtomicBroadcastMessage.broadcastResponse,
+                                outgoing.offer( Message.internal( AtomicBroadcastMessage.broadcastResponse,
                                         learnState.getValue() ) );
                                 context.learnerContext.setLastDeliveredInstanceId( instanceId.getId() );
 
@@ -101,7 +100,7 @@ public enum LearnerState
                                             AtomicBroadcastMessage.broadcastResponse, instance.value_2 )
                                             .setHeader( InstanceId.INSTANCE, instance.id.toString() )
                                             .setHeader( Message.CONVERSATION_ID, instance.conversationIdHeader );
-                                    outgoing.process( learnMessage );
+                                    outgoing.offer( learnMessage );
 
                                     checkInstanceId++;
                                 }
@@ -151,7 +150,7 @@ public enum LearnerState
                                         {
                                             if ( !node.equals( context.clusterContext.getMe() ) )
                                             {
-                                                outgoing.process( Message.to( LearnerMessage.learnRequest, node,
+                                                outgoing.offer( Message.to( LearnerMessage.learnRequest, node,
                                                         new LearnerMessage.LearnRequestState() ).setHeader(
                                                         InstanceId.INSTANCE,
                                                         id.toString() ) );
@@ -177,7 +176,7 @@ public enum LearnerState
                             if ( instance.isState( PaxosInstance.State.closed ) || instance.isState( PaxosInstance
                                     .State.delivered ) )
                             {
-                                outgoing.process( Message.respond( LearnerMessage.learn, message,
+                                outgoing.offer( Message.respond( LearnerMessage.learn, message,
                                         new LearnerMessage.LearnState( instance.value_2 ) ).setHeader( InstanceId
                                         .INSTANCE,
                                         instanceId.toString() ) );
@@ -188,7 +187,7 @@ public enum LearnerState
                                         "value for" +
                                         " " +
                                         "instance " + instanceId );
-                                outgoing.process( message.copyHeadersTo( Message.respond( LearnerMessage.learnFailed,
+                                outgoing.offer( message.copyHeadersTo( Message.respond( LearnerMessage.learnFailed,
                                         message,
                                         new LearnerMessage.LearnFailedState() ), InstanceId.INSTANCE ) );
                             }
@@ -209,7 +208,7 @@ public enum LearnerState
                                 URI learnerNode = context.clusterContext.getConfiguration().getMembers().get(
                                         nextPotentialLearnerIndex );
 
-                                outgoing.process( message.copyHeadersTo( Message.to( LearnerMessage.learnRequest,
+                                outgoing.offer( message.copyHeadersTo( Message.to( LearnerMessage.learnRequest,
                                         learnerNode,
                                         new LearnerMessage.LearnRequestState() ), InstanceId.INSTANCE ) );
                             }
@@ -238,7 +237,7 @@ public enum LearnerState
                                         {
                                             if ( !node.equals( context.clusterContext.getMe() ) )
                                             {
-                                                outgoing.process( Message.to( LearnerMessage.learnRequest, node,
+                                                outgoing.offer( Message.to( LearnerMessage.learnRequest, node,
                                                         new LearnerMessage.LearnRequestState() ).setHeader(
                                                         InstanceId.INSTANCE,
                                                         id.toString() ) );

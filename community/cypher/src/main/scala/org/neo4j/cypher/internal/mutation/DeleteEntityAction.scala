@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -63,19 +63,10 @@ case class DeleteEntityAction(elementToDelete: Expression)
 
   def rewrite(f: (Expression) => Expression) = DeleteEntityAction(elementToDelete.rewrite(f))
 
-  def filter(f: (Expression) => Boolean) = elementToDelete.filter(f)
+  def children = Seq(elementToDelete)
 
-  def assertTypes(symbols: SymbolTable) {
-    val elementType = elementToDelete.getType(symbols)
-
-    checkTypes(elementType)
-  }
-
-  private def checkTypes(t:CypherType) {
-    t match {
-      case x:MapType =>
-      case x:CollectionType => checkTypes(x.iteratedType)
-    }
+  def throwIfSymbolsMissing(symbols: SymbolTable) {
+    elementToDelete.throwIfSymbolsMissing(symbols)
   }
 
   def symbolTableDependencies = elementToDelete.symbolTableDependencies

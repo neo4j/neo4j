@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -27,8 +27,8 @@ import java.net.URI;
 import java.util.Map;
 
 import org.junit.Test;
-import org.neo4j.server.webadmin.rest.ConsoleService;
-import org.neo4j.server.webadmin.rest.ConsoleSessionFactory;
+import org.neo4j.server.webadmin.rest.console.ConsoleService;
+import org.neo4j.server.webadmin.console.ConsoleSessionFactory;
 
 public class ServerRootRepresentationTest
 {

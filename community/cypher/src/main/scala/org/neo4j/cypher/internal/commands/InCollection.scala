@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.commands
 import collection.Seq
 import expressions.{Closure, Expression}
 import org.neo4j.cypher.internal.symbols._
-import collection.Map
 import org.neo4j.cypher.internal.helpers.CollectionSupport
 import org.neo4j.cypher.internal.pipes.ExecutionContext
 
@@ -30,15 +29,13 @@ abstract class InCollection(collection: Expression, id: String, predicate: Predi
   extends Predicate
   with CollectionSupport
   with Closure {
+
   def seqMethod[U](f: Seq[U]): ((U) => Boolean) => Boolean
 
   def isMatch(m: ExecutionContext): Boolean = {
     val seq = makeTraversable(collection(m)).toSeq
 
-    seqMethod(seq)(item => {
-      val innerMap = m.newWith(id -> item)
-      predicate.isMatch(innerMap)
-    })
+    seqMethod(seq)(item =>predicate.isMatch(m.newWith(id -> item)))
   }
 
   def atoms: Seq[Predicate] = Seq(this)
@@ -49,17 +46,20 @@ abstract class InCollection(collection: Expression, id: String, predicate: Predi
 
   def containsIsNull = predicate.containsIsNull
 
-  def filter(f: (Expression) => Boolean): Seq[Expression] = collection.filter(f) ++ predicate.filter(f)
+  def children = Seq(collection, predicate)
 
   def assertInnerTypes(symbols: SymbolTable) {
     val innerType = collection.evaluateType(AnyCollectionType(), symbols).iteratedType
-    predicate.assertTypes(symbols.add(id, innerType))
+    predicate.throwIfSymbolsMissing(symbols.add(id, innerType))
   }
 
   def symbolTableDependencies = symbolTableDependencies(collection, predicate, id)
+
+  override def addsToRow() = Seq(id)
 }
 
-case class AllInCollection(collection: Expression, symbolName: String, inner: Predicate) extends InCollection(collection, symbolName, inner) {
+case class AllInCollection(collection: Expression, symbolName: String, inner: Predicate)
+  extends InCollection(collection, symbolName, inner) {
   def seqMethod[U](f: Seq[U]): ((U) => Boolean) => Boolean = f.forall _
 
   def name = "all"
@@ -67,7 +67,8 @@ case class AllInCollection(collection: Expression, symbolName: String, inner: Pr
   def rewrite(f: (Expression) => Expression) = AllInCollection(collection.rewrite(f), symbolName, inner.rewrite(f))
 }
 
-case class AnyInCollection(collection: Expression, symbolName: String, inner: Predicate) extends InCollection(collection, symbolName, inner) {
+case class AnyInCollection(collection: Expression, symbolName: String, inner: Predicate)
+  extends InCollection(collection, symbolName, inner) {
   def seqMethod[U](f: Seq[U]): ((U) => Boolean) => Boolean = f.exists _
 
   def name = "any"
@@ -75,7 +76,8 @@ case class AnyInCollection(collection: Expression, symbolName: String, inner: Pr
   def rewrite(f: (Expression) => Expression) = AnyInCollection(collection.rewrite(f), symbolName, inner.rewrite(f))
 }
 
-case class NoneInCollection(collection: Expression, symbolName: String, inner: Predicate) extends InCollection(collection, symbolName, inner) {
+case class NoneInCollection(collection: Expression, symbolName: String, inner: Predicate)
+  extends InCollection(collection, symbolName, inner) {
   def seqMethod[U](f: Seq[U]): ((U) => Boolean) => Boolean = x => !f.exists(x)
 
   def name = "none"
@@ -83,7 +85,8 @@ case class NoneInCollection(collection: Expression, symbolName: String, inner: P
   def rewrite(f: (Expression) => Expression) = NoneInCollection(collection.rewrite(f), symbolName, inner.rewrite(f))
 }
 
-case class SingleInCollection(collection: Expression, symbolName: String, inner: Predicate) extends InCollection(collection, symbolName, inner) {
+case class SingleInCollection(collection: Expression, symbolName: String, inner: Predicate)
+  extends InCollection(collection, symbolName, inner) {
   def seqMethod[U](f: Seq[U]): ((U) => Boolean) => Boolean = x => f.filter(x).length == 1
 
   def name = "single"

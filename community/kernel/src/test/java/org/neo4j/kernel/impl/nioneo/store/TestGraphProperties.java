@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -17,7 +17,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.neo4j.kernel.impl.nioneo.store;
 
 import static java.util.Arrays.asList;
@@ -235,8 +234,8 @@ public class TestGraphProperties
     @Test
     public void graphPropertiesAreLockedPerTx() throws Exception
     {
-        Worker worker1 = new Worker( new State( db ) );
-        Worker worker2 = new Worker( new State( db ) );
+        Worker worker1 = new Worker( "W1", new State( db ) );
+        Worker worker2 = new Worker( "W2", new State( db ) );
 
         PropertyContainer properties = getGraphProperties( db );
         worker1.beginTx();
@@ -433,9 +432,9 @@ public class TestGraphProperties
 
     private static class Worker extends OtherThreadExecutor<State>
     {
-        public Worker( State initialState )
+        public Worker( String name, State initialState )
         {
-            super( initialState );
+            super( name, initialState );
         }
 
         public boolean hasProperty( final String key ) throws Exception

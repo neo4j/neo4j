@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -117,9 +117,11 @@ public class GremlinPluginTest
     @Test
     public void testReturnTable() throws Exception
     {
-        assertTrue(json.format( GremlinPluginTest.executeTestScript( ""+
-        		"t = new Table();" +
-        		"g.v(1).out('knows').as('friends').table(t).iterate();t;", null) ).contains("josh"));
+        Representation result = GremlinPluginTest.executeTestScript("" +
+                "t = new Table();" +
+                "g.v(1).out('knows').as('friends').table(t).iterate();t;", null);
+        String resultString = json.format(result);
+        assertTrue(resultString,resultString.contains("josh"));
     }
 
     @Test

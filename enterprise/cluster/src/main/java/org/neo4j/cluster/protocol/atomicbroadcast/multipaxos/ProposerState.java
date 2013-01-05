@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -17,7 +17,6 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos;
 
 import java.net.URI;
@@ -25,7 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.cluster.com.message.Message;
-import org.neo4j.cluster.com.message.MessageProcessor;
+import org.neo4j.cluster.com.message.MessageHolder;
 import org.neo4j.cluster.protocol.cluster.ClusterMessage;
 import org.neo4j.cluster.statemachine.State;
 
@@ -40,7 +39,7 @@ public enum ProposerState
                 @Override
                 public ProposerState handle( MultiPaxosContext context,
                                              Message<ProposerMessage> message,
-                                             MessageProcessor outgoing
+                                             MessageHolder outgoing
                 )
                         throws Throwable
                 {
@@ -61,7 +60,7 @@ public enum ProposerState
                 @Override
                 public ProposerState handle( MultiPaxosContext context,
                                              Message<ProposerMessage> message,
-                                             MessageProcessor outgoing
+                                             MessageHolder outgoing
                 )
                         throws Throwable
                 {
@@ -116,7 +115,7 @@ public enum ProposerState
                                     }
                                     else
                                     {
-                                        outgoing.process( message.copyHeadersTo( Message.to( AcceptorMessage.prepare,
+                                        outgoing.offer( message.copyHeadersTo( Message.to( AcceptorMessage.prepare,
                                                 acceptor, new AcceptorMessage.PrepareState( ballot ) ),
                                                 InstanceId.INSTANCE ) );
                                     }
@@ -140,7 +139,7 @@ public enum ProposerState
                                             " to phase 1 timeout" );
 
                                     // Fail this propose
-                                    outgoing.process( Message.internal( AtomicBroadcastMessage.failed,
+                                    outgoing.offer( Message.internal( AtomicBroadcastMessage.failed,
                                             context.proposerContext.bookedInstances.get( instance.id ) ) );
                                 }
                                 else
@@ -151,7 +150,7 @@ public enum ProposerState
 
                                     for ( URI acceptor : instance.getAcceptors() )
                                     {
-                                        outgoing.process( message.copyHeadersTo( Message.to( AcceptorMessage.prepare,
+                                        outgoing.offer( message.copyHeadersTo( Message.to( AcceptorMessage.prepare,
                                                 acceptor, new AcceptorMessage.PrepareState( ballot ) ),
                                                 InstanceId.INSTANCE ) );
                                     }
@@ -227,7 +226,7 @@ public enum ProposerState
                                     instance.pending();
                                     for ( URI acceptor : instance.getAcceptors() )
                                     {
-                                        outgoing.process( message.copyHeadersTo( Message.to( AcceptorMessage.accept,
+                                        outgoing.offer( message.copyHeadersTo( Message.to( AcceptorMessage.accept,
                                                 acceptor,
                                                 new AcceptorMessage.AcceptState( instance.ballot,
                                                         instance.value_2 ) ), InstanceId.INSTANCE ) );
@@ -286,7 +285,7 @@ public enum ProposerState
 
                                 for ( URI acceptor : instance.getAcceptors() )
                                 {
-                                    outgoing.process( message.copyHeadersTo( Message.to( AcceptorMessage.prepare,
+                                    outgoing.offer( message.copyHeadersTo( Message.to( AcceptorMessage.prepare,
                                             acceptor, new AcceptorMessage.PrepareState( ballot ) ),
                                             InstanceId.INSTANCE ) );
                                 }
@@ -324,7 +323,7 @@ public enum ProposerState
                                         // configuration changes
                                         for ( URI learner : context.getLearners() )
                                         {
-                                            outgoing.process( message.copyHeadersTo( Message.to( LearnerMessage
+                                            outgoing.offer( message.copyHeadersTo( Message.to( LearnerMessage
                                                     .learn, learner,
                                                     new LearnerMessage.LearnState( instance.value_2 ) ),
                                                     InstanceId.INSTANCE ) );
@@ -333,7 +332,7 @@ public enum ProposerState
                                         // Tell joiner of this cluster configuration change
                                         if ( state.getJoin() != null )
                                         {
-                                            outgoing.process( message.copyHeadersTo( Message.to( LearnerMessage
+                                            outgoing.offer( message.copyHeadersTo( Message.to( LearnerMessage
                                                     .learn, state.getJoin(),
                                                     new LearnerMessage.LearnState( instance.value_2 ) ),
                                                     InstanceId.INSTANCE ) );
@@ -344,7 +343,7 @@ public enum ProposerState
                                         // Tell learners
                                         for ( URI learner : context.getLearners() )
                                         {
-                                            outgoing.process( message.copyHeadersTo( Message.to( LearnerMessage
+                                            outgoing.offer( message.copyHeadersTo( Message.to( LearnerMessage
                                                     .learn, learner,
                                                     new LearnerMessage.LearnState( instance.value_2 ) ),
                                                     InstanceId.INSTANCE ) );
@@ -361,7 +360,7 @@ public enum ProposerState
                                         context.clusterContext.getLogger( ProposerState.class ).debug( "Restarting "
                                                 + value + " booked:"
                                                 + context.proposerContext.bookedInstances.size() );
-                                        outgoing.process( Message.internal( ProposerMessage.propose, value ) );
+                                        outgoing.offer( Message.internal( ProposerMessage.propose, value ) );
                                     }
                                 }
                                 else
@@ -386,7 +385,7 @@ public enum ProposerState
 
     public final int MAX_CONCURRENT_INSTANCES = 10;
 
-    private static void propose( MultiPaxosContext context, Message message, MessageProcessor outgoing,
+    private static void propose( MultiPaxosContext context, Message message, MessageHolder outgoing,
                                  Object payload, List<URI> acceptors )
     {
         InstanceId instanceId = context.proposerContext.newInstanceId( context.learnerContext
@@ -404,7 +403,7 @@ public enum ProposerState
 
             for ( URI acceptor : acceptors )
             {
-                outgoing.process( Message.to( AcceptorMessage.prepare, acceptor, new AcceptorMessage.PrepareState(
+                outgoing.offer( Message.to( AcceptorMessage.prepare, acceptor, new AcceptorMessage.PrepareState(
                         ballot ) ).setHeader( InstanceId.INSTANCE, instanceId.toString() ) );
             }
 

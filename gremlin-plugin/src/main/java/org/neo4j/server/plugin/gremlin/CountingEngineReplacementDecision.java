@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -21,23 +21,30 @@ package org.neo4j.server.plugin.gremlin;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-class CountingEngineReplacementDecision implements EngineReplacementDecision {
+class CountingEngineReplacementDecision implements EngineReplacementDecision
+{
     private final AtomicInteger executionCount = new AtomicInteger();
     private final int maxExecutionCount;
 
-    public CountingEngineReplacementDecision(int maxExecutionCount) {
+    public CountingEngineReplacementDecision( int maxExecutionCount )
+    {
         this.maxExecutionCount = maxExecutionCount;
     }
 
     @Override
-    public void beforeExecution(String script) {
+    public void beforeExecution( String script )
+    {
         executionCount.incrementAndGet();
     }
 
     @Override
-    public boolean mustReplaceEngine() {
-        if (executionCount.get() < maxExecutionCount) return false;
-        executionCount.set(0);
+    public boolean mustReplaceEngine()
+    {
+        if ( executionCount.get() < maxExecutionCount )
+        {
+            return false;
+        }
+        executionCount.set( 0 );
         return true;
     }
 }

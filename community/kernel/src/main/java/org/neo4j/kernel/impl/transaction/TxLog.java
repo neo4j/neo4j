@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -24,13 +24,16 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.transaction.xa.Xid;
 
@@ -39,7 +42,6 @@ import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.xaframework.DirectMappedLogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
-import org.neo4j.kernel.impl.util.StringLogger;
 
 // TODO: fixed sized logs (pre-initialize them)
 // keep dangling records in memory for log switch
@@ -56,14 +58,35 @@ public class TxLog
     private File name = null;
     private LogBuffer logBuffer;
     private int recordCount = 0;
+    private final Set<ByteArrayKey> activeTransactions = new HashSet<ByteArrayKey>();
 
     public static final byte TX_START = 1;
     public static final byte BRANCH_ADD = 2;
     public static final byte MARK_COMMIT = 3;
     public static final byte TX_DONE = 4;
     private final FileSystemAbstraction fileSystem;
-    private final StringLogger msgLog;
-    private int rotationCounter;
+    
+    private static final class ByteArrayKey
+    {
+        private final byte[] bytes;
+
+        private ByteArrayKey( byte[] bytes )
+        {
+            this.bytes = bytes;
+        }
+        
+        @Override
+        public int hashCode()
+        {
+            return Arrays.hashCode( bytes );
+        }
+        
+        @Override
+        public boolean equals( Object obj )
+        {
+            return Arrays.equals( bytes, ((ByteArrayKey)obj).bytes );
+        }
+    }
 
     /**
      * Initializes a transaction log using <CODE>filename</CODE>. If the file
@@ -76,18 +99,27 @@ public class TxLog
      * @throws IOException
      *             If unable to open file
      */
-    public TxLog( File fileName, FileSystemAbstraction fileSystem, StringLogger msgLog ) throws IOException
+    public TxLog( File fileName, FileSystemAbstraction fileSystem ) throws IOException
     {
         if ( fileName == null )
         {
             throw new IllegalArgumentException( "Null filename" );
         }
         this.fileSystem = fileSystem;
-        this.msgLog = msgLog;
         FileChannel fileChannel = fileSystem.open( fileName, "rw" );
         fileChannel.position( fileChannel.size() );
         logBuffer = new DirectMappedLogBuffer( fileChannel );
         this.name = fileName;
+        
+        recreateActiveTransactionState();
+    }
+
+    private void recreateActiveTransactionState() throws IOException
+    {
+        for ( List<Record> tx : getDanglingRecords() )
+            for ( Record record : tx )
+                if ( record.getType() == TX_START )
+                    activeTransactions.add( new ByteArrayKey( record.getGlobalId() ) );
     }
 
     /**
@@ -134,6 +166,7 @@ public class TxLog
         fileChannel.truncate( 0 );
         recordCount = 0;
         logBuffer = new DirectMappedLogBuffer( fileChannel );
+        activeTransactions.clear();
     }
 
     /**
@@ -148,7 +181,8 @@ public class TxLog
     public synchronized void txStart( byte globalId[] ) throws IOException
     {
         assertNotNull( globalId, "global id" );
-
+        if ( !activeTransactions.add( new ByteArrayKey( globalId ) ) )
+            throw new IllegalStateException( "Global ID " + Arrays.toString( globalId ) + " already started" );
         logBuffer.put( TX_START ).put( (byte) globalId.length ).put( globalId );
         recordCount++;
     }
@@ -177,9 +211,16 @@ public class TxLog
     {
         assertNotNull( globalId, "global id" );
         assertNotNull( branchId, "branch id" );
+        assertActive( globalId );
         logBuffer.put( BRANCH_ADD ).put( (byte) globalId.length ).put(
             (byte) branchId.length ).put( globalId ).put( branchId );
         recordCount++;
+    }
+
+    private void assertActive( byte[] globalId )
+    {
+        if ( !activeTransactions.contains( new ByteArrayKey( globalId ) ) )
+            throw new IllegalStateException( "Global ID " + Arrays.toString( globalId ) + " not active" );
     }
 
     /**
@@ -197,7 +238,8 @@ public class TxLog
         throws IOException
     {
         assertNotNull( globalId, "global id" );
-
+        assertActive( globalId );
+        
         logBuffer.put( MARK_COMMIT ).put( (byte) globalId.length ).put( globalId );
         forceMode.force( logBuffer );
         recordCount++;
@@ -215,6 +257,9 @@ public class TxLog
     public synchronized void txDone( byte globalId[] ) throws IOException
     {
         assertNotNull( globalId, "global id" );
+        if ( !activeTransactions.remove( new ByteArrayKey( globalId ) ) )
+            throw new IllegalStateException( "Global ID " + Arrays.toString( globalId ) + " not active" );
+        
         logBuffer.put( TX_DONE ).put( (byte) globalId.length ).put( globalId );
         recordCount++;
     }
@@ -471,7 +516,6 @@ public class TxLog
     public synchronized void switchToLogFile( File newFile )
         throws IOException
     {
-        rotationCounter++;
         if ( newFile == null )
         {
             throw new IllegalArgumentException( "Null filename" );
@@ -480,17 +524,6 @@ public class TxLog
         force();
         Iterable<List<Record>> itr = getDanglingRecords();
         close();
-        if ( fileSystem.fileExists( name ) )
-        {
-            try
-            {
-                fileSystem.copyFile( name, new File( name.getPath()+"_"+rotationCounter ));
-            }
-            catch (Throwable t)
-            {
-                t.printStackTrace();
-            }
-        }
         List<Record> records = new ArrayList<Record>();
         for ( List<Record> tx : itr )
         {
@@ -503,7 +536,6 @@ public class TxLog
                 return r1.getSequenceNumber() - r2.getSequenceNumber();
             }
         } );
-//        msgLog.logMessage( "About to rotate " + name + " to " + newFile + " with dangling records " + records, true );
         Iterator<Record> recordItr = records.iterator();
         FileChannel fileChannel = fileSystem.open( newFile, "rw" );
         fileChannel.position( fileChannel.size() );
@@ -516,6 +548,5 @@ public class TxLog
             writeRecord( record, ForceMode.forced );
         }
         force();
-//        msgLog.logMessage( "Rotated " + name + " to, file channel now at " + fileChannel.position(), true );
     }
 }

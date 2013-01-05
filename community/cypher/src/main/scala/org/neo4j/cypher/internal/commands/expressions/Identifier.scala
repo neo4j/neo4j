@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -32,18 +32,14 @@ object Identifier {
   def notNamed(x: String) = x.startsWith("  UNNAMED")
 }
 
-
 case class Identifier(entityName: String) extends Expression with Typed {
-  def apply(ctx: ExecutionContext): Any = ctx.getOrElse(entityName, throw new NotFoundException("Unknown identifier `%s`".format(entityName)))
+  def apply(ctx: ExecutionContext): Any = ctx.getOrElse(entityName, throw new NotFoundException("Unknown identifier `%s`.".format(entityName)))
 
   override def toString(): String = entityName
 
   def rewrite(f: (Expression) => Expression) = f(this)
 
-  def filter(f: (Expression) => Boolean) = if (f(this))
-    Seq(this)
-  else
-    Seq()
+  def children = Seq()
 
   def calculateType(symbols: SymbolTable) =
     throw new ThisShouldNotHappenError("Andres", "This class should override evaluateType, and this method should never be run")

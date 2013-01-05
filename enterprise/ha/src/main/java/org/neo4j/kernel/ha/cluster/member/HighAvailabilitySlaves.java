@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -87,14 +87,14 @@ public class HighAvailabilitySlaves implements Lifecycle, Slaves
     }
     
     @Override
-    public void init() throws Throwable
+    public void init()
     {
         life.init();
 
         clusterListener = new HASClusterListener();
         cluster.addClusterListener( clusterListener );
     }
-
+    
     @Override
     public void start() throws Throwable
     {

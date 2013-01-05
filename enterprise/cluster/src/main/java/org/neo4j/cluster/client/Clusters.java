@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -17,7 +17,6 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.neo4j.cluster.client;
 
 import java.net.InetAddress;
@@ -60,7 +59,6 @@ public class Clusters
         }
         return null;
     }
-
 
     @Override
     public boolean equals( Object o )
@@ -180,10 +178,27 @@ public class Clusters
     public static class Member
     {
         private String host;
-        
-        public Member( int port )
+        private boolean fullHaMember;
+
+        public Member( int port, boolean fullHaMember )
         {
-            this( localhost() + ":" + port );
+            this( localhost() + ":" + port, fullHaMember );
+        }
+
+        public Member( String host )
+        {
+            this( host, true );
+        }
+
+        public Member( String host, boolean fullHaMember )
+        {
+            this.host = host;
+            this.fullHaMember = fullHaMember;
+        }
+        
+        public boolean isFullHaMember()
+        {
+            return fullHaMember;
         }
 
         private static String localhost()
@@ -197,12 +212,7 @@ public class Clusters
                 throw new RuntimeException( e );
             }
         }
-
-        public Member( String host )
-        {
-            this.host = host;
-        }
-
+        
         public String getHost()
         {
             return host;

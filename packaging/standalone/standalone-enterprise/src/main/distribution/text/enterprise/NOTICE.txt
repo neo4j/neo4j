@@ -59,6 +59,7 @@ Apache Software License, Version 2.0
   Servlet Specification API
   StAX API
   The Netty Project
+  zookeeper
 
 BSD - Scala License
   Scala Library

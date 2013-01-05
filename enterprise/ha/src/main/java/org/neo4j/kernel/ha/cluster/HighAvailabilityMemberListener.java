@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -31,7 +31,7 @@ public interface HighAvailabilityMemberListener
     void slaveIsAvailable( HighAvailabilityMemberChangeEvent event );
 
     void instanceStops( HighAvailabilityMemberChangeEvent event );
-    
+
     public static class Adapter implements HighAvailabilityMemberListener
     {
         @Override

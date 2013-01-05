@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -24,6 +24,7 @@ import static org.neo4j.com.DechunkingChannelBuffer.assertSameProtocolVersion;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.Map;
@@ -53,8 +54,8 @@ import org.jboss.netty.channel.group.ChannelGroup;
 import org.jboss.netty.channel.group.DefaultChannelGroup;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
 import org.neo4j.com.RequestContext.Tx;
-import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.Exceptions;
+import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Triplet;
@@ -63,6 +64,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.kernel.logging.Logging;
 
 /**
  * Receives requests from {@link Client clients}. Delegates actual work to an instance
@@ -134,14 +136,14 @@ public abstract class Server<T, R> extends Protocol implements ChannelPipelineFa
     private TxChecksumVerifier txVerifier;
     private int chunkSize;
 
-    public Server( T requestTarget, Configuration config, StringLogger logger, int frameLength,
+    public Server( T requestTarget, Configuration config, Logging logging, int frameLength,
                    byte applicationProtocolVersion, TxChecksumVerifier txVerifier )
     {
         this.requestTarget = requestTarget;
         this.config = config;
         this.frameLength = frameLength;
         this.applicationProtocolVersion = applicationProtocolVersion;
-        this.msgLog = logger;
+        this.msgLog = logging.getLogger( getClass() );
         this.txVerifier = txVerifier;
     }
 
@@ -180,10 +182,9 @@ public abstract class Server<T, R> extends Protocol implements ChannelPipelineFa
 
         for ( int port = ports[0]; port <= ports[1]; port++ )
         {
-
             if ( config.getServerAddress().getHost() == null )
             {
-                socketAddress = new InetSocketAddress( port );
+                socketAddress = new InetSocketAddress( InetAddress.getLocalHost().getHostAddress(), port );
             }
             else
             {
@@ -231,7 +232,7 @@ public abstract class Server<T, R> extends Protocol implements ChannelPipelineFa
     public void shutdown() throws Throwable
     {
     }
-
+    
     public InetSocketAddress getSocketAddress()
     {
         return socketAddress;

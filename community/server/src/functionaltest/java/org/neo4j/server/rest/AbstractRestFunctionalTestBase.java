@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -70,30 +70,6 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
                 .payload( queryString )
                 .description( AsciidocHelper.createCypherSnippet( script ) );
         return gen().post( endpoint ).entity();
-    }
-    
-    protected String doGremlinRestCall( String endpoint, String scriptTemplate, Status status, Pair<String, String>... params ) {
-        data.get();
-        String parameterString = createParameterString( params );
-
-
-        String script = createScript( scriptTemplate );
-        String queryString = "{\"script\": \"" + script + "\"," + parameterString+"},"  ;
-
-        gen().expectedStatus( status.getStatusCode() ).payload(
-                queryString ).description(formatGroovy( script ) );
-        return gen().post( endpoint ).entity();
-    }
-    
-    protected String formatGroovy( String script )
-    {
-        script = script.replace( ";", "\n" );
-        if ( !script.endsWith( "\n" ) )
-        {
-            script += "\n";
-        }
-        return "_Raw script source_\n\n" + "[source, groovy]\n" + "----\n"
-               + script + "----\n";
     }
     
     protected String formatJavaScript( String script )

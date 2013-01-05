@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -68,15 +68,13 @@ public class Start extends ReadOnlyGraphDatabaseApp
             try
             {
                 ExecutionResult result = engine.execute( queryWithoutSemicolon, getParameters( session ) );
-                out.println( result.toString() );
-            }
-            catch ( CypherException e )
+                out.println( result.dumpToString() );
+            } catch ( CypherException e )
             {
                 throw ShellException.wrapCause( e );
             }
             return Continuation.INPUT_COMPLETE;
-        }
-        else
+        } else
         {
             return Continuation.INPUT_INCOMPLETE;
         }
@@ -96,8 +94,7 @@ public class Start extends ReadOnlyGraphDatabaseApp
         {
             NodeOrRelationship self = getCurrent( session );
             params.put( "self", self.isNode() ? self.asNode() : self.asRelationship() );
-        }
-        catch ( ShellException e )
+        } catch ( ShellException e )
         { // OK, current didn't exist
         }
         return params;

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -52,11 +52,11 @@ public class ConsoleWebIT extends AbstractWebadminTest {
     public void remembersShellStateWhenSwitchingTabsTest() {
         wl.goToWebadminStartPage();
         wl.clickOnTab("Console");
-        wl.clickOnLink("Gremlin");
+        wl.clickOnLink("HTTP");
         wl.clickOnTab("Data browser");
         wl.clickOnTab("Console");
         wl.waitForElementToAppear(By
-                .xpath("//li[contains(.,'gremlin')]"));
+                .xpath("//li[contains(.,'200')]"));
     }
 
     @Test
@@ -70,31 +70,6 @@ public class ConsoleWebIT extends AbstractWebadminTest {
         wl.writeTo(By.id("console-input"), Keys.RETURN);
 
         wl.waitForElementToAppear(By.xpath("//li[contains(.,'Node[0]')]"));
-    }
-
-    //
-    // GREMLIN
-    //
-
-    @Test
-    public void hasGremlinConsoleTest() {
-        wl.goToWebadminStartPage();
-        wl.clickOnTab("Console");
-        wl.clickOnLink("Gremlin");
-        wl.waitForElementToAppear(By
-                .xpath("//li[contains(.,'gremlin')]"));
-    }
-
-    @Test
-    @Ignore( "Broken due to http://code.google.com/p/selenium/issues/detail?id=1723" )
-    public void canAccessDatabaseViaGremlinConsoleTest() {
-        
-        wl.goToWebadminStartPage();
-        wl.clickOnTab("Console");
-        
-        wl.writeTo(By.id("console-input"), "g.v(0)", Keys.RETURN);
-
-        wl.waitForElementToAppear(By.xpath("//li[contains(.,'v[0]')]"));
     }
 
     //

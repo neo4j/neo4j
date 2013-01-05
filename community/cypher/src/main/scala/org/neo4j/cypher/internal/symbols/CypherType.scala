@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.symbols
 
-import org.neo4j.cypher.{CypherException, CypherTypeException}
+import org.neo4j.cypher.CypherTypeException
 
 trait CypherType {
   def isAssignableFrom(other: CypherType): Boolean = this.getClass.isAssignableFrom(other.getClass)
@@ -59,18 +59,7 @@ object CypherType {
 TypeSafe is everything that needs to check it's types
  */
 trait TypeSafe {
-  /*
-  Checks if internal type dependencies are met. Throws an exception if it fails
-  */
-  def assertTypes(symbols: SymbolTable)
-
-  // Same as assert types, but doesn't throw if it fails
-  def checkTypes(symbols: SymbolTable): Boolean = try {
-    assertTypes(symbols)
-    true
-  } catch {
-    case _: CypherException => false
-  }
+  def throwIfSymbolsMissing(symbols: SymbolTable)
 
   def symbolDependenciesMet(symbols: SymbolTable): Boolean =
     symbolTableDependencies.forall(name => check(symbols, name))

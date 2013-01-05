@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -27,10 +27,27 @@ import javax.transaction.RollbackException;
 import javax.transaction.SystemException;
 import javax.transaction.Transaction;
 
+import org.neo4j.kernel.impl.core.LockElement;
+import org.neo4j.kernel.impl.core.NoTransactionState;
 import org.neo4j.kernel.impl.core.TransactionState;
+import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 
 public class PlaceboTm extends AbstractTransactionManager
 {
+    private LockManager lockManager;
+    private TxIdGenerator txIdGenerator;
+
+    public PlaceboTm( LockManager lockManager, TxIdGenerator txIdGenerator )
+    {
+        this.lockManager = lockManager;
+        this.txIdGenerator = txIdGenerator;
+    }
+    
+    public void setLockManager( LockManager lockManager )
+    {
+        this.lockManager = lockManager;
+    }
+    
     public void begin() throws NotSupportedException, SystemException
     {
         // TODO Auto-generated method stub
@@ -129,6 +146,27 @@ public class PlaceboTm extends AbstractTransactionManager
     @Override
     public TransactionState getTransactionState()
     {
-        return TransactionState.NO_STATE;
+        return new NoTransactionState()
+        {
+            @Override
+            public LockElement acquireReadLock( Object resource )
+            {
+                lockManager.getReadLock( resource );
+                return new LockElement( resource, LockType.READ, lockManager );
+            }
+            
+            @Override
+            public LockElement acquireWriteLock( Object resource )
+            {
+                lockManager.getWriteLock( resource );
+                return new LockElement( resource, LockType.WRITE, lockManager );
+            }
+            
+            @Override
+            public TxIdGenerator getTxIdGenerator()
+            {
+                return txIdGenerator;
+            }
+        };
     }
 }

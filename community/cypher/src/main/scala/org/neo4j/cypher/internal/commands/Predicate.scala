@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -37,7 +37,6 @@ abstract class Predicate extends Expression {
   def atoms: Seq[Predicate]
   def rewrite(f: Expression => Expression): Predicate
   def containsIsNull: Boolean
-  def filter(f: Expression => Boolean): Seq[Expression]
   def assertInnerTypes(symbols: SymbolTable)
   protected def calculateType(symbols: SymbolTable) = {
     assertInnerTypes(symbols)
@@ -65,10 +64,10 @@ case class NullablePredicate(inner: Predicate, exp: Seq[(Expression, Boolean)]) 
     case (e, ascDesc) => (e.rewrite(f), ascDesc)
   })
 
-  def filter(f: (Expression) => Boolean) = exp.flatMap { case (e,_) => e.filter(f)  }
+  def children = Seq(inner) ++ exp.map(_._1)
 
   def assertInnerTypes(symbols: SymbolTable) {
-    inner.assertTypes(symbols)
+    inner.throwIfSymbolsMissing(symbols)
   }
 
   def symbolTableDependencies = inner.symbolTableDependencies ++ exp.flatMap(_._1.symbolTableDependencies).toSet
@@ -81,11 +80,12 @@ case class And(a: Predicate, b: Predicate) extends Predicate {
   override def toString(): String = "(" + a + " AND " + b + ")"
   def containsIsNull = a.containsIsNull||b.containsIsNull
   def rewrite(f: (Expression) => Expression) = And(a.rewrite(f), b.rewrite(f))
-  def filter(f: (Expression) => Boolean) = a.filter(f) ++ b.filter(f)
+
+  def children = Seq(a, b)
 
   def assertInnerTypes(symbols: SymbolTable) {
-    a.assertTypes(symbols)
-    b.assertTypes(symbols)
+    a.throwIfSymbolsMissing(symbols)
+    b.throwIfSymbolsMissing(symbols)
   }
 
   def symbolTableDependencies = a.symbolTableDependencies ++ b.symbolTableDependencies
@@ -97,11 +97,12 @@ case class Or(a: Predicate, b: Predicate) extends Predicate {
   override def toString(): String = "(" + a + " OR " + b + ")"
   def containsIsNull = a.containsIsNull||b.containsIsNull
   def rewrite(f: (Expression) => Expression) = Or(a.rewrite(f), b.rewrite(f))
-  def filter(f: (Expression) => Boolean) = a.filter(f) ++ b.filter(f)
+
+  def children = Seq(a, b)
 
   def assertInnerTypes(symbols: SymbolTable) {
-    a.assertTypes(symbols)
-    b.assertTypes(symbols)
+    a.throwIfSymbolsMissing(symbols)
+    b.throwIfSymbolsMissing(symbols)
   }
 
   def symbolTableDependencies = a.symbolTableDependencies ++ b.symbolTableDependencies
@@ -113,9 +114,9 @@ case class Not(a: Predicate) extends Predicate {
   override def toString(): String = "NOT(" + a + ")"
   def containsIsNull = a.containsIsNull
   def rewrite(f: (Expression) => Expression) = Not(a.rewrite(f))
-  def filter(f: (Expression) => Boolean) = a.filter(f)
+  def children = Seq(a)
   def assertInnerTypes(symbols: SymbolTable) {
-    a.assertTypes(symbols)
+    a.throwIfSymbolsMissing(symbols)
   }
 
   def symbolTableDependencies = a.symbolTableDependencies
@@ -137,11 +138,10 @@ case class HasRelationshipTo(from: Expression, to: Expression, dir: Direction, r
   def atoms: Seq[Predicate] = Seq(this)
   def containsIsNull = false
   def rewrite(f: (Expression) => Expression) = HasRelationshipTo(from.rewrite(f), to.rewrite(f), dir, relType)
-  def filter(f: (Expression) => Boolean) = from.filter(f) ++ to.filter(f)
-
+  def children = Seq(from, to)
   def assertInnerTypes(symbols: SymbolTable) {
-    from.assertTypes(symbols)
-    to.assertTypes(symbols)
+    from.throwIfSymbolsMissing(symbols)
+    to.throwIfSymbolsMissing(symbols)
   }
   def symbolTableDependencies = from.symbolTableDependencies ++ to.symbolTableDependencies
 }
@@ -161,10 +161,10 @@ case class HasRelationship(from: Expression, dir: Direction, relType: Seq[String
 
   def atoms: Seq[Predicate] = Seq(this)
   def containsIsNull = false
-  def filter(f: (Expression) => Boolean) = from.filter(f)
+  def children = Seq(from)
   def rewrite(f: (Expression) => Expression) = HasRelationship(from.rewrite(f), dir, relType)
   def assertInnerTypes(symbols: SymbolTable) {
-    from.assertTypes(symbols)
+    from.throwIfSymbolsMissing(symbols)
   }
 
   def symbolTableDependencies = from.symbolTableDependencies
@@ -176,9 +176,9 @@ case class IsNull(expression: Expression) extends Predicate {
   override def toString(): String = expression + " IS NULL"
   def containsIsNull = true
   def rewrite(f: (Expression) => Expression) = IsNull(expression.rewrite(f))
-  def filter(f: (Expression) => Boolean) = expression.filter(f)
+  def children = Seq(expression)
   def assertInnerTypes(symbols: SymbolTable) {
-    expression.assertTypes(symbols)
+    expression.throwIfSymbolsMissing(symbols)
   }
   def symbolTableDependencies = expression.symbolTableDependencies
 }
@@ -189,20 +189,17 @@ case class True() extends Predicate {
   override def toString(): String = "true"
   def containsIsNull = false
   def rewrite(f: (Expression) => Expression) = True()
-  def filter(f: (Expression) => Boolean) = if (f(this))
-    Seq(this)
-  else
-    Seq()
+  def children = Seq.empty
   def assertInnerTypes(symbols: SymbolTable) {}
   def symbolTableDependencies = Set()
 }
 
-case class Has(element: Expression, propertyName: String) extends Predicate {
-  def isMatch(m: ExecutionContext): Boolean = element(m) match {
+case class Has(identifier: Expression, propertyName: String) extends Predicate {
+  def isMatch(m: ExecutionContext): Boolean = identifier(m) match {
     case pc: Node         => m.state.query.nodeOps().hasProperty(pc, propertyName)
     case pc: Relationship => m.state.query.relationshipOps().hasProperty(pc, propertyName)
     case null             => false
-    case _                => throw new CypherTypeException("Expected " + element + " to be a property container.")
+    case _                => throw new CypherTypeException("Expected " + identifier + " to be a property container.")
   }
 
   def atoms: Seq[Predicate] = Seq(this)
@@ -211,15 +208,15 @@ case class Has(element: Expression, propertyName: String) extends Predicate {
 
   def containsIsNull = false
 
-  def rewrite(f: (Expression) => Expression) = Has(element.rewrite(f), propertyName)
+  def rewrite(f: (Expression) => Expression) = Has(identifier.rewrite(f), propertyName)
 
-  def filter(f: (Expression) => Boolean) = element.filter(f)
+  def children = Seq(identifier)
 
   def assertInnerTypes(symbols: SymbolTable) {
-    element.evaluateType(MapType(), symbols)
+    identifier.evaluateType(MapType(), symbols)
   }
 
-  def symbolTableDependencies = element.symbolTableDependencies
+  def symbolTableDependencies = identifier.symbolTableDependencies
 }
 
 case class LiteralRegularExpression(a: Expression, regex: Literal) extends Predicate {
@@ -232,7 +229,8 @@ case class LiteralRegularExpression(a: Expression, regex: Literal) extends Predi
     case lit:Literal => LiteralRegularExpression(a.rewrite(f), lit)
     case other => RegularExpression(a.rewrite(f), other)
   }
-  def filter(f: (Expression) => Boolean) = a.filter(f) ++ regex.filter(f)
+
+  def children = Seq(a, regex)
 
   def assertInnerTypes(symbols: SymbolTable) {
     a.evaluateType(StringType(), symbols)
@@ -257,7 +255,8 @@ case class RegularExpression(a: Expression, regex: Expression) extends Predicate
     case lit:Literal => LiteralRegularExpression(a.rewrite(f), lit)
     case other => RegularExpression(a.rewrite(f), other)
   }
-  def filter(f: (Expression) => Boolean) = a.filter(f) ++ regex.filter(f)
+
+  def children = Seq(a, regex)
 
   def assertInnerTypes(symbols: SymbolTable) {
     a.evaluateType(StringType(), symbols)
@@ -279,8 +278,7 @@ case class NonEmpty(collection:Expression) extends Predicate with CollectionSupp
   override def toString(): String = "nonEmpty(" + collection.toString() + ")"
   def containsIsNull = false
   def rewrite(f: (Expression) => Expression) = NonEmpty(collection.rewrite(f))
-  def filter(f: (Expression) => Boolean) = collection.filter(f)
-
+  def children = Seq(collection)
   def assertInnerTypes(symbols: SymbolTable) {
     collection.evaluateType(AnyCollectionType(), symbols)
   }

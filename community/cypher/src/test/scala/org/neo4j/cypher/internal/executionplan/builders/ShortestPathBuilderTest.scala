@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -24,7 +24,7 @@ import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.executionplan.PartiallySolvedQuery
 import org.junit.Assert._
 import org.neo4j.cypher.internal.commands._
-import expressions.{Literal, Property}
+import expressions.{Identifier, Literal, Property}
 
 class ShortestPathBuilderTest extends BuilderTest {
 
@@ -71,7 +71,7 @@ class ShortestPathBuilderTest extends BuilderTest {
   def should_not_accept_work_id_predicates_depend_on_something_not_solved() {
     val q = PartiallySolvedQuery().
       copy(start = Seq(Solved(NodeById("a", 0)), Solved(NodeById("b", 0)), Unsolved(NodeById("x", 0))),
-      patterns = Seq(Unsolved(ShortestPath("p", "a", "b", Seq(), Direction.OUTGOING, None, optional = false, single = true, relIterator = None, predicate = Equals(Property("x", "foo"), Literal(42))))))
+      patterns = Seq(Unsolved(ShortestPath("p", "a", "b", Seq(), Direction.OUTGOING, None, optional = false, single = true, relIterator = None, predicate = Equals(Property(Identifier("x"), "foo"), Literal(42))))))
 
     val p = createPipe(nodes = Seq("a", "b"))
 

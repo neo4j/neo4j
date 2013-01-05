@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -17,7 +17,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.neo4j.kernel;
 
 import static org.slf4j.impl.StaticLoggerBinder.getSingleton;
@@ -31,6 +30,7 @@ import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
+import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
 
 import org.neo4j.graphdb.DependencyResolver;
@@ -270,16 +270,14 @@ public abstract class InternalAbstractGraphDatabase
                 if ( instance instanceof KernelExtensions && to.equals( LifecycleStatus.STARTED ) && txManager
                         instanceof TxManager )
                 {
-                    InternalAbstractGraphDatabase.this.doRecovery();
+                    InternalAbstractGraphDatabase.this.doAfterRecoveryAndStartup();
                 }
             }
         } );
     }
 
-    protected void doRecovery()
+    protected void doAfterRecoveryAndStartup()
     {
-//        txManager.doRecovery();
-
         NeoStoreXaDataSource neoStoreDataSource = xaDataSourceManager.getNeoStoreDataSource();
         storeId = neoStoreDataSource.getStoreId();
         KernelDiagnostics.register( diagnosticsManager, InternalAbstractGraphDatabase.this,
@@ -336,13 +334,13 @@ public abstract class InternalAbstractGraphDatabase
 
         kernelPanicEventGenerator = new KernelPanicEventGenerator( kernelEventHandlers );
 
-        txHook = createTxHook();
-
         xaDataSourceManager = life.add( createXaDataSourceManager() );
+
+        txHook = createTxHook();
 
         guard = config.get( Configuration.execution_guard_enabled ) ? new Guard( msgLog ) : null;
 
-        stateFactory = new TransactionStateFactory();
+        stateFactory = createTransactionStateFactory();
 
         if ( readOnly )
         {
@@ -353,7 +351,7 @@ public abstract class InternalAbstractGraphDatabase
             String serviceName = config.get( GraphDatabaseSettings.tx_manager_impl );
             if ( serviceName == null )
             {
-                txManager = new TxManager( this.storeDir, xaDataSourceManager, kernelPanicEventGenerator, txHook,
+                txManager = new TxManager( this.storeDir, xaDataSourceManager, kernelPanicEventGenerator,
                         logging.getLogger( TxManager.class ), fileSystem, stateFactory );
             }
             else
@@ -403,7 +401,7 @@ public abstract class InternalAbstractGraphDatabase
                 createNodeManager( readOnly, cacheProvider, nodeCache, relCache );
 
         life.add( nodeManager );
-        stateFactory.setDependencies( lockManager, propertyIndexManager, nodeManager, txManager );
+        stateFactory.setDependencies( lockManager, propertyIndexManager, nodeManager, txHook, txIdGenerator );
 
         indexStore = new IndexStore( this.storeDir, fileSystem );
 
@@ -446,7 +444,7 @@ public abstract class InternalAbstractGraphDatabase
         storeFactory = createStoreFactory();
         String keepLogicalLogsConfig = config.get( GraphDatabaseSettings.keep_logical_logs );
         xaFactory = new XaFactory( config, txIdGenerator, txManager, logBufferFactory, fileSystem,
-                logging.getLogger( XaFactory.class ), recoveryVerifier, LogPruneStrategies.fromConfigValue(
+                logging, recoveryVerifier, LogPruneStrategies.fromConfigValue(
                 fileSystem, keepLogicalLogsConfig ) );
 
         createNeoDataSource();
@@ -461,6 +459,11 @@ public abstract class InternalAbstractGraphDatabase
 
         // TODO This is probably too coarse-grained and we should have some strategy per user of config instead
         life.add( new ConfigurationChangedRestarter() );
+    }
+
+    protected TransactionStateFactory createTransactionStateFactory()
+    {
+        return new TransactionStateFactory( logging );
     }
 
     protected XaDataSourceManager createXaDataSourceManager()
@@ -484,12 +487,12 @@ public abstract class InternalAbstractGraphDatabase
     {
         if ( readOnly )
         {
-            return new ReadOnlyNodeManager( config, this, lockManager, txManager, persistenceManager,
+            return new ReadOnlyNodeManager( config, this, txManager, persistenceManager,
                     persistenceSource, relationshipTypeHolder, cacheType, propertyIndexManager, createNodeLookup(),
                     createRelationshipLookups(), nodeCache, relCache, xaDataSourceManager );
         }
 
-        return new NodeManager( config, this, lockManager, txManager, persistenceManager,
+        return new NodeManager( config, this, txManager, persistenceManager,
                 persistenceSource, relationshipTypeHolder, cacheType, propertyIndexManager, createNodeLookup(),
                 createRelationshipLookups(), nodeCache, relCache, xaDataSourceManager );
     }
@@ -499,7 +502,7 @@ public abstract class InternalAbstractGraphDatabase
     {
         if ( readOnly )
         {
-            return new ReadOnlyNodeManager( config, this, lockManager, txManager, persistenceManager,
+            return new ReadOnlyNodeManager( config, this, txManager, persistenceManager,
                     persistenceSource, relationshipTypeHolder, cacheType, propertyIndexManager, createNodeLookup(),
                     createRelationshipLookups(), nodeCache, relCache, xaDataSourceManager )
             {
@@ -548,7 +551,7 @@ public abstract class InternalAbstractGraphDatabase
             };
         }
 
-        return new NodeManager( config, this, lockManager, txManager, persistenceManager,
+        return new NodeManager( config, this, txManager, persistenceManager,
                 persistenceSource, relationshipTypeHolder, cacheType, propertyIndexManager, createNodeLookup(),
                 createRelationshipLookups(), nodeCache, relCache, xaDataSourceManager )
         {
@@ -811,7 +814,7 @@ public abstract class InternalAbstractGraphDatabase
         {
             return txManager.getTransaction() != null;
         }
-        catch ( Exception e )
+        catch ( SystemException e )
         {
             throw new TransactionFailureException(
                     "Unable to get transaction.", e );
@@ -1233,6 +1236,10 @@ public abstract class InternalAbstractGraphDatabase
             {
                 return (T) msgLog;
             }
+            else if ( Logging.class.isAssignableFrom( type ) )
+            {
+                return (T) logging;
+            }
             else if ( IndexStore.class.isAssignableFrom( type ) )
             {
                 return (T) indexStore;
@@ -1280,6 +1287,14 @@ public abstract class InternalAbstractGraphDatabase
             else if ( TransactionStateFactory.class.isAssignableFrom( type ) )
             {
                 return (T) stateFactory;
+            }
+            else if ( TxIdGenerator.class.isAssignableFrom( type ) )
+            {
+                return (T) txIdGenerator;
+            }
+            else if ( DiagnosticsManager.class.isAssignableFrom( type ) )
+            {
+                return (T) diagnosticsManager;
             }
             else
             {

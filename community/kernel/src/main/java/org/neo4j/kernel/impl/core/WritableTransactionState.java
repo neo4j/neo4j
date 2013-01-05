@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -27,17 +27,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import javax.transaction.Status;
 import javax.transaction.Synchronization;
-import javax.transaction.SystemException;
 import javax.transaction.Transaction;
-import javax.transaction.TransactionManager;
 
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.event.TransactionData;
@@ -46,21 +41,26 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.LockType;
+import org.neo4j.kernel.impl.transaction.TxHook;
+import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.RelIdArray;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 import org.neo4j.kernel.impl.util.RelIdArrayWithLoops;
 import org.neo4j.kernel.impl.util.RelIdIterator;
+import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.logging.Logging;
 
 public class WritableTransactionState implements TransactionState
 {
-    private static Logger log = Logger.getLogger( TransactionState.class.getName() );
-
     // Dependencies
     private final LockManager lockManager;
     private final PropertyIndexManager propertyIndexManager;
     private final NodeManager nodeManager;
-    private final TransactionManager transactionManager;
+    private final StringLogger log;
+    private final Transaction tx;
+    private final TxHook txHook;
+    private final TxIdGenerator txIdGenerator;
     
     // State
     private List<LockElement> lockElements;
@@ -231,55 +231,37 @@ public class WritableTransactionState implements TransactionState
     }
 
     public WritableTransactionState( LockManager lockManager,
-            PropertyIndexManager propertyIndexManager, NodeManager nodeManager, TransactionManager transactionManager )
+            PropertyIndexManager propertyIndexManager, NodeManager nodeManager,
+            Logging logging, Transaction tx, TxHook txHook, TxIdGenerator txIdGenerator )
     {
         this.lockManager = lockManager;
         this.propertyIndexManager = propertyIndexManager;
         this.nodeManager = nodeManager;
-        this.transactionManager = transactionManager;
-    }
-
-    public static class LockElement
-    {
-        private final Object resource;
-        private final LockType lockType;
-        private boolean released;
-
-        LockElement( Object resource, LockType type )
-        {
-            this.resource = resource;
-            this.lockType = type;
-        }
-
-        public boolean releaseIfAcquired( LockManager lockManager )
-        {
-            // Assume that we are in a tx context, and will be able 
-            // to figure out the tx when we actually end up needing it. 
-            return releaseIfAcquired( lockManager, null );
-        }
-
-        public boolean releaseIfAcquired( LockManager lockManager, Transaction tx )
-        {
-            if ( released )
-                return false;
-            lockType.release( resource, lockManager, tx );
-            return ( released = true );
-        }
-
-        @Override
-        public String toString()
-        {
-            StringBuilder string = new StringBuilder( lockType.name() ).append( "-LockElement[" );
-            if ( released )
-                string.append( "released," );
-            string.append( resource );
-            return string.append( ']' ).toString();
-        }
+        this.tx = tx;
+        this.txHook = txHook;
+        this.txIdGenerator = txIdGenerator;
+        this.log = logging.getLogger( getClass() );
     }
 
     @Override
-    public LockElement addLockToTransaction( LockManager lockManager, Object resource, LockType type )
-            throws NotInTransactionException
+    public LockElement acquireWriteLock( Object resource )
+    {
+        lockManager.getWriteLock( resource );
+        LockElement lock = new LockElement( resource, LockType.WRITE, lockManager );
+        addLockToTransaction( lock );
+        return lock;
+    }
+
+    @Override
+    public LockElement acquireReadLock( Object resource )
+    {
+        lockManager.getReadLock( resource );
+        LockElement lock = new LockElement( resource, LockType.READ, lockManager );
+        addLockToTransaction( lock );
+        return lock;
+    }
+    
+    private void addLockToTransaction( LockElement lock )
     {
         boolean firstLock = false;
         if ( lockElements == null )
@@ -287,14 +269,13 @@ public class WritableTransactionState implements TransactionState
             lockElements = new ArrayList<LockElement>();
             firstLock = true;
         }
-        LockElement element = new LockElement( resource, type );
-        lockElements.add( element );
+        lockElements.add( lock );
         
         if ( firstLock )
         {
             try
             {
-                transactionManager.getTransaction().registerSynchronization( new ReadOnlyTxReleaser() );
+                tx.registerSynchronization( new ReadOnlyTxReleaser() );
             }
             catch ( Exception e )
             {
@@ -302,7 +283,6 @@ public class WritableTransactionState implements TransactionState
                     "Failed to register lock release synchronization hook", e );
             }
         }
-        return element;
     }
 
     @Override
@@ -390,27 +370,26 @@ public class WritableTransactionState implements TransactionState
     {
         if ( lockElements != null )
         {
-            Transaction tx;
-            try
-            {
-                tx = transactionManager.getTransaction();
-            }
-            catch ( SystemException e )
-            {
-                throw new RuntimeException( e );
-            }
-            
+            Collection<LockElement> releaseFailures = null;
+            Exception releaseException = null;
             for ( LockElement lockElement : lockElements )
             {
                 try
                 {
-                    lockElement.releaseIfAcquired( lockManager, tx );
+                    lockElement.releaseIfAcquired( tx );
                 }
                 catch ( Exception e )
                 {
-                    log.log( Level.SEVERE, "Unable to release lock[" + lockElement.lockType + "] on resource["
-                            + lockElement.resource + "]", e );
+                    releaseException = e;
+                    if ( releaseFailures == null )
+                        releaseFailures = new ArrayList<LockElement>();
+                    releaseFailures.add( lockElement );
                 }
+            }
+            
+            if ( releaseException != null )
+            {
+                log.warn( "Unable to release locks: " + releaseFailures + ". Example of exception:" + releaseException );
             }
         }
     }
@@ -826,5 +805,38 @@ public class WritableTransactionState implements TransactionState
         {
             releaseLocks();
         }
+    }
+    
+    @Override
+    public void setRollbackOnly()
+    {
+        try
+        {
+            tx.setRollbackOnly();
+        }
+        catch ( IllegalStateException e )
+        {
+            // this exception always get generated in a finally block and
+            // when it happens another exception has already been thrown
+            // (most likley NotInTransactionException)
+            log.warn( "Failed to set transaction rollback only", e );
+        }
+        catch ( javax.transaction.SystemException se )
+        {
+            // our TM never throws this exception
+            log.warn( "Failed to set transaction rollback only", se );
+        }
+    }
+    
+    @Override
+    public TxHook getTxHook()
+    {
+        return txHook;
+    }
+    
+    @Override
+    public TxIdGenerator getTxIdGenerator()
+    {
+        return txIdGenerator;
     }
 }

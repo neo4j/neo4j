@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -22,19 +22,26 @@ package org.neo4j.cypher.internal.executionplan.builders
 import org.neo4j.cypher.internal.executionplan.{ExecutionPlanInProgress, PlanBuilder}
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.cypher.internal.pipes.{Pipe, ExecuteUpdateCommandsPipe, TransactionStartPipe}
-import org.neo4j.cypher.internal.mutation.UpdateAction
-import org.neo4j.cypher.internal.symbols.{NodeType, SymbolTable}
+import org.neo4j.cypher.internal.mutation._
+import org.neo4j.cypher.internal.symbols.{TypeSafe, AnyCollectionType, NodeType, SymbolTable}
 import org.neo4j.cypher.internal.commands._
 import collection.Map
 import collection.mutable
 import expressions.{Identifier, Expression}
 import org.neo4j.cypher.SyntaxException
+import org.neo4j.helpers.ThisShouldNotHappenError
+import org.neo4j.cypher.internal.commands.CreateNodeStartItem
+import org.neo4j.cypher.internal.commands.CreateRelationshipStartItem
+import org.neo4j.cypher.internal.executionplan.ExecutionPlanInProgress
+import org.neo4j.cypher.internal.mutation.CreateNode
+import org.neo4j.cypher.internal.mutation.ForeachAction
 
-class CreateNodesAndRelationshipsBuilder(db: GraphDatabaseService) extends PlanBuilder {
+class CreateNodesAndRelationshipsBuilder(db: GraphDatabaseService) extends PlanBuilder with UpdateCommandExpander with GraphElementPropertyFunctions {
   def apply(plan: ExecutionPlanInProgress) = {
     val q = plan.query
     val mutatingQueryTokens = q.start.filter(applicableTo(plan.pipe))
-    val commands = mutatingQueryTokens.map(_.token.asInstanceOf[UpdateAction])
+
+    val commands = mutatingQueryTokens.map(_.token.asInstanceOf[UpdatingStartItem].updateAction)
     val allCommands = expandCommands(commands, plan.pipe.symbols)
 
     val p = if (plan.containsTransaction) {
@@ -49,52 +56,9 @@ class CreateNodesAndRelationshipsBuilder(db: GraphDatabaseService) extends PlanB
     plan.copy(query = q.copy(start = resultQuery), pipe = resultPipe, containsTransaction = true)
   }
 
-  private def expandCommands(commands: Seq[UpdateAction], symbols: SymbolTable): Seq[UpdateAction] = {
-    val missingCreateNodeActions = commands.flatMap {
-      case createRel: CreateRelationshipStartItem =>
-        alsoCreateNode(createRel.from, symbols, commands) ++
-        alsoCreateNode(createRel.to, symbols, commands)
-      case _                                      => Seq()
-    }.distinct
-
-    distinctify(missingCreateNodeActions) ++ commands
-  }
-
-  private def distinctify(nodes: Seq[CreateNodeStartItem]): Seq[CreateNodeStartItem] = {
-    val createdNodes = mutable.Set[String]()
-    nodes.flatMap {
-      case CreateNodeStartItem(key, props)
-        if createdNodes.contains(key) && props.nonEmpty              =>
-        throw new SyntaxException("Node `%s` has already been created. Can't assign properties to it again.".format(key))
-
-      case CreateNodeStartItem(key, _) if createdNodes.contains(key) => None
-
-      case x@CreateNodeStartItem(key, _)                             =>
-        createdNodes += key
-        Some(x)
-    }
-  }
-
-  private def alsoCreateNode(e: (Expression, Map[String, Expression]), symbols: SymbolTable, commands: Seq[UpdateAction]): Seq[CreateNodeStartItem] = e._1 match {
-    case Identifier(name) =>
-      val nodeFromUnderlyingPipe = symbols.checkType(name, NodeType())
-
-      val nodeFromOtherCommand = commands.exists {
-        case CreateNodeStartItem(n, _) => n == name
-        case _                         => false
-      }
-
-      if (!nodeFromUnderlyingPipe && !nodeFromOtherCommand)
-        Seq(CreateNodeStartItem(name, e._2))
-      else
-        Seq()
-
-    case _ => Seq()
-  }
-
-  def applicableTo(pipe: Pipe)(start: QueryToken[StartItem]):Boolean = start match {
-    case Unsolved(x: CreateNodeStartItem)         => x.checkTypes(pipe.symbols)
-    case Unsolved(x: CreateRelationshipStartItem) => x.checkTypes(pipe.symbols)
+  def applicableTo(pipe: Pipe)(start: QueryToken[StartItem]): Boolean = start match {
+    case Unsolved(x: CreateNodeStartItem)         => x.symbolDependenciesMet(pipe.symbols)
+    case Unsolved(x: CreateRelationshipStartItem) => x.symbolDependenciesMet(pipe.symbols)
     case _                                        => false
   }
 
@@ -107,4 +71,87 @@ class CreateNodesAndRelationshipsBuilder(db: GraphDatabaseService) extends PlanB
   def canWorkWith(plan: ExecutionPlanInProgress) = plan.query.start.exists(applicableTo(plan.pipe))
 
   def priority = PlanBuilder.Mutation
+}
+
+trait UpdateCommandExpander {
+  def expandCommands(commands: Seq[UpdateAction], symbols: SymbolTable): Seq[UpdateAction] = {
+    def distinctify(nodes: Seq[UpdateAction]): Seq[UpdateAction] = {
+      val createdNodes = mutable.Set[String]()
+
+      nodes.flatMap {
+        case CreateNode(key, props)
+          if createdNodes.contains(key) && props.nonEmpty =>
+          throw new SyntaxException("Node `%s` has already been created. Can't assign properties to it again.".format(key))
+
+        case CreateNode(key, _) if createdNodes.contains(key) => None
+
+        case x@CreateNode(key, _) =>
+          createdNodes += key
+          Some(x)
+
+        case x => Some(x)
+      }
+    }
+
+    def alsoCreateNode(e: (Expression, Map[String, Expression]), symbols: SymbolTable, commands: Seq[UpdateAction]): Seq[CreateNode] = e._1 match {
+      case Identifier(name) =>
+        val nodeFromUnderlyingPipe = symbols.checkType(name, NodeType())
+
+        val nodeFromOtherCommand = commands.exists {
+          case CreateNode(n, _) => n == name
+          case _                         => false
+        }
+
+        if (!nodeFromUnderlyingPipe && !nodeFromOtherCommand)
+          Seq(CreateNode(name, e._2))
+        else
+          Seq()
+
+      case _ => Seq()
+    }
+
+    val missingCreateNodeActions = commands.flatMap {
+      case ForeachAction(coll, id, actions) =>
+        val expandedCommands = expandCommands(actions, symbols.add(id, coll.evaluateType(AnyCollectionType(), symbols)))
+        Seq(ForeachAction(coll, id, expandedCommands))
+
+      case createRel: CreateRelationship =>
+        alsoCreateNode(createRel.from, symbols, commands) ++
+        alsoCreateNode(createRel.to, symbols, commands) ++ commands
+      case _                                      => commands
+    }.distinct
+
+    new SortedUpdateActionIterator(distinctify(missingCreateNodeActions), symbols).toSeq
+  }
+
+  class SortedUpdateActionIterator(var commandsLeft: Seq[UpdateAction], var symbols: SymbolTable)
+    extends Iterator[UpdateAction] {
+    def hasNext = commandsLeft.nonEmpty
+
+    def next() = {
+      if (commandsLeft.isEmpty)
+        Iterator.empty.next()
+      else {
+
+        //Let's get all the commands that are ready to run, and sort them so node creation happens before
+        //relationship creation
+        val nextCommands = commandsLeft.filter(action => action.symbolDependenciesMet(symbols)).sortWith {
+          case (a: CreateNode, _) => true
+          case (_, a: CreateNode) => false
+          case _                           => false
+        }
+
+        if (nextCommands.isEmpty) {
+          throw new ThisShouldNotHappenError("Andres", "This query should never have been built in the first place")
+        }
+
+        val head = nextCommands.head
+
+        commandsLeft = commandsLeft.filterNot(_ == head)
+        symbols = symbols.add(head.identifiers.toMap)
+        head
+      }
+    }
+  }
+
 }

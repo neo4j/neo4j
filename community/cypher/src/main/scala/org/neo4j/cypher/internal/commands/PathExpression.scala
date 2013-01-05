@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -62,12 +62,12 @@ case class PathExpression(pathPattern: Seq[Pattern])
     matches.map(getPath)
   }
 
-  def filter(f: (Expression) => Boolean): Seq[Expression] = Seq()
+  def children = pathPattern
 
   def rewrite(f: (Expression) => Expression): Expression = f(PathExpression(pathPattern.map(_.rewrite(f))))
 
   def calculateType(symbols: SymbolTable): CypherType = {
-    pathPattern.foreach(_.assertTypes(symbols))
+    pathPattern.foreach(_.throwIfSymbolsMissing(symbols))
     new CollectionType(PathType())
   }
 

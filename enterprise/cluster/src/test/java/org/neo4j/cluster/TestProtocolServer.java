@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -17,7 +17,6 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.neo4j.cluster;
 
 import java.net.URI;
@@ -26,6 +25,7 @@ import java.util.List;
 
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageProcessor;
+import org.neo4j.cluster.com.message.MessageSender;
 import org.neo4j.cluster.com.message.MessageSource;
 import org.neo4j.cluster.com.message.MessageType;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.AcceptorInstanceStore;
@@ -103,10 +103,18 @@ public class TestProtocolServer
         return server.getServerId() + ": " + sender.getMessages().size() + server.toString();
     }
 
-    public class TestMessageSender
-            implements MessageProcessor
+    public class TestMessageSender implements MessageSender
     {
         List<Message> messages = new ArrayList<Message>();
+
+        @Override
+        public void process( List<Message<? extends MessageType>> messages )
+        {
+            for ( Message<? extends MessageType> message : messages )
+            {
+                process( message );
+            }
+        }
 
         @Override
         public void process( Message<? extends MessageType> message )

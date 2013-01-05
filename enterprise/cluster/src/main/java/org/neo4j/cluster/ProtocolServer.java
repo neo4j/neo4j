@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -17,11 +17,11 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.neo4j.cluster;
 
 import java.net.URI;
 
+import org.neo4j.cluster.com.BindingNotifier;
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageProcessor;
 import org.neo4j.cluster.com.message.MessageType;
@@ -32,12 +32,13 @@ import org.neo4j.cluster.statemachine.StateTransitionListener;
 import org.neo4j.cluster.timeout.Timeouts;
 import org.neo4j.helpers.Listeners;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.logging.Logging;
 
 /**
  * A ProtocolServer ties together the underlying ConnectedStateMachines with an understanding of ones
  * own server address (me), and provides a proxy factory for creating clients to invoke the CSM.
  */
-public class ProtocolServer
+public class ProtocolServer implements BindingNotifier
 {
     private URI me;
     protected StateMachineProxyFactory proxyFactory;
@@ -45,10 +46,10 @@ public class ProtocolServer
     private Iterable<BindingListener> bindingListeners = Listeners.newListeners();
     private final StringLogger msgLog;
 
-    public ProtocolServer( ConnectedStateMachines connectedStateMachines, StringLogger msgLog )
+    public ProtocolServer( ConnectedStateMachines connectedStateMachines, Logging logging )
     {
         this.connectedStateMachines = connectedStateMachines;
-        this.msgLog = msgLog;
+        this.msgLog = logging.getLogger( getClass() );
 
         FromHeaderMessageProcessor fromHeaderMessageProcessor = new FromHeaderMessageProcessor();
         addBindingListener( fromHeaderMessageProcessor );

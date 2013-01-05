@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -17,11 +17,10 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos;
 
 import org.neo4j.cluster.com.message.Message;
-import org.neo4j.cluster.com.message.MessageProcessor;
+import org.neo4j.cluster.com.message.MessageHolder;
 import org.neo4j.cluster.statemachine.State;
 
 /**
@@ -35,7 +34,7 @@ public enum AcceptorState
                 @Override
                 public AcceptorState handle( AcceptorContext context,
                                              Message<AcceptorMessage> message,
-                                             MessageProcessor outgoing
+                                             MessageHolder outgoing
                 )
                         throws Throwable
                 {
@@ -56,7 +55,7 @@ public enum AcceptorState
                 @Override
                 public AcceptorState handle( AcceptorContext context,
                                              Message<AcceptorMessage> message,
-                                             MessageProcessor outgoing
+                                             MessageHolder outgoing
                 )
                         throws Throwable
                 {
@@ -72,7 +71,7 @@ public enum AcceptorState
                             {
                                 context.promise( instance, prepareState.getBallot() );
 
-                                outgoing.process( message.copyHeadersTo( Message.respond( ProposerMessage.promise,
+                                outgoing.offer( message.copyHeadersTo( Message.respond( ProposerMessage.promise,
                                         message,
                                         new ProposerMessage.PromiseState( prepareState.getBallot(),
                                                 instance.getValue() ) ), InstanceId.INSTANCE ) );
@@ -82,7 +81,7 @@ public enum AcceptorState
                                 // Optimization - explicit reject
                                 context.getLogger( AcceptorState.class ).debug( "Reject " + instanceId
                                         + " ballot:" + instance.getBallot() );
-                                outgoing.process( message.copyHeadersTo( Message.respond( ProposerMessage
+                                outgoing.offer( message.copyHeadersTo( Message.respond( ProposerMessage
                                         .rejectPrepare, message,
                                         new ProposerMessage.RejectPrepare( instance.getBallot() ) ),
                                         InstanceId.INSTANCE ) );
@@ -102,7 +101,7 @@ public enum AcceptorState
                                 context.accept( instance, acceptState.getValue() );
                                 instance.accept( acceptState.getValue() );
 
-                                outgoing.process( message.copyHeadersTo( Message.respond( ProposerMessage.accepted,
+                                outgoing.offer( message.copyHeadersTo( Message.respond( ProposerMessage.accepted,
                                         message,
                                         new ProposerMessage.AcceptedState() ), InstanceId.INSTANCE ) );
                             }
@@ -111,7 +110,7 @@ public enum AcceptorState
                                 context.getLogger( AcceptorState.class ).debug( "Reject " + instanceId
                                         + " accept ballot:" + acceptState.getBallot() + " actual ballot:" +
                                         instance.getBallot() );
-                                outgoing.process( message.copyHeadersTo( Message.respond( ProposerMessage
+                                outgoing.offer( message.copyHeadersTo( Message.respond( ProposerMessage
                                         .rejectAccept, message,
                                         new ProposerMessage.RejectAcceptState() ), InstanceId.INSTANCE ) );
                             }

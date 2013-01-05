@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -17,7 +17,6 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.neo4j.kernel.ha.cluster;
 
 import java.net.URI;
@@ -43,7 +42,7 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
     private StringLogger logger;
     private Iterable<HighAvailabilityMemberListener> memberListeners = Listeners.newListeners();
     private HighAvailabilityMemberState state;
-    private HighAvailabilityMemberStateMachine.StateMachineClusterEventListener listener;
+    private StateMachineClusterEventListener eventsListener;
 
     public HighAvailabilityMemberStateMachine( HighAvailabilityMemberContext context, InstanceAccessGuard accessGuard,
                                       ClusterMemberEvents events, StringLogger logger )
@@ -53,19 +52,18 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
         this.events = events;
         this.logger = logger;
         state = HighAvailabilityMemberState.PENDING;
-
-        listener = new StateMachineClusterEventListener();
     }
 
     @Override
     public void init() throws Throwable
     {
-        events.addClusterMemberListener( listener );
+        events.addClusterMemberListener( eventsListener = new StateMachineClusterEventListener() );
     }
 
     @Override
     public void stop() throws Throwable
     {
+        events.removeClusterMemberListener( eventsListener );
         HighAvailabilityMemberState oldState = state;
         state = HighAvailabilityMemberState.PENDING;
         final HighAvailabilityMemberChangeEvent event = new HighAvailabilityMemberChangeEvent( oldState, state, null, null );
@@ -77,14 +75,7 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
                 listener.instanceStops( event );
             }
         } );
-
         accessGuard.setState( state );
-    }
-
-    @Override
-    public void shutdown() throws Throwable
-    {
-        events.removeClusterMemberListener( listener );
     }
 
     public void addHighAvailabilityMemberListener( HighAvailabilityMemberListener toAdd )
@@ -105,7 +96,7 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
     private class StateMachineClusterEventListener extends ClusterMemberListener.Adapter
     {
         @Override
-        public void masterIsElected( URI masterUri )
+        public synchronized void masterIsElected( URI masterUri )
         {
             try
             {
@@ -137,7 +128,7 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
         }
 
         @Override
-        public void memberIsAvailable( String role, URI instanceClusterUri, URI roleUri )
+        public synchronized void memberIsAvailable( String role, URI instanceClusterUri, URI roleUri )
         {
             try
             {

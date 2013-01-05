@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -17,18 +17,19 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.neo4j.cluster.member.paxos;
 
 import java.net.URI;
-import org.neo4j.cluster.Binding;
+
 import org.neo4j.cluster.BindingListener;
+import org.neo4j.cluster.com.BindingNotifier;
 import org.neo4j.cluster.member.ClusterMemberAvailability;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcast;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastSerializer;
 import org.neo4j.cluster.protocol.atomicbroadcast.Payload;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.kernel.logging.Logging;
 
 /**
  * Paxos based implementation of {@link org.neo4j.cluster.member.ClusterMemberAvailability}
@@ -38,15 +39,15 @@ public class PaxosClusterMemberAvailability implements ClusterMemberAvailability
     private URI serverClusterId;
     private StringLogger logger;
     protected AtomicBroadcastSerializer serializer;
-    private Binding binding;
+    private BindingNotifier binding;
     private AtomicBroadcast atomicBroadcast;
     private BindingListener bindingListener;
 
-    public PaxosClusterMemberAvailability( Binding binding, AtomicBroadcast atomicBroadcast, StringLogger logger)
+    public PaxosClusterMemberAvailability( BindingNotifier binding, AtomicBroadcast atomicBroadcast, Logging logging )
     {
         this.binding = binding;
         this.atomicBroadcast = atomicBroadcast;
-        this.logger = logger;
+        this.logger = logging.getLogger( getClass() );
 
         bindingListener = new BindingListener()
         {

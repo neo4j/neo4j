@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -507,7 +507,15 @@ return distinct center""")
   def cant_set_properties_after_node_is_already_created2() {
     intercept[SyntaxException](parseAndExecute("create a-[:test]->b create unique (a {name:'a'})-[:test2]->c"))
   }
+
+  @Test
+  def can_create_anonymous_nodes_inside_foreach() {
+    val result = parseAndExecute("start me=node(0) foreach (i in range(1,10) : create me-[:FRIEND]->())")
+
+    assert(result.toList === List())
+  }
 }
+
 trait StatisticsChecker extends Assertions {
   def assertStats(result: ExecutionResult,
                   nodesCreated: Int = 0,

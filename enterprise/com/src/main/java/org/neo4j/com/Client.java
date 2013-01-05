@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -50,9 +50,11 @@ import org.neo4j.com.RequestContext.Tx;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.helpers.Triplet;
+import org.neo4j.kernel.impl.nioneo.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.kernel.logging.Logging;
 
 /**
  * A means for a client to communicate with a {@link Server}. It
@@ -77,8 +79,7 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
     private ResourcePool<Triplet<Channel, ChannelBuffer, ByteBuffer>> channelPool;
     private final int frameLength;
     private final long readTimeout;
-    private final int maxConcurrentChannels;
-    private final int maxUnusedPoolSize;
+    private final int maxUnusedChannels;
     private final byte applicationProtocolVersion;
     private final StoreId storeId;
     private ResourceReleaser resourcePoolReleaser;
@@ -86,20 +87,20 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
 
     private int chunkSize;
 
-    public Client( String hostNameOrIp, int port, StringLogger logger,
+    public Client( String hostNameOrIp, int port, Logging logging,
             StoreId storeId, int frameLength,
             byte applicationProtocolVersion, long readTimeout,
             int maxConcurrentChannels, int maxUnusedPoolSize, int chunkSize )
     {
         assertChunkSizeIsWithinFrameSize( chunkSize, frameLength );
         
-        this.msgLog = logger;
+        this.msgLog = logging.getLogger( getClass() );
         this.storeId = storeId;
         this.frameLength = frameLength;
         this.applicationProtocolVersion = applicationProtocolVersion;
         this.readTimeout = readTimeout;
-        this.maxConcurrentChannels = maxConcurrentChannels;
-        this.maxUnusedPoolSize = maxUnusedPoolSize;
+        // ResourcePool no longer controls max concurrent channels. Use this value for the pool size
+        this.maxUnusedChannels = maxConcurrentChannels;
         this.chunkSize = chunkSize;
         this.mismatchingVersionHandlers = new ArrayList<MismatchingVersionHandler>( 2 );
         address = new InetSocketAddress( hostNameOrIp, port );
@@ -113,8 +114,7 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
         executor = Executors.newCachedThreadPool( new NamedThreadFactory( getClass().getSimpleName() + "@" + address ) );
         bootstrap = new ClientBootstrap( new NioClientSocketChannelFactory( executor, executor ) );
         bootstrap.setPipelineFactory( this );
-        channelPool = new ResourcePool<Triplet<Channel, ChannelBuffer, ByteBuffer>>(
-                maxConcurrentChannels, maxUnusedPoolSize )
+        channelPool = new ResourcePool<Triplet<Channel, ChannelBuffer, ByteBuffer>>( maxUnusedChannels )
         {
             @Override
             protected Triplet<Channel, ChannelBuffer, ByteBuffer> create()
@@ -291,7 +291,7 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
     {
         if ( !myStoreId.equals( storeId ) )
         {
-            throw new ComException( storeId + " from response doesn't match my " + myStoreId );
+            throw new MismatchingStoreIdException( myStoreId, storeId );
         }
     }
 

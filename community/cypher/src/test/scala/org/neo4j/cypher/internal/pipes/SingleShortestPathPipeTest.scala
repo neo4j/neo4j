@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -80,7 +80,7 @@ class SingleShortestPathPipeTest extends GraphDatabaseTestBase with Assertions {
 
     relate(a, c, "rel", Map("foo" -> "notBar"))
 
-    val pred = AllInCollection(RelationshipFunction(Identifier("p")), "r", Equals(Property("r", "foo"), Literal("bar")))
+    val pred = AllInCollection(RelationshipFunction(Identifier("p")), "r", Equals(Property(Identifier("r"), "foo"), Literal("bar")))
     val path = ShortestPath("p", "a", "b", Seq(), Direction.OUTGOING, None, false, true, Some("r"), pred)
 
 

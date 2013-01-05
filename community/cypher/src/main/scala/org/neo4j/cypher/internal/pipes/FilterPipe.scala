@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.pipes
 
 import java.lang.String
 import org.neo4j.cypher.internal.commands.Predicate
-import org.neo4j.cypher.internal.symbols.{SymbolTable, AnyType}
+import org.neo4j.cypher.internal.symbols.SymbolTable
 
 class FilterPipe(source: Pipe, predicate: Predicate) extends PipeWithSource(source) {
   val symbols = source.symbols
@@ -30,7 +30,7 @@ class FilterPipe(source: Pipe, predicate: Predicate) extends PipeWithSource(sour
 
   override def executionPlan(): String = source.executionPlan() + "\r\n" + "Filter(" + predicate.toString + ")"
 
-  def assertTypes(symbols: SymbolTable) {
-    predicate.assertTypes(symbols)
+  def throwIfSymbolsMissing(symbols: SymbolTable) {
+    predicate.throwIfSymbolsMissing(symbols)
   }
 }

@@ -1,3 +1,10 @@
+1.9.M02 (2012-11-30)
+--------------------
+o Write out log file if inconsistencies are found.
+o Improved configuration for memory mapping with MOST_FREQUENTLY_USED window pool.
+o Consistency checker defaults to using the 'most frequently used' implementation when 
+  on Windows to avoid memory (un)mapping problems
+
 1.9.M01 (2012-10-23)
 --------------------
 o Initial release (extracted from backup module).

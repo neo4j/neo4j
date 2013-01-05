@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -17,44 +17,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.neo4j.kernel.logging;
 
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 /**
  * Implements the old-style logging with just one logger regardless of name.
  */
-public class ClassicLoggingService
-        extends LifecycleAdapter
-        implements Logging
+public class ClassicLoggingService extends SingleLoggingService
 {
-    protected StringLogger stringLogger;
-
     public ClassicLoggingService( Config config )
     {
-        stringLogger = StringLogger.loggerDirectory( config.get( InternalAbstractGraphDatabase.Configuration.store_dir ) );
-    }
-
-    @Override
-    public void init()
-            throws Throwable
-    {
-    }
-
-    @Override
-    public void shutdown()
-            throws Throwable
-    {
-        stringLogger.close();
-    }
-
-    @Override
-    public StringLogger getLogger( Class loggingClass )
-    {
-        return stringLogger;
+        super( StringLogger.loggerDirectory( config.get( InternalAbstractGraphDatabase.Configuration.store_dir ) ) );
     }
 }

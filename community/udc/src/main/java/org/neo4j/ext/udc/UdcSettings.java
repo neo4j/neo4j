@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -71,6 +71,6 @@ public class UdcSettings
     /**
      * Unique registration id
      */
-    public static final Setting<String> udc_registration_key = setting( "neo4j.ext.udc.source", STRING, "unreg",
+    public static final Setting<String> udc_registration_key = setting( "neo4j.ext.udc.reg", STRING, "unreg",
             illegalValueMessage( "Must be a valid registration id", matches( ANY ) ) );
 }

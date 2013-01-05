@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -33,7 +33,6 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.transaction.LockManager;
-import org.neo4j.kernel.impl.transaction.LockType;
 
 public class TestPlaceboTransaction
 {
@@ -107,8 +106,7 @@ public class TestPlaceboTransaction
         placeboTx.acquireReadLock( resource );
         
         // then
-        verify( lockManager ).getReadLock( resource );
-        verify( state ).addLockToTransaction( lockManager, resource, LockType.READ );
+        verify( state ).acquireReadLock( resource );
     }
 
     @Test
@@ -118,7 +116,6 @@ public class TestPlaceboTransaction
         placeboTx.acquireWriteLock( resource );
         
         // then
-        verify( lockManager ).getWriteLock( resource );
-        verify( state ).addLockToTransaction( lockManager, resource, LockType.WRITE );
+        verify( state ).acquireWriteLock( resource );
     }
 }

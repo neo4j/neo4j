@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -129,7 +129,7 @@ public class TestManualAcquireLock extends AbstractNeo4jTestCase
     {
         public Worker()
         {
-            super( new State( getGraphDb() ) );
+            super( "other thread", new State( getGraphDb() ) );
         }
         
         void beginTx() throws Exception

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -34,6 +34,7 @@ import org.neo4j.kernel.impl.transaction.LockManagerImpl;
 import org.neo4j.kernel.impl.transaction.LockNotFoundException;
 import org.neo4j.kernel.impl.transaction.RagManager;
 import org.neo4j.kernel.info.LockInfo;
+import org.neo4j.kernel.logging.Logging;
 
 public class SlaveLockManager implements LockManager
 {
@@ -180,9 +181,9 @@ public class SlaveLockManager implements LockManager
     }
 
     @Override
-    public void dumpLocksOnResource( Object resource )
+    public void dumpLocksOnResource( Object resource, Logging logging )
     {
-        local.dumpLocksOnResource( resource );
+        local.dumpLocksOnResource( resource, logging );
     }
 
     @Override
@@ -198,14 +199,14 @@ public class SlaveLockManager implements LockManager
     }
 
     @Override
-    public void dumpRagStack()
+    public void dumpRagStack( Logging logging )
     {
-        local.dumpRagStack();
+        local.dumpRagStack( logging );
     }
 
     @Override
-    public void dumpAllLocks()
+    public void dumpAllLocks( Logging logging )
     {
-        local.dumpAllLocks();
+        local.dumpAllLocks( logging );
     }
 }

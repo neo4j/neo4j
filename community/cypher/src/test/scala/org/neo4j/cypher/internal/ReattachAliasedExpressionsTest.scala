@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -36,12 +36,12 @@ class ReattachAliasedExpressionsTest extends Assertions {
     val q = Query.
       start(NodeById("a", 1)).
       orderBy(SortItem(Identifier("newAlias"), ascending = true)).
-      returns(ReturnItem(Property("a", "x"), "newAlias"))
+      returns(ReturnItem(Property(Identifier("a"), "x"), "newAlias"))
 
     val expected = Query.
       start(NodeById("a", 1)).
-      orderBy(SortItem(Property("a", "x"), ascending = true)).
-      returns(ReturnItem(Property("a", "x"), "newAlias"))
+      orderBy(SortItem(Property(Identifier("a"), "x"), ascending = true)).
+      returns(ReturnItem(Property(Identifier("a"), "x"), "newAlias"))
 
     assert(ReattachAliasedExpressions(q) === expected)
   }

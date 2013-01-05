@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -52,7 +52,7 @@ class ColumnFilterPipe(source: Pipe, val returnItems: Seq[ReturnItem])
 
   def dependencies = Seq()
 
-  def assertTypes(symbols: SymbolTable) {
-    returnItems.foreach(_.expression.assertTypes(symbols))
+  def throwIfSymbolsMissing(symbols: SymbolTable) {
+    returnItems.foreach(_.expression.throwIfSymbolsMissing(symbols))
   }
 }

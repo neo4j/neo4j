@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -17,7 +17,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.neo4j.jmx.impl;
 
 import org.neo4j.helpers.Service;
@@ -47,7 +46,6 @@ public final class JmxExtensionFactory extends KernelExtensionFactory<JmxExtensi
     @Override
     public Lifecycle newKernelExtension( Dependencies dependencies ) throws Throwable
     {
-        return new JmxKernelExtension( dependencies.getKernelData(), dependencies.getLogging().getLogger( getClass()
-        ) );
+        return new JmxKernelExtension( dependencies.getKernelData(), dependencies.getLogging() );
     }
 }

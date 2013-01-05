@@ -562,7 +562,7 @@ public class CypherSql
     String executeCypher( String cypher )
     {
         return engine.execute( cypher )
-                .toString();
+                .dumpToString();
     }
 
     String executeSql( String sql ) throws SQLException

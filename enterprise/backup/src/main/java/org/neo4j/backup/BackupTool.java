@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -40,8 +40,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.storemigration.LogFiles;
 import org.neo4j.kernel.impl.storemigration.StoreFiles;
 import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedByConfigurationException;
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.kernel.logging.SystemOutLogging;
 
 public class BackupTool
 {
@@ -120,14 +119,7 @@ public class BackupTool
         if ( service != null )
         { // If in here, it means a module was loaded. Use it and substitute the
             // passed URI
-            backupURI = service.resolve( backupURI, arguments, new Logging()
-            {
-                @Override
-                public StringLogger getLogger( Class loggingClass )
-                {
-                    return StringLogger.SYSTEM;
-                }
-            } );
+            backupURI = service.resolve( backupURI, arguments, new SystemOutLogging() );
         }
         doBackup( full, backupURI, to, verify, tuningConfiguration );
     }

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -456,7 +456,7 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions with Pat
 
     val patterns: Seq[Pattern] = Seq(RelatedTo("a", "b", "r", "rel", Direction.OUTGOING, false))
 
-    val matchingContext = createMatchingContextWithNodes(patterns, Seq("a"), Seq(Equals(Property("r", "age"), Literal(5))))
+    val matchingContext = createMatchingContextWithNodes(patterns, Seq("a"), Seq(Equals(Property(Identifier("r"), "age"), Literal(5))))
 
     assertMatches(matchingContext.getMatches(ctx("a" -> a)), 1, Map("a" -> a, "b" -> b, "r" -> r2))
   }
@@ -466,7 +466,7 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions with Pat
     relate(a, b, "rel")
 
     val patterns: Seq[Pattern] = Seq(RelatedTo("a", "b", "r", "rel", Direction.OUTGOING, false))
-    val matchingContext = createMatchingContextWithNodes(patterns, Seq("a"), Seq(Equals(Property("a", "prop"), Literal("not value"))))
+    val matchingContext = createMatchingContextWithNodes(patterns, Seq("a"), Seq(Equals(Property(Identifier("a"), "prop"), Literal("not value"))))
 
     assert(matchingContext.getMatches(ctx("a" -> a)).size === 0)
   }
@@ -474,7 +474,7 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions with Pat
   @Test def predicateInPatternRelationship() {
     relate(a, b, "rel", Map("foo" -> "notBar"))
 
-    val patterns = Seq(RelatedTo("a", "b", "r", Seq("rel"), Direction.OUTGOING, true, Equals(Property("r", "foo"), Literal("bar"))))
+    val patterns = Seq(RelatedTo("a", "b", "r", Seq("rel"), Direction.OUTGOING, true, Equals(Property(Identifier("r"), "foo"), Literal("bar"))))
     val matchingContext = createMatchingContextWithNodes(patterns, Seq("a"))
 
     assertMatches(matchingContext.getMatches(ctx("a" -> a)), 1, Map("a" -> a, "b" -> null, "r" -> null))
@@ -502,7 +502,7 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions with Pat
     relate(a, b, "rel", Map("foo" -> "bar"))
     relate(b, c, "rel", Map("foo" -> "notBar"))
 
-    val pred = AllInCollection(RelationshipFunction(Identifier("p")), "r", Equals(Property("r", "foo"), Literal("bar")))
+    val pred = AllInCollection(RelationshipFunction(Identifier("p")), "r", Equals(Property(Identifier("r"), "foo"), Literal("bar")))
     val patterns = Seq(VarLengthRelatedTo("p", "a", "b", Some(2), Some(2), Seq(), Direction.OUTGOING, None, true, pred))
     val matchingContext = createMatchingContextWithNodes(patterns, Seq("a"))
 

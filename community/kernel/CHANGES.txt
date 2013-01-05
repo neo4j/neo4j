@@ -1,3 +1,22 @@
+1.9.M02 (2012-11-30)
+--------------------
+o Made sure that auto-indexing removed graph elements from indexes when they are delete
+o OrderByTypeExpander keeps ordering of type AND direction
+o Fixed an issue where a lock on a store was sometimes not released
+o Old GraphDatabaseSetting classes are now wrappers for Settings instances
+o Fixes an issue where an incomplete 2PC transaction could cause recovery to not be triggered
+o Optimizations for read performance
+  - Cache refers to relationship types as ints instead of Strings.
+  - Binary search on sorted arrays for finding properties and
+    relationship types in the cache.
+  - Less objects instantiated during getting and iterating relationships.
+  - Reduced number of map lookups significantly for a getProperty call,
+    especially outside transaction or in transactions without any changes.
+    (previously 8 lookups whereof 2 synchronized, now down to as low as 2)
+  - Uses ThreadLocal as mapper from thread to transaction
+  - Refactored LockReleaser into TransactionState, associated with each
+    transaction instead
+
 1.9.M01 (2012-10-23)
 --------------------
 o XaDatasources now implement lifecycle and their registration with XaDatasourceManager triggers TxManager recovery

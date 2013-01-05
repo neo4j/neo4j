@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -44,7 +44,6 @@ import org.neo4j.kernel.impl.core.WritableTransactionState.PrimitiveElement;
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.nioneo.store.Record;
-import org.neo4j.kernel.impl.transaction.LockType;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.CombinedRelIdIterator;
 import org.neo4j.kernel.impl.util.RelIdArray;
@@ -314,9 +313,9 @@ public class NodeImpl extends ArrayBasedPrimitive
 
     public void delete( NodeManager nodeManager, Node proxy )
     {
-        nodeManager.acquireLock( proxy, LockType.WRITE );
         boolean success = false;
         TransactionState tx = nodeManager.getTransactionState();
+        tx.acquireWriteLock( proxy );
         try
         {
             ArrayMap<Integer,PropertyData> skipMap = tx.getOrCreateCowPropertyRemoveMap( this );
@@ -332,7 +331,6 @@ public class NodeImpl extends ArrayBasedPrimitive
         }
         finally
         {
-            nodeManager.releaseLock( proxy, LockType.WRITE, tx );
             if ( !success )
             {
                 nodeManager.setRollbackOnly();

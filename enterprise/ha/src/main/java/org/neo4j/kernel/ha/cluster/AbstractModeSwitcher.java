@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -36,12 +36,15 @@ public abstract class AbstractModeSwitcher<T> implements Lifecycle
 {
     private final DelegateInvocationHandler<T> delegate;
     private LifeSupport life;
+    private final HighAvailability highAvailability;
+    private DelegateStateSwitcher delegateStateSwitcher;
 
     protected AbstractModeSwitcher( HighAvailability highAvailability, DelegateInvocationHandler<T> delegate )
     {
         this.delegate = delegate;
         this.life = new LifeSupport();
-        highAvailability.addHighAvailabilityMemberListener( new DelegateStateSwitcher() );
+        this.highAvailability = highAvailability;
+        highAvailability.addHighAvailabilityMemberListener( delegateStateSwitcher = new DelegateStateSwitcher() );
     }
 
     @Override
@@ -60,6 +63,7 @@ public abstract class AbstractModeSwitcher<T> implements Lifecycle
     public void stop() throws Throwable
     {
         life.stop();
+        highAvailability.removeHighAvailabilityMemberListener( delegateStateSwitcher );
     }
 
     @Override

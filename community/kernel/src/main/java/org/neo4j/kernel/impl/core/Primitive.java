@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -28,7 +28,6 @@ import org.neo4j.kernel.impl.core.WritableTransactionState.CowEntityElement;
 import org.neo4j.kernel.impl.core.WritableTransactionState.PrimitiveElement;
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
-import org.neo4j.kernel.impl.transaction.LockType;
 import org.neo4j.kernel.impl.util.ArrayMap;
 
 abstract class Primitive
@@ -343,8 +342,8 @@ abstract class Primitive
             throw new IllegalArgumentException( "Null parameter, " + "key=" +
                 key + ", " + "value=" + value );
         }
-        nodeManager.acquireLock( proxy, LockType.WRITE );
         TransactionState tx = nodeManager.getTransactionState();
+        tx.acquireWriteLock( proxy );
         boolean success = false;
         try
         {
@@ -443,7 +442,6 @@ abstract class Primitive
         }
         finally
         {
-            nodeManager.releaseLock( proxy, LockType.WRITE, tx );
             if ( !success )
             {
                 nodeManager.setRollbackOnly();
@@ -457,9 +455,9 @@ abstract class Primitive
         {
             throw new IllegalArgumentException( "Null parameter." );
         }
-        nodeManager.acquireLock( proxy, LockType.WRITE );
         boolean success = false;
         TransactionState tx = nodeManager.getTransactionState();
+        tx.acquireWriteLock( proxy );
         try
         {
             ensureFullProperties( nodeManager );
@@ -554,7 +552,6 @@ abstract class Primitive
         }
         finally
         {
-            nodeManager.releaseLock( proxy, LockType.WRITE, tx );
             if ( !success )
             {
                 nodeManager.setRollbackOnly();

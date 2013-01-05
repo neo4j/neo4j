@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -23,18 +23,13 @@ import org.neo4j.cypher.internal.symbols._
 import collection.Map
 import org.neo4j.cypher.internal.pipes.ExecutionContext
 
-case class Collection(expressions: Expression*) extends Expression {
-  def apply(ctx: ExecutionContext): Any = expressions.map(e => e(ctx))
+case class Collection(children: Expression*) extends Expression {
+  def apply(ctx: ExecutionContext): Any = children.map(e => e(ctx))
 
-  def rewrite(f: (Expression) => Expression): Expression = f(Collection(expressions.map(f): _*))
-
-  def filter(f: (Expression) => Boolean): Seq[Expression] = if (f(this))
-    Seq(this) ++ expressions.flatMap(_.filter(f))
-  else
-    expressions.flatMap(_.filter(f))
+  def rewrite(f: (Expression) => Expression): Expression = f(Collection(children.map(f): _*))
 
   def calculateType(symbols: SymbolTable): CypherType = {
-    expressions.map(_.getType(symbols)) match {
+    children.map(_.getType(symbols)) match {
 
       case Seq() => AnyCollectionType()
 
@@ -45,5 +40,5 @@ case class Collection(expressions: Expression*) extends Expression {
 
   }
 
-  def symbolTableDependencies = expressions.flatMap(_.symbolTableDependencies).toSet
+  def symbolTableDependencies = children.flatMap(_.symbolTableDependencies).toSet
 }

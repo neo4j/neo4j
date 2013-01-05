@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -30,12 +30,16 @@ import java.net.URLEncoder;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response.Status;
 
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.annotations.Documented;
+import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
 import org.neo4j.server.rest.JSONPrettifier;
+import org.neo4j.server.webadmin.console.GremlinSessionCreator;
 import org.neo4j.test.GraphDescription.Graph;
 import org.neo4j.test.GraphDescription.NODE;
 import org.neo4j.test.GraphDescription.PROP;
@@ -124,9 +128,25 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
     private String doRestCall( String script, Status status,
             Pair<String, String>... params )
     {
-        // TODO Auto-generated method stub
-        return super.doGremlinRestCall( ENDPOINT, script, status, params );
+           return doGremlinRestCall(ENDPOINT, script, status, params);
     }
+
+    protected String doGremlinRestCall( String endpoint, String scriptTemplate, Status status, Pair<String, String>... params ) {
+        data.get();
+        String parameterString = createParameterString( params );
+
+
+        String script = createScript( scriptTemplate );
+        String queryString = "{\"script\": \"" + script + "\"," + parameterString+"},"  ;
+
+        gen().expectedStatus( status.getStatusCode() ).payload(
+                queryString ).description(formatGroovy( script ) );
+        return gen().post( endpoint ).entity();
+    }
+
+
+
+
 
     /**
      * Import a graph form a http://graphml.graphdrawing.org/[GraphML] file can
@@ -152,6 +172,8 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
         String response = doRestCall( script, OK );
         assertTrue( response.contains( "you" ) );
     }
+    
+    
     
     @Test
     public void return_map() throws UnsupportedEncodingException
@@ -656,4 +678,27 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
         assertTrue( response.contains( "BadInputException" ) );
     }
 
+       
+    
+    
+    protected String formatGroovy( String script )
+    {
+        script = script.replace( ";", "\n" );
+        if ( !script.endsWith( "\n" ) )
+        {
+            script += "\n";
+        }
+        return "_Raw script source_\n\n" + "[source, groovy]\n" + "----\n"
+               + script + "----\n";
+    }
+    
+    @BeforeClass
+    public static void addGremlinShellConfig() {
+        Configurator.DEFAULT_MANAGEMENT_CONSOLE_ENGINES.add(new GremlinSessionCreator().name());
+    }
+    
+    @AfterClass
+    public static void removeGremlinShellConfig() {
+        Configurator.DEFAULT_MANAGEMENT_CONSOLE_ENGINES.remove(new GremlinSessionCreator().name());
+    }
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -28,7 +28,6 @@ import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 
 public class LimitedFilesystemAbstraction implements FileSystemAbstraction
 {
-
     private FileSystemAbstraction inner;
     private boolean outOfSpace;
     private Integer bytesAtATime = null;
@@ -103,7 +102,7 @@ public class LimitedFilesystemAbstraction implements FileSystemAbstraction
 
     public void ensureHasSpace() throws IOException
     {
-        if(outOfSpace)
+        if( outOfSpace )
         {
             throw new IOException( "No space left on device" );
         }

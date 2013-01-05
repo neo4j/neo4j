@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -33,9 +33,15 @@ final case class EndPoint(name: String) extends Trail {
 
   def toSteps(id: Int) = None
 
-  protected[matching] def decompose(p: Seq[PropertyContainer], r: Map[String, Any]) =
+  protected[matching] def decompose(p: Seq[PropertyContainer], mapSoFar: Map[String, Any]) =
     if (p.size == 1) {
-      Iterator((Seq.empty, r ++ Map(name -> p.head)))
+      val existingValue = mapSoFar.get(name)
+      val endNode = p.head
+
+      existingValue match {
+        case Some(existing) if endNode != existing => Iterator()
+        case _                                     => Iterator((Seq.empty, mapSoFar ++ Map(name -> endNode)))
+      }
     } else {
       Iterator()
     }

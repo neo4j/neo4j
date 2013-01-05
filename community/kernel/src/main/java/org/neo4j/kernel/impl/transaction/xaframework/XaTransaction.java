@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -24,6 +24,7 @@ import java.io.IOException;
 import javax.transaction.xa.XAException;
 
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.kernel.impl.core.TransactionState;
 
 /**
  * <CODE>XaTransaction</CODE> holds all the commands that participate in the
@@ -165,6 +166,7 @@ public abstract class XaTransaction
 
     private final int identifier;
     private final XaLogicalLog log;
+    private final TransactionState state;
     private boolean isRecovered = false;
     private boolean committed = false;
     private boolean rolledback = false;
@@ -172,7 +174,7 @@ public abstract class XaTransaction
     
     private long commitTxId = -1;
 
-    public XaTransaction( int identifier, XaLogicalLog log )
+    public XaTransaction( int identifier, XaLogicalLog log, TransactionState state )
     {
         if ( log == null )
         {
@@ -180,6 +182,7 @@ public abstract class XaTransaction
         }
         this.identifier = identifier;
         this.log = log;
+        this.state = state;
     }
 
     /**
@@ -333,5 +336,9 @@ public abstract class XaTransaction
     {
         this.commitTxId = commitTxId;
     }
-
+    
+    public final TxIdGenerator getTxIdGenerator()
+    {
+        return state.getTxIdGenerator();
+    }
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -24,6 +24,7 @@ import static org.neo4j.helpers.Settings.DURATION;
 import static org.neo4j.helpers.Settings.HOSTNAME_PORT;
 import static org.neo4j.helpers.Settings.INTEGER;
 import static org.neo4j.helpers.Settings.MANDATORY;
+import static org.neo4j.helpers.Settings.list;
 import static org.neo4j.helpers.Settings.min;
 import static org.neo4j.helpers.Settings.options;
 import static org.neo4j.helpers.Settings.setting;
@@ -33,10 +34,11 @@ import static org.neo4j.kernel.impl.cache.GcrSettings.node_cache_size;
 import static org.neo4j.kernel.impl.cache.GcrSettings.relationship_cache_array_fraction;
 import static org.neo4j.kernel.impl.cache.GcrSettings.relationship_cache_size;
 
+import java.util.List;
+
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.Description;
 import org.neo4j.helpers.HostnamePort;
-import org.neo4j.helpers.Settings;
 import org.neo4j.kernel.configuration.ConfigurationMigrator;
 import org.neo4j.kernel.configuration.Migrator;
 
@@ -64,13 +66,18 @@ public class HaSettings
     public static final Setting<BranchedDataPolicy> branched_data_policy = setting( "ha.branched_data_policy",
             options( BranchedDataPolicy.class ), "keep_all" );
 
+    public static Setting<List<HostnamePort>> coordinators = setting( "ha.coordinators", list( ",", HOSTNAME_PORT ),
+            "" );
+
+    public static final Setting<Long> zk_session_timeout = setting( "ha.zk_session_timeout", DURATION, "5s");
+
     @Description("Max size of the data chunks that flows between master and slaves in HA. Bigger size may increase " +
             "throughput," +
             "but may be more sensitive to variations in bandwidth, whereas lower size increases tolerance for " +
             "bandwidth variations. " +
             "Examples: 500k or 3M. Must be within 1k-16M")
     public static final Setting<Long> com_chunk_size =
-            Settings.setting( "ha.com_chunk_size", BYTES, "2M", min( 1024L ) );
+            setting( "ha.com_chunk_size", BYTES, "2M", min( 1024L ) );
 
     public static final Setting<Long> pull_interval = setting( "ha.pull_interval", DURATION, "0s" );
 

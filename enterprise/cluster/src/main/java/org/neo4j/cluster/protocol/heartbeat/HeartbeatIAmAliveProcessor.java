@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -17,25 +17,24 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.neo4j.cluster.protocol.heartbeat;
 
 import java.net.URI;
 import java.net.URISyntaxException;
 
 import org.neo4j.cluster.com.message.Message;
+import org.neo4j.cluster.com.message.MessageHolder;
 import org.neo4j.cluster.com.message.MessageProcessor;
 import org.neo4j.cluster.com.message.MessageType;
 
 /**
  * When a message is received, create an I Am Alive message as well, since we know that the sending instance is up
  */
-public class HeartbeatIAmAliveProcessor
-    implements MessageProcessor
+public class HeartbeatIAmAliveProcessor implements MessageProcessor
 {
-    private MessageProcessor output;
+    private MessageHolder output;
 
-    public HeartbeatIAmAliveProcessor( MessageProcessor output )
+    public HeartbeatIAmAliveProcessor( MessageHolder output )
     {
         this.output = output;
     }
@@ -43,13 +42,16 @@ public class HeartbeatIAmAliveProcessor
     @Override
     public void process( Message<? extends MessageType> message )
     {
-        if (!message.isInternal() && !message.isBroadcast() && !message.getMessageType().equals( HeartbeatMessage.i_am_alive ))
+        if (!message.isInternal() && !message.isBroadcast() &&
+                !message.getMessageType().equals( HeartbeatMessage.i_am_alive ))
         {
             try
             {
                 String from = message.getHeader( Message.FROM );
                 if (!from.equals( message.getHeader( Message.TO ) ))
-                    output.process( message.copyHeadersTo( Message.internal( HeartbeatMessage.i_am_alive, new HeartbeatMessage.IAmAliveState( new URI( from ) ) ), Message.FROM ) );
+                    output.offer( message.copyHeadersTo(
+                            Message.internal( HeartbeatMessage.i_am_alive,
+                                    new HeartbeatMessage.IAmAliveState( new URI( from ) ) ), Message.FROM ) );
             }
             catch( URISyntaxException e )
             {

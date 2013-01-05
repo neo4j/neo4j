@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -17,12 +17,14 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.neo4j.backup;
 
 import java.net.URI;
 
+import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.member.ClusterMemberAvailability;
+import org.neo4j.cluster.member.ClusterMemberEvents;
+import org.neo4j.cluster.member.ClusterMemberListener;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -59,16 +61,14 @@ public class OnlineBackupKernelExtension implements Lifecycle
             {
                 server = new BackupServer( backup,
                         config.get( OnlineBackupSettings.online_backup_port ),
-                        graphDatabaseAPI.getDependencyResolver().resolveDependency( Logging.class ).getLogger(
-                                OnlineBackupKernelExtension.class ) );
+                        graphDatabaseAPI.getDependencyResolver().resolveDependency( Logging.class ) );
                 server.init();
                 server.start();
 
                 try
                 {
-                    ClusterMemberAvailability ha = graphDatabaseAPI.getDependencyResolver().resolveDependency( ClusterMemberAvailability.class );
-                    backupUri = URI.create( "backup://" + server.getSocketAddress().getHostName() + ":" + server.getSocketAddress().getPort() );
-                    ha.memberIsAvailable( BACKUP, backupUri );
+                    graphDatabaseAPI.getDependencyResolver().resolveDependency( ClusterMemberEvents.class).addClusterMemberListener(
+                            new StartBindingListener() );
                 }
                 catch ( NoClassDefFoundError e )
                 {
@@ -114,5 +114,59 @@ public class OnlineBackupKernelExtension implements Lifecycle
     @Override
     public void shutdown() throws Throwable
     {
+    }
+
+    private class StartBindingListener implements ClusterMemberListener
+    {
+
+
+        @Override
+        public void masterIsElected( URI masterUri )
+        {
+        }
+
+        @Override
+        public void memberIsAvailable( String role, URI instanceClusterUri, URI roleUri )
+        {
+            if ( graphDatabaseAPI.getDependencyResolver().resolveDependency( ClusterClient.class ).
+                    getServerUri().equals( instanceClusterUri ) && "master".equals( role ) )
+            {
+                // It was me and i am master - yey!
+                {
+                    try
+                    {
+                        ClusterMemberAvailability ha = graphDatabaseAPI.getDependencyResolver().resolveDependency( ClusterMemberAvailability.class );
+                        backupUri = URI.create( "backup://" + server.getSocketAddress().getHostName() + ":" + server.getSocketAddress().getPort() );
+                        ha.memberIsAvailable( BACKUP, backupUri );
+                    }
+                    catch ( Throwable t )
+                    {
+                        throw new RuntimeException( t );
+                    }
+                }
+            }
+        }
+
+        @Override
+        public void memberIsUnavailable( String role, URI instanceClusterUri )
+        {
+            if ( graphDatabaseAPI.getDependencyResolver().resolveDependency( ClusterClient.class ).
+                    getServerUri().equals( instanceClusterUri ) && "master".equals( role ) )
+            {
+                // It was me and i am master - yey!
+                {
+                    try
+                    {
+                        ClusterMemberAvailability ha = graphDatabaseAPI.getDependencyResolver().resolveDependency( ClusterMemberAvailability.class );
+                        backupUri = URI.create( "backup://" + server.getSocketAddress().getHostName() + ":" + server.getSocketAddress().getPort() );
+                        ha.memberIsUnavailable( BACKUP );
+                    }
+                    catch ( Throwable t )
+                    {
+                        throw new RuntimeException( t );
+                    }
+                }
+            }
+        }
     }
 }

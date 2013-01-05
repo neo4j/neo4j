@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -17,7 +17,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.neo4j.kernel.impl.util;
 
 import static org.neo4j.helpers.collection.IteratorUtil.loop;
@@ -272,12 +271,14 @@ public abstract class StringLogger
 
     public void debug( String msg )
     {
-        // Ignore
+        if ( isDebugEnabled() )
+            logMessage( msg );
     }
 
     public void debug( String msg, Throwable cause )
     {
-        // Ignore
+        if ( isDebugEnabled() )
+            logMessage( msg, cause );
     }
 
     public boolean isDebugEnabled()
@@ -608,6 +609,29 @@ public abstract class StringLogger
         public void logLine( String line )
         {
             target.logLine( line );
+        }
+    }
+    
+    protected static class SystemLogger extends ActualStringLogger
+    {
+        private boolean debugEnabled;
+
+        private SystemLogger( boolean debugEnabled )
+        {
+            super( new PrintWriter( System.out ) );
+            this.debugEnabled = debugEnabled;
+        }
+        
+        @Override
+        public boolean isDebugEnabled()
+        {
+            return debugEnabled;
+        }
+
+        @Override
+        public void close()
+        {
+            // don't close System.out
         }
     }
 }

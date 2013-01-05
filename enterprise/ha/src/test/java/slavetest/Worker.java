@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -27,9 +27,9 @@ import org.neo4j.test.OtherThreadExecutor;
 
 public class Worker extends OtherThreadExecutor<WorkerState>
 {
-    public Worker( GraphDatabaseService db )
+    public Worker( String name, GraphDatabaseService db )
     {
-        super( new WorkerState( db ) );
+        super( name, new WorkerState( db ) );
     }
 
     public void beginTx() throws Exception

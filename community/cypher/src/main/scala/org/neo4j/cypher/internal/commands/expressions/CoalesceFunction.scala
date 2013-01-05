@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -23,31 +23,26 @@ import org.neo4j.cypher.internal.symbols._
 import collection.Map
 import org.neo4j.cypher.internal.pipes.ExecutionContext
 
-case class CoalesceFunction(expressions: Expression*) extends Expression {
-  def apply(ctx: ExecutionContext): Any = expressions.toStream.map(expression => expression(ctx)).find(value => value != null) match {
+case class CoalesceFunction(children: Expression*) extends Expression {
+  def apply(ctx: ExecutionContext): Any = children.toStream.map(expression => expression(ctx)).find(value => value != null) match {
     case None    => null
     case Some(x) => x
   }
 
   def innerExpectedType: Option[CypherType] = None
 
-  val argumentsString: String = expressions.mkString(",")
+  val argumentsString: String = children.mkString(",")
 
   override def toString() = "coalesce(" + argumentsString + ")"
 
-  def rewrite(f: (Expression) => Expression) = f(CoalesceFunction(expressions.map(e => e.rewrite(f)): _*))
-
-  def filter(f: (Expression) => Boolean) = if (f(this))
-    Seq(this) ++ expressions.flatMap(_.filter(f))
-  else
-    expressions.flatMap(_.filter(f))
+  def rewrite(f: (Expression) => Expression) = f(CoalesceFunction(children.map(e => e.rewrite(f)): _*))
 
   def calculateType(symbols: SymbolTable) = {
-    expressions.map(_.getType(symbols)) match {
+    children.map(_.getType(symbols)) match {
       case Seq() => ScalarType()
       case types => types.foldLeft(AnyType().asInstanceOf[CypherType])(_ mergeWith _)
     }
   }
 
-  def symbolTableDependencies = expressions.flatMap(_.symbolTableDependencies).toSet
+  def symbolTableDependencies = children.flatMap(_.symbolTableDependencies).toSet
 }

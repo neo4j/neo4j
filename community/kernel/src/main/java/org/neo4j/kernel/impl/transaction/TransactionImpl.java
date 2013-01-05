@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -72,12 +72,12 @@ class TransactionImpl implements Transaction
     private final ForceMode forceMode;
     private Thread owner;
 
-    private TransactionState state;
+    private final TransactionState state;
 
-    TransactionImpl( TxManager txManager, ForceMode forceMode, TransactionState state )
+    TransactionImpl( TxManager txManager, ForceMode forceMode, TransactionStateFactory stateFactory )
     {
         this.txManager = txManager;
-        this.state = state;
+        this.state = stateFactory.create( this );
         globalId = XidImpl.getNewGlobalId();
         eventIdentifier = txManager.getNextEventIdentifier();
         this.forceMode = forceMode;
@@ -187,7 +187,8 @@ class TransactionImpl implements Transaction
                                                                          + " error writing transaction log" ), e );
                     }
                     // TODO ties HA to our TxManager
-                    if ( !txManager.finishHook.hasAnyLocks( this ) ) txManager.finishHook.initializeTransaction( eventIdentifier );
+                    if ( !hasAnyLocks() )
+                        getState().getTxHook().initializeTransaction( eventIdentifier );
                     return true;
                 }
                 Xid sameRmXid = null;
@@ -710,5 +711,15 @@ class TransactionImpl implements Transaction
             }
             ((MultipleCauseException) rollbackCause).addCause( cause );
         }
+    }
+
+    public boolean hasAnyLocks()
+    {
+        return getState().getTxHook().hasAnyLocks( this );
+    }
+
+    public void finish( boolean successful )
+    {
+        getState().getTxHook().finishTransaction( getEventIdentifier(), successful );
     }
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -19,14 +19,24 @@
  */
 package org.neo4j.test;
 
+import static java.util.Arrays.asList;
 import static java.util.concurrent.Executors.newSingleThreadExecutor;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.TimeoutException;
+
+import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.kernel.impl.util.StringLogger.LineLogger;
 
 /**
  * Executes {@link WorkerCommand}s in another thread. Very useful for writing
@@ -37,34 +47,52 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * @param <T>
  */
-public class OtherThreadExecutor<T> implements ThreadFactory
+public class OtherThreadExecutor<T> implements ThreadFactory, Visitor<LineLogger>
 {
-    private static final AtomicLong THREADID = new AtomicLong();
-    private final ExecutorService commandExecutor = newSingleThreadExecutor(this);
-    private final T state;
+    private final ExecutorService commandExecutor = newSingleThreadExecutor( this );
+    protected final T state;
     private volatile Thread thread;
-    private boolean executingCommand;
-
-    public OtherThreadExecutor( T initialState )
+    private volatile ExecutionState executionState;
+    private final String name;
+    private final long timeout;
+    private Exception lastExecutionTrigger;
+    
+    private static enum ExecutionState
     {
+        REQUESTED_EXECUTION,
+        EXECUTING,
+        EXECUTED;
+    }
+
+    public OtherThreadExecutor( String name, T initialState )
+    {
+        this( name, 10, SECONDS, initialState );
+    }
+    
+    public OtherThreadExecutor( String name, long timeout, TimeUnit unit, T initialState )
+    {
+        this.name = name;
         this.state = initialState;
+        this.timeout = MILLISECONDS.convert( timeout, unit );
     }
 
     public <R> Future<R> executeDontWait( final WorkerCommand<T, R> cmd ) throws Exception
     {
+        lastExecutionTrigger = new Exception();
+        executionState = ExecutionState.REQUESTED_EXECUTION;
         return commandExecutor.submit( new Callable<R>()
         {
             @Override
             public R call()
             {
-                executingCommand = true;
+                executionState = ExecutionState.EXECUTING;
                 try
                 {
                     return cmd.doWork( state );
                 }
                 finally
                 {
-                    executingCommand = false;
+                    executionState = ExecutionState.EXECUTED;
                 }
             }
         } );
@@ -91,6 +119,11 @@ public class OtherThreadExecutor<T> implements ThreadFactory
         }
     }
     
+    public <R> R awaitFuture( Future<R> future ) throws InterruptedException, ExecutionException, TimeoutException
+    {
+        return future.get( timeout, MILLISECONDS );
+    }
+    
     public interface WorkerCommand<T, R>
     {
         R doWork( T state );
@@ -99,7 +132,7 @@ public class OtherThreadExecutor<T> implements ThreadFactory
     @Override
     public Thread newThread( Runnable r )
     {
-        Thread thread = new Thread( r, getClass().getName() + ":" + THREADID.getAndIncrement() )
+        Thread thread = new Thread( r, getClass().getName() + ":" + name )
         {
             @Override
             public void run()
@@ -117,17 +150,24 @@ public class OtherThreadExecutor<T> implements ThreadFactory
         this.thread = thread;
         return thread;
     }
-
-    public void waitUntilWaiting()
+    
+    @Override
+    public String toString()
     {
-        waitUntilWaiting( 0, TimeUnit.SECONDS );
+        return getClass().getSimpleName() + ":" + name;
     }
 
-    public void waitUntilWaiting( long timeout, TimeUnit unit )
+    public void waitUntilWaiting() throws TimeoutException
     {
-        long end = timeout == 0 ? Long.MAX_VALUE : System.currentTimeMillis() + unit.toMillis( timeout );
+        waitUntilThreadState( Thread.State.WAITING );
+    }
+    
+    public void waitUntilThreadState( Thread.State... possibleStates ) throws TimeoutException
+    {
+        Set<Thread.State> stateSet = new HashSet<Thread.State>( asList( possibleStates ) );
+        long end = System.currentTimeMillis() + timeout;
         Thread thread = getThread();
-        while ( thread.getState() != Thread.State.WAITING || !executingCommand )
+        while ( !stateSet.contains( thread.getState() ) || executionState == ExecutionState.REQUESTED_EXECUTION )
         {
             try
             {
@@ -139,8 +179,11 @@ public class OtherThreadExecutor<T> implements ThreadFactory
             }
             
             if ( System.currentTimeMillis() > end )
-                throw new IllegalStateException( "The executor didn't wait inside an executing command for " +
-                        timeout + " " + unit );
+            {
+                throw new TimeoutException( "The executor didn't enter any of states " +
+                        Arrays.toString( possibleStates ) + " inside an executing command for " +
+                        timeout + " ms" );
+            }
         }
     }
     
@@ -161,5 +204,31 @@ public class OtherThreadExecutor<T> implements ThreadFactory
         catch ( InterruptedException e )
         {   // OK
         }
+    }
+    
+    @Override
+    public boolean visit( LineLogger logger )
+    {
+        logger.logLine( getClass().getName() + ", " + this + " state:" + state + " thread:" + thread +
+                " execution:" + executionState );
+        if ( thread != null )
+        {
+            logger.logLine( "Thread state:" + thread.getState() );
+            logger.logLine( "" );
+            for ( StackTraceElement element : thread.getStackTrace() )
+                logger.logLine( element.toString() );
+        }
+        else
+        {
+            logger.logLine( "No operations performed yet, so no thread" );
+        }
+        if ( lastExecutionTrigger != null )
+        {
+            logger.logLine( "" );
+            logger.logLine( "Last execution triggered from:" );
+            for ( StackTraceElement element : lastExecutionTrigger.getStackTrace() )
+                logger.logLine( element.toString() );
+        }
+        return true;
     }
 }

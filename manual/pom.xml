@@ -193,13 +193,6 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>org.neo4j.server.plugin</groupId>
-      <artifactId>neo4j-cypher-plugin</artifactId>
-      <version>${neo4j.version}</version>
-      <classifier>docs</classifier>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
       <groupId>org.neo4j.drivers</groupId>
       <artifactId>neo4j-python-embedded</artifactId>
       <version>${neo4j.version}</version>

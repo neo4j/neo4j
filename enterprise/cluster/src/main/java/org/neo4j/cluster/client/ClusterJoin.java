@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -17,7 +17,6 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.neo4j.cluster.client;
 
 import java.io.File;
@@ -75,9 +74,9 @@ public class ClusterJoin
         boolean isAllowedToCreateCluster();
     }
 
-    private Configuration config;
-    private ProtocolServer protocolServer;
-    private StringLogger logger;
+    private final Configuration config;
+    private final ProtocolServer protocolServer;
+    private final StringLogger logger;
     private URI clustersUri;
     private Clusters clusters;
     private Cluster cluster;
@@ -95,14 +94,16 @@ public class ClusterJoin
     @Override
     public void init() throws Throwable
     {
-        cluster = protocolServer.newClient( Cluster.class );
         builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
         transformer = TransformerFactory.newInstance().newTransformer();
+        cluster = protocolServer.newClient( Cluster.class );
     }
 
     @Override
     public void start() throws Throwable
     {
+        cluster = protocolServer.newClient( Cluster.class );
+
         acquireServerId();
 
         // Now that we have our own id, do cluster join
@@ -137,13 +138,13 @@ public class ClusterJoin
         {
             if ( !semaphore.tryAcquire( 5, TimeUnit.SECONDS ) )
             {
-                logger.logMessage( "Unable to leave cluster, timeout" );
+                logger.info( "Unable to leave cluster, timeout" );
             }
         }
         catch ( InterruptedException e )
         {
             Thread.interrupted();
-            logger.logMessage( "Unable to leave cluster, interrupted", e );
+            logger.warn( "Unable to leave cluster, interrupted", e );
         }
     }
 
@@ -195,7 +196,7 @@ public class ClusterJoin
                         Future<ClusterConfiguration> config = cluster.join( joinUri );
                         try
                         {
-                            logger.logMessage( "Joined cluster:" + config.get() );
+                            logger.info( "Joined cluster:" + config.get() );
 
                             try
                             {
@@ -214,7 +215,7 @@ public class ClusterJoin
                         }
                         catch ( ExecutionException e )
                         {
-                            logger.logMessage( "Could not join cluster member " + member.getHost() );
+                            logger.info( "Could not join cluster member " + member.getHost() );
                         }
                     }
                 }
@@ -241,13 +242,13 @@ public class ClusterJoin
                     }
                     catch ( TransformerException e )
                     {
-                        logger.logMessage( "Could not update cluster discovery file:" + clustersUri, e );
+                        logger.warn( "Could not update cluster discovery file:" + clustersUri, e );
                     }
                 }
             }
             else
             {
-                logger.warn( "Could not join cluster, and is not allowed to create one" );
+                logger.info( "Could not join cluster, and is not allowed to create one" );
             }
         }
     }
@@ -339,40 +340,48 @@ public class ClusterJoin
 
         if ( hosts == null || hosts.size() == 0 )
         {
-            logger.logMessage( "Creating cluster " + config.getClusterName() );
+            logger.info( "Creating cluster " + config.getClusterName() );
             cluster.create( config.getClusterName() );
         }
         else
         {
             try
             {
-                for ( HostnamePort host : hosts )
+                while( true )
                 {
-                    if ( serverId.toString().endsWith( host.toString() ) )
+                    for ( HostnamePort host : hosts )
                     {
-                        continue; // Don't try to join myself
+                        if ( serverId.toString().endsWith( host.toString() ) )
+                        {
+                                continue; // Don't try to join myself
+                        }
+
+                        String hostString = resolvePortOnlyHost( host );
+                        logger.info( "Attempting to join " + hostString );
+                        Future<ClusterConfiguration> clusterConfig = cluster.join( new URI( "cluster://" + hostString ) );
+                        try
+                        {
+                            logger.info( "Joined cluster:" + clusterConfig.get() );
+                            return;
+                        }
+                        catch ( InterruptedException e )
+                        {
+                            e.printStackTrace();
+                        }
+                        catch ( ExecutionException e )
+                        {
+                            logger.info( "Could not join cluster member " + hostString );
+                        }
                     }
 
-                    String hostString = resolvePortOnlyHost( host );
-                    logger.info( "Attempting to join " + hostString );
-                    Future<ClusterConfiguration> clusterConfig = cluster.join( new URI( "cluster://" + hostString ) );
-                    try
+                    if ( config.isAllowedToCreateCluster() )
                     {
-                        logger.info( "Joined cluster:" + clusterConfig.get() );
-                        return;
+                        // Failed to join cluster, create new one
+                        cluster.create( config.getClusterName() );
+                        break;
                     }
-                    catch ( InterruptedException e )
-                    {
-                        e.printStackTrace();
-                    }
-                    catch ( ExecutionException e )
-                    {
-                        logger.error( "Could not join cluster member " + hostString );
-                    }
+                    // else retry the list from the top
                 }
-
-                // Failed to join cluster, create new one
-                cluster.create( config.getClusterName() );
             }
             catch ( URISyntaxException e )
             {
@@ -386,14 +395,7 @@ public class ClusterJoin
     {
         try
         {
-            if ( host.getHost() == null )
-            {
-                return InetAddress.getLocalHost().getHostAddress() + ":" + host.getPort();
-            }
-            else
-            {
-                return host.toString();
-            }
+            return host.toString( InetAddress.getLocalHost().getHostAddress() );
         }
         catch ( UnknownHostException e )
         {

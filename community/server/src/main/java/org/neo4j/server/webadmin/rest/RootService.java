@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -26,6 +26,8 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
 import org.neo4j.server.rest.repr.OutputFormat;
+import org.neo4j.server.webadmin.rest.console.ConsoleService;
+import org.neo4j.server.webadmin.console.ConsoleSessionFactory;
 import org.neo4j.server.webadmin.rest.representations.ServerRootRepresentation;
 
 @Path( "/" )

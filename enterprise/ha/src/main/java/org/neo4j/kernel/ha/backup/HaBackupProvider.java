@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -17,7 +17,6 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.neo4j.kernel.ha.backup;
 
 import java.net.URI;
@@ -33,17 +32,19 @@ import org.neo4j.backup.OnlineBackupKernelExtension;
 import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.client.ClusterClient;
+import org.neo4j.cluster.member.ClusterMemberEvents;
 import org.neo4j.cluster.member.ClusterMemberListener;
 import org.neo4j.cluster.member.paxos.PaxosClusterMemberEvents;
+import org.neo4j.cluster.protocol.election.CoordinatorIncapableCredentialsProvider;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.HaSettings;
-import org.neo4j.cluster.member.ClusterMemberEvents;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.Logging;
+import org.neo4j.kernel.logging.SystemOutLogging;
 
 @Service.Implementation(BackupExtensionService.class)
 public final class HaBackupProvider extends BackupExtensionService
@@ -95,8 +96,9 @@ public final class HaBackupProvider extends BackupExtensionService
                 ClusterSettings.class, OnlineBackupSettings.class );
 
         ClusterClient clusterClient = life.add( new ClusterClient( ClusterClient.adapt( config ), logging,
-                new BackupElectionCredentialsProvider() ) );
-        ClusterMemberEvents events = life.add( new PaxosClusterMemberEvents( clusterClient, clusterClient, clusterClient, StringLogger.SYSTEM ) );
+                new CoordinatorIncapableCredentialsProvider() ) );
+        ClusterMemberEvents events = life.add( new PaxosClusterMemberEvents( clusterClient, clusterClient,
+                clusterClient, new SystemOutLogging() ) );
 
         final Semaphore infoReceivedLatch = new Semaphore( 0 );
         final AtomicReference<URI> backupUri = new AtomicReference<URI>(  );

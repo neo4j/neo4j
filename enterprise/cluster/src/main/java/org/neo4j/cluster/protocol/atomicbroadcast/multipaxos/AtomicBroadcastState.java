@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -17,7 +17,6 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos;
 
 import static org.neo4j.cluster.com.message.Message.internal;
@@ -28,7 +27,7 @@ import java.net.URI;
 import java.util.concurrent.TimeoutException;
 
 import org.neo4j.cluster.com.message.Message;
-import org.neo4j.cluster.com.message.MessageProcessor;
+import org.neo4j.cluster.com.message.MessageHolder;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastListener;
 import org.neo4j.cluster.protocol.atomicbroadcast.Payload;
 import org.neo4j.cluster.protocol.cluster.ClusterMessage;
@@ -46,7 +45,7 @@ public enum AtomicBroadcastState
                 @Override
                 public AtomicBroadcastState handle( AtomicBroadcastContext context,
                                                     Message<AtomicBroadcastMessage> message,
-                                                    MessageProcessor outgoing
+                                                    MessageHolder outgoing
                 )
                         throws Throwable
                 {
@@ -78,7 +77,7 @@ public enum AtomicBroadcastState
                 @Override
                 public State<?, ?> handle( AtomicBroadcastContext context,
                                            Message<AtomicBroadcastMessage> message,
-                                           MessageProcessor outgoing
+                                           MessageHolder outgoing
                 )
                         throws Throwable
                 {
@@ -87,7 +86,7 @@ public enum AtomicBroadcastState
                         case failed:
                         {
                             // Joining failed
-                            outgoing.process( internal( ClusterMessage.joinFailure,
+                            outgoing.offer( internal( ClusterMessage.joinFailure,
                                     new TimeoutException( "Could not join cluster" ) ) );
 
                             return start;
@@ -97,7 +96,7 @@ public enum AtomicBroadcastState
                         {
                             if ( message.getPayload() instanceof ClusterMessage.ConfigurationChangeState )
                             {
-                                outgoing.process( internal( ClusterMessage.configurationChanged,
+                                outgoing.offer( internal( ClusterMessage.configurationChanged,
                                         message.getPayload() ) );
                             }
 
@@ -124,7 +123,7 @@ public enum AtomicBroadcastState
                 @Override
                 public AtomicBroadcastState handle( AtomicBroadcastContext context,
                                                     Message<AtomicBroadcastMessage> message,
-                                                    MessageProcessor outgoing
+                                                    MessageHolder outgoing
                 )
                         throws Throwable
                 {
@@ -135,7 +134,7 @@ public enum AtomicBroadcastState
                             URI coordinator = context.getCoordinator();
                             if ( coordinator != null )
                             {
-                                outgoing.process( to( ProposerMessage.propose, coordinator, message.getPayload() ) );
+                                outgoing.offer( to( ProposerMessage.propose, coordinator, message.getPayload() ) );
                                 Timeouts timeouts = context.getClusterContext().timeouts;
                                 timeouts.setTimeout( "broadcast-" + message.getHeader( Message.CONVERSATION_ID ),
                                         timeout( AtomicBroadcastMessage.broadcastTimeout, message,
@@ -143,7 +142,7 @@ public enum AtomicBroadcastState
                             }
                             else
                             {
-                                outgoing.process( message.copyHeadersTo( internal( ProposerMessage.propose,
+                                outgoing.offer( message.copyHeadersTo( internal( ProposerMessage.propose,
                                         message.getPayload() ), Message.CONVERSATION_ID ) );
                             }
                             break;
@@ -158,7 +157,7 @@ public enum AtomicBroadcastState
 
                             if ( message.getPayload() instanceof ClusterMessage.ConfigurationChangeState )
                             {
-                                outgoing.process( internal( ClusterMessage.configurationChanged,
+                                outgoing.offer( internal( ClusterMessage.configurationChanged,
                                         message.getPayload() ) );
                             }
                             else
@@ -171,7 +170,7 @@ public enum AtomicBroadcastState
 
                         case broadcastTimeout:
                         {
-                            outgoing.process( internal( AtomicBroadcastMessage.broadcast, message.getPayload() ) );
+                            outgoing.offer( internal( AtomicBroadcastMessage.broadcast, message.getPayload() ) );
                             break;
                         }
 
@@ -191,7 +190,7 @@ public enum AtomicBroadcastState
             };
 
     private static void defaultHandling( AtomicBroadcastContext context, Message<AtomicBroadcastMessage> message,
-                                         MessageProcessor outgoing )
+                                         MessageHolder outgoing )
     {
         switch ( message.getMessageType() )
         {

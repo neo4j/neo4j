@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -19,7 +19,6 @@
  */
 package org.neo4j.server.rest.repr;
 
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
 
@@ -30,19 +29,10 @@ import org.neo4j.helpers.collection.FirstItemIterable;
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.helpers.collection.IteratorWrapper;
 
-import com.tinkerpop.blueprints.pgm.impls.neo4j.Neo4jEdge;
-import com.tinkerpop.blueprints.pgm.impls.neo4j.Neo4jGraph;
-import com.tinkerpop.blueprints.pgm.impls.neo4j.Neo4jVertex;
-import com.tinkerpop.pipes.util.structures.Table;
-
 public class ObjectToRepresentationConverter
 {
     public static Representation convert( final Object data )
     {
-        if ( data instanceof Table )
-        {
-            return new GremlinTableRepresentation( (Table) data );
-        }
         if ( data instanceof Iterable )
         {
             return getListRepresentation( (Iterable) data );
@@ -91,10 +81,6 @@ public class ObjectToRepresentationConverter
 
     static FirstItemIterable<Representation> convertValuesToRepresentations( Iterable data )
     {
-        if ( data instanceof Table )
-        {
-            return new FirstItemIterable<Representation>(Collections.<Representation>singleton(new GremlinTableRepresentation( (Table) data )));
-        }
         return new FirstItemIterable<Representation>(new IterableWrapper<Representation,Object>(data) {
             @Override
             protected Representation underlyingObjectToObject(Object value) {
@@ -113,16 +99,6 @@ public class ObjectToRepresentationConverter
     static Representation getSingleRepresentation( Object result )
     {
         if ( result == null ) return ValueRepresentation.string( "null" );
-        if ( result instanceof Neo4jVertex )
-        {
-            return new NodeRepresentation(
-                    ( (Neo4jVertex) result ).getRawVertex() );
-        }
-        else if ( result instanceof Neo4jEdge )
-        {
-            return new RelationshipRepresentation(
-                    ( (Neo4jEdge) result ).getRawEdge() );
-        }
         else if ( result instanceof GraphDatabaseService )
         {
             return new DatabaseRepresentation( ( (GraphDatabaseService) result ) );
@@ -134,10 +110,6 @@ public class ObjectToRepresentationConverter
         else if ( result instanceof Relationship )
         {
             return new RelationshipRepresentation( (Relationship) result );
-        }
-        else if ( result instanceof Neo4jGraph )
-        {
-            return ValueRepresentation.string( ( (Neo4jGraph) result ).getRawGraph().toString() );
         }
         else if ( result instanceof Double || result instanceof Float )
         {

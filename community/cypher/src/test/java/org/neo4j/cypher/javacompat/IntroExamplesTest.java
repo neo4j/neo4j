@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -67,7 +67,7 @@ public class IntroExamplesTest implements GraphHolder
                 createCypherSnippet( query ) ) );
         fw.append( "\nResulting in:\n\n" );
         fw.append( AsciiDocGenerator.dumpToSeparateFileWithType( new File("target/docs/dev/"), "intro.result",
-                createQueryResultSnippet( engine.execute( query  ).toString() ) ) );
+                createQueryResultSnippet( engine.execute( query  ).dumpToString() ) ) );
 
         fw.append( "\nNext up we will add filtering to set more parts "
                    + "in motion:\n\nIn this next example, we take a list of users "
@@ -90,7 +90,7 @@ public class IntroExamplesTest implements GraphHolder
                 createCypherSnippet( query ) ) );
         fw.append( "\nResulting in:\n\n" );
         fw.append( AsciiDocGenerator.dumpToSeparateFileWithType( new File("target/docs/dev/"), "intro.result",
-                createQueryResultSnippet( engine.execute( query ).toString() ) ) );
+                createQueryResultSnippet( engine.execute( query ).dumpToString() ) ) );
         fw.close();
     }
 

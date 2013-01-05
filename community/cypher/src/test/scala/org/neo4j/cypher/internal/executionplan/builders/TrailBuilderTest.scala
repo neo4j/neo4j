@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.executionplan.builders
 
 import org.junit.Test
 import org.neo4j.cypher.internal.commands._
-import expressions.{Literal, Property}
+import expressions.{Identifier, Literal, Property}
 import org.neo4j.graphdb.Direction
 import org.scalatest.Assertions
 import org.neo4j.graphdb.DynamicRelationshipType.withName
@@ -92,12 +92,12 @@ class TrailBuilderTest extends GraphDatabaseTestBase with Assertions with Builde
   @Test def find_longest_path_between_two_points_with_a_predicate() {
     //()<-[r1:A]-(a)<-[r2:B]-()
     //WHERE r1.prop = 42 AND r2.prop = "FOO"
-    val r1Pred = Equals(Property("pr1", "prop"), Literal(42))
-    val r2Pred = Equals(Property("pr2", "prop"), Literal("FOO"))
+    val r1Pred = Equals(Property(Identifier("pr1"), "prop"), Literal(42))
+    val r2Pred = Equals(Property(Identifier("pr2"), "prop"), Literal("FOO"))
     val predicates = Seq(r1Pred, r2Pred)
 
-    val rewrittenR1 = Equals(MiniMapRelProperty("pr1", "prop"), Literal(42))
-    val rewrittenR2 = Equals(MiniMapRelProperty("pr2", "prop"), Literal("FOO"))
+    val rewrittenR1 = Equals(Property(RelationshipIdentifier(), "prop"), Literal(42))
+    val rewrittenR2 = Equals(Property(RelationshipIdentifier(), "prop"), Literal("FOO"))
 
     val boundPoint = EndPoint("c")
     val second = SingleStepTrail(boundPoint, Direction.OUTGOING, "pr2", Seq("B"), "b", relPred = Some(rewrittenR2), nodePred = None, pattern = BtoC)
@@ -112,10 +112,10 @@ class TrailBuilderTest extends GraphDatabaseTestBase with Assertions with Builde
     //(a)-[pr1:A]->(b)-[pr2:B]->(c)
     //WHERE b.prop = 42
 
-    val nodePred = Equals(Property("b", "prop"), Literal(42))
+    val nodePred = Equals(Property(Identifier("b"), "prop"), Literal(42))
     val predicates = Seq(nodePred)
 
-    val rewrittenPredicate = Equals(MiniMapNodeProperty("b", "prop"), Literal(42))
+    val rewrittenPredicate = Equals(Property(NodeIdentifier(), "prop"), Literal(42))
 
     val boundPoint = EndPoint("c")
     val second = SingleStepTrail(boundPoint, Direction.OUTGOING, "pr2", Seq("B"), "b", None, None, BtoC)

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -17,24 +17,20 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.neo4j.test.ha;
 
 import static org.neo4j.test.ha.ClusterManager.fromXml;
 
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.test.LoggerRule;
+import org.neo4j.test.TargetDirectory;
 
 public class ClusterTest
 {
-    @Rule
-    public TemporaryFolder folder = new TemporaryFolder();
-
     @Rule
     public LoggerRule logging = new LoggerRule();
 
@@ -42,7 +38,7 @@ public class ClusterTest
     public void testCluster() throws Throwable
     {
         ClusterManager clusterManager = new ClusterManager( fromXml( getClass().getResource( "/threeinstances.xml" ).toURI() ),
-                folder.getRoot(), MapUtil.stringMap() );
+                TargetDirectory.forTest( getClass() ).directory( "testCluster", true ), MapUtil.stringMap() );
         clusterManager.start();
         
         GraphDatabaseService master = clusterManager.getDefaultCluster().getMaster();
@@ -60,24 +56,22 @@ public class ClusterTest
     public void given4instanceclusterWhenMasterGoesDownThenElectNewMaster() throws Throwable
     {
         ClusterManager clusterManager = new ClusterManager( fromXml( getClass().getResource( "/fourinstances.xml" ).toURI() ),
-                folder.getRoot(), MapUtil.stringMap() );
+                TargetDirectory.forTest( getClass() ).directory( "4instances", true ), MapUtil.stringMap() );
         clusterManager.start();
 
         logging.getLogger().info( "STOPPING MASTER" );
         clusterManager.getDefaultCluster().getMaster().stop();
         logging.getLogger().info( "STOPPED MASTER" );
 
-        Thread.sleep( 60000 );
+        Thread.sleep( 30000 ); // OMG!!!! My Eyes!!!! It Burns Us!!!!
 
-/*
-        GraphDatabaseService master = clusterManager.getMaster( "neo4j.ha" );
+        GraphDatabaseService master = clusterManager.getCluster( "neo4j.ha" ).getMaster();
         logging.getLogger().info( "CREATE NODE" );
         Transaction tx = master.beginTx();
         master.createNode();
         logging.getLogger().info( "CREATED NODE" );
         tx.success();
         tx.finish();
-*/
 
         logging.getLogger().info( "STOPPING CLUSTER" );
         clusterManager.stop();

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
 
-    Copyright (c) 2002-2012 "Neo Technology,"
+    Copyright (c) 2002-2013 "Neo Technology,"
     Network Engine for Objects in Lund AB [http://neotechnology.com]
 
     This file is part of Neo4j.
@@ -21,8 +21,20 @@
 
 -->
 <configuration>
+
+  <property resource="logback.properties" />
+
   <appender name="FILE" class="ch.qos.logback.core.FileAppender">
     <file>${neo_store}/messages.log</file>
+    <encoder>
+      <pattern>%date{yyyy-MM-dd HH:mm:ss.SSSZ,UTC} %-5level [%logger{15}]: %message%n</pattern>
+    </encoder>
+  </appender>
+
+  <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+    <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+      <level>${CONSOLE_LEVEL:-WARN}</level>
+    </filter>
     <encoder>
       <pattern>%date{yyyy-MM-dd HH:mm:ss.SSSZ,UTC} %-5level [%logger{15}]: %message%n</pattern>
     </encoder>
@@ -42,11 +54,10 @@
     </then>
   </if>
 
-  <logger name="org.neo4j" level="info" additivity="false">
+  <logger name="org.neo4j" level="INFO" additivity="false">
     <appender-ref ref="FILE"/>
+    <appender-ref ref="CONSOLE"/>
   </logger>
-
-  <logger name="org.neo4j.kernel.info.DiagnosticsManager" level="warn"/>
 
   <include resource="custom-logback.xml"/>
 

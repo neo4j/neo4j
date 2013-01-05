@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -19,14 +19,15 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
+import static java.lang.Math.max;
+import static org.neo4j.kernel.impl.util.FileUtils.truncateFile;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.LinkedList;
 import java.util.concurrent.atomic.AtomicLong;
-
-import static org.neo4j.kernel.impl.util.FileUtils.*;
 
 /**
  * This class generates unique ids for a resource type. For example, nodes in a
@@ -113,10 +114,12 @@ public class IdGeneratorImpl implements IdGenerator
      * {@link #nextId()}.
      * @param aggressiveReuse will reuse ids during the same session, not requiring
      * a restart to be able reuse ids freed with {@link #freeId(long)}.
+     * @param highId2 
      * @throws UnderlyingStorageException
      *             If no such file exist or if the id generator is sticky
      */
-    public IdGeneratorImpl( FileSystemAbstraction fs, File fileName, int grabSize, long max, boolean aggressiveReuse )
+    public IdGeneratorImpl( FileSystemAbstraction fs, File fileName, int grabSize, long max, boolean aggressiveReuse,
+            long highId )
     {
         this.fs = fs;
         this.aggressiveReuse = aggressiveReuse;
@@ -128,6 +131,7 @@ public class IdGeneratorImpl implements IdGenerator
         this.fileName = fileName;
         this.grabSize = grabSize;
         initGenerator();
+        this.highId.set( max( this.highId.get(), highId ) );
     }
 
     /**
@@ -546,12 +550,18 @@ public class IdGeneratorImpl implements IdGenerator
                 if ( writeBuffer.position() == writeBuffer.capacity() )
                 {
                     writeBuffer.flip();
-                    fileChannel.write( writeBuffer );
+                    while ( writeBuffer.hasRemaining() )
+                    {
+                        fileChannel.write( writeBuffer );
+                    }
                     writeBuffer.clear();
                 }
             }
             writeBuffer.flip();
-            fileChannel.write( writeBuffer );
+            while ( writeBuffer.hasRemaining() )
+            {
+                fileChannel.write( writeBuffer );
+            }
             // position for next readIdBatch
             fileChannel.position( readPosition );
             if ( aggressiveReuse )
@@ -624,5 +634,12 @@ public class IdGeneratorImpl implements IdGenerator
         {
             throw new UnderlyingStorageException( "Unable to delete id generator " + fileName );
         }
+    }
+
+    @Override
+    public String toString()
+    {
+        return "IdGeneratorImpl " + hashCode() + " [highId=" + highId + ", defragged=" + defraggedIdCount + ", fileName="
+                + fileName + ", max=" + max + ", aggressive=" + aggressiveReuse + "]";
     }
 }

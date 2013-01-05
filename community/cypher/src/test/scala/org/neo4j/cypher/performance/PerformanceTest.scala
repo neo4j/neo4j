@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -72,7 +72,6 @@ class PerformanceTest extends Assertions {
     engine.execute("start a=node({root}) match a-->b-->c, b-->d return a,count(*)", Map("root"->startPoints)).toList
     val t1 = System.nanoTime : Double
     println("Elapsed time " + (t1 - t0) / 1000000.0 + " msecs")
-
   }
 
   def createNode() = {

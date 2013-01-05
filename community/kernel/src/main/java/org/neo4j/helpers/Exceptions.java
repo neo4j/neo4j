@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -77,6 +77,51 @@ public class Exceptions
         {
             throw new RuntimeException( messageForUnexpected, exception );
         }
+    }
+    
+    /**
+     * Peels off layers of causes. For example:
+     * 
+     * MyFarOuterException
+     *   cause: MyOuterException
+     *     cause: MyInnerException
+     *       cause: MyException
+     * and a toPeel predicate returning true for MyFarOuterException and MyOuterException
+     * will return MyInnerException. If the predicate peels all exceptions null is returned. 
+     * 
+     * @param exception the outer exception to peel to get to an inner cause.
+     * @param toPeel {@link Predicate} for deciding what to peel. {@code true} means
+     * to peel (i.e. remove), whereas the first {@code false} means stop and return.
+     * @return the inner cause of an exception, dictated by the predicate.
+     */
+    public static Throwable peel( Throwable exception, Predicate<Throwable> toPeel )
+    {
+        while ( exception != null )
+        {
+            if ( !toPeel.accept( exception ) )
+                break;
+            exception = exception.getCause();
+        }
+        return exception;
+    }
+    
+    public static Predicate<Throwable> exceptionsOfType( final Class<? extends Throwable>... types )
+    {
+        return new Predicate<Throwable>()
+        {
+            @Override
+            public boolean accept( Throwable item )
+            {
+                for ( Class<? extends Throwable> type : types )
+                {
+                    if ( type.isAssignableFrom( item.getClass() ) )
+                    {
+                        return true;
+                    }
+                }
+                return false;
+            }
+        };
     }
 
     private Exceptions()

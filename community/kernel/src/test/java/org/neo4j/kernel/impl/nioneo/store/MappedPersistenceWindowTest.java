@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -19,6 +19,10 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
+import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
 import java.io.File;
 import java.io.RandomAccessFile;
 
@@ -28,10 +32,6 @@ import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.ResourceCollection;
 import org.neo4j.test.TargetDirectory;
-
-import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 
 public class MappedPersistenceWindowTest
 {
@@ -82,7 +82,7 @@ public class MappedPersistenceWindowTest
         final MappedPersistenceWindow window = new MappedPersistenceWindow( 0, 8, 16, file.getChannel(), READ_WRITE );
 
         window.markAsInUse();
-        OtherThreadExecutor<Void> executor = new OtherThreadExecutor<Void>(null);
+        OtherThreadExecutor<Void> executor = new OtherThreadExecutor<Void>( "other thread", null );
         executor.execute( new WorkerCommand<Void, Void>()
         {
             @Override

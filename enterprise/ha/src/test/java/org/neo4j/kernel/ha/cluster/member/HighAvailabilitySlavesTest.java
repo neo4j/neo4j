@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -27,7 +27,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.Iterables.count;
-import static org.neo4j.helpers.collection.Iterables.iterable;
+
 import java.net.URI;
 import org.hamcrest.CoreMatchers;
 import org.junit.Assert;
@@ -37,6 +37,7 @@ import org.mockito.Mockito;
 import org.neo4j.cluster.protocol.cluster.Cluster;
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.protocol.cluster.ClusterListener;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.ha.Slave;
 import org.neo4j.kernel.ha.SlaveFactory;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher;
@@ -49,7 +50,7 @@ public class HighAvailabilitySlavesTest
     private static URI haUri2 = create( "ha://server2?serverId=2" );
     private static URI clusterUri3 = create( "cluster://server3" );
     private static URI haUri3 = create( "ha://server3?serverId=3" );
-    
+
     @Test
     public void shouldRegisterItselfOnMonitors() throws Throwable
     {
@@ -60,7 +61,7 @@ public class HighAvailabilitySlavesTest
         
         // when
         new HighAvailabilitySlaves( clusterMembers, cluster, slaveFactory).init();
-        
+
         // then
         verify( cluster ).addClusterListener( Mockito.<ClusterListener>any() );
     }
@@ -71,7 +72,7 @@ public class HighAvailabilitySlavesTest
         // given
         Cluster cluster = mock( Cluster.class);
         ClusterMembers clusterMembers = mock( ClusterMembers.class);
-        when( clusterMembers.getMembers() ).thenReturn( iterable(new ClusterMember(clusterUri1)) );
+        when( clusterMembers.getMembers() ).thenReturn( Iterables.<ClusterMember,ClusterMember>iterable(new ClusterMember(clusterUri1)) );
 
         SlaveFactory slaveFactory = mock( SlaveFactory.class );
 
@@ -91,7 +92,7 @@ public class HighAvailabilitySlavesTest
         // given
         Cluster cluster = mock( Cluster.class);
         ClusterMembers clusterMembers = mock( ClusterMembers.class);
-        when( clusterMembers.getMembers() ).thenReturn( iterable(new ClusterMember(clusterUri1).availableAs( "SLAVE", haUri1 ).failed()) );
+        when( clusterMembers.getMembers() ).thenReturn( Iterables.<ClusterMember,ClusterMember>iterable(new ClusterMember(clusterUri1).availableAs("SLAVE", haUri1).failed()) );
 
         SlaveFactory slaveFactory = mock( SlaveFactory.class );
 
@@ -111,7 +112,7 @@ public class HighAvailabilitySlavesTest
         // given
         Cluster cluster = mock( Cluster.class);
         ClusterMembers clusterMembers = mock( ClusterMembers.class);
-        when( clusterMembers.getMembers() ).thenReturn( iterable(new ClusterMember(clusterUri1).availableAs( HighAvailabilityModeSwitcher.SLAVE,haUri1 )) );
+        when( clusterMembers.getMembers() ).thenReturn( Iterables.<ClusterMember,ClusterMember>iterable(new ClusterMember(clusterUri1).availableAs(HighAvailabilityModeSwitcher.SLAVE, haUri1)) );
 
         SlaveFactory slaveFactory = mock( SlaveFactory.class );
         when( slaveFactory.newSlave( (ClusterMember)any() ) ).thenReturn( mock(Slave.class));
@@ -132,7 +133,7 @@ public class HighAvailabilitySlavesTest
         // given
         Cluster cluster = mock( Cluster.class );
         ClusterMembers clusterMembers = mock( ClusterMembers.class);
-        when( clusterMembers.getMembers() ).thenReturn( iterable(new ClusterMember(clusterUri1).availableAs( HighAvailabilityModeSwitcher.SLAVE, haUri1 )) );
+        when( clusterMembers.getMembers() ).thenReturn( Iterables.<ClusterMember,ClusterMember>iterable(new ClusterMember(clusterUri1).availableAs(HighAvailabilityModeSwitcher.SLAVE, haUri1)) );
 
         SlaveFactory slaveFactory = mock( SlaveFactory.class );
         when( slaveFactory.newSlave( (ClusterMember)any() ) ).thenReturn( mock(Slave.class), mock(Slave.class) );

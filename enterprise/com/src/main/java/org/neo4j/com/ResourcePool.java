@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -23,45 +23,16 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Semaphore;
 
 public abstract class ResourcePool<R>
 {
-    private static final boolean FAIR = true;
-
-    private static class ResizableSemaphore extends Semaphore
-    {
-        private int permits;
-
-        ResizableSemaphore( int permits )
-        {
-            super( permits, FAIR );
-            this.permits = permits;
-        }
-
-        synchronized void setPermits( int permits )
-        {
-            if ( permits > this.permits )
-            {
-                release( permits - this.permits );
-            }
-            else if ( permits < this.permits )
-            {
-                reducePermits( this.permits - permits );
-            }
-            this.permits = permits;
-        }
-    }
-
     private final LinkedList<R> unused = new LinkedList<R>();
     private final Map<Thread, R> current = new ConcurrentHashMap<Thread, R>();
-    private final ResizableSemaphore resources;
     private int maxUnused; // Guarded by unused
 
-    protected ResourcePool( int maxResources, int maxUnused )
+    protected ResourcePool( int maxUnused )
     {
         this.maxUnused = maxUnused;
-        this.resources = new ResizableSemaphore( maxResources );
     }
 
     protected abstract R create();
@@ -75,18 +46,12 @@ public abstract class ResourcePool<R>
         return true;
     }
 
-    public final void setMaxResources( int maxResources )
-    {
-        resources.setPermits( maxResources );
-    }
-
     public final R acquire()
     {
         Thread thread = Thread.currentThread();
         R resource = current.get( thread );
         if ( resource == null )
         {
-            resources.acquireUninterruptibly();
             List<R> garbage = null;
             synchronized ( unused )
             {
@@ -119,28 +84,21 @@ public abstract class ResourcePool<R>
     {
         Thread thread = Thread.currentThread();
         R resource = current.remove( thread );
-        try
+        if ( resource != null )
         {
-            if ( resource != null )
+            boolean dead = false;
+            synchronized ( unused )
             {
-                boolean dead = false;
-                synchronized ( unused )
+                if ( unused.size() < maxUnused )
                 {
-                    if ( unused.size() < maxUnused )
-                    {
-                        unused.add( resource );
-                    }
-                    else
-                    {
-                        dead = true;
-                    }
+                    unused.add( resource );
                 }
-                if ( dead ) dispose( resource );
+                else
+                {
+                    dead = true;
+                }
             }
-        }
-        finally
-        {
-            resources.release();
+            if ( dead ) dispose( resource );
         }
     }
 

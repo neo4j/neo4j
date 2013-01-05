@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -65,6 +65,7 @@ public class ConsistencyCheckService
         NeoStore neoStore = factory.newNeoStore( new File( storeDir, NeoStore.DEFAULT_NAME ) );
         try
         {
+            neoStore.makeStoreOk();
             StoreAccess store = new StoreAccess( neoStore );
             summary = new FullCheck( tuningConfiguration, progressFactory )
                     .execute( store, StringLogger.tee( logger, report ) );

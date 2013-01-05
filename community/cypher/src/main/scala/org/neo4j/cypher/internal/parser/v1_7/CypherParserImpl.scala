@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.parser.v1_7
 import org.neo4j.cypher.SyntaxException
 import org.neo4j.cypher.internal.parser.ActualParser
 import org.neo4j.cypher.internal.commands._
-import expressions.{Property, Expression, AggregationExpression}
+import expressions.{Identifier, Property, Expression, AggregationExpression}
 import org.neo4j.cypher.internal.ReattachAliasedExpressions
 
 class CypherParserImpl extends Base
@@ -55,7 +55,7 @@ with ActualParser {
     }
   }
 
-  def createProperty(entity: String, propName: String): Expression = Property(entity, propName)
+  def createProperty(entity: String, propName: String): Expression = Property(Identifier(entity), propName)
 
   @throws(classOf[SyntaxException])
   def parse(queryText: String): Query = parseAll(query, queryText) match {

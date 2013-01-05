@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -49,24 +49,25 @@ case class ForeachAction(collection: Expression, id: String, actions: Seq[Update
     Stream(context)
   }
 
-  def filter(f: (Expression) => Boolean) = Some(collection).filter(f).toSeq ++ actions.flatMap(_.filter(f))
+  def children = Seq(collection) ++ actions.flatMap(_.children)
 
   def rewrite(f: (Expression) => Expression) = ForeachAction(f(collection), id, actions.map(_.rewrite(f)))
 
   def identifiers = Seq.empty
 
-  def assertTypes(symbols: SymbolTable) {
+  def throwIfSymbolsMissing(symbols: SymbolTable) {
     val t = collection.evaluateType(AnyCollectionType(), symbols).iteratedType
 
     val innerSymbols: SymbolTable = symbols.add(id, t)
 
-    actions.foreach(_.assertTypes(innerSymbols))
+    actions.foreach(_.throwIfSymbolsMissing(innerSymbols))
   }
 
   def symbolTableDependencies = {
+    val updateActionsDeps: Set[String] = actions.flatMap(_.symbolTableDependencies).toSet
     val updateActionIdentifiers: Set[String] = actions.flatMap(_.identifiers.map(_._1)).toSet
-    val updateActionsDeps = actions.flatMap(_.symbolTableDependencies).filterNot(_ == id).toSet
     val collectionDeps = collection.symbolTableDependencies
-    (updateActionsDeps -- updateActionIdentifiers) ++ collectionDeps
+
+    (updateActionsDeps -- updateActionIdentifiers) ++ collectionDeps -- Some(id)
   }
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -17,7 +17,6 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.neo4j.cluster;
 
 import static org.neo4j.cluster.com.message.Message.CONVERSATION_ID;
@@ -32,7 +31,9 @@ import java.util.Queue;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.neo4j.cluster.com.message.Message;
+import org.neo4j.cluster.com.message.MessageHolder;
 import org.neo4j.cluster.com.message.MessageProcessor;
+import org.neo4j.cluster.com.message.MessageSender;
 import org.neo4j.cluster.com.message.MessageSource;
 import org.neo4j.cluster.com.message.MessageType;
 import org.neo4j.cluster.statemachine.StateMachine;
@@ -53,19 +54,19 @@ public class ConnectedStateMachines
 {
     private final Logger logger = LoggerFactory.getLogger( ConnectedStateMachines.class );
 
-    private final MessageProcessor sender;
+    private final MessageSender sender;
     private DelayedDirectExecutor executor;
     private Timeouts timeouts;
     private final Map<Class<? extends MessageType>, StateMachine> stateMachines = new LinkedHashMap<Class<? extends
             MessageType>, StateMachine>();
 
     private final List<MessageProcessor> outgoingProcessors = new ArrayList<MessageProcessor>();
-    private final OutgoingMessageProcessor outgoing;
+    private final OutgoingMessageHolder outgoing;
 
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock( true );
 
     public ConnectedStateMachines( MessageSource source,
-                                   final MessageProcessor sender,
+                                   final MessageSender sender,
                                    TimeoutStrategy timeoutStrategy,
                                    DelayedDirectExecutor executor )
     {
@@ -73,7 +74,7 @@ public class ConnectedStateMachines
         this.executor = executor;
         this.timeouts = new Timeouts( this, timeoutStrategy );
 
-        outgoing = new OutgoingMessageProcessor();
+        outgoing = new OutgoingMessageHolder();
         source.addMessageProcessor( this );
     }
 
@@ -103,7 +104,7 @@ public class ConnectedStateMachines
         outgoingProcessors.add( messageProcessor );
     }
 
-    public OutgoingMessageProcessor getOutgoing()
+    public OutgoingMessageHolder getOutgoing()
     {
         return outgoing;
     }
@@ -129,9 +130,10 @@ public class ConnectedStateMachines
                 // Process and send messages
                 // Allow state machines to send messages to each other as well in this loop
                 Message<? extends MessageType> outgoingMessage;
+                List<Message<? extends MessageType>> toSend = new LinkedList<Message<? extends MessageType>>();
                 try
                 {
-                    while ( (outgoingMessage = outgoing.nextOutgoingMessage()) != null )
+                    while ( ( outgoingMessage = outgoing.nextOutgoingMessage() ) != null )
                     {
                         message.copyHeadersTo( outgoingMessage, CONVERSATION_ID, CREATED_BY );
 
@@ -149,14 +151,15 @@ public class ConnectedStateMachines
 
                         if ( outgoingMessage.hasHeader( Message.TO ) )
                         {
-                            try
-                            {
-                                sender.process( outgoingMessage );
-                            }
-                            catch ( Throwable e )
-                            {
-                                logger.warn( "Message sending threw exception", e );
-                            }
+//                            try
+//                            {
+//                                sender.process( outgoingMessage );
+//                            }
+//                            catch ( Throwable e )
+//                            {
+//                                logger.warn( "Message sending threw exception", e );
+//                            }
+                            toSend.add( outgoingMessage );
                         }
                         else
                         {
@@ -169,6 +172,10 @@ public class ConnectedStateMachines
                                 internalStatemachine.handle( (Message) outgoingMessage, outgoing );
                             }
                         }
+                    }
+                    if ( !toSend.isEmpty() ) // the check is necessary, sender may not have started yet
+                    {
+                        sender.process( toSend );
                     }
                 }
                 catch ( Exception e )
@@ -220,14 +227,13 @@ public class ConnectedStateMachines
         return stateMachines.get( messageType );
     }
 
-    private class OutgoingMessageProcessor
-            implements MessageProcessor
+    private class OutgoingMessageHolder implements MessageHolder
     {
         private Queue<Message<? extends MessageType>> outgoingMessages = new LinkedList<Message<? extends
                 MessageType>>();
 
         @Override
-        public synchronized void process( Message<? extends MessageType> message )
+        public synchronized void offer( Message<? extends MessageType> message )
         {
             outgoingMessages.offer( message );
         }

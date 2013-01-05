@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -29,10 +29,11 @@ import org.neo4j.kernel.ha.ClusterDatabaseInfoProvider;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.cluster.member.ClusterMember;
 import org.neo4j.kernel.ha.cluster.member.ClusterMembers;
+import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.management.ClusterDatabaseInfo;
 import org.neo4j.management.ClusterMemberInfo;
 
-public class HighlyAvailableKernelData extends KernelData
+public class HighlyAvailableKernelData extends KernelData implements Lifecycle
 {
     private final HighlyAvailableGraphDatabase db;
     private final ClusterMembers memberInfo;
@@ -45,6 +46,27 @@ public class HighlyAvailableKernelData extends KernelData
         this.db = db;
         this.memberInfo = memberInfo;
         this.memberInfoProvider = databaseInfo;
+    }
+
+    @Override
+    public void init() throws Throwable
+    {
+    }
+
+    @Override
+    public void start() throws Throwable
+    {
+    }
+
+    @Override
+    public void stop() throws Throwable
+    {
+    }
+
+    @Override
+    public void shutdown()
+    {
+        super.shutdown();
     }
 
     @Override
@@ -66,7 +88,8 @@ public class HighlyAvailableKernelData extends KernelData
         {
             ClusterMemberInfo clusterMemberInfo = new ClusterMemberInfo( clusterMember.getClusterUri().toString(),
                     clusterMember.getHAUri() != null, clusterMember.isAlive(), clusterMember.getHARole(),
-                    toArray( String.class, map( Functions.TO_STRING, clusterMember.getRoleURIs() ) ));
+                    toArray( String.class, map( Functions.TO_STRING, clusterMember.getRoleURIs() ) ),
+                    toArray( String.class, map( Functions.TO_STRING, clusterMember.getRoles() ) ) );
             clusterMemberInfos.add( clusterMemberInfo );
         }
 

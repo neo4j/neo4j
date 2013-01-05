@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -37,13 +37,13 @@ case class ExtractFunction(collection: Expression, id: String, expression: Expre
 
   def rewrite(f: (Expression) => Expression) = f(ExtractFunction(collection.rewrite(f), id, expression.rewrite(f)))
 
-  def filter(f: (Expression) => Boolean) = if (f(this))
-    Seq(this) ++ collection.filter(f) ++ expression.filter(f)
-  else
-    collection.filter(f) ++ expression.filter(f)
+  def children = Seq(collection, expression)
 
-
-  def calculateType(symbols: SymbolTable): CypherType = collection.evaluateType(AnyCollectionType(), symbols)
+  def calculateType(symbols: SymbolTable): CypherType = {
+    val iteratorType = collection.evaluateType(AnyCollectionType(), symbols).iteratedType
+    val innerSymbols = symbols.add(id, iteratorType)
+    new CollectionType(expression.evaluateType(AnyType(), innerSymbols))
+  }
 
   def symbolTableDependencies = symbolTableDependencies(collection, expression, id)
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -25,6 +25,7 @@ import javax.transaction.Transaction;
 
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.info.LockInfo;
+import org.neo4j.kernel.logging.Logging;
 
 public interface LockManager
 {
@@ -48,13 +49,13 @@ public interface LockManager
 
     long getDetectedDeadlockCount();
 
-    void dumpLocksOnResource( Object resource );
+    void dumpLocksOnResource( Object resource, Logging logging );
 
     List<LockInfo> getAllLocks();
 
     List<LockInfo> getAwaitedLocks( long minWaitTime );
 
-    void dumpRagStack();
+    void dumpRagStack( Logging logging );
 
-    void dumpAllLocks();
+    void dumpAllLocks( Logging logging );
 }

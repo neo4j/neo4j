@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -42,7 +42,9 @@ import org.neo4j.kernel.impl.index.IndexStore;
 import org.neo4j.kernel.impl.index.ReadOnlyIndexConnectionBroker;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
+import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.impl.transaction.xaframework.XaFactory;
+import org.neo4j.kernel.logging.Logging;
 
 public class LuceneIndexProvider extends IndexProvider
 {
@@ -68,8 +70,10 @@ public class LuceneIndexProvider extends IndexProvider
         XaFactory xaFactory = dependencyResolver.resolveDependency(XaFactory.class);
         FileSystemAbstraction fileSystemAbstraction = dependencyResolver.resolveDependency(FileSystemAbstraction.class);
         XaDataSourceManager xaDataSourceManager = dependencyResolver.resolveDependency( XaDataSourceManager.class );
+        Logging logging = dependencyResolver.resolveDependency( Logging.class );
+        TxIdGenerator txIdGenerator = gdb.getTxIdGenerator();
 
-        LuceneDataSource luceneDataSource = new LuceneDataSource(config, indexStore, fileSystemAbstraction, xaFactory);
+        LuceneDataSource luceneDataSource = new LuceneDataSource(config, indexStore, fileSystemAbstraction, xaFactory, txIdGenerator, logging);
 
         xaDataSourceManager.registerDataSource(luceneDataSource);
 

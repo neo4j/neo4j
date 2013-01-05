@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -21,26 +21,24 @@ package org.neo4j.cypher.internal.mutation
 
 import org.neo4j.cypher.CypherTypeException
 import org.neo4j.cypher.internal.symbols._
-import org.neo4j.graphdb.{RelationshipType => KernelRelType, _}
 import org.neo4j.cypher.internal.pipes.{QueryState, ExecutionContext}
 
 import java.util.{Map => JavaMap}
 import scala.collection.JavaConverters._
 import collection.Map
-import org.neo4j.cypher.internal.commands._
-import expressions.Expression
 import org.neo4j.cypher.internal.helpers.CollectionSupport
+import org.neo4j.cypher.internal.commands.expressions.Expression
+import org.neo4j.graphdb.{Node, Relationship, PropertyContainer}
+import org.neo4j.cypher.internal.commands.AstNode
 
-trait UpdateAction extends TypeSafe {
+trait UpdateAction extends TypeSafe with AstNode[UpdateAction] {
   def exec(context: ExecutionContext, state: QueryState): Traversable[ExecutionContext]
 
-  def assertTypes(symbols: SymbolTable)
+  def throwIfSymbolsMissing(symbols: SymbolTable)
 
   def identifiers: Seq[(String, CypherType)]
 
   def rewrite(f: Expression => Expression): UpdateAction
-
-  def filter(f: Expression => Boolean): Seq[Expression]
 }
 
 trait GraphElementPropertyFunctions extends CollectionSupport {
@@ -51,8 +49,8 @@ trait GraphElementPropertyFunctions extends CollectionSupport {
     }
   }
 
-  def checkTypes(props: Map[String, Expression], symbols: SymbolTable) {
-    props.values.foreach(_.checkTypes(symbols))
+  def throwIfSymbolsMissing(props: Map[String, Expression], symbols: SymbolTable) {
+    props.values.foreach(_.throwIfSymbolsMissing(symbols))
   }
 
   def symbolTableDependencies(props: Map[String, Expression]): Set[String] = props.values.flatMap(_.symbolTableDependencies).toSet

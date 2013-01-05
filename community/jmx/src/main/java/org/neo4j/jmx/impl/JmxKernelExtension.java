@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -17,7 +17,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.neo4j.jmx.impl;
 
 import java.util.ArrayList;
@@ -34,6 +33,7 @@ import org.neo4j.helpers.Service;
 import org.neo4j.kernel.KernelData;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.kernel.logging.Logging;
 
 public class JmxKernelExtension implements Lifecycle
 {
@@ -44,10 +44,10 @@ public class JmxKernelExtension implements Lifecycle
     private ManagementSupport support;
     private JMXServiceURL url;
 
-    public JmxKernelExtension( KernelData kernelData, StringLogger logger )
+    public JmxKernelExtension( KernelData kernelData, Logging logging )
     {
         this.kernelData = kernelData;
-        this.logger = logger;
+        this.logger = logging.getLogger( getClass() );
     }
 
     @Override

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -27,6 +27,7 @@ import org.hamcrest.core.IsNot.not
 import org.neo4j.cypher.internal.pipes.{TransactionStartPipe, ExecuteUpdateCommandsPipe}
 import org.neo4j.cypher.internal.commands._
 import expressions.{HeadFunction, Identifier}
+import org.neo4j.cypher.internal.mutation.{CreateRelationship, CreateNode}
 
 class CreateNodesAndRelationshipsBuilderTest extends BuilderTest {
 
@@ -43,7 +44,7 @@ class CreateNodesAndRelationshipsBuilderTest extends BuilderTest {
   @Test
   def does_offer_to_solve_queries_without_start_items() {
     val q = PartiallySolvedQuery().
-      copy(start = Seq(Unsolved(CreateNodeStartItem("r", Map()))))
+      copy(start = Seq(Unsolved(CreateNodeStartItem(CreateNode("r", Map())))))
 
     assertTrue("Should be able to build on this", builder.canWorkWith(plan(q)))
   }
@@ -51,8 +52,8 @@ class CreateNodesAndRelationshipsBuilderTest extends BuilderTest {
   @Test
   def full_path() {
     val q = PartiallySolvedQuery().copy(start = Seq(
-      Unsolved(CreateRelationshipStartItem("r1", (Identifier("a"), Map()), (Identifier("  UNNAMED1"), Map()), "KNOWS", Map())),
-      Unsolved(CreateRelationshipStartItem("r2", (Identifier("b"), Map()), (Identifier("  UNNAMED1"), Map()), "LOVES", Map()))))
+      Unsolved(CreateRelationshipStartItem(CreateRelationship("r1", (Identifier("a"), Map()), (Identifier("  UNNAMED1"), Map()), "KNOWS", Map()))),
+      Unsolved(CreateRelationshipStartItem(CreateRelationship("r2", (Identifier("b"), Map()), (Identifier("  UNNAMED1"), Map()), "LOVES", Map())))))
 
 
     val startPipe = createPipe(Seq("a", "b"))
@@ -63,7 +64,7 @@ class CreateNodesAndRelationshipsBuilderTest extends BuilderTest {
   @Test
   def single_relationship_missing_nodes() {
     val q = PartiallySolvedQuery().copy(start = Seq(
-      Unsolved(CreateRelationshipStartItem("r", (Identifier("a"), Map()), (Identifier("b"), Map()), "LOVES", Map()))))
+      Unsolved(CreateRelationshipStartItem(CreateRelationship("r", (Identifier("a"), Map()), (Identifier("b"), Map()), "LOVES", Map())))))
 
     assertTrue("Should be able to build on this", builder.canWorkWith(plan(q)))
   }
@@ -71,7 +72,7 @@ class CreateNodesAndRelationshipsBuilderTest extends BuilderTest {
   @Test
   def single_relationship_missing_nodes_with_expression() {
     val q = PartiallySolvedQuery().copy(updates = Seq(
-      Unsolved(CreateRelationshipStartItem("r", (HeadFunction(Identifier("p")), Map()), (Identifier("b"), Map()), "LOVES", Map()))))
+      Unsolved(CreateRelationship("r", (HeadFunction(Identifier("p")), Map()), (Identifier("b"), Map()), "LOVES", Map()))))
 
     assertFalse("Should not be able to build on this", builder.canWorkWith(plan(q)))
   }
@@ -79,7 +80,7 @@ class CreateNodesAndRelationshipsBuilderTest extends BuilderTest {
   @Test
   def inserts_tx_start_pipe() {
     val q = PartiallySolvedQuery().
-      copy(start = Seq(Unsolved(CreateNodeStartItem("r", Map()))))
+      copy(start = Seq(Unsolved(CreateNodeStartItem(CreateNode("r", Map())))))
 
     val resultPlan = builder(plan(q))
 
@@ -95,7 +96,7 @@ class CreateNodesAndRelationshipsBuilderTest extends BuilderTest {
   @Test
   def does_not_start_transaction() {
     val q = PartiallySolvedQuery().
-      copy(start = Seq(Unsolved(CreateNodeStartItem("r", Map()))))
+      copy(start = Seq(Unsolved(CreateNodeStartItem(CreateNode("r", Map())))))
 
     val inputPlan = plan(q).copy(containsTransaction = true)
     val resultPlan = builder(inputPlan)

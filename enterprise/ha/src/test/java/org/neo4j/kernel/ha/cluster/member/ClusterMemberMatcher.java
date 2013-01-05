@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -155,7 +155,7 @@ public class ClusterMemberMatcher extends BaseMatcher<Iterable<ClusterMemberInfo
         
         private boolean match( ClusterMemberInfo toMatch )
         {
-            if ( !member.toString().equals( toMatch.getInstanceId() ) )
+            if ( !member.toString().equals( toMatch.getClusterId() ) )
                 return false;
             if ( available != null && toMatch.isAvailable() != available )
                 return false;
@@ -163,7 +163,7 @@ public class ClusterMemberMatcher extends BaseMatcher<Iterable<ClusterMemberInfo
                 return false;
             if ( haRole != null && !haRole.equals( toMatch.getHaRole() ) )
                 return false;
-            if ( uris != null && !uris.equals( new HashSet<String>( asList( toMatch.getURIs() ) ) ) )
+            if ( uris != null && !uris.equals( new HashSet<String>( asList( toMatch.getUris() ) ) ) )
                 return false;
             return true;
         }

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.parser.v1_8
 import org.neo4j.cypher.SyntaxException
 import org.neo4j.cypher.internal.parser.ActualParser
 import org.neo4j.cypher.internal.commands._
-import expressions.{Property, Expression, AggregationExpression}
+import expressions.{Identifier, Property, Expression, AggregationExpression}
 import org.neo4j.cypher.internal.ReattachAliasedExpressions
 import org.neo4j.cypher.internal.mutation.UpdateAction
 
@@ -124,7 +124,7 @@ Thank you, the Neo4j Team.
     }
   }
 
-  def createProperty(entity: String, propName: String): Expression = Property(entity, propName)
+  def createProperty(entity: String, propName: String): Expression = Property(Identifier(entity), propName)
 
   override def handleWhiteSpace(source: CharSequence, offset: Int): Int = {
     if (offset >= source.length())

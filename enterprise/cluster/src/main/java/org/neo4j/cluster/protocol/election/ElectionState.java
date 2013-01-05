@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -17,16 +17,16 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.neo4j.cluster.protocol.election;
 
 import java.net.URI;
 
 import org.neo4j.cluster.com.message.Message;
-import org.neo4j.cluster.com.message.MessageProcessor;
+import org.neo4j.cluster.com.message.MessageHolder;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.ProposerMessage;
 import org.neo4j.cluster.protocol.cluster.ClusterMessage;
 import org.neo4j.cluster.statemachine.State;
+import org.neo4j.helpers.collection.Iterables;
 
 /**
  * State machine that implements the {@link Election} API.
@@ -39,7 +39,7 @@ public enum ElectionState
                 @Override
                 public State<?, ?> handle( ElectionContext context,
                                            Message<ElectionMessage> message,
-                                           MessageProcessor outgoing
+                                           MessageHolder outgoing
                 )
                         throws Throwable
                 {
@@ -66,7 +66,7 @@ public enum ElectionState
                 @Override
                 public State<?, ?> handle( ElectionContext context,
                                            Message<ElectionMessage> message,
-                                           MessageProcessor outgoing
+                                           MessageHolder outgoing
                 )
                         throws Throwable
                 {
@@ -88,13 +88,14 @@ public enum ElectionState
                                 else
                                 {
                                     // Should we delay this so that someone else can give it a go?
-                                    remainingDelays = context.getClusterContext().getConfiguration().getMembers()
-                                            .indexOf( context.getClusterContext().getMe() );
+                                    // Delay is based on my index in the *alive* member list.
+                                    remainingDelays = Iterables.indexOf( context.getClusterContext().getMe(),
+                                            context.getHeartbeatContext().getAlive() );
                                     if ( remainingDelays > 0 )
                                     {
-                                        context.getClusterContext().getLogger( ElectionState.class ).debug( "Delay " +
-                                                "demotion of " + demoteNode
-                                                .toString() + " " + remainingDelays + " times" );
+                                        context.getClusterContext().getLogger( ElectionState.class ).debug(
+                                                "Delay demotion of " + demoteNode.toString() + " " +
+                                                remainingDelays + " times" );
                                     }
                                 }
 
@@ -129,7 +130,7 @@ public enum ElectionState
                                                 if ( !context.getHeartbeatContext().getFailed().contains( uri ) )
                                                 {
                                                     // This is a candidate - allow it to vote itself for promotion
-                                                    outgoing.process( Message.to( ElectionMessage.vote, uri, role ) );
+                                                    outgoing.offer( Message.to( ElectionMessage.vote, uri, role ) );
                                                     voterCount++;
                                                 }
                                             }
@@ -170,7 +171,7 @@ public enum ElectionState
                                         if ( !context.getHeartbeatContext().getFailed().contains( uri ) )
                                         {
                                             // This is a candidate - allow it to vote itself for promotion
-                                            outgoing.process( Message.to( ElectionMessage.vote, uri, role ) );
+                                            outgoing.offer( Message.to( ElectionMessage.vote, uri, role ) );
                                         }
                                     }
                                     context.getClusterContext()
@@ -185,7 +186,7 @@ public enum ElectionState
                         case vote:
                         {
                             String role = message.getPayload();
-                            outgoing.process( Message.respond( ElectionMessage.voted, message,
+                            outgoing.offer( Message.respond( ElectionMessage.voted, message,
                                     new ElectionMessage.VotedData( role, context
                                             .getCredentialsForRole( role ) ) ) );
                             break;
@@ -212,7 +213,7 @@ public enum ElectionState
                                     ClusterMessage.ConfigurationChangeState configurationChangeState = new
                                             ClusterMessage.ConfigurationChangeState();
                                     configurationChangeState.elected( data.getRole(), winner );
-                                    outgoing.process( Message.internal( ProposerMessage.propose,
+                                    outgoing.offer( Message.internal( ProposerMessage.propose,
                                             configurationChangeState ) );
                                 }
                                 else

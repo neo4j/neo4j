@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -17,7 +17,6 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-
 package recovery;
 
 import static org.junit.Assert.assertEquals;
@@ -25,6 +24,7 @@ import static org.junit.Assert.assertNotNull;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.InetAddress;
 import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -49,7 +49,6 @@ import org.neo4j.kernel.impl.transaction.TxLog;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
 import org.neo4j.kernel.impl.transaction.xaframework.XaResourceHelpImpl;
 import org.neo4j.kernel.impl.util.FileUtils;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.AbstractSubProcessTestBase;
 import org.neo4j.test.subprocess.BreakPoint;
 import org.neo4j.test.subprocess.DebugInterface;
@@ -75,7 +74,7 @@ public class TestDoubleRecovery extends AbstractSubProcessTestBase
     {
         String backupDirectory = "target/var/backup-db";
         FileUtils.deleteRecursively( new File( backupDirectory ) );
-        OnlineBackup.from( "localhost" ).full( backupDirectory );
+        OnlineBackup.from( InetAddress.getLocalHost().getHostAddress() ).full( backupDirectory );
         for ( BreakPoint bp : breakpoints( 0 ) )
             bp.enable();
         runInThread( new WriteTransaction() );
@@ -84,7 +83,7 @@ public class TestDoubleRecovery extends AbstractSubProcessTestBase
         runInThread( new Crash() );
         afterCrash.await();
         startSubprocesses();
-        OnlineBackup.from( "localhost" ).incremental( backupDirectory );
+        OnlineBackup.from( InetAddress.getLocalHost().getHostAddress() ).incremental( backupDirectory );
         run( new Verification() );
 
         EmbeddedGraphDatabase db = new EmbeddedGraphDatabase( backupDirectory );
@@ -306,7 +305,7 @@ public class TestDoubleRecovery extends AbstractSubProcessTestBase
             graphdb.shutdown();
         }
 
-        TxLog log = new TxLog( new File(args[0]), new DefaultFileSystemAbstraction(), StringLogger.DEV_NULL );
+        TxLog log = new TxLog( new File(args[0]), new DefaultFileSystemAbstraction() );
         byte globalId[] = new byte[NEOKERNL.length + 16];
         System.arraycopy( NEOKERNL, 0, globalId, 0, NEOKERNL.length );
         ByteBuffer byteBuf = ByteBuffer.wrap( globalId );

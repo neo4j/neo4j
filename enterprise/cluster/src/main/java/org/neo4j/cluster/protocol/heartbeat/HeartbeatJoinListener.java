@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -17,24 +17,22 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.neo4j.cluster.protocol.heartbeat;
 
 import java.net.URI;
 
 import org.neo4j.cluster.com.message.Message;
-import org.neo4j.cluster.com.message.MessageProcessor;
+import org.neo4j.cluster.com.message.MessageHolder;
 import org.neo4j.cluster.protocol.cluster.ClusterListener;
 
 /**
  * When an instance joins a cluster, setup a heartbeat for it
  */
-public class HeartbeatJoinListener
-        extends ClusterListener.Adapter
+public class HeartbeatJoinListener extends ClusterListener.Adapter
 {
-    private MessageProcessor outgoing;
+    private MessageHolder outgoing;
 
-    public HeartbeatJoinListener( MessageProcessor outgoing )
+    public HeartbeatJoinListener( MessageHolder outgoing )
     {
         this.outgoing = outgoing;
     }
@@ -42,6 +40,6 @@ public class HeartbeatJoinListener
     @Override
     public void joinedCluster( URI member )
     {
-        outgoing.process( Message.internal( HeartbeatMessage.reset_send_heartbeat, member ) );
+        outgoing.offer( Message.internal( HeartbeatMessage.reset_send_heartbeat, member ) );
     }
 }

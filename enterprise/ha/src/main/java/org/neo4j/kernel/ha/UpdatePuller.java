@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -17,7 +17,6 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.neo4j.kernel.ha;
 
 import java.util.concurrent.ScheduledThreadPoolExecutor;
@@ -36,6 +35,7 @@ public class UpdatePuller implements Lifecycle
     private final RequestContextFactory requestContextFactory;
     private final AbstractTransactionManager txManager;
     private final InstanceAccessGuard accessGuard;
+    private final LastUpdateTime lastUpdateTime;
     private final Config config;
     private final StringLogger logger;
     private boolean pullUpdates = false;
@@ -43,13 +43,15 @@ public class UpdatePuller implements Lifecycle
 
     public UpdatePuller( HaXaDataSourceManager xaDataSourceManager, Master master,
                          RequestContextFactory requestContextFactory, AbstractTransactionManager txManager,
-                         InstanceAccessGuard accessGuard, Config config, StringLogger logger )
+                         InstanceAccessGuard accessGuard, LastUpdateTime lastUpdateTime, Config config,
+                         StringLogger logger )
     {
         this.xaDataSourceManager = xaDataSourceManager;
         this.master = master;
         this.requestContextFactory = requestContextFactory;
         this.txManager = txManager;
         this.accessGuard = accessGuard;
+        this.lastUpdateTime = lastUpdateTime;
         this.config = config;
         this.logger = logger;
     }
@@ -61,6 +63,7 @@ public class UpdatePuller implements Lifecycle
             xaDataSourceManager.applyTransactions(
                     master.pullUpdates( requestContextFactory.newRequestContext( txManager.getEventIdentifier() ) ) );
         }
+        lastUpdateTime.setLastUpdateTime( System.currentTimeMillis() );
     }
 
     @Override

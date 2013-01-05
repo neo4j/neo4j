@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -17,7 +17,6 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.neo4j.cluster.com;
 
 import java.net.ConnectException;
@@ -27,6 +26,7 @@ import java.net.SocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.UnknownHostException;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -38,6 +38,7 @@ import org.jboss.netty.bootstrap.ServerBootstrap;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelException;
 import org.jboss.netty.channel.ChannelFuture;
+import org.jboss.netty.channel.ChannelFutureListener;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.channel.ChannelPipelineFactory;
@@ -58,6 +59,7 @@ import org.jboss.netty.util.ThreadNameDeterminer;
 import org.jboss.netty.util.ThreadRenamingRunnable;
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageProcessor;
+import org.neo4j.cluster.com.message.MessageSender;
 import org.neo4j.cluster.com.message.MessageSource;
 import org.neo4j.cluster.com.message.MessageType;
 import org.neo4j.helpers.HostnamePort;
@@ -65,6 +67,7 @@ import org.neo4j.helpers.Listeners;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.kernel.logging.Logging;
 
 /**
  * TCP version of a Networked Instance. This handles receiving messages to be consumed by local statemachines and
@@ -72,7 +75,7 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
  * outgoing messages
  */
 public class NetworkInstance
-        implements MessageProcessor, MessageSource, Lifecycle
+        implements MessageSource, MessageSender, Lifecycle
 {
     public interface Configuration
     {
@@ -93,7 +96,8 @@ public class NetworkInstance
     private ChannelGroup channels;
 
     // Receiving
-    private ExecutorService executor;
+    private ExecutorService receiveExecutor;
+    private ExecutorService sendExecutor;
     private ServerBootstrap serverBootstrap;
     private ServerSocketChannelFactory nioChannelFactory;
     //    private Channel channel;
@@ -109,10 +113,10 @@ public class NetworkInstance
     private Map<URI, Channel> connections = new ConcurrentHashMap<URI, Channel>();
     private Iterable<NetworkChannelsListener> listeners = Listeners.newListeners();
 
-    public NetworkInstance( Configuration config, StringLogger logger )
+    public NetworkInstance( Configuration config, Logging logging )
     {
         this.config = config;
-        this.msgLog = logger;
+        this.msgLog = logging.getLogger( getClass() );
     }
 
     @Override
@@ -126,13 +130,14 @@ public class NetworkInstance
     public void start()
             throws Throwable
     {
-        executor = Executors.newSingleThreadExecutor( new NamedThreadFactory( "Cluster messenger" ) );
+        receiveExecutor = Executors.newSingleThreadExecutor( new NamedThreadFactory( "Cluster Receiver" ) );
+        sendExecutor = Executors.newSingleThreadExecutor( new NamedThreadFactory( "Cluster Sender" ) );
         channels = new DefaultChannelGroup();
 
         // Listen for incoming connections
         nioChannelFactory = new NioServerSocketChannelFactory(
                 Executors.newCachedThreadPool( new NamedThreadFactory( "Cluster boss" ) ),
-                Executors.newFixedThreadPool( 10, new NamedThreadFactory( "Cluster worker" ) ) );
+                Executors.newFixedThreadPool( 2, new NamedThreadFactory( "Cluster worker" ) ), 2 );
         serverBootstrap = new ServerBootstrap( nioChannelFactory );
         serverBootstrap.setPipelineFactory( new NetworkNodePipelineFactory() );
 
@@ -144,7 +149,7 @@ public class NetworkInstance
         // Start client bootstrap
         clientBootstrap = new ClientBootstrap( new NioClientSocketChannelFactory(
                 Executors.newSingleThreadExecutor( new NamedThreadFactory( "Cluster client boss" ) ),
-                Executors.newFixedThreadPool( 10, new NamedThreadFactory( "Cluster client worker" ) ) ) );
+                Executors.newFixedThreadPool( 2, new NamedThreadFactory( "Cluster client worker" ) ), 2 ) );
         clientBootstrap.setPipelineFactory( new NetworkNodePipelineFactory() );
 
         // Try all ports in the given range
@@ -155,14 +160,20 @@ public class NetworkInstance
     public void stop()
             throws Throwable
     {
+        sendExecutor.shutdownNow();
+        if ( !sendExecutor.awaitTermination( 10, TimeUnit.SECONDS ) )
+        {
+            msgLog.warn( "Could not shut down send executor" );
+        }
+
         channels.close().awaitUninterruptibly();
         nioChannelFactory.releaseExternalResources();
         clientBootstrap.releaseExternalResources();
 
-        executor.shutdownNow();
-        if ( !executor.awaitTermination( 10, TimeUnit.SECONDS ) )
+        receiveExecutor.shutdownNow();
+        if ( !receiveExecutor.awaitTermination( 10, TimeUnit.SECONDS ) )
         {
-            msgLog.warn( "Could not shut down executor" );
+            msgLog.warn( "Could not shut down receive executor" );
         }
     }
 
@@ -230,7 +241,30 @@ public class NetworkInstance
         }
     }
 
-    // MessageProcessor implementation
+    // MessageSender implementation
+    @Override
+    public void process( final List<Message<? extends MessageType>> messages )
+    {
+        sendExecutor.submit( new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                for ( Message<? extends MessageType> message : messages )
+                {
+                    try
+                    {
+                        process( message );
+                    }
+                    catch ( Exception e )
+                    {
+                        msgLog.warn( "Error sending message " + message, e );
+                    }
+                }
+            }
+        });
+    }
+
     @Override
     public void process( Message<? extends MessageType> message )
     {
@@ -292,7 +326,7 @@ public class NetworkInstance
         }
     }
 
-    private synchronized void send( Message message )
+    private synchronized void send( final Message message )
     {
         URI to = null;
         try
@@ -317,17 +351,23 @@ public class NetworkInstance
         }
         catch ( Exception e )
         {
-//            msgLog.error("Could not connect to:" + to, true);
+            msgLog.debug( "Could not connect to:" + to, e );
             return;
         }
 
         try
         {
-            if ( msgLog.isDebugEnabled() )
+            msgLog.debug( "Sending to " + to + ": " + message );
+            ChannelFuture future = channel.write( message );
+            future.addListener( new ChannelFutureListener()
             {
-                msgLog.debug( "Sending to " + to + ": " + message );
-            }
-            channel.write( message );
+                @Override
+                public void operationComplete( ChannelFuture future ) throws Exception
+                {
+                    if ( !future.isSuccess() )
+                        msgLog.debug( "Unable to write " + message + " to " + future.getChannel(), future.getCause() );
+                }
+            } );
         }
         catch ( Exception e )
         {
@@ -410,6 +450,9 @@ public class NetworkInstance
         catch ( InterruptedException e )
         {
             msgLog.warn( "Interrupted", e );
+            // Restore the interrupt status since we are not rethrowing InterruptedException
+            // We may be running in an executor and we could fail to be terminated
+            Thread.currentThread().interrupt();
             throw new ChannelOpenFailedException( e );
         }
     }
@@ -452,7 +495,7 @@ public class NetworkInstance
             final Message message = (Message) event.getMessage();
 //            msgLog.logMessage("Received:" + message, true);
 //            receive( message );
-            executor.submit( new Runnable()
+            receiveExecutor.submit( new Runnable()
             {
                 @Override
                 public void run()
@@ -460,7 +503,6 @@ public class NetworkInstance
                     receive( message );
                 }
             } );
-
         }
 
         @Override

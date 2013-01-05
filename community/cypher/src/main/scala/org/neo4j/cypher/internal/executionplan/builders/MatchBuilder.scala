@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -71,7 +71,7 @@ class MatchBuilder extends PlanBuilder with PatternGraphBuilder {
       })
 
       val resolvedStartPoints =  apa.foldLeft(true)(_ && _)
-      val pipeSatisfied = x.predicate.checkTypes(p.symbols)
+      val pipeSatisfied = x.predicate.symbolDependenciesMet(p.symbols)
 
       resolvedStartPoints && pipeSatisfied
     }

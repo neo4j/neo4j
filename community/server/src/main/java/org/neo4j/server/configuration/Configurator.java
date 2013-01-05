@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -31,7 +31,7 @@ import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.info.DiagnosticsExtractor;
 import org.neo4j.kernel.info.DiagnosticsPhase;
-import org.neo4j.server.webadmin.rest.SessionFactoryImpl;
+import org.neo4j.server.webadmin.console.ShellSessionCreator;
 
 public interface Configurator
 {
@@ -71,8 +71,7 @@ public interface Configurator
     List<String> DEFAULT_MANAGEMENT_CONSOLE_ENGINES = new ArrayList<String>(){
         private static final long serialVersionUID = 6621747998288594121L;
     {
-        add(SessionFactoryImpl.ConsoleEngineCreator.SHELL.name().toLowerCase());
-        add(SessionFactoryImpl.ConsoleEngineCreator.GREMLIN.name().toLowerCase());
+        add(new ShellSessionCreator().name());
     }};
 
     String THIRD_PARTY_PACKAGES_KEY = "org.neo4j.server.thirdparty_jaxrs_classes";

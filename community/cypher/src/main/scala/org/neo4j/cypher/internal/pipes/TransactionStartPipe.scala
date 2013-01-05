@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -38,5 +38,5 @@ class TransactionStartPipe(source: Pipe, graph: GraphDatabaseService) extends Pi
 
   def symbols = source.symbols
 
-  def assertTypes(symbols: SymbolTable) {}
+  def throwIfSymbolsMissing(symbols: SymbolTable) {}
 }

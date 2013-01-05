@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -35,7 +35,6 @@ import java.util.Map;
  * Either iterate directly over the ExecutionResult to retrieve each row of the result
  * set, or use <code>columnAs()</code> to access a single column with result objects
  * cast to a type.
- *
  */
 public class ExecutionResult implements Iterable<Map<String,Object>>
 {
@@ -79,20 +78,22 @@ public class ExecutionResult implements Iterable<Map<String,Object>>
     }
 
     @Override
-    public Iterator<Map<String, Object>> iterator()
+    public String toString()
     {
-        return inner.javaIterator();
+        return inner.toString();
     }
 
-    @Override
-    public String toString()
+    /**
+     * @return Returns the execution result
+     */
+    public String dumpToString()
     {
         return inner.dumpToString();
     }
 
     /**
      * Returns statistics about this result.
-     * @return
+     * @return statistics about this result
      */
     public QueryStatistics getQueryStatistics()
     {
@@ -104,4 +105,9 @@ public class ExecutionResult implements Iterable<Map<String,Object>>
         inner.dumpToString( writer );
     }
 
+    @Override
+    public Iterator<Map<String, Object>> iterator()
+    {
+        return inner.javaIterator();
+    }
 }

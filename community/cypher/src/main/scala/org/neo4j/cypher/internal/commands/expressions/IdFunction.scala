@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -34,10 +34,7 @@ case class IdFunction(inner: Expression) extends NullInNullOutExpression(inner) 
 
   def rewrite(f: (Expression) => Expression) = f(IdFunction(inner.rewrite(f)))
 
-  def filter(f: (Expression) => Boolean) = if (f(this))
-    Seq(this) ++ inner.filter(f)
-  else
-    inner.filter(f)
+  def children = Seq(inner)
 
   def calculateType(symbols: SymbolTable): CypherType = LongType()
 

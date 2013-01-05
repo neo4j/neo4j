@@ -1,3 +1,7 @@
+1.9.M02 (2012-11-30)
+--------------------
+o Adds serverId and current roles to the set of information available for cluster members
+
 1.9.M01 (2012-10-23)
 --------------------
 o High Availability beans now expose information relevant to the new way clusters work

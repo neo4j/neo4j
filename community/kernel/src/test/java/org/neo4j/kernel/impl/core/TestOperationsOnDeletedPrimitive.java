@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -54,7 +54,8 @@ public class TestOperationsOnDeletedPrimitive
     private NodeManager mockTheNodeManager()
     {
         NodeManager mock = mock( NodeManager.class );
-        when( mock.getTransactionState() ).thenReturn( TransactionState.NO_STATE );
+        TransactionState transactionState = mock( TransactionState.class );
+        when( mock.getTransactionState() ).thenReturn( transactionState );
         return mock;
     }
     

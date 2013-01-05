@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -17,14 +17,13 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.neo4j.cluster;
 
 import static org.neo4j.cluster.com.message.Message.internal;
 
 import java.net.URI;
 
-import org.neo4j.cluster.com.message.MessageProcessor;
+import org.neo4j.cluster.com.message.MessageSender;
 import org.neo4j.cluster.com.message.MessageSource;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.AcceptorContext;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.AcceptorInstanceStore;
@@ -87,7 +86,7 @@ public class MultiPaxosServerFactory
 
     @Override
     public ProtocolServer newProtocolServer( TimeoutStrategy timeoutStrategy, MessageSource input,
-                                             MessageProcessor output,
+                                             MessageSender output,
                                              AcceptorInstanceStore acceptorInstanceStore,
                                              ElectionCredentialsProvider electionCredentialsProvider )
     {
@@ -110,7 +109,7 @@ public class MultiPaxosServerFactory
         final HeartbeatContext heartbeatContext = new HeartbeatContext( clusterContext, learnerContext, executor );
         final MultiPaxosContext context = new MultiPaxosContext( clusterContext, proposerContext, learnerContext,
                 heartbeatContext, timeouts );
-        ElectionContext electionContext = new ElectionContext( Iterables.iterable( new ElectionRole(
+        ElectionContext electionContext = new ElectionContext( Iterables.<ElectionRole,ElectionRole>iterable( new ElectionRole(
                 ClusterConfiguration.COORDINATOR ) ),
                 clusterContext, heartbeatContext );
         SnapshotContext snapshotContext = new SnapshotContext( clusterContext, learnerContext );
@@ -129,13 +128,10 @@ public class MultiPaxosServerFactory
                 ElectionState.start ) );
         connectedStateMachines.addStateMachine( new StateMachine( snapshotContext, SnapshotMessage.class,
                 SnapshotState.start ) );
+        connectedStateMachines.addStateMachine( new StateMachine( clusterContext, ClusterMessage.class,
+                ClusterState.start ) );
 
-        final ProtocolServer server = new ProtocolServer( connectedStateMachines, logging.getLogger( ProtocolServer
-                .class ) );
-
-        StateMachine cluster = new StateMachine( clusterContext, ClusterMessage.class, ClusterState.start );
-
-        connectedStateMachines.addStateMachine( cluster );
+        final ProtocolServer server = new ProtocolServer( connectedStateMachines, logging );
 
         server.addBindingListener( new BindingListener()
         {

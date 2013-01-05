@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -33,7 +33,7 @@ import org.neo4j.com.RequestContext;
 import org.neo4j.com.RequestType;
 import org.neo4j.com.Server;
 import org.neo4j.com.TxChecksumVerifier;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.logging.Logging;
 
 /**
  * Sits on the master side, receiving serialized requests from slaves (via
@@ -43,10 +43,10 @@ public class MasterServer extends Server<Master, Void>
 {
     public static final int FRAME_LENGTH = Protocol.DEFAULT_FRAME_LENGTH;
 
-    public MasterServer( Master requestTarget, StringLogger logger, Configuration config,
+    public MasterServer( Master requestTarget, Logging logging, Configuration config,
                          TxChecksumVerifier txVerifier ) throws IOException
     {
-        super( requestTarget, config, logger, FRAME_LENGTH, MasterClient18.PROTOCOL_VERSION, txVerifier );
+        super( requestTarget, config, logging, FRAME_LENGTH, MasterClient18.PROTOCOL_VERSION, txVerifier );
     }
 
     @Override

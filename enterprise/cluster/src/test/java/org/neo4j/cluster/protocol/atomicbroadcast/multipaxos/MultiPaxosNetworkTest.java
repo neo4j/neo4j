@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -17,7 +17,6 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos;
 
 import java.net.URI;
@@ -52,6 +51,7 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.LogbackService;
+import org.neo4j.test.TargetDirectory;
 
 /**
  * TODO
@@ -63,7 +63,8 @@ public class MultiPaxosNetworkTest
             throws ExecutionException, InterruptedException, URISyntaxException, BrokenBarrierException
     {
         final LifeSupport life = new LifeSupport();
-        Config config = new Config( MapUtil.stringMap( GraphDatabaseSettings.store_dir.name(), "test" ),
+        Config config = new Config( MapUtil.stringMap( GraphDatabaseSettings.store_dir.name(),
+                TargetDirectory.forTest( getClass() ).directory( "cluster" ).getAbsolutePath() ),
                 GraphDatabaseSettings.class );
 
         final LoggerContext loggerContext = new LoggerContext();

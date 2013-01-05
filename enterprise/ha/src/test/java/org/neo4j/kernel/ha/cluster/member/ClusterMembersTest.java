@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -31,12 +31,13 @@ import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.SLAVE;
 import static org.neo4j.kernel.ha.cluster.member.ClusterMemberMatcher.sameMemberAs;
 
 import java.net.URI;
+
 import org.hamcrest.CoreMatchers;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
-import org.neo4j.cluster.Binding;
 import org.neo4j.cluster.BindingListener;
+import org.neo4j.cluster.com.BindingNotifier;
 import org.neo4j.cluster.member.ClusterMemberEvents;
 import org.neo4j.cluster.member.ClusterMemberListener;
 import org.neo4j.cluster.protocol.cluster.Cluster;
@@ -59,7 +60,7 @@ public class ClusterMembersTest
     {
         // given
         Cluster cluster = mock( Cluster.class );
-        Binding binding = mock( Binding.class );
+        BindingNotifier binding = mock( BindingNotifier.class );
         Heartbeat heartbeat = mock( Heartbeat.class );
         ClusterMemberEvents clusterMemberEvents = mock(ClusterMemberEvents.class);
 
@@ -78,7 +79,7 @@ public class ClusterMembersTest
     {
         // given
         Cluster cluster = mock( Cluster.class );
-        Binding binding = mock( Binding.class );
+        BindingNotifier binding = mock( BindingNotifier.class );
         Heartbeat heartbeat = mock( Heartbeat.class );
         ClusterMemberEvents clusterMemberEvents = mock(ClusterMemberEvents.class);
 
@@ -101,7 +102,7 @@ public class ClusterMembersTest
     {
         // given
         Cluster cluster = mock( Cluster.class );
-        Binding binding = mock( Binding.class );
+        BindingNotifier binding = mock( BindingNotifier.class );
         Heartbeat heartbeat = mock( Heartbeat.class );
         ClusterMemberEvents clusterMemberEvents = mock(ClusterMemberEvents.class);
 
@@ -127,7 +128,7 @@ public class ClusterMembersTest
     {
         // given
         Cluster cluster = mock( Cluster.class );
-        Binding binding = mock( Binding.class );
+        BindingNotifier binding = mock( BindingNotifier.class );
         Heartbeat heartbeat = mock( Heartbeat.class );
         ClusterMemberEvents clusterMemberEvents = mock(ClusterMemberEvents.class);
 
@@ -151,7 +152,7 @@ public class ClusterMembersTest
     {
         // given
         Cluster cluster = mock(Cluster.class);
-        Binding binding = mock( Binding.class );
+        BindingNotifier binding = mock( BindingNotifier.class );
         Heartbeat heartbeat = mock( Heartbeat.class );
         ClusterMemberEvents clusterMemberEvents = mock(ClusterMemberEvents.class);
 
@@ -176,7 +177,7 @@ public class ClusterMembersTest
     {
         // given
         Cluster cluster = mock(Cluster.class);
-        Binding binding = mock( Binding.class );
+        BindingNotifier binding = mock( BindingNotifier.class );
         Heartbeat heartbeat = mock( Heartbeat.class );
         ClusterMemberEvents clusterMemberEvents = mock(ClusterMemberEvents.class);
 
@@ -201,7 +202,7 @@ public class ClusterMembersTest
     {
         // given
         Cluster cluster = mock(Cluster.class);
-        Binding binding = mock( Binding.class );
+        BindingNotifier binding = mock( BindingNotifier.class );
         Heartbeat heartbeat = mock( Heartbeat.class );
         ClusterMemberEvents clusterMemberEvents = mock(ClusterMemberEvents.class);
 
@@ -227,7 +228,7 @@ public class ClusterMembersTest
     {
         // given
         Cluster cluster = mock(Cluster.class);
-        Binding binding = mock( Binding.class );
+        BindingNotifier binding = mock( BindingNotifier.class );
         Heartbeat heartbeat = mock( Heartbeat.class );
         ClusterMemberEvents clusterMemberEvents = mock(ClusterMemberEvents.class);
 
@@ -252,7 +253,7 @@ public class ClusterMembersTest
     {
         // given
         Cluster cluster = mock(Cluster.class);
-        Binding binding = mock( Binding.class );
+        BindingNotifier binding = mock( BindingNotifier.class );
         Heartbeat heartbeat = mock( Heartbeat.class );
         ClusterMemberEvents clusterMemberEvents = mock(ClusterMemberEvents.class);
 

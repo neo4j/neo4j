@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -28,9 +28,11 @@ import javax.transaction.Transaction;
 
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.DeadlockDetectedException;
+import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.info.LockInfo;
 import org.neo4j.kernel.info.LockingTransaction;
 import org.neo4j.kernel.info.WaitingThread;
+import org.neo4j.kernel.logging.Logging;
 
 /**
  * The LockManager can lock resources for reading or writing. By doing this one
@@ -251,19 +253,20 @@ public class LockManagerImpl implements LockManager
      *
      * @param resource
      */
-    public void dumpLocksOnResource( Object resource )
+    public void dumpLocksOnResource( Object resource, Logging logging )
     {
+        StringLogger logger = logging.getLogger( LockManager.class );
         RWLock lock = null;
         synchronized ( resourceLockMap )
         {
             if ( !resourceLockMap.containsKey( resource ) )
             {
-                System.out.println( "No locks on " + resource );
+                logger.info( "No locks on " + resource );
                 return;
             }
             lock = resourceLockMap.get( resource );
         }
-        lock.dumpStack();
+        logger.logLongMessage( "Dump locks on resource " + resource, lock );
     }
 
     public List<LockInfo> getAllLocks()
@@ -323,17 +326,17 @@ public class LockManagerImpl implements LockManager
      * Utility method for debugging. Dumps the resource allocation graph to
      * console.
      */
-    public void dumpRagStack()
+    public void dumpRagStack( Logging logging )
     {
-        ragManager.dumpStack();
+        logging.getLogger( getClass() ).logLongMessage( "RAG stack", ragManager );
     }
 
     /**
      * Utility method for debugging. Dumps info about each lock to console.
      */
-    public void dumpAllLocks()
+    public void dumpAllLocks( Logging logging )
     {
-        DumpVisitor dump = new DumpVisitor();
+        DumpVisitor dump = new DumpVisitor( logging );
         eachLock( dump );
         dump.done();
     }
@@ -352,6 +355,13 @@ public class LockManagerImpl implements LockManager
     
     private static class DumpVisitor implements Visitor<LockInfo>
     {
+        private final StringLogger logger;
+        
+        DumpVisitor( Logging logging )
+        {
+            logger = logging.getLogger( LockManager.class );
+        }
+        
         int emptyLockCount = 0;
 
         @Override
@@ -374,10 +384,10 @@ public class LockManagerImpl implements LockManager
 
         private void dumpStack( LockInfo lock )
         {
-            System.out.println( "Total lock count: readCount=" + lock.getReadCount() + " writeCount="
+            logger.info( "Total lock count: readCount=" + lock.getReadCount() + " writeCount="
                                 + lock.getWriteCount() + " for "
                                 + lock.getResourceType().toString( lock.getResourceId() ) );
-            System.out.println( "Waiting list:" );
+            logger.info( "Waiting list:" );
             StringBuilder waitlist = new StringBuilder();
             String sep = "";
             for ( WaitingThread we : lock.getWaitingThreads() )
@@ -387,10 +397,10 @@ public class LockManagerImpl implements LockManager
                         we.isWaitingOnWriteLock() ? "Write" : "Read" ).append( "Lock]" );
                 sep = ", ";
             }
-            System.out.println( waitlist );
+            logger.info( waitlist.toString() );
             for ( LockingTransaction tle : lock.getLockingTransactions() )
             {
-                System.out.println( "" + tle.getTransaction() + "(" + tle.getReadCount() + "r," + tle.getWriteCount()
+                logger.info( "" + tle.getTransaction() + "(" + tle.getReadCount() + "r," + tle.getWriteCount()
                                     + "w)" );
             }
         }
@@ -399,11 +409,11 @@ public class LockManagerImpl implements LockManager
         {
             if ( emptyLockCount > 0 )
             {
-                System.out.println( "There are " + emptyLockCount + " empty locks" );
+                logger.info( "There are " + emptyLockCount + " empty locks" );
             }
             else
             {
-                System.out.println( "There are no empty locks" );
+                logger.info( "There are no empty locks" );
             }
         }
     }

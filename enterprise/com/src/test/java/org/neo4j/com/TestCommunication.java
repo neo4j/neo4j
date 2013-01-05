@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -34,6 +34,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.neo4j.kernel.impl.nioneo.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 
@@ -88,7 +89,7 @@ public class TestCommunication
         }
     }
 
-    @Test
+    @Test( expected = MismatchingStoreIdException.class )
     public void makeSureClientStoreIdsMustMatch() throws Throwable
     {
         MadeUpServer server = builder.server();
@@ -97,18 +98,10 @@ public class TestCommunication
         life.add( client );
         life.start();
 
-        try
-        {
-            client.multiply( 1, 2 );
-            fail();
-        }
-        catch ( ComException e )
-        {
-            // Good
-        }
+        client.multiply( 1, 2 );
     }
 
-    @Test
+    @Test( expected = MismatchingStoreIdException.class )
     public void makeSureServerStoreIdsMustMatch() throws Throwable
     {
         MadeUpServer server = builder.storeId( new StoreId( 10, 10, versionStringToLong( ALL_STORES_VERSION ) ) ).server();
@@ -117,15 +110,7 @@ public class TestCommunication
         life.add( client );
         life.start();
 
-        try
-        {
-            client.multiply( 1, 2 );
-            fail();
-        }
-        catch ( ComException e )
-        {
-            // Good
-        }
+        client.multiply( 1, 2 );
     }
 
     @Test

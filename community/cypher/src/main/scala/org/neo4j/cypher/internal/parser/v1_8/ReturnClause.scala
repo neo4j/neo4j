@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -53,7 +53,7 @@ trait ReturnClause extends Base with Expressions {
       }
 
       val aggregationExpressions = returnItems.filter(_.isInstanceOf[ReturnItem]).map(_.asInstanceOf[ReturnItem]).
-        flatMap(_.expression.filter(_.isInstanceOf[AggregationExpression])).
+        flatMap(returnItem => returnItem.expression.filter(_.isInstanceOf[AggregationExpression])).
         map(_.asInstanceOf[AggregationExpression])
 
       val aggregation = aggregationExpressions match {

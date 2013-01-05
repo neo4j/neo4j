@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -45,10 +45,8 @@ case class Add(a: Expression, b: Expression) extends Expression with TypeSafeMat
 
   def rewrite(f: (Expression) => Expression) = f(Add(a.rewrite(f), b.rewrite(f)))
 
-  def filter(f: (Expression) => Boolean) = if (f(this))
-    Seq(this) ++ a.filter(f) ++ b.filter(f)
-  else
-    a.filter(f) ++ b.filter(f)
+
+  def children = Seq(a, b)
 
   def calculateType(symbols: SymbolTable): CypherType = {
     val aT = a.getType(symbols)

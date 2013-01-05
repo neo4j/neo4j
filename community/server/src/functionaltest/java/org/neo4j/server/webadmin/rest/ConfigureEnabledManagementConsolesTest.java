@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -42,32 +42,19 @@ public class ConfigureEnabledManagementConsolesTest extends ExclusiveServerTestB
     }
     
     @Test
-    public void shouldBeAbleToDisableGremlinConsole() throws Exception {
-        server = server().withProperty(Configurator.MANAGEMENT_CONSOLE_ENGINES, "shell").build();
-        server.start();
-
-        assertThat(exec("g","gremlin").getStatus(), is(400));
-        assertThat(exec("ls","shell").getStatus(),  is(200));
-    }
-    
-    @Test
     public void shouldBeAbleToExplicitlySetConsolesToEnabled() throws Exception 
     {
-        server = server().withProperty(Configurator.MANAGEMENT_CONSOLE_ENGINES, "shell,gremlin").build();
+        server = server().withProperty(Configurator.MANAGEMENT_CONSOLE_ENGINES, "").build();
         server.start();
         
-        assertThat(exec("g","gremlin").getStatus(), is(200));
-        assertThat(exec("ls","shell").getStatus(),  is(200));
+        assertThat(exec("ls","shell").getStatus(),  is(400));
     }
     
-
-    
     @Test
-    public void gremlinAndShellConsolesShouldBeEnabledByDefault() throws Exception {
+    public void shellConsoleShouldBeEnabledByDefault() throws Exception {
         server = server().build();
         server.start();
         
-        assertThat(exec("g","gremlin").getStatus(), is(200));
         assertThat(exec("ls","shell").getStatus(),  is(200));
     }
 

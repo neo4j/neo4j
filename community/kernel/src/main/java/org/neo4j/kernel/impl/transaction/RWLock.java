@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -34,6 +34,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.impl.util.ArrayMap;
+import org.neo4j.kernel.impl.util.StringLogger.LineLogger;
 import org.neo4j.kernel.info.LockInfo;
 import org.neo4j.kernel.info.LockingTransaction;
 import org.neo4j.kernel.info.ResourceType;
@@ -65,7 +66,7 @@ import org.neo4j.kernel.info.WaitingThread;
  * starvation and increase performance since only waiting txs that can acquire
  * the lock are notified.
  */
-class RWLock
+class RWLock implements Visitor<LineLogger>
 {
     private int writeCount = 0; // total writeCount
     private int readCount = 0; // total readCount
@@ -456,38 +457,39 @@ class RWLock
         return waitingThreadList.size();
     }
 
-    synchronized void dumpStack()
+    @Override
+    public synchronized boolean visit( LineLogger logger )
     {
-        System.out.println( "Total lock count: readCount=" + readCount
+        logger.logLine( "Total lock count: readCount=" + readCount
             + " writeCount=" + writeCount + " for " + resource );
 
-        System.out.println( "Waiting list:" );
+        logger.logLine( "Waiting list:" );
         Iterator<WaitElement> wElements = waitingThreadList.iterator();
         while ( wElements.hasNext() )
         {
             WaitElement we = wElements.next();
-            System.out.print( "[" + we.waitingThread + "("
+            logger.logLine( "[" + we.waitingThread + "("
                 + we.element.readCount + "r," + we.element.writeCount + "w),"
                 + we.lockType + "]" );
             if ( wElements.hasNext() )
             {
-                System.out.print( "," );
+                logger.logLine( "," );
             }
             else
             {
-                System.out.println();
+                logger.logLine( "" );
             }
         }
 
-        System.out.println( "Locking transactions:" );
-        Iterator<TxLockElement> lElements = txLockElementMap.values()
-            .iterator();
+        logger.logLine( "Locking transactions:" );
+        Iterator<TxLockElement> lElements = txLockElementMap.values().iterator();
         while ( lElements.hasNext() )
         {
             TxLockElement tle = lElements.next();
-            System.out.println( "" + tle.tx + "(" + tle.readCount + "r,"
+            logger.logLine( "" + tle.tx + "(" + tle.readCount + "r,"
                 + tle.writeCount + "w)" );
         }
+        return true;
     }
 
     synchronized LockInfo info()

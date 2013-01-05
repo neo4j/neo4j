@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -53,8 +53,6 @@ import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.transaction.DataSourceRegistrationListener;
-import org.neo4j.kernel.impl.transaction.LockException;
-import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.LockType;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
@@ -77,7 +75,6 @@ public class NodeManager
 
     private final CacheProvider cacheProvider;
 
-    private final LockManager lockManager;
     private final AbstractTransactionManager transactionManager;
     private final PropertyIndexManager propertyIndexManager;
     private final RelationshipTypeHolder relTypeHolder;
@@ -100,7 +97,7 @@ public class NodeManager
 
     private NodeManagerDatasourceListener dataSourceListener;
 
-    public NodeManager( Config config, GraphDatabaseService graphDb, LockManager lockManager,
+    public NodeManager( Config config, GraphDatabaseService graphDb,
                         AbstractTransactionManager transactionManager,
                         PersistenceManager persistenceManager, EntityIdGenerator idGenerator,
                         RelationshipTypeHolder relationshipTypeHolder, CacheProvider cacheProvider,
@@ -109,7 +106,6 @@ public class NodeManager
                         Cache<RelationshipImpl> relCache, XaDataSourceManager xaDsm )
     {
         this.graphDbService = graphDb;
-        this.lockManager = lockManager;
         this.transactionManager = transactionManager;
         this.propertyIndexManager = propertyIndexManager;
         this.persistenceManager = persistenceManager;
@@ -176,7 +172,8 @@ public class NodeManager
         NodeImpl node = new NodeImpl( id, Record.NO_NEXT_RELATIONSHIP.intValue(), Record.NO_NEXT_PROPERTY.intValue(),
                 true );
         NodeProxy proxy = new NodeProxy( id, nodeLookup );
-        acquireLock( proxy, LockType.WRITE );
+        TransactionState transactionState = getTransactionState();
+        transactionState.acquireWriteLock( proxy );
         boolean success = false;
         try
         {
@@ -188,7 +185,6 @@ public class NodeManager
         }
         finally
         {
-            releaseLock( proxy, LockType.WRITE, getTransactionState() );
             if ( !success )
             {
                 setRollbackOnly();
@@ -226,20 +222,16 @@ public class NodeManager
         long id = idGenerator.nextId( Relationship.class );
         int typeId = getRelationshipTypeIdFor( type );
         RelationshipImpl rel = newRelationshipImpl( id, startNodeId, endNodeId, type, typeId, true );
-        boolean firstNodeTaken = false;
-        boolean secondNodeTaken = false;
         RelationshipProxy proxy = new RelationshipProxy( id, relationshipLookups );
-        acquireLock( proxy, LockType.WRITE );
+        TransactionState transactionState = getTransactionState();
+        transactionState.acquireWriteLock( proxy );
         boolean success = false;
-        TransactionState tx = getTransactionState();
+        TransactionState tx = transactionState;
         try
         {
-            acquireLock( startNodeProxy, LockType.WRITE );
-            firstNodeTaken = true;
-            acquireLock( endNode, LockType.WRITE );
-            secondNodeTaken = true;
-            persistenceManager.relationshipCreate( id, typeId, startNodeId,
-                    endNodeId );
+            transactionState.acquireWriteLock( startNodeProxy );
+            transactionState.acquireWriteLock( endNode );
+            persistenceManager.relationshipCreate( id, typeId, startNodeId, endNodeId );
             if ( startNodeId == endNodeId )
             {
                 tx.getOrCreateCowRelationshipAddMap( startNode, typeId ).add( id, DirectionWrapper.BOTH );
@@ -256,41 +248,9 @@ public class NodeManager
         }
         finally
         {
-            boolean releaseFailed = false;
-            if ( firstNodeTaken )
-            {
-                try
-                {
-                    releaseLock( startNodeProxy, LockType.WRITE, tx );
-                }
-                catch ( Exception e )
-                {
-                    releaseFailed = true;
-                    log.log( Level.SEVERE, "Failed to release lock", e );
-                }
-            }
-            if ( secondNodeTaken )
-            {
-                try
-                {
-                    releaseLock( endNode, LockType.WRITE, tx );
-                }
-                catch ( Exception e )
-                {
-                    releaseFailed = true;
-                    log.log( Level.SEVERE, "Failed to release lock", e );
-                }
-            }
-            releaseLock( proxy, LockType.WRITE, tx );
             if ( !success )
             {
                 setRollbackOnly();
-            }
-            if ( releaseFailed )
-            {
-                throw new LockException( "Unable to release locks ["
-                        + startNode + "," + endNode + "] in relationship create->"
-                        + rel );
             }
         }
     }
@@ -432,7 +392,7 @@ public class NodeManager
     {
         if ( lock != null )
         {
-            acquireTxBoundLock( new NodeProxy( nodeId, nodeLookup ), lock );
+            lock.acquire( getTransactionState(), new NodeProxy( nodeId, nodeLookup ) );
         }
         NodeImpl node = getLightNode( nodeId );
         if ( node == null )
@@ -545,7 +505,7 @@ public class NodeManager
     {
         if ( lock != null )
         {
-            acquireTxBoundLock( new RelationshipProxy( relId, relationshipLookups ), lock );
+            lock.acquire( getTransactionState(), new RelationshipProxy( relId, relationshipLookups ) );
         }
         RelationshipImpl relationship = relCache.get( relId );
         if ( relationship != null )
@@ -733,62 +693,21 @@ public class NodeManager
 
         // Grab lock
         IndexLock lock = new IndexLock( index.getName(), key );
-        LockType.WRITE.acquire( lock, lockManager );
-        try
+        TransactionState state = getTransactionState();
+        LockElement writeLock = state.acquireWriteLock( lock );
+        
+        // Check again -- now holding the lock
+        existing = index.get( key, value ).getSingle();
+        if ( existing != null )
         {
-            // Check again
-            existing = index.get( key, value ).getSingle();
-            if ( existing != null )
-            {
-                LockType.WRITE.release( lock, lockManager );
-                return existing;
-            }
-
-            // Add
-            index.add( entity, key, value );
-            return null;
+            // Someone else created this entry, release the lock as we won't be needing it
+            writeLock.release();
+            return existing;
         }
-        finally
-        {
-            if ( existing == null )
-                LockType.WRITE.unacquire( lock, lockManager, getTransactionState() );
-        }
-    }
 
-    void acquireLock( Primitive resource, LockType lockType )
-    {
-        lockType.acquire( resource.asProxy( this ), lockManager );
-    }
-
-    void acquireLock( PropertyContainer resource, LockType lockType )
-    {
-        lockType.acquire( resource, lockManager );
-    }
-
-    void acquireTxBoundLock( PropertyContainer resource, LockType lockType )
-    {
-        lockType.acquire( resource, lockManager );
-        lockType.unacquire( resource, lockManager, getTransactionState() );
-    }
-
-    void acquireIndexLock( String index, String key, LockType lockType )
-    {
-        lockType.acquire( new IndexLock( index, key ), lockManager );
-    }
-
-    void releaseLock( Primitive resource, LockType lockType, TransactionState state )
-    {
-        lockType.unacquire( resource.asProxy( this ), lockManager, state );
-    }
-
-    void releaseLock( PropertyContainer resource, LockType lockType, TransactionState state )
-    {
-        lockType.unacquire( resource, lockManager, state );
-    }
-
-    void releaseIndexLock( String index, String key, LockType lockType )
-    {
-        lockType.unacquire( new IndexLock( index, key ), lockManager, getTransactionState() );
+        // Add
+        index.add( entity, key, value );
+        return null;
     }
 
     public static class IndexLock
@@ -935,8 +854,29 @@ public class NodeManager
         return relTypeHolder.getRelationshipTypes();
     }
 
-    ArrayMap<Integer,PropertyData> deleteNode( NodeImpl node, TransactionState tx )
+    private <T extends PropertyContainer> void deleteFromTrackers( Primitive primitive, List<PropertyTracker<T>>
+            trackers ) {
+        if ( !trackers.isEmpty() )
+        {
+            Iterable<String> propertyKeys = primitive.getPropertyKeys( this );
+            T proxy = (T) primitive.asProxy( this );
+
+            for ( String key : propertyKeys )
+            {
+                Object value = primitive.getProperty( this, key );
+                for ( PropertyTracker<T> tracker : trackers )
+                {
+                    tracker.propertyRemoved( proxy, key, value );
+                }
+            }
+        }
+
+    }
+
+    ArrayMap<Integer, PropertyData> deleteNode( NodeImpl node, TransactionState tx )
     {
+        deleteFromTrackers( node, nodePropertyTrackers );
+
         tx.deletePrimitive( node );
         return persistenceManager.nodeDelete( node.getId() );
         // remove from node cache done via event
@@ -1001,8 +941,11 @@ public class NodeManager
     {
         persistenceManager.graphRemoveProperty( property );
     }
+
     ArrayMap<Integer,PropertyData> deleteRelationship( RelationshipImpl rel, TransactionState tx )
     {
+        deleteFromTrackers( rel, relationshipPropertyTrackers );
+
         tx.deletePrimitive( rel );
         return persistenceManager.relDelete( rel.getId() );
         // remove in rel cache done via event
@@ -1063,11 +1006,6 @@ public class NodeManager
     public RelationshipImpl getRelIfCached( long nodeId )
     {
         return relCache.get( nodeId );
-    }
-
-    LockManager getLockManager()
-    {
-        return this.lockManager;
     }
 
     void addRelationshipType( NameData type )

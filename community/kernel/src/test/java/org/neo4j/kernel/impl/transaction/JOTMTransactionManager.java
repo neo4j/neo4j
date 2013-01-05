@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -132,7 +132,7 @@ public class JOTMTransactionManager extends AbstractTransactionManager
     {
         current.begin();
         Transaction tx = getTransaction();
-        states.put( tx, stateFactory.create() );
+        states.put( tx, stateFactory.create( tx ) );
     }
 
     @Override

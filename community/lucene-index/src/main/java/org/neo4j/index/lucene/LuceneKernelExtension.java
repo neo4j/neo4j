@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -17,7 +17,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.neo4j.index.lucene;
 
 import javax.transaction.TransactionManager;
@@ -36,19 +35,23 @@ import org.neo4j.kernel.impl.index.IndexStore;
 import org.neo4j.kernel.impl.index.ReadOnlyIndexConnectionBroker;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
+import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.impl.transaction.xaframework.XaFactory;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.kernel.logging.Logging;
 
 public class LuceneKernelExtension extends LifecycleAdapter
 {
-    private Config config;
-    private GraphDatabaseService gdb;
-    private TransactionManager txManager;
-    private IndexStore indexStore;
-    private XaFactory xaFactory;
-    private FileSystemAbstraction fileSystemAbstraction;
-    private XaDataSourceManager xaDataSourceManager;
-    private IndexProviders indexProviders;
+    private final Config config;
+    private final GraphDatabaseService gdb;
+    private final TransactionManager txManager;
+    private final IndexStore indexStore;
+    private final XaFactory xaFactory;
+    private final FileSystemAbstraction fileSystemAbstraction;
+    private final XaDataSourceManager xaDataSourceManager;
+    private final IndexProviders indexProviders;
+    private final Logging logging;
+    private final TxIdGenerator txIdGenerator;
 
 
     public static abstract class Configuration
@@ -59,7 +62,8 @@ public class LuceneKernelExtension extends LifecycleAdapter
     public LuceneKernelExtension( Config config, GraphDatabaseService gdb, TransactionManager txManager,
                                   IndexStore indexStore, XaFactory xaFactory,
                                   FileSystemAbstraction fileSystemAbstraction,
-                                  XaDataSourceManager xaDataSourceManager, IndexProviders indexProviders )
+                                  XaDataSourceManager xaDataSourceManager, IndexProviders indexProviders,
+                                  TxIdGenerator txIdGenerator, Logging logging )
     {
         this.config = config;
         this.gdb = gdb;
@@ -69,13 +73,15 @@ public class LuceneKernelExtension extends LifecycleAdapter
         this.fileSystemAbstraction = fileSystemAbstraction;
         this.xaDataSourceManager = xaDataSourceManager;
         this.indexProviders = indexProviders;
+        this.txIdGenerator = txIdGenerator;
+        this.logging = logging;
     }
 
     @Override
     public void start() throws Throwable
     {
         LuceneDataSource luceneDataSource = new LuceneDataSource( config, indexStore, fileSystemAbstraction,
-                xaFactory );
+                xaFactory, txIdGenerator, logging );
 
         xaDataSourceManager.registerDataSource( luceneDataSource );
 

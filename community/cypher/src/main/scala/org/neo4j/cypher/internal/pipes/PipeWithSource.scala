@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.pipes
 import org.neo4j.cypher.internal.symbols.SymbolTable
 
 abstract class PipeWithSource(val source: Pipe) extends Pipe {
-  def assertTypes(symbols: SymbolTable)
+  def throwIfSymbolsMissing(symbols: SymbolTable)
 
-  assertTypes(source.symbols)
+  throwIfSymbolsMissing(source.symbols)
 }

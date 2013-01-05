@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -17,7 +17,6 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.neo4j.cluster.member.paxos;
 
 import static org.neo4j.helpers.collection.Iterables.append;
@@ -50,6 +49,7 @@ import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.kernel.logging.Logging;
 
 /**
  * Paxos based implementation of {@link org.neo4j.cluster.member.ClusterMemberEvents}
@@ -67,12 +67,12 @@ public class PaxosClusterMemberEvents implements ClusterMemberEvents, Lifecycle
     private AtomicBroadcastListener atomicBroadcastListener;
     private ExecutorService executor;
 
-    public PaxosClusterMemberEvents( final Snapshot snapshot, Cluster cluster, AtomicBroadcast atomicBroadcast, StringLogger logger )
+    public PaxosClusterMemberEvents( final Snapshot snapshot, Cluster cluster, AtomicBroadcast atomicBroadcast, Logging logging )
     {
         this.snapshot = snapshot;
         this.cluster = cluster;
         this.atomicBroadcast = atomicBroadcast;
-        this.logger = logger;
+        this.logger = logging.getLogger( getClass() );
 
         clusterListener = new ClusterListenerImpl();
 
@@ -102,36 +102,38 @@ public class PaxosClusterMemberEvents implements ClusterMemberEvents, Lifecycle
         atomicBroadcast.addAtomicBroadcastListener( atomicBroadcastListener );
 
         snapshot.setSnapshotProvider( new HighAvailabilitySnapshotProvider() );
+
+        executor = Executors.newSingleThreadExecutor();
     }
 
     @Override
     public void start()
             throws Throwable
     {
-        executor = Executors.newSingleThreadExecutor();
-
     }
 
     @Override
     public void stop()
             throws Throwable
     {
-        if ( executor != null )
-        {
-            executor.shutdown();
-            executor = null;
-        }
+
     }
 
     @Override
     public void shutdown()
             throws Throwable
     {
+        snapshot.setSnapshotProvider( null );
+
+        if ( executor != null )
+        {
+            executor.shutdown();
+            executor = null;
+        }
+
         cluster.removeClusterListener( clusterListener );
 
         atomicBroadcast.removeAtomicBroadcastListener( atomicBroadcastListener );
-
-        snapshot.setSnapshotProvider( null );
     }
 
     private class HighAvailabilitySnapshotProvider implements SnapshotProvider
@@ -155,7 +157,8 @@ public class PaxosClusterMemberEvents implements ClusterMemberEvents, Lifecycle
                 {
                     for ( MemberIsAvailable memberIsAvailable : clusterMembersSnapshot.getCurrentAvailableMembers() )
                     {
-                        listener.memberIsAvailable( memberIsAvailable.getRole(), memberIsAvailable.getClusterUri(), memberIsAvailable.getRoleUri() );
+                        listener.memberIsAvailable( memberIsAvailable.getRole(), memberIsAvailable.getClusterUri(),
+                                memberIsAvailable.getRoleUri() );
                     }
                 }
             } );
@@ -220,8 +223,6 @@ public class PaxosClusterMemberEvents implements ClusterMemberEvents, Lifecycle
         @Override
         public void enteredCluster( ClusterConfiguration clusterConfiguration )
         {
-            snapshot.refreshSnapshot();
-
             // Catch up with elections
             for ( Map.Entry<String, URI> memberRoles : clusterConfiguration.getRoles().entrySet() )
             {

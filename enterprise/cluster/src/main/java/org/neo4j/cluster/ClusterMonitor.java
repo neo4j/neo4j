@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -17,9 +17,9 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.neo4j.cluster;
 
+import org.neo4j.cluster.com.BindingNotifier;
 import org.neo4j.cluster.protocol.cluster.ClusterListener;
 import org.neo4j.cluster.protocol.heartbeat.Heartbeat;
 
@@ -35,7 +35,7 @@ import org.neo4j.cluster.protocol.heartbeat.Heartbeat;
  * 
  * @author Mattias Persson
  */
-public interface ClusterMonitor extends Binding, Heartbeat
+public interface ClusterMonitor extends BindingNotifier, Heartbeat
 {
     void addClusterListener( ClusterListener listener);
     

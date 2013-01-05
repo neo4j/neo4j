@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -25,13 +25,11 @@ import expressions.Identifier
 import expressions.Identifier._
 import expressions.Literal
 import org.neo4j.cypher.internal.symbols.{RelationshipType, NodeType, SymbolTable}
-import org.neo4j.graphdb.{Node, DynamicRelationshipType, Direction}
+import org.neo4j.graphdb.{Node, Direction}
 import org.neo4j.cypher.internal.pipes.{QueryState, ExecutionContext}
 import org.neo4j.cypher.{SyntaxException, CypherTypeException, UniquePathNotUniqueException}
 import collection.JavaConverters._
 import collection.Map
-import org.neo4j.cypher.internal.commands.CreateRelationshipStartItem
-import org.neo4j.cypher.internal.commands.CreateNodeStartItem
 import org.neo4j.cypher.internal.helpers.{IsMap, MapSupport}
 
 object UniqueLink {
@@ -68,7 +66,8 @@ case class UniqueLink(start: NamedExpectation, end: NamedExpectation, rel: Named
           val tx = state.transaction.getOrElse(throw new RuntimeException("I need a transaction!"))
 
           val expectations = rel.getExpectations(context)
-          Some(this->Update(Seq(UpdateWrapper(Seq(), CreateRelationshipStartItem(rel.name, (Literal(startNode), Map()), (Literal(endNode), Map()), relType, expectations))), () => {
+          val createRel = CreateRelationship(rel.name, (Literal(startNode), Map()), (Literal(endNode), Map()), relType, expectations)
+          Some(this->Update(Seq(UpdateWrapper(Seq(), createRel, rel.name)), () => {
             Seq(tx.acquireWriteLock(startNode), tx.acquireWriteLock(endNode))
           }))
         case List(r) => Some(this->Traverse(rel.name -> r))
@@ -84,13 +83,13 @@ case class UniqueLink(start: NamedExpectation, end: NamedExpectation, rel: Named
       def createUpdateActions(): Seq[UpdateWrapper] = {
         val relExpectations = rel.getExpectations(context)
         val createRel = if (dir == Direction.OUTGOING) {
-          CreateRelationshipStartItem(rel.name, (Literal(startNode), Map()), (Identifier(other.name), Map()), relType, relExpectations)
+          CreateRelationship(rel.name, (Literal(startNode), Map()), (Identifier(other.name), Map()), relType, relExpectations)
         } else {
-          CreateRelationshipStartItem(rel.name, (Identifier(other.name), Map()), (Literal(startNode), Map()), relType, relExpectations)
+          CreateRelationship(rel.name, (Identifier(other.name), Map()), (Literal(startNode), Map()), relType, relExpectations)
         }
 
-        val relUpdate = UpdateWrapper(Seq(other.name), createRel)
-        val nodeCreate = UpdateWrapper(Seq(), CreateNodeStartItem(other.name, other.getExpectations(context)))
+        val relUpdate = UpdateWrapper(Seq(other.name), createRel, createRel.key)
+        val nodeCreate = UpdateWrapper(Seq(), CreateNode(other.name, other.getExpectations(context)), other.name)
 
         Seq(nodeCreate, relUpdate)
       }
@@ -156,13 +155,12 @@ case class UniqueLink(start: NamedExpectation, end: NamedExpectation, rel: Named
     node(start.name) + leftArrow(dir) + relInfo + rightArrow(dir) + node(end.name)
   }
 
+  def children = Seq(start.e, end.e, rel.e)
 
-  def filter(f: (Expression) => Boolean) = Seq.empty
-
-  def assertTypes(symbols: SymbolTable) {
-    checkTypes(start.properties, symbols)
-    checkTypes(end.properties, symbols)
-    checkTypes(rel.properties, symbols)
+  def throwIfSymbolsMissing(symbols: SymbolTable) {
+    throwIfSymbolsMissing(start.properties, symbols)
+    throwIfSymbolsMissing(end.properties, symbols)
+    throwIfSymbolsMissing(rel.properties, symbols)
   }
 
   def optional: Boolean = false

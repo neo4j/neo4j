@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -31,10 +31,7 @@ case class ParameterExpression(parameterName: String) extends Expression {
 
   def rewrite(f: (Expression) => Expression) = f(this)
 
-  def filter(f: (Expression) => Boolean) = if (f(this))
-    Seq(this)
-  else
-    Seq()
+  def children = Seq()
 
   def calculateType(symbols: SymbolTable) = AnyType()
 

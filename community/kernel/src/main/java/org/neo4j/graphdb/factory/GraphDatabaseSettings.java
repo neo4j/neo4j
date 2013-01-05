@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -17,7 +17,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.neo4j.graphdb.factory;
 
 import static org.neo4j.helpers.Settings.ANY;
@@ -36,9 +35,13 @@ import static org.neo4j.helpers.Settings.basePath;
 import static org.neo4j.helpers.Settings.illegalValueMessage;
 import static org.neo4j.helpers.Settings.matches;
 import static org.neo4j.helpers.Settings.min;
+import static org.neo4j.helpers.Settings.options;
 import static org.neo4j.helpers.Settings.port;
 import static org.neo4j.helpers.Settings.range;
 import static org.neo4j.helpers.Settings.setting;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting.BooleanSetting;
@@ -48,10 +51,12 @@ import org.neo4j.graphdb.factory.GraphDatabaseSetting.NumberOfBytesSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting.OptionsSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting.PortSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting.StringSetting;
+import org.neo4j.helpers.Service;
 import org.neo4j.helpers.Settings;
 import org.neo4j.kernel.configuration.ConfigurationMigrator;
 import org.neo4j.kernel.configuration.GraphDatabaseConfigurationMigrator;
 import org.neo4j.kernel.configuration.Migrator;
+import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.cache.MonitorGc;
 
 /**
@@ -70,7 +75,8 @@ public abstract class GraphDatabaseSettings
     @Description("The type of cache to use for nodes and relationships. "
             + "Note that the Neo4j Enterprise Edition has the additional 'gcr' cache type. "
             + "See the chapter on caches in the manual for more information.")
-    public static final CacheTypeSetting cache_type = new CacheTypeSetting( setting( "cache_type", Settings.options( CacheTypeSetting.availableCaches() ), CacheTypeSetting.soft ));
+    public static final CacheTypeSetting cache_type = new CacheTypeSetting( setting( "cache_type",
+            options( CacheTypeSetting.availableCaches() ), CacheTypeSetting.availableCaches()[0] ) );
 
     public static final BooleanSetting load_kernel_extensions = new BooleanSetting( setting("load_kernel_extensions", BOOLEAN, TRUE ));
 
@@ -389,16 +395,14 @@ public abstract class GraphDatabaseSettings
 
         public static String[] availableCaches()
         {
-            try
-            {
-                GraphDatabaseSettings.class.getClassLoader().loadClass( "org.neo4j.kernel.impl.cache" +
-                        ".GCResistantCacheProvider" );
-                return new String[]{gcr, soft, weak, strong, none};
-            }
-            catch ( ClassNotFoundException e )
-            {
-                return new String[]{soft, weak, strong, none};
-            }
+            List<String> available = new ArrayList<String>();
+            for ( CacheProvider cacheProvider : Service.load( CacheProvider.class ) )
+                available.add( cacheProvider.getName() );
+                                               // --- higher prio ---->
+            for ( String prioritized : new String[] { "soft", "gcr" } )
+                if ( available.remove( prioritized ) )
+                    available.add( 0, prioritized );
+            return available.toArray( new String[0] );
         }
     }
 

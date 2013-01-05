@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -54,6 +54,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.LogExtractor;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
+import org.neo4j.kernel.logging.Logging;
 
 public class ServerUtil
 {
@@ -115,7 +116,7 @@ public class ServerUtil
             catch ( IOException e )
             {
                 // TODO: what about error message?
-                graphDb.getMessageLog().logMessage(
+                graphDb.getDependencyResolver().resolveDependency( Logging.class ).getLogger( ServerUtil.class ).logMessage(
                         "Unable to rotate log for " + ds, e );
                 // TODO If we do it in rotate() the transaction semantics for such a failure will change
                 // slightly and that has got to be verified somehow. But to have it in there feels much better.

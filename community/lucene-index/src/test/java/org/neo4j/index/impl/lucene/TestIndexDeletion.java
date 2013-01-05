@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -265,7 +265,7 @@ public class TestIndexDeletion
 
     private WorkThread createWorker( String name )
     {
-        WorkThread workThread = new WorkThread( index, graphDb, node );
+        WorkThread workThread = new WorkThread( "other thread", index, graphDb, node );
         workers.add( workThread );
         return workThread;
     }

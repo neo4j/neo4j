@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -25,7 +25,7 @@ import org.neo4j.graphdb.Direction
 import collection.Seq
 import org.neo4j.cypher.internal.symbols._
 
-trait Pattern extends TypeSafe {
+trait Pattern extends TypeSafe with AstNode[Pattern] {
   def optional: Boolean
   def predicate: Predicate
   def possibleStartPoints: Seq[(String,CypherType)]
@@ -72,11 +72,15 @@ case class RelatedTo(left: String,
 
   def rels = Seq(relName)
 
-  def assertTypes(symbols: SymbolTable) {
-    predicate.assertTypes(symbols)
+  def throwIfSymbolsMissing(symbols: SymbolTable) {
+    predicate.throwIfSymbolsMissing(symbols)
   }
 
   def symbolTableDependencies = predicate.symbolTableDependencies
+
+  def children = Seq(predicate)
+
+  override def addsToRow() = Seq(left, right, relName)
 }
 
 abstract class PathPattern extends Pattern {
@@ -135,9 +139,11 @@ case class VarLengthRelatedTo(pathName: String,
 
   def rels = Seq()
 
-  def assertTypes(symbols: SymbolTable) {
-    predicate.assertTypes(symbols)
+  def throwIfSymbolsMissing(symbols: SymbolTable) {
+    predicate.throwIfSymbolsMissing(symbols)
   }
+
+  def children = Seq(predicate)
 }
 
 case class ShortestPath(pathName: String,
@@ -176,8 +182,10 @@ case class ShortestPath(pathName: String,
 
   def nodes = Seq(start,end)
 
-  def assertTypes(symbols: SymbolTable) {
+  def throwIfSymbolsMissing(symbols: SymbolTable) {
     possibleStartPoints.foreach(p => symbols.evaluateType(p._1, p._2))
-    predicate.assertTypes(symbols)
+    predicate.throwIfSymbolsMissing(symbols)
   }
+
+  def children = Seq(predicate)
 }

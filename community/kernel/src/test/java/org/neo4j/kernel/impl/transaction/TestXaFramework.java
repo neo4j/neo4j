@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -17,12 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.neo4j.kernel.impl.transaction;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
-import static org.neo4j.kernel.impl.transaction.TransactionStateFactory.NO_STATE_FACTORY;
 
 import java.io.File;
 import java.io.FilenameFilter;
@@ -32,6 +30,7 @@ import java.nio.channels.ReadableByteChannel;
 import java.util.HashMap;
 import java.util.Map;
 
+import javax.transaction.Transaction;
 import javax.transaction.TransactionManager;
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
@@ -50,6 +49,7 @@ import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.TransactionInterceptorProviders;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
+import org.neo4j.kernel.impl.core.NoTransactionState;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.xaframework.DefaultLogBufferFactory;
@@ -71,7 +71,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaResourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.XaTransaction;
 import org.neo4j.kernel.impl.transaction.xaframework.XaTransactionFactory;
 import org.neo4j.kernel.impl.util.FileUtils;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.logging.DevNullLoggingService;
 
 public class TestXaFramework extends AbstractNeo4jTestCase
 {
@@ -159,9 +159,9 @@ public class TestXaFramework extends AbstractNeo4jTestCase
     {
         private java.util.List<XaCommand> commandList = new java.util.ArrayList<XaCommand>();
 
-        public DummyTransaction( int identifier, XaLogicalLog log )
+        public DummyTransaction( int identifier, XaLogicalLog log, TransactionState state )
         {
-            super( identifier, log );
+            super( identifier, log, state );
             setCommitTxId( 0 );
         }
 
@@ -204,7 +204,7 @@ public class TestXaFramework extends AbstractNeo4jTestCase
         @Override
         public XaTransaction create( int identifier, TransactionState state )
         {
-            return new DummyTransaction( identifier, getLogicalLog() );
+            return new DummyTransaction( identifier, getLogicalLog(), state );
         }
 
         @Override
@@ -246,15 +246,31 @@ public class TestXaFramework extends AbstractNeo4jTestCase
             super( branchId, name );
             try
             {
+                TransactionStateFactory stateFactory = new TransactionStateFactory( new DevNullLoggingService() )
+                {
+                    @Override
+                    public TransactionState create( Transaction tx )
+                    {
+                        return new NoTransactionState()
+                        {
+                            @Override
+                            public TxIdGenerator getTxIdGenerator()
+                            {
+                                return getEmbeddedGraphDb().getTxIdGenerator();
+                            }
+                        };
+                    }
+                };
+                
                 map.put( "store_dir", path().getPath() );
                 xaContainer = xaFactory.newXaContainer( this, resourceFile(),
                         new DummyCommandFactory(),
-                        new DummyTransactionFactory(), NO_STATE_FACTORY, new TransactionInterceptorProviders(
+                        new DummyTransactionFactory(), stateFactory, new TransactionInterceptorProviders(
                         Iterables.<TransactionInterceptorProvider>empty(),
                         new DependencyResolver()
                         {
                             @Override
-                            public <T> T resolveDependency( Class<T> type ) throws IllegalArgumentException
+                            public <T> T resolveDependency( Class<T> type )
                             {
                                 return (T) new Config( MapUtil.stringMap(
                                         GraphDatabaseSettings.intercept_committing_transactions.name(),
@@ -391,8 +407,8 @@ public class TestXaFramework extends AbstractNeo4jTestCase
         xaDsMgr.registerDataSource( new DummyXaDataSource(
                 config, UTF8.encode( "DDDDDD" ), "dummy_datasource",
                 new XaFactory( new Config( config, GraphDatabaseSettings.class ),
-                        TxIdGenerator.DEFAULT, new PlaceboTm(), new DefaultLogBufferFactory(),
-                        fileSystem, StringLogger.DEV_NULL,
+                        TxIdGenerator.DEFAULT, new PlaceboTm( null, getEmbeddedGraphDb().getTxIdGenerator() ), new DefaultLogBufferFactory(),
+                        fileSystem, new DevNullLoggingService(),
                         RecoveryVerifier.ALWAYS_VALID, LogPruneStrategies.NO_PRUNING ) ) );
         XaDataSource xaDs = xaDsMgr.getXaDataSource( "dummy_datasource" );
         DummyXaConnection xaC = null;
@@ -458,7 +474,7 @@ public class TestXaFramework extends AbstractNeo4jTestCase
             FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
             xaDsMgr.registerDataSource( new DummyXaDataSource( config, UTF8.encode( "DDDDDD" ), "dummy_datasource1",
                     new XaFactory( new Config( config, GraphDatabaseSettings.class ), TxIdGenerator.DEFAULT,
-                            new PlaceboTm(), new DefaultLogBufferFactory(), fileSystem, StringLogger.DEV_NULL,
+                            (AbstractTransactionManager)tm, new DefaultLogBufferFactory(), fileSystem, new DevNullLoggingService(),
                             RecoveryVerifier.ALWAYS_VALID, LogPruneStrategies.NO_PRUNING ) ) );
             xaDs1 = (DummyXaDataSource) xaDsMgr
                     .getXaDataSource( "dummy_datasource1" );

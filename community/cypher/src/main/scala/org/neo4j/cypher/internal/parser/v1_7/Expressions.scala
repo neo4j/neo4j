@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -181,7 +181,7 @@ trait Expressions extends Base {
   def hasProperty = ignoreCase("has") ~> parens(property) ^^ {
     case x =>
       val prop = x.asInstanceOf[Property]
-      Has(Identifier(prop.entity), prop.property)
+      Has(prop.mapExpr, prop.property)
   }
 
   def sequencePredicate: Parser[Predicate] = allInSeq | anyInSeq | noneInSeq | singleInSeq | in

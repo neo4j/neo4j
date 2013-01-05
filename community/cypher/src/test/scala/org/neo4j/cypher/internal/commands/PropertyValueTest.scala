@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -19,14 +19,14 @@
  */
 package org.neo4j.cypher.internal.commands
 
-import expressions.Property
+import expressions.{Identifier, Property}
 import org.scalatest.Assertions
 import org.junit.Test
 import org.neo4j.cypher.internal.pipes.ExecutionContext
 
 class PropertyValueTest extends Assertions {
   @Test def nullNodeShouldGiveNullProperty() {
-    val p = Property("identifier", "property")
+    val p = Property(Identifier("identifier"), "property")
 
     assert(p(ExecutionContext.from("identifier" -> null)) === null)
   }

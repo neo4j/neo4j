@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -24,13 +24,13 @@ import static org.neo4j.kernel.CommonFactories.defaultFileSystemAbstraction;
 import static org.neo4j.kernel.CommonFactories.defaultLogBufferFactory;
 import static org.neo4j.kernel.impl.util.FileUtils.copyRecursively;
 import static org.neo4j.kernel.impl.util.FileUtils.deleteRecursively;
-import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
 
 import java.io.File;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.neo4j.kernel.impl.transaction.TransactionStateFactory;
+import org.neo4j.kernel.logging.DevNullLoggingService;
 
 public class TestUpgradeOneDotFourToFiveIT
 {
@@ -52,8 +52,8 @@ public class TestUpgradeOneDotFourToFiveIT
 //        config.put( FileSystemAbstraction.class, CommonFactories.defaultFileSystemAbstraction() );
 //        config.put( LogBufferFactory.class, CommonFactories.defaultLogBufferFactory() );
         
-        XaLogicalLog log = new XaLogicalLog( resourceFile(), null, null, null, defaultLogBufferFactory(), defaultFileSystemAbstraction(), DEV_NULL,
-                LogPruneStrategies.NO_PRUNING, TransactionStateFactory.NO_STATE_FACTORY );
+        XaLogicalLog log = new XaLogicalLog( resourceFile(), null, null, null, defaultLogBufferFactory(), defaultFileSystemAbstraction(), new DevNullLoggingService(),
+                LogPruneStrategies.NO_PRUNING, TransactionStateFactory.noStateFactory( new DevNullLoggingService() ) );
         log.open();
         fail( "Shouldn't be able to start" );
     }

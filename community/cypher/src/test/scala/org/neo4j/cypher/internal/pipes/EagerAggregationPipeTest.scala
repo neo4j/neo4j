@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -78,12 +78,12 @@ class EagerAggregationPipeTest extends JUnitSuite {
     val returnItems = createReturnItemsFor()
     val grouping = Map(
       "count(*)" -> CountStar(),
-      "avg(name.age)" -> Avg(Property("name", "age")),
-      "collect(name.age)" -> Collect(Property("name", "age")),
-      "count(name.age)" -> Count(Property("name", "age")),
-      "max(name.age)" -> Max(Property("name", "age")),
-      "min(name.age)" -> Min(Property("name", "age")),
-      "sum(name.age)" -> Sum(Property("name", "age"))
+      "avg(name.age)" -> Avg(Property(Identifier("name"), "age")),
+      "collect(name.age)" -> Collect(Property(Identifier("name"), "age")),
+      "count(name.age)" -> Count(Property(Identifier("name"), "age")),
+      "max(name.age)" -> Max(Property(Identifier("name"), "age")),
+      "min(name.age)" -> Min(Property(Identifier("name"), "age")),
+      "sum(name.age)" -> Sum(Property(Identifier("name"), "age"))
     )
 
     val aggregationPipe = new EagerAggregationPipe(source, returnItems, grouping)

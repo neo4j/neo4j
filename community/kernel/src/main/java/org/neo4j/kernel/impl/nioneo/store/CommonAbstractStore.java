@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -17,7 +17,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.neo4j.kernel.impl.nioneo.store;
 
 import static org.neo4j.helpers.Exceptions.launderedException;
@@ -514,8 +513,7 @@ public abstract class CommonAbstractStore
 
     protected IdGenerator openIdGenerator( File fileName, int grabSize, boolean firstTime )
     {
-        return idGeneratorFactory.open( fileSystemAbstraction, fileName, grabSize, getIdType()
-        );
+        return idGeneratorFactory.open( fileSystemAbstraction, fileName, grabSize, getIdType(), figureOutHighestIdInUse() );
     }
 
     protected abstract long figureOutHighestIdInUse();
@@ -599,6 +597,7 @@ public abstract class CommonAbstractStore
                     ByteBuffer buffer = ByteBuffer.wrap(
                         UTF8.encode( getTypeAndVersionDescriptor() ) );
                     fileChannel.write( buffer );
+                    stringLogger.debug( "Closing " + storageFileName + ", truncating at " + fileChannel.position() + " vs file size " + fileChannel.size() );
                     fileChannel.truncate( fileChannel.position() );
                     fileChannel.force( false );
                     releaseFileLockAndCloseFileChannel();

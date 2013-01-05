@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -24,8 +24,8 @@ import java.util.{Map => JavaMap}
 import collection.JavaConverters._
 import org.neo4j.graphdb.{Relationship, Node, PropertyContainer}
 import org.neo4j.helpers.ThisShouldNotHappenError
-import org.neo4j.cypher.internal.pipes.ExecutionContext
 import org.neo4j.cypher.internal.spi.QueryContext
+import org.neo4j.cypher.EntityNotFoundException
 
 object IsMap extends MapSupport {
   def unapply(x: Any): Option[(QueryContext) => Map[String, Any]] = if (isMap(x)) {
@@ -58,5 +58,12 @@ trait MapSupport {
     def iterator: Iterator[(String, Any)] = ops.propertyKeys(n).asScala.map(k => k -> ops.getProperty(n, k)).toIterator
 
     override def contains(key: String) = ops.hasProperty(n, key)
+
+    override def apply(key: String) = try {
+      super.apply(key)
+    } catch {
+      case e:NoSuchElementException => throw new EntityNotFoundException("The property '%s' does not exist on %s".format(key, n))
+    }
+
   }
 }

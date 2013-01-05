@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -23,7 +23,6 @@ import internal.StringExtras
 import org.scalatest.Assertions
 import org.junit.Assert._
 import org.junit.{Ignore, Test}
-import org.neo4j.graphdb.NotFoundException
 
 class ErrorMessagesTest extends ExecutionEngineHelper with Assertions with StringExtras {
   @Test def noReturnColumns() {
@@ -239,6 +238,12 @@ class ErrorMessagesTest extends ExecutionEngineHelper with Assertions with Strin
       "Properties on pattern elements are not allowed in MATCH")
   }
 
+  @Test def missing_something_to_delete() {
+    expectError(
+      "START p=node(0) DELETE x",
+      "Unknown identifier `x`")
+  }
+
   private def expectError[T <: CypherException](query: String, expectedError: String)(implicit manifest: Manifest[T]): T = {
     val error = intercept[T](engine.execute(query).toList)
     val s = """
@@ -255,7 +260,7 @@ Expected: %s
   }
 
   private def expectNotFoundError(query: String, expectedError: String)  {
-    val error = intercept[NotFoundException](engine.execute(query).toList)
+    val error = intercept[CypherException](engine.execute(query).toList)
     val s = """
 Wrong error message produced: %s
 Expected: %s

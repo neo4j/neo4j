@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -22,23 +22,30 @@ package org.neo4j.server.plugin.gremlin;
 import java.util.HashSet;
 import java.util.Set;
 
-public class ScriptCountingEngineReplacementDecision implements EngineReplacementDecision {
-    private final Set<String> scripts=new HashSet<String>();
+public class ScriptCountingEngineReplacementDecision implements EngineReplacementDecision
+{
+    private final Set<String> scripts = new HashSet<String>();
     private final int maxScriptCount;
 
-    public ScriptCountingEngineReplacementDecision(int maxScriptCount) {
+    public ScriptCountingEngineReplacementDecision( int maxScriptCount )
+    {
         this.maxScriptCount = maxScriptCount;
     }
 
     @Override
-    public boolean mustReplaceEngine() {
-        if (scripts.size() < maxScriptCount) return false;
+    public boolean mustReplaceEngine()
+    {
+        if ( scripts.size() < maxScriptCount )
+        {
+            return false;
+        }
         scripts.clear();
         return true;
     }
 
     @Override
-    public void beforeExecution(String script) {
-        scripts.add(script);
+    public void beforeExecution( String script )
+    {
+        scripts.add( script );
     }
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -17,13 +17,13 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.neo4j.cluster.protocol.snapshot;
 
 import java.net.URI;
 
 import org.neo4j.cluster.com.message.Message;
-import org.neo4j.cluster.com.message.MessageProcessor;
+import org.neo4j.cluster.com.message.MessageHolder;
+import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.statemachine.State;
 
 /**
@@ -37,7 +37,7 @@ public enum SnapshotState
                 @Override
                 public State<?, ?> handle( SnapshotContext context,
                                            Message<SnapshotMessage> message,
-                                           MessageProcessor outgoing
+                                           MessageHolder outgoing
                 )
                         throws Throwable
                 {
@@ -53,22 +53,27 @@ public enum SnapshotState
                         case refreshSnapshot:
                         {
                             URI coordinator = context.getClusterContext().getConfiguration().getMembers().get( 0 );
-                            outgoing.process( Message.to( SnapshotMessage.sendSnapshot, coordinator ) );
+                            outgoing.offer( Message.to( SnapshotMessage.sendSnapshot, coordinator ) );
                             return refreshing;
                         }
 
                         case join:
                         {
-                            if ( context.getClusterContext().isMe( context.getClusterContext().getConfiguration()
-                                    .getMembers().get( 0 ) ) || context.getSnapshotProvider() == null )
+                            if ( context.getClusterContext().getConfiguration().getMembers().size() <= 1 || context.getSnapshotProvider() == null )
                             {
                                 return ready;
                             }
                             else
                             {
-                                URI coordinator = context.getClusterContext().getConfiguration().getMembers().get( 0 );
-                                outgoing.process( Message.to( SnapshotMessage.sendSnapshot, coordinator ) );
-                                return refreshing;
+                                URI coordinator = context.getClusterContext().getConfiguration().getElected(ClusterConfiguration.COORDINATOR );
+                                if (coordinator != null)
+                                {
+                                    outgoing.offer( Message.to( SnapshotMessage.sendSnapshot, coordinator ) );
+                                    return refreshing;
+                                } else
+                                {
+                                    return ready;
+                                }
                             }
                         }
                     }
@@ -81,7 +86,7 @@ public enum SnapshotState
                 @Override
                 public State<?, ?> handle( SnapshotContext context,
                                            Message<SnapshotMessage> message,
-                                           MessageProcessor outgoing
+                                           MessageHolder outgoing
                 )
                         throws Throwable
                 {
@@ -105,7 +110,7 @@ public enum SnapshotState
                 @Override
                 public State<?, ?> handle( SnapshotContext context,
                                            Message<SnapshotMessage> message,
-                                           MessageProcessor outgoing
+                                           MessageHolder outgoing
                 )
                         throws Throwable
                 {
@@ -113,7 +118,9 @@ public enum SnapshotState
                     {
                         case sendSnapshot:
                         {
-                            outgoing.process( Message.respond( SnapshotMessage.snapshot, message, new SnapshotMessage.SnapshotState( context.getLearnerContext().getLastDeliveredInstanceId(), context.getSnapshotProvider() ) ) );
+                            outgoing.offer( Message.respond( SnapshotMessage.snapshot, message,
+                                    new SnapshotMessage.SnapshotState( context.getLearnerContext()
+                                            .getLastDeliveredInstanceId(), context.getSnapshotProvider() ) ) );
                             break;
                         }
 

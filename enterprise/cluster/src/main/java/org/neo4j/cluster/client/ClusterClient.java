@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.cluster.BindingListener;
@@ -33,6 +34,7 @@ import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.ConnectedStateMachines;
 import org.neo4j.cluster.MultiPaxosServerFactory;
 import org.neo4j.cluster.ProtocolServer;
+import org.neo4j.cluster.com.BindingNotifier;
 import org.neo4j.cluster.com.NetworkInstance;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcast;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastListener;
@@ -57,16 +59,16 @@ import org.neo4j.cluster.statemachine.StateTransitionLogger;
 import org.neo4j.cluster.timeout.FixedTimeoutStrategy;
 import org.neo4j.cluster.timeout.MessageTimeoutStrategy;
 import org.neo4j.cluster.timeout.Timeouts;
-import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.DaemonThreadFactory;
+import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.Logging;
 
-public class ClusterClient extends LifecycleAdapter implements ClusterMonitor, Cluster, AtomicBroadcast, Snapshot
+public class ClusterClient extends LifecycleAdapter
+        implements ClusterMonitor, Cluster, AtomicBroadcast, Snapshot, BindingNotifier
 {
     public interface Configuration
     {
@@ -259,7 +261,7 @@ public class ClusterClient extends LifecycleAdapter implements ClusterMonitor, C
             {
                 return config.getAddress();
             }
-        }, StringLogger.SYSTEM );
+        }, logging );
 
         server = protocolServerFactory.newProtocolServer( timeoutStrategy, networkNodeTCP, networkNodeTCP,
                 acceptorInstanceStore, electionCredentialsProvider );
@@ -290,6 +292,7 @@ public class ClusterClient extends LifecycleAdapter implements ClusterMonitor, C
         life.add( new Lifecycle()
         {
             private ScheduledExecutorService scheduler;
+            private ScheduledFuture<?> tickFuture;
 
             @Override
             public void init() throws Throwable
@@ -300,9 +303,10 @@ public class ClusterClient extends LifecycleAdapter implements ClusterMonitor, C
             @Override
             public void start() throws Throwable
             {
-                scheduler = Executors.newSingleThreadScheduledExecutor( new DaemonThreadFactory( "timeout" ) );
+                scheduler = Executors.newSingleThreadScheduledExecutor(
+                        new DaemonThreadFactory( "timeout-clusterClient" ) );
 
-                scheduler.scheduleWithFixedDelay( new Runnable()
+                tickFuture = scheduler.scheduleWithFixedDelay( new Runnable()
                 {
                     @Override
                     public void run()
@@ -317,6 +321,7 @@ public class ClusterClient extends LifecycleAdapter implements ClusterMonitor, C
             @Override
             public void stop() throws Throwable
             {
+                tickFuture.cancel( true );
                 scheduler.shutdownNow();
             }
 
@@ -363,6 +368,12 @@ public class ClusterClient extends LifecycleAdapter implements ClusterMonitor, C
         broadcast = server.newClient( AtomicBroadcast.class );
         heartbeat = server.newClient( Heartbeat.class );
         snapshot = server.newClient( Snapshot.class );
+    }
+
+    @Override
+    public void init() throws Throwable
+    {
+        life.init();
     }
 
     @Override

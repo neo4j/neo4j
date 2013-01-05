@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -27,14 +27,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import javax.transaction.HeuristicMixedException;
-import javax.transaction.HeuristicRollbackException;
-import javax.transaction.NotSupportedException;
-import javax.transaction.RollbackException;
-import javax.transaction.SystemException;
 import javax.transaction.UserTransaction;
 import javax.transaction.xa.Xid;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -125,7 +121,7 @@ public class UseJOTMAsTxManagerIT
     }
 
     @Test
-    public void shouldHandleFailingCommitWithExternalDataSourceGracefully() throws IllegalStateException, RollbackException, SystemException
+    public void shouldHandleFailingCommitWithExternalDataSourceGracefully() throws Exception
     {
         Map<String, String> config = new HashMap<String, String>();
         config.put( GraphDatabaseSettings.tx_manager_impl.name(), JOTMTransactionManager.NAME );
@@ -193,7 +189,31 @@ public class UseJOTMAsTxManagerIT
     }
     
     @Test
-    public void shouldSupportRollbacks() throws IllegalStateException, RollbackException, SystemException, NotSupportedException, SecurityException, HeuristicMixedException, HeuristicRollbackException
+    public void shouldSupportRollbacks() throws Exception
+    {
+        Map<String, String> config = new HashMap<String, String>();
+        config.put( GraphDatabaseSettings.tx_manager_impl.name(), JOTMTransactionManager.NAME );
+        GraphDatabaseAPI neo4j = null;
+
+        try
+        {
+            neo4j = new ImpermanentGraphDatabase( config );
+            neo4j.getTxManager().begin();
+            neo4j.createNode();
+            neo4j.getTxManager().rollback();
+        }
+        finally
+        {
+            if ( neo4j != null )
+            {
+                neo4j.shutdown();
+            }
+        }
+    }
+
+    @Ignore( "When going through Jotm object and UserTransaction we've got no control over begin() which creates the TransactionState object" )
+    @Test
+    public void shouldSupportRollbacksFromUserTransaction() throws Exception
     {
         Map<String, String> config = new HashMap<String, String>();
         config.put( GraphDatabaseSettings.tx_manager_impl.name(), JOTMTransactionManager.NAME );
@@ -220,5 +240,4 @@ public class UseJOTMAsTxManagerIT
             }
         }
     }
-
 }

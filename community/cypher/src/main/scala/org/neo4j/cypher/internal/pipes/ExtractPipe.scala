@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -41,8 +41,8 @@ class ExtractPipe(source: Pipe, val expressions: Map[String, Expression]) extend
 
   override def executionPlan(): String = source.executionPlan() + "\r\nExtract([" + source.symbols.keys.mkString(",") + "] => [" + expressions.keys.mkString(", ") + "])"
 
-  def assertTypes(symbols: SymbolTable) {
-    expressions.foreach(_._2.assertTypes(symbols))
+  def throwIfSymbolsMissing(symbols: SymbolTable) {
+    expressions.foreach(_._2.throwIfSymbolsMissing(symbols))
   }
 }
 

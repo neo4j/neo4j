@@ -1,5 +1,74 @@
 For Release Notes, see http://neo4j.org/release-notes
 
+1.9.M03 (2012-12-21)
+--------------------
+Server:
+o Pulled out Gremlin as separate plugin to support different versions
+
+Cypher:
+o Fixes #336 - Patterns that re-use a pattern node can produce non-existing matches
+o Fixes #369 - The substring-function sometimes fails when no length is specified
+
+1.9.M02 (2012-11-30)
+--------------------
+HA:
+o Lifecycle improvements, with proper removal of listeners on shutdown
+o Cluster snapshot synchronization used for HA cluster membership
+o Implements JMX changes  
+o IdGenerators instantiated properly in ModeSwitcher
+o ZooKeeper compatibility layer introduced, allows for rolling upgrades from 1.8
+o Ability to join a cluster even if there's an existing and empty database with a mismatching store ID.
+  If the existing database isn't empty an error will be logged and database unable to start.
+
+Cluster:
+o Moved shared logic, commonly refered to as cluster client into a ClusterClient class.
+o Reduced amount of threads used by Paxos by using fixed size thread pools
+o Paxos cluster membership management imporoved by introducing memberIsUnavailable and cleanup of roles
+
+Consistency Checker:
+o Write out log file if inconsistencies are found.
+o Improved configuration for memory mapping with MOST_FREQUENTLY_USED window pool.
+o Consistency checker defaults to using the 'most frequently used' implementation when
+  on Windows to avoid memory (un)mapping problems
+
+Management:
+o Adds serverId and current roles to the set of information available for cluster members
+
+Kernel:
+o Made sure that auto-indexing removed graph elements from indexes when they are delete
+o OrderByTypeExpander keeps ordering of type AND direction
+o Fixed an issue where a lock on a store was sometimes not released
+o Old GraphDatabaseSetting classes are now wrappers for Settings instances
+o Fixes an issue where an incomplete 2PC transaction could cause recovery to not be triggered
+o Optimizations for read performance
+  - Cache refers to relationship types as ints instead of Strings.
+  - Binary search on sorted arrays for finding properties and
+    relationship types in the cache.
+  - Less objects instantiated during getting and iterating relationships.
+  - Reduced number of map lookups significantly for a getProperty call,
+    especially outside transaction or in transactions without any changes.
+    (previously 8 lookups whereof 2 synchronized, now down to as low as 2)
+  - Uses ThreadLocal as mapper from thread to transaction
+  - Refactored LockReleaser into TransactionState, associated with each
+    transaction instead
+
+Server:
+o Server now allows - under some specific circumstances - setting empty arrays as properties. 
+  Specifically, it is allowed if there is a pre-existing array property on the entity from 
+  which the server can infer the type of array to store.
+o Traversal Javascript is now security sandboxed. It is possible to turn the sandbox off for
+  the next two releases, for backwards compatibility.
+
+Cypher:
+o The traversal pattern matcher now supports variable length relationship patterns
+o Fixes #946 - HAS(...) fails with ThisShouldNotHappenException for some patterns
+o Made Cypher better at keeping a numeric type. Adding two integers now returns an integer, and not a double.
+o Major refactoring to make certain Cypher is more lazy
+o When asking for the top x rows by some value, Cypher will now only keep a list the size of x
+o Fix so identifiers created inside a foreach can be used by other statements in the foreach
+o Fix for problems when using patterns with multiple unnamed nodes
+o Fixes problems when doing ORDER BY ... LIMIT x. When x is larger than the input set, sorting was never done.
+
 1.9.M01 (2012-10-23)
 --------------------
 Introduces consistency check and cluster components.
