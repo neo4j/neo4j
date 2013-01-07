@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
