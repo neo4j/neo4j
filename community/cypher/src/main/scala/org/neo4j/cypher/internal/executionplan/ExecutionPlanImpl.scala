@@ -181,7 +181,7 @@ The Neo4j Team""")
     }
 
     val prio = errors.head._1.priority
-    val errorsOfHighestPrio = errors.filter(_._1.priority == prio).map("Unknown identifier `" + _._2 + "`").distinct
+    val errorsOfHighestPrio = errors.filter(_._1.priority == prio).distinct.map(_._2)
 
     val errorMessage = errorsOfHighestPrio.mkString("\n")
     throw new SyntaxException(errorMessage)
