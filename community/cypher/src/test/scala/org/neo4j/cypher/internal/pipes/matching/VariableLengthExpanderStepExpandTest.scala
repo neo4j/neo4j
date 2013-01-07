@@ -23,7 +23,8 @@ import org.junit.Test
 import org.neo4j.graphdb.{RelationshipType, DynamicRelationshipType, Direction}
 import org.neo4j.cypher.internal.commands.True
 import org.neo4j.cypher.GraphDatabaseTestBase
-import org.neo4j.cypher.internal.pipes.{QueryState, ExecutionContext}
+import org.neo4j.cypher.internal.pipes.{QueryState}
+import org.neo4j.cypher.internal.ExecutionContext
 
 class VariableLengthExpanderStepExpandTest extends GraphDatabaseTestBase {
 

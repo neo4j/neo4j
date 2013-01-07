@@ -25,7 +25,7 @@ import org.neo4j.graphmatching.{PatternMatcher => SimplePatternMatcher, PatternN
 import collection.JavaConverters._
 import org.neo4j.cypher.internal.commands.{Predicate, True}
 import org.neo4j.cypher.internal.symbols.SymbolTable
-import org.neo4j.cypher.internal.pipes.ExecutionContext
+import org.neo4j.cypher.internal.ExecutionContext
 
 class SimplePatternMatcherBuilder(pattern: PatternGraph, predicates: Seq[Predicate], symbolTable: SymbolTable) extends MatcherBuilder {
   def createPatternNodes: immutable.Map[String, SimplePatternNode] = {

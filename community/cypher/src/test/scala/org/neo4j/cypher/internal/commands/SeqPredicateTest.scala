@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.commands
 import expressions.{Identifier, Literal}
 import org.junit.Test
 import org.scalatest.Assertions
-import org.neo4j.cypher.internal.pipes.ExecutionContext
+import org.neo4j.cypher.internal.ExecutionContext
 
 class SeqPredicateTest extends Assertions {
   @Test def allStringsBeginWithA() {

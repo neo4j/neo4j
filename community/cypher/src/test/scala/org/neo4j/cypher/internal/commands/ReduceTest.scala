@@ -23,7 +23,7 @@ import expressions.{ReduceFunction, Identifier, LengthFunction, Add, Literal}
 import org.neo4j.cypher.internal.symbols.{SymbolTable, StringType, NumberType, AnyCollectionType}
 import org.scalatest.Assertions
 import org.junit.Test
-import org.neo4j.cypher.internal.pipes.ExecutionContext
+import org.neo4j.cypher.internal.ExecutionContext
 
 class ReduceTest extends Assertions {
   @Test def canReturnSomethingFromAnIterable() {

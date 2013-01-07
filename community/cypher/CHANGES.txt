@@ -1,6 +1,7 @@
 1.9.RC
 -------
 o Clearer error message for when aggregations are used in ORDER BY and not in RETURN
+o Fixes #390 - IN/ANY/NONE/ANY/SINGLE causes RuntimeException for some patterns
 
 1.9.M03
 -------

@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.pipes.aggregation
 import org.junit.Test
 import org.junit.Assert._
 import org.neo4j.cypher.internal.commands.expressions.{Expression, Identifier, Literal, NumericHelper}
-import org.neo4j.cypher.internal.pipes.ExecutionContext
+import org.neo4j.cypher.internal.ExecutionContext
 
 abstract class PercentileTest {
   def createAggregator(inner: Expression, percentile: Expression): AggregationFunction

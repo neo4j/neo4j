@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.pipes.matching
 import org.neo4j.graphdb.{Relationship, Node, Direction, PropertyContainer}
 import org.neo4j.cypher.internal.commands.Predicate
 import collection.Map
-import org.neo4j.cypher.internal.pipes.ExecutionContext
+import org.neo4j.cypher.internal.ExecutionContext
 
 class PatterMatchingBuilder(patternGraph: PatternGraph, predicates: Seq[Predicate]) extends MatcherBuilder {
   def getMatches(sourceRow: ExecutionContext): Traversable[ExecutionContext] = {

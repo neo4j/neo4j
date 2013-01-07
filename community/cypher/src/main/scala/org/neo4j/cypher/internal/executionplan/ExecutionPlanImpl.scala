@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.executionplan
 import builders._
 import org.neo4j.cypher.internal.pipes._
 import org.neo4j.cypher._
-import internal.ClosingIterator
+import internal.{ExecutionContext, ClosingIterator}
 import internal.commands._
 import internal.mutation.{CreateNode, CreateRelationship}
 import internal.spi.gdsimpl.GDSBackedQueryContext

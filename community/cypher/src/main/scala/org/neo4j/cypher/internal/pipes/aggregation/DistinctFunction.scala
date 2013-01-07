@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.pipes.aggregation
 
 import org.neo4j.cypher.internal.commands.expressions.Expression
-import org.neo4j.cypher.internal.pipes.ExecutionContext
+import org.neo4j.cypher.internal.ExecutionContext
 
 class DistinctFunction(value: Expression, inner: AggregationFunction) extends AggregationFunction {
   val seen = scala.collection.mutable.Set[Any]()

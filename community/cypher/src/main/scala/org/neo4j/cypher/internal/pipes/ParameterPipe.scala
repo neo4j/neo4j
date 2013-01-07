@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.pipes
 
 import java.lang.String
 import org.neo4j.cypher.internal.symbols.SymbolTable
+import org.neo4j.cypher.internal.ExecutionContext
 
 class ParameterPipe() extends Pipe {
   def createResults(state: QueryState) = Iterator(ExecutionContext(state = state))
