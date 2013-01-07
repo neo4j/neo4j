@@ -514,6 +514,13 @@ return distinct center""")
 
     assert(result.toList === List())
   }
+
+  @Test
+  def should_be_able_to_use_external_identifiers_inside_foreach() {
+    val result = parseAndExecute("start a=node(0), b=node(0) foreach(x in [b] : create x-[:FOO]->a) ")
+
+    assert(result.toList === List())
+  }
 }
 
 trait StatisticsChecker extends Assertions {
