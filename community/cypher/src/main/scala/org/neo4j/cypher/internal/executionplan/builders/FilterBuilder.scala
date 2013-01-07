@@ -68,7 +68,8 @@ class FilterBuilder extends PlanBuilder {
     val unsolvedPredicates = querySoFar.where.filter(_.unsolved).map(_.token)
 
     unsolvedPredicates.
-      flatMap(pred => pipe.symbols.missingSymbolTableDependencies(pred))
+      flatMap(pred => pipe.symbols.missingSymbolTableDependencies(pred)).
+      map("Unknown identifier `%s`".format(_))
   }
 
   private def yesOrNo(q: QueryToken[_], p: Pipe) = q match {
