@@ -36,7 +36,7 @@ case class SingleStep(id: Int,
 
 
   private def filter(r: Relationship, n: Node, parameters: ExecutionContext): Boolean = {
-    val m = new MiniMap(r, n, parameters)
+    val m = new MiniMap(r, n, parameters.state)
     relPredicate.isMatch(m) && nodePredicate.isMatch(m)
   }
 

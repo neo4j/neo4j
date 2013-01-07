@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.pipes.matching
 import org.neo4j.graphdb._
 import org.neo4j.cypher.internal.commands.Predicate
 import collection.mutable
-import org.neo4j.cypher.internal.pipes.ExecutionContext
+import org.neo4j.cypher.internal.pipes.{QueryState, MutableMaps, ExecutionContext}
 import org.neo4j.cypher.internal.commands.expressions.Expression
 import org.neo4j.cypher.internal.symbols.SymbolTable
 import org.neo4j.cypher.internal.commands.True
@@ -152,22 +152,16 @@ case class RelationshipIdentifier(name:String) extends MiniMapIdentifier(name) {
   protected def extract(m: MiniMap) = m.relationship
 }
 
-case class MiniMap(var relationship: Relationship, var node: Node, parameters: ExecutionContext)
-  extends ExecutionContext(params = parameters.params) {
+case class MiniMap(var relationship: Relationship,
+                   var node: Node,
+                   myState: QueryState,
+                   myMap: collection.mutable.Map[String, Any] = MutableMaps.empty)
+  extends ExecutionContext(state = myState, m = myMap) {
 
   override def iterator = throw new RuntimeException
 
   override def -(key: String) = throw new RuntimeException
 
-  override def +[B1 >: Any](kv: (String, B1)) = throw new RuntimeException
-
-  override def newWith(newEntries: Seq[(String, Any)]) = throw new RuntimeException
-
-  override def newWith(newEntries: scala.collection.Map[String, Any]) = throw new RuntimeException
-
-  override def newFrom(newEntries: Seq[(String, Any)]) = throw new RuntimeException
-
-  override def newFrom(newEntries: scala.collection.Map[String, Any]) = throw new RuntimeException
-
-  override def newWith(newEntry: (String, Any)) = throw new RuntimeException
+  override protected def createWithNewMap(newMap: mutable.Map[String, Any]) =
+    MiniMap(relationship, node, myState, newMap)
 }

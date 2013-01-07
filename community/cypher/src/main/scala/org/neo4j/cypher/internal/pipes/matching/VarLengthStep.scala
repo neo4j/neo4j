@@ -49,7 +49,7 @@ case class VarLengthStep(id: Int,
 
   def expand(node: Node, parameters: ExecutionContext): (Iterable[Relationship], Option[ExpanderStep]) = {
     def filter(r: Relationship, n: Node): Boolean = {
-      val m = new MiniMap(r, n, parameters)
+      val m = new MiniMap(r, n, parameters.state)
       relPredicate.isMatch(m) && nodePredicate.isMatch(m)
     }
 

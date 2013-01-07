@@ -61,7 +61,7 @@ class CreateNodesAndRelationshipsBuilder(db: GraphDatabaseService) extends PlanB
     case Unsolved(x: CreateNodeStartItem)         => plan.pipe.symbols.missingSymbolTableDependencies(x)
     case Unsolved(x: CreateRelationshipStartItem) => plan.pipe.symbols.missingSymbolTableDependencies(x)
     case _                                        => Seq()
-  }
+  }.map("Unknown identifier `%s`".format(_))
 
   def canWorkWith(plan: ExecutionPlanInProgress) = plan.query.start.exists(applicableTo(plan.pipe))
 
@@ -107,7 +107,9 @@ trait UpdateCommandExpander {
 
     val missingCreateNodeActions = commands.flatMap {
       case ForeachAction(coll, id, actions) =>
-        val expandedCommands = expandCommands(actions, symbols.add(id, coll.evaluateType(AnyCollectionType(), symbols)))
+        val iteratedType = coll.evaluateType(AnyCollectionType(), symbols).iteratedType
+        val expandedCommands = expandCommands(actions, symbols.add(id, iteratedType))
+
         Seq(ForeachAction(coll, id, expandedCommands))
 
       case createRel: CreateRelationshipStartItem =>

@@ -54,6 +54,9 @@ class ShortestPathBuilder extends PlanBuilder {
     val unsolvedShortestPaths: Seq[ShortestPath] = querySoFar.patterns.
       filter(sp => !sp.solved && sp.token.isInstanceOf[ShortestPath]).map(_.token.asInstanceOf[ShortestPath])
 
-    unsolvedShortestPaths.flatMap(sp => symbols.missingSymbolTableDependencies(sp)).distinct
+    unsolvedShortestPaths.
+      flatMap(sp => symbols.missingSymbolTableDependencies(sp)).
+      distinct.
+      map("Unknown identifier `%s`".format(_))
   }
 }

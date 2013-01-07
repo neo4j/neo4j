@@ -2308,4 +2308,12 @@ RETURN x0.name?
       Map("a.count" -> 15)
     ))
   }
+
+  @Test
+  def filtering_in_match_should_not_fail() {
+    relate(refNode, createNode("name" -> "Neo"))
+    val result = parseAndExecute("START n = node(0) MATCH n-->me WHERE me.name IN ['Neo'] RETURN me.name")
+
+    assert(result.toList === List(Map("me.name"->"Neo")))
+  }
 }

@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.pipes
 
-import java.lang.String
 import org.neo4j.cypher.internal.symbols.SymbolTable
 import collection.Iterator
 import org.neo4j.cypher.internal.mutation.UpdateAction
@@ -106,12 +105,12 @@ object ExecutionContext {
 
 case class ExecutionContext(m: MutableMap[String, Any] = MutableMaps.empty,
                             mutationCommands: Queue[UpdateAction] = Queue.empty,
-                            params: Map[String, Any] = Map.empty)
+                            state: QueryState = QueryState())
   extends MutableMap[String, Any] {
   def get(key: String): Option[Any] = m.get(key)
 
   def getParam(key: String): Any =
-    params.getOrElse(key, throw new ParameterNotFoundException("Expected a parameter named " + key))
+    state.params.getOrElse(key, throw new ParameterNotFoundException("Expected a parameter named " + key))
 
   def iterator: Iterator[(String, Any)] = m.iterator
 
@@ -133,25 +132,24 @@ case class ExecutionContext(m: MutableMap[String, Any] = MutableMaps.empty,
     this
   }
 
-  def newWith(newEntries: Seq[(String, Any)]) = {
-    copy(m = (MutableMaps.create(this.m) ++= newEntries))
-  }
+  def newWith(newEntries: Seq[(String, Any)]) =
+    createWithNewMap(MutableMaps.create(this.m) ++= newEntries)
 
-  def newWith(newEntries: scala.collection.Map[String, Any]) = {
-    copy(m = (MutableMaps.create(this.m) ++= newEntries))
-  }
+  def newWith(newEntries: scala.collection.Map[String, Any]) =
+    createWithNewMap(MutableMaps.create(this.m) ++= newEntries)
 
-  def newFrom(newEntries: Seq[(String, Any)]) = {
-    copy(m = MutableMaps.create(newEntries: _*))
-  }
+  def newFrom(newEntries: Seq[(String, Any)]) =
+    createWithNewMap(MutableMaps.create(newEntries: _*))
 
-  def newFrom(newEntries: scala.collection.Map[String, Any]) = {
-    copy(m = MutableMaps.create(newEntries))
-  }
+  def newFrom(newEntries: scala.collection.Map[String, Any]) =
+    createWithNewMap(MutableMaps.create(newEntries))
 
-  def newWith(newEntry: (String, Any)) = {
-    copy(m = (MutableMaps.create(this.m) += newEntry))
-  }
+  def newWith(newEntry: (String, Any)) =
+    createWithNewMap(MutableMaps.create(this.m) += newEntry)
 
-  override def clone: ExecutionContext = newFrom(m)
+  override def clone(): ExecutionContext = newFrom(m)
+
+  protected def createWithNewMap(newMap: MutableMap[String, Any]) = {
+    copy(m = newMap)
+  }
 }

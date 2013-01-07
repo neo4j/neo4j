@@ -79,6 +79,8 @@ class UpdateActionBuilder(db: GraphDatabaseService) extends PlanBuilder with Upd
       case _                             => None
     }
 
-    (updateDeps ++ startDeps).distinct
+    (updateDeps ++ startDeps).
+      distinct.
+      map("Unknown identifier `%s`".format(_))
   }
 }

@@ -238,6 +238,12 @@ class ErrorMessagesTest extends ExecutionEngineHelper with Assertions with Strin
       "Properties on pattern elements are not allowed in MATCH")
   }
 
+  @Test def aggregations_must_be_included_in_return() {
+    expectError(
+      "START a=node(0) RETURN a ORDER BY count(*)",
+      "Aggregation expressions must be listed in the RETURN clause to be used in ORDER BY")
+  }
+
   private def expectError[T <: CypherException](query: String, expectedError: String)(implicit manifest: Manifest[T]): T = {
     val error = intercept[T](engine.execute(query).toList)
     val s = """

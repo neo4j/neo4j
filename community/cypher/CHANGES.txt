@@ -1,5 +1,11 @@
+1.8.2
+-----
+o Clearer error message for when aggregations are used in ORDER BY and not in RETURN
+o Fixes #390 - IN/ANY/NONE/ANY/SINGLE causes RuntimeException for some patterns
+o Fixes #394 - Identifiers inside of FOREACH get the wrong type
+
 1.8.1
--------------------
+-----
 o The traversal pattern matcher now supports variable length relationship patterns
 o Fixes #946 - HAS(...) fails with ThisShouldNotHappenException for some patterns
 o Made Cypher better at keeping a numeric type. Adding two integers now returns an integer, and not a double.
@@ -134,7 +140,7 @@ o Added COALESCE
 o Added column aliasing with AS
 o Variable length relationships can now introduce a rel-iterable
 o BREAKING CHANGE: Changed the syntax for iterable predicated ALL/NONE/ANY/SINGLE to use WHERE instead of a colon
-o BREAKING CHANGE: ExecutionResult is now a read-once, forward only iterator. 
+o BREAKING CHANGE: ExecutionResult is now a read-once, forward only iterator.
 o Fixed problems with optional graph elements
 
 1.6.M01 (2011-11-24)
@@ -170,4 +176,3 @@ o Added new aggregate function - COLLECT
 o Added paths
 o Changed r.TYPE to type(r)
 o Variable length path supported
-
