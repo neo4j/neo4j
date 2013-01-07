@@ -20,13 +20,14 @@
 package org.neo4j.cypher.internal.executionplan.builders
 
 import org.neo4j.cypher.internal.commands._
-import org.neo4j.cypher.internal.pipes.{ExecutionContext, RelationshipStartPipe, NodeStartPipe, Pipe}
+import org.neo4j.cypher.internal.pipes.{RelationshipStartPipe, NodeStartPipe, Pipe}
 import org.neo4j.graphdb.{Relationship, Node, GraphDatabaseService}
 import collection.JavaConverters._
 import java.lang.{Iterable => JIterable}
 import org.neo4j.cypher.MissingIndexException
 import org.neo4j.cypher.internal.executionplan.{ExecutionPlanInProgress, PlanBuilder}
 import GetGraphElements.getElements
+import org.neo4j.cypher.internal.ExecutionContext
 
 class IndexQueryBuilder(graph: GraphDatabaseService) extends PlanBuilder {
   def apply(plan: ExecutionPlanInProgress) = {

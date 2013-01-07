@@ -74,7 +74,7 @@ class LazyTest extends ExecutionEngineHelper with Assertions {
 
     val step = SingleStep(0, Seq(), Direction.OUTGOING, None, True(), True())
     val matcher = new MonoDirectionalTraversalMatcher(step, (ctx) => Seq(monitoredNode))
-    val ctx = ExecutionContext(state=QueryState(graph)).newWith("a" -> monitoredNode)
+    val ctx = internal.ExecutionContext(state=QueryState(graph)).newWith("a" -> monitoredNode)
 
     //When:
     val iter = matcher.findMatchingPaths(QueryState(), ctx)

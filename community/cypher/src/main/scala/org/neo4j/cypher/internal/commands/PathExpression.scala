@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.pipes.matching.MatchingContext
 import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.graphdb.Path
 import org.neo4j.cypher.internal.executionplan.builders.PatternGraphBuilder
-import org.neo4j.cypher.internal.pipes.ExecutionContext
+import org.neo4j.cypher.internal.ExecutionContext
 
 case class PathExpression(pathPattern: Seq[Pattern])
   extends Expression

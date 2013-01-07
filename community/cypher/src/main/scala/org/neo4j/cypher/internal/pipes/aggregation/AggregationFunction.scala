@@ -19,8 +19,7 @@
  */
 package org.neo4j.cypher.internal.pipes.aggregation
 
-import collection.Map
-import org.neo4j.cypher.internal.pipes.ExecutionContext
+import org.neo4j.cypher.internal.ExecutionContext
 
 /**
  * Base class for aggregation functions. The function is stateful

@@ -21,9 +21,10 @@ package org.neo4j.cypher.internal.mutation
 
 import org.neo4j.cypher.internal.commands.expressions.Expression
 import collection.Map
-import org.neo4j.cypher.internal.pipes.{QueryState, ExecutionContext}
+import org.neo4j.cypher.internal.pipes.{QueryState}
 import org.neo4j.graphdb.Node
 import org.neo4j.cypher.internal.symbols.{SymbolTable, RelationshipType}
+import org.neo4j.cypher.internal.ExecutionContext
 
 case class CreateRelationship(key: String,
                                        from: (Expression, Map[String, Expression]),

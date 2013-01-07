@@ -24,7 +24,7 @@ import org.scalatest.Assertions
 import org.junit.Test
 import org.neo4j.graphdb.{DynamicRelationshipType, Direction}
 import org.neo4j.cypher.internal.commands.True
-import org.neo4j.cypher.internal.pipes.ExecutionContext
+import org.neo4j.cypher.internal.ExecutionContext
 
 class HistoryTest extends GraphDatabaseTestBase with Assertions {
 

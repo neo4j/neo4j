@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.pipes
 
 import org.neo4j.cypher.internal.symbols.{SymbolTable, CypherType}
 import collection.Map
+import org.neo4j.cypher.internal.ExecutionContext
 
 class FakePipe(val data: Iterator[Map[String, Any]], identifiers: (String, CypherType)*) extends Pipe {
 

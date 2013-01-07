@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.commands
 import expressions.{ExtractFunction, Identifier, LengthFunction}
 import org.scalatest.Assertions
 import org.junit.Test
-import org.neo4j.cypher.internal.pipes.ExecutionContext
+import org.neo4j.cypher.internal.ExecutionContext
 
 class ExtractTest extends Assertions {
   @Test def canReturnSomethingFromAnIterable() {

@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.commands.expressions
 
 import org.neo4j.cypher._
 import internal.commands.AstNode
+import internal.ExecutionContext
 import internal.helpers.TypeSafeMathSupport
-import internal.pipes.ExecutionContext
 import internal.symbols._
 
 abstract class Expression extends (ExecutionContext => Any)

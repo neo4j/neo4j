@@ -23,7 +23,7 @@ import org.neo4j.graphdb.{Relationship, Path, PathExpander}
 import org.neo4j.graphdb.traversal.BranchState
 import java.lang.{Iterable => JIterable}
 import collection.JavaConverters._
-import org.neo4j.cypher.internal.pipes.ExecutionContext
+import org.neo4j.cypher.internal.ExecutionContext
 
 class TraversalPathExpander(params: ExecutionContext) extends PathExpander[Option[ExpanderStep]] {
   def expand(path: Path, state: BranchState[Option[ExpanderStep]]): JIterable[Relationship] = {

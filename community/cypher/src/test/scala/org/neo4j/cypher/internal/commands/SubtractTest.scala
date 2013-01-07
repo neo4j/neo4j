@@ -23,7 +23,7 @@ import expressions.{Literal, Subtract}
 import org.junit.Test
 import org.scalatest.Assertions
 import org.neo4j.cypher.CypherTypeException
-import org.neo4j.cypher.internal.pipes.ExecutionContext
+import org.neo4j.cypher.internal.ExecutionContext
 
 class SubtractTest extends Assertions {
 

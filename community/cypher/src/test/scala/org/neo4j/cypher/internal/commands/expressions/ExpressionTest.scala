@@ -25,8 +25,8 @@ import org.neo4j.cypher.internal.symbols._
 import collection.Map
 import org.neo4j.cypher.CypherTypeException
 import org.neo4j.helpers.ThisShouldNotHappenError
-import org.neo4j.cypher.internal.pipes.ExecutionContext
-import org.neo4j.cypher.internal.commands.{ReturnItem, Return}
+import org.neo4j.cypher.internal.commands.ReturnItem
+import org.neo4j.cypher.internal.ExecutionContext
 
 class ExpressionTest extends Assertions {
   @Test def replacePropWithCache() {

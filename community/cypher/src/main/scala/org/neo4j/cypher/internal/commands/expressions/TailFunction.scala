@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.commands.expressions
 import org.neo4j.cypher.internal.symbols.{SymbolTable, AnyCollectionType}
 import org.neo4j.cypher.internal.helpers.CollectionSupport
-import org.neo4j.cypher.internal.pipes.ExecutionContext
+import org.neo4j.cypher.internal.ExecutionContext
 
 case class TailFunction(collection: Expression) extends NullInNullOutExpression(collection) with CollectionSupport {
   def compute(value: Any, m: ExecutionContext) = {

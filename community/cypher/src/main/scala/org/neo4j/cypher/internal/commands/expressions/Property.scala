@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.commands.expressions
 
 import org.neo4j.cypher.internal.symbols._
 import org.neo4j.helpers.ThisShouldNotHappenError
-import org.neo4j.cypher.internal.pipes.ExecutionContext
 import org.neo4j.cypher.internal.helpers.IsMap
+import org.neo4j.cypher.internal.ExecutionContext
 
 case class Property(mapExpr: Expression, property: String) extends Expression {
   def apply(ctx: ExecutionContext): Any = mapExpr(ctx) match {

@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.commands
 import expressions.{Identifier, Property}
 import org.scalatest.Assertions
 import org.junit.Test
-import org.neo4j.cypher.internal.pipes.ExecutionContext
+import org.neo4j.cypher.internal.ExecutionContext
 
 class PropertyValueTest extends Assertions {
   @Test def nullNodeShouldGiveNullProperty() {

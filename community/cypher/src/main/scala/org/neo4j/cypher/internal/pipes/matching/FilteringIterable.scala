@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.pipes.matching
 
 import org.neo4j.graphdb.{Node, Relationship}
-import org.neo4j.cypher.internal.pipes.ExecutionContext
 import org.neo4j.cypher.internal.commands.Predicate
+import org.neo4j.cypher.internal.ExecutionContext
 
 
 class FilteringIterable(inner: Iterable[Relationship], startNode:Node, predicate: Predicate, ctx:ExecutionContext)
