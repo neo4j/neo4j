@@ -1,3 +1,7 @@
+1.9.RC
+-------
+o Fixes #394 - Identifiers inside of FOREACH get the wrong type
+
 1.9.M03
 -------
 o Fixes #336 - Patterns that re-use a pattern node can produce non-existing matches
