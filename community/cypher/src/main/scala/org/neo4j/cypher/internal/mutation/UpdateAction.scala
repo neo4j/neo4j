@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.mutation
 
 import org.neo4j.cypher.CypherTypeException
 import org.neo4j.cypher.internal.symbols._
-import org.neo4j.cypher.internal.pipes.{QueryState, ExecutionContext}
+import org.neo4j.cypher.internal.pipes.{QueryState}
 
 import java.util.{Map => JavaMap}
 import scala.collection.JavaConverters._
@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.helpers.CollectionSupport
 import org.neo4j.cypher.internal.commands.expressions.Expression
 import org.neo4j.graphdb.{Node, Relationship, PropertyContainer}
 import org.neo4j.cypher.internal.commands.AstNode
+import org.neo4j.cypher.internal.ExecutionContext
 
 trait UpdateAction extends TypeSafe with AstNode[UpdateAction] {
   def exec(context: ExecutionContext, state: QueryState): Traversable[ExecutionContext]

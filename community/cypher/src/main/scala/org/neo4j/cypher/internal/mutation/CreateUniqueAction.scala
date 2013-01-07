@@ -20,12 +20,13 @@
 package org.neo4j.cypher.internal.mutation
 
 import org.neo4j.cypher.internal.symbols.{CypherType, SymbolTable}
-import org.neo4j.cypher.internal.pipes.{QueryState, ExecutionContext}
+import org.neo4j.cypher.internal.pipes.{QueryState}
 import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.cypher.internal.commands.StartItem
 import org.neo4j.cypher.UniquePathNotUniqueException
 import org.neo4j.graphdb.{Lock, PropertyContainer}
 import org.neo4j.cypher.internal.commands.expressions.Expression
+import org.neo4j.cypher.internal.ExecutionContext
 
 case class CreateUniqueAction(incomingLinks: UniqueLink*) extends UpdateAction {
 

@@ -19,12 +19,10 @@
  */
 package org.neo4j.cypher.internal.pipes.aggregation
 
-import org.neo4j.cypher.internal.Comparer
+import org.neo4j.cypher.internal.{ExecutionContext, Comparer}
 import java.lang.Boolean
 import org.neo4j.cypher.internal.commands.expressions.Expression
 import org.neo4j.cypher.SyntaxException
-import collection.Map
-import org.neo4j.cypher.internal.pipes.ExecutionContext
 
 trait MinMax extends AggregationFunction with Comparer {
   def value: Expression

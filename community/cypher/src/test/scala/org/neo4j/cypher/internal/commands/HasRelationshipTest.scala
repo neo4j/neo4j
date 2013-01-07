@@ -25,8 +25,9 @@ import org.scalatest.Assertions
 import org.junit.{Before, Test}
 import org.neo4j.graphdb.{Node, Direction}
 import org.junit.Assert._
-import org.neo4j.cypher.internal.pipes.{QueryState, ExecutionContext}
+import org.neo4j.cypher.internal.pipes.{QueryState}
 import org.neo4j.cypher.internal.spi.gdsimpl.GDSBackedQueryContext
+import org.neo4j.cypher.internal.ExecutionContext
 
 
 class HasRelationshipTest extends GraphDatabaseTestBase with Assertions {

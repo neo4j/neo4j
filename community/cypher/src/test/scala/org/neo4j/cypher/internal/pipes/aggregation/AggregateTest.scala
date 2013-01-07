@@ -20,8 +20,7 @@
 package org.neo4j.cypher.internal.pipes.aggregation
 
 import org.neo4j.cypher.internal.commands.expressions.{Identifier, Expression}
-import org.neo4j.cypher.internal.pipes.ExecutionContext
-
+import org.neo4j.cypher.internal.ExecutionContext
 
 abstract class AggregateTest {
   def createAggregator(inner: Expression): AggregationFunction

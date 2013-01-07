@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.mutation.CreateNode
 import collection.Map
 import org.neo4j.cypher.internal.commands.expressions.{Identifier, Expression}
 import org.neo4j.cypher.internal.symbols.SymbolTable
+import org.neo4j.cypher.internal.ExecutionContext
 
 class ExecuteUpdateCommandsPipe(source: Pipe, db: GraphDatabaseService, commands: Seq[UpdateAction])
   extends PipeWithSource(source) {

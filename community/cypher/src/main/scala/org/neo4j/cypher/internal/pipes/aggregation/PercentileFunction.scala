@@ -19,10 +19,9 @@
  */
 package org.neo4j.cypher.internal.pipes.aggregation
 
-import collection.Map
 import org.neo4j.cypher.internal.commands.expressions.Expression
 import org.neo4j.cypher.internal.commands.expressions.NumericHelper
-import org.neo4j.cypher.internal.pipes.ExecutionContext
+import org.neo4j.cypher.internal.ExecutionContext
 
 class PercentileContFunction(val value: Expression, val percentile: Expression)
   extends AggregationFunction

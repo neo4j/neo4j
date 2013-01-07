@@ -24,7 +24,7 @@ import internal.commands.expressions.Add
 import internal.commands.expressions.Literal
 import internal.commands.expressions.Multiply
 import internal.commands.expressions.Subtract
-import internal.pipes.ExecutionContext
+import internal.ExecutionContext
 import org.junit.Test
 import org.hamcrest.CoreMatchers._
 import org.hamcrest.Matcher

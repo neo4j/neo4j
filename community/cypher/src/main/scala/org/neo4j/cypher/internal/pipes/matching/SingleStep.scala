@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.pipes.matching
 
-import org.neo4j.graphdb.{Node, Relationship, Direction, RelationshipType}
+import org.neo4j.graphdb.{Node, Relationship, Direction}
 import org.neo4j.cypher.internal.commands.{And, Predicate}
 import collection.JavaConverters._
-import org.neo4j.cypher.internal.pipes.ExecutionContext
+import org.neo4j.cypher.internal.ExecutionContext
 
 case class SingleStep(id: Int,
                       typ: Seq[String],

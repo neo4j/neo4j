@@ -21,9 +21,8 @@ package org.neo4j.cypher.internal.commands.expressions
 
 import org.neo4j.graphdb.{Relationship, Node}
 import org.neo4j.cypher.internal.symbols._
-import collection.Map
 import org.neo4j.cypher.CypherTypeException
-import org.neo4j.cypher.internal.pipes.ExecutionContext
+import org.neo4j.cypher.internal.ExecutionContext
 
 case class IdFunction(inner: Expression) extends NullInNullOutExpression(inner) {
   def compute(value: Any, m: ExecutionContext) = value match {

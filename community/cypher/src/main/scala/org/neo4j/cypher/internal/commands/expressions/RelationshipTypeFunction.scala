@@ -21,8 +21,7 @@ package org.neo4j.cypher.internal.commands.expressions
 
 import org.neo4j.graphdb.Relationship
 import org.neo4j.cypher.internal.symbols._
-import collection.Map
-import org.neo4j.cypher.internal.pipes.ExecutionContext
+import org.neo4j.cypher.internal.ExecutionContext
 
 case class RelationshipTypeFunction(relationship: Expression) extends NullInNullOutExpression(relationship) {
   def compute(value: Any, m: ExecutionContext) = value.asInstanceOf[Relationship].getType.name()

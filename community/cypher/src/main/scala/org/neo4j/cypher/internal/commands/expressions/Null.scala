@@ -20,8 +20,7 @@
 package org.neo4j.cypher.internal.commands.expressions
 
 import org.neo4j.cypher.internal.symbols.{SymbolTable, CypherType, ScalarType}
-import collection.Map
-import org.neo4j.cypher.internal.pipes.ExecutionContext
+import org.neo4j.cypher.internal.ExecutionContext
 
 case class Null() extends Expression {
   def apply(v1: ExecutionContext) = null

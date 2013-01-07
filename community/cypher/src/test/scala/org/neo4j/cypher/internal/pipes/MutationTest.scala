@@ -28,7 +28,7 @@ import org.neo4j.graphdb.{Node, NotFoundException}
 import org.neo4j.cypher.internal.symbols.{SymbolTable, CypherType, NodeType}
 import org.neo4j.cypher.internal.commands.expressions.{Expression, Literal}
 import org.neo4j.cypher.internal.spi.gdsimpl.GDSBackedQueryContext
-
+import org.neo4j.cypher.internal.ExecutionContext
 
 class MutationTest extends ExecutionEngineHelper with Assertions {
 

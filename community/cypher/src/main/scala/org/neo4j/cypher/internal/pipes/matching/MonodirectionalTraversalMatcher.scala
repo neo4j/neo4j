@@ -20,10 +20,11 @@
 package org.neo4j.cypher.internal.pipes.matching
 
 import org.neo4j.graphdb._
-import org.neo4j.cypher.internal.pipes.{ExecutionContext, QueryState}
+import org.neo4j.cypher.internal.pipes.{QueryState}
 import collection.JavaConverters._
 import org.neo4j.kernel.{Uniqueness, Traversal}
 import traversal._
+import org.neo4j.cypher.internal.ExecutionContext
 
 class MonoDirectionalTraversalMatcher(steps: ExpanderStep, start: (ExecutionContext) => Iterable[Node])
   extends TraversalMatcher {

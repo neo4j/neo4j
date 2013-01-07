@@ -20,9 +20,7 @@
 package org.neo4j.cypher.internal.commands.expressions
 
 import org.neo4j.cypher.internal.symbols.{SymbolTable, AnyType}
-import org.neo4j.cypher.ParameterNotFoundException
-import collection.Map
-import org.neo4j.cypher.internal.pipes.ExecutionContext
+import org.neo4j.cypher.internal.ExecutionContext
 
 case class ParameterExpression(parameterName: String) extends Expression {
   def apply(ctx: ExecutionContext) = ctx.getParam(parameterName)
