@@ -1,6 +1,6 @@
 Neo4j examples
 
-Copyright (c) 2010-2012 "Neo Technology," Network Engine for Objects in Lund AB
+Copyright (c) 2010-2013 "Neo Technology," Network Engine for Objects in Lund AB
    [http://neotechnology.com]
 
 This product includes software ("Software") developed by Neo Technology.
