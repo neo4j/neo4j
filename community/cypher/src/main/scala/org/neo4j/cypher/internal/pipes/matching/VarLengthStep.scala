@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.pipes.matching
 import org.neo4j.graphdb.{Node, Relationship, Direction, RelationshipType}
 import org.neo4j.cypher.internal.commands.Predicate
 import collection.JavaConverters._
-import org.neo4j.cypher.internal.pipes.ExecutionContext
+import org.neo4j.cypher.internal.ExecutionContext
 
 /*
 Variable length paths are expanded by decreasing min and max, if it's a bounded path. Once

@@ -25,7 +25,7 @@ import org.scalatest.Assertions
 import org.junit.Test
 import org.junit.Assert._
 import org.neo4j.graphdb.{Path, Direction}
-import org.neo4j.cypher.internal.pipes.ExecutionContext
+import org.neo4j.cypher.internal.ExecutionContext
 
 class PathExpressionTest extends GraphDatabaseTestBase with Assertions {
   @Test def shouldAcceptShortestPathExpressions() {

@@ -23,7 +23,7 @@ import org.neo4j.graphdb.NotFoundException
 import org.neo4j.cypher.internal.symbols._
 import collection.Map
 import org.neo4j.helpers.ThisShouldNotHappenError
-import org.neo4j.cypher.internal.pipes.ExecutionContext
+import org.neo4j.cypher.internal.ExecutionContext
 
 
 object Identifier {

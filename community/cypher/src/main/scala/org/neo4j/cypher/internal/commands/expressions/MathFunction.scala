@@ -21,9 +21,8 @@ package org.neo4j.cypher.internal.commands.expressions
 
 import java.lang.Math
 import org.neo4j.cypher.CypherTypeException
-import collection.Map
 import org.neo4j.cypher.internal.symbols._
-import org.neo4j.cypher.internal.pipes.ExecutionContext
+import org.neo4j.cypher.internal.ExecutionContext
 
 abstract class MathFunction(arg: Expression) extends Expression with NumericHelper {
   def innerExpectedType = NumberType()

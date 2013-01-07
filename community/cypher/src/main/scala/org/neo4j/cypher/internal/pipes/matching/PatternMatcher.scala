@@ -22,8 +22,8 @@ package org.neo4j.cypher.internal.pipes.matching
 import org.neo4j.graphdb.Node
 import org.neo4j.cypher.internal.commands.{True, Predicate}
 import collection.Map
-import org.neo4j.cypher.internal.pipes.ExecutionContext
 import org.neo4j.cypher.EntityNotFoundException
+import org.neo4j.cypher.internal.ExecutionContext
 
 class PatternMatcher(bindings: Map[String, MatchingPair], predicates: Seq[Predicate], includeOptionals: Boolean, source:ExecutionContext)
   extends Traversable[ExecutionContext] {

@@ -19,13 +19,11 @@
  */
 package org.neo4j.cypher.internal.commands.expressions
 
-import collection.Seq
 import org.neo4j.cypher.internal.pipes.aggregation._
 import org.neo4j.cypher.internal.symbols._
 import org.neo4j.cypher.SyntaxException
-import collection.Map
 import org.neo4j.helpers.ThisShouldNotHappenError
-import org.neo4j.cypher.internal.pipes.ExecutionContext
+import org.neo4j.cypher.internal.ExecutionContext
 
 abstract class AggregationExpression extends Expression {
   def apply(ctx: ExecutionContext) = throw new ThisShouldNotHappenError("Andres", "Aggregations should not be used like this.")

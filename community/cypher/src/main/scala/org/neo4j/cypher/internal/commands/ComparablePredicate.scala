@@ -19,13 +19,10 @@
  */
 package org.neo4j.cypher.internal.commands
 
-import collection.Seq
 import expressions.Expression
-import org.neo4j.cypher.internal.Comparer
-import java.lang.String
+import org.neo4j.cypher.internal.{ExecutionContext, Comparer}
 import org.neo4j.cypher.internal.symbols._
 import org.neo4j.cypher.internal.helpers.IsCollection
-import org.neo4j.cypher.internal.pipes.ExecutionContext
 
 abstract sealed class ComparablePredicate(left: Expression, right: Expression) extends Predicate with Comparer {
   def compare(comparisonResult: Int): Boolean

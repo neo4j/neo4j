@@ -18,7 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package org.neo4j.cypher.internal.commands.expressions
-import org.neo4j.cypher.internal.pipes.ExecutionContext
+import org.neo4j.cypher.internal.ExecutionContext
 
 abstract class NullInNullOutExpression(argument: Expression) extends Expression {
   def compute(value: Any, m: ExecutionContext): Any

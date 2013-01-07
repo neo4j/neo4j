@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.commands.expressions
 import org.neo4j.cypher.internal.symbols._
 import org.neo4j.cypher.CypherTypeException
 import org.neo4j.cypher.internal.helpers.{TypeSafeMathSupport, IsCollection}
-import org.neo4j.cypher.internal.pipes.ExecutionContext
+import org.neo4j.cypher.internal.ExecutionContext
 
 case class Add(a: Expression, b: Expression) extends Expression with TypeSafeMathSupport {
   def apply(ctx: ExecutionContext) = {

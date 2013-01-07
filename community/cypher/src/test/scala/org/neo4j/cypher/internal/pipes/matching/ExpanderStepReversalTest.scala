@@ -20,12 +20,12 @@
 package org.neo4j.cypher.internal.pipes.matching
 
 import org.junit.Test
-import org.neo4j.graphdb.{RelationshipType, DynamicRelationshipType, Direction}
+import org.neo4j.graphdb.Direction
 import org.scalatest.Assertions
 import org.neo4j.cypher.internal.commands.{True, Predicate}
 import org.neo4j.cypher.internal.commands.expressions.Expression
 import org.neo4j.cypher.internal.symbols.SymbolTable
-import org.neo4j.cypher.internal.pipes.ExecutionContext
+import org.neo4j.cypher.internal.ExecutionContext
 
 class ExpanderStepReversalTest extends Assertions {
   val A = "A"

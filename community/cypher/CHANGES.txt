@@ -1,3 +1,7 @@
+1.9.RC
+-------
+Fixes #390 - IN/ANY/NONE/ANY/SINGLE causes RuntimeException for some patterns
+
 1.9.M03
 -------
 o Fixes #336 - Patterns that re-use a pattern node can produce non-existing matches

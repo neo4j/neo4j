@@ -22,9 +22,8 @@ package org.neo4j.cypher.internal.commands.expressions
 import org.neo4j.graphdb.Path
 import org.neo4j.cypher.SyntaxException
 import org.neo4j.cypher.internal.symbols._
-import collection.Map
 import collection.JavaConverters._
-import org.neo4j.cypher.internal.pipes.ExecutionContext
+import org.neo4j.cypher.internal.ExecutionContext
 
 case class NodesFunction(path: Expression) extends NullInNullOutExpression(path) {
   def compute(value: Any, m: ExecutionContext) = value match {

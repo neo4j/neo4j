@@ -21,10 +21,9 @@ package org.neo4j.cypher.internal.commands
 
 import expressions.{Expression, Null, Literal, CoalesceFunction}
 import org.scalatest.Assertions
-import collection.Map
 import org.junit.{Assert, Test}
 import org.neo4j.cypher.internal.symbols.{SymbolTable, CypherType, AnyType}
-import org.neo4j.cypher.internal.pipes.ExecutionContext
+import org.neo4j.cypher.internal.ExecutionContext
 
 class CoalesceTest extends Assertions {
   @Test def givenANonNullValueThenReturnsTheValue() {

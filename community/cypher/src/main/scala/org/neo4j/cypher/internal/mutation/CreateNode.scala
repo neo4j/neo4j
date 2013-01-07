@@ -21,9 +21,10 @@ package org.neo4j.cypher.internal.mutation
 
 import org.neo4j.cypher.internal.commands.expressions.{Literal, Expression}
 import org.neo4j.cypher.internal.helpers.CollectionSupport
-import org.neo4j.cypher.internal.pipes.{QueryState, ExecutionContext}
+import org.neo4j.cypher.internal.pipes.{QueryState}
 import org.neo4j.cypher.internal.symbols.{SymbolTable, NodeType}
 import collection.Map
+import org.neo4j.cypher.internal.ExecutionContext
 
 case class CreateNode(key: String, props: Map[String, Expression])
   extends UpdateAction

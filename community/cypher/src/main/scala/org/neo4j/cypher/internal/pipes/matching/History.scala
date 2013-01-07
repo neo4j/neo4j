@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.pipes.matching
 import collection.Set
 import collection.mutable.{Map => MutableMap}
 import org.neo4j.graphdb.Node
-import org.neo4j.cypher.internal.pipes.ExecutionContext
+import org.neo4j.cypher.internal.ExecutionContext
 
 /**
  * This class is responsible for keeping track of the already visited parts of the pattern, and the matched
