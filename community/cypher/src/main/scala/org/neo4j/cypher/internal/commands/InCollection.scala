@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -23,7 +23,7 @@ import collection.Seq
 import expressions.{Closure, Expression}
 import org.neo4j.cypher.internal.symbols._
 import org.neo4j.cypher.internal.helpers.CollectionSupport
-import org.neo4j.cypher.internal.pipes.ExecutionContext
+import org.neo4j.cypher.internal.ExecutionContext
 
 abstract class InCollection(collection: Expression, id: String, predicate: Predicate)
   extends Predicate

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.pipes.matching
 
 import org.neo4j.cypher.internal.commands._
 import org.neo4j.cypher.internal.symbols._
-import collection.{immutable, Map}
-import org.neo4j.cypher.internal.pipes.ExecutionContext
+import collection.immutable
+import org.neo4j.cypher.internal.ExecutionContext
 
 /**
  * This class is responsible for deciding how to get the parts of the pattern that are not already bound

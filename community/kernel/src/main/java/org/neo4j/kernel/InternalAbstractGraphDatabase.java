@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -17,7 +17,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.neo4j.kernel;
 
 import static org.slf4j.impl.StaticLoggerBinder.getSingleton;
@@ -345,7 +344,7 @@ public abstract class InternalAbstractGraphDatabase
 
         if ( readOnly )
         {
-            txManager = new ReadOnlyTxManager( xaDataSourceManager );
+            txManager = new ReadOnlyTxManager( xaDataSourceManager, logging.getLogger( ReadOnlyTxManager.class ) );
         }
         else
         {
@@ -385,7 +384,7 @@ public abstract class InternalAbstractGraphDatabase
 
         syncHook = new DefaultTxEventSyncHookFactory();
 
-        persistenceManager = new PersistenceManager( txManager,
+        persistenceManager = new PersistenceManager( logging.getLogger( PersistenceManager.class ), txManager,
                 persistenceSource, syncHook );
 
         propertyIndexManager = life.add( new PropertyIndexManager( persistenceManager, persistenceSource ) );
@@ -488,12 +487,12 @@ public abstract class InternalAbstractGraphDatabase
     {
         if ( readOnly )
         {
-            return new ReadOnlyNodeManager( config, this, txManager, persistenceManager,
+            return new ReadOnlyNodeManager( config, logging.getLogger( NodeManager.class ), this, txManager, persistenceManager,
                     persistenceSource, relationshipTypeHolder, cacheType, propertyIndexManager, createNodeLookup(),
                     createRelationshipLookups(), nodeCache, relCache, xaDataSourceManager );
         }
 
-        return new NodeManager( config, this, txManager, persistenceManager,
+        return new NodeManager( config, logging.getLogger( NodeManager.class ), this, txManager, persistenceManager,
                 persistenceSource, relationshipTypeHolder, cacheType, propertyIndexManager, createNodeLookup(),
                 createRelationshipLookups(), nodeCache, relCache, xaDataSourceManager );
     }
@@ -503,7 +502,7 @@ public abstract class InternalAbstractGraphDatabase
     {
         if ( readOnly )
         {
-            return new ReadOnlyNodeManager( config, this, txManager, persistenceManager,
+            return new ReadOnlyNodeManager( config, logging.getLogger( NodeManager.class ), this, txManager, persistenceManager,
                     persistenceSource, relationshipTypeHolder, cacheType, propertyIndexManager, createNodeLookup(),
                     createRelationshipLookups(), nodeCache, relCache, xaDataSourceManager )
             {
@@ -552,7 +551,7 @@ public abstract class InternalAbstractGraphDatabase
             };
         }
 
-        return new NodeManager( config, this, txManager, persistenceManager,
+        return new NodeManager( config, logging.getLogger( NodeManager.class ), this, txManager, persistenceManager,
                 persistenceSource, relationshipTypeHolder, cacheType, propertyIndexManager, createNodeLookup(),
                 createRelationshipLookups(), nodeCache, relCache, xaDataSourceManager )
         {

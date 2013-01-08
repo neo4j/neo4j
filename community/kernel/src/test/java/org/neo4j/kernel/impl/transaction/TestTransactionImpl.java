@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -30,6 +30,7 @@ import org.junit.Test;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
 import org.neo4j.kernel.impl.util.MultipleCauseException;
 import org.neo4j.kernel.logging.DevNullLoggingService;
+import org.neo4j.kernel.logging.SystemOutLogging;
 
 public class TestTransactionImpl
 {
@@ -38,7 +39,7 @@ public class TestTransactionImpl
             throws IllegalStateException, RollbackException
     {
         TxManager mockedTxManager = mock( TxManager.class );
-        TransactionImpl tx = new TransactionImpl( mockedTxManager, ForceMode.forced, TransactionStateFactory.noStateFactory( new DevNullLoggingService() ) );
+        TransactionImpl tx = new TransactionImpl( mockedTxManager, ForceMode.forced, TransactionStateFactory.noStateFactory( new DevNullLoggingService() ), new SystemOutLogging().getLogger( TxManager.class ) );
 
         // Evil synchronizations
         final RuntimeException firstException = new RuntimeException( "Ex1" );
@@ -91,7 +92,7 @@ public class TestTransactionImpl
             RollbackException
     {
         TxManager mockedTxManager = mock( TxManager.class );
-        TransactionImpl tx = new TransactionImpl( mockedTxManager, ForceMode.forced, TransactionStateFactory.noStateFactory( new DevNullLoggingService() ) );
+        TransactionImpl tx = new TransactionImpl( mockedTxManager, ForceMode.forced, TransactionStateFactory.noStateFactory( new DevNullLoggingService() ), new SystemOutLogging().getLogger( TxManager.class ) );
 
         // Evil synchronizations
         final RuntimeException firstException = new RuntimeException( "Ex1" );

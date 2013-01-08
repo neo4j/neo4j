@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -35,8 +35,9 @@ import org.neo4j.cypher.internal.executionplan.builders.PatternGraphBuilder
 import org.neo4j.cypher.internal.commands.True
 import org.neo4j.cypher.internal.commands.Equals
 import org.neo4j.cypher.internal.commands.AllInCollection
-import org.neo4j.cypher.internal.pipes.{QueryState, ExecutionContext}
+import org.neo4j.cypher.internal.pipes.{QueryState}
 import org.neo4j.cypher.internal.spi.gdsimpl.GDSBackedQueryContext
+import org.neo4j.cypher.internal.ExecutionContext
 
 class MatchingContextTest extends GraphDatabaseTestBase with Assertions with PatternGraphBuilder {
   var a: Node = null

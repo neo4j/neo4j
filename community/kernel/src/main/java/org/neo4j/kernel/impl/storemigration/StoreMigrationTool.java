@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -17,7 +17,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.neo4j.kernel.impl.storemigration;
 
 import java.io.File;
@@ -77,7 +76,7 @@ public class StoreMigrationTool
 
         long startTime = System.currentTimeMillis();
 
-        new StoreMigrator( new VisibleMigrationProgressMonitor( System.out ) ).migrate( legacyStore, neoStore );
+        new StoreMigrator( new VisibleMigrationProgressMonitor( log, System.out ) ).migrate( legacyStore, neoStore );
 
         long duration = System.currentTimeMillis() - startTime;
         System.out.printf( "Migration completed in %d s%n", duration / 1000 );

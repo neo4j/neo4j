@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -29,7 +29,6 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Logger;
 
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
@@ -61,8 +60,6 @@ import org.neo4j.kernel.lifecycle.LifecycleStatus;
 public class XaDataSourceManager
         implements Lifecycle
 {
-    private static Logger log = Logger.getLogger( XaDataSourceManager.class.getName() );
-
     // key = data source name, value = data source
     private final Map<String, XaDataSource> dataSources =
             new HashMap<String, XaDataSource>();
@@ -328,8 +325,6 @@ public class XaDataSourceManager
                         // linear search
                         if ( rollbackList.contains( xids[i] ) )
                         {
-                            log.fine( "Found pre commit " + xids[i]
-                                    + " rolling back ... " );
                             msgLog.logMessage( "TM: Found pre commit " + xids[i] + " rolling back ... ", true );
                             rollbackList.remove( xids[i] );
                             xaRes.rollback( xids[i] );
@@ -346,7 +341,7 @@ public class XaDataSourceManager
                     }
                     else
                     {
-                        log.warning( "Unknown xid: " + xids[i] );
+                        msgLog.warn( "Unknown xid: " + xids[i] );
                     }
                 }
             }
@@ -361,13 +356,13 @@ public class XaDataSourceManager
                 NonCompletedTransaction nct = commitItr.next();
                 int seq = nct.getSequenceNumber();
                 Xid xids[] = nct.getXids();
-                log.fine( "Marked as commit tx-seq[" + seq +
+                msgLog.debug( "Marked as commit tx-seq[" + seq +
                         "] branch length: " + xids.length );
                 for ( Xid xid : xids )
                 {
                     if ( !recoveredXidsList.contains( xid ) )
                     {
-                        log.fine( "Tx-seq[" + seq + "][" + xid +
+                        msgLog.debug( "Tx-seq[" + seq + "][" + xid +
                                 "] not found in recovered xid list, "
                                 + "assuming already committed" );
                         continue;
@@ -380,8 +375,7 @@ public class XaDataSourceManager
                                 "Couldn't find XAResource for " + xid );
                         throw logAndReturn( "TM: recovery error", ex );
                     }
-                    log.fine( "Commiting tx seq[" + seq + "][" + xid + "] ... " );
-                    msgLog.logMessage( "TM: Committing tx " + xid, true );
+                    msgLog.debug( "TM: Committing tx " + xid );
                     resourceMap.get( resource ).getXaConnection().getXaResource().commit( xid, false );
                 }
             }
@@ -398,19 +392,16 @@ public class XaDataSourceManager
                             "Couldn't find XAResource for " + xid );
                     throw logAndReturn( "TM: recovery error", ex );
                 }
-                log.fine( "Rollback " + xid + " ... " );
-                msgLog.logMessage( "TM: no match found for " + xid + " removing", true );
+                msgLog.debug( "TM: no match found for " + xid + " removing" );
                 resourceMap.get( resource ).getXaConnection().getXaResource().rollback( xid );
             }
             if ( rollbackList.size() > 0 )
             {
-                log.fine( "TxLog contained unresolved "
+                msgLog.debug( "TxLog contained unresolved "
                         + "xids that needed rollback. They couldn't be matched to "
                         + "any of the XAResources recover list. " + "Assuming "
                         + rollbackList.size()
                         + " transactions already rolled back." );
-                msgLog.logMessage( "TM: no match found for in total " + rollbackList.size() +
-                        " transaction that should have been rolled back", true );
             }
 
             // Rotate the logs of the participated data sources, making sure that

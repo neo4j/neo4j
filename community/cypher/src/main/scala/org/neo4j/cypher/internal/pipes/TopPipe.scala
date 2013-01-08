@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.commands.SortItem
 import org.neo4j.cypher.internal.symbols.{NumberType, SymbolTable}
 import collection.mutable.ListBuffer
 import org.neo4j.cypher.internal.commands.expressions.Expression
+import org.neo4j.cypher.internal.ExecutionContext
 
 /*
  * TopPipe is used when a query does a ORDER BY ... LIMIT query. Instead of ordering the whole result set and then

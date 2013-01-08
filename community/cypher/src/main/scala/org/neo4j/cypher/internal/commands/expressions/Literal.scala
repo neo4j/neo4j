@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -20,8 +20,7 @@
 package org.neo4j.cypher.internal.commands.expressions
 
 import org.neo4j.cypher.internal.symbols.{SymbolTable, CypherType}
-import collection.Map
-import org.neo4j.cypher.internal.pipes.ExecutionContext
+import org.neo4j.cypher.internal.ExecutionContext
 
 case class Literal(v: Any) extends Expression {
   def apply(ctx: ExecutionContext): Any = v

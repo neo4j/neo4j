@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -22,10 +22,10 @@ package org.neo4j.cypher.internal.mutation
 import org.junit.{After, Before, Test}
 import org.neo4j.cypher.GraphDatabaseTestBase
 import org.neo4j.cypher.internal.commands.expressions.Literal
-import org.neo4j.cypher.internal.pipes.{QueryState, ExecutionContext}
+import org.neo4j.cypher.internal.pipes.QueryState
 import org.neo4j.graphdb.{PropertyContainer, Transaction}
 import org.neo4j.cypher.internal.spi.gdsimpl.GDSBackedQueryContext
-
+import org.neo4j.cypher.internal.ExecutionContext
 
 class MapPropertySetActionTest extends GraphDatabaseTestBase {
 

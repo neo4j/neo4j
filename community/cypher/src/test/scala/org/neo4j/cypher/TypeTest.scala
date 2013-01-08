@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -24,7 +24,7 @@ import internal.commands.expressions.Add
 import internal.commands.expressions.Literal
 import internal.commands.expressions.Multiply
 import internal.commands.expressions.Subtract
-import internal.pipes.ExecutionContext
+import internal.ExecutionContext
 import org.junit.Test
 import org.hamcrest.CoreMatchers._
 import org.hamcrest.Matcher

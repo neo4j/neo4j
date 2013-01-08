@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -20,13 +20,14 @@
 package org.neo4j.cypher.internal.mutation
 
 import org.neo4j.cypher.internal.symbols.{MapType, SymbolTable}
-import org.neo4j.cypher.internal.pipes.{QueryState, ExecutionContext}
+import org.neo4j.cypher.internal.pipes.{QueryState}
 import org.neo4j.graphdb.{Node, Relationship, PropertyContainer}
 import org.neo4j.cypher.internal.commands.expressions.Expression
 import org.neo4j.cypher.internal.helpers.{MapSupport, IsMap}
 import org.neo4j.cypher.CypherTypeException
 import collection.Map
 import collection.JavaConverters._
+import org.neo4j.cypher.internal.ExecutionContext
 
 case class MapPropertySetAction(element: Expression, mapExpression: Expression)
   extends UpdateAction with GraphElementPropertyFunctions with MapSupport {

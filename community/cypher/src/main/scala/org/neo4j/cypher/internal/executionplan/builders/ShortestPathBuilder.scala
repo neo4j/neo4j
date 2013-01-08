@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -54,6 +54,9 @@ class ShortestPathBuilder extends PlanBuilder {
     val unsolvedShortestPaths: Seq[ShortestPath] = querySoFar.patterns.
       filter(sp => !sp.solved && sp.token.isInstanceOf[ShortestPath]).map(_.token.asInstanceOf[ShortestPath])
 
-    unsolvedShortestPaths.flatMap(sp => symbols.missingSymbolTableDependencies(sp)).distinct
+    unsolvedShortestPaths.
+      flatMap(sp => symbols.missingSymbolTableDependencies(sp)).
+      distinct.
+      map("Unknown identifier `%s`".format(_))
   }
 }

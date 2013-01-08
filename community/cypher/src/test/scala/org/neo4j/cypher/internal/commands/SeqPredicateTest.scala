@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.commands
 import expressions.{Identifier, Literal}
 import org.junit.Test
 import org.scalatest.Assertions
-import org.neo4j.cypher.internal.pipes.ExecutionContext
+import org.neo4j.cypher.internal.ExecutionContext
 
 class SeqPredicateTest extends Assertions {
   @Test def allStringsBeginWithA() {

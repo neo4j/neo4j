@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -20,12 +20,13 @@
 package org.neo4j.cypher.internal.mutation
 
 import org.neo4j.cypher.internal.symbols.{CypherType, SymbolTable}
-import org.neo4j.cypher.internal.pipes.{QueryState, ExecutionContext}
+import org.neo4j.cypher.internal.pipes.{QueryState}
 import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.cypher.internal.commands.StartItem
 import org.neo4j.cypher.UniquePathNotUniqueException
 import org.neo4j.graphdb.{Lock, PropertyContainer}
 import org.neo4j.cypher.internal.commands.expressions.Expression
+import org.neo4j.cypher.internal.ExecutionContext
 
 case class CreateUniqueAction(incomingLinks: UniqueLink*) extends UpdateAction {
 

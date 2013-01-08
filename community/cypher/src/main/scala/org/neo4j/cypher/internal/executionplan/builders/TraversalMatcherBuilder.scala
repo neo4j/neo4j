@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -24,11 +24,12 @@ import org.neo4j.cypher.internal.commands._
 import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.graphdb
 import graphdb.{Node, GraphDatabaseService}
-import org.neo4j.cypher.internal.pipes.{ParameterPipe, TraversalMatchPipe, ExecutionContext}
+import org.neo4j.cypher.internal.pipes.{ParameterPipe, TraversalMatchPipe}
 import org.neo4j.cypher.internal.pipes.matching.{MonoDirectionalTraversalMatcher, BidirectionalTraversalMatcher}
 import org.neo4j.cypher.internal.executionplan.ExecutionPlanInProgress
 import org.neo4j.cypher.internal.commands.NodeByIndex
 import org.neo4j.cypher.internal.commands.NodeByIndexQuery
+import org.neo4j.cypher.internal.ExecutionContext
 
 class TraversalMatcherBuilder(graph: GraphDatabaseService) extends PlanBuilder {
   def apply(plan: ExecutionPlanInProgress): ExecutionPlanInProgress = extractExpanderStepsFromQuery(plan) match {

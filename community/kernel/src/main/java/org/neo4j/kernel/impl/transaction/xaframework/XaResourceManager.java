@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -31,7 +31,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.logging.Logger;
 
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
@@ -649,7 +648,6 @@ public class XaResourceManager
             }
         } );
         txOrderMap.clear(); // = null;
-        Logger logger = Logger.getLogger( tf.getClass().getName() );
         while ( !xids.isEmpty() )
         {
             Xid xid = xids.removeFirst();
@@ -661,24 +659,24 @@ public class XaResourceManager
             {
                 if ( txStatus.commitStarted() )
                 {
-                    logger.fine( "Marking 1PC [" + name + "] tx "
-                        + identifier + " as done" );
+                    msgLog.debug( "Marking 1PC [" + name + "] tx "
+                            + identifier + " as done" );
                     log.doneInternal( identifier );
                     xidMap.remove( xid );
                     recoveredTxCount--;
                 }
                 else if ( !txStatus.prepared() )
                 {
-                    logger.fine( "Rolling back non prepared tx [" + name + "]"
-                        + "txIdent[" + identifier + "]" );
+                    msgLog.debug( "Rolling back non prepared tx [" + name + "]"
+                            + "txIdent[" + identifier + "]" );
                     log.doneInternal( xaTransaction.getIdentifier() );
                     xidMap.remove( xid );
                     recoveredTxCount--;
                 }
                 else
                 {
-                    logger.fine( "2PC tx [" + name + "] " + txStatus +
-                        " txIdent[" + identifier + "]" );
+                    msgLog.debug( "2PC tx [" + name + "] " + txStatus +
+                            " txIdent[" + identifier + "]" );
                 }
             }
         }

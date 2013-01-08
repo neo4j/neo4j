@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -17,14 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.neo4j.kernel.impl.nioneo.store;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-import java.util.logging.Logger;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -53,8 +51,6 @@ public class StoreFactory
         public static final GraphDatabaseSetting.IntegerSetting array_block_size = GraphDatabaseSettings.array_block_size;
     }
     
-    protected static final Logger logger = Logger.getLogger(StoreFactory.class.getName());
-
     private final Config config;
     private final IdGeneratorFactory idGeneratorFactory;
     private final WindowPoolFactory windowPoolFactory;
@@ -115,7 +111,7 @@ public class StoreFactory
     private void tryToUpgradeStores( File fileName )
     {
         new StoreUpgrader(config, stringLogger, new ConfigMapUpgradeConfiguration(config),
-                new UpgradableDatabase(), new StoreMigrator( new VisibleMigrationProgressMonitor( System.out ) ),
+                new UpgradableDatabase(), new StoreMigrator( new VisibleMigrationProgressMonitor( stringLogger, System.out ) ),
                 new DatabaseFiles(), idGeneratorFactory, fileSystemAbstraction ).attemptUpgrade( fileName );
     }
 

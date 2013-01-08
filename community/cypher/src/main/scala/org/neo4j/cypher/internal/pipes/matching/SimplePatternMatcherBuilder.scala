@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -25,7 +25,7 @@ import org.neo4j.graphmatching.{PatternMatcher => SimplePatternMatcher, PatternN
 import collection.JavaConverters._
 import org.neo4j.cypher.internal.commands.{Predicate, True}
 import org.neo4j.cypher.internal.symbols.SymbolTable
-import org.neo4j.cypher.internal.pipes.ExecutionContext
+import org.neo4j.cypher.internal.ExecutionContext
 
 class SimplePatternMatcherBuilder(pattern: PatternGraph, predicates: Seq[Predicate], symbolTable: SymbolTable) extends MatcherBuilder {
   def createPatternNodes: immutable.Map[String, SimplePatternNode] = {

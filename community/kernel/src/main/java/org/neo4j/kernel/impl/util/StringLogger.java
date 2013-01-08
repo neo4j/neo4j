@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -17,7 +17,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.neo4j.kernel.impl.util;
 
 import static org.neo4j.helpers.collection.IteratorUtil.loop;
@@ -456,7 +455,7 @@ public abstract class StringLogger
         public synchronized void logMessage( String msg, boolean flush )
         {
 //            ensureOpen();
-            out.println( time() + ": " + msg );
+            out.println( time() + " INFO  [org.neo4j]: " + msg );
             if ( flush )
             {
                 out.flush();
@@ -473,7 +472,7 @@ public abstract class StringLogger
         public synchronized void logMessage( String msg, Throwable cause, boolean flush )
         {
 //            ensureOpen();
-            out.println( time() + ": " + msg + " " + cause.getMessage() );
+            out.println( time() + " ERROR [org.neo4j]: " + msg + " " + cause.getMessage());
             cause.printStackTrace( out );
             if ( flush )
             {
@@ -485,7 +484,7 @@ public abstract class StringLogger
         @Override
         public synchronized void logLongMessage( String msg, Visitor<LineLogger> source, boolean flush )
         {
-            out.println( time() + ": " + msg );
+            out.println( time() + " INFO  [org.neo4j]: " + msg );
             source.visit( new LineLoggerImpl( this ) );
             if ( flush )
             {

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.commands.Predicate
 import collection.immutable.Set
 import collection.Seq
 import collection.Map
-import org.neo4j.cypher.internal.pipes.ExecutionContext
+import org.neo4j.cypher.internal.ExecutionContext
 
 /*
 Normally, when we encounter an optional relationship, we can try with null and see if that's enough. But for

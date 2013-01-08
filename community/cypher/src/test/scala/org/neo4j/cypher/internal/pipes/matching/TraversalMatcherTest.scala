@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -22,11 +22,12 @@ package org.neo4j.cypher.internal.pipes.matching
 import org.junit.Test
 import org.neo4j.cypher.GraphDatabaseTestBase
 import org.neo4j.graphdb.Path
-import org.neo4j.cypher.internal.pipes.{ExecutionContext, MutableMaps, QueryState}
+import org.neo4j.cypher.internal.pipes.{MutableMaps, QueryState}
 import org.neo4j.graphdb.DynamicRelationshipType.withName
 import org.neo4j.graphdb.Direction.OUTGOING
 import org.neo4j.cypher.internal.commands.True
 import org.neo4j.cypher.internal.spi.gdsimpl.GDSBackedQueryContext
+import org.neo4j.cypher.internal.ExecutionContext
 
 
 class TraversalMatcherTest extends GraphDatabaseTestBase {

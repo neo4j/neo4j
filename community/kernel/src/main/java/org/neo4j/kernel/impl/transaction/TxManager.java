@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -314,7 +314,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
             throw logAndReturn( "TM error tx begin", new NotSupportedException(
                     "Nested transactions not supported" ) );
         }
-        tx = new TransactionImpl( this, forceMode, stateFactory );
+        tx = new TransactionImpl( this, forceMode, stateFactory, log );
         txThreadMap.set( tx );
         int concurrentTxCount = txThreadMap.size();
         if ( concurrentTxCount > peakConcurrentTransactions )

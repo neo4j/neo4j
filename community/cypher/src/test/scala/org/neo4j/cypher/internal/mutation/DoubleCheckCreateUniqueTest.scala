@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -25,9 +25,10 @@ import org.neo4j.test.ImpermanentGraphDatabase
 import java.lang.Iterable
 import org.neo4j.graphdb.Traverser.Order
 import org.neo4j.graphdb._
-import org.neo4j.cypher.internal.pipes.{ExecutionContext, QueryState}
+import org.neo4j.cypher.internal.pipes.{QueryState}
 import collection.JavaConverters._
 import org.neo4j.cypher.internal.spi.gdsimpl.GDSBackedQueryContext
+import org.neo4j.cypher.internal.ExecutionContext
 
 /*
 This test tries to set up a situation where CREATE UNIQUE would fail, unless we guard with locks to prevent creating

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -32,17 +32,18 @@ import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.util.ArrayMap;
+import org.neo4j.kernel.impl.util.StringLogger;
 
 public class ReadOnlyNodeManager extends NodeManager
 {
-    public ReadOnlyNodeManager(Config config, GraphDatabaseService graphDb,
+    public ReadOnlyNodeManager(Config config, StringLogger logger, GraphDatabaseService graphDb,
                                AbstractTransactionManager transactionManager, PersistenceManager persistenceManager,
                                EntityIdGenerator idGenerator, RelationshipTypeHolder relationshipTypeHolder,
                                CacheProvider cacheType, PropertyIndexManager propertyIndexManager,
                                NodeProxy.NodeLookup nodeLookup, RelationshipProxy.RelationshipLookups relationshipLookups,
                                Cache<NodeImpl> nodeCache, Cache<RelationshipImpl> relCache, XaDataSourceManager xaDsm )
     {
-        super(config, graphDb, transactionManager, persistenceManager, idGenerator,
+        super(config, logger, graphDb, transactionManager, persistenceManager, idGenerator,
                 relationshipTypeHolder, cacheType, propertyIndexManager, nodeLookup, relationshipLookups,
                 nodeCache, relCache, xaDsm );
     }

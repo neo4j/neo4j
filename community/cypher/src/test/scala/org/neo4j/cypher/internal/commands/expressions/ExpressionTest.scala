@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -25,8 +25,8 @@ import org.neo4j.cypher.internal.symbols._
 import collection.Map
 import org.neo4j.cypher.CypherTypeException
 import org.neo4j.helpers.ThisShouldNotHappenError
-import org.neo4j.cypher.internal.pipes.ExecutionContext
-import org.neo4j.cypher.internal.commands.{ReturnItem, Return}
+import org.neo4j.cypher.internal.commands.ReturnItem
+import org.neo4j.cypher.internal.ExecutionContext
 
 class ExpressionTest extends Assertions {
   @Test def replacePropWithCache() {

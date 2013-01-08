@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -24,8 +24,7 @@ import scala.collection.JavaConverters._
 import org.neo4j.cypher.internal.helpers.{IsCollection, CollectionSupport}
 import org.neo4j.graphdb.{PropertyContainer, Relationship, Node}
 import org.neo4j.cypher.internal.symbols._
-import org.neo4j.cypher.internal.StringExtras
-import org.neo4j.cypher.internal.pipes.ExecutionContext
+import org.neo4j.cypher.internal.{ExecutionContext, StringExtras}
 import org.neo4j.cypher.internal.spi.QueryContext
 
 abstract class StringFunction(arg: Expression) extends NullInNullOutExpression(arg) with StringHelper with CollectionSupport {

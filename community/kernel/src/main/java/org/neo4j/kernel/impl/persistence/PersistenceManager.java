@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -20,8 +20,6 @@
 package org.neo4j.kernel.impl.persistence;
 
 import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import javax.transaction.RollbackException;
 import javax.transaction.Status;
@@ -47,13 +45,12 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaConnection;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.RelIdArray;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
+import org.neo4j.kernel.impl.util.StringLogger;
 
 public class PersistenceManager
 {
-    private static Logger log = Logger.getLogger( PersistenceManager.class
-        .getName() );
-
     private final PersistenceSource persistenceSource;
+    private StringLogger msgLog;
     private final AbstractTransactionManager transactionManager;
 
     private final ArrayMap<Transaction,NeoStoreTransaction> txConnectionMap =
@@ -61,10 +58,11 @@ public class PersistenceManager
 
     private final TxEventSyncHookFactory syncHookFactory;
 
-    public PersistenceManager( AbstractTransactionManager transactionManager,
+    public PersistenceManager( StringLogger msgLog, AbstractTransactionManager transactionManager,
             PersistenceSource persistenceSource,
             TxEventSyncHookFactory syncHookFactory )
     {
+        this.msgLog = msgLog;
         this.transactionManager = transactionManager;
         this.persistenceSource = persistenceSource;
         this.syncHookFactory = syncHookFactory;
@@ -355,8 +353,7 @@ public class PersistenceManager
             }
             catch ( Throwable t )
             {
-                log.log( Level.SEVERE,
-                    "Error releasing resources for " + tx, t );
+                msgLog.error( "Error releasing resources for " + tx, t );
             }
         }
     }

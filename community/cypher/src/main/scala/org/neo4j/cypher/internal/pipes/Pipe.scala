@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -19,19 +19,14 @@
  */
 package org.neo4j.cypher.internal.pipes
 
-import java.lang.String
 import org.neo4j.cypher.internal.symbols.SymbolTable
-import collection.Iterator
-import org.neo4j.cypher.internal.mutation.UpdateAction
 import org.neo4j.graphdb.{GraphDatabaseService, Transaction}
-import collection.mutable.{Queue, Map => MutableMap}
 import scala.collection.JavaConverters._
-import java.util.HashMap
 import org.neo4j.kernel.GraphDatabaseAPI
-import org.neo4j.cypher.ParameterNotFoundException
 import java.util.concurrent.atomic.AtomicInteger
 import org.neo4j.cypher.internal.spi.QueryContext
 import org.neo4j.cypher.internal.spi.gdsimpl.GDSBackedQueryContext
+import org.neo4j.cypher.internal.ExecutionContext
 
 /**
  * Pipe is a central part of Cypher. Most pipes are decorators - they
@@ -63,7 +58,7 @@ object MutableMaps {
   def create(input: scala.collection.Map[String, Any]) = new java.util.HashMap[String, Any](input.asJava).asScala
 
   def create(input: (String, Any)*) = {
-    val m: HashMap[String, Any] = new java.util.HashMap[String, Any]()
+    val m: java.util.HashMap[String, Any] = new java.util.HashMap[String, Any]()
     input.foreach {
       case (k, v) => m.put(k, v)
     }
@@ -100,62 +95,4 @@ class Counter {
   def increase() {
     counter.incrementAndGet()
   }
-}
-
-object ExecutionContext {
-  def empty = new ExecutionContext()
-
-  def from(x: (String, Any)*) = new ExecutionContext().newWith(x)
-}
-
-case class ExecutionContext(m: MutableMap[String, Any] = MutableMaps.empty,
-                            mutationCommands: Queue[UpdateAction] = Queue.empty,
-                            state:QueryState = QueryState())
-  extends MutableMap[String, Any] {
-  def get(key: String): Option[Any] = m.get(key)
-
-  def getParam(key: String): Any =
-    state.params.getOrElse(key, throw new ParameterNotFoundException("Expected a parameter named " + key))
-
-  def iterator: Iterator[(String, Any)] = m.iterator
-
-  override def size = m.size
-
-  def ++(other: ExecutionContext): ExecutionContext = copy(m = m ++ other.m)
-
-  override def foreach[U](f: ((String, Any)) => U) {
-    m.foreach(f)
-  }
-
-  def +=(kv: (String, Any)) = {
-    m += kv
-    this
-  }
-
-  def -=(key: String) = {
-    m -= key
-    this
-  }
-
-  def newWith(newEntries: Seq[(String, Any)]) = {
-    copy(m = (MutableMaps.create(this.m) ++= newEntries))
-  }
-
-  def newWith(newEntries: scala.collection.Map[String, Any]) = {
-    copy(m = (MutableMaps.create(this.m) ++= newEntries))
-  }
-
-  def newFrom(newEntries: Seq[(String, Any)]) = {
-    copy(m = MutableMaps.create(newEntries: _*))
-  }
-
-  def newFrom(newEntries: scala.collection.Map[String, Any]) = {
-    copy(m = MutableMaps.create(newEntries))
-  }
-
-  def newWith(newEntry: (String, Any)) = {
-    copy(m = (MutableMaps.create(this.m) += newEntry))
-  }
-
-  override def clone: ExecutionContext = newFrom(m)
 }

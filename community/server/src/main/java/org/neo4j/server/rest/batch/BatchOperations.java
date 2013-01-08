@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -25,6 +25,8 @@ import java.io.StringWriter;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.servlet.ServletException;
 import javax.ws.rs.core.HttpHeaders;
@@ -98,17 +100,25 @@ public abstract class BatchOperations
         return baseUri.resolve("." + requestedPath);
     }
 
+
+    private final static Pattern PLACHOLDER_PATTERN=Pattern.compile("\\{(\\d+)\\}");
+    
     protected String replaceLocationPlaceholders( String str,
                                                   Map<Integer, String> locations )
     {
         if (!str.contains( "{" )) return str;
-        // TODO: Potential memory-hog on big requests, write smarter
-        // implementation.
-        for (Integer jobId : locations.keySet())
-        {
-            str = str.replace("{" + jobId + "}", locations.get(jobId));
+        Matcher matcher = PLACHOLDER_PATTERN.matcher(str);
+        StringBuffer sb=new StringBuffer();
+        while (matcher.find()) {
+            String id = matcher.group(1);
+            String replacement = locations.get(Integer.valueOf(id));
+            if (replacement!=null)
+                matcher.appendReplacement(sb,replacement);
+            else 
+                matcher.appendReplacement(sb,matcher.group());
         }
-        return str;
+        matcher.appendTail(sb);
+        return sb.toString();
     }
 
     protected boolean is2XXStatusCode( int statusCode )

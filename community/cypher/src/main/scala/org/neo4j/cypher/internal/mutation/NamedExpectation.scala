@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -22,10 +22,10 @@ package org.neo4j.cypher.internal.mutation
 import org.neo4j.cypher.internal.commands.expressions.{Literal, Identifier, Expression}
 import org.neo4j.cypher.internal.symbols.{SymbolTable, TypeSafe}
 import org.neo4j.graphdb.{Relationship, Node, PropertyContainer}
-import org.neo4j.cypher.internal.pipes.ExecutionContext
 import collection.Map
 import org.neo4j.cypher.internal.helpers.{IsCollection, IsMap, CollectionSupport}
 import org.neo4j.cypher.internal.spi.QueryContext
+import org.neo4j.cypher.internal.ExecutionContext
 
 object NamedExpectation {
   def apply(name: String): NamedExpectation = NamedExpectation(name, Map.empty)

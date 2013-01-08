@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -22,13 +22,14 @@ package org.neo4j.cypher.internal.pipes.matching
 import org.neo4j.graphdb._
 import org.neo4j.cypher.internal.commands.Predicate
 import collection.mutable
-import org.neo4j.cypher.internal.pipes.{QueryState, ExecutionContext}
+import org.neo4j.cypher.internal.pipes.{MutableMaps, QueryState}
 import org.neo4j.cypher.internal.commands.expressions.Expression
 import org.neo4j.cypher.internal.symbols.SymbolTable
 import org.neo4j.cypher.internal.commands.True
 import org.neo4j.cypher.EntityNotFoundException
 import org.neo4j.helpers.ThisShouldNotHappenError
-
+import org.neo4j.cypher.internal.ExecutionContext
+import collection.mutable.{Map => MutableMap}
 
 trait ExpanderStep {
   def next: Option[ExpanderStep]
@@ -147,22 +148,15 @@ case class RelationshipIdentifier() extends MiniMapIdentifier() {
   protected def extract(m: MiniMap) = m.relationship
 }
 
-case class MiniMap(var relationship: Relationship, var node: Node, myState:QueryState)
-  extends ExecutionContext(state = myState) {
+case class MiniMap(var relationship: Relationship,
+                   var node: Node,
+                   myState: QueryState,
+                   myMap: MutableMap[String, Any] = MutableMaps.empty)
+  extends ExecutionContext(state = myState, m = myMap) {
 
   override def iterator = throw new RuntimeException
 
   override def -(key: String) = throw new RuntimeException
 
-  override def +[B1 >: Any](kv: (String, B1)) = throw new RuntimeException
-
-  override def newWith(newEntries: Seq[(String, Any)]) = throw new RuntimeException
-
-  override def newWith(newEntries: scala.collection.Map[String, Any]) = throw new RuntimeException
-
-  override def newFrom(newEntries: Seq[(String, Any)]) = throw new RuntimeException
-
-  override def newFrom(newEntries: scala.collection.Map[String, Any]) = throw new RuntimeException
-
-  override def newWith(newEntry: (String, Any)) = throw new RuntimeException
+  override protected def createWithNewMap(newMap: mutable.Map[String, Any]) = MiniMap(relationship, node, myState, newMap)
 }

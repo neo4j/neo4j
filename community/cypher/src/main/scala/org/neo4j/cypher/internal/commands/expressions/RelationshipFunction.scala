@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -22,7 +22,7 @@ import org.neo4j.graphdb.Path
 import org.neo4j.cypher.SyntaxException
 import org.neo4j.cypher.internal.symbols._
 import collection.JavaConverters._
-import org.neo4j.cypher.internal.pipes.ExecutionContext
+import org.neo4j.cypher.internal.ExecutionContext
 
 case class RelationshipFunction(path: Expression) extends NullInNullOutExpression(path) {
   def compute(value: Any, m: ExecutionContext) = value match {

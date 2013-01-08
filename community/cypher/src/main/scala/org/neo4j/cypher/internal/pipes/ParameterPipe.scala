@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.pipes
 
 import java.lang.String
 import org.neo4j.cypher.internal.symbols.SymbolTable
+import org.neo4j.cypher.internal.ExecutionContext
 
 class ParameterPipe() extends Pipe {
   def createResults(state: QueryState) = Iterator(ExecutionContext(state = state))

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -26,11 +26,12 @@ import expressions.Identifier._
 import expressions.Literal
 import org.neo4j.cypher.internal.symbols.{RelationshipType, NodeType, SymbolTable}
 import org.neo4j.graphdb.{Node, Direction}
-import org.neo4j.cypher.internal.pipes.{QueryState, ExecutionContext}
+import org.neo4j.cypher.internal.pipes.{QueryState}
 import org.neo4j.cypher.{SyntaxException, CypherTypeException, UniquePathNotUniqueException}
 import collection.JavaConverters._
 import collection.Map
 import org.neo4j.cypher.internal.helpers.{IsMap, MapSupport}
+import org.neo4j.cypher.internal.ExecutionContext
 
 object UniqueLink {
   def apply(start: String, end: String, relName: String, relType: String, dir: Direction): UniqueLink =

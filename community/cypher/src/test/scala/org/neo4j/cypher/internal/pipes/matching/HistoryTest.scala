@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -24,7 +24,7 @@ import org.scalatest.Assertions
 import org.junit.Test
 import org.neo4j.graphdb.{DynamicRelationshipType, Direction}
 import org.neo4j.cypher.internal.commands.True
-import org.neo4j.cypher.internal.pipes.ExecutionContext
+import org.neo4j.cypher.internal.ExecutionContext
 
 class HistoryTest extends GraphDatabaseTestBase with Assertions {
 

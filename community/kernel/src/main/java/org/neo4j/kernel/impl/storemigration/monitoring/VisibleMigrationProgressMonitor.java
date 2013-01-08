@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -20,17 +20,17 @@
 package org.neo4j.kernel.impl.storemigration.monitoring;
 
 import java.io.PrintStream;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+
+import org.neo4j.kernel.impl.util.StringLogger;
 
 public class VisibleMigrationProgressMonitor implements MigrationProgressMonitor
 {
-    protected static final Logger logger = Logger
-            .getLogger( MigrationProgressMonitor.class.getName() );
+    private StringLogger logger;
     private final PrintStream out;
 
-    public VisibleMigrationProgressMonitor( PrintStream out )
+    public VisibleMigrationProgressMonitor( StringLogger logger, PrintStream out )
     {
+        this.logger = logger;
         this.out = out;
     }
 
@@ -38,7 +38,7 @@ public class VisibleMigrationProgressMonitor implements MigrationProgressMonitor
     {
         String message = "Starting upgrade of database store files";
         out.println( message );
-        logger.log( Level.INFO, message );
+        logger.info( message );
     }
 
     public void percentComplete( int percent )
@@ -47,7 +47,7 @@ public class VisibleMigrationProgressMonitor implements MigrationProgressMonitor
         out.flush();
         if (percent % 10 == 0)
         {
-            logger.log( Level.INFO, String.format("Store upgrade %d%% complete", percent) );
+            logger.info( String.format( "Store upgrade %d%% complete", percent ) );
         }
     }
 
@@ -56,6 +56,6 @@ public class VisibleMigrationProgressMonitor implements MigrationProgressMonitor
         String message = "Finished upgrade of database store files";
         out.println();
         out.println( message );
-        logger.log( Level.INFO, message );
+        logger.info( message );
     }
 }

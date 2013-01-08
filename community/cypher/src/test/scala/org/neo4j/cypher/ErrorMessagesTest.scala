@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -242,6 +242,12 @@ class ErrorMessagesTest extends ExecutionEngineHelper with Assertions with Strin
     expectError(
       "START p=node(0) DELETE x",
       "Unknown identifier `x`")
+  }
+
+  @Test def aggregations_must_be_included_in_return() {
+    expectError(
+      "START a=node(0) RETURN a ORDER BY count(*)",
+      "Aggregation expressions must be listed in the RETURN clause to be used in ORDER BY")
   }
 
   private def expectError[T <: CypherException](query: String, expectedError: String)(implicit manifest: Manifest[T]): T = {

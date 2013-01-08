@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -25,7 +25,7 @@ import org.neo4j.graphdb._
 import org.neo4j.cypher.internal.symbols._
 import org.neo4j.cypher.CypherTypeException
 import org.neo4j.cypher.internal.helpers.{IsCollection, CollectionSupport}
-import org.neo4j.cypher.internal.pipes.ExecutionContext
+import org.neo4j.cypher.internal.ExecutionContext
 
 abstract class Predicate extends Expression {
   def apply(ctx: ExecutionContext) = isMatch(ctx)

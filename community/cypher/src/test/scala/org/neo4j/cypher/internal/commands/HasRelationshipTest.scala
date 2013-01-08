@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -25,8 +25,9 @@ import org.scalatest.Assertions
 import org.junit.{Before, Test}
 import org.neo4j.graphdb.{Node, Direction}
 import org.junit.Assert._
-import org.neo4j.cypher.internal.pipes.{QueryState, ExecutionContext}
+import org.neo4j.cypher.internal.pipes.{QueryState}
 import org.neo4j.cypher.internal.spi.gdsimpl.GDSBackedQueryContext
+import org.neo4j.cypher.internal.ExecutionContext
 
 
 class HasRelationshipTest extends GraphDatabaseTestBase with Assertions {

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -22,9 +22,10 @@ package org.neo4j.cypher.internal.mutation
 import org.scalatest.Assertions
 import org.neo4j.cypher.ExecutionEngineHelper
 import org.junit.Test
-import org.neo4j.cypher.internal.pipes.{MutableMaps, ExecutionContext, QueryState}
+import org.neo4j.cypher.internal.pipes.{MutableMaps, QueryState}
 import org.neo4j.cypher.internal.commands.expressions.Literal
 import org.neo4j.cypher.internal.spi.gdsimpl.GDSBackedQueryContext
+import org.neo4j.cypher.internal.ExecutionContext
 
 class CreateNodeActionTest extends ExecutionEngineHelper with Assertions {
 

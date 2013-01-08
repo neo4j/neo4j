@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -66,7 +66,7 @@ class CreateNodesAndRelationshipsBuilder(db: GraphDatabaseService) extends PlanB
     case Unsolved(x: CreateNodeStartItem)         => plan.pipe.symbols.missingSymbolTableDependencies(x)
     case Unsolved(x: CreateRelationshipStartItem) => plan.pipe.symbols.missingSymbolTableDependencies(x)
     case _                                        => Seq()
-  }
+  }.map("Unknown identifier `%s`".format(_))
 
   def canWorkWith(plan: ExecutionPlanInProgress) = plan.query.start.exists(applicableTo(plan.pipe))
 
@@ -112,7 +112,7 @@ trait UpdateCommandExpander {
 
     val missingCreateNodeActions = commands.flatMap {
       case ForeachAction(coll, id, actions) =>
-        val expandedCommands = expandCommands(actions, symbols.add(id, coll.evaluateType(AnyCollectionType(), symbols)))
+        val expandedCommands = expandCommands(actions, symbols.add(id, coll.evaluateType(AnyCollectionType(), symbols).iteratedType))
         Seq(ForeachAction(coll, id, expandedCommands))
 
       case createRel: CreateRelationship =>

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -511,6 +511,13 @@ return distinct center""")
   @Test
   def can_create_anonymous_nodes_inside_foreach() {
     val result = parseAndExecute("start me=node(0) foreach (i in range(1,10) : create me-[:FRIEND]->())")
+
+    assert(result.toList === List())
+  }
+
+  @Test
+  def should_be_able_to_use_external_identifiers_inside_foreach() {
+    val result = parseAndExecute("start a=node(0), b=node(0) foreach(x in [b] : create x-[:FOO]->a) ")
 
     assert(result.toList === List())
   }

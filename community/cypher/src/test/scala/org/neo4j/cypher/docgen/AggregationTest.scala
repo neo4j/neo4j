@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -150,6 +150,9 @@ We have two return expressions -- `n`, and `count(*)`. The first, `n`, is no agg
 grouping key. The latter, `count(*)` is an aggregate expression. So the matching subgraphs will be divided into
 different buckets, depending on the grouping key. The aggregate function will then run on these buckets, calculating
 the aggregate values.
+
+If you want to use aggregations to sort your result set, the aggregation must be included in the +RETURN+ to be used
+in your +ORDER BY+.
 
 The last piece of the puzzle is the +DISTINCT+ keyword. It is used to make all values unique before running them through
 an aggregate function.

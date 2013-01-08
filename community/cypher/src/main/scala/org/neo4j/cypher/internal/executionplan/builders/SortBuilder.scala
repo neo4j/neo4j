@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -37,9 +37,25 @@ class SortBuilder extends PlanBuilder with SortingPreparations {
     plan.copy(pipe = resultPipe, query = resultQ)
   }
 
-  def canWorkWith(plan: ExecutionPlanInProgress) = plan.query.extracted && plan.query.sort.filter(_.unsolved).nonEmpty
+  def canWorkWith(plan: ExecutionPlanInProgress) =
+    plan.query.extracted &&
+    plan.query.sort.filter(x => x.unsolved && !x.token.expression.containsAggregate).nonEmpty
 
   def priority: Int = PlanBuilder.Sort
+
+  override def missingDependencies(plan: ExecutionPlanInProgress) = if (!plan.query.extracted) {
+    Seq()
+  } else {
+    val aggregations = plan.query.sort.
+      filter(_.token.expression.containsAggregate).
+      map(_.token.expression.toString())
+
+    if (aggregations.nonEmpty) {
+      Seq("Aggregation expressions must be listed in the RETURN clause to be used in ORDER BY")
+    } else {
+      Seq()
+    }
+  }
 }
 
 trait SortingPreparations {

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.pipes.matching.MatchingContext
 import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.graphdb.Path
 import org.neo4j.cypher.internal.executionplan.builders.PatternGraphBuilder
-import org.neo4j.cypher.internal.pipes.ExecutionContext
+import org.neo4j.cypher.internal.ExecutionContext
 
 case class PathExpression(pathPattern: Seq[Pattern])
   extends Expression

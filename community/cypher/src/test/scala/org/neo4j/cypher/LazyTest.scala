@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -74,7 +74,7 @@ class LazyTest extends ExecutionEngineHelper with Assertions {
 
     val step = SingleStep(0, Seq(), Direction.OUTGOING, None, True(), True())
     val matcher = new MonoDirectionalTraversalMatcher(step, (ctx) => Seq(monitoredNode))
-    val ctx = ExecutionContext(state=QueryState(graph)).newWith("a" -> monitoredNode)
+    val ctx = internal.ExecutionContext(state=QueryState(graph)).newWith("a" -> monitoredNode)
 
     //When:
     val iter = matcher.findMatchingPaths(QueryState(), ctx)

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.executionplan
 import builders._
 import org.neo4j.cypher.internal.pipes._
 import org.neo4j.cypher._
-import internal.ClosingIterator
+import internal.{ExecutionContext, ClosingIterator}
 import internal.commands._
 import internal.mutation.{CreateNode, CreateRelationship}
 import internal.spi.gdsimpl.GDSBackedQueryContext
@@ -181,7 +181,7 @@ The Neo4j Team""")
     }
 
     val prio = errors.head._1.priority
-    val errorsOfHighestPrio = errors.filter(_._1.priority == prio).map("Unknown identifier `" + _._2 + "`").distinct
+    val errorsOfHighestPrio = errors.filter(_._1.priority == prio).distinct.map(_._2)
 
     val errorMessage = errorsOfHighestPrio.mkString("\n")
     throw new SyntaxException(errorMessage)

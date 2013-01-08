@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -2324,5 +2324,13 @@ RETURN x0.name?
     val result = parseAndExecute("""START a=node(0) return substring("0123456789", 1) as s""")
 
     assert(result.toList === List(Map("s" -> "123456789")))
+  }
+
+  @Test
+  def filtering_in_match_should_not_fail() {
+    relate(refNode, createNode("name" -> "Neo"))
+    val result = parseAndExecute("START n = node(0) MATCH n-->me WHERE me.name IN ['Neo'] RETURN me.name")
+
+    assert(result.toList === List(Map("me.name"->"Neo")))
   }
 }

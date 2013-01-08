@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 import java.util.Collection;
-import java.util.logging.Logger;
 
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
@@ -51,8 +50,6 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
  */
 public abstract class Command extends XaCommand
 {
-    static Logger logger = Logger.getLogger( Command.class.getName() );
-
     private final long key;
 
     Command( long key )
@@ -331,7 +328,6 @@ public abstract class Command extends XaCommand
         {
             if ( isRecovered() )
             {
-                logger.fine( this.toString() );
                 store.updateRecord( record, true );
             }
             else
@@ -472,7 +468,6 @@ public abstract class Command extends XaCommand
         {
             if ( isRecovered() )
             {
-                logger.fine( this.toString() );
                 store.updateRecord( record, true );
             }
             else
@@ -681,7 +676,6 @@ public abstract class Command extends XaCommand
         {
             if ( isRecovered() )
             {
-                logger.fine( this.toString() );
                 store.updateRecord( record, true );
             }
             else
@@ -823,7 +817,6 @@ public abstract class Command extends XaCommand
         {
             if ( isRecovered() )
             {
-                logger.fine( this.toString() );
                 store.updateRecord( record, true );
             }
             else
@@ -1040,7 +1033,6 @@ public abstract class Command extends XaCommand
         {
             if ( isRecovered() )
             {
-                logger.fine( this.toString() );
                 store.updateRecord( record, true );
             }
             else

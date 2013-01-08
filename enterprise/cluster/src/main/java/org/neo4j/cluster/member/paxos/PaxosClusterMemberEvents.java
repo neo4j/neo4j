@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -17,11 +17,11 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.neo4j.cluster.member.paxos;
 
 import static org.neo4j.helpers.collection.Iterables.append;
 import static org.neo4j.helpers.collection.Iterables.filter;
+import static org.neo4j.helpers.collection.Iterables.reverse;
 import static org.neo4j.helpers.collection.Iterables.toList;
 
 import java.io.IOException;
@@ -30,7 +30,9 @@ import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -165,15 +167,27 @@ public class PaxosClusterMemberEvents implements ClusterMemberEvents, Lifecycle
             } );
         }
     }
+    
+    private static class UniqueRoleFilter implements Predicate<MemberIsAvailable>
+    {
+        private final Set<String> roles = new HashSet<String>();
+        
+        @Override
+        public boolean accept( MemberIsAvailable item )
+        {
+            return roles.add( item.getRole() );
+        }
+    }
 
     public static class ClusterMembersSnapshot
         implements Serializable
     {
-        Iterable<MemberIsAvailable> availableMembers = new ArrayList<MemberIsAvailable>(  );
+        private Iterable<MemberIsAvailable> availableMembers = new ArrayList<MemberIsAvailable>();
 
-        public void availableMember(MemberIsAvailable memberIsAvailable)
+        public void availableMember( MemberIsAvailable memberIsAvailable )
         {
-            availableMembers = toList( append( memberIsAvailable, availableMembers ) );
+            availableMembers = toList( filter( new UniqueRoleFilter(),
+                    reverse( append( memberIsAvailable, availableMembers ) ) ) );
         }
 
         public void unavailableMember( final URI member )
@@ -205,7 +219,7 @@ public class PaxosClusterMemberEvents implements ClusterMemberEvents, Lifecycle
             return availableMembers;
         }
 
-        public Iterable<MemberIsAvailable> getCurrentAvailable( final URI memberUri)
+        public Iterable<MemberIsAvailable> getCurrentAvailable( final URI memberUri )
         {
             return Iterables.filter( new Predicate<MemberIsAvailable>()
                                     {

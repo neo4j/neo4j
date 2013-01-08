@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -23,6 +23,7 @@ import aggregation.AggregationFunction
 import org.neo4j.cypher.internal.symbols._
 import org.neo4j.cypher.internal.commands.expressions.{Expression, AggregationExpression}
 import collection.mutable.{Map => MutableMap}
+import org.neo4j.cypher.internal.ExecutionContext
 
 // Eager aggregation means that this pipe will eagerly load the whole resulting sub graphs before starting
 // to emit aggregated results.
