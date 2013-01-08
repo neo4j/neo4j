@@ -19,19 +19,18 @@
  */
 package org.neo4j.server.rest.batch;
 
-import org.junit.Test;
-import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.server.rest.web.InternalJettyServletRequest;
-import org.neo4j.server.rest.web.InternalJettyServletResponse;
+import static org.junit.Assert.assertEquals;
 
-import javax.servlet.ServletException;
 import java.io.IOException;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.junit.Assert.assertEquals;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import javax.servlet.ServletException;
+
+import org.junit.Test;
+import org.neo4j.server.rest.web.InternalJettyServletRequest;
+import org.neo4j.server.rest.web.InternalJettyServletResponse;
 
 public class BatchOperationsTest {
 
@@ -49,14 +48,5 @@ public class BatchOperationsTest {
         assertEquals("foo bar", ops.replaceLocationPlaceholders("foo {100}", map));
         assertEquals("bar foo bar", ops.replaceLocationPlaceholders("{100} foo {100}", map));
         assertEquals("bar bar foo bar bar", ops.replaceLocationPlaceholders("bar {100} foo {100} bar", map));
-    }
-
-    @Test(timeout = 50)
-    public void testPerformance() throws Exception {
-        Map<Integer,String> map=new HashMap<Integer, String>();
-        for (int i=0;i<10000;i++) {
-            map.put(i, "" + i);
-        }
-        assertEquals(" 1000 foo 5000 ", ops.replaceLocationPlaceholders(" {1000} foo {5000} ", map));
     }
 }
