@@ -19,19 +19,18 @@
  */
 package org.neo4j.server.rest.batch;
 
-import org.junit.Test;
-import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.server.rest.web.InternalJettyServletRequest;
-import org.neo4j.server.rest.web.InternalJettyServletResponse;
+import static org.junit.Assert.assertEquals;
 
-import javax.servlet.ServletException;
 import java.io.IOException;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.junit.Assert.assertEquals;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import javax.servlet.ServletException;
+
+import org.junit.Test;
+import org.neo4j.server.rest.web.InternalJettyServletRequest;
+import org.neo4j.server.rest.web.InternalJettyServletResponse;
 
 public class BatchOperationsTest {
 
