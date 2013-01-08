@@ -76,7 +76,7 @@ public class StoreMigrationTool
 
         long startTime = System.currentTimeMillis();
 
-        new StoreMigrator( new VisibleMigrationProgressMonitor( System.out ) ).migrate( legacyStore, neoStore );
+        new StoreMigrator( new VisibleMigrationProgressMonitor( log, System.out ) ).migrate( legacyStore, neoStore );
 
         long duration = System.currentTimeMillis() - startTime;
         System.out.printf( "Migration completed in %d s%n", duration / 1000 );

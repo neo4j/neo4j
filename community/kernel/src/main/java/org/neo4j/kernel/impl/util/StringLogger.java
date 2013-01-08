@@ -455,7 +455,7 @@ public abstract class StringLogger
         public synchronized void logMessage( String msg, boolean flush )
         {
 //            ensureOpen();
-            out.println( time() + ": " + msg );
+            out.println( time() + " INFO  [org.neo4j]: " + msg );
             if ( flush )
             {
                 out.flush();
@@ -472,7 +472,7 @@ public abstract class StringLogger
         public synchronized void logMessage( String msg, Throwable cause, boolean flush )
         {
 //            ensureOpen();
-            out.println( time() + ": " + msg + " " + cause.getMessage() );
+            out.println( time() + " ERROR [org.neo4j]: " + msg + " " + cause.getMessage());
             cause.printStackTrace( out );
             if ( flush )
             {
@@ -484,7 +484,7 @@ public abstract class StringLogger
         @Override
         public synchronized void logLongMessage( String msg, Visitor<LineLogger> source, boolean flush )
         {
-            out.println( time() + ": " + msg );
+            out.println( time() + " INFO  [org.neo4j]: " + msg );
             source.visit( new LineLoggerImpl( this ) );
             if ( flush )
             {

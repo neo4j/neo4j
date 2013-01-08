@@ -344,7 +344,7 @@ public abstract class InternalAbstractGraphDatabase
 
         if ( readOnly )
         {
-            txManager = new ReadOnlyTxManager( xaDataSourceManager );
+            txManager = new ReadOnlyTxManager( xaDataSourceManager, logging.getLogger( ReadOnlyTxManager.class ) );
         }
         else
         {
@@ -384,7 +384,7 @@ public abstract class InternalAbstractGraphDatabase
 
         syncHook = new DefaultTxEventSyncHookFactory();
 
-        persistenceManager = new PersistenceManager( txManager,
+        persistenceManager = new PersistenceManager( logging.getLogger( PersistenceManager.class ), txManager,
                 persistenceSource, syncHook );
 
         propertyIndexManager = life.add( new PropertyIndexManager( persistenceManager, persistenceSource ) );
@@ -487,12 +487,12 @@ public abstract class InternalAbstractGraphDatabase
     {
         if ( readOnly )
         {
-            return new ReadOnlyNodeManager( config, this, txManager, persistenceManager,
+            return new ReadOnlyNodeManager( config, logging.getLogger( NodeManager.class ), this, txManager, persistenceManager,
                     persistenceSource, relationshipTypeHolder, cacheType, propertyIndexManager, createNodeLookup(),
                     createRelationshipLookups(), nodeCache, relCache, xaDataSourceManager );
         }
 
-        return new NodeManager( config, this, txManager, persistenceManager,
+        return new NodeManager( config, logging.getLogger( NodeManager.class ), this, txManager, persistenceManager,
                 persistenceSource, relationshipTypeHolder, cacheType, propertyIndexManager, createNodeLookup(),
                 createRelationshipLookups(), nodeCache, relCache, xaDataSourceManager );
     }
@@ -502,7 +502,7 @@ public abstract class InternalAbstractGraphDatabase
     {
         if ( readOnly )
         {
-            return new ReadOnlyNodeManager( config, this, txManager, persistenceManager,
+            return new ReadOnlyNodeManager( config, logging.getLogger( NodeManager.class ), this, txManager, persistenceManager,
                     persistenceSource, relationshipTypeHolder, cacheType, propertyIndexManager, createNodeLookup(),
                     createRelationshipLookups(), nodeCache, relCache, xaDataSourceManager )
             {
@@ -551,7 +551,7 @@ public abstract class InternalAbstractGraphDatabase
             };
         }
 
-        return new NodeManager( config, this, txManager, persistenceManager,
+        return new NodeManager( config, logging.getLogger( NodeManager.class ), this, txManager, persistenceManager,
                 persistenceSource, relationshipTypeHolder, cacheType, propertyIndexManager, createNodeLookup(),
                 createRelationshipLookups(), nodeCache, relCache, xaDataSourceManager )
         {

@@ -27,8 +27,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -60,15 +58,15 @@ import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.RelIdArray;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 import org.neo4j.kernel.impl.util.RelIdArrayWithLoops;
+import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
 public class NodeManager
         implements Lifecycle
 {
-    private static Logger log = Logger.getLogger( NodeManager.class.getName() );
-
     private long referenceNodeId = 0;
 
+    private StringLogger logger;
     private final GraphDatabaseService graphDbService;
     private final Cache<NodeImpl> nodeCache;
     private final Cache<RelationshipImpl> relCache;
@@ -97,7 +95,7 @@ public class NodeManager
 
     private NodeManagerDatasourceListener dataSourceListener;
 
-    public NodeManager( Config config, GraphDatabaseService graphDb,
+    public NodeManager( Config config, StringLogger logger, GraphDatabaseService graphDb,
                         AbstractTransactionManager transactionManager,
                         PersistenceManager persistenceManager, EntityIdGenerator idGenerator,
                         RelationshipTypeHolder relationshipTypeHolder, CacheProvider cacheProvider,
@@ -105,6 +103,7 @@ public class NodeManager
                         RelationshipProxy.RelationshipLookups relationshipLookups, Cache<NodeImpl> nodeCache,
                         Cache<RelationshipImpl> relCache, XaDataSourceManager xaDsm )
     {
+        this.logger = logger;
         this.graphDbService = graphDb;
         this.transactionManager = transactionManager;
         this.propertyIndexManager = propertyIndexManager;
@@ -675,13 +674,12 @@ public class NodeManager
             // this exception always get generated in a finally block and
             // when it happens another exception has already been thrown
             // (most likley NotInTransactionException)
-            log.log( Level.FINE, "Failed to set transaction rollback only", e );
+            logger.debug( "Failed to set transaction rollback only", e );
         }
         catch ( javax.transaction.SystemException se )
         {
             // our TM never throws this exception
-            log.log( Level.SEVERE, "Failed to set transaction rollback only",
-                    se );
+            logger.error( "Failed to set transaction rollback only", se );
         }
     }
 

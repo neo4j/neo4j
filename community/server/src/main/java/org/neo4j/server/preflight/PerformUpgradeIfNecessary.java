@@ -84,7 +84,7 @@ public class PerformUpgradeIfNecessary implements PreflightTask
             Config conf = new Config( dbConfig, GraphDatabaseSettings.class );
             StoreUpgrader storeUpgrader = new StoreUpgrader( conf, StringLogger.SYSTEM,
                     new ConfigMapUpgradeConfiguration( conf ),
-                    new UpgradableDatabase(), new StoreMigrator( new VisibleMigrationProgressMonitor( out ) ),
+                    new UpgradableDatabase(), new StoreMigrator( new VisibleMigrationProgressMonitor( StringLogger.SYSTEM, out ) ),
                     new DatabaseFiles(), new DefaultIdGeneratorFactory(), fileSystem );
 
             try

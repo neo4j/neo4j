@@ -51,8 +51,6 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
  */
 public abstract class Command extends XaCommand
 {
-    static Logger logger = Logger.getLogger( Command.class.getName() );
-
     private final long key;
 
     Command( long key )
@@ -331,7 +329,6 @@ public abstract class Command extends XaCommand
         {
             if ( isRecovered() )
             {
-                logger.fine( this.toString() );
                 store.updateRecord( record, true );
             }
             else
@@ -472,7 +469,6 @@ public abstract class Command extends XaCommand
         {
             if ( isRecovered() )
             {
-                logger.fine( this.toString() );
                 store.updateRecord( record, true );
             }
             else
@@ -681,7 +677,6 @@ public abstract class Command extends XaCommand
         {
             if ( isRecovered() )
             {
-                logger.fine( this.toString() );
                 store.updateRecord( record, true );
             }
             else
@@ -823,7 +818,6 @@ public abstract class Command extends XaCommand
         {
             if ( isRecovered() )
             {
-                logger.fine( this.toString() );
                 store.updateRecord( record, true );
             }
             else
@@ -1040,7 +1034,6 @@ public abstract class Command extends XaCommand
         {
             if ( isRecovered() )
             {
-                logger.fine( this.toString() );
                 store.updateRecord( record, true );
             }
             else

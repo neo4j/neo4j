@@ -28,7 +28,6 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Properties;
-import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
 import org.neo4j.graphdb.DependencyResolver;
@@ -96,9 +95,6 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
 
     public static final byte BRANCH_ID[] = UTF8.encode( "414141" );
     public static final String LOGICAL_LOG_DEFAULT_NAME = "nioneo_logical.log";
-
-    private static Logger logger = Logger.getLogger(
-        NeoStoreXaDataSource.class.getName() );
 
     private StoreFactory storeFactory;
     private XaFactory xaFactory;
@@ -265,8 +261,8 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
             }
             else
             {
-                logger.fine( "Waiting for TM to take care of recovered " +
-                    "transactions." );
+                msgLog.debug( "Waiting for TM to take care of recovered " +
+                        "transactions." );
             }
             idGenerators = new ArrayMap<Class<?>,Store>( (byte)5, false, false );
             this.idGenerators.put( Node.class, neoStore.getNodeStore() );
@@ -314,8 +310,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
             logApplied = false;
         }
         neoStore.close();
-        logger.fine( "NeoStore closed" );
-        msgLog.logMessage( "NeoStore closed", true );
+        msgLog.info( "NeoStore closed" );
     }
 
     @Override
@@ -380,14 +375,14 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
         @Override
         public void recoveryComplete()
         {
-            logger.fine( "Recovery complete, "
-                + "all transactions have been resolved" );
-            logger.fine( "Rebuilding id generators as needed. "
-                + "This can take a while for large stores..." );
+            msgLog.debug( "Recovery complete, "
+                    + "all transactions have been resolved" );
+            msgLog.debug( "Rebuilding id generators as needed. "
+                    + "This can take a while for large stores..." );
             neoStore.flushAll();
             neoStore.makeStoreOk();
             neoStore.setVersion( xaContainer.getLogicalLog().getHighestLogVersion() );
-            logger.fine( "Rebuild of id generators complete." );
+            msgLog.debug( "Rebuild of id generators complete." );
         }
 
         @Override
