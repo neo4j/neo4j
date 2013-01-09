@@ -174,6 +174,7 @@ trait ParserPattern extends Base {
     case Some("*" ~ None ~ None ~ None) => Some(None, None)
     case Some("*" ~ min ~ None ~ None) => Some((min.map(_.toInt), min.map(_.toInt)))
     case Some("*" ~ min ~ _ ~ max) => Some((min.map(_.toInt), max.map(_.toInt)))
+    case _ => throw new ThisShouldNotHappenError("Stefan/Andres", "This non-exhaustive match would have been a RuntimeException in the past")
   }
 
   private def tailWithNoRelData = opt("<") ~ "--" ~ opt(">") ~ node ^^ {

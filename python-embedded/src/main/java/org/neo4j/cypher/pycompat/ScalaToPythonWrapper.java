@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.pycompat;
 
+import java.util.Collection;
 import java.util.Map;
 
 import org.neo4j.graphdb.Path;
@@ -38,6 +39,10 @@ public class ScalaToPythonWrapper
         else if(obj instanceof Map)
         {
             return new WrappedMap( (Map<String, Object>) obj );
+        }
+        else if(obj instanceof Collection )
+        {
+            return new WrappedCollection( (Collection) obj );
         }
         return obj;
     }

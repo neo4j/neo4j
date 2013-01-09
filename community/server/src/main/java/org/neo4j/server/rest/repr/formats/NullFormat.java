@@ -20,6 +20,7 @@
 package org.neo4j.server.rest.repr.formats;
 
 import java.net.URI;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -33,8 +34,6 @@ import org.neo4j.server.rest.repr.ListWriter;
 import org.neo4j.server.rest.repr.MappingWriter;
 import org.neo4j.server.rest.repr.MediaTypeNotSupportedException;
 import org.neo4j.server.rest.repr.RepresentationFormat;
-
-import scala.actors.threadpool.Arrays;
 
 public class NullFormat extends RepresentationFormat
 {
@@ -73,7 +72,11 @@ public class NullFormat extends RepresentationFormat
     {
         if ( empty( input ) )
         {
-            if ( requiredKeys.length != 0 ) throw new BadInputException( "Missing required keys: " + Arrays.toString( requiredKeys ) );
+            if ( requiredKeys.length != 0 )
+            {
+                String missingKeys = Arrays.toString( requiredKeys );
+                throw new BadInputException( "Missing required keys: " + missingKeys );
+            }
             return Collections.emptyMap();
         }
         throw new MediaTypeNotSupportedException( Response.Status.UNSUPPORTED_MEDIA_TYPE, supported, requested );

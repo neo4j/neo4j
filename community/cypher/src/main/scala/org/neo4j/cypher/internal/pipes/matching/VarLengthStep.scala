@@ -65,7 +65,7 @@ case class VarLengthStep(id: Int,
 
     def expandRecursively(rels: Iterable[Relationship]): Iterable[Relationship] = {
       if (min == 0) {
-        rels ++ next.map(s => s.expand(node, parameters)._1).flatten
+        rels ++ next.toSeq.map(s => s.expand(node, parameters)._1).flatten
       } else {
         rels
       }
