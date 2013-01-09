@@ -42,6 +42,9 @@ abstract class Trail {
 
   def contains(target: String): Boolean
 
+  /**
+   * @return The original predicates that this Trail uses
+   */
   def predicates: Seq[Predicate]
 
   def patterns: Seq[Pattern]

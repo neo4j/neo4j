@@ -74,15 +74,15 @@ class TrailToStepTest extends GraphDatabaseTestBase with Assertions with Builder
   @Test def single_step() {
     val expected = step(0, Seq(A), Direction.INCOMING, None)
 
-    val steps = SingleStepTrail(EndPoint("b"), Direction.INCOMING, "pr1", Seq("A"), "a", None, None, AtoB).toSteps(0).get
+    val steps = SingleStepTrail(EndPoint("b"), Direction.INCOMING, "pr1", Seq("A"), "a", True(), True(), AtoB, Seq()).toSteps(0).get
 
     assert(steps === expected)
   }
 
   @Test def two_steps() {
     val boundPoint = EndPoint("c")
-    val second = SingleStepTrail(boundPoint, Direction.INCOMING, "pr2", Seq("B"), "b", None, None, BtoC)
-    val first = SingleStepTrail(second, Direction.INCOMING, "pr1", Seq("A"), "a", None, None, AtoB)
+    val second = SingleStepTrail(boundPoint, Direction.INCOMING, "pr2", Seq("B"), "b", True(), True(), BtoC, Seq())
+    val first = SingleStepTrail(second, Direction.INCOMING, "pr1", Seq("A"), "a", True(), True(), AtoB, Seq())
 
     val backward2 = step(1, Seq(B), Direction.INCOMING, None)
     val backward1 = step(0, Seq(A), Direction.INCOMING, Some(backward2))
@@ -99,8 +99,8 @@ class TrailToStepTest extends GraphDatabaseTestBase with Assertions with Builder
     val r2Pred = Equals(Property(Identifier("pr2"), "prop"), Literal("FOO"))
 
     val boundPoint = EndPoint("c")
-    val second = SingleStepTrail(boundPoint, Direction.INCOMING, "pr2", Seq("B"), "b", Some(r2Pred), None, BtoC)
-    val first = SingleStepTrail(second, Direction.INCOMING, "pr1", Seq("A"), "a", Some(r1Pred), None, AtoB)
+    val second = SingleStepTrail(boundPoint, Direction.INCOMING, "pr2", Seq("B"), "b", r2Pred, True(), BtoC, Seq())
+    val first = SingleStepTrail(second, Direction.INCOMING, "pr1", Seq("A"), "a", r1Pred, True(), AtoB, Seq())
 
     val backward2 = step(1, Seq(B), Direction.INCOMING, None, relPredicate = r2Pred)
     val backward1 = step(0, Seq(A), Direction.INCOMING, Some(backward2), relPredicate = r1Pred)
@@ -118,8 +118,8 @@ class TrailToStepTest extends GraphDatabaseTestBase with Assertions with Builder
     val forward1 = step(0, Seq(A), Direction.INCOMING, Some(forward2))
 
     val boundPoint = EndPoint("c")
-    val second = SingleStepTrail(boundPoint, Direction.INCOMING, "pr2", Seq("B"), "b", None, Some(nodePred), BtoC)
-    val first = SingleStepTrail(second, Direction.INCOMING, "pr1", Seq("A"), "a", None, None, AtoB)
+    val second = SingleStepTrail(boundPoint, Direction.INCOMING, "pr2", Seq("B"), "b", True(), nodePred, BtoC, Seq())
+    val first = SingleStepTrail(second, Direction.INCOMING, "pr1", Seq("A"), "a", True(), True(), AtoB, Seq())
 
 
     assert(first.toSteps(0).get === forward1)
@@ -131,9 +131,9 @@ class TrailToStepTest extends GraphDatabaseTestBase with Assertions with Builder
     val pr1 = step(0, Seq(C), OUTGOING, Some(pr2))
 
     val boundPoint = EndPoint("a")
-    val third = SingleStepTrail(boundPoint, Direction.OUTGOING, "pr1", Seq("A"), "b", None, None, AtoB)
-    val second = SingleStepTrail(third, Direction.OUTGOING, "pr2", Seq("B"), "c", None, None, BtoC)
-    val first = SingleStepTrail(second, Direction.OUTGOING, "pr3", Seq("C"), "d", None, None, CtoD)
+    val third = SingleStepTrail(boundPoint, Direction.OUTGOING, "pr1", Seq("A"), "b", True(), True(), AtoB, Seq())
+    val second = SingleStepTrail(third, Direction.OUTGOING, "pr2", Seq("B"), "c", True(), True(), BtoC, Seq())
+    val first = SingleStepTrail(second, Direction.OUTGOING, "pr3", Seq("C"), "d", True(), True(), CtoD, Seq())
 
     assert(first.toSteps(0).get === pr1)
   }

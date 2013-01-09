@@ -19,15 +19,16 @@
  */
 package org.neo4j.cypher.internal.executionplan.builders
 
-import org.neo4j.cypher.internal.commands.{VarLengthRelatedTo, RelatedTo, Pattern, Predicate}
+import org.neo4j.cypher.internal.commands._
 import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.commands.expressions.{Expression, Identifier}
 import org.neo4j.cypher.internal.pipes.matching._
 import org.neo4j.helpers.ThisShouldNotHappenError
-import annotation.tailrec
 import org.neo4j.cypher.internal.pipes.matching.VariableLengthStepTrail
 import org.neo4j.cypher.internal.pipes.matching.EndPoint
+import org.neo4j.cypher.internal.pipes.matching.RelationshipIdentifier
 import org.neo4j.cypher.internal.pipes.matching.SingleStepTrail
+import annotation.tailrec
 
 object TrailBuilder {
   def findLongestTrail(patterns: Seq[Pattern], boundPoints: Seq[String], predicates: Seq[Predicate] = Seq.empty) =
@@ -54,12 +55,19 @@ final class TrailBuilder(patterns: Seq[Pattern], boundPoints: Seq[String], predi
         case e                                        => e
       }
 
-      def relPred(k: String) = predicates.find(createFinder(k)).map(rewriteTo(k, RelationshipIdentifier()))
-
-      def nodePred(k: String) = predicates.find(createFinder(k)).map(rewriteTo(k, NodeIdentifier()))
+      def findRelPredicates(k: String): Seq[Predicate] = predicates.filter(createFinder(k))
+      def findNodePredicates(k: String): Seq[Predicate] = predicates.filter(createFinder(k))
 
       def singleStep(rel: RelatedTo, end: String, dir: Direction) = {
-        done.add(start => SingleStepTrail(EndPoint(end), dir, rel.relName, rel.relTypes, start, relPred(rel.relName), nodePred(end), rel))
+        val relPreds = findNodePredicates(rel.relName)
+        val nodePreds = findRelPredicates(end)
+
+        def reduceOrTrue(predicates: Seq[Predicate]): Predicate = predicates.reduceOption(_ ++ _).getOrElse(True())
+
+        val rewrittenRelPredicate: Predicate = reduceOrTrue(relPreds.map(rewriteTo(rel.relName, RelationshipIdentifier())))
+        val rewrittenNodePredicate: Predicate = reduceOrTrue(nodePreds.map(rewriteTo(end, NodeIdentifier())))
+
+        done.add(start => SingleStepTrail(EndPoint(end), dir, rel.relName, rel.relTypes, start, rewrittenRelPredicate, rewrittenNodePredicate, rel, relPreds ++ nodePreds))
       }
 
       def multiStep(rel: VarLengthRelatedTo, end: String, dir: Direction) =

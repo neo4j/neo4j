@@ -2347,4 +2347,12 @@ RETURN x0.name?
 
     assert(result.toList === List())
   }
+
+  @Test def path_expressions_should_work_with_on_the_fly_predicates() {
+    relate(refNode, createNode("name" -> "Neo"))
+    val result = parseAndExecute("START a=node({self}) MATCH a-->b WHERE b-->() RETURN b", "self"->refNode)
+
+    assert(result.toList === List())
+  }
+
 }

@@ -25,7 +25,7 @@ import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.graphdb
 import graphdb.{Node, GraphDatabaseService}
 import org.neo4j.cypher.internal.pipes.{ParameterPipe, TraversalMatchPipe}
-import org.neo4j.cypher.internal.pipes.matching.{MonoDirectionalTraversalMatcher, BidirectionalTraversalMatcher}
+import org.neo4j.cypher.internal.pipes.matching.{Trail, TraversalMatcher, MonoDirectionalTraversalMatcher, BidirectionalTraversalMatcher}
 import org.neo4j.cypher.internal.executionplan.ExecutionPlanInProgress
 import org.neo4j.cypher.internal.commands.NodeByIndex
 import org.neo4j.cypher.internal.commands.NodeByIndexQuery
@@ -40,27 +40,46 @@ class TraversalMatcherBuilder(graph: GraphDatabaseService) extends PlanBuilder {
       val unsolvedItems = plan.query.start.filter(_.unsolved)
       val (startToken, startNodeFn) = identifier2nodeFn(graph, start, unsolvedItems)
 
-
-      val (matcher,tokens) = if (end.isEmpty) {
-        val matcher = new MonoDirectionalTraversalMatcher(longestPath.step, startNodeFn)
-        (matcher, Seq(startToken))
-      } else {
-        val (endToken, endNodeFn) = identifier2nodeFn(graph, end.get, unsolvedItems)
-        val step = longestPath.step
-        val matcher = new BidirectionalTraversalMatcher(step, startNodeFn, endNodeFn)
-        (matcher, Seq(startToken, endToken))
-      }
+      val (matcher,tokens) = chooseCorrectMatcher(end, longestPath, startNodeFn, startToken, unsolvedItems)
 
       val solvedPatterns = longestTrail.patterns
 
+      val newWhereClause = markPredicatesAsSolved(plan, longestTrail)
+
       val newQ = plan.query.copy(
         patterns = plan.query.patterns.filterNot(p => solvedPatterns.contains(p.token)) ++ solvedPatterns.map(Solved(_)),
-        start = plan.query.start.filterNot(tokens.contains) ++ tokens.map(_.solve)
+        start = plan.query.start.filterNot(tokens.contains) ++ tokens.map(_.solve),
+        where = newWhereClause
       )
 
       val pipe = new TraversalMatchPipe(plan.pipe, matcher, longestTrail)
 
       plan.copy(pipe = pipe, query = newQ)
+  }
+
+  private def markPredicatesAsSolved(in: ExecutionPlanInProgress, trail: Trail): Seq[QueryToken[Predicate]] = {
+    val originalWhere = in.query.where
+    val predicates = trail.predicates.toList
+    val (solvedPreds, old) = originalWhere.partition(pred => predicates.contains(pred.token))
+
+    old ++ solvedPreds.map(_.solve)
+  }
+
+  private def chooseCorrectMatcher(end:Option[String],
+                           longestPath:LongestTrail,
+                           startNodeFn:(ExecutionContext) => Iterable[Node],
+                           startToken:QueryToken[StartItem],
+                           unsolvedItems: Seq[QueryToken[StartItem]] ): (TraversalMatcher,Seq[QueryToken[StartItem]]) = {
+    val (matcher, tokens) = if (end.isEmpty) {
+      val matcher = new MonoDirectionalTraversalMatcher(longestPath.step, startNodeFn)
+      (matcher, Seq(startToken))
+    } else {
+      val (endToken, endNodeFn) = identifier2nodeFn(graph, end.get, unsolvedItems)
+      val step = longestPath.step
+      val matcher = new BidirectionalTraversalMatcher(step, startNodeFn, endNodeFn)
+      (matcher, Seq(startToken, endToken))
+    }
+    (matcher,tokens)
   }
 
   def identifier2nodeFn(graph: GraphDatabaseService, identifier: String, unsolvedItems: Seq[QueryToken[StartItem]]):
@@ -88,7 +107,12 @@ class TraversalMatcherBuilder(graph: GraphDatabaseService) extends PlanBuilder {
       case _                                                                  => None
     }
 
-    val preds = plan.query.where.filter(_.unsolved).map(_.token)
+    val preds = plan.query.where.filter(_.unsolved).map(_.token).
+    // TODO We should not filter these out. This should be removed once we only use TraversalMatcher
+    filterNot {
+      case pred => pred.exists( exp => exp.isInstanceOf[PathExpression] )
+    }
+
     TrailBuilder.findLongestTrail(pattern, startPoints, preds)
   }
 
