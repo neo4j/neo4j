@@ -338,6 +338,8 @@ public class ClusterJoin
     {
         List<HostnamePort> hosts = config.getInitialHosts();
 
+        cluster.addClusterListener( new UnknownJoiningMemberWarning( hosts ) );
+
         if ( hosts == null || hosts.size() == 0 )
         {
             logger.info( "No cluster hosts specified. Creating cluster " + config.getClusterName() );
@@ -353,7 +355,7 @@ public class ClusterJoin
                     {
                         if ( serverId.toString().endsWith( host.toString() ) )
                         {
-                                continue; // Don't try to join myself
+                            continue; // Don't try to join myself
                         }
 
                         String hostString = resolvePortOnlyHost( host );
@@ -400,6 +402,36 @@ public class ClusterJoin
         catch ( UnknownHostException e )
         {
             throw new RuntimeException( e );
+        }
+    }
+
+    private class UnknownJoiningMemberWarning extends ClusterListener.Adapter
+    {
+        private final List<HostnamePort> initialHosts;
+
+        private UnknownJoiningMemberWarning( List<HostnamePort> initialHosts )
+        {
+            this.initialHosts = initialHosts;
+        }
+
+        @Override
+        public void joinedCluster( URI member )
+        {
+            for ( HostnamePort host : initialHosts )
+            {
+                if ( host.matches( member ) )
+                {
+                    return;
+                }
+            }
+            logger.warn( "Member " + member + " joined cluster but was not part of initial hosts (" +
+                    initialHosts + ")" );
+        }
+
+        @Override
+        public void leftCluster()
+        {
+            cluster.removeClusterListener( this );
         }
     }
 }
