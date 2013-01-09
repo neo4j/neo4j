@@ -67,7 +67,7 @@ public class RobustnessIT
         assertExists( dbs[2], nodes, rels );
 /*
         // Case 1: Cluster is running, do stuff on each instance, see they are there
-        System.out.println( "============== Case simple create on all ================" );
+        debug( "============== Case simple create on all ================" );
         ExecutorService threadPool = Executors.newFixedThreadPool( 30 );
         for ( int i = 0; i < 1000; i++ )
         {
@@ -117,19 +117,19 @@ public class RobustnessIT
 */
 //        System.exit( 0 );
 
-        System.out.println( "============== Case simple master switch test ================" );
+        debug( "============== Case simple master switch test ================" );
 
-        System.out.println( "Start master test" );
+        debug( "Start master test" );
         dbs[0].shutdown();
-        System.out.println( "0 is now dead" );
+        debug( "0 is now dead" );
         Thread.sleep( 3000 );
         assertTrue( dbs[1].isMaster() || dbs[2].isMaster() );
         dbs[0] = startDb( 0 );
-        System.out.println( "0 is now back on" );
+        debug( "0 is now back on" );
         assertTrue( dbs[1].isMaster() );
         assertFalse( dbs[0].isMaster() );
 
-        System.out.println( "============== Case brutal master switch test with create ================" );
+        debug( "============== Case brutal master switch test with create ================" );
         for ( int i = 0; i < 6; i++ )
         {
             int j = findMaster();
@@ -137,28 +137,28 @@ public class RobustnessIT
             HighlyAvailableGraphDatabase db2 = dbs[(j + 2) % dbs.length];
             db1.getDependencyResolver().resolveDependency( UpdatePuller.class ).pullUpdates();
             db2.getDependencyResolver().resolveDependency( UpdatePuller.class ).pullUpdates();
-            System.out.println( "Starting kill of " + j );
+            debug( "Starting kill of " + j );
             dbs[j].shutdown();
-            System.out.println( "========> killed " + j );
+            debug( "========> killed " + j );
             for ( int k = 0; k < 10; k++ )
             {
-//                    System.out.println("Creating on "+((j+1)%dbs.length));
+//                debug("Creating on "+((j+1)%dbs.length));
                 createNodeAndRelationship( db1, nodes, rels );
-//                    System.out.println("Creating on "+((j+2)%dbs.length));
+//                debug("Creating on "+((j+2)%dbs.length));
                 createNodeAndRelationship( db2, nodes, rels );
             }
             Thread.sleep( 3000 );
-            System.out.println( "Starting " + dbs[j] );
+            debug( "Starting " + dbs[j] );
             dbs[j] = startDb( j );
-            System.out.println( "Done starting " + j );
+            debug( "Done starting " + j );
             Thread.sleep( 3000 );
             for ( int k = 0; k < 10; k++ )
             {
-                    System.out.println("Creating on "+((j+1)%dbs.length));
+                debug("Creating on "+((j+1)%dbs.length));
                 createNodeAndRelationship( db1, nodes, rels );
-                    System.out.println("Creating on "+((j+2)%dbs.length));
+                debug("Creating on "+((j+2)%dbs.length));
                 createNodeAndRelationship( db2, nodes, rels );
-                    System.out.println("Creating on "+((j+3)%dbs.length));
+                debug("Creating on "+((j+3)%dbs.length));
                 createNodeAndRelationship( dbs[(j + 3) % dbs.length], nodes, rels );
             }
         }
@@ -187,7 +187,7 @@ public class RobustnessIT
         dbs = startCluster( 3 );
 
         // Case 2: Kill master, create stuff on new slave, see it is there
-        System.out.println( "============== Case switch master, create on slave simple ================" );
+        debug( "============== Case switch master, create on slave simple ================" );
         dbs[0].shutdown();
         for ( int i = 0; i < 1; i++ )
         {
@@ -208,7 +208,7 @@ public class RobustnessIT
 //        System.exit( 0 );
 
         // Case 3: Kill new master, leave one machine in cluster. See it works.
-        System.out.println( "============== Case remove master, slave alone still works ================" );
+        debug( "============== Case remove master, slave alone still works ================" );
         dbs[1].shutdown();
         createNodeAndRelationship( dbs[2], nodes, rels );
         assertExists( dbs[2], nodes, rels );
@@ -216,7 +216,7 @@ public class RobustnessIT
 //        ConsistencyCheck.run( dbs[0].getStoreDir(), dbs[0].getConfig() );
 
         // Case 4: Start new instance, see it joins the cluster and works
-        System.out.println( "============== Case instance joins single machine cluster ================" );
+        debug( "============== Case instance joins single machine cluster ================" );
         dbs[1] = startDb( 1 );
         createNodeAndRelationship( dbs[1], nodes, rels );
         assertExists( dbs[1], nodes, rels );
@@ -225,7 +225,7 @@ public class RobustnessIT
 //        ConsistencyCheck.run( dbs[0].getStoreDir(), dbs[0].getConfig() );
 
         // Case 5: Remove slave, see master is still up
-        System.out.println( "============== Case remove slave, master still working ================" );
+        debug( "============== Case remove slave, master still working ================" );
         dbs[1].shutdown();
         while ( true )
         {
@@ -243,16 +243,21 @@ public class RobustnessIT
         assertExists( dbs[2], nodes, rels );
 
         // Done
-        System.out.println( "============== Done ================" );
+        debug( "============== Done ================" );
         dbs[2].shutdown();
 
         for ( HighlyAvailableGraphDatabase db : dbs )
         {
 //            db.shutdown();
             Thread.sleep( 3000 );
-            System.out.println( "Checking " + db );
+            debug( "Checking " + db );
 //            ConsistencyCheck.run( db.getStoreDir(), db.getConfig() );
         }
+    }
+    
+    private void debug( String string )
+    {
+//        System.out.println( string );
     }
 
     private void createInitial( HighlyAvailableGraphDatabase db, List<Node> nodes, List<Relationship> relationships )
@@ -302,7 +307,7 @@ public class RobustnessIT
         {
             if ( dbs[i].isMaster() )
             {
-                System.out.println( "Found master as " + i );
+                debug( "Found master as " + i );
                 return i;
             }
         }
