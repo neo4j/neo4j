@@ -59,13 +59,15 @@ public enum SnapshotState
 
                         case join:
                         {
-                            if ( context.getClusterContext().getConfiguration().getMembers().size() <= 1 || context.getSnapshotProvider() == null )
+                            if ( context.getClusterContext().getConfiguration().getMembers().size() <= 1 ||
+                                    context.getSnapshotProvider() == null )
                             {
                                 return ready;
                             }
                             else
                             {
-                                URI coordinator = context.getClusterContext().getConfiguration().getElected(ClusterConfiguration.COORDINATOR );
+                                URI coordinator = context.getClusterContext().getConfiguration().getElected(
+                                        ClusterConfiguration.COORDINATOR );
                                 if (coordinator != null)
                                 {
                                     outgoing.offer( Message.to( SnapshotMessage.sendSnapshot, coordinator ) );

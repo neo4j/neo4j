@@ -169,13 +169,17 @@ public class ClusterManager
     {
         this( clustersProvider, root, commonConfig, Collections.<Integer, Map<String, String>>emptyMap() );
     }
-    
+
     @Override
     public void start() throws Throwable
     {
         Clusters clusters = clustersProvider.clusters();
 
         life = new LifeSupport();
+
+        // Started so instances added here will be started immediately, and in case of exceptions they can be
+        // shutdown() or stop()ped properly
+        life.start();
 
         for ( int i = 0; i < clusters.getClusters().size(); i++ )
         {
@@ -184,8 +188,6 @@ public class ClusterManager
             clusterMap.put( cluster.getName(), managedCluster );
             life.add( managedCluster );
         }
-
-        life.start();
     }
 
     @Override
@@ -369,13 +371,13 @@ public class ClusterManager
                 }
 
                 config( graphDatabaseBuilder, name, serverId );
-    
+
                 logger.info( "Starting cluster node " + serverId + " in cluster " + name );
                 final GraphDatabaseService graphDatabase = graphDatabaseBuilder.
                         newGraphDatabase();
-    
+
                 members.put( serverId, (HighlyAvailableGraphDatabase) graphDatabase );
-    
+
                 life.add( new LifecycleAdapter()
                 {
                     @Override

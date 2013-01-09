@@ -228,8 +228,7 @@ public enum ClusterState
                         case joiningTimeout:
                         {
                             context.getLogger( ClusterState.class ).info( "Join timeout for " + message.getHeader(
-                                    Message
-                                    .CONVERSATION_ID ) );
+                                    Message.CONVERSATION_ID ) );
 
                             // The member I got the configuration from, put it last on the list
                             // and then try the member at the top of the list

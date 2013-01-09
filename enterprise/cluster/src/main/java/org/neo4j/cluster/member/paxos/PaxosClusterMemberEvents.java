@@ -69,8 +69,10 @@ public class PaxosClusterMemberEvents implements ClusterMemberEvents, Lifecycle
     private Snapshot snapshot;
     private AtomicBroadcastListener atomicBroadcastListener;
     private ExecutorService executor;
+    private final Predicate<ClusterMembersSnapshot> snapshotValidator;
 
-    public PaxosClusterMemberEvents( final Snapshot snapshot, Cluster cluster, AtomicBroadcast atomicBroadcast, Logging logging )
+    public PaxosClusterMemberEvents( final Snapshot snapshot, Cluster cluster, AtomicBroadcast atomicBroadcast,
+                                     Logging logging, Predicate<ClusterMembersSnapshot> validator )
     {
         this.snapshot = snapshot;
         this.cluster = cluster;
@@ -80,6 +82,8 @@ public class PaxosClusterMemberEvents implements ClusterMemberEvents, Lifecycle
         clusterListener = new ClusterListenerImpl();
 
         atomicBroadcastListener = new AtomicBroadcastListenerImpl();
+
+        this.snapshotValidator = validator;
     }
 
     @Override
@@ -152,19 +156,33 @@ public class PaxosClusterMemberEvents implements ClusterMemberEvents, Lifecycle
         {
             clusterMembersSnapshot = ClusterMembersSnapshot.class.cast(input.readObject());
 
-            // Send current availability events to listeners
-            Listeners.notifyListeners( listeners, executor, new Listeners.Notification<ClusterMemberListener>()
+            if ( !snapshotValidator.accept( clusterMembersSnapshot ) )
             {
-                @Override
-                public void notify( ClusterMemberListener listener )
+                executor.submit( new Runnable()
                 {
-                    for ( MemberIsAvailable memberIsAvailable : clusterMembersSnapshot.getCurrentAvailableMembers() )
+                    @Override
+                    public void run()
                     {
-                        listener.memberIsAvailable( memberIsAvailable.getRole(), memberIsAvailable.getClusterUri(),
-                                memberIsAvailable.getRoleUri() );
+                        cluster.leave();
                     }
-                }
-            } );
+                } );
+            }
+            else
+            {
+                // Send current availability events to listeners
+                Listeners.notifyListeners( listeners, executor, new Listeners.Notification<ClusterMemberListener>()
+                {
+                    @Override
+                    public void notify( ClusterMemberListener listener )
+                    {
+                        for ( MemberIsAvailable memberIsAvailable : clusterMembersSnapshot.getCurrentAvailableMembers() )
+                        {
+                            listener.memberIsAvailable( memberIsAvailable.getRole(), memberIsAvailable.getClusterUri(),
+                                    memberIsAvailable.getRoleUri() );
+                        }
+                    }
+                } );
+            }
         }
     }
     
