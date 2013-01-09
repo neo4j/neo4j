@@ -94,7 +94,7 @@ for jar in "$REPO"/*.jar
 do
   LIBRARY_JARS="$LIBRARY_JARS":$jar
 done
-for jar in "$BASEDIR"/system/coordinator/lib/*.jar
+for jar in "$BASEDIR"/system/lib/*.jar
 do
   LIBRARY_JARS="$LIBRARY_JARS":$jar
 done

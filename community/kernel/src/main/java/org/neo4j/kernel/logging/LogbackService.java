@@ -20,6 +20,7 @@
 package org.neo4j.kernel.logging;
 
 import java.io.File;
+import java.net.URL;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Visitor;
@@ -44,14 +45,21 @@ public class LogbackService
 {
     private Config config;
     private final LoggerContext loggerContext;
+    private final String logbackConfigurationFilename;
 
     private LifeSupport loggingLife = new LifeSupport();
     protected RestartOnChange restartOnChange;
 
     public LogbackService( Config config, LoggerContext loggerContext )
     {
+        this(config, loggerContext, "neo4j-logback.xml");
+    }
+
+    public LogbackService( Config config, LoggerContext loggerContext, String logbackConfigurationFilename )
+    {
         this.config = config;
         this.loggerContext = loggerContext;
+        this.logbackConfigurationFilename = logbackConfigurationFilename;
     }
 
     @Override
@@ -87,7 +95,12 @@ public class LogbackService
                     try
 
                     {
-                        configurator.doConfigure( getClass().getResource( "/neo4j-logback.xml" ) );
+                        URL resource = getClass().getClassLoader().getResource( logbackConfigurationFilename );
+
+                        if (resource == null)
+                            throw new IllegalStateException( String.format("Could not find %s configuration", logbackConfigurationFilename ));
+
+                        configurator.doConfigure( resource );
                     }
                     catch ( JoranException e )
                     {

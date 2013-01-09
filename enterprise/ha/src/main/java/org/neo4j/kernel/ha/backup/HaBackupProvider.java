@@ -59,7 +59,7 @@ public final class HaBackupProvider extends BackupExtensionService
     {
         String master = null;
         StringLogger logger = logging.getLogger( HaBackupProvider.class );
-        logger.logMessage( "Asking cluster member at '" + address
+        logger.debug( "Asking cluster member at '" + address
                 + "' for master" );
 
         String clusterName = args.get( ClusterSettings.cluster_name.name(), null );
@@ -68,23 +68,21 @@ public final class HaBackupProvider extends BackupExtensionService
             clusterName = args.get( ClusterSettings.cluster_name.name(), ClusterSettings.cluster_name.getDefaultValue() );
         }
 
-        master = getMasterServerInCluster( address.getSchemeSpecificPart().substring(
-                2 ), clusterName, logging ); // skip the "//" part
-
-        logger.logMessage( "Found master '" + master + "' in cluster" );
-        URI toReturn = null;
         try
         {
-            toReturn = new URI( master );
+            master = getMasterServerInCluster( address.getSchemeSpecificPart().substring(
+                    2 ), clusterName, logging ); // skip the "//" part
+
+            logger.debug( "Found master '" + master + "' in cluster" );
+            return URI.create( master );
         }
-        catch ( URISyntaxException e )
+        catch ( Exception e )
         {
-            // no way
+            throw new RuntimeException( e.getMessage() );
         }
-        return toReturn;
     }
 
-    private static String getMasterServerInCluster( String from, String clusterName, final Logging logging )
+    private String getMasterServerInCluster( String from, String clusterName, final Logging logging )
     {
         LifeSupport life = new LifeSupport();
         Map<String, String> params = new HashMap<String, String>();
