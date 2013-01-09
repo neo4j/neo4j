@@ -20,7 +20,6 @@
 package org.neo4j.kernel.ha.backup;
 
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Semaphore;
