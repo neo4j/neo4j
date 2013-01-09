@@ -429,20 +429,16 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
 
     static class NodeIndex extends LuceneIndex<Node>
     {
-        private GraphDatabaseService gdb;
-
         NodeIndex( LuceneIndexImplementation service,
-                   GraphDatabaseService gdb,
                 IndexIdentifier identifier )
         {
             super( service, identifier );
-            this.gdb = gdb;
         }
 
         @Override
         protected Node getById( long id )
         {
-            return gdb.getNodeById(id);
+            return service.graphDb().getNodeById(id);
         }
 
         @Override
@@ -474,20 +470,15 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
     static class RelationshipIndex extends LuceneIndex<Relationship>
             implements org.neo4j.graphdb.index.RelationshipIndex
     {
-        private GraphDatabaseService gdb;
-
-        RelationshipIndex( LuceneIndexImplementation service,
-                           GraphDatabaseService gdb,
-                IndexIdentifier identifier )
+        RelationshipIndex( LuceneIndexImplementation service, IndexIdentifier identifier )
         {
             super( service, identifier );
-            this.gdb = gdb;
         }
 
         @Override
         protected Relationship getById( long id )
         {
-            return gdb.getRelationshipById(id);
+            return service.graphDb().getRelationshipById(id);
         }
 
         @Override

@@ -329,7 +329,7 @@ public class LuceneDataSource extends LogBackedXaDataSource
             LuceneIndex index = indexes.get( identifier );
             if ( index == null )
             {
-                index = new LuceneIndex.NodeIndex( luceneIndexImplementation, graphDb, identifier );
+                index = new LuceneIndex.NodeIndex( luceneIndexImplementation, identifier );
                 indexes.put( identifier, index );
             }
             return index;
@@ -348,7 +348,7 @@ public class LuceneDataSource extends LogBackedXaDataSource
             LuceneIndex index = indexes.get( identifier );
             if ( index == null )
             {
-                index = new LuceneIndex.RelationshipIndex( luceneIndexImplementation, gdb, identifier );
+                index = new LuceneIndex.RelationshipIndex( luceneIndexImplementation, identifier );
                 indexes.put( identifier, index );
             }
             return (RelationshipIndex) index;

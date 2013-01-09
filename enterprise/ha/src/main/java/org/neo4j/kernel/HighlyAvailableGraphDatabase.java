@@ -159,6 +159,7 @@ public class HighlyAvailableGraphDatabase
     private final SlaveUpdateMode slaveUpdateMode;
     private final Caches caches;
     private final MasterClientResolver masterClientResolver;
+    private final ProxyIndexManager indexManager;
 
     // This lock is used to safeguard access to internal database
     // Users will acquire readlock, and upon master/slave switch
@@ -282,6 +283,8 @@ public class HighlyAvailableGraphDatabase
 
         this.broker = createBroker();
         this.pullUpdates = false;
+        
+        this.indexManager = new ProxyIndexManager();
 
         start();
     }
@@ -378,7 +381,7 @@ public class HighlyAvailableGraphDatabase
     @Override
     public IndexManager index()
     {
-        return localGraph().index();
+        return indexManager;
     }
 
     @Override
@@ -1074,6 +1077,7 @@ public class HighlyAvailableGraphDatabase
         {
             newDb.registerKernelEventHandler( handler );
         }
+        indexManager.setDelegate( newDb.index() );
     }
 
     private void logHaInfo( String started )
