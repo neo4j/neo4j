@@ -26,7 +26,6 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Map;
 import java.util.NoSuchElementException;
 
 import org.neo4j.com.ComException;

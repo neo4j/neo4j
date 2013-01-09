@@ -22,6 +22,7 @@ package org.neo4j.index.impl.lucene;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.index.Index;
@@ -50,7 +51,7 @@ public class LuceneIndexImplementation implements IndexImplementation
 
     public static final int DEFAULT_LAZY_THRESHOLD = 100;
 
-    private final GraphDatabaseService graphDb;
+    private GraphDatabaseService graphDb;
     private IndexConnectionBroker<LuceneXaConnection> broker;
     private LuceneDataSource dataSource;
     final int lazynessThreshold;
@@ -159,8 +160,9 @@ public class LuceneIndexImplementation implements IndexImplementation
         return this.graphDb.equals(gdb);
     }
 
-    public void reset( LuceneDataSource dataSource, IndexConnectionBroker<LuceneXaConnection> broker)
+    public void reset( GraphDatabaseService graphDb, LuceneDataSource dataSource, IndexConnectionBroker<LuceneXaConnection> broker)
     {
+        this.graphDb = graphDb;
         this.broker = broker;
         this.dataSource = dataSource;
     }
