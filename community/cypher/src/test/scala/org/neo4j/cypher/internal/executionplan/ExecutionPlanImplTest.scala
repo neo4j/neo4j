@@ -22,12 +22,13 @@ package org.neo4j.cypher.internal.executionplan
 import collection.Seq
 import org.junit.Test
 import org.junit.Assert._
-import org.neo4j.cypher.internal.commands.{ReturnItem, NodeById, Query}
+import org.neo4j.cypher.internal.commands.{NodeById, Query}
 import org.neo4j.graphdb.GraphDatabaseService
 import org.scalatest.Assertions
 import org.neo4j.cypher.InternalException
-import actors.threadpool.{ExecutionException, TimeUnit, Executors}
 import org.neo4j.cypher.internal.commands.expressions.Identifier
+import java.util.concurrent._
+import org.neo4j.cypher.internal.commands.ReturnItem
 
 class ExecutionPlanImplTest extends Assertions with Timed {
   @Test def should_not_go_into_never_ending_loop() {
@@ -58,15 +59,15 @@ class BadBuilder extends PlanBuilder {
 
 trait Timed {
   def timeoutAfter(timeout: Long)(codeToTest: => Unit) {
-    val executor = Executors.newSingleThreadExecutor
+    val executor = Executors.newSingleThreadExecutor()
     val future = executor.submit(new Runnable {
-      def run = codeToTest
+      def run() {
+        codeToTest
+      }
     })
-    try {
-      future.get(timeout, TimeUnit.SECONDS)
-    }
-    finally {
-      executor.shutdown()
-    }
+
+    future.get(1, TimeUnit.SECONDS)
+
+    executor.shutdownNow()
   }
 }
