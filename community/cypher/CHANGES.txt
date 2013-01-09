@@ -4,6 +4,7 @@ o Clearer error message for when aggregations are used in ORDER BY and not in RE
 o Fixes #394 - Identifiers inside of FOREACH get the wrong type
 o Fixes #390 - IN/ANY/NONE/ANY/SINGLE causes RuntimeException for some patterns
 o Fixes #387 - Some patterns produced "Unexpected traversal state" in Cypher
+o Upgraded the Scala version to 2.10
 
 1.9.M03
 -------
