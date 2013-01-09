@@ -196,7 +196,7 @@ public class ClusterJoin
                         Future<ClusterConfiguration> config = cluster.join( joinUri );
                         try
                         {
-                            logger.info( "Joined cluster:" + config.get() );
+                            logger.debug( "Joined cluster:" + config.get() );
 
                             try
                             {
@@ -215,7 +215,7 @@ public class ClusterJoin
                         }
                         catch ( ExecutionException e )
                         {
-                            logger.info( "Could not join cluster member " + member.getHost() );
+                            logger.debug( "Could not join cluster member " + member.getHost() );
                         }
                     }
                 }
@@ -248,7 +248,7 @@ public class ClusterJoin
             }
             else
             {
-                logger.info( "Could not join cluster, and is not allowed to create one" );
+                logger.warn( "Could not join cluster, and is not allowed to create one" );
             }
         }
     }
@@ -340,7 +340,7 @@ public class ClusterJoin
 
         if ( hosts == null || hosts.size() == 0 )
         {
-            logger.info( "Creating cluster " + config.getClusterName() );
+            logger.info( "No cluster hosts specified. Creating cluster " + config.getClusterName() );
             cluster.create( config.getClusterName() );
         }
         else
@@ -357,11 +357,11 @@ public class ClusterJoin
                         }
 
                         String hostString = resolvePortOnlyHost( host );
-                        logger.info( "Attempting to join " + hostString );
+                        logger.debug( "Attempting to join " + hostString );
                         Future<ClusterConfiguration> clusterConfig = cluster.join( new URI( "cluster://" + hostString ) );
                         try
                         {
-                            logger.info( "Joined cluster:" + clusterConfig.get() );
+                            logger.debug( "Joined cluster:" + clusterConfig.get() );
                             return;
                         }
                         catch ( InterruptedException e )
@@ -370,7 +370,7 @@ public class ClusterJoin
                         }
                         catch ( ExecutionException e )
                         {
-                            logger.info( "Could not join cluster member " + hostString );
+                            logger.debug( "Could not join cluster member " + hostString );
                         }
                     }
 
