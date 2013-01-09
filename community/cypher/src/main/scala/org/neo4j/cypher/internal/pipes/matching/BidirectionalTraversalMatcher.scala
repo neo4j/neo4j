@@ -85,21 +85,22 @@ class BidirectionalTraversalMatcher(steps: ExpanderStep,
       val s = startPath.state().asInstanceOf[Option[ExpanderStep]]
       val e = endPath.state().asInstanceOf[Option[ExpanderStep]]
 
+      def inTheMiddle(startStep:ExpanderStep, endStep:ExpanderStep):(Boolean,Boolean)={
+        val foundEnd = endStep.id + 1 == startStep.id
+        val includeButDoNotPrune = endStep.id == startStep.id && endStep.shouldInclude() || startStep.shouldInclude()
+        (foundEnd || includeButDoNotPrune, foundEnd)
+      }
+
+      def oneWay(branch:TraversalBranch):(Boolean, Boolean)={
+        val result = branch.length() == 0
+        (result, true)
+      }
+
       val (include, prune) = (s, e) match {
-        case (Some(startStep), Some(endStep)) =>
-          val foundEnd = endStep.id + 1 == startStep.id
-          val includeButDoNotPrune = endStep.id == startStep.id && endStep.shouldInclude() || startStep.shouldInclude()
-          (foundEnd || includeButDoNotPrune, foundEnd)
-
-        case (Some(x), None) =>
-          val result = startPath.length() == 0
-          (result, true)
-
-        case (None, Some(x)) =>
-          val result = endPath.length() == 0
-          (result, true)
-
-        case _ => throw new ThisShouldNotHappenError("Andres", "Unexpected traversal state encountered")
+        case (Some(startStep), Some(endStep)) => inTheMiddle(startStep, endStep)
+        case (Some(_), None)                  => oneWay(startPath)
+        case (None, Some(_))                  => oneWay(endPath)
+        case _                                => (false, false)
       }
 
       if (prune) {

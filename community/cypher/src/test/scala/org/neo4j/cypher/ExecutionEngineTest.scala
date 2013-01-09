@@ -2333,4 +2333,18 @@ RETURN x0.name?
 
     assert(result.toList === List(Map("me.name"->"Neo")))
   }
+
+  @Test
+  def unexpected_traversal_state_should_never_be_hit() {
+    val a = createNode()
+    val b = createNode()
+    val c = createNode()
+
+    relate(a, b)
+    relate(b, c)
+
+    val result = parseAndExecute("START n=node({a}), m=node({b}) MATCH n-[r]->m RETURN *", "a"->a, "b"->c)
+
+    assert(result.toList === List())
+  }
 }
