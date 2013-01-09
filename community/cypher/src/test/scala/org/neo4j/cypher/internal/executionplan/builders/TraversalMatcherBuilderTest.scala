@@ -23,7 +23,7 @@ import org.junit.{Before, Test}
 import org.neo4j.cypher.internal.commands._
 import org.scalatest.Assertions
 import org.neo4j.cypher.GraphDatabaseTestBase
-import org.neo4j.cypher.internal.executionplan.PartiallySolvedQuery
+import org.neo4j.cypher.internal.executionplan.{ExecutionPlanInProgress, PartiallySolvedQuery}
 import org.junit.Assert._
 import org.neo4j.cypher.internal.commands.expressions.Literal
 import org.neo4j.cypher.internal.pipes.ParameterPipe
@@ -66,6 +66,25 @@ class TraversalMatcherBuilderTest extends GraphDatabaseTestBase with Assertions 
                   "RETURN me")
 
     assertTrue("This query should be accepted", builder.canWorkWith(plan(new ParameterPipe(), q)))
+  }
+
+  @Test def should_not_take_on_path_expression_predicates() {
+    val q = query("START a=node({self}) MATCH a-->b WHERE b-->() RETURN b")
+
+    val testPlan = plan(new ParameterPipe(), q)
+    assertTrue("This query should be accepted", builder.canWorkWith(testPlan))
+
+    val newPlan = builder.apply(testPlan)
+
+    assertQueryHasNotSolvedPathExpressions(newPlan)
+  }
+
+
+  def assertQueryHasNotSolvedPathExpressions(newPlan: ExecutionPlanInProgress) {
+    newPlan.query.where.foreach {
+      case Solved(pred) if pred.exists(_.isInstanceOf[PathExpression]) => fail("Didn't expect the predicate to be solved")
+      case _                                                           =>
+    }
   }
 
   val parser = new CypherParserImpl
