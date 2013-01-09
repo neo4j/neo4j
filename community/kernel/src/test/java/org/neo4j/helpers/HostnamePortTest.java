@@ -20,8 +20,12 @@
 package org.neo4j.helpers;
 
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+
+import java.net.URI;
 
 import org.junit.Test;
 
@@ -86,5 +90,35 @@ public class HostnamePortTest
     {
         HostnamePort hostnamePort = new HostnamePort( ":1234" );
         assertThat( hostnamePort.getHost( "1.2.3.4" ), equalTo( "1.2.3.4" ) );
+    }
+
+    @Test
+    public void testMatches() throws Exception
+    {
+        HostnamePort hostnamePortSinglePort = new HostnamePort( "host1:1234" );
+        // Should match, same host and port
+        assertTrue( hostnamePortSinglePort.matches( URI.create( "ha://host1:1234" ) ) );
+        // Should fail, different host or port
+        assertFalse( hostnamePortSinglePort.matches( URI.create( "ha://host1:1235" ) ) );
+        assertFalse( hostnamePortSinglePort.matches( URI.create( "ha://host2:1234" ) ) );
+        assertFalse( hostnamePortSinglePort.matches( URI.create( "ha://host2:1235" ) ) );
+        // Should fail, no port
+        assertFalse( hostnamePortSinglePort.matches( URI.create( "ha://host1" ) ) );
+        assertFalse( hostnamePortSinglePort.matches( URI.create( "ha://host2" ) ) );
+
+        HostnamePort hostnamePortWithRange = new HostnamePort( "host1:1234-1236" );
+        // Should match, port in range and host the same
+        assertTrue( hostnamePortWithRange.matches( URI.create( "ha://host1:1234" ) ) );
+        assertTrue( hostnamePortWithRange.matches( URI.create( "ha://host1:1235" ) ) );
+        assertTrue( hostnamePortWithRange.matches( URI.create( "ha://host1:1236" ) ) );
+        // Should not match, different host
+        assertFalse( hostnamePortWithRange.matches( URI.create( "ha://host2:1234" ) ) );
+        assertFalse( hostnamePortWithRange.matches( URI.create( "ha://host2:1235" ) ) );
+        // Should not match, port outside of range
+        assertFalse( hostnamePortWithRange.matches( URI.create( "ha://host1:1233" ) ) );
+        assertFalse( hostnamePortWithRange.matches( URI.create( "ha://host1:1237" ) ) );
+        // Should not match, no port
+        assertFalse( hostnamePortWithRange.matches( URI.create( "ha://host1" ) ) );
+        assertFalse( hostnamePortWithRange.matches( URI.create( "ha://host2" ) ) );
     }
 }

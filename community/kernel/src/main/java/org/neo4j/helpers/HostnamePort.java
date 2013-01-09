@@ -21,6 +21,8 @@ package org.neo4j.helpers;
 
 import static java.lang.String.format;
 
+import java.net.URI;
+
 /**
  * Represents a hostname and port, optionally with a port range.
  * Examples: myhost, myhost:1234, myhost:1234-1240, :1234, :1234-1240
@@ -152,5 +154,19 @@ public class HostnamePort
         }
 
         return builder.toString();
+    }
+
+    public boolean matches( URI toMatch )
+    {
+        boolean result = false;
+        for ( int port = ports[0]; port <= ports[1]; port++ )
+        {
+            if ( port == toMatch.getPort() )
+            {
+                result = true;
+                break;
+            }
+        }
+        return result && host.equalsIgnoreCase( toMatch.getHost() );
     }
 }
