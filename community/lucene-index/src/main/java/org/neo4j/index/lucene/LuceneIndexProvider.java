@@ -85,7 +85,7 @@ public class LuceneIndexProvider extends IndexProvider
             if (indexImplementation == null)
                 iterator.remove();
             else if ( indexImplementation.matches( gdb ) )
-                indexImplementation.reset( luceneDataSource, broker );
+                indexImplementation.reset( gdb, luceneDataSource, broker );
         }
         
         LuceneIndexImplementation indexImplementation = new LuceneIndexImplementation( gdb, luceneDataSource, broker );
