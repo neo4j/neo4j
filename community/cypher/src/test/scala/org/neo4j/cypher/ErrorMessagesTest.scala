@@ -265,7 +265,7 @@ Expected: %s
     error
   }
 
-  private def expectNotFoundError(query: String, expectedError: String)  {
+  private def expectNotFoundError(query: String, expectedError: String):CypherException = {
     val error = intercept[CypherException](engine.execute(query).toList)
     val s = """
 Wrong error message produced: %s
