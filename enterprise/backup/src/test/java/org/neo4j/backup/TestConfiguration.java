@@ -44,17 +44,10 @@ public class TestConfiguration
     }
     
     @Test
-    public void testOffByDefault() throws Exception
+    public void testOnByDefault() throws Exception
     {
         GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( SOURCE_DIR );
-        try
-        {
-            OnlineBackup.from( InetAddress.getLocalHost().getHostAddress() ).full( BACKUP_DIR );
-            fail( "Shouldn't be possible" );
-        }
-        catch ( Exception e )
-        { // Good
-        }
+        OnlineBackup.from( InetAddress.getLocalHost().getHostAddress() ).full( BACKUP_DIR );
         db.shutdown();
     }
     
