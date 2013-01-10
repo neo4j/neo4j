@@ -343,6 +343,7 @@ public class TestBackup
     {
         return new GraphDatabaseFactory().
             newEmbeddedDatabaseBuilder( path.getPath() ).
+            setConfig( OnlineBackupSettings.online_backup_enabled, GraphDatabaseSetting.FALSE ).
             setConfig( GraphDatabaseSettings.keep_logical_logs, GraphDatabaseSetting.TRUE ).
             newGraphDatabase();
     }

@@ -193,6 +193,8 @@ public abstract class Server<T, R> extends Protocol implements ChannelPipelineFa
             try
             {
                 channel = bootstrap.bind( socketAddress );
+                ex = null;
+                break;
             }
             catch ( ChannelException e )
             {
