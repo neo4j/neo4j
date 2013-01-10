@@ -60,7 +60,7 @@ public class BackupHaIT
             @Override
             protected void config( GraphDatabaseBuilder builder, String clusterName, int serverId )
             {
-                builder.setConfig( OnlineBackupSettings.online_backup_port, (4444 + serverId) + "" );
+                builder.setConfig( OnlineBackupSettings.online_backup_server, (":"+(4444 + serverId) ));
             }
         };
         clusterManager.start();

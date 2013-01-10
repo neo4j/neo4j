@@ -39,7 +39,7 @@ class BackupServer extends Server<TheBackupInterface, Object>
     static int DEFAULT_PORT = DEFAULT_BACKUP_PORT;
     static final int FRAME_LENGTH = Protocol.MEGA * 4;
 
-    public BackupServer( TheBackupInterface requestTarget, final int port, Logging logging ) throws IOException
+    public BackupServer( TheBackupInterface requestTarget, final HostnamePort server , Logging logging ) throws IOException
     {
         super( requestTarget, new Configuration()
         {
@@ -64,7 +64,7 @@ class BackupServer extends Server<TheBackupInterface, Object>
             @Override
             public HostnamePort getServerAddress()
             {
-                return new HostnamePort( null, port );
+                return server;
             }
         }, logging, FRAME_LENGTH, PROTOCOL_VERSION,
                 TxChecksumVerifier.ALWAYS_MATCH );

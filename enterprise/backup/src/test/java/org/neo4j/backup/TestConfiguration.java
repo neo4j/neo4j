@@ -92,7 +92,7 @@ public class TestConfiguration
         String customPort = "12345";
         GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( SOURCE_DIR ).
             setConfig( OnlineBackupSettings.online_backup_enabled, GraphDatabaseSetting.TRUE ).
-            setConfig( OnlineBackupSettings.online_backup_port, customPort ).newGraphDatabase(); 
+            setConfig( OnlineBackupSettings.online_backup_server, ":"+customPort ).newGraphDatabase();
         try
         {
             OnlineBackup.from( InetAddress.getLocalHost().getHostAddress() ).full( BACKUP_DIR );

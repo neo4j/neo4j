@@ -124,7 +124,7 @@ public class BackupEmbeddedIT
     {
         db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( PATH.getPath() ).
             setConfig( OnlineBackupSettings.online_backup_enabled, GraphDatabaseSetting.TRUE ).
-            setConfig( OnlineBackupSettings.online_backup_port, backupPort ).newGraphDatabase();
+            setConfig( OnlineBackupSettings.online_backup_server, ":"+backupPort ).newGraphDatabase();
         createSomeData( db );
     }
 
