@@ -37,6 +37,7 @@ import java.util.concurrent.TimeUnit;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
+import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.client.Clusters;
@@ -45,6 +46,7 @@ import org.neo4j.cluster.com.NetworkInstance;
 import org.neo4j.cluster.protocol.election.CoordinatorIncapableCredentialsProvider;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
+import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.MapUtil;
@@ -364,6 +366,7 @@ public class ClusterManager
                                 setConfig( HaSettings.server_id, serverId + "" ).
                                 setConfig( ClusterSettings.cluster_server, member.getHost() ).
                                 setConfig( HaSettings.ha_server, ":" + haPort ).
+                                setConfig( OnlineBackupSettings.online_backup_enabled, GraphDatabaseSetting.FALSE ).
                                 setConfig( commonConfig );
                 if ( instanceConfig.containsKey( serverId ) )
                 {

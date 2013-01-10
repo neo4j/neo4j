@@ -45,12 +45,12 @@ public class GraphDatabaseConfigurationMigrator extends BaseConfigurationMigrato
                     if ( value.contains( "=" ) )
                     {   // Multi-value config, which means we have to parse the port
                         Args args = parseMapFromConfigValue( "enable_online_backup", value );
-                        port = args.get( "port", "6362" );
+                        port = args.get( "port", "6372" );
                         port = ":"+port;
                     }
                     else if ( Boolean.parseBoolean( value ) == true )
                     {   // Single-value config, true/false
-                        port = ":6362-6372";
+                        port = ":6372-6382";
                     }
 
                     if ( port != null )

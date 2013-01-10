@@ -257,12 +257,15 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
             {
                 for ( MemberIsAvailable member : item.getCurrentAvailableMembers() )
                 {
-                    if ( HighAvailabilityModeSwitcher.getServerId( member.getRoleUri() ) ==
-                            config.get( HaSettings.server_id ))
+                    if (member.getRole().equals( HighAvailabilityModeSwitcher.MASTER ) || member.getRole().equals( HighAvailabilityModeSwitcher.SLAVE ))
                     {
-                        msgLog.error( String.format( "Instance %s has the same serverId as ours (%d) - will not join this cluster",
-                                member.getRoleUri(), config.get( HaSettings.server_id ) ) );
-                        return false;
+                        if ( HighAvailabilityModeSwitcher.getServerId( member.getRoleUri() ) ==
+                                config.get( HaSettings.server_id ))
+                        {
+                            msgLog.error( String.format( "Instance %s has the same serverId as ours (%d) - will not join this cluster",
+                                    member.getRoleUri(), config.get( HaSettings.server_id ) ) );
+                            return false;
+                        }
                     }
                 }
                 return true;

@@ -67,7 +67,7 @@ public class HaSettings
     public static final Setting<Integer> server_id = setting( "ha.server_id", INTEGER, MANDATORY );
 
     @Description( "Where to bind High Availability protocol server" )
-    public static final Setting<HostnamePort> ha_server = setting( "ha.server", HOSTNAME_PORT, ":6361" );
+    public static final Setting<HostnamePort> ha_server = setting( "ha.server", HOSTNAME_PORT, ":6361-6371" );
 
     @Description( "Policy for how to handle branched data" )
     public static final Setting<BranchedDataPolicy> branched_data_policy = setting( "ha.branched_data_policy",
