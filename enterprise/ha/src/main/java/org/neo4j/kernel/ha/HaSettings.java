@@ -50,25 +50,36 @@ public class HaSettings
     @Migrator
     public static final ConfigurationMigrator migrator = new EnterpriseConfigurationMigrator();
 
+    @Description("Timeout for reading network data")
     public static final Setting<Long> read_timeout = setting( "ha.read_timeout", DURATION, "20s" );
 
+    @Description( "Timeout for waiting for instance to become master or slave" )
     public static final Setting<Long> state_switch_timeout = setting( "ha.state_switch_timeout", DURATION, "20s" );
 
+    @Description( "Timeout for taking locks" )
     public static final Setting<Long> lock_read_timeout = setting( "ha.lock_read_timeout", DURATION, read_timeout );
 
+    @Description( "Maximum number of connections a slave can have to the master" )
     public static final Setting<Integer> max_concurrent_channels_per_slave =
             setting( "ha.max_concurrent_channels_per_slave", INTEGER, "20", min( 1 ) );
 
+    @Description( "Id for a cluster instance. Must be unique within the cluster" )
     public static final Setting<Integer> server_id = setting( "ha.server_id", INTEGER, MANDATORY );
 
+    @Description( "Where to bind High Availability protocol server" )
     public static final Setting<HostnamePort> ha_server = setting( "ha.server", HOSTNAME_PORT, ":6361" );
 
+    @Description( "Policy for how to handle branched data" )
     public static final Setting<BranchedDataPolicy> branched_data_policy = setting( "ha.branched_data_policy",
             options( BranchedDataPolicy.class ), "keep_all" );
 
+    @Description( "List of ZooKeeper coordinators. Only needed for rolling upgrade from 1.8 to 1.9" )
+    @Deprecated
     public static Setting<List<HostnamePort>> coordinators = setting( "ha.coordinators", list( ",", HOSTNAME_PORT ),
             "" );
 
+    @Description( "ZooKeeper session timeout. Only needed for rolling upgrade from 1.8 to 1.9" )
+    @Deprecated
     public static final Setting<Long> zk_session_timeout = setting( "ha.zk_session_timeout", DURATION, "5s");
 
     @Description("Max size of the data chunks that flows between master and slaves in HA. Bigger size may increase " +
@@ -79,6 +90,7 @@ public class HaSettings
     public static final Setting<Long> com_chunk_size =
             setting( "ha.com_chunk_size", BYTES, "2M", min( 1024L ) );
 
+    @Description( "Interval of pulling updates from master" )
     public static final Setting<Long> pull_interval = setting( "ha.pull_interval", DURATION, "0s" );
 
     @Description("The amount of slaves the master will ask to replicate a committed transaction. " +

@@ -78,6 +78,7 @@ public abstract class GraphDatabaseSettings
     public static final CacheTypeSetting cache_type = new CacheTypeSetting( setting( "cache_type",
             options( CacheTypeSetting.availableCaches() ), CacheTypeSetting.availableCaches()[0] ) );
 
+    @Description( "Enable loading kernel extensions" )
     public static final BooleanSetting load_kernel_extensions = new BooleanSetting( setting("load_kernel_extensions", BOOLEAN, TRUE ));
 
     @Description("Print out the effective Neo4j configuration after startup.")
@@ -264,6 +265,7 @@ public abstract class GraphDatabaseSettings
     public static final StringSetting relationshipstore_mapped_memory =
             new StringSetting( setting("neostore.relationshipstore.db.mapped_memory", STRING, "100M", matches(SIZE_FORMAT)));
 
+    @Description("How many relationships to read at a time during iteration")
     public static final IntegerSetting relationship_grab_size =
             new IntegerSetting( setting("relationship_grab_size", INTEGER, "100", min( 1 )));
 
@@ -294,14 +296,6 @@ public abstract class GraphDatabaseSettings
             "Defaults to an auto-generated number depending on how many instance are started in this JVM.")
     public static final GraphDatabaseSetting<String> forced_kernel_id =
             new StringSetting( setting("forced_kernel_id", STRING, NO_DEFAULT, illegalValueMessage( "invalid kernel identifier", matches( "[a-zA-Z0-9]*" ) )));
-
-    // TODO: This should be in enterprise, but we currently have code depending on this in community
-    public static final GraphDatabaseSetting.BooleanSetting online_backup_enabled =
-            new GraphDatabaseSetting.BooleanSetting( setting("online_backup_enabled", BOOLEAN, FALSE ));
-
-    // TODO: This should be in enterprise, but we currently have code depending on this in community
-    public static final GraphDatabaseSetting.PortSetting online_backup_port =
-            new GraphDatabaseSetting.PortSetting(setting("online_backup_port", INTEGER, "6362", port) );
 
     public static final BooleanSetting execution_guard_enabled = new BooleanSetting( setting("execution_guard_enabled", BOOLEAN, FALSE ));
 

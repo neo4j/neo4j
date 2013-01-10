@@ -55,7 +55,7 @@ public class GraphDatabaseConfigurationMigrator extends BaseConfigurationMigrato
                     if ( port != null )
                     {
                         rawConfiguration.put( "online_backup_port", port );
-                        rawConfiguration.put( GraphDatabaseSettings.online_backup_enabled.name(), Settings.TRUE );
+                        rawConfiguration.put( "online_backup_enabled", Settings.TRUE );
                     }
                 }
             }
