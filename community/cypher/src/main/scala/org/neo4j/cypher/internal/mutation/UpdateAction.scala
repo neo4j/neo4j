@@ -60,11 +60,15 @@ trait GraphElementPropertyFunctions extends CollectionSupport {
     case (k, v) => k -> v.rewrite(f)
   }
 
-  def getMapFromExpression(v: Any): Map[String, Any] = v match {
-    case m: collection.Map[String, Any] => m.toMap
-    case m: JavaMap[String, Any]        => m.asScala.toMap
-    case x                              => throw new CypherTypeException("Don't know how to extract parameters from this type: " + x.getClass.getName)
+  def getMapFromExpression(v: Any): Map[String, Any] = {
+    if (v.isInstanceOf[collection.Map[_, _]])
+      v.asInstanceOf[collection.Map[String, Any]].toMap
+    else if (v.isInstanceOf[JavaMap[_, _]])
+      v.asInstanceOf[JavaMap[String, Any]].asScala.toMap
+    else
+      throw new CypherTypeException(s"Don't know how to extract parameters from this type: ${v.getClass.getName}")
   }
+
 
   private def setAllMapKeyValues(expression: Expression, context: ExecutionContext, pc: PropertyContainer, state: QueryState) {
     val map = getMapFromExpression(expression(context))
