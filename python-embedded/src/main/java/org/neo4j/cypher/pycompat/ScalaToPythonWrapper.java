@@ -19,11 +19,9 @@
  */
 package org.neo4j.cypher.pycompat;
 
-import java.util.Collection;
 import java.util.Map;
 
 import org.neo4j.graphdb.Path;
-import scala.collection.JavaConversions;
 
 /**
  * Used to wrap gnarly scala classes into something that JPype understands.
@@ -41,11 +39,6 @@ public class ScalaToPythonWrapper
         {
             return new WrappedMap( (Map<String, Object>) obj );
         }
-        else if(obj instanceof JavaConversions.SeqWrapper)
-        {
-            return new WrappedCollection<Object>( (Collection)obj );
-        }
-
         return obj;
     }
 
