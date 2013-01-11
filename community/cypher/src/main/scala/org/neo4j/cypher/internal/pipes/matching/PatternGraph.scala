@@ -233,7 +233,7 @@ class PatternGraph(val patternNodes: Map[String, PatternNode],
 
     val notVisitedElements = allPatternElements.filterNot(visited contains)
     if (notVisitedElements.nonEmpty) {
-      throw new SyntaxException("All parts of the pattern must either directly or indirectly be connected to at least one bound entity. These identifiers were found to be disconnected: " + notVisitedElements.map(_.key).mkString("", ", ", ""))
+      throw new SyntaxException("All parts of the pattern must either directly or indirectly be connected to at least one bound entity. These identifiers were found to be disconnected: " + notVisitedElements.map(_.key).sorted.mkString(", "))
     }
 
     loop

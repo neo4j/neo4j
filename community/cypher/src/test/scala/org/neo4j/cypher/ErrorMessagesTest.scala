@@ -250,8 +250,8 @@ class ErrorMessagesTest extends ExecutionEngineHelper with Assertions with Strin
       "Aggregation expressions must be listed in the RETURN clause to be used in ORDER BY")
   }
 
-  private def expectError[T <: CypherException](query: String, expectedError: String)(implicit manifest: Manifest[T]): T = {
-    val error = intercept[T](engine.execute(query).toList)
+  private def expectError(query: String, expectedError: String):CypherException = {
+    val error = intercept[CypherException](engine.execute(query).toList)
     val s = """
 Wrong error message produced: %s
 Expected: %s
@@ -265,7 +265,7 @@ Expected: %s
     error
   }
 
-  private def expectNotFoundError(query: String, expectedError: String)  {
+  private def expectNotFoundError(query: String, expectedError: String):CypherException = {
     val error = intercept[CypherException](engine.execute(query).toList)
     val s = """
 Wrong error message produced: %s
@@ -282,9 +282,12 @@ Expected: %s
   }
 
   private def expectSyntaxError(query: String, expectedError: String, expectedOffset: Int) {
-    val exception = expectError[SyntaxException](query, expectedError)
-    val s = query + "\n" + exception.toString()
-    assertEquals(s, Some(expectedOffset), exception.offset)
-  }
+    expectError(query, expectedError) match {
+      case e: SyntaxException =>
+        val s = query + "\n" + e.toString()
+        assertEquals(s, Some(expectedOffset), e.offset)
 
+      case e => fail("Expected a SyntaxException, but got: " + e.getMessage)
+    }
+  }
 }
