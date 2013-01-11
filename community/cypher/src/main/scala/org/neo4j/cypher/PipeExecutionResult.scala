@@ -46,7 +46,7 @@ class PipeExecutionResult(result: Iterator[Map[String, Any]], val columns: List[
   }
 
   private def makeValueJavaCompatible(value: Any): Any = value match {
-    case iter: Seq[_] => iter.asJava
+    case iter: Seq[_] => iter.map(makeValueJavaCompatible).asJava
     case x => x
   }
 
