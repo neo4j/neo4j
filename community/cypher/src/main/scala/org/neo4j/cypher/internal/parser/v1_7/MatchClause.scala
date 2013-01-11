@@ -23,6 +23,7 @@ import org.neo4j.cypher.SyntaxException
 import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.commands._
 import expressions.Identifier._
+import org.neo4j.helpers.ThisShouldNotHappenError
 
 trait MatchClause extends Base with Expressions {
   val namer = new NodeNamer
@@ -168,6 +169,8 @@ trait MatchClause extends Base with Expressions {
           case Some("*" ~ x ~ None ~ None) => Some((intOrNone(x), intOrNone(x)))
           case Some("*" ~ minHops ~ punktpunkt ~ maxHops) => Some((intOrNone(minHops), intOrNone(maxHops)))
           case None => None
+          // TODO I think * | *12 | *12.. are all not caught proper, need to signal a syntax error in this case
+          case Some(_) => throw new ThisShouldNotHappenError("Stefan/Andres", "This non-exhaustive match would have been a RuntimeException in the past")
         }
         
 

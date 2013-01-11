@@ -24,7 +24,7 @@ import org.neo4j.cypher.ParameterWrongTypeException
 import collection.JavaConverters._
 
 object GetGraphElements {
-  def getElements[T](data: Any, name: String, getElement: Long => T): Seq[T] = {
+  def getElements[T : Manifest](data: Any, name: String, getElement: Long => T): Seq[T] = {
     def castElement(x: Any): T = x match {
       case i: Int => getElement(i)
       case i: Long => getElement(i)
