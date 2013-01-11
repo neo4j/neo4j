@@ -24,6 +24,7 @@ import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.commands._
 import expressions.Identifier._
 import org.neo4j.helpers.ThisShouldNotHappenError
+import org.neo4j.cypher.internal.helpers.CastSupport.sift
 
 trait MatchClause extends Base with Expressions {
   val namer = new NodeNamer
@@ -33,11 +34,9 @@ trait MatchClause extends Base with Expressions {
   ignoreCase("match") ~> failure("invalid pattern")
 
   def correctMatch = ignoreCase("match") ~> comaList(path) ^^ {
-    case matching =>
-      val namedPaths = matching.filter(_.isInstanceOf[NamedPath]).map(_.asInstanceOf[NamedPath])
-      val patterns = matching.filter(_.isInstanceOf[List[Pattern]]).map(_.asInstanceOf[List[Pattern]]).flatten ++
-                     matching.filter(_.isInstanceOf[Pattern]).map(_.asInstanceOf[Pattern]) ++
-                     namedPaths.flatMap(_.pathPattern)
+    case matches =>
+      val namedPaths = sift[NamedPath](matches)
+      val patterns = sift[List[Pattern]](matches).flatten ++ sift[Pattern](matches) ++ namedPaths.flatMap(_.pathPattern)
 
       (patterns.distinct, namedPaths)
   }
