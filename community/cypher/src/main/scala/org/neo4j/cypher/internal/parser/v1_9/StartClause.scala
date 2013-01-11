@@ -53,6 +53,7 @@ trait StartClause extends Base with Expressions with CreateUnique {
       end = rel.end.copy(props = Map())
     )
     case n:ParsedEntity => n.copy(props = Map())
+    case _ => throw new ThisShouldNotHappenError("Stefan", "This non-exhaustive match would have been a RuntimeException in the past")
   }
 
   private def translate(abstractPattern: AbstractPattern): Maybe[Any] = abstractPattern match {
