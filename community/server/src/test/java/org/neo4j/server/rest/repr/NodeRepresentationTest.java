@@ -24,6 +24,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.server.rest.repr.RepresentationTestAccess.serialize;
 import static org.neo4j.server.rest.repr.RepresentationTestBase.assertUriMatches;
+import static org.neo4j.server.rest.repr.RepresentationTestBase.number;
 import static org.neo4j.server.rest.repr.RepresentationTestBase.uriPattern;
 
 import java.util.Collections;
@@ -89,6 +90,12 @@ public class NodeRepresentationTest
     public void shouldHavePropertiesLink() throws BadInputException
     {
         assertUriMatches( uriPattern( "/properties" ), noderep( 1234 ).propertiesUri() );
+    }
+
+    @Test
+    public void shouldHaveNumericId() throws BadInputException
+    {
+        assertUriMatches( number(), noderep( 1234 ).id() );
     }
 
     @Test

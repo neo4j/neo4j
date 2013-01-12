@@ -26,6 +26,7 @@ public final class IndexedEntityRepresentation extends MappingRepresentation imp
         EntityRepresentation
 {
     private final MappingRepresentation entity;
+    private final long entityId;
     private final ValueRepresentation selfUri;
 
     @SuppressWarnings( "boxing" )
@@ -46,7 +47,14 @@ public final class IndexedEntityRepresentation extends MappingRepresentation imp
     {
         super( entity.type );
         this.entity = entity;
+        this.entityId = entityId;
         selfUri = ValueRepresentation.uri( indexRepresentation.relativeUriFor( key, value, entityId ) );
+    }
+
+    @ObjectRepresentation.Mapping( "id" )
+    public ValueRepresentation id()
+    {
+        return ValueRepresentation.number( entityId );
     }
 
     @Override

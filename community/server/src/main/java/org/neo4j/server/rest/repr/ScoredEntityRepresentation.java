@@ -39,6 +39,14 @@ public abstract class ScoredEntityRepresentation<E extends ObjectRepresentation 
         return delegate;
     }
 
+    protected abstract ValueRepresentation getId();
+
+    @Mapping("id")
+    public ValueRepresentation id()
+    {
+        return getId();
+    }
+
     @Override
     public String getIdentity()
     {

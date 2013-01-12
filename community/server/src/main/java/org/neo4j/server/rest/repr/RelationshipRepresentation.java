@@ -60,6 +60,12 @@ public final class RelationshipRepresentation extends ObjectRepresentation imple
         return "relationship/" + rel.getId();
     }
 
+    @Mapping( "id" )
+    public ValueRepresentation id()
+    {
+        return ValueRepresentation.number( getId() );
+    }
+
     @Mapping( "type" )
     public ValueRepresentation getType()
     {

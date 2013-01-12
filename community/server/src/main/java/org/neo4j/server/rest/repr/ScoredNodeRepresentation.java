@@ -28,6 +28,11 @@ public final class ScoredNodeRepresentation extends
         super( delegate, score );
     }
 
+    @Override
+    protected ValueRepresentation getId() {
+        return getDelegate().id();
+    }
+
     @Mapping( "create_relationship" )
     public ValueRepresentation relationshipCreationUri()
     {

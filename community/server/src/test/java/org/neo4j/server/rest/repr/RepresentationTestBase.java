@@ -49,6 +49,11 @@ class RepresentationTestBase
         return "http://.*/[0-9]+" + subPath;
     }
 
+    static String number( )
+    {
+        return "[0-9]+";
+    }
+
     private RepresentationTestBase()
     {
         // only static resource
