@@ -17,29 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.parser.v1_7
+package org.neo4j.cypher.internal.parser.v2_0
 
-import org.neo4j.cypher.internal.commands.SortItem
+import org.neo4j.cypher.internal.commands.expressions.Nullable
+import org.neo4j.cypher.internal.parser.ActualParser
 
-
-trait OrderByClause extends Base with Expressions  {
-  def desc:Parser[String] = ignoreCases("descending", "desc")
-
-  def asc:Parser[String] = ignoreCases("ascending", "asc")
-
-  def ascOrDesc:Parser[Boolean] = opt(asc | desc) ^^ {
-    case None => true
-    case Some(txt) => txt.toLowerCase.startsWith("a")
-  }
-
-  def sortItem :Parser[SortItem] = expression ~ ascOrDesc ^^ { case expression ~ reverse => SortItem(expression, reverse)  }
-
-  def order: Parser[Seq[SortItem]] =
-    (ignoreCase("order by") ~> comaList(sortItem)
-      | ignoreCase("order") ~> failure("expected by"))
+class ConsoleCypherParser extends CypherParserImpl with ActualParser {
+  override def createProperty(entity: String, propName: String) = Nullable(super.createProperty(entity, propName))
 }
-
-
-
-
-
