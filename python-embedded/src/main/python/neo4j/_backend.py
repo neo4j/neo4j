@@ -21,7 +21,7 @@
 """Neo4j backend selection for Python."""
 
 import sys, inspect
-#, 'FinalTraversalBranch','AsOneStartBranch', 
+
 NEO4J_JAVA_CLASSES = (
     ('org.neo4j.kernel.impl.core',      ('NodeProxy', 'RelationshipProxy',)),
     ('org.neo4j.kernel',                ('Uniqueness', 'Traversal', 'EmbeddedGraphDatabase',\
@@ -37,8 +37,6 @@ NEO4J_JAVA_CLASSES = (
     ('org.neo4j.graphdb.index',         ('Index', 'IndexHits',)),
     ('org.neo4j.helpers.collection',    ('IterableWrapper',)),
     ('org.neo4j.cypher.pycompat',       ('ExecutionEngine','WrappedPath',)),
-    #('com.tinkerpop.blueprints.pgm.impls.neo4j', ('Neo4jGraph', 'Neo4jEdge', 'Neo4jVertex')),
-    #('com.tinkerpop.gremlin', ('Gremlin')),
     ('java.util',                       ('HashMap',)),
 )	
 

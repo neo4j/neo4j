@@ -1799,7 +1799,7 @@ RETURN x0.name?
       engine.execute("create a")
     } catch {
       case x: SyntaxException =>
-      case _ => fail("expected exception")
+      case _: Throwable => fail("expected exception")
     } finally {
       db.shutdown()
     }
