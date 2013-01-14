@@ -36,6 +36,7 @@ import org.neo4j.test.{ImpermanentGraphDatabase, TestGraphDatabaseFactory, Graph
 import org.neo4j.test.GeoffService
 import org.scalatest.Assertions
 import org.neo4j.test.AsciiDocGenerator
+import org.neo4j.kernel.AbstractGraphDatabase
 
 trait DocumentationHelper {
   def generateConsole:Boolean
@@ -130,14 +131,26 @@ abstract class DocumentingTestBase extends Assertions with DocumentationHelper {
     engine.execute(query)
   }
 
-
+  protected def assertIsDeleted(pc:PropertyContainer) {
+    val internalDb:AbstractGraphDatabase = db.asInstanceOf[AbstractGraphDatabase]
+    if(!internalDb.getNodeManager.isDeleted(pc)) {
+      fail("Expected " + pc + " to be deleted, but it isn't.")
+    }
+  }
 
   def testWithoutDocs(queryText: String, assertions: (ExecutionResult => Unit)*): (ExecutionResult, String) = {
     var query = queryText
-    nodes.keySet.foreach((key) => query = query.replace("%" + key + "%", node(key).getId.toString))
-    val result = engine.execute(query)
-    assertions.foreach(_.apply(result))
-    (result, query)
+    val tx = db.beginTx()
+    try {
+      nodes.keySet.foreach((key) => query = query.replace("%" + key + "%", node(key).getId.toString))
+      val result = engine.execute(query)
+      assertions.foreach(_.apply(result))
+      tx.failure()
+    } finally {
+      tx.finish()
+    }
+
+    (engine.execute(query), query)
   }
 
   def indexProperties[T <: PropertyContainer](n: T, index: Index[T]) {
