@@ -44,11 +44,9 @@ class DeleteTest extends DocumentingTestBase {
     testQuery(
       title = "Delete single node",
       text = "To remove a node from the graph, you can delete it with the +DELETE+ clause.",
-      queryText = "start n = node("+id+") delete n",
+      queryText = "start n = node(" + id + ") delete n",
       returns = "Nothing is returned from this query, except the count of affected nodes.",
-      assertions = (p) => {
-        intercept[NotFoundException](db.getNodeById(id))
-      })
+      assertions = (p) => assertIsDeleted(db.getNodeById(id)))
   }
 
   @Test def delete_single_node_with_all_relationships() {
@@ -57,9 +55,7 @@ class DeleteTest extends DocumentingTestBase {
       text = "If you are trying to remove a node with relationships on it, you have to remove these as well.",
       queryText = "start n = node(%Andres%) match n-[r]-() delete n, r",
       returns = "Nothing is returned from this query, except the count of affected nodes.",
-      assertions = (p) => {
-        intercept[NotFoundException](node("Andres"))
-      })
+      assertions = (p) => assertIsDeleted(node("Andres")))
   }
 
   @Test def delete_property() {
@@ -69,8 +65,6 @@ class DeleteTest extends DocumentingTestBase {
         "just not there. So, to remove a property value on a node or a relationship, is also done with +DELETE+.",
       queryText = "start andres = node(%Andres%) delete andres.age return andres",
       returns = "The node is returned, and no property `age` exists on it.",
-      assertions = (p) => {
-        assertFalse("Property was not removed as expected.", node("Andres").hasProperty("age"))
-      })
+      assertions = (p) => assertFalse("Property was not removed as expected.", node("Andres").hasProperty("age")) )
   }
 }
