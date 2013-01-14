@@ -37,10 +37,10 @@ import org.neo4j.kernel.info.DiagnosticsManager;
 
 /**
  * This API can be used to get access to services.
- * <p/>
- * TODO: The methods exposing internal services directly should go away. It indicates lack of abstractions somewhere.
- * DO NOT ADD MORE USAGE OF THESE!
  */
+// TODO: The methods exposing internal services directly should go away. It
+// indicates lack of abstractions somewhere.
+// DO NOT ADD MORE USAGE OF THESE!
 public interface GraphDatabaseAPI
         extends GraphDatabaseService
 {
