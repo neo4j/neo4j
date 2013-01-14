@@ -30,7 +30,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.neo4j</groupId>
   <artifactId>neo4j-kernel</artifactId>
-  <version>1.9-SNAPSHOT</version>
+  <version>2.0-SNAPSHOT</version>
   <name>Neo4j - Graph Database Kernel</name>
   <description>
  Neo4j kernel is a lightweight, embedded Java database designed to
@@ -219,8 +219,7 @@ public class ComponentVersion extends Version
             <phase>process-classes</phase>
             <configuration>
               <target>
-                <java classname="org.neo4j.tooling.GenerateConfigDocumentation"
-                      classpathref="maven.compile.classpath" failonerror="true">
+                <java classname="org.neo4j.tooling.GenerateConfigDocumentation" classpathref="maven.compile.classpath" failonerror="true">
                   <arg value="org.neo4j.graphdb.factory.GraphDatabaseSettingsResourceBundle" />
                   <arg value="${project.build.directory}/docs/ops/configuration-attributes.asciidoc" />
                 </java>
