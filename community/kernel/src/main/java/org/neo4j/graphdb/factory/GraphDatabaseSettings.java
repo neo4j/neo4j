@@ -85,8 +85,9 @@ public abstract class GraphDatabaseSettings
     public static final BooleanSetting dump_configuration = new BooleanSetting( setting("dump_configuration", BOOLEAN, FALSE ));
 
     @Description("The name of the Transaction Manager service to use as defined in the TM service provider " +
-            "constructor, defaults to native.")
-    public static final StringSetting tx_manager_impl = new StringSetting( setting("tx_manager_impl", STRING, NO_DEFAULT, illegalValueMessage( "Must be class name of TransactionManager implementation", matches( ANY ))));
+            "constructor.")
+    public static final StringSetting tx_manager_impl = new StringSetting( setting("tx_manager_impl", STRING, "native",
+            illegalValueMessage( "Must be class name of TransactionManager implementation", matches( ANY ))));
 
     @Description("Whether to allow a store upgrade in case the current version of the database starts against an " +
             "older store version. " +
