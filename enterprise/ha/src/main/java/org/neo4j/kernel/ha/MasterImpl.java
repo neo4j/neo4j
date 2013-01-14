@@ -49,12 +49,15 @@ import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Predicate;
+import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.GraphProperties;
+import org.neo4j.kernel.impl.core.KeyNotFoundException;
 import org.neo4j.kernel.impl.core.NodeManager;
+import org.neo4j.kernel.impl.core.PropertyIndexManager;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.nioneo.store.IdGenerator;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
@@ -460,10 +463,31 @@ public class MasterImpl extends LifecycleAdapter implements Master
 
     public Response<Integer> createRelationshipType( RequestContext context, String name )
     {
-        graphDb.getRelationshipTypeHolder().addValidRelationshipType( name, true );
-        return packResponse( context, graphDb.getRelationshipTypeHolder().getIdFor( name ) );
+        try
+        {
+            graphDb.getRelationshipTypeHolder().getOrCreateId( name );
+            return packResponse( context, graphDb.getRelationshipTypeHolder().getIdByKeyName( name ) );
+        }
+        catch ( KeyNotFoundException e )
+        {
+            throw new ThisShouldNotHappenError( "Mattias", "Relationship type create failed for some reason" );
+        }
     }
 
+    public Response<Integer> createPropertyKey( RequestContext context, String name )
+    {
+        try
+        {
+            PropertyIndexManager propertyKeyHolder = graphDb.getDependencyResolver().resolveDependency( PropertyIndexManager.class );
+            propertyKeyHolder.getOrCreateId( name );
+            return packResponse( context, propertyKeyHolder.getIdByKeyName( name ) );
+        }
+        catch ( KeyNotFoundException e )
+        {
+            throw new ThisShouldNotHappenError( "Mattias", "Relationship type create failed for some reason" );
+        }
+    }
+    
     public Response<Void> pullUpdates( RequestContext context )
     {
         return packResponse( context, null );

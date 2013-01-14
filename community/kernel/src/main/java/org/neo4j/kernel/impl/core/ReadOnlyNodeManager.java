@@ -62,7 +62,7 @@ public class ReadOnlyNodeManager extends NodeManager
     }
 
     @Override
-    PropertyIndex createPropertyIndex( String key )
+    int getOrCreatePropertyIndex( String key )
     {
         throw new ReadOnlyDbException();
     }

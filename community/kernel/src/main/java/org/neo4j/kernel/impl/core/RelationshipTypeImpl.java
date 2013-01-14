@@ -20,28 +20,45 @@
 package org.neo4j.kernel.impl.core;
 
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
-import org.neo4j.kernel.impl.persistence.PersistenceManager;
-import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 
-public class RelationshipTypeHolder extends KeyHolder<RelationshipType>
+class RelationshipTypeImpl implements RelationshipType
 {
-    public RelationshipTypeHolder( AbstractTransactionManager transactionManager,
-                                   PersistenceManager persistenceManager, EntityIdGenerator idGenerator,
-                                   KeyCreator keyCreator )
+    final String name;
+    private final int id;
+
+    RelationshipTypeImpl( String name, int id )
     {
-        super( transactionManager, persistenceManager, idGenerator, keyCreator );
+        assert name != null;
+        this.name = name;
+        this.id = id;
     }
 
-    @Override
-    protected RelationshipTypeImpl newKey( String key, int id )
+    public String name()
     {
-        return new RelationshipTypeImpl( key, id );
+        return name;
+    }
+    
+    public int getId()
+    {
+        return id;
     }
 
-    @Override
-    protected String nameOf( RelationshipType key )
+    public String toString()
     {
-        return key.name();
+        return name;
+    }
+
+    public boolean equals( Object o )
+    {
+        if ( !(o instanceof RelationshipType) )
+        {
+            return false;
+        }
+        return name.equals( ((RelationshipType) o).name() );
+    }
+
+    public int hashCode()
+    {
+        return name.hashCode();
     }
 }

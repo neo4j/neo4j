@@ -25,13 +25,13 @@ import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 
-public class SlaveRelationshipTypeCreator implements KeyCreator
+public class SlavePropertyKeyCreator implements KeyCreator
 {
     private final Master master;
     private final RequestContextFactory requestContextFactory;
     private final HaXaDataSourceManager xaDsm;
 
-    public SlaveRelationshipTypeCreator( Master master, RequestContextFactory requestContextFactory,
+    public SlavePropertyKeyCreator( Master master, RequestContextFactory requestContextFactory,
                                          HaXaDataSourceManager xaDsm )
     {
         this.master = master;
@@ -43,7 +43,7 @@ public class SlaveRelationshipTypeCreator implements KeyCreator
     public int getOrCreate( AbstractTransactionManager txManager, EntityIdGenerator idGenerator,
             PersistenceManager persistence, String name )
     {
-        Response<Integer> response = master.createRelationshipType( requestContextFactory.newRequestContext(), name );
+        Response<Integer> response = master.createPropertyKey( requestContextFactory.newRequestContext(), name );
         xaDsm.applyTransactions( response );
         return response.response().intValue();
     }

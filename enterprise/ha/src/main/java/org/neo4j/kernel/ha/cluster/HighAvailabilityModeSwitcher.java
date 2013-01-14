@@ -46,7 +46,7 @@ import org.neo4j.kernel.ha.HaIdGeneratorFactory;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HaXaDataSourceManager;
 import org.neo4j.kernel.ha.Master;
-import org.neo4j.kernel.ha.MasterClient18;
+import org.neo4j.kernel.ha.MasterClient20;
 import org.neo4j.kernel.ha.MasterImpl;
 import org.neo4j.kernel.ha.MasterServer;
 import org.neo4j.kernel.ha.RequestContextFactory;
@@ -295,7 +295,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
     {
         try
         {
-            MasterClient18 master = new MasterClient18( masterUri, logging,
+            MasterClient20 master = new MasterClient20( masterUri, logging,
                     nioneoDataSource.getStoreId(), config );
 
             Slave slaveImpl = new SlaveImpl( nioneoDataSource.getStoreId(), master,
@@ -363,7 +363,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
         LifeSupport checkConsistencyLife = new LifeSupport();
         try
         {
-            MasterClient18 checkConsistencyMaster = new MasterClient18( masterUri,
+            MasterClient20 checkConsistencyMaster = new MasterClient20( masterUri,
                     logging, nioneoDataSource.getStoreId(), config );
             checkConsistencyLife.add( checkConsistencyMaster );
             checkConsistencyLife.start();
@@ -444,8 +444,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
         {
             // Remove the current store - neostore file is missing, nothing we can really do
             stopServicesAndHandleBranchedStore( BranchedDataPolicy.keep_none );
-            MasterClient18 copyMaster =
-                    new MasterClient18( masterUri, logging, null, config );
+            MasterClient20 copyMaster = new MasterClient20( masterUri, logging, null, config );
 
             life.add( copyMaster );
             life.start();

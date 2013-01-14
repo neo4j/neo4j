@@ -1411,10 +1411,10 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
     }
 
     @Override
-    public NameData[] loadPropertyIndexes( int count )
+    public NameData[] loadPropertyIndexes()
     {
         PropertyIndexStore indexStore = getPropertyStore().getIndexStore();
-        return indexStore.getNames( count );
+        return indexStore.getNames( Integer.MAX_VALUE );
     }
 
     @Override

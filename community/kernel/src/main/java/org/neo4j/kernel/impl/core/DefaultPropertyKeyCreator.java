@@ -19,29 +19,22 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
-import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
+import org.neo4j.kernel.logging.Logging;
 
-public class RelationshipTypeHolder extends KeyHolder<RelationshipType>
+public class DefaultPropertyKeyCreator extends IsolatedTransactionKeyCreator
 {
-    public RelationshipTypeHolder( AbstractTransactionManager transactionManager,
-                                   PersistenceManager persistenceManager, EntityIdGenerator idGenerator,
-                                   KeyCreator keyCreator )
+    public DefaultPropertyKeyCreator( Logging logging )
     {
-        super( transactionManager, persistenceManager, idGenerator, keyCreator );
+        super( logging );
     }
 
     @Override
-    protected RelationshipTypeImpl newKey( String key, int id )
+    protected int createKey( EntityIdGenerator idGenerator, PersistenceManager persistence, String name )
     {
-        return new RelationshipTypeImpl( key, id );
-    }
-
-    @Override
-    protected String nameOf( RelationshipType key )
-    {
-        return key.name();
+        int id = (int) idGenerator.nextId( PropertyIndex.class );
+        persistence.createPropertyIndex( name, id );
+        return id;
     }
 }

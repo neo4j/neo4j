@@ -151,4 +151,10 @@ class TestMaster implements Master
     {
         return actual.pushTransaction( context, resourceName, tx );
     }
+
+    @Override
+    public Response<Integer> createPropertyKey( RequestContext context, String name )
+    {
+        return actual.createPropertyKey( context, name );
+    }
 }
