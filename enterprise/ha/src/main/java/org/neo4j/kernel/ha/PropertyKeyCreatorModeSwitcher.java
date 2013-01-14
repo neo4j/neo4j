@@ -23,18 +23,18 @@ import java.net.URI;
 
 import org.neo4j.kernel.ha.cluster.AbstractModeSwitcher;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberStateMachine;
-import org.neo4j.kernel.impl.core.DefaultRelationshipTypeCreator;
+import org.neo4j.kernel.impl.core.DefaultPropertyKeyCreator;
 import org.neo4j.kernel.impl.core.KeyCreator;
 import org.neo4j.kernel.logging.Logging;
 
-public class RelationshipTypeCreatorModeSwitcher extends AbstractModeSwitcher<KeyCreator>
+public class PropertyKeyCreatorModeSwitcher extends AbstractModeSwitcher<KeyCreator>
 {
     private final HaXaDataSourceManager xaDsm;
     private final Master master;
     private final RequestContextFactory requestContextFactory;
     private final Logging logging;
 
-    public RelationshipTypeCreatorModeSwitcher( HighAvailabilityMemberStateMachine stateMachine,
+    public PropertyKeyCreatorModeSwitcher( HighAvailabilityMemberStateMachine stateMachine,
                                                 DelegateInvocationHandler<KeyCreator> delegate,
                                                 HaXaDataSourceManager xaDsm,
                                                 Master master, RequestContextFactory requestContextFactory,
@@ -51,12 +51,12 @@ public class RelationshipTypeCreatorModeSwitcher extends AbstractModeSwitcher<Ke
     @Override
     protected KeyCreator getMasterImpl()
     {
-        return new DefaultRelationshipTypeCreator( logging );
+        return new DefaultPropertyKeyCreator( logging );
     }
 
     @Override
     protected KeyCreator getSlaveImpl( URI serverHaUri )
     {
-        return new SlaveRelationshipTypeCreator( master, requestContextFactory, xaDsm );
+        return new SlavePropertyKeyCreator( master, requestContextFactory, xaDsm );
     }
 }

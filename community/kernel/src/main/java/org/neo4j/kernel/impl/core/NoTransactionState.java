@@ -182,30 +182,6 @@ public class NoTransactionState implements TransactionState
     }
 
     @Override
-    public void addPropertyIndex( PropertyIndex index )
-    {
-        throw new NotInTransactionException();
-    }
-
-    @Override
-    public PropertyIndex getPropertyIndex( String key )
-    {
-        return null;
-    }
-
-    @Override
-    public PropertyIndex getPropertyIndex( int keyId )
-    {
-        return null;
-    }
-    
-    @Override
-    public PropertyIndex[] getAddedPropertyIndexes()
-    {
-        return EMPTY_PROPERTY_INDEX_ARRAY;
-    }
-
-    @Override
     public boolean isDeleted( Node node )
     {
         return false;

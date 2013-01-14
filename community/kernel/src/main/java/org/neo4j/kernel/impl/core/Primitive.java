@@ -121,25 +121,32 @@ abstract class Primitive
         ensureFullProperties( nodeManager );
         List<String> keys = new ArrayList<String>();
 
-        for ( PropertyData property : allProperties() )
+        try
         {
-            Integer index = property.getIndex();
-            if ( skipMap != null && skipMap.get( index ) != null )
+            for ( PropertyData property : allProperties() )
             {
-                continue;
+                Integer index = property.getIndex();
+                if ( skipMap != null && skipMap.get( index ) != null )
+                {
+                    continue;
+                }
+                if ( addMap != null && addMap.get( index ) != null )
+                {
+                    continue;
+                }
+                keys.add( nodeManager.getPropertyIndex( index ).getKey() );
             }
-            if ( addMap != null && addMap.get( index ) != null )
+            if ( addMap != null )
             {
-                continue;
+                for ( Integer index : addMap.keySet() )
+                {
+                    keys.add( nodeManager.getPropertyIndex( index ).getKey() );
+                }
             }
-            keys.add( nodeManager.getIndexFor( index, tx ).getKey() );
         }
-        if ( addMap != null )
+        catch ( KeyNotFoundException e )
         {
-            for ( Integer index : addMap.keySet() )
-            {
-                keys.add( nodeManager.getIndexFor( index, tx ).getKey() );
-            }
+            throw new NotFoundException( e );
         }
         return keys;
     }
@@ -160,7 +167,7 @@ abstract class Primitive
         }
 
         ensureFullProperties( nodeManager );
-        for ( PropertyIndex index : nodeManager.index( key, tx ) )
+        for ( PropertyIndex index : nodeManager.index( key ) )
         {
             if ( skipMap != null && skipMap.get( index.getKeyId() ) != null )
             {
@@ -180,71 +187,12 @@ abstract class Primitive
                 return getPropertyValue( nodeManager, property );
             }
         }
-        PropertyData property = getSlowProperty( nodeManager, addMap, skipMap, key, tx );
-        if ( property != null )
-        {
-            return getPropertyValue( nodeManager, property );
-        }
         throw newPropertyNotFoundException( key );
     }
 
     private NotFoundException newPropertyNotFoundException( String key )
     {
         return new NotFoundException( "'" + key + "' property not found for " + this + "." );
-    }
-
-    private PropertyData getSlowProperty( NodeManager nodeManager,
-            ArrayMap<Integer, PropertyData> addMap,
-            ArrayMap<Integer,PropertyData> skipMap, String key, TransactionState tx )
-    {
-        if ( nodeManager.hasAllPropertyIndexes() )
-        {
-            return null;
-        }
-        if ( addMap != null )
-        {
-            for ( int keyId : addMap.keySet() )
-            {
-                if ( !nodeManager.hasIndexFor( keyId ) )
-                {
-                    PropertyIndex indexToCheck =
-                        nodeManager.getIndexFor( keyId, tx );
-                    if ( indexToCheck.getKey().equals( key ) )
-                    {
-                        if ( skipMap != null && skipMap.get( keyId ) != null )
-                        {
-                            throw newPropertyNotFoundException( key );
-                        }
-                        PropertyData property =
-                            addMap.get( indexToCheck.getKeyId() );
-                        if ( property != null )
-                        {
-                            return property;
-                        }
-                    }
-                }
-            }
-        }
-        for ( PropertyData property : allProperties() )
-        {
-            int keyId = property.getIndex();
-            if ( !nodeManager.hasIndexFor( keyId ) )
-            {
-                PropertyIndex indexToCheck = nodeManager.getIndexFor( keyId, tx );
-                if ( indexToCheck.getKey().equals( key ) )
-                {
-                    if ( skipMap != null && skipMap.get( keyId ) != null )
-                    {
-                        throw newPropertyNotFoundException( key );
-                    }
-                    if ( property != null )
-                    {
-                        return property;
-                    }
-                }
-            }
-        }
-        return null;
     }
 
     public Object getProperty( NodeManager nodeManager, String key, Object defaultValue )
@@ -263,7 +211,7 @@ abstract class Primitive
         }
 
         ensureFullProperties( nodeManager );
-        for ( PropertyIndex index : nodeManager.index( key, tx ) )
+        for ( PropertyIndex index : nodeManager.index( key ) )
         {
             if ( skipMap != null && skipMap.get( index.getKeyId() ) != null )
             {
@@ -282,11 +230,6 @@ abstract class Primitive
             {
                 return getPropertyValue( nodeManager, property );
             }
-        }
-        PropertyData property = getSlowProperty( nodeManager, addMap, skipMap, key, tx );
-        if ( property != null )
-        {
-            return getPropertyValue( nodeManager, property );
         }
         return defaultValue;
     }
@@ -307,7 +250,7 @@ abstract class Primitive
         }
 
         ensureFullProperties( nodeManager );
-        for ( PropertyIndex index : nodeManager.index( key, tx ) )
+        for ( PropertyIndex index : nodeManager.index( key ) )
         {
             if ( skipMap != null && skipMap.get( index.getKeyId() ) != null )
             {
@@ -326,11 +269,6 @@ abstract class Primitive
             {
                 return true;
             }
-        }
-        PropertyData property = getSlowProperty( nodeManager, addMap, skipMap, key, tx );
-        if ( property != null )
-        {
-            return true;
         }
         return false;
     }
@@ -353,7 +291,7 @@ abstract class Primitive
             PropertyIndex index = null;
             PropertyData property = null;
             boolean foundInSkipMap = false;
-            for ( PropertyIndex cachedIndex : nodeManager.index( key, tx ) )
+            for ( PropertyIndex cachedIndex : nodeManager.index( key ) )
             {
                 if ( skipMap != null )
                 {
@@ -374,58 +312,10 @@ abstract class Primitive
                     break;
                 }
             }
-            if ( property == null && !nodeManager.hasAllPropertyIndexes() )
-            {
-                for ( int keyId : addMap.keySet() )
-                {
-                    if ( !nodeManager.hasIndexFor( keyId ) )
-                    {
-                        PropertyIndex indexToCheck = nodeManager
-                            .getIndexFor( keyId, tx );
-                        if ( indexToCheck.getKey().equals( key ) )
-                        {
-                            if ( skipMap != null )
-                            {
-                                skipMap.remove( indexToCheck.getKeyId() );
-                            }
-                            index = indexToCheck;
-                            property = addMap.get( indexToCheck.getKeyId() );
-                            if ( property != null )
-                            {
-                                break;
-                            }
-                        }
-                    }
-                }
-                if ( property == null )
-                {
-                    for ( PropertyData aProperty : allProperties() )
-                    {
-                        int keyId = aProperty.getIndex();
-                        if ( !nodeManager.hasIndexFor( keyId ) )
-                        {
-                            PropertyIndex indexToCheck = nodeManager
-                                .getIndexFor( keyId, tx );
-                            if ( indexToCheck.getKey().equals( key ) )
-                            {
-                                if ( skipMap != null )
-                                {
-                                    skipMap.remove( indexToCheck.getKeyId() );
-                                }
-                                index = indexToCheck;
-                                property = getPropertyForIndex( indexToCheck.getKeyId() );
-                                if ( property != null )
-                                {
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
             if ( index == null )
             {
-                index = nodeManager.createPropertyIndex( key );
+                int keyId = nodeManager.getOrCreatePropertyIndex( key );
+                index = nodeManager.getPropertyIndexOrNull( keyId );
             }
             if ( property != null && !foundInSkipMap )
             {
@@ -435,8 +325,6 @@ abstract class Primitive
             {
                 property = addProperty( nodeManager, index, value );
             }
-            if ( addMap == null ) System.out.println( "addMap null" );
-            if ( index == null ) System.out.println( "index null" );
             addMap.put( index.getKeyId(), property );
             success = true;
         }
@@ -467,7 +355,7 @@ abstract class Primitive
             // Don't create the map if it doesn't exist here... but instead when (and if)
             // the property is found below.
             ArrayMap<Integer,PropertyData> removeMap = tx.getCowPropertyRemoveMap( this );
-            for ( PropertyIndex cachedIndex : nodeManager.index( key, tx ) )
+            for ( PropertyIndex cachedIndex : nodeManager.index( key ) )
             {
                 if ( addMap != null )
                 {
@@ -490,55 +378,6 @@ abstract class Primitive
                     removeMap = removeMap != null ? removeMap : tx.getOrCreateCowPropertyRemoveMap( this );
                     removeMap.put( cachedIndex.getKeyId(), property );
                     break;
-                }
-            }
-            if ( property == null && !nodeManager.hasAllPropertyIndexes() )
-            {
-                if ( addMap != null )
-                {
-                    for ( int keyId : addMap.keySet() )
-                    {
-                        if ( !nodeManager.hasIndexFor( keyId ) )
-                        {
-                            PropertyIndex indexToCheck = nodeManager
-                                .getIndexFor( keyId, tx );
-                            if ( indexToCheck.getKey().equals( key ) )
-                            {
-                                property = addMap.remove( indexToCheck
-                                    .getKeyId() );
-                                if ( property != null )
-                                {
-                                    removeMap = removeMap != null ? removeMap : tx.getOrCreateCowPropertyRemoveMap( this );
-                                    removeMap.put( indexToCheck.getKeyId(),
-                                        property );
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                    if ( property == null )
-                    {
-                        for ( PropertyData aProperty : allProperties() )
-                        {
-                            int keyId = aProperty.getIndex();
-                            if ( !nodeManager.hasIndexFor( keyId ) )
-                            {
-                                PropertyIndex indexToCheck = nodeManager
-                                    .getIndexFor( keyId, tx );
-                                if ( indexToCheck.getKey().equals( key ) )
-                                {
-                                    property = getPropertyForIndex( indexToCheck.getKeyId() );
-                                    if ( property != null )
-                                    {
-                                        removeMap = removeMap != null ? removeMap : tx.getOrCreateCowPropertyRemoveMap( this );
-                                        removeMap.put( indexToCheck.getKeyId(),
-                                            property );
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-                    }
                 }
             }
             if ( property == null )
@@ -618,7 +457,7 @@ abstract class Primitive
             new ArrayList<PropertyEventData>( properties.length );
         for ( PropertyData property : properties )
         {
-            PropertyIndex index = nodeManager.getIndexFor( property.getIndex(), tx );
+            PropertyIndex index = nodeManager.getPropertyIndexOrNull( property.getIndex() );
             Object value = getPropertyValue( nodeManager, property );
             props.add( new PropertyEventData( index.getKey(), value ) );
         }
@@ -628,7 +467,7 @@ abstract class Primitive
     protected Object getCommittedPropertyValue( NodeManager nodeManager, String key, TransactionState tx )
     {
         ensureFullLightProperties( nodeManager );
-        for ( PropertyIndex index : nodeManager.index( key, tx ) )
+        for ( PropertyIndex index : nodeManager.index( key ) )
         {
             PropertyData property = getPropertyForIndex( index.getKeyId() );
             if ( property != null )

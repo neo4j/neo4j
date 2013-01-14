@@ -66,14 +66,15 @@ import org.neo4j.kernel.impl.core.Caches;
 import org.neo4j.kernel.impl.core.DefaultCaches;
 import org.neo4j.kernel.impl.core.DefaultRelationshipTypeCreator;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
+import org.neo4j.kernel.impl.core.KeyCreator;
 import org.neo4j.kernel.impl.core.NodeImpl;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.NodeProxy;
+import org.neo4j.kernel.impl.core.DefaultPropertyKeyCreator;
 import org.neo4j.kernel.impl.core.PropertyIndexManager;
 import org.neo4j.kernel.impl.core.ReadOnlyNodeManager;
 import org.neo4j.kernel.impl.core.RelationshipImpl;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
-import org.neo4j.kernel.impl.core.RelationshipTypeCreator;
 import org.neo4j.kernel.impl.core.RelationshipTypeHolder;
 import org.neo4j.kernel.impl.core.TransactionEventsSyncHook;
 import org.neo4j.kernel.impl.core.TxEventSyncHookFactory;
@@ -173,7 +174,7 @@ public abstract class InternalAbstractGraphDatabase
     protected XaDataSourceManager xaDataSourceManager;
     protected LockManager lockManager;
     protected IdGeneratorFactory idGeneratorFactory;
-    protected RelationshipTypeCreator relationshipTypeCreator;
+    protected KeyCreator relationshipTypeCreator;
     protected NioNeoDbPersistenceSource persistenceSource;
     protected TxEventSyncHookFactory syncHook;
     protected PersistenceManager persistenceManager;
@@ -386,8 +387,10 @@ public abstract class InternalAbstractGraphDatabase
 
         persistenceManager = new PersistenceManager( logging.getLogger( PersistenceManager.class ), txManager,
                 persistenceSource, syncHook );
+        
+        KeyCreator propertyIndexCreator = createPropertyKeyCreator();
 
-        propertyIndexManager = life.add( new PropertyIndexManager( persistenceManager, persistenceSource ) );
+        propertyIndexManager = life.add( new PropertyIndexManager( txManager, persistenceManager, persistenceSource, propertyIndexCreator ) );
 
         relationshipTypeHolder = new RelationshipTypeHolder( txManager,
                 persistenceManager, persistenceSource, relationshipTypeCreator );
@@ -477,9 +480,14 @@ public abstract class InternalAbstractGraphDatabase
         return dependencyResolver;
     }
 
-    protected RelationshipTypeCreator createRelationshipTypeCreator()
+    protected KeyCreator createRelationshipTypeCreator()
     {
-        return new DefaultRelationshipTypeCreator();
+        return new DefaultRelationshipTypeCreator( logging );
+    }
+    
+    protected KeyCreator createPropertyKeyCreator()
+    {
+        return new DefaultPropertyKeyCreator( logging );
     }
 
     private NodeManager createNodeManager( final boolean readOnly, final CacheProvider cacheType,
@@ -1295,6 +1303,10 @@ public abstract class InternalAbstractGraphDatabase
             else if ( DiagnosticsManager.class.isAssignableFrom( type ) )
             {
                 return (T) diagnosticsManager;
+            }
+            else if ( PropertyIndexManager.class.isAssignableFrom( type ) )
+            {
+                return (T) propertyIndexManager;
             }
             else
             {

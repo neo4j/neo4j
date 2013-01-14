@@ -19,12 +19,16 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -36,9 +40,8 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.nioneo.xa.Command;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
+import org.neo4j.kernel.impl.transaction.xaframework.LogEntry.Commit;
 import org.neo4j.kernel.impl.util.FileUtils;
-
-import static org.junit.Assert.*;
 
 public class TestTxTimestamps
 {
@@ -85,6 +88,7 @@ public class TestTxTimestamps
             LogIoUtils.readLogHeader( buffer, channel, true );
             LogEntry entry = null;
             int foundTxCount = 0;
+            skipFirstTransaction( buffer, channel, commandFactory ); // Since it's the property index transaction
             while ( (entry = LogIoUtils.readEntry( buffer, channel, commandFactory )) != null )
             {
                 if ( entry instanceof LogEntry.Start )
@@ -107,6 +111,14 @@ public class TestTxTimestamps
         {
             file.close();
         }
+    }
+
+    private void skipFirstTransaction( ByteBuffer buffer, FileChannel channel, XaCommandFactory commandFactory ) throws IOException
+    {
+        LogEntry entry = null;
+        while ( (entry = LogIoUtils.readEntry( buffer, channel, commandFactory )) != null )
+            if ( entry instanceof Commit )
+                break;
     }
 
     private static class CommandFactory extends XaCommandFactory

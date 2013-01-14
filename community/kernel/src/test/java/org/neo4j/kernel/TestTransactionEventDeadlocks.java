@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel;
 
+import static org.junit.Assert.assertEquals;
+import static org.neo4j.helpers.collection.IteratorUtil.count;
+
 import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.graphdb.DynamicRelationshipType;
@@ -28,8 +31,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.test.EmbeddedDatabaseRule;
-
-import static org.junit.Assert.*;
 
 public class TestTransactionEventDeadlocks
 {
@@ -58,6 +59,11 @@ public class TestTransactionEventDeadlocks
             @Override
             public Void beforeCommit( TransactionData data ) throws Exception
             {
+                // TODO Hmm, makes me think... should we really call transaction event handlers
+                // for these relationship type / property index transasctions?
+                if ( count( data.createdRelationships() ) == 0 )
+                    return null;
+                
                 root.setProperty( "counter", ( (Long) root.removeProperty( "counter" ) ) + 1 );
                 return null;
             }

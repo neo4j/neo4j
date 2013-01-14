@@ -19,13 +19,12 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import javax.transaction.TransactionManager;
-
 import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
+import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 
-public interface RelationshipTypeCreator
+public interface KeyCreator
 {
-    int getOrCreate( TransactionManager txManager, EntityIdGenerator idGenerator,
-            PersistenceManager persistence, RelationshipTypeHolder relTypeHolder, String name );
+    int getOrCreate( AbstractTransactionManager txManager, EntityIdGenerator idGenerator,
+            PersistenceManager persistence, String name );
 }

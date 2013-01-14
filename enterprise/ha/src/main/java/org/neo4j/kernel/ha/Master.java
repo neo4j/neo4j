@@ -37,6 +37,8 @@ public interface Master
 
     Response<Integer> createRelationshipType( RequestContext context, String name );
 
+    Response<Integer> createPropertyKey( RequestContext context, String name );
+    
     /**
      * Called when the first write operation of lock is performed for a transaction.
      */

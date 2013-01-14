@@ -19,23 +19,10 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
-import org.neo4j.kernel.impl.persistence.PersistenceManager;
-import org.neo4j.kernel.logging.Logging;
-
-public class DefaultRelationshipTypeCreator extends IsolatedTransactionKeyCreator
+public class KeyNotFoundException extends Exception
 {
-    public DefaultRelationshipTypeCreator( Logging logging )
+    public KeyNotFoundException( String message )
     {
-        super( logging );
-    }
-
-    @Override
-    protected int createKey( EntityIdGenerator idGenerator, PersistenceManager persistence, String name )
-    {
-        int id = (int) idGenerator.nextId( RelationshipType.class );
-        persistence.createRelationshipType( id, name );
-        return id;
+        super( message );
     }
 }

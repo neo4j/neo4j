@@ -223,10 +223,16 @@ public class NodeImpl extends ArrayBasedPrimitive
         int actualLength = 0;
         for ( int i = 0; i < types.length; i++ )
         {
-            Integer typeId = nodeManager.getRelationshipTypeIdFor( types[i] );
-            if ( typeId == null )
+            int typeId;
+            try
+            {
+                typeId = nodeManager.getRelationshipTypeIdFor( types[i] );
+            }
+            catch ( KeyNotFoundException e )
+            {
                 // This relationship type doesn't even exist in this database
                 continue;
+            }
             
             result[actualLength++] = getRelationshipsIterator( nodeManager, direction,
                     addMap != null ? addMap.get( typeId ) : null,

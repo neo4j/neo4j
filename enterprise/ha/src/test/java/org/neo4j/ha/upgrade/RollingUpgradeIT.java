@@ -38,6 +38,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.After;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -50,6 +51,7 @@ import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.UpdatePuller;
 import org.neo4j.test.TargetDirectory;
 
+@Ignore( "Disabled as long as there's no rolling upgrade support 1.8->2.0 (property key creation changes)" )
 public class RollingUpgradeIT
 {
     private TargetDirectory DIR = TargetDirectory.forTest( getClass() );

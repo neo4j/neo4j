@@ -227,7 +227,7 @@ public interface NeoStoreTransaction
      * @return An array of the PropertyIndexData that were loaded - can be less
      *         than the number requested.
      */
-    public NameData[] loadPropertyIndexes( int maxCount );
+    public NameData[] loadPropertyIndexes();
 
     /**
      * Loads the complete property chain for the given node and returns it as a

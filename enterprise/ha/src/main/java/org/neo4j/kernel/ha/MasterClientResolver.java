@@ -89,6 +89,7 @@ public class MasterClientResolver implements MasterClientFactory, MismatchingVer
         static final ProtocolVersionCombo PC_153 = new ProtocolVersionCombo( 2, 2 );
         static final ProtocolVersionCombo PC_17 = new ProtocolVersionCombo( 3, 2 );
         static final ProtocolVersionCombo PC_18 = new ProtocolVersionCombo( 4, 2 );
+        static final ProtocolVersionCombo PC_20 = new ProtocolVersionCombo( 5, 2 );
     }
 
     private final Map<ProtocolVersionCombo, MasterClientFactory> protocolToFactoryMapping;
@@ -102,6 +103,8 @@ public class MasterClientResolver implements MasterClientFactory, MismatchingVer
         protocolToFactoryMapping.put( ProtocolVersionCombo.PC_17, new F17( logging, readTimeout, lockReadTimeout,
                 channels, chunkSize ) );
         protocolToFactoryMapping.put( ProtocolVersionCombo.PC_18, new F18( logging, readTimeout, lockReadTimeout,
+                channels, chunkSize ) );
+        protocolToFactoryMapping.put( ProtocolVersionCombo.PC_20, new F20( logging, readTimeout, lockReadTimeout,
                 channels, chunkSize ) );
     }
 
@@ -127,7 +130,7 @@ public class MasterClientResolver implements MasterClientFactory, MismatchingVer
 
     public MasterClientFactory getDefault()
     {
-        return getFor( ProtocolVersionCombo.PC_18.applicationProtocol, ProtocolVersionCombo.PC_18.internalProtocol );
+        return getFor( ProtocolVersionCombo.PC_20.applicationProtocol, ProtocolVersionCombo.PC_20.internalProtocol );
     }
 
     protected static abstract class StaticMasterClientFactory implements MasterClientFactory
@@ -197,6 +200,22 @@ public class MasterClientResolver implements MasterClientFactory, MismatchingVer
         }
     }
 
+    public static final class F20 extends StaticMasterClientFactory
+    {
+        public F20( Logging logging, int readTimeoutSeconds, int lockReadTimeout, int maxConcurrentChannels,
+                int chunkSize )
+        {
+            super( logging, readTimeoutSeconds, lockReadTimeout, maxConcurrentChannels, chunkSize );
+        }
+
+        @Override
+        public MasterClient instantiate( String hostNameOrIp, int port, StoreId storeId, LifeSupport life )
+        {
+            return life.add( new MasterClient20( hostNameOrIp, port, logging, storeId,
+                    readTimeoutSeconds, lockReadTimeout, maxConcurrentChannels, chunkSize ) );
+        }
+    }
+    
     public void enableDowngradeBarrier()
     {
         downgradeForbidden = true;

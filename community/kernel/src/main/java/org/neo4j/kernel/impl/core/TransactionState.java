@@ -98,18 +98,10 @@ public interface TransactionState
     void clearCache();
 
     TransactionData getTransactionData();
-    
-    void addPropertyIndex( PropertyIndex index );
 
-    PropertyIndex getPropertyIndex( String key );
-
-    PropertyIndex getPropertyIndex( int keyId );
-    
     boolean isDeleted( Node node );
 
     boolean isDeleted( Relationship relationship );
-    
-    PropertyIndex[] getAddedPropertyIndexes();
     
     boolean hasChanges();
     
