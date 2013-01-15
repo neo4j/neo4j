@@ -24,9 +24,7 @@ import expressions._
 import org.neo4j.cypher.SyntaxException
 
 trait Expressions extends Base with ParserPattern with Predicates with StringLiteral {
-  def expression: Parser[Expression] =
-
-    term ~ rep("+" ~ term | "-" ~ term) ^^ {
+  def expression: Parser[Expression] = term ~ rep("+" ~ term | "-" ~ term) ^^ {
     case head ~ rest =>
       var result = head
       rest.foreach {
@@ -56,8 +54,10 @@ trait Expressions extends Base with ParserPattern with Predicates with StringLit
       | ignoreCase("null") ^^^ Literal(null)
       | pathExpression
       | extract
+      | reduce
       | function
       | aggregateExpression
+      | percentileFunction
       | coalesceFunc
       | filterFunc
       | nullableProperty
@@ -69,6 +69,8 @@ trait Expressions extends Base with ParserPattern with Predicates with StringLit
       | entity
       | parens(expression)
       | failure("illegal value"))
+
+  def expressionOrPredicate: Parser[Expression] = pathExpression | predicate | expression
 
   def numberLiteral: Parser[Expression] = number ^^ (x => {
     val value: Any = if (x.contains("."))
@@ -98,6 +100,10 @@ trait Expressions extends Base with ParserPattern with Predicates with StringLit
 
   def extract: Parser[Expression] = ignoreCase("extract") ~> parens(identity ~ ignoreCase("in") ~ expression ~ ":" ~ expression) ^^ {
     case (id ~ in ~ iter ~ ":" ~ expression) => ExtractFunction(iter, id, expression)
+  }
+
+  def reduce: Parser[Expression] = ignoreCase("reduce") ~> parens(identity ~ "=" ~ expression ~ "," ~ identity ~ ignoreCase("in") ~ expression ~ ":" ~ expression) ^^ {
+    case (acc ~ "=" ~ init ~ "," ~ id ~ in ~ iter ~ ":" ~ expression) => ReduceFunction(iter, id, expression, acc, init)
   }
 
   def coalesceFunc: Parser[Expression] = ignoreCase("coalesce") ~> parens(commaList(expression)) ^^ {
@@ -145,6 +151,19 @@ trait Expressions extends Base with ParserPattern with Predicates with StringLit
     "head" -> func(1, args => HeadFunction(args.head)),
     "last" -> func(1, args => LastFunction(args.head)),
     "tail" -> func(1, args => TailFunction(args.head)),
+    "replace" -> func(3, args => ReplaceFunction(args(0), args(1), args(2))),
+    "left" -> func(2, args => LeftFunction(args(0), args(1))),
+    "right" -> func(2, args => RightFunction(args(0), args(1))),
+    "substring" -> Function(x => x == 2 || x == 3, args => {
+      if(args.size == 2) SubstringFunction(args(0), args(1), None)
+      else SubstringFunction(args(0), args(1), Some(args(2)))
+    }),
+    "lower" -> func(1, args => LowerFunction(args.head)),
+    "upper" -> func(1, args => UpperFunction(args.head)),
+    "ltrim" -> func(1, args => LTrimFunction(args.head)),
+    "rtrim" -> func(1, args => RTrimFunction(args.head)),
+    "trim" -> func(1, args => TrimFunction(args.head)),
+    "str" -> func(1, args => StrFunction(args.head)),
     "shortestpath" -> Function(x => false, args => null),
     "range" -> Function(x => x == 2 || x == 3, args => {
       val step = if (args.size == 2) Literal(1) else args(2)
@@ -175,6 +194,15 @@ trait Expressions extends Base with ParserPattern with Predicates with StringLit
         Distinct(aggregateExpression, inner)
       }
     }
+  }
+
+  def percentileFunctionNames: Parser[String] = ignoreCases("percentile_cont", "percentile_disc")
+
+  def percentileFunction: Parser[Expression] = percentileFunctionNames ~ parens(expression ~ "," ~ expression) ^^ {
+    case function ~ (property ~ "," ~ percentile) => function match {
+      case "percentile_cont" => PercentileCont(property, percentile)
+      case "percentile_disc" => PercentileDisc(property, percentile)
+    } 
   }
 
   def countStar: Parser[Expression] = ignoreCase("count") ~> parens("*") ^^^ CountStar()

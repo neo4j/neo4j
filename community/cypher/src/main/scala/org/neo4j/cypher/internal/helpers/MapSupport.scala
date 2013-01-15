@@ -39,10 +39,14 @@ trait MapSupport {
   def isMap(x: Any) = castToMap.isDefinedAt(x)
 
   def castToMap: PartialFunction[Any, (QueryContext) => Map[String, Any]] = {
-    case x: Map[String, Any]     => (_: QueryContext) => x
-    case x: JavaMap[String, Any] => (_: QueryContext) => x.asScala
-    case x: Node                 => (ctx: QueryContext) => new PropertyContainerMap(x, ctx.nodeOps())
-    case x: Relationship         => (ctx: QueryContext) => new PropertyContainerMap(x, ctx.relationshipOps())
+    case x: Any if x.isInstanceOf[Map[_, _]] =>
+      (_: QueryContext) => x.asInstanceOf[Map[String, Any]]
+    case x: Any if x.isInstanceOf[JavaMap[_, _]] =>
+      (_: QueryContext) => x.asInstanceOf[JavaMap[String, Any]].asScala
+    case x: Node  =>
+      (ctx: QueryContext) => new PropertyContainerMap(x, ctx.nodeOps())
+    case x: Relationship =>
+      (ctx: QueryContext) => new PropertyContainerMap(x, ctx.relationshipOps())
   }
 
   class PropertyContainerMap[T <: PropertyContainer](n: T, ops: QueryContext.Operations[T]) extends Map[String, Any] {
