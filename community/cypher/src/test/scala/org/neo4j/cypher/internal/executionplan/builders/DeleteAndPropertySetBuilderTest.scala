@@ -50,7 +50,7 @@ class DeleteAndPropertySetBuilderTest extends BuilderTest {
     val resultQ = resultPlan.query
 
     assert(resultQ === q.copy(updates = q.updates.map(_.solve)))
-    assertTrue("Execution plan should contain transaction", resultPlan.containsTransaction)
+    assertTrue("Execution plan should contain transaction", resultPlan.isUpdating)
   }
 
   @Test

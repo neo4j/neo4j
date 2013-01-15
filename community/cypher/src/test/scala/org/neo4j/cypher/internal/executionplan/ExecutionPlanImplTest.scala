@@ -29,14 +29,18 @@ import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.commands.expressions.Identifier
 import java.util.concurrent._
 import org.neo4j.cypher.internal.commands.ReturnItem
+import org.neo4j.cypher.internal.helpers.StatementContextMock.TxQueryContextWrapSupport
+import org.mockito.Mockito._
+import org.neo4j.cypher.internal.spi.TxQueryContextWrap
 
-class ExecutionPlanImplTest extends Assertions with Timed {
+class ExecutionPlanImplTest extends Assertions with Timed with TxQueryContextWrapSupport {
   @Test def should_not_go_into_never_ending_loop() {
-    val q = Query.start(NodeById("x", 0)).returns(ReturnItem(Identifier("x"), "x"))
+    val graph = mock(classOf[GraphDatabaseService])
+    val q     = Query.start(NodeById("x", 0)).returns(ReturnItem(Identifier("x"), "x"))
 
     val exception = intercept[ExecutionException](timeoutAfter(1) {
-      val epi = new FakeEPI(q, null)
-      epi.execute(Map())
+      val epi = new FakeEPI(q, graph)
+      withTxWrap(graph) { (wrap: TxQueryContextWrap) => epi.execute(wrap, Map()) }
     })
 
     assertTrue(exception.getCause.isInstanceOf[InternalException])

@@ -17,14 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.parser.v1_7
+package org.neo4j.cypher.internal.parser.v2_0
 
 import scala.util.parsing.combinator._
 import org.neo4j.helpers.ThisShouldNotHappenError
-import org.neo4j.cypher.internal.commands.expressions.{ParameterExpression, Expression, Literal}
+import org.neo4j.cypher.internal.commands.expressions.{LabelValue, ParameterExpression, Expression, Literal}
+import org.neo4j.cypher.internal.commands.{LabelDel, LabelAdd, LabelSet, LabelOp}
 
 abstract class Base extends JavaTokenParsers {
-  val keywords = List("start", "where", "return", "limit", "skip", "order", "by")
+  var namer = new NodeNamer
+  val keywords = List("start", "create", "set", "delete", "foreach", "match", "where",
+    "with", "return", "skip", "limit", "order", "by", "asc", "ascending", "desc", "descending")
 
   def ignoreCase(str: String): Parser[String] = ("""(?i)\b""" + str + """\b""").r ^^ (x => x.toLowerCase)
 
@@ -38,6 +41,10 @@ abstract class Base extends JavaTokenParsers {
     }
   }
 
+  def liftToSeq[A](x : Parser[A]):Parser[Seq[A]] = x ^^ (x => Seq(x))
+
+  def reduce[A,B](in:Seq[(Seq[A], Seq[B])]):(Seq[A], Seq[B]) = if (in.isEmpty) (Seq(),Seq()) else in.reduce((a, b) => (a._1 ++ b._1, a._2 ++ b._2))
+
   def ignoreCases(strings: String*): Parser[String] = ignoreCases(strings.toList)
 
   def ignoreCases(strings: List[String]): Parser[String] = strings match {
@@ -46,7 +53,7 @@ abstract class Base extends JavaTokenParsers {
     case _ => throw new ThisShouldNotHappenError("Andres", "Something went wrong if we get here.")
   }
 
-  def comaList[T](inner: Parser[T]): Parser[List[T]] =
+  def commaList[T](inner: Parser[T]): Parser[List[T]] =
     rep1sep(inner, ",") |
       rep1sep(inner, ",") ~> opt(",") ~> failure("trailing coma")
 
@@ -70,7 +77,7 @@ abstract class Base extends JavaTokenParsers {
 
   def number: Parser[String] = """-?(\d+(\.\d*)?|\d*\.\d+)""".r
 
-  def optParens[U](q: => Parser[U]): Parser[U] = parens(q) | q
+  def optParens[U](q: => Parser[U]): Parser[U] = q | parens(q)
 
   def parens[U](inner: => Parser[U]) =
     ("(" ~> inner <~ ")"
@@ -87,6 +94,16 @@ abstract class Base extends JavaTokenParsers {
   def positiveNumber: Parser[String] = """\d+""".r
   def anything: Parser[String] = """[.\s]""".r
 
+  def labelOp: Parser[LabelOp] = labelOpStr ^^ {
+      case "="  => LabelSet
+      case "+=" => LabelAdd
+      case "-=" => LabelDel
+  }
+
+  def labelOpStr: Parser[String] = "=" | "+=" | "-="
+
+  def labelLit: Parser[Literal] = ":" ~> identity ^^ { x => Literal(LabelValue(x)) }
+
   def string: Parser[String] = (stringLiteral | apostropheString) ^^ (str => stripQuotes(str))
 
   def apostropheString: Parser[String] = ("\'" + """([^'\p{Cntrl}\\]|\\[\\/bfnrt]|\\u[a-fA-F0-9]{4})*""" + "\'").r
@@ -96,4 +113,17 @@ abstract class Base extends JavaTokenParsers {
   def parameter: Parser[Expression] = curly(identity | wholeNumber) ^^ (x => ParameterExpression(x))
 
   override def failure(msg: String): Parser[Nothing] = "" ~> super.failure("INNER" + msg)
+
+  def failure(msg:String, input:Input) = Failure("INNER" + msg, input)
+}
+class NodeNamer {
+  var lastNodeNumber = 0
+
+  def name(s: Option[String]): String = s match {
+    case None => {
+      lastNodeNumber += 1
+      "  UNNAMED" + lastNodeNumber
+    }
+    case Some(x) => x
+  }
 }

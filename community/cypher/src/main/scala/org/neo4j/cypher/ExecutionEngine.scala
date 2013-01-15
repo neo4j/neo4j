@@ -21,7 +21,9 @@ package org.neo4j.cypher
 
 import internal.commands._
 import internal.executionplan.ExecutionPlanImpl
+import internal.helpers.StatementContextMock.TxQueryContextWrapSupport
 import internal.LRUCache
+import internal.spi.TxQueryContextWrap
 import scala.collection.JavaConverters._
 import java.lang.Error
 import java.util.{Map => JavaMap}
@@ -30,8 +32,9 @@ import org.neo4j.kernel.InternalAbstractGraphDatabase
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.impl.util.StringLogger
+import org.neo4j.kernel.api.StatementContext
 
-class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = StringLogger.DEV_NULL) {
+class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = StringLogger.DEV_NULL) extends TxQueryContextWrapSupport {
   checkScalaVersion()
 
   require(graph != null, "Can't work with a null graph database")
@@ -49,14 +52,15 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
     new CypherParser()
   }
 
-
   @throws(classOf[SyntaxException])
   def execute(query: String): ExecutionResult = execute(query, Map[String, Any]())
 
   @throws(classOf[SyntaxException])
   def execute(query: String, params: Map[String, Any]): ExecutionResult = {
     logger.info(query)
-    prepare(query).execute(params)
+    withTxWrap(graph) { (wrap: TxQueryContextWrap) =>
+      prepare(query).execute(wrap, params)
+    }
   }
 
   @throws(classOf[SyntaxException])
@@ -79,7 +83,10 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
 
   @throws(classOf[SyntaxException])
   @deprecated(message = "You should not parse queries manually any more. Use the execute(String) instead")
-  def execute(query: Query, params: Map[String, Any]): ExecutionResult = new ExecutionPlanImpl(query, graph).execute(params)
+  def execute(query: Query, params: Map[String, Any]): ExecutionResult =
+    withTxWrap(graph) { (wrap: TxQueryContextWrap) =>
+      new ExecutionPlanImpl(query, graph).execute(wrap, params)
+    }
 
   private def checkScalaVersion() {
     if (util.Properties.versionString.matches("^version 2.9.0")) {

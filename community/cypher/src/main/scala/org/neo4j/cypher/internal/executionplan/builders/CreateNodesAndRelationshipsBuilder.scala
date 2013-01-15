@@ -44,7 +44,7 @@ class CreateNodesAndRelationshipsBuilder(db: GraphDatabaseService) extends PlanB
     val commands = mutatingQueryTokens.map(_.token.asInstanceOf[UpdatingStartItem].updateAction)
     val allCommands = expandCommands(commands, plan.pipe.symbols)
 
-    val p = if (plan.containsTransaction) {
+    val p = if (plan.isUpdating) {
       plan.pipe
     } else {
       new TransactionStartPipe(plan.pipe, db)
@@ -53,7 +53,7 @@ class CreateNodesAndRelationshipsBuilder(db: GraphDatabaseService) extends PlanB
     val resultPipe = new ExecuteUpdateCommandsPipe(p, db, allCommands)
     val resultQuery = q.start.filterNot(mutatingQueryTokens.contains) ++ mutatingQueryTokens.map(_.solve)
 
-    plan.copy(query = q.copy(start = resultQuery), pipe = resultPipe, containsTransaction = true)
+    plan.copy(query = q.copy(start = resultQuery), pipe = resultPipe, isUpdating = true)
   }
 
   def applicableTo(pipe: Pipe)(start: QueryToken[StartItem]): Boolean = start match {

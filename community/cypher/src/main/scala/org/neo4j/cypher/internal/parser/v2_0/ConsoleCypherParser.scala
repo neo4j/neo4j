@@ -17,32 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher
+package org.neo4j.cypher.internal.parser.v2_0
 
-import internal.commands.Query
+import org.neo4j.cypher.internal.commands.expressions.Nullable
+import org.neo4j.cypher.internal.parser.ActualParser
 
-class CypherParser(version: String) {
-  def this() = this("2.0")
-
-  val hasVersionDefined = """(?si)^\s*cypher\s*([^\s]+)\s*(.*)""".r
-
-  val v18 = new internal.parser.v1_8.CypherParserImpl
-  val v19 = new internal.parser.v1_9.CypherParserImpl
-  val v20 = new internal.parser.v2_0.CypherParserImpl
-
-  @throws(classOf[SyntaxException])
-  def parse(queryText: String): Query = synchronized {
-
-    val (v, q) = queryText match {
-      case hasVersionDefined(v1, q1) => (v1, q1)
-      case _ => (version, queryText)
-    }
-
-    v match {
-      case "1.8" => v18.parse(q)
-      case "1.9" => v19.parse(q)
-      case "2.0" => v20.parse(q)
-      case _ => throw new SyntaxException("Versions supported are 1.8, 1.9 and 2.0")
-    }
-  }
+class ConsoleCypherParser extends CypherParserImpl with ActualParser {
+  override def createProperty(entity: String, propName: String) = Nullable(super.createProperty(entity, propName))
 }

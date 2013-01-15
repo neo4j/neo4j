@@ -17,29 +17,36 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.parser.v1_7
+package org.neo4j.cypher.internal.spi;
 
-import org.neo4j.cypher.internal.commands.SortItem
+import org.neo4j.kernel.api.TransactionContext;
 
+public class TxQueryContextWrap {
 
-trait OrderByClause extends Base with Expressions  {
-  def desc:Parser[String] = ignoreCases("descending", "desc")
+    private final QueryContext queryCtx;
+    private final TransactionContext tx;
 
-  def asc:Parser[String] = ignoreCases("ascending", "asc")
+    public TxQueryContextWrap(QueryContext queryCtx, TransactionContext tx) {
+        this.queryCtx = queryCtx;
+        this.tx = tx;
+    }
 
-  def ascOrDesc:Parser[Boolean] = opt(asc | desc) ^^ {
-    case None => true
-    case Some(txt) => txt.toLowerCase.startsWith("a")
-  }
+    public QueryContext getQueryContext() {
+        return queryCtx;
+    }
 
-  def sortItem :Parser[SortItem] = expression ~ ascOrDesc ^^ { case expression ~ reverse => SortItem(expression, reverse)  }
+    public void rollback() {
+        queryCtx.close();
 
-  def order: Parser[Seq[SortItem]] =
-    (ignoreCase("order by") ~> comaList(sortItem)
-      | ignoreCase("order") ~> failure("expected by"))
+        // Rollback tx
+        tx.finish();
+    }
+
+    public void commit() {
+        queryCtx.close();
+
+        // Commit tx
+        tx.success();
+        tx.finish();
+    }
 }
-
-
-
-
-

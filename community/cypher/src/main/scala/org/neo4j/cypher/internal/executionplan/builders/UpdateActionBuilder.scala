@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.commands.{UpdatingStartItem, StartItem}
 class UpdateActionBuilder(db: GraphDatabaseService) extends PlanBuilder with UpdateCommandExpander {
   def apply(plan: ExecutionPlanInProgress) = {
 
-    val p = if (plan.containsTransaction) {
+    val p = if (plan.isUpdating) {
       plan.pipe
     } else {
       new TransactionStartPipe(plan.pipe, db)
@@ -44,7 +44,7 @@ class UpdateActionBuilder(db: GraphDatabaseService) extends PlanBuilder with Upd
     val resultPipe = new ExecuteUpdateCommandsPipe(p, db, commands)
 
     plan.copy(
-      containsTransaction = true,
+      isUpdating = true,
       query = plan.query.copy(
         updates = plan.query.updates.filterNot(updateCmds.contains) ++ updateCmds.map(_.solve),
         start = plan.query.start.filterNot(startItems.contains) ++ startItems.map(_.solve)),

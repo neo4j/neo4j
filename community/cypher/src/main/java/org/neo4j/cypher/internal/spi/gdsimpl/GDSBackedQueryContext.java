@@ -67,6 +67,16 @@ public class GDSBackedQueryContext implements QueryContext
         }
     }
 
+    @Override
+    public void addLabelsToNode(Node node, Iterable<Long> labelIds) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Long getOrCreateLabelId(String labelName) {
+        throw new UnsupportedOperationException();
+    }
+
     private RelationshipType[] transform( String[] types )
     {
         RelationshipType[] result = new RelationshipType[types.length];

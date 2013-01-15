@@ -17,32 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher
+package org.neo4j.cypher.internal.symbols
 
-import internal.commands.Query
+/*
+ * Copyright (C) 2012 Neo Technology
+ * All rights reserved
+ */
 
-class CypherParser(version: String) {
-  def this() = this("2.0")
+object LabelType {
+  val instance = new LabelType()
 
-  val hasVersionDefined = """(?si)^\s*cypher\s*([^\s]+)\s*(.*)""".r
-
-  val v18 = new internal.parser.v1_8.CypherParserImpl
-  val v19 = new internal.parser.v1_9.CypherParserImpl
-  val v20 = new internal.parser.v2_0.CypherParserImpl
-
-  @throws(classOf[SyntaxException])
-  def parse(queryText: String): Query = synchronized {
-
-    val (v, q) = queryText match {
-      case hasVersionDefined(v1, q1) => (v1, q1)
-      case _ => (version, queryText)
-    }
-
-    v match {
-      case "1.8" => v18.parse(q)
-      case "1.9" => v19.parse(q)
-      case "2.0" => v20.parse(q)
-      case _ => throw new SyntaxException("Versions supported are 1.8, 1.9 and 2.0")
-    }
-  }
+  def apply(): LabelType = instance
 }
+
+class LabelType extends ScalarType {
+  override def parentType:CypherType = ScalarType()
+  override def toString = "Label"
+}
+
+

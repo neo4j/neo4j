@@ -84,7 +84,7 @@ class CreateNodesAndRelationshipsBuilderTest extends BuilderTest {
 
     val resultPlan = builder(plan(q))
 
-    assertTrue("The execution plan should be markes as containing a transaction", resultPlan.containsTransaction)
+    assertTrue("The execution plan should be markes as containing a transaction", resultPlan.isUpdating)
 
     val p = resultPlan.pipe.asInstanceOf[ExecuteUpdateCommandsPipe]
 
@@ -98,10 +98,10 @@ class CreateNodesAndRelationshipsBuilderTest extends BuilderTest {
     val q = PartiallySolvedQuery().
       copy(start = Seq(Unsolved(CreateNodeStartItem(CreateNode("r", Map())))))
 
-    val inputPlan = plan(q).copy(containsTransaction = true)
+    val inputPlan = plan(q).copy(isUpdating = true)
     val resultPlan = builder(inputPlan)
 
-    assertTrue(resultPlan.containsTransaction)
+    assertTrue(resultPlan.isUpdating)
 
     val inner = resultPlan.pipe.asInstanceOf[ExecuteUpdateCommandsPipe].source
 

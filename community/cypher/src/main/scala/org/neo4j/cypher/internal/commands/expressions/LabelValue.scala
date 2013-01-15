@@ -17,11 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.parser.v1_7
+package org.neo4j.cypher.internal.commands.expressions
 
-import org.neo4j.cypher.internal.commands.expressions.Nullable
-import org.neo4j.cypher.internal.parser.ActualParser
 
-class ConsoleCypherParser extends CypherParserImpl with ActualParser {
-  override def createProperty(entity: String, propName: String) = Nullable(super.createProperty(entity, propName))
-}
+case class LabelValue(name: String)

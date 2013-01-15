@@ -22,24 +22,26 @@ package org.neo4j.cypher.internal.executionplan
 import builders._
 import org.neo4j.cypher.internal.pipes._
 import org.neo4j.cypher._
+import internal.spi.TxQueryContextWrap
 import internal.{ExecutionContext, ClosingIterator}
 import internal.commands._
 import internal.mutation.{CreateNode, CreateRelationship}
-import internal.spi.gdsimpl.GDSBackedQueryContext
 import internal.symbols.{NodeType, RelationshipType, SymbolTable}
 import org.neo4j.kernel.InternalAbstractGraphDatabase
 import org.neo4j.graphdb.GraphDatabaseService
+import org.neo4j.kernel.api.{StatementContext, TransactionContext, KernelAPI}
+import org.neo4j.cypher.ExecutionResult
 
 class ExecutionPlanImpl(inputQuery: Query, graph: GraphDatabaseService) extends ExecutionPlan with PatternGraphBuilder {
   val (executionPlan, executionPlanText) = prepareExecutionPlan()
 
-  def execute(params: Map[String, Any]): ExecutionResult = executionPlan(params)
+  def execute(wrap: TxQueryContextWrap, params: Map[String, Any]): ExecutionResult = executionPlan(wrap, params)
 
   lazy val lockManager = graph.asInstanceOf[InternalAbstractGraphDatabase].getLockManager
 
-  private def prepareExecutionPlan(): ((Map[String, Any]) => ExecutionResult, String) = {
+  private def prepareExecutionPlan(): ((TxQueryContextWrap, Map[String, Any]) => ExecutionResult, String) = {
     var continue = true
-    var planInProgress = ExecutionPlanInProgress(PartiallySolvedQuery(inputQuery), new ParameterPipe(), containsTransaction = false)
+    var planInProgress = ExecutionPlanInProgress(PartiallySolvedQuery(inputQuery), new ParameterPipe(), isUpdating = false)
     checkFirstQueryPattern(planInProgress)
 
     while (continue) {
@@ -69,7 +71,7 @@ class ExecutionPlanImpl(inputQuery: Query, graph: GraphDatabaseService) extends 
     }
 
     val columns = getQueryResultColumns(inputQuery, planInProgress.pipe.symbols)
-    val (pipe, func) = if (planInProgress.containsTransaction) {
+    val (pipe, func) = if (planInProgress.isUpdating) {
       val p = planInProgress.pipe
       (p, getEagerReadWriteQuery(p, columns))
     } else {
@@ -126,9 +128,9 @@ class ExecutionPlanImpl(inputQuery: Query, graph: GraphDatabaseService) extends 
     columns
   }
 
-  private def getLazyReadonlyQuery(pipe: Pipe, columns: List[String]): Map[String, Any] => ExecutionResult = {
-    val func = (params: Map[String, Any]) => {
-      val (state, results) = prepareStateAndResult(params, pipe)
+  private def getLazyReadonlyQuery(pipe: Pipe, columns: List[String]): (TxQueryContextWrap, Map[String, Any]) => ExecutionResult = {
+    val func = (wrap: TxQueryContextWrap, params: Map[String, Any]) => {
+      val (state, results) = prepareStateAndResult(wrap, params, pipe)
 
       new PipeExecutionResult(results, columns, state)
     }
@@ -136,30 +138,25 @@ class ExecutionPlanImpl(inputQuery: Query, graph: GraphDatabaseService) extends 
     func
   }
 
-  private def prepareStateAndResult(params: Map[String, Any], pipe: Pipe): (QueryState, Iterator[ExecutionContext]) = {
-    val tx = graph.beginTx()
-
-    try
-    {
-      val gdsContext = new GDSBackedQueryContext(graph)
+  private def prepareStateAndResult(wrap: TxQueryContextWrap, params: Map[String, Any], pipe: Pipe): (QueryState, Iterator[ExecutionContext]) = {
 //      val lockingContext = new RepeatableReadQueryContext(gdsContext, new GDSBackedLocker(tx))
-      val state = new QueryState(graph, gdsContext, params)
-      val results = pipe.createResults(state)
+    val state = new QueryState(graph, wrap.getQueryContext, params)
+    val results = pipe.createResults(state)
 
-      val closingIterator = new ClosingIterator[ExecutionContext](results, state.query, tx)
-
+    try {
+      val closingIterator = new ClosingIterator[ExecutionContext](results, wrap)
       (state, closingIterator)
-    } catch {
-      case e: Throwable =>
-        tx.failure()
-        tx.finish()
-        throw e
+    }
+    catch {
+      case (t: Throwable) =>
+        wrap.rollback()
+        throw t
     }
   }
 
-  private def getEagerReadWriteQuery(pipe: Pipe, columns: List[String]): Map[String, Any] => ExecutionResult = {
-    val func = (params: Map[String, Any]) => {
-      val (state, results) = prepareStateAndResult(params, pipe)
+  private def getEagerReadWriteQuery(pipe: Pipe, columns: List[String]): (TxQueryContextWrap, Map[String, Any]) => ExecutionResult = {
+    val func = (wrap: TxQueryContextWrap, params: Map[String, Any]) => {
+      val (state, results) = prepareStateAndResult(wrap, params, pipe)
       new EagerPipeExecutionResult(results, columns, state, graph)
     }
 

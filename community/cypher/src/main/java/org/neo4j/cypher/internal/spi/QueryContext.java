@@ -50,6 +50,11 @@ public interface QueryContext
     // TODO: Expose a high-tech traversal framework here in some way, and remove the getRelationshipsFor method
     Iterable<Relationship> getRelationshipsFor( Node node, Direction dir, String... types );
 
+    void addLabelsToNode( Node node, Iterable<Long> labelIds );
+
+    // TODO: Figure out how this can be a primitive type
+    Long getOrCreateLabelId( String labelName );
+
     /**
      * Release all resources held by this context.
      */

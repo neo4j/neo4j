@@ -20,10 +20,12 @@
 package org.neo4j.cypher
 
 import internal.commands.Query
+import internal.helpers.StatementContextMock.TxQueryContextWrapSupport
+import internal.spi.TxQueryContextWrap
 import org.junit.Before
 
 
-trait ExecutionEngineHelper extends GraphDatabaseTestBase {
+trait ExecutionEngineHelper extends GraphDatabaseTestBase with TxQueryContextWrapSupport {
 
   var engine: ExecutionEngine = null
 
@@ -40,8 +42,10 @@ trait ExecutionEngineHelper extends GraphDatabaseTestBase {
 
   def parseAndExecute(q: String, params: (String, Any)*): ExecutionResult = {
     val plan = engine.prepare(q)
-    
-    plan.execute(params.toMap)
+
+    withTxWrap(graph) { (wrap: TxQueryContextWrap) =>
+      plan.execute(wrap, params.toMap)
+    }
   }
 
   def executeScalar[T](q: String, params: (String, Any)*):T = engine.execute(q, params.toMap).toList match {

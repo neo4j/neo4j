@@ -1,0 +1,10 @@
+[[query-label]]
+Label
+=====
+
+Adding and removing labels from nodes is done with the +LABEL+ +AS+ clause.
+
+:leveloffset: 2
+
+include::add-a-label-to-a-node.asciidoc[]
+include::add-multiple-labels-to-a-node.asciidoc[]

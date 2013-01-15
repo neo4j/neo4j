@@ -87,6 +87,16 @@ public class RepeatableReadQueryContext implements QueryContext
     }
 
     @Override
+    public void addLabelsToNode(Node node, Iterable<Long> labelIds) {
+        //To change body of implemented methods use File | Settings | File Templates.
+    }
+
+    @Override
+    public Long getOrCreateLabelId(String labelName) {
+        return null;  //To change body of implemented methods use File | Settings | File Templates.
+    }
+
+    @Override
     public void close()
     {
         locker.releaseAllReadLocks();

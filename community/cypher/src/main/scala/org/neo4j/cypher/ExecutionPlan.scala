@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher
 
+import internal.spi.TxQueryContextWrap
+
 trait ExecutionPlan {
-  def execute(params: Map[String,Any]): ExecutionResult
+  def execute(wrap: TxQueryContextWrap, params: Map[String,Any]): ExecutionResult
 }

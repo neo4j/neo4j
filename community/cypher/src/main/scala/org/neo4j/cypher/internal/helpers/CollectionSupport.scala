@@ -36,6 +36,9 @@ object IsCollection extends CollectionSupport {
 trait CollectionSupport {
   def isCollection(x: Any) = castToTraversable.isDefinedAt(x)
 
+  def isCollectionOf[T](test: PartialFunction[Any, T])(input: Traversable[Any]): Option[Traversable[T]] =
+    Some(input.map { (elem: Any) => if (test.isDefinedAt(elem)) test(elem) else return None })
+
   def makeTraversable(z: Any): Traversable[Any] = if (castToTraversable.isDefinedAt(z)) {
     castToTraversable(z)
   } else {
