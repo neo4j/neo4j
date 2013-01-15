@@ -57,6 +57,7 @@ public class JavaExecutionEngineTest
     private Node johanNode;
     private Node michaelaNode;
 
+    @SuppressWarnings("deprecation")
     @Before
     public void setUp() throws IOException
     {
