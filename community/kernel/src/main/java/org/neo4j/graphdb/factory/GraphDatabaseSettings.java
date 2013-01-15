@@ -85,8 +85,9 @@ public abstract class GraphDatabaseSettings
     public static final BooleanSetting dump_configuration = new BooleanSetting( setting("dump_configuration", BOOLEAN, FALSE ));
 
     @Description("The name of the Transaction Manager service to use as defined in the TM service provider " +
-            "constructor, defaults to native.")
-    public static final StringSetting tx_manager_impl = new StringSetting( setting("tx_manager_impl", STRING, NO_DEFAULT, illegalValueMessage( "Must be class name of TransactionManager implementation", matches( ANY ))));
+            "constructor.")
+    public static final StringSetting tx_manager_impl = new StringSetting( setting("tx_manager_impl", STRING, "native",
+            illegalValueMessage( "Must be class name of TransactionManager implementation", matches( ANY ))));
 
     @Description("Whether to allow a store upgrade in case the current version of the database starts against an " +
             "older store version. " +
@@ -102,7 +103,7 @@ public abstract class GraphDatabaseSettings
     // Cypher settings
     // TODO: These should live with cypher
     @Description("Enable this to specify a parser other than the default one.")
-    public static final OptionsSetting cypher_parser_version = new CypherParserSetting(setting( "cypher_parser_version", Settings.options( CypherParserSetting.v1_7, CypherParserSetting.v1_8, CypherParserSetting.v1_9 ), NO_DEFAULT ));
+    public static final OptionsSetting cypher_parser_version = new CypherParserSetting(setting( "cypher_parser_version", Settings.options( CypherParserSetting.v1_8, CypherParserSetting.v1_9, CypherParserSetting.v2_0 ), NO_DEFAULT ));
 
     @Description("Used to set the number of Cypher query execution plans that are cached.")
     public static GraphDatabaseSetting<Integer> query_cache_size = new IntegerSetting( setting("query_cache_size", INTEGER, "100", min( 0 ) ));
@@ -403,14 +404,14 @@ public abstract class GraphDatabaseSettings
     public static class CypherParserSetting
             extends OptionsSetting
     {
-        @Description("Cypher v1.7 syntax.")
-        public static final String v1_7 = "1.7";
-
         @Description("Cypher v1.8 syntax.")
         public static final String v1_8 = "1.8";
 
         @Description("Cypher v1.9 syntax.")
         public static final String v1_9 = "1.9";
+
+        @Description("Cypher v2.0 syntax.")
+        public static final String v2_0 = "2.0";
 
         public CypherParserSetting( Setting<String> setting )
         {

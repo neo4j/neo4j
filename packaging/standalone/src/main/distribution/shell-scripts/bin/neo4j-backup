@@ -21,19 +21,19 @@
 #Remember where we started from so that working dir is set correctly
 RUN_FROM=`pwd`
 
-BACKUP_SCRIPT=$0
+BACKUP_SCRIPT="$0"
 
-cd `dirname $BACKUP_SCRIPT`
-BACKUP_SCRIPT=`basename $BACKUP_SCRIPT`
+cd "`dirname "$BACKUP_SCRIPT"`"
+BACKUP_SCRIPT=`basename "$BACKUP_SCRIPT"`
 
 while [ -L "$BACKUP_SCRIPT" ]
 do
   BACKUP_SCRIPT=$( readlink $BACKUP_SCRIPT )
-  cd `dirname $BACKUP_SCRIPT`
-  BACKUP_SCRIPT=`basename $BACKUP_SCRIPT`
+  cd "`dirname "$BACKUP_SCRIPT"`"
+  BACKUP_SCRIPT="`basename "$BACKUP_SCRIPT"`"
 done
 
-BASEDIR=`cd $( dirname $BACKUP_SCRIPT )/.. && dirs -l +0`
+BASEDIR=`cd "$( dirname $BACKUP_SCRIPT )"/.. && dirs -l +0`
 
 # OS specific support.  $var _must_ be set to either true or false.
 cygwin=false;

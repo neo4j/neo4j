@@ -21,19 +21,19 @@
 #Remember where we started from so that working dir is set correctly
 RUN_FROM=`pwd`
 
-SHELL_SCRIPT=$0
+SHELL_SCRIPT="$0"
 
-cd `dirname $SHELL_SCRIPT`
-SHELL_SCRIPT=`basename $SHELL_SCRIPT`
+cd "`dirname "$SHELL_SCRIPT"`"
+SHELL_SCRIPT=`basename "$SHELL_SCRIPT"`
 
 while [ -L "$SHELL_SCRIPT" ]
 do
   SHELL_SCRIPT=$( readlink $SHELL_SCRIPT )
-  cd `dirname $SHELL_SCRIPT`
-  SHELL_SCRIPT=`basename $SHELL_SCRIPT`
+  cd "`dirname "$SHELL_SCRIPT"`"
+  SHELL_SCRIPT="`basename "$SHELL_SCRIPT"`"
 done
 
-BASEDIR=`cd $( dirname $SHELL_SCRIPT )/.. && dirs -l +0`
+BASEDIR=`cd "$( dirname $SHELL_SCRIPT )"/.. && dirs -l +0`
 
 # OS specific support.  $var _must_ be set to either true or false.
 cygwin=false;

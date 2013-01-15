@@ -44,6 +44,7 @@ import org.neo4j.jmx.Kernel;
 import org.neo4j.jmx.impl.JmxKernelExtension;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
+import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher;
 import org.neo4j.management.BranchedStore;
 import org.neo4j.management.ClusterMemberInfo;
@@ -190,18 +191,24 @@ public class HaBeanIT
     public void testAfterHardMasterSwitchClusterInfoIsCorrect() throws Throwable
     {
         startCluster( 3 );
-        RepairKit masterShutdown = cluster.shutdown( cluster.getMaster() );
+        RepairKit masterShutdown = cluster.fail( cluster.getMaster() );
         cluster.await( ClusterManager.masterAvailable() );
         cluster.await( ClusterManager.masterSeesSlavesAsAvailable( 1 ) );
         for ( HighlyAvailableGraphDatabase db : cluster.getAllMembers() )
         {
-            assertEquals( 2, ha( db ).getInstancesInCluster().length );
+            if ( db.getInstanceState().equals( HighAvailabilityMemberState.PENDING.name() ))
+            {
+                continue;
+            }
+            // Instance that was hard killed will still be in the cluster
+            assertEquals( 3, ha( db ).getInstancesInCluster().length );
         }
         masterShutdown.repair();
         cluster.await( ClusterManager.masterAvailable() );
         cluster.await( ClusterManager.masterSeesSlavesAsAvailable( 2 ) );
         for ( HighlyAvailableGraphDatabase db : cluster.getAllMembers() )
         {
+            int mastersFound = 0;
             HighAvailability bean = ha( db );
 
             assertEquals( 3, bean.getInstancesInCluster().length );
@@ -209,10 +216,14 @@ public class HaBeanIT
             {
                 assertTrue( bean.getInstanceId() + ": every instance should be available: " + info.getClusterId(),
                         info.isAvailable() );
+                for ( String role : info.getRoles() )
+                {
+                    if (role.equals( HighAvailabilityModeSwitcher.MASTER )) mastersFound++;
+                }
             }
+            assertEquals( 1, mastersFound );
         }
     }
-
 
     @Test
     public void canGetBranchedStoreBean() throws Throwable
