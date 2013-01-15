@@ -15,7 +15,7 @@
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
   <properties>
-    <neo4j.version>${project.version}</neo4j.version>
+    <neo4j.version>1.9-SNAPSHOT</neo4j.version>
     <bundle.namespace>org.neo4j.consistency</bundle.namespace>
     <short-name>consistency-check</short-name>
     <docs.url>http://docs.neo4j.org/chunked/${project.version}/</docs.url>
