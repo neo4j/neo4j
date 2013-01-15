@@ -17,20 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.parser.v1_7
+package org.neo4j.cypher.internal.parser.v2_0
 
-import org.neo4j.cypher.internal.commands.expressions.{Literal, Expression}
+import org.neo4j.cypher.internal.commands.Predicate
 
-trait SkipLimitClause extends Base {
-  def skip: Parser[Expression] = ignoreCase("skip") ~> numberOrParam ^^ (x => x)
 
-  def limit: Parser[Expression] = ignoreCase("limit") ~> numberOrParam ^^ (x => x)
-
-  private def numberOrParam: Parser[Expression] =
-    (positiveNumber ^^ (x => Literal(x.toInt))
-      | parameter ^^ (x => x)
-      | failure("expected positive integer or parameter"))
+trait WhereClause extends Base with Expressions {
+  def where: Parser[Predicate] = ignoreCase("where") ~> predicate
 }
+
+
+
+
+
+
 
 
 

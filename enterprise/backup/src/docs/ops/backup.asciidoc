@@ -27,8 +27,8 @@ points to a host running the database, on port _port_ if not the default. The ad
 are useful for passing multiple cluster members.
 
 [IMPORTANT]
-Backups can only be performed on databases which have the configuration parameter `online_backup_enabled=true` set.
-That will make the backup service available on the default port (6362).
+As of version 1.9, backups are enabled by default.
+That means that the configuration parameter `online_backup_enabled` defaults to +true+ and that makes the backup service available on the default port (+6362+).
 To enable the backup service on a different port use `online_backup_port=9999`.
 
 [[backup-embedded-and-server]]

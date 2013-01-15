@@ -349,7 +349,7 @@ public abstract class InternalAbstractGraphDatabase
         else
         {
             String serviceName = config.get( GraphDatabaseSettings.tx_manager_impl );
-            if ( serviceName == null )
+            if ( GraphDatabaseSettings.tx_manager_impl.getDefaultValue().equals( serviceName ) )
             {
                 txManager = new TxManager( this.storeDir, xaDataSourceManager, kernelPanicEventGenerator,
                         logging.getLogger( TxManager.class ), fileSystem, stateFactory );

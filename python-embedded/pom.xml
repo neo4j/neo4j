@@ -44,7 +44,7 @@
 		<jythonpath>../../main/python:$JYTHONPATH</jythonpath>
 		<build.number>0</build.number>
 
-		<neo4j.version>1.9-SNAPSHOT</neo4j.version>
+		<neo4j.version>${project.version}</neo4j.version>
 		<gremlin.version>1.2</gremlin.version>
 		<docs.url>http://docs.neo4j.org/chunked/${project.version}/python-embedded.html</docs.url>
 	</properties>
