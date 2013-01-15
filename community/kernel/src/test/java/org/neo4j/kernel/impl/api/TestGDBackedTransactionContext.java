@@ -17,13 +17,28 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api;
+package org.neo4j.kernel.impl.api;
 
-public interface StatementContext
+import static org.hamcrest.CoreMatchers.not;
+import static org.hamcrest.core.IsNull.nullValue;
+import static org.junit.Assert.assertThat;
+
+import org.junit.Test;
+import org.neo4j.kernel.api.StatementContext;
+import org.neo4j.kernel.api.TransactionContext;
+
+public class TestGDBackedTransactionContext
 {
-    long getOrCreateLabelId( String label ) throws IllegalLabelNameException;
-    
-    long getLabelId( String label ) throws LabelNotFoundException;
-    
-    void addLabelToNode( long nodeId, long labelId );
+    @Test
+    public void shouldCreateStatementContexts() throws Exception
+    {
+        // Given
+        TransactionContext txCtx = new GDBackedTransactionContext( null );
+
+        // When
+        StatementContext statementCtx = txCtx.newStatementContext();
+
+        // Then
+        assertThat(statementCtx, not(nullValue()));
+    }
 }

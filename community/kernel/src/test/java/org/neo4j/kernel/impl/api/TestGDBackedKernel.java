@@ -17,13 +17,34 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api;
+package org.neo4j.kernel.impl.api;
 
-public interface StatementContext
+import static org.hamcrest.core.IsNot.not;
+import static org.hamcrest.core.IsNull.nullValue;
+import static org.junit.Assert.*;
+
+import org.junit.Rule;
+import org.junit.Test;
+import org.neo4j.kernel.api.KernelAPI;
+import org.neo4j.kernel.api.TransactionContext;
+import org.neo4j.test.ImpermanentDatabaseRule;
+
+public class TestGDBackedKernel
 {
-    long getOrCreateLabelId( String label ) throws IllegalLabelNameException;
-    
-    long getLabelId( String label ) throws LabelNotFoundException;
-    
-    void addLabelToNode( long nodeId, long labelId );
+
+    public final @Rule
+    ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule();
+
+    @Test
+    public void shouldCreateTransactionContext() throws Exception
+    {
+        // Given
+        KernelAPI kernel = new GDBackedKernel( dbRule.getGraphDatabaseAPI() );
+
+        // When
+        TransactionContext tx = kernel.newTransactionContext();
+
+        // Then
+        assertThat(tx, not(nullValue()));
+    }
 }

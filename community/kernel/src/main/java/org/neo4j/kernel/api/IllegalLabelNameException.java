@@ -19,11 +19,10 @@
  */
 package org.neo4j.kernel.api;
 
-public interface StatementContext
+public class IllegalLabelNameException extends KernelException
 {
-    long getOrCreateLabelId( String label ) throws IllegalLabelNameException;
-    
-    long getLabelId( String label ) throws LabelNotFoundException;
-    
-    void addLabelToNode( long nodeId, long labelId );
+    public IllegalLabelNameException( String labelName )
+    {
+        super( "'"+labelName+"' is not a legal label name, needs to be non-empty unicode string." );
+    }
 }

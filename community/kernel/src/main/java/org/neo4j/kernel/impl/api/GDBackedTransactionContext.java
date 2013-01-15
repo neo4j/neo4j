@@ -17,13 +17,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api;
+package org.neo4j.kernel.impl.api;
 
-public interface StatementContext
+import org.neo4j.kernel.api.StatementContext;
+import org.neo4j.kernel.api.TransactionContext;
+import org.neo4j.kernel.impl.core.PropertyIndexManager;
+
+public class GDBackedTransactionContext implements TransactionContext
 {
-    long getOrCreateLabelId( String label ) throws IllegalLabelNameException;
-    
-    long getLabelId( String label ) throws LabelNotFoundException;
-    
-    void addLabelToNode( long nodeId, long labelId );
+    private final PropertyIndexManager propertyIndexManager;
+
+    public GDBackedTransactionContext( PropertyIndexManager propertyIndexManager )
+    {
+        this.propertyIndexManager = propertyIndexManager;
+    }
+
+    @Override
+    public StatementContext newStatementContext()
+    {
+        return new GDBackedStatementContext( propertyIndexManager );
+    }
 }
