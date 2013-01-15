@@ -1668,43 +1668,22 @@ create a-[r:REL]->b
     testFrom_1_8("start a=node(0), b=node(1) with a,b create a-[r:REL {why : 42, foo : 'bar'}]->b", q)
   }
 
-  @Test def create_relationship_without_identifier_1_8() {
-    test_1_8("create ({a})-[:REL]->({a})",
-      Query.
-        start(CreateRelationshipStartItem(CreateRelationship("  UNNAMED1", (ParameterExpression("a"),Map()), (ParameterExpression("a"),Map()), "REL", Map()))).
-        returns())
-  }
-
   @Test def create_relationship_without_identifier() {
-    testFrom_1_9("create ({a})-[:REL]->({a})",
+    testFrom_1_8("create ({a})-[:REL]->({a})",
       Query.
         start(CreateRelationshipStartItem(CreateRelationship("  UNNAMED3", (ParameterExpression("a"),Map()), (ParameterExpression("a"),Map()), "REL", Map()))).
         returns())
   }
 
-  @Test def create_relationship_with_properties_from_map_1_8() {
-    test_1_8("create ({a})-[:REL {param}]->({a})",
-      Query.
-        start(CreateRelationshipStartItem(CreateRelationship("  UNNAMED1", (ParameterExpression("a"),Map()), (ParameterExpression("a"),Map()), "REL", Map("*" -> ParameterExpression("param"))))).
-        returns())
-  }
-
   @Test def create_relationship_with_properties_from_map() {
-    testFrom_1_9("create ({a})-[:REL {param}]->({a})",
+    testFrom_1_8("create ({a})-[:REL {param}]->({a})",
       Query.
         start(CreateRelationshipStartItem(CreateRelationship("  UNNAMED3", (ParameterExpression("a"),Map()), (ParameterExpression("a"),Map()), "REL", Map("*" -> ParameterExpression("param"))))).
         returns())
   }
 
-  @Test def create_relationship_without_identifier2_1_8() {
-    test_1_8("create ({a})-[:REL]->({a})",
-      Query.
-        start(CreateRelationshipStartItem(CreateRelationship("  UNNAMED1", (ParameterExpression("a"),Map()), (ParameterExpression("a"),Map()), "REL", Map()))).
-        returns())
-  }
-
   @Test def create_relationship_without_identifier2() {
-    testFrom_1_9("create ({a})-[:REL]->({a})",
+    testFrom_1_8("create ({a})-[:REL]->({a})",
       Query.
         start(CreateRelationshipStartItem(CreateRelationship("  UNNAMED3", (ParameterExpression("a"),Map()), (ParameterExpression("a"),Map()), "REL", Map()))).
         returns())
