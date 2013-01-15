@@ -17,20 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.parser.v2_0
+package org.neo4j.cypher.internal.parser.v1_7
 
 import org.neo4j.cypher.internal.commands._
-import expressions.{Identifier, AggregationExpression}
-import org.neo4j.cypher.SyntaxException
+import expressions.AggregationExpression
 
 
 trait ReturnClause extends Base with Expressions {
-  def column : Parser[ReturnColumn] = returnItem ~ alias ^^ {
-    case col ~ Some(newName) => col.rename(newName)
-    case col ~ None => col
-  } | "*" ^^^ AllIdentifiers()
+  def column = expressionColumn
 
-  def returnItem: Parser[ReturnItem] = trap(expressionOrPredicate) ^^ {
+  def returnItem: Parser[ReturnItem] = trap(expression) ^^ {
     case (expression, name) => ReturnItem(expression, name.replace("`", ""))
   }
 
@@ -39,11 +35,15 @@ trait ReturnClause extends Base with Expressions {
       | ignoreCase("return") ~> failure("return column list expected")
       | failure("expected return clause"))
 
-  def returnsClause: Parser[(Return, Option[Seq[AggregationExpression]])] = ignoreCase("return") ~> columnList
 
   def alias: Parser[Option[String]] = opt(ignoreCase("as") ~> identity)
 
-  def columnList:Parser[(Return, Option[Seq[AggregationExpression]])]  = opt(ignoreCase("distinct")) ~ commaList(column) ^^ {
+  def expressionColumn: Parser[ReturnItem] = returnItem ~ alias ^^ {
+    case col ~ Some(newName) => col.rename(newName)
+    case col ~ None => col
+  }
+
+  def returnsClause: Parser[(Return, Option[Seq[AggregationExpression]])] = ignoreCase("return") ~> opt(ignoreCase("distinct")) ~ comaList(column) ^^ {
     case distinct ~ returnItems => {
       val columnName = returnItems.map(_.name).toList
 
@@ -52,7 +52,7 @@ trait ReturnClause extends Base with Expressions {
         case None => None
       }
 
-      val aggregationExpressions = returnItems.filter(_.isInstanceOf[ReturnItem]).map(_.asInstanceOf[ReturnItem]).
+      val aggregationExpressions = returnItems.
         flatMap(_.expression.filter(_.isInstanceOf[AggregationExpression])).
         map(_.asInstanceOf[AggregationExpression])
 
@@ -64,20 +64,4 @@ trait ReturnClause extends Base with Expressions {
       (Return(columnName, returnItems: _*), aggregation)
     }
   }
-
-  def withSyntax = ignoreCase("with") ~> columnList | "===" ~> rep("=") ~> columnList <~ "===" <~ rep("=")
-
-  def WITH: Parser[(Return, Option[Seq[AggregationExpression]])] = withSyntax ^^ (columns => {
-
-    val problemColumns = columns._1.returnItems.flatMap {
-      case ReturnItem(_, _, true) => None
-      case ReturnItem(Identifier(_), _, _) => None
-      case ri => Some(ri.name)
-    }
-    if (problemColumns.nonEmpty) {
-      throw new SyntaxException("These columns can't be listen in the WITH statement without renaming: " + problemColumns.mkString(","))
-    }
-
-    columns
-  })
 }

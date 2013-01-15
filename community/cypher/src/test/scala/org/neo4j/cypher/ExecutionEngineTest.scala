@@ -1790,6 +1790,21 @@ RETURN x0.name?
     assert(result === List(Map("a.name?" -> "Florescu"), Map("a.name?" -> null)))
   }
 
+  @Test def createEngineWithSpecifiedParserVersion() {
+    val db = new ImpermanentGraphDatabase(Map[String, String]("cypher_parser_version" -> "1.7").asJava)
+    val engine = new ExecutionEngine(db)
+
+    try {
+      // This syntax is valid today, but should give an exception in 1.5
+      engine.execute("create a")
+    } catch {
+      case x: SyntaxException =>
+      case _: Throwable => fail("expected exception")
+    } finally {
+      db.shutdown()
+    }
+  }
+
   @Test def different_results_on_ordered_aggregation_with_limit() {
     val root = createNode()
     val n1 = createNode("x" -> 1)
