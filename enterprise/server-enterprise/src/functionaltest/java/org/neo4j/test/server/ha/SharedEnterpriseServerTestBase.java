@@ -5,33 +5,33 @@
  * This file is part of Neo4j.
  *
  * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.test.server;
+package org.neo4j.test.server.ha;
 
 import java.io.IOException;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.neo4j.server.NeoServer;
+import org.neo4j.server.enterprise.EnterpriseNeoServer;
 import org.neo4j.server.helpers.ServerHelper;
 
-public class SharedServerTestBase
+public class SharedEnterpriseServerTestBase
 {
 	private static boolean useExternal = Boolean.valueOf(System.getProperty("neo-server.external","false"));
 	private static String externalURL = System.getProperty("neo-server.external.url","http://localhost:7474");
 
-    protected static final NeoServer server()
+    protected static final EnterpriseNeoServer server()
     {
         return server;
     }
@@ -56,7 +56,7 @@ public class SharedServerTestBase
     	}
     }
 
-    private static NeoServer server;
+    private static EnterpriseNeoServer server;
 	private static String serverUrl;
 	
 	public static String getServerURL()
@@ -72,7 +72,7 @@ public class SharedServerTestBase
     		serverUrl = externalURL;
     	} else 
     	{
-    		server = ServerHolder.allocate();
+    		server = EnterpriseServerHolder.allocate();
     		serverUrl = server.baseUri().toString();
     	}
     }
@@ -84,7 +84,7 @@ public class SharedServerTestBase
     	{
 	        try
 	        {
-	            ServerHolder.release( server );
+	            EnterpriseServerHolder.release( server );
 	        }
 	        finally
 	        {

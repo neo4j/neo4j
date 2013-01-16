@@ -167,6 +167,10 @@ public class HostnamePort
                 break;
             }
         }
+        if ( host == null && toMatch.getHost() == null )
+        {
+            return true;
+        }
         return result && host.equalsIgnoreCase( toMatch.getHost() );
     }
 }

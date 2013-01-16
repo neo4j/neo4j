@@ -106,15 +106,18 @@ public class ServerBuilder
             };
         }
 
-        return new CommunityNeoServer(new PropertyFileConfigurator( new Validator( new DatabaseLocationMustBeSpecifiedRule() ), configFile ))
+        return new CommunityNeoServer( new PropertyFileConfigurator( new Validator(
+                new DatabaseLocationMustBeSpecifiedRule() ), configFile ) )
 	    {
         	@Override
-        	protected PreFlightTasks createPreflightTasks() {
+        	protected PreFlightTasks createPreflightTasks()
+            {
         		return preflightTasks;
         	}
 
         	@Override
-        	protected Database createDatabase() {
+        	protected Database createDatabase()
+            {
         		return persistent ? 
         				new CommunityDatabase(configurator.configuration()) :
     					new EphemeralDatabase(configurator.configuration());

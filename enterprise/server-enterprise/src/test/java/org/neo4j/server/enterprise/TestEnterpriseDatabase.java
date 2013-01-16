@@ -28,22 +28,24 @@ import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.server.configuration.MapBasedConfiguration;
 
 
-public class TestEnterpriseDatabase {
+public class TestEnterpriseDatabase
+{
 
-	@Test
-	public void shouldStartInSingleModeByDefault() throws Throwable
-	{
-		Configuration config = new MapBasedConfiguration();
-		EnterpriseDatabase db = new EnterpriseDatabase(config);
-		
-		try 
-		{
-			db.start();
-			
-			assertThat(db.getGraph(), is(EmbeddedGraphDatabase.class));
-		} finally {
-			db.stop();
-		}
-	}
-	
+    @Test
+    public void shouldStartInSingleModeByDefault() throws Throwable
+    {
+        Configuration config = new MapBasedConfiguration();
+        EnterpriseDatabase db = new EnterpriseDatabase( config );
+
+        try
+        {
+            db.start();
+
+            assertThat( db.getGraph(), is( EmbeddedGraphDatabase.class ) );
+        }
+        finally
+        {
+            db.stop();
+        }
+    }
 }
