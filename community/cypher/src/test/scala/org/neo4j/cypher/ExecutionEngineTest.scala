@@ -2355,4 +2355,15 @@ RETURN x0.name?
     assert(result.toList === List())
   }
 
+  @Ignore 
+  @Test def concatenation_and_collect_should_work() {
+    val a = createNode()
+    val b = createNode()
+    val c = createNode()
+
+    val result = parseAndExecute("START a=node(1),b=node(2,3) RETURN a + collect(b)")
+
+    assert(result.toList === List(List(a,b,c)))
+  }
+
 }
