@@ -26,6 +26,10 @@ import static org.neo4j.kernel.impl.nioneo.store.NeoStore.isStorePresent;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 import org.neo4j.cluster.member.ClusterMemberAvailability;
 import org.neo4j.com.Response;
@@ -57,6 +61,7 @@ import org.neo4j.kernel.ha.SlaveStoreWriter;
 import org.neo4j.kernel.ha.StoreOutOfDateException;
 import org.neo4j.kernel.ha.StoreUnableToParticipateInClusterException;
 import org.neo4j.kernel.impl.core.NodeManager;
+import org.neo4j.kernel.impl.index.IndexStore;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
@@ -81,6 +86,15 @@ import org.neo4j.kernel.logging.Logging;
  */
 public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListener, Lifecycle
 {
+    // TODO solve this with lifecycle instance grouping or something
+    @SuppressWarnings( "rawtypes" )
+    private static final Class[] SERVICES_TO_RESTART_FOR_STORE_COPY = new Class[] {
+        XaDataSourceManager.class,
+        TxManager.class,
+        NodeManager.class,
+        IndexStore.class
+    };
+    
     public static final String MASTER = "master";
     public static final String SLAVE = "slave";
 
@@ -469,53 +483,39 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
         return false;
     }
 
-        private void startServicesAgain() throws Throwable
-        {
-            graphDb.getDependencyResolver().resolveDependency( NodeManager.class ).start();
-            graphDb.getDependencyResolver().resolveDependency( TxManager.class ).start();
-            graphDb.getDependencyResolver().resolveDependency( XaDataSourceManager.class ).start();
-        }
+    private void startServicesAgain() throws Throwable
+    {
+        @SuppressWarnings( "rawtypes" )
+        List<Class> services = new ArrayList<Class>( Arrays.asList( SERVICES_TO_RESTART_FOR_STORE_COPY ) );
+        Collections.reverse( services );
+        for ( Class<Lifecycle> serviceClass : services )
+            graphDb.getDependencyResolver().resolveDependency( serviceClass ).start();
+    }
 
-        private void stopServicesAndHandleBranchedStore( BranchedDataPolicy branchPolicy )
-                throws Throwable
-        {
-            graphDb.getDependencyResolver().resolveDependency( XaDataSourceManager.class ).stop();
-            graphDb.getDependencyResolver().resolveDependency( TxManager.class ).stop();
-            graphDb.getDependencyResolver().resolveDependency( NodeManager.class ).stop();
-            branchPolicy.handle( config.get( InternalAbstractGraphDatabase.Configuration.store_dir ) );
-        }
+    @SuppressWarnings( "unchecked" )
+    private void stopServicesAndHandleBranchedStore( BranchedDataPolicy branchPolicy )
+            throws Throwable
+    {
+        for ( Class<Lifecycle> serviceClass : SERVICES_TO_RESTART_FOR_STORE_COPY )
+            graphDb.getDependencyResolver().resolveDependency( serviceClass ).stop();
+        
+        branchPolicy.handle( config.get( InternalAbstractGraphDatabase.Configuration.store_dir ) );
+    }
 
-        /*
+    /* Those left here for posterity, all data source start-stop cycles must happen through XaDSManager
+    private void startOtherDataSources() throws Throwable
+    {
+        LuceneKernelExtension lucene = graphDb.getDependencyResolver().resolveDependency(
+                KernelExtensions.class ).resolveDependency( LuceneKernelExtension.class );
+        lucene.start();
+    }
 
-        // Those left here for posterity, all data source start-stop cycles must happen through XaDSManager
-        private void startOtherDataSources() throws Throwable
-        {
-            LuceneKernelExtension lucene = graphDb.getDependencyResolver().resolveDependency(
-                    KernelExtensions.class ).resolveDependency( LuceneKernelExtension.class );
-            lucene.start();
-        }
-
-        private void stopOtherDataSources() throws Throwable
-        {
-            LuceneKernelExtension lucene = graphDb.getDependencyResolver().resolveDependency(
-                    KernelExtensions.class ).resolveDependency( LuceneKernelExtension.class );
-            lucene.stop();
-        }
-
-        private void retryLater( boolean wayLater )
-        {
-            if ( ++tries < 5 )
-            {
-                executor.schedule( this, wayLater ? 15 : 1, TimeUnit.SECONDS );
-            }
-            else
-            {
-                msgLog.error( "Giving up trying to switch to slave" );
-            }
-        }
-        } );
-        */
-//    }
+    private void stopOtherDataSources() throws Throwable
+    {
+        LuceneKernelExtension lucene = graphDb.getDependencyResolver().resolveDependency(
+                KernelExtensions.class ).resolveDependency( LuceneKernelExtension.class );
+        lucene.stop();
+    } */
 
     private void checkDataConsistencyWithMaster( Master master, NeoStoreXaDataSource nioneoDataSource )
     {

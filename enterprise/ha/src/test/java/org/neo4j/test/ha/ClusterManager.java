@@ -47,6 +47,7 @@ import org.neo4j.cluster.protocol.election.CoordinatorIncapableCredentialsProvid
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.MapUtil;
@@ -56,6 +57,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.Slaves;
+import org.neo4j.kernel.ha.UpdatePuller;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -215,7 +217,7 @@ public class ClusterManager
             this.name = spec.getName();
             for ( int i = 0; i < spec.getMembers().size(); i++ )
             {
-                startMember( i + 1 );
+                startMember( i + 1, true );
             }
         }
         
@@ -349,7 +351,7 @@ public class ClusterManager
             return new StartDatabaseAgainKit( this, serverId );
         }
 
-        private void startMember( int serverId ) throws URISyntaxException
+        private void startMember( int serverId, boolean initialStartup ) throws URISyntaxException
         {
             Clusters.Member member = spec.getMembers().get( serverId-1 );
             StringBuilder initialHosts = new StringBuilder( spec.getMembers().get( 0 ).getHost() );
@@ -378,7 +380,10 @@ public class ClusterManager
                 logger.info( "Starting cluster node " + serverId + " in cluster " + name );
                 final GraphDatabaseService graphDatabase = graphDatabaseBuilder.
                         newGraphDatabase();
-
+                
+                if ( initialStartup )
+                    insertInitialData( graphDatabase, name, serverId );
+    
                 members.put( serverId, (HighlyAvailableGraphDatabase) graphDatabase );
 
                 life.add( new LifecycleAdapter()
@@ -463,10 +468,24 @@ public class ClusterManager
             return spec.getMembers().size();
         }
         
-        public int getServerId( HighlyAvailableGraphDatabase db )
+        public int getServerId( HighlyAvailableGraphDatabase member )
         {
-            assertMember( db );
-            return db.getConfig().get( HaSettings.server_id );
+            assertMember( member );
+            return member.getConfig().get( HaSettings.server_id );
+        }
+
+        public File getStoreDir( HighlyAvailableGraphDatabase member )
+        {
+            assertMember( member );
+            return member.getConfig().get( GraphDatabaseSettings.store_dir );
+        }
+        
+        public void sync( HighlyAvailableGraphDatabase... except )
+        {
+            Set<HighlyAvailableGraphDatabase> exceptSet = new HashSet<HighlyAvailableGraphDatabase>( asList( except ) );
+            for ( HighlyAvailableGraphDatabase db : getAllMembers() )
+                if ( !exceptSet.contains( db ) )
+                    db.getDependencyResolver().resolveDependency( UpdatePuller.class ).pullUpdates();
         }
     }
 
@@ -609,24 +628,31 @@ public class ClusterManager
     {
     }
 
+    protected void insertInitialData( GraphDatabaseService db, String name, int serverId )
+    {
+    }
+    
     public interface RepairKit
     {
-        void repair() throws Throwable;
+        HighlyAvailableGraphDatabase repair() throws Throwable;
     }
 
     private class StartNetworkAgainKit implements RepairKit
     {
-        private NetworkInstance network;
+        private final HighlyAvailableGraphDatabase db;
+        private final NetworkInstance network;
 
-        StartNetworkAgainKit( NetworkInstance network )
+        StartNetworkAgainKit( HighlyAvailableGraphDatabase db, NetworkInstance network )
         {
+            this.db = db;
             this.network = network;
         }
 
         @Override
-        public void repair() throws Throwable
+        public HighlyAvailableGraphDatabase repair() throws Throwable
         {
             network.start();
+            return db;
         }
     }
 
@@ -642,9 +668,10 @@ public class ClusterManager
         }
 
         @Override
-        public void repair() throws Throwable
+        public HighlyAvailableGraphDatabase repair() throws Throwable
         {
-            cluster.startMember( serverId );
+            cluster.startMember( serverId, false );
+            return cluster.getMemberByServerId( serverId );
         }
     }
 }
