@@ -263,5 +263,5 @@ public interface TraversalDescription
      * @return a {@link Traverser} used to step through the graph and to get
      * results from.
      */
-    Traverser traverse( Node... startNode );
+    Traverser traverse( Node... startNodes );
 }

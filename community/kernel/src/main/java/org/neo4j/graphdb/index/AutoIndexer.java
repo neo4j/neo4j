@@ -51,7 +51,7 @@ public interface AutoIndexer<T extends PropertyContainer>
      * 
      * @return true iff this auto indexer is enabled
      * 
-     * @see setEnabled(boolean)
+     * @see #setEnabled(boolean)
      */
     boolean isEnabled();
 
