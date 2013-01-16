@@ -35,8 +35,9 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.util.IoPrimitiveUtils;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
-public class IndexStore
+public class IndexStore extends LifecycleAdapter
 {
     public static final String INDEX_DB_FILE_NAME = "index.db";
     private static final byte[] MAGICK = new byte[] { 'n', 'e', 'o', '4', 'j', '-', 'i', 'n', 'd', 'e', 'x' };
@@ -54,7 +55,6 @@ public class IndexStore
         this.fileSystem = fileSystem;
         this.file = new File( graphDbStoreDir, INDEX_DB_FILE_NAME );
         this.oldFile = new File( file.getParentFile(), file.getName() + ".old" );
-        read();
     }
     
     private ByteBuffer buffer( int size )
@@ -107,7 +107,13 @@ public class IndexStore
             close( channel );
         }
     }
-
+    
+    @Override
+    public void start() throws Throwable
+    {
+        read();
+    }
+    
     private Map<String, Map<String, String>> readMap( FileChannel channel,
             Map<String, Map<String, String>> map, Integer sizeOrTillEof ) throws IOException
     {

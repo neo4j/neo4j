@@ -403,7 +403,7 @@ public abstract class InternalAbstractGraphDatabase
         life.add( nodeManager );
         stateFactory.setDependencies( lockManager, propertyIndexManager, nodeManager, txHook, txIdGenerator );
 
-        indexStore = new IndexStore( this.storeDir, fileSystem );
+        indexStore = life.add( new IndexStore( this.storeDir, fileSystem ) );
 
         diagnosticsManager.prependProvider( config );
 
