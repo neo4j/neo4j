@@ -12,6 +12,10 @@ are found an exception will be thrown.
 In the +CREATE UNIQUE+ clause, patterns are used a lot.
 Read <<introduction-pattern>> for an introduction.
 
+The examples start out with the following data set:
+
+include::includes/cypher-createunique-graph.asciidoc[]
+
 :leveloffset: 2
 
 include::create-relationship-if-it-is-missing.asciidoc[]

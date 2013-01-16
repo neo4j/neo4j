@@ -1,8 +1,12 @@
 [[query-set]]
 Set
 ===
-Updating properties on nodes and relationships is done with the +SET+ clause. +SET+ can also be used with
-maps from parameters.
+Updating properties on nodes and relationships is done with the +SET+ clause.
++SET+ can also be used with maps from parameters.
+
+The examples use this graph as a starting point:
+
+include::includes/cypher-set-graph.asciidoc[]
 
 :leveloffset: 2
 
