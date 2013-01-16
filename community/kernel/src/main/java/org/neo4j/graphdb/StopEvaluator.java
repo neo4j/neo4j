@@ -19,6 +19,10 @@
  */
 package org.neo4j.graphdb;
 
+import org.neo4j.graphdb.traversal.Evaluator;
+import org.neo4j.graphdb.traversal.TraversalDescription;
+import org.neo4j.kernel.Traversal;
+
 
 /**
  * A client hook for evaluating whether the traverser should traverse beyond a

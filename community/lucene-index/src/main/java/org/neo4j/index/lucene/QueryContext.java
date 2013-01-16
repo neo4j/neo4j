@@ -164,8 +164,8 @@ public class QueryContext
     /**
      * Returns the default operator used between terms in compound queries.
      * 
-     * @return the default {@link Operator} specified with {@link #defaultOperator(Operator)}
-     * or "OR" if none specified.
+     * @return the default {@link Operator} specified with
+     *         {@link #defaultOperator} or "OR" if none specified.
      */
     public Operator getDefaultOperator()
     {

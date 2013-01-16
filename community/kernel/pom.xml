@@ -259,6 +259,23 @@ public class ComponentVersion extends Version
             <plugin>
               <artifactId>maven-javadoc-plugin</artifactId>
               <configuration>
+                <additionnalDependencies>
+                  <additionnalDependency>
+                    <groupId>ch.qos.logback</groupId>
+                    <artifactId>logback-classic</artifactId>
+                    <version>1.0.0</version>
+                  </additionnalDependency>
+                  <additionnalDependency>
+                    <groupId>ch.qos.logback</groupId>
+                    <artifactId>logback-core</artifactId>
+                    <version>1.0.0</version>
+                  </additionnalDependency>
+                  <additionnalDependency>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>slf4j-api</artifactId>
+                    <version>1.6.4</version>
+                  </additionnalDependency>
+                </additionnalDependencies>
                 <detectJavaApiLink>true</detectJavaApiLink>
                 <detectLinks>true</detectLinks>
                 <quiet>true</quiet>
@@ -298,6 +315,23 @@ public class ComponentVersion extends Version
       <plugin>
         <artifactId>maven-javadoc-plugin</artifactId>
         <configuration>
+          <additionnalDependencies>
+            <additionnalDependency>
+              <groupId>ch.qos.logback</groupId>
+              <artifactId>logback-classic</artifactId>
+              <version>1.0.0</version>
+            </additionnalDependency>
+            <additionnalDependency>
+              <groupId>ch.qos.logback</groupId>
+              <artifactId>logback-core</artifactId>
+              <version>1.0.0</version>
+            </additionnalDependency>
+            <additionnalDependency>
+              <groupId>org.slf4j</groupId>
+              <artifactId>slf4j-api</artifactId>
+              <version>1.6.4</version>
+            </additionnalDependency>
+          </additionnalDependencies>
           <groups>
             <group>
               <title>Graph database</title>
@@ -411,6 +445,23 @@ public class ComponentVersion extends Version
       <plugin>
         <artifactId>maven-javadoc-plugin</artifactId>
         <configuration>
+          <additionnalDependencies>
+            <additionnalDependency>
+              <groupId>ch.qos.logback</groupId>
+              <artifactId>logback-classic</artifactId>
+              <version>1.0.0</version>
+            </additionnalDependency>
+            <additionnalDependency>
+              <groupId>ch.qos.logback</groupId>
+              <artifactId>logback-core</artifactId>
+              <version>1.0.0</version>
+            </additionnalDependency>
+            <additionnalDependency>
+              <groupId>org.slf4j</groupId>
+              <artifactId>slf4j-api</artifactId>
+              <version>1.6.4</version>
+            </additionnalDependency>
+          </additionnalDependencies>
           <detectJavaApiLink>true</detectJavaApiLink>
           <detectLinks>true</detectLinks>
           <quiet>true</quiet>
