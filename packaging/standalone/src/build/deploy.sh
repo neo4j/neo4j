@@ -19,9 +19,8 @@ function run_command {
 }
 
 function fetch_artifact {
-    artifact=$1
-    filename=$2
-    run_command "cp ${WORKSPACE}/standalone/target/$filename ."
+    filename=$1
+    run_command "cp ${WORKSPACE}/packaging/standalone/target/$filename ."
 }
 
 function upload_file {
@@ -34,8 +33,8 @@ function upload_package {
     version=$2
     filenameWindows=$artifact-$version-windows.zip
     filenameUnix=$artifact-$version-unix.tar.gz
-    fetch_artifact standalone/target $filenameWindows
-    fetch_artifact standalone/target $filenameUnix
+    fetch_artifact $filenameWindows
+    fetch_artifact $filenameUnix
     upload_file $filenameWindows
     upload_file $filenameUnix
 }
