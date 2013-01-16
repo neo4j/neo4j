@@ -57,7 +57,7 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
     {
         gen().setSection( getDocumentationSectionName() );
     }
-    
+
     protected String doCypherRestCall( String endpoint, String scriptTemplate, Status status, Pair<String, String>... params ) {
         data.get();
         String parameterString = createParameterString( params );
