@@ -26,7 +26,9 @@ import org.neo4j.graphdb.index.IndexProvider;
 import org.neo4j.helpers.Service;
 
 /**
- * Provides {@link IndexProvider} objects based on {@link Service#load()} static method. 
+ * Provides {@link IndexProvider} objects based on {@link Service#load} static
+ * method.
+ * 
  * @author ceefour
  */
 public class LegacyIndexIterable implements IndexIterable {

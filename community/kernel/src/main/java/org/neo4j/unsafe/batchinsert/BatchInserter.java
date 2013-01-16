@@ -73,9 +73,9 @@ public interface BatchInserter
     public void setNodeProperties( long node, Map<String,Object> properties );
 
     /**
-     * Returns true iff the node with id {@value node} has a property with name
-     * {@value propertyName}.
-     *
+     * Returns true iff the node with id {@code node} has a property with name
+     * {@code propertyName}.
+     * 
      * @param node The node id of the node to check.
      * @param propertyName The property name to check for
      * @return True if the node has the named property - false otherwise.
@@ -83,9 +83,9 @@ public interface BatchInserter
     public boolean nodeHasProperty( long node, String propertyName );
 
     /**
-     * Returns true iff the relationship with id {@value relationship} has a
-     * property with name {@value propertyName}.
-     *
+     * Returns true iff the relationship with id {@code relationship} has a
+     * property with name {@code propertyName}.
+     * 
      * @param relationship The relationship id of the relationship to check.
      * @param propertyName The property name to check for
      * @return True if the relationship has the named property - false
@@ -95,10 +95,10 @@ public interface BatchInserter
             String propertyName );
 
     /**
-     * Sets the property with name {@value propertyName} of node with id
-     * {@value node} to the value {@propertyValue}. If the property exists it is
-     * updated, otherwise created.
-     *
+     * Sets the property with name {@code propertyName} of node with id
+     * {@code node} to the value {@code propertyValue}. If the property exists
+     * it is updated, otherwise created.
+     * 
      * @param node The node id of the node whose property is to be set
      * @param propertyName The name of the property to set
      * @param propertyValue The value of the property to set
@@ -107,11 +107,10 @@ public interface BatchInserter
             Object propertyValue );
 
     /**
-     * Sets the property with name {@value propertyName} of relationship with id
-     * {@value relationship} to the value {@value propertyValue}. If the
-     * property
+     * Sets the property with name {@code propertyName} of relationship with id
+     * {@code relationship} to the value {@code propertyValue}. If the property
      * exists it is updated, otherwise created.
-     *
+     * 
      * @param relationship The node id of the relationship whose property is to
      *            be set
      * @param propertyName The name of the property to set
@@ -138,9 +137,9 @@ public interface BatchInserter
     public Iterable<Long> getRelationshipIds( long nodeId );
 
     /**
-     * Returns an iterable of {@link BatchRelationsip relationships} connected
+     * Returns an iterable of {@link BatchRelationship relationships} connected
      * to the node with supplied id.
-     *
+     * 
      * @param nodeId the id of the node.
      * @return iterable over the relationships connected to the node.
      */
@@ -203,18 +202,18 @@ public interface BatchInserter
     public Map<String,Object> getRelationshipProperties( long relId );
 
     /**
-     * Removes the property named {@value property} from the node with id
-     * {@value id}, if present.
-     *
+     * Removes the property named {@code property} from the node with id
+     * {@code id}, if present.
+     * 
      * @param node The id of the node from which to remove the property
      * @param property The name of the property
      */
     public void removeNodeProperty( long node, String property );
 
     /**
-     * Removes the property named {@value property} from the relationship with
-     * id {@value id}, if present.
-     *
+     * Removes the property named {@code property} from the relationship with id
+     * {@code id}, if present.
+     * 
      * @param relationship The id of the relationship from which to remove the
      *            property
      * @param property The name of the property

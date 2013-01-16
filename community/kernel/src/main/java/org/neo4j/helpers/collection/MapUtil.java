@@ -326,8 +326,9 @@ public abstract class MapUtil
     /**
      * Stores the data in {@code config} into {@code writer} in a standard java
      * {@link Properties} format.
+     * 
      * @param config the data to store in the properties file.
-     * @param stream the {@link Writer} to store the properties in.
+     * @param writer the {@link Writer} to store the properties in.
      * @throws IOException IO error.
      */
     public static void store( Map<String, String> config, Writer writer ) throws IOException
@@ -339,10 +340,11 @@ public abstract class MapUtil
     
     /**
      * Stores the data in {@code config} into {@code writer} in a standard java
-     * {@link Properties} format. Any {@link IOException} is wrapped and thrown as a
-     * {@link RuntimeException} instead.
+     * {@link Properties} format. Any {@link IOException} is wrapped and thrown
+     * as a {@link RuntimeException} instead.
+     * 
      * @param config the data to store in the properties file.
-     * @param stream the {@link Writer} to store the properties in.
+     * @param writer the {@link Writer} to store the properties in.
      * @throws IOException IO error.
      */
     public static void storeStrictly( Map<String, String> config, Writer writer )
