@@ -1,3 +1,3 @@
-1.9.M04 (2013-01-??)
+1.9.M04 (2013-01-17)
 --------------------
 o Includes new service endpoint, typically found under /db/manage/server/ha/{isMaster,getMaster}, with HA related info.
