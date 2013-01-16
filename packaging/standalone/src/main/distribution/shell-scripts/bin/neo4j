@@ -140,6 +140,9 @@ buildclasspath() {
   fi
 
   CLASSPATH=${ALL_JARS}
+
+  # add useful conf stuff to classpath - always a good idea
+  CLASSPATH="$CLASSPATH":"$NEO4J_HOME"/conf/
 }
 
 checkupgrade() {
