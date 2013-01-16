@@ -24,20 +24,21 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 
 import java.net.URI;
+import java.util.Collections;
 import java.util.Map;
 
 import org.junit.Test;
+import org.neo4j.server.webadmin.rest.AdvertisableService;
 import org.neo4j.server.webadmin.rest.console.ConsoleService;
-import org.neo4j.server.webadmin.console.ConsoleSessionFactory;
 
 public class ServerRootRepresentationTest
 {
     @Test
     public void shouldProvideAListOfServiceUris() throws Exception
     {
-        ConsoleService consoleService = new ConsoleService( (ConsoleSessionFactory) null, null, null );
+        ConsoleService consoleService = new ConsoleService( null, null, null );
         ServerRootRepresentation srr = new ServerRootRepresentation( new URI( "http://example.org:9999" ),
-                consoleService );
+                Collections.<AdvertisableService>singletonList( consoleService ) );
         Map<String, Map<String, String>> map = srr.serialize();
 
         assertNotNull( map.get( "services" ) );

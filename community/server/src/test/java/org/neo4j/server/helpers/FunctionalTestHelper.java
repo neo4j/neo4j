@@ -179,7 +179,7 @@ public final class FunctionalTestHelper
         return indexUri() + "relationship/";
     }
 
-    public String mangementUri()
+    public String managementUri()
     {
         return server.baseUri()
                 .toString() + "db/manage";
