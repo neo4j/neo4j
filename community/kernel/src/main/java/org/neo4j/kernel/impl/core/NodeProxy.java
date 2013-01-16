@@ -183,9 +183,9 @@ public class NodeProxy implements Node
     public boolean equals( Object o )
     {
         if ( !(o instanceof Node) )
-        {
-            return false;
-        }
+    {
+        return false;
+    }
         return this.getId() == ((Node) o).getId();
     }
 

@@ -17,17 +17,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api;
+package org.neo4j.kernel.impl.api;
 
-public class LabelNotFoundException extends KernelException
+import org.neo4j.kernel.api.StatementContext;
+
+public class LockingStatementContext extends DelegatingStatementContext
 {
-    public LabelNotFoundException( String label )
+    private final LockHolder lockHolder;
+
+    public LockingStatementContext( StatementContext actual, LockHolder lockHolder )
     {
-        super( "Label '" + label + "' not found" );
+        super( actual );
+        this.lockHolder = lockHolder;
     }
-    
-    public LabelNotFoundException( String label, Exception cause )
+
+    @Override
+    public void addLabelToNode( long labelId, long nodeId )
     {
-        super( "Label '" + label + "' not found", cause );
+        lockHolder.acquireNodeWriteLock( nodeId );
+        super.addLabelToNode( labelId, nodeId );
     }
 }

@@ -22,8 +22,8 @@ package org.neo4j.kernel.api;
 public interface StatementContext
 {
     long getOrCreateLabelId( String label );
-    
     long getLabelId( String label ) throws LabelNotFoundException;
-    
     void addLabelToNode( long labelId, long nodeId );
+    boolean isLabelSetOnNode( long labelId, long nodeId );
+    void close();
 }

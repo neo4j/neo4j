@@ -53,24 +53,26 @@ import org.neo4j.helpers.DaemonThreadFactory;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.Settings;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConfigurationChange;
 import org.neo4j.kernel.configuration.ConfigurationChangeListener;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.extension.KernelExtensions;
 import org.neo4j.kernel.guard.Guard;
+import org.neo4j.kernel.impl.api.Kernel;
 import org.neo4j.kernel.impl.cache.Cache;
 import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.cache.MonitorGc;
 import org.neo4j.kernel.impl.core.Caches;
 import org.neo4j.kernel.impl.core.DefaultCaches;
+import org.neo4j.kernel.impl.core.DefaultPropertyKeyCreator;
 import org.neo4j.kernel.impl.core.DefaultRelationshipTypeCreator;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.core.KeyCreator;
 import org.neo4j.kernel.impl.core.NodeImpl;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.NodeProxy;
-import org.neo4j.kernel.impl.core.DefaultPropertyKeyCreator;
 import org.neo4j.kernel.impl.core.PropertyIndexManager;
 import org.neo4j.kernel.impl.core.ReadOnlyNodeManager;
 import org.neo4j.kernel.impl.core.RelationshipImpl;
@@ -152,7 +154,7 @@ public abstract class InternalAbstractGraphDatabase
 
     protected File storeDir;
     protected Map<String, String> params;
-    private TransactionInterceptorProviders transactionInterceptorProviders;
+    private final TransactionInterceptorProviders transactionInterceptorProviders;
     private final KernelExtensions kernelExtensions;
     protected StoreId storeId;
     private final TransactionBuilder defaultTxBuilder = new TransactionBuilderImpl( this, ForceMode.forced );
@@ -189,15 +191,15 @@ public abstract class InternalAbstractGraphDatabase
     protected NeoStoreXaDataSource neoDataSource;
     protected RecoveryVerifier recoveryVerifier;
     protected Guard guard;
-
     protected NodeAutoIndexerImpl nodeAutoIndexer;
     protected RelationshipAutoIndexerImpl relAutoIndexer;
     protected KernelData extensions;
     protected Caches caches;
+    protected TransactionStateFactory stateFactory;
+    protected KernelAPI kernelAPI;
 
     protected final LifeSupport life = new LifeSupport();
     private final Map<String,CacheProvider> cacheProviders;
-    protected TransactionStateFactory stateFactory;
 
     protected InternalAbstractGraphDatabase( String storeDir, Map<String, String> params,
                                              Iterable<Class<?>> settingsClasses,
@@ -449,6 +451,8 @@ public abstract class InternalAbstractGraphDatabase
         xaFactory = new XaFactory( config, txIdGenerator, txManager, logBufferFactory, fileSystem,
                 logging, recoveryVerifier, LogPruneStrategies.fromConfigValue(
                 fileSystem, keepLogicalLogsConfig ) );
+        
+        kernelAPI = new Kernel( txManager, propertyIndexManager, persistenceManager, lockManager );
 
         createNeoDataSource();
 
@@ -799,13 +803,13 @@ public abstract class InternalAbstractGraphDatabase
     {
         if ( transactionRunning() )
         {
-            return new PlaceboTransaction( txManager, lockManager, txManager.getTransactionState() );
+            return new PlaceboTransaction( txManager, txManager.getTransactionState() );
         }
         Transaction result = null;
         try
         {
             txManager.begin( forceMode );
-            result = new TopLevelTransaction( txManager, lockManager, txManager.getTransactionState() );
+            result = new TopLevelTransaction( txManager, txManager.getTransactionState() );
         }
         catch ( Exception e )
         {
@@ -1307,6 +1311,14 @@ public abstract class InternalAbstractGraphDatabase
             else if ( PropertyIndexManager.class.isAssignableFrom( type ) )
             {
                 return (T) propertyIndexManager;
+            }
+            else if ( PersistenceManager.class.isAssignableFrom( type ) )
+            {
+                return (T) persistenceManager;
+            }
+            else if ( KernelAPI.class.isAssignableFrom( type ) )
+            {
+                return (T) kernelAPI;
             }
             else
             {

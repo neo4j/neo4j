@@ -17,34 +17,51 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel;
+package org.neo4j.kernel.impl.api;
 
-import org.neo4j.graphdb.Lock;
-import org.neo4j.kernel.impl.core.TransactionState;
-import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
+import org.neo4j.kernel.impl.cache.SizeOfs;
+import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 
-public class PlaceboTransaction extends TopLevelTransaction
+public class LabelAsPropertyData implements PropertyData
 {
-    public final static Lock NO_LOCK = new Lock()
+    private final long id;
+    private final int index;
+    private Object value;
+
+    public LabelAsPropertyData( long id, int index, Object value )
     {
-        @Override
-        public void release()
-        {
-        }
-    };
+        this.id = id;
+        this.index = index;
+        this.value = value;
+    }
     
-    public PlaceboTransaction( AbstractTransactionManager transactionManager,
-            TransactionState state )
+    @Override
+    public int size()
     {
-        super( transactionManager, state );
+        return SizeOfs.withObjectOverhead( 4+8 );
     }
 
     @Override
-    public void finish()
+    public long getId()
     {
-        if ( !transactionOutcome.successCalled() && !transactionOutcome.failureCalled() )
-        {
-            markAsRollbackOnly();
-        }
+        return id;
+    }
+
+    @Override
+    public int getIndex()
+    {
+        return index;
+    }
+
+    @Override
+    public Object getValue()
+    {
+        return value;
+    }
+
+    @Override
+    public void setNewValue( Object newValue )
+    {
+        this.value = newValue;
     }
 }

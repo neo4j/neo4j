@@ -32,14 +32,12 @@ import org.junit.Test;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
-import org.neo4j.kernel.impl.transaction.LockManager;
 
 public class TestPlaceboTransaction
 {
     private AbstractTransactionManager mockTxManager;
     private Transaction mockTopLevelTx;
     private PlaceboTransaction placeboTx;
-    private LockManager lockManager;
     private TransactionState state;
     private PropertyContainer resource;
     
@@ -49,9 +47,8 @@ public class TestPlaceboTransaction
         mockTxManager = mock( AbstractTransactionManager.class );
         mockTopLevelTx = mock( Transaction.class );
         when( mockTxManager.getTransaction() ).thenReturn( mockTopLevelTx );
-        lockManager = mock( LockManager.class );
         state = mock( TransactionState.class );
-        placeboTx = new PlaceboTransaction( mockTxManager, lockManager, state );
+        placeboTx = new PlaceboTransaction( mockTxManager, state );
         resource = mock( PropertyContainer.class );
     }
 

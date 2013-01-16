@@ -17,17 +17,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api;
+package org.neo4j.kernel.impl.api;
 
-public class LabelNotFoundException extends KernelException
+public class LabelAsProperty
 {
-    public LabelNotFoundException( String label )
+    private final long nodeId;
+
+    public LabelAsProperty( long nodeId )
     {
-        super( "Label '" + label + "' not found" );
+        this.nodeId = nodeId;
     }
     
-    public LabelNotFoundException( String label, Exception cause )
+    public long getNodeId()
     {
-        super( "Label '" + label + "' not found", cause );
+        return nodeId;
+    }
+
+    @Override
+    public String toString()
+    {
+        return "" + nodeId;
     }
 }

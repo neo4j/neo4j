@@ -17,17 +17,29 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api;
+package org.neo4j.kernel.impl.api;
 
-public class LabelNotFoundException extends KernelException
+import java.util.Set;
+
+import org.neo4j.kernel.api.StatementContext;
+
+// Only intercepts reading
+public class CachingStatementContext extends DelegatingStatementContext
 {
-    public LabelNotFoundException( String label )
+    private final PersistenceCache cache;
+
+    public CachingStatementContext( StatementContext actual, PersistenceCache cache )
     {
-        super( "Label '" + label + "' not found" );
+        super( actual );
+        this.cache = cache;
     }
-    
-    public LabelNotFoundException( String label, Exception cause )
+
+    @Override
+    public boolean isLabelSetOnNode( long labelId, long nodeId )
     {
-        super( "Label '" + label + "' not found", cause );
+        Set<Long> labels = cache.getLabels( nodeId );
+        if ( labels != null )
+            return labels.contains( labelId );
+        return super.isLabelSetOnNode( labelId, nodeId );
     }
 }

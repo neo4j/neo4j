@@ -26,7 +26,6 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.locks.ReentrantLock;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -43,6 +42,7 @@ import org.neo4j.kernel.PropertyTracker;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.cache.Cache;
 import org.neo4j.kernel.impl.cache.CacheProvider;
+import org.neo4j.kernel.impl.cache.LockStripedCache;
 import org.neo4j.kernel.impl.nioneo.store.NameData;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
@@ -69,8 +69,8 @@ public class NodeManager
 
     private StringLogger logger;
     private final GraphDatabaseService graphDbService;
-    private final Cache<NodeImpl> nodeCache;
-    private final Cache<RelationshipImpl> relCache;
+    private final LockStripedCache<NodeImpl> nodeCache;
+    private final LockStripedCache<RelationshipImpl> relCache;
 
     private final CacheProvider cacheProvider;
 
@@ -88,11 +88,51 @@ public class NodeManager
     private final List<PropertyTracker<Relationship>> relationshipPropertyTrackers;
 
     private static final int LOCK_STRIPE_COUNT = 32;
-    private final ReentrantLock loadLocks[] =
-            new ReentrantLock[LOCK_STRIPE_COUNT];
     private GraphProperties graphProperties;
 
     private NodeManagerDatasourceListener dataSourceListener;
+
+    private final LockStripedCache.Loader<NodeImpl> nodeLoader = new LockStripedCache.Loader<NodeImpl>()
+    {
+        @Override
+        public NodeImpl loadById( long id )
+        {
+            NodeRecord record = persistenceManager.loadLightNode( id );
+            if ( record == null )
+            {
+                return null;
+            }
+            return new NodeImpl( id, record.getCommittedNextRel(), record.getCommittedNextProp() );
+        }
+    };
+
+    private final LockStripedCache.Loader<RelationshipImpl> relLoader = new LockStripedCache.Loader<RelationshipImpl>()
+    {
+        @Override
+        public RelationshipImpl loadById( long id )
+        {
+            RelationshipRecord data = persistenceManager.loadLightRelationship( id );
+            if ( data == null )
+            {
+                return null;
+            }
+            int typeId = data.getType();
+            RelationshipType type;
+            try
+            {
+                type = getRelationshipTypeById( typeId );
+            }
+            catch ( KeyNotFoundException e )
+            {
+                throw new NotFoundException( "Relationship[" + data.getId()
+                        + "] exist but relationship type[" + typeId
+                        + "] not found." );
+            }
+            final long startNodeId = data.getFirstNode();
+            final long endNodeId = data.getSecondNode();
+            return newRelationshipImpl( id, startNodeId, endNodeId, type, typeId, false );
+        }
+    };
 
     public NodeManager( Config config, StringLogger logger, GraphDatabaseService graphDb,
                         AbstractTransactionManager transactionManager,
@@ -113,13 +153,9 @@ public class NodeManager
         this.relTypeHolder = relationshipTypeHolder;
 
         this.cacheProvider = cacheProvider;
-        this.nodeCache = nodeCache;
-        this.relCache = relCache;
+        this.nodeCache = new LockStripedCache<NodeImpl>( nodeCache, LOCK_STRIPE_COUNT, nodeLoader );
+        this.relCache = new LockStripedCache<RelationshipImpl>( relCache, LOCK_STRIPE_COUNT, relLoader );
         this.xaDsm = xaDsm;
-        for ( int i = 0; i < loadLocks.length; i++ )
-        {
-            loadLocks[i] = new ReentrantLock();
-        }
         nodePropertyTrackers = new LinkedList<PropertyTracker<Node>>();
         relationshipPropertyTrackers = new LinkedList<PropertyTracker<Relationship>>();
         this.graphProperties = instantiateGraphProperties();
@@ -176,7 +212,6 @@ public class NodeManager
         try
         {
             persistenceManager.nodeCreate( id );
-            // nodeCache.put( id, node );
             nodeCache.put( node );
             success = true;
             return proxy;
@@ -252,57 +287,13 @@ public class NodeManager
     private RelationshipImpl newRelationshipImpl( long id, long startNodeId, long endNodeId,
                                                   RelationshipType type, int typeId, boolean newRel )
     {
-//        int rest = (int)(((startNodeId|endNodeId)&0xFFFFC0000000L)>>30);
-//        if ( rest == 0 && typeId < 16 )
-//        {
-//            return new SuperLowRelationshipImpl( id, startNodeId, endNodeId, typeId, newRel );
-//        }
-//        return rest <= 3 ?
-//                new LowRelationshipImpl( id, startNodeId, endNodeId, type, newRel ) :
-//                new HighRelationshipImpl( id, startNodeId, endNodeId, type, newRel );
         return new RelationshipImpl( id, startNodeId, endNodeId, typeId, newRel );
-    }
-
-    private ReentrantLock lockId( long id )
-    {
-        // TODO: Change stripe mod for new 4B+
-        int stripe = (int) (id / 32768) % LOCK_STRIPE_COUNT;
-        if ( stripe < 0 )
-        {
-            stripe *= -1;
-        }
-        ReentrantLock lock = loadLocks[stripe];
-        lock.lock();
-        return lock;
     }
 
     protected Node getNodeByIdOrNull( long nodeId )
     {
-        NodeImpl node = nodeCache.get( nodeId );
-        if ( node != null )
-        {
-            return new NodeProxy( nodeId, nodeLookup );
-        }
-        ReentrantLock loadLock = lockId( nodeId );
-        try
-        {
-            if ( nodeCache.get( nodeId ) != null )
-            {
-                return new NodeProxy( nodeId, nodeLookup );
-            }
-            NodeRecord record = persistenceManager.loadLightNode( nodeId );
-            if ( record == null )
-            {
-                return null;
-            }
-            node = new NodeImpl( nodeId, record.getCommittedNextRel(), record.getCommittedNextProp() );
-            nodeCache.put( node );
-            return new NodeProxy( nodeId, nodeLookup );
-        }
-        finally
-        {
-            loadLock.unlock();
-        }
+        NodeImpl node = getLightNode( nodeId );
+        return node != null ? new NodeProxy( nodeId, nodeLookup ) : null;
     }
 
     public Node getNodeById( long nodeId ) throws NotFoundException
@@ -315,11 +306,15 @@ public class NodeManager
         return node;
     }
 
+    NodeImpl getLightNode( long nodeId )
+    {
+        return nodeCache.get( nodeId );
+    }
+
     public RelationshipProxy newRelationshipProxyById( long id )
     {
         return new RelationshipProxy( id, relationshipLookups );
     }
-
 
     public Iterator<Node> getAllNodes()
     {
@@ -349,37 +344,6 @@ public class NodeManager
                 return null;
             }
         };
-    }
-
-    NodeImpl getLightNode( long nodeId )
-    {
-        NodeImpl node = nodeCache.get( nodeId );
-        if ( node != null )
-        {
-            return node;
-        }
-        ReentrantLock loadLock = lockId( nodeId );
-        try
-        {
-            node = nodeCache.get( nodeId );
-            if ( node != null )
-            {
-                return node;
-            }
-            NodeRecord record = persistenceManager.loadLightNode( nodeId );
-            if ( record == null )
-            {
-                return null;
-            }
-            node = new NodeImpl( nodeId, record.getCommittedNextRel(), record.getCommittedNextProp() );
-//            nodeCache.put( nodeId, node );
-            nodeCache.put( node );
-            return node;
-        }
-        finally
-        {
-            loadLock.unlock();
-        }
     }
 
     public NodeImpl getNodeForProxy( long nodeId, LockType lock )
@@ -413,45 +377,7 @@ public class NodeManager
     protected Relationship getRelationshipByIdOrNull( long relId )
     {
         RelationshipImpl relationship = relCache.get( relId );
-        if ( relationship != null )
-        {
-            return new RelationshipProxy( relId, relationshipLookups );
-        }
-        ReentrantLock loadLock = lockId( relId );
-        try
-        {
-            relationship = relCache.get( relId );
-            if ( relationship != null )
-            {
-                return new RelationshipProxy( relId, relationshipLookups );
-            }
-            RelationshipRecord data = persistenceManager.loadLightRelationship( relId );
-            if ( data == null )
-            {
-                return null;
-            }
-            int typeId = data.getType();
-            RelationshipType type;
-            try
-            {
-                type = getRelationshipTypeById( typeId );
-            }
-            catch ( KeyNotFoundException e )
-            {
-                throw new NotFoundException( "Relationship[" + data.getId()
-                        + "] exist but relationship type[" + typeId
-                        + "] not found." );
-            }
-            final long startNodeId = data.getFirstNode();
-            final long endNodeId = data.getSecondNode();
-            relationship = newRelationshipImpl( relId, startNodeId, endNodeId, type, typeId, false );
-            relCache.put( relationship );
-            return new RelationshipProxy( relId, relationshipLookups );
-        }
-        finally
-        {
-            loadLock.unlock();
-        }
+        return relationship != null ? new RelationshipProxy( relId, relationshipLookups ) : null;
     }
 
     public Relationship getRelationshipById( long id ) throws NotFoundException
@@ -505,46 +431,7 @@ public class NodeManager
         {
             lock.acquire( getTransactionState(), new RelationshipProxy( relId, relationshipLookups ) );
         }
-        RelationshipImpl relationship = relCache.get( relId );
-        if ( relationship != null )
-        {
-            return relationship;
-        }
-        ReentrantLock loadLock = lockId( relId );
-        try
-        {
-            relationship = relCache.get( relId );
-            if ( relationship != null )
-            {
-                return relationship;
-            }
-            RelationshipRecord data = persistenceManager.loadLightRelationship( relId );
-            if ( data == null )
-            {
-                throw new NotFoundException( "Relationship[" + relId + "] not found." );
-            }
-            int typeId = data.getType();
-            RelationshipType type;
-            try
-            {
-                type = getRelationshipTypeById( typeId );
-            }
-            catch ( KeyNotFoundException e )
-            {
-                throw new NotFoundException( "Relationship[" + data.getId()
-                        + "] exist but relationship type[" + typeId
-                        + "] not found." );
-            }
-            relationship = newRelationshipImpl( relId, data.getFirstNode(), data.getSecondNode(),
-                    type, typeId, false );
-            // relCache.put( relId, relationship );
-            relCache.put( relationship );
-            return relationship;
-        }
-        finally
-        {
-            loadLock.unlock();
-        }
+        return relCache.get( relId );
     }
 
     public void removeNodeFromCache( long nodeId )
@@ -1001,12 +888,12 @@ public class NodeManager
 
     public NodeImpl getNodeIfCached( long nodeId )
     {
-        return nodeCache.get( nodeId );
+        return nodeCache.getIfCached( nodeId );
     }
 
     public RelationshipImpl getRelIfCached( long nodeId )
     {
-        return relCache.get( nodeId );
+        return relCache.getIfCached( nodeId );
     }
 
     void addRelationshipType( NameData type )
@@ -1123,7 +1010,7 @@ public class NodeManager
         relCache.updateSize( rel, newSize );
     }
     
-    TransactionState getTransactionState()
+    public TransactionState getTransactionState()
     {
         return transactionManager.getTransactionState();
     }
