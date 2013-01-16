@@ -3,6 +3,10 @@ Delete
 ======
 Removing graph elements -- nodes, relationships and properties, is done with +DELETE+.
 
+The examples start out with the following database:
+
+include::includes/cypher-delete-graph.asciidoc[]
+
 :leveloffset: 2
 
 include::delete-single-node.asciidoc[]
