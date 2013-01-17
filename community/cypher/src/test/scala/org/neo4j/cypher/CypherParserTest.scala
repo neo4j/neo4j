@@ -1866,6 +1866,20 @@ foreach(x in [1,2,3] :
     )
   }
 
+  @Test def add_string_label() {
+    val q2 = Query.
+      start().
+      updates(LabelAction(Identifier("n"), LabelAdd, StrLabelFunction(Literal("LabelName")))).
+      returns()
+
+    testFrom_2_0("START n=node(0) LABEL n += strlabel(\"LabelName\")",
+      Query.
+        start(NodeById("n", 0)).
+        tail(q2).
+        returns(AllIdentifiers())
+    )
+  }
+
   @Ignore("slow test") @Test def multi_thread_parsing() {
     val q = """start root=node(0) return x"""
     val parser = new CypherParser()

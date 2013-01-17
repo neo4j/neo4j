@@ -35,15 +35,17 @@ public class TxQueryContextWrap {
         return queryCtx;
     }
 
+    // TODO bring in line w kernel API
+
     public void rollback() {
-        queryCtx.close();
+        // queryCtx.close();
 
         // Rollback tx
         tx.finish();
     }
 
     public void commit() {
-        queryCtx.close();
+        // queryCtx.close();
 
         // Commit tx
         tx.success();
