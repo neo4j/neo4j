@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.commands.expressions
 import org.neo4j.cypher.internal.ExecutionContext
 import org.neo4j.cypher.internal.symbols._
 import org.neo4j.cypher.CypherTypeException
+import org.neo4j.cypher.internal.commands.values.LabelName
 
 /*
  * Copyright (C) 2012 Neo Technology
@@ -30,7 +31,7 @@ import org.neo4j.cypher.CypherTypeException
 case class StrLabelFunction(labelStr: Expression) extends NullInNullOutExpression(labelStr) {
 
   def compute(value: Any, m: ExecutionContext) = value match {
-    case s: String => LabelValue(s)
+    case s: String => LabelName(s)
     case _ => throw new CypherTypeException("Cannot convert value that is not a string to a label")
   }
 

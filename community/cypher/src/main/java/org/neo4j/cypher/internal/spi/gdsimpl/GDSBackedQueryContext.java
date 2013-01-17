@@ -90,6 +90,12 @@ public class GDSBackedQueryContext implements QueryContext
     }
 
     @Override
+    public String getLabelName( Long id )
+    {
+        throw new UnsupportedOperationException(  );
+    }
+
+    @Override
     public Iterable<Long> getLabelsForNode( Node node )
     {
         throw new UnsupportedOperationException(  );

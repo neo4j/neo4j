@@ -88,7 +88,7 @@ public class RepeatableReadQueryContext implements QueryContext
 
     @Override
     public void addLabelsToNode(Node node, Iterable<Long> labelIds) {
-        //To change body of implemented methods use File | Settings | File Templates.
+        throw new UnsupportedOperationException(  );
     }
 
     @Override
@@ -105,6 +105,12 @@ public class RepeatableReadQueryContext implements QueryContext
 
     @Override
     public Long getOrCreateLabelId(String labelName) {
+        throw new UnsupportedOperationException(  );
+    }
+
+    @Override
+    public String getLabelName( Long id )
+    {
         throw new UnsupportedOperationException(  );
     }
 

@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.commands
 
-import expressions.{LabelValue, Expression, Collection}
+import expressions.{Expression, Collection}
 import org.neo4j.cypher.internal.mutation.{GraphElementPropertyFunctions, UpdateAction}
 import org.neo4j.cypher.internal.symbols.SymbolTable
 import org.neo4j.cypher.internal.ExecutionContext
@@ -28,6 +28,7 @@ import org.neo4j.graphdb.{Relationship, Node, PropertyContainer}
 import org.neo4j.cypher.CypherTypeException
 import org.neo4j.cypher.internal.helpers.{IsCollection, CollectionSupport}
 import scala.collection.JavaConverters._
+import values.LabelValue
 
 sealed abstract class LabelOp
 
@@ -62,7 +63,7 @@ case class LabelAction(entity: Expression, labelOp: LabelOp, labelSetExpr: Expre
       }
     }
 
-    val labelIds = labelVals.map { labelVal => queryCtx.getOrCreateLabelId(labelVal.name) }
+    val labelIds = labelVals.map { labelVal => labelVal.resolve(queryCtx).id.asInstanceOf[java.lang.Long] }
 
     queryCtx.addLabelsToNode(node, labelIds.asJava)
 

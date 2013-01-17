@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.symbols
 
 import org.neo4j.cypher.CypherTypeException
-import org.neo4j.cypher.internal.commands.expressions.LabelValue
+import org.neo4j.cypher.internal.commands.values.LabelValue
 
 trait CypherType {
   def isAssignableFrom(other: CypherType): Boolean = this.getClass.isAssignableFrom(other.getClass)

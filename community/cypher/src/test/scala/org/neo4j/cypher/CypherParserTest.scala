@@ -33,6 +33,7 @@ import org.junit.Test
 import org.junit.Ignore
 import org.scalatest.Assertions
 import org.hamcrest.CoreMatchers.equalTo
+import values.LabelName
 
 class CypherParserTest extends JUnitSuite with Assertions {
   @Test def shouldParseEasiestPossibleQuery() {
@@ -1840,7 +1841,7 @@ foreach(x in [1,2,3] :
   @Test def add_label() {
     val q2 = Query.
       start().
-      updates(LabelAction(Identifier("n"), LabelAdd, Literal(LabelValue("LabelName")))).
+      updates(LabelAction(Identifier("n"), LabelAdd, Literal(LabelName("LabelName")))).
       returns()
 
     testFrom_2_0("START n=node(0) LABEL n += :LabelName",
@@ -1852,7 +1853,7 @@ foreach(x in [1,2,3] :
   }
 
   @Test def add_multiple_labels() {
-    val coll = Collection(Literal(LabelValue("LabelName2")), Literal(LabelValue("LabelName3")))
+    val coll = Collection(Literal(LabelName("LabelName2")), Literal(LabelName("LabelName3")))
     val q2   = Query.
       start().
       updates(LabelAction(Identifier("n"), LabelAdd, coll)).
@@ -1873,6 +1874,34 @@ foreach(x in [1,2,3] :
       returns()
 
     testFrom_2_0("START n=node(0) LABEL n += strlabel(\"LabelName\")",
+      Query.
+        start(NodeById("n", 0)).
+        tail(q2).
+        returns(AllIdentifiers())
+    )
+  }
+
+  @Test def add_own_labels() {
+    val q2 = Query.
+      start().
+      updates(LabelAction(Identifier("n"), LabelAdd, LabelsFunction(Identifier("n")))).
+      returns()
+
+    testFrom_2_0("START n=node(0) LABEL n += labels(n)",
+      Query.
+        start(NodeById("n", 0)).
+        tail(q2).
+        returns(AllIdentifiers())
+    )
+  }
+
+  @Test def add_label_from_str_of_label() {
+    val q2 = Query.
+      start().
+      updates(LabelAction(Identifier("n"), LabelAdd, StrLabelFunction(StrFunction(Literal(LabelName("foo")))))).
+      returns()
+
+    testFrom_2_0("START n=node(0) LABEL n += strlabel(str(:foo))",
       Query.
         start(NodeById("n", 0)).
         tail(q2).

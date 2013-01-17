@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.commands
 
-import expressions.{LabelValue, Literal}
+import expressions.Literal
 import org.neo4j.cypher.internal.ExecutionContext
 import org.neo4j.cypher.{CypherTypeException, GraphDatabaseTestBase}
 import org.scalatest.Assertions
@@ -30,6 +30,7 @@ import collection.JavaConverters._
 import org.neo4j.cypher.internal.pipes.QueryState
 import org.junit.Test
 import java.lang
+import values.LabelName
 
 /*
  * Copyright (C) 2012 Neo Technology
@@ -72,7 +73,7 @@ class LabelActionTest extends GraphDatabaseTestBase with Assertions {
     assert(result === Stream(ctx))
   }
 
-  private def label(v: String) = LabelValue(v)
+  private def label(v: String) = LabelName(v)
 
   @Test
   def set_invalid_label_set_on_node() {
@@ -90,14 +91,14 @@ class SnitchingQueryContext extends QueryContext {
   var node: Node = null
   var ids: Seq[Long] = null
 
-  var highLabelId: Long = 0;
+  var highLabelId: Long = 0
   var labels: Map[String, Long] = Map("green" -> 12, "blue" -> 42)
 
 
   override def addLabelsToNode(n: Node, input: JIterable[java.lang.Long]) {
     node = n
     ids = input.asScala.map(l => {
-      val x: Long = l;
+      val x: Long = l
       x
     }).toSeq
   }
@@ -116,7 +117,9 @@ class SnitchingQueryContext extends QueryContext {
 
   def relationshipOps() = ???
 
-  def getLabelsForNode(node: Node) = ???
+  def getLabelName(id: lang.Long) = ???
+
+  def getLabelsForNode(node: Node) = Seq(12L.asInstanceOf[java.lang.Long]).toIterable.asJava
 
   def replaceLabelsOfNode(node: Node, labelIds: lang.Iterable[lang.Long]) = ???
 

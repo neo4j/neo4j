@@ -24,6 +24,8 @@ import org.junit.Test
 import org.scalatest.Assertions
 import org.neo4j.cypher.CypherTypeException
 import org.neo4j.cypher.internal.ExecutionContext
+import values.{ResolvedLabel, LabelId, LabelName}
+import org.neo4j.cypher.internal.spi.QueryContext
 
 class StringFunctionsTest extends Assertions {
   @Test def replaceTests() {
@@ -140,5 +142,11 @@ class StringFunctionsTest extends Assertions {
     assert(str(1234) === "1234")
     assert(str(List(1, 2, 3, 4)) === "[1,2,3,4]")
     assert(str(null) === null)
+
+    assert(str(LabelName("foo")) === "foo")
+    val labelId = new LabelId(12) {
+      override def resolve(ctx: QueryContext) = ResolvedLabel(12, "bar")
+    }
+    assert(str(labelId) === "bar")
   }
 }

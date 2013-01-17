@@ -17,34 +17,40 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.commands
+package org.neo4j.cypher.internal.commands.expressions
 
-import expressions.{Literal, StrLabelFunction}
-import org.junit.Test
 import org.scalatest.Assertions
+import org.junit.Test
+import org.neo4j.cypher.internal.commands.values.LabelId
 import org.neo4j.cypher.internal.ExecutionContext
-import org.neo4j.cypher.CypherTypeException
-import values.LabelName
+import org.neo4j.cypher.internal.pipes.QueryState
+import org.neo4j.graphdb.Node
+import org.scalatest.mock.MockitoSugar
+import org.neo4j.cypher.internal.spi.QueryContext
+import org.mockito.Mockito
+import scala.collection.JavaConverters._
 
 /*
  * Copyright (C) 2012 Neo Technology
  * All rights reserved
  */
 
-class StrLabelFunctionTest extends Assertions {
+class LabelsFunctionTest extends Assertions with MockitoSugar {
 
   @Test
-  def testWithCorrectType() {
-    assert(StrLabelFunction(Literal("bluey"))(ExecutionContext.empty) === LabelName("bluey"))
-  }
+  def testIdLookup() {
+    // GIVEN
+    val node = mock[Node]
+    val queryContext = mock[QueryContext]
+    val ids = Seq(12L.asInstanceOf[java.lang.Long]).toIterable.asJava
+    Mockito.when(queryContext.getLabelsForNode(node)).thenReturn(ids)
+    val state = new QueryState(null, queryContext, Map.empty)
+    val ctx = ExecutionContext(state = state) += ("n" -> node)
 
-  @Test
-  def testWithIncorrectType() {
-    intercept[CypherTypeException] { StrLabelFunction(Literal(3))(ExecutionContext.empty) }
-  }
+    // WHEN
+    val when: Expression = LabelsFunction(Identifier("n"))
 
-  @Test
-  def testCalculateTypeThrows() {
-    intercept[CypherTypeException] { StrLabelFunction(Literal(3)).calculateType(null) }
+    // THEN
+    assert(when(ctx) === Seq(LabelId(12L)))
   }
 }

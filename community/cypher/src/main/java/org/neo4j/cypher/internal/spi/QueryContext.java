@@ -54,6 +54,8 @@ public interface QueryContext
     // TODO: Figure out how this can be a primitive type
     Long getOrCreateLabelId( String labelName );
 
+    String getLabelName( Long id);
+
     Iterable<Long> getLabelsForNode( Node node );
 
     void addLabelsToNode( Node node, Iterable<Long> labelIds );

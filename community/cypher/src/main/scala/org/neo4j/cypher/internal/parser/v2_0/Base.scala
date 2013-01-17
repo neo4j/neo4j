@@ -21,8 +21,9 @@ package org.neo4j.cypher.internal.parser.v2_0
 
 import scala.util.parsing.combinator._
 import org.neo4j.helpers.ThisShouldNotHappenError
-import org.neo4j.cypher.internal.commands.expressions.{LabelValue, ParameterExpression, Expression, Literal}
+import org.neo4j.cypher.internal.commands.expressions.{ParameterExpression, Expression, Literal}
 import org.neo4j.cypher.internal.commands.{LabelDel, LabelAdd, LabelSet, LabelOp}
+import org.neo4j.cypher.internal.commands.values.{LabelName, LabelValue}
 
 abstract class Base extends JavaTokenParsers {
   var namer = new NodeNamer
@@ -102,7 +103,7 @@ abstract class Base extends JavaTokenParsers {
 
   def labelOpStr: Parser[String] = "=" | "+=" | "-="
 
-  def labelLit: Parser[Literal] = ":" ~> identity ^^ { x => Literal(LabelValue(x)) }
+  def labelLit: Parser[Literal] = ":" ~> identity ^^ { x => Literal(LabelName(x)) }
 
   def string: Parser[String] = (stringLiteral | apostropheString) ^^ (str => stripQuotes(str))
 

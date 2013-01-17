@@ -17,7 +17,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.commands.expressions
+package org.neo4j.cypher.internal.commands.values
+
+import org.neo4j.cypher.internal.spi.QueryContext
 
 
-case class LabelValue(name: String)
+sealed abstract class LabelValue {
+  def resolve(ctx: QueryContext): ResolvedLabel
+}
+
+case class LabelName(name: String) extends LabelValue {
+  def resolve(ctx: QueryContext) = ResolvedLabel(ctx.getOrCreateLabelId(name), name)
+}
+
+case class LabelId(id: Long) extends LabelValue {
+  def resolve(ctx: QueryContext) = ResolvedLabel(id, ctx.getLabelName(id.asInstanceOf[java.lang.Long]))
+}
+
+case class ResolvedLabel(id: Long, name: String) extends LabelValue {
+  def resolve(ctx: QueryContext) = this
+}
