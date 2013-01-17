@@ -79,11 +79,10 @@ public class ClusterSettings
     public static final Setting<Long> broadcast_timeout = setting( "ha.broadcast_timeout", DURATION, "30s" );
 
     @Description( "Timeout for joining a cluster" )
-    public static final Setting<Long> join_timeout = setting( "ha.join_timeout", DURATION, default_timeout );
+    public static final Setting<Long> join_timeout = setting( "ha.join_timeout", DURATION, broadcast_timeout );
 
     @Description( "Timeout for waiting for configuration from an existing cluster member" )
-    public static final Setting<Long> configuration_timeout = setting( "ha.configuration_timeout", DURATION,
-            default_timeout );
+    public static final Setting<Long> configuration_timeout = setting( "ha.configuration_timeout", DURATION, "1s" );
 
     @Description( "Timeout for waiting for cluster leave to finish" )
     public static final Setting<Long> leave_timeout = setting( "ha.leave_timeout", DURATION, broadcast_timeout );

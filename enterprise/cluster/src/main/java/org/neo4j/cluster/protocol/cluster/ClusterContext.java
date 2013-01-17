@@ -20,6 +20,7 @@
 package org.neo4j.cluster.protocol.cluster;
 
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -47,6 +48,9 @@ public class ClusterContext
     public final Timeouts timeouts;
     private Executor executor;
     private Logging logging;
+    private List<URI> discoveredInstances = new ArrayList<URI>(  );
+    private String joiningClusterName;
+    private Iterable<URI> joiningInstances;
 
     public ClusterContext( ProposerContext proposerContext,
                            LearnerContext learnerContext,
@@ -86,6 +90,13 @@ public class ClusterContext
                 listener.enteredCluster( configuration );
             }
         } );
+    }
+
+    public void joining(String name, Iterable<URI> instanceList)
+    {
+        joiningClusterName = name;
+        joiningInstances = instanceList;
+        discoveredInstances.clear();
     }
 
     public void acquiredConfiguration( final List<URI> memberList, final Map<String, URI> roles )
@@ -206,6 +217,16 @@ public class ClusterContext
     public boolean isInCluster()
     {
         return !configuration.getMembers().isEmpty();
+    }
+
+    public Iterable<URI> getJoiningInstances()
+    {
+        return joiningInstances;
+    }
+
+    public List<URI> getDiscoveredInstances()
+    {
+        return discoveredInstances;
     }
 
     public StringLogger getLogger( Class loggingClass )

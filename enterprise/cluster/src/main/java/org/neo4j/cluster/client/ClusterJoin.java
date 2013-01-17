@@ -46,7 +46,10 @@ import org.neo4j.cluster.ProtocolServer;
 import org.neo4j.cluster.protocol.cluster.Cluster;
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.protocol.cluster.ClusterListener;
+import org.neo4j.helpers.Function;
 import org.neo4j.helpers.HostnamePort;
+import org.neo4j.helpers.Predicate;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.Logging;
@@ -188,36 +191,47 @@ public class ClusterJoin
             Clusters.Cluster clusterConfig = clusters.getCluster( config.getClusterName() );
             if ( clusterConfig != null )
             {
-                for ( Clusters.Member member : clusterConfig.getMembers() )
+                URI[] memberURIs = Iterables.toArray(URI.class,
+                        Iterables.filter( new Predicate<URI>()
+                        {
+                            @Override
+                            public boolean accept( URI uri )
+                            {
+                                return !uri.equals( serverId );
+                            }
+                        },
+                        Iterables.map(new Function<Clusters.Member, URI>()
+                        {
+                            @Override
+                            public URI apply( Clusters.Member member)
+                            {
+                                return URI.create( "cluster://" + member.getHost() );
+                            }
+                        }, clusterConfig.getMembers())));
+
+                Future<ClusterConfiguration> config = cluster.join( this.config.getClusterName(), memberURIs );
+                try
                 {
-                    URI joinUri = new URI( "cluster://" + member.getHost() );
-                    if ( !joinUri.equals( serverId ) )
+                    logger.debug( "Joined cluster:" + config.get() );
+
+                    try
                     {
-                        Future<ClusterConfiguration> config = cluster.join( joinUri );
-                        try
-                        {
-                            logger.debug( "Joined cluster:" + config.get() );
-
-                            try
-                            {
-                                updateMyInfo();
-                            }
-                            catch ( TransformerException e )
-                            {
-                                throw new RuntimeException( e );
-                            }
-
-                            return;
-                        }
-                        catch ( InterruptedException e )
-                        {
-                            e.printStackTrace();
-                        }
-                        catch ( ExecutionException e )
-                        {
-                            logger.debug( "Could not join cluster member " + member.getHost() );
-                        }
+                        updateMyInfo();
                     }
+                    catch ( TransformerException e )
+                    {
+                        throw new RuntimeException( e );
+                    }
+
+                    return;
+                }
+                catch ( InterruptedException e )
+                {
+                    e.printStackTrace();
+                }
+                catch ( ExecutionException e )
+                {
+                    logger.debug( "Could not join cluster " + this.config.getClusterName() );
                 }
             }
 
@@ -347,48 +361,58 @@ public class ClusterJoin
         }
         else
         {
-            try
+            while( true )
             {
-                while( true )
+                URI[] memberURIs = Iterables.toArray(URI.class,
+                        Iterables.filter( new Predicate<URI>()
+                        {
+                            @Override
+                            public boolean accept( URI uri )
+                            {
+                                return !serverId.equals( uri );
+                            }
+                        },
+                        Iterables.map(new Function<HostnamePort, URI>()
+                        {
+                            @Override
+                            public URI apply( HostnamePort member)
+                            {
+                                return URI.create( "cluster://" + resolvePortOnlyHost( member ) );
+                            }
+                        }, hosts)));
+
+                for ( HostnamePort host : hosts )
                 {
-                    for ( HostnamePort host : hosts )
+                    if ( serverId.toString().endsWith( host.toString() ) )
                     {
-                        if ( serverId.toString().endsWith( host.toString() ) )
-                        {
-                            continue; // Don't try to join myself
-                        }
-
-                        String hostString = resolvePortOnlyHost( host );
-                        logger.debug( "Attempting to join " + hostString );
-                        Future<ClusterConfiguration> clusterConfig = cluster.join( new URI( "cluster://" + hostString ) );
-                        try
-                        {
-                            logger.debug( "Joined cluster:" + clusterConfig.get() );
-                            return;
-                        }
-                        catch ( InterruptedException e )
-                        {
-                            e.printStackTrace();
-                        }
-                        catch ( ExecutionException e )
-                        {
-                            logger.debug( "Could not join cluster member " + hostString );
-                        }
+                        continue; // Don't try to join myself
                     }
 
-                    if ( config.isAllowedToCreateCluster() )
+                    String hostString = resolvePortOnlyHost( host );
+                    logger.debug( "Attempting to join " + hosts.toString());
+                    Future<ClusterConfiguration> clusterConfig = cluster.join( this.config.getClusterName(), memberURIs );
+                    try
                     {
-                        // Failed to join cluster, create new one
-                        cluster.create( config.getClusterName() );
-                        break;
+                        logger.debug( "Joined cluster:" + clusterConfig.get() );
+                        return;
                     }
-                    // else retry the list from the top
+                    catch ( InterruptedException e )
+                    {
+                        e.printStackTrace();
+                    }
+                    catch ( ExecutionException e )
+                    {
+                        logger.debug( "Could not join cluster " + this.config.getClusterName());
+                    }
                 }
-            }
-            catch ( URISyntaxException e )
-            {
-                // This
-                e.printStackTrace();
+
+                if ( config.isAllowedToCreateCluster() )
+                {
+                    // Failed to join cluster, create new one
+                    cluster.create( config.getClusterName() );
+                    break;
+                }
+                // else retry the list from the top
             }
         }
     }
