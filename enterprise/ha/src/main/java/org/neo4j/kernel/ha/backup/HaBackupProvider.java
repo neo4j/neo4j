@@ -132,7 +132,7 @@ public final class HaBackupProvider extends BackupExtensionService
         {
             if ( !infoReceivedLatch.tryAcquire( 10, TimeUnit.SECONDS ) )
             {
-                throw new RuntimeException( "Could not find master in cluster " + clusterName + " at " + from + ", " +
+                throw new RuntimeException( "Could not find backup server in cluster " + clusterName + " at " + from + ", " +
                         "operation timed out" );
             }
         }
