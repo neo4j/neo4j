@@ -91,10 +91,9 @@ public class TransactionLifecycleTransactionContext implements TransactionContex
     }
     
     @Override
-    public TransactionContext success()
+    public void success()
     {
         transaction.success();
-        return this;
     }
 
     @Override
@@ -107,5 +106,11 @@ public class TransactionLifecycleTransactionContext implements TransactionContex
         cache.apply( state );
         // - outside this commit() call there will be LockingTransactionContext
         //   if such is decorated, and it will release acquired locks
+    }
+
+    @Override
+    public void failure()
+    {
+        transaction.failure();
     }
 }

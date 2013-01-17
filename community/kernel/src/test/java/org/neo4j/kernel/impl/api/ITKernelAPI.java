@@ -47,7 +47,8 @@ public class ITKernelAPI
         Node node = db.createNode();
         long labelId = statement.getOrCreateLabelId( "labello" );
         statement.addLabelToNode( labelId, node.getId() );
-        tx.success().finish();
+        tx.success();
+        tx.finish();
 
         // THEN
         tx = kernel.newTransactionContext();
@@ -68,7 +69,8 @@ public class ITKernelAPI
         Node node = db.createNode();
         long labelId = statement.getOrCreateLabelId( "labello" );
         statement.addLabelToNode( labelId, node.getId() );
-        tx.success().finish();
+        tx.success();
+        tx.finish();
         outerTx.finish();
 
         // THEN
@@ -89,6 +91,28 @@ public class ITKernelAPI
         Node node = db.createNode();
         long labelId = statement.getOrCreateLabelId( "labello" );
         statement.addLabelToNode( labelId, node.getId() );
+        tx.finish();
+
+        // THEN
+        tx = kernel.newTransactionContext();
+        statement = tx.newStatementContext();
+        assertFalse( statement.isLabelSetOnNode( labelId, node.getId() ) );
+    }
+    
+    @Test
+    public void shouldNotBeAbleToCommitIfFailedTransactionContext() throws Exception
+    {
+        // GIVEN
+        KernelAPI kernel = db.getDependencyResolver().resolveDependency( KernelAPI.class );
+        TransactionContext tx = kernel.newTransactionContext();
+        StatementContext statement = tx.newStatementContext();
+
+        // WHEN
+        Node node = db.createNode();
+        long labelId = statement.getOrCreateLabelId( "labello" );
+        statement.addLabelToNode( labelId, node.getId() );
+        tx.failure();
+        tx.success();
         tx.finish();
 
         // THEN

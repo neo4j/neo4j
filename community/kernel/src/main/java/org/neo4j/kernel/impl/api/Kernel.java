@@ -51,8 +51,10 @@ public class Kernel implements KernelAPI
         TransactionContext result = new TemporaryLabelAsPropertyTransactionContext( propertyIndexManager, persistenceManager );
         // + Locking
         result = new LockingTransactionContext( result, lockManager, transactionManager );
-        // + Transaction lifecycle
+        // + Transaction life cycle
         result = new TransactionLifecycleTransactionContext( result, transactionManager, propertyIndexManager, persistenceManager, cache );
+        // + Single statement at a time
+        result = new SingleStatementTransactionContext( result );
         
         // done
         return result;

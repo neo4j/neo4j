@@ -43,9 +43,13 @@ public class TemporaryLabelAsPropertyTransactionContext implements TransactionCo
     }
 
     @Override
-    public TransactionContext success()
+    public void success()
     {
-        return this;
+    }
+    
+    @Override
+    public void failure()
+    {
     }
 
     @Override

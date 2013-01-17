@@ -22,6 +22,7 @@ package org.neo4j.kernel.api;
 public interface TransactionContext
 {
     StatementContext newStatementContext();
-    TransactionContext success();
+    void success();
+    void failure();
     void finish();
 }
