@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher
 
+import internal.helpers.StatementContextMock.TxQueryContextWrapSupport
+import internal.spi.TxQueryContextWrap
 import org.junit.{After, Before}
 import scala.collection.JavaConverters._
 import org.scalatest.junit.JUnitSuite
@@ -27,7 +29,7 @@ import org.neo4j.graphdb._
 import org.neo4j.test.ImpermanentGraphDatabase
 import org.neo4j.kernel.GraphDatabaseAPI
 
-class GraphDatabaseTestBase extends JUnitSuite {
+class GraphDatabaseTestBase extends JUnitSuite with TxQueryContextWrapSupport {
   var graph: GraphDatabaseAPI with Snitch = null
   var refNode: Node = null
   var nodes: List[Node] = null
@@ -61,7 +63,18 @@ class GraphDatabaseTestBase extends JUnitSuite {
 
       props.foreach((kv) => node.setProperty(kv._1, kv._2))
       node
-    }).asInstanceOf[Node]
+    })
+  }
+
+  def createLabeledNode(props: Map[String, Any], labels: String*): Node = {
+    withTxWrap(graph)({ (wrap: TxQueryContextWrap) =>
+      val query = wrap.getQueryContext()
+      val node = query.createNode()
+      props.foreach((kv) => node.setProperty(kv._1, kv._2))
+      val labelIds = labels.toIterable.map { (l) => query.getOrCreateLabelId(l) }
+      query.addLabelsToNode(node, labelIds.asJava)
+      node
+    })
   }
 
   def createNode(values: (String, Any)*): Node = createNode(values.toMap)

@@ -34,8 +34,6 @@ class PipeExecutionResult(result: Iterator[Map[String, Any]], val columns: List[
   with CollectionSupport
   with StringHelper {
 
-  private def valueMapper = new ResultValueMapper(state.query)
-
   def javaColumns: java.util.List[String] = columns.asJava
 
   def javaColumnAs[T](column: String): java.util.Iterator[T] = columnAs[T](column).map(x => makeValueJavaCompatible(x).asInstanceOf[T]).asJava
@@ -43,7 +41,7 @@ class PipeExecutionResult(result: Iterator[Map[String, Any]], val columns: List[
   def columnAs[T](column: String): Iterator[T] = map {
     case m => {
       val item: Any = m.getOrElse(column, throw new EntityNotFoundException("No column named '" + column + "' was found. Found: " + m.keys.mkString("(\"", "\", \"", "\")")))
-      valueMapper(item).asInstanceOf[T]
+      item.asInstanceOf[T]
     }
   }
 
@@ -53,7 +51,7 @@ class PipeExecutionResult(result: Iterator[Map[String, Any]], val columns: List[
   }
 
   def javaIterator: java.util.Iterator[java.util.Map[String, Any]] = this.map(m => {
-    m.map(kv => kv._1 -> makeValueJavaCompatible(valueMapper(kv._2))).asJava
+    m.map(kv => kv._1 -> makeValueJavaCompatible(kv._2)).asJava
   }).toIterator.asJava
 
   private def calculateColumnSizes(result: Seq[Map[String, Any]]): Map[String, Int] = {
@@ -72,7 +70,7 @@ class PipeExecutionResult(result: Iterator[Map[String, Any]], val columns: List[
 
   protected def createTimedResults: (List[Map[String, Any]], String) = {
     val start = System.currentTimeMillis()
-    val eagerResult = result.toList.map { _.mapValues(valueMapper) }
+    val eagerResult = result.toList
     val ms = System.currentTimeMillis() - start
 
     (eagerResult, ms.toString)
@@ -140,7 +138,7 @@ class PipeExecutionResult(result: Iterator[Map[String, Any]], val columns: List[
 
   def hasNext: Boolean = result.hasNext
 
-  def next(): ImmutableMap[String, Any] = result.next().toMap.mapValues(valueMapper)
+  def next(): ImmutableMap[String, Any] = result.next().toMap
 
   def queryStatistics = QueryStatistics.empty
 }

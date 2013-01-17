@@ -2410,4 +2410,46 @@ RETURN x0.name?
     assert(result.toList === List(Map(("r" -> List("foo", "bar")))))
 >>>>>>> 04d4dce... Ensure labels get returned as strings
   }
+
+  @Test def should_add_label_to_node() {
+    val a = createNode()
+    val result = parseAndExecute("""START a=node(1) LABEL a += :foo RETURN a""")
+
+    assert(result.toList === List(Map("a" -> a)))
+  }
+
+  @Test def should_add_multiple_labels_to_node() {
+    val a = createNode()
+    val result = parseAndExecute("""START a=node(1) LABEL a += [:foo, :bar] RETURN a""")
+
+    assert(result.toList === List(Map("a" -> a)))
+  }
+
+  @Test def should_set_label_on_node() {
+    val a = createNode()
+    val result = parseAndExecute("""START a=node(1) LABEL a = :foo RETURN a""")
+
+    assert(result.toList === List(Map("a" -> a)))
+  }
+
+  @Test def should_set_multiple_labels_on_node() {
+    val a = createNode()
+    val result = parseAndExecute("""START a=node(1) LABEL a = [:foo, :bar] RETURN a""")
+
+    assert(result.toList === List(Map("a" -> a)))
+  }
+
+  @Test def should_remove_label_from_node() {
+    val a = createLabeledNode(Map.empty, "foo")
+    val result = parseAndExecute("""START a=node(1) LABEL a -= :foo RETURN a""")
+
+    assert(result.toList === List(Map("a" -> a)))
+  }
+
+  @Test def should_remove_multiple_labels_from_node() {
+    val a = createLabeledNode(Map.empty, "foo")
+    val result = parseAndExecute("""START a=node(1) LABEL a -= [:foo, :bar] RETURN a""")
+
+    assert(result.toList === List(Map("a" -> a)))
+  }
 }

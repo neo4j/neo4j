@@ -32,6 +32,6 @@ trait TxQueryContextWrapSupport {
     val stmCtx = statementContextProvider.getCtxForWriting();
     val kbqc = new KernelBackedQueryContext(graph, stmCtx)
     val wrap = new TxQueryContextWrap(kbqc, tx)
-    return fun(wrap)
+    fun(wrap)
   }
 }
