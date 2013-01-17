@@ -74,8 +74,26 @@ public class KernelBackedQueryContext implements QueryContext {
     }
 
     @Override
+    public void replaceLabelsOfNode( Node node, Iterable<Long> labelIds )
+    {
+        throw new UnsupportedOperationException(  );
+    }
+
+    @Override
+    public void removeLabelsFromNode( Node node, Iterable<Long> labelIds )
+    {
+        throw new UnsupportedOperationException(  );
+    }
+
+    @Override
     public Long getOrCreateLabelId(String labelName) {
         return ctx.getOrCreateLabelId(labelName);
+    }
+
+    @Override
+    public Iterable<Long> getLabelsForNode( Node node )
+    {
+        throw new UnsupportedOperationException(  );
     }
 
     @Override

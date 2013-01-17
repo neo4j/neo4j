@@ -29,6 +29,7 @@ import java.lang.{Iterable => JIterable}
 import collection.JavaConverters._
 import org.neo4j.cypher.internal.pipes.QueryState
 import org.junit.Test
+import java.lang
 
 /*
  * Copyright (C) 2012 Neo Technology
@@ -114,4 +115,10 @@ class SnitchingQueryContext extends QueryContext {
   def nodeOps() = ???
 
   def relationshipOps() = ???
+
+  def getLabelsForNode(node: Node) = ???
+
+  def replaceLabelsOfNode(node: Node, labelIds: lang.Iterable[lang.Long]) = ???
+
+  def removeLabelsFromNode(node: Node, labelIds: lang.Iterable[lang.Long]) = ???
 }
