@@ -1909,6 +1909,64 @@ foreach(x in [1,2,3] :
     )
   }
 
+  @Test def remove_label() {
+    val q2 = Query.
+      start().
+      updates(LabelAction(Identifier("n"), LabelDel, Literal(LabelName("LabelName")))).
+      returns()
+
+    testFrom_2_0("START n=node(0) LABEL n -= :LabelName",
+      Query.
+        start(NodeById("n", 0)).
+        tail(q2).
+        returns(AllIdentifiers())
+    )
+  }
+
+  @Test def remove_multiple_labels() {
+    val coll = Collection(Literal(LabelName("LabelName2")), Literal(LabelName("LabelName3")))
+    val q2   = Query.
+      start().
+      updates(LabelAction(Identifier("n"), LabelDel, coll)).
+      returns()
+
+    testFrom_2_0("START n=node(0) LABEL n -= [:LabelName2, :LabelName3]",
+      Query.
+        start(NodeById("n", 0)).
+        tail(q2).
+        returns(AllIdentifiers())
+    )
+  }
+
+  @Test def replace_label() {
+    val q2 = Query.
+      start().
+      updates(LabelAction(Identifier("n"), LabelSet, Literal(LabelName("LabelName")))).
+      returns()
+
+    testFrom_2_0("START n=node(0) LABEL n = :LabelName",
+      Query.
+        start(NodeById("n", 0)).
+        tail(q2).
+        returns(AllIdentifiers())
+    )
+  }
+
+  @Test def replace_multiple_labels() {
+    val coll = Collection(Literal(LabelName("LabelName2")), Literal(LabelName("LabelName3")))
+    val q2   = Query.
+      start().
+      updates(LabelAction(Identifier("n"), LabelSet, coll)).
+      returns()
+
+    testFrom_2_0("START n=node(0) LABEL n = [:LabelName2, :LabelName3]",
+      Query.
+        start(NodeById("n", 0)).
+        tail(q2).
+        returns(AllIdentifiers())
+    )
+  }
+
   @Ignore("slow test") @Test def multi_thread_parsing() {
     val q = """start root=node(0) return x"""
     val parser = new CypherParser()
