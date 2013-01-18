@@ -22,6 +22,9 @@ package org.neo4j.graphdb;
 import java.util.Collection;
 import java.util.Iterator;
 
+import org.neo4j.graphdb.traversal.TraversalDescription;
+import org.neo4j.kernel.Traversal;
+
 /**
  * A traversal in the node space. A Traverser is an {@link Iterable} that
  * encapsulates a number of traversal parameters (defined at traverser creation)

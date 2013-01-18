@@ -84,7 +84,7 @@ public class HostnamePortTest
         assertThat( hostnamePort.getPort(), equalTo( 1230 ) );
         assertThat( hostnamePort.getPorts(), equalTo( new int[] { 1230, 1240 } ) );
     }
-    
+
     @Test
     public void testDefaultHost() throws Exception
     {
@@ -120,5 +120,14 @@ public class HostnamePortTest
         // Should not match, no port
         assertFalse( hostnamePortWithRange.matches( URI.create( "ha://host1" ) ) );
         assertFalse( hostnamePortWithRange.matches( URI.create( "ha://host2" ) ) );
+    }
+
+    @Test
+    public void testMatchesNullHost() throws Exception
+    {
+        HostnamePort hostnamePortSinglePort = new HostnamePort( ":1234" );
+        assertFalse( hostnamePortSinglePort.matches( URI.create( "ha://host1:1234" ) ) );
+        // no scheme means no ports and no host, so both null therefore comparison fails
+        assertFalse( hostnamePortSinglePort.matches( URI.create( "host1:1234" ) ) );
     }
 }

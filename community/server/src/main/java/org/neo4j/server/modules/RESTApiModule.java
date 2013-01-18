@@ -61,7 +61,7 @@ public class RESTApiModule implements ServerModule
 
             webServer.addJAXRSPackages( getPackageNames(), restApiUri.toString(), null );
             loadPlugins( logger );
-            
+
             setupRequestTimeLimit();
 
             log.info( "Mounted REST API at [%s]", restApiUri.toString() );

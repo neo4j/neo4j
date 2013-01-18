@@ -19,6 +19,8 @@
  */
 package org.neo4j.server.enterprise;
 
+import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.server.InterruptThreadTimer;
 import org.neo4j.server.advanced.AdvancedNeoServer;
 import org.neo4j.server.configuration.Configurator;
@@ -27,6 +29,8 @@ import org.neo4j.server.preflight.EnsurePreparedForHttpLogging;
 import org.neo4j.server.preflight.PerformRecoveryIfNecessary;
 import org.neo4j.server.preflight.PerformUpgradeIfNecessary;
 import org.neo4j.server.preflight.PreFlightTasks;
+import org.neo4j.server.webadmin.rest.AdvertisableService;
+import org.neo4j.server.webadmin.rest.MasterInfoService;
 
 public class EnterpriseNeoServer extends AdvancedNeoServer {
 
@@ -35,7 +39,7 @@ public class EnterpriseNeoServer extends AdvancedNeoServer {
         this.configurator = configurator;
         init();
     }
-    
+
     @Override
 	protected PreFlightTasks createPreflightTasks() 
     {
@@ -54,7 +58,7 @@ public class EnterpriseNeoServer extends AdvancedNeoServer {
     @Override
 	protected Database createDatabase() 
     {
-    	return new EnterpriseDatabase(configurator.configuration());
+    	return new EnterpriseDatabase( configurator.configuration() );
     }
     
     @Override
@@ -72,7 +76,8 @@ public class EnterpriseNeoServer extends AdvancedNeoServer {
     			stopStartupTimer = InterruptThreadTimer.createTimer(
     					startupTimeout,
     					Thread.currentThread());
-            } else {
+            } else
+            {
             	stopStartupTimer = InterruptThreadTimer.createNoOpTimer();
             }
     		return stopStartupTimer;
@@ -82,4 +87,16 @@ public class EnterpriseNeoServer extends AdvancedNeoServer {
     	}
 	}
 
+    @Override
+    public Iterable<AdvertisableService> getServices()
+    {
+        if ( getDatabase().getGraph() instanceof HighlyAvailableGraphDatabase )
+        {
+            return Iterables.append( new MasterInfoService( null, null ), super.getServices() );
+        }
+        else
+        {
+            return super.getServices();
+        }
+    }
 }

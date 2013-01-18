@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.Assert.fail;
 
 import org.junit.After;
@@ -169,7 +170,7 @@ public class TestManualAcquireLock extends AbstractNeo4jTestCase
                     node.setProperty( key, value );
                     return null;
                 }
-            }, 200 );
+            }, 200, MILLISECONDS );
         }
     }
 }

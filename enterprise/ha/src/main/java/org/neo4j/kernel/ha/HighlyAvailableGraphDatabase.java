@@ -510,7 +510,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     @Override
     public String toString()
     {
-        return getClass().getSimpleName() + "[" + 0 + ", " + storeDir + "]";
+        return getClass().getSimpleName() + "[" + storeDir + "]";
     }
 
     public String getInstanceState()
@@ -540,23 +540,27 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                 {
                     if ( ClusterMemberEvents.class.isAssignableFrom( type ) )
                     {
-                        result = type.cast(clusterEvents);
+                        result = type.cast( clusterEvents );
                     }
                     else if ( ClusterMemberAvailability.class.isAssignableFrom( type ) )
                     {
-                        result = type.cast(clusterMemberAvailability);
+                        result = type.cast( clusterMemberAvailability );
                     }
                     else if ( UpdatePuller.class.isAssignableFrom( type ) )
                     {
-                        result = type.cast(updatePuller);
+                        result = type.cast( updatePuller );
                     }
                     else if ( Slaves.class.isAssignableFrom( type ) )
                     {
-                        result = type.cast(slaves);
+                        result = type.cast( slaves );
                     }
                     else if ( ClusterClient.class.isAssignableFrom( type ) )
                     {
-                        result = type.cast(clusterClient);
+                        result = type.cast( clusterClient );
+                    }
+                    else if ( ClusterMembers.class.isAssignableFrom( type ) )
+                    {
+                        result = type.cast( members );
                     }
                     else
                     {

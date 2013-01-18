@@ -39,15 +39,15 @@ import org.neo4j.server.rest.paging.LeaseManager;
 import org.neo4j.server.rest.paging.RealClock;
 import org.neo4j.server.rest.web.DatabaseActions;
 
-public class EnterpriseServerBuilder extends ServerBuilder {
-
+public class EnterpriseServerBuilder extends ServerBuilder
+{
     public static EnterpriseServerBuilder server()
     {
         return new EnterpriseServerBuilder();
     }
-	
-	@Override
-	public EnterpriseNeoServer build() throws IOException
+
+    @Override
+    public EnterpriseNeoServer build() throws IOException
     {
         if ( dbDir == null )
         {
@@ -55,20 +55,34 @@ public class EnterpriseServerBuilder extends ServerBuilder {
         }
         File configFile = createPropertiesFiles();
 
-        return new EnterpriseNeoServer(new PropertyFileConfigurator( new Validator( new DatabaseLocationMustBeSpecifiedRule() ), configFile ))
-	    {
-        	@Override
-        	protected PreFlightTasks createPreflightTasks() {
-        		return preflightTasks;
-        	}
+        if ( preflightTasks == null )
+        {
+            preflightTasks = new PreFlightTasks()
+            {
+                @Override
+                public boolean run()
+                {
+                    return true;
+                }
+            };
+        }
 
-        	@Override
-        	protected Database createDatabase() {
-        		return persistent ? 
-        				super.createDatabase() :
-    					new EphemeralDatabase(configurator.configuration());
-        		
-        	}
+        return new EnterpriseNeoServer( new PropertyFileConfigurator( new Validator(
+                new DatabaseLocationMustBeSpecifiedRule() ), configFile ) )
+        {
+            @Override
+            protected PreFlightTasks createPreflightTasks()
+            {
+                return preflightTasks;
+            }
+
+            @Override
+            protected Database createDatabase()
+            {
+                return persistent ?
+                        super.createDatabase() :
+                        new EphemeralDatabase( configurator.configuration() );
+            }
 
             @Override
             protected DatabaseActions createDatabaseActions()
@@ -76,13 +90,12 @@ public class EnterpriseServerBuilder extends ServerBuilder {
                 Clock clockToUse = (clock != null) ? clock : new RealClock();
 
                 return new DatabaseActions( database,
-                        new LeaseManager(clock),
+                        new LeaseManager( clockToUse ),
                         ForceMode.forced,
                         configurator.configuration().getBoolean(
                                 Configurator.SCRIPT_SANDBOXING_ENABLED_KEY,
-                                Configurator.DEFAULT_SCRIPT_SANDBOXING_ENABLED ));
+                                Configurator.DEFAULT_SCRIPT_SANDBOXING_ENABLED ) );
             }
-	    };
+        };
     }
-	
 }

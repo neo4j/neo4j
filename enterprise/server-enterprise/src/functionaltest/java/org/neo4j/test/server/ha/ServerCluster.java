@@ -37,6 +37,7 @@ import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Triplet;
 import org.neo4j.jmx.impl.JmxKernelExtension;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState;
 import org.neo4j.management.HighAvailability;
@@ -189,7 +190,8 @@ public final class ServerCluster
         config( dbConfig, //
                 Pair.of( ClusterSettings.cluster_name.name(), name ),//
                 Pair.of( HaSettings.ha_server.name(), "localhost:" + ports.first() ),//
-                Pair.of( HaSettings.server_id.name(), Integer.toString( id ) ) );
+                Pair.of( HaSettings.server_id.name(), Integer.toString( id ) ),
+                Pair.of( ClusterSettings.initial_hosts.name(), ":5001,:5002,:5003" ) );
 
         return Pair.of( serverConfig.getAbsolutePath(), serverDir );
     }
@@ -269,6 +271,11 @@ public final class ServerCluster
         return result;
     }
 
+    public Triplet<ServerManager, URI, File>[] getServers()
+    {
+        return servers;
+    }
+
     public interface ServerManager
     {
         URI awaitStartup();
@@ -276,6 +283,8 @@ public final class ServerCluster
         void update();
 
         boolean isMaster();
+
+        String getHaURI();
     }
 
     private static class ServerProcess extends SubProcess<ServerManager, String> implements
@@ -303,6 +312,12 @@ public final class ServerCluster
             System.setProperty( Configurator.NEO_SERVER_CONFIG_FILE_KEY, configFilePath );
             this.bootstrap = new EnterpriseBootstrapper();
             this.startupStatus = this.bootstrap.start();
+        }
+
+        @Override
+        public String getHaURI()
+        {
+            return graphDb().getDependencyResolver().resolveDependency( Config.class ).get( HaSettings.ha_server ).toString();
         }
 
         @Override

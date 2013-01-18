@@ -35,45 +35,52 @@ import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.enterprise.EnterpriseDatabase;
 import org.neo4j.server.enterprise.helpers.EnterpriseServerBuilder;
 
-public class EnterpriseServerIT {
+public class EnterpriseServerIT
+{
+    @Test
+    public void shouldBeAbleToStartInHAMode() throws Throwable
+    {
+        // Given
+        File tuningFile = createNeo4jProperties();
 
-	@Test
-	public void shouldBeAbleToStartInHAMode() throws Throwable
-	{
-		// Given
-		File tuningFile = createNeo4jProperties();
+        NeoServer server = EnterpriseServerBuilder.server()
+                .withProperty( Configurator.DB_MODE_KEY, "HA" )
+                .withProperty( Configurator.DB_TUNING_PROPERTY_FILE_KEY, tuningFile.getAbsolutePath() )
+                .persistent()
+                .build();
 
-		NeoServer server = EnterpriseServerBuilder.server()
-			.withProperty( Configurator.DB_MODE_KEY, "HA" )
-			.withProperty(Configurator.DB_TUNING_PROPERTY_FILE_KEY, tuningFile.getAbsolutePath())
-			.persistent()
-			.build();
-		
-		try 
-		{
-			server.start();
-			
-			assertThat(server.getDatabase(), is(EnterpriseDatabase.class));
-			assertThat(server.getDatabase().getGraph(), is(HighlyAvailableGraphDatabase.class));
-		} finally {
-			server.stop();
-		}
-	}
+        try
+        {
+            server.start();
+            server.getDatabase();
 
-	private File createNeo4jProperties() throws IOException,
-			FileNotFoundException {
-		File tuningFile = File.createTempFile("neo4j-test", "properties");
-		FileOutputStream fos = new FileOutputStream(tuningFile);
-		try {
-			Properties neo4jProps = new Properties();
-			
-			neo4jProps.put("ha.server_id", "1");
+            assertThat( server.getDatabase(), is( EnterpriseDatabase.class ) );
+            assertThat( server.getDatabase().getGraph(), is( HighlyAvailableGraphDatabase.class ) );
+        }
+        finally
+        {
+            server.stop();
+        }
+    }
 
-			neo4jProps.store(fos, "");
-			return tuningFile;
-		} finally {
-			fos.close();
-		}
-	}
-	
+    private File createNeo4jProperties() throws IOException,
+            FileNotFoundException
+    {
+        File tuningFile = File.createTempFile( "neo4j-test", "properties" );
+        FileOutputStream fos = new FileOutputStream( tuningFile );
+        try
+        {
+            Properties neo4jProps = new Properties();
+
+            neo4jProps.put( "ha.server_id", "1" );
+
+            neo4jProps.store( fos, "" );
+            return tuningFile;
+        }
+        finally
+        {
+            fos.close();
+        }
+    }
+
 }

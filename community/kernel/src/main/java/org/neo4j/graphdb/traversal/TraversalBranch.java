@@ -56,7 +56,8 @@ public interface TraversalBranch extends Path
     
     /**
      * Explicitly tell this branch to be pruned so that consecutive calls to
-     * {@link #next()} is guaranteed to return {@code null}.
+     * {@link #next(PathExpander, TraversalContext)} is guaranteed to return
+     * {@code null}.
      */
     void prune();
     

@@ -45,7 +45,7 @@ public class EphemeralDatabase extends CommunityDatabase {
 			.setConfig( loadNeo4jProperties() )
 			.newGraphDatabase();
 	}
-	
+
 	@Override
 	public void shutdown()
 	{

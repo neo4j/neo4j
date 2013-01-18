@@ -28,10 +28,9 @@ import org.neo4j.server.helpers.ServerHelper;
 
 public class SharedServerTestBase
 {
-	
 	private static boolean useExternal = Boolean.valueOf(System.getProperty("neo-server.external","false"));
 	private static String externalURL = System.getProperty("neo-server.external.url","http://localhost:7474");
-	
+
     protected static final NeoServer server()
     {
         return server;
@@ -77,8 +76,6 @@ public class SharedServerTestBase
     		serverUrl = server.baseUri().toString();
     	}
     }
-    
-    
 
     @AfterClass
     public static final void releaseServer()
