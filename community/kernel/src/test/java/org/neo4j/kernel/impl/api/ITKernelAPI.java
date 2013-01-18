@@ -102,7 +102,7 @@ public class ITKernelAPI
 
     private StatementContext getStatementContextFor( Transaction beansAPITx )
     {
-        return null;  //To change body of created methods use File | Settings | File Templates.
+        return null;
     }
 
     @Test
@@ -118,6 +118,7 @@ public class ITKernelAPI
         Node node = db.createNode();
         long labelId = statement.getOrCreateLabelId( "labello" );
         statement.addLabelToNode( labelId, node.getId() );
+        statement.close();
         tx.success();
         tx.finish();
         outerTx.finish();
@@ -140,6 +141,7 @@ public class ITKernelAPI
         Node node = db.createNode();
         long labelId = statement.getOrCreateLabelId( "labello" );
         statement.addLabelToNode( labelId, node.getId() );
+        statement.close();
         tx.finish();
 
         // THEN
@@ -160,6 +162,7 @@ public class ITKernelAPI
         Node node = db.createNode();
         long labelId = statement.getOrCreateLabelId( "labello" );
         statement.addLabelToNode( labelId, node.getId() );
+        statement.close();
         tx.failure();
         tx.success();
         tx.finish();

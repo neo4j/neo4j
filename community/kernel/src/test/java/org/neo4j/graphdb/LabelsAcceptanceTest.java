@@ -27,14 +27,12 @@ import org.neo4j.test.ImpermanentDatabaseRule;
 
 public class LabelsAcceptanceTest
 {
-
     public @Rule
     ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule();
 
-    private enum Labels implements Label {
-
+    private enum Labels implements Label
+    {
         MY_LABEL;
-
     }
 
     @Test
@@ -60,5 +58,4 @@ public class LabelsAcceptanceTest
         // Then
         assertTrue( "Label should have been added to node", myNode.hasLabel( Labels.MY_LABEL ) );
     }
-
 }

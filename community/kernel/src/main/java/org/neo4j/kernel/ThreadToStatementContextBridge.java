@@ -64,6 +64,20 @@ public class ThreadToStatementContextBridge
         throw new NotInTransactionException( "You have to start a transaction to perform write operations." );
     }
 
+    public boolean hasTransactionContextForThread()
+    {
+        return transactionContextForThread.get() != null;
+    }
+
+    public void closeAnyActiveContext( TransactionContext txCtx )
+    {
+        StatementContext stmtCtx = currentStatementCtx.get( txCtx );
+        if ( stmtCtx != null )
+        {
+            stmtCtx.close();
+        }
+    }
+
     private StatementContext contextForTransaction( TransactionContext txCtx )
     {
         StatementContext stmtCtx = currentStatementCtx.get( txCtx );

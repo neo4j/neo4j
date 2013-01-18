@@ -55,11 +55,20 @@ public class BeansAPITransaction implements Transaction
     @Override
     public void finish()
     {
-        txCtx.finish();
-        if ( !nested )
+        if ( !bridge.hasTransactionContextForThread() )
         {
-            bridge.clearThisThread();
+            return;
         }
+
+        if ( nested )
+        {
+            txCtx.finish();
+            return;
+        }
+
+        bridge.closeAnyActiveContext( txCtx );
+        txCtx.finish();
+        bridge.clearThisThread();
     }
 
     @Override
