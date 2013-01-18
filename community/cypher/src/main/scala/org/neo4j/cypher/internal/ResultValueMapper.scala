@@ -32,7 +32,7 @@ class ResultValueMapper(query: QueryContext) extends (Any => Any) {
   def apply(in: Any) = in match {
     case l: LabelName => l.name
     case l: LabelValue => l.resolve(query).name
-    case m: scala.collection.Map[_, _] => m.mapValues(this) // Do we need this?
+    // case m: scala.collection.Map[_, _] => m.mapValues(this) // Do we need this?
     case i: Traversable[_] => i.map(this)
     case x => x
   }
