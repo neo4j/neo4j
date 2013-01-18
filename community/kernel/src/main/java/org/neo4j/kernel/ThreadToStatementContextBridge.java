@@ -19,12 +19,9 @@
  */
 package org.neo4j.kernel;
 
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.kernel.api.StatementContext;
-import org.neo4j.kernel.api.TransactionContext;
+import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 
 /**
  * This is meant to serve as the bridge that makes the Beans API tie transactions to threads. The Beans API
@@ -33,21 +30,20 @@ import org.neo4j.kernel.api.TransactionContext;
 public class ThreadToStatementContextBridge
 {
     private final StatementContext readOnlyStatementCtx;
-    private final ThreadLocal<TransactionContext> transactionContextForThread = new ThreadLocal<TransactionContext>();
-    private final Map<TransactionContext, StatementContext> currentStatementCtx =
-            new ConcurrentHashMap<TransactionContext, StatementContext>();
+    private final AbstractTransactionManager txManager;
 
-    public ThreadToStatementContextBridge(StatementContext readOnlyStatementCtx)
+    public ThreadToStatementContextBridge(StatementContext readOnlyStatementCtx, AbstractTransactionManager txManager)
     {
         this.readOnlyStatementCtx = readOnlyStatementCtx;
+        this.txManager = txManager;
     }
 
     public StatementContext getCtxForReading()
     {
-        TransactionContext txCtx = transactionContextForThread.get();
-        if(txCtx != null)
+        StatementContext ctx = getStatementContext();
+        if(ctx != null)
         {
-            return contextForTransaction(txCtx);
+            return ctx;
         }
 
         return readOnlyStatementCtx;
@@ -55,10 +51,10 @@ public class ThreadToStatementContextBridge
 
     public StatementContext getCtxForWriting()
     {
-        TransactionContext txCtx = transactionContextForThread.get();
-        if(txCtx != null)
+        StatementContext ctx = getStatementContext();
+        if(ctx != null)
         {
-            return contextForTransaction(txCtx);
+            return ctx;
         }
 
         throw new NotInTransactionException( "You have to start a transaction to perform write operations." );
@@ -66,38 +62,20 @@ public class ThreadToStatementContextBridge
 
     public boolean hasTransactionContextForThread()
     {
-        return transactionContextForThread.get() != null;
+        return getStatementContext() != null;
     }
 
-    public void closeAnyActiveContext( TransactionContext txCtx )
+    public void closeAnyActiveContext(  )
     {
-        StatementContext stmtCtx = currentStatementCtx.get( txCtx );
+        StatementContext stmtCtx = getStatementContext();
         if ( stmtCtx != null )
         {
             stmtCtx.close();
         }
     }
 
-    private StatementContext contextForTransaction( TransactionContext txCtx )
+    private StatementContext getStatementContext()
     {
-        StatementContext stmtCtx = currentStatementCtx.get( txCtx );
-        if(stmtCtx == null)
-        {
-            stmtCtx = txCtx.newStatementContext();
-            currentStatementCtx.put( txCtx, stmtCtx );
-        }
-
-        return stmtCtx;
-    }
-
-    public void setTransactionContextForThread( TransactionContext ctx )
-    {
-        transactionContextForThread.set( ctx );
-    }
-
-    public void clearThisThread()
-    {
-        currentStatementCtx.remove( transactionContextForThread.get() );
-        transactionContextForThread.remove();
+        return txManager.getStatementContext();
     }
 }

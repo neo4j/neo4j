@@ -19,17 +19,17 @@
  */
 package org.neo4j.cypher.internal.helpers.StatementContextMock
 
-import org.neo4j.kernel.api.{TransactionContext, KernelAPI, StatementContext}
 import org.neo4j.cypher.internal.spi.TxQueryContextWrap
 import org.neo4j.cypher.internal.spi.kernelimpl.KernelBackedQueryContext
 import org.neo4j.graphdb.GraphDatabaseService
-import org.neo4j.kernel.GraphDatabaseAPI
+import org.neo4j.kernel.{ThreadToStatementContextBridge, GraphDatabaseAPI}
 
 trait TxQueryContextWrapSupport {
   protected def withTxWrap[T](graph: GraphDatabaseService)(fun: TxQueryContextWrap => T): T = {
-    val kernel = graph.asInstanceOf[GraphDatabaseAPI].getDependencyResolver.resolveDependency(classOf[KernelAPI])
-    val tx = kernel.newTransactionContext
-    val stmCtx = tx.newStatementContext()
+    val statementContextProvider = graph.asInstanceOf[GraphDatabaseAPI].getDependencyResolver().resolveDependency(
+      classOf[ThreadToStatementContextBridge] )
+    val tx = graph.beginTx()
+    val stmCtx = statementContextProvider.getCtxForWriting();
     val kbqc = new KernelBackedQueryContext(graph, stmCtx)
     val wrap = new TxQueryContextWrap(kbqc, tx)
     return fun(wrap)

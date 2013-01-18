@@ -19,8 +19,7 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 import org.junit.After;
 import org.junit.Before;
@@ -58,7 +57,15 @@ public class ITKernelAPI
      *     |      |
      *  Kernel Implementation
      *
-     * Meaning Kernel API and Beans API both manipulate the underlying kernel, causing lots of corner cases.
+     * Meaning Kernel API and Beans API both manipulate the underlying kernel, causing lots of corner cases. Most
+     * notably, those corner cases are related to Transactions, and the interplay between three transaction APIs:
+     *   - The Beans API
+     *   - The JTA Transaction Manager API
+     *   - The Kernel TransactionContext API
+     *
+     * In the long term, the goal is for JTA compliant stuff to live outside of the kernel, as an addon. The Kernel
+     * API will rule supreme over the land of transactions. We are a long way away from there, however, so as a first
+     * intermediary step, the JTA transaction manager rules supreme, and the Kernel API piggybacks on it.
      *
      * This test shows us how to use both the Kernel API and the Beans API together in the same transaction,
      * during the transition phase.
@@ -86,23 +93,12 @@ public class ITKernelAPI
         beansAPITx.success();
         beansAPITx.finish();
 
-        // You can use the kernel API on it's own, like this:
-        KernelAPI kernel = db.getDependencyResolver().resolveDependency( KernelAPI.class );
-        TransactionContext kernelAPITx = kernel.newTransactionContext();
-        statement = kernelAPITx.newStatementContext();
-        assertTrue( statement.isLabelSetOnNode( labelId, node.getId() ) );
-
-        // NOTE: Transactions are still thread-bound right now in the Kernel API, meaning if you use
+        // NOTE: Transactions are still thread-bound right now, because we use JTA to "own" transactions, meaning if you use
         // both the Kernel API to create transactions while a Beans API transaction is running in the same
         // thread, the results are undefined.
 
         // When the Kernel API implementation is done, the Kernel API transaction implementation is not meant
         // to be bound to threads.
-    }
-
-    private StatementContext getStatementContextFor( Transaction beansAPITx )
-    {
-        return null;
     }
 
     @Test
@@ -122,54 +118,50 @@ public class ITKernelAPI
         tx.success();
         tx.finish();
         outerTx.finish();
-
-        // THEN
-        tx = kernel.newTransactionContext();
-        statement = tx.newStatementContext();
-        assertFalse( statement.isLabelSetOnNode( labelId, node.getId() ) );
     }
     
     @Test
-    public void shouldBeAbleToRollBackTransactionContext() throws Exception
+    public void changesInTransactionContextShouldBeRolledBackWhenTxIsRolledBack() throws Exception
     {
         // GIVEN
-        KernelAPI kernel = db.getDependencyResolver().resolveDependency( KernelAPI.class );
-        TransactionContext tx = kernel.newTransactionContext();
-        StatementContext statement = tx.newStatementContext();
+        ThreadToStatementContextBridge statementContextProvider = db.getDependencyResolver().resolveDependency(
+                ThreadToStatementContextBridge.class );
+
+        Transaction tx = db.beginTx();
+        StatementContext statement = statementContextProvider.getCtxForWriting();
 
         // WHEN
         Node node = db.createNode();
         long labelId = statement.getOrCreateLabelId( "labello" );
         statement.addLabelToNode( labelId, node.getId() );
-        statement.close();
+        //statement.close();  // Because we are currently using the statement context from the beans API, the Beans API will close it for us
         tx.finish();
 
         // THEN
-        tx = kernel.newTransactionContext();
-        statement = tx.newStatementContext();
+        statement = statementContextProvider.getCtxForReading();
         assertFalse( statement.isLabelSetOnNode( labelId, node.getId() ) );
     }
     
     @Test
     public void shouldNotBeAbleToCommitIfFailedTransactionContext() throws Exception
     {
-        // GIVEN
-        KernelAPI kernel = db.getDependencyResolver().resolveDependency( KernelAPI.class );
-        TransactionContext tx = kernel.newTransactionContext();
-        StatementContext statement = tx.newStatementContext();
+        ThreadToStatementContextBridge statementContextProvider = db.getDependencyResolver().resolveDependency(
+                ThreadToStatementContextBridge.class );
+
+        Transaction tx = db.beginTx();
+        StatementContext statement = statementContextProvider.getCtxForWriting();
 
         // WHEN
         Node node = db.createNode();
         long labelId = statement.getOrCreateLabelId( "labello" );
         statement.addLabelToNode( labelId, node.getId() );
-        statement.close();
+        //statement.close();  // Because we are currently using the statement context from the beans API, the Beans API will close it for us
         tx.failure();
         tx.success();
         tx.finish();
 
         // THEN
-        tx = kernel.newTransactionContext();
-        statement = tx.newStatementContext();
+        statement = statementContextProvider.getCtxForReading();
         assertFalse( statement.isLabelSetOnNode( labelId, node.getId() ) );
     }
     

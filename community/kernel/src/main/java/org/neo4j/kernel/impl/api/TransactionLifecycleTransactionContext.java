@@ -28,28 +28,19 @@ import org.neo4j.kernel.PlaceboTransaction;
 import org.neo4j.kernel.TopLevelTransaction;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.TransactionContext;
-import org.neo4j.kernel.impl.core.PropertyIndexManager;
-import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 
 public class TransactionLifecycleTransactionContext implements TransactionContext
 {
     private final TransactionContext actual;
     private final AbstractTransactionManager transactionManager;
-    private final TxState state;
-    private final PersistenceCache cache;
     private final Transaction transaction;
 
     public TransactionLifecycleTransactionContext( TransactionContext actual,
-            AbstractTransactionManager transactionManager,
-            PropertyIndexManager propertyIndexManager,
-            PersistenceManager persistenceManager,
-            PersistenceCache cache )
+            AbstractTransactionManager transactionManager)
     {
         this.actual = actual;
         this.transactionManager = transactionManager;
-        this.cache = cache;
-        this.state = new TxState();
         this.transaction = getOrBeginTransaction();
     }
 
@@ -79,17 +70,9 @@ public class TransactionLifecycleTransactionContext implements TransactionContex
     @Override
     public StatementContext newStatementContext()
     {
-        // Store stuff
-        StatementContext result = actual.newStatementContext();
-        // + Caching
-        result = new CachingStatementContext( result, cache );
-        // + Transaction awareness
-        result = new TransactionStateAwareStatementContext( result, state );
-        
-        // done
-        return result;
+        return actual.newStatementContext();
     }
-    
+
     @Override
     public void success()
     {
@@ -102,10 +85,6 @@ public class TransactionLifecycleTransactionContext implements TransactionContex
         // - flush changes from tx state to the store
         // - tx.finish()
         transaction.finish();
-        // - commit changes from tx state to the cache
-        cache.apply( state );
-        // - outside this commit() call there will be LockingTransactionContext
-        //   if such is decorated, and it will release acquired locks
     }
 
     @Override

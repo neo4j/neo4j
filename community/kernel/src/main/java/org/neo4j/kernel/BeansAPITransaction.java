@@ -66,9 +66,8 @@ public class BeansAPITransaction implements Transaction
             return;
         }
 
-        bridge.closeAnyActiveContext( txCtx );
+        bridge.closeAnyActiveContext(  );
         txCtx.finish();
-        bridge.clearThisThread();
     }
 
     @Override

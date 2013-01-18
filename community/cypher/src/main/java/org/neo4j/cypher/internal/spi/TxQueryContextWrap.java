@@ -19,14 +19,14 @@
  */
 package org.neo4j.cypher.internal.spi;
 
-import org.neo4j.kernel.api.TransactionContext;
+import org.neo4j.graphdb.Transaction;
 
 public class TxQueryContextWrap {
 
     private final QueryContext queryCtx;
-    private final TransactionContext tx;
+    private final Transaction tx;
 
-    public TxQueryContextWrap(QueryContext queryCtx, TransactionContext tx) {
+    public TxQueryContextWrap(QueryContext queryCtx, Transaction tx) {
         this.queryCtx = queryCtx;
         this.tx = tx;
     }

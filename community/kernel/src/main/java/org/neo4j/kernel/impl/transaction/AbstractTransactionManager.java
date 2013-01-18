@@ -23,6 +23,8 @@ import javax.transaction.NotSupportedException;
 import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
 
+import org.neo4j.kernel.api.KernelAPI;
+import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -39,6 +41,8 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
  */
 public abstract class AbstractTransactionManager implements TransactionManager, Lifecycle
 {
+    private KernelAPI kernel;
+
     public void begin( ForceMode forceMode ) throws NotSupportedException, SystemException
     {
         begin();
@@ -73,21 +77,6 @@ public abstract class AbstractTransactionManager implements TransactionManager, 
      */
     public abstract TransactionState getTransactionState();
 
-    /**
-     * A temporary method for retrieving the transaction context for the current thread,
-     * this will be removed in future milestones.
-     *
-     * This helps code that is transitioning to the new Kernel API to handle transactions
-     * appropriately. Independent of how the transaction was started (through an external
-     * transaction manager or through eg. beginTx), we can retrieve the transaction context
-     * here.
-     *
-     * @return
-     */
-//    @Deprecated
-
-//    public abstract TransactionContext getTransactionContext();
-
     public abstract int getEventIdentifier();
 
     /**
@@ -96,5 +85,27 @@ public abstract class AbstractTransactionManager implements TransactionManager, 
     public Throwable getRecoveryError()
     {
         return null;
+    }
+
+    /**
+     * Temporarily here during transition to Kernel API.
+     *
+     * @return an open statement context for the current transaction. If none exists, it should create one. It
+     *         can do this using the kernel api that is provided at startup through the (ick) setKernel method.
+     */
+    @Deprecated
+    public StatementContext getStatementContext() {
+        throw new UnsupportedOperationException( "The current transaction manager implementation does not support the " +
+                "new StatementContext interface. This is an intermediary problem during transition to a new internal API." );
+    }
+
+    /**
+     * Temporarily here during transition to Kernel API
+     * @param kernel
+     */
+    @Deprecated
+    public void setKernel( KernelAPI kernel )
+    {
+
     }
 }

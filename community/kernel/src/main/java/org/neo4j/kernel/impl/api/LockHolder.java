@@ -45,6 +45,10 @@ public class LockHolder
 
     public LockHolder( LockManager lockManager, Transaction tx )
     {
+        if(tx == null)
+        {
+            throw new RuntimeException( "Cannot initialize lock holder without a transaction, got null." );
+        }
         this.lockManager = lockManager;
         this.tx = tx;
     }
@@ -84,7 +88,7 @@ public class LockHolder
         
         if ( releaseException != null )
         {
-//            log.warn( "Unable to release locks: " + releaseFailures + ". Example of exception:" + releaseException );
+            throw new RuntimeException( "Unable to release locks: " + releaseFailures + ".", releaseException );
         }
     }
     
@@ -109,7 +113,7 @@ public class LockHolder
         @Override
         public void release()
         {
-            lockType.release( lockManager, lockType, tx );
+            lockType.release( lockManager, this, tx );
         }
 
         @Override

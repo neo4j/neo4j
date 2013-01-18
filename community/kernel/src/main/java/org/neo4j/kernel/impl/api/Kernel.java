@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.api;
 
 import org.neo4j.kernel.api.KernelAPI;
-import org.neo4j.kernel.api.LabelNotFoundException;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.TransactionContext;
 import org.neo4j.kernel.impl.core.PropertyIndexManager;
@@ -60,10 +59,14 @@ public class Kernel implements KernelAPI
     {
         // I/O
         TransactionContext result = new TemporaryLabelAsPropertyTransactionContext( propertyIndexManager, persistenceManager );
+        // + Transaction life cycle
+        // XXX: This is disabled during transition phase, we are still using the legacy transaction management stuff
+        //result = new TransactionLifecycleTransactionContext( result, transactionManager, propertyIndexManager, persistenceManager, cache );
+
+        // + Transaction state and Caching
+        result = new StateHandlingTransactionContext( result, cache );
         // + Locking
         result = new LockingTransactionContext( result, lockManager, transactionManager );
-        // + Transaction life cycle
-        result = new TransactionLifecycleTransactionContext( result, transactionManager, propertyIndexManager, persistenceManager, cache );
         // + Single statement at a time
         result = new SingleStatementTransactionContext( result );
         

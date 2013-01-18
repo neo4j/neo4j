@@ -81,6 +81,6 @@ public class KernelBackedQueryContext implements QueryContext {
     @Override
     public void close() {
         gdsQueryContext.close();
-        ctx.close();
+        //ctx.close(); // This is commented out right now, because the Beans API currently closes statement context for us
     }
 }

@@ -19,10 +19,13 @@
  */
 package org.neo4j.graphdb;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.ThreadToStatementContextBridge;
+import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.test.ImpermanentDatabaseRule;
 
 public class LabelsAcceptanceTest
@@ -57,5 +60,39 @@ public class LabelsAcceptanceTest
 
         // Then
         assertTrue( "Label should have been added to node", myNode.hasLabel( Labels.MY_LABEL ) );
+    }
+
+    @Test
+    public void shouldNotDeadlock() throws Exception
+    {
+        // Given
+        GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
+
+        ThreadToStatementContextBridge statementContextProvider = db.getDependencyResolver().resolveDependency(
+                ThreadToStatementContextBridge.class );
+
+        Transaction tx = db.beginTx();
+
+        // When
+        doFakeCypherStatement( db, statementContextProvider );
+
+        tx.failure();
+        tx.finish();
+
+        doFakeCypherStatement( db, statementContextProvider );
+    }
+
+    private void doFakeCypherStatement( GraphDatabaseAPI db, ThreadToStatementContextBridge statementContextProvider )
+    {
+        Transaction tx = db.beginTx();
+
+        StatementContext ctx = statementContextProvider.getCtxForWriting();
+        Node node = db.createNode();
+
+        long labelId = ctx.getOrCreateLabelId( "A Label" );
+        ctx.addLabelToNode( labelId, node.getId() );
+
+        tx.success();
+        tx.finish();
     }
 }

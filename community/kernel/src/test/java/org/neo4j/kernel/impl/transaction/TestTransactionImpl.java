@@ -20,8 +20,8 @@
 package org.neo4j.kernel.impl.transaction;
 
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.mock;
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
 
 import javax.transaction.RollbackException;
 import javax.transaction.Synchronization;

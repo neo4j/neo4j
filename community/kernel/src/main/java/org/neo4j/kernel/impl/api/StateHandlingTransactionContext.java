@@ -19,41 +19,42 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import java.util.Set;
-
 import org.neo4j.kernel.api.StatementContext;
+import org.neo4j.kernel.api.TransactionContext;
 
-public class TransactionStateAwareStatementContext extends DelegatingStatementContext
+public class StateHandlingTransactionContext extends DelegatingTransactionContext
 {
+    private final PersistenceCache cache;
     private final TxState state;
 
-    public TransactionStateAwareStatementContext( StatementContext actual, TxState state )
+    public StateHandlingTransactionContext( TransactionContext actual, PersistenceCache cache )
     {
-        super( actual );
-        this.state = state;
+        super(actual);
+        this.cache = cache;
+        this.state = new TxState();
     }
 
     @Override
-    public void addLabelToNode( long labelId, long nodeId )
+    public StatementContext newStatementContext()
     {
-        Set<Long> addedLabels = state.getAddedLabels( nodeId, true );
+        // Store stuff
+        StatementContext result = super.newStatementContext();
+        // + Caching
+        result = new CachingStatementContext( result, cache );
+        // + Transaction-local state awareness
+        result = new TransactionStateAwareStatementContext( result, state );
 
-        if ( !addedLabels.add( labelId ) )
-            return; // Already added
-
-        super.addLabelToNode( labelId, nodeId );
+        // done
+        return result;
     }
 
     @Override
-    public boolean isLabelSetOnNode( long labelId, long nodeId )
+    public void finish()
     {
-        if ( state.hasChanges() )
-        {
-            Set<Long> addedLabels = state.getAddedLabels( nodeId, false );
-            if ( addedLabels != null && addedLabels.contains( labelId ) )
-                return true;
-        }
-
-        return super.isLabelSetOnNode( labelId, nodeId );
+        // - Ensure transaction is committed to disk at this point
+        super.finish();
+        // - commit changes from tx state to the cache
+        cache.apply( state );
     }
+
 }

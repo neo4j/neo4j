@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
+import javax.transaction.NotSupportedException;
 import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
 
@@ -55,7 +56,6 @@ import org.neo4j.helpers.Service;
 import org.neo4j.helpers.Settings;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.KernelAPI;
-import org.neo4j.kernel.api.TransactionContext;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConfigurationChange;
 import org.neo4j.kernel.configuration.ConfigurationChangeListener;
@@ -404,8 +404,10 @@ public abstract class InternalAbstractGraphDatabase
         Cache<RelationshipImpl> relCache = diagnosticsManager.tryAppendProvider( caches.relationship() );
 
         kernelAPI = new Kernel( txManager, propertyIndexManager, persistenceManager, lockManager );
+        // XXX: Circular dependency, temporary during transition to KernelAPI
+        txManager.setKernel(kernelAPI);
 
-        statementContextProvider = new ThreadToStatementContextBridge( kernelAPI.newReadOnlyStatementContext() );
+        statementContextProvider = new ThreadToStatementContextBridge( kernelAPI.newReadOnlyStatementContext(), txManager );
 
         nodeManager = guard != null ?
                 createGuardedNodeManager( readOnly, cacheProvider, nodeCache, relCache ) :
@@ -805,14 +807,24 @@ public abstract class InternalAbstractGraphDatabase
 
     protected Transaction beginTx( ForceMode forceMode )
     {
-        boolean transactionRunning = transactionRunning();
-        TransactionContext txCtx = kernelAPI.newTransactionContext();
-        if ( !transactionRunning )
+        try
         {
-            statementContextProvider.setTransactionContextForThread(txCtx);
-        }
+            if ( transactionRunning() )
+            {
+                return new PlaceboTransaction( txManager, txManager.getTransactionState() );
+            }
 
-        return new BeansAPITransaction(txCtx, txManager.getTransactionState(), statementContextProvider, transactionRunning);
+            txManager.begin();
+            return new TopLevelTransaction( txManager, txManager.getTransactionState() );
+        }
+        catch ( SystemException e )
+        {
+            throw new TransactionFailureException( "Couldn't get transaction", e );
+        }
+        catch ( NotSupportedException e )
+        {
+            throw new TransactionFailureException( "Couldn't begin transaction", e );
+        }
     }
 
     @Override
