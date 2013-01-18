@@ -29,9 +29,9 @@ import org.neo4j.kernel.api.TransactionContext;
  */
 public class SingleStatementTransactionContext extends DelegatingTransactionContext
 {
-    private StatementContext activeStatement;
+    private InteractionStoppingStatementContext activeStatement;
     private boolean finished;
-    
+
     public SingleStatementTransactionContext( TransactionContext delegate )
     {
         super( delegate );
@@ -41,31 +41,38 @@ public class SingleStatementTransactionContext extends DelegatingTransactionCont
     public StatementContext newStatementContext()
     {
         assertNewStatementAllowed();
-        closeAnyActiveStatement();
-        StatementContext result = super.newStatementContext();
-        // + Interaction stopping
-        result = new InteractionStoppingStatementContext( result );
-        activeStatement = result;
-        return result;
+        StatementContext inner = super.newStatementContext();
+        activeStatement = new InteractionStoppingStatementContext( inner );
+        return activeStatement;
     }
 
     @Override
     public void finish()
     {
+        if ( anyActiveStatement() )
+        {
+            throw new IllegalStateException( "Cannot finish since there is an active statements" );
+        }
+
         finished = true;
-        closeAnyActiveStatement();
         super.finish();
     }
 
-    private void closeAnyActiveStatement()
-    {
-        if ( activeStatement != null )
-            activeStatement.close();
-    }
-    
     private void assertNewStatementAllowed()
     {
         if ( finished )
+        {
             throw new IllegalStateException( "This TransactionContext is finished. No new statements allowed" );
+        }
+
+        if ( anyActiveStatement() )
+        {
+            throw new IllegalStateException( "There is an active StatementContext. No new statements allowed" );
+        }
+    }
+
+    private boolean anyActiveStatement()
+    {
+        return activeStatement != null && activeStatement.isOpen();
     }
 }

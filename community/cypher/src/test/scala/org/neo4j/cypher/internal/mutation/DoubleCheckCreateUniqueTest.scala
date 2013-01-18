@@ -96,7 +96,7 @@ class PausingNode(n: Node, afterGetRelationship: Node => Unit) extends Node {
   def getId: Long = n.getId
 
   def delete() {
-    throw new RuntimeException
+    ???
   }
 
   def getRelationships: Iterable[Relationship] = {
@@ -105,19 +105,19 @@ class PausingNode(n: Node, afterGetRelationship: Node => Unit) extends Node {
     rels.toIterable.asJava
   }
 
-  def hasRelationship: Boolean = throw new RuntimeException
+  def hasRelationship: Boolean = ???
 
-  def getRelationships(types: RelationshipType*): Iterable[Relationship] = throw new RuntimeException
+  def getRelationships(types: RelationshipType*): Iterable[Relationship] = ???
 
   def getRelationships(direction: Direction, types: RelationshipType*): Iterable[Relationship] = getRelationships
 
-  def hasRelationship(types: RelationshipType*): Boolean = throw new RuntimeException
+  def hasRelationship(types: RelationshipType*): Boolean = ???
 
-  def hasRelationship(direction: Direction, types: RelationshipType*): Boolean = throw new RuntimeException
+  def hasRelationship(direction: Direction, types: RelationshipType*): Boolean = ???
 
-  def getRelationships(dir: Direction): Iterable[Relationship] = throw new RuntimeException
+  def getRelationships(dir: Direction): Iterable[Relationship] = ???
 
-  def hasRelationship(dir: Direction): Boolean = throw new RuntimeException
+  def hasRelationship(dir: Direction): Boolean = ???
 
   def getRelationships(`type`: RelationshipType, dir: Direction): Iterable[Relationship] = {
     val rels =  n.getRelationships(`type`, dir).asScala.toList
@@ -126,35 +126,39 @@ class PausingNode(n: Node, afterGetRelationship: Node => Unit) extends Node {
   }
 
 
-  def hasRelationship(`type`: RelationshipType, dir: Direction): Boolean = throw new RuntimeException
+  def hasRelationship(`type`: RelationshipType, dir: Direction): Boolean = ???
 
-  def getSingleRelationship(`type`: RelationshipType, dir: Direction): Relationship = throw new RuntimeException
+  def getSingleRelationship(`type`: RelationshipType, dir: Direction): Relationship = ???
 
   def createRelationshipTo(otherNode: Node, `type`: RelationshipType): Relationship = {
     n.createRelationshipTo(otherNode, `type`)
   }
 
-  def traverse(traversalOrder: Order, stopEvaluator: StopEvaluator, returnableEvaluator: ReturnableEvaluator, relationshipType: RelationshipType, direction: Direction): Traverser = throw new RuntimeException
+  def traverse(traversalOrder: Order, stopEvaluator: StopEvaluator, returnableEvaluator: ReturnableEvaluator, relationshipType: RelationshipType, direction: Direction): Traverser = ???
 
-  def traverse(traversalOrder: Order, stopEvaluator: StopEvaluator, returnableEvaluator: ReturnableEvaluator, firstRelationshipType: RelationshipType, firstDirection: Direction, secondRelationshipType: RelationshipType, secondDirection: Direction): Traverser = throw new RuntimeException
+  def traverse(traversalOrder: Order, stopEvaluator: StopEvaluator, returnableEvaluator: ReturnableEvaluator, firstRelationshipType: RelationshipType, firstDirection: Direction, secondRelationshipType: RelationshipType, secondDirection: Direction): Traverser = ???
 
-  def traverse(traversalOrder: Order, stopEvaluator: StopEvaluator, returnableEvaluator: ReturnableEvaluator, relationshipTypesAndDirections: AnyRef*): Traverser = throw new RuntimeException
+  def traverse(traversalOrder: Order, stopEvaluator: StopEvaluator, returnableEvaluator: ReturnableEvaluator, relationshipTypesAndDirections: AnyRef*): Traverser = ???
 
-  def getGraphDatabase: GraphDatabaseService = throw new RuntimeException
+  def getGraphDatabase: GraphDatabaseService = ???
 
-  def hasProperty(key: String): Boolean = throw new RuntimeException
+  def hasProperty(key: String): Boolean = ???
 
-  def getProperty(key: String): AnyRef = throw new RuntimeException
+  def getProperty(key: String): AnyRef = ???
 
-  def getProperty(key: String, defaultValue: Any): AnyRef = throw new RuntimeException
+  def getProperty(key: String, defaultValue: Any): AnyRef = ???
 
   def setProperty(key: String, value: Any) {
-    throw new RuntimeException
+    ???
   }
 
-  def removeProperty(key: String): AnyRef = throw new RuntimeException
+  def removeProperty(key: String): AnyRef = ???
 
-  def getPropertyKeys: Iterable[String] = throw new RuntimeException
+  def getPropertyKeys: Iterable[String] = ???
 
-  def getPropertyValues: Iterable[AnyRef] = throw new RuntimeException
+  def getPropertyValues: Iterable[AnyRef] = ???
+
+  def addLabel(label: Label) { ??? }
+
+  def hasLabel(label: Label) = ???
 }

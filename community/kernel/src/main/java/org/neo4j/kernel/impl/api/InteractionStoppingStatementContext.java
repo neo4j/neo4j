@@ -73,4 +73,9 @@ public class InteractionStoppingStatementContext implements StatementContext
         if ( closed )
             throw new IllegalStateException( "This StatementContext has been closed. No more interaction allowed" );
     }
+
+    public boolean isOpen()
+    {
+        return !closed;
+    }
 }

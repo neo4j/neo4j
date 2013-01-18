@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.api;
 
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import org.junit.Test;
@@ -29,8 +28,8 @@ import org.neo4j.kernel.api.TransactionContext;
 
 public class SingleStatementTransactionContextTest
 {
-    @Test
-    public void shouldClosePreviousStatement() throws Exception
+    @Test(expected = IllegalStateException.class)
+    public void shouldNotAllowNewStatementContextWhenTheOldIsOpen() throws Exception
     {
         // GIVEN
         TransactionContext actualTransactionContext = mock( TransactionContext.class );
@@ -41,20 +40,35 @@ public class SingleStatementTransactionContextTest
         // WHEN
         singleContext.newStatementContext();
         singleContext.newStatementContext();
-
-        // THEN
-        verify( actualStatement ).close();
     }
     
     @Test( expected = IllegalStateException.class )
-    public void shouldNotBeAbleToCreateNewStatementsAfterFinished() throws Exception
+    public void shouldNotBeAbleToCloseTxWhenStatementIsOpen() throws Exception
     {
         // GIVEN
         TransactionContext actual = mock( TransactionContext.class );
         TransactionContext transactionContext = new SingleStatementTransactionContext( actual );
+        transactionContext.newStatementContext();
 
         // WHEN
         transactionContext.finish();
-        transactionContext.newStatementContext();
+    }
+
+    @Test
+    public void shouldBeAbleStartNewStatementAfterPreviousIsClosed() throws Exception
+    {
+        // GIVEN
+        TransactionContext actual = mock( TransactionContext.class );
+        StatementContext actualStatement = mock( StatementContext.class );
+        when( actual.newStatementContext() ).thenReturn( actualStatement );
+
+        TransactionContext transactionContext = new SingleStatementTransactionContext( actual );
+        StatementContext firstStatement = transactionContext.newStatementContext();
+        firstStatement.close();
+
+        // WHEN
+        StatementContext secondStatement = transactionContext.newStatementContext();
+
+        // No exception is closed.
     }
 }

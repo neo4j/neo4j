@@ -238,6 +238,10 @@ class MonitoredNode(inner: Node, monitor: () => Unit) extends Node {
   def getPropertyValues: JIterable[AnyRef] = null
 
   override def toString = "°" + inner.toString + "°"
+
+  def addLabel(label: Label) { ??? }
+
+  def hasLabel(label: Label) = ???
 }
 
 
