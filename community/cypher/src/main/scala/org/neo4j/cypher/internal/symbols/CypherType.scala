@@ -29,7 +29,7 @@ trait CypherType {
   def mergeWith(other: CypherType): CypherType = {
     if (this.isAssignableFrom(other)) other
     else if (other.isAssignableFrom(this)) this
-    else throw new CypherTypeException("Failed merging " + this + " with " + other)
+    else AnyType()
   }
 
   def parentType: CypherType
