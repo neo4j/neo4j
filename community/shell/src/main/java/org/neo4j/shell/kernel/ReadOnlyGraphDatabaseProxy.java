@@ -35,6 +35,7 @@ import javax.transaction.TransactionManager;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
@@ -433,6 +434,18 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
         {
             return OldTraverserWrapper.traverse( this, traversalOrder, stopEvaluator,
                     returnableEvaluator, relationshipTypesAndDirections );
+        }
+
+        @Override
+        public void addLabel( Label label )
+        {
+            readOnly();
+        }
+
+        @Override
+        public boolean hasLabel( Label label )
+        {
+            return actual.hasLabel( label );
         }
 
         public GraphDatabaseService getGraphDatabase()

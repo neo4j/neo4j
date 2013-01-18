@@ -27,6 +27,7 @@ import javax.transaction.Transaction;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
@@ -136,85 +137,86 @@ public class LockHolder
         @Override
         public void delete()
         {
+            throw unsupportedOperation();
         }
 
         @Override
         public Iterable<Relationship> getRelationships()
         {
-            return null;
+            throw unsupportedOperation();
         }
 
         @Override
         public boolean hasRelationship()
         {
-            return false;
+            throw unsupportedOperation();
         }
 
         @Override
         public Iterable<Relationship> getRelationships( RelationshipType... types )
         {
-            return null;
+            throw unsupportedOperation();
         }
 
         @Override
         public Iterable<Relationship> getRelationships( Direction direction, RelationshipType... types )
         {
-            return null;
+            throw unsupportedOperation();
         }
 
         @Override
         public boolean hasRelationship( RelationshipType... types )
         {
-            return false;
+            throw unsupportedOperation();
         }
 
         @Override
         public boolean hasRelationship( Direction direction, RelationshipType... types )
         {
-            return false;
+            throw unsupportedOperation();
         }
 
         @Override
         public Iterable<Relationship> getRelationships( Direction dir )
         {
-            return null;
+            throw unsupportedOperation();
         }
 
         @Override
         public boolean hasRelationship( Direction dir )
         {
-            return false;
+            throw unsupportedOperation();
         }
 
         @Override
         public Iterable<Relationship> getRelationships( RelationshipType type, Direction dir )
         {
-            return null;
+            throw unsupportedOperation();
         }
 
         @Override
         public boolean hasRelationship( RelationshipType type, Direction dir )
         {
-            return false;
+            throw unsupportedOperation();
         }
 
         @Override
         public Relationship getSingleRelationship( RelationshipType type, Direction dir )
         {
-            return null;
+            throw unsupportedOperation();
         }
 
         @Override
         public Relationship createRelationshipTo( Node otherNode, RelationshipType type )
         {
-            return null;
+            throw unsupportedOperation();
         }
 
         @Override
         public Traverser traverse( Traverser.Order traversalOrder, StopEvaluator stopEvaluator, ReturnableEvaluator
                 returnableEvaluator, RelationshipType relationshipType, Direction direction )
         {
-            return null;
+            throw unsupportedOperation();
         }
 
         @Override
@@ -222,61 +224,80 @@ public class LockHolder
                 returnableEvaluator, RelationshipType firstRelationshipType, Direction firstDirection,
                                    RelationshipType secondRelationshipType, Direction secondDirection )
         {
-            return null;
+            throw unsupportedOperation();
         }
 
         @Override
         public Traverser traverse( Traverser.Order traversalOrder, StopEvaluator stopEvaluator, ReturnableEvaluator
                 returnableEvaluator, Object... relationshipTypesAndDirections )
         {
-            return null;
+            throw unsupportedOperation();
+        }
+
+        @Override
+        public void addLabel( Label label )
+        {
+            throw unsupportedOperation();
+        }
+
+        @Override
+        public boolean hasLabel( Label label )
+        {
+            throw unsupportedOperation();
         }
 
         @Override
         public GraphDatabaseService getGraphDatabase()
         {
-            return null;
+            throw unsupportedOperation();
         }
 
         @Override
         public boolean hasProperty( String key )
         {
-            return false;
+            throw unsupportedOperation();
         }
 
         @Override
         public Object getProperty( String key )
         {
-            return null;
+            throw unsupportedOperation();
         }
 
         @Override
         public Object getProperty( String key, Object defaultValue )
         {
-            return null;
+            throw unsupportedOperation();
         }
 
         @Override
         public void setProperty( String key, Object value )
         {
+            throw unsupportedOperation();
         }
 
         @Override
         public Object removeProperty( String key )
         {
-            return null;
+            throw unsupportedOperation();
         }
 
         @Override
         public Iterable<String> getPropertyKeys()
         {
-            return null;
+            throw unsupportedOperation();
         }
 
         @Override
         public Iterable<Object> getPropertyValues()
         {
-            return null;
+            throw unsupportedOperation();
+        }
+
+
+        private UnsupportedOperationException unsupportedOperation()
+        {
+            return new UnsupportedOperationException( "NodeLock does not support this operation." );
         }
     }
 }

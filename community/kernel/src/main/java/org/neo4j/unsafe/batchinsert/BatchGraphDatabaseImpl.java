@@ -26,6 +26,7 @@ import java.util.NoSuchElementException;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
@@ -423,6 +424,18 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
             StopEvaluator stopEvaluator,
             ReturnableEvaluator returnableEvaluator,
             Object... relationshipTypesAndDirections )
+        {
+            throw new UnsupportedOperationException( "Batch inserter mode" );
+        }
+
+        @Override
+        public void addLabel( Label label )
+        {
+            throw new UnsupportedOperationException( "Batch inserter mode" );
+        }
+
+        @Override
+        public boolean hasLabel( Label label )
         {
             throw new UnsupportedOperationException( "Batch inserter mode" );
         }

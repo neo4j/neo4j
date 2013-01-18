@@ -20,12 +20,23 @@
 package org.neo4j.kernel.impl.api;
 
 import org.neo4j.kernel.api.KernelAPI;
+import org.neo4j.kernel.api.LabelNotFoundException;
+import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.TransactionContext;
 import org.neo4j.kernel.impl.core.PropertyIndexManager;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.transaction.LockManager;
 
+/**
+ * This is the beginnings of an implementation of the Kernel API, which is meant to be an internal API for consumption by
+ * both the Beans API, Cypher, and any other components that want to interface with the underlying database.
+ *
+ * This is currently in an intermediate phase, where for many features you still have to use the beans API. To use this
+ * implementation together with the beans API (eg. perform operations within the same transactions), then you should
+ * use the beans API to start transactions, and use the Beans2KernelTransition class to get an {@link StatementContext}
+ * that is hooked into that transaction.
+ */
 public class Kernel implements KernelAPI
 {
     private final AbstractTransactionManager transactionManager;
@@ -57,6 +68,19 @@ public class Kernel implements KernelAPI
         result = new SingleStatementTransactionContext( result );
         
         // done
+        return result;
+    }
+
+    @Override
+    public StatementContext newReadOnlyStatementContext()
+    {
+        // I/O
+        StatementContext result = new TemporaryLabelAsPropertyStatementContext( propertyIndexManager, persistenceManager );
+        // + Cache
+        result = new CachingStatementContext( result, cache );
+        // + Read only access
+        result = new ReadOnlyStatementContext( result );
+
         return result;
     }
 }

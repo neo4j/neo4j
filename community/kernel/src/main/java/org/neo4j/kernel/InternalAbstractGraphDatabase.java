@@ -33,6 +33,7 @@ import java.util.concurrent.Executors;
 import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
 
+import ch.qos.logback.classic.LoggerContext;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -54,6 +55,7 @@ import org.neo4j.helpers.Service;
 import org.neo4j.helpers.Settings;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.KernelAPI;
+import org.neo4j.kernel.api.TransactionContext;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConfigurationChange;
 import org.neo4j.kernel.configuration.ConfigurationChangeListener;
@@ -123,8 +125,6 @@ import org.neo4j.kernel.logging.LogbackService;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.tooling.GlobalGraphOperations;
 
-import ch.qos.logback.classic.LoggerContext;
-
 /**
  * Base implementation of GraphDatabaseService. Responsible for creating services, handling dependencies between them,
  * and lifecycle management of these.
@@ -132,6 +132,7 @@ import ch.qos.logback.classic.LoggerContext;
 public abstract class InternalAbstractGraphDatabase
         extends AbstractGraphDatabase implements GraphDatabaseService, GraphDatabaseAPI
 {
+
 
     public static class Configuration
     {
@@ -197,6 +198,7 @@ public abstract class InternalAbstractGraphDatabase
     protected Caches caches;
     protected TransactionStateFactory stateFactory;
     protected KernelAPI kernelAPI;
+    protected ThreadToStatementContextBridge statementContextProvider;
 
     protected final LifeSupport life = new LifeSupport();
     private final Map<String,CacheProvider> cacheProviders;
@@ -401,6 +403,10 @@ public abstract class InternalAbstractGraphDatabase
         Cache<NodeImpl> nodeCache = diagnosticsManager.tryAppendProvider( caches.node() );
         Cache<RelationshipImpl> relCache = diagnosticsManager.tryAppendProvider( caches.relationship() );
 
+        kernelAPI = new Kernel( txManager, propertyIndexManager, persistenceManager, lockManager );
+
+        statementContextProvider = new ThreadToStatementContextBridge( kernelAPI.newReadOnlyStatementContext() );
+
         nodeManager = guard != null ?
                 createGuardedNodeManager( readOnly, cacheProvider, nodeCache, relCache ) :
                 createNodeManager( readOnly, cacheProvider, nodeCache, relCache );
@@ -451,8 +457,6 @@ public abstract class InternalAbstractGraphDatabase
         xaFactory = new XaFactory( config, txIdGenerator, txManager, logBufferFactory, fileSystem,
                 logging, recoveryVerifier, LogPruneStrategies.fromConfigValue(
                 fileSystem, keepLogicalLogsConfig ) );
-        
-        kernelAPI = new Kernel( txManager, propertyIndexManager, persistenceManager, lockManager );
 
         createNeoDataSource();
 
@@ -501,12 +505,12 @@ public abstract class InternalAbstractGraphDatabase
         {
             return new ReadOnlyNodeManager( config, logging.getLogger( NodeManager.class ), this, txManager, persistenceManager,
                     persistenceSource, relationshipTypeHolder, cacheType, propertyIndexManager, createNodeLookup(),
-                    createRelationshipLookups(), nodeCache, relCache, xaDataSourceManager );
+                    createRelationshipLookups(), nodeCache, relCache, xaDataSourceManager, statementContextProvider );
         }
 
         return new NodeManager( config, logging.getLogger( NodeManager.class ), this, txManager, persistenceManager,
                 persistenceSource, relationshipTypeHolder, cacheType, propertyIndexManager, createNodeLookup(),
-                createRelationshipLookups(), nodeCache, relCache, xaDataSourceManager );
+                createRelationshipLookups(), nodeCache, relCache, xaDataSourceManager, statementContextProvider );
     }
 
     private NodeManager createGuardedNodeManager( final boolean readOnly, final CacheProvider cacheType,
@@ -516,7 +520,7 @@ public abstract class InternalAbstractGraphDatabase
         {
             return new ReadOnlyNodeManager( config, logging.getLogger( NodeManager.class ), this, txManager, persistenceManager,
                     persistenceSource, relationshipTypeHolder, cacheType, propertyIndexManager, createNodeLookup(),
-                    createRelationshipLookups(), nodeCache, relCache, xaDataSourceManager )
+                    createRelationshipLookups(), nodeCache, relCache, xaDataSourceManager, statementContextProvider )
             {
                 @Override
                 protected Node getNodeByIdOrNull( final long nodeId )
@@ -565,7 +569,7 @@ public abstract class InternalAbstractGraphDatabase
 
         return new NodeManager( config, logging.getLogger( NodeManager.class ), this, txManager, persistenceManager,
                 persistenceSource, relationshipTypeHolder, cacheType, propertyIndexManager, createNodeLookup(),
-                createRelationshipLookups(), nodeCache, relCache, xaDataSourceManager )
+                createRelationshipLookups(), nodeCache, relCache, xaDataSourceManager, statementContextProvider )
         {
             @Override
             protected Node getNodeByIdOrNull( final long nodeId )
@@ -801,22 +805,11 @@ public abstract class InternalAbstractGraphDatabase
 
     protected Transaction beginTx( ForceMode forceMode )
     {
-        if ( transactionRunning() )
-        {
-            return new PlaceboTransaction( txManager, txManager.getTransactionState() );
-        }
-        Transaction result = null;
-        try
-        {
-            txManager.begin( forceMode );
-            result = new TopLevelTransaction( txManager, txManager.getTransactionState() );
-        }
-        catch ( Exception e )
-        {
-            throw new TransactionFailureException(
-                    "Unable to begin transaction", e );
-        }
-        return result;
+        TransactionContext txCtx = kernelAPI.newTransactionContext();
+        statementContextProvider.setTransactionContextForThread(txCtx);
+
+        return new BeansAPITransaction(txCtx, txManager.getTransactionState(), statementContextProvider);
+
     }
 
     @Override
@@ -1319,6 +1312,10 @@ public abstract class InternalAbstractGraphDatabase
             else if ( KernelAPI.class.isAssignableFrom( type ) )
             {
                 return (T) kernelAPI;
+            }
+            else if ( ThreadToStatementContextBridge.class.isAssignableFrom( type ) )
+            {
+                return (T) statementContextProvider;
             }
             else
             {

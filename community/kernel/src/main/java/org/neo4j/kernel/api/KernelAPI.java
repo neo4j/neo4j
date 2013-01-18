@@ -22,4 +22,6 @@ package org.neo4j.kernel.api;
 public interface KernelAPI
 {
     TransactionContext newTransactionContext();
+
+    StatementContext newReadOnlyStatementContext();
 }

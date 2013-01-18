@@ -23,6 +23,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.kernel.ThreadToStatementContextBridge;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.cache.Cache;
 import org.neo4j.kernel.impl.cache.CacheProvider;
@@ -41,11 +42,12 @@ public class ReadOnlyNodeManager extends NodeManager
                                EntityIdGenerator idGenerator, RelationshipTypeHolder relationshipTypeHolder,
                                CacheProvider cacheType, PropertyIndexManager propertyIndexManager,
                                NodeProxy.NodeLookup nodeLookup, RelationshipProxy.RelationshipLookups relationshipLookups,
-                               Cache<NodeImpl> nodeCache, Cache<RelationshipImpl> relCache, XaDataSourceManager xaDsm )
+                               Cache<NodeImpl> nodeCache, Cache<RelationshipImpl> relCache, XaDataSourceManager xaDsm,
+                               ThreadToStatementContextBridge statementCtxProvider )
     {
         super(config, logger, graphDb, transactionManager, persistenceManager, idGenerator,
                 relationshipTypeHolder, cacheType, propertyIndexManager, nodeLookup, relationshipLookups,
-                nodeCache, relCache, xaDsm );
+                nodeCache, relCache, xaDsm, statementCtxProvider );
     }
 
     @Override

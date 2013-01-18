@@ -31,7 +31,7 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
  * This interface extends the TransactionManager, with the rationale that it
  * additionally provides an init method that is used for recovery and a stop
  * method for shutting down. Implementations are to hold an actual
- * TrasactionManager and forward operations to it and additionally provide an
+ * TransactionManager and forward operations to it and additionally provide an
  * implementation specific way of initializing it, ensuring tx recovery and an
  * implementation specific way of shutting down, for resource reclamation.
  *
@@ -72,6 +72,21 @@ public abstract class AbstractTransactionManager implements TransactionManager, 
      * @return state associated with the current transaction for this thread.
      */
     public abstract TransactionState getTransactionState();
+
+    /**
+     * A temporary method for retrieving the transaction context for the current thread,
+     * this will be removed in future milestones.
+     *
+     * This helps code that is transitioning to the new Kernel API to handle transactions
+     * appropriately. Independent of how the transaction was started (through an external
+     * transaction manager or through eg. beginTx), we can retrieve the transaction context
+     * here.
+     *
+     * @return
+     */
+//    @Deprecated
+
+//    public abstract TransactionContext getTransactionContext();
 
     public abstract int getEventIdentifier();
 

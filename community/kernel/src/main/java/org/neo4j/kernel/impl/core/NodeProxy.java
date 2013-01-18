@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.core;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
@@ -29,6 +30,9 @@ import org.neo4j.graphdb.ReturnableEvaluator;
 import org.neo4j.graphdb.StopEvaluator;
 import org.neo4j.graphdb.Traverser;
 import org.neo4j.graphdb.Traverser.Order;
+import org.neo4j.kernel.ThreadToStatementContextBridge;
+import org.neo4j.kernel.api.LabelNotFoundException;
+import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.impl.transaction.LockType;
 import org.neo4j.kernel.impl.traversal.OldTraverserWrapper;
 
@@ -43,13 +47,14 @@ public class NodeProxy implements Node
     }
     
     private final NodeLookup nodeLookup;
-
+    private final ThreadToStatementContextBridge statementCtxProvider;
     private final long nodeId;
 
-    NodeProxy( long nodeId, NodeLookup nodeLookup )
+    NodeProxy( long nodeId, NodeLookup nodeLookup, ThreadToStatementContextBridge statementCtxProvider )
     {
         this.nodeId = nodeId;
         this.nodeLookup = nodeLookup;
+        this.statementCtxProvider = statementCtxProvider;
     }
 
     public long getId()
@@ -262,5 +267,26 @@ public class NodeProxy implements Node
         return OldTraverserWrapper.traverse( this,
                                              traversalOrder, stopEvaluator,
                                              returnableEvaluator, relationshipTypesAndDirections );
+    }
+
+    @Override
+    public void addLabel( Label label )
+    {
+        StatementContext ctx = statementCtxProvider.getCtxForWriting();
+        ctx.addLabelToNode( ctx.getOrCreateLabelId( label.name() ), getId() );
+    }
+
+    @Override
+    public boolean hasLabel( Label label )
+    {
+        try
+        {
+            StatementContext ctx = statementCtxProvider.getCtxForReading();
+            return ctx.isLabelSetOnNode( ctx.getLabelId( label.name() ), getId() );
+        }
+        catch ( LabelNotFoundException e )
+        {
+            return false;
+        }
     }
 }

@@ -28,6 +28,7 @@ import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.ThreadToStatementContextBridge;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.TransactionContext;
@@ -35,27 +36,75 @@ import org.neo4j.test.ImpermanentGraphDatabase;
 
 public class ITKernelAPI
 {
+    /**
+     * While we transition ownership from the Beans API to the Kernel API for core database
+     * interactions, there will be a bit of a mess. Our first goal is an architecture like this:
+     *
+     *         Users
+     *        /    \
+     *  Beans API   Cypher
+     *        \    /
+     *      Kernel API
+     *           |
+     *  Kernel Implementation
+     *
+     * But our current intermediate architecture looks like this:
+     *
+     *           Users
+     *        /        \
+     *  Beans API <--- Cypher
+     *     |    \    /
+     *     |  Kernel API
+     *     |      |
+     *  Kernel Implementation
+     *
+     * Meaning Kernel API and Beans API both manipulate the underlying kernel, causing lots of corner cases.
+     *
+     * This test shows us how to use both the Kernel API and the Beans API together in the same transaction,
+     * during the transition phase.
+     */
     @Test
     public void mixingBeansApiWithKernelAPI() throws Exception
     {
-        // GIVEN
-        KernelAPI kernel = db.getDependencyResolver().resolveDependency( KernelAPI.class );
-        TransactionContext tx = kernel.newTransactionContext();
-        StatementContext statement = tx.newStatementContext();
+        ThreadToStatementContextBridge statementContextProvider = db.getDependencyResolver().resolveDependency(
+                ThreadToStatementContextBridge.class );
 
-        // WHEN
+        // 1: Start your transactions through the Beans API
+        Transaction beansAPITx = db.beginTx();
+
+        // 2: Get a hold of a KernelAPI statement context for the *current* transaction this way:
+        StatementContext statement = statementContextProvider.getCtxForWriting();
+
+        // 3: Now you can interact through both the statement context and the kernel API to manipulate the
+        //    same transaction.
         Node node = db.createNode();
+
         long labelId = statement.getOrCreateLabelId( "labello" );
         statement.addLabelToNode( labelId, node.getId() );
-        tx.success();
-        tx.finish();
 
-        // THEN
-        tx = kernel.newTransactionContext();
-        statement = tx.newStatementContext();
+        // 4: Commit through the beans API
+        beansAPITx.success();
+        beansAPITx.finish();
+
+        // You can use the kernel API on it's own, like this:
+        KernelAPI kernel = db.getDependencyResolver().resolveDependency( KernelAPI.class );
+        TransactionContext kernelAPITx = kernel.newTransactionContext();
+        statement = kernelAPITx.newStatementContext();
         assertTrue( statement.isLabelSetOnNode( labelId, node.getId() ) );
+
+        // NOTE: Transactions are still thread-bound right now in the Kernel API, meaning if you use
+        // both the Kernel API to create transactions while a Beans API transaction is running in the same
+        // thread, the results are undefined.
+
+        // When the Kernel API implementation is done, the Kernel API transaction implementation is not meant
+        // to be bound to threads.
     }
-    
+
+    private StatementContext getStatementContextFor( Transaction beansAPITx )
+    {
+        return null;  //To change body of created methods use File | Settings | File Templates.
+    }
+
     @Test
     public void mixingBeansApiWithKernelAPIForNestedTransaction() throws Exception
     {

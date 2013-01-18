@@ -55,7 +55,7 @@ public class TemporaryLabelAsPropertyStatementContext implements StatementContex
     {
         try
         {
-            return propertyIndexManager.getIdByKeyName( label );
+            return propertyIndexManager.getIdByKeyName( internalLabelName( label ) );
         }
         catch ( KeyNotFoundException e )
         {

@@ -39,6 +39,7 @@ import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.helpers.Triplet;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.PropertyTracker;
+import org.neo4j.kernel.ThreadToStatementContextBridge;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.cache.Cache;
 import org.neo4j.kernel.impl.cache.CacheProvider;
@@ -80,6 +81,7 @@ public class NodeManager
     private final PersistenceManager persistenceManager;
     private final EntityIdGenerator idGenerator;
     private final XaDataSourceManager xaDsm;
+    private final ThreadToStatementContextBridge statementCtxProvider;
 
     private final NodeProxy.NodeLookup nodeLookup;
     private final RelationshipProxy.RelationshipLookups relationshipLookups;
@@ -140,7 +142,8 @@ public class NodeManager
                         RelationshipTypeHolder relationshipTypeHolder, CacheProvider cacheProvider,
                         PropertyIndexManager propertyIndexManager, NodeProxy.NodeLookup nodeLookup,
                         RelationshipProxy.RelationshipLookups relationshipLookups, Cache<NodeImpl> nodeCache,
-                        Cache<RelationshipImpl> relCache, XaDataSourceManager xaDsm )
+                        Cache<RelationshipImpl> relCache, XaDataSourceManager xaDsm, ThreadToStatementContextBridge
+            statementCtxProvider )
     {
         this.logger = logger;
         this.graphDbService = graphDb;
@@ -153,6 +156,7 @@ public class NodeManager
         this.relTypeHolder = relationshipTypeHolder;
 
         this.cacheProvider = cacheProvider;
+        this.statementCtxProvider = statementCtxProvider;
         this.nodeCache = new LockStripedCache<NodeImpl>( nodeCache, LOCK_STRIPE_COUNT, nodeLoader );
         this.relCache = new LockStripedCache<RelationshipImpl>( relCache, LOCK_STRIPE_COUNT, relLoader );
         this.xaDsm = xaDsm;
@@ -205,7 +209,7 @@ public class NodeManager
         long id = idGenerator.nextId( Node.class );
         NodeImpl node = new NodeImpl( id, Record.NO_NEXT_RELATIONSHIP.intValue(), Record.NO_NEXT_PROPERTY.intValue(),
                 true );
-        NodeProxy proxy = new NodeProxy( id, nodeLookup );
+        NodeProxy proxy = new NodeProxy( id, nodeLookup, statementCtxProvider );
         TransactionState transactionState = getTransactionState();
         transactionState.acquireWriteLock( proxy );
         boolean success = false;
@@ -227,7 +231,7 @@ public class NodeManager
 
     public NodeProxy newNodeProxyById( long id )
     {
-        return new NodeProxy( id, nodeLookup );
+        return new NodeProxy( id, nodeLookup, statementCtxProvider );
     }
 
     public Relationship createRelationship( Node startNodeProxy, NodeImpl startNode, Node endNode,
@@ -293,7 +297,7 @@ public class NodeManager
     protected Node getNodeByIdOrNull( long nodeId )
     {
         NodeImpl node = getLightNode( nodeId );
-        return node != null ? new NodeProxy( nodeId, nodeLookup ) : null;
+        return node != null ? new NodeProxy( nodeId, nodeLookup, statementCtxProvider ) : null;
     }
 
     public Node getNodeById( long nodeId ) throws NotFoundException
@@ -350,7 +354,7 @@ public class NodeManager
     {
         if ( lock != null )
         {
-            lock.acquire( getTransactionState(), new NodeProxy( nodeId, nodeLookup ) );
+            lock.acquire( getTransactionState(), new NodeProxy( nodeId, nodeLookup, statementCtxProvider ) );
         }
         NodeImpl node = getLightNode( nodeId );
         if ( node == null )

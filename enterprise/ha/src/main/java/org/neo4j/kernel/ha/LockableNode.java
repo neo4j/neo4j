@@ -21,6 +21,7 @@ package org.neo4j.kernel.ha;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
@@ -196,6 +197,18 @@ public class LockableNode implements Node
             StopEvaluator stopEvaluator,
             ReturnableEvaluator returnableEvaluator,
             Object... relationshipTypesAndDirections )
+    {
+        throw lockableNodeException();
+    }
+
+    @Override
+    public void addLabel( Label label )
+    {
+        throw lockableNodeException();
+    }
+
+    @Override
+    public boolean hasLabel( Label label )
     {
         throw lockableNodeException();
     }

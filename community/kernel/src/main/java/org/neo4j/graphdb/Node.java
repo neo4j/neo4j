@@ -426,4 +426,8 @@ public interface Node extends PropertyContainer
             StopEvaluator stopEvaluator,
             ReturnableEvaluator returnableEvaluator,
             Object... relationshipTypesAndDirections );
+
+    void addLabel( Label label );
+
+    boolean hasLabel( Label label );
 }
