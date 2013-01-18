@@ -805,11 +805,14 @@ public abstract class InternalAbstractGraphDatabase
 
     protected Transaction beginTx( ForceMode forceMode )
     {
+        boolean transactionRunning = transactionRunning();
         TransactionContext txCtx = kernelAPI.newTransactionContext();
-        statementContextProvider.setTransactionContextForThread(txCtx);
+        if ( !transactionRunning )
+        {
+            statementContextProvider.setTransactionContextForThread(txCtx);
+        }
 
-        return new BeansAPITransaction(txCtx, txManager.getTransactionState(), statementContextProvider);
-
+        return new BeansAPITransaction(txCtx, txManager.getTransactionState(), statementContextProvider, transactionRunning);
     }
 
     @Override

@@ -30,12 +30,14 @@ public class BeansAPITransaction implements Transaction
     private final TransactionContext txCtx;
     private final TransactionState state;
     private final ThreadToStatementContextBridge bridge;
+    private final boolean nested;
 
-    public BeansAPITransaction( TransactionContext txCtx, TransactionState state, ThreadToStatementContextBridge bridge )
+    public BeansAPITransaction( TransactionContext txCtx, TransactionState state, ThreadToStatementContextBridge bridge, boolean nested )
     {
         this.txCtx = txCtx;
         this.state = state;
         this.bridge = bridge;
+        this.nested = nested;
     }
 
     @Override
@@ -54,7 +56,10 @@ public class BeansAPITransaction implements Transaction
     public void finish()
     {
         txCtx.finish();
-        bridge.clearThisThread();
+        if ( !nested )
+        {
+            bridge.clearThisThread();
+        }
     }
 
     @Override

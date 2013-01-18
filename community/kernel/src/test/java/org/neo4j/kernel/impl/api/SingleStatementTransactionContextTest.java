@@ -69,6 +69,6 @@ public class SingleStatementTransactionContextTest
         // WHEN
         StatementContext secondStatement = transactionContext.newStatementContext();
 
-        // No exception is closed.
+        // No exception is thrown.
     }
 }

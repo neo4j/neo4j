@@ -32,7 +32,6 @@ import org.neo4j.kernel.api.TransactionContext;
  */
 public class ThreadToStatementContextBridge
 {
-
     private final StatementContext readOnlyStatementCtx;
     private final ThreadLocal<TransactionContext> transactionContextForThread = new ThreadLocal<TransactionContext>();
     private final Map<TransactionContext, StatementContext> currentStatementCtx =
@@ -53,6 +52,7 @@ public class ThreadToStatementContextBridge
 
         return readOnlyStatementCtx;
     }
+
     public StatementContext getCtxForWriting()
     {
         TransactionContext txCtx = transactionContextForThread.get();
