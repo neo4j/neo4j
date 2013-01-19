@@ -21,16 +21,36 @@ package org.neo4j.cypher
 
 import internal.commands._
 import expressions._
+import expressions.CountStar
+import expressions.Literal
+import expressions.Nullable
+import expressions.ParameterExpression
+import expressions.Property
+import expressions.RelationshipTypeFunction
+import internal.commands.And
+import internal.commands.Equals
+import internal.commands.LessThan
+import internal.commands.NodeByIndex
+import internal.commands.NodeByIndexQuery
+import internal.commands.Or
+import internal.commands.RegularExpression
+import internal.commands.ReturnItem
+import internal.commands.ShortestPath
+import internal.commands.SortItem
+import internal.commands.True
 import org.junit.Assert._
 import java.lang.String
 import scala.collection.JavaConverters._
 import org.junit.matchers.JUnitMatchers._
-import org.neo4j.graphdb.{Path, Relationship, Direction, Node}
+import org.neo4j.graphdb._
 import org.junit.{Ignore, Test}
 import org.neo4j.index.lucene.ValueContext
 import org.neo4j.test.ImpermanentGraphDatabase
 import collection.mutable
 import util.Random
+import scala.Some
+import org.neo4j.cypher.PathImpl
+import org.neo4j.kernel.TopLevelTransaction
 
 class ExecutionEngineTest extends ExecutionEngineHelper {
 
@@ -2355,4 +2375,22 @@ RETURN x0.name?
     assert(result.toList === List())
   }
 
+  @Test def syntax_errors_should_not_leave_dangling_transactions() {
+
+    val engine = new ExecutionEngine(graph)
+
+    try {
+      engine.execute("BABY START SMILING, YOU KNOW THE SUN IS SHINING.")
+    } catch {
+      case _ =>
+    }
+
+    // Until we have a clean cut way where statement context is injected into cypher,
+    // I don't know a non-hairy way to tell if this was done correctly, so here goes:
+    val tx  = graph.beginTx()
+    val isTopLevelTx = tx.getClass === classOf[TopLevelTransaction]
+    tx.finish()
+
+    assert(isTopLevelTx)
+  }
 }

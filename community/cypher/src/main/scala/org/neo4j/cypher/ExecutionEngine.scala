@@ -58,8 +58,11 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
   @throws(classOf[SyntaxException])
   def execute(query: String, params: Map[String, Any]): ExecutionResult = {
     logger.info(query)
+
+    val plan = prepare(query)
+
     withTxWrap(graph) { (wrap: TxQueryContextWrap) =>
-      prepare(query).execute(wrap, params)
+      plan.execute(wrap, params)
     }
   }
 

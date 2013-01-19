@@ -19,20 +19,18 @@
  */
 package org.neo4j.graphdb;
 
-import static org.junit.Assert.*;
-
 import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.test.ImpermanentDatabaseRule;
+import org.neo4j.tooling.GlobalGraphOperations;
 
-public class LabelsAcceptanceTest
+public class CreateAndDeleteNodesIT
 {
-    public @Rule
-ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule();
 
-    private enum Labels implements Label
-    {
-        MY_LABEL;
+    public @Rule ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule();
+
+    enum RelTypes implements RelationshipType {
+        ASD;
     }
 
     @Test
@@ -47,15 +45,33 @@ ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule();
         try
         {
             myNode = beansAPI.createNode();
-            myNode.addLabel(Labels.MY_LABEL);
+            myNode.setProperty( "Name", "Bob" );
 
+            myNode.createRelationshipTo( beansAPI.getReferenceNode(), RelTypes.ASD );
             tx.success();
         } finally
         {
             tx.finish();
         }
 
-        // Then
-        assertTrue( "Label should have been added to node", myNode.hasLabel( Labels.MY_LABEL ) );
+        // When
+        Transaction tx2 = beansAPI.beginTx();
+        try
+        {
+            for ( Relationship r : GlobalGraphOperations.at( beansAPI ).getAllRelationships() )
+            {
+                r.delete();
+            }
+
+            for ( Node n : GlobalGraphOperations.at( beansAPI ).getAllNodes() )
+            {
+                n.delete();
+            }
+
+            tx2.success();
+        } finally
+        {
+            tx2.finish();
+        }
     }
 }

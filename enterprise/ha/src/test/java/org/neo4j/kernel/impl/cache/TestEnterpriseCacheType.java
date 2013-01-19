@@ -19,14 +19,16 @@
  */
 package org.neo4j.kernel.impl.cache;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 import static org.neo4j.kernel.ha.HaSettings.server_id;
 
 import org.junit.After;
 import org.junit.Test;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.test.TargetDirectory;
 
 public class TestEnterpriseCacheType
@@ -40,7 +42,7 @@ public class TestEnterpriseCacheType
 
         // THEN
         // -- the selected cache type should be GCR
-        assertEquals( GCResistantCache.class, cacheTypeInUse( db ) );
+        assertEquals( "gcr", getCacheTypeUsed() );
     }
     
     @Test
@@ -53,9 +55,14 @@ public class TestEnterpriseCacheType
 
         // THEN
         // -- the selected cache type should be GCR
-        assertEquals( GCResistantCache.class, cacheTypeInUse( db ) );
+        assertEquals( "gcr", getCacheTypeUsed() );
     }
-    
+
+    private String getCacheTypeUsed()
+    {
+        return db.getDependencyResolver().resolveDependency( Config.class ).get( GraphDatabaseSettings.cache_type );
+    }
+
     @After
     public void after() throws Exception
     {
@@ -65,9 +72,4 @@ public class TestEnterpriseCacheType
 
     private String storeDir = TargetDirectory.forTest( getClass() ).graphDbDir( true ).getAbsolutePath();
     private GraphDatabaseAPI db;
-    
-    private Class<?> cacheTypeInUse( GraphDatabaseAPI db )
-    {
-        return db.getNodeManager().caches().iterator().next().getClass();
-    }
 }

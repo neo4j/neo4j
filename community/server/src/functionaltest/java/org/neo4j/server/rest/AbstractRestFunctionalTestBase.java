@@ -58,6 +58,14 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
         gen().setSection( getDocumentationSectionName() );
     }
 
+    @Before
+    public void cleanContent()
+    {
+        cleanDatabase();
+        gen().setGraph( graphdb() );
+    }
+
+
     protected String doCypherRestCall( String endpoint, String scriptTemplate, Status status, Pair<String, String>... params ) {
         data.get();
         String parameterString = createParameterString( params );
@@ -117,14 +125,6 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
     {
         return server().getDatabase().getGraph();
     }
-
-    @Before
-    public void cleanContent()
-    {
-        cleanDatabase();
-        gen().setGraph( graphdb() );
-    }
-
     protected String getDataUri()
     {
         return "http://localhost:7474/db/data/";

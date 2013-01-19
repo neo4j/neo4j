@@ -46,7 +46,6 @@ public class ServerHelper
             public void doWork()
             {
                 deleteAllNodesAndRelationships( server );
-
                 deleteAllIndexes( server );
             }
 

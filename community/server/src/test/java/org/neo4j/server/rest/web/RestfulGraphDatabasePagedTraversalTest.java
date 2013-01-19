@@ -85,8 +85,6 @@ public class RestfulGraphDatabasePagedTraversalTest
                 .toString();
         assertThat( responseUri, containsString( "/node/1/paged/traverse/node/" ) );
         assertNotNull( response.getEntity() );
-        System.out.println( response.getEntity()
-                .toString() );
         assertThat( response.getEntity()
                 .toString(), containsString( "\"name\" : \"19\"" ) );
     }

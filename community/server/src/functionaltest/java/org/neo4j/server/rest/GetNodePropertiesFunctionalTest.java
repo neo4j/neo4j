@@ -19,8 +19,7 @@
  */
 package org.neo4j.server.rest;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.*;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 import java.io.IOException;
@@ -104,7 +103,8 @@ public class GetNodePropertiesFunctionalTest extends AbstractRestFunctionalTestB
 
         String complicatedString = asianText + germanText;
 
-        String entity = JsonHelper.createJsonFrom(Collections.singletonMap("foo", complicatedString));
+
+        String entity = JsonHelper.createJsonFrom( Collections.singletonMap( "foo", complicatedString ));
         final RestRequest request = req;
         JaxRsResponse createResponse = request.post(functionalTestHelper.dataUri() + "node/", entity);
         String response = (String) JsonHelper.jsonToSingleValue( request.get( getPropertyUri( createResponse.getLocation().toString(), "foo" ) ).getEntity() );
@@ -118,8 +118,8 @@ public class GetNodePropertiesFunctionalTest extends AbstractRestFunctionalTestB
 
         String complicatedString = asianText + germanText;
 
-        String entity = JsonHelper.createJsonFrom(Collections.singletonMap("foo", complicatedString));
-        final RestRequest request = req.header(StreamingJsonFormat.STREAM_HEADER,"true");
+        String entity = JsonHelper.createJsonFrom( Collections.singletonMap( "foo", complicatedString ) );
+        final RestRequest request = req.header( StreamingJsonFormat.STREAM_HEADER,"true");
         JaxRsResponse createResponse = request.post(functionalTestHelper.dataUri() + "node/", entity);
         String response = (String) JsonHelper.jsonToSingleValue( request.get( getPropertyUri( createResponse.getLocation().toString(), "foo" ) , new MediaType( "application","json", stringMap( "stream", "true" ) )).getEntity() );
         assertEquals( complicatedString, response );
@@ -150,7 +150,7 @@ public class GetNodePropertiesFunctionalTest extends AbstractRestFunctionalTestB
 
     /**
      * Get property for node.
-     * 
+     *
      * Get a single node property from a node.
      */
     @Documented
@@ -176,7 +176,7 @@ public class GetNodePropertiesFunctionalTest extends AbstractRestFunctionalTestB
 
     @Test
     public void shouldBeJSONContentTypeOnPropertyResponse() throws JsonParseException {
-        String entity = JsonHelper.createJsonFrom(Collections.singletonMap("foo", "bar"));
+        String entity = JsonHelper.createJsonFrom( Collections.singletonMap( "foo", "bar" ) );
 
         JaxRsResponse createResponse = req.post(functionalTestHelper.dataUri() + "node/", entity);
 
