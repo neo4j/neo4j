@@ -41,7 +41,7 @@ case class SingleStep(id: Int,
   }
 
   def expand(node: Node, parameters: ExecutionContext): (Iterable[Relationship], Option[ExpanderStep]) = {
-    val intermediate = parameters.state.query.getRelationshipsFor(node, direction, typ:_*).asScala
+    val intermediate = parameters.state.queryContext.getRelationshipsFor(node, direction, typ:_*).asScala
 
     val rels = new FilteringIterable(intermediate, node, And(relPredicate, nodePredicate), parameters)
     (rels, next)

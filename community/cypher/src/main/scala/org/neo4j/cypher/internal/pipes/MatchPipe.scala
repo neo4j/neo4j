@@ -29,5 +29,5 @@ class MatchPipe(source: Pipe, predicates: Seq[Predicate], patternGraph: PatternG
 
   def createResults(state: QueryState) = source.createResults(state).flatMap(matchingContext.getMatches)
 
-  override def executionPlan(): String = source.executionPlan() + "\r\nPatternMatch(" + patternGraph + ")"
+  override def executionPlanDescription(): String = source.executionPlanDescription() + "\r\nPatternMatch(" + patternGraph + ")"
 }

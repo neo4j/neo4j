@@ -87,7 +87,7 @@ class ExecuteUpdateCommandsPipe(source: Pipe, db: GraphDatabaseService, commands
     )
   }
 
-  def executionPlan() = source.executionPlan() + "\nUpdateGraph(" + commands.mkString + ")"
+  def executionPlanDescription() = source.executionPlanDescription() + "\nUpdateGraph(" + commands.mkString + ")"
 
   def symbols = source.symbols.add(commands.flatMap(_.identifiers).toMap)
 

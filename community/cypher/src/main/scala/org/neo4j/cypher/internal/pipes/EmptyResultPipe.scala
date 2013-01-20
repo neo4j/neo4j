@@ -33,7 +33,7 @@ class EmptyResultPipe(source: Pipe)
     Iterator()
   }
 
-  override def executionPlan(): String = source.executionPlan() + "\nEmptyResult()"
+  override def executionPlanDescription(): String = source.executionPlanDescription() + "\nEmptyResult()"
 
   def dependencies = Seq()
 

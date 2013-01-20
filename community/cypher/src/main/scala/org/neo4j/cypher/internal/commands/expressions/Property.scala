@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.ExecutionContext
 case class Property(mapExpr: Expression, property: String) extends Expression {
   def apply(ctx: ExecutionContext): Any = mapExpr(ctx) match {
     case null           => null
-    case IsMap(mapFunc) => mapFunc(ctx.state.query).apply(property)
+    case IsMap(mapFunc) => mapFunc(ctx.state.queryContext).apply(property)
     case _              => throw new ThisShouldNotHappenError("Andres", "Need something with properties")
   }
 

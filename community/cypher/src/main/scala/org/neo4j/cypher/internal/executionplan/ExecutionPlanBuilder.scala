@@ -74,7 +74,7 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService) extends PatternGraphBuil
       (planInProgress.pipe, getLazyReadonlyQuery(planInProgress.pipe, columns))
     }
 
-    val executionPlanDescription = pipe.executionPlan()
+    val executionPlanDescription = pipe.executionPlanDescription()
 
     new ExecutionPlan {
       def execute(wrap: TxQueryContextWrap, params: Map[String, Any]) = func(wrap, params)
@@ -185,6 +185,7 @@ The Neo4j Team""")
   }
 
   lazy val builders = Seq(
+//    new ResultValueMapperBuilder(graph),
     new NodeByIdBuilder(graph),
     new IndexQueryBuilder(graph),
     new GraphGlobalStartBuilder(graph),

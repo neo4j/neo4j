@@ -39,7 +39,7 @@ trait Pipe {
 
   def symbols: SymbolTable
 
-  def executionPlan(): String
+  def executionPlanDescription(): String
 }
 
 class NullPipe extends Pipe {
@@ -47,7 +47,7 @@ class NullPipe extends Pipe {
 
   def symbols: SymbolTable = new SymbolTable()
 
-  def executionPlan(): String = ""
+  def executionPlanDescription(): String = ""
 }
 
 object MutableMaps {
@@ -72,7 +72,7 @@ object QueryState {
 }
 
 class QueryState(val db: GraphDatabaseService,
-                 val query: QueryContext,
+                 val queryContext: QueryContext,
                  val params: Map[String, Any],
                  var transaction: Option[Transaction] = None) {
   val createdNodes = new Counter

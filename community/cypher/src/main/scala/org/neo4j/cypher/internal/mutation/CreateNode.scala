@@ -36,13 +36,13 @@ case class CreateNode(key: String, props: Map[String, Expression])
         val m: Map[String, Expression] = x.asInstanceOf[Map[String, Any]].map {
           case (k, v) => (k -> Literal(v))
         }
-        val node = state.query.createNode()
+        val node = state.queryContext.createNode()
         state.createdNodes.increase()
         setProperties(node, m, context, state)
         context.newWith(key -> node)
       })
     } else {
-      val node = state.query.createNode()
+      val node = state.queryContext.createNode()
       state.createdNodes.increase()
       setProperties(node, props, context, state)
 

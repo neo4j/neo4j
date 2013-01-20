@@ -51,7 +51,7 @@ case class NamedExpectation(name: String, e: Expression, properties: Map[String,
       e(ctx) match {
         case _: PropertyContainer => properties
         case IsMap(f)             =>
-          val m = f(ctx.state.query)
+          val m = f(ctx.state.queryContext)
           m.map {
             case (k, v) => k -> Literal(v)
           }
@@ -63,8 +63,8 @@ case class NamedExpectation(name: String, e: Expression, properties: Map[String,
     val expectations = getExpectations(ctx)
 
     pc match {
-      case n: Node         => compareWithExpectation(n, ctx.state.query.nodeOps(), ctx, expectations)
-      case n: Relationship => compareWithExpectation(n, ctx.state.query.relationshipOps(), ctx, expectations)
+      case n: Node         => compareWithExpectation(n, ctx.state.queryContext.nodeOps(), ctx, expectations)
+      case n: Relationship => compareWithExpectation(n, ctx.state.queryContext.relationshipOps(), ctx, expectations)
     }
   }
 

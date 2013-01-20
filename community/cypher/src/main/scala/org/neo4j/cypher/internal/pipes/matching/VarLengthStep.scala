@@ -80,7 +80,7 @@ case class VarLengthStep(id: Int,
       }
     }
 
-    val matchingRelationships = parameters.state.query.getRelationshipsFor(node, direction, typ:_*).asScala
+    val matchingRelationships = parameters.state.queryContext.getRelationshipsFor(node, direction, typ:_*).asScala
 
 
     val result = if (matchingRelationships.isEmpty && min == 0) {

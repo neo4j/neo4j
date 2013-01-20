@@ -60,7 +60,7 @@ PipeExecutionResult(result: Iterator[Map[String, Any]], val columns: List[String
 
     result.foreach((m) => {
       m.foreach((kv) => {
-        val length = text(kv._2, state.query).size
+        val length = text(kv._2, state.queryContext).size
         if (!columnSizes.contains(kv._1) || columnSizes.get(kv._1).get < length) {
           columnSizes.put(kv._1, length)
         }
@@ -131,7 +131,7 @@ PipeExecutionResult(result: Iterator[Map[String, Any]], val columns: List[String
   private def createString(columns: List[String], columnSizes: Map[String, Int], m: Map[String, Any]): String = {
     columns.map(c => {
       val length = columnSizes.get(c).get
-      val txt = text(m.get(c).get, state.query)
+      val txt = text(m.get(c).get, state.queryContext)
       val value = makeSize(txt, length)
       value
     }).mkString("| ", " | ", " |")

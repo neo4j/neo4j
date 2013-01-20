@@ -36,6 +36,8 @@ trait CypherType {
   def parentType: CypherType
 
   val isCollection: Boolean = false
+
+  def rewrite(f: CypherType => CypherType) = f(this)
 }
 
 object CypherType {

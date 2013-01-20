@@ -69,7 +69,7 @@ trait StringHelper {
 }
 
 case class StrFunction(argument: Expression) extends StringFunction(argument) with StringHelper with StringExtras {
-  def compute(value: Any, m: ExecutionContext): Any = text(argument(m), m.state.query)
+  def compute(value: Any, m: ExecutionContext): Any = text(argument(m), m.state.queryContext)
 
   def rewrite(f: (Expression) => Expression) = f(StrFunction(argument.rewrite(f)))
 }

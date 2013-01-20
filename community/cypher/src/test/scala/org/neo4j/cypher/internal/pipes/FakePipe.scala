@@ -31,5 +31,5 @@ class FakePipe(val data: Iterator[Map[String, Any]], identifiers: (String, Cyphe
 
   def createResults(state: QueryState) = data.map(m => ExecutionContext(collection.mutable.Map(m.toSeq: _*)))
 
-  def executionPlan(): String = "FAKE"
+  def executionPlanDescription(): String = "FAKE"
 }

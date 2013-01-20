@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.commands.values
 
 import org.neo4j.cypher.internal.spi.QueryContext
 
-
+// TODO Maybe use atoms
 sealed abstract class LabelValue {
   def resolve(ctx: QueryContext): ResolvedLabel
 }

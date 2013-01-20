@@ -38,7 +38,7 @@ case class LabelsFunction(nodeExpr: Expression) extends Expression {
   override def apply(ctx: ExecutionContext): Any = nodeExpr(ctx) match {
     case n: Node =>
       val state: QueryState = ctx.state
-      val apa: QueryContext = state.query
+      val apa: QueryContext = state.queryContext
       apa.getLabelsForNode(n).asScala.toSeq.map { LabelId(_) }
     case _ =>
       throw new CypherTypeException("labels() expected a Node but was called with something else")

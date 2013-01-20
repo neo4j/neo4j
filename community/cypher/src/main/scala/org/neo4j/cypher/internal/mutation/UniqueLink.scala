@@ -58,7 +58,7 @@ case class UniqueLink(start: NamedExpectation, end: NamedExpectation, rel: Named
     // If any matching rels are found, they are returned. Otherwise, a new one is
     // created and returned.
     def twoNodes(startNode: Node, endNode: Node): Option[(UniqueLink, CreateUniqueResult)] = {
-      val rels = context.state.query.getRelationshipsFor(startNode, dir, relType).asScala.
+      val rels = context.state.queryContext.getRelationshipsFor(startNode, dir, relType).asScala.
         filter(r => r.getOtherNode(startNode) == endNode && rel.compareWithExpectations(r, context) ).
         toList
 
@@ -95,7 +95,7 @@ case class UniqueLink(start: NamedExpectation, end: NamedExpectation, rel: Named
         Seq(nodeCreate, relUpdate)
       }
 
-      val rels = context.state.query.getRelationshipsFor(startNode, dir, relType).asScala.
+      val rels = context.state.queryContext.getRelationshipsFor(startNode, dir, relType).asScala.
         filter(r => rel.compareWithExpectations(r, context) && other.compareWithExpectations(r.getOtherNode(startNode), context)).toList
 
       rels match {

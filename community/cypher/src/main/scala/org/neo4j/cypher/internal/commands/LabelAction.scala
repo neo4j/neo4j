@@ -53,7 +53,7 @@ case class LabelAction(entity: Expression, labelOp: LabelOp, labelSetExpr: Expre
     }
 
     val node = getNodeFromExpression
-    val queryCtx = state.query
+    val queryCtx = state.queryContext
 
     val labelVals: Iterable[LabelValue] = labelSetExpr(context) match {
       case l: LabelValue => Iterable(l)

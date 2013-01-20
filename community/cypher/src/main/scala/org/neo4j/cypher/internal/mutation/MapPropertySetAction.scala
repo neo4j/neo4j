@@ -48,27 +48,27 @@ case class MapPropertySetAction(element: Expression, mapExpression: Expression)
         kv match {
           case (k, v) =>
             (v, pc) match {
-              case (null, r: Relationship) => state.query.relationshipOps().removeProperty(r, k)
-              case (null, n: Node)         => state.query.nodeOps().removeProperty(n, k)
-              case (_, n: Node)            => state.query.nodeOps().setProperty(n, k, makeValueNeoSafe(v))
-              case (_, r: Relationship)    => state.query.relationshipOps().setProperty(r, k, makeValueNeoSafe(v))
+              case (null, r: Relationship) => state.queryContext.relationshipOps().removeProperty(r, k)
+              case (null, n: Node)         => state.queryContext.nodeOps().removeProperty(n, k)
+              case (_, n: Node)            => state.queryContext.nodeOps().setProperty(n, k, makeValueNeoSafe(v))
+              case (_, r: Relationship)    => state.queryContext.relationshipOps().setProperty(r, k, makeValueNeoSafe(v))
             }
         }
       })
 
       /*Remove all other properties from the property container*/
       pc match {
-        case n:Node=> state.query.nodeOps().propertyKeys(n).asScala.foreach {
+        case n:Node=> state.queryContext.nodeOps().propertyKeys(n).asScala.foreach {
           case k if map.contains(k) => //Do nothing
           case k                    =>
-            state.query.nodeOps().removeProperty(n, k)
+            state.queryContext.nodeOps().removeProperty(n, k)
             state.propertySet.increase()
         }
 
-        case r:Relationship=> state.query.relationshipOps().propertyKeys(r).asScala.foreach {
+        case r:Relationship=> state.queryContext.relationshipOps().propertyKeys(r).asScala.foreach {
           case k if map.contains(k) => //Do nothing
           case k                    =>
-            state.query.relationshipOps().removeProperty(r, k)
+            state.queryContext.relationshipOps().removeProperty(r, k)
             state.propertySet.increase()
         }
       }
@@ -76,7 +76,7 @@ case class MapPropertySetAction(element: Expression, mapExpression: Expression)
 
     /*Make the map expression look like a map*/
     mapExpression(context) match {
-      case IsMap(createMapFrom) => setProperties(createMapFrom(state.query))
+      case IsMap(createMapFrom) => setProperties(createMapFrom(state.queryContext))
       case x                    =>
         throw new CypherTypeException("Expected %s to be a map, but it was :`%s`".format(element, x))
     }

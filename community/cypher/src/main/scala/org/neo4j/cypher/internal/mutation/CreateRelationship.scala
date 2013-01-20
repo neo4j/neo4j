@@ -46,7 +46,7 @@ case class CreateRelationship(key: String,
   def exec(context: ExecutionContext, state: QueryState) = {
     val f = from._1(context).asInstanceOf[Node]
     val t = to._1(context).asInstanceOf[Node]
-    val relationship = state.query.createRelationship(f, t, typ)
+    val relationship = state.queryContext.createRelationship(f, t, typ)
     state.createdRelationships.increase()
     setProperties(relationship, props, context, state)
     context.put(key, relationship)
