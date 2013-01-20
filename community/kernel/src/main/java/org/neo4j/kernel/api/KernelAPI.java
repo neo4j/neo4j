@@ -19,9 +19,34 @@
  */
 package org.neo4j.kernel.api;
 
+/**
+ * The main API through which access to the Neo4j kernel is made, both read
+ * and write operations are supported as well as transactions.
+ * 
+ * Changes to the graph (i.e. write operations) are performed via a
+ * {@link #newTransactionContext() transaction context} where changes done
+ * inside the transaction are visible in read operations for {@link StatementContext statements}
+ * executed within that transaction context. Once {@link TransactionContext#finish() committed}
+ * those changes are applied to the graph storage and made visible to all other transactions.
+ * 
+ * Read operations not associated with any particular transaction can be performed via
+ * the {@link #newReadOnlyStatementContext() read-only statement context}.
+ */
 public interface KernelAPI
 {
+    /**
+     * Creates and returns a new {@link TransactionContext} capable of modifying the
+     * underlying graph. Changes made in it are visible within the transaction and can
+     * be committed or rolled back.
+     * 
+     * @return a new {@link TransactionContext} for modifying the underlying graph.
+     */
     TransactionContext newTransactionContext();
 
+    /**
+     * 
+     * 
+     * @return
+     */
     StatementContext newReadOnlyStatementContext();
 }

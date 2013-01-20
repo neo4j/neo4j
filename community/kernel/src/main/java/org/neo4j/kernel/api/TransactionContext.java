@@ -19,10 +19,51 @@
  */
 package org.neo4j.kernel.api;
 
+/**
+ * Represents a transaction of changes to the underlying graph.
+ * Actual changes are made in the {@link #newStatementContext() statements}
+ * created from this transaction context. Changes made within a transaction
+ * are visible to all operations within it. The changes are stored to the
+ * graph upon {@link #finish() commit}, after marked as {@link #success() successful}.
+ * 
+ * Usage of a transaction context:
+ * <ol>
+ *   <li>get a {@link #newStatementContext() statement} and use it</li>
+ *   <li>in a finally-block: close the statement context</li>
+ *   <li>(do these above two an arbitrary number of times)</li>
+ *   <li>call {@link #success()} if all statements were successful</li>
+ *   <li>call {@link #finish()} to commit (if {@link #success()} has been called)
+ *       or roll back (if {@link #success()} hasn't or {@link #failure()} has been called</li>
+ * </ol>
+ */
 public interface TransactionContext
 {
+    /**
+     * Creates a new {@link StatementContext statement} which operations can be performed on.
+     * When done it must be {@link StatementContext#close() closed}.
+     * 
+     * @return a new {@link StatementContext} to do operations on.
+     */
     StatementContext newStatementContext();
+    
+    /**
+     * Marks this transaction as successful, so that a call to {@link #finish()} will
+     * commit it. This call has no effect if {@link #failure()} has been called.
+     * By default a transaction isn't marked as successful, so this must be called
+     * in order to commit this transaction.
+     */
     void success();
+    
+    /**
+     * Marks this transaction as failed, so that a call to {@link #finalize()} will
+     * roll it back. No calls to {@link #success()} will be able to mark this transaction
+     * as successful after this call.
+     */
     void failure();
+    
+    /**
+     * Commits or rolls back this transaction depending on how {@link #success()}
+     * and {@link #failure()} has been used.
+     */
     void finish();
 }

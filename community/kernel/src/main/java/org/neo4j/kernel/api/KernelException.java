@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.api;
 
+/**
+ * A super class of checked exceptions coming from the {@link KernelAPI Kernel API}.
+ */
 public class KernelException extends Exception
 {
     public KernelException( String message, Throwable cause )

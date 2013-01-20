@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.api;
 
+/**
+ * Thrown for using a label that doesn't exist.
+ */
 public class LabelNotFoundException extends KernelException
 {
     public LabelNotFoundException( String label )
