@@ -46,7 +46,7 @@ object CypherType {
     case _: Char => StringType()
     case _: Number => NumberType()
     case _: Boolean => BooleanType()
-    case _: Iterable[_] => AnyCollectionType()
+    case inner: Iterable[_] => new CollectionType(  inner.map(fromJava).fold(AnyType())(_.mergeWith(_)) )
     case _: LabelValue => LabelType()
     case _ => AnyType()
   }

@@ -197,7 +197,7 @@ class FunctionsTest extends DocumentingTestBase {
       queryText = """start a=node(%E%) return a.array, filter(x in a.array : length(x) = 3)""",
       returns = "This returns the property named `array` and a list of values in it, which have the length `3`.",
       assertions = (p) => {
-        val array = p.columnAs[WrappedArray[_]]("filter(x in a.array : length(x) = 3)").toList.head
+        val array = p.columnAs[Iterable[_]]("filter(x in a.array : length(x) = 3)").toList.head
         assert(List("one","two") === array.toList)
       })
   }

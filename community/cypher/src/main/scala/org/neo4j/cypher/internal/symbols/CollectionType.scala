@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.symbols
 
-import java.lang.String
 
 class CollectionType(override val iteratedType: CypherType) extends AnyType {
 

@@ -17,21 +17,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.executionplan.builders
+package org.neo4j.cypher.internal.symbols
 
-import org.neo4j.cypher.internal.executionplan.{ExecutionPlanInProgress, PlanBuilder}
-import org.neo4j.cypher.internal.symbols.{LabelType, AnyType}
+import org.junit.Test
+import org.neo4j.cypher.internal.commands.values.LabelName
+import org.scalatest.Assertions
 
-class ResultValueMapperBuilder extends PlanBuilder {
-  def apply(plan: ExecutionPlanInProgress) = ???
 
-  def canWorkWith(plan: ExecutionPlanInProgress) = plan.query.returns.exists {
-    case Unsolved(rc) => val symbols = plan.pipe.symbols
-      rc.expressions(symbols).values.exists(exp => {
-        val typ = exp.evaluateType(AnyType(), symbols)
-        typ == LabelType()
-      })
+class CypherTypeTest extends Assertions {
+  @Test def collections_should_be_types_correctly() {
+    val value = Seq(Seq(LabelName("foo")))
+    val typ = new CollectionType(new CollectionType(LabelType()))
+
+    assert(CypherType.fromJava(value) === typ)
   }
-
-  def priority = ???
 }

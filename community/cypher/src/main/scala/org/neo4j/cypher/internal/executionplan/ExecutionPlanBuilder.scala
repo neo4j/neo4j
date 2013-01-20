@@ -27,15 +27,34 @@ import internal.{ExecutionContext, ClosingIterator}
 import internal.commands._
 import internal.mutation.{CreateNode, CreateRelationship}
 import internal.symbols.{NodeType, RelationshipType, SymbolTable}
-import org.neo4j.kernel.InternalAbstractGraphDatabase
 import org.neo4j.graphdb.GraphDatabaseService
-import org.neo4j.kernel.api.{StatementContext, TransactionContext, KernelAPI}
 import org.neo4j.cypher.ExecutionResult
 
 class ExecutionPlanBuilder(graph: GraphDatabaseService) extends PatternGraphBuilder {
 
   def build(inputQuery: Query): ExecutionPlan = {
 
+    val planInProgress = buildPipes(inputQuery)
+
+    val columns = getQueryResultColumns(inputQuery, planInProgress.pipe.symbols)
+    val (pipe, func) = if (planInProgress.isUpdating) {
+      val p = planInProgress.pipe
+      (p, getEagerReadWriteQuery(p, columns))
+    } else {
+      (planInProgress.pipe, getLazyReadonlyQuery(planInProgress.pipe, columns))
+    }
+
+    val executionPlanDescription = pipe.executionPlanDescription()
+
+    new ExecutionPlan {
+      def execute(wrap: TxQueryContextWrap, params: Map[String, Any]) = func(wrap, params)
+
+      def description = executionPlanDescription
+    }
+  }
+
+
+  def buildPipes(inputQuery: Query): ExecutionPlanInProgress = {
     var continue = true
     var planInProgress = ExecutionPlanInProgress(PartiallySolvedQuery(inputQuery), new ParameterPipe(), isUpdating = false)
     checkFirstQueryPattern(planInProgress)
@@ -59,30 +78,16 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService) extends PatternGraphBuil
       }
 
       planInProgress.query.tail match {
-        case None    => continue = false
+        case None => continue = false
         case Some(q) =>
           planInProgress = planInProgress.copy(query = q)
           validatePattern(planInProgress.pipe.symbols, planInProgress.query.patterns.map(_.token))
       }
     }
 
-    val columns = getQueryResultColumns(inputQuery, planInProgress.pipe.symbols)
-    val (pipe, func) = if (planInProgress.isUpdating) {
-      val p = planInProgress.pipe
-      (p, getEagerReadWriteQuery(p, columns))
-    } else {
-      (planInProgress.pipe, getLazyReadonlyQuery(planInProgress.pipe, columns))
-    }
-
-    val executionPlanDescription = pipe.executionPlanDescription()
-
-    new ExecutionPlan {
-      def execute(wrap: TxQueryContextWrap, params: Map[String, Any]) = func(wrap, params)
-
-      def description = executionPlanDescription
-    }
+    // TODO Get back to this when we touch the type system
+    planInProgress.copy(pipe = new ResultValueMapperPipe(planInProgress.pipe))
   }
-
 
   private def checkFirstQueryPattern(planInProgress: ExecutionPlanInProgress) {
     val startPoints = getStartPointsFromPlan(planInProgress.query)

@@ -2228,7 +2228,7 @@ RETURN x0.name?
     val result = parseAndExecute("START n=node(0) SET n.array = [1,2,3,4,5] RETURN tail(tail(n.array))").
       toList.
       head("tail(tail(n.array))").
-      asInstanceOf[mutable.WrappedArray[_]]
+      asInstanceOf[Iterable[_]]
 
     assert(result.toList === List(3,4,5))
   }
@@ -2380,7 +2380,7 @@ RETURN x0.name?
     try {
       engine.execute("BABY START SMILING, YOU KNOW THE SUN IS SHINING.")
     } catch {
-      case _ =>
+      case _ : Throwable => // We mean it
     }
 
     // Until we have a clean cut way where statement context is injected into cypher,

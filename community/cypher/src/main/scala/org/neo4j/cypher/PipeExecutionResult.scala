@@ -21,7 +21,7 @@ package org.neo4j.cypher
 
 import internal.helpers.CollectionSupport
 import internal.pipes.QueryState
-import internal.{ResultValueMapper, StringExtras}
+import internal.StringExtras
 import internal.commands.expressions.StringHelper
 import scala.collection.JavaConverters._
 import java.io.{StringWriter, PrintWriter}
