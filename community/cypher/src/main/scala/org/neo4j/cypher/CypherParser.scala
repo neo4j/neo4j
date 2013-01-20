@@ -31,7 +31,7 @@ class CypherParser(version: String) {
   val v20 = new internal.parser.v2_0.CypherParserImpl
 
   @throws(classOf[SyntaxException])
-  def parse(queryText: String): Query = synchronized {
+  def parse(queryText: String): Query = {
 
     val (v, q) = queryText match {
       case hasVersionDefined(v1, q1) => (v1, q1)
