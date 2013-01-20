@@ -44,9 +44,12 @@ public interface KernelAPI
     TransactionContext newTransactionContext();
 
     /**
+     * Returns a {@link StatementContext context} that can be used for read operations
+     * that aren't associated with any specific transaction. Write operations on this
+     * statement will throw exception.
      * 
-     * 
-     * @return
+     * @return a new {@link StatementContext} used for read operations not associated
+     * with any transaction.
      */
     StatementContext newReadOnlyStatementContext();
 }
