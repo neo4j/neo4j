@@ -154,7 +154,7 @@ class LazyTest extends ExecutionEngineHelper with Assertions {
     val monitoredNode = new MonitoredNode(a, limiter.monitor)
 
     val end = EndPoint("b")
-    val trail = SingleStepTrail(end, Direction.OUTGOING, "r", Seq(), "a", None, None, null)
+    val trail = SingleStepTrail(end, Direction.OUTGOING, "r", Seq(), "a", True(), True(), null, Seq())
     val parameterPipe = new ParameterPipe()
 
     val step = trail.toSteps(0).get

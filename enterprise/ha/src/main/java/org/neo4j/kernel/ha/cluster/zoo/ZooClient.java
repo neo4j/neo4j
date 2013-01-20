@@ -117,7 +117,7 @@ public class ZooClient implements Lifecycle, CompatibilityMonitor
 
     private File storeDir;
     private long sessionId = -1;
-    private int backupPort;
+    private HostnamePort backupPort;
     private String clusterName;
     private boolean allowCreateCluster;
     private WatcherImpl watcher;
@@ -153,7 +153,7 @@ public class ZooClient implements Lifecycle, CompatibilityMonitor
     {
         this.storeDir = conf.get( GraphDatabaseSettings.store_dir );
         machineId = conf.get( server_id );
-        backupPort = conf.get( OnlineBackupSettings.online_backup_port );
+        backupPort = conf.get( OnlineBackupSettings.online_backup_server );
         clusterServer = NetworkInstance.URI_PROTOCOL + "://" +
                 conf.get( ClusterSettings.cluster_server ).getHost( defaultServer() ) + ":" +
                 conf.get( ClusterSettings.cluster_server ).getPort();
@@ -161,7 +161,7 @@ public class ZooClient implements Lifecycle, CompatibilityMonitor
                 conf.get( ClusterSettings.cluster_server ).getPort();
         clusterName = conf.get( ClusterSettings.cluster_name );
         allowCreateCluster = conf.get( ClusterSettings.allow_init_cluster );
-        asMachine = new Machine( machineId, 0, 0, 0, haServer, backupPort );
+        asMachine = new Machine( machineId, 0, 0, 0, haServer, backupPort.getPort() );
         this.servers = conf.get( HaSettings.coordinators );
         this.sessionTimeout = conf.get( HaSettings.zk_session_timeout );
         sequenceNr = "not initialized yet";
@@ -737,7 +737,7 @@ public class ZooClient implements Lifecycle, CompatibilityMonitor
     {
         byte[] array = new byte[haServer.length() * 2 + 100];
         ByteBuffer buffer = ByteBuffer.wrap( array );
-        buffer.putInt( backupPort );
+        buffer.putInt( backupPort.getPort() );
         buffer.put( (byte) haServer.substring( 5 ).length() );
         buffer.asCharBuffer().put( haServer.substring( 5 ).toCharArray() ).flip();
         byte[] actualArray = new byte[buffer.limit()];

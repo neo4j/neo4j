@@ -31,7 +31,7 @@ public class ServerRootRepresentation extends MappingRepresentation
 {
     private HashMap<String, String> services = new HashMap<String, String>();
 
-    public ServerRootRepresentation( URI baseUri, AdvertisableService... advertisableServices )
+    public ServerRootRepresentation( URI baseUri, Iterable<AdvertisableService> advertisableServices )
     {
         super( "services" );
         for ( AdvertisableService svc : advertisableServices )

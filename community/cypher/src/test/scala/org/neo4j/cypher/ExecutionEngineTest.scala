@@ -1799,7 +1799,7 @@ RETURN x0.name?
       engine.execute("create a")
     } catch {
       case x: SyntaxException =>
-      case _ => fail("expected exception")
+      case _: Throwable => fail("expected exception")
     } finally {
       db.shutdown()
     }
@@ -2333,4 +2333,26 @@ RETURN x0.name?
 
     assert(result.toList === List(Map("me.name"->"Neo")))
   }
+
+  @Test
+  def unexpected_traversal_state_should_never_be_hit() {
+    val a = createNode()
+    val b = createNode()
+    val c = createNode()
+
+    relate(a, b)
+    relate(b, c)
+
+    val result = parseAndExecute("START n=node({a}), m=node({b}) MATCH n-[r]->m RETURN *", "a"->a, "b"->c)
+
+    assert(result.toList === List())
+  }
+
+  @Test def path_expressions_should_work_with_on_the_fly_predicates() {
+    relate(refNode, createNode("name" -> "Neo"))
+    val result = parseAndExecute("START a=node({self}) MATCH a-->b WHERE b-->() RETURN b", "self"->refNode)
+
+    assert(result.toList === List())
+  }
+
 }

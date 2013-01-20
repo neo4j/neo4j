@@ -20,7 +20,6 @@
 package org.neo4j.kernel.ha.backup;
 
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Semaphore;
@@ -37,6 +36,7 @@ import org.neo4j.cluster.member.ClusterMemberListener;
 import org.neo4j.cluster.member.paxos.PaxosClusterMemberEvents;
 import org.neo4j.cluster.protocol.election.CoordinatorIncapableCredentialsProvider;
 import org.neo4j.helpers.Args;
+import org.neo4j.helpers.Predicates;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.HaSettings;
@@ -59,7 +59,7 @@ public final class HaBackupProvider extends BackupExtensionService
     {
         String master = null;
         StringLogger logger = logging.getLogger( HaBackupProvider.class );
-        logger.logMessage( "Asking cluster member at '" + address
+        logger.debug( "Asking cluster member at '" + address
                 + "' for master" );
 
         String clusterName = args.get( ClusterSettings.cluster_name.name(), null );
@@ -68,23 +68,21 @@ public final class HaBackupProvider extends BackupExtensionService
             clusterName = args.get( ClusterSettings.cluster_name.name(), ClusterSettings.cluster_name.getDefaultValue() );
         }
 
-        master = getMasterServerInCluster( address.getSchemeSpecificPart().substring(
-                2 ), clusterName, logging ); // skip the "//" part
-
-        logger.logMessage( "Found master '" + master + "' in cluster" );
-        URI toReturn = null;
         try
         {
-            toReturn = new URI( master );
+            master = getMasterServerInCluster( address.getSchemeSpecificPart().substring(
+                    2 ), clusterName, logging ); // skip the "//" part
+
+            logger.debug( "Found master '" + master + "' in cluster" );
+            return URI.create( master );
         }
-        catch ( URISyntaxException e )
+        catch ( Exception e )
         {
-            // no way
+            throw new RuntimeException( e.getMessage() );
         }
-        return toReturn;
     }
 
-    private static String getMasterServerInCluster( String from, String clusterName, final Logging logging )
+    private String getMasterServerInCluster( String from, String clusterName, final Logging logging )
     {
         LifeSupport life = new LifeSupport();
         Map<String, String> params = new HashMap<String, String>();
@@ -98,7 +96,7 @@ public final class HaBackupProvider extends BackupExtensionService
         ClusterClient clusterClient = life.add( new ClusterClient( ClusterClient.adapt( config ), logging,
                 new CoordinatorIncapableCredentialsProvider() ) );
         ClusterMemberEvents events = life.add( new PaxosClusterMemberEvents( clusterClient, clusterClient,
-                clusterClient, new SystemOutLogging() ) );
+                clusterClient, new SystemOutLogging(), Predicates.<PaxosClusterMemberEvents.ClusterMembersSnapshot>TRUE() ) );
 
         final Semaphore infoReceivedLatch = new Semaphore( 0 );
         final AtomicReference<URI> backupUri = new AtomicReference<URI>(  );
@@ -134,7 +132,7 @@ public final class HaBackupProvider extends BackupExtensionService
         {
             if ( !infoReceivedLatch.tryAcquire( 10, TimeUnit.SECONDS ) )
             {
-                throw new RuntimeException( "Could not find master in cluster " + clusterName + " at " + from + ", " +
+                throw new RuntimeException( "Could not find backup server in cluster " + clusterName + " at " + from + ", " +
                         "operation timed out" );
             }
         }

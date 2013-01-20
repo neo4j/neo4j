@@ -21,7 +21,6 @@ package org.neo4j.server.enterprise;
 
 import static org.junit.Assert.assertEquals;
 
-import java.io.IOException;
 import java.net.URI;
 import java.util.Map;
 
@@ -30,8 +29,6 @@ import javax.ws.rs.core.MediaType;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
@@ -56,18 +53,6 @@ public class HaServerFunctionalTest
             return HaServerFunctionalTest.class.getSimpleName() + "." + super.getMethodName();
         }
     };
-
-    @BeforeClass
-    public static void startZooKeeper()
-    {
-        if ( Settings.osIsWindows() ) return;
-    }
-
-    @AfterClass
-    public static void stopZooKeeper() throws IOException
-    {
-        dir.cleanup();
-    }
 
     private ServerCluster cluster;
 

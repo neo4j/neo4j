@@ -103,19 +103,20 @@ public class OtherThreadExecutor<T> implements ThreadFactory, Visitor<LineLogger
         return executeDontWait( cmd ).get();
     }
 
-    public <R> R execute( WorkerCommand<T, R> cmd, long timeout ) throws Exception
+    public <R> R execute( WorkerCommand<T, R> cmd, long timeout, TimeUnit unit ) throws Exception
     {
         Future<R> future = executeDontWait( cmd );
         boolean success = false;
         try
         {
-            R result = future.get( timeout, TimeUnit.MILLISECONDS );
+            R result = future.get( timeout, unit );
             success = true;
             return result;
         }
         finally
         {
-            if ( !success ) future.cancel( true );
+            if ( !success )
+                future.cancel( true );
         }
     }
     

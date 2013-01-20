@@ -20,6 +20,7 @@
 package org.neo4j.graphdb;
 
 import org.neo4j.graphdb.traversal.TraversalDescription;
+import org.neo4j.kernel.Traversal;
 
 /**
  * A node in the graph with properties and relationships to other entities.
@@ -316,12 +317,12 @@ public interface Node extends PropertyContainer
      *            <code>relationshipType</code> will be traversed
      * @return a new traverser, configured as above
      * @deprecated because of an unnatural and too tight coupling with
-     * {@link Node}. Also because of the introduction of a new traversal
-     * framework. The new way of doing traversals is by creating a
-     * new {@link TraversalDescription} from
-     * {@link Traversal#traversal()}, add rules and
-     * behaviours to it and then calling
-     * {@link TraversalDescription#traverse(Node...)}
+     *             {@link Node}. Also because of the introduction of a new
+     *             traversal framework. The new way of doing traversals is by
+     *             creating a new {@link TraversalDescription} from
+     *             {@link Traversal#traversal()}, add rules and behaviors to it
+     *             and then calling
+     *             {@link TraversalDescription#traverse(Node...)}
      */
     public Traverser traverse( Traverser.Order traversalOrder,
             StopEvaluator stopEvaluator,

@@ -42,15 +42,15 @@ public interface ReadableIndex<T extends PropertyContainer>
     Class<T> getEntityType();
 
     /**
-     * Returns exact matches from this index, given the key/value pair.
-     * Matches will be for key/value pairs just as they were added by the
-     * {@link #add(PropertyContainer, String, Object)} method.
-     *
+     * Returns exact matches from this index, given the key/value pair. Matches
+     * will be for key/value pairs just as they were added by the
+     * {@link Index#add(PropertyContainer, String, Object)} method.
+     * 
      * @param key the key in the key/value pair to match.
      * @param value the value in the key/value pair to match.
      * @return the result wrapped in an {@link IndexHits} object. If the entire
-     * result set isn't looped through, {@link IndexHits#close()} must be
-     * called before disposing of the result.
+     *         result set isn't looped through, {@link IndexHits#close()} must
+     *         be called before disposing of the result.
      */
     IndexHits<T> get( String key, Object value );
 

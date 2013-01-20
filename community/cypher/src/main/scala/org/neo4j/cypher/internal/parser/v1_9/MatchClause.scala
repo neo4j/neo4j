@@ -22,14 +22,14 @@ package org.neo4j.cypher.internal.parser.v1_9
 import org.neo4j.cypher.internal.commands._
 import expressions.{Identifier, Expression}
 import collection.Map
+import org.neo4j.cypher.internal.helpers.CastSupport.sift
 
 trait MatchClause extends Base with ParserPattern {
+
   def matching: Parser[(Seq[Pattern], Seq[NamedPath])] = ignoreCase("match") ~> usePattern(matchTranslator) ^^ {
-    case matching =>
-      val namedPaths = matching.filter(_.isInstanceOf[NamedPath]).map(_.asInstanceOf[NamedPath])
-      val patterns = matching.filter(_.isInstanceOf[List[Pattern]]).map(_.asInstanceOf[List[Pattern]]).flatten ++
-                     matching.filter(_.isInstanceOf[Pattern]).map(_.asInstanceOf[Pattern]) ++
-                     namedPaths.flatMap(_.pathPattern)
+    case matches =>
+      val namedPaths = sift[NamedPath](matches)
+      val patterns = sift[List[Pattern]](matches).flatten ++ sift[Pattern](matches) ++ namedPaths.flatMap(_.pathPattern)
 
       (patterns.distinct, namedPaths)
   }

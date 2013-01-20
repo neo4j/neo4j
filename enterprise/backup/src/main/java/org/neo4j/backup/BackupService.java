@@ -48,6 +48,7 @@ import org.neo4j.com.TransactionStream;
 import org.neo4j.com.TxExtractor;
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
+import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.ProgressIndicator;
 import org.neo4j.helpers.Settings;
@@ -328,22 +329,16 @@ class BackupService
 
     static EmbeddedGraphDatabase startTemporaryDb( String targetDirectory, ConfigParam... params )
     {
-        if ( params != null && params.length > 0 )
+        Map<String, String> config = new HashMap<String, String>();
+        config.put( OnlineBackupSettings.online_backup_enabled.name(), GraphDatabaseSetting.FALSE );
+        for ( ConfigParam param : params )
         {
-            Map<String, String> config = new HashMap<String, String>();
-            for ( ConfigParam param : params )
+            if ( param != null )
             {
-                if ( param != null )
-                {
-                    param.configure( config );
-                }
+                param.configure( config );
             }
-            return new EmbeddedGraphDatabase( targetDirectory, config );
         }
-        else
-        {
-            return new EmbeddedGraphDatabase( targetDirectory );
-        }
+        return new EmbeddedGraphDatabase( targetDirectory, config );
     }
 
     private RequestContext addDiffToSlaveContext( RequestContext original,

@@ -99,7 +99,7 @@ public abstract class Server<T, R> extends Protocol implements ChannelPipelineFa
     }
 
     static final byte INTERNAL_PROTOCOL_VERSION = 2;
-    public static final int DEFAULT_BACKUP_PORT = 6362;
+    public static final int DEFAULT_BACKUP_PORT = 6372;
 
     // It's ok if there are more transactions, since these worker threads doesn't
     // do any actual work themselves, but spawn off other worker threads doing the
@@ -193,6 +193,8 @@ public abstract class Server<T, R> extends Protocol implements ChannelPipelineFa
             try
             {
                 channel = bootstrap.bind( socketAddress );
+                ex = null;
+                break;
             }
             catch ( ChannelException e )
             {

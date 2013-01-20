@@ -1,5 +1,21 @@
 For Release Notes, see http://neo4j.org/release-notes#neo4j-${project.version}
 
+1.9.M04 (2013-01-17)
+--------------------
+Kernel:
+o Start entries are now explicitly marked as written, solves a bug that might cause recovery to fail
+
+Server:
+o Increased performance for rest-batch-operations by a factor of 100
+
+Cypher:
+o Clearer error message for when aggregations are used in ORDER BY and not in RETURN
+o Fixes #394 - Identifiers inside of FOREACH get the wrong type
+o Fixes #390 - IN/ANY/NONE/ANY/SINGLE causes RuntimeException for some patterns
+o Fixes #387 - Some patterns produced "Unexpected traversal state" in Cypher
+o Upgraded the Scala version to 2.10
+o Fixes #355 - Collections in collections are still Scala collections instead of Java collections
+
 1.9.M03 (2012-12-21)
 --------------------
 Server:

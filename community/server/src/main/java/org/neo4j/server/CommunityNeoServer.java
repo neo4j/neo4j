@@ -19,7 +19,9 @@
  */
 package org.neo4j.server;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.database.CommunityDatabase;
@@ -38,15 +40,17 @@ import org.neo4j.server.preflight.PerformUpgradeIfNecessary;
 import org.neo4j.server.preflight.PreFlightTasks;
 import org.neo4j.server.web.Jetty6WebServer;
 import org.neo4j.server.web.WebServer;
+import org.neo4j.server.webadmin.rest.AdvertisableService;
+import org.neo4j.server.webadmin.rest.JmxService;
+import org.neo4j.server.webadmin.rest.MonitorService;
+import org.neo4j.server.webadmin.rest.console.ConsoleService;
 
 public class CommunityNeoServer extends AbstractNeoServer
 {
-
-    protected CommunityNeoServer()
+    public CommunityNeoServer()
     {
-        
     }
-    
+
     public CommunityNeoServer( Configurator configurator )
     {
         this.configurator = configurator;
@@ -54,7 +58,8 @@ public class CommunityNeoServer extends AbstractNeoServer
     }
 
 	@Override
-	protected PreFlightTasks createPreflightTasks() {
+	protected PreFlightTasks createPreflightTasks()
+    {
 		return new PreFlightTasks(
 				// TODO: Move the config check into bootstrapper
 				//new EnsureNeo4jPropertiesExist(configurator.configuration()),
@@ -79,12 +84,25 @@ public class CommunityNeoServer extends AbstractNeoServer
 	}
 
 	@Override
-	protected Database createDatabase() {
+	protected Database createDatabase()
+    {
 		return new CommunityDatabase(configurator.configuration());
 	}
 
 	@Override
-	protected WebServer createWebServer() {
+	protected WebServer createWebServer()
+    {
 		return new Jetty6WebServer();
 	}
+
+    @Override
+    public Iterable<AdvertisableService> getServices()
+    {
+        List<AdvertisableService> toReturn = new ArrayList<AdvertisableService>( 3 );
+        toReturn.add( new ConsoleService( null, null, null ) );
+        toReturn.add( new JmxService( null, null ) );
+        toReturn.add( new MonitorService( null, null ) );
+
+        return toReturn;
+    }
 }

@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.parser.v1_8
 
 import org.neo4j.cypher.internal.commands.expressions.Literal
 
+
 trait StringLiteral extends Base {
   def stringLit: Parser[Literal] = Parser {
     case in if in.atEnd => Failure("out of string", in)

@@ -29,19 +29,18 @@ final case class SingleStepTrail(next: Trail,
                                  relName: String,
                                  typ: Seq[String],
                                  start: String,
-                                 relPred: Option[Predicate],
-                                 nodePred: Option[Predicate],
-                                 pattern: Pattern) extends Trail {
+                                 relPred: Predicate,
+                                 nodePred: Predicate,
+                                 pattern: Pattern,
+                                 originalPredicates: Seq[Predicate]) extends Trail {
   def end = next.end
 
   def pathDescription = next.pathDescription ++ Seq(relName, end)
 
   def toSteps(id: Int) = {
     val steps = next.toSteps(id + 1)
-    val relPredicate = relPred.getOrElse(True())
-    val nodePredicate = nodePred.getOrElse(True())
 
-    Some(SingleStep(id, typ, dir, steps, relPredicate, nodePredicate))
+    Some(SingleStep(id, typ, dir, steps, relPred, nodePred))
   }
 
   def size = next.size + 1
@@ -69,7 +68,7 @@ final case class SingleStepTrail(next: Trail,
 
   def contains(target: String): Boolean = next.contains(target) || target == end
 
-  def predicates = nodePred.toSeq ++ relPred.toSeq ++ next.predicates
+  def predicates = originalPredicates ++ next.predicates
 
   def patterns = next.patterns :+ pattern
 

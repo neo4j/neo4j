@@ -44,17 +44,10 @@ public class TestConfiguration
     }
     
     @Test
-    public void testOffByDefault() throws Exception
+    public void testOnByDefault() throws Exception
     {
         GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( SOURCE_DIR );
-        try
-        {
-            OnlineBackup.from( InetAddress.getLocalHost().getHostAddress() ).full( BACKUP_DIR );
-            fail( "Shouldn't be possible" );
-        }
-        catch ( Exception e )
-        { // Good
-        }
+        OnlineBackup.from( InetAddress.getLocalHost().getHostAddress() ).full( BACKUP_DIR );
         db.shutdown();
     }
     
@@ -92,7 +85,7 @@ public class TestConfiguration
         String customPort = "12345";
         GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( SOURCE_DIR ).
             setConfig( OnlineBackupSettings.online_backup_enabled, GraphDatabaseSetting.TRUE ).
-            setConfig( OnlineBackupSettings.online_backup_port, customPort ).newGraphDatabase(); 
+            setConfig( OnlineBackupSettings.online_backup_server, ":"+customPort ).newGraphDatabase();
         try
         {
             OnlineBackup.from( InetAddress.getLocalHost().getHostAddress() ).full( BACKUP_DIR );

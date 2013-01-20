@@ -27,7 +27,7 @@ import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.neo4j.graphdb.factory.GraphDatabaseSetting;
+import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
@@ -48,7 +48,7 @@ public class NeoStore extends AbstractStore
     public static abstract class Configuration
         extends AbstractStore.Configuration
     {
-        public static final GraphDatabaseSetting.IntegerSetting relationship_grab_size = GraphDatabaseSettings.relationship_grab_size;
+        public static final Setting<Integer> relationship_grab_size = GraphDatabaseSettings.relationship_grab_size;
     }
 
     public static final String TYPE_DESCRIPTOR = "NeoStore";

@@ -28,17 +28,40 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 
+/**
+ * This class encapsulates the information needed to perform an online backup against a running Neo4j instance
+ * configured to act as a backup server. This class is not instantiable, instead factory methods are used to get
+ * instances configured to contact a specific backup server against which all possible backup operations can be
+ * performed.
+ *
+ * All backup methods return the same instance, allowing for chaining calls.
+ */
 public class OnlineBackup
 {
     private final String hostNameOrIp;
     private final int port;
     private BackupService.BackupOutcome outcome;
 
+    /**
+     * Factory method for this class. The OnlineBackup instance returned will perform backup operations against the
+     * hostname and port passed in as parameters.
+     *
+     * @param hostNameOrIp The hostname or the IP address of the backup server
+     * @param port The port at which the remote backup server is listening
+     * @return An OnlineBackup instance ready to perform backup operations from the given remote server
+     */
     public static OnlineBackup from( String hostNameOrIp, int port )
     {
         return new OnlineBackup( hostNameOrIp, port );
     }
 
+    /**
+     * Factory method for this class. The OnlineBackup instance returned will perform backup operations against the
+     * hostname passed in as parameter, using the default backup port.
+     *
+     * @param hostNameOrIp The hostname or IP address of the backup server
+     * @return An OnlineBackup instance ready to perform backup operations from the given remote server
+     */
     public static OnlineBackup from( String hostNameOrIp )
     {
         return new OnlineBackup( hostNameOrIp, BackupServer.DEFAULT_PORT );
@@ -50,12 +73,35 @@ public class OnlineBackup
         this.port = port;
     }
 
+    /**
+     * Performs a full backup storing the resulting database at the given directory. The server contacted is the one
+     * configured in the factory method used to obtain this instance. At the end of the backup, a verification phase
+     * will take place, running over the resulting database ensuring it is consistent. If the check fails, the fact
+     * will be printed in stderr.
+     *
+     * If the target directory already contains a database, a RuntimeException denoting the fact will be thrown.
+     *
+     * @param targetDirectory The directory in which to store the database
+     * @return The same OnlineBackup instance, possible to use for a new backup operation.
+     */
     public OnlineBackup full( String targetDirectory )
     {
         outcome = new BackupService().doFullBackup( hostNameOrIp, port, targetDirectory, true, defaultConfig() );
         return this;
     }
 
+    /**
+     * Performs a full backup storing the resulting database at the given directory. The server contacted is the one
+     * configured in the factory method used to obtain this instance. If the verification flag is set, at the end of
+     * the backup, a verification phase will take place, running over the resulting database ensuring it is consistent.
+     * If the check fails, the fact will be printed in stderr.
+     *
+     * If the target directory already contains a database, a RuntimeException denoting the fact will be thrown.
+     *
+     * @param targetDirectory The directory in which to store the database
+     * @param verification a boolean indicating whether to perform verification on the created backup
+     * @return The same OnlineBackup instance, possible to use for a new backup operation.
+     */
     public OnlineBackup full( String targetDirectory, boolean verification )
     {
         outcome = new BackupService().doFullBackup( hostNameOrIp, port, targetDirectory, verification,
@@ -63,6 +109,20 @@ public class OnlineBackup
         return this;
     }
 
+    /**
+     * Performs a full backup storing the resulting database at the given directory. The server contacted is the one
+     * configured in the factory method used to obtain this instance. If the verification flag is set, at the end of
+     * the backup, a verification phase will take place, running over the resulting database ensuring it is consistent.
+     * If the check fails, the fact will be printed in stderr. The consistency check will run with the provided
+     * tuning configuration.
+     *
+     * If the target directory already contains a database, a RuntimeException denoting the fact will be thrown.
+     *
+     * @param targetDirectory The directory in which to store the database
+     * @param verification a boolean indicating whether to perform verification on the created backup
+     * @param tuningConfiguration The {@link Config} to use when running the consistency check
+     * @return The same OnlineBackup instance, possible to use for a new backup operation.
+     */
     public OnlineBackup full( String targetDirectory, boolean verification, Config tuningConfiguration )
     {
         outcome = new BackupService().doFullBackup( hostNameOrIp, port, targetDirectory, verification,
@@ -70,24 +130,68 @@ public class OnlineBackup
         return this;
     }
 
+    /**
+     * Performs an incremental backup on the database stored in targetDirectory. The server contacted is the one
+     * configured in the factory method used to obtain this instance. After the incremental backup is complete, a
+     * verification phase will take place, checking the database for consistency. If any errors are found, they will
+     * be printed in stderr.
+     *
+     * If the target directory does not contain a database or it is not compatible with the one present in the
+     * configured backup server a RuntimeException will be thrown denoting the fact.
+     *
+     * @param targetDirectory A directory holding a complete database previously obtained from the backup server.
+     * @return The same OnlineBackup instance, possible to use for a new backup operation
+     */
     public OnlineBackup incremental( String targetDirectory )
     {
         outcome = new BackupService().doIncrementalBackup( hostNameOrIp, port, targetDirectory, true );
         return this;
     }
 
+    /**
+     * Performs an incremental backup on the database stored in targetDirectory. The server contacted is the one
+     * configured in the factory method used to obtain this instance. After the incremental backup is complete, and if
+     * the verification parameter is set to true, a  verification phase will take place, checking the database for
+     * consistency. If any errors are found, they will be printed in stderr.
+     *
+     * If the target directory does not contain a database or it is not compatible with the one present in the
+     * configured backup server a RuntimeException will be thrown denoting the fact.
+     *
+     * @param targetDirectory A directory holding a complete database previously obtained from the backup server.
+     * @param verification If true, the verification phase will be run.
+     * @return The same OnlineBackup instance, possible to use for a new backup operation
+     */
     public OnlineBackup incremental( String targetDirectory, boolean verification )
     {
         outcome = new BackupService().doIncrementalBackup( hostNameOrIp, port, targetDirectory, verification );
         return this;
     }
 
+    /**
+     * Performs an incremental backup on the supplied target database. The server contacted is the one
+     * configured in the factory method used to obtain this instance. After the incremental backup is complete
+     * a verification phase will take place, checking the database for consistency. If any errors are found, they will
+     * be printed in stderr.
+     *
+     * If the target database is not compatible with the one present in the target backup server, a RuntimeException
+     * will be thrown denoting the fact.
+     *
+     * @param targetDb The database on which the incremental backup is to be applied
+     * @return The same OnlineBackup instance, possible to use for a new backup operation.
+     */
     public OnlineBackup incremental( GraphDatabaseAPI targetDb )
     {
         outcome = new BackupService().doIncrementalBackup( hostNameOrIp, port, targetDb );
         return this;
     }
 
+    /**
+     * Provides information about the last committed transaction for each data source present in the last backup
+     * operation performed by this OnlineBackup.
+     * In particular, it returns a map where the keys are the names of the data sources and the values the longs that
+     * are the last committed transaction id for that data source.
+     * @return A map from data source name to last committed transaction id.
+     */
     public Map<String, Long> getLastCommittedTxs()
     {
         return outcome.getLastCommittedTxs();

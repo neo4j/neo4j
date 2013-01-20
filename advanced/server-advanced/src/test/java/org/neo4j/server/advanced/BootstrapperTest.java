@@ -30,26 +30,28 @@ import org.neo4j.server.advanced.jmx.ServerManagement;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.PropertyFileConfigurator;
 import org.neo4j.server.helpers.ServerBuilder;
+import org.neo4j.test.TargetDirectory;
 
 public class BootstrapperTest
 {
     @Test
     public void shouldBeAbleToRestartServer() throws Exception
     {
-        String dbDir1 = new File("target/db1").getAbsolutePath();
+        TargetDirectory target = TargetDirectory.forTest( getClass() );
+        String dbDir1 =  target.directory( "db1", true ).getAbsolutePath();
         Configurator config = new PropertyFileConfigurator(
         		ServerBuilder
 	        		.server()
 	        		.usingDatabaseDir( dbDir1 )
 	                .createPropertiesFiles());
-        
+
         // TODO: This needs to be here because of a startuphealthcheck
         // that requires this system property. Look into moving
         // config file check into bootstrapper to avoid this.
-        File irellevant = new File("target/irellevant");
-        irellevant.createNewFile();
+        File irrelevant = target.file( "irrelevant" );
+        irrelevant.createNewFile();
         
-        config.configuration().setProperty( "org.neo4j.server.properties", irellevant.getAbsolutePath());
+        config.configuration().setProperty( "org.neo4j.server.properties", irrelevant.getAbsolutePath());
         
         AdvancedNeoServer server = new AdvancedNeoServer(config);
         
@@ -59,7 +61,8 @@ public class BootstrapperTest
         assertEquals( dbDir1, server.getDatabase().getGraph().getStoreDir() );
 
         // Change the database location
-        String dbDir2 = new File("target/db2").getAbsolutePath();
+        String dbDir2 = target.directory( "db2", true ).getAbsolutePath();
+
         Configuration conf = config.configuration();
         conf.setProperty(Configurator.DATABASE_LOCATION_PROPERTY_KEY, dbDir2);
         

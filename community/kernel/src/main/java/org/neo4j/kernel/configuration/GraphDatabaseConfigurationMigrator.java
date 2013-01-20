@@ -24,7 +24,6 @@ import static java.util.regex.Pattern.quote;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.Settings;
 
@@ -45,18 +44,31 @@ public class GraphDatabaseConfigurationMigrator extends BaseConfigurationMigrato
                     if ( value.contains( "=" ) )
                     {   // Multi-value config, which means we have to parse the port
                         Args args = parseMapFromConfigValue( "enable_online_backup", value );
-                        port = args.get( "port", "6362" );
+                        port = args.get( "port", "6372" );
+                        port = ":"+port;
                     }
                     else if ( Boolean.parseBoolean( value ) == true )
                     {   // Single-value config, true/false
-                        port = "6362";
+                        port = ":6372-6382";
                     }
 
                     if ( port != null )
                     {
-                        rawConfiguration.put( "online_backup_port", port );
-                        rawConfiguration.put( GraphDatabaseSettings.online_backup_enabled.name(), Settings.TRUE );
+                        rawConfiguration.put( "online_backup_server", port );
+                        rawConfiguration.put( "online_backup_enabled", Settings.TRUE );
                     }
+                }
+            }
+        } );
+
+        add( new SpecificPropertyMigration( "online_backup_port", "online_backup_port has been replaced with online_backup_server, which is a hostname:port setting" )
+        {
+            @Override
+            public void setValueWithOldSetting( String value, Map<String, String> rawConfiguration )
+            {
+                if ( value != null )
+                {
+                    rawConfiguration.put( "online_backup_server", ":"+value );
                 }
             }
         } );

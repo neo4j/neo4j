@@ -27,6 +27,6 @@ public class EnterpriseBootstrapper extends AdvancedBootstrapper
     @Override
 	protected NeoServer createNeoServer() 
 	{
-		return new EnterpriseNeoServer( createConfigurator());
+		return new EnterpriseNeoServer( createConfigurator() );
 	}
 }

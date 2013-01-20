@@ -305,7 +305,7 @@ public abstract class Evaluators
     }
 
     /**
-     * @deprecated use {@link #includeWhereEndNodeIs(Node...)
+     * @deprecated use {@link #includeWhereEndNodeIs(Node...)}
      */
     public static Evaluator returnWhereEndNodeIs( Node... nodes )
     {
@@ -314,9 +314,11 @@ public abstract class Evaluators
 
     /**
      * @param nodes end nodes for paths to be included in the result.
-     * @see #endNodeIs(Evaluation, Evaluation, Node...),
-     *      uses {@link Evaluation#INCLUDE_AND_CONTINUE} for {@code evaluationIfMatch}
-     *      and {@link Evaluation#EXCLUDE_AND_CONTINUE} for {@code evaluationIfNoMatch}.
+     * @see this#endNodeIs(Evaluation, Evaluation, Node...), uses
+     *      {@link Evaluation#INCLUDE_AND_CONTINUE} for
+     *      {@code evaluationIfMatch} and
+     *      {@link Evaluation#EXCLUDE_AND_CONTINUE} for
+     *      {@code evaluationIfNoMatch}.
      */
     @SuppressWarnings( "rawtypes" )
     public static PathEvaluator includeWhereEndNodeIs( Node... nodes )

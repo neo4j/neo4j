@@ -48,7 +48,7 @@ public class JmxServiceTest extends AbstractRestFunctionalTestBase
 
     @Test
     public void shouldRespondWithTheWebAdminClientSettings() throws Exception {
-        String url = functionalTestHelper.mangementUri() + "/server/jmx";
+        String url = functionalTestHelper.managementUri() + "/server/jmx";
         JaxRsResponse resp = RestRequest.req().get(url);
         String json = resp.getEntity(String.class);
 

@@ -122,6 +122,7 @@
       <excludes>
         <exclude>*:site:*</exclude>
         <exclude>*:docs:*</exclude>
+        <exclude>*:tests:*</exclude>
         <exclude>org.neo4j:*</exclude>
         <exclude>org.neo4j.examples:*</exclude>
         <exclude>org.neo4j.doc:*</exclude>

@@ -52,6 +52,24 @@ public class ClusterTest
         clusterManager.stop();
     }
 
+    @Test(expected = RuntimeException.class)
+    public void testInstancesWithConflictingPorts() throws Throwable
+    {
+        ClusterManager clusterManager = null;
+        try
+        {
+            clusterManager = new ClusterManager(
+                    fromXml( getClass().getResource( "/threeinstancesconflictingports.xml" ).toURI() ),
+                    TargetDirectory.forTest( getClass() ).directory( "testClusterConflictingPorts", true ),
+                    MapUtil.stringMap() );
+            clusterManager.start();
+        }
+        finally
+        {
+            clusterManager.stop();
+        }
+    }
+
     @Test
     public void given4instanceclusterWhenMasterGoesDownThenElectNewMaster() throws Throwable
     {

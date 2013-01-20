@@ -27,10 +27,8 @@ import org.neo4j.cypher.SyntaxException
  * Comparer is a trait that enables it's subclasses to compare to AnyRef with each other.
  */
 trait Comparer {
-  private def compareValuesOfSameType(l: AnyRef, r: AnyRef): Int = (l, r) match {
-    case (left: Comparable[AnyRef], right: Comparable[AnyRef]) => left.compareTo(right)
-    case _ => throw new RuntimeException("This shouldn't happen")
-  }
+  private def compareValuesOfSameType(l: AnyRef, r: AnyRef): Int =
+    l.asInstanceOf[Comparable[AnyRef]].compareTo(r)
 
   private def compareValuesOfDifferentTypes(l: Any, r: Any): Int = (l, r) match {
     case (left: Long, right: Number) => BigDecimal.valueOf(left).compareTo(BigDecimal.valueOf(right.doubleValue()))
@@ -42,15 +40,12 @@ trait Comparer {
     case (null, _) => 1
     case (_, null) => -1
     case (left, right) => {
-      throw new SyntaxException("Don't know how to compare that. Left: " + left.toString + "; Right: " + right.toString)
+      throw new SyntaxException(s"Don't know how to compare that. Left: $left; Right: $right")
     }
   }
 
-  private def areComparableOfSameType(l: AnyRef, r: AnyRef): Boolean = {
-    l.isInstanceOf[Comparable[_]] &&
-      r.isInstanceOf[Comparable[_]] &&
-      l.getClass.isInstance(r)
-  }
+  private def areComparableOfSameType(l: AnyRef, r: AnyRef): Boolean =
+    l.isInstanceOf[Comparable[_]] && l.getClass.isInstance(r)
 
   def compare(left: Any, right: Any): Int = {
     if (left == Nil || right == Nil) {

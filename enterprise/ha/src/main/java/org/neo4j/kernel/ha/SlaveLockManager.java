@@ -28,6 +28,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.impl.core.GraphProperties;
+import org.neo4j.kernel.impl.core.NodeManager.IndexLock;
 import org.neo4j.kernel.impl.transaction.IllegalResourceException;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.LockManagerImpl;
@@ -97,6 +98,12 @@ public class SlaveLockManager implements LockManager
             transactionSupport.makeSureTxHasBeenInitialized();
             response = master.acquireGraphReadLock( requestContextFactory.newRequestContext() );
         }
+        else if ( resource instanceof IndexLock )
+        {
+            transactionSupport.makeSureTxHasBeenInitialized();
+            IndexLock indexLock = (IndexLock) resource;
+            response = master.acquireIndexReadLock( requestContextFactory.newRequestContext(), indexLock.getIndex(), indexLock.getKey() );
+        }
         else
         {
             return true;
@@ -157,6 +164,12 @@ public class SlaveLockManager implements LockManager
         {
             transactionSupport.makeSureTxHasBeenInitialized();
             response = master.acquireGraphWriteLock( requestContextFactory.newRequestContext() );
+        }
+        else if ( resource instanceof IndexLock )
+        {
+            transactionSupport.makeSureTxHasBeenInitialized();
+            IndexLock indexLock = (IndexLock) resource;
+            response = master.acquireIndexWriteLock( requestContextFactory.newRequestContext(), indexLock.getIndex(), indexLock.getKey() );
         }
         else
         {

@@ -36,6 +36,7 @@ import org.neo4j.test.{ImpermanentGraphDatabase, TestGraphDatabaseFactory, Graph
 import org.neo4j.test.GeoffService
 import org.scalatest.Assertions
 import org.neo4j.test.AsciiDocGenerator
+import org.neo4j.kernel.AbstractGraphDatabase
 
 trait DocumentationHelper {
   def generateConsole:Boolean
@@ -76,7 +77,7 @@ trait DocumentationHelper {
 ----
 
 """.format(testid, graphVizOptions, out)
-    return ".Graph\n" + AsciiDocGenerator.dumpToSeparateFile(dir, graphvizFileName, graphOutput)
+    return ".Graph\n" + AsciiDocGenerator.dumpToSeparateFile(dir, testid, graphOutput)
   }
 
   protected def getGraphvizStyle: GraphStyle = AsciiDocStyle.withAutomaticRelationshipTypeColors()
@@ -85,13 +86,22 @@ trait DocumentationHelper {
 
 abstract class DocumentingTestBase extends Assertions with DocumentationHelper {
   def testQuery(title: String, text: String, queryText: String, returns: String, assertions: (ExecutionResult => Unit)*) {
+    dumpGraphViz(dir, graphvizOptions.trim)
+    var consoleData: String = ""
+    if (generateConsole) {
+      if (generateInitialGraphForConsole) {
+        consoleData = new GeoffService(db).toGeoff
+      }
+      if (consoleData.isEmpty()) {
+        consoleData = "(0)"
+      }
+    }
     val r = testWithoutDocs(queryText, assertions:_*)
     val result: ExecutionResult = r._1
     var query: String = r._2
 
     val writer: PrintWriter = createWriter(title, dir)
-    dumpToFile(dir, writer, title, query, returns, text, result)
-    dumpGraphViz(dir, graphvizOptions.trim)
+    dumpToFile(dir, writer, title, query, returns, text, result, consoleData)
   }
 
   var db: GraphDatabaseService = null
@@ -113,13 +123,13 @@ abstract class DocumentingTestBase extends Assertions with DocumentationHelper {
 
   def indexProps: List[String] = List()
 
-  def dumpToFile(dir: File, writer: PrintWriter, title: String, query: String, returns: String, text: String, result: ExecutionResult) {
+  def dumpToFile(dir: File, writer: PrintWriter, title: String, query: String, returns: String, text: String, result: ExecutionResult, consoleData: String) {
     val testId = nicefy(section + " " + title)
     writer.println("[[" + testId + "]]")
     if (!noTitle) writer.println("== " + title + " ==")
     writer.println(text)
     writer.println()
-    runQuery(dir, writer, testId, query, returns, result)
+    runQuery(dir, writer, testId, query, returns, result, consoleData)
     writer.flush()
     writer.close()
   }
@@ -130,14 +140,26 @@ abstract class DocumentingTestBase extends Assertions with DocumentationHelper {
     engine.execute(query)
   }
 
-
+  protected def assertIsDeleted(pc:PropertyContainer) {
+    val internalDb:AbstractGraphDatabase = db.asInstanceOf[AbstractGraphDatabase]
+    if(!internalDb.getNodeManager.isDeleted(pc)) {
+      fail("Expected " + pc + " to be deleted, but it isn't.")
+    }
+  }
 
   def testWithoutDocs(queryText: String, assertions: (ExecutionResult => Unit)*): (ExecutionResult, String) = {
     var query = queryText
-    nodes.keySet.foreach((key) => query = query.replace("%" + key + "%", node(key).getId.toString))
-    val result = engine.execute(query)
-    assertions.foreach(_.apply(result))
-    (result, query)
+    val tx = db.beginTx()
+    try {
+      nodes.keySet.foreach((key) => query = query.replace("%" + key + "%", node(key).getId.toString))
+      val result = engine.execute(query)
+      assertions.foreach(_.apply(result))
+      tx.failure()
+    } finally {
+      tx.finish()
+    }
+
+    (engine.execute(query), query)
   }
 
   def indexProperties[T <: PropertyContainer](n: T, index: Index[T]) {
@@ -190,7 +212,7 @@ abstract class DocumentingTestBase extends Assertions with DocumentationHelper {
     })
   }
 
-  def runQuery(dir: File, writer: PrintWriter, testId: String, query: String, returns: String, result: ExecutionResult) {
+  def runQuery(dir: File, writer: PrintWriter, testId: String, query: String, returns: String, result: ExecutionResult, consoleData: String) {
     val output = new StringBuilder(2048)
     output.append(".Query\n")
     output.append(AsciidocHelper.createCypherSnippet(query))
@@ -211,7 +233,7 @@ abstract class DocumentingTestBase extends Assertions with DocumentationHelper {
       writer.println(".Try this query live")
       output.append("[console]\n")
       output.append("----\n")
-      output.append(if (generateInitialGraphForConsole) new GeoffService(db).toGeoff else "start n=node(*) match n-[r?]->() delete n, r;")
+      output.append(consoleData)
       output.append("\n\n")
       output.append(query)
       output.append("\n----")

@@ -34,6 +34,7 @@ import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.com.NetworkInstance;
 import org.neo4j.cluster.member.ClusterMemberAvailability;
 import org.neo4j.cluster.member.ClusterMemberEvents;
+import org.neo4j.cluster.member.paxos.MemberIsAvailable;
 import org.neo4j.cluster.member.paxos.PaxosClusterMemberAvailability;
 import org.neo4j.cluster.member.paxos.PaxosClusterMemberEvents;
 import org.neo4j.cluster.protocol.election.DefaultElectionCredentialsProvider;
@@ -41,6 +42,7 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.IndexProvider;
+import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.HighlyAvailableKernelData;
 import org.neo4j.kernel.IdGeneratorFactory;
@@ -248,7 +250,27 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
 
         clusterClient = new ClusterClient( ClusterClient.adapt( config ), logging, electionCredentialsProvider );
         PaxosClusterMemberEvents localClusterEvents = new PaxosClusterMemberEvents( clusterClient, clusterClient,
-            clusterClient, logging );
+            clusterClient, logging, new Predicate<PaxosClusterMemberEvents.ClusterMembersSnapshot>()
+        {
+            @Override
+            public boolean accept( PaxosClusterMemberEvents.ClusterMembersSnapshot item )
+            {
+                for ( MemberIsAvailable member : item.getCurrentAvailableMembers() )
+                {
+                    if (member.getRole().equals( HighAvailabilityModeSwitcher.MASTER ) || member.getRole().equals( HighAvailabilityModeSwitcher.SLAVE ))
+                    {
+                        if ( HighAvailabilityModeSwitcher.getServerId( member.getRoleUri() ) ==
+                                config.get( HaSettings.server_id ))
+                        {
+                            msgLog.error( String.format( "Instance %s has the same serverId as ours (%d) - will not join this cluster",
+                                    member.getRoleUri(), config.get( HaSettings.server_id ) ) );
+                            return false;
+                        }
+                    }
+                }
+                return true;
+            }
+        } );
 
         HighAvailabilityMemberContext localMemberContext = new SimpleHighAvailabilityMemberContext( clusterClient );
         PaxosClusterMemberAvailability localClusterMemberAvailability = new PaxosClusterMemberAvailability(
@@ -488,7 +510,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     @Override
     public String toString()
     {
-        return getClass().getSimpleName() + "[" + 0 + ", " + storeDir + "]";
+        return getClass().getSimpleName() + "[" + storeDir + "]";
     }
 
     public String getInstanceState()
@@ -518,23 +540,27 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                 {
                     if ( ClusterMemberEvents.class.isAssignableFrom( type ) )
                     {
-                        result = type.cast(clusterEvents);
+                        result = type.cast( clusterEvents );
                     }
                     else if ( ClusterMemberAvailability.class.isAssignableFrom( type ) )
                     {
-                        result = type.cast(clusterMemberAvailability);
+                        result = type.cast( clusterMemberAvailability );
                     }
                     else if ( UpdatePuller.class.isAssignableFrom( type ) )
                     {
-                        result = type.cast(updatePuller);
+                        result = type.cast( updatePuller );
                     }
                     else if ( Slaves.class.isAssignableFrom( type ) )
                     {
-                        result = type.cast(slaves);
+                        result = type.cast( slaves );
                     }
                     else if ( ClusterClient.class.isAssignableFrom( type ) )
                     {
-                        result = type.cast(clusterClient);
+                        result = type.cast( clusterClient );
+                    }
+                    else if ( ClusterMembers.class.isAssignableFrom( type ) )
+                    {
+                        result = type.cast( members );
                     }
                     else
                     {

@@ -88,23 +88,26 @@ trait ParserPattern extends Base {
 
 
   private def singleNodeEqualsMap = identity ~ "=" ~ properties ^^ {
-    case name ~ "=" ~ map => ParsedEntity(Identifier(name), map, True())
+    case name ~ "=" ~ map => ParsedEntity(name, Identifier(name), map, True())
   }
 
   private def nodeInParenthesis = parens(opt(identity) ~ props) ^^ {
-    case id ~ props => ParsedEntity(Identifier(namer.name(id)), props, True())
+    case id ~ props =>
+      val name = namer.name(id)
+      ParsedEntity(name, Identifier(name), props, True())
   }
 
   private def nodeFromExpression = Parser {
     case in => expression(in) match {
-      case Success(exp, rest) => Success(ParsedEntity(exp, Map[String, Expression](), True()), rest)
+      case Success(exp@Identifier(name), rest) => Success(ParsedEntity(name, exp, Map[String, Expression](), True()), rest)
+      case Success(exp, rest) => Success(ParsedEntity(namer.name(None), exp, Map[String, Expression](), True()), rest)
       case x: Error => x
       case Failure(msg, rest) => failure("expected an expression that is a node", rest)
     }
   }
 
   private def nodeIdentifier = identity ^^ {
-    case name => ParsedEntity(Identifier(name), Map[String, Expression](), True())
+    case name => ParsedEntity(name, Identifier(name), Map[String, Expression](), True())
   }
 
   private def path: Parser[List[AbstractPattern]] = relationship | shortestPath
@@ -171,6 +174,7 @@ trait ParserPattern extends Base {
     case Some("*" ~ None ~ None ~ None) => Some(None, None)
     case Some("*" ~ min ~ None ~ None) => Some((min.map(_.toInt), min.map(_.toInt)))
     case Some("*" ~ min ~ _ ~ max) => Some((min.map(_.toInt), max.map(_.toInt)))
+    case _ => throw new ThisShouldNotHappenError("Stefan/Andres", "This non-exhaustive match would have been a RuntimeException in the past")
   }
 
   private def tailWithNoRelData = opt("<") ~ "--" ~ opt(">") ~ node ^^ {
@@ -218,7 +222,7 @@ trait ParserPattern extends Base {
     def seqMap[B](f:Seq[T]=>Seq[B]): Maybe[B]
   }
 
-  final case class Yes[T](values: Seq[T]) extends Maybe[T] {
+  case class Yes[T](values: Seq[T]) extends Maybe[T] {
     def success = true
 
     def ++[B >: T](other: Maybe[B]): Maybe[B] = other match {
@@ -231,7 +235,7 @@ trait ParserPattern extends Base {
     def seqMap[B](f: (Seq[T]) => Seq[B]): Maybe[B] = Yes(f(values))
   }
 
-  final case class No(messages: Seq[String]) extends Maybe[Nothing] {
+  case class No(messages: Seq[String]) extends Maybe[Nothing] {
     def values = throw new Exception("No values exists")
     def success = false
 

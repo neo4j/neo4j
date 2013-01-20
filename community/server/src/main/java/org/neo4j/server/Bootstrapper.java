@@ -98,6 +98,13 @@ public abstract class Bootstrapper
                                .getLocation() );
             return GRAPH_DATABASE_STARTUP_ERROR_CODE;
         }
+        catch ( IllegalArgumentException e )
+        {
+            log.error(e.getMessage());
+            log.error( "Failed to start Neo Server on port [%s]",
+            		configurator.configuration().getInt(Configurator.WEBSERVER_PORT_PROPERTY_KEY, Configurator.DEFAULT_WEBSERVER_PORT) );
+            return WEB_SERVER_STARTUP_ERROR_CODE;
+        }
         catch ( Exception e )
         {
             log.error(e);

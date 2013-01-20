@@ -1,3 +1,9 @@
+1.9.M04 (2013-01-17)
+--------------------
+o Warning is now printed if an instance that is not part of ha.initial_hosts tries to join the cluster
+o Snapshots are now prunned when received during cluster joining
+o Logging cleanup
+
 1.9.M02 (2012-11-30)
 --------------------
 o Moved shared logic, commonly refered to as cluster client into a ClusterClient class.

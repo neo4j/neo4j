@@ -19,15 +19,15 @@
  */
 package org.neo4j.ha;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
-import static org.neo4j.test.ha.ClusterManager.masterAvailable;
 
 import java.util.concurrent.Future;
 
-import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Lock;
@@ -44,7 +44,6 @@ import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.test.AbstractClusterTest;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
-import org.neo4j.test.ha.ClusterManager.ManagedCluster;
 
 public class TransactionConstraintsIT extends AbstractClusterTest
 {
@@ -209,8 +208,7 @@ public class TransactionConstraintsIT extends AbstractClusterTest
     public void deadlock_detection_involving_two_slaves() throws Exception
     {
         HighlyAvailableGraphDatabase slave1 = cluster.getAnySlave();
-        HighlyAvailableGraphDatabase slave2 = cluster.getAnySlave( slave1 );
-        deadlockDetectionBetween( slave1, slave2 );
+        deadlockDetectionBetween( slave1, cluster.getAnySlave( slave1 ) );
     }
     
     @Test
@@ -227,9 +225,9 @@ public class TransactionConstraintsIT extends AbstractClusterTest
         Transaction tx1 = slave1.beginTx();
         Transaction tx2 = thread2.execute( new BeginTx() );
         tx1.acquireReadLock( slave1.getReferenceNode() );
-        thread2.execute( new AcquireReadLock( tx2 ) );
+        thread2.execute( new AcquireReadLock( tx2, slave2.getReferenceNode() ) );
         // -- and one of them wanting (and awaiting) to upgrade its read lock to a write lock
-        Future<Lock> writeLockFuture = thread2.executeDontWait( new AcquireWriteLock( tx2 ) );
+        Future<Lock> writeLockFuture = thread2.executeDontWait( new AcquireWriteLock( tx2, slave2.getReferenceNode() ) );
         thread2.waitUntilThreadState( Thread.State.TIMED_WAITING, Thread.State.WAITING );
         
         try
@@ -248,16 +246,39 @@ public class TransactionConstraintsIT extends AbstractClusterTest
         }
         
         assertNotNull( writeLockFuture.get() );
-        thread2.execute( new FinishTx( tx2 ) );
+        thread2.execute( new FinishTx( tx2, true ) );
     }
 
-    private ManagedCluster cluster;
-
-    @Before
-    public void getCluster() throws Exception
+    @Ignore( "Known issue where locks acquired from Transaction#acquireXXXLock() methods doesn't get properly released when calling Lock#release() method" )
+    @Test
+    public void manually_acquire_and_release_transaction_lock() throws Exception
     {
-        cluster = clusterManager.getDefaultCluster();
-        cluster.await( masterAvailable() );
+        // GIVEN
+        // -- a slave acquiring a lock on an ubiquitous node
+        HighlyAvailableGraphDatabase master = cluster.getMaster();
+        OtherThreadExecutor<HighlyAvailableGraphDatabase> masterWorker = new OtherThreadExecutor<HighlyAvailableGraphDatabase>( "master worker", master );
+        Node node = createNode( master );
+        cluster.sync();
+        HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
+        Transaction slaveTx = slave.beginTx();
+        try
+        {
+            Lock lock = slaveTx.acquireWriteLock( slave.getNodeById( node.getId() ) );
+    
+            // WHEN
+            // -- the lock is manually released (tx still running)
+            lock.release();
+    
+            // THEN
+            // -- that entity should be able to be locked from another member
+            Transaction masterTx = masterWorker.execute( new BeginTx() );
+            masterWorker.execute( new AcquireWriteLock( masterTx, node ), 1, SECONDS );
+        }
+        finally
+        {
+            slaveTx.finish();
+            masterWorker.shutdown();
+        }
     }
     
     private void takeTheLeadInAnEventualMasterSwitch( GraphDatabaseService db )
@@ -332,61 +353,39 @@ public class TransactionConstraintsIT extends AbstractClusterTest
         }
     }
     
-    private static class BeginTx implements WorkerCommand<HighlyAvailableGraphDatabase, Transaction>
-    {
-        @Override
-        public Transaction doWork( HighlyAvailableGraphDatabase state )
-        {
-            return state.beginTx();
-        }
-    }
-
     private static class AcquireReadLock implements WorkerCommand<HighlyAvailableGraphDatabase, Lock>
     {
         private final Transaction tx;
+        private final Node node;
 
-        public AcquireReadLock( Transaction tx )
+        public AcquireReadLock( Transaction tx, Node node )
         {
             this.tx = tx;
+            this.node = node;
         }
 
         @Override
         public Lock doWork( HighlyAvailableGraphDatabase state )
         {
-            return tx.acquireReadLock( state.getReferenceNode() );
+            return tx.acquireReadLock( node );
         }
     }
 
     private static class AcquireWriteLock implements WorkerCommand<HighlyAvailableGraphDatabase, Lock>
     {
         private final Transaction tx;
+        private final Node node;
 
-        public AcquireWriteLock( Transaction tx )
+        public AcquireWriteLock( Transaction tx, Node node )
         {
             this.tx = tx;
+            this.node = node;
         }
 
         @Override
         public Lock doWork( HighlyAvailableGraphDatabase state )
         {
-            return tx.acquireWriteLock( state.getReferenceNode() );
-        }
-    }
-    
-    private static class FinishTx implements WorkerCommand<HighlyAvailableGraphDatabase, Void>
-    {
-        private final Transaction tx;
-
-        public FinishTx( Transaction tx )
-        {
-            this.tx = tx;
-        }
-
-        @Override
-        public Void doWork( HighlyAvailableGraphDatabase state )
-        {
-            tx.finish();
-            return null;
+            return tx.acquireWriteLock( node );
         }
     }
 }

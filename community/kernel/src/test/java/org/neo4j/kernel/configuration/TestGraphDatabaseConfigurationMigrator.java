@@ -42,7 +42,10 @@ public class TestGraphDatabaseConfigurationMigrator
     public void testEnableOnlineBackup()
     {
         ConfigurationMigrator migrator = new GraphDatabaseConfigurationMigrator(  );
-        assertThat( migrator.apply( stringMap( "enable_online_backup", "true" ), StringLogger.DEV_NULL  ), equalTo( stringMap( "online_backup_enabled", "true", "online_backup_port", "6362" ) ) );
+        assertThat( migrator.apply( stringMap( "enable_online_backup", "true" ), StringLogger.DEV_NULL  ), equalTo( stringMap( "online_backup_enabled", "true", "online_backup_server", ":6372-6382" ) ) );
+
+        // 1.9
+        assertThat( migrator.apply( stringMap( "online_backup_port", "1234" ), StringLogger.DEV_NULL  ), equalTo( stringMap( "online_backup_server", ":1234" ) ) );
     }
 
     @Test
