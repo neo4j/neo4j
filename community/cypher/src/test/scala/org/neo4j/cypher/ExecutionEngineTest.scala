@@ -2373,7 +2373,6 @@ RETURN x0.name?
     assert(result.toList === List())
   }
 
-<<<<<<< HEAD
   @Test def syntax_errors_should_not_leave_dangling_transactions() {
 
     val engine = new ExecutionEngine(graph)
@@ -2391,7 +2390,8 @@ RETURN x0.name?
     tx.finish()
 
     assert(isTopLevelTx)
-=======
+  }
+
   @Test def should_return_literal_label_as_string() {
     val result = parseAndExecute("""START a=node(0) return :foo""")
 
@@ -2408,7 +2408,6 @@ RETURN x0.name?
     val result = parseAndExecute("""START a=node(0) return [:foo, :bar] as r""")
 
     assert(result.toList === List(Map(("r" -> List("foo", "bar")))))
->>>>>>> 04d4dce... Ensure labels get returned as strings
   }
 
   @Test def should_add_label_to_node() {

@@ -32,14 +32,10 @@ import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.kernel.api.{StatementContext, TransactionContext, KernelAPI}
 import org.neo4j.cypher.ExecutionResult
 
-class ExecutionPlanImpl(inputQuery: Query, graph: GraphDatabaseService) extends ExecutionPlan with PatternGraphBuilder {
-  val (executionPlan, executionPlanText) = prepareExecutionPlan()
+class ExecutionPlanBuilder(graph: GraphDatabaseService) extends PatternGraphBuilder {
 
-  def execute(wrap: TxQueryContextWrap, params: Map[String, Any]): ExecutionResult = executionPlan(wrap, params)
+  def build(inputQuery: Query): ExecutionPlan = {
 
-  lazy val lockManager = graph.asInstanceOf[InternalAbstractGraphDatabase].getLockManager
-
-  private def prepareExecutionPlan(): ((TxQueryContextWrap, Map[String, Any]) => ExecutionResult, String) = {
     var continue = true
     var planInProgress = ExecutionPlanInProgress(PartiallySolvedQuery(inputQuery), new ParameterPipe(), isUpdating = false)
     checkFirstQueryPattern(planInProgress)
@@ -51,9 +47,9 @@ class ExecutionPlanImpl(inputQuery: Query, graph: GraphDatabaseService) extends 
         val builder = matchingBuilders.sortBy(_.priority).head
         val newPlan = builder(planInProgress)
 
-        if (planInProgress == newPlan) {
-          throw new InternalException("Something went wrong trying to build your query. The offending builder was: " + builder.getClass.getSimpleName)
-        }
+        if (planInProgress == newPlan)
+          throw new InternalException("Something went wrong trying to build your query. The offending builder was: "
+            + builder.getClass.getSimpleName)
 
         planInProgress = newPlan
       }
@@ -78,9 +74,13 @@ class ExecutionPlanImpl(inputQuery: Query, graph: GraphDatabaseService) extends 
       (planInProgress.pipe, getLazyReadonlyQuery(planInProgress.pipe, columns))
     }
 
-    val executionPlan = pipe.executionPlan()
+    val executionPlanDescription = pipe.executionPlan()
 
-    (func, executionPlan)
+    new ExecutionPlan {
+      def execute(wrap: TxQueryContextWrap, params: Map[String, Any]) = func(wrap, params)
+
+      def description = executionPlanDescription
+    }
   }
 
 
@@ -204,6 +204,4 @@ The Neo4j Team""")
     new TraversalMatcherBuilder(graph),
     new TopPipeBuilder
   )
-
-  override def toString = executionPlanText
 }

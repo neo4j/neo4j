@@ -25,29 +25,28 @@ import org.junit.Assert._
 import org.neo4j.cypher.internal.commands.{NodeById, Query}
 import org.neo4j.graphdb.GraphDatabaseService
 import org.scalatest.Assertions
-import org.neo4j.cypher.InternalException
+import org.neo4j.cypher.{GraphDatabaseTestBase, InternalException}
 import org.neo4j.cypher.internal.commands.expressions.Identifier
 import java.util.concurrent._
 import org.neo4j.cypher.internal.commands.ReturnItem
 import org.neo4j.cypher.internal.helpers.StatementContextMock.TxQueryContextWrapSupport
-import org.mockito.Mockito._
 import org.neo4j.cypher.internal.spi.TxQueryContextWrap
+import org.hamcrest.core.Is.is
 
-class ExecutionPlanImplTest extends Assertions with Timed with TxQueryContextWrapSupport {
+class ExecutionPlanBuilderTest extends GraphDatabaseTestBase with Assertions with Timed with TxQueryContextWrapSupport {
   @Test def should_not_go_into_never_ending_loop() {
-    val graph = mock(classOf[GraphDatabaseService])
     val q     = Query.start(NodeById("x", 0)).returns(ReturnItem(Identifier("x"), "x"))
 
     val exception = intercept[ExecutionException](timeoutAfter(1) {
-      val epi = new FakeEPI(q, graph)
-      withTxWrap(graph) { (wrap: TxQueryContextWrap) => epi.execute(wrap, Map()) }
+      val epi = new FakeExecPlanBuilder(graph)
+      withTxWrap(graph) { (wrap: TxQueryContextWrap) => epi.build(q) }
     })
 
-    assertTrue(exception.getCause.isInstanceOf[InternalException])
+    assertThat(exception.getCause, is(classOf[InternalException]))
   }
 }
 
-class FakeEPI(q: Query, gds: GraphDatabaseService) extends ExecutionPlanImpl(q, gds) {
+class FakeExecPlanBuilder(gds: GraphDatabaseService) extends ExecutionPlanBuilder(gds) {
   override lazy val builders = Seq(new BadBuilder)
 }
 

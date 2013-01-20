@@ -20,7 +20,7 @@
 package org.neo4j.cypher
 
 import internal.commands._
-import internal.executionplan.ExecutionPlanImpl
+import internal.executionplan.ExecutionPlanBuilder
 import internal.helpers.StatementContextMock.TxQueryContextWrapSupport
 import internal.LRUCache
 import internal.spi.TxQueryContextWrap
@@ -40,6 +40,7 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
   require(graph != null, "Can't work with a null graph database")
 
   val parser = createCorrectParser()
+  val planBuilder = new ExecutionPlanBuilder(graph)
 
   private def createCorrectParser() = if (graph.isInstanceOf[InternalAbstractGraphDatabase]) {
     val database = graph.asInstanceOf[InternalAbstractGraphDatabase]
@@ -71,7 +72,7 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
 
   @throws(classOf[SyntaxException])
   def prepare(query: String): ExecutionPlan =
-    executionPlanCache.getOrElseUpdate(query, new ExecutionPlanImpl(parser.parse(query), graph))
+    executionPlanCache.getOrElseUpdate(query, planBuilder.build(parser.parse(query)))
 
   def isPrepared(query : String) : Boolean =
     executionPlanCache.containsKey(query)
@@ -88,7 +89,7 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
   @deprecated(message = "You should not parse queries manually any more. Use the execute(String) instead")
   def execute(query: Query, params: Map[String, Any]): ExecutionResult =
     withTxWrap(graph) { (wrap: TxQueryContextWrap) =>
-      new ExecutionPlanImpl(query, graph).execute(wrap, params)
+      planBuilder.build(query).execute(wrap, params)
     }
 
   private def checkScalaVersion() {
