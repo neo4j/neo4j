@@ -21,10 +21,12 @@ package org.neo4j.cypher.internal.spi.kernelimpl;
 
 import org.neo4j.cypher.internal.spi.QueryContext;
 import org.neo4j.cypher.internal.spi.gdsimpl.GDSBackedQueryContext;
+import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.kernel.api.ConstraintViolationKernelException;
 import org.neo4j.kernel.api.StatementContext;
 
 public class KernelBackedQueryContext implements QueryContext {
@@ -87,7 +89,14 @@ public class KernelBackedQueryContext implements QueryContext {
 
     @Override
     public Long getOrCreateLabelId(String labelName) {
-        return ctx.getOrCreateLabelId(labelName);
+        try
+        {
+            return ctx.getOrCreateLabelId(labelName);
+        }
+        catch ( ConstraintViolationKernelException e )
+        {
+            throw new ConstraintViolationException( e.getMessage(), e );
+        }
     }
 
     @Override

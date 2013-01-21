@@ -17,39 +17,33 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.graphdb;
+package org.neo4j.kernel.impl.api;
+
+import org.neo4j.kernel.api.StatementContext;
+import org.neo4j.kernel.api.TransactionContext;
 
 /**
- * A dynamically instantiated and named {@link Label}. This class is
- * a convenience implementation of <code>Label</code> that is
- * typically used when labels are created and named after a
- * condition that can only be detected at runtime.
- *
- * @see Label
+ * Adds constraint checking to the kernel implementation, for instance ensuring label names are valid.
  */
-public class DynamicLabel implements Label
+public class ConstraintEvaluatingTransactionContext extends DelegatingTransactionContext
 {
-    public static Label label( String labelName )
-    {
-        return new DynamicLabel( labelName );
-    }
 
-    private final String name;
+    // Note: This could be refactored to use arbitrary constraint rules, so this could evaluate
+    // both user and system level constraints.
 
-    private DynamicLabel( String labelName )
+    public ConstraintEvaluatingTransactionContext( TransactionContext actual )
     {
-        this.name = labelName;
+        super(actual);
     }
 
     @Override
-    public String name()
+    public StatementContext newStatementContext()
     {
-        return this.name;
+        StatementContext result = super.newStatementContext();
+        // + Constraints
+        result = new ConstraintEvaluatingStatementContext(result);
+
+        return result;
     }
 
-    @Override
-    public String toString()
-    {
-        return this.name;
-    }
 }

@@ -33,6 +33,21 @@ public abstract class IsolatedTransactionKeyCreator implements KeyCreator
 {
     private final StringLogger logger;
 
+    private static class ExceptionContainer
+    {
+        private Throwable exc;
+
+        public void setException( Throwable exc )
+        {
+            this.exc = exc;
+        }
+
+        public Throwable getException()
+        {
+            return exc;
+        }
+    }
+
     public IsolatedTransactionKeyCreator( Logging logging )
     {
         this.logger = logging.getLogger( getClass() );
@@ -43,6 +58,8 @@ public abstract class IsolatedTransactionKeyCreator implements KeyCreator
             final PersistenceManager persistence, final String name )
     {
         final AtomicInteger result = new AtomicInteger( -1 );
+        final ExceptionContainer exceptionContainer = new ExceptionContainer();
+
         Thread isolatedCreator = new Thread()
         {
             @Override
@@ -57,6 +74,7 @@ public abstract class IsolatedTransactionKeyCreator implements KeyCreator
                 }
                 catch ( Throwable t )
                 {
+                    exceptionContainer.setException( t );
                     logger.error( "Unable to create key '" + name + "'", t );
                     try
                     {
@@ -86,7 +104,7 @@ public abstract class IsolatedTransactionKeyCreator implements KeyCreator
         
         int id = result.get();
         if ( id == -1 )
-            throw new TransactionFailureException( "Unable to create key '" + name + "'" );
+            throw new TransactionFailureException( "Unable to create key '" + name + "'" , exceptionContainer.getException());
         
         return id;
     }

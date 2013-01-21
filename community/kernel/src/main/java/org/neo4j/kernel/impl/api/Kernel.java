@@ -65,6 +65,8 @@ public class Kernel implements KernelAPI
 
         // + Transaction state and Caching
         result = new StateHandlingTransactionContext( result, cache );
+        // + Constraints evaluation
+        result = new ConstraintEvaluatingTransactionContext( result );
         // + Locking
         result = new LockingTransactionContext( result, lockManager, transactionManager );
         // + Single statement at a time

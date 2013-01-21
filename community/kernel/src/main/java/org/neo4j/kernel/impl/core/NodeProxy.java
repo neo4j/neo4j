@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -31,7 +32,8 @@ import org.neo4j.graphdb.StopEvaluator;
 import org.neo4j.graphdb.Traverser;
 import org.neo4j.graphdb.Traverser.Order;
 import org.neo4j.kernel.ThreadToStatementContextBridge;
-import org.neo4j.kernel.api.LabelNotFoundException;
+import org.neo4j.kernel.api.ConstraintViolationKernelException;
+import org.neo4j.kernel.api.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.impl.transaction.LockType;
 import org.neo4j.kernel.impl.traversal.OldTraverserWrapper;
@@ -272,8 +274,15 @@ public class NodeProxy implements Node
     @Override
     public void addLabel( Label label )
     {
-        StatementContext ctx = statementCtxProvider.getCtxForWriting();
-        ctx.addLabelToNode( ctx.getOrCreateLabelId( label.name() ), getId() );
+        try
+        {
+            StatementContext ctx = statementCtxProvider.getCtxForWriting();
+            ctx.addLabelToNode( ctx.getOrCreateLabelId( label.name() ), getId() );
+        }
+        catch ( ConstraintViolationKernelException e )
+        {
+            throw new ConstraintViolationException( "Unable to add label.", e );
+        }
     }
 
     @Override
@@ -284,7 +293,7 @@ public class NodeProxy implements Node
             StatementContext ctx = statementCtxProvider.getCtxForReading();
             return ctx.isLabelSetOnNode( ctx.getLabelId( label.name() ), getId() );
         }
-        catch ( LabelNotFoundException e )
+        catch ( LabelNotFoundKernelException e )
         {
             return false;
         }

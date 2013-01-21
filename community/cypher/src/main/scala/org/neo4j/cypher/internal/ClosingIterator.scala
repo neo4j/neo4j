@@ -20,8 +20,7 @@
 package org.neo4j.cypher.internal
 
 import spi.{TxQueryContextWrap, QueryContext}
-import org.neo4j.graphdb.{TransactionFailureException, Transaction}
-import org.neo4j.kernel.impl.nioneo.store.ConstraintViolationException
+import org.neo4j.graphdb.{ConstraintViolationException, TransactionFailureException, Transaction}
 import org.neo4j.cypher.NodeStillHasRelationshipsException
 
 /**

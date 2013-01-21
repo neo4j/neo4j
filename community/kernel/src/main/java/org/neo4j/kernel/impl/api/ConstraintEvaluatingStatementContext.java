@@ -20,45 +20,26 @@
 package org.neo4j.kernel.impl.api;
 
 import org.neo4j.kernel.api.ConstraintViolationKernelException;
-import org.neo4j.kernel.api.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.StatementContext;
 
-public class DelegatingStatementContext implements StatementContext
+public class ConstraintEvaluatingStatementContext extends DelegatingStatementContext
 {
-    private final StatementContext delegate;
-
-    public DelegatingStatementContext( StatementContext delegate )
+    public ConstraintEvaluatingStatementContext( StatementContext actual )
     {
-        this.delegate = delegate;
+        super(actual);
     }
 
     @Override
     public long getOrCreateLabelId( String label ) throws ConstraintViolationKernelException
     {
-        return delegate.getOrCreateLabelId( label );
-    }
+        // KISS - but refactor into a general purpose constraint checker later on
+        if(label == null || label.length() == 0 )
+        {
+            throw new ConstraintViolationKernelException(
+                    String.format( "%s is not a valid label name. Only non-empty strings are allowed.",
+                            label == null ? "null" : "'" + label + "'" ) );
+        }
 
-    @Override
-    public long getLabelId( String label ) throws LabelNotFoundKernelException
-    {
-        return delegate.getLabelId( label );
-    }
-
-    @Override
-    public void addLabelToNode( long labelId, long nodeId )
-    {
-        delegate.addLabelToNode( labelId, nodeId );
-    }
-
-    @Override
-    public boolean isLabelSetOnNode( long labelId, long nodeId )
-    {
-        return delegate.isLabelSetOnNode( labelId, nodeId );
-    }
-
-    @Override
-    public void close()
-    {
-        delegate.close();
+        return super.getOrCreateLabelId( label );
     }
 }

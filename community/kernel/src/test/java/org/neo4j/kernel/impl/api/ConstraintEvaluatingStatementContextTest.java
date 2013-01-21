@@ -17,23 +17,32 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.nioneo.store;
+package org.neo4j.kernel.impl.api;
 
-/**
- * Thrown when we are asked to modify data in a way that violates one or more
- * constraints that we have been asked to uphold.
- *
- * For instance, if we are asked to remove a node that still has relationships.
- *
- * This is an internal exception, users are expected to ask us to perform operations
- * that fulfill all constraints, and if they don't, they should modify their code,
- * not handle this exception.
- */
-public class ConstraintViolationException extends RuntimeException
+import org.junit.Test;
+import org.neo4j.kernel.api.ConstraintViolationKernelException;
+
+public class ConstraintEvaluatingStatementContextTest
 {
 
-    public ConstraintViolationException( String msg )
+    @Test(expected = ConstraintViolationKernelException.class)
+    public void shouldFailInvalidLabelNames() throws Exception
     {
-        super(msg);
+        // Given
+        ConstraintEvaluatingStatementContext ctx = new ConstraintEvaluatingStatementContext( null );
+
+        // When
+        ctx.getOrCreateLabelId( "" );
     }
+
+    @Test(expected = ConstraintViolationKernelException.class)
+    public void shouldFailOnNullLabel() throws Exception
+    {
+        // Given
+        ConstraintEvaluatingStatementContext ctx = new ConstraintEvaluatingStatementContext( null );
+
+        // When
+        ctx.getOrCreateLabelId( null );
+    }
+
 }

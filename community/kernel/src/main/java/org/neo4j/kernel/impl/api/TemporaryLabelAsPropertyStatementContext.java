@@ -19,13 +19,16 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.neo4j.kernel.api.LabelNotFoundException;
+import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.kernel.api.ConstraintViolationKernelException;
+import org.neo4j.kernel.api.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.impl.core.KeyNotFoundException;
 import org.neo4j.kernel.impl.core.PropertyIndex;
 import org.neo4j.kernel.impl.core.PropertyIndexManager;
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
+import org.neo4j.kernel.impl.nioneo.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.util.ArrayMap;
 
@@ -45,13 +48,28 @@ public class TemporaryLabelAsPropertyStatementContext implements StatementContex
     }
 
     @Override
-    public long getOrCreateLabelId( String label )
+    public long getOrCreateLabelId( String label ) throws ConstraintViolationKernelException
     {
-        return propertyIndexManager.getOrCreateId( internalLabelName( label ) );
+        try {
+            return propertyIndexManager.getOrCreateId( internalLabelName( label ) );
+        } catch(TransactionFailureException e)
+        {
+            // Temporary workaround for the property store based label implementation. Actual
+            // implementation should not depend on internal kernel exception messages like this.
+            if(e.getCause() != null && e.getCause() instanceof UnderlyingStorageException
+               && e.getCause().getMessage().equals( "Id capacity exceeded" ))
+            {
+                throw new ConstraintViolationKernelException(
+                        "The maximum number of labels available has been reached, cannot create more labels.", e );
+            } else
+            {
+                throw e;
+            }
+        }
     }
 
     @Override
-    public long getLabelId( String label ) throws LabelNotFoundException
+    public long getLabelId( String label ) throws LabelNotFoundKernelException
     {
         try
         {
@@ -59,7 +77,7 @@ public class TemporaryLabelAsPropertyStatementContext implements StatementContex
         }
         catch ( KeyNotFoundException e )
         {
-            throw new LabelNotFoundException( label, e );
+            throw new LabelNotFoundKernelException( label, e );
         }
     }
 

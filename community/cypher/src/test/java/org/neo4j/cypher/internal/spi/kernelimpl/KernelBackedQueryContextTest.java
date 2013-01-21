@@ -19,14 +19,14 @@
  */
 package org.neo4j.cypher.internal.spi.kernelimpl;
 
+import static org.mockito.Mockito.*;
+
+import java.util.Arrays;
+
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.kernel.api.StatementContext;
-
-import java.util.Arrays;
-
-import static org.mockito.Mockito.*;
 
 public class KernelBackedQueryContextTest {
 
@@ -51,7 +51,7 @@ public class KernelBackedQueryContextTest {
     }
 
     @Test
-    public void shouldGetOrCreateLabelId()
+    public void shouldGetOrCreateLabelId() throws Exception
     {
         // Given
         StatementContext mockCtx = mock(StatementContext.class);

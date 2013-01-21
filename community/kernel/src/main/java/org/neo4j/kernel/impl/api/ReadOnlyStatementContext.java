@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.api;
 
 import org.neo4j.graphdb.NotInTransactionException;
-import org.neo4j.kernel.api.LabelNotFoundException;
+import org.neo4j.kernel.api.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.StatementContext;
 
 public class ReadOnlyStatementContext implements StatementContext
@@ -45,7 +45,7 @@ public class ReadOnlyStatementContext implements StatementContext
     }
 
     @Override
-    public long getLabelId( String label ) throws LabelNotFoundException
+    public long getLabelId( String label ) throws LabelNotFoundKernelException
     {
         return actual.getLabelId( label );
     }

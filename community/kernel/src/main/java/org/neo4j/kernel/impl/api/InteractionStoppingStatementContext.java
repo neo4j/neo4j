@@ -19,7 +19,8 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.neo4j.kernel.api.LabelNotFoundException;
+import org.neo4j.kernel.api.ConstraintViolationKernelException;
+import org.neo4j.kernel.api.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.StatementContext;
 
 public class InteractionStoppingStatementContext implements StatementContext
@@ -33,14 +34,14 @@ public class InteractionStoppingStatementContext implements StatementContext
     }
 
     @Override
-    public long getOrCreateLabelId( String label )
+    public long getOrCreateLabelId( String label ) throws ConstraintViolationKernelException
     {
         assertOperationsAllowed();
         return delegate.getOrCreateLabelId( label );
     }
 
     @Override
-    public long getLabelId( String label ) throws LabelNotFoundException
+    public long getLabelId( String label ) throws LabelNotFoundKernelException
     {
         assertOperationsAllowed();
         return delegate.getLabelId( label );

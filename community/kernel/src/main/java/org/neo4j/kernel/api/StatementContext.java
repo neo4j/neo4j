@@ -38,18 +38,18 @@ public interface StatementContext
      * @param label the name of the label to get the id for.
      * @return the label id for the given label name.
      */
-    long getOrCreateLabelId( String label );
+    long getOrCreateLabelId( String label ) throws ConstraintViolationKernelException;
     
     /**
      * Returns a label if for a label name. If the label doesn't exist a
-     * {@link LabelNotFoundException} will be thrown.
+     * {@link LabelNotFoundKernelException} will be thrown.
      * 
      * @param label the name of the label to get the id for.
      * @return the label id for the given label name.
-     * @throws LabelNotFoundException if the label for the given name
+     * @throws LabelNotFoundKernelException if the label for the given name
      * doesn't exist.
      */
-    long getLabelId( String label ) throws LabelNotFoundException;
+    long getLabelId( String label ) throws LabelNotFoundKernelException;
     
     /**
      * Labels a node with the label corresponding to the given label id.

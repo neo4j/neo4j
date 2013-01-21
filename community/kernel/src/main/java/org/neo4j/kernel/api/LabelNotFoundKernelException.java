@@ -17,39 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.graphdb;
+package org.neo4j.kernel.api;
 
 /**
- * A dynamically instantiated and named {@link Label}. This class is
- * a convenience implementation of <code>Label</code> that is
- * typically used when labels are created and named after a
- * condition that can only be detected at runtime.
- *
- * @see Label
+ * Thrown for using a label that doesn't exist.
  */
-public class DynamicLabel implements Label
+public class LabelNotFoundKernelException extends KernelException
 {
-    public static Label label( String labelName )
+    public LabelNotFoundKernelException( String label )
     {
-        return new DynamicLabel( labelName );
+        super( "Label '" + label + "' not found" );
     }
-
-    private final String name;
-
-    private DynamicLabel( String labelName )
+    
+    public LabelNotFoundKernelException( String label, Exception cause )
     {
-        this.name = labelName;
-    }
-
-    @Override
-    public String name()
-    {
-        return this.name;
-    }
-
-    @Override
-    public String toString()
-    {
-        return this.name;
+        super( "Label '" + label + "' not found", cause );
     }
 }
