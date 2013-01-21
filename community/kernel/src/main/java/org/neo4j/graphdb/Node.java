@@ -19,6 +19,9 @@
  */
 package org.neo4j.graphdb;
 
+import org.neo4j.graphdb.traversal.TraversalDescription;
+import org.neo4j.kernel.Traversal;
+
 /**
  * A node in the graph with properties and relationships to other entities.
  * Along with {@link Relationship relationships}, nodes are the core building
@@ -270,6 +273,144 @@ public interface Node extends PropertyContainer
      * @return the newly created relationship
      */
     public Relationship createRelationshipTo( Node otherNode, RelationshipType type );
+
+    /**
+     * Instantiates a traverser that will start at this node and traverse
+     * according to the given order and evaluators along the specified
+     * relationship type and direction. If the traverser should traverse more
+     * than one <code>RelationshipType</code>/<code>Direction</code> pair, use
+     * one of the overloaded variants of this method. The created traverser will
+     * iterate over each node that can be reached from this node by the spanning
+     * tree formed by the given relationship types (with direction) exactly
+     * once. For more information about traversal, see the {@link Traverser}
+     * documentation.
+     * 
+     *
+     * @param traversalOrder the traversal order
+     * @param stopEvaluator an evaluator instructing the new traverser about
+     *            when to stop traversing, either a predefined evaluator such as
+     *            {@link StopEvaluator#END_OF_GRAPH} or a custom-written
+     *            evaluator
+     * @param returnableEvaluator an evaluator instructing the new traverser
+     *            about whether a specific node should be returned from the
+     *            traversal, either a predefined evaluator such as
+     *            {@link ReturnableEvaluator#ALL} or a customer-written
+     *            evaluator
+     * @param relationshipType the relationship type that the traverser will
+     *            traverse along
+     * @param direction the direction in which the relationships of type
+     *            <code>relationshipType</code> will be traversed
+     * @return a new traverser, configured as above
+     * @deprecated because of an unnatural and too tight coupling with
+     *             {@link Node}. Also because of the introduction of a new
+     *             traversal framework. The new way of doing traversals is by
+     *             creating a new {@link TraversalDescription} from
+     *             {@link Traversal#traversal()}, add rules and behaviors to it
+     *             and then calling
+     *             {@link TraversalDescription#traverse(Node...)}
+     */
+    public Traverser traverse( Traverser.Order traversalOrder,
+            StopEvaluator stopEvaluator,
+            ReturnableEvaluator returnableEvaluator,
+            RelationshipType relationshipType, Direction direction );
+
+    /**
+     * Instantiates a traverser that will start at this node and traverse
+     * according to the given order and evaluators along the two specified
+     * relationship type and direction pairs. If the traverser should traverse
+     * more than two <code>RelationshipType</code>/<code>Direction</code> pairs,
+     * use the overloaded
+     * {@link #traverse(Traverser.Order, StopEvaluator, ReturnableEvaluator, Object...)
+     * varargs variant} of this method. The created traverser will iterate over
+     * each node that can be reached from this node by the spanning tree formed
+     * by the given relationship types (with direction) exactly once. For more
+     * information about traversal, see the {@link Traverser} documentation.
+     * 
+     * @param traversalOrder the traversal order
+     * @param stopEvaluator an evaluator instructing the new traverser about
+     *            when to stop traversing, either a predefined evaluator such as
+     *            {@link StopEvaluator#END_OF_GRAPH} or a custom-written
+     *            evaluator
+     * @param returnableEvaluator an evaluator instructing the new traverser
+     *            about whether a specific node should be returned from the
+     *            traversal, either a predefined evaluator such as
+     *            {@link ReturnableEvaluator#ALL} or a customer-written
+     *            evaluator
+     * @param firstRelationshipType the first of the two relationship types that
+     *            the traverser will traverse along
+     * @param firstDirection the direction in which the first relationship type
+     *            will be traversed
+     * @param secondRelationshipType the second of the two relationship types
+     *            that the traverser will traverse along
+     * @param secondDirection the direction that the second relationship type
+     *            will be traversed
+     * @return a new traverser, configured as above
+     * @deprecated because of an unnatural and too tight coupling with
+     * {@link Node}. Also because of the introduction of a new traversal
+     * framework. The new way of doing traversals is by creating a
+     * new {@link TraversalDescription} from
+     * {@link Traversal#traversal()}, add rules and
+     * behaviours to it and then calling
+     * {@link TraversalDescription#traverse(Node...)}
+     */
+    public Traverser traverse( Traverser.Order traversalOrder,
+            StopEvaluator stopEvaluator,
+            ReturnableEvaluator returnableEvaluator,
+            RelationshipType firstRelationshipType, Direction firstDirection,
+            RelationshipType secondRelationshipType, Direction secondDirection );
+
+    /**
+     * Instantiates a traverser that will start at this node and traverse
+     * according to the given order and evaluators along the specified
+     * relationship type and direction pairs. Unlike the overloaded variants of
+     * this method, the relationship types and directions are passed in as a
+     * "varargs" variable-length argument which means that an arbitrary set of
+     * relationship type and direction pairs can be specified. The
+     * variable-length argument list should be every other relationship type and
+     * direction, starting with relationship type, e.g:
+     * <p>
+     * <code>node.traverse( BREADTH_FIRST, stopEval, returnableEval,
+     * MyRels.REL1, Direction.OUTGOING, MyRels.REL2, Direction.OUTGOING,
+     * MyRels.REL3, Direction.BOTH, MyRels.REL4, Direction.INCOMING );</code>
+     * <p>
+     * Unfortunately, the compiler cannot enforce this so an unchecked exception
+     * is raised if the variable-length argument has a different constitution.
+     * <p>
+     * The created traverser will iterate over each node that can be reached
+     * from this node by the spanning tree formed by the given relationship
+     * types (with direction) exactly once. For more information about
+     * traversal, see the {@link Traverser} documentation.
+     * 
+     * @param traversalOrder the traversal order
+     * @param stopEvaluator an evaluator instructing the new traverser about
+     *            when to stop traversing, either a predefined evaluator such as
+     *            {@link StopEvaluator#END_OF_GRAPH} or a custom-written
+     *            evaluator
+     * @param returnableEvaluator an evaluator instructing the new traverser
+     *            about whether a specific node should be returned from the
+     *            traversal, either a predefined evaluator such as
+     *            {@link ReturnableEvaluator#ALL} or a customer-written
+     *            evaluator
+     * @param relationshipTypesAndDirections a variable-length list of
+     *            relationship types and their directions, where the first
+     *            argument is a relationship type, the second argument the first
+     *            type's direction, the third a relationship type, the fourth
+     *            its direction, etc
+     * @return a new traverser, configured as above
+     * @throws RuntimeException if the variable-length relationship type /
+     *             direction list is not as described above
+     * @deprecated because of an unnatural and too tight coupling with
+     * {@link Node}. Also because of the introduction of a new traversal
+     * framework. The new way of doing traversals is by creating a
+     * new {@link TraversalDescription} from
+     * {@link Traversal#traversal()}, add rules and
+     * behaviours to it and then calling
+     * {@link TraversalDescription#traverse(Node...)}
+     */
+    public Traverser traverse( Traverser.Order traversalOrder,
+            StopEvaluator stopEvaluator,
+            ReturnableEvaluator returnableEvaluator,
+            Object... relationshipTypesAndDirections );
 
     /**
      * Adds a {@link Label} to this node. If this node doesn't already have
