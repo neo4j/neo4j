@@ -1649,10 +1649,10 @@ RETURN x0.name?
 
     val result = parseAndExecute("start a=node(1,2,3) return distinct a.color, count(*)").toList
     result.foreach(x => {
-      val c = x("a.color").asInstanceOf[Array[_]]
-      if (c.deep == Array("red").deep)
+      val c = x("a.color").asInstanceOf[Iterable[_]]
+      if (c.toList == List("red"))
         assertEquals(2L, x("count(*)"))
-      else if (c.deep == Array("blue").deep)
+      else if (c.toList == List("blue"))
         assertEquals(1L, x("count(*)"))
       else fail("wut?")
     })

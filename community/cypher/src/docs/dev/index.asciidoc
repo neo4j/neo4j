@@ -70,7 +70,7 @@ include::ql/create-unique/index.asciidoc[]
 
 :leveloffset: 2
 
-include::ql/label/index.asciidoc[]
+include::ql/add-label/index.asciidoc[]
 
 :leveloffset: 2
 

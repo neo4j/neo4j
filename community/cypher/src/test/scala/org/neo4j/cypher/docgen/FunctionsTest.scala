@@ -23,7 +23,6 @@ import org.junit.Test
 import org.junit.Assert._
 import org.neo4j.graphdb.Node
 import org.neo4j.cypher.ExecutionResult
-import collection.mutable.WrappedArray
 
 class FunctionsTest extends DocumentingTestBase {
   def graphDescription = List(
@@ -39,6 +38,10 @@ class FunctionsTest extends DocumentingTestBase {
     "C" -> Map("age" -> 53, "eyes" -> "green"),
     "D" -> Map("age" -> 54, "eyes" -> "brown"),
     "E" -> Map("age" -> 41, "eyes" -> "blue", "array" -> Array("one", "two", "three"))
+  )
+
+  override def labelsDescription = Map(
+    "A" -> List("foo", "bar")
   )
 
   def section = "functions"
@@ -104,17 +107,6 @@ class FunctionsTest extends DocumentingTestBase {
       assertions = (p) => assertEquals("KNOWS", p.columnAs[String]("type(r)").toList.head))
   }
 
-  @Test def labels() {
-    testThis(
-      title = "LABELS",
-      syntax = "LABELS( node )",
-      arguments = List("node" -> "A node."),
-      text = """Returns a collection of string representations for the labels attached to a node.""",
-      queryText = """start n=node(%E%) return labels(n)""",
-      returns = """The labels of `n` is returned by the query.""",
-      assertions = (p) => assertEquals(List("Spouse"), p.columnAs[String]("labels(n)").toList.head))
-  }
-
   @Test def length() {
     testThis(
       title = "LENGTH",
@@ -124,6 +116,22 @@ class FunctionsTest extends DocumentingTestBase {
       queryText = """start a=node(%A%) match p=a-->b-->c return length(p)""",
       returns = """The length of the path `p` is returned by the query.""",
       assertions = (p) => assertEquals(2, p.columnAs[Int]("length(p)").toList.head))
+  }
+
+  @Test def labels() {
+    testThis(
+      title = "LABELS",
+      syntax = "LABELS( node )",
+      arguments = List("node" -> "Any expression that returns a single node"),
+      text = """Returns a collection of string representations for the labels attached to a node.""",
+      queryText = """start a=node(%A%) return labels(a)""",
+      returns = """The labels of `n` is returned by the query.""",
+      assertions = {
+        (p) =>
+          val iter: Iterable[String] = p.columnAs[Iterable[String]]("labels(a)").next()
+          assert(iter.toList === List("foo", "bar"))
+      }
+    )
   }
 
   @Test def extract() {
@@ -199,7 +207,7 @@ class FunctionsTest extends DocumentingTestBase {
       queryText = """start a=node(%E%) return a.array, tail(a.array)""",
       returns = "This returns the property named `array` and all elements of that property except the first one.",
       assertions = (p) => {
-        val toList = p.columnAs[WrappedArray[_]]("tail(a.array)").toList.head.toList
+        val toList = p.columnAs[Iterable[_]]("tail(a.array)").toList.head.toList
         assert(toList === List("two","three"))
       })
   }

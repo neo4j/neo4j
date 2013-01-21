@@ -20,7 +20,9 @@
 package org.neo4j.cypher.docgen
 
 import org.junit.Test
-import org.junit.Assert._
+import org.neo4j.graphdb.Node
+import collection.JavaConverters._
+import org.neo4j.cypher.ExecutionResult
 
 class LabelTest extends DocumentingTestBase {
   def graphDescription = List(
@@ -40,7 +42,7 @@ class LabelTest extends DocumentingTestBase {
       text = "To add a label to a node, use +ADD+ +LABEL+.",
       queryText = "start n = node(%Anders%) add n label :swedish return n",
       returns = "The newly labeled node is returned by the query.",
-      assertions = (p) => {}
+      assertions = (p) => { getLabelsFromNode(p) === List("swedish") }
     )
   }
 
@@ -48,10 +50,14 @@ class LabelTest extends DocumentingTestBase {
   @Test def add_multiple_labels_to_a_node() {
     testQuery(
       title = "Add multiple labels to a node",
-      text = "To add multiple labels to a node, use +ADD+ +LABEL+ and separate the different lables using +,+.",
+      text = "To add multiple labels to a node, use +ADD+ +LABEL+ and separate the different lables using +:+.",
       queryText = "start n = node(%Anders%) add n label :swedish:polish return n",
       returns = "The newly labeled node is returned by the query.",
-      assertions = (p) => {}
+      assertions = (p) => { getLabelsFromNode(p) === List("swedish", "polish") }
     )
   }
+
+
+  private def getLabelsFromNode(p: ExecutionResult): Iterable[String] =
+    p.columnAs[Node]("n").next().getLabels.asScala.map(_.name())
 }

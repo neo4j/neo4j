@@ -368,16 +368,16 @@ return distinct center""")
 
   @Test
   def concatenate_to_a_collection() {
-    val result = executeScalar[Array[Long]]("create a={foo:[1,2,3]} set a.foo = a.foo + [4,5] return a.foo")
+    val result = executeScalar[Iterable[Long]]("create a={foo:[1,2,3]} set a.foo = a.foo + [4,5] return a.foo")
 
-    assert(result === Array(1,2,3,4,5))
+    assert(result.toList === List(1,2,3,4,5))
   }
 
   @Test
   def concatenate_to_a_collection_in_reverse() {
-    val result = executeScalar[Array[Long]]("create a={foo:[3,4,5]} set a.foo = [1,2] + a.foo return a.foo")
+    val result = executeScalar[Iterable[Long]]("create a={foo:[3,4,5]} set a.foo = [1,2] + a.foo return a.foo")
 
-    assert(result === Array(1,2,3,4,5))
+    assert(result.toList === List(1,2,3,4,5))
   }
 
   @Test
@@ -390,10 +390,10 @@ return distinct center""")
     map.put("arrayProp", list)
 
     val q = "create a={param} return a.arrayProp"
-    val result =  executeScalar[Array[String]](q, "param" -> map)
+    val result =  executeScalar[Iterable[String]](q, "param" -> map)
 
     assertStats(parseAndExecute(q, "param"->map), nodesCreated = 1, propertiesSet = 1)
-    assert(result === Array("foo","bar"))
+    assert(result.toList === List("foo","bar"))
   }
 
   @Test

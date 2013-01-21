@@ -148,6 +148,7 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService) extends PatternGraphBuil
     val results = pipe.createResults(state)
 
     try {
+
       val closingIterator = new ClosingIterator[ExecutionContext](results, queryContext)
       (state, closingIterator)
     }

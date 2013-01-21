@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.ExecutionContext
 import org.neo4j.graphdb.Path
 import org.neo4j.cypher.internal.commands.values.LabelValue
 import org.neo4j.cypher.internal.commands.values.LabelName
+import org.neo4j.cypher.internal.helpers.IsCollection
 
 class ResultValueMapperPipe(source: Pipe) extends PipeWithSource(source) {
 
@@ -33,7 +34,7 @@ class ResultValueMapperPipe(source: Pipe) extends PipeWithSource(source) {
     def mapValue(in: Any): Any = in match {
       case p: Path => p
       case l: LabelValue => l.resolveForName(state.queryContext).name
-      case i: Traversable[_] => i.map(mapValue)
+      case IsCollection(coll) => coll.map(mapValue)
       case x => x
     }
 

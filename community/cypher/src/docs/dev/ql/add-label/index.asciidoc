@@ -1,8 +1,8 @@
-[[query-label]]
-Label
-=====
+[[query-add-label]]
+Add Label
+=========
 
-Adding and removing labels from nodes is done with the +LABEL+ +AS+ clause.
+Adding labels to nodes is done with the +ADD+ +LABEL+ clause.
 
 :leveloffset: 2
 

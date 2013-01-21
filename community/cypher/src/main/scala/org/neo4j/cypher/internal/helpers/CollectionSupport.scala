@@ -29,7 +29,7 @@ object IsCollection extends CollectionSupport {
   def unapply(x: Any):Option[Iterable[Any]] = {
     val collection = isCollection(x)
     if (collection) {
-      Some(castToIterable(x))
+      Some(makeTraversable(x))
     } else {
       None
     }
@@ -53,16 +53,14 @@ trait CollectionSupport {
   def makeTraversable(z: Any): Iterable[Any] = if (castToIterable.isDefinedAt(z)) {
     castToIterable(z)
   } else {
-    Stream(z)
+    List(z)
   }
 
-  def castToIterable: PartialFunction[Any, Iterable[Any]] = {
-    case x: Seq[_] => x
+  protected def castToIterable: PartialFunction[Any, Iterable[Any]] = {
     case x: Array[_] => x
-    case x: Map[_, _] => Stream(x)
-    case x: JavaMap[_, _] => Stream(x.asScala)
-    case x: Iterable[_] => x.toIterable
-    case x: Traversable[_] => x.toIterable
+    case x: Map[_, _] => List(x)
+    case x: JavaMap[_, _] => List(x.asScala)
+    case x: Traversable[_] => x.toList
     case x: JavaIterable[_] => x.asScala.map {
       case y: JavaMap[_, _] => y.asScala
       case y => y
