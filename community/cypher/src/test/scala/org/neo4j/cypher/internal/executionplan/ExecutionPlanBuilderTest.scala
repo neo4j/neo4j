@@ -29,17 +29,15 @@ import org.neo4j.cypher.{GraphDatabaseTestBase, InternalException}
 import org.neo4j.cypher.internal.commands.expressions.Identifier
 import java.util.concurrent._
 import org.neo4j.cypher.internal.commands.ReturnItem
-import org.neo4j.cypher.internal.helpers.StatementContextMock.TxQueryContextWrapSupport
-import org.neo4j.cypher.internal.spi.TxQueryContextWrap
 import org.hamcrest.core.Is.is
 
-class ExecutionPlanBuilderTest extends GraphDatabaseTestBase with Assertions with Timed with TxQueryContextWrapSupport {
+class ExecutionPlanBuilderTest extends GraphDatabaseTestBase with Assertions with Timed {
   @Test def should_not_go_into_never_ending_loop() {
     val q     = Query.start(NodeById("x", 0)).returns(ReturnItem(Identifier("x"), "x"))
 
     val exception = intercept[ExecutionException](timeoutAfter(1) {
       val epi = new FakeExecPlanBuilder(graph)
-      withTxWrap(graph) { (wrap: TxQueryContextWrap) => epi.build(q) }
+      epi.build(q)
     })
 
     assertThat(exception.getCause, is(classOf[InternalException]))

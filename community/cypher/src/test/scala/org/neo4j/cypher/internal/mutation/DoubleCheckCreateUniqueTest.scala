@@ -25,9 +25,9 @@ import org.neo4j.test.ImpermanentGraphDatabase
 import java.lang.Iterable
 import org.neo4j.graphdb.Traverser.Order
 import org.neo4j.graphdb._
-import org.neo4j.cypher.internal.pipes.{QueryState}
+import org.neo4j.cypher.internal.pipes.QueryState
 import collection.JavaConverters._
-import org.neo4j.cypher.internal.spi.gdsimpl.GDSBackedQueryContext
+import org.neo4j.cypher.internal.spi.gdsimpl.TransactionBoundQueryContext
 import org.neo4j.cypher.internal.ExecutionContext
 
 /*
@@ -43,43 +43,45 @@ class DoubleCheckCreateUniqueTest extends Assertions {
   val db = new ImpermanentGraphDatabase() with TripIt
 
   @Test def double_check_unique() {
-
+    //GIVEN
     db.afterGetRelationship = createRel
+    val a = createNode()
+    val state = createQueryState()
 
-    val tx = db.beginTx
+    //WHEN we create a relationship just after seeing an empty iterable
+    relateAction.exec(createExecutionContext(state, a), state)
 
-    val a = try {
-      val a = db.createNode()
-
-      relateAction.exec(createExecutionContext(a, tx), createQueryState(tx))
-
-      tx.success()
-      a
-    } finally {
-      tx.finish()
-    }
-
+    //THEN we double-check, and don't create a second rel
     assert(a.getRelationships.asScala.size === 1)
   }
 
   val relateAction = CreateUniqueAction(UniqueLink("a", "b", "r", "X", Direction.OUTGOING))
 
 
-  private def createExecutionContext(a: Node, tx: Transaction): ExecutionContext = {
-    ExecutionContext(state = createQueryState(tx)).newWith(Map("a" -> a))
+  private def createExecutionContext(state:QueryState, a: Node): ExecutionContext = {
+    ExecutionContext(state = state).newWith(Map("a" -> a))
   }
 
-  private def createQueryState(tx: Transaction): QueryState = {
-    new QueryState(db, new GDSBackedQueryContext(db), Map.empty, Some(tx))
+  private def createQueryState(): QueryState = {
+    new QueryState(db, new TransactionBoundQueryContext(db), Map.empty)
+  }
+  private def createNode(): Node = {
+    val tx = db.beginTx()
+    try {
+      val n = db.createNode()
+      tx.success()
+      return n
+    } finally {
+      tx.finish()
+    }
   }
 
-  private def createRel(node:Node) {
+  private def createRel(node: Node) {
     if (!done) {
       done = true
       val x = db.createNode()
       node.createRelationshipTo(x, DynamicRelationshipType.withName("X"))
     }
-
   }
 }
 
@@ -120,7 +122,7 @@ class PausingNode(n: Node, afterGetRelationship: Node => Unit) extends Node {
   def hasRelationship(dir: Direction): Boolean = ???
 
   def getRelationships(`type`: RelationshipType, dir: Direction): Iterable[Relationship] = {
-    val rels =  n.getRelationships(`type`, dir).asScala.toList
+    val rels = n.getRelationships(`type`, dir).asScala.toList
     afterGetRelationship(n)
     rels.toIterable.asJava
   }
@@ -158,7 +160,9 @@ class PausingNode(n: Node, afterGetRelationship: Node => Unit) extends Node {
 
   def getPropertyValues: Iterable[AnyRef] = ???
 
-  def addLabel(label: Label) { ??? }
+  def addLabel(label: Label) {
+    ???
+  }
 
   def hasLabel(label: Label) = ???
 }

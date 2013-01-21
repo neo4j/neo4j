@@ -22,9 +22,6 @@ package org.neo4j.cypher.internal.executionplan.builders
 import org.neo4j.cypher.internal.executionplan.PartiallySolvedQuery
 import org.junit.Test
 import org.junit.Assert._
-import org.hamcrest.core.IsInstanceOf.instanceOf
-import org.hamcrest.core.IsNot.not
-import org.neo4j.cypher.internal.pipes.{TransactionStartPipe, ExecuteUpdateCommandsPipe}
 import org.neo4j.cypher.internal.commands._
 import expressions.{HeadFunction, Identifier}
 import org.neo4j.cypher.internal.mutation.{CreateRelationship, CreateNode}
@@ -75,36 +72,5 @@ class CreateNodesAndRelationshipsBuilderTest extends BuilderTest {
       Unsolved(CreateRelationship("r", (HeadFunction(Identifier("p")), Map()), (Identifier("b"), Map()), "LOVES", Map()))))
 
     assertFalse("Should not be able to build on this", builder.canWorkWith(plan(q)))
-  }
-
-  @Test
-  def inserts_tx_start_pipe() {
-    val q = PartiallySolvedQuery().
-      copy(start = Seq(Unsolved(CreateNodeStartItem(CreateNode("r", Map())))))
-
-    val resultPlan = builder(plan(q))
-
-    assertTrue("The execution plan should be markes as containing a transaction", resultPlan.isUpdating)
-
-    val p = resultPlan.pipe.asInstanceOf[ExecuteUpdateCommandsPipe]
-
-    val inner = p.source
-
-    assertThat(inner, instanceOf(classOf[TransactionStartPipe]))
-  }
-
-  @Test
-  def does_not_start_transaction() {
-    val q = PartiallySolvedQuery().
-      copy(start = Seq(Unsolved(CreateNodeStartItem(CreateNode("r", Map())))))
-
-    val inputPlan = plan(q).copy(isUpdating = true)
-    val resultPlan = builder(inputPlan)
-
-    assertTrue(resultPlan.isUpdating)
-
-    val inner = resultPlan.pipe.asInstanceOf[ExecuteUpdateCommandsPipe].source
-
-    assertThat(inner, not(instanceOf(classOf[TransactionStartPipe])))
   }
 }

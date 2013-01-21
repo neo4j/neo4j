@@ -21,20 +21,16 @@ package org.neo4j.cypher
 
 import internal.commands._
 import internal.executionplan.ExecutionPlanBuilder
-import internal.helpers.StatementContextMock.TxQueryContextWrapSupport
 import internal.LRUCache
-import internal.spi.TxQueryContextWrap
+import internal.spi.gdsimpl.TransactionBoundQueryContext
 import scala.collection.JavaConverters._
-import java.lang.Error
 import java.util.{Map => JavaMap}
-import scala.{Int, deprecated}
-import org.neo4j.kernel.InternalAbstractGraphDatabase
+import org.neo4j.kernel.{GraphDatabaseAPI, InternalAbstractGraphDatabase}
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.impl.util.StringLogger
-import org.neo4j.kernel.api.StatementContext
 
-class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = StringLogger.DEV_NULL) extends TxQueryContextWrapSupport {
+class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = StringLogger.DEV_NULL) {
   checkScalaVersion()
 
   require(graph != null, "Can't work with a null graph database")
@@ -61,10 +57,8 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
     logger.info(query)
 
     val plan = prepare(query)
-
-    withTxWrap(graph) { (wrap: TxQueryContextWrap) =>
-      plan.execute(wrap, params)
-    }
+    val ctx = new TransactionBoundQueryContext(graph.asInstanceOf[GraphDatabaseAPI])
+    plan.execute(ctx, params)
   }
 
   @throws(classOf[SyntaxException])
@@ -87,10 +81,10 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
 
   @throws(classOf[SyntaxException])
   @deprecated(message = "You should not parse queries manually any more. Use the execute(String) instead")
-  def execute(query: Query, params: Map[String, Any]): ExecutionResult =
-    withTxWrap(graph) { (wrap: TxQueryContextWrap) =>
-      planBuilder.build(query).execute(wrap, params)
-    }
+  def execute(query: Query, params: Map[String, Any]): ExecutionResult = {
+    val ctx = new TransactionBoundQueryContext(graph.asInstanceOf[GraphDatabaseAPI])
+    planBuilder.build(query).execute(ctx, params)
+  }
 
   private def checkScalaVersion() {
     if (util.Properties.versionString.matches("^version 2.9.0")) {

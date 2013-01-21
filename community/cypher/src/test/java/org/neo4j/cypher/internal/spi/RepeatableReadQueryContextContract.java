@@ -19,22 +19,22 @@
  */
 package org.neo4j.cypher.internal.spi;
 
+import org.junit.Before;
+import org.junit.Test;
+import org.neo4j.cypher.internal.spi.gdsimpl.RepeatableReadQueryContext;
+import org.neo4j.cypher.internal.spi.gdsimpl.TransactionBoundQueryContext;
+import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.test.ImpermanentGraphDatabase;
+
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
-
-import org.junit.Before;
-import org.junit.Test;
-import org.neo4j.cypher.internal.spi.gdsimpl.GDSBackedQueryContext;
-import org.neo4j.cypher.internal.spi.gdsimpl.RepeatableReadQueryContext;
-import org.neo4j.graphdb.Direction;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.Transaction;
-import org.neo4j.test.ImpermanentGraphDatabase;
 
 public class RepeatableReadQueryContextContract
 {
@@ -48,7 +48,7 @@ public class RepeatableReadQueryContextContract
     {
         database = new ImpermanentGraphDatabase();
         locker = mock( RepeatableReadQueryContext.Locker.class );
-        innerContext = new GDSBackedQueryContext( database );
+        innerContext = new TransactionBoundQueryContext( database );
         Transaction tx = database.beginTx();
         node = database.createNode();
         Node b = database.createNode();
