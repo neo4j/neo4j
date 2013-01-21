@@ -25,47 +25,46 @@ import org.junit.Assert.assertThat
 import org.mockito.Mockito.mock
 import org.mockito.Mockito.when
 import org.mockito.Mockito.verify
-import spi.{TxQueryContextWrap, QueryContext}
-import org.neo4j.graphdb.Transaction
+import spi.QueryContext
 import org.scalatest.Assertions
 
 class ClosingIteratorTest extends Assertions {
   @Test
   def should_call_close_when_we_reach_the_end() {
     //Given
-    val txWrap   = mock(classOf[TxQueryContextWrap])
+    val ctx   = mock(classOf[QueryContext])
     val wrapee   = Iterator(42)
-    val iterator = new ClosingIterator(wrapee, txWrap)
+    val iterator = new ClosingIterator(wrapee, ctx)
 
     //When
     val result = iterator.next()
 
     //Then
-    verify(txWrap).commit()
+    verify(ctx).close()
     assertThat(result, is(42))
   }
 
   @Test
   def should_close_querycontext_even_for_empty_iterator() {
     //Given
-    val txWrap   = mock(classOf[TxQueryContextWrap])
+    val ctx   = mock(classOf[QueryContext])
     val wrapee   = Iterator.empty
-    val iterator = new ClosingIterator(wrapee, txWrap)
+    val iterator = new ClosingIterator(wrapee, ctx)
 
     //When
     val result = iterator.hasNext
 
     //Then
-    verify(txWrap).commit()
+    verify(ctx).close()
     assertThat(result, is(false))
   }
 
   @Test
   def multiple_has_next_should_not_close_more_than_once() {
     //Given
-    val txWrap   = mock(classOf[TxQueryContextWrap])
+    val ctx   = mock(classOf[QueryContext])
     val wrapee   = Iterator.empty
-    val iterator = new ClosingIterator(wrapee, txWrap)
+    val iterator = new ClosingIterator(wrapee, ctx)
 
     //When
     val result = iterator.hasNext
@@ -75,39 +74,39 @@ class ClosingIteratorTest extends Assertions {
     iterator.hasNext
 
     //Then
-    verify(txWrap).commit()
+    verify(ctx).close()
     assertThat(result, is(false))
   }
 
   @Test
   def exception_in_hasNext_should_fail_transaction() {
     //Given
-    val txWrap   = mock(classOf[TxQueryContextWrap])
+    val ctx   = mock(classOf[QueryContext])
     val wrapee   = mock(classOf[Iterator[Int]])
     when(wrapee.hasNext).thenThrow(new RuntimeException)
-    val iterator = new ClosingIterator(wrapee, txWrap)
+    val iterator = new ClosingIterator(wrapee, ctx)
 
     //When
     intercept[RuntimeException](iterator.hasNext)
 
     //Then
-    verify(txWrap).rollback()
+    verify(ctx).fail()
   }
 
   @Test
   def exception_in_next_should_fail_transaction() {
     //Given
-    val txWrap   = mock(classOf[TxQueryContextWrap])
+    val ctx   = mock(classOf[QueryContext])
     val wrapee   = mock(classOf[Iterator[Int]])
     when(wrapee.hasNext).thenReturn(true)
     when(wrapee.next()).thenThrow(new RuntimeException)
 
-    val iterator = new ClosingIterator(wrapee, txWrap)
+    val iterator = new ClosingIterator(wrapee, ctx)
 
     //When
     intercept[RuntimeException](iterator.next())
 
     //Then
-    verify(txWrap).rollback()
+    verify(ctx).fail()
   }
 }

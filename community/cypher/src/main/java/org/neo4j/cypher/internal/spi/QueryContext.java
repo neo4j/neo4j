@@ -50,11 +50,9 @@ public interface QueryContext
     // TODO: Expose a high-tech traversal framework here in some way, and remove the getRelationshipsFor method
     Iterable<Relationship> getRelationshipsFor( Node node, Direction dir, String... types );
 
+    long getOrCreateLabelId( String labelName );
 
-    // TODO: Figure out how this can be a primitive type
-    Long getOrCreateLabelId( String labelName );
-
-    String getLabelName( Long id);
+    String getLabelName( long id);
 
     Iterable<Long> getLabelsForNode( Node node );
 
@@ -68,6 +66,11 @@ public interface QueryContext
      * Release all resources held by this context.
      */
     void close();
+
+    /**
+     * Marks the current statement (and therefore the transaction as failed) and closes it
+     */
+    void fail();
 
     public interface Operations<T extends PropertyContainer>
     {

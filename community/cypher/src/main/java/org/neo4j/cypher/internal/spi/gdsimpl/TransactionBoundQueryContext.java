@@ -27,19 +27,49 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.ThreadToStatementContextBridge;
+import org.neo4j.kernel.api.StatementContext;
 
-public class GDSBackedQueryContext implements QueryContext
+public class TransactionBoundQueryContext implements QueryContext
 {
     private final GraphDatabaseService graph;
+    private final StatementContext ctx;
+    private final Transaction tx;
 
-    public GDSBackedQueryContext( GraphDatabaseService graph )
+    public TransactionBoundQueryContext( GraphDatabaseAPI graph )
     {
         this.graph = graph;
+        this.tx = graph.beginTx();
+        this.ctx = graph
+                .getDependencyResolver()
+                .resolveDependency( ThreadToStatementContextBridge.class )
+                .getCtxForWriting();
+    }
+
+    /**
+     * This method is only here while the kernel API doesn't take appropriate locks.
+     * You should not use this.
+     * @return the tx
+     */
+    public Transaction getTransaction()
+    {
+        return tx;
     }
 
     @Override
     public void close()
     {
+        tx.success();
+        tx.finish();
+    }
+
+    @Override
+    public void fail()
+    {
+        tx.failure();
+        tx.finish();
     }
 
     @Override
@@ -68,37 +98,42 @@ public class GDSBackedQueryContext implements QueryContext
     }
 
     @Override
-    public void addLabelsToNode(Node node, Iterable<Long> labelIds) {
-        throw new UnsupportedOperationException();
+    public void addLabelsToNode( Node node, Iterable<Long> labelIds )
+    {
+        for ( Long labelId : labelIds )
+        {
+            ctx.addLabelToNode( labelId, node.getId() );
+        }
     }
 
     @Override
     public void replaceLabelsOfNode( Node node, Iterable<Long> labelIds )
     {
-        throw new UnsupportedOperationException(  );
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void removeLabelsFromNode( Node node, Iterable<Long> labelIds )
     {
-        throw new UnsupportedOperationException(  );
-    }
-
-    @Override
-    public Long getOrCreateLabelId(String labelName) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public String getLabelName( Long id )
+    public long getOrCreateLabelId( String labelName )
     {
-        throw new UnsupportedOperationException(  );
+        return ctx.getOrCreateLabelId( labelName );
+    }
+
+    @Override
+    public String getLabelName( long id )
+    {
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public Iterable<Long> getLabelsForNode( Node node )
     {
-        throw new UnsupportedOperationException(  );
+        throw new UnsupportedOperationException();
     }
 
     private RelationshipType[] transform( String[] types )

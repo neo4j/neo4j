@@ -25,7 +25,7 @@ import scala.collection.JavaConverters._
 import org.neo4j.kernel.GraphDatabaseAPI
 import java.util.concurrent.atomic.AtomicInteger
 import org.neo4j.cypher.internal.spi.QueryContext
-import org.neo4j.cypher.internal.spi.gdsimpl.GDSBackedQueryContext
+import org.neo4j.cypher.internal.spi.gdsimpl.TransactionBoundQueryContext
 import org.neo4j.cypher.internal.ExecutionContext
 
 /**
@@ -68,13 +68,12 @@ object MutableMaps {
 
 object QueryState {
   def apply() = new QueryState(null, null, Map.empty)
-  def apply(db: GraphDatabaseService) = new QueryState(db, new GDSBackedQueryContext(db), Map.empty, None)
+  def apply(db: GraphDatabaseAPI) = new QueryState(db, new TransactionBoundQueryContext(db), Map.empty)
 }
 
 class QueryState(val db: GraphDatabaseService,
                  val queryContext: QueryContext,
-                 val params: Map[String, Any],
-                 var transaction: Option[Transaction] = None) {
+                 val params: Map[String, Any]) {
   val createdNodes = new Counter
   val createdRelationships = new Counter
   val propertySet = new Counter

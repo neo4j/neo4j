@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.executionplan
 import builders._
 import org.neo4j.cypher.internal.pipes._
 import org.neo4j.cypher._
-import internal.spi.TxQueryContextWrap
+import internal.spi.QueryContext
 import internal.{ExecutionContext, ClosingIterator}
 import internal.commands._
 import internal.mutation.{CreateNode, CreateRelationship}
@@ -47,7 +47,7 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService) extends PatternGraphBuil
     val executionPlanDescription = pipe.executionPlanDescription()
 
     new ExecutionPlan {
-      def execute(wrap: TxQueryContextWrap, params: Map[String, Any]) = func(wrap, params)
+      def execute(queryContext: QueryContext, params: Map[String, Any]) = func(queryContext, params)
 
       def description = executionPlanDescription
     }
@@ -133,9 +133,9 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService) extends PatternGraphBuil
     columns
   }
 
-  private def getLazyReadonlyQuery(pipe: Pipe, columns: List[String]): (TxQueryContextWrap, Map[String, Any]) => ExecutionResult = {
-    val func = (wrap: TxQueryContextWrap, params: Map[String, Any]) => {
-      val (state, results) = prepareStateAndResult(wrap, params, pipe)
+  private def getLazyReadonlyQuery(pipe: Pipe, columns: List[String]): (QueryContext, Map[String, Any]) => ExecutionResult = {
+    val func = (queryContext: QueryContext, params: Map[String, Any]) => {
+      val (state, results) = prepareStateAndResult(queryContext, params, pipe)
 
       new PipeExecutionResult(results, columns, state)
     }
@@ -143,25 +143,24 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService) extends PatternGraphBuil
     func
   }
 
-  private def prepareStateAndResult(wrap: TxQueryContextWrap, params: Map[String, Any], pipe: Pipe): (QueryState, Iterator[ExecutionContext]) = {
-//      val lockingContext = new RepeatableReadQueryContext(gdsContext, new GDSBackedLocker(tx))
-    val state = new QueryState(graph, wrap.getQueryContext, params)
+  private def prepareStateAndResult(queryContext: QueryContext, params: Map[String, Any], pipe: Pipe): (QueryState, Iterator[ExecutionContext]) = {
+    val state = new QueryState(graph, queryContext, params)
     val results = pipe.createResults(state)
 
     try {
-      val closingIterator = new ClosingIterator[ExecutionContext](results, wrap)
+      val closingIterator = new ClosingIterator[ExecutionContext](results, queryContext)
       (state, closingIterator)
     }
     catch {
       case (t: Throwable) =>
-        wrap.rollback()
+        queryContext.fail()
         throw t
     }
   }
 
-  private def getEagerReadWriteQuery(pipe: Pipe, columns: List[String]): (TxQueryContextWrap, Map[String, Any]) => ExecutionResult = {
-    val func = (wrap: TxQueryContextWrap, params: Map[String, Any]) => {
-      val (state, results) = prepareStateAndResult(wrap, params, pipe)
+  private def getEagerReadWriteQuery(pipe: Pipe, columns: List[String]): (QueryContext, Map[String, Any]) => ExecutionResult = {
+    val func = (queryContext: QueryContext, params: Map[String, Any]) => {
+      val (state, results) = prepareStateAndResult(queryContext, params, pipe)
       new EagerPipeExecutionResult(results, columns, state, graph)
     }
 
