@@ -19,7 +19,6 @@
  */
 package org.neo4j.graphdb;
 
-
 /**
  * A relationship type is mandatory on all relationships and is used to navigate
  * the node space. RelationshipType is in particular a key part of the
