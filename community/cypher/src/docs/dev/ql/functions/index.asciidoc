@@ -54,6 +54,11 @@ include::nodes.asciidoc[]
 
 include::relationships.asciidoc[]
 
+// include once it works and enable the test in FunctionsTest
+//
+// include::labels.asciidoc[]
+//
+
 include::extract.asciidoc[]
 
 include::filter.asciidoc[]

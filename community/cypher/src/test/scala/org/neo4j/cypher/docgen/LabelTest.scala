@@ -37,7 +37,7 @@ class LabelTest extends DocumentingTestBase {
   @Test def add_a_label_to_a_node() {
     testQuery(
       title = "Add a label to a node",
-      text = "To add a label to a node, use +LABEL+ +AS+.",
+      text = "To add a label to a node, use `LABEL +=`.",
       queryText = "start n = node(%Anders%) label n += :swedish return n",
       returns = "The newly labeled node is returned by the query.",
       assertions = (p) => {}
@@ -48,8 +48,29 @@ class LabelTest extends DocumentingTestBase {
   @Test def add_multiple_labels_to_a_node() {
     testQuery(
       title = "Add multiple labels to a node",
-      text = "To add multiple labels to a node, use +LABEL+ +AS+ and separate the different lables using +,+.",
+      text = "To add multiple labels to a node, use `LABEL +=` and separate the different lables using `,`.",
       queryText = "start n = node(%Anders%) label n += [:swedish, :polish] return n",
+      returns = "The newly labeled node is returned by the query.",
+      assertions = (p) => {}
+    )
+  }
+
+
+  @Test def replace_labels_of_a_node() {
+    testQuery(
+      title = "Replace all labels of a node with new labels",
+      text = "To replace all labels of a node with a completely new set, use `LABEL +=` and separate the different lables using `,`.",
+      queryText = "start n = node(%Stefan%) label n = [:german, :swedish] return n",
+      returns = "The newly labeled node is returned by the query.",
+      assertions = (p) => {}
+    )
+  }
+
+  @Test def delete_labels_from_a_node() {
+    testQuery(
+      title = "Delete all labels from a node with new labels",
+      text = "To replace all labels of a node with a completely new set, use `LABEL -=` and separate the different lables using `,`.",
+      queryText = "start n = node(%Stefan%) label n = [:german, :swedish] return n",
       returns = "The newly labeled node is returned by the query.",
       assertions = (p) => {}
     )

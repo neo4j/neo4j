@@ -37,6 +37,7 @@ import org.neo4j.test.GeoffService
 import org.scalatest.Assertions
 import org.neo4j.test.AsciiDocGenerator
 import org.neo4j.kernel.AbstractGraphDatabase
+import java.util
 
 trait DocumentationHelper {
   def generateConsole:Boolean
@@ -96,9 +97,10 @@ abstract class DocumentingTestBase extends Assertions with DocumentationHelper {
         consoleData = "(0)"
       }
     }
+
     val r = testWithoutDocs(queryText, assertions:_*)
     val result: ExecutionResult = r._1
-    var query: String = r._2
+    val query: String = r._2
 
     val writer: PrintWriter = createWriter(title, dir)
     dumpToFile(dir, writer, title, query, returns, text, result, consoleData)
@@ -120,6 +122,8 @@ abstract class DocumentingTestBase extends Assertions with DocumentationHelper {
   val dir = createDir(section)
 
   def graphDescription: List[String]
+
+  def labelsDescription: Map[String, List[Label]] = Map.empty
 
   def indexProps: List[String] = List()
 
@@ -205,12 +209,18 @@ abstract class DocumentingTestBase extends Assertions with DocumentationHelper {
         n.getRelationships(Direction.OUTGOING).asScala.foreach(indexProperties(_, relIndex))
       })
 
-      properties.foreach((n) => {
-        val nod = node(n._1)
-        n._2.foreach((kv) => nod.setProperty(kv._1, kv._2))
-      })
+      asNodeMap(properties) foreach { case (n: Node, seq: Map[String, Any]) =>
+          seq foreach { case (k, v) => n.setProperty(k, v) }
+      }
+
+      asNodeMap(labelsDescription) foreach { case (n: Node, labels: List[Label]) =>
+          labels.foreach { (label: Label) => n.addLabel(label) }
+      }
     })
   }
+
+  private def asNodeMap[T : Manifest](m: Map[String, T]): Map[Node, T] =
+    m map { case (k: String, v: T) => (node(k), v) }
 
   def runQuery(dir: File, writer: PrintWriter, testId: String, query: String, returns: String, result: ExecutionResult, consoleData: String) {
     val output = new StringBuilder(2048)
