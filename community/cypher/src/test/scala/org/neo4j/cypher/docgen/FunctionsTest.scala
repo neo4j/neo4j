@@ -188,6 +188,22 @@ class FunctionsTest extends DocumentingTestBase {
       })
   }
 
+  @Test def nth() {
+    testThis(
+      title = "NTH",
+      syntax = "NTH( n, collection)",
+      arguments = List(
+        "n" -> "This expression should return an integer.",
+        "collection" -> "This expression should return a collection of some kind."),
+      text = "`NTH` returns the nth (zero-based) element in a collection.",
+      queryText = """start a=node(%E%) return a.array, nth(1, a.array)""",
+      returns = "This returns the nth element in a collection.",
+      assertions = (p) => {
+        val toList = p.columnAs[String]("nth(1, a.array)").toList.head
+        assert(toList === "two")
+      })
+  }
+
   @Test def filter() {
     testThis(
       title = "FILTER",
