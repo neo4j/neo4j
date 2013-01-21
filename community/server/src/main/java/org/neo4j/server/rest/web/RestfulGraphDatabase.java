@@ -19,6 +19,8 @@
  */
 package org.neo4j.server.rest.web;
 
+import static java.lang.String.format;
+
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Collections;
@@ -89,6 +91,7 @@ public class RestfulGraphDatabase
     private static final String PATH_NODE_TRAVERSE = PATH_NODE + "/traverse/{returnType}";
     private static final String PATH_NODE_PATH = PATH_NODE + "/path";
     private static final String PATH_NODE_PATHS = PATH_NODE + "/paths";
+    private static final String PATH_NODE_LABELS = PATH_NODE + "/labels";
 
     protected static final String PATH_NODE_INDEX = "index/node";
     protected static final String PATH_NAMED_NODE_INDEX = PATH_NODE_INDEX + "/{indexName}";
@@ -384,6 +387,39 @@ public class RestfulGraphDatabase
         catch ( PropertyValueException e )
         {
             return output.badRequest( e );
+        }
+        return nothing();
+    }
+
+    // Node Labels
+
+    @POST
+    @Path( PATH_NODE_LABELS )
+    public Response addNodeLabel( @HeaderParam( HEADER_TRANSACTION ) ForceMode force,
+                                  @PathParam( "nodeId" ) long nodeId,
+                                  String body )
+    {
+        try
+        {
+            Object rawInput = input.readValue( body );
+            if( !(rawInput instanceof String))
+            {
+                throw new BadInputException( format( "Label name must be a string. Got: '%s'", rawInput ) );
+            } else {
+                actions( force ).addLabelToNode( nodeId, (String)rawInput );
+            }
+        }
+        catch ( BadInputException e )
+        {
+            return output.badRequest( e );
+        }
+        catch ( ArrayStoreException ase )
+        {
+            return generateBadRequestDueToMangledJsonResponse( body );
+        }
+        catch ( NodeNotFoundException e )
+        {
+            return output.notFound( e );
         }
         return nothing();
     }

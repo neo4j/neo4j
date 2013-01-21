@@ -19,6 +19,8 @@
  */
 package org.neo4j.server.rest.web;
 
+import static org.neo4j.graphdb.DynamicLabel.label;
+
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -31,6 +33,7 @@ import org.neo4j.graphalgo.CostEvaluator;
 import org.neo4j.graphalgo.GraphAlgoFactory;
 import org.neo4j.graphalgo.PathFinder;
 import org.neo4j.graphalgo.WeightedPath;
+import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Expander;
@@ -103,6 +106,7 @@ public class DatabaseActions
     private final TraversalDescriptionBuilder traversalDescriptionBuilder;
     private final boolean enableScriptSandboxing;
     private final PropertySettingStrategy propertySetter;
+
 
     public static class Provider extends InjectableProvider<DatabaseActions>
     {
@@ -304,6 +308,27 @@ public class DatabaseActions
             throws NodeNotFoundException, PropertyValueException
     {
         propertySetter.setAllProperties( node( nodeId ), null );
+    }
+
+    // Labels
+
+    public void addLabelToNode( long nodeId, String labelName ) throws NodeNotFoundException, BadInputException
+    {
+        Node node = node( nodeId );
+        Transaction tx = beginTx();
+        try
+        {
+            node.addLabel( label( labelName ) );
+            tx.success();
+        }
+        catch(ConstraintViolationException e)
+        {
+            throw new BadInputException( "Unable to add label, see nested exception.", e );
+        }
+        finally
+        {
+            tx.finish();
+        }
     }
 
     public String[] getNodeIndexNames()
