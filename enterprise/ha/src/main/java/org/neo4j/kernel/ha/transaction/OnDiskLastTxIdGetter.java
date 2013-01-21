@@ -17,29 +17,33 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.ha;
+package org.neo4j.kernel.ha.transaction;
 
-/**
- * Thrown to point out that branching of data has occured for one or
- * more instances in a cluster. Branching is when one machine has
- * different (not meaning outdated) than the current master.
- * 
- * @author Mattias Persson
- */
-public class BranchedDataException extends StoreUnableToParticipateInClusterException
+import java.io.File;
+
+import org.neo4j.kernel.ha.NeoStoreUtil;
+import org.neo4j.kernel.impl.core.LastTxIdGetter;
+import org.neo4j.kernel.impl.nioneo.store.NeoStore;
+
+public class OnDiskLastTxIdGetter implements LastTxIdGetter
 {
-    public BranchedDataException( String message, Throwable cause )
+    private final File storeDirectory;
+
+    public OnDiskLastTxIdGetter( File storeDirectory )
     {
-        super( message, cause );
+        this.storeDirectory = storeDirectory;
     }
 
-    public BranchedDataException( String message )
+    @Override
+    public long getLastTxId()
     {
-        super( message );
-    }
-
-    public BranchedDataException( Throwable cause )
-    {
-        super( cause );
+        if ( new File(storeDirectory, NeoStore.DEFAULT_NAME).exists() )
+        {
+            return new NeoStoreUtil(storeDirectory).getLastCommittedTx();
+        }
+        else
+        {
+            return -1;
+        }
     }
 }

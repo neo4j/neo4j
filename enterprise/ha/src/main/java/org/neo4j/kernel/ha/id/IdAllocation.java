@@ -17,29 +17,41 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.ha;
+package org.neo4j.kernel.ha.id;
 
-/**
- * Thrown to point out that branching of data has occured for one or
- * more instances in a cluster. Branching is when one machine has
- * different (not meaning outdated) than the current master.
- * 
- * @author Mattias Persson
- */
-public class BranchedDataException extends StoreUnableToParticipateInClusterException
+import org.neo4j.kernel.impl.nioneo.store.IdRange;
+
+public final class IdAllocation
 {
-    public BranchedDataException( String message, Throwable cause )
+    private final IdRange idRange;
+    private final long highestIdInUse;
+    private final long defragCount;
+
+    public IdAllocation( IdRange idRange, long highestIdInUse, long defragCount )
     {
-        super( message, cause );
+        this.idRange = idRange;
+        this.highestIdInUse = highestIdInUse;
+        this.defragCount = defragCount;
+    }
+    
+    public long getHighestIdInUse()
+    {
+        return highestIdInUse;
     }
 
-    public BranchedDataException( String message )
+    public long getDefragCount()
     {
-        super( message );
+        return defragCount;
     }
 
-    public BranchedDataException( Throwable cause )
+    public IdRange getIdRange()
     {
-        super( cause );
+        return this.idRange;
+    }
+    
+    @Override
+    public String toString()
+    {
+        return "IdAllocation[" + idRange + ", " + highestIdInUse + ", " + defragCount + "]";
     }
 }

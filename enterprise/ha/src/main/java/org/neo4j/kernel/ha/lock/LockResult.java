@@ -17,29 +17,38 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.ha;
+package org.neo4j.kernel.ha.lock;
 
-/**
- * Thrown to point out that branching of data has occured for one or
- * more instances in a cluster. Branching is when one machine has
- * different (not meaning outdated) than the current master.
- * 
- * @author Mattias Persson
- */
-public class BranchedDataException extends StoreUnableToParticipateInClusterException
+public class LockResult
 {
-    public BranchedDataException( String message, Throwable cause )
+    private final LockStatus status;
+    private final String deadlockMessage;
+    
+    public LockResult( LockStatus status )
     {
-        super( message, cause );
+        this.status = status;
+        this.deadlockMessage = null;
+    }
+    
+    public LockResult( String deadlockMessage )
+    {
+        this.status = LockStatus.DEAD_LOCKED;
+        this.deadlockMessage = deadlockMessage;
     }
 
-    public BranchedDataException( String message )
+    public LockStatus getStatus()
     {
-        super( message );
+        return status;
     }
 
-    public BranchedDataException( Throwable cause )
+    public String getDeadlockMessage()
     {
-        super( cause );
+        return deadlockMessage;
+    }
+    
+    @Override
+    public String toString()
+    {
+        return "LockResult[" + status + ", " + deadlockMessage + "]";
     }
 }

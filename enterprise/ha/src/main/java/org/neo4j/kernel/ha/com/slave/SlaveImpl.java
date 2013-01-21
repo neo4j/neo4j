@@ -17,38 +17,43 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.ha;
-
-import javax.transaction.TransactionManager;
+package org.neo4j.kernel.ha.com.slave;
 
 import org.neo4j.com.Response;
+import org.neo4j.com.ServerUtil;
+import org.neo4j.kernel.ha.HaXaDataSourceManager;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
-import org.neo4j.kernel.impl.core.RelationshipTypeCreator;
-import org.neo4j.kernel.impl.core.RelationshipTypeHolder;
-import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
-import org.neo4j.kernel.impl.persistence.PersistenceManager;
+import org.neo4j.kernel.ha.com.master.Slave;
+import org.neo4j.kernel.impl.nioneo.store.StoreId;
 
-public class SlaveRelationshipTypeCreator implements RelationshipTypeCreator
+public class SlaveImpl implements Slave
 {
-    private Master master;
+    private final Master master;
     private final RequestContextFactory requestContextFactory;
+    private final StoreId storeId;
     private final HaXaDataSourceManager xaDsm;
 
-    public SlaveRelationshipTypeCreator( Master master, RequestContextFactory requestContextFactory,
-                                         HaXaDataSourceManager xaDsm )
+    public SlaveImpl( StoreId storeId, Master master, RequestContextFactory requestContextFactory,
+                      HaXaDataSourceManager xaDsm )
     {
+        this.storeId = storeId;
         this.master = master;
         this.requestContextFactory = requestContextFactory;
         this.xaDsm = xaDsm;
     }
 
     @Override
-    public int getOrCreate( TransactionManager txManager, EntityIdGenerator idGenerator,
-            PersistenceManager persistence, RelationshipTypeHolder relTypeHolder, String name )
+    public Response<Void> pullUpdates( String resource, long upToAndIncludingTxId )
     {
-        Response<Integer> response = master.createRelationshipType( requestContextFactory.newRequestContext(), name );
-        xaDsm.applyTransactions( response );
-        return response.response().intValue();
+        // Pull updates from the master
+        xaDsm.applyTransactions( master.pullUpdates( requestContextFactory.newRequestContext( 0 ) ), ServerUtil.NO_ACTION );
+        return ServerUtil.packResponseWithoutTransactionStream( storeId, null );
+    }
+
+    @Override
+    public int getServerId()
+    {
+        return 0;
     }
 }

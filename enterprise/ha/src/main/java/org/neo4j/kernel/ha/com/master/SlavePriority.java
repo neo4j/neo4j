@@ -17,29 +17,9 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.ha;
+package org.neo4j.kernel.ha.com.master;
 
-/**
- * Thrown to point out that branching of data has occured for one or
- * more instances in a cluster. Branching is when one machine has
- * different (not meaning outdated) than the current master.
- * 
- * @author Mattias Persson
- */
-public class BranchedDataException extends StoreUnableToParticipateInClusterException
+public interface SlavePriority
 {
-    public BranchedDataException( String message, Throwable cause )
-    {
-        super( message, cause );
-    }
-
-    public BranchedDataException( String message )
-    {
-        super( message );
-    }
-
-    public BranchedDataException( Throwable cause )
-    {
-        super( cause );
-    }
+    Iterable<Slave> prioritize( Iterable<Slave> slaves );
 }

@@ -77,7 +77,7 @@ import org.neo4j.helpers.Listeners;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.HaSettings;
-import org.neo4j.kernel.ha.Master;
+import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.ha.NeoStoreUtil;
 import org.neo4j.kernel.ha.switchover.CompatibilityModeListener;
 import org.neo4j.kernel.ha.switchover.CompatibilityMonitor;
