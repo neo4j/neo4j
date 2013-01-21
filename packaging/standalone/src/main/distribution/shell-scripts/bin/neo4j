@@ -178,6 +178,7 @@ startit() {
     printf "Starting $FRIENDLY_NAME..."
 
     buildclasspath
+    checkclasspath
     checkandrepairenv
 
     if [ $UID == 0 ] ; then
