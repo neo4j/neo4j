@@ -63,7 +63,7 @@ public abstract class KernelData
     private final String instanceId;
     private final Config configuration;
 
-    KernelData( Config configuration )
+    protected KernelData( Config configuration )
     {
         this.configuration = configuration;
         this.instanceId = newInstance( this );

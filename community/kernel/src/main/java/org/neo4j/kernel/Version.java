@@ -110,7 +110,7 @@ public class Version extends Service
         return ( preferred == null || preferred.equals( "" ) ) ? fallback : preferred;
     }
 
-    static Version getKernel()
+    public static Version getKernel()
     {
         return KERNEL_VERSION;
     }
