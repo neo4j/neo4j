@@ -70,6 +70,11 @@
       <version>${project.version}</version>
     </dependency>
     <dependency>
+      <groupId>org.neo4j.app</groupId>
+      <artifactId>neo4j-server</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-enterprise</artifactId>
       <version>${project.version}</version>
@@ -96,6 +101,7 @@
       <artifactId>neo4j-server</artifactId>
       <version>${project.version}</version>
       <type>test-jar</type>
+      <scope>test</scope>
     </dependency>
 
     <dependency>
@@ -108,7 +114,7 @@
     <dependency>
       <groupId>com.sun.jersey</groupId>
       <artifactId>jersey-client</artifactId>
-      <version>1.3</version>
+      <version>1.9</version>
       <scope>test</scope>
     </dependency>
 
@@ -320,11 +326,15 @@
             </executions>
           </plugin>
           <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-surefire-plugin</artifactId>
             <configuration>
               <skip>false</skip>
               <argLine>-Xmx1024m</argLine>
-              <forkMode>perTest</forkMode>
+              <includes>
+                <!-- WebIT for web integration test -->
+                <include>**/*Test*.java</include>
+              </includes>
             </configuration>
           </plugin>
         </plugins>

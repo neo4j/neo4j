@@ -111,27 +111,7 @@ and when a transaction is committed changes to the logical log will be forced
 (+fdatasync+) down to disk. The store files are however not flushed to disk and 
 writes to them are not append-only either. They will be written to in a more or
 less random pattern (depending on graph layout) and writes will not be forced to 
-disk until the log is rotated or the Neo4j kernel is shut down. It may be a good 
-idea to increase the logical log target size for rotation or turn off log rotation 
-if you experience problems with writes that can be linked to the actual rotation 
-of the log. Here is some example code demonstrating how to change log rotation 
-settings at runtime:
-
-[source,java]
-----
-    GraphDatabaseService graphDb; // ... 
-
-    // get the XaDataSource for the native store
-    TxModule txModule = ((EmbeddedGraphDatabase) graphDb).getConfig().getTxModule();
-    XaDataSourceManager xaDsMgr = txModule.getXaDataSourceManager();
-    XaDataSource xaDs = xaDsMgr.getXaDataSource( "nioneodb" );
-  
-    // turn off log rotation
-    xaDs.setAutoRotate( false );
-
-    // or to increase log target size to 100MB (default 10MB)
-    xaDs.setLogicalLogTargetSize( 100 * 1024 * 1024L );
-----
+disk until the log is rotated or the Neo4j kernel is shut down.
 
 Since random writes to memory mapped regions for the store files may 
 happen it is very important that the data does not get written out to disk unless 

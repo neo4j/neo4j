@@ -30,7 +30,7 @@ trait ReturnClause extends Base with Expressions {
     case col ~ None => col
   } | "*" ^^^ AllIdentifiers()
 
-  def returnItem: Parser[ReturnItem] = trap(expression) ^^ {
+  def returnItem: Parser[ReturnItem] = trap(expressionOrPredicate) ^^ {
     case (expression, name) => ReturnItem(expression, name.replace("`", ""))
   }
 
@@ -53,7 +53,7 @@ trait ReturnClause extends Base with Expressions {
       }
 
       val aggregationExpressions = returnItems.filter(_.isInstanceOf[ReturnItem]).map(_.asInstanceOf[ReturnItem]).
-        flatMap(returnItem => returnItem.expression.filter(_.isInstanceOf[AggregationExpression])).
+        flatMap(_.expression.filter(_.isInstanceOf[AggregationExpression])).
         map(_.asInstanceOf[AggregationExpression])
 
       val aggregation = aggregationExpressions match {

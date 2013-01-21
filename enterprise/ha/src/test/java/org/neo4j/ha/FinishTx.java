@@ -17,11 +17,29 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package slavetest;
+package org.neo4j.ha;
 
-public interface Fetcher<T>
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
+import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
+
+public class FinishTx implements WorkerCommand<HighlyAvailableGraphDatabase, Void>
 {
-    T fetch();
-    
-    void close();
+    private final Transaction tx;
+    private final boolean successful;
+
+    public FinishTx( Transaction tx, boolean successful )
+    {
+        this.tx = tx;
+        this.successful = successful;
+    }
+
+    @Override
+    public Void doWork( HighlyAvailableGraphDatabase state )
+    {
+        if ( successful )
+            tx.success();
+        tx.finish();
+        return null;
+    }
 }

@@ -56,10 +56,10 @@ class IndexManagerImpl implements IndexManager, IndexProviders
 
     private NodeAutoIndexerImpl nodeAutoIndexer;
     private RelationshipAutoIndexerImpl relAutoIndexer;
-    private Config config;
-    private XaDataSourceManager xaDataSourceManager;
-    private AbstractTransactionManager txManager;
-    private GraphDatabaseAPI graphDatabaseAPI;
+    private final Config config;
+    private final XaDataSourceManager xaDataSourceManager;
+    private final AbstractTransactionManager txManager;
+    private final GraphDatabaseAPI graphDatabaseAPI;
 
     IndexManagerImpl( Config config, IndexStore indexStore,
                       XaDataSourceManager xaDataSourceManager, AbstractTransactionManager txManager,

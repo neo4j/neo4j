@@ -59,9 +59,9 @@ trait StartClause extends Base with Expressions with CreateUnique {
   private def translate(abstractPattern: AbstractPattern): Maybe[Any] = abstractPattern match {
     case ParsedNamedPath(name, patterns) =>
       val namedPathPatterns: Maybe[Any] = patterns.
-        map(removeProperties).
-        map(matchTranslator).
-        reduce(_ ++ _)
+                                          map(removeProperties).
+                                          map(matchTranslator).
+                                          reduce(_ ++ _)
 
       val startItems = patterns.map(p => translate(p.makeOutgoing)).reduce(_ ++ _)
 
@@ -73,17 +73,19 @@ trait StartClause extends Base with Expressions with CreateUnique {
         })
       }
 
-    case ParsedRelation(name, props, ParsedEntity(a, startProps, True()), ParsedEntity(b, endProps, True()), relType, dir, map, True()) if relType.size == 1 =>
+    case ParsedRelation(name, props, ParsedEntity(_, a, startProps, True()), ParsedEntity(_, b, endProps, True()), relType, dir, map, True()) if relType.size == 1 =>
       val (from, to) = if (dir != Direction.INCOMING)
-        (a, b)
-      else
-        (b, a)
+                         (a, b)
+                       else
+                         (b, a)
+
       Yes(Seq(CreateRelationshipStartItem(CreateRelationship(name, (from, startProps), (to, endProps), relType.head, props))))
 
-    case ParsedEntity(Identifier(name), props, True()) =>
+
+    case ParsedEntity(_, Identifier(name), props, True()) =>
       Yes(Seq(CreateNodeStartItem(CreateNode(name, props))))
 
-    case ParsedEntity(p, _, True()) if p.isInstanceOf[ParameterExpression] =>
+    case ParsedEntity(_, p: ParameterExpression, _, True()) =>
       Yes(Seq(CreateNodeStartItem(CreateNode(namer.name(None), Map[String, Expression]("*" -> p)))))
 
     case _ => No(Seq(""))
