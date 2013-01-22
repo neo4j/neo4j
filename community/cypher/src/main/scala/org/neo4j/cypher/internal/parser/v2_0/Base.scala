@@ -22,12 +22,11 @@ package org.neo4j.cypher.internal.parser.v2_0
 import scala.util.parsing.combinator._
 import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.cypher.internal.commands.expressions.{ParameterExpression, Expression, Literal}
-import org.neo4j.cypher.internal.commands.{LabelDel, LabelAdd, LabelSet, LabelOp}
-import org.neo4j.cypher.internal.commands.values.{LabelName, LabelValue}
+import org.neo4j.cypher.internal.commands.values.{LabelValue, LabelName}
 
 abstract class Base extends JavaTokenParsers {
   var namer = new NodeNamer
-  val keywords = List("start", "create", "set", "delete", "foreach", "match", "where", "label", "values",
+  val keywords = List("start", "create", "set", "delete", "foreach", "match", "where", "label", "values", "add",
     "with", "return", "skip", "limit", "order", "by", "asc", "ascending", "desc", "descending")
 
   def ignoreCase(str: String): Parser[String] = ("""(?i)\b""" + str + """\b""").r ^^ (x => x.toLowerCase)
@@ -94,14 +93,6 @@ abstract class Base extends JavaTokenParsers {
 
   def positiveNumber: Parser[String] = """\d+""".r
   def anything: Parser[String] = """[.\s]""".r
-
-  def labelOp: Parser[LabelOp] = labelOpStr ^^ {
-      case "="  => LabelSet
-      case "+=" => LabelAdd
-      case "-=" => LabelDel
-  }
-
-  def labelOpStr: Parser[String] = "=" | "+=" | "-="
 
   def labelLit: Parser[Literal] = ":" ~> identity ^^ { x => Literal(LabelName(x)) }
 

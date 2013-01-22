@@ -21,12 +21,12 @@ package org.neo4j.cypher.internal.parser.v2_0
 
 import org.neo4j.cypher.internal.mutation._
 import org.neo4j.cypher.internal.commands._
-import expressions.{Literal, Property, Identifier}
+import expressions.{Expression, Literal, Property, Identifier}
 import org.neo4j.cypher.SyntaxException
 
 trait Updates extends Base with Expressions with StartAndCreateClause {
   def updates: Parser[(Seq[UpdateAction], Seq[NamedPath])] =
-    rep(foreach | liftToSeq(label)  | set | delete) ^^ { x => (x.flatten, Seq.empty) }
+    rep(foreach | liftToSeq(add)  | set | delete) ^^ { x => (x.flatten, Seq.empty) }
 
   private def foreach: Parser[Seq[UpdateAction]] = ignoreCase("foreach") ~> "(" ~> identity ~ ignoreCase("in") ~ expression ~ ":" ~ opt(createStart) ~ opt(updates) <~ ")" ^^ {
     case id ~ in ~ collection ~ ":" ~ creates ~ innerUpdates =>
@@ -38,10 +38,12 @@ trait Updates extends Base with Expressions with StartAndCreateClause {
       Seq(ForeachAction(collection, id, createCmds ++ updateCmds))
   }
 
-  private def label: Parser[UpdateAction] = ignoreCase("label") ~> identity ~ labelOp ~ expression  ^^ {
-    case entity ~ op ~ labelSetExpr =>
-      LabelAction(Identifier(entity), op, labelSetExpr)
-  }
+  override def longLabelSeq: Parser[Expression]  = ignoreCase("LABEL") ~> (labelLitSeq | expression)
+
+  private def add: Parser[UpdateAction] = ignoreCase("add") ~> identity ~ optLabelSeq  ^^ {
+      case entity ~ labelSetExpr =>
+        LabelAction(Identifier(entity), LabelAdd, labelSetExpr)
+    }
 
   private def delete: Parser[Seq[UpdateAction]] = ignoreCase("delete") ~> commaList(expression) ^^ {
     case expressions => val updateActions: List[UpdateAction with Product] = expressions.map {

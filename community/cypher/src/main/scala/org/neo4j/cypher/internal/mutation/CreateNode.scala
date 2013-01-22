@@ -20,19 +20,19 @@
 package org.neo4j.cypher.internal.mutation
 
 import org.neo4j.cypher.internal.commands.expressions.{Literal, Expression}
-import org.neo4j.cypher.internal.helpers.{IsCollection, CollectionSupport}
-import org.neo4j.cypher.internal.pipes.{QueryState}
+import org.neo4j.cypher.internal.helpers.{LabelSupport, CollectionSupport}
+import org.neo4j.cypher.internal.pipes.QueryState
 import org.neo4j.cypher.internal.symbols.{SymbolTable, NodeType}
 import collection.Map
 import org.neo4j.cypher.internal.ExecutionContext
-import org.neo4j.cypher.internal.commands.values.LabelValue
-import org.neo4j.cypher.CypherTypeException
 import collection.JavaConverters._
 
-case class CreateNode(key: String, props: Map[String, Expression], labels:Expression=Literal(Seq.empty))
+case class CreateNode(key: String, props: Map[String, Expression], labels:Expression = Literal(Seq.empty))
   extends UpdateAction
   with GraphElementPropertyFunctions
-  with CollectionSupport {
+  with CollectionSupport
+  with LabelSupport {
+
   def exec(context: ExecutionContext, state: QueryState) = {
     if (props.size == 1 && props.head._1 == "*") {
       makeTraversable(props.head._2(context)).map(x => {
@@ -50,15 +50,7 @@ case class CreateNode(key: String, props: Map[String, Expression], labels:Expres
       setProperties(node, props, context, state)
 
       val queryCtx = state.queryContext
-      val labelVals: Iterable[LabelValue] = labels(context) match {
-        case l: LabelValue => Iterable(l)
-        case IsCollection(coll) => coll.map {
-          case (l: LabelValue) => l
-          case _ => throw new CypherTypeException("Encountered label collection with non-label values")
-        }
-      }
-
-      val labelIds = labelVals.map { labelVal => labelVal.resolveForId(queryCtx).id.asInstanceOf[java.lang.Long] }
+      val labelIds = labelSeqToJavaIds(context, queryCtx, labels)
 
       queryCtx.addLabelsToNode(node, labelIds.asJava)
 

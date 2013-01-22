@@ -37,8 +37,8 @@ class LabelTest extends DocumentingTestBase {
   @Test def add_a_label_to_a_node() {
     testQuery(
       title = "Add a label to a node",
-      text = "To add a label to a node, use +LABEL+ +AS+.",
-      queryText = "start n = node(%Anders%) label n += :swedish return n",
+      text = "To add a label to a node, use +ADD+ +LABEL+.",
+      queryText = "start n = node(%Anders%) add n label :swedish return n",
       returns = "The newly labeled node is returned by the query.",
       assertions = (p) => {}
     )
@@ -48,8 +48,8 @@ class LabelTest extends DocumentingTestBase {
   @Test def add_multiple_labels_to_a_node() {
     testQuery(
       title = "Add multiple labels to a node",
-      text = "To add multiple labels to a node, use +LABEL+ +AS+ and separate the different labels using +,+.",
-      queryText = "start n = node(%Anders%) label n += [:swedish, :polish] return n",
+      text = "To add multiple labels to a node, use +ADD+ +LABEL+ and separate the different lables using +,+.",
+      queryText = "start n = node(%Anders%) add n label :swedish:polish return n",
       returns = "The newly labeled node is returned by the query.",
       assertions = (p) => {}
     )

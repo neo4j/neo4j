@@ -1,3 +1,7 @@
+2.0
+---
+o Added the possibility to add labels to nodes using ADD/CREATE
+
 1.9.RC
 ------
 o Made it possible to run the parser concurrently

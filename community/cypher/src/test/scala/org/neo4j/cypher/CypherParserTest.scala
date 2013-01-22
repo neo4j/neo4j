@@ -1317,6 +1317,29 @@ class CypherParserTest extends JUnitSuite with Assertions {
     )
   }
 
+  @Test def create_node_using_LABEL_keyword_and_EQ() {
+    testFrom_2_0("create a:fii = {name : 'Andres'}",
+      Query.
+        start(CreateNodeStartItem(CreateNode("a", Map("name" -> Literal("Andres")), Literal(Seq(LabelName("fii")))))).
+        returns()
+    )
+  }
+
+  @Test def create_node_using_LABEL_and_VALUES_keyword() {
+    testFrom_2_0("create a :fii VALUES {name : 'Andres'}",
+      Query.
+        start(CreateNodeStartItem(CreateNode("a", Map("name" -> Literal("Andres")), Literal(Seq(LabelName("fii")))))).
+        returns()
+    )
+  }
+
+  @Test def create_node_using_LABEL_and_VALUES_keyword2() {
+    testFrom_2_0("create a:fii VALUES {name : 'Andres'}",
+      Query.
+        start(CreateNodeStartItem(CreateNode("a", Map("name" -> Literal("Andres")), Literal(Seq(LabelName("fii")))))).
+        returns()
+    )
+  }
   @Test def create_node_with_a_property_and_return_it() {
     testAll("create (a {name : 'Andres'}) return a",
       Query.
@@ -1371,7 +1394,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
       Query.
         start(CreateRelationshipStartItem(CreateRelationship("  UNNAMED1",
         RelationshipEndpoint(Identifier("n"),Map(), Literal(Seq(LabelName("Person"), LabelName("Husband")))),
-        RelationshipEndpoint(Identifier("x"),Map(), Literal(Seq(LabelName("Person")))), "REL", Map()))).
+        RelationshipEndpoint(Identifier("x"),Map(), Literal(Seq(LabelName("Person")))), "FOO", Map()))).
         returns()
     )
   }
@@ -1885,10 +1908,24 @@ foreach(x in [1,2,3] :
   @Test def add_label() {
     val q2 = Query.
       start().
-      updates(LabelAction(Identifier("n"), LabelAdd, Literal(LabelName("LabelName")))).
+      updates(LabelAction(Identifier("n"), LabelAdd, Literal(Seq(LabelName("LabelName"))))).
       returns()
 
-    testFrom_2_0("START n=node(0) LABEL n += :LabelName",
+    testFrom_2_0("START n=node(0) ADD n LABEL :LabelName",
+      Query.
+        start(NodeById("n", 0)).
+        tail(q2).
+        returns(AllIdentifiers())
+    )
+  }
+
+  @Test def add_short_label() {
+    val q2 = Query.
+      start().
+      updates(LabelAction(Identifier("n"), LabelAdd, Literal(Seq(LabelName("LabelName"))))).
+      returns()
+
+    testFrom_2_0("START n=node(0) ADD n:LabelName",
       Query.
         start(NodeById("n", 0)).
         tail(q2).
@@ -1897,13 +1934,43 @@ foreach(x in [1,2,3] :
   }
 
   @Test def add_multiple_labels() {
-    val coll = Collection(Literal(LabelName("LabelName2")), Literal(LabelName("LabelName3")))
+    val coll = Literal(Seq(LabelName("LabelName2"), LabelName("LabelName3")))
     val q2   = Query.
       start().
       updates(LabelAction(Identifier("n"), LabelAdd, coll)).
       returns()
 
-    testFrom_2_0("START n=node(0) LABEL n += [:LabelName2, :LabelName3]",
+    testFrom_2_0("START n=node(0) ADD n LABEL :LabelName2 :LabelName3",
+      Query.
+        start(NodeById("n", 0)).
+        tail(q2).
+        returns(AllIdentifiers())
+    )
+  }
+
+  @Test def add_multiple_short_labels() {
+    val coll = Literal(Seq(LabelName("LabelName2"), LabelName("LabelName3")))
+    val q2   = Query.
+      start().
+      updates(LabelAction(Identifier("n"), LabelAdd, coll)).
+      returns()
+
+    testFrom_2_0("START n=node(0) ADD n:LabelName2:LabelName3",
+      Query.
+        start(NodeById("n", 0)).
+        tail(q2).
+        returns(AllIdentifiers())
+    )
+  }
+
+  @Test def add_multiple_short_labels2() {
+    val coll = Literal(Seq(LabelName("LabelName2"), LabelName("LabelName3")))
+    val q2   = Query.
+      start().
+      updates(LabelAction(Identifier("n"), LabelAdd, coll)).
+      returns()
+
+    testFrom_2_0("START n=node(0) ADD n :LabelName2 :LabelName3",
       Query.
         start(NodeById("n", 0)).
         tail(q2).
@@ -1917,7 +1984,7 @@ foreach(x in [1,2,3] :
       updates(LabelAction(Identifier("n"), LabelAdd, StrLabelFunction(Literal("LabelName")))).
       returns()
 
-    testFrom_2_0("START n=node(0) LABEL n += strlabel(\"LabelName\")",
+    testFrom_2_0("START n=node(0) ADD n LABEL strlabel(\"LabelName\")",
       Query.
         start(NodeById("n", 0)).
         tail(q2).
@@ -1931,7 +1998,7 @@ foreach(x in [1,2,3] :
       updates(LabelAction(Identifier("n"), LabelAdd, LabelsFunction(Identifier("n")))).
       returns()
 
-    testFrom_2_0("START n=node(0) LABEL n += labels(n)",
+    testFrom_2_0("START n=node(0) ADD n LABEL labels(n)",
       Query.
         start(NodeById("n", 0)).
         tail(q2).
@@ -1945,7 +2012,7 @@ foreach(x in [1,2,3] :
       updates(LabelAction(Identifier("n"), LabelAdd, StrLabelFunction(StrFunction(Literal(LabelName("foo")))))).
       returns()
 
-    testFrom_2_0("START n=node(0) LABEL n += strlabel(str(:foo))",
+    testFrom_2_0("START n=node(0) ADD n LABEL strlabel(str(:foo))",
       Query.
         start(NodeById("n", 0)).
         tail(q2).
@@ -1953,13 +2020,13 @@ foreach(x in [1,2,3] :
     )
   }
 
-  @Test def remove_label() {
+  @Test @Ignore def remove_label() {
     val q2 = Query.
       start().
       updates(LabelAction(Identifier("n"), LabelDel, Literal(LabelName("LabelName")))).
       returns()
 
-    testFrom_2_0("START n=node(0) LABEL n -= :LabelName",
+    testFrom_2_0("START n=node(0) REMOVE n LABEL n",
       Query.
         start(NodeById("n", 0)).
         tail(q2).
@@ -1967,14 +2034,14 @@ foreach(x in [1,2,3] :
     )
   }
 
-  @Test def remove_multiple_labels() {
+  @Test @Ignore def remove_multiple_labels() {
     val coll = Collection(Literal(LabelName("LabelName2")), Literal(LabelName("LabelName3")))
     val q2   = Query.
       start().
       updates(LabelAction(Identifier("n"), LabelDel, coll)).
       returns()
 
-    testFrom_2_0("START n=node(0) LABEL n -= [:LabelName2, :LabelName3]",
+    testFrom_2_0("START n=node(0) REMOVE n LABEL :LabelName2:LabelName3",
       Query.
         start(NodeById("n", 0)).
         tail(q2).
@@ -1982,13 +2049,13 @@ foreach(x in [1,2,3] :
     )
   }
 
-  @Test def replace_label() {
+  @Test @Ignore def replace_label() {
     val q2 = Query.
       start().
       updates(LabelAction(Identifier("n"), LabelSet, Literal(LabelName("LabelName")))).
       returns()
 
-    testFrom_2_0("START n=node(0) LABEL n = :LabelName",
+    testFrom_2_0("START n=node(0) REPLACE n LABEL :LabelName",
       Query.
         start(NodeById("n", 0)).
         tail(q2).
@@ -1996,14 +2063,14 @@ foreach(x in [1,2,3] :
     )
   }
 
-  @Test def replace_multiple_labels() {
+  @Test @Ignore def replace_multiple_labels() {
     val coll = Collection(Literal(LabelName("LabelName2")), Literal(LabelName("LabelName3")))
     val q2   = Query.
       start().
       updates(LabelAction(Identifier("n"), LabelSet, coll)).
       returns()
 
-    testFrom_2_0("START n=node(0) LABEL n = [:LabelName2, :LabelName3]",
+    testFrom_2_0("START n=node(0) REPLACE n LABEL :LabelName2:LabelName3",
       Query.
         start(NodeById("n", 0)).
         tail(q2).

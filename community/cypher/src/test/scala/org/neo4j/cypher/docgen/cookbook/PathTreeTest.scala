@@ -60,7 +60,7 @@ include::includes/path-tree-layout-full-range.asciidoc[]
                 "startPath=root-[:`2010`]->()-[:`12`]->()-[:`31`]->startLeaf, " +
                 "endPath=root-[:`2011`]->()-[:`01`]->()-[:`03`]->endLeaf, " +
                 "valuePath=startLeaf-[:NEXT*0..]->middle-[:NEXT*0..]->endLeaf, " +
-                "values=middle-[:VALUE]->event " +
+                "vals=middle-[:VALUE]->event " +
                 "RETURN event.name " +
                 "ORDER BY event.name ASC",
       returns = "Returning all events between 2010-12-31 and 2011-01-03, in this case all events.",
@@ -109,7 +109,7 @@ include::includes/path-tree-layout-shared-root-path.asciidoc[]
                 "startPath=commonRootEnd-[:`01`]->startLeaf, " +
                 "endPath=commonRootEnd-[:`03`]->endLeaf, " +
                 "valuePath=startLeaf-[:NEXT*0..]->middle-[:NEXT*0..]->endLeaf, " +
-                "values=middle-[:VALUE]->event " +
+                "vals=middle-[:VALUE]->event " +
                 "RETURN event.name " +
                 "ORDER BY event.name ASC",
       returns = "Returning all events between 2011-01-01 and 2011-01-03, in this case +Event2+ and +Event3+.",

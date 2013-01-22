@@ -1424,7 +1424,7 @@ order by a.COL1
     relate(a, b)
     val result = parseAndExecute( """START n=node(1)
 MATCH n-->x0-[?]->x1
-WHERE has(x1.type) AND x1.type="http://dbpedia.org/ontology/Film" AND has(x1.label) AND x1.label="Reservoir Dogs"
+WHERE has(x1.type) AND x1.type="http://dbpedia.org/ontology/Film" AND has(x1.`label`) AND x1.`label`="Reservoir Dogs"
 RETURN x0.name?
                                   """)
     assert(List() === result.toList)
@@ -2412,28 +2412,28 @@ RETURN x0.name?
 
   @Test def should_add_label_to_node() {
     val a = createNode()
-    val result = parseAndExecute("""START a=node(1) LABEL a += :foo RETURN a""")
+    val result = parseAndExecute("""START a=node(1) ADD a LABEL :foo RETURN a""")
 
     assert(result.toList === List(Map("a" -> a)))
   }
 
   @Test def should_add_multiple_labels_to_node() {
     val a = createNode()
-    val result = parseAndExecute("""START a=node(1) LABEL a += [:foo, :bar] RETURN a""")
+    val result = parseAndExecute("""START a=node(1) ADD a LABEL :foo:bar RETURN a""")
 
     assert(result.toList === List(Map("a" -> a)))
   }
 
   @Test def should_set_label_on_node() {
     val a = createNode()
-    val result = parseAndExecute("""START a=node(1) LABEL a = :foo RETURN a""")
+    val result = parseAndExecute("""START a=node(1) ADD a LABEL :foo RETURN a""")
 
     assert(result.toList === List(Map("a" -> a)))
   }
 
   @Test def should_set_multiple_labels_on_node() {
     val a = createNode()
-    val result = parseAndExecute("""START a=node(1) LABEL a = [:foo, :bar] RETURN a""")
+    val result = parseAndExecute("""START a=node(1) ADD a LABEL :foo:bar RETURN a""")
 
     assert(result.toList === List(Map("a" -> a)))
   }

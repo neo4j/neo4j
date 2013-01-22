@@ -19,53 +19,36 @@
  */
 package org.neo4j.cypher.internal.commands
 
-import expressions.{Expression, Collection}
+import expressions.Expression
 import org.neo4j.cypher.internal.mutation.{GraphElementPropertyFunctions, UpdateAction}
 import org.neo4j.cypher.internal.symbols.SymbolTable
 import org.neo4j.cypher.internal.ExecutionContext
 import org.neo4j.cypher.internal.pipes.QueryState
-import org.neo4j.graphdb.{Relationship, Node, PropertyContainer}
-import org.neo4j.cypher.CypherTypeException
-import org.neo4j.cypher.internal.helpers.{IsCollection, CollectionSupport}
+import org.neo4j.graphdb.Node
+import org.neo4j.cypher.internal.helpers.{LabelSupport, CastSupport, CollectionSupport}
 import scala.collection.JavaConverters._
-import values.LabelValue
 
 sealed abstract class LabelOp
 
-case object LabelSet extends LabelOp { override def toString = "=" }
-case object LabelAdd extends LabelOp { override def toString = "+=" }
-case object LabelDel extends LabelOp { override def toString = "-=" }
+case object LabelSet extends LabelOp
+case object LabelAdd extends LabelOp
+case object LabelDel extends LabelOp
 
 case class LabelAction(entity: Expression, labelOp: LabelOp, labelSetExpr: Expression)
-  extends UpdateAction with GraphElementPropertyFunctions with CollectionSupport {
+  extends UpdateAction with GraphElementPropertyFunctions with CollectionSupport with LabelSupport {
 
   def children = Seq(entity, labelSetExpr)
-
   def rewrite(f: (Expression) => Expression) = LabelAction(entity.rewrite(f), labelOp, labelSetExpr.rewrite(f))
 
   def exec(context: ExecutionContext, state: QueryState) = {
-    def getNodeFromExpression: Node = {
-      entity(context) match {
-        case x: Node => x
-        case x =>
-          throw new CypherTypeException("Expected %s to be a node, but it was :`%s`".format(entity, x))
-      }
+    val node      = CastSupport.erasureCastOrFail[Node](entity(context))
+    val queryCtx  = state.queryContext
+    val labelIds  = labelSeqToJavaIds(context, queryCtx, labelSetExpr)
+
+    labelOp match {
+      case LabelAdd => queryCtx.addLabelsToNode(node, labelIds.asJava)
+      case _        => throw new UnsupportedOperationException
     }
-
-    val node = getNodeFromExpression
-    val queryCtx = state.queryContext
-
-    val labelVals: Iterable[LabelValue] = labelSetExpr(context) match {
-      case l: LabelValue => Iterable(l)
-      case IsCollection(coll) => coll.map {
-        case (l: LabelValue) => l
-        case _ => throw new CypherTypeException("Encountered label collection with non-label values")
-      }
-    }
-
-    val labelIds = labelVals.map { labelVal => labelVal.resolveForId(queryCtx).id.asInstanceOf[java.lang.Long] }
-
-    queryCtx.addLabelsToNode(node, labelIds.asJava)
 
     Stream(context)
   }
