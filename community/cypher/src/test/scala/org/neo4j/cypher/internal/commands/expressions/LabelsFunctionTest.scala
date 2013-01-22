@@ -30,11 +30,6 @@ import org.neo4j.cypher.internal.spi.QueryContext
 import org.mockito.Mockito
 import scala.collection.JavaConverters._
 
-/*
- * Copyright (C) 2012 Neo Technology
- * All rights reserved
- */
-
 class LabelsFunctionTest extends Assertions with MockitoSugar {
 
   @Test

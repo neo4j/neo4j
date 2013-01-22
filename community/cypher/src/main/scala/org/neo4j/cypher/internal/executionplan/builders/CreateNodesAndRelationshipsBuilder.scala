@@ -73,13 +73,13 @@ trait UpdateCommandExpander {
       val createdNodes = mutable.Set[String]()
 
       nodes.flatMap {
-        case CreateNode(key, props)
+        case CreateNode(key, props, _)
           if createdNodes.contains(key) && props.nonEmpty =>
           throw new SyntaxException("Node `%s` has already been created. Can't assign properties to it again.".format(key))
 
-        case CreateNode(key, _) if createdNodes.contains(key) => None
+        case CreateNode(key, _, _) if createdNodes.contains(key) => None
 
-        case x@CreateNode(key, _) =>
+        case x@CreateNode(key, _, _) =>
           createdNodes += key
           Some(x)
 
@@ -87,17 +87,17 @@ trait UpdateCommandExpander {
       }
     }
 
-    def alsoCreateNode(e: (Expression, Map[String, Expression]), symbols: SymbolTable, commands: Seq[UpdateAction]): Seq[CreateNode] = e._1 match {
+    def alsoCreateNode(e: RelationshipEndpoint, symbols: SymbolTable, commands: Seq[UpdateAction]): Seq[CreateNode] = e.node match {
       case Identifier(name) =>
         val nodeFromUnderlyingPipe = symbols.checkType(name, NodeType())
 
         val nodeFromOtherCommand = commands.exists {
-          case CreateNode(n, _) => n == name
-          case _                => false
+          case CreateNode(n, _, _) => n == name
+          case _                  => false
         }
 
         if (!nodeFromUnderlyingPipe && !nodeFromOtherCommand) {
-          Seq(CreateNode(name, e._2))
+          Seq(CreateNode(name, e.props))
         }
         else {
           Seq()

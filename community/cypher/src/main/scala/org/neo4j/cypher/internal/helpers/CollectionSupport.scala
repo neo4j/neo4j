@@ -26,31 +26,35 @@ import java.util.{Map => JavaMap}
 import collection.JavaConverters._
 
 object IsCollection extends CollectionSupport {
-  def unapply(x: Any):Option[Traversable[Any]] = if (isCollection(x)) {
-    Some(castToTraversable(x))
-  } else {
-    None
+  def unapply(x: Any):Option[Iterable[Any]] = {
+    val collection = isCollection(x)
+    if (collection) {
+      Some(castToIterable(x))
+    } else {
+      None
+    }
   }
 }
 
 trait CollectionSupport {
-  def isCollection(x: Any) = castToTraversable.isDefinedAt(x)
+  def isCollection(x: Any) = castToIterable.isDefinedAt(x)
 
-  def isCollectionOf[T](test: PartialFunction[Any, T])(input: Traversable[Any]): Option[Traversable[T]] =
+  def asCollectionOf[T](test: PartialFunction[Any, T])(input: Iterable[Any]): Option[Iterable[T]] =
     Some(input.map { (elem: Any) => if (test.isDefinedAt(elem)) test(elem) else return None })
 
-  def makeTraversable(z: Any): Traversable[Any] = if (castToTraversable.isDefinedAt(z)) {
-    castToTraversable(z)
+  def makeTraversable(z: Any): Iterable[Any] = if (castToIterable.isDefinedAt(z)) {
+    castToIterable(z)
   } else {
     Stream(z)
   }
 
-  def castToTraversable: PartialFunction[Any, Traversable[Any]] = {
+  def castToIterable: PartialFunction[Any, Iterable[Any]] = {
     case x: Seq[_] => x
     case x: Array[_] => x
     case x: Map[_, _] => Stream(x)
     case x: JavaMap[_, _] => Stream(x.asScala)
-    case x: Iterable[_] => x
+    case x: Iterable[_] => x.toIterable
+    case x: Traversable[_] => x.toIterable
     case x: JavaIterable[_] => x.asScala.map {
       case y: JavaMap[_, _] => y.asScala
       case y => y

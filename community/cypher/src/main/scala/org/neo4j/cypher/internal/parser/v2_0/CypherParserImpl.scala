@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.ReattachAliasedExpressions
 import org.neo4j.cypher.internal.mutation.UpdateAction
 
 class CypherParserImpl extends Base
-with StartClause
+with StartAndCreateClause
 with MatchClause
 with WhereClause
 with ReturnClause

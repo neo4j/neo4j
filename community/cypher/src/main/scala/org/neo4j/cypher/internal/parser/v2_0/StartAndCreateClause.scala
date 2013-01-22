@@ -23,10 +23,10 @@ import org.neo4j.cypher.internal.commands._
 import expressions.{Literal, Expression, ParameterExpression, Identifier}
 import org.neo4j.graphdb.Direction
 import org.neo4j.helpers.ThisShouldNotHappenError
-import org.neo4j.cypher.internal.mutation.{CreateNode, CreateRelationship}
+import org.neo4j.cypher.internal.mutation.{RelationshipEndpoint, CreateNode, CreateRelationship}
 
 
-trait StartClause extends Base with Expressions with CreateUnique {
+trait StartAndCreateClause extends Base with Expressions with CreateUnique {
   def start: Parser[(Seq[StartItem], Seq[NamedPath])] = createStart | readStart | failure("expected START or CREATE")
 
   def readStart: Parser[(Seq[StartItem], Seq[NamedPath])] = ignoreCase("start") ~> commaList(startBit) ^^ (x => (x, Seq()))
@@ -73,19 +73,19 @@ trait StartClause extends Base with Expressions with CreateUnique {
         })
       }
 
-    case ParsedRelation(name, props, ParsedEntity(_, a, startProps, True()), ParsedEntity(_, b, endProps, True()), relType, dir, map, True()) if relType.size == 1 =>
+    case ParsedRelation(name, props, ParsedEntity(_, a, startProps, True(), _), ParsedEntity(_, b, endProps, True(), _), relType, dir, map, True()) if relType.size == 1 =>
       val (from, to) = if (dir != Direction.INCOMING)
                          (a, b)
                        else
                          (b, a)
 
-      Yes(Seq(CreateRelationshipStartItem(CreateRelationship(name, (from, startProps), (to, endProps), relType.head, props))))
+      Yes(Seq(CreateRelationshipStartItem(CreateRelationship(name, RelationshipEndpoint(from, startProps, Literal(Seq.empty)), RelationshipEndpoint(to, endProps, Literal(Seq.empty)), relType.head, props))))
 
-    case ParsedEntity(_, Identifier(name), props, True()) =>
-      Yes(Seq(CreateNodeStartItem(CreateNode(name, props))))
+    case ParsedEntity(_, Identifier(name), props, True(), labels) =>
+      Yes(Seq(CreateNodeStartItem(CreateNode(name, props, labels))))
 
-    case ParsedEntity(_, p: ParameterExpression, _, True()) =>
-      Yes(Seq(CreateNodeStartItem(CreateNode(namer.name(None), Map[String, Expression]("*" -> p)))))
+    case ParsedEntity(_, p: ParameterExpression, _, True(), labels) =>
+      Yes(Seq(CreateNodeStartItem(CreateNode(namer.name(None), Map[String, Expression]("*" -> p), labels))))
 
     case _ => No(Seq(""))
   }

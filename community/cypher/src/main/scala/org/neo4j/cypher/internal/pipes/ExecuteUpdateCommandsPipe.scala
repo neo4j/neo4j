@@ -64,17 +64,17 @@ class ExecuteUpdateCommandsPipe(source: Pipe, db: GraphDatabaseService, commands
 
 
   private def extractEntitiesWithProperties(action: UpdateAction): Seq[NamedExpectation] = action match {
-    case CreateNode(key, props)                      => Seq(NamedExpectation(key, props))
+    case CreateNode(key, props, _)                   => Seq(NamedExpectation(key, props))
     case CreateRelationship(key, from, to, _, props) => Seq(NamedExpectation(key, props)) ++ extractIfEntity(from) ++ extractIfEntity(to)
-    case CreateUniqueAction(links@_*)                         => links.flatMap(l => Seq(l.start, l.end, l.rel))
-    case _                                                    => Seq()
+    case CreateUniqueAction(links@_*)                => links.flatMap(l => Seq(l.start, l.end, l.rel))
+    case _                                           => Seq()
   }
 
 
-  def extractIfEntity(from: (Expression, Map[String, Expression])): Option[NamedExpectation] = {
+  def extractIfEntity(from: RelationshipEndpoint): Option[NamedExpectation] = {
     from match {
-      case (Identifier(key), props) => Some(NamedExpectation(key, props))
-      case _                        => None
+      case RelationshipEndpoint(Identifier(key), props, _) => Some(NamedExpectation(key, props))
+      case _                                               => None
     }
   }
 

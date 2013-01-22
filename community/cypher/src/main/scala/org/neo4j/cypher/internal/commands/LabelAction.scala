@@ -57,13 +57,13 @@ case class LabelAction(entity: Expression, labelOp: LabelOp, labelSetExpr: Expre
 
     val labelVals: Iterable[LabelValue] = labelSetExpr(context) match {
       case l: LabelValue => Iterable(l)
-      case c: Iterable[_] => c.map {
+      case IsCollection(coll) => coll.map {
         case (l: LabelValue) => l
         case _ => throw new CypherTypeException("Encountered label collection with non-label values")
       }
     }
 
-    val labelIds = labelVals.map { labelVal => labelVal.resolve(queryCtx).id.asInstanceOf[java.lang.Long] }
+    val labelIds = labelVals.map { labelVal => labelVal.resolveForId(queryCtx).id.asInstanceOf[java.lang.Long] }
 
     queryCtx.addLabelsToNode(node, labelIds.asJava)
 

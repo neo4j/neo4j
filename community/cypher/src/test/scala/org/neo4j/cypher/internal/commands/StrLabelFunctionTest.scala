@@ -26,11 +26,6 @@ import org.neo4j.cypher.internal.ExecutionContext
 import org.neo4j.cypher.CypherTypeException
 import values.LabelName
 
-/*
- * Copyright (C) 2012 Neo Technology
- * All rights reserved
- */
-
 class StrLabelFunctionTest extends Assertions {
 
   @Test

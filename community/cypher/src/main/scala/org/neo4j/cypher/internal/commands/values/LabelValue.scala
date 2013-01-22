@@ -23,17 +23,29 @@ import org.neo4j.cypher.internal.spi.QueryContext
 
 // TODO Maybe use atoms
 sealed abstract class LabelValue {
-  def resolve(ctx: QueryContext): ResolvedLabel
+  def resolveForName(ctx: QueryContext): LabelValue with LabelWithName
+  def resolveForId(ctx: QueryContext): LabelValue with LabelWithId
 }
 
-case class LabelName(name: String) extends LabelValue {
-  def resolve(ctx: QueryContext) = ResolvedLabel(ctx.getOrCreateLabelId(name), name)
+trait LabelWithId {
+  def id: Long
 }
 
-case class LabelId(id: Long) extends LabelValue {
-  def resolve(ctx: QueryContext) = ResolvedLabel(id, ctx.getLabelName(id.asInstanceOf[java.lang.Long]))
+trait LabelWithName {
+  def name: String
 }
 
-case class ResolvedLabel(id: Long, name: String) extends LabelValue {
-  def resolve(ctx: QueryContext) = this
+case class LabelName(name: String) extends LabelValue with LabelWithName {
+  def resolveForName(ctx: QueryContext) = this
+  def resolveForId(ctx: QueryContext) = ResolvedLabel(ctx.getOrCreateLabelId(name), name)
+}
+
+case class LabelId(id: Long) extends LabelValue with LabelWithId {
+  def resolveForId(ctx: QueryContext) = this
+  def resolveForName(ctx: QueryContext) = ResolvedLabel(id, ctx.getLabelName(id.asInstanceOf[java.lang.Long]))
+}
+
+case class ResolvedLabel(id: Long, name: String) extends LabelValue with LabelWithName with LabelWithId {
+  def resolveForName(ctx: QueryContext) = this
+  def resolveForId(ctx: QueryContext) = this
 }

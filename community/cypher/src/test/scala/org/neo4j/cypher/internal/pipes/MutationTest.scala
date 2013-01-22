@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.pipes
 
 import org.scalatest.Assertions
 import org.junit.Test
-import org.neo4j.cypher.internal.mutation.{CreateRelationship, CreateNode, DeleteEntityAction}
+import org.neo4j.cypher.internal.mutation.{RelationshipEndpoint, CreateRelationship, CreateNode, DeleteEntityAction}
 import org.neo4j.cypher.{CypherTypeException, ExecutionEngineHelper}
 import collection.mutable.{Map => MutableMap}
 import org.neo4j.graphdb.{Node, NotFoundException}
@@ -91,7 +91,7 @@ class MutationTest extends ExecutionEngineHelper with Assertions {
     val a = createNode()
     val b = createNode()
 
-    val createRel = CreateRelationship("r", (getNode("a", a), Map()), (getNode("b", b), Map()), "REL", Map("I" -> Literal("was here")))
+    val createRel = CreateRelationship("r", RelationshipEndpoint(getNode("a", a), Map(), Literal(Seq.empty)), RelationshipEndpoint(getNode("b", b), Map(), Literal(Seq.empty)), "REL", Map("I" -> Literal("was here")))
 
     val startPipe = new NullPipe
     val createNodePipe = new ExecuteUpdateCommandsPipe(startPipe, graph, Seq(createRel))

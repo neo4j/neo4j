@@ -60,8 +60,7 @@ trait StringHelper {
     case x: Relationship    => ":" + x.getType.toString + "[" + x.getId + "] " + props(x, ctx)
     case IsCollection(coll) => coll.map(elem => text(elem, ctx)).mkString("[", ",", "]")
     case x: String          => "\"" + x + "\""
-    case v: LabelName       => v.name
-    case v: LabelValue      => v.resolve(ctx).name
+    case v: LabelValue      => v.resolveForName(ctx).name
     case Some(x)            => x.toString
     case null               => "<null>"
     case x                  => x.toString

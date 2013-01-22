@@ -144,9 +144,6 @@ class StringFunctionsTest extends Assertions {
     assert(str(null) === null)
 
     assert(str(LabelName("foo")) === "foo")
-    val labelId = new LabelId(12) {
-      override def resolve(ctx: QueryContext) = ResolvedLabel(12, "bar")
-    }
-    assert(str(labelId) === "bar")
+    assert(str(ResolvedLabel(12, "bar")) === "bar")
   }
 }

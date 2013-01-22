@@ -24,14 +24,9 @@ import org.neo4j.cypher.internal.ExecutionContext
 import org.neo4j.graphdb.Node
 import org.neo4j.cypher.CypherTypeException
 import scala.collection.JavaConverters._
-import org.neo4j.cypher.internal.commands.values.{LabelId, LabelValue}
+import org.neo4j.cypher.internal.commands.values.LabelId
 import org.neo4j.cypher.internal.pipes.QueryState
 import org.neo4j.cypher.internal.spi.QueryContext
-
-/*
- * Copyright (C) 2012 Neo Technology
- * All rights reserved
- */
 
 case class LabelsFunction(nodeExpr: Expression) extends Expression {
 

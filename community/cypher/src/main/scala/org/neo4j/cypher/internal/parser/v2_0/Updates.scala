@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.commands._
 import expressions.{Literal, Property, Identifier}
 import org.neo4j.cypher.SyntaxException
 
-trait Updates extends Base with Expressions with StartClause {
+trait Updates extends Base with Expressions with StartAndCreateClause {
   def updates: Parser[(Seq[UpdateAction], Seq[NamedPath])] =
     rep(foreach | liftToSeq(label)  | set | delete) ^^ { x => (x.flatten, Seq.empty) }
 

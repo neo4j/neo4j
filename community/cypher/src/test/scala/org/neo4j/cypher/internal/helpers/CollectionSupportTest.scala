@@ -32,7 +32,7 @@ class CollectionSupportTest extends CollectionSupport {
     val given = Seq(1, 2, 3, 4)
 
     // When
-    val result = isCollectionOf[Int](tester)(given)
+    val result = asCollectionOf[Int](tester)(given)
 
     // Then
     assert(result == Some(given))
@@ -44,7 +44,7 @@ class CollectionSupportTest extends CollectionSupport {
     val given = Seq(1, 2, 3, 4)
 
     // When
-    val result = isCollectionOf[Int](tester)(given)
+    val result = asCollectionOf[Int](tester)(given)
 
     // Then
     assert(result == Some(given))
@@ -56,7 +56,7 @@ class CollectionSupportTest extends CollectionSupport {
     val given: Seq[Int] = Seq(1, 2, 3, 4)
 
     // When
-    val result = isCollectionOf[Int](mapper)(given)
+    val result = asCollectionOf[Int](mapper)(given)
 
     // Then
     assert(result == Some(Seq(2, 3, 4, 5)))
@@ -68,7 +68,7 @@ class CollectionSupportTest extends CollectionSupport {
     val given: Seq[Any] = Seq(1, 2, "foo", 3, 4)
 
     // When
-    val result = isCollectionOf[Int](mapper)(given.toTraversable)
+    val result = asCollectionOf[Int](mapper)(given)
 
     // Then
     assert(result == None)
@@ -80,7 +80,7 @@ class CollectionSupportTest extends CollectionSupport {
     val given: Seq[String] = Seq.empty
 
     // When
-    val result = isCollectionOf[Int](mapper)(given.toTraversable)
+    val result = asCollectionOf[Int](mapper)(given)
 
     // Then
     assert(result == Some(given))

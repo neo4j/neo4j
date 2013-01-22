@@ -23,8 +23,8 @@ import org.neo4j.cypher.internal.executionplan.PartiallySolvedQuery
 import org.junit.Test
 import org.junit.Assert._
 import org.neo4j.cypher.internal.commands._
-import expressions.{HeadFunction, Identifier}
-import org.neo4j.cypher.internal.mutation.{CreateRelationship, CreateNode}
+import expressions.{Literal, HeadFunction, Identifier}
+import org.neo4j.cypher.internal.mutation.{RelationshipEndpoint, CreateRelationship, CreateNode}
 
 class CreateNodesAndRelationshipsBuilderTest extends BuilderTest {
 
@@ -49,8 +49,8 @@ class CreateNodesAndRelationshipsBuilderTest extends BuilderTest {
   @Test
   def full_path() {
     val q = PartiallySolvedQuery().copy(start = Seq(
-      Unsolved(CreateRelationshipStartItem(CreateRelationship("r1", (Identifier("a"), Map()), (Identifier("  UNNAMED1"), Map()), "KNOWS", Map()))),
-      Unsolved(CreateRelationshipStartItem(CreateRelationship("r2", (Identifier("b"), Map()), (Identifier("  UNNAMED1"), Map()), "LOVES", Map())))))
+      Unsolved(CreateRelationshipStartItem(CreateRelationship("r1", RelationshipEndpoint(Identifier("a"), Map(), Literal(Seq.empty)), RelationshipEndpoint(Identifier("  UNNAMED1"), Map(), Literal(Seq.empty)), "KNOWS", Map()))),
+      Unsolved(CreateRelationshipStartItem(CreateRelationship("r2", RelationshipEndpoint(Identifier("b"), Map(), Literal(Seq.empty)), RelationshipEndpoint(Identifier("  UNNAMED1"), Map(), Literal(Seq.empty)), "LOVES", Map())))))
 
 
     val startPipe = createPipe(Seq("a", "b"))
@@ -61,7 +61,7 @@ class CreateNodesAndRelationshipsBuilderTest extends BuilderTest {
   @Test
   def single_relationship_missing_nodes() {
     val q = PartiallySolvedQuery().copy(start = Seq(
-      Unsolved(CreateRelationshipStartItem(CreateRelationship("r", (Identifier("a"), Map()), (Identifier("b"), Map()), "LOVES", Map())))))
+      Unsolved(CreateRelationshipStartItem(CreateRelationship("r", RelationshipEndpoint(Identifier("a"), Map(), Literal(Seq.empty)), RelationshipEndpoint(Identifier("b"), Map(), Literal(Seq.empty)), "LOVES", Map())))))
 
     assertTrue("Should be able to build on this", builder.canWorkWith(plan(q)))
   }
@@ -69,7 +69,7 @@ class CreateNodesAndRelationshipsBuilderTest extends BuilderTest {
   @Test
   def single_relationship_missing_nodes_with_expression() {
     val q = PartiallySolvedQuery().copy(updates = Seq(
-      Unsolved(CreateRelationship("r", (HeadFunction(Identifier("p")), Map()), (Identifier("b"), Map()), "LOVES", Map()))))
+      Unsolved(CreateRelationship("r", RelationshipEndpoint(HeadFunction(Identifier("p")), Map(), Literal(Seq.empty)), RelationshipEndpoint(Identifier("b"), Map(), Literal(Seq.empty)), "LOVES", Map()))))
 
     assertFalse("Should not be able to build on this", builder.canWorkWith(plan(q)))
   }

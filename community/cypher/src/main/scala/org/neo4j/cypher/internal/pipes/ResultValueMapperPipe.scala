@@ -32,8 +32,7 @@ class ResultValueMapperPipe(source: Pipe) extends PipeWithSource(source) {
   def createResults(state: QueryState): Iterator[ExecutionContext] = {
     def mapValue(in: Any): Any = in match {
       case p: Path => p
-      case l: LabelName => l.name
-      case l: LabelValue => l.resolve(state.queryContext).name
+      case l: LabelValue => l.resolveForName(state.queryContext).name
       case i: Traversable[_] => i.map(mapValue)
       case x => x
     }

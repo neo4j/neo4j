@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.symbols.{SymbolTable, NodeType}
 import collection.Map
 import org.neo4j.cypher.internal.ExecutionContext
 
-case class CreateNode(key: String, props: Map[String, Expression])
+case class CreateNode(key: String, props: Map[String, Expression], labels:Expression=Literal(Seq.empty))
   extends UpdateAction
   with GraphElementPropertyFunctions
   with CollectionSupport {

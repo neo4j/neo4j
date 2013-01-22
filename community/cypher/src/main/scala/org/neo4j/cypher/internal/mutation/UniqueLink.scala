@@ -68,7 +68,7 @@ case class UniqueLink(start: NamedExpectation, end: NamedExpectation, rel: Named
       rels match {
         case List() =>
           val expectations = rel.getExpectations(context)
-          val createRel = CreateRelationship(rel.name, (Literal(startNode), Map()), (Literal(endNode), Map()), relType, expectations)
+          val createRel = CreateRelationship(rel.name, RelationshipEndpoint(Literal(startNode), Map(), Literal(Seq.empty)), RelationshipEndpoint(Literal(endNode), Map(), Literal(Seq.empty)), relType, expectations)
           Some(this->Update(Seq(UpdateWrapper(Seq(), createRel, rel.name)), () => {
             // TODO: This should not be done here. The QueryContext should take the necessary locks while reading the
             // graph. For now, let's rip out the inside of objects and get to the transaction.
@@ -88,9 +88,9 @@ case class UniqueLink(start: NamedExpectation, end: NamedExpectation, rel: Named
       def createUpdateActions(): Seq[UpdateWrapper] = {
         val relExpectations = rel.getExpectations(context)
         val createRel = if (dir == Direction.OUTGOING) {
-          CreateRelationship(rel.name, (Literal(startNode), Map()), (Identifier(other.name), Map()), relType, relExpectations)
+          CreateRelationship(rel.name, RelationshipEndpoint(Literal(startNode), Map(), Literal(Seq.empty)), RelationshipEndpoint(Identifier(other.name), Map(), Literal(Seq.empty)), relType, relExpectations)
         } else {
-          CreateRelationship(rel.name, (Identifier(other.name), Map()), (Literal(startNode), Map()), relType, relExpectations)
+          CreateRelationship(rel.name, RelationshipEndpoint(Identifier(other.name), Map(), Literal(Seq.empty)), RelationshipEndpoint(Literal(startNode), Map(), Literal(Seq.empty)), relType, relExpectations)
         }
 
         val relUpdate = UpdateWrapper(Seq(other.name), createRel, createRel.key)

@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.parser.v2_0
 import org.neo4j.graphdb.Direction
 import collection.Map
 import org.neo4j.cypher.SyntaxException
-import org.neo4j.cypher.internal.commands.expressions.{Identifier, Expression}
+import org.neo4j.cypher.internal.commands.expressions.{Literal, Identifier, Expression}
 import org.neo4j.cypher.internal.commands.Predicate
 
 abstract sealed class AbstractPattern {
@@ -46,7 +46,8 @@ abstract class PatternWithPathName(val pathName: String) extends AbstractPattern
 case class ParsedEntity(name: String,
                         expression: Expression,
                         props: Map[String, Expression],
-                        predicate: Predicate) extends AbstractPattern{
+                        predicate: Predicate,
+                        labels: Expression = Literal(Seq.empty)) extends AbstractPattern{
   def makeOutgoing = this
 }
 

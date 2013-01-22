@@ -22,7 +22,8 @@ package org.neo4j.cypher.internal.parser.v2_0
 import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.commands.True
 import org.neo4j.helpers.ThisShouldNotHappenError
-import org.neo4j.cypher.internal.commands.expressions.{Expression, Identifier}
+import org.neo4j.cypher.internal.commands.expressions.{Literal, Expression, Identifier}
+import org.neo4j.cypher.internal.commands.values.LabelValue
 
 trait ParserPattern extends Base {
 
@@ -87,14 +88,14 @@ trait ParserPattern extends Base {
       failure("expected an expression that is a node")
 
 
-  private def singleNodeEqualsMap = identity ~ "=" ~ properties ^^ {
-    case name ~ "=" ~ map => ParsedEntity(name, Identifier(name), map, True())
-  }
+  private def singleNodeEqualsMap = (identity ~ ((opt("=") ~> curlyMap) | (ignoreCase("values") ~> (expressionAsMap(expression)|literalMap)))) ^^ {
+      case name ~ map => ParsedEntity(name, Identifier(name), map, True())
+    }
 
-  private def nodeInParenthesis = parens(opt(identity) ~ props) ^^ {
-    case id ~ props =>
+  private def nodeInParenthesis = parens(opt(identity) ~ optLabelSeq  ~ props) ^^ {
+    case id ~ labels ~ props =>
       val name = namer.name(id)
-      ParsedEntity(name, Identifier(name), props, True())
+      ParsedEntity(name, Identifier(name), props, True(), labels)
   }
 
   private def nodeFromExpression = Parser {
@@ -106,9 +107,17 @@ trait ParserPattern extends Base {
     }
   }
 
-  private def nodeIdentifier = identity ^^ {
-    case name => ParsedEntity(name, Identifier(name), Map[String, Expression](), True())
+
+  private def nodeIdentifier = identity ~ optLabelSeq ^^ {
+    case name ~ labels => ParsedEntity(name, Identifier(name), Map[String, Expression](), True(), labels)
   }
+
+  private def optLabelSeq = opt(opt(ignoreCase("LABEL")) ~> labelSeq) ^^ {
+    case Some(labels) => labels
+    case _            => Literal(Seq.empty)
+  }
+
+  private def labelSeq = rep1(labelLit) ^^ (x => Literal(x.map { _.v.asInstanceOf[LabelValue] }))
 
   private def path: Parser[List[AbstractPattern]] = relationship | shortestPath
   private def pathFacingOut: Parser[List[AbstractPattern]] = relationshipFacingOut | shortestPath
@@ -183,15 +192,18 @@ trait ParserPattern extends Base {
 
   private def tail: Parser[Tail] = tailWithRelData | tailWithNoRelData
 
-  private def props = opt(properties) ^^ {
+  private def props = opt(curlyMap) ^^ {
     case None => Map[String, Expression]()
     case Some(x) => x
   }
 
-  private def properties =
-    expression ^^ (x => Map[String, Expression]("*" -> x)) |
-      "{" ~> repsep(propertyAssignment, ",") <~ "}" ^^ (_.toMap)
+  private def expressionAsMap(x:Parser[Expression]):Parser[Map[String, Expression]] =
+    x ^^ (x => Map[String, Expression]("*" -> x))
 
+  private def curlyMap =
+    expressionAsMap(parameter) | literalMap
+
+  private def literalMap = "{" ~> repsep(propertyAssignment, ",") <~ "}" ^^ (_.toMap)
 
   private def direction(l: Option[String], r: Option[String]): Direction = (l, r) match {
     case (None, Some(_)) => Direction.OUTGOING
