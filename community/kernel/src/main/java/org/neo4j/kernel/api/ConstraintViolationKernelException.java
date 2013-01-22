@@ -19,6 +19,10 @@
  */
 package org.neo4j.kernel.api;
 
+/**
+ * Signals that some constraint has been violated in a {@link KernelAPI kernel interaction},
+ * for example a name containing invalid characters or length.
+ */
 public class ConstraintViolationKernelException extends KernelException
 {
     public ConstraintViolationKernelException( String message, Throwable cause )

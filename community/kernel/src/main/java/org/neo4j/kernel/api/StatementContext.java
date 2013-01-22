@@ -37,6 +37,8 @@ public interface StatementContext
      * 
      * @param label the name of the label to get the id for.
      * @return the label id for the given label name.
+     * @throws ConstraintViolationKernelException if the label name violates some
+     * constraint, for example if it's null or of zero length.
      */
     long getOrCreateLabelId( String label ) throws ConstraintViolationKernelException;
     

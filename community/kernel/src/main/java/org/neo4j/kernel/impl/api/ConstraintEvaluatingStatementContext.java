@@ -26,14 +26,14 @@ public class ConstraintEvaluatingStatementContext extends DelegatingStatementCon
 {
     public ConstraintEvaluatingStatementContext( StatementContext actual )
     {
-        super(actual);
+        super( actual );
     }
 
     @Override
     public long getOrCreateLabelId( String label ) throws ConstraintViolationKernelException
     {
         // KISS - but refactor into a general purpose constraint checker later on
-        if(label == null || label.length() == 0 )
+        if ( label == null || label.length() == 0 )
         {
             throw new ConstraintViolationKernelException(
                     String.format( "%s is not a valid label name. Only non-empty strings are allowed.",
