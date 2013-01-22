@@ -521,6 +521,13 @@ return distinct center""")
 
     assert(result.toList === List())
   }
+
+  @Test
+  def should_be_able_to_create_node_with_labels() {
+    val createdNode = parseAndExecute("create n:FOO:BAR return n").columnAs[Node]("n").next()
+
+    assert(createdNode.getLabels.asScala.map(_.name()) === List("FOO", "BAR"))
+  }
 }
 
 trait StatisticsChecker extends Assertions {
