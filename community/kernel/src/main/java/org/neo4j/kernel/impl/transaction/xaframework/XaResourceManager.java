@@ -243,6 +243,7 @@ public class XaResourceManager
         private boolean prepared = false;
         private boolean commitStarted = false;
         private boolean rollback = false;
+        private boolean startWritten = false;
         private final XaTransaction xaTransaction;
 
         TransactionStatus( XaTransaction xaTransaction )
@@ -280,9 +281,14 @@ public class XaResourceManager
             return commitStarted;
         }
 
-        boolean started()
+        boolean startWritten()
         {
-            return prepared || commitStarted || rollback;
+            return startWritten;
+        }
+
+        void markStartWritten()
+        {
+            this.startWritten = true;
         }
 
         XaTransaction getTransaction()
@@ -302,9 +308,10 @@ public class XaResourceManager
     private void checkStartWritten( TransactionStatus status, XaTransaction tx )
             throws XAException
     {
-        if ( !status.started() && !tx.isRecovered() )
+        if ( !status.startWritten() && !tx.isRecovered() )
         {
             log.writeStartEntry( tx.getIdentifier() );
+            status.markStartWritten();
         }
     }
 

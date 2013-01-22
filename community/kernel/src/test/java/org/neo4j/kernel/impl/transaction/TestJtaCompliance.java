@@ -24,7 +24,6 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import javax.transaction.NotSupportedException;
-import javax.transaction.RollbackException;
 import javax.transaction.Status;
 import javax.transaction.SystemException;
 import javax.transaction.Transaction;
@@ -37,8 +36,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
-import org.neo4j.kernel.impl.transaction.xaframework.XaConnection;
-import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 
 public class TestJtaCompliance extends AbstractNeo4jTestCase
 {
@@ -58,8 +55,8 @@ public class TestJtaCompliance extends AbstractNeo4jTestCase
         map2.put( "store_dir", "target/var" );
         try
         {
-            xaDsMgr.registerDataSource( new DummyXaDataSource( map1, "fakeRes1", UTF8.encode( "0xDDDDDE" ), new FakeXAResource( "XAResource1" ) ));
-            xaDsMgr.registerDataSource( new DummyXaDataSource( map2, "fakeRes2", UTF8.encode( "0xDDDDDF" ), new FakeXAResource( "XAResource2" ) ));
+            xaDsMgr.registerDataSource( new DummyXaDataSource( "fakeRes1", UTF8.encode( "0xDDDDDE" ), new FakeXAResource( "XAResource1" ) ));
+            xaDsMgr.registerDataSource( new DummyXaDataSource( "fakeRes2", UTF8.encode( "0xDDDDDF" ), new FakeXAResource( "XAResource2" ) ));
         }
         catch ( Exception e )
         {
@@ -694,75 +691,5 @@ public class TestJtaCompliance extends AbstractNeo4jTestCase
         assertTrue( tm.getStatus() == Status.STATUS_MARKED_ROLLBACK );
         tm.rollback();
         assertTrue( tm.getStatus() == Status.STATUS_NO_TRANSACTION );
-    }
-
-    /**
-     * Is one-phase commit always performed when only one (or many isSameRM)
-     * resource(s) are present in the transaction?
-     * 
-     * If so it could be tested...
-     */
-    // public void test1PhaseCommit()
-    // {
-    //	
-    // }
-    public static class DummyXaDataSource extends XaDataSource
-    {
-        private XAResource xaResource = null;
-
-        public DummyXaDataSource( java.util.Map<String,String> map, String name, byte[] branchId, XAResource xaResource )
-            throws InstantiationException
-        {
-            super( branchId, name );
-            this.xaResource = xaResource;
-        }
-
-        public void close()
-        {
-        }
-
-        public XaConnection getXaConnection()
-        {
-            return new DummyXaConnection( xaResource );
-        }
-
-        @Override
-        public long getLastCommittedTxId()
-        {
-            return 0;
-        }
-    }
-
-    private static class DummyXaConnection implements XaConnection
-    {
-        private XAResource xaResource = null;
-
-        public DummyXaConnection( XAResource xaResource )
-        {
-            this.xaResource = xaResource;
-        }
-
-        public XAResource getXaResource()
-        {
-            return xaResource;
-        }
-
-        public void destroy()
-        {
-        }
-
-        @Override
-        public boolean enlistResource( Transaction javaxTx )
-            throws SystemException, RollbackException
-        {
-            return javaxTx.enlistResource( xaResource );
-        }
-
-        @Override
-        public boolean delistResource( Transaction tx, int tmsuccess )
-            throws IllegalStateException, SystemException
-        {
-            return tx.delistResource( xaResource, tmsuccess );
-        }
     }
 }
