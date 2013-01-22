@@ -371,7 +371,7 @@ public class UdcExtensionImplTest
         GraphDatabaseService graphdb = createDatabase( config );
         assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
         String version = handler.getQueryMap().get( VERSION );
-        assertTrue( version.matches( "\\d\\.\\d(\\.|\\-).*?" ) );
+        assertTrue( version.matches( "\\d\\.\\d(((\\.|\\-).*)|GA)?" ) );
 
         destroy( graphdb );
     }
