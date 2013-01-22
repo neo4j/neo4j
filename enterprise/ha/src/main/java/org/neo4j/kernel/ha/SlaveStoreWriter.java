@@ -35,6 +35,7 @@ import org.neo4j.helpers.Settings;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
 import org.neo4j.kernel.impl.util.FileUtils;

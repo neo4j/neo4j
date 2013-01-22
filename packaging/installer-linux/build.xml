@@ -8,7 +8,7 @@
             <!-- this is a glob? -->
             <property name="udc.properties" location="${udc.tmpdir}/org/neo4j/ext/udc/udc.properties"/>
 
-            <fileset id="udc.jars" dir="${project.build.outputDirectory}/@{name}" includes="**/neo4j-udc*.jar"/>
+            <fileset id="udc.jars" dir="${project.build.outputDirectory}/@{name}" includes="server/lib/neo4j-udc*.jar"/>
             <property name="udc.jar" value="${toString:udc.jars}"/>
             <echo message="Working on: ${udc.jar}" />
             <unzip src="target/classes/@{name}/${udc.jar}"

@@ -22,9 +22,8 @@ package org.neo4j.kernel.ha;
 import javax.transaction.TransactionManager;
 
 import org.neo4j.com.Response;
-import org.neo4j.kernel.ha.HaXaDataSourceManager;
-import org.neo4j.kernel.ha.Master;
-import org.neo4j.kernel.ha.RequestContextFactory;
+import org.neo4j.kernel.ha.com.master.Master;
+import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.impl.core.RelationshipTypeCreator;
 import org.neo4j.kernel.impl.core.RelationshipTypeHolder;
 import org.neo4j.kernel.impl.persistence.EntityIdGenerator;

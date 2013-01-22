@@ -19,6 +19,12 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+import static org.neo4j.graphdb.DynamicRelationshipType.withName;
+import static org.neo4j.kernel.impl.AbstractNeo4jTestCase.deleteFileOrDirectory;
+import static org.neo4j.kernel.impl.AbstractNeo4jTestCase.getStorePath;
+
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.neo4j.graphdb.Direction;
@@ -33,10 +39,6 @@ import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.test.DbRepresentation;
-
-import static org.junit.Assert.*;
-import static org.neo4j.graphdb.DynamicRelationshipType.*;
-import static org.neo4j.kernel.impl.AbstractNeo4jTestCase.*;
 
 public class TestReadOnlyNeo4j
 {

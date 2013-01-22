@@ -23,6 +23,8 @@ import java.net.URI;
 
 import org.neo4j.kernel.ha.cluster.AbstractModeSwitcher;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberStateMachine;
+import org.neo4j.kernel.ha.com.master.Master;
+import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.impl.core.DefaultRelationshipTypeCreator;
 import org.neo4j.kernel.impl.core.RelationshipTypeCreator;
 

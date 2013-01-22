@@ -38,8 +38,8 @@ import org.neo4j.cluster.protocol.cluster.Cluster;
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.protocol.cluster.ClusterListener;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.ha.Slave;
-import org.neo4j.kernel.ha.SlaveFactory;
+import org.neo4j.kernel.ha.com.master.Slave;
+import org.neo4j.kernel.ha.com.master.SlaveFactory;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher;
 
 public class HighAvailabilitySlavesTest
