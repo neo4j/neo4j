@@ -173,7 +173,8 @@ public class GetOrCreateTest extends AbstractJavaDocTestbase
     }
 
     // START SNIPPET: pessimisticLocking
-    public Node getOrCreateUserPessimistically( String username, GraphDatabaseService graphDb, Node lockNode )
+    public Node getOrCreateUserPessimistically( String username, GraphDatabaseService graphDb, 
+                                                Node lockNode )
     {
         Index<Node> usersIndex = graphDb.index().forNodes( "users" );
         Node userNode = usersIndex.get( "name", username ).getSingle();

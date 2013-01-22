@@ -6,7 +6,7 @@ Questions & Answers
 [qanda]
 
 What is the maximum number of nodes supported?  What is the maximum number of edges supported per node?::
-        At the moment it is 34.4 billion nodes, 34.4 billion relationships, and 68.7 billion properties, in total.
+        At the moment it is 34.4 billion nodes, 34.4 billion relationships, and at a minimum 68.7 billion properties (maximum is 274 billion, depending on the property types), in total.
 
 What is the largest complete connected graph supported (i.e. every node is connecting to all other nodes)?::
         Theoretical limits can be derived from numbers above: It basically comes out to a full graph of 262144 nodes and 34359607296 relationships. We have never seen this use case though.
@@ -113,5 +113,5 @@ How do I import my data into Neo4j?::
         The Neo4j batch inserter can be used to fill an initial database with data.
         After batch insertion, the store can be used in an embedded or HA environment.
         Future data load/refresh should go directly to Production server
-        SQL Importer (built on top of Batch Inserter) is not officially supported
+        SQL Importer (built on top of Batch Inserter) is not officially supported.
 

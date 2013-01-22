@@ -12,15 +12,7 @@ To gain good performance, these are the things to look into first:
 
 == How to add configuration settings ==
 
-When creating the embedded Neo4j instance it is possible to pass in parameters contained in a map where keys and values are strings.
-
-[snippet,java]
-----
-component=neo4j-examples
-source=org/neo4j/examples/Neo4jBasicTest.java
-classifier=test-sources
-tag=startDbWithConfig
-----
+When creating the embedded Neo4j instance it is possible to pass in parameters contained in a map where keys and values are strings, see <<tutorials-java-embedded-setup-config>> for an example.
 
 If no configuration is provided, the Database Kernel will try to determine suitable settings from the information available via the JVM settings and the underlying operating system. 
 

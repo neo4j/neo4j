@@ -64,7 +64,8 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
 
 
         String script = createScript( scriptTemplate );
-        String queryString = "{\"query\": \"" + script + "\"," + parameterString+"},"  ;
+        String queryString = "{\"query\": \"" + script + "\","
+                             + parameterString + "}";
 
         gen().expectedStatus( status.getStatusCode() )
                 .payload( queryString )

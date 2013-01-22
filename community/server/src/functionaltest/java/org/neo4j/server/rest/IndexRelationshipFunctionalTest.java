@@ -395,6 +395,7 @@ public class IndexRelationshipFunctionalTest extends AbstractRestFunctionalTestB
         long start = helper.createNode();
         long end = helper.createNode();
         gen.get()
+                .noGraph()
            .expectedStatus( 201 /* created */)
            .payloadType( MediaType.APPLICATION_JSON_TYPE )
            .payload( "{\"key\": \"" + key + "\", \"value\":\"" + value +
@@ -417,6 +418,7 @@ public class IndexRelationshipFunctionalTest extends AbstractRestFunctionalTestB
         final String index = "knowledge", key = "name", value = "Mattias";
         helper.createRelationshipIndex( index );
         gen.get()
+                .noGraph()
            .expectedStatus( 201 /* created */)
            .payloadType( MediaType.APPLICATION_JSON_TYPE )
            .payload( "{\"key\": \"" + key + "\", \"value\":\"" + value +
@@ -457,7 +459,8 @@ public class IndexRelationshipFunctionalTest extends AbstractRestFunctionalTestB
             tx.finish();
         }
        
-         ResponseEntity response = gen.get()
+        gen.get()
+                .noGraph()
                 .expectedStatus( 200 /* conflict */)
                 .payloadType( MediaType.APPLICATION_JSON_TYPE )
                 .payload( "{\"key\": \"" + key + "\", \"value\": \"" + value 
@@ -482,7 +485,8 @@ public class IndexRelationshipFunctionalTest extends AbstractRestFunctionalTestB
    	final String index = "rels", key = "name", value = "Tobias";
    	helper.createRelationshipIndex( index );
    	
-   	ResponseEntity response = gen.get()
+        ResponseEntity response = gen.get()
+                .noGraph()
                                     .expectedStatus( 201 /* created */)
                                     .payloadType( MediaType.APPLICATION_JSON_TYPE )
                                     .payload( "{\"key\": \"" + key + "\", \"value\": \"" + value 
@@ -530,7 +534,8 @@ public class IndexRelationshipFunctionalTest extends AbstractRestFunctionalTestB
            tx.finish();
        }
       
-     	ResponseEntity response = gen.get()
+        ResponseEntity response = gen.get()
+                .noGraph()
                .expectedStatus( 409 /* conflict */)
                .payloadType( MediaType.APPLICATION_JSON_TYPE )
                .payload( "{\"key\": \"" + key + "\", \"value\": \"" + value 
@@ -554,7 +559,9 @@ public class IndexRelationshipFunctionalTest extends AbstractRestFunctionalTestB
 
        helper.createRelationshipIndex( index );
        
-       gen.get().expectedStatus( 201 /* created */ )
+        gen.get()
+                .noGraph()
+                .expectedStatus( 201 /* created */)
                 .payloadType( MediaType.APPLICATION_JSON_TYPE )
                 .payload( "{\"key\": \"" + key + "\", \"value\": \"" + value + "\", \"uri\":\"" + functionalTestHelper.relationshipUri( helper.createRelationship("KNOWS", helper.createNode(), helper.createNode()) ) + "\"}" )
                 .post( functionalTestHelper.relationshipIndexUri() + index + "?uniqueness=create_or_fail" );
@@ -589,7 +596,9 @@ public class IndexRelationshipFunctionalTest extends AbstractRestFunctionalTestB
            tx.finish();
        }
        
-       gen.get().expectedStatus( 409 /* conflict */ )
+        gen.get()
+                .noGraph()
+                .expectedStatus( 409 /* conflict */)
                 .payloadType( MediaType.APPLICATION_JSON_TYPE )
                 .payload( "{\"key\": \"" + key + "\", \"value\": \"" + value + "\", \"uri\":\"" + functionalTestHelper.relationshipUri( rel.getId() ) + "\"}" )
                 .post( functionalTestHelper.relationshipIndexUri() + index + "?uniqueness=create_or_fail" );
@@ -624,6 +633,7 @@ public class IndexRelationshipFunctionalTest extends AbstractRestFunctionalTestB
        }
       
         ResponseEntity response = gen.get()
+                .noGraph()
                .expectedStatus( 200 /* conflict */)
                .payloadType( MediaType.APPLICATION_JSON_TYPE )
                .payload( "{\"key\": \"" + key + "\", \"value\": \"" + value 
