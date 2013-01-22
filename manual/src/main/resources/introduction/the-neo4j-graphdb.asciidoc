@@ -12,11 +12,14 @@ In Neo4j, both nodes and relationships can contain <<graphdb-neo4j-properties,pr
 
 Nodes are often used to represent _entities,_ but depending on the domain relationships may be used for that purpose as well.
 
+Apart from properties and relationships, nodes can also be <<graphdb-neo4j-labels,labelled>> with zero or more labels.
+
 ["dot", "graphdb-nodes-overview.svg", "meta"]
 ----
 "A Node" [fillcolor="NODEHIGHLIGHT"]
 "A Node" -> "Relationships" [label="can have"]
 "A Node" -> "Properties" [label="can have"]
+"A Node" -> "Labels" [label="can have"]
 "Relationships" -> "Properties" [label="can have"]
 ----
 
@@ -166,6 +169,31 @@ Primitive [shape="record" label="Primitive |{boolean|byte|short|int|long|float|d
 |========================================================
 
 For further details on float/double values, see http://docs.oracle.com/javase/specs/jls/se5.0/html/typesValues.html#4.2.3[Java Language Specification].
+
+[[graphdb-neo4j-labels]]
+== Labels ==
+
+[NOTE]
+This is a new feature in Neo4j, it is experimental and may still change.
+Your feedback on this addition to the model is very welcome.
+
+A label is a named graph construct that is used to group nodes into sets; all nodes labelled with the same label belongs to the same set.
+Many database queries can work with these sets instead of the whole graph, making queries easier to write and more efficient.
+A node may be labelled with any number of labels, including none, making labels an optional addition to the graph.
+
+["dot", "graphdb-labels.svg", "meta"]
+----
+"A Label" [fillcolor="NODEHIGHLIGHT"]
+"A Label" -> Name [label="has a"]
+"A Label" -> Node [label="groups"]
+----
+
+An example would be a label named 'User' that you label all your nodes representing users with.
+With that in place, you can ask Neo4j to perform operations only on your user nodes, such as finding all users with a given name.
+
+However, you can use labels for much more.
+For instance, since labels can be added and removed during runtime, they can be used to mark temporary states for your nodes.
+You might create an "Offline" label for phones that are offline, a "Happy" label for happy pets, and so on.
 
 [[graphdb-neo4j-paths]]
 == Paths ==

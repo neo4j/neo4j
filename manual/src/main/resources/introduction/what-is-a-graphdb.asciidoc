@@ -22,6 +22,7 @@ At some point it makes sense to distribute the data into multiple nodes, organiz
 "Graph" -> Nodes [label="records data in" weight=2.0]
 "Graph" -> Relationships [label="records data in" weight=2.0]
 Relationships -> Nodes [label="organize"]
+Labels -> Nodes [label="group"]
 Nodes -> Properties [label="have"]
 Relationships -> Properties [label="have"]
 ----
@@ -33,6 +34,15 @@ ____
 ____
 
 Relationships organize Nodes into arbitrary structures, allowing a Graph to resemble a List, a Tree, a Map, or a compound Entity – any of which can be combined into yet more complex, richly inter-connected structures. 
+
+== Labels group the Nodes ==
+
+____
+``Nodes —are grouped by-> Labels —into-> Sets''
+____
+
+Labels are a means of grouping the nodes in the graph.
+They can be used to restrict queries to subsets of the graph, as well as enabling optional model constraints and indexing rules.
 
 
 == Query a Graph with a Traversal ==
