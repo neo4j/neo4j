@@ -60,6 +60,13 @@ public class InteractionStoppingStatementContext implements StatementContext
         assertOperationsAllowed();
         return delegate.isLabelSetOnNode( labelId, nodeId );
     }
+    
+    @Override
+    public Iterable<Long> getLabelsForNode( long nodeId )
+    {
+        assertOperationsAllowed();
+        return delegate.getLabelsForNode( nodeId );
+    }
 
     @Override
     public void close()

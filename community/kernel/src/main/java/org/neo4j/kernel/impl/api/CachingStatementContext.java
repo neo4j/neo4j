@@ -42,4 +42,13 @@ public class CachingStatementContext extends DelegatingStatementContext
             return labels.contains( labelId );
         return super.isLabelSetOnNode( labelId, nodeId );
     }
+    
+    @Override
+    public Iterable<Long> getLabelsForNode( long nodeId )
+    {
+        Set<Long> labels = cache.getLabels( nodeId );
+        if ( labels != null )
+            return labels;
+        return super.getLabelsForNode( nodeId );
+    }
 }

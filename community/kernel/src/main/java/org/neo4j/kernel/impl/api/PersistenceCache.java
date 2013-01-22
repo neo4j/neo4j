@@ -27,6 +27,15 @@ import org.neo4j.kernel.impl.cache.EntityWithSize;
 import org.neo4j.kernel.impl.cache.LockStripedCache;
 import org.neo4j.kernel.impl.cache.SoftLruCache;
 
+/**
+ * This is a cache for data not cached by NodeImpl/RelationshipImpl. NodeImpl/RelationshipImpl
+ * currently has the roles of caching, locking and transaction state merging. In the future
+ * they might disappear and split up into {@link CachingStatementContext},
+ * {@link LockingStatementContext} and {@link TransactionStateAwareStatementContext}.
+ * 
+ * The point is that we need a cache and the implementation is a bit temporary, but might end
+ * up being the cache to replace the data within NodeImpl/RelationshipImpl.
+ */
 public class PersistenceCache
 {
     private final LockStripedCache<CachedNodeEntity> nodeCache;

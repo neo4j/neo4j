@@ -57,6 +57,12 @@ public class DelegatingStatementContext implements StatementContext
     }
 
     @Override
+    public Iterable<Long> getLabelsForNode( long nodeId )
+    {
+        return delegate.getLabelsForNode( nodeId );
+    }
+    
+    @Override
     public void close()
     {
         delegate.close();

@@ -55,6 +55,12 @@ public class ReadOnlyStatementContext implements StatementContext
     {
         return actual.isLabelSetOnNode( labelId, nodeId );
     }
+    
+    @Override
+    public Iterable<Long> getLabelsForNode( long nodeId )
+    {
+        return actual.getLabelsForNode( nodeId );
+    }
 
     @Override
     public void close()

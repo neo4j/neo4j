@@ -19,6 +19,11 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import static java.util.Collections.emptyList;
+
+import java.util.ArrayList;
+import java.util.Collection;
+
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.kernel.api.ConstraintViolationKernelException;
 import org.neo4j.kernel.api.LabelNotFoundKernelException;
@@ -103,6 +108,25 @@ public class TemporaryLabelAsPropertyStatementContext implements StatementContex
         {
             return false;
         }
+    }
+    
+    @Override
+    public Iterable<Long> getLabelsForNode( long nodeId )
+    {
+        ArrayMap<Integer, PropertyData> propertyMap = persistenceManager.loadNodeProperties( nodeId, true );
+        if ( propertyMap == null )
+            return emptyList();
+        
+        // TODO just wrap propertyMap and return lazy iterable/iterator instead?
+        Collection<Long> result = new ArrayList<Long>();
+        for ( PropertyData data : propertyMap.values() )
+        {
+            if ( data instanceof LabelAsPropertyData )
+            {
+                result.add( (long) data.getIndex() );
+            }
+        }
+        return result;
     }
 
     private String internalLabelName( String label )

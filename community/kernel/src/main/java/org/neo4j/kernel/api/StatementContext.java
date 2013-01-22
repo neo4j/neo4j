@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api;
 
+
 /**
  * Interface for accessing and modifying the underlying graph.
  * A statement is executing within a {@link TransactionContext transaction}
@@ -74,6 +75,15 @@ public interface StatementContext
      * @return whether or not the node is labeled with the given label.
      */
     boolean isLabelSetOnNode( long labelId, long nodeId );
+    
+    /**
+     * Returns all labels set on node with id {@code nodeId}.
+     * If the node has no labels an empty {@link Iterable} will be returned.
+     * 
+     * @param nodeId the id of the node.
+     * @return the label ids for the given node.
+     */
+    Iterable<Long> getLabelsForNode( long nodeId );
     
     /**
      * Closes this statement. Statements must be closed when done and before

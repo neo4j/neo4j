@@ -19,7 +19,12 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import static java.util.Arrays.asList;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
+
+import java.util.HashSet;
 
 import org.junit.After;
 import org.junit.Before;
@@ -49,6 +54,25 @@ public class TemporaryLabelAsPropertyContextTest
 
         // THEN
         assertTrue( "Label " + labelName + " wasn't set on " + nodeId, statement.isLabelSetOnNode( labelId, nodeId ) );
+    }
+    
+    @Test
+    public void should_be_able_to_list_labels_for_node() throws Exception
+    {
+        // GIVEN
+        Transaction tx = db.beginTx();
+        long nodeId = db.createNode().getId();
+        String labelName1 = "mylabel", labelName2 = "myOtherLabel";
+        long labelId1 = statement.getOrCreateLabelId( labelName1 );
+        long labelId2 = statement.getOrCreateLabelId( labelName2 );
+        statement.addLabelToNode( labelId1, nodeId );
+        statement.addLabelToNode( labelId2, nodeId );
+        tx.success();
+        tx.finish();
+
+        // THEN
+        Iterable<Long> readLabels = statement.getLabelsForNode( nodeId );
+        assertEquals( new HashSet<Long>( asList( labelId1, labelId2 ) ), addToCollection( readLabels, new HashSet<Long>() ) );
     }
 
     //write test when we dont have a property map
