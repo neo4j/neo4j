@@ -19,15 +19,21 @@
  */
 package org.neo4j.server.rest;
 
+import static org.junit.Assert.assertEquals;
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.server.rest.domain.JsonHelper.createJsonFrom;
 
+import java.util.List;
 import java.util.Map;
 
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.kernel.impl.annotations.Documented;
+import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.web.PropertyValueException;
 import org.neo4j.test.GraphDescription;
+import org.neo4j.test.GraphDescription.LABEL;
+import org.neo4j.test.GraphDescription.NODE;
 
 public class LabelsFunctionalTest  extends AbstractRestFunctionalTestBase
 {
@@ -36,7 +42,7 @@ public class LabelsFunctionalTest  extends AbstractRestFunctionalTestBase
      */
     @Documented
     @Test
-    @GraphDescription.Graph( nodes = { @GraphDescription.NODE( name = "I", setNameProperty = true ) } )
+    @GraphDescription.Graph( nodes = { @NODE( name = "I", setNameProperty = true ) } )
     public void adding_a_label_to_a_node() throws PropertyValueException
     {
         Map<String,Node> nodes = data.get();
@@ -54,7 +60,7 @@ public class LabelsFunctionalTest  extends AbstractRestFunctionalTestBase
      */
     @Documented
     @Test
-    @GraphDescription.Graph( nodes = { @GraphDescription.NODE( name = "I", setNameProperty = true ) } )
+    @GraphDescription.Graph( nodes = { @NODE( name = "I", setNameProperty = true ) } )
     public void adding_an_invalid_label_to_a_node() throws PropertyValueException
     {
         Map<String,Node> nodes = data.get();
@@ -64,5 +70,24 @@ public class LabelsFunctionalTest  extends AbstractRestFunctionalTestBase
             .expectedStatus( 400 )
             .payload( createJsonFrom( "" ) )
             .post( nodeUri + "/labels"  );
+    }
+    
+    /**
+     * Listing a Node's labels.
+     */
+    @Documented
+    @Test
+    @GraphDescription.Graph( nodes = { @NODE( name = "I", labels = { @LABEL( "Me" ), @LABEL( "You" ) }, setNameProperty = true ) } )
+    public void listing_node_labels() throws PropertyValueException
+    {
+        Map<String, Node> nodes = data.get();
+        String nodeUri = getNodeUri( nodes.get( "I" ) );
+
+        String body = gen.get()
+            .expectedStatus( 200 )
+            .get( nodeUri + "/labels"  )
+            .entity();
+        List<String> labels = (List<String>) JsonHelper.readJson( body );
+        assertEquals( asSet( "Me", "You" ), asSet( labels ) );
     }
 }

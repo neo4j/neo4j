@@ -27,6 +27,8 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.helpers.collection.IteratorUtil.single;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.server.rest.repr.RepresentationTestAccess.serialize;
 
@@ -1039,6 +1041,39 @@ public class DatabaseActionsTest
                 nodes[1],
                 map( "max_depth", 2, "algorithm", "shortestPath", "relationships",
                         map( "type", "to", "direction", "in" ), "single", false ) ) );
+    }
+    
+    @Test
+    public void shouldAddLabelToNode() throws Exception
+    {
+        // GIVEN
+        long node = actions.createNode( null ).getId();
+
+        // WHEN
+        String labelName = "labello";
+        actions.addLabelToNode( node, labelName );
+        Iterable<String> labels = graphdbHelper.getNodeLabels( node );
+
+        // THEN
+        assertEquals( labelName, single( labels ) );
+    }
+    
+    @Test
+    public void shouldListExistingLabelsOnNode() throws Exception
+    {
+        // GIVEN
+        long node = graphdbHelper.createNode();
+        String labelName1 = "LabelOne", labelName2 = "labelTwo";
+        graphdbHelper.addLabelToNode( node, labelName1 );
+        graphdbHelper.addLabelToNode( node, labelName2 );
+
+        // WHEN
+        List<Object> labels = serialize( actions.getNodeLabels( node ) );
+
+        // THEN
+        assertEquals(
+                asSet( labelName1, labelName2 ),
+                asSet( labels ) );
     }
 
     private void assertPaths( int numPaths, long[] nodes, int length, List<Object> result )

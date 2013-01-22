@@ -423,6 +423,21 @@ public class RestfulGraphDatabase
         }
         return nothing();
     }
+    
+    @GET
+    @Path( PATH_NODE_LABELS )
+    public Response getNodeLabels( @HeaderParam( HEADER_TRANSACTION ) ForceMode force,
+            @PathParam( "nodeId" ) long nodeId )
+    {
+        try
+        {
+            return output.ok( actions( force ).getNodeLabels( nodeId ) );
+        }
+        catch ( NodeNotFoundException e )
+        {
+            return output.notFound( e );
+        }
+    }
 
     // Relationships
 

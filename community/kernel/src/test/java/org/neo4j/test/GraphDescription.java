@@ -19,6 +19,7 @@
  */
 package org.neo4j.test;
 
+import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.test.GraphDescription.PropType.STRING;
 
 import java.lang.annotation.Annotation;
@@ -65,6 +66,8 @@ public class GraphDescription implements GraphDefinition
         String name();
 
         PROP[] properties() default {};
+        
+        LABEL[] labels() default {};
 
         boolean setNameProperty() default false;
     }
@@ -93,6 +96,12 @@ public class GraphDescription implements GraphDefinition
         String value();
 
         PropType type() default STRING;
+    }
+    
+    @Target( {} )
+    public @interface LABEL
+    {
+        String value();
     }
 
     @SuppressWarnings( "boxing" )
@@ -164,8 +173,12 @@ public class GraphDescription implements GraphDefinition
             graphdb.index().getRelationshipAutoIndexer().setEnabled( autoIndexRelationships );
             for ( NODE def : nodes )
             {
-                result.put( def.name(),
-                        init( graphdb.createNode(), def.setNameProperty() ? def.name() : null, def.properties(), graphdb.index().getNodeAutoIndexer(), autoIndexNodes ));
+                Node node = init( graphdb.createNode(), def.setNameProperty() ? def.name() : null, def.properties(), graphdb.index().getNodeAutoIndexer(), autoIndexNodes );
+                for ( LABEL label : def.labels() )
+                {
+                    node.addLabel( label( label.value() ) );
+                }
+                result.put( def.name(), node );
             }
             for ( REL def : rels )
             {
@@ -360,6 +373,12 @@ public class GraphDescription implements GraphDefinition
         DefaultNode( String name )
         {
             super( name );
+        }
+
+        @Override
+        public LABEL[] labels()
+        {
+            return new LABEL[0];
         }
     }
 

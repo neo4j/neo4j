@@ -26,7 +26,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import com.sun.jersey.api.core.HttpContext;
 import org.apache.lucene.search.Sort;
 import org.neo4j.graphalgo.CommonEvaluators;
 import org.neo4j.graphalgo.CostEvaluator;
@@ -37,6 +36,7 @@ import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Expander;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Path;
@@ -92,6 +92,8 @@ import org.neo4j.server.rest.repr.ScoredNodeRepresentation;
 import org.neo4j.server.rest.repr.ScoredRelationshipRepresentation;
 import org.neo4j.server.rest.repr.ValueRepresentation;
 import org.neo4j.server.rest.repr.WeightedPathRepresentation;
+
+import com.sun.jersey.api.core.HttpContext;
 
 public class DatabaseActions
 {
@@ -321,7 +323,7 @@ public class DatabaseActions
             node.addLabel( label( labelName ) );
             tx.success();
         }
-        catch(ConstraintViolationException e)
+        catch( ConstraintViolationException e )
         {
             throw new BadInputException( "Unable to add label, see nested exception.", e );
         }
@@ -329,6 +331,19 @@ public class DatabaseActions
         {
             tx.finish();
         }
+    }
+    
+    public ListRepresentation getNodeLabels( long nodeId ) throws NodeNotFoundException
+    {
+        Iterable<String> labels = new IterableWrapper<String, Label>( node( nodeId ).getLabels() )
+        {
+            @Override
+            protected String underlyingObjectToObject( Label object )
+            {
+                return object.name();
+            }
+        };
+        return ListRepresentation.string( labels );
     }
 
     public String[] getNodeIndexNames()

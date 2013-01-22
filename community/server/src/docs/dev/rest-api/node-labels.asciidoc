@@ -4,3 +4,5 @@
 include::adding-a-label-to-a-node.asciidoc[]
 
 include::adding-an-invalid-label-to-a-node.asciidoc[]
+
+include::listing-node-labels.asciidoc[]
