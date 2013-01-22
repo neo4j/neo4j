@@ -2,9 +2,11 @@
 Label
 =====
 
-Adding and removing labels from nodes is done with the +LABEL+ +AS+ clause.
+Adding and removing labels from nodes is done with the +LABEL+ clause.
 
 :leveloffset: 2
 
 include::add-a-label-to-a-node.asciidoc[]
 include::add-multiple-labels-to-a-node.asciidoc[]
+include::replace-labels-of-a-node.asciidoc[]
+include::delete-labels-from-a-node.asciidoc[]

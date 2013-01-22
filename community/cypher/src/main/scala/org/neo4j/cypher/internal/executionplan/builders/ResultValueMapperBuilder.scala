@@ -31,6 +31,7 @@ class ResultValueMapperBuilder extends PlanBuilder {
         val typ = exp.evaluateType(AnyType(), symbols)
         typ == LabelType()
       })
+    case _ => false
   }
 
   def priority = ???

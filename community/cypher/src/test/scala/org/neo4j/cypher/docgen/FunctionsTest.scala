@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.docgen
 
-import org.junit.Test
+import org.junit.{Ignore, Test}
 import org.junit.Assert._
-import org.neo4j.graphdb.Node
+import org.neo4j.graphdb.{Label, Node}
 import org.neo4j.cypher.ExecutionResult
 import collection.mutable.WrappedArray
 
@@ -34,6 +34,13 @@ class FunctionsTest extends DocumentingTestBase {
     "C" -> Map("age" -> 53, "eyes" -> "green"),
     "D" -> Map("age" -> 54, "eyes" -> "brown"),
     "E" -> Map("age" -> 41, "eyes" -> "blue", "array" -> Array("one", "two", "three"))
+  )
+
+  case object FooLabel extends Label { def name = "foo" }
+  case object BarLabel extends Label { def name = "bar" }
+
+  override def labelsDescription = Map(
+    "A" -> List(FooLabel, BarLabel)
   )
 
   def section = "functions"
@@ -108,6 +115,21 @@ class FunctionsTest extends DocumentingTestBase {
       queryText = """start a=node(%A%) match p=a-->b-->c return length(p)""",
       returns = """The length of the path `p` is returned by the query.""",
       assertions = (p) => assertEquals(2, p.columnAs[Int]("length(p)").toList.head))
+  }
+
+  @Test @Ignore def labels() {
+    testThis(
+      title = "LABELS",
+      syntax = "LABELS( node )",
+      arguments = List("node" -> "Any expression that returns a single node"),
+      text = """To return a collection of all the labels of a node, use the `LABELS()` function.""",
+      queryText = """start a=node(%A%) return labels(a)""",
+      returns = """A collection of all the labels of `a` is returned by the query.""",
+      assertions = { (p) =>
+        val iter: Iterator[String] = p.columnAs[Iterator[_]]("labels(p)").asInstanceOf[Iterator[String]]
+        assertEquals(iter.toList, List("foo", "bar"))
+      }
+    )
   }
 
   @Test def extract() {
