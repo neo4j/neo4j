@@ -17,7 +17,7 @@
     <!-- Jar Versions -->
     <junit.version>4.8.2</junit.version>
     <spring.version>3.0.4.RELEASE</spring.version>
-    <jackson.version>1.8.3</jackson.version>
+    <jackson.version>1.9.7</jackson.version>
     <cxf.version>2.3.1</cxf.version>
     <servlet-api.version>2.5</servlet-api.version>
     <neo4j.version>${project.version}</neo4j.version>
@@ -73,7 +73,7 @@ the relevant Commercial Agreement.
       <artifactId>neo4j-server</artifactId>
       <version>${neo4j.version}</version>
       <type>test-jar</type>
-      <scope>provided</scope>
+      <scope>test</scope>
     </dependency>
 
     <dependency>
@@ -135,6 +135,12 @@ the relevant Commercial Agreement.
     </dependency>
     <!--end jackson dependencies -->
 
+    <dependency>
+      <groupId>com.google.code.gson</groupId>
+      <artifactId>gson</artifactId>
+      <version>2.2.2</version>
+      <scope>test</scope>
+    </dependency>
 
     <dependency>
       <groupId>junit</groupId>
@@ -214,4 +220,3 @@ the relevant Commercial Agreement.
   </distributionManagement>
 
 </project>
-
