@@ -63,7 +63,7 @@ public class ClusterRule
         for ( int i = 1; i < nrOfNodes; i++ )
         {
             TestProtocolServer protocolServer = network.addServer( new URI( "cluster://server" + (i + 1) ) );
-            protocolServer.newClient( Cluster.class ).join( new URI( "cluster://server1" ) );
+            protocolServer.newClient( Cluster.class ).join( "default", new URI( "cluster://server1" ) );
             network.tick( 10 );
             nodes.add( protocolServer );
         }

@@ -60,6 +60,7 @@ import org.neo4j.cluster.protocol.heartbeat.HeartbeatMessage;
 import org.neo4j.cluster.statemachine.State;
 import org.neo4j.cluster.timeout.FixedTimeoutStrategy;
 import org.neo4j.cluster.timeout.MessageTimeoutStrategy;
+import org.neo4j.helpers.Function;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.test.LoggerRule;
@@ -347,7 +348,7 @@ public class ClusterMockTest
             return this;
         }
 
-        public ClusterTestScriptDSL join( int time, final int joinServer )
+        public ClusterTestScriptDSL join( int time, final int joinServer, final int... joinServers )
         {
             return addAction( new ClusterAction()
             {
@@ -361,16 +362,15 @@ public class ClusterMockTest
                         {
                             out.remove( cluster );
                             logger.getLogger().debug( "Join:" + cluster.toString() );
-                            if ( in.isEmpty() )
+                            if (joinServers.length == 0)
                             {
-                                cluster.create( "default" );
-                            }
-                            else
-                            {
-                                try
+                                if ( in.isEmpty() )
                                 {
-                                    final Future<ClusterConfiguration> result = cluster.join( new URI( in.get( 0 )
-                                            .toString() ) );
+                                    cluster.create( "default" );
+                                } else
+                                {
+                                    // Use test info to figure out who to join
+                                    final Future<ClusterConfiguration> result = cluster.join( "default", URI.create( in.get( 0 ).toString() ) );
                                     executor.submit( new Runnable()
                                     {
                                         @Override
@@ -391,11 +391,36 @@ public class ClusterMockTest
                                         }
                                     } );
                                 }
-                                catch ( URISyntaxException e )
+                            } else
+                            {
+                                // List of servers to join was explicitly specified, so use that
+                                URI[] instanceUris = new URI[joinServers.length];
+                                for ( int i = 0; i < joinServers.length; i++ )
                                 {
-                                    e.printStackTrace();
+                                    int server = joinServers[i];
+                                    instanceUris[i] = URI.create( "server"+server );
                                 }
 
+                                final Future<ClusterConfiguration> result = cluster.join( "default", instanceUris );
+                                executor.submit( new Runnable()
+                                {
+                                    @Override
+                                    public void run()
+                                    {
+                                        try
+                                        {
+                                            ClusterConfiguration clusterConfiguration = result.get();
+                                            logger.getLogger().debug( "**** Cluster configuration:" +
+                                                    clusterConfiguration );
+                                        }
+                                        catch ( Exception e )
+                                        {
+                                            logger.getLogger().debug( "**** Node "+joinServer+" could not join cluster:" + e
+                                                    .getMessage() );
+                                            cluster.create( "default" );
+                                        }
+                                    }
+                                } );
                             }
                             break;
                         }
@@ -621,8 +646,7 @@ public class ClusterMockTest
                     {
                         try
                         {
-                            final Future<ClusterConfiguration> result = cluster.join( new URI( in.get( 0 )
-                                    .toString() ) );
+                            final Future<ClusterConfiguration> result = cluster.join( "default", new URI( in.get( 0 ).toString() ) );
                             executor.submit( new Runnable()
                             {
                                 @Override
