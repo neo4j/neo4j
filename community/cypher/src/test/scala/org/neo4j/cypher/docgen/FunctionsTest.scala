@@ -26,7 +26,12 @@ import org.neo4j.cypher.ExecutionResult
 import collection.mutable.WrappedArray
 
 class FunctionsTest extends DocumentingTestBase {
-  def graphDescription = List("A KNOWS B", "A KNOWS C", "B KNOWS D", "C KNOWS D", "B MARRIED E")
+  def graphDescription = List(
+    "A KNOWS B",
+    "A KNOWS C",
+    "B KNOWS D",
+    "C KNOWS D",
+    "B MARRIED E:Spouse")
 
   override val properties = Map(
     "A" -> Map("age" -> 38, "eyes" -> "brown"),
@@ -97,6 +102,17 @@ class FunctionsTest extends DocumentingTestBase {
       queryText = """start n=node(%A%) match (n)-[r]->() return type(r)""",
       returns = """The relationship type of `r` is returned by the query.""",
       assertions = (p) => assertEquals("KNOWS", p.columnAs[String]("type(r)").toList.head))
+  }
+
+  @Test def labels() {
+    testThis(
+      title = "LABELS",
+      syntax = "LABELS( node )",
+      arguments = List("node" -> "A node."),
+      text = """Returns a collection of string representations for the labels attached to a node.""",
+      queryText = """start n=node(%E%) return labels(n)""",
+      returns = """The labels of `n` is returned by the query.""",
+      assertions = (p) => assertEquals(List("Spouse"), p.columnAs[String]("labels(n)").toList.head))
   }
 
   @Test def length() {

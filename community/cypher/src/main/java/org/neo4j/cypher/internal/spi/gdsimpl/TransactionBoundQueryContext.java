@@ -31,6 +31,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.ThreadToStatementContextBridge;
 import org.neo4j.kernel.api.ConstraintViolationKernelException;
+import org.neo4j.kernel.api.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.StatementContext;
 
 public class TransactionBoundQueryContext implements QueryContext
@@ -126,15 +127,15 @@ public class TransactionBoundQueryContext implements QueryContext
     }
 
     @Override
-    public String getLabelName( long id )
+    public String getLabelName( long id ) throws LabelNotFoundKernelException
     {
-        throw new UnsupportedOperationException();
+        return ctx.getLabelName( id );
     }
 
     @Override
     public Iterable<Long> getLabelsForNode( Node node )
     {
-        throw new UnsupportedOperationException();
+        return ctx.getLabelsForNode( node.getId() );
     }
 
     private RelationshipType[] transform( String[] types )

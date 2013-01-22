@@ -19,10 +19,14 @@
  */
 package org.neo4j.metatest;
 
+import static org.junit.Assert.*;
+import static org.neo4j.graphdb.DynamicLabel.label;
+
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -41,8 +45,6 @@ import org.neo4j.test.GraphHolder;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestData;
 import org.neo4j.test.TestGraphDatabaseFactory;
-
-import static org.junit.Assert.*;
 
 public class TestGraphDescription implements GraphHolder
 {
@@ -81,6 +83,18 @@ public class TestGraphDescription implements GraphHolder
         }
         assertEquals( graph.size(), unique.size() );
     }
+
+    @Test
+    @Graph( { "a:Person EATS b:Banana" } )
+    public void ensurePeopleCanEatBananas() throws Exception
+    {
+        Map<String, Node> graph = data.get();
+        Node a = graph.get( "a" );
+        Node b = graph.get( "b" );
+
+        assertTrue( a.hasLabel( label( "Person" ) ) );
+        assertTrue( b.hasLabel( label( "Banana" ) ) );
+    }
     
     @Test
     @Graph( value = { "I know you" }, autoIndexNodes=true )
@@ -116,7 +130,7 @@ public class TestGraphDescription implements GraphHolder
     public void canCreateMoreInvolvedGraphWithPropertiesAndAutoIndex()
             throws Exception
     {
-        System.out.println( data.get() );
+        data.get();
         verifyIknowYou( "knows", "me" );
         assertEquals( true, data.get().get( "I" ).getProperty( "bool" ) );
         assertFalse( "node autoindex enabled.",

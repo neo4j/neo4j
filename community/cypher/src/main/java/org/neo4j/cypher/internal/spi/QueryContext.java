@@ -24,6 +24,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.kernel.api.ConstraintViolationKernelException;
+import org.neo4j.kernel.api.LabelNotFoundKernelException;
 
 /*
  * Developer note: This is an attempt at an internal graph database API, which defines a clean cut between
@@ -53,7 +54,7 @@ public interface QueryContext
 
     long getOrCreateLabelId( String labelName ) throws ConstraintViolationKernelException;
 
-    String getLabelName( long id);
+    String getLabelName( long id) throws LabelNotFoundKernelException;
 
     Iterable<Long> getLabelsForNode( Node node );
 

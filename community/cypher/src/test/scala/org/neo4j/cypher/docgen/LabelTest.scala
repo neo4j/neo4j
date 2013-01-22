@@ -24,7 +24,7 @@ import org.junit.Assert._
 
 class LabelTest extends DocumentingTestBase {
   def graphDescription = List(
-    "Anders KNOWS Peter",
+    "Anders:Person KNOWS Peter",
     "Stefan KNOWS Andres",
     "Michael KNOWS Stefan",
     "Emil KNOWS Peter",
@@ -48,7 +48,7 @@ class LabelTest extends DocumentingTestBase {
   @Test def add_multiple_labels_to_a_node() {
     testQuery(
       title = "Add multiple labels to a node",
-      text = "To add multiple labels to a node, use +LABEL+ +AS+ and separate the different lables using +,+.",
+      text = "To add multiple labels to a node, use +LABEL+ +AS+ and separate the different labels using +,+.",
       queryText = "start n = node(%Anders%) label n += [:swedish, :polish] return n",
       returns = "The newly labeled node is returned by the query.",
       assertions = (p) => {}

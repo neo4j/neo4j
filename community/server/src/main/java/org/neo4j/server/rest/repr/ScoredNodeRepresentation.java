@@ -76,6 +76,12 @@ public final class ScoredNodeRepresentation extends
         return getDelegate().propertiesUri();
     }
 
+    @Mapping( "labels" )
+    public ValueRepresentation labelsUriTemplate()
+    {
+        return getDelegate().labelsUriTemplate();
+    }
+
     @Mapping( "property" )
     public ValueRepresentation propertyUriTemplate()
     {
