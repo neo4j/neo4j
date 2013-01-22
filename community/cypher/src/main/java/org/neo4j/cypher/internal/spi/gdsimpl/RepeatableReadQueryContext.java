@@ -87,43 +87,52 @@ public class RepeatableReadQueryContext implements QueryContext
     }
 
     @Override
-    public void addLabelsToNode(Node node, Iterable<Long> labelIds) {
-        throw new UnsupportedOperationException(  );
+    public void addLabelsToNode( Node node, Iterable<Long> labelIds )
+    {
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void replaceLabelsOfNode( Node node, Iterable<Long> labelIds )
     {
-        throw new UnsupportedOperationException(  );
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void removeLabelsFromNode( Node node, Iterable<Long> labelIds )
     {
-        throw new UnsupportedOperationException(  );
+        throw new UnsupportedOperationException();
     }
 
     @Override
-    public Long getOrCreateLabelId(String labelName) {
-        throw new UnsupportedOperationException(  );
-    }
-
-    @Override
-    public String getLabelName( Long id )
+    public long getOrCreateLabelId( String labelName )
     {
-        throw new UnsupportedOperationException(  );
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public String getLabelName( long id )
+    {
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public Iterable<Long> getLabelsForNode( Node node )
     {
-        throw new UnsupportedOperationException(  );
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void close()
     {
         locker.releaseAllReadLocks();
+    }
+
+    @Override
+    public void fail()
+    {
+        locker.releaseAllReadLocks();
+        inner.fail();
     }
 
     private class LockingIterator extends IterableWrapper<Relationship, Relationship>

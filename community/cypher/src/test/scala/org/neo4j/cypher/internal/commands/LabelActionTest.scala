@@ -81,7 +81,7 @@ class LabelActionTest extends GraphDatabaseTestBase with Assertions {
     val n = createNode()
     val given = LabelAction(Literal(n), LabelAdd, Literal(Seq(label("green"), "blue")))
 
-    //TWHEN
+    //THEN
     intercept[CypherTypeException](given.exec(ctx, state))
   }
 }
@@ -124,4 +124,8 @@ class SnitchingQueryContext extends QueryContext {
   def replaceLabelsOfNode(node: Node, labelIds: lang.Iterable[lang.Long]) = ???
 
   def removeLabelsFromNode(node: Node, labelIds: lang.Iterable[lang.Long]) = ???
+
+  def fail() {}
+
+  def getLabelName(id: Long) = ???
 }

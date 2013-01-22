@@ -27,22 +27,27 @@ import collection.mutable.{Map => MutableMap}
 import org.neo4j.graphdb.{Node, NotFoundException}
 import org.neo4j.cypher.internal.symbols.{SymbolTable, CypherType, NodeType}
 import org.neo4j.cypher.internal.commands.expressions.{Expression, Literal}
-import org.neo4j.cypher.internal.spi.gdsimpl.GDSBackedQueryContext
+import org.neo4j.cypher.internal.spi.gdsimpl.TransactionBoundQueryContext
 import org.neo4j.cypher.internal.ExecutionContext
+import org.neo4j.cypher.internal.spi.QueryContext
 
 class MutationTest extends ExecutionEngineHelper with Assertions {
 
-  def createQueryState = new QueryState(graph, new GDSBackedQueryContext(graph), Map.empty)
+  def createQueryState = {
+    queryContext = new TransactionBoundQueryContext(graph)
+    new QueryState(graph, queryContext, Map.empty)
+  }
+
+  var queryContext: QueryContext = null
+
 
   @Test
   def create_node() {
     val start = new NullPipe
-    val txBegin = new TransactionStartPipe(start, graph)
-    val createNode = new ExecuteUpdateCommandsPipe(txBegin, graph, Seq(CreateNode("n", Map("name" -> Literal("Andres")))))
+    val createNode = new ExecuteUpdateCommandsPipe(start, graph, Seq(CreateNode("n", Map("name" -> Literal("Andres")))))
 
     val queryState = createQueryState
     createNode.createResults(queryState).toList
-
 
     val n = graph.getNodeById(1)
     assert(n.getProperty("name") === "Andres")
@@ -54,8 +59,7 @@ class MutationTest extends ExecutionEngineHelper with Assertions {
   def join_existing_transaction_and_rollback() {
     val tx = graph.beginTx()
     val start = new NullPipe
-    val txBegin = new TransactionStartPipe(start, graph)
-    val createNode = new ExecuteUpdateCommandsPipe(txBegin, graph, Seq(CreateNode("n", Map("name" -> Literal("Andres")))))
+    val createNode = new ExecuteUpdateCommandsPipe(start, graph, Seq(CreateNode("n", Map("name" -> Literal("Andres")))))
 
     createNode.createResults(createQueryState).toList
 
@@ -69,8 +73,7 @@ class MutationTest extends ExecutionEngineHelper with Assertions {
   def join_existing_transaction_and_commit() {
     val tx = graph.beginTx()
     val start = new NullPipe
-    val txBegin = new TransactionStartPipe(start, graph)
-    val createNode = new ExecuteUpdateCommandsPipe(txBegin, graph, Seq(CreateNode("n", Map("name" -> Literal("Andres")))))
+    val createNode = new ExecuteUpdateCommandsPipe(start, graph, Seq(CreateNode("n", Map("name" -> Literal("Andres")))))
 
     createNode.createResults(createQueryState).toList
 
@@ -81,18 +84,17 @@ class MutationTest extends ExecutionEngineHelper with Assertions {
     assert(n.getProperty("name") === "Andres")
   }
 
-  private def getNode(key:String, n:Node) = InjectValue(n, NodeType())
+  private def getNode(key: String, n: Node) = InjectValue(n, NodeType())
 
   @Test
   def create_rel() {
     val a = createNode()
     val b = createNode()
 
-    val createRel = CreateRelationship("r", (getNode("a", a),Map()), (getNode("b", b),Map()), "REL", Map("I" -> Literal("was here")))
+    val createRel = CreateRelationship("r", (getNode("a", a), Map()), (getNode("b", b), Map()), "REL", Map("I" -> Literal("was here")))
 
     val startPipe = new NullPipe
-    val txBeginPipe = new TransactionStartPipe(startPipe, graph)
-    val createNodePipe = new ExecuteUpdateCommandsPipe(txBeginPipe, graph, Seq(createRel))
+    val createNodePipe = new ExecuteUpdateCommandsPipe(startPipe, graph, Seq(createRel))
 
     val state = createQueryState
     val results: List[MutableMap[String, Any]] = createNodePipe.createResults(state).map(ctx => ctx.m).toList
@@ -118,19 +120,18 @@ class MutationTest extends ExecutionEngineHelper with Assertions {
     val deleteCommand = DeleteEntityAction(getNode("a", a))
 
     val startPipe = new NullPipe
-    val txBeginPipe = new TransactionStartPipe(startPipe, graph)
-    val createNodePipe = new ExecuteUpdateCommandsPipe(txBeginPipe, graph, Seq(deleteCommand))
+    val createNodePipe = new ExecuteUpdateCommandsPipe(startPipe, graph, Seq(deleteCommand))
 
     val state = createQueryState
     createNodePipe.createResults(state).toList
-    state.transaction.get.success()
-    state.transaction.get.finish()
+
+    queryContext.close()
 
     intercept[NotFoundException](graph.getNodeById(node_id))
   }
 }
 
-case class InjectValue(value:Any, typ:CypherType) extends Expression {
+case class InjectValue(value: Any, typ: CypherType) extends Expression {
   def apply(v1: ExecutionContext) = value
 
   def children = Seq()

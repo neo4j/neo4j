@@ -2437,18 +2437,4 @@ RETURN x0.name?
 
     assert(result.toList === List(Map("a" -> a)))
   }
-
-  @Test def should_remove_label_from_node() {
-    val a = createLabeledNode(Map.empty, "foo")
-    val result = parseAndExecute("""START a=node(1) LABEL a -= :foo RETURN a""")
-
-    assert(result.toList === List(Map("a" -> a)))
-  }
-
-  @Test def should_remove_multiple_labels_from_node() {
-    val a = createLabeledNode(Map.empty, "foo")
-    val result = parseAndExecute("""START a=node(1) LABEL a -= [:foo, :bar] RETURN a""")
-
-    assert(result.toList === List(Map("a" -> a)))
-  }
 }

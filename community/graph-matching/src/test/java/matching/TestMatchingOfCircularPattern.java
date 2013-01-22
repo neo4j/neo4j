@@ -19,9 +19,15 @@
  */
 package matching;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
+import static org.neo4j.graphdb.DynamicRelationshipType.withName;
+
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -41,9 +47,6 @@ import org.neo4j.graphmatching.PatternMatch;
 import org.neo4j.graphmatching.PatternMatcher;
 import org.neo4j.graphmatching.PatternNode;
 import org.neo4j.helpers.collection.IteratorWrapper;
-
-import static org.junit.Assert.*;
-import static org.neo4j.graphdb.DynamicRelationshipType.*;
 
 public class TestMatchingOfCircularPattern
 {
