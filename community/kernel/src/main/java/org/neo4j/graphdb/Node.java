@@ -309,6 +309,7 @@ public interface Node extends PropertyContainer
      *             and then calling
      *             {@link TraversalDescription#traverse(Node...)}
      */
+    @Deprecated
     public Traverser traverse( Traverser.Order traversalOrder,
             StopEvaluator stopEvaluator,
             ReturnableEvaluator returnableEvaluator,
@@ -353,6 +354,7 @@ public interface Node extends PropertyContainer
      * behaviours to it and then calling
      * {@link TraversalDescription#traverse(Node...)}
      */
+    @Deprecated
     public Traverser traverse( Traverser.Order traversalOrder,
             StopEvaluator stopEvaluator,
             ReturnableEvaluator returnableEvaluator,
@@ -407,6 +409,7 @@ public interface Node extends PropertyContainer
      * behaviours to it and then calling
      * {@link TraversalDescription#traverse(Node...)}
      */
+    @Deprecated
     public Traverser traverse( Traverser.Order traversalOrder,
             StopEvaluator stopEvaluator,
             ReturnableEvaluator returnableEvaluator,
@@ -427,4 +430,12 @@ public interface Node extends PropertyContainer
      * @return {@code true} if this node has the given label, otherwise {@code false}.
      */
     public boolean hasLabel( Label label );
+    
+    /**
+     * Lists all labels attached to this node. If this node has no
+     * labels an empty {@link Iterable} will be returned.
+     * 
+     * @return all labels attached to this node.
+     */
+    public Iterable<Label> getLabels();
 }

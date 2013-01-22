@@ -298,7 +298,12 @@ public class LockHolder
             throw unsupportedOperation();
         }
 
-
+        @Override
+        public Iterable<Label> getLabels()
+        {
+            throw unsupportedOperation();
+        }
+        
         private UnsupportedOperationException unsupportedOperation()
         {
             return new UnsupportedOperationException( "NodeLock does not support this operation." );

@@ -61,6 +61,12 @@ public class ReadOnlyStatementContext implements StatementContext
     {
         return actual.getLabelsForNode( nodeId );
     }
+    
+    @Override
+    public String getLabelName( long labelId ) throws LabelNotFoundKernelException
+    {
+        return actual.getLabelName( labelId );
+    }
 
     @Override
     public void close()

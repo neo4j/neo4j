@@ -20,13 +20,19 @@
 package org.neo4j.graphdb;
 
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.helpers.collection.IteratorUtil.count;
 
 import java.io.File;
+import java.util.Set;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
@@ -42,7 +48,8 @@ public class LabelsAcceptanceTest
 
     private enum Labels implements Label
     {
-        MY_LABEL;
+        MY_LABEL,
+        MY_OTHER_LABEL;
     }
 
     @Test
@@ -157,6 +164,74 @@ public class LabelsAcceptanceTest
 
         // Then
         assertThat( "IllegalLabelException should have been thrown.", caught,is( ConstraintViolationException.class));
+    }
+    
+    @Test
+    public void shouldBeAbleToListLabelsForANode() throws Exception
+    {
+        // GIVEN
+        GraphDatabaseService beansAPI = dbRule.getGraphDatabaseService();
+        Transaction tx = beansAPI.beginTx();
+        Node node = null;
+        Set<String> expected = asSet( Labels.MY_LABEL.name(), Labels.MY_OTHER_LABEL.name() );
+        try
+        {
+            node = beansAPI.createNode();
+            for ( String label : expected )
+                node.addLabel( label( label ) );
+            tx.success();
+        }
+        finally
+        {
+            tx.finish();
+        }
+
+        // WHEN
+        Set<String> labels = asSet( asStrings( node.getLabels() ) );
+
+        // THEN
+        assertEquals( "Node didn't have all labels", expected, labels );
+    }
+    
+    @Test
+    public void shouldReturnEmptyListIfNoLabels() throws Exception
+    {
+        // GIVEN
+        GraphDatabaseService beansAPI = dbRule.getGraphDatabaseService();
+        Node node = createNode( beansAPI );
+
+        // WHEN
+        Iterable<Label> labels = node.getLabels();
+
+        // THEN
+        assertEquals( 0, count( labels ) );
+    }
+
+    private Node createNode( GraphDatabaseService beansAPI )
+    {
+        Transaction tx = beansAPI.beginTx();
+        try
+        {
+            Node node = beansAPI.createNode();
+            tx.success();
+            return node;
+        }
+        finally
+        {
+            tx.finish();
+        }
+    }
+
+    private Iterable<String> asStrings( Iterable<Label> labels )
+    {
+        return new IterableWrapper<String, Label>( labels )
+        {
+            @Override
+            protected String underlyingObjectToObject( Label label )
+            {
+                return label.name();
+            }
+        };
     }
 
     private GraphDatabaseService beansAPIWithNoMoreLabelIds()

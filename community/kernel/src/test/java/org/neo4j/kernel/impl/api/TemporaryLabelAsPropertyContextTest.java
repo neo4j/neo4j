@@ -74,8 +74,20 @@ public class TemporaryLabelAsPropertyContextTest
         Iterable<Long> readLabels = statement.getLabelsForNode( nodeId );
         assertEquals( new HashSet<Long>( asList( labelId1, labelId2 ) ), addToCollection( readLabels, new HashSet<Long>() ) );
     }
+    
+    @Test
+    public void should_be_able_to_get_label_name_for_label() throws Exception
+    {
+        // GIVEN
+        String labelName = "LabelName";
+        long labelId = statement.getOrCreateLabelId( labelName );
 
-    //write test when we dont have a property map
+        // WHEN
+        String readLabelName = statement.getLabelName( labelId );
+
+        // THEN
+        assertEquals( labelName, readLabelName );
+    }
 
     private GraphDatabaseAPI db;
     private StatementContext statement;

@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import static org.neo4j.graphdb.DynamicLabel.label;
+
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -31,6 +33,8 @@ import org.neo4j.graphdb.ReturnableEvaluator;
 import org.neo4j.graphdb.StopEvaluator;
 import org.neo4j.graphdb.Traverser;
 import org.neo4j.graphdb.Traverser.Order;
+import org.neo4j.helpers.ThisShouldNotHappenError;
+import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.kernel.ThreadToStatementContextBridge;
 import org.neo4j.kernel.api.ConstraintViolationKernelException;
 import org.neo4j.kernel.api.LabelNotFoundKernelException;
@@ -59,41 +63,49 @@ public class NodeProxy implements Node
         this.statementCtxProvider = statementCtxProvider;
     }
 
+    @Override
     public long getId()
     {
         return nodeId;
     }
 
+    @Override
     public GraphDatabaseService getGraphDatabase()
     {
         return nodeLookup.getGraphDatabase();
     }
 
+    @Override
     public void delete()
     {
         nodeLookup.lookup(nodeId, LockType.WRITE).delete( nodeLookup.getNodeManager(), this );
     }
 
+    @Override
     public Iterable<Relationship> getRelationships()
     {
         return nodeLookup.lookup(nodeId).getRelationships( nodeLookup.getNodeManager() );
     }
 
+    @Override
     public boolean hasRelationship()
     {
         return nodeLookup.lookup( nodeId ).hasRelationship( nodeLookup.getNodeManager() );
     }
 
+    @Override
     public Iterable<Relationship> getRelationships( Direction dir )
     {
         return nodeLookup.lookup(nodeId).getRelationships( nodeLookup.getNodeManager(), dir );
     }
 
+    @Override
     public boolean hasRelationship( Direction dir )
     {
         return nodeLookup.lookup(nodeId).hasRelationship( nodeLookup.getNodeManager(), dir );
     }
 
+    @Override
     public Iterable<Relationship> getRelationships( RelationshipType... types )
     {
         return nodeLookup.lookup(nodeId).getRelationships( nodeLookup.getNodeManager(), types );
@@ -105,63 +117,75 @@ public class NodeProxy implements Node
         return nodeLookup.lookup(nodeId).getRelationships( nodeLookup.getNodeManager(), direction, types );
     }
 
+    @Override
     public boolean hasRelationship( RelationshipType... types )
     {
         return nodeLookup.lookup(nodeId).hasRelationship( nodeLookup.getNodeManager(), types );
     }
 
+    @Override
     public boolean hasRelationship( Direction direction, RelationshipType... types )
     {
         return nodeLookup.lookup(nodeId).hasRelationship( nodeLookup.getNodeManager(), direction, types );
     }
 
+    @Override
     public Iterable<Relationship> getRelationships( RelationshipType type,
         Direction dir )
     {
         return nodeLookup.lookup(nodeId).getRelationships( nodeLookup.getNodeManager(), type, dir );
     }
 
+    @Override
     public boolean hasRelationship( RelationshipType type, Direction dir )
     {
         return nodeLookup.lookup(nodeId).hasRelationship( nodeLookup.getNodeManager(), type, dir );
     }
 
+    @Override
     public Relationship getSingleRelationship( RelationshipType type,
         Direction dir )
     {
         return nodeLookup.lookup(nodeId).getSingleRelationship( nodeLookup.getNodeManager(), type, dir );
     }
 
+    @Override
     public void setProperty( String key, Object value )
     {
         nodeLookup.lookup(nodeId, LockType.WRITE).setProperty( nodeLookup.getNodeManager(), this, key, value );
     }
 
+    @Override
     public Object removeProperty( String key ) throws NotFoundException
     {
         return nodeLookup.lookup(nodeId, LockType.WRITE).removeProperty( nodeLookup.getNodeManager(), this, key );
     }
 
+    @Override
     public Object getProperty( String key, Object defaultValue )
     {
         return nodeLookup.lookup(nodeId).getProperty( nodeLookup.getNodeManager(), key, defaultValue );
     }
 
+    @Override
     public Iterable<Object> getPropertyValues()
     {
         return nodeLookup.lookup(nodeId).getPropertyValues( nodeLookup.getNodeManager() );
     }
 
+    @Override
     public Iterable<String> getPropertyKeys()
     {
         return nodeLookup.lookup(nodeId).getPropertyKeys( nodeLookup.getNodeManager() );
     }
 
+    @Override
     public Object getProperty( String key ) throws NotFoundException
     {
         return nodeLookup.lookup(nodeId).getProperty( nodeLookup.getNodeManager(), key );
     }
 
+    @Override
     public boolean hasProperty( String key )
     {
         return nodeLookup.lookup(nodeId).hasProperty( nodeLookup.getNodeManager(), key );
@@ -208,6 +232,7 @@ public class NodeProxy implements Node
         return "Node[" + this.getId() + "]";
     }
 
+    @Override
     public Relationship createRelationshipTo( Node otherNode,
         RelationshipType type )
     {
@@ -242,6 +267,7 @@ public class NodeProxy implements Node
     }
     */
 
+    @Override
     public Traverser traverse( Order traversalOrder,
         StopEvaluator stopEvaluator, ReturnableEvaluator returnableEvaluator,
         RelationshipType relationshipType, Direction direction )
@@ -251,6 +277,7 @@ public class NodeProxy implements Node
                                              returnableEvaluator, relationshipType, direction );
     }
 
+    @Override
     public Traverser traverse( Order traversalOrder,
         StopEvaluator stopEvaluator, ReturnableEvaluator returnableEvaluator,
         RelationshipType firstRelationshipType, Direction firstDirection,
@@ -262,6 +289,7 @@ public class NodeProxy implements Node
                                              secondRelationshipType, secondDirection );
     }
 
+    @Override
     public Traverser traverse( Order traversalOrder,
         StopEvaluator stopEvaluator, ReturnableEvaluator returnableEvaluator,
         Object... relationshipTypesAndDirections )
@@ -297,5 +325,28 @@ public class NodeProxy implements Node
         {
             return false;
         }
+    }
+    
+    @Override
+    public Iterable<Label> getLabels()
+    {
+        final StatementContext ctx = statementCtxProvider.getCtxForReading();
+        return new IterableWrapper<Label, Long>( ctx.getLabelsForNode( getId() ) )
+        {
+            @Override
+            protected Label underlyingObjectToObject( Long labelId )
+            {
+                // TODO Don't create new label instances all the time.
+                try
+                {
+                    return label( ctx.getLabelName( labelId ) );
+                }
+                catch ( LabelNotFoundKernelException e )
+                {
+                    throw new ThisShouldNotHappenError( "Mattias", "Listed labels for node " + nodeId +
+                            ", but the returned label " + labelId + " doesn't exist anymore" );
+                }
+            }
+        };
     }
 }

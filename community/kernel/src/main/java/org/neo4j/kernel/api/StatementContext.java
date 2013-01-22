@@ -86,6 +86,15 @@ public interface StatementContext
     Iterable<Long> getLabelsForNode( long nodeId );
     
     /**
+     * Returns the label name for the given label id.
+     * 
+     * @param labelId the label id to get the name for.
+     * @return the name of the label with the given id.
+     * @throws LabelNotFoundKernelException if the label doesn't exist.
+     */
+    String getLabelName( long labelId ) throws LabelNotFoundKernelException;
+    
+    /**
      * Closes this statement. Statements must be closed when done and before
      * their parent transaction {@link TransactionContext#finish()} finishes.
      * As an example statement-bound locks can be released when closing

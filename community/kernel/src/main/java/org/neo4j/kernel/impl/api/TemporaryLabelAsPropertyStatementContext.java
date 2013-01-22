@@ -56,7 +56,7 @@ public class TemporaryLabelAsPropertyStatementContext implements StatementContex
     public long getOrCreateLabelId( String label ) throws ConstraintViolationKernelException
     {
         try {
-            return propertyIndexManager.getOrCreateId( internalLabelName( label ) );
+            return propertyIndexManager.getOrCreateId( toInternalLabelName( label ) );
         } catch(TransactionFailureException e)
         {
             // Temporary workaround for the property store based label implementation. Actual
@@ -78,7 +78,7 @@ public class TemporaryLabelAsPropertyStatementContext implements StatementContex
     {
         try
         {
-            return propertyIndexManager.getIdByKeyName( internalLabelName( label ) );
+            return propertyIndexManager.getIdByKeyName( toInternalLabelName( label ) );
         }
         catch ( KeyNotFoundException e )
         {
@@ -128,12 +128,31 @@ public class TemporaryLabelAsPropertyStatementContext implements StatementContex
         }
         return result;
     }
+    
+    @Override
+    public String getLabelName( long labelId ) throws LabelNotFoundKernelException
+    {
+        try
+        {
+            String rawKey = propertyIndexManager.getKeyById( (int) labelId ).getKey();
+            return fromInternalLabelName( rawKey );
+        }
+        catch ( KeyNotFoundException e )
+        {
+            throw new LabelNotFoundKernelException( "Label by id " + labelId, e );
+        }
+    }
 
-    private String internalLabelName( String label )
+    private String toInternalLabelName( String label )
     {
         return LABEL_PREFIX + label;
     }
 
+    private String fromInternalLabelName( String label )
+    {
+        return label.substring( LABEL_PREFIX.length() );
+    }
+    
     @Override
     public void close()
     {

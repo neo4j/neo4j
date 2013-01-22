@@ -67,6 +67,13 @@ public class InteractionStoppingStatementContext implements StatementContext
         assertOperationsAllowed();
         return delegate.getLabelsForNode( nodeId );
     }
+    
+    @Override
+    public String getLabelName( long labelId ) throws LabelNotFoundKernelException
+    {
+        assertOperationsAllowed();
+        return delegate.getLabelName( labelId );
+    }
 
     @Override
     public void close()

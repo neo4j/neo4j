@@ -63,6 +63,12 @@ public class DelegatingStatementContext implements StatementContext
     }
     
     @Override
+    public String getLabelName( long labelId ) throws LabelNotFoundKernelException
+    {
+        return delegate.getLabelName( labelId );
+    }
+    
+    @Override
     public void close()
     {
         delegate.close();

@@ -81,14 +81,17 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
     private final GraphDatabaseAPI actual;
     private final Transaction tx = new Transaction()
     {
+        @Override
         public void success()
         {
         }
 
+        @Override
         public void failure()
         {
         }
 
+        @Override
         public void finish()
         {
         }
@@ -198,6 +201,7 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
             throw new ReadOnlyDbException();
         }
 
+        @Override
         public int getEventIdentifier()
         {
             return 0;
@@ -240,12 +244,14 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
         throw new UnsupportedOperationException( "Read only Graph Database!" );
     }
 
+    @Override
     public Transaction beginTx()
     {
         // return readOnly();
         return tx;
     }
 
+    @Override
     public Node createNode()
     {
         return readOnly();
@@ -261,52 +267,62 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
         return enableRemoteShell();
     }
 
+    @Override
     public Iterable<Node> getAllNodes()
     {
         return nodes( actual.getAllNodes() );
     }
 
+    @Override
     public Node getNodeById( long id )
     {
         return new ReadOnlyNodeProxy( actual.getNodeById( id ) );
     }
 
+    @Override
     public Node getReferenceNode()
     {
         return new ReadOnlyNodeProxy( actual.getReferenceNode() );
     }
 
+    @Override
     public Relationship getRelationshipById( long id )
     {
         return new ReadOnlyRelationshipProxy( actual.getRelationshipById( id ) );
     }
 
+    @Override
     public Iterable<RelationshipType> getRelationshipTypes()
     {
         return actual.getRelationshipTypes();
     }
 
+    @Override
     public KernelEventHandler registerKernelEventHandler( KernelEventHandler handler )
     {
         return readOnly();
     }
 
+    @Override
     public <T> TransactionEventHandler<T> registerTransactionEventHandler(
             TransactionEventHandler<T> handler )
     {
         return readOnly();
     }
 
+    @Override
     public void shutdown()
     {
         actual.shutdown();
     }
 
+    @Override
     public KernelEventHandler unregisterKernelEventHandler( KernelEventHandler handler )
     {
         return readOnly();
     }
 
+    @Override
     public <T> TransactionEventHandler<T> unregisterTransactionEventHandler(
             TransactionEventHandler<T> handler )
     {
@@ -340,77 +356,92 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
             return actual.toString();
         }
 
+        @Override
         public long getId()
         {
             return actual.getId();
         }
 
+        @Override
         public Relationship createRelationshipTo( Node otherNode, RelationshipType type )
         {
             return readOnly();
         }
 
+        @Override
         public void delete()
         {
             readOnly();
         }
 
+        @Override
         public Iterable<Relationship> getRelationships()
         {
             return relationships( actual.getRelationships() );
         }
 
+        @Override
         public Iterable<Relationship> getRelationships( RelationshipType... types )
         {
             return relationships( actual.getRelationships( types ) );
         }
 
+        @Override
         public Iterable<Relationship> getRelationships( Direction direction,
                                                         RelationshipType... types )
         {
             return relationships( actual.getRelationships( direction, types ) );
         }
 
+        @Override
         public Iterable<Relationship> getRelationships( Direction dir )
         {
             return relationships( actual.getRelationships( dir ) );
         }
 
+        @Override
         public Iterable<Relationship> getRelationships( RelationshipType type, Direction dir )
         {
             return relationships( actual.getRelationships( type, dir ) );
         }
 
+        @Override
         public Relationship getSingleRelationship( RelationshipType type, Direction dir )
         {
             return new ReadOnlyRelationshipProxy( actual.getSingleRelationship( type, dir ) );
         }
 
+        @Override
         public boolean hasRelationship()
         {
             return actual.hasRelationship();
         }
 
+        @Override
         public boolean hasRelationship( RelationshipType... types )
         {
             return actual.hasRelationship( types );
         }
 
+        @Override
         public boolean hasRelationship( Direction direction, RelationshipType... types )
         {
             return actual.hasRelationship( direction, types );
         }
 
+        @Override
         public boolean hasRelationship( Direction dir )
         {
             return actual.hasRelationship( dir );
         }
 
+        @Override
         public boolean hasRelationship( RelationshipType type, Direction dir )
         {
             return actual.hasRelationship( type, dir );
         }
 
+        @Override
         public Traverser traverse( Order traversalOrder, StopEvaluator stopEvaluator,
                                    ReturnableEvaluator returnableEvaluator, RelationshipType relationshipType,
                                    Direction direction )
@@ -419,6 +450,7 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
                     returnableEvaluator, relationshipType, direction );
         }
 
+        @Override
         public Traverser traverse( Order traversalOrder, StopEvaluator stopEvaluator,
                                    ReturnableEvaluator returnableEvaluator, RelationshipType firstRelationshipType,
                                    Direction firstDirection, RelationshipType secondRelationshipType,
@@ -429,6 +461,7 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
                     secondRelationshipType, secondDirection );
         }
 
+        @Override
         public Traverser traverse( Order traversalOrder, StopEvaluator stopEvaluator,
                                    ReturnableEvaluator returnableEvaluator, Object... relationshipTypesAndDirections )
         {
@@ -447,42 +480,56 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
         {
             return actual.hasLabel( label );
         }
+        
+        @Override
+        public Iterable<Label> getLabels()
+        {
+            return actual.getLabels();
+        }
 
+        @Override
         public GraphDatabaseService getGraphDatabase()
         {
             return ReadOnlyGraphDatabaseProxy.this;
         }
 
+        @Override
         public Object getProperty( String key )
         {
             return actual.getProperty( key );
         }
 
+        @Override
         public Object getProperty( String key, Object defaultValue )
         {
             return actual.getProperty( key, defaultValue );
         }
 
+        @Override
         public Iterable<String> getPropertyKeys()
         {
             return actual.getPropertyKeys();
         }
 
+        @Override
         public Iterable<Object> getPropertyValues()
         {
             return actual.getPropertyValues();
         }
 
+        @Override
         public boolean hasProperty( String key )
         {
             return actual.hasProperty( key );
         }
 
+        @Override
         public Object removeProperty( String key )
         {
             return readOnly();
         }
 
+        @Override
         public void setProperty( String key, Object value )
         {
             readOnly();
@@ -516,81 +563,97 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
             return actual.toString();
         }
 
+        @Override
         public long getId()
         {
             return actual.getId();
         }
 
+        @Override
         public void delete()
         {
             readOnly();
         }
 
+        @Override
         public Node getEndNode()
         {
             return new ReadOnlyNodeProxy( actual.getEndNode() );
         }
 
+        @Override
         public Node[] getNodes()
         {
             return new Node[]{getStartNode(), getEndNode()};
         }
 
+        @Override
         public Node getOtherNode( Node node )
         {
             return new ReadOnlyNodeProxy( actual.getOtherNode( node ) );
         }
 
+        @Override
         public Node getStartNode()
         {
             return new ReadOnlyNodeProxy( actual.getStartNode() );
         }
 
+        @Override
         public RelationshipType getType()
         {
             return actual.getType();
         }
 
+        @Override
         public boolean isType( RelationshipType type )
         {
             return actual.isType( type );
         }
 
+        @Override
         public GraphDatabaseService getGraphDatabase()
         {
             return ReadOnlyGraphDatabaseProxy.this;
         }
 
+        @Override
         public Object getProperty( String key )
         {
             return actual.getProperty( key );
         }
 
+        @Override
         public Object getProperty( String key, Object defaultValue )
         {
             return actual.getProperty( key, defaultValue );
         }
 
+        @Override
         public Iterable<String> getPropertyKeys()
         {
             return actual.getPropertyKeys();
         }
 
+        @Override
         public Iterable<Object> getPropertyValues()
         {
             return actual.getPropertyValues();
         }
 
+        @Override
         public boolean hasProperty( String key )
         {
             return actual.hasProperty( key );
         }
 
+        @Override
         public Object removeProperty( String key )
         {
             return readOnly();
         }
 
+        @Override
         public void setProperty( String key, Object value )
         {
             readOnly();
@@ -621,63 +684,75 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
         };
     }
 
+    @Override
     public boolean existsForNodes( String indexName )
     {
         return actual.index().existsForNodes( indexName );
     }
 
+    @Override
     public Index<Node> forNodes( String indexName )
     {
         return new ReadOnlyNodeIndexProxy( actual.index().forNodes( indexName, null ) );
     }
 
+    @Override
     public Index<Node> forNodes( String indexName, Map<String, String> customConfiguration )
     {
         return new ReadOnlyNodeIndexProxy( actual.index().forNodes( indexName, customConfiguration ) );
     }
 
+    @Override
     public String[] nodeIndexNames()
     {
         return actual.index().nodeIndexNames();
     }
 
+    @Override
     public boolean existsForRelationships( String indexName )
     {
         return actual.index().existsForRelationships( indexName );
     }
 
+    @Override
     public RelationshipIndex forRelationships( String indexName )
     {
         return new ReadOnlyRelationshipIndexProxy( actual.index().forRelationships( indexName, null ) );
     }
 
+    @Override
     public RelationshipIndex forRelationships( String indexName,
                                                Map<String, String> customConfiguration )
     {
         return new ReadOnlyRelationshipIndexProxy( actual.index().forRelationships( indexName, customConfiguration ) );
     }
 
+    @Override
     public String[] relationshipIndexNames()
     {
         return actual.index().relationshipIndexNames();
     }
 
+    @Override
     public IndexManager index()
     {
         return this;
     }
 
+    @Override
     public Map<String, String> getConfiguration( Index<? extends PropertyContainer> index )
     {
         return actual.index().getConfiguration( index );
     }
 
+    @Override
     public String setConfiguration( Index<? extends PropertyContainer> index, String key,
                                     String value )
     {
         throw new ReadOnlyDbException();
     }
 
+    @Override
     public String removeConfiguration( Index<? extends PropertyContainer> index, String key )
     {
         throw new ReadOnlyDbException();
@@ -707,47 +782,56 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
 
         abstract T wrap( T actual );
 
+        @Override
         public void delete()
         {
             readOnly();
         }
 
+        @Override
         public void add( T entity, String key, Object value )
         {
             readOnly();
         }
 
+        @Override
         public T putIfAbsent( T entity, String key, Object value )
         {
             readOnly();
             return null;
         }
 
+        @Override
         public IndexHits<T> get( String key, Object value )
         {
             return new ReadOnlyIndexHitsProxy<T>( this, actual.get( key, value ) );
         }
 
+        @Override
         public IndexHits<T> query( String key, Object queryOrQueryObject )
         {
             return new ReadOnlyIndexHitsProxy<T>( this, actual.query( key, queryOrQueryObject ) );
         }
 
+        @Override
         public IndexHits<T> query( Object queryOrQueryObject )
         {
             return new ReadOnlyIndexHitsProxy<T>( this, actual.query( queryOrQueryObject ) );
         }
 
+        @Override
         public void remove( T entity, String key, Object value )
         {
             readOnly();
         }
 
+        @Override
         public void remove( T entity, String key )
         {
             readOnly();
         }
 
+        @Override
         public void remove( T entity )
         {
             readOnly();
@@ -779,11 +863,13 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
             return readOnly( actual );
         }
 
+        @Override
         public String getName()
         {
             return actual.getName();
         }
 
+        @Override
         public Class<Node> getEntityType()
         {
             return Node.class;
@@ -806,6 +892,7 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
             return readOnly( actual );
         }
 
+        @Override
         public IndexHits<Relationship> get( String key, Object valueOrNull, Node startNodeOrNull,
                                             Node endNodeOrNull )
         {
@@ -813,6 +900,7 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
                     startNodeOrNull, endNodeOrNull ) );
         }
 
+        @Override
         public IndexHits<Relationship> query( String key, Object queryOrQueryObjectOrNull,
                                               Node startNodeOrNull, Node endNodeOrNull )
         {
@@ -820,6 +908,7 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
                     queryOrQueryObjectOrNull, startNodeOrNull, endNodeOrNull ) );
         }
 
+        @Override
         public IndexHits<Relationship> query( Object queryOrQueryObjectOrNull,
                                               Node startNodeOrNull, Node endNodeOrNull )
         {
@@ -827,11 +916,13 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
                     queryOrQueryObjectOrNull, startNodeOrNull, endNodeOrNull ) );
         }
 
+        @Override
         public String getName()
         {
             return actual.getName();
         }
 
+        @Override
         public Class<Relationship> getEntityType()
         {
             return Relationship.class;
@@ -850,41 +941,49 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
             this.actual = actual;
         }
 
+        @Override
         public void close()
         {
             actual.close();
         }
 
+        @Override
         public T getSingle()
         {
             return index.wrap( actual.getSingle() );
         }
 
+        @Override
         public int size()
         {
             return actual.size();
         }
 
+        @Override
         public boolean hasNext()
         {
             return actual.hasNext();
         }
 
+        @Override
         public T next()
         {
             return index.wrap( actual.next() );
         }
 
+        @Override
         public void remove()
         {
             readOnly();
         }
 
+        @Override
         public Iterator<T> iterator()
         {
             return this;
         }
 
+        @Override
         public float currentScore()
         {
             return actual.currentScore();

@@ -439,6 +439,12 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
         {
             throw new UnsupportedOperationException( "Batch inserter mode" );
         }
+        
+        @Override
+        public Iterable<Label> getLabels()
+        {
+            throw new UnsupportedOperationException( "Batch inserter mode" );
+        }
 
         @Override
         public Object getProperty( String key )

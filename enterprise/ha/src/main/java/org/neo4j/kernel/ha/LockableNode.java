@@ -212,4 +212,10 @@ public class LockableNode implements Node
     {
         throw lockableNodeException();
     }
+    
+    @Override
+    public Iterable<Label> getLabels()
+    {
+        throw lockableNodeException();
+    }
 }

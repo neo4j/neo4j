@@ -19,6 +19,8 @@
  */
 package org.neo4j.helpers.collection;
 
+import static java.util.Arrays.asList;
+
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
@@ -27,9 +29,10 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Deque;
+import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Set;
 
 /**
  * Contains common functionality regarding {@link Iterator}s and
@@ -358,6 +361,7 @@ public abstract class IteratorUtil
     {
         return new Iterable<T>()
         {
+            @Override
             public Iterator<T> iterator()
             {
                 return iterator;
@@ -422,9 +426,30 @@ public abstract class IteratorUtil
      */
     public static <T> Collection<T> asCollection( Iterable<T> iterable )
     {
-        List<T> list = new ArrayList<T>();
-        addToCollection( iterable, list );
-        return list;
+        return addToCollection( iterable, new ArrayList<T>() );
+    }
+    
+    /**
+     * Creates a {@link Set} from an {@link Iterable}.
+     *
+     * @param iterable The items to create the set from.
+     * @param <T> The generic type of items.
+     * @return a set containing all items from the {@link Iterable}.
+     */
+    public static <T> Set<T> asSet( Iterable<T> iterable )
+    {
+        return addToCollection( iterable, new HashSet<T>() );
+    }
+    
+    /**
+     * Creates a {@link Set} from an array of items.
+     * 
+     * @param items the items to add to the set.
+     * @return the {@link Set} containing the items.
+     */
+    public static <T> Set<T> asSet( T... items )
+    {
+        return new HashSet<T>( asList( items ) );
     }
     
     /**
