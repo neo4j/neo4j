@@ -134,15 +134,20 @@ class TransactionImpl implements Transaction
         HeuristicMixedException, HeuristicRollbackException,
         IllegalStateException, SystemException
     {
-        if(currentStatementContext != null)
-        {
-            currentStatementContext.close();
-            currentStatementContext = null;
-        }
+        ensureStatementContextClosed();
         // make sure tx not suspended
         txManager.commit();
         transactionContext.success();
         transactionContext.finish();
+    }
+
+    private void ensureStatementContextClosed()
+    {
+        if ( currentStatementContext != null )
+        {
+            currentStatementContext.close();
+            currentStatementContext = null;
+        }
     }
 
     boolean isGlobalStartRecordWritten()
@@ -154,11 +159,7 @@ class TransactionImpl implements Transaction
 	public synchronized void rollback() throws IllegalStateException,
         SystemException
     {
-        if(currentStatementContext != null)
-        {
-            currentStatementContext.close();
-            currentStatementContext = null;
-        }
+        ensureStatementContextClosed();
         // make sure tx not suspended
         txManager.rollback();
         transactionContext.failure();
@@ -617,7 +618,7 @@ class TransactionImpl implements Transaction
 
     public StatementContext getCurrentStatementContext()
     {
-        if(currentStatementContext == null)
+        if ( currentStatementContext == null )
         {
             currentStatementContext = transactionContext.newStatementContext();
         }

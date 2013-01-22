@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.internal.executionplan.builders
 
-import org.neo4j.cypher.internal.executionplan.{ExecutionPlanInProgress, PlanBuilder}
+import org.neo4j.cypher.internal.executionplan.PlanBuilder
 import org.neo4j.graphdb.GraphDatabaseService
-import org.neo4j.cypher.internal.pipes.{Pipe, ExecuteUpdateCommandsPipe, TransactionStartPipe}
+import org.neo4j.cypher.internal.pipes.{Pipe, ExecuteUpdateCommandsPipe}
 import org.neo4j.cypher.internal.mutation._
-import org.neo4j.cypher.internal.symbols.{TypeSafe, AnyCollectionType, NodeType, SymbolTable}
+import org.neo4j.cypher.internal.symbols.{AnyCollectionType, NodeType, SymbolTable}
 import org.neo4j.cypher.internal.commands._
 import collection.Map
 import collection.mutable
@@ -44,13 +44,7 @@ class CreateNodesAndRelationshipsBuilder(db: GraphDatabaseService) extends PlanB
     val commands = mutatingQueryTokens.map(_.token.asInstanceOf[UpdatingStartItem].updateAction)
     val allCommands = expandCommands(commands, plan.pipe.symbols)
 
-    val p = if (plan.isUpdating) {
-      plan.pipe
-    } else {
-      new TransactionStartPipe(plan.pipe, db)
-    }
-
-    val resultPipe = new ExecuteUpdateCommandsPipe(p, db, allCommands)
+    val resultPipe = new ExecuteUpdateCommandsPipe(plan.pipe, db, allCommands)
     val resultQuery = q.start.filterNot(mutatingQueryTokens.contains) ++ mutatingQueryTokens.map(_.solve)
 
     plan.copy(query = q.copy(start = resultQuery), pipe = resultPipe, isUpdating = true)
@@ -99,13 +93,15 @@ trait UpdateCommandExpander {
 
         val nodeFromOtherCommand = commands.exists {
           case CreateNode(n, _) => n == name
-          case _                         => false
+          case _                => false
         }
 
-        if (!nodeFromUnderlyingPipe && !nodeFromOtherCommand)
+        if (!nodeFromUnderlyingPipe && !nodeFromOtherCommand) {
           Seq(CreateNode(name, e._2))
-        else
+        }
+        else {
           Seq()
+        }
 
       case _ => Seq()
     }
@@ -117,8 +113,8 @@ trait UpdateCommandExpander {
 
       case createRel: CreateRelationship =>
         alsoCreateNode(createRel.from, symbols, commands) ++
-        alsoCreateNode(createRel.to, symbols, commands) ++ commands
-      case _                                      => commands
+          alsoCreateNode(createRel.to, symbols, commands) ++ commands
+      case _                             => commands
     }.distinct
 
     new SortedUpdateActionIterator(distinctify(missingCreateNodeActions), symbols).toSeq
@@ -129,8 +125,9 @@ trait UpdateCommandExpander {
     def hasNext = commandsLeft.nonEmpty
 
     def next() = {
-      if (commandsLeft.isEmpty)
+      if (commandsLeft.isEmpty) {
         Iterator.empty.next()
+      }
       else {
 
         //Let's get all the commands that are ready to run, and sort them so node creation happens before
@@ -138,7 +135,7 @@ trait UpdateCommandExpander {
         val nextCommands = commandsLeft.filter(action => action.symbolDependenciesMet(symbols)).sortWith {
           case (a: CreateNode, _) => true
           case (_, a: CreateNode) => false
-          case _                           => false
+          case _                  => false
         }
 
         if (nextCommands.isEmpty) {

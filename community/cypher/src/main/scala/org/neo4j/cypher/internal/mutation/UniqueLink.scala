@@ -32,6 +32,7 @@ import collection.JavaConverters._
 import collection.Map
 import org.neo4j.cypher.internal.helpers.{IsMap, MapSupport}
 import org.neo4j.cypher.internal.ExecutionContext
+import org.neo4j.cypher.internal.spi.gdsimpl.TransactionBoundQueryContext
 
 object UniqueLink {
   def apply(start: String, end: String, relName: String, relType: String, dir: Direction): UniqueLink =
@@ -42,6 +43,8 @@ case class UniqueLink(start: NamedExpectation, end: NamedExpectation, rel: Named
   extends GraphElementPropertyFunctions with Pattern with MapSupport {
 
   def exec(context: ExecutionContext, state: QueryState): Option[(UniqueLink, CreateUniqueResult)] = {
+
+    def tx = state.queryContext.asInstanceOf[TransactionBoundQueryContext].getTransaction()
 
     def getNode(expect: NamedExpectation): Option[Node] = context.get(expect.name) match {
       case Some(n: Node)                             => Some(n)
@@ -64,11 +67,12 @@ case class UniqueLink(start: NamedExpectation, end: NamedExpectation, rel: Named
 
       rels match {
         case List() =>
-          val tx = state.transaction.getOrElse(throw new RuntimeException("I need a transaction!"))
-
           val expectations = rel.getExpectations(context)
           val createRel = CreateRelationship(rel.name, (Literal(startNode), Map()), (Literal(endNode), Map()), relType, expectations)
           Some(this->Update(Seq(UpdateWrapper(Seq(), createRel, rel.name)), () => {
+            // TODO: This should not be done here. The QueryContext should take the necessary locks while reading the
+            // graph. For now, let's rip out the inside of objects and get to the transaction.
+
             Seq(tx.acquireWriteLock(startNode), tx.acquireWriteLock(endNode))
           }))
         case List(r) => Some(this->Traverse(rel.name -> r))
@@ -100,7 +104,6 @@ case class UniqueLink(start: NamedExpectation, end: NamedExpectation, rel: Named
 
       rels match {
         case List() =>
-          val tx = state.transaction.getOrElse(throw new RuntimeException("I need a transaction!"))
           Some(this -> Update(createUpdateActions(), () => Seq(tx.acquireWriteLock(startNode))))
 
         case List(r) => Some(this -> Traverse(rel.name -> r, other.name -> r.getOtherNode(startNode)))
