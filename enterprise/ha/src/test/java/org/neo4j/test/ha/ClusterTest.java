@@ -26,7 +26,6 @@ import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.test.LoggerRule;
 import org.neo4j.test.TargetDirectory;
 

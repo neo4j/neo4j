@@ -60,7 +60,6 @@ import org.neo4j.cluster.protocol.heartbeat.HeartbeatMessage;
 import org.neo4j.cluster.statemachine.State;
 import org.neo4j.cluster.timeout.FixedTimeoutStrategy;
 import org.neo4j.cluster.timeout.MessageTimeoutStrategy;
-import org.neo4j.helpers.Function;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.test.LoggerRule;
@@ -336,8 +335,8 @@ public class ClusterMockTest
             public long time;
         }
 
-        private Queue<ClusterAction> actions = new LinkedList<ClusterAction>();
-        private AtomicBroadcastSerializer serializer = new AtomicBroadcastSerializer();
+        private final Queue<ClusterAction> actions = new LinkedList<ClusterAction>();
+        private final AtomicBroadcastSerializer serializer = new AtomicBroadcastSerializer();
 
         private int rounds = 100;
         private long now = 0;
