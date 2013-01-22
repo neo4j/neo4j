@@ -225,27 +225,29 @@ public class PersistenceWindowPool implements WindowPool
     @Override
     public void release( PersistenceWindow window )
     {
-        if ( window instanceof PersistenceRow )
+        try
         {
-            PersistenceRow dpw = (PersistenceRow) window;
-            
-            // If the corresponding window has been instantiated while we had
-            // this active row we need to hand over the changes to that
-            // window if the window isn't memory mapped.
-            if ( brickSize > 0 && dpw.isDirty() )
-                applyChangesToWindowIfNecessary( dpw );
+            if ( window instanceof PersistenceRow )
+            {
+                PersistenceRow dpw = (PersistenceRow) window;
 
-            if ( dpw.writeOutAndCloseIfFree( readOnly ) )
-            {
-                activeRowWindows.remove( dpw.position(), dpw );
+                // If the corresponding window has been instantiated while we had
+                // this active row we need to hand over the changes to that
+                // window if the window isn't memory mapped.
+                if ( brickSize > 0 && dpw.isDirty() )
+                    applyChangesToWindowIfNecessary( dpw );
+
+                if ( dpw.writeOutAndCloseIfFree( readOnly ) )
+                {
+                    activeRowWindows.remove( dpw.position(), dpw );
+                }
+                else
+                {
+                    dpw.reset();
+                }
             }
-            else
-            {
-                dpw.reset();
-            }
-            dpw.unLock();
         }
-        else
+        finally
         {
             ((LockableWindow) window).unLock();
         }
