@@ -60,6 +60,17 @@
                     </rulesets>
                 </configuration>
             </plugin>
+            <plugin>
+              <groupId>org.codehaus.mojo</groupId>
+              <artifactId>findbugs-maven-plugin</artifactId>
+              <configuration>
+                <xmlOutput>true</xmlOutput>
+                <findbugsXmlOutput>true</findbugsXmlOutput><!-- For jenkins to pick stuff up -->
+                <effort>Max</effort>
+                <failOnError>false</failOnError>
+                <sourceEncoding>${file.encoding}</sourceEncoding>
+              </configuration>
+            </plugin>
         </plugins>
     </reporting>
 
