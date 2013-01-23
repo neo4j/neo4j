@@ -65,9 +65,6 @@
               <configuration>
                 <xmlOutput>true</xmlOutput>
                 <findbugsXmlOutput>true</findbugsXmlOutput><!-- For jenkins to pick stuff up -->
-                <effort>Max</effort>
-                <failOnError>false</failOnError>
-                <sourceEncoding>${file.encoding}</sourceEncoding>
               </configuration>
             </plugin>
         </plugins>
