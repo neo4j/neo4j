@@ -78,6 +78,7 @@ class GraphDatabaseTestBase extends JUnitSuite  {
     n
   }
 
+  def createLabeledNode(labels: String*): Node = createLabeledNode(Map[String,Any](), labels:_*)
   def createNode(values: (String, Any)*): Node = createNode(values.toMap)
 
   def inTx[T](f: () => T): T = {

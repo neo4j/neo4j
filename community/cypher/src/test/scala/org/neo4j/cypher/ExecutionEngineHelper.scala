@@ -22,8 +22,18 @@ package org.neo4j.cypher
 import internal.commands.Query
 import internal.spi.gdsimpl.TransactionBoundQueryContext
 import org.junit.Before
+import org.neo4j.graphdb.{DynamicLabel, Node}
+import org.neo4j.graphdb.DynamicLabel.label
+import collection.JavaConverters._
 
 trait ExecutionEngineHelper extends GraphDatabaseTestBase {
+
+  implicit class RichNode(n: Node) {
+    def labels: List[String] = n.getLabels.asScala.map(_.name()).toList
+
+    def addLabels(input: String*) = input.foreach(l => n.addLabel(label(l)))
+  }
+
 
   var engine: ExecutionEngine = null
 
