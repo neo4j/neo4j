@@ -732,13 +732,20 @@ public class ZooClient extends AbstractZooKeeperManager
      * bail out quickly. Otherwise we just grab the lock and
      * synchronously update. The checking outside the lock is the
      * reason the flushing boolean flag is volatile.
+     *
+     * Of course, if we are slave only, nothing is to be written
      */
 
     private void startFlushing()
     {
+        if( !writeLastCommittedTx )
+        {
+            return;
+        }
         if ( checkCompatibilityMode() )
         {
-            msgLog.logMessage( "Discovered compatibility node, will remain in compatibility mode until the node is removed" );
+            msgLog.logMessage(
+                    "Discovered compatibility node, will remain in compatibility mode until the node is removed" );
             updater = new CompatibilitySlaveOnlyTxIdUpdater();
             updater.init();
         }
@@ -758,9 +765,14 @@ public class ZooClient extends AbstractZooKeeperManager
 
     private void stopFlushing()
     {
+        if( !writeLastCommittedTx )
+        {
+            return;
+        }
         if ( checkCompatibilityMode() )
         {
-            msgLog.logMessage( "Discovered compatibility node, will remain in compatibility mode until the node is removed" );
+            msgLog.logMessage(
+                    "Discovered compatibility node, will remain in compatibility mode until the node is removed" );
             updater = new CompatibilitySlaveOnlyTxIdUpdater();
             updater.init();
         }
