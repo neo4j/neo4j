@@ -359,22 +359,26 @@ public class ComponentVersion extends Version
           </execution>
         </executions>
         <configuration>
-          <failOnError>false</failOnError>
+          <failOnError>true</failOnError>
           <logResults>true</logResults>
           <!-- This is temporarily hard-coded, because the versionsBack attribute seems to not work on OS X, we'll
            need to fix that. -->
-          <comparisonVersion>1.7</comparisonVersion>
+          <comparisonVersion>1.8.1</comparisonVersion>
           <includes>
             <include>org/neo4j/graphdb/**</include>
           </includes>
 
-          <!-- These are temporary exceptions for the 1.8 release, please remove after that. -->
+          <!-- Allowed breaking changes in Neo4j 2.0 -->
+          <!-- These rules should be looked over and modified appropriately in 2.1 -->
           <excludeMessageCodes>
             <param>6006</param><!-- Field was made final. -->
+            <param>7012</param><!-- Method added to interface -->
           </excludeMessageCodes>
           <excludes>
-            <exclude>org/neo4j/graphdb/factory/GraphDatabaseSettings*UseMemoryMappedBuffers</exclude>
-            <exclude>org/neo4j/graphdb/factory/GraphDatabaseSetting*BooleanSetting</exclude>
+            <!-- Ignore known breaking changes introduced in 1.9 traversal and config APIs. -->
+            <exclude>org/neo4j/graphdb/config/**</exclude>
+            <exclude>org/neo4j/graphdb/traversal/**</exclude>
+            <exclude>org/neo4j/graphdb/factory/GraphDatabaseSetting*</exclude>
           </excludes>
 
         </configuration>
