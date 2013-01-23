@@ -385,7 +385,7 @@ public class UdcExtensionImplTest
         assertTrue( "1.8.GA".matches( pattern ) );
         assertTrue( "1.8".matches( pattern ) );
         assertTrue( "1.9".matches( pattern ) );
-        assertTrue( "1.9-SNAPSHOT".matches( pattern ) );
+        assertTrue( "2.0-SNAPSHOT".matches( pattern ) );
         assertTrue( "1.9.M01".matches( pattern ) );
         assertTrue( "1.10".matches( pattern ) );
         assertTrue( "1.10-SNAPSHOT".matches( pattern ) );
@@ -407,7 +407,7 @@ public class UdcExtensionImplTest
 
     @Test
     public void shouldNotFilterSnapshotBuildNumbers() throws Exception {
-        assertThat(new DefaultUdcInformationCollector(null, null, null).filterVersionForUDC("1.9-SNAPSHOT"), is(equalTo("1.9-SNAPSHOT")));
+        assertThat(new DefaultUdcInformationCollector(null, null, null).filterVersionForUDC("2.0-SNAPSHOT"), is(equalTo("2.0-SNAPSHOT")));
 
     }
 
