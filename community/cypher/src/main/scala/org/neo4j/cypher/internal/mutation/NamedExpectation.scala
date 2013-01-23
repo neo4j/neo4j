@@ -89,9 +89,9 @@ case class NamedExpectation(name: String, e: Expression, properties: Map[String,
         }
     }
 
-  def symbolTableDependencies = symbolTableDependencies(properties)
+  def symbolTableDependencies = properties.symboltableDependencies
 
   def throwIfSymbolsMissing(symbols: SymbolTable) {
-    throwIfSymbolsMissing(properties, symbols)
+    properties.throwIfSymbolsMissing(symbols)
   }
 }

@@ -139,14 +139,14 @@ case class UniqueLink(start: NamedExpectation, end: NamedExpectation, rel: Named
 
   lazy val identifier2 = Seq(start.name -> NodeType(), end.name -> NodeType(), rel.name -> RelationshipType())
 
-  def symbolTableDependencies:Set[String] = symbolTableDependencies(start.properties) ++
-    symbolTableDependencies(end.properties) ++
-    symbolTableDependencies(rel.properties)
+  def symbolTableDependencies:Set[String] = start.properties.symboltableDependencies ++
+    end.properties.symboltableDependencies ++
+    rel.properties.symboltableDependencies
 
   def rewrite(f: (Expression) => Expression): UniqueLink = {
-    val s = NamedExpectation(start.name, rewrite(start.properties, f))
-    val e = NamedExpectation(end.name, rewrite(end.properties, f))
-    val r = NamedExpectation(rel.name, rewrite(rel.properties, f))
+    val s = NamedExpectation(start.name, start.properties.rewrite(f))
+    val e = NamedExpectation(end.name, end.properties.rewrite(f))
+    val r = NamedExpectation(rel.name, rel.properties.rewrite(f))
     UniqueLink(s, e, r, relType, dir)
   }
 
@@ -162,9 +162,9 @@ case class UniqueLink(start: NamedExpectation, end: NamedExpectation, rel: Named
   def children = Seq(start.e, end.e, rel.e)
 
   def throwIfSymbolsMissing(symbols: SymbolTable) {
-    throwIfSymbolsMissing(start.properties, symbols)
-    throwIfSymbolsMissing(end.properties, symbols)
-    throwIfSymbolsMissing(rel.properties, symbols)
+    start.properties.throwIfSymbolsMissing(symbols)
+    end.properties.throwIfSymbolsMissing(symbols)
+    rel.properties.throwIfSymbolsMissing(symbols)
   }
 
   def optional: Boolean = false

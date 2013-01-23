@@ -32,11 +32,11 @@ case class RelationshipEndpoint(node: Expression, props: Map[String, Expression]
     RelationshipEndpoint(node.rewrite(f), props.mapValues(_.rewrite(f)), labels.rewrite(f))
 
   def throwIfSymbolsMissing(symbols: SymbolTable) {
-    throwIfSymbolsMissing(props, symbols)
+    props.throwIfSymbolsMissing(symbols)
     labels.throwIfSymbolsMissing(symbols)
   }
 
-  def symbolTableDependencies: Set[String] = symbolTableDependencies(props) ++ labels.symbolTableDependencies
+  def symbolTableDependencies: Set[String] = props.symboltableDependencies ++ labels.symbolTableDependencies
 }
 
 case class CreateRelationship(key: String,
@@ -72,7 +72,7 @@ extends UpdateAction
   override def throwIfSymbolsMissing(symbols: SymbolTable) {
     from.throwIfSymbolsMissing(symbols)
     to.throwIfSymbolsMissing(symbols)
-    throwIfSymbolsMissing(props, symbols)
+    props.throwIfSymbolsMissing(symbols)
   }
 
   override def symbolTableDependencies: Set[String] =
