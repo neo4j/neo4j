@@ -16,7 +16,6 @@
         <module>advanced</module>
         <module>enterprise</module>
         <module>gremlin-plugin</module>
-        <module>cypher-plugin</module>
     </modules>
 
     <profiles>
