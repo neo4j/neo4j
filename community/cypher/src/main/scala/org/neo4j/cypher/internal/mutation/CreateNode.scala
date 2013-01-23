@@ -27,24 +27,20 @@ import collection.Map
 import org.neo4j.cypher.internal.ExecutionContext
 import collection.JavaConverters._
 
-case class CreateNode(key: String, props: Map[String, Expression], labels:Expression = Literal(Seq.empty))
+case class CreateNode(key: String, properties: Map[String, Expression], labels: Expression = Literal(Seq.empty))
   extends UpdateAction
   with GraphElementPropertyFunctions
   with CollectionSupport
   with LabelSupport {
 
+
+
   def exec(context: ExecutionContext, state: QueryState) = {
-    if (props.size == 1 && props.head._1 == "*") {
-      makeTraversable(props.head._2(context)).map(x => {
-        val m: Map[String, Expression] = x.asInstanceOf[Map[String, Any]].map {
-          case (k, v) => (k -> Literal(v))
-        }
-        val node = state.queryContext.createNode()
-        state.createdNodes.increase()
-        setProperties(node, m, context, state)
-        context.newWith(key -> node)
-      })
-    } else {
+    def fromAnyToLiteral(x: Map[String, Any]): Map[String, Expression] = x.map {
+      case (k, v:Any) => (k -> Literal(v))
+    }
+
+    def createNodeWithPropertiesAndLabels(props: Map[String, Expression]): ExecutionContext = {
       val node = state.queryContext.createNode()
       state.createdNodes.increase()
       setProperties(node, props, context, state)
@@ -54,19 +50,50 @@ case class CreateNode(key: String, props: Map[String, Expression], labels:Expres
 
       queryCtx.addLabelsToNode(node, labelIds.asJava)
 
-      Stream(context.newWith(key -> node))
+      val newContext = context.newWith(key -> node)
+      newContext
+    }
+
+    def isParametersMap(m: Map[String, Expression]) = properties.size == 1 && properties.head._1 == "*"
+
+    /*
+     Parameters coming in from the outside in queries using parameters like this:
+
+     CREATE n = {param}
+
+     This parameter can either be a collection of maps, or a single map. Cypher creates one node per incoming map.
+
+     This is encoded using a map containing the expression that when applied will produce the incoming maps.
+     */
+    if (isParametersMap(properties)) {
+      val singleMapExpression: Expression = properties.head._2
+
+      val maps: Iterable[Any] = makeTraversable(singleMapExpression(context))
+
+      maps.map {
+        case untyped: Map[_, _] => {
+          //We want to use the same code to actually create nodes and properties as a normal expression would, so we
+          //encode the incoming Map[String,Any] to a Map[String, Literal] wrapping the values.
+          val m: Map[String, Expression] = fromAnyToLiteral(untyped.asInstanceOf[Map[String, Any]])
+
+          createNodeWithPropertiesAndLabels(m)
+        }
+      }
+    } else {
+      Stream(createNodeWithPropertiesAndLabels(properties))
     }
   }
 
   def identifiers = Seq(key -> NodeType())
 
-  override def children = props.map(_._2).toSeq
+  override def children = properties.map(_._2).toSeq :+ labels
 
-  override def rewrite(f: (Expression) => Expression): CreateNode = CreateNode(key, rewrite(props, f))
+  override def rewrite(f: (Expression) => Expression): CreateNode = CreateNode(key, properties.rewrite(f), labels.rewrite(f))
 
   override def throwIfSymbolsMissing(symbols: SymbolTable) {
-    throwIfSymbolsMissing(props, symbols)
+    properties throwIfSymbolsMissing symbols
+    labels throwIfSymbolsMissing symbols
   }
 
-  override def symbolTableDependencies: Set[String] = symbolTableDependencies(props)
+  override def symbolTableDependencies: Set[String] = properties.symboltableDependencies ++ labels.symbolTableDependencies
 }

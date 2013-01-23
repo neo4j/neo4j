@@ -73,17 +73,17 @@ trait StartAndCreateClause extends Base with Expressions with CreateUnique {
         })
       }
 
-    // with pattern matching everything becomes so much more easy
-    case ParsedRelation(name, props,
-      ParsedEntity(_, a, startProps, True(), aLabels),
-      ParsedEntity(_, b, endProps, True(), bLabels), relType, dir, map, True()) if relType.size == 1 =>
-        val (from, fromLabels, to, toLabels) =
-          if (dir != Direction.INCOMING) (a, aLabels, b, bLabels) else (b, bLabels, a, aLabels)
+    case ParsedRelation(name, props, a, b, relType, dir, map, True()) if relType.size == 1 =>
 
-        Yes(Seq(CreateRelationshipStartItem(
-          CreateRelationship(name,
-            RelationshipEndpoint(from, startProps, fromLabels),
-            RelationshipEndpoint(to, endProps, toLabels), relType.head, props))))
+      def translate(in: ParsedEntity) =
+        RelationshipEndpoint(in.expression, in.props, in.labels)
+
+      val (from, to) = if (dir != Direction.INCOMING)
+        (a, b)
+      else
+        (b, a)
+
+      Yes(Seq(CreateRelationshipStartItem(CreateRelationship(name, translate(from), translate(to), relType.head, props))))
 
     case ParsedEntity(_, Identifier(name), props, True(), labels) =>
       Yes(Seq(CreateNodeStartItem(CreateNode(name, props, labels))))
