@@ -55,8 +55,10 @@ public class LabelsFunctionalTest  extends AbstractRestFunctionalTestBase
     }
 
     /**
-     * Adding a label with an invalid name leads to a 400 response. Labels with empty names are not allowed,
-     * however, all other valid strings are accepted as label names.
+     * Adding a label with an invalid name.
+     *
+     * Labels with empty names are not allowed, however, all other valid strings are accepted as label names.
+     * Adding an invalid label to a node will lead to a HTTP 400 response.
      */
     @Documented
     @Test
@@ -73,7 +75,7 @@ public class LabelsFunctionalTest  extends AbstractRestFunctionalTestBase
     }
     
     /**
-     * Listing a Node's labels.
+     * Listing labels for a node.
      */
     @Documented
     @Test

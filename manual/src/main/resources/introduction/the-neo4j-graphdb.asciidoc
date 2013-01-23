@@ -184,8 +184,8 @@ A node may be labelled with any number of labels, including none, making labels 
 ["dot", "graphdb-labels.svg", "meta"]
 ----
 "A Label" [fillcolor="NODEHIGHLIGHT"]
-"A Label" -> Name [label="has a"]
-"A Label" -> Node [label="groups"]
+"A Label" -> "Name" [label="has a"]
+"A Label" -> "Node" [label="groups"]
 ----
 
 An example would be a label named 'User' that you label all your nodes representing users with.
