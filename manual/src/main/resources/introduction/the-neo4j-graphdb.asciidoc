@@ -195,6 +195,16 @@ However, you can use labels for much more.
 For instance, since labels can be added and removed during runtime, they can be used to mark temporary states for your nodes.
 You might create an "Offline" label for phones that are offline, a "Happy" label for happy pets, and so on.
 
+=== Label names ===
+
+Any non-empty unicode string can be used as a label name.
+In Cypher, you may need to use the backtick (``) syntax to avoid clashes with cypher keywords.
+By convention, labels are written with CamelCase notation, with the first letter in upper case.
+For instance, 'User' or 'CarOwner'.
+
+Labels currently share id space with property keys, meaning the maximum number of labels the database can contain depends on the number of property keys it stores.
+The combined number of property keys and labels that can be stored at the same time is 2^24^ (&#8764; 16 000 000)
+
 [[graphdb-neo4j-paths]]
 == Paths ==
 
