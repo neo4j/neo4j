@@ -54,9 +54,16 @@ public class TxState
     
     public Set<Long> getAddedLabels( long nodeId, boolean create )
     {
-        return getNodeState( nodeId, create ).getAddedLabels();
+        NodeState nodeState = getNodeState( nodeId, create );
+        return nodeState != null ? nodeState.getAddedLabels() : null;
     }
     
+    public Set<Long> getRemovedLabels( long nodeId, boolean create )
+    {
+        NodeState nodeState = getNodeState( nodeId, create );
+        return nodeState != null ? nodeState.getRemovedLabels() : null;
+    }
+
     static class EntityState
     {
         private final long id;
@@ -80,10 +87,16 @@ public class TxState
         }
 
         private final Set<Long> addedLabels = new HashSet<Long>();
-        
+        private final Set<Long> removedLabels = new HashSet<Long>();
+
         public Set<Long> getAddedLabels()
         {
             return addedLabels;
+        }
+
+        public Set<Long> getRemovedLabels()
+        {
+            return removedLabels;
         }
     }
 }

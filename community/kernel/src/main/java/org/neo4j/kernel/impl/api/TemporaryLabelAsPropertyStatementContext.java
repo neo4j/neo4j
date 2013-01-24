@@ -102,7 +102,12 @@ public class TemporaryLabelAsPropertyStatementContext implements StatementContex
             if ( propertyMap == null )
                 return false;
 
-            return propertyMap.get( (int) labelId ) != null;
+            PropertyData propertyData = propertyMap.get( (int) labelId );
+            if ( propertyData == null )
+                return false;
+
+            ensureIsLabel( propertyData );
+            return true;
         }
         catch ( InvalidRecordException e )
         {
@@ -140,6 +145,29 @@ public class TemporaryLabelAsPropertyStatementContext implements StatementContex
         catch ( KeyNotFoundException e )
         {
             throw new LabelNotFoundKernelException( "Label by id " + labelId, e );
+        }
+    }
+
+    @Override
+    public void removeLabelFromNode( long labelId, long nodeId )
+    {
+        ArrayMap<Integer, PropertyData> propertyMap = persistenceManager.loadNodeProperties( nodeId, true );
+        if ( propertyMap == null )
+            return;
+
+        PropertyData data = propertyMap.get( (int) labelId );
+        if ( data == null )
+            return;
+
+        ensureIsLabel( data );
+        persistenceManager.nodeRemoveProperty( nodeId, data );
+    }
+
+    private void ensureIsLabel( PropertyData data )
+    {
+        if ( !(data instanceof LabelAsPropertyData) )
+        {
+            throw new IllegalArgumentException( "Label id " + data.getIndex() + " doesn't correspond to label" );
         }
     }
 

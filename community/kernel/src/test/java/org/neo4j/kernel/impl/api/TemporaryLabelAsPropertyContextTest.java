@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api;
 
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
 
@@ -87,6 +88,28 @@ public class TemporaryLabelAsPropertyContextTest
 
         // THEN
         assertEquals( labelName, readLabelName );
+    }
+
+    @Test
+    public void should_be_able_to_remove_node_label() throws Exception
+    {
+        // GIVEN
+        Transaction tx = db.beginTx();
+        String labelName = "MyLabel";
+        long labelId = statement.getOrCreateLabelId( labelName );
+        long node = db.createNode().getId();
+        statement.addLabelToNode( labelId, node );
+        tx.success();
+        tx.finish();
+
+        // WHEN
+        tx = db.beginTx();
+        statement.removeLabelFromNode( labelId, node );
+        tx.success();
+        tx.finish();
+
+        // THEN
+        assertFalse( statement.isLabelSetOnNode( labelId, node ) );
     }
 
     private GraphDatabaseAPI db;

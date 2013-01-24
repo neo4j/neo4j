@@ -184,7 +184,7 @@ public class DatabaseActions
 
     // Nodes
 
-    public NodeRepresentation createNode( Map<String, Object> properties )
+    public NodeRepresentation createNode( Map<String, Object> properties, Label... labels )
             throws PropertyValueException
     {
         final NodeRepresentation result;
@@ -193,6 +193,11 @@ public class DatabaseActions
         {
             Node node = graphDb.createNode();
             propertySetter.setProperties( node, properties );
+            if ( labels != null )
+            {
+                for ( Label label : labels )
+                    node.addLabel( label );
+            }
             result = new NodeRepresentation( node );
             tx.success();
         }
@@ -326,6 +331,21 @@ public class DatabaseActions
         catch( ConstraintViolationException e )
         {
             throw new BadInputException( "Unable to add label, see nested exception.", e );
+        }
+        finally
+        {
+            tx.finish();
+        }
+    }
+    
+    public void removeLabelFromNode( long nodeId, String labelName ) throws NodeNotFoundException
+    {
+        Node node = node( nodeId );
+        Transaction tx = beginTx();
+        try
+        {
+            node.removeLabel( label( labelName ) );
+            tx.success();
         }
         finally
         {

@@ -37,4 +37,11 @@ public class LockingStatementContext extends DelegatingStatementContext
         lockHolder.acquireNodeWriteLock( nodeId );
         super.addLabelToNode( labelId, nodeId );
     }
+
+    @Override
+    public void removeLabelFromNode( long labelId, long nodeId )
+    {
+        lockHolder.acquireNodeWriteLock( nodeId );
+        super.removeLabelFromNode( labelId, nodeId );
+    }
 }

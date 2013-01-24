@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.PropertyContainer;
@@ -40,6 +41,7 @@ import org.neo4j.helpers.Triplet;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.PropertyTracker;
 import org.neo4j.kernel.ThreadToStatementContextBridge;
+import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.cache.Cache;
 import org.neo4j.kernel.impl.cache.CacheProvider;
@@ -206,6 +208,11 @@ public class NodeManager
 
     public Node createNode()
     {
+        return createNode( null );
+    }
+
+    public Node createNode( Label[] labels )
+    {
         long id = idGenerator.nextId( Node.class );
         NodeImpl node = new NodeImpl( id, Record.NO_NEXT_RELATIONSHIP.intValue(), Record.NO_NEXT_PROPERTY.intValue(),
                 true );
@@ -216,6 +223,14 @@ public class NodeManager
         try
         {
             persistenceManager.nodeCreate( id );
+            if ( labels != null )
+            {
+                for ( int i = 0; i < labels.length; i++ )
+                {
+                    proxy.addLabel( labels[i] );
+                }
+            }
+
             nodeCache.put( node );
             success = true;
             return proxy;

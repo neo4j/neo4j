@@ -424,6 +424,14 @@ public interface Node extends PropertyContainer
     public void addLabel( Label label );
 
     /**
+     * Removes a {@link Label} from this node. If this node doesn't have this label,
+     * nothing will happen.
+     *
+     * @param label the label to remove from this node.
+     */
+    public void removeLabel( Label label );
+
+    /**
      * Checks whether or not this node has the given label.
      *
      * @param label the label to check for.

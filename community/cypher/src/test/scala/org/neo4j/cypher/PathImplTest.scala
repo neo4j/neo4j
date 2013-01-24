@@ -162,6 +162,8 @@ class PathImplTest extends Spec {
 
     def addLabel(label: Label) { ??? }
 
+    def removeLabel(label: Label) { ??? }
+
     def hasLabel(label: Label) = ???
 
     def getLabels() = ???

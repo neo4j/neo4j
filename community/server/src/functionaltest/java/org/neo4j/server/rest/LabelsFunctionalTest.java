@@ -20,6 +20,7 @@
 package org.neo4j.server.rest;
 
 import static org.junit.Assert.assertEquals;
+import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.server.rest.domain.JsonHelper.createJsonFrom;
 
@@ -91,5 +92,45 @@ public class LabelsFunctionalTest  extends AbstractRestFunctionalTestBase
             .entity();
         List<String> labels = (List<String>) JsonHelper.readJson( body );
         assertEquals( asSet( "Me", "You" ), asSet( labels ) );
+    }
+
+    /**
+     * Removing a label from a node.
+     */
+    @Documented
+    @Test
+    @GraphDescription.Graph( nodes = { @NODE( name = "I", setNameProperty = true, labels = { @LABEL( "MyLabel" ) } ) } )
+    public void removing_a_label_from_a_node() throws PropertyValueException
+    {
+        Map<String,Node> nodes = data.get();
+        Node node = nodes.get( "I" );
+        String nodeUri = getNodeUri( node );
+
+        String labelName = "MyLabel";
+        gen.get()
+            .expectedStatus( 204 )
+            .delete( nodeUri + "/labels/" + labelName );
+        
+        node.hasLabel( label( labelName ) );
+    }
+
+    /**
+     * Removing a non-existent label from a node.
+     */
+    @Documented
+    @Test
+    @GraphDescription.Graph( nodes = { @NODE( name = "I", setNameProperty = true ) } )
+    public void removing_a_non_existent_label_from_a_node() throws PropertyValueException
+    {
+        Map<String,Node> nodes = data.get();
+        Node node = nodes.get( "I" );
+        String nodeUri = getNodeUri( node );
+
+        String labelName = "MyLabel";
+        gen.get()
+            .expectedStatus( 204 )
+            .delete( nodeUri + "/labels/" + labelName );
+        
+        node.hasLabel( label( labelName ) );
     }
 }

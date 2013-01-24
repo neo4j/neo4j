@@ -20,6 +20,8 @@
 package org.neo4j.helpers.collection;
 
 import static java.util.Arrays.asList;
+import static java.util.EnumSet.allOf;
+import static org.neo4j.helpers.collection.Iterables.map;
 
 import java.io.Closeable;
 import java.io.File;
@@ -29,10 +31,13 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Deque;
+import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Set;
+
+import org.neo4j.helpers.Function;
 
 /**
  * Contains common functionality regarding {@link Iterator}s and
@@ -451,7 +456,42 @@ public abstract class IteratorUtil
     {
         return new HashSet<T>( asList( items ) );
     }
-    
+
+    /**
+     * Function for converting Enum to String
+     */
+    public static Function<Enum, String> ENUM_NAME = new Function<Enum, String>()
+    {
+        @Override
+        public String apply( Enum from )
+        {
+            return from.name();
+        }
+    };
+
+    /**
+     * Converts an {@link Iterable} of enums to {@link Set} of their names.
+     *
+     * @param enums the enums to convert.
+     * @return the set of enum names
+     */
+    public static Set<String> asEnumNameSet( Iterable<Enum> enums )
+    {
+        return asSet( map( ENUM_NAME, enums ) );
+    }
+
+    /**
+     * Converts an enum class to to {@link Set} of the names of all valid enum values
+     *
+     * @param clazz enum class
+     * @param <E> enum type bound
+     * @return the set of enum names
+     */
+    public static <E extends Enum<E>> Set<String> asEnumNameSet( Class<E> clazz)
+    {
+        return asSet( map( ENUM_NAME, allOf( clazz ) ) );
+    }
+
     /**
      * Creates an {@link Iterable} for iterating over the lines of a text file.
      * @param file the file to get the lines for.
