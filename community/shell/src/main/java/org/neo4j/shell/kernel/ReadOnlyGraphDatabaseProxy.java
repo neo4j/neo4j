@@ -256,12 +256,6 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
     {
         return readOnly();
     }
-    
-    @Override
-    public Node createNode( Label... labels )
-    {
-        return readOnly();
-    }
 
     public boolean enableRemoteShell()
     {
@@ -477,12 +471,6 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
 
         @Override
         public void addLabel( Label label )
-        {
-            readOnly();
-        }
-        
-        @Override
-        public void removeLabel( Label label )
         {
             readOnly();
         }

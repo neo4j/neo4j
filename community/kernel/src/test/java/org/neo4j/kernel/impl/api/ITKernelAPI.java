@@ -19,9 +19,7 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.junit.Assert.*;
 
 import org.junit.After;
 import org.junit.Before;
@@ -166,84 +164,7 @@ public class ITKernelAPI
         statement = statementContextProvider.getCtxForReading();
         assertFalse( statement.isLabelSetOnNode( labelId, node.getId() ) );
     }
-
-    @Test
-    public void transactionStateShouldRemovePreviouslyAddedLabel() throws Exception
-    {
-        ThreadToStatementContextBridge statementContextProvider = db.getDependencyResolver().resolveDependency(
-                ThreadToStatementContextBridge.class );
-
-        Transaction tx = db.beginTx();
-        StatementContext statement = statementContextProvider.getCtxForWriting();
-
-        // WHEN
-        Node node = db.createNode();
-        long labelId1 = statement.getOrCreateLabelId( "labello1" );
-        long labelId2 = statement.getOrCreateLabelId( "labello2" );
-        statement.addLabelToNode( labelId1, node.getId() );
-        statement.addLabelToNode( labelId2, node.getId() );
-        statement.removeLabelFromNode( labelId2, node.getId() );
-        tx.success();
-        tx.finish();
-
-        // THEN
-        statement = statementContextProvider.getCtxForReading();
-        assertEquals( asSet( labelId1 ), asSet( statement.getLabelsForNode( node.getId() ) ) );
-    }
     
-    @Test
-    public void transactionStateShouldReflectRemovingAddedLabelImmediately() throws Exception
-    {
-        ThreadToStatementContextBridge statementContextProvider = db.getDependencyResolver().resolveDependency(
-                ThreadToStatementContextBridge.class );
-
-        Transaction tx = db.beginTx();
-        StatementContext statement = statementContextProvider.getCtxForWriting();
-
-        // WHEN
-        Node node = db.createNode();
-        long labelId1 = statement.getOrCreateLabelId( "labello1" );
-        long labelId2 = statement.getOrCreateLabelId( "labello2" );
-        statement.addLabelToNode( labelId1, node.getId() );
-        statement.addLabelToNode( labelId2, node.getId() );
-        statement.removeLabelFromNode( labelId2, node.getId() );
-
-        // THEN
-        assertFalse( statement.isLabelSetOnNode( labelId2, node.getId() ) );
-        assertEquals( asSet( labelId1 ), asSet( statement.getLabelsForNode( node.getId() ) ) );
-
-        tx.success();
-        tx.finish();
-    }
-
-    @Test
-    public void transactionStateShouldReflectRemovingLabelImmediately() throws Exception
-    {
-        // GIVEN
-        ThreadToStatementContextBridge statementContextProvider = db.getDependencyResolver().resolveDependency(
-                ThreadToStatementContextBridge.class );
-        Transaction tx = db.beginTx();
-        StatementContext statement = statementContextProvider.getCtxForWriting();
-        Node node = db.createNode();
-        long labelId1 = statement.getOrCreateLabelId( "labello1" );
-        long labelId2 = statement.getOrCreateLabelId( "labello2" );
-        statement.addLabelToNode( labelId1, node.getId() );
-        statement.addLabelToNode( labelId2, node.getId() );
-        tx.success();
-        tx.finish();
-        tx = db.beginTx();
-        statement = statementContextProvider.getCtxForWriting();
-
-        // WHEN
-        statement.removeLabelFromNode( labelId2, node.getId() );
-
-        // THEN
-        assertFalse( statement.isLabelSetOnNode( labelId2, node.getId() ) );
-        assertEquals( asSet( labelId1 ), asSet( statement.getLabelsForNode( node.getId() ) ) );
-        tx.success();
-        tx.finish();
-    }
-
     private GraphDatabaseAPI db;
     
     @Before

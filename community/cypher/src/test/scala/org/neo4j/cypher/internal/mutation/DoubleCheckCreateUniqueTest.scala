@@ -164,10 +164,6 @@ class PausingNode(n: Node, afterGetRelationship: Node => Unit) extends Node {
     ???
   }
 
-  def removeLabel(label: Label) {
-    ???
-  }
-
   def hasLabel(label: Label) = ???
 
   def getLabels() = ???

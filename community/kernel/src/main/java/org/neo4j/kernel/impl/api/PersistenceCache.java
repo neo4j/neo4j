@@ -57,7 +57,6 @@ public class PersistenceCache
             }
             
             entity.addLabels( stateEntity.getAddedLabels() );
-            entity.removeLabels( stateEntity.getRemovedLabels() );
         }
     }
 
@@ -80,11 +79,6 @@ public class PersistenceCache
         public void addLabels( Set<Long> additionalLabels )
         {
             labels.addAll( additionalLabels );
-        }
-
-        public void removeLabels( Set<Long> removedLabels )
-        {
-            labels.removeAll( removedLabels );
         }
 
         @Override

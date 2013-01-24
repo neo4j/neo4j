@@ -245,12 +245,6 @@ public class LockHolder
         }
 
         @Override
-        public void removeLabel( Label label )
-        {
-            throw unsupportedOperation();
-        }
-
-        @Override
         public boolean hasLabel( Label label )
         {
             throw unsupportedOperation();

@@ -241,8 +241,6 @@ class MonitoredNode(inner: Node, monitor: () => Unit) extends Node {
 
   def addLabel(label: Label) { ??? }
 
-  def removeLabel(label: Label) { ??? }
-
   def hasLabel(label: Label) = ???
 
   def getLabels() = ???

@@ -67,13 +67,7 @@ public class DelegatingStatementContext implements StatementContext
     {
         return delegate.getLabelName( labelId );
     }
-
-    @Override
-    public void removeLabelFromNode( long labelId, long nodeId )
-    {
-        delegate.removeLabelFromNode( labelId, nodeId );
-    }
-
+    
     @Override
     public void close()
     {

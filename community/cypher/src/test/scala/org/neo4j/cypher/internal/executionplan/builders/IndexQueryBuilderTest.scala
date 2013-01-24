@@ -112,8 +112,6 @@ class IndexQueryBuilderTest extends BuilderTest {
 class Fake_Database_That_Has_All_Indexes extends GraphDatabaseService with IndexManager {
   def createNode(): Node = null
 
-  def createNode(labels: Label*): Node = null
-
   def existsForNodes(indexName: String): Boolean = true
 
   def existsForRelationships(indexName: String): Boolean = true

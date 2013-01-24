@@ -39,67 +39,56 @@ public class LockableNode implements Node
         this.id = id;
     }
 
-    @Override
     public void delete()
     {
         throw new UnsupportedOperationException( "Lockable node" );
     }
 
-    @Override
     public long getId()
     {
         return this.id;
     }
 
-    @Override
     public GraphDatabaseService getGraphDatabase()
     {
         throw new UnsupportedOperationException( "Lockable node" );
     }
 
-    @Override
     public Object getProperty( String key )
     {
         throw new UnsupportedOperationException( "Lockable node" );
     }
 
-    @Override
     public Object getProperty( String key, Object defaultValue )
     {
         throw new UnsupportedOperationException( "Lockable node" );
     }
 
-    @Override
     public Iterable<String> getPropertyKeys()
     {
         throw new UnsupportedOperationException( "Lockable node" );
     }
 
-    @Override
     public Iterable<Object> getPropertyValues()
     {
         throw new UnsupportedOperationException( "Lockable node" );
     }
 
-    @Override
     public boolean hasProperty( String key )
     {
         throw new UnsupportedOperationException( "Lockable node" );
     }
 
-    @Override
     public Object removeProperty( String key )
     {
         throw new UnsupportedOperationException( "Lockable node" );
     }
 
-    @Override
     public void setProperty( String key, Object value )
     {
         throw new UnsupportedOperationException( "Lockable node" );
     }
 
-    @Override
     public boolean equals( Object o )
     {
         if ( !(o instanceof Node) )
@@ -109,13 +98,11 @@ public class LockableNode implements Node
         return this.getId() == ((Node) o).getId();
     }
 
-    @Override
     public int hashCode()
     {
         return (int) (( id >>> 32 ) ^ id );
     }
 
-    @Override
     public String toString()
     {
         return "Lockable node #" + this.getId();
@@ -126,82 +113,69 @@ public class LockableNode implements Node
         return new UnsupportedOperationException( "Lockable node" );
     }
     
-    @Override
     public Relationship createRelationshipTo( Node otherNode,
             RelationshipType type )
     {
         throw lockableNodeException();
     }
 
-    @Override
     public Iterable<Relationship> getRelationships()
     {
         throw lockableNodeException();
     }
 
-    @Override
     public Iterable<Relationship> getRelationships( RelationshipType... types )
     {
         throw lockableNodeException();
     }
     
-    @Override
     public Iterable<Relationship> getRelationships( Direction direction, RelationshipType... types )
     {
         throw lockableNodeException();
     }
 
-    @Override
     public Iterable<Relationship> getRelationships( Direction dir )
     {
         throw lockableNodeException();
     }
 
-    @Override
     public Iterable<Relationship> getRelationships( RelationshipType type,
             Direction dir )
     {
         throw lockableNodeException();
     }
 
-    @Override
     public Relationship getSingleRelationship( RelationshipType type,
             Direction dir )
     {
         throw lockableNodeException();
     }
 
-    @Override
     public boolean hasRelationship()
     {
         throw lockableNodeException();
     }
 
-    @Override
     public boolean hasRelationship( RelationshipType... types )
     {
         throw lockableNodeException();
     }
     
-    @Override
     public boolean hasRelationship( Direction direction, RelationshipType... types )
     {
         throw lockableNodeException();
     }
 
-    @Override
     public boolean hasRelationship( Direction dir )
     {
         throw lockableNodeException();
     }
 
-    @Override
     public boolean hasRelationship( RelationshipType type, Direction dir )
     {
         throw lockableNodeException();
     }
 
-    @Override
     public Traverser traverse( Order traversalOrder,
             StopEvaluator stopEvaluator,
             ReturnableEvaluator returnableEvaluator,
@@ -210,7 +184,6 @@ public class LockableNode implements Node
         throw lockableNodeException();
     }
 
-    @Override
     public Traverser traverse( Order traversalOrder,
             StopEvaluator stopEvaluator,
             ReturnableEvaluator returnableEvaluator,
@@ -220,7 +193,6 @@ public class LockableNode implements Node
         throw lockableNodeException();
     }
 
-    @Override
     public Traverser traverse( Order traversalOrder,
             StopEvaluator stopEvaluator,
             ReturnableEvaluator returnableEvaluator,
@@ -243,12 +215,6 @@ public class LockableNode implements Node
     
     @Override
     public Iterable<Label> getLabels()
-    {
-        throw lockableNodeException();
-    }
-
-    @Override
-    public void removeLabel( Label label )
     {
         throw lockableNodeException();
     }

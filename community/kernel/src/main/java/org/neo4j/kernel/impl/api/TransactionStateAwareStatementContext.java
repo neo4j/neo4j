@@ -19,13 +19,8 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import static org.neo4j.helpers.collection.Iterables.concat;
-import static org.neo4j.helpers.collection.Iterables.filter;
-
 import java.util.Set;
 
-import org.neo4j.helpers.Predicate;
-import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.StatementContext;
 
 public class TransactionStateAwareStatementContext extends DelegatingStatementContext
@@ -42,12 +37,11 @@ public class TransactionStateAwareStatementContext extends DelegatingStatementCo
     public void addLabelToNode( long labelId, long nodeId )
     {
         Set<Long> addedLabels = state.getAddedLabels( nodeId, true );
-        Set<Long> removedLabels = state.getRemovedLabels( nodeId, false );
 
-        if ( removedLabels != null )
-            removedLabels.remove( labelId );
         if ( !addedLabels.add( labelId ) )
             return; // Already added
+
+        super.addLabelToNode( labelId, nodeId );
     }
 
     @Override
@@ -58,61 +52,8 @@ public class TransactionStateAwareStatementContext extends DelegatingStatementCo
             Set<Long> addedLabels = state.getAddedLabels( nodeId, false );
             if ( addedLabels != null && addedLabels.contains( labelId ) )
                 return true;
-            Set<Long> removedLabels = state.getRemovedLabels( nodeId, false );
-            if ( removedLabels != null && removedLabels.contains( labelId ) )
-                return false;
         }
 
         return super.isLabelSetOnNode( labelId, nodeId );
-    }
-
-    @Override
-    public Iterable<Long> getLabelsForNode( long nodeId )
-    {
-        Iterable<Long> committedLabels = super.getLabelsForNode( nodeId );
-        if ( !state.hasChanges() )
-            return committedLabels;
-
-        Iterable<Long> result = committedLabels;
-        Set<Long> addedLabels = state.getAddedLabels( nodeId, false );
-        if ( addedLabels != null )
-            result = concat( result, addedLabels );
-        final Set<Long> removedLabels = state.getRemovedLabels( nodeId, false );
-        if ( removedLabels != null )
-        {
-            result = filter( new Predicate<Long>()
-            {
-                @Override
-                public boolean accept( Long item )
-                {
-                    return ! removedLabels.contains( item );
-                }
-            }, result );
-        }
-        return result;
-    }
-
-    @Override
-    public void removeLabelFromNode( long labelId, long nodeId )
-    {
-        Set<Long> addedLabels = state.getAddedLabels( nodeId, false );
-        Set<Long> removedLabels = state.getRemovedLabels( nodeId, true );
-
-        if ( addedLabels != null )
-            addedLabels.remove( labelId );
-        if ( !removedLabels.add( labelId ) )
-            return; // Already removed
-    }
-
-    @Override
-    public void close()
-    {
-        for ( TxState.NodeState node : state.getNodes() )
-        {
-            for ( Long labelId : node.getAddedLabels() )
-                super.addLabelToNode( labelId, node.getId() );
-            for ( Long labelId : node.getRemovedLabels() )
-                super.removeLabelFromNode( labelId, node.getId() );
-        }
     }
 }

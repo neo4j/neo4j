@@ -314,20 +314,6 @@ public class NodeProxy implements Node
     }
 
     @Override
-    public void removeLabel( Label label )
-    {
-        try
-        {
-            StatementContext ctx = statementCtxProvider.getCtxForWriting();
-            ctx.removeLabelFromNode( ctx.getLabelId( label.name() ), getId() );
-        }
-        catch ( LabelNotFoundKernelException e )
-        {
-            // OK, no such label... cool
-        }
-    }
-
-    @Override
     public boolean hasLabel( Label label )
     {
         try
