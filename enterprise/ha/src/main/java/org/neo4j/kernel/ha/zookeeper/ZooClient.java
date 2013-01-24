@@ -589,22 +589,13 @@ public class ZooClient extends AbstractZooKeeperManager
                 throw e;
             }
             msgLog.logMessage( "HA server info already present, trying again" );
-            try
-            {
-                if ( compatCreated ) zooKeeper.delete( compatibilityMachinePath, -1 );
-                if ( machineCreated ) zooKeeper.delete( machinePath, -1 );
-            }
-            catch ( KeeperException ee )
-            {
-                if ( ee.code() != KeeperException.Code.NONODE )
-                {
-                    msgLog.logMessage( "Unable to delete " + ee.getPath(), ee );
-                }
-            }
-            finally
-            {
-                writeHaServerConfig();
-            }
+            if ( compatCreated ) zooKeeper.delete( compatibilityMachinePath, -1 );
+            if ( machineCreated ) zooKeeper.delete( machinePath, -1 );
+            /*
+             * Being here means that the nodes existed and we were able to delete them.
+             * That means it's worth retrying.
+             */
+            writeHaServerConfig();
         }
         zooKeeper.setData( machinePath, data, -1 );
         msgLog.logMessage( "Wrote HA server " + haServer + " to zoo keeper" );
