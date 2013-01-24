@@ -19,6 +19,8 @@
  */
 package org.neo4j.server.statistic;
 
+import java.util.concurrent.atomic.AtomicLong;
+
 import org.neo4j.server.logging.Logger;
 
 /**
@@ -33,9 +35,9 @@ public class StatisticCollector
     private static final Logger LOG = Logger.getLogger( StatisticCollector.class );
 
     private volatile long start = System.currentTimeMillis();
-    private volatile long count = 0;
     private volatile StatisticData currentSize = new StatisticData();
     private volatile StatisticData currentDuration = new StatisticData();
+    private final AtomicLong count = new AtomicLong( 0l );
     private StatisticRecord snapshot = createSnapshot();
 
     public StatisticRecord currentSnapshot()
@@ -52,13 +54,13 @@ public class StatisticCollector
         {
             previousDuration = currentDuration.copy();
             previousSize = currentSize.copy();
-            previousCount = count;
+            previousCount = count.get();
             previousStart = start;
 
             currentDuration = new StatisticData();
             currentSize = new StatisticData();
             start = System.currentTimeMillis();
-            count = 0;
+            count.set( 0l );
 
             timeStamp = start;
             period = ( start - previousStart );
@@ -77,6 +79,6 @@ public class StatisticCollector
     {
         currentDuration.addValue( time );
         currentSize.addValue( size );
-        count++;
+        count.incrementAndGet();
     }
 }

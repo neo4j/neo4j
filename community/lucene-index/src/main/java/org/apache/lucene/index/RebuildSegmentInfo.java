@@ -29,7 +29,12 @@ public class RebuildSegmentInfo
 {
     public static void main( String[] args ) throws Exception
     {
-        String path = "/home/chris/index";
+        if(args.length != 1)
+        {
+            System.out.println("Usage: RebuildSegmentInfo <INDEX DIRECTORY>");
+            System.exit( 0 );
+        }
+        String path = args[0];
         File file = new File( path );
         Directory directory = FSDirectory.open( file );
 

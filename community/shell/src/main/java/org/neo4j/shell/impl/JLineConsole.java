@@ -20,6 +20,7 @@
 package org.neo4j.shell.impl;
 
 import java.io.File;
+import java.lang.reflect.InvocationTargetException;
 
 import org.neo4j.shell.Console;
 import org.neo4j.shell.ShellClient;
@@ -60,11 +61,18 @@ public class JLineConsole implements Console
 
 			return new JLineConsole( consoleReader, client );
 		}
-		catch ( Exception e )
+		catch ( RuntimeException e )
 		{
-			return null;
+            // Only checked exceptions should cause us to return null,
+            // a runtime exception is not expected - it could be an OOM
+            // for instance, throw instead.
+			throw e;
 		}
-	}
+        catch ( Exception e )
+        {
+            return null;
+        }
+    }
 	
 	private JLineConsole( Object consoleReader, ShellClient client )
 	{

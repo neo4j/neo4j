@@ -38,7 +38,7 @@ public abstract class ProgressMonitorFactory
 
     public static ProgressMonitorFactory textual( final OutputStream out )
     {
-        return textual( new PrintWriter( out ) );
+        return textual( new PrintWriter(out) );
     }
 
     public static ProgressMonitorFactory textual( final Writer out )

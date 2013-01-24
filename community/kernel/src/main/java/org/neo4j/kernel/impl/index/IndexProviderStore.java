@@ -46,10 +46,12 @@ public class IndexProviderStore
     private final ByteBuffer buf = ByteBuffer.allocate( RECORD_SIZE*RECORD_COUNT );
     private long lastCommittedTx;
     private final File file;
-    
+    private final Random random;
+
     public IndexProviderStore( File file, FileSystemAbstraction fileSystem, long expectedVersion, boolean allowUpgrade )
     {
         this.file = file;
+        this.random = new Random( System.currentTimeMillis() );
         FileChannel channel = null;
         boolean success = false;
         try
@@ -148,7 +150,7 @@ public class IndexProviderStore
         try
         {
             fileChannel = fileSystem.open( file, "rw" );
-            write( fileChannel, System.currentTimeMillis(), new Random( System.currentTimeMillis() ).nextLong(),
+            write( fileChannel, System.currentTimeMillis(), random.nextLong(),
                     0, 1, indexVersion );
         }
         finally

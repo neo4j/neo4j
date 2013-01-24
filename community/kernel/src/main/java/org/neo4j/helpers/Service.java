@@ -437,7 +437,7 @@ public abstract class Service
                     {
                         try
                         {
-                            return new BufferedReader( new InputStreamReader( url.openStream() ) );
+                            return new BufferedReader( new InputStreamReader( url.openStream(), "utf-8" ) );
                         }
                         catch ( IOException e )
                         {

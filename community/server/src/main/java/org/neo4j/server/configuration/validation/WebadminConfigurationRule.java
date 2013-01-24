@@ -53,7 +53,7 @@ public class WebadminConfigurationRule implements ValidationRule
         return uri.substring( 0, uri.length() - 1 );
     }
 
-    private URI validateAndNormalizeUri( String uri, String property )
+    private URI validateAndNormalizeUri( String uri, String property ) throws RuleFailedException
     {
         URI result = null;
         try
@@ -67,7 +67,7 @@ public class WebadminConfigurationRule implements ValidationRule
         }
         catch ( URISyntaxException e )
         {
-            new RuleFailedException(
+            throw new RuleFailedException(
                     "The specified URI [%s] for the property [%s] is invalid. Please correct the neo4j-server.properties file.",
                     uri, property );
         }
