@@ -286,6 +286,17 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
     }
 
     @Test
+    @Ignore("this is currently broken, waiting fix")
+    public void indexHitsFromQueryingRemovedDoesNotReturnNegativeCount()
+    {
+        Index<Node> index = nodeIndex( LuceneIndexImplementation.EXACT_CONFIG );
+        Node theNode = graphDb.createNode();
+        index.remove( theNode );
+        IndexHits<Node> hits = index.query( "someRandomKey", theNode.getId() );
+        assertTrue( hits.size() >= 0 );
+    }
+
+    @Test
     public void shouldNotGetLatestTxModificationsWhenChoosingSpeedQueries()
     {
         Index<Node> index = nodeIndex( LuceneIndexImplementation.EXACT_CONFIG );
