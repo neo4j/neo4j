@@ -19,6 +19,7 @@
  */
 package org.neo4j.server.rest.repr;
 
+import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
@@ -51,9 +52,11 @@ public class TestExceptionRepresentation
 
         // Then
         assertThat(output.containsKey( "cause" ), is( true ));
-        assertThat( output.get( "cause" ), is( Map.class ) );
+        assertThat( output.get( "cause" ), is( instanceOf( Map.class ) ) );
         assertThat( (String) ((Map<String,Object>)output.get( "cause" )).get("message"), is( "Haha" ) );
-        assertThat( ((Map<String,Object>)output.get( "cause" )).get("cause"), is( Map.class ) );
+        assertThat(
+                ( (Map<String, Object>) output.get( "cause" ) ).get( "cause" ),
+                is( instanceOf( Map.class ) ) );
         assertThat( (String) ((Map<String,Object>)((Map<String,Object>)output.get( "cause" )).get("cause")).get( "message" ),
                 is( "HAHA!") );
     }

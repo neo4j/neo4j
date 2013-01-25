@@ -19,8 +19,11 @@
  */
 package org.neo4j.graphdb;
 
-import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.*;
+import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.isA;
+import static org.junit.Assert.fail;
+import static org.junit.Assert.assertThat;
 
 import java.io.IOException;
 
@@ -62,10 +65,12 @@ public class RunOutOfDiskSpaceIT
         }
 
         // Then
-        assertThat(exceptionThrown.getCause(), is( Throwable.class ));
-        assertThat(exceptionThrown.getCause().getCause(), is( Throwable.class ));
-        assertThat(exceptionThrown.getCause().getCause().getCause(), is( IOException.class ));
-
+        assertThat( exceptionThrown.getCause(), isA( Throwable.class ) );
+        assertThat( exceptionThrown.getCause()
+                .getCause(), isA( Throwable.class ) );
+        assertThat( exceptionThrown.getCause()
+                .getCause()
+                .getCause(), is( instanceOf( IOException.class ) ) );
     }
 
     @Test
@@ -99,7 +104,8 @@ public class RunOutOfDiskSpaceIT
         }
 
         // Then
-        assertThat( errorCaught.getCause(), is( SystemException.class ) );
+        assertThat( errorCaught.getCause(),
+                is( instanceOf( SystemException.class ) ) );
 
     }
 

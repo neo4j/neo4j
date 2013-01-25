@@ -1,10 +1,10 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
-    <groupId>org.neo4j.build</groupId>
-    <artifactId>examples-pom</artifactId>
-    <version>35</version>
-    <relativePath />
+    <groupId>org.neo4j</groupId>
+    <artifactId>parent</artifactId>
+    <version>1.9-SNAPSHOT</version>
+    <relativePath>../..</relativePath>
   </parent>
   <groupId>org.neo4j.examples</groupId>
   <artifactId>neo4j-examples</artifactId>
@@ -25,8 +25,7 @@
     <license-text.header>ApacheLicense-2.0-header.txt</license-text.header>
     <docs-plugin.filter>true</docs-plugin.filter>
     <docs.url>http://docs.neo4j.org/chunked/${project.version}/tutorials-java-embedded.html</docs.url>
-    <paxexamversion>2.4.0.RC1</paxexamversion>
-    
+    <paxexamversion>2.4.0.RC1</paxexamversion>    
   </properties>
 
   <dependencies>
@@ -176,18 +175,6 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-failsafe-plugin</artifactId>
-        <version>2.12</version>
-        <configuration>
-          <encoding>${project.build.sourceEncoding}</encoding>
-        </configuration>
-        <executions>
-          <execution>
-            <goals>
-              <goal>integration-test</goal>
-              <goal>verify</goal>
-            </goals>
-          </execution>
-        </executions>
       </plugin>
       <plugin>
         <artifactId>maven-site-plugin</artifactId>
@@ -207,19 +194,6 @@
           </execution>
         </executions>
       </plugin>
-      <!-- plugin>
-        <artifactId>maven-source-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>attach-sources</id>
-            <phase>package</phase>
-            <goals>
-              <goal>jar-no-fork</goal>
-              <goal>test-jar-no-fork</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin -->
     </plugins>
   </build>
 
@@ -279,4 +253,3 @@
   </repositories>
 
 </project>
-
