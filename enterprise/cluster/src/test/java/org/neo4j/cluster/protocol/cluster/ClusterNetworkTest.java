@@ -42,7 +42,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import ch.qos.logback.classic.LoggerContext;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Rule;
+import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -137,7 +137,7 @@ public class ClusterNetworkTest
     static List<Cluster> out = new ArrayList<Cluster>();
     static List<Cluster> in = new ArrayList<Cluster>();
 
-    @Rule
+    @ClassRule
     public static LoggerRule logger = new LoggerRule();
 
     List<AtomicReference<ClusterConfiguration>> configurations = new ArrayList<AtomicReference<ClusterConfiguration>>();
@@ -226,7 +226,7 @@ public class ClusterNetworkTest
         }, 0, 10 );
 
         // Let messages settle
-        Thread.currentThread().sleep( script.getLength()+1000 );
+        Thread.sleep( script.getLength() + 1000 );
 
         logger.getLogger().debug( "All nodes leave" );
 
@@ -235,7 +235,7 @@ public class ClusterNetworkTest
         {
             logger.getLogger().debug( "Leaving:" + cluster );
             cluster.leave();
-            Thread.currentThread().sleep( 100 );
+            Thread.sleep( 100 );
         }
     }
 

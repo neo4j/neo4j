@@ -19,6 +19,7 @@
  */
 package org.neo4j.server.scripting.javascript;
 
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.*;
 
@@ -76,7 +77,7 @@ public class TestWhiteListJavaWrapper
         Object wrapped = wrapper.wrap( cx, scope, new TestWhiteListJavaWrapper(), null );
 
         // Then
-        assertThat(wrapped, is(NativeJavaObject.class));
+        assertThat( wrapped, is( instanceOf( NativeJavaObject.class ) ) );
         NativeJavaObject obj = (NativeJavaObject)wrapped;
 
         assertThat( obj.has( "aGetter", scope ), is( false ));
@@ -118,10 +119,11 @@ public class TestWhiteListJavaWrapper
         Object wrapped = wrapper.wrap( cx, scope, DynamicRelationshipType.withName( "blah" ), null );
 
         // Then
-        assertThat(wrapped, is(NativeJavaObject.class));
+        assertThat( wrapped, is( instanceOf( NativeJavaObject.class ) ) );
         NativeJavaObject obj = (NativeJavaObject)wrapped;
 
-        assertThat( obj.get( "name", scope ), is( NativeJavaMethod.class ));
+        assertThat( obj.get( "name", scope ),
+                is( instanceOf( NativeJavaMethod.class ) ) );
     }
 
     public void aGetter()

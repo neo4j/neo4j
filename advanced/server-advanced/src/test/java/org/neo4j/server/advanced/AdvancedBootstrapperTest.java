@@ -19,6 +19,7 @@
  */
 package org.neo4j.server.advanced;
 
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 
@@ -30,6 +31,7 @@ public class AdvancedBootstrapperTest
     @Test
     public void bootstrapperLoadsAdvancedServerBootstrapper() throws Exception
     {
-        assertThat( Bootstrapper.loadMostDerivedBootstrapper(), is( AdvancedBootstrapper.class ) );
+        assertThat( Bootstrapper.loadMostDerivedBootstrapper(),
+                is( instanceOf( AdvancedBootstrapper.class ) ) );
     }
 }
