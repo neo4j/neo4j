@@ -68,7 +68,7 @@ public class NodeManager
 {
     private long referenceNodeId = 0;
 
-    private StringLogger logger;
+    private final StringLogger logger;
     private final GraphDatabaseService graphDbService;
     private final LockStripedCache<NodeImpl> nodeCache;
     private final LockStripedCache<RelationshipImpl> relCache;
