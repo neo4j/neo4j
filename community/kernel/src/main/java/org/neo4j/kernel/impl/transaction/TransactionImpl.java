@@ -144,8 +144,14 @@ class TransactionImpl implements Transaction
     {
         if ( currentStatementContext != null )
         {
-            currentStatementContext.close();
-            currentStatementContext = null;
+            try
+            {
+                currentStatementContext.close( getStatus() != Status.STATUS_MARKED_ROLLBACK );
+            }
+            finally
+            {
+                currentStatementContext = null;
+            }
         }
     }
 

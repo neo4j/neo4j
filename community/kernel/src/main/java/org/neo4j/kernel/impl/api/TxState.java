@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -55,13 +56,13 @@ public class TxState
     public Set<Long> getAddedLabels( long nodeId, boolean create )
     {
         NodeState nodeState = getNodeState( nodeId, create );
-        return nodeState != null ? nodeState.getAddedLabels() : null;
+        return nodeState != null ? nodeState.getAddedLabels() : Collections.<Long>emptySet();
     }
     
     public Set<Long> getRemovedLabels( long nodeId, boolean create )
     {
         NodeState nodeState = getNodeState( nodeId, create );
-        return nodeState != null ? nodeState.getRemovedLabels() : null;
+        return nodeState != null ? nodeState.getRemovedLabels() : Collections.<Long>emptySet();
     }
 
     static class EntityState

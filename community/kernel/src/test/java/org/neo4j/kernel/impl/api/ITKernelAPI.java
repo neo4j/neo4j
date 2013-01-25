@@ -116,7 +116,7 @@ public class ITKernelAPI
         Node node = db.createNode();
         long labelId = statement.getOrCreateLabelId( "labello" );
         statement.addLabelToNode( labelId, node.getId() );
-        statement.close();
+        statement.close( true );
         tx.success();
         tx.finish();
         outerTx.finish();

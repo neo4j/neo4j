@@ -99,8 +99,10 @@ public interface StatementContext
      * their parent transaction {@link TransactionContext#finish()} finishes.
      * As an example statement-bound locks can be released when closing
      * a statement. 
+     * 
+     * @param whether or not the statement has been successful.
      */
-    void close();
+    void close( boolean successful );
 
     /**
      * Removes a label with the corresponding id from a node.

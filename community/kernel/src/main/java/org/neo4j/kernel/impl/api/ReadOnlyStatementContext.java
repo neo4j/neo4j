@@ -75,9 +75,9 @@ public class ReadOnlyStatementContext implements StatementContext
     }
 
     @Override
-    public void close()
+    public void close( boolean successful )
     {
-        actual.close();
+        actual.close( successful );
     }
 
     private NotInTransactionException readOnlyException()

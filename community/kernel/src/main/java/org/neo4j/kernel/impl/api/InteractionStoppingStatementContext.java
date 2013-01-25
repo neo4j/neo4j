@@ -83,11 +83,11 @@ public class InteractionStoppingStatementContext implements StatementContext
     }
 
     @Override
-    public void close()
+    public void close( boolean successful )
     {
         assertOperationsAllowed();
         closed = true;
-        delegate.close();
+        delegate.close( successful );
     }
 
     private void assertOperationsAllowed()

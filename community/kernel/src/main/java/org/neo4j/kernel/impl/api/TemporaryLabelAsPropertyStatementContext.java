@@ -188,7 +188,7 @@ public class TemporaryLabelAsPropertyStatementContext implements StatementContex
     }
     
     @Override
-    public void close()
+    public void close( boolean successful )
     {
     }
 }

@@ -19,12 +19,11 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import static org.neo4j.helpers.collection.Iterables.concat;
-import static org.neo4j.helpers.collection.Iterables.filter;
+import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
 
+import java.util.HashSet;
 import java.util.Set;
 
-import org.neo4j.helpers.Predicate;
 import org.neo4j.kernel.api.StatementContext;
 
 public class TransactionStateAwareStatementContext extends DelegatingStatementContext
@@ -43,10 +42,8 @@ public class TransactionStateAwareStatementContext extends DelegatingStatementCo
         Set<Long> addedLabels = state.getAddedLabels( nodeId, true );
         Set<Long> removedLabels = state.getRemovedLabels( nodeId, false );
 
-        if ( removedLabels != null )
-            removedLabels.remove( labelId );
-        if ( !addedLabels.add( labelId ) )
-            return; // Already added
+        removedLabels.remove( labelId );
+        addedLabels.add( labelId );
     }
 
     @Override
@@ -55,10 +52,10 @@ public class TransactionStateAwareStatementContext extends DelegatingStatementCo
         if ( state.hasChanges() )
         {
             Set<Long> addedLabels = state.getAddedLabels( nodeId, false );
-            if ( addedLabels != null && addedLabels.contains( labelId ) )
+            if ( addedLabels.contains( labelId ) )
                 return true;
             Set<Long> removedLabels = state.getRemovedLabels( nodeId, false );
-            if ( removedLabels != null && removedLabels.contains( labelId ) )
+            if ( removedLabels.contains( labelId ) )
                 return false;
         }
 
@@ -72,22 +69,9 @@ public class TransactionStateAwareStatementContext extends DelegatingStatementCo
         if ( !state.hasChanges() )
             return committedLabels;
 
-        Iterable<Long> result = committedLabels;
-        Set<Long> addedLabels = state.getAddedLabels( nodeId, false );
-        if ( addedLabels != null )
-            result = concat( result, addedLabels );
-        final Set<Long> removedLabels = state.getRemovedLabels( nodeId, false );
-        if ( removedLabels != null )
-        {
-            result = filter( new Predicate<Long>()
-            {
-                @Override
-                public boolean accept( Long item )
-                {
-                    return ! removedLabels.contains( item );
-                }
-            }, result );
-        }
+        Set<Long> result = addToCollection( committedLabels, new HashSet<Long>() );
+        result.addAll( state.getAddedLabels( nodeId, false ) );
+        result.removeAll( state.getRemovedLabels( nodeId, false ) );
         return result;
     }
 
@@ -97,22 +81,23 @@ public class TransactionStateAwareStatementContext extends DelegatingStatementCo
         Set<Long> addedLabels = state.getAddedLabels( nodeId, false );
         Set<Long> removedLabels = state.getRemovedLabels( nodeId, true );
 
-        if ( addedLabels != null )
-            addedLabels.remove( labelId );
-        if ( !removedLabels.add( labelId ) )
-            return; // Already removed
+        addedLabels.remove( labelId );
+        removedLabels.add( labelId );
     }
 
     @Override
-    public void close()
+    public void close( boolean successful )
     {
-        for ( TxState.NodeState node : state.getNodes() )
+        if ( successful )
         {
-            for ( Long labelId : node.getAddedLabels() )
-                super.addLabelToNode( labelId, node.getId() );
-            for ( Long labelId : node.getRemovedLabels() )
-                super.removeLabelFromNode( labelId, node.getId() );
+            for ( TxState.NodeState node : state.getNodes() )
+            {
+                for ( Long labelId : node.getAddedLabels() )
+                    super.addLabelToNode( labelId, node.getId() );
+                for ( Long labelId : node.getRemovedLabels() )
+                    super.removeLabelFromNode( labelId, node.getId() );
+            }
         }
-        super.close();
+        super.close( successful );
     }
 }

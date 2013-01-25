@@ -75,8 +75,8 @@ public class DelegatingStatementContext implements StatementContext
     }
 
     @Override
-    public void close()
+    public void close( boolean successful )
     {
-        delegate.close();
+        delegate.close( successful );
     }
 }
