@@ -64,4 +64,9 @@ public class LabelAsPropertyData implements PropertyData
     {
         this.value = newValue;
     }
+    
+    public static boolean representsLabel( PropertyData propertyData )
+    {
+        return propertyData instanceof LabelAsPropertyData;
+    }
 }

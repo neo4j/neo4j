@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import static org.neo4j.kernel.impl.api.LabelAsPropertyData.representsLabel;
+
 import java.util.HashSet;
 import java.util.Set;
 
@@ -51,7 +53,7 @@ class TemporaryLabelAsPropertyLoader implements LockStripedCache.Loader<CachedNo
             Set<Long> labels = new HashSet<Long>();
             for ( PropertyData data : properties.values() )
             {
-                if ( data instanceof LabelAsPropertyData )
+                if ( representsLabel( data ) )
                 {
                     labels.add( (long) data.getIndex() );
                 }

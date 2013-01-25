@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.api;
 
 import static java.util.Collections.emptyList;
+import static org.neo4j.kernel.impl.api.LabelAsPropertyData.representsLabel;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -55,18 +56,23 @@ public class TemporaryLabelAsPropertyStatementContext implements StatementContex
     @Override
     public long getOrCreateLabelId( String label ) throws ConstraintViolationKernelException
     {
-        try {
-            return propertyIndexManager.getOrCreateId( toInternalLabelName( label ) );
-        } catch(TransactionFailureException e)
+        try
         {
-            // Temporary workaround for the property store based label implementation. Actual
-            // implementation should not depend on internal kernel exception messages like this.
-            if(e.getCause() != null && e.getCause() instanceof UnderlyingStorageException
-               && e.getCause().getMessage().equals( "Id capacity exceeded" ))
+            return propertyIndexManager.getOrCreateId( toInternalLabelName( label ) );
+        }
+        catch ( TransactionFailureException e )
+        {
+            // Temporary workaround for the property store based label
+            // implementation. Actual
+            // implementation should not depend on internal kernel exception
+            // messages like this.
+            if ( e.getCause() != null && e.getCause() instanceof UnderlyingStorageException
+                    && e.getCause().getMessage().equals( "Id capacity exceeded" ) )
             {
                 throw new ConstraintViolationKernelException(
                         "The maximum number of labels available has been reached, cannot create more labels.", e );
-            } else
+            }
+            else
             {
                 throw e;
             }
@@ -126,7 +132,7 @@ public class TemporaryLabelAsPropertyStatementContext implements StatementContex
         Collection<Long> result = new ArrayList<Long>();
         for ( PropertyData data : propertyMap.values() )
         {
-            if ( data instanceof LabelAsPropertyData )
+            if ( representsLabel( data ) )
             {
                 result.add( (long) data.getIndex() );
             }
@@ -165,7 +171,7 @@ public class TemporaryLabelAsPropertyStatementContext implements StatementContex
 
     private void ensureIsLabel( PropertyData data )
     {
-        if ( !(data instanceof LabelAsPropertyData) )
+        if ( !representsLabel( data ) )
         {
             throw new IllegalArgumentException( "Label id " + data.getIndex() + " doesn't correspond to label" );
         }

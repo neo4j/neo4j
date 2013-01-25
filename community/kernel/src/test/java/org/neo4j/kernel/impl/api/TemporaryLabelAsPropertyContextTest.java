@@ -23,19 +23,28 @@ import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.cache_type;
 import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.helpers.collection.MapUtil.map;
 
 import java.util.HashSet;
+import java.util.Map;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.impl.core.PropertyIndexManager;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.test.ImpermanentGraphDatabase;
+import org.neo4j.test.TestGraphDatabaseFactory;
 
 public class TemporaryLabelAsPropertyContextTest
 {
@@ -112,6 +121,26 @@ public class TemporaryLabelAsPropertyContextTest
         assertFalse( statement.isLabelSetOnNode( labelId, node ) );
     }
 
+    /*
+     * This test doesn't really belong here, but OTOH it does, as it has to do with this specific
+     * store solution. It creates its own IGD with cache_type:none to try reproduce to trigger the problem.
+     */
+    @Test
+    public void labels_should_not_leak_out_as_properties() throws Exception
+    {
+        // GIVEN
+        GraphDatabaseService db = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
+                .setConfig( cache_type, "none" ).newGraphDatabase();
+        Label label = label( "the-label" );
+        Node node = createLabeledNode( db, map( "name", "Node" ), label );
+
+        // WHEN
+        Iterable<String> propertyKeys = node.getPropertyKeys();
+        
+        // THEN
+        assertEquals( asSet( "name" ), asSet( propertyKeys ) );
+    }
+    
     private GraphDatabaseAPI db;
     private StatementContext statement;
 
@@ -128,5 +157,22 @@ public class TemporaryLabelAsPropertyContextTest
     public void after()
     {
         db.shutdown();
+    }
+
+    private static Node createLabeledNode( GraphDatabaseService db, Map<String, Object> properties, Label... labels )
+    {
+        Transaction tx = db.beginTx();
+        try
+        {
+            Node node = db.createNode( labels );
+            for ( Map.Entry<String, Object> property : properties.entrySet() )
+                node.setProperty( property.getKey(), property.getValue() );
+            tx.success();
+            return node;
+        }
+        finally
+        {
+            tx.finish();
+        }
     }
 }

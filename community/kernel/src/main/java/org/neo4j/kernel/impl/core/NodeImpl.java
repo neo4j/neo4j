@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.core;
 
 import static java.lang.System.arraycopy;
+import static org.neo4j.kernel.impl.api.LabelAsPropertyData.representsLabel;
 import static org.neo4j.kernel.impl.cache.SizeOfs.withArrayOverheadIncludingReferences;
 import static org.neo4j.kernel.impl.util.RelIdArray.empty;
 import static org.neo4j.kernel.impl.util.RelIdArray.wrap;
@@ -132,7 +133,32 @@ public class NodeImpl extends ArrayBasedPrimitive
     protected ArrayMap<Integer, PropertyData> loadProperties(
             NodeManager nodeManager, boolean light )
     {
-        return nodeManager.loadProperties( this, light );
+        return filterLabels( nodeManager.loadProperties( this, light ) );
+    }
+
+    /**
+     * At the moment labels are stored in the database as properties with special keys.
+     * That means that they will be loaded when loading properties from disk.
+     * They need to filtered out to not leak out as properties.
+     * 
+     * TODO please remove this filtering when the store solution changes for labels.
+     */
+    private ArrayMap<Integer, PropertyData> filterLabels( ArrayMap<Integer, PropertyData> properties )
+    {
+        if ( properties == null )
+        {
+            return properties;
+        }
+        
+        ArrayMap<Integer, PropertyData> result = new ArrayMap<Integer, PropertyData>();
+        for ( PropertyData data : properties.values() )
+        {
+            if ( !representsLabel( data ) )
+            {
+                result.put( data.getIndex(), data );
+            }
+        }
+        return result;
     }
 
     Iterable<Relationship> getAllRelationships( NodeManager nodeManager, DirectionWrapper direction )
