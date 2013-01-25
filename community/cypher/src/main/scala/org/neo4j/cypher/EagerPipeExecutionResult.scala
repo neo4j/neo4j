@@ -41,7 +41,9 @@ class EagerPipeExecutionResult(result: Iterator[Map[String, Any]],
       relationshipsCreated = state.createdRelationships.count,
       propertiesSet = state.propertySet.count,
       deletedNodes = state.deletedNodes.count,
-      deletedRelationships = state.deletedRelationships.count)
+      deletedRelationships = state.deletedRelationships.count,
+      addedLabels = state.addedLabels.count,
+      removedLabels = state.removedLabels.count)
   }
 
   override def createTimedResults = (eagerResult,timeTaken)

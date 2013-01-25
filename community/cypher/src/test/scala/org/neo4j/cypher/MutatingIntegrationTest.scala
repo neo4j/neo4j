@@ -524,9 +524,20 @@ return distinct center""")
 
   @Test
   def should_be_able_to_create_node_with_labels() {
-    val createdNode = parseAndExecute("create n:FOO:BAR return n").columnAs[Node]("n").next()
+    val result = parseAndExecute("create n:FOO:BAR return n")
+    val createdNode = result.columnAs[Node]("n").next()
 
     assert(createdNode.getLabels.asScala.map(_.name()) === List("FOO", "BAR"))
+    assertStats(result, nodesCreated = 1, addedLabels = 2);
+  }
+  
+  @Test
+  def should_be_able_to_add_label_to_node() {
+    val result = parseAndExecute("start n=node(0) add n:FOO return n")
+    val createdNode = result.columnAs[Node]("n").next()
+
+    assert(createdNode.getLabels.asScala.map(_.name()) === List("FOO"))
+    assertStats(result, addedLabels = 1);
   }
 }
 
@@ -536,9 +547,12 @@ trait StatisticsChecker extends Assertions {
                   relationshipsCreated: Int = 0,
                   propertiesSet: Int = 0,
                   deletedNodes: Int = 0,
-                  deletedRelationships: Int = 0) {
+                  deletedRelationships: Int = 0,
+                  addedLabels: Int = 0,
+                  removedLabels: Int = 0) {
     val statistics = result.queryStatistics()
-    assert(statistics === QueryStatistics(nodesCreated, relationshipsCreated, propertiesSet, deletedNodes, deletedRelationships)
+    assert(statistics === QueryStatistics(nodesCreated, relationshipsCreated, propertiesSet, deletedNodes,
+                                deletedRelationships, addedLabels, removedLabels)
     )
   }
 }

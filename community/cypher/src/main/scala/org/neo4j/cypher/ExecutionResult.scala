@@ -35,19 +35,23 @@ trait ExecutionResult extends Iterator[Map[String, Any]] {
 
 
 object QueryStatistics {
-  def empty = new QueryStatistics(0,0,0,0,0)
+  def empty = new QueryStatistics(0,0,0,0,0,0,0)
 }
 
 case class QueryStatistics(nodesCreated: Int,
                            relationshipsCreated: Int,
                            propertiesSet: Int,
                            deletedNodes: Int,
-                           deletedRelationships: Int) {
+                           deletedRelationships: Int,
+                           addedLabels: Int,
+                           removedLabels: Int ) {
   def containsUpdates = nodesCreated > 0 ||
   relationshipsCreated > 0 ||
   propertiesSet > 0 ||
   deletedNodes > 0 ||
-  deletedRelationships > 0
+  deletedRelationships > 0 ||
+  addedLabels > 0 ||
+  removedLabels > 0
 
   override def toString = {
     val builder = new StringBuilder
@@ -57,6 +61,8 @@ case class QueryStatistics(nodesCreated: Int,
     includeIfNonZero(builder, "Properties set: ", propertiesSet)
     includeIfNonZero(builder, "Nodes deleted: ", deletedNodes)
     includeIfNonZero(builder, "Relationships deleted: ", deletedRelationships)
+    includeIfNonZero(builder, "Labels added: ", addedLabels)
+    includeIfNonZero(builder, "Labels removed: ", removedLabels)
 
     builder.toString()
   }
