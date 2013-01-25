@@ -65,15 +65,6 @@ public class ThreadToStatementContextBridge
         return getStatementContext() != null;
     }
 
-    public void closeAnyActiveContext(  )
-    {
-        StatementContext stmtCtx = getStatementContext();
-        if ( stmtCtx != null )
-        {
-            stmtCtx.close();
-        }
-    }
-
     private StatementContext getStatementContext()
     {
         return txManager.getStatementContext();

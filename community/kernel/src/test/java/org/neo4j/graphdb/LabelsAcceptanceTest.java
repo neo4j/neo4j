@@ -21,9 +21,12 @@ package org.neo4j.graphdb;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.helpers.collection.Iterables.map;
+import static org.neo4j.helpers.collection.IteratorUtil.asEnumNameSet;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
 
@@ -32,6 +35,7 @@ import java.util.Set;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.neo4j.helpers.Function;
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
@@ -165,7 +169,133 @@ public class LabelsAcceptanceTest
         // Then
         assertThat( "IllegalLabelException should have been thrown.", caught,is( ConstraintViolationException.class));
     }
-    
+
+    @Test
+    public void removingCommittedLabel() throws Exception
+    {
+        // Given
+        GraphDatabaseService beansAPI = dbRule.getGraphDatabaseService();
+        Label label = Labels.MY_LABEL;
+        Node myNode = createLabeledNode( label );
+
+        // When
+        Transaction tx = beansAPI.beginTx();
+        try
+        {
+            myNode = beansAPI.createNode();
+            myNode.removeLabel( label );
+            tx.success();
+        }
+        finally
+        {
+            tx.finish();
+        }
+
+        // Then
+        assertFalse( "Label should have been removed from node", myNode.hasLabel( label ) );
+    }
+
+    @Test
+    public void createNodeWithLabels() throws Exception
+    {
+        // GIVEN
+        GraphDatabaseService db = dbRule.getGraphDatabaseService();
+
+        // WHEN
+        Node node = null;
+        Transaction tx = db.beginTx();
+        try
+        {
+            node = db.createNode( Labels.values() );
+            tx.success();
+        }
+        finally
+        {
+            tx.finish();
+        }
+
+        // THEN
+        assertEquals( asEnumNameSet( Labels.class ), asLabelNameSet( node.getLabels() ));
+    }
+
+    @Test
+    public void removingNonExistentLabel() throws Exception
+    {
+        // Given
+        GraphDatabaseService beansAPI = dbRule.getGraphDatabaseService();
+        Label label = Labels.MY_LABEL;
+
+        // When
+        Transaction tx = beansAPI.beginTx();
+        Node myNode;
+        try
+        {
+            myNode = beansAPI.createNode();
+            myNode.removeLabel( label );
+            tx.success();
+        }
+        finally
+        {
+            tx.finish();
+        }
+
+        // THEN
+        assertFalse( myNode.hasLabel( label ) );
+    }
+
+    @Test
+    public void removingExistingLabelFromUnlabeledNode() throws Exception
+    {
+        // Given
+        GraphDatabaseService beansAPI = dbRule.getGraphDatabaseService();
+        Label label = Labels.MY_LABEL;
+        createLabeledNode( label );
+
+        // When
+        Transaction tx = beansAPI.beginTx();
+        Node myNode;
+        try
+        {
+            myNode = beansAPI.createNode();
+            myNode.removeLabel( label );
+            tx.success();
+        }
+        finally
+        {
+            tx.finish();
+        }
+
+        // THEN
+        assertFalse( myNode.hasLabel( label ) );
+    }
+
+    @Test
+    public void removingUncommittedLabel() throws Exception
+    {
+        // Given
+        GraphDatabaseService beansAPI = dbRule.getGraphDatabaseService();
+        Label label = Labels.MY_LABEL;
+
+        // When
+        Transaction tx = beansAPI.beginTx();
+        Node myNode;
+        try
+        {
+            myNode = beansAPI.createNode();
+            myNode.addLabel( label );
+            myNode.removeLabel( label );
+
+            // THEN
+            assertFalse( myNode.hasLabel( label ) );
+
+            tx.success();
+        }
+        finally
+        {
+            tx.finish();
+        }
+    }
+
     @Test
     public void shouldBeAbleToListLabelsForANode() throws Exception
     {
@@ -264,5 +394,33 @@ public class LabelsAcceptanceTest
                 };
             }
         };
+    }
+
+    public static Set<String> asLabelNameSet( Iterable<Label> enums )
+    {
+        return asSet( map( new Function<Label, String>()
+        {
+            @Override
+            public String apply( Label from )
+            {
+                return from.name();
+            }
+        }, enums ) );
+    }
+
+    private Node createLabeledNode( Label... labels )
+    {
+        GraphDatabaseService db = dbRule.getGraphDatabaseService();
+        Transaction tx = db.beginTx();
+        try
+        {
+            Node node = db.createNode( labels );
+            tx.success();
+            return node;
+        }
+        finally
+        {
+            tx.finish();
+        }
     }
 }

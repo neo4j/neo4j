@@ -27,7 +27,9 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.helpers.collection.IteratorUtil.count;
 import static org.neo4j.helpers.collection.IteratorUtil.single;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.server.rest.repr.RepresentationTestAccess.serialize;
@@ -1056,6 +1058,21 @@ public class DatabaseActionsTest
 
         // THEN
         assertEquals( labelName, single( labels ) );
+    }
+    
+    @Test
+    public void shouldRemoveLabelFromNode() throws Exception
+    {
+        // GIVEN
+        String labelName = "mylabel";
+        long node = actions.createNode( null, label( labelName ) ).getId();
+
+        // WHEN
+        actions.removeLabelFromNode( node, labelName );
+        Iterable<String> labels = graphdbHelper.getNodeLabels( node );
+
+        // THEN
+        assertEquals( 0, count( labels ) );
     }
     
     @Test

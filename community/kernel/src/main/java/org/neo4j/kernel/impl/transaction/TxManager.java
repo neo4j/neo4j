@@ -73,7 +73,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
     private final Map<RecoveredBranchInfo, Boolean> branches = new HashMap<RecoveredBranchInfo, Boolean>();
     private volatile TxLog txLog = null;
     private boolean tmOk = false;
-    private boolean blocked = false;
+    private final boolean blocked = false;
 
     private final KernelPanicEventGenerator kpe;
 
@@ -85,12 +85,12 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
     private final StringLogger log;
 
 //    final TxHook finishHook;
-    private XaDataSourceManager xaDataSourceManager;
+    private final XaDataSourceManager xaDataSourceManager;
     private final FileSystemAbstraction fileSystem;
     private TxManager.TxManagerDataSourceRegistrationListener dataSourceRegistrationListener;
 
     private Throwable recoveryError;
-    private TransactionStateFactory stateFactory;
+    private final TransactionStateFactory stateFactory;
     private KernelAPI kernel;
 
     public TxManager( File txLogDir,
@@ -380,12 +380,12 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
                         + getTxStatusAsString( tx.getStatus() ) ) );
             }
 
-
             tx.doBeforeCompletion();
             // delist resources?
             if ( tx.getStatus() == Status.STATUS_ACTIVE )
             {
                 comittedTxCount.incrementAndGet();
+                tx.ensureStatementContextClosed();
                 commit( thread, tx );
             }
             else if ( tx.getStatus() == Status.STATUS_MARKED_ROLLBACK )
@@ -625,6 +625,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
                 try
                 {
                     rolledBackTxCount.incrementAndGet();
+                    tx.ensureStatementContextClosed();
                     tx.doRollback();
                 }
                 catch ( XAException e )
@@ -805,6 +806,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
         }
     }
 
+    @Override
     public void doRecovery()
     {
         if ( txLog == null )

@@ -92,6 +92,7 @@ public class RestfulGraphDatabase
     private static final String PATH_NODE_PATH = PATH_NODE + "/path";
     private static final String PATH_NODE_PATHS = PATH_NODE + "/paths";
     private static final String PATH_NODE_LABELS = PATH_NODE + "/labels";
+    private static final String PATH_NODE_LABEL = PATH_NODE + "/labels/{label}";
 
     protected static final String PATH_NODE_INDEX = "index/node";
     protected static final String PATH_NAMED_NODE_INDEX = PATH_NODE_INDEX + "/{indexName}";
@@ -402,11 +403,13 @@ public class RestfulGraphDatabase
         try
         {
             Object rawInput = input.readValue( body );
-            if( !(rawInput instanceof String))
+            if ( !(rawInput instanceof String) )
             {
                 throw new BadInputException( format( "Label name must be a string. Got: '%s'", rawInput ) );
-            } else {
-                actions( force ).addLabelToNode( nodeId, (String)rawInput );
+            }
+            else
+            {
+                actions( force ).addLabelToNode( nodeId, (String) rawInput );
             }
         }
         catch ( BadInputException e )
@@ -416,6 +419,22 @@ public class RestfulGraphDatabase
         catch ( ArrayStoreException ase )
         {
             return generateBadRequestDueToMangledJsonResponse( body );
+        }
+        catch ( NodeNotFoundException e )
+        {
+            return output.notFound( e );
+        }
+        return nothing();
+    }
+    
+    @DELETE
+    @Path( PATH_NODE_LABEL )
+    public Response removeNodeLabel( @HeaderParam( HEADER_TRANSACTION ) ForceMode force,
+                                  @PathParam( "nodeId" ) long nodeId, @PathParam( "label" ) String labelName )
+    {
+        try
+        {
+            actions( force ).removeLabelFromNode( nodeId, labelName );
         }
         catch ( NodeNotFoundException e )
         {

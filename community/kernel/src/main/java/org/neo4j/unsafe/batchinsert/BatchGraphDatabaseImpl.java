@@ -117,6 +117,17 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
         return node;
     }
 
+    @Override
+    public Node createNode( Label... labels )
+    {
+        throw unsupportedOperation();
+    }
+
+    private static UnsupportedOperationException unsupportedOperation()
+    {
+        return new UnsupportedOperationException( "Batch inserter mode" );
+    }
+
     static Map<String,Object> emptyProps()
     {
         return new HashMap<String,Object>();
@@ -125,12 +136,12 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
     @Override
     public Iterable<Node> getAllNodes()
     {
-        throw new UnsupportedOperationException( "Batch inserter mode" );
+        throw unsupportedOperation();
     }
 
     public Iterable<Relationship> getAllRelationships()
     {
-        throw new UnsupportedOperationException( "Batch inserter mode" );
+        throw unsupportedOperation();
     }
     
     @Override
@@ -185,7 +196,7 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
     @Override
     public Iterable<RelationshipType> getRelationshipTypes()
     {
-        throw new UnsupportedOperationException( "Batch inserter mode" );
+        throw unsupportedOperation();
     }
 
     @Override
@@ -269,7 +280,7 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
         @Override
         public void delete()
         {
-            throw new UnsupportedOperationException();
+            throw unsupportedOperation();
         }
 
         @Override
@@ -406,7 +417,7 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
             ReturnableEvaluator returnableEvaluator,
             RelationshipType relationshipType, Direction direction )
         {
-            throw new UnsupportedOperationException( "Batch inserter mode" );
+            throw unsupportedOperation();
         }
 
         @Override
@@ -416,7 +427,7 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
             RelationshipType firstRelationshipType, Direction firstDirection,
             RelationshipType secondRelationshipType, Direction secondDirection )
         {
-            throw new UnsupportedOperationException( "Batch inserter mode" );
+            throw unsupportedOperation();
         }
 
         @Override
@@ -425,25 +436,31 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
             ReturnableEvaluator returnableEvaluator,
             Object... relationshipTypesAndDirections )
         {
-            throw new UnsupportedOperationException( "Batch inserter mode" );
+            throw unsupportedOperation();
         }
 
         @Override
         public void addLabel( Label label )
         {
-            throw new UnsupportedOperationException( "Batch inserter mode" );
+            throw unsupportedOperation();
+        }
+
+        @Override
+        public void removeLabel( Label label )
+        {
+            throw unsupportedOperation();
         }
 
         @Override
         public boolean hasLabel( Label label )
         {
-            throw new UnsupportedOperationException( "Batch inserter mode" );
+            throw unsupportedOperation();
         }
         
         @Override
         public Iterable<Label> getLabels()
         {
-            throw new UnsupportedOperationException( "Batch inserter mode" );
+            throw unsupportedOperation();
         }
 
         @Override
@@ -549,7 +566,7 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
         @Override
         public void delete()
         {
-            throw new UnsupportedOperationException( "Batch inserter mode" );
+            throw unsupportedOperation();
         }
 
         @Override

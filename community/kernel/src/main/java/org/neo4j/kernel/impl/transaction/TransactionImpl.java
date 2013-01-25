@@ -67,7 +67,7 @@ class TransactionImpl implements Transaction
     private final int eventIdentifier;
 
     private final TxManager txManager;
-    private StringLogger logger;
+    private final StringLogger logger;
     private final ForceMode forceMode;
     private Thread owner;
 
@@ -134,14 +134,13 @@ class TransactionImpl implements Transaction
         HeuristicMixedException, HeuristicRollbackException,
         IllegalStateException, SystemException
     {
-        ensureStatementContextClosed();
         // make sure tx not suspended
         txManager.commit();
         transactionContext.success();
         transactionContext.finish();
     }
 
-    private void ensureStatementContextClosed()
+    void ensureStatementContextClosed()
     {
         if ( currentStatementContext != null )
         {
@@ -159,7 +158,6 @@ class TransactionImpl implements Transaction
 	public synchronized void rollback() throws IllegalStateException,
         SystemException
     {
-        ensureStatementContextClosed();
         // make sure tx not suspended
         txManager.rollback();
         transactionContext.failure();

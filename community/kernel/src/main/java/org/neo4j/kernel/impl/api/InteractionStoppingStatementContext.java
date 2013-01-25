@@ -76,6 +76,13 @@ public class InteractionStoppingStatementContext implements StatementContext
     }
 
     @Override
+    public void removeLabelFromNode( long labelId, long nodeId )
+    {
+        assertOperationsAllowed();
+        delegate.removeLabelFromNode( labelId, nodeId );
+    }
+
+    @Override
     public void close()
     {
         assertOperationsAllowed();

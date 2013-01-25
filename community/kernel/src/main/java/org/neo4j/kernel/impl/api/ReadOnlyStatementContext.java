@@ -69,6 +69,12 @@ public class ReadOnlyStatementContext implements StatementContext
     }
 
     @Override
+    public void removeLabelFromNode( long labelId, long nodeId )
+    {
+        throw readOnlyException();
+    }
+
+    @Override
     public void close()
     {
         actual.close();

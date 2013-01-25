@@ -101,4 +101,14 @@ public interface StatementContext
      * a statement. 
      */
     void close();
+
+    /**
+     * Removes a label with the corresponding id from a node.
+     * If the node doesn't have that label nothing will happen. Label ids
+     * are retrieved from {@link #getOrCreateLabelId(String)} or {@link #getLabelId(String)}.
+     *
+     * @param labelId the label id to label the node with.
+     * @param nodeId the node id to remove the label from.
+     */
+    void removeLabelFromNode( long labelId, long nodeId );
 }
