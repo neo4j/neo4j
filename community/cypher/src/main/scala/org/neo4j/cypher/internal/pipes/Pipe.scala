@@ -79,6 +79,8 @@ class QueryState(val db: GraphDatabaseService,
   val propertySet = new Counter
   val deletedNodes = new Counter
   val deletedRelationships = new Counter
+  val addedLabels = new Counter
+  val removedLabels = new Counter
 
   def graphDatabaseAPI: GraphDatabaseAPI = if (db.isInstanceOf[GraphDatabaseAPI])
     db.asInstanceOf[GraphDatabaseAPI]
@@ -91,7 +93,7 @@ class Counter {
 
   def count: Int = counter.get()
 
-  def increase() {
-    counter.incrementAndGet()
+  def increase( amount: Int = 1 ) {
+    counter.addAndGet( amount )
   }
 }

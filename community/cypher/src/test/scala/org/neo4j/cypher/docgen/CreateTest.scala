@@ -55,7 +55,7 @@ class CreateTest extends DocumentingTestBase with StatisticsChecker {
         "or you can use the labels short form from +MATCH+.",
       queryText = "create n:Person",
       returns = "Nothing is returned from this query.",
-      assertions = (p) => assertStats(p, nodesCreated = 1))
+      assertions = (p) => assertStats(p, nodesCreated = 1, addedLabels = 1))
   }
 
   @Test def create_single_node_with_labels_and_properties() {
@@ -65,7 +65,7 @@ class CreateTest extends DocumentingTestBase with StatisticsChecker {
         "or you can use the labels short form from +MATCH+.",
       queryText = "create n label :Person = {name : 'Andres', title : 'Developer'}",
       returns = "Nothing is returned from this query.",
-      assertions = (p) => assertStats(p, nodesCreated = 1, propertiesSet = 2))
+      assertions = (p) => assertStats(p, nodesCreated = 1, propertiesSet = 2, addedLabels = 1))
   }
 
   @Test def create_single_node_and_return_it() {

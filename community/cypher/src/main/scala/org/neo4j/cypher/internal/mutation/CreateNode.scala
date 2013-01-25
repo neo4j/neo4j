@@ -49,6 +49,7 @@ case class CreateNode(key: String, properties: Map[String, Expression], labels: 
       val labelIds = labelSeqToJavaIds(context, queryCtx, labels)
 
       queryCtx.addLabelsToNode(node, labelIds.asJava)
+      state.addedLabels.increase( labelIds.size )
 
       val newContext = context.newWith(key -> node)
       newContext
