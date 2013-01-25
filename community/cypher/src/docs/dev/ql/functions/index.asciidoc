@@ -60,6 +60,8 @@ include::filter.asciidoc[]
 
 include::tail.asciidoc[]
 
+include::nth.asciidoc[]
+
 include::range.asciidoc[]
 
 include::reduce.asciidoc[]

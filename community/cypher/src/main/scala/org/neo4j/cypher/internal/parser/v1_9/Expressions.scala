@@ -151,6 +151,7 @@ trait Expressions extends Base with ParserPattern with Predicates with StringLit
     "head" -> func(1, args => HeadFunction(args.head)),
     "last" -> func(1, args => LastFunction(args.head)),
     "tail" -> func(1, args => TailFunction(args.head)),
+    "nth" -> func(2, args => NthFunction(args(0), args(1))),
     "replace" -> func(3, args => ReplaceFunction(args(0), args(1), args(2))),
     "left" -> func(2, args => LeftFunction(args(0), args(1))),
     "right" -> func(2, args => RightFunction(args(0), args(1))),

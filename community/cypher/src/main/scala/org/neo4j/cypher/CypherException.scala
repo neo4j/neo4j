@@ -27,6 +27,8 @@ abstract class CypherException(message: String, cause: Throwable) extends Runtim
 
 class UniquePathNotUniqueException(message:String) extends CypherException(message)
 
+class CollectionIndexOutOfRange(message:String) extends CypherException(message)
+
 class EntityNotFoundException(message:String, cause:Throwable=null) extends CypherException(message, cause)
 
 class CypherTypeException(message: String, cause: Throwable = null) extends CypherException(message, cause)
