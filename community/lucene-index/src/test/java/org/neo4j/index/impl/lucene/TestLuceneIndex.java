@@ -286,7 +286,6 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
     }
 
     @Test
-    @Ignore("this is currently broken, waiting fix")
     public void indexHitsFromQueryingRemovedDoesNotReturnNegativeCount()
     {
         Index<Node> index = nodeIndex( LuceneIndexImplementation.EXACT_CONFIG );
