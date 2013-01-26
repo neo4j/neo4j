@@ -44,7 +44,7 @@ class MutationTest extends ExecutionEngineHelper with Assertions {
   @Test
   def create_node() {
     val start = new NullPipe
-    val createNode = new ExecuteUpdateCommandsPipe(start, graph, Seq(CreateNode("n", Map("name" -> Literal("Andres")))))
+    val createNode = new ExecuteUpdateCommandsPipe(start, graph, Seq(CreateNode("n", Map("name" -> Literal("Andres")), Literal(Seq.empty))))
 
     val queryState = createQueryState
     createNode.createResults(queryState).toList
@@ -59,7 +59,7 @@ class MutationTest extends ExecutionEngineHelper with Assertions {
   def join_existing_transaction_and_rollback() {
     val tx = graph.beginTx()
     val start = new NullPipe
-    val createNode = new ExecuteUpdateCommandsPipe(start, graph, Seq(CreateNode("n", Map("name" -> Literal("Andres")))))
+    val createNode = new ExecuteUpdateCommandsPipe(start, graph, Seq(CreateNode("n", Map("name" -> Literal("Andres")), Literal(Seq.empty))))
 
     createNode.createResults(createQueryState).toList
 
@@ -73,7 +73,7 @@ class MutationTest extends ExecutionEngineHelper with Assertions {
   def join_existing_transaction_and_commit() {
     val tx = graph.beginTx()
     val start = new NullPipe
-    val createNode = new ExecuteUpdateCommandsPipe(start, graph, Seq(CreateNode("n", Map("name" -> Literal("Andres")))))
+    val createNode = new ExecuteUpdateCommandsPipe(start, graph, Seq(CreateNode("n", Map("name" -> Literal("Andres")), Literal(Seq.empty))))
 
     createNode.createResults(createQueryState).toList
 
@@ -91,7 +91,9 @@ class MutationTest extends ExecutionEngineHelper with Assertions {
     val a = createNode()
     val b = createNode()
 
-    val createRel = CreateRelationship("r", RelationshipEndpoint(getNode("a", a), Map(), Literal(Seq.empty)), RelationshipEndpoint(getNode("b", b), Map(), Literal(Seq.empty)), "REL", Map("I" -> Literal("was here")))
+    val createRel = CreateRelationship("r",
+      RelationshipEndpoint(getNode("a", a), Map(), Literal(Seq.empty), true),
+      RelationshipEndpoint(getNode("b", b), Map(), Literal(Seq.empty), true), "REL", Map("I" -> Literal("was here")))
 
     val startPipe = new NullPipe
     val createNodePipe = new ExecuteUpdateCommandsPipe(startPipe, graph, Seq(createRel))
