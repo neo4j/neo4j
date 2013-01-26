@@ -40,7 +40,7 @@ class ClosingIteratorTest extends Assertions {
     val result = iterator.next()
 
     //Then
-    verify(ctx).close()
+    verify(ctx).close(success = true)
     assertThat(result, is(42))
   }
 
@@ -55,7 +55,7 @@ class ClosingIteratorTest extends Assertions {
     val result = iterator.hasNext
 
     //Then
-    verify(ctx).close()
+    verify(ctx).close(success = true)
     assertThat(result, is(false))
   }
 
@@ -74,7 +74,7 @@ class ClosingIteratorTest extends Assertions {
     iterator.hasNext
 
     //Then
-    verify(ctx).close()
+    verify(ctx).close(success = true)
     assertThat(result, is(false))
   }
 
@@ -90,7 +90,7 @@ class ClosingIteratorTest extends Assertions {
     intercept[RuntimeException](iterator.hasNext)
 
     //Then
-    verify(ctx).fail()
+    verify(ctx).close(success = false)
   }
 
   @Test
@@ -107,6 +107,6 @@ class ClosingIteratorTest extends Assertions {
     intercept[RuntimeException](iterator.next())
 
     //Then
-    verify(ctx).fail()
+    verify(ctx).close(success = false)
   }
 }

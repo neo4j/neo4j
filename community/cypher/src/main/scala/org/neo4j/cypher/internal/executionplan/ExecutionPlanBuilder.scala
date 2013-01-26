@@ -154,7 +154,7 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService) extends PatternGraphBuil
     }
     catch {
       case (t: Throwable) =>
-        queryContext.fail()
+        queryContext.close(success = false)
         throw t
     }
   }

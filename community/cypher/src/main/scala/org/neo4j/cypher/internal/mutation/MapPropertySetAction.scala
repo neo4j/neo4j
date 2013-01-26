@@ -20,13 +20,12 @@
 package org.neo4j.cypher.internal.mutation
 
 import org.neo4j.cypher.internal.symbols.{MapType, SymbolTable}
-import org.neo4j.cypher.internal.pipes.{QueryState}
+import org.neo4j.cypher.internal.pipes.QueryState
 import org.neo4j.graphdb.{Node, Relationship, PropertyContainer}
 import org.neo4j.cypher.internal.commands.expressions.Expression
 import org.neo4j.cypher.internal.helpers.{MapSupport, IsMap}
 import org.neo4j.cypher.CypherTypeException
 import collection.Map
-import collection.JavaConverters._
 import org.neo4j.cypher.internal.ExecutionContext
 
 case class MapPropertySetAction(element: Expression, mapExpression: Expression)
@@ -48,27 +47,27 @@ case class MapPropertySetAction(element: Expression, mapExpression: Expression)
         kv match {
           case (k, v) =>
             (v, pc) match {
-              case (null, r: Relationship) => state.queryContext.relationshipOps().removeProperty(r, k)
-              case (null, n: Node)         => state.queryContext.nodeOps().removeProperty(n, k)
-              case (_, n: Node)            => state.queryContext.nodeOps().setProperty(n, k, makeValueNeoSafe(v))
-              case (_, r: Relationship)    => state.queryContext.relationshipOps().setProperty(r, k, makeValueNeoSafe(v))
+              case (null, r: Relationship) => state.queryContext.relationshipOps.removeProperty(r, k)
+              case (null, n: Node)         => state.queryContext.nodeOps.removeProperty(n, k)
+              case (_, n: Node)            => state.queryContext.nodeOps.setProperty(n, k, makeValueNeoSafe(v))
+              case (_, r: Relationship)    => state.queryContext.relationshipOps.setProperty(r, k, makeValueNeoSafe(v))
             }
         }
       })
 
       /*Remove all other properties from the property container*/
       pc match {
-        case n:Node=> state.queryContext.nodeOps().propertyKeys(n).asScala.foreach {
+        case n:Node=> state.queryContext.nodeOps.propertyKeys(n).foreach {
           case k if map.contains(k) => //Do nothing
           case k                    =>
-            state.queryContext.nodeOps().removeProperty(n, k)
+            state.queryContext.nodeOps.removeProperty(n, k)
             state.propertySet.increase()
         }
 
-        case r:Relationship=> state.queryContext.relationshipOps().propertyKeys(r).asScala.foreach {
+        case r:Relationship=> state.queryContext.relationshipOps.propertyKeys(r).foreach {
           case k if map.contains(k) => //Do nothing
           case k                    =>
-            state.queryContext.relationshipOps().removeProperty(r, k)
+            state.queryContext.relationshipOps.removeProperty(r, k)
             state.propertySet.increase()
         }
       }

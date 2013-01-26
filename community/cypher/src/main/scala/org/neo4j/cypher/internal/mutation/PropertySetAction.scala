@@ -34,10 +34,10 @@ case class PropertySetAction(prop: Property, e: Expression)
     val entity = mapExpr(context).asInstanceOf[PropertyContainer]
 
     (value, entity) match {
-      case (null, n: Node)         => state.queryContext.nodeOps().removeProperty(n, propertyKey)
-      case (null, r: Relationship) => state.queryContext.relationshipOps().removeProperty(r, propertyKey)
-      case (_, r: Relationship)    => state.queryContext.relationshipOps().setProperty(r, propertyKey, value)
-      case (_, n: Node)            => state.queryContext.nodeOps().setProperty(n, propertyKey, value)
+      case (null, n: Node)         => state.queryContext.nodeOps.removeProperty(n, propertyKey)
+      case (null, r: Relationship) => state.queryContext.relationshipOps.removeProperty(r, propertyKey)
+      case (_, r: Relationship)    => state.queryContext.relationshipOps.setProperty(r, propertyKey, value)
+      case (_, n: Node)            => state.queryContext.nodeOps.setProperty(n, propertyKey, value)
     }
 
     state.propertySet.increase()

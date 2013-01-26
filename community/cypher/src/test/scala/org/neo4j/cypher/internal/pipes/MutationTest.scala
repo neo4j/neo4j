@@ -125,7 +125,7 @@ class MutationTest extends ExecutionEngineHelper with Assertions {
     val state = createQueryState
     createNodePipe.createResults(state).toList
 
-    queryContext.close()
+    queryContext.close(success = true)
 
     intercept[NotFoundException](graph.getNodeById(node_id))
   }

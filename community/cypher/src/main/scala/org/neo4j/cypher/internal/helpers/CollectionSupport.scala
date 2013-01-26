@@ -37,14 +37,27 @@ object IsCollection extends CollectionSupport {
 }
 
 trait CollectionSupport {
+
+  class NoValidValuesExceptions extends Exception
+
   def isCollection(x: Any) = castToIterable.isDefinedAt(x)
 
-  def liftAsCollection[T](test: PartialFunction[Any, T])(input: Any): Option[Iterable[T]] = input match {
-    case single if test.isDefinedAt(single) =>
-      Some(Seq(test(single)))
-    case IsCollection(coll) =>
-      Some(coll map { (elem: Any) => if (test.isDefinedAt(elem)) test(elem) else return None })
-    case _ => None
+  def liftAsCollection[T](test: PartialFunction[Any, T])(input: Any): Option[Iterable[T]] = try {
+    input match {
+      case single if test.isDefinedAt(single) => Some(Seq(test(single)))
+
+      case IsCollection(coll) =>
+        val mappedCollection = coll map {
+          case elem if test.isDefinedAt(elem) => test(elem)
+          case _                              => throw new NoValidValuesExceptions
+        }
+
+        Some(mappedCollection)
+
+      case _ => None
+    }
+  } catch {
+    case _: NoValidValuesExceptions => None
   }
 
   def asCollectionOf[T](test: PartialFunction[Any, T])(input: Iterable[Any]): Option[Iterable[T]] =
