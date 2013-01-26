@@ -26,13 +26,11 @@ import expressions.Identifier._
 import expressions.Literal
 import org.neo4j.cypher.internal.symbols.{RelationshipType, NodeType, SymbolTable}
 import org.neo4j.graphdb.{Node, Direction}
-import org.neo4j.cypher.internal.pipes.{QueryState}
+import org.neo4j.cypher.internal.pipes.QueryState
 import org.neo4j.cypher.{SyntaxException, CypherTypeException, UniquePathNotUniqueException}
-import collection.JavaConverters._
 import collection.Map
 import org.neo4j.cypher.internal.helpers.{IsMap, MapSupport}
 import org.neo4j.cypher.internal.ExecutionContext
-import org.neo4j.cypher.internal.spi.gdsimpl.TransactionBoundQueryContext
 
 object UniqueLink {
   def apply(start: String, end: String, relName: String, relType: String, dir: Direction): UniqueLink =
@@ -44,7 +42,7 @@ case class UniqueLink(start: NamedExpectation, end: NamedExpectation, rel: Named
 
   def exec(context: ExecutionContext, state: QueryState): Option[(UniqueLink, CreateUniqueResult)] = {
 
-    def tx = state.queryContext.asInstanceOf[TransactionBoundQueryContext].tx
+    def tx = state.queryContext.getTransaction
 
     def getNode(expect: NamedExpectation): Option[Node] = context.get(expect.name) match {
       case Some(n: Node)                             => Some(n)

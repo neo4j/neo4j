@@ -48,7 +48,6 @@ case class LabelAction(entity: Expression, labelOp: LabelOp, labelSetExpr: Expre
     labelOp match {
       case LabelAdd => {
         queryCtx.addLabelsToNode(node.getId, labelIds)
-        state.addedLabels.increase(labelIds.size)
       }
       case _        => throw new UnsupportedOperationException
     }

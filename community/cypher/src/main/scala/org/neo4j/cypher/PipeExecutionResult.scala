@@ -141,6 +141,6 @@ PipeExecutionResult(result: Iterator[Map[String, Any]], val columns: List[String
 
   def next(): ImmutableMap[String, Any] = result.next().toMap
 
-  def queryStatistics = QueryStatistics.empty
+  def queryStatistics = QueryStatistics()
 }
 

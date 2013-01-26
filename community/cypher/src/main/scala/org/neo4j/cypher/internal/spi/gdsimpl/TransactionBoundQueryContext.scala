@@ -106,4 +106,6 @@ class TransactionBoundQueryContext(graph: GraphDatabaseAPI) extends QueryContext
       obj.setProperty(propertyKey, value)
     }
   }
+
+  def getTransaction = tx
 }

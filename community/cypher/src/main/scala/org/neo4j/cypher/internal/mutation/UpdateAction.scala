@@ -79,13 +79,11 @@ trait GraphElementPropertyFunctions extends CollectionSupport {
       case n: Node => map.foreach {
         case (key, value) =>
           state.queryContext.nodeOps.setProperty(n, key, value)
-          state.propertySet.increase()
       }
 
       case r: Relationship => map.foreach {
         case (key, value) =>
           state.queryContext.relationshipOps.setProperty(r, key, value)
-          state.propertySet.increase()
       }
     }
   }
@@ -99,8 +97,6 @@ trait GraphElementPropertyFunctions extends CollectionSupport {
       case r: Relationship =>
         state.queryContext.relationshipOps.setProperty(r, key, value)
     }
-
-    state.propertySet.increase()
   }
 
   def makeValueNeoSafe(a: Any): Any = if (isCollection(a)) {

@@ -61,7 +61,6 @@ extends UpdateAction
     val f = from.node(context).asInstanceOf[Node]
     val t = to.node(context).asInstanceOf[Node]
     val relationship = state.queryContext.createRelationship(f, t, typ)
-    state.createdRelationships.increase()
     setProperties(relationship, props, context, state)
     context.put(key, relationship)
     Stream(context)

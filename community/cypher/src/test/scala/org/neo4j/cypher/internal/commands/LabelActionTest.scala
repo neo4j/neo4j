@@ -117,4 +117,6 @@ class SnitchingQueryContext extends QueryContext {
   def removeLabelsFromNode(node: Long, labelIds: Iterable[Long]) {???}
 
   def replaceLabelsOfNode(node: Long, labelIds: Iterable[Long]) {???}
+
+  def getTransaction = ???
 }

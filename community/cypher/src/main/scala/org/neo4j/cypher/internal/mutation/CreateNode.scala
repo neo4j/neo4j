@@ -41,7 +41,6 @@ case class CreateNode(key: String, properties: Map[String, Expression], labels: 
 
     def createNodeWithPropertiesAndLabels(props: Map[String, Expression]): ExecutionContext = {
       val node = state.queryContext.createNode()
-      state.createdNodes.increase()
       setProperties(node, props, context, state)
 
       val queryCtx = state.queryContext
@@ -49,7 +48,6 @@ case class CreateNode(key: String, properties: Map[String, Expression], labels: 
       val labelIds: Iterable[Long] = getLabelsAsLongs(context, labels, queryCtx)
 
       queryCtx.addLabelsToNode(node.getId, labelIds)
-      state.addedLabels.increase( labelIds.size )
 
       val newContext = context.newWith(key -> node)
       newContext

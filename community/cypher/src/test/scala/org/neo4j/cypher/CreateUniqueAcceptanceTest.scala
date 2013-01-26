@@ -26,7 +26,7 @@ import org.neo4j.graphdb.{Path, Node, Relationship}
 
 class CreateUniqueAcceptanceTest extends ExecutionEngineHelper with Assertions with StatisticsChecker {
 
-  val stats = QueryStatistics.empty
+  val stats = QueryStatistics()
 
   @Test
   def create_a_missing_relationship() {

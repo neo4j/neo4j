@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.spi.gdsimpl
 
 import org.neo4j.cypher.internal.spi.{Operations, DelegatingOperations, DelegatingQueryContext, QueryContext}
-import org.neo4j.graphdb.{Relationship, Direction, Node}
+import org.neo4j.graphdb.{PropertyContainer, Relationship, Direction, Node}
 import org.neo4j.kernel.impl.api.LockHolder
 
 class RepeatableReadQueryContext(inner: QueryContext, locker: LockHolder) extends DelegatingQueryContext(inner) {
@@ -52,7 +52,7 @@ class RepeatableReadQueryContext(inner: QueryContext, locker: LockHolder) extend
     case r: Relationship => r.getId
   }
 
-  class RepeatableReadOperations[T](inner: Operations[T]) extends DelegatingOperations[T](inner) {
+  class RepeatableReadOperations[T <: PropertyContainer](inner: Operations[T]) extends DelegatingOperations[T](inner) {
     override def getProperty(obj: T, propertyKey: String) = {
       locker.acquireNodeReadLock(id(obj))
       inner.getProperty(obj, propertyKey)

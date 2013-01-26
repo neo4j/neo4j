@@ -20,7 +20,7 @@
 
 package org.neo4j.cypher.internal.spi
 
-import org.neo4j.graphdb.{Direction, Relationship, Node}
+import org.neo4j.graphdb._
 
 /*
  * Developer note: This is an attempt at an internal graph database API, which defines a clean cut between
@@ -58,9 +58,16 @@ trait QueryContext {
   def removeLabelsFromNode(node: Long, labelIds: Iterable[Long])
 
   def close(success: Boolean)
+
+  /**
+   * This should not exist. It's a transient stated before locking is done somewhere else
+   * @return
+   */
+  @Deprecated
+  def getTransaction: Transaction
 }
 
-trait Operations[T] {
+trait Operations[T <: PropertyContainer] {
   def delete(obj: T)
 
   def setProperty(obj: T, propertyKey: String, value: Any)

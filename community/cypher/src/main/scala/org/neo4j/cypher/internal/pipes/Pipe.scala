@@ -20,11 +20,10 @@
 package org.neo4j.cypher.internal.pipes
 
 import org.neo4j.cypher.internal.symbols.SymbolTable
-import org.neo4j.graphdb.{GraphDatabaseService, Transaction}
+import org.neo4j.graphdb.GraphDatabaseService
 import scala.collection.JavaConverters._
 import org.neo4j.kernel.GraphDatabaseAPI
-import java.util.concurrent.atomic.AtomicInteger
-import org.neo4j.cypher.internal.spi.QueryContext
+import org.neo4j.cypher.internal.spi.{UpdateCountingQueryContext, QueryContext}
 import org.neo4j.cypher.internal.spi.gdsimpl.TransactionBoundQueryContext
 import org.neo4j.cypher.internal.ExecutionContext
 
@@ -72,28 +71,16 @@ object QueryState {
 }
 
 class QueryState(val db: GraphDatabaseService,
-                 val queryContext: QueryContext,
+                 inner: QueryContext,
                  val params: Map[String, Any]) {
-  val createdNodes = new Counter
-  val createdRelationships = new Counter
-  val propertySet = new Counter
-  val deletedNodes = new Counter
-  val deletedRelationships = new Counter
-  val addedLabels = new Counter
-  val removedLabels = new Counter
+
+  private val updateTrackingQryCtx: UpdateCountingQueryContext = new UpdateCountingQueryContext(inner)
+  val queryContext: QueryContext = updateTrackingQryCtx
+
+  def getStatistics = updateTrackingQryCtx.getStatistics
 
   def graphDatabaseAPI: GraphDatabaseAPI = if (db.isInstanceOf[GraphDatabaseAPI])
     db.asInstanceOf[GraphDatabaseAPI]
   else
     throw new IllegalStateException("Graph database does not implement GraphDatabaseAPI")
-}
-
-class Counter {
-  private val counter: AtomicInteger = new AtomicInteger()
-
-  def count: Int = counter.get()
-
-  def increase( amount: Int = 1 ) {
-    counter.addAndGet( amount )
-  }
 }

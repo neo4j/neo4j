@@ -40,8 +40,6 @@ case class PropertySetAction(prop: Property, e: Expression)
       case (_, n: Node)            => state.queryContext.nodeOps.setProperty(n, propertyKey, value)
     }
 
-    state.propertySet.increase()
-
     Stream(context)
   }
 

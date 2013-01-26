@@ -47,11 +47,9 @@ case class DeleteEntityAction(elementToDelete: Expression)
 
     x match {
       case n: Node if (!nodeManager.isDeleted(n)) =>
-        state.deletedNodes.increase()
         state.queryContext.nodeOps.delete(n)
 
       case r: Relationship if (!nodeManager.isDeleted(r))=>
-        state.deletedRelationships.increase()
         state.queryContext.relationshipOps.delete(r)
 
       case _ => // Entity is already deleted. No need to do anything

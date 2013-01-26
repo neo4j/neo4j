@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.spi
 
-import org.neo4j.graphdb.{Direction, Node}
+import org.neo4j.graphdb.{PropertyContainer, Direction, Node}
 
 
 class DelegatingQueryContext(inner: QueryContext) extends QueryContext {
@@ -54,9 +54,11 @@ class DelegatingQueryContext(inner: QueryContext) extends QueryContext {
   def replaceLabelsOfNode(node: Long, labelIds: Iterable[Long]) {
     inner.replaceLabelsOfNode(node, labelIds)
   }
+
+  def getTransaction = inner.getTransaction
 }
 
-class DelegatingOperations[T](inner: Operations[T]) extends Operations[T] {
+class DelegatingOperations[T <: PropertyContainer](protected val inner: Operations[T]) extends Operations[T] {
   def delete(obj: T) {
     inner.delete(obj)
   }

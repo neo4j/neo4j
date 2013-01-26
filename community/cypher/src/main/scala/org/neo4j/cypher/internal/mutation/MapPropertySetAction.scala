@@ -42,8 +42,6 @@ case class MapPropertySetAction(element: Expression, mapExpression: Expression)
     def setProperties(map:Map[String, Any]) {
       /*Set all map values on the property container*/
       map.foreach(kv => {
-        state.propertySet.increase()
-
         kv match {
           case (k, v) =>
             (v, pc) match {
@@ -61,14 +59,12 @@ case class MapPropertySetAction(element: Expression, mapExpression: Expression)
           case k if map.contains(k) => //Do nothing
           case k                    =>
             state.queryContext.nodeOps.removeProperty(n, k)
-            state.propertySet.increase()
         }
 
         case r:Relationship=> state.queryContext.relationshipOps.propertyKeys(r).foreach {
           case k if map.contains(k) => //Do nothing
           case k                    =>
             state.queryContext.relationshipOps.removeProperty(r, k)
-            state.propertySet.increase()
         }
       }
     }
