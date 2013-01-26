@@ -53,7 +53,7 @@ class ClosingIterator[T](inner: Iterator[T], queryContext: QueryContext) extends
     translateException {
       if (!closed) {
         closed = true
-        queryContext.close()
+        queryContext.close(success = true)
       }
     }
   }
@@ -85,7 +85,7 @@ class ClosingIterator[T](inner: Iterator[T], queryContext: QueryContext) extends
     f
   } catch {
     case t: Throwable if !closed =>
-      queryContext.fail()
+      queryContext.close(success = false)
       throw t
   }
 }

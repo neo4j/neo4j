@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.symbols.{SymbolTable, TypeSafe}
 import org.neo4j.graphdb.{Relationship, Node, PropertyContainer}
 import collection.Map
 import org.neo4j.cypher.internal.helpers.{IsCollection, IsMap, CollectionSupport}
-import org.neo4j.cypher.internal.spi.QueryContext
+import org.neo4j.cypher.internal.spi.Operations
 import org.neo4j.cypher.internal.ExecutionContext
 
 object NamedExpectation {
@@ -63,13 +63,13 @@ case class NamedExpectation(name: String, e: Expression, properties: Map[String,
     val expectations = getExpectations(ctx)
 
     pc match {
-      case n: Node         => compareWithExpectation(n, ctx.state.queryContext.nodeOps(), ctx, expectations)
-      case n: Relationship => compareWithExpectation(n, ctx.state.queryContext.relationshipOps(), ctx, expectations)
+      case n: Node         => compareWithExpectation(n, ctx.state.queryContext.nodeOps, ctx, expectations)
+      case n: Relationship => compareWithExpectation(n, ctx.state.queryContext.relationshipOps, ctx, expectations)
     }
   }
 
   private def compareWithExpectation[T <: PropertyContainer](x: T,
-                                                             ops: QueryContext.Operations[T],
+                                                             ops: Operations[T],
                                                              ctx: ExecutionContext,
                                                              expectations: Map[String, Expression]): Boolean =
     expectations.forall {

@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.ExecutionContext
 import org.neo4j.cypher.internal.pipes.QueryState
 import org.neo4j.graphdb.Node
 import org.neo4j.cypher.internal.helpers.{LabelSupport, CastSupport, CollectionSupport}
-import scala.collection.JavaConverters._
+
 
 sealed abstract class LabelOp
 
@@ -43,11 +43,11 @@ case class LabelAction(entity: Expression, labelOp: LabelOp, labelSetExpr: Expre
   def exec(context: ExecutionContext, state: QueryState) = {
     val node      = CastSupport.erasureCastOrFail[Node](entity(context))
     val queryCtx  = state.queryContext
-    val labelIds  = labelSeqToJavaIds(context, queryCtx, labelSetExpr)
+    val labelIds: Iterable[Long] = getLabelsAsLongs(context, labelSetExpr, queryCtx)
 
     labelOp match {
       case LabelAdd => {
-        queryCtx.addLabelsToNode(node, labelIds.asJava)
+        queryCtx.addLabelsToNode(node.getId, labelIds)
         state.addedLabels.increase(labelIds.size)
       }
       case _        => throw new UnsupportedOperationException

@@ -24,14 +24,10 @@ import org.neo4j.cypher.internal.spi.QueryContext
 sealed abstract class LabelValue {
   def resolveForName(ctx: QueryContext): LabelValue with LabelWithName
   def resolveForId(ctx: QueryContext): LabelValue with LabelWithId
-
-  def resolveJavaId(ctx: QueryContext) = resolveForId(ctx).javaId
 }
 
 trait LabelWithId {
   def id: Long
-
-  def javaId: java.lang.Long = id.asInstanceOf[java.lang.Long]
 }
 
 trait LabelWithName {

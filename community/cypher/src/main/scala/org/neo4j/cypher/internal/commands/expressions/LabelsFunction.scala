@@ -23,18 +23,15 @@ import org.neo4j.cypher.internal.symbols.{CollectionType, LabelType, NodeType, S
 import org.neo4j.cypher.internal.ExecutionContext
 import org.neo4j.graphdb.Node
 import org.neo4j.cypher.CypherTypeException
-import scala.collection.JavaConverters._
 import org.neo4j.cypher.internal.commands.values.LabelId
 import org.neo4j.cypher.internal.pipes.QueryState
-import org.neo4j.cypher.internal.spi.QueryContext
 
 case class LabelsFunction(nodeExpr: Expression) extends Expression {
 
   override def apply(ctx: ExecutionContext): Any = nodeExpr(ctx) match {
     case n: Node =>
       val state: QueryState = ctx.state
-      val apa: QueryContext = state.queryContext
-      apa.getLabelsForNode(n).asScala.toSeq.map { LabelId(_) }
+      state.queryContext.getLabelsForNode(n.getId).map { LabelId(_) }
     case _ =>
       throw new CypherTypeException("labels() expected a Node but was called with something else")
   }

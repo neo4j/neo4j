@@ -44,7 +44,7 @@ case class UniqueLink(start: NamedExpectation, end: NamedExpectation, rel: Named
 
   def exec(context: ExecutionContext, state: QueryState): Option[(UniqueLink, CreateUniqueResult)] = {
 
-    def tx = state.queryContext.asInstanceOf[TransactionBoundQueryContext].getTransaction()
+    def tx = state.queryContext.asInstanceOf[TransactionBoundQueryContext].tx
 
     def getNode(expect: NamedExpectation): Option[Node] = context.get(expect.name) match {
       case Some(n: Node)                             => Some(n)
@@ -61,7 +61,7 @@ case class UniqueLink(start: NamedExpectation, end: NamedExpectation, rel: Named
     // If any matching rels are found, they are returned. Otherwise, a new one is
     // created and returned.
     def twoNodes(startNode: Node, endNode: Node): Option[(UniqueLink, CreateUniqueResult)] = {
-      val rels = context.state.queryContext.getRelationshipsFor(startNode, dir, relType).asScala.
+      val rels = context.state.queryContext.getRelationshipsFor(startNode, dir, Seq(relType)).
         filter(r => r.getOtherNode(startNode) == endNode && rel.compareWithExpectations(r, context) ).
         toList
 
@@ -99,7 +99,7 @@ case class UniqueLink(start: NamedExpectation, end: NamedExpectation, rel: Named
         Seq(nodeCreate, relUpdate)
       }
 
-      val rels = context.state.queryContext.getRelationshipsFor(startNode, dir, relType).asScala.
+      val rels = context.state.queryContext.getRelationshipsFor(startNode, dir, Seq(relType)).
         filter(r => rel.compareWithExpectations(r, context) && other.compareWithExpectations(r.getOtherNode(startNode), context)).toList
 
       rels match {
