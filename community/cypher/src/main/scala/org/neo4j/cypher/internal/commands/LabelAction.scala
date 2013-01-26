@@ -46,7 +46,10 @@ case class LabelAction(entity: Expression, labelOp: LabelOp, labelSetExpr: Expre
     val labelIds  = labelSeqToJavaIds(context, queryCtx, labelSetExpr)
 
     labelOp match {
-      case LabelAdd => queryCtx.addLabelsToNode(node, labelIds.asJava)
+      case LabelAdd => {
+        queryCtx.addLabelsToNode(node, labelIds.asJava)
+        state.addedLabels.increase(labelIds.size)
+      }
       case _        => throw new UnsupportedOperationException
     }
 
