@@ -29,12 +29,30 @@ class DistinctPipe(source: Pipe, expressions: Map[String, Expression]) extends P
   val keyNames: Seq[String] = expressions.keys.toSeq
 
   def createResults(state: QueryState): Iterator[ExecutionContext] = {
-    val inner = source.createResults(state).map(ctx => {
+
+    // Run the return item expressions, and replace the execution context's with their values
+    val returnExpressions = source.createResults(state).map(ctx => {
       val newMap = expressions.mapValues(expression => expression(ctx))
       ctx.newFrom(newMap)
     })
 
-    new DistinctIterator(inner)
+    /*
+     * The filtering is done by extracting from the context the values of all return expressions, and keeping them
+     * in a set.
+     */
+    var seen = mutable.Set[NiceHasher]()
+
+    returnExpressions.filter {
+       case ctx =>
+         val values = new NiceHasher(keyNames.map(ctx).toSeq)
+
+         if (seen.contains(values)) {
+           false
+         } else {
+           seen += values
+           true
+         }
+    }
   }
 
   def executionPlan() = source.executionPlan() + "\nDistinct()"
@@ -44,66 +62,7 @@ class DistinctPipe(source: Pipe, expressions: Map[String, Expression]) extends P
     new SymbolTable(identifiers)
   }
 
-
   def throwIfSymbolsMissing(symbols: SymbolTable) {
     expressions.values.foreach(e => e.throwIfSymbolsMissing(symbols))
   }
-
-  private class DistinctIterator(inner: Iterator[ExecutionContext]) extends PrefetchingIterator[ExecutionContext] {
-
-    var seen = mutable.Set[NiceHasher]()
-
-    def getNext() = if ( !inner.hasNext ) {
-      None
-    } else {
-      var value: ExecutionContext = null
-      var hash: NiceHasher = null
-
-      def fetchNext() {
-        value = inner.next()
-        hash = new NiceHasher(keyNames.map(value).toSeq)
-      }
-
-      fetchNext()
-      while ( seen.contains(hash) && inner.hasNext ) {
-        fetchNext()
-      }
-
-      if ( seen.contains(hash) ) {
-        None
-      }
-      else {
-        seen += hash
-        Some(value)
-      }
-    }
-  }
-
-  private abstract class PrefetchingIterator[T] extends Iterator[T] {
-
-    def getNext(): Option[T]
-
-    private var nextObject: Option[T] = null
-
-    private def spoolToNext() {
-      if ( nextObject == null ) {
-        nextObject = getNext()
-      }
-    }
-
-
-    def hasNext = {
-      spoolToNext()
-      nextObject.nonEmpty
-    }
-
-    def next() = {
-      spoolToNext()
-
-      val result = nextObject.getOrElse(Iterator.empty.next())
-      nextObject = null
-      result
-    }
-  }
-
 }
