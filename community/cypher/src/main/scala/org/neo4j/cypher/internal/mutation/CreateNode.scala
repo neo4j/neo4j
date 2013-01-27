@@ -27,7 +27,7 @@ import collection.Map
 import org.neo4j.cypher.internal.ExecutionContext
 import collection.JavaConverters._
 
-case class CreateNode(key: String, properties: Map[String, Expression], labels: Expression = Literal(Seq.empty))
+case class CreateNode(key: String, properties: Map[String, Expression], labels: Expression, bare: Boolean = true)
   extends UpdateAction
   with GraphElementPropertyFunctions
   with CollectionSupport
@@ -89,7 +89,8 @@ case class CreateNode(key: String, properties: Map[String, Expression], labels: 
 
   override def children = properties.map(_._2).toSeq :+ labels
 
-  override def rewrite(f: (Expression) => Expression): CreateNode = CreateNode(key, properties.rewrite(f), labels.rewrite(f))
+  override def rewrite(f: (Expression) => Expression): CreateNode =
+    CreateNode(key, properties.rewrite(f), labels.rewrite(f), bare)
 
   override def throwIfSymbolsMissing(symbols: SymbolTable) {
     properties throwIfSymbolsMissing symbols

@@ -81,7 +81,7 @@ trait ParserPattern extends Base with LabelParsing {
   }
 
   private def node: Parser[ParsedEntity] =
-    parens(nodeFromExpression) | // whatever expression, but inside parenthesis
+      parens(nodeFromExpression) | // whatever expression, but inside parenthesis
       singleNodeDefinition | // x optLabelSeq optValues
       nodeInParenthesis | // (singleNodeDefinition)
       failure("expected an expression that is a node")
@@ -91,22 +91,32 @@ trait ParserPattern extends Base with LabelParsing {
 
   private def singleNodeDefinition =
     (identity ~ optLabelSeq ~ optValues) ^^ {
-      case name ~ labels ~ optMap =>
-        ParsedEntity(name, Identifier(name), optMap.getOrElse(Map.empty), True(), labels)
+      case name ~ optLabels ~ optMap =>
+        val mapVal = optMap.getOrElse(Map.empty)
+        val labelsVal = optLabels.getOrElse(Literal(Seq.empty))
+        val bare = optMap.isEmpty && optLabels.isEmpty
+        ParsedEntity(name, Identifier(name), mapVal, True(), labelsVal, bare)
     }
 
   private def nodeInParenthesis = parens(opt(identity) ~ optLabelSeq ~ optValues) ^^ {
-    case id ~ labels ~ optMap =>
+    case id ~ optLabels~ optMap =>
       val name = namer.name(id)
-      ParsedEntity(name, Identifier(name), optMap.getOrElse(Map.empty), True(), labels)
+      val mapVal = optMap.getOrElse(Map.empty)
+      val labelsVal = optLabels.getOrElse(Literal(Seq.empty))
+      val bare = optMap.isEmpty && optLabels.isEmpty
+      ParsedEntity(name, Identifier(name), mapVal, True(), labelsVal, bare)
   }
 
   private def nodeFromExpression = Parser {
     case in => expression(in) match {
-      case Success(exp@Identifier(name), rest) => Success(ParsedEntity(name, exp, Map[String, Expression](), True()), rest)
-      case Success(exp, rest) => Success(ParsedEntity(namer.name(None), exp, Map[String, Expression](), True()), rest)
-      case x: Error => x
-      case Failure(msg, rest) => failure("expected an expression that is a node", rest)
+      case Success(exp@Identifier(name), rest) =>
+        Success(ParsedEntity(name, exp, Map[String, Expression](), True(), Literal(Seq.empty), true), rest)
+      case Success(exp, rest) =>
+        Success(ParsedEntity(namer.name(None), exp, Map[String, Expression](), True(), Literal(Seq.empty), true), rest)
+      case x: Error =>
+        x
+      case Failure(msg, rest) =>
+        failure("expected an expression that is a node", rest)
     }
   }
 

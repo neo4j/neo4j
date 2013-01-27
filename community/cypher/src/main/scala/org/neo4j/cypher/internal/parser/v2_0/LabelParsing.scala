@@ -25,10 +25,7 @@ import org.neo4j.cypher.internal.commands.values.LabelValue
 trait LabelParsing {
   self: Base =>
 
-  def optLabelSeq = opt(labelSeq) ^^ {
-    case Some(labels) => labels
-    case _            => Literal(Seq.empty)
-  }
+  def optLabelSeq = opt(labelSeq)
 
   def labelSeq = longLabelSeq | shortLabelSeq
 

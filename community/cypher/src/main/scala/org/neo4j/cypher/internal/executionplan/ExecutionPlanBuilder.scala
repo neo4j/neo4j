@@ -108,11 +108,11 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService) extends PatternGraphBuil
       case AllRelationships(varName: String)                                    => varName -> RelationshipType()
       case CreateRelationshipStartItem(CreateRelationship(varName, _, _, _, _)) => varName -> RelationshipType()
 
-      case NodeByIndex(varName: String, _, _, _)          => varName -> NodeType()
-      case NodeByIndexQuery(varName: String, _, _)        => varName -> NodeType()
-      case NodeById(varName: String, _)                   => varName -> NodeType()
-      case AllNodes(varName: String)                      => varName -> NodeType()
-      case CreateNodeStartItem(CreateNode(varName, _, _)) => varName -> RelationshipType()
+      case NodeByIndex(varName: String, _, _, _)             => varName -> NodeType()
+      case NodeByIndexQuery(varName: String, _, _)           => varName -> NodeType()
+      case NodeById(varName: String, _)                      => varName -> NodeType()
+      case AllNodes(varName: String)                         => varName -> NodeType()
+      case CreateNodeStartItem(CreateNode(varName, _, _, _)) => varName -> RelationshipType()
     }.toMap
 
     val symbols = new SymbolTable(startMap)

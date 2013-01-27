@@ -47,7 +47,8 @@ case class ParsedEntity(name: String,
                         expression: Expression,
                         props: Map[String, Expression],
                         predicate: Predicate,
-                        labels: Expression = Literal(Seq.empty)) extends AbstractPattern{
+                        labels: Expression,
+                        bare: Boolean) extends AbstractPattern {
   def makeOutgoing = this
 }
 
