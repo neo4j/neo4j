@@ -28,66 +28,6 @@
     <url>https://github.com/neo4j/advanced/tree/master/management</url>
   </scm>
 
-  <profiles>
-    <profile>
-      <id>Linux-dependency-jconsole.jar</id>
-      <activation>
-        <os>
-          <name>Linux</name>
-        </os>
-      </activation>
-      <dependencies>
-        <dependency>
-          <groupId>com.sun.tools</groupId>
-          <artifactId>jconsole</artifactId>
-          <version>${sun.tools.version}</version>
-          <scope>system</scope>
-          <systemPath>${java.home}/../lib/jconsole.jar</systemPath>
-          <optional>true</optional>
-        </dependency>
-      </dependencies>
-    </profile>
-    <profile>
-      <id>Mac-OS-X-dependency-jconsole.jar</id>
-      <activation>
-        <os>
-          <family>mac</family>
-        </os>
-        <file>
-          <exists>${java.home}/lib/jconsole.jar</exists>
-        </file>
-      </activation>
-      <dependencies>
-        <dependency>
-          <groupId>com.sun.tools</groupId>
-          <artifactId>jconsole</artifactId>
-          <version>${sun.tools.version}</version>
-          <scope>system</scope>
-          <systemPath>${java.home}/lib/jconsole.jar</systemPath>
-          <optional>true</optional>
-        </dependency>
-      </dependencies>
-    </profile>
-    <profile>
-      <id>Windows-dependency-jconsole.jar</id>
-      <activation>
-        <os>
-          <family>Windows</family>
-        </os>
-      </activation>
-      <dependencies>
-        <dependency>
-          <groupId>com.sun.tools</groupId>
-          <artifactId>jconsole</artifactId>
-          <version>${sun.tools.version}</version>
-          <scope>system</scope>
-          <systemPath>${java.home}\\..\\lib\\jconsole.jar</systemPath>
-          <optional>true</optional>
-        </dependency>
-      </dependencies>
-    </profile>
-  </profiles>
-
   <licenses>
     <license>
       <name>GNU Affero General Public License, Version 3</name>
@@ -134,6 +74,10 @@
       <version>${project.version}</version>
       <type>test-jar</type>
       <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.sun.tools</groupId>
+      <artifactId>jconsole</artifactId>
     </dependency>
   </dependencies>
 
