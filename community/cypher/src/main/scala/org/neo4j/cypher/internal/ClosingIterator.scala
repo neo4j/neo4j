@@ -40,7 +40,6 @@ class ClosingIterator[T](inner: Iterator[T], queryContext: QueryContext, tx: Tra
     innerHasNext
   }
 
-
   def next(): T = failIfThrows {
     val result: T = inner.next()
     if (!inner.hasNext) {

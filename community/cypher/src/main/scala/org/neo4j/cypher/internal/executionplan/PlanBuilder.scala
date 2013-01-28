@@ -52,6 +52,7 @@ object PlanBuilder extends Enumeration {
   val Match = 10
   val ShortestPath = 20
   val SortedAggregation = 30
+  val Distinct = 29
   val Aggregation = 31
   val Sort = 40
 }
