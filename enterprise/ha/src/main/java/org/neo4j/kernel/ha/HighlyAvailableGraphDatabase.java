@@ -44,7 +44,12 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.IndexProvider;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.HighlyAvailableKernelData;
+import org.neo4j.kernel.ha.com.master.DefaultSlaveFactory;
+import org.neo4j.kernel.ha.com.master.Master;
+import org.neo4j.kernel.ha.com.RequestContextFactory;
+import org.neo4j.kernel.ha.com.master.Slaves;
+import org.neo4j.kernel.ha.management.ClusterDatabaseInfoProvider;
+import org.neo4j.kernel.ha.management.HighlyAvailableKernelData;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.KernelData;
@@ -59,7 +64,12 @@ import org.neo4j.kernel.ha.cluster.SimpleHighAvailabilityMemberContext;
 import org.neo4j.kernel.ha.cluster.member.ClusterMembers;
 import org.neo4j.kernel.ha.cluster.member.HighAvailabilitySlaves;
 import org.neo4j.kernel.ha.cluster.zoo.ZooKeeperHighAvailabilityEvents;
+import org.neo4j.kernel.ha.id.HaIdGeneratorFactory;
+import org.neo4j.kernel.ha.lock.LockManagerModeSwitcher;
 import org.neo4j.kernel.ha.switchover.Switchover;
+import org.neo4j.kernel.ha.transaction.OnDiskLastTxIdGetter;
+import org.neo4j.kernel.ha.transaction.TxHookModeSwitcher;
+import org.neo4j.kernel.ha.transaction.TxIdGeneratorModeSwitcher;
 import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.core.Caches;
 import org.neo4j.kernel.impl.core.KeyCreator;
@@ -89,7 +99,6 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     private ClusterMembers members;
     private DelegateInvocationHandler masterDelegateInvocationHandler;
     private LoggerContext loggerContext;
-    private DefaultTransactionSupport transactionSupport;
     private Master master;
     private InstanceAccessGuard accessGuard;
     private HighAvailabilityMemberStateMachine memberStateMachine;
@@ -257,10 +266,10 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
             {
                 for ( MemberIsAvailable member : item.getCurrentAvailableMembers() )
                 {
-                    if (member.getRole().equals( HighAvailabilityModeSwitcher.MASTER ) || member.getRole().equals( HighAvailabilityModeSwitcher.SLAVE ))
+                    if ( member.getRoleUri().getScheme().equals( "ha" ) )
                     {
                         if ( HighAvailabilityModeSwitcher.getServerId( member.getRoleUri() ) ==
-                                config.get( HaSettings.server_id ))
+                                config.get( HaSettings.server_id ) )
                         {
                             msgLog.error( String.format( "Instance %s has the same serverId as ours (%d) - will not join this cluster",
                                     member.getRoleUri(), config.get( HaSettings.server_id ) ) );
@@ -393,15 +402,12 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     @Override
     protected LockManager createLockManager()
     {
-        // TransactionSupport piggy-backing on creating the lock manager
-        transactionSupport = new DefaultTransactionSupport( txManager, txHook, accessGuard, config );
-
         DelegateInvocationHandler<LockManager> lockManagerDelegate = new DelegateInvocationHandler<LockManager>();
         LockManager lockManager =
                 (LockManager) Proxy.newProxyInstance( LockManager.class.getClassLoader(),
                         new Class[]{LockManager.class}, lockManagerDelegate );
         new LockManagerModeSwitcher( memberStateMachine, lockManagerDelegate, txManager, txHook,
-                (HaXaDataSourceManager) xaDataSourceManager, master, requestContextFactory, transactionSupport );
+                (HaXaDataSourceManager) xaDataSourceManager, master, requestContextFactory, accessGuard, config );
         return lockManager;
     }
 

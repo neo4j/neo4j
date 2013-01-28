@@ -22,6 +22,8 @@ package org.neo4j.cypher.internal.executionplan.builders
 import org.neo4j.cypher.internal.executionplan.PartiallySolvedQuery
 import org.junit.Test
 import org.junit.Assert._
+import org.hamcrest.CoreMatchers.instanceOf
+import org.hamcrest.CoreMatchers.not
 import org.neo4j.cypher.internal.commands._
 import expressions.{Literal, HeadFunction, Identifier}
 import org.neo4j.cypher.internal.mutation.{RelationshipEndpoint, CreateRelationship, CreateNode}

@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.javacompat;
 
-import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.*;
+import static org.hamcrest.CoreMatchers.isA;
+import static org.junit.Assert.assertThat;
 
 import java.io.IOException;
 import java.util.List;
@@ -49,8 +49,8 @@ public class JavaCompatibilityTest
         ExecutionResult execute = engine.execute( "START n=node(0) RETURN [[ [1,2],[3,4] ],[[5,6]]] as x" );
         Map<String, Object> next = execute.iterator().next();
         List<List<Object>> x = (List<List<Object>>)next.get( "x" );
-        Object objects = x.get( 0 );
+        Iterable objects = x.get( 0 );
 
-        assertThat(objects, is(Iterable.class));
+        assertThat(objects, isA(Iterable.class));
     }
 }

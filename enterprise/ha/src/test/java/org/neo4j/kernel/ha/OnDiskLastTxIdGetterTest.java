@@ -22,6 +22,7 @@ package org.neo4j.kernel.ha;
 import static org.junit.Assert.assertEquals;
 
 import org.junit.Test;
+import org.neo4j.kernel.ha.transaction.OnDiskLastTxIdGetter;
 import org.neo4j.test.TargetDirectory;
 
 public class OnDiskLastTxIdGetterTest

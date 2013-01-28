@@ -28,11 +28,6 @@ package org.neo4j.kernel.ha;
  */
 public class BranchedDataException extends StoreUnableToParticipateInClusterException
 {
-    public BranchedDataException()
-    {
-        super();
-    }
-
     public BranchedDataException( String message, Throwable cause )
     {
         super( message, cause );

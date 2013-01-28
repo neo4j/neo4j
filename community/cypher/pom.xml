@@ -1,10 +1,10 @@
 <?xml version="1.0"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <parent>
-    <groupId>org.neo4j.build</groupId>
-    <artifactId>parent-central</artifactId>
-    <version>35</version>
-    <relativePath />
+    <groupId>org.neo4j</groupId>
+    <artifactId>parent</artifactId>
+    <version>2.0-SNAPSHOT</version>
+    <relativePath>../..</relativePath>
   </parent>
 
   <properties>
@@ -95,17 +95,31 @@
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>org.hamcrest</groupId>
+          <artifactId>hamcrest-core</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.hamcrest</groupId>
+      <artifactId>hamcrest-all</artifactId>
     </dependency>
     <dependency>
       <groupId>org.mockito</groupId>
-      <artifactId>mockito-all</artifactId>
-      <version>1.8.5</version>
-      <scope>test</scope>
+      <artifactId>mockito-core</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>org.hamcrest</groupId>
+          <artifactId>hamcrest-core</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>com.google.code.gson</groupId>
       <artifactId>gson</artifactId>
-      <version>2.1</version>
+      <version>2.2.2</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -131,10 +145,10 @@
           </execution>
           <execution>
             <id>scala-test-compile</id>
+            <phase>${scala-test-compile-phase}</phase>
             <goals>
               <goal>testCompile</goal>
             </goals>
-            <phase>process-test-resources</phase>
           </execution>
         </executions>
         <configuration>

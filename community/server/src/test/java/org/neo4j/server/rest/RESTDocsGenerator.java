@@ -92,7 +92,8 @@ public class RESTDocsGenerator extends AsciiDocGenerator
     private final List<String> expectedHeaderFields = new ArrayList<String>();
     private String payload;
     private Map<String, String> addedRequestHeaders = new TreeMap<String, String>(  );
-    private boolean noDoc;
+    private boolean noDoc = false;
+    private boolean noGraph = false;
     private int headingLevel = 3;
 
     /**
@@ -193,6 +194,12 @@ public class RESTDocsGenerator extends AsciiDocGenerator
 
     public RESTDocsGenerator noDoc() {
         this.noDoc = true;
+        return this;
+    }
+
+    public RESTDocsGenerator noGraph()
+    {
+        this.noGraph = true;
         return this;
     }
 
@@ -501,7 +508,8 @@ public class RESTDocsGenerator extends AsciiDocGenerator
                 line( fw, data.description );
                 line( fw, "" );
             }
-            if( graph != null) {
+            if ( !noGraph && graph != null )
+            {
                 fw.append( AsciiDocGenerator.dumpToSeparateFile( dir,
                         name + ".graph",
                         AsciidocHelper.createGraphVizWithNodeId( "Final Graph",

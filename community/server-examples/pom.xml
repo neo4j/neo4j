@@ -1,10 +1,10 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
-    <groupId>org.neo4j.build</groupId>
-    <artifactId>examples-pom</artifactId>
-    <version>35</version>
-    <relativePath />
+    <groupId>org.neo4j</groupId>
+    <artifactId>parent</artifactId>
+    <version>1.9-SNAPSHOT</version>
+    <relativePath>../..</relativePath>
   </parent>
   <groupId>org.neo4j.examples</groupId>
   <artifactId>neo4j-server-examples</artifactId>
@@ -66,29 +66,6 @@
         </executions>
       </plugin>
       <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>wagon-maven-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>upload-to-dist-server</id>
-            <phase>none</phase>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <artifactId>maven-site-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>create-site</id>
-            <phase>none</phase>
-          </execution>
-          <execution>
-            <id>attach-descriptor</id>
-            <phase>none</phase>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
         <groupId>org.neo4j.build.plugins</groupId>
         <artifactId>docs-maven-plugin</artifactId>
         <configuration>
@@ -97,15 +74,6 @@
             <sourceDirectory>${basedir}/src/main/resources/META-INF/services</sourceDirectory>
           </sourceDirectories>
         </configuration>
-      </plugin>
-      <plugin>
-        <artifactId>maven-javadoc-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>attach-javadocs</id>
-            <phase>none</phase>
-          </execution>
-        </executions>
       </plugin>
     </plugins>
   </build>
@@ -138,22 +106,6 @@
       </releases>
     </repository>
   </repositories>
-
-  <reporting>
-    <plugins>
-      <plugin>
-        <artifactId>maven-javadoc-plugin</artifactId>
-        <reportSets>
-          <reportSet>
-            <id>javadoc-aggregated-report</id>
-            <configuration>
-              <skip>true</skip>
-            </configuration>
-          </reportSet>
-        </reportSets>
-      </plugin>
-    </plugins>
-  </reporting>
 
   <distributionManagement>
     <site>

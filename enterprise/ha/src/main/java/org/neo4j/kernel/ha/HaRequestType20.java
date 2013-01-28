@@ -24,7 +24,7 @@ import static org.neo4j.com.Protocol.LONG_SERIALIZER;
 import static org.neo4j.com.Protocol.VOID_SERIALIZER;
 import static org.neo4j.com.Protocol.readBoolean;
 import static org.neo4j.com.Protocol.readString;
-import static org.neo4j.kernel.ha.MasterClient.LOCK_SERIALIZER;
+import static org.neo4j.kernel.ha.com.slave.MasterClient.LOCK_SERIALIZER;
 
 import java.io.IOException;
 import java.nio.channels.ReadableByteChannel;
@@ -40,7 +40,10 @@ import org.neo4j.com.ToNetworkStoreWriter;
 import org.neo4j.com.TxExtractor;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.IdType;
-import org.neo4j.kernel.ha.MasterClient18.AquireLockCall;
+import org.neo4j.kernel.ha.com.master.Master;
+import org.neo4j.kernel.ha.com.slave.MasterClient18.AquireLockCall;
+import org.neo4j.kernel.ha.id.IdAllocation;
+import org.neo4j.kernel.ha.lock.LockResult;
 import org.neo4j.kernel.impl.nioneo.store.IdRange;
 
 public enum HaRequestType20 implements RequestType<Master>
@@ -57,6 +60,7 @@ public enum HaRequestType20 implements RequestType<Master>
         }
     }, new ObjectSerializer<IdAllocation>()
     {
+        @Override
         public void write( IdAllocation idAllocation, ChannelBuffer result ) throws IOException
         {
             IdRange idRange = idAllocation.getIdRange();
@@ -87,7 +91,7 @@ public enum HaRequestType20 implements RequestType<Master>
     ACQUIRE_NODE_WRITE_LOCK( new AquireLockCall()
     {
         @Override
-        Response<LockResult> lock( Master master, RequestContext context, long... ids )
+        public Response<LockResult> lock( Master master, RequestContext context, long... ids )
         {
             return master.acquireNodeWriteLock( context, ids );
         }
@@ -104,7 +108,7 @@ public enum HaRequestType20 implements RequestType<Master>
     ACQUIRE_NODE_READ_LOCK( new AquireLockCall()
     {
         @Override
-        Response<LockResult> lock( Master master, RequestContext context, long... ids )
+        public Response<LockResult> lock( Master master, RequestContext context, long... ids )
         {
             return master.acquireNodeReadLock( context, ids );
         }
@@ -121,7 +125,7 @@ public enum HaRequestType20 implements RequestType<Master>
     ACQUIRE_RELATIONSHIP_WRITE_LOCK( new AquireLockCall()
     {
         @Override
-        Response<LockResult> lock( Master master, RequestContext context, long... ids )
+        public Response<LockResult> lock( Master master, RequestContext context, long... ids )
         {
             return master.acquireRelationshipWriteLock( context, ids );
         }
@@ -138,7 +142,7 @@ public enum HaRequestType20 implements RequestType<Master>
     ACQUIRE_RELATIONSHIP_READ_LOCK( new AquireLockCall()
     {
         @Override
-        Response<LockResult> lock( Master master, RequestContext context, long... ids )
+        public Response<LockResult> lock( Master master, RequestContext context, long... ids )
         {
             return master.acquireRelationshipReadLock( context, ids );
         }

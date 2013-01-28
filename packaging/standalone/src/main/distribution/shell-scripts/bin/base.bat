@@ -41,6 +41,9 @@ if not "%javaHomeError%" == "" (
   goto:eof
 )
 
+rem Check classpath
+echo "%classpath%" | findstr "SNAPSHOT" > NUL && echo "WARNING! Latest Development Build. Not intended for general-pupose use. May be unstable."
+
 rem Unescape javaPath
 for /f "tokens=* delims=" %%P in (%javaPath%) do (
     set javaPath=%%P

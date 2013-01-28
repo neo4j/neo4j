@@ -31,8 +31,10 @@ import java.lang.{Iterable => JIterable}
 import org.junit.{Test, Before}
 import org.neo4j.graphdb.Traverser.Order
 import org.scalatest.Assertions
+import org.scalatest.mock.MockitoSugar
+import org.mockito.Mockito._
 
-class LazyTest extends ExecutionEngineHelper with Assertions {
+class LazyTest extends ExecutionEngineHelper with Assertions with MockitoSugar {
 
   var a: Node = null
   var b: Node = null
@@ -100,6 +102,29 @@ class LazyTest extends ExecutionEngineHelper with Assertions {
     assert(limiter.count === 0)
 
     //Also then does not step over the limit
+    iter.next()
+  }
+
+  @Test def distinct_is_lazy() {
+    //Given:
+    val a = mock[Node]
+    val b = mock[Node]
+    val c = mock[Node]
+
+    when(a.hasProperty("name")).thenReturn(true)
+    when(a.getProperty("name")).thenReturn("Andres", Array())
+    when(b.hasProperty("name")).thenReturn(true)
+    when(b.getProperty("name")).thenReturn("Jake", Array())
+
+    // Because we use a prefetching iterator, it will cache one more result than we have pulled
+    when(c.hasProperty("name")).thenThrow(new RuntimeException("Distinct was not lazy!"))
+
+    val engine = new ExecutionEngine(graph)
+
+    //When:
+    val iter = engine.execute("start n=node({foo}) return distinct n.name", Map("foo" -> Seq(a,b,c)))
+
+    //Then, no Runtime exception is thrown
     iter.next()
   }
 

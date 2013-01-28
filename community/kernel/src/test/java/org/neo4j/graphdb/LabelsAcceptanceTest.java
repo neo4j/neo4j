@@ -19,11 +19,10 @@
  */
 package org.neo4j.graphdb;
 
-import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.helpers.collection.IteratorUtil.asEnumNameSet;
@@ -68,10 +67,11 @@ public class LabelsAcceptanceTest
         try
         {
             myNode = beansAPI.createNode();
-            myNode.addLabel(Labels.MY_LABEL);
+            myNode.addLabel( Labels.MY_LABEL );
 
             tx.success();
-        } finally
+        }
+        finally
         {
             tx.finish();
         }
@@ -85,39 +85,36 @@ public class LabelsAcceptanceTest
     {
         // Given
         GraphDatabaseService beansAPI = dbRule.getGraphDatabaseService();
-        Exception caught = null;
 
         // When I set an empty label
         Transaction tx = beansAPI.beginTx();
         try
         {
             beansAPI.createNode().addLabel( label( "" ));
-        } catch(ConstraintViolationException ex)
-        {
-            caught = ex;
-        } finally
+            fail( "Should have thrown exception" );
+        }
+        catch( ConstraintViolationException ex )
+        {   // Happy
+        }
+        finally
         {
             tx.finish();
         }
-
-        // Then
-        assertThat( "Correct exception should have been thrown.", caught, is(ConstraintViolationException.class));
 
         // And When I set a null label
         Transaction tx2 = beansAPI.beginTx();
         try
         {
             beansAPI.createNode().addLabel( label( null ));
-        } catch(ConstraintViolationException ex)
-        {
-            caught = ex;
-        } finally
+            fail( "Should have thrown exception" );
+        }
+        catch( ConstraintViolationException ex )
+        {   // Happy
+        }
+        finally
         {
             tx2.finish();
         }
-
-        // Then
-        assertThat( "Correct exception should have been thrown.", caught, is(ConstraintViolationException.class));
     }
 
     @Test
@@ -151,23 +148,21 @@ public class LabelsAcceptanceTest
     {
         // Given
         GraphDatabaseService beansAPI = beansAPIWithNoMoreLabelIds();
-        Exception caught = null;
 
         // When
         Transaction tx = beansAPI.beginTx();
         try
         {
-            beansAPI.createNode().addLabel(Labels.MY_LABEL);
-        } catch (ConstraintViolationException ex)
-        {
-            caught = ex;
-        } finally
+            beansAPI.createNode().addLabel( Labels.MY_LABEL );
+            fail( "Should have thrown exception" );
+        }
+        catch ( ConstraintViolationException ex )
+        {   // Happy
+        }
+        finally
         {
             tx.finish();
         }
-
-        // Then
-        assertThat( "IllegalLabelException should have been thrown.", caught,is( ConstraintViolationException.class));
     }
 
     @Test

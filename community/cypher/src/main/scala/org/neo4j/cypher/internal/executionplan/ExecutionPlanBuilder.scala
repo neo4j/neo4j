@@ -206,6 +206,7 @@ The Neo4j Team""")
     new UpdateActionBuilder(graph),
     new EmptyResultBuilder,
     new TraversalMatcherBuilder(graph),
-    new TopPipeBuilder
+    new TopPipeBuilder,
+    new DistinctBuilder
   )
 }

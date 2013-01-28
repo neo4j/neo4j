@@ -1805,6 +1805,7 @@ RETURN x0.name?
     createNode()
 
     val result = parseAndExecute("start a=node(1,2,3) return distinct a.name?").toList
+
     assert(result === List(Map("a.name?" -> "Florescu"), Map("a.name?" -> null)))
   }
 

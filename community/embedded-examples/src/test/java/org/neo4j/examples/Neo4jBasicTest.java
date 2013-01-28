@@ -26,7 +26,6 @@ import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.hamcrest.Matchers.*;
@@ -69,7 +68,10 @@ public class Neo4jBasicTest
         config.put( "neostore.nodestore.db.mapped_memory", "10M" );
         config.put( "string_block_size", "60" );
         config.put( "array_block_size", "300" );
-        GraphDatabaseService db = new ImpermanentGraphDatabase( config );
+        GraphDatabaseService db = new TestGraphDatabaseFactory()
+            .newImpermanentDatabaseBuilder()
+            .setConfig( config )
+            .newGraphDatabase();
         // END SNIPPET: startDbWithConfig
         db.shutdown();
     }

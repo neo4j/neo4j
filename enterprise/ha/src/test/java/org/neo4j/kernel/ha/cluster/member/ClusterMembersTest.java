@@ -22,8 +22,6 @@ package org.neo4j.kernel.ha.cluster.member;
 import static java.net.URI.create;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertThat;
-import static org.junit.internal.matchers.IsCollectionContaining.hasItem;
-import static org.junit.internal.matchers.IsCollectionContaining.hasItems;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.MASTER;
@@ -91,7 +89,7 @@ public class ClusterMembersTest
         listener.getValue().enteredCluster( clusterConfiguration( clusterUri1, clusterUri2, clusterUri3 ) );
 
         // then
-        assertThat( members.getMembers(), hasItems(
+        assertThat( members.getMembers(), CoreMatchers.<ClusterMember>hasItems(
                 sameMemberAs( new ClusterMember( clusterUri1 ) ),
                 sameMemberAs( new ClusterMember( clusterUri2 ) ),
                 sameMemberAs( new ClusterMember( clusterUri3 ) ) ));
@@ -117,7 +115,7 @@ public class ClusterMembersTest
         listener.getValue().joinedCluster( clusterUri3 );
 
         // then
-        assertThat( members.getMembers(), hasItems(
+        assertThat( members.getMembers(), CoreMatchers.<ClusterMember>hasItems(
                 sameMemberAs( new ClusterMember( clusterUri1 ) ),
                 sameMemberAs( new ClusterMember( clusterUri2 ) ),
                 sameMemberAs( new ClusterMember( clusterUri3 ) ) ));
@@ -143,7 +141,9 @@ public class ClusterMembersTest
         listener.getValue().leftCluster( clusterUri3 );
 
         // then
-        assertThat( members.getMembers(), CoreMatchers.not( hasItems(
+        assertThat(
+                members.getMembers(),
+                CoreMatchers.not( CoreMatchers.<ClusterMember>hasItems(
                 sameMemberAs( new ClusterMember( clusterUri3 ) ) ) ));
     }
     
@@ -169,7 +169,10 @@ public class ClusterMembersTest
         clusterMemberListener.getValue().memberIsAvailable( MASTER, clusterUri1, haUri1 );
 
         // then
-        assertThat( members.getMembers(), hasItem( sameMemberAs( new ClusterMember( clusterUri1 ).availableAs(MASTER, haUri1 ) ) ));
+        assertThat(
+                members.getMembers(),
+                CoreMatchers.<ClusterMember>hasItem( sameMemberAs( new ClusterMember(
+                        clusterUri1 ).availableAs( MASTER, haUri1 ) ) ) );
     }
 
     @Test
@@ -194,7 +197,10 @@ public class ClusterMembersTest
         clusterMemberListener.getValue().memberIsAvailable( SLAVE, clusterUri1, haUri1 );
 
         // then
-        assertThat( members.getMembers(), hasItem( sameMemberAs( new ClusterMember( clusterUri1 ).availableAs(SLAVE, haUri1 ) ) ));
+        assertThat(
+                members.getMembers(),
+                CoreMatchers.<ClusterMember>hasItem( sameMemberAs( new ClusterMember(
+                        clusterUri1 ).availableAs( SLAVE, haUri1 ) ) ) );
     }
     
     @Test
@@ -220,7 +226,10 @@ public class ClusterMembersTest
         clusterMemberListener.getValue().masterIsElected( clusterUri2 );
 
         // then
-        assertThat( members.getMembers(), hasItem( sameMemberAs( new ClusterMember( clusterUri1 ) ) ));
+        assertThat(
+                members.getMembers(),
+                CoreMatchers.<ClusterMember>hasItem( sameMemberAs( new ClusterMember(
+                        clusterUri1 ) ) ) );
     }
     
     @Test
@@ -245,7 +254,10 @@ public class ClusterMembersTest
         heartBeatListener.getValue().failed( clusterUri1);
 
         // then
-        assertThat( members.getMembers(), hasItem( sameMemberAs( new ClusterMember( clusterUri1 ).failed() ) ));
+        assertThat(
+                members.getMembers(),
+                CoreMatchers.<ClusterMember>hasItem( sameMemberAs( new ClusterMember(
+                        clusterUri1 ).failed() ) ) );
     }
     
     @Test
@@ -271,7 +283,10 @@ public class ClusterMembersTest
         heartBeatListener.getValue().alive( clusterUri1);
 
         // then
-        assertThat( members.getMembers(), hasItem( sameMemberAs( new ClusterMember( clusterUri1 ) ) ));
+        assertThat(
+                members.getMembers(),
+                CoreMatchers.<ClusterMember>hasItem( sameMemberAs( new ClusterMember(
+                        clusterUri1 ) ) ) );
     }
 
     private ClusterConfiguration clusterConfiguration( URI... uris )

@@ -13,10 +13,11 @@ In order to specify the parameters, add a line for the additional Java arguments
 # Java Additional Parameters
 wrapper.java.additional.1=-Dorg.neo4j.server.properties=conf/neo4j-server.properties
 wrapper.java.additional.2=-Dlog4j.configuration=file:conf/log4j.properties
-wrapper.java.additional.3=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005 -Xdebug-Xnoagent-Djava.compiler=NONE-Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=5005
+wrapper.java.additional.3=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005 \
+   -Xdebug-Xnoagent-Djava.compiler=NONE\
+   -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=5005
 ----
 
 This configuration will start a Neo4j server ready for remote debugging attachement at localhost and port +5005+.
-Use these parameters to attach to the process from Eclipse, IntelliJ or your
-remote debugger of choice after starting the server.
+Use these parameters to attach to the process from Eclipse, IntelliJ or your remote debugger of choice after starting the server.
 

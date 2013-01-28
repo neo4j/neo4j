@@ -44,6 +44,13 @@ import org.neo4j.com.TxExtractor;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.ha.com.master.Master;
+import org.neo4j.kernel.ha.com.master.MasterImpl;
+import org.neo4j.kernel.ha.com.master.MasterServer;
+import org.neo4j.kernel.ha.com.slave.MasterClient;
+import org.neo4j.kernel.ha.id.IdAllocation;
+import org.neo4j.kernel.ha.lock.LockResult;
+import org.neo4j.kernel.ha.transaction.UnableToResumeTransactionException;
 import org.neo4j.kernel.impl.nioneo.store.IdRange;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.logging.Logging;
@@ -108,12 +115,14 @@ public class MasterClient20 extends Client<Master> implements MasterClient
     {
         return sendRequest( HaRequestType20.ALLOCATE_IDS, RequestContext.EMPTY, new Serializer()
                 {
+                    @Override
                     public void write( ChannelBuffer buffer, ByteBuffer readBuffer ) throws IOException
                     {
                         buffer.writeByte( idType.ordinal() );
                     }
                 }, new Deserializer<IdAllocation>()
                 {
+                    @Override
                     public IdAllocation read( ChannelBuffer buffer, ByteBuffer temporaryBuffer ) throws IOException
                     {
                         return readIdAllocation( buffer );
@@ -127,12 +136,14 @@ public class MasterClient20 extends Client<Master> implements MasterClient
     {
         return sendRequest( HaRequestType20.CREATE_RELATIONSHIP_TYPE, context, new Serializer()
         {
+            @Override
             public void write( ChannelBuffer buffer, ByteBuffer readBuffer ) throws IOException
             {
                 writeString( buffer, name );
             }
         }, new Deserializer<Integer>()
         {
+            @Override
             @SuppressWarnings("boxing")
             public Integer read( ChannelBuffer buffer, ByteBuffer temporaryBuffer ) throws IOException
             {
@@ -146,12 +157,14 @@ public class MasterClient20 extends Client<Master> implements MasterClient
     {
         return sendRequest( HaRequestType20.CREATE_PROPERTY_KEY, context, new Serializer()
         {
+            @Override
             public void write( ChannelBuffer buffer, ByteBuffer readBuffer ) throws IOException
             {
                 writeString( buffer, name );
             }
         }, new Deserializer<Integer>()
         {
+            @Override
             @SuppressWarnings("boxing")
             public Integer read( ChannelBuffer buffer, ByteBuffer temporaryBuffer ) throws IOException
             {
@@ -230,6 +243,7 @@ public class MasterClient20 extends Client<Master> implements MasterClient
     {
         return sendRequest( HaRequestType20.COMMIT, context, new Serializer()
                 {
+                    @Override
                     public void write( ChannelBuffer buffer, ByteBuffer readBuffer ) throws IOException
                     {
                         writeString( buffer, resource );
@@ -239,6 +253,7 @@ public class MasterClient20 extends Client<Master> implements MasterClient
                     }
                 }, new Deserializer<Long>()
                 {
+                    @Override
                     @SuppressWarnings("boxing")
                     public Long read( ChannelBuffer buffer, ByteBuffer temporaryBuffer ) throws IOException
                     {
@@ -255,6 +270,7 @@ public class MasterClient20 extends Client<Master> implements MasterClient
         {
             return sendRequest( HaRequestType20.FINISH, context, new Serializer()
             {
+                @Override
                 public void write( ChannelBuffer buffer, ByteBuffer readBuffer ) throws IOException
                 {
                     buffer.writeByte( success ? 1 : 0 );
@@ -298,6 +314,7 @@ public class MasterClient20 extends Client<Master> implements MasterClient
     {
         return sendRequest( HaRequestType20.GET_MASTER_ID_FOR_TX, RequestContext.EMPTY, new Serializer()
                 {
+                    @Override
                     public void write( ChannelBuffer buffer, ByteBuffer readBuffer ) throws IOException
                     {
                         buffer.writeLong( txId );
@@ -335,6 +352,7 @@ public class MasterClient20 extends Client<Master> implements MasterClient
         context = stripFromTransactions( context );
         return sendRequest( HaRequestType20.COPY_TRANSACTIONS, context, new Serializer()
         {
+            @Override
             public void write( ChannelBuffer buffer, ByteBuffer readBuffer )
                     throws IOException
             {
@@ -385,6 +403,7 @@ public class MasterClient20 extends Client<Master> implements MasterClient
             this.entities = entities;
         }
 
+        @Override
         public void write( ChannelBuffer buffer, ByteBuffer readBuffer ) throws IOException
         {
             buffer.writeInt( entities.length );

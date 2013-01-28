@@ -40,7 +40,7 @@ class ExecutionPlanBuilderTest extends GraphDatabaseTestBase with Assertions wit
       epi.build(q)
     })
 
-    assertThat(exception.getCause, is(classOf[InternalException]))
+    assertTrue( "Execution plan builder didn't throw expected exception", exception.getCause().isInstanceOf[InternalException] )
   }
 }
 

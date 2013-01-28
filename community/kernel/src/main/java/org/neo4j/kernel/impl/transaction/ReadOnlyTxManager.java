@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
-import java.util.Iterator;
-
 import javax.transaction.HeuristicMixedException;
 import javax.transaction.NotSupportedException;
 import javax.transaction.RollbackException;
@@ -36,19 +34,19 @@ import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.impl.core.ReadOnlyDbException;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.transaction.xaframework.XaResource;
-import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.impl.util.ThreadLocalWithSize;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
 public class ReadOnlyTxManager extends AbstractTransactionManager
         implements Lifecycle
 {
-    private ArrayMap<Thread, ReadOnlyTransactionImpl> txThreadMap;
+    private ThreadLocalWithSize<ReadOnlyTransactionImpl> txThreadMap;
 
     private int eventIdentifierCounter = 0;
 
     private XaDataSourceManager xaDsManager = null;
-    private StringLogger logger;
+    private final StringLogger logger;
     private KernelAPI kernel;
     private StatementContext readOnlyStatementContext;
 
@@ -66,13 +64,13 @@ public class ReadOnlyTxManager extends AbstractTransactionManager
     @Override
     public void init()
     {
-        txThreadMap = new ArrayMap<Thread, ReadOnlyTransactionImpl>( (byte) 5, true, true );
     }
 
     @Override
     public void start()
             throws Throwable
     {
+        txThreadMap = new ThreadLocalWithSize<ReadOnlyTransactionImpl>();
     }
 
     @Override
@@ -87,24 +85,22 @@ public class ReadOnlyTxManager extends AbstractTransactionManager
     }
 
 
+    @Override
     public void begin() throws NotSupportedException
     {
-        Thread thread = Thread.currentThread();
-        ReadOnlyTransactionImpl tx = txThreadMap.get( thread );
-        if ( tx != null )
+        if ( txThreadMap.get() != null )
         {
             throw new NotSupportedException(
                     "Nested transactions not supported" );
         }
-        tx = new ReadOnlyTransactionImpl( this, logger );
-        txThreadMap.put( thread, tx );
+        txThreadMap.set( new ReadOnlyTransactionImpl( this, logger ) );
     }
 
+    @Override
     public void commit() throws RollbackException, HeuristicMixedException,
             IllegalStateException
     {
-        Thread thread = Thread.currentThread();
-        ReadOnlyTransactionImpl tx = txThreadMap.get( thread );
+        ReadOnlyTransactionImpl tx = txThreadMap.get();
         if ( tx == null )
         {
             throw new IllegalStateException( "Not in transaction" );
@@ -118,11 +114,11 @@ public class ReadOnlyTxManager extends AbstractTransactionManager
         tx.doBeforeCompletion();
         if ( tx.getStatus() == Status.STATUS_ACTIVE )
         {
-            commit( thread, tx );
+            commit( tx );
         }
         else if ( tx.getStatus() == Status.STATUS_MARKED_ROLLBACK )
         {
-            rollbackCommit( thread, tx );
+            rollbackCommit( tx );
         }
         else
         {
@@ -131,7 +127,7 @@ public class ReadOnlyTxManager extends AbstractTransactionManager
         }
     }
 
-    private void commit( Thread thread, ReadOnlyTransactionImpl tx )
+    private void commit( ReadOnlyTransactionImpl tx )
     {
         if ( tx.getResourceCount() == 0 )
         {
@@ -142,11 +138,11 @@ public class ReadOnlyTxManager extends AbstractTransactionManager
             throw new ReadOnlyDbException();
         }
         tx.doAfterCompletion();
-        txThreadMap.remove( thread );
+        txThreadMap.remove();
         tx.setStatus( Status.STATUS_NO_TRANSACTION );
     }
 
-    private void rollbackCommit( Thread thread, ReadOnlyTransactionImpl tx )
+    private void rollbackCommit( ReadOnlyTransactionImpl tx )
             throws HeuristicMixedException, RollbackException
     {
         try
@@ -165,16 +161,16 @@ public class ReadOnlyTxManager extends AbstractTransactionManager
         }
 
         tx.doAfterCompletion();
-        txThreadMap.remove( thread );
+        txThreadMap.remove();
         tx.setStatus( Status.STATUS_NO_TRANSACTION );
         throw new RollbackException(
                 "Failed to commit, transaction rolledback" );
     }
 
+    @Override
     public void rollback() throws IllegalStateException, SystemException
     {
-        Thread thread = Thread.currentThread();
-        ReadOnlyTransactionImpl tx = txThreadMap.get( thread );
+        ReadOnlyTransactionImpl tx = txThreadMap.get();
         if ( tx == null )
         {
             throw new IllegalStateException( "Not in transaction" );
@@ -198,7 +194,7 @@ public class ReadOnlyTxManager extends AbstractTransactionManager
                         + " ---> error code for rollback: " + e.errorCode ), e );
             }
             tx.doAfterCompletion();
-            txThreadMap.remove( thread );
+            txThreadMap.remove();
             tx.setStatus( Status.STATUS_NO_TRANSACTION );
         }
         else
@@ -208,10 +204,10 @@ public class ReadOnlyTxManager extends AbstractTransactionManager
         }
     }
 
+    @Override
     public int getStatus()
     {
-        Thread thread = Thread.currentThread();
-        ReadOnlyTransactionImpl tx = txThreadMap.get( thread );
+        ReadOnlyTransactionImpl tx = txThreadMap.get();
         if ( tx != null )
         {
             return tx.getStatus();
@@ -219,15 +215,16 @@ public class ReadOnlyTxManager extends AbstractTransactionManager
         return Status.STATUS_NO_TRANSACTION;
     }
 
+    @Override
     public Transaction getTransaction()
     {
-        return txThreadMap.get( Thread.currentThread() );
+        return txThreadMap.get();
     }
 
+    @Override
     public void resume( Transaction tx ) throws IllegalStateException
     {
-        Thread thread = Thread.currentThread();
-        if ( txThreadMap.get( thread ) != null )
+        if ( txThreadMap.get() != null )
         {
             throw new IllegalStateException( "Transaction already associated" );
         }
@@ -237,14 +234,16 @@ public class ReadOnlyTxManager extends AbstractTransactionManager
             if ( txImpl.getStatus() != Status.STATUS_NO_TRANSACTION )
             {
                 txImpl.markAsActive();
-                txThreadMap.put( thread, txImpl );
+                txThreadMap.set( txImpl );
             }
         }
     }
 
+    @Override
     public Transaction suspend()
     {
-        ReadOnlyTransactionImpl tx = txThreadMap.remove( Thread.currentThread() );
+        ReadOnlyTransactionImpl tx = txThreadMap.get();
+        txThreadMap.remove();
         if ( tx != null )
         {
             tx.markAsSuspended();
@@ -252,10 +251,10 @@ public class ReadOnlyTxManager extends AbstractTransactionManager
         return tx;
     }
 
+    @Override
     public void setRollbackOnly() throws IllegalStateException
     {
-        Thread thread = Thread.currentThread();
-        ReadOnlyTransactionImpl tx = txThreadMap.get( thread );
+        ReadOnlyTransactionImpl tx = txThreadMap.get();
         if ( tx == null )
         {
             throw new IllegalStateException( "Not in transaction" );
@@ -263,6 +262,7 @@ public class ReadOnlyTxManager extends AbstractTransactionManager
         tx.setRollbackOnly();
     }
 
+    @Override
     public void setTransactionTimeout( int seconds )
     {
     }
@@ -311,19 +311,9 @@ public class ReadOnlyTxManager extends AbstractTransactionManager
 
     public synchronized void dumpTransactions()
     {
-        Iterator<ReadOnlyTransactionImpl> itr = txThreadMap.values().iterator();
-        if ( !itr.hasNext() )
-        {
-            System.out.println( "No uncompleted transactions" );
-            return;
-        }
-        System.out.println( "Uncompleted transactions found: " );
-        while ( itr.hasNext() )
-        {
-            System.out.println( itr.next() );
-        }
     }
 
+    @Override
     public int getEventIdentifier()
     {
         TransactionImpl tx = (TransactionImpl) getTransaction();

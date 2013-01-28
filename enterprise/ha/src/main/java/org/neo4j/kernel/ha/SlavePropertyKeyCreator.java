@@ -20,6 +20,8 @@
 package org.neo4j.kernel.ha;
 
 import org.neo4j.com.Response;
+import org.neo4j.kernel.ha.com.RequestContextFactory;
+import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.impl.core.KeyCreator;
 import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;

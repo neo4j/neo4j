@@ -73,7 +73,8 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
     private final Map<RecoveredBranchInfo, Boolean> branches = new HashMap<RecoveredBranchInfo, Boolean>();
     private volatile TxLog txLog = null;
     private boolean tmOk = false;
-    private final boolean blocked = false;
+    private Throwable tmNotOkCause;
+    private boolean blocked = false;
 
     private final KernelPanicEventGenerator kpe;
 
@@ -84,7 +85,6 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
 
     private final StringLogger log;
 
-//    final TxHook finishHook;
     private final XaDataSourceManager xaDataSourceManager;
     private final FileSystemAbstraction fileSystem;
     private TxManager.TxManagerDataSourceRegistrationListener dataSourceRegistrationListener;
@@ -96,7 +96,6 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
     public TxManager( File txLogDir,
                       XaDataSourceManager xaDataSourceManager,
                       KernelPanicEventGenerator kpe,
-//                      TxHook finishHook,
                       StringLogger log,
                       FileSystemAbstraction fileSystem,
                       TransactionStateFactory stateFactory
@@ -107,7 +106,6 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
         this.fileSystem = fileSystem;
         this.log = log;
         this.kpe = kpe;
-//        this.finishHook = finishHook;
         this.stateFactory = stateFactory;
     }
 
@@ -253,6 +251,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
             return;
         
         tmOk = false;
+        tmNotOkCause = cause;
         log.logMessage( "setting TM not OK", cause );
         kpe.generateEvent( ErrorState.TX_MANAGER_NOT_OK );
     }
@@ -334,8 +333,14 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
     {
         if ( !tmOk )
         {
-            throw new SystemException( "TM has encountered some problem, "
+            SystemException ex = new SystemException( "TM has encountered some problem, "
                     + "please perform neccesary action (tx recovery/restart)" );
+            if(tmNotOkCause != null)
+            {
+                ex = Exceptions.withCause( ex, tmNotOkCause );
+            }
+
+            throw ex;
         }
     }
 
@@ -820,26 +825,23 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
         try
         {
             // Assuming here that the last datasource to register is the Neo one
-//            if ( !tmOk )
-            {
-                // Do recovery on start - all Resources should be registered by now
-                Iterable<List<TxLog.Record>> knownDanglingRecordList = txLog.getDanglingRecords();
-                if ( knownDanglingRecordList.iterator().hasNext() )
-                    log.info( "Unresolved transactions found, " +
-                            "recovery started ... " + txLogDir );
+            // Do recovery on start - all Resources should be registered by now
+            Iterable<List<TxLog.Record>> knownDanglingRecordList = txLog.getDanglingRecords();
+            if ( knownDanglingRecordList.iterator().hasNext() )
+                log.info( "Unresolved transactions found, " +
+                        "recovery started ... " + txLogDir );
 
-                log.logMessage( "TM non resolved transactions found in " + txLog.getName(), true );
+            log.logMessage( "TM non resolved transactions found in " + txLog.getName(), true );
 
-                // Recover DataSources
-                xaDataSourceManager.recover( knownDanglingRecordList.iterator() );
+            // Recover DataSources
+            xaDataSourceManager.recover( knownDanglingRecordList.iterator() );
 
-                log.logMessage( "Recovery completed, all transactions have been " +
-                        "resolved to a consistent state." );
-                
-                getTxLog().truncate();
-                recovered = true;
-                tmOk = true;
-            }
+            log.logMessage( "Recovery completed, all transactions have been " +
+                    "resolved to a consistent state." );
+
+            getTxLog().truncate();
+            recovered = true;
+            tmOk = true;
         }
         catch ( Throwable t )
         {

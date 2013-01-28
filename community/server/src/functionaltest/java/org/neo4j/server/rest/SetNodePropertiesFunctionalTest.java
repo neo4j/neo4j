@@ -142,7 +142,10 @@ public class SetNodePropertiesFunctionalTest extends
     public void shouldReturn400WhenSendinIncompatibleJsonProperty()
             throws Exception
     {
-        gen.get().payload( "{\"foo\" : {\"bar\" : \"baz\"}}" ).expectedStatus(
+        gen.get()
+                .noGraph()
+                .payload( "{\"foo\" : {\"bar\" : \"baz\"}}" )
+                .expectedStatus(
                 400 ).post( getDataUri() + "node/" );
     }
 
