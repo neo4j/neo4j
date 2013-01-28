@@ -43,7 +43,7 @@ case class LabelAction(entity: Expression, labelOp: LabelOp, labelSetExpr: Expre
   def exec(context: ExecutionContext, state: QueryState) = {
     val node      = CastSupport.erasureCastOrFail[Node](entity(context))
     val queryCtx  = state.queryContext
-    val labelIds: Iterable[Long] = getLabelsAsLongs(context, labelSetExpr, queryCtx)
+    val labelIds: Iterable[Long] = getLabelsAsLongs(context, labelSetExpr)
 
     labelOp match {
       case LabelAdd => {

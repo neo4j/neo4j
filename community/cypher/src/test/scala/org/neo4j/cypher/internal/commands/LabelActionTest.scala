@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.spi.QueryContext
 import org.neo4j.graphdb.{Direction, Node}
 import org.neo4j.cypher.internal.pipes.QueryState
 import org.junit.Test
-import values.LabelName
+import values.{ResolvedLabel, LabelName}
 
 class LabelActionTest extends GraphDatabaseTestBase with Assertions {
   val ctx = ExecutionContext.empty
@@ -39,7 +39,7 @@ class LabelActionTest extends GraphDatabaseTestBase with Assertions {
   def set_single_label_on_node() {
     //GIVEN
     val n = createNode()
-    val given = LabelAction(Literal(n), LabelAdd, Literal(label("green")))
+    val given = LabelAction(Literal(n), LabelAdd, Literal(resolvedLabel(12, "green")))
 
     //WHEN
     val result = given.exec(ctx, state)
@@ -54,7 +54,7 @@ class LabelActionTest extends GraphDatabaseTestBase with Assertions {
   def set_two_labels_on_node() {
     //GIVEN
     val n = createNode()
-    val given = LabelAction(Literal(n), LabelAdd, Literal(Seq(label("green"), label("blue"))))
+    val given = LabelAction(Literal(n), LabelAdd, Literal(Seq(resolvedLabel(12, "green"), resolvedLabel(42, "blue"))))
 
     //WHEN
     val result = given.exec(ctx, state)
@@ -66,6 +66,8 @@ class LabelActionTest extends GraphDatabaseTestBase with Assertions {
   }
 
   private def label(v: String) = LabelName(v)
+
+  private def resolvedLabel(id: Long, v: String) = ResolvedLabel(id, v)
 
   @Test
   def set_invalid_label_set_on_node() {

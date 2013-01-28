@@ -2438,4 +2438,43 @@ RETURN x0.name?
 
     assert(result.toList === List(Map("a" -> a)))
   }
+
+  @Test def should_filter_nodes_by_single_label() {
+    // GIVEN
+    val a = createLabeledNode("foo")
+    val b = createLabeledNode("foo", "bar")
+    val c = createNode()
+
+    // WHEN
+    val result = parseAndExecute("""START n=node(1, 2, 3) WHERE n:foo RETURN n""")
+
+    // THEN
+    assert(result.toList === List(Map("n" -> a), Map("n" -> b)))
+  }
+
+  @Test def should_filter_nodes_by_single_negated_label() {
+    // GIVEN
+    val a = createLabeledNode("foo")
+    val b = createLabeledNode("foo", "bar")
+    val c = createNode()
+
+    // WHEN
+    val result = parseAndExecute("""START n=node(1, 2, 3) WHERE not(n:foo) RETURN n""")
+
+    // THEN
+    assert(result.toList === List(Map("n" -> c)))
+  }
+
+  @Test def should_filter_nodes_by_multiple_labels() {
+    // GIVEN
+    val a = createLabeledNode("foo")
+    val b = createLabeledNode("foo", "bar")
+    val c = createNode()
+
+    // WHEN
+    val result = parseAndExecute("""START n=node(1, 2, 3) WHERE n:foo:bar RETURN n""")
+
+    // THEN
+    assert(result.toList === List(Map("n" -> b)))
+  }
 }

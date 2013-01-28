@@ -10,6 +10,8 @@ include::includes/cypher-where-graph.asciidoc[]
 
 include::boolean-operations.asciidoc[]
 
+include::filter-on-node-label.asciidoc[]
+
 include::filter-on-node-property.asciidoc[]
 
 include::regular-expressions.asciidoc[]

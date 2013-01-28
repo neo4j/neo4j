@@ -33,6 +33,6 @@ trait LabelSupport extends CollectionSupport {
      }
 
 
-  def getLabelsAsLongs(executionContext: ExecutionContext, labels: Expression, queryContext:QueryContext) =
-    labelSeq(executionContext, labels).map(_.resolveForId(queryContext).id)
+  def getLabelsAsLongs(executionContext: ExecutionContext, labels: Expression) =
+    labelSeq(executionContext, labels).map(_.resolveForId(executionContext.state.queryContext).id)
 }
