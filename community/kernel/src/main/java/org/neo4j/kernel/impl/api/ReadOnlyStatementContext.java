@@ -25,11 +25,11 @@ import org.neo4j.kernel.api.StatementContext;
 
 public class ReadOnlyStatementContext implements StatementContext
 {
-    private final StatementContext actual;
+    private final StatementContext delegate;
 
-    public ReadOnlyStatementContext( StatementContext actual )
+    public ReadOnlyStatementContext( StatementContext delegate )
     {
-        this.actual = actual;
+        this.delegate = delegate;
     }
 
     @Override
@@ -47,25 +47,25 @@ public class ReadOnlyStatementContext implements StatementContext
     @Override
     public long getLabelId( String label ) throws LabelNotFoundKernelException
     {
-        return actual.getLabelId( label );
+        return delegate.getLabelId( label );
     }
 
     @Override
     public boolean isLabelSetOnNode( long labelId, long nodeId )
     {
-        return actual.isLabelSetOnNode( labelId, nodeId );
+        return delegate.isLabelSetOnNode( labelId, nodeId );
     }
     
     @Override
     public Iterable<Long> getLabelsForNode( long nodeId )
     {
-        return actual.getLabelsForNode( nodeId );
+        return delegate.getLabelsForNode( nodeId );
     }
     
     @Override
     public String getLabelName( long labelId ) throws LabelNotFoundKernelException
     {
-        return actual.getLabelName( labelId );
+        return delegate.getLabelName( labelId );
     }
 
     @Override
@@ -73,11 +73,17 @@ public class ReadOnlyStatementContext implements StatementContext
     {
         throw readOnlyException();
     }
+    
+    @Override
+    public Iterable<Long> getNodesWithLabel( long labelId )
+    {
+        return delegate.getNodesWithLabel( labelId );
+    }
 
     @Override
     public void close( boolean successful )
     {
-        actual.close( successful );
+        delegate.close( successful );
     }
 
     private NotInTransactionException readOnlyException()

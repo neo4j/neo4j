@@ -308,7 +308,7 @@ public class NodeManager
         return new RelationshipImpl( id, startNodeId, endNodeId, typeId, newRel );
     }
 
-    protected Node getNodeByIdOrNull( long nodeId )
+    public Node getNodeByIdOrNull( long nodeId )
     {
         NodeImpl node = getLightNode( nodeId );
         return node != null ? new NodeProxy( nodeId, nodeLookup, statementCtxProvider ) : null;

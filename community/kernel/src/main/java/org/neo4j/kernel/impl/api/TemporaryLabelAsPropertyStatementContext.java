@@ -24,8 +24,11 @@ import static org.neo4j.kernel.impl.api.LabelAsPropertyData.representsLabel;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Iterator;
 
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.api.ConstraintViolationKernelException;
 import org.neo4j.kernel.api.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.StatementContext;
@@ -33,7 +36,11 @@ import org.neo4j.kernel.impl.core.KeyNotFoundException;
 import org.neo4j.kernel.impl.core.PropertyIndex;
 import org.neo4j.kernel.impl.core.PropertyIndexManager;
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
+import org.neo4j.kernel.impl.nioneo.store.PropertyBlock;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
+import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
+import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
+import org.neo4j.kernel.impl.nioneo.store.PropertyType;
 import org.neo4j.kernel.impl.nioneo.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.util.ArrayMap;
@@ -45,12 +52,14 @@ public class TemporaryLabelAsPropertyStatementContext implements StatementContex
 
     private final PropertyIndexManager propertyIndexManager;
     private final PersistenceManager persistenceManager;
+    private final PropertyStore propertyStore;
 
     public TemporaryLabelAsPropertyStatementContext( PropertyIndexManager propertyIndexManager,
-                                            PersistenceManager persistenceManager )
+            PersistenceManager persistenceManager, PropertyStore propertyStore )
     {
         this.propertyIndexManager = propertyIndexManager;
         this.persistenceManager = persistenceManager;
+        this.propertyStore = propertyStore;
     }
 
     @Override
@@ -173,6 +182,73 @@ public class TemporaryLabelAsPropertyStatementContext implements StatementContex
         
         persistenceManager.nodeRemoveProperty( nodeId, data );
         return true;
+    }
+    
+    private static class LabelPropertyBlockToNodeIterator extends PrefetchingIterator<Long>
+    {
+        private final Iterator<PropertyBlock> blocks;
+        private final long matchingLabelId;
+
+        LabelPropertyBlockToNodeIterator( Iterator<PropertyBlock> blocks, long labelId )
+        {
+            this.blocks = blocks;
+            this.matchingLabelId = labelId;
+        }
+
+        @Override
+        protected Long fetchNextOrNull()
+        {
+            while ( blocks.hasNext() )
+            {
+                PropertyBlock block = blocks.next();
+                if ( block.getType() == PropertyType.LABEL && block.getKeyIndexId() == matchingLabelId )
+                    return block.getValueBlocks()[1];
+            }
+            return null;
+        }
+    }
+    
+    @Override
+    public Iterable<Long> getNodesWithLabel( final long labelId )
+    {
+        final long highestId = propertyStore.getHighestPossibleIdInUse();
+        return new Iterable<Long>()
+        {
+            @Override
+            public Iterator<Long> iterator()
+            {
+                return new PrefetchingIterator<Long>()
+                {
+                    private long id = 0L;
+                    private Iterator<Long> blockNodes = Collections.<Long>emptyList().iterator();
+                    
+                    @Override
+                    protected Long fetchNextOrNull()
+                    {
+                        if ( !blockNodes.hasNext() )
+                        {
+                            while ( id <= highestId )
+                            {
+                                PropertyRecord record = propertyStore.forceGetRecord( id++ );
+                                if ( !record.inUse() )
+                                    continue;
+
+                                blockNodes = new LabelPropertyBlockToNodeIterator(
+                                        record.getPropertyBlocks().iterator(), labelId );
+                                if ( blockNodes.hasNext() )
+                                    return blockNodes.next();
+                            }
+                            // scan exhausted
+                            return null;
+                        }
+                        else
+                        {
+                            return blockNodes.next();
+                        }
+                    }
+                };
+            }
+        };
     }
 
     private void ensureIsLabel( PropertyData data )

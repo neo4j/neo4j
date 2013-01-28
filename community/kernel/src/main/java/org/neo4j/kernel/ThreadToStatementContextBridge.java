@@ -20,22 +20,32 @@
 package org.neo4j.kernel;
 
 import org.neo4j.graphdb.NotInTransactionException;
+import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 /**
  * This is meant to serve as the bridge that makes the Beans API tie transactions to threads. The Beans API
  * will use this to get the appropriate {@link StatementContext} when it performs operations.
  */
-public class ThreadToStatementContextBridge
+public class ThreadToStatementContextBridge extends LifecycleAdapter
 {
-    private final StatementContext readOnlyStatementCtx;
+    private final KernelAPI kernelAPI;
+    private StatementContext readOnlyStatementCtx;
     private final AbstractTransactionManager txManager;
 
-    public ThreadToStatementContextBridge(StatementContext readOnlyStatementCtx, AbstractTransactionManager txManager)
+    public ThreadToStatementContextBridge( KernelAPI kernelAPI,
+            AbstractTransactionManager txManager )
     {
-        this.readOnlyStatementCtx = readOnlyStatementCtx;
+        this.kernelAPI = kernelAPI;
         this.txManager = txManager;
+    }
+    
+    @Override
+    public void start()
+    {
+        readOnlyStatementCtx = kernelAPI.newReadOnlyStatementContext();
     }
 
     public StatementContext getCtxForReading()

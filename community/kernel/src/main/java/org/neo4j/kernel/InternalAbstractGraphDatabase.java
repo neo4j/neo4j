@@ -34,7 +34,6 @@ import javax.transaction.NotSupportedException;
 import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
 
-import ch.qos.logback.classic.LoggerContext;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -125,6 +124,8 @@ import org.neo4j.kernel.logging.ClassicLoggingService;
 import org.neo4j.kernel.logging.LogbackService;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.tooling.GlobalGraphOperations;
+
+import ch.qos.logback.classic.LoggerContext;
 
 /**
  * Base implementation of GraphDatabaseService. Responsible for creating services, handling dependencies between them,
@@ -404,11 +405,12 @@ public abstract class InternalAbstractGraphDatabase
         Cache<NodeImpl> nodeCache = diagnosticsManager.tryAppendProvider( caches.node() );
         Cache<RelationshipImpl> relCache = diagnosticsManager.tryAppendProvider( caches.relationship() );
 
-        kernelAPI = new Kernel( txManager, propertyIndexManager, persistenceManager, lockManager );
+        kernelAPI = new Kernel( txManager, propertyIndexManager, persistenceManager,
+                xaDataSourceManager, lockManager );
         // XXX: Circular dependency, temporary during transition to KernelAPI
         txManager.setKernel(kernelAPI);
 
-        statementContextProvider = new ThreadToStatementContextBridge( kernelAPI.newReadOnlyStatementContext(), txManager );
+        statementContextProvider = life.add( new ThreadToStatementContextBridge( kernelAPI, txManager ) );
 
         nodeManager = guard != null ?
                 createGuardedNodeManager( readOnly, cacheProvider, nodeCache, relCache ) :
@@ -526,7 +528,7 @@ public abstract class InternalAbstractGraphDatabase
                     createRelationshipLookups(), nodeCache, relCache, xaDataSourceManager, statementContextProvider )
             {
                 @Override
-                protected Node getNodeByIdOrNull( final long nodeId )
+                public Node getNodeByIdOrNull( final long nodeId )
                 {
                     guard.check();
                     return super.getNodeByIdOrNull( nodeId );
@@ -575,7 +577,7 @@ public abstract class InternalAbstractGraphDatabase
                 createRelationshipLookups(), nodeCache, relCache, xaDataSourceManager, statementContextProvider )
         {
             @Override
-            protected Node getNodeByIdOrNull( final long nodeId )
+            public Node getNodeByIdOrNull( final long nodeId )
             {
                 guard.check();
                 return super.getNodeByIdOrNull( nodeId );

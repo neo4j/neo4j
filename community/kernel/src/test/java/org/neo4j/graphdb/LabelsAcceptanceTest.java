@@ -30,6 +30,7 @@ import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
 
 import java.io.File;
+import java.util.Iterator;
 import java.util.Set;
 
 import org.junit.Rule;
@@ -44,6 +45,7 @@ import org.neo4j.kernel.impl.nioneo.store.UnderlyingStorageException;
 import org.neo4j.test.ImpermanentDatabaseRule;
 import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.impl.EphemeralIdGenerator;
+import org.neo4j.tooling.GlobalGraphOperations;
 
 public class LabelsAcceptanceTest
 {
@@ -52,7 +54,7 @@ public class LabelsAcceptanceTest
     private enum Labels implements Label
     {
         MY_LABEL,
-        MY_OTHER_LABEL;
+        MY_OTHER_LABEL
     }
 
     @Test
@@ -171,7 +173,7 @@ public class LabelsAcceptanceTest
         // Given
         GraphDatabaseService beansAPI = dbRule.getGraphDatabaseService();
         Label label = Labels.MY_LABEL;
-        Node myNode = createLabeledNode( label );
+        Node myNode = createNode( beansAPI, label );
 
         // When
         Transaction tx = beansAPI.beginTx();
@@ -244,8 +246,8 @@ public class LabelsAcceptanceTest
         // Given
         GraphDatabaseService beansAPI = dbRule.getGraphDatabaseService();
         Label label = Labels.MY_LABEL;
-        createLabeledNode( label );
-        Node myNode = createLabeledNode();
+        createNode( beansAPI, label );
+        Node myNode = createNode( beansAPI );
 
         // When
         Transaction tx = beansAPI.beginTx();
@@ -331,19 +333,57 @@ public class LabelsAcceptanceTest
         assertEquals( 0, count( labels ) );
     }
 
-    private Node createNode( GraphDatabaseService beansAPI )
+    @Test
+    public void getNodesWithLabelCommited() throws Exception
     {
+        // Given
+        GraphDatabaseService beansAPI = dbRule.getGraphDatabaseService();
+        GlobalGraphOperations glops = GlobalGraphOperations.at( beansAPI );
+
+        // When
         Transaction tx = beansAPI.beginTx();
+        Node node = beansAPI.createNode( );
+        node.addLabel( Labels.MY_LABEL );
+        tx.success();
+        tx.finish();
+
+        // THEN
+        Iterator<Node> labelIter = glops.getAllNodesWithLabel( Labels.MY_LABEL ).iterator();
+        assertEquals( labelIter.next(), node );
+        assertFalse( labelIter.hasNext() );
+        assertFalse( glops.getAllNodesWithLabel( Labels.MY_OTHER_LABEL ).iterator().hasNext() );
+    }
+    
+    @Test
+    public void getNodesWithLabelsWithTxAddsAndRemoves() throws Exception
+    {
+        // GIVEN
+        GraphDatabaseService beansAPI = dbRule.getGraphDatabaseService();
+        GlobalGraphOperations glops = GlobalGraphOperations.at( beansAPI );
+        Node node1 = createNode( beansAPI, Labels.MY_LABEL, Labels.MY_OTHER_LABEL );
+        Node node2 = createNode( beansAPI, Labels.MY_LABEL, Labels.MY_OTHER_LABEL );
+
+        // WHEN
+        Transaction tx = beansAPI.beginTx();
+        Node node3 = null;
+        Set<Node> nodesWithMyLabel = null, nodesWithMyOtherLabel = null;
         try
         {
-            Node node = beansAPI.createNode();
+            node3 = beansAPI.createNode( Labels.MY_LABEL );
+            node2.removeLabel( Labels.MY_LABEL );
+            // extracted here to be asserted below
+            nodesWithMyLabel = asSet( glops.getAllNodesWithLabel( Labels.MY_LABEL ) );
+            nodesWithMyOtherLabel = asSet( glops.getAllNodesWithLabel( Labels.MY_OTHER_LABEL ) );
             tx.success();
-            return node;
         }
         finally
         {
             tx.finish();
         }
+
+        // THEN
+        assertEquals( asSet( node1, node3 ), nodesWithMyLabel );
+        assertEquals( asSet( node1, node2 ), nodesWithMyOtherLabel );
     }
 
     private Iterable<String> asStrings( Iterable<Label> labels )
@@ -360,7 +400,8 @@ public class LabelsAcceptanceTest
 
     private GraphDatabaseService beansAPIWithNoMoreLabelIds()
     {
-        return new ImpermanentGraphDatabase(  ) {
+        return new ImpermanentGraphDatabase()
+        {
             @Override
             protected IdGeneratorFactory createIdGeneratorFactory()
             {
@@ -402,9 +443,8 @@ public class LabelsAcceptanceTest
         }, enums ) );
     }
 
-    private Node createLabeledNode( Label... labels )
+    private Node createNode( GraphDatabaseService db, Label... labels )
     {
-        GraphDatabaseService db = dbRule.getGraphDatabaseService();
         Transaction tx = db.beginTx();
         try
         {

@@ -117,4 +117,10 @@ public interface StatementContext
      * {@code false} if the node didn't have this label.
      */
     boolean removeLabelFromNode( long labelId, long nodeId );
+
+    /**
+     * @param labelId the label id of the label that returned nodes are guaranteed to have
+     * @return ids of all nodes that have the given label
+     */
+    Iterable<Long> getNodesWithLabel( long labelId );
 }
