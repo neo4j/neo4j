@@ -19,12 +19,13 @@
  */
 package org.neo4j.cypher
 
-import org.junit.{Ignore, Test}
+import internal.helpers.CollectionSupport
+import org.junit.Test
 import org.scalatest.Assertions
 import org.neo4j.test.ImpermanentGraphDatabase
 import org.neo4j.graphdb.Node
 
-class LabelsAcceptanceTest extends ExecutionEngineHelper with StatisticsChecker with Assertions {
+class LabelsAcceptanceTest extends ExecutionEngineHelper with StatisticsChecker with Assertions with CollectionSupport {
 
   @Test def `Adding single literal label`() {
     assertThat("create n = {} add n:FOO", List("FOO"))
@@ -39,7 +40,6 @@ class LabelsAcceptanceTest extends ExecutionEngineHelper with StatisticsChecker 
     assertThat("create n = {} add n :FOO:BAR", List("FOO", "BAR"))
   }
 
-  @Ignore
   @Test def `Adding labels using an expression`() {
     createLabeledNode("FOO", "BAR")
     assertThat("start x=node(1) create n = {} add n label labels(x)", List("FOO", "BAR"))
@@ -61,15 +61,20 @@ class LabelsAcceptanceTest extends ExecutionEngineHelper with StatisticsChecker 
     assertDoesNotWork("CREATE n :Foo CREATE (n {})-[:OWNS]->(x:Dog)")
   }
 
-  @Ignore
   @Test def `Creating nodes with labels from expressions`() {
     assertThat("START n=node(0) WITH [:FOO,:BAR] as lbls CREATE node LABEL lbls", List("FOO", "BAR"))
-    assertThat("CREATE (n LABEL <expr> VALUES <expr>)-[:FOO]->x:Person", List("FOO", "BAR"))
-    assertThat("CREATE node LABEL [:name, strlabel(“comic')] = {name: ’susi’}", List("FOO", "BAR"))
+    assertThat("CREATE (n LABEL [:FOO, :BAR] VALUES {name:'Mattias'})-[:FOO]->x:Person", List("FOO", "BAR"))
   }
 
   @Test def `Add labels to nodes in a foreach`() {
     assertThat("CREATE a,b,c WITH [a,b,c] as nodes FOREACH(n in nodes : ADD n label :FOO:BAR)", List("FOO", "BAR"))
+  }
+
+  @Test def Using_labels_in_RETURN_clauses() {
+    assertThat("START n=node(0) RETURN labels(n)", List())
+    assertThat("START n=node(0) ADD n LABEL :FOO RETURN labels(n)", List("FOO"))
+    assertThat("START n = node(0) RETURN :FOO", List("FOO"))
+    assertThat("START n = node(0) RETURN [:FOO, :BAR]", List("FOO", "BAR"))
   }
 
   /* STILL TO DO
@@ -115,13 +120,6 @@ class LabelsAcceptanceTest extends ExecutionEngineHelper with StatisticsChecker 
  MATCH n-->x<--m:Bar
  WHERE n:Animal or (n:Person:Chef and n.income > 0)
 
- Using labels in RETURN clauses
-
- Returning labels as literals (a bit pointless but here for completeness’ sake)
- START n=node(0) RETURN :FOO
-
- Returning the labels of a node
- START n=node(0) RETURN labels(n), n.age
 
  Returning label membership of a node
  START n=node(0) WHERE n:FOO RETURN n:BAR, n:BAR|:baz
@@ -134,13 +132,22 @@ class LabelsAcceptanceTest extends ExecutionEngineHelper with StatisticsChecker 
       val n = graph.getNodeById(1)
       assert(n.labels === expectedLabels)
     } else {
-      result.columnAs[Node]("node").foreach(n => assert(n.labels === expectedLabels))
+      result.foreach {
+        map => map.get("node") match {
+                  case None =>
+                    assert(makeTraversable(map.head._2).toList === expectedLabels)
+
+                  case Some(n:Node) =>
+                    assert(n.labels === expectedLabels)
+                }
+      }
     }
 
     graph.shutdown()
 
     graph = new ImpermanentGraphDatabase() with Snitch
     refNode = graph.getReferenceNode
+    executionEngineHelperInit()
   }
 
   def assertDoesNotWork(s: String) {

@@ -67,13 +67,16 @@ class GraphDatabaseTestBase extends JUnitSuite  {
   def createLabeledNode(props: Map[String, Any], labels: String*): Node = {
     val n = createNode()
 
-    labels.foreach {
-      name => n.addLabel(DynamicLabel.label(name))
-    }
+    inTx(() => {
+      labels.foreach {
+        name => n.addLabel(DynamicLabel.label(name))
+      }
 
-    props.foreach {
-      case (k, v) => n.setProperty(k, v)
-    }
+      props.foreach {
+        case (k, v) => n.setProperty(k, v)
+      }
+
+    })
 
     n
   }
