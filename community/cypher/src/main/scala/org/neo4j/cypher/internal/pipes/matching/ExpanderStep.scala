@@ -103,8 +103,8 @@ abstract class MiniMapProperty(originalName: String, prop: String) extends Expre
         val pc = extract(m)
         try {
           pc match {
-            case n:Node=>ctx.state.queryContext.nodeOps().getProperty(n, prop)
-            case r:Relationship=>ctx.state.queryContext.relationshipOps().getProperty(r, prop)
+            case n:Node=>ctx.state.queryContext.nodeOps.getProperty(n, prop)
+            case r:Relationship=>ctx.state.queryContext.relationshipOps.getProperty(r, prop)
           }
         } catch {
           case x: NotFoundException =>

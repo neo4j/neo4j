@@ -148,13 +148,12 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService) extends PatternGraphBuil
     val results = pipe.createResults(state)
 
     try {
-
       val closingIterator = new ClosingIterator[ExecutionContext](results, queryContext)
       (state, closingIterator)
     }
     catch {
       case (t: Throwable) =>
-        queryContext.fail()
+        queryContext.close(success = false)
         throw t
     }
   }
@@ -190,7 +189,6 @@ The Neo4j Team""")
   }
 
   lazy val builders = Seq(
-//    new ResultValueMapperBuilder(graph),
     new NodeByIdBuilder(graph),
     new IndexQueryBuilder(graph),
     new GraphGlobalStartBuilder(graph),

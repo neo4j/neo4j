@@ -25,7 +25,6 @@ import org.neo4j.cypher.internal.pipes.QueryState
 import org.neo4j.cypher.internal.symbols.{SymbolTable, NodeType}
 import collection.Map
 import org.neo4j.cypher.internal.ExecutionContext
-import collection.JavaConverters._
 
 case class CreateNode(key: String, properties: Map[String, Expression], labels: Expression, bare: Boolean = true)
   extends UpdateAction
@@ -42,14 +41,13 @@ case class CreateNode(key: String, properties: Map[String, Expression], labels: 
 
     def createNodeWithPropertiesAndLabels(props: Map[String, Expression]): ExecutionContext = {
       val node = state.queryContext.createNode()
-      state.createdNodes.increase()
       setProperties(node, props, context, state)
 
       val queryCtx = state.queryContext
-      val labelIds = labelSeqToJavaIds(context, queryCtx, labels)
 
-      queryCtx.addLabelsToNode(node, labelIds.asJava)
-      state.addedLabels.increase( labelIds.size )
+      val labelIds: Iterable[Long] = getLabelsAsLongs(context, labels, queryCtx)
+
+      queryCtx.addLabelsToNode(node.getId, labelIds)
 
       val newContext = context.newWith(key -> node)
       newContext

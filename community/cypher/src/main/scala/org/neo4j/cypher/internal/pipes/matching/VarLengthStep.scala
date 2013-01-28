@@ -19,9 +19,8 @@
  */
 package org.neo4j.cypher.internal.pipes.matching
 
-import org.neo4j.graphdb.{Node, Relationship, Direction, RelationshipType}
+import org.neo4j.graphdb.{Node, Relationship, Direction}
 import org.neo4j.cypher.internal.commands.Predicate
-import collection.JavaConverters._
 import org.neo4j.cypher.internal.ExecutionContext
 
 /*
@@ -80,7 +79,7 @@ case class VarLengthStep(id: Int,
       }
     }
 
-    val matchingRelationships = parameters.state.queryContext.getRelationshipsFor(node, direction, typ:_*).asScala
+    val matchingRelationships = parameters.state.queryContext.getRelationshipsFor(node, direction, typ)
 
 
     val result = if (matchingRelationships.isEmpty && min == 0) {

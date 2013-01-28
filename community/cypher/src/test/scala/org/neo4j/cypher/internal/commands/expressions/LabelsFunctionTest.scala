@@ -28,7 +28,6 @@ import org.neo4j.graphdb.Node
 import org.scalatest.mock.MockitoSugar
 import org.neo4j.cypher.internal.spi.QueryContext
 import org.mockito.Mockito
-import scala.collection.JavaConverters._
 
 class LabelsFunctionTest extends Assertions with MockitoSugar {
 
@@ -37,8 +36,8 @@ class LabelsFunctionTest extends Assertions with MockitoSugar {
     // GIVEN
     val node = mock[Node]
     val queryContext = mock[QueryContext]
-    val ids = Seq(12L.asInstanceOf[java.lang.Long]).toIterable.asJava
-    Mockito.when(queryContext.getLabelsForNode(node)).thenReturn(ids)
+    val ids = Seq(12L)
+    Mockito.when(queryContext.getLabelsForNode(node.getId)).thenReturn(ids)
     val state = new QueryState(null, queryContext, Map.empty)
     val ctx = ExecutionContext(state = state) += ("n" -> node)
 

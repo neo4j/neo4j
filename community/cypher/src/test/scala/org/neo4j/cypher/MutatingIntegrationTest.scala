@@ -28,7 +28,7 @@ import java.util.HashMap
 
 class MutatingIntegrationTest extends ExecutionEngineHelper with Assertions with StatisticsChecker {
 
-  val stats = QueryStatistics.empty
+  val stats = QueryStatistics()
 
   @Test
   def create_a_single_node() {
