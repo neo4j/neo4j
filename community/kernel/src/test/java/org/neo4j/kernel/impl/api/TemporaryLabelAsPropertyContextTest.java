@@ -141,6 +141,106 @@ public class TemporaryLabelAsPropertyContextTest
         assertEquals( asSet( "name" ), asSet( propertyKeys ) );
     }
     
+    @Test
+    public void should_return_true_when_adding_new_label() throws Exception
+    {
+        // GIVEN
+        Label label = label( "the-label" );
+        Node node = createLabeledNode( db, map() );
+
+        // WHEN
+        Transaction tx = db.beginTx();
+        boolean added = false;
+        try
+        {
+            long labelId = statement.getOrCreateLabelId( label.name() );
+            added = statement.addLabelToNode( labelId, node.getId() );
+            tx.success();
+        }
+        finally
+        {
+            tx.finish();
+        }
+
+        // THEN
+        assertTrue( "Label should have been added", added );
+    }
+    
+    @Test
+    public void should_return_false_when_adding_existing_label() throws Exception
+    {
+        // GIVEN
+        Label label = label( "the-label" );
+        Node node = createLabeledNode( db, map(), label );
+
+        // WHEN
+        Transaction tx = db.beginTx();
+        boolean added = false;
+        try
+        {
+            long labelId = statement.getOrCreateLabelId( label.name() );
+            added = statement.addLabelToNode( labelId, node.getId() );
+            tx.success();
+        }
+        finally
+        {
+            tx.finish();
+        }
+
+        // THEN
+        assertFalse( "Label should not have been added", added );
+    }
+    
+    @Test
+    public void should_return_true_when_remove_existing_label() throws Exception
+    {
+        // GIVEN
+        Label label = label( "the-label" );
+        Node node = createLabeledNode( db, map(), label );
+
+        // WHEN
+        Transaction tx = db.beginTx();
+        boolean removed = false;
+        try
+        {
+            long labelId = statement.getOrCreateLabelId( label.name() );
+            removed = statement.removeLabelFromNode( labelId, node.getId() );
+            tx.success();
+        }
+        finally
+        {
+            tx.finish();
+        }
+
+        // THEN
+        assertTrue( "Label should have been removed", removed );
+    }
+    
+    @Test
+    public void should_return_false_when_removing_non_existent_label() throws Exception
+    {
+        // GIVEN
+        Label label = label( "the-label" );
+        Node node = createLabeledNode( db, map() );
+
+        // WHEN
+        Transaction tx = db.beginTx();
+        boolean removed = false;
+        try
+        {
+            long labelId = statement.getOrCreateLabelId( label.name() );
+            removed = statement.addLabelToNode( labelId, node.getId() );
+            tx.success();
+        }
+        finally
+        {
+            tx.finish();
+        }
+
+        // THEN
+        assertTrue( "Label should not have been removed", removed );
+    }
+    
     private GraphDatabaseAPI db;
     private StatementContext statement;
 

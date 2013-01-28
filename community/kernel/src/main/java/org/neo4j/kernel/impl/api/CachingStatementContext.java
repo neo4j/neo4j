@@ -33,6 +33,15 @@ public class CachingStatementContext extends DelegatingStatementContext
         super( actual );
         this.cache = cache;
     }
+    
+    @Override
+    public boolean addLabelToNode( long labelId, long nodeId )
+    {
+        Set<Long> cachedLabels = cache.getLabels( nodeId );
+        if ( cachedLabels != null && cachedLabels.contains( labelId ) )
+            return false;
+        return delegate.addLabelToNode( labelId, nodeId );
+    }
 
     @Override
     public boolean isLabelSetOnNode( long labelId, long nodeId )
@@ -40,7 +49,7 @@ public class CachingStatementContext extends DelegatingStatementContext
         Set<Long> labels = cache.getLabels( nodeId );
         if ( labels != null )
             return labels.contains( labelId );
-        return super.isLabelSetOnNode( labelId, nodeId );
+        return delegate.isLabelSetOnNode( labelId, nodeId );
     }
     
     @Override
@@ -49,6 +58,15 @@ public class CachingStatementContext extends DelegatingStatementContext
         Set<Long> labels = cache.getLabels( nodeId );
         if ( labels != null )
             return labels;
-        return super.getLabelsForNode( nodeId );
+        return delegate.getLabelsForNode( nodeId );
+    }
+    
+    @Override
+    public boolean removeLabelFromNode( long labelId, long nodeId )
+    {
+        Set<Long> cachedLabels = cache.getLabels( nodeId );
+        if ( cachedLabels != null && !cachedLabels.contains( labelId ) )
+            return false;
+        return delegate.removeLabelFromNode( labelId, nodeId );
     }
 }

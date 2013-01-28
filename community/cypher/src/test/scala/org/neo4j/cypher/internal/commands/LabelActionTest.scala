@@ -87,9 +87,10 @@ class SnitchingQueryContext extends QueryContext {
   var labels: Map[String, Long] = Map("green" -> 12, "blue" -> 42)
 
 
-  override def addLabelsToNode(n: Long, input: Iterable[Long]) {
+  override def addLabelsToNode(n: Long, input: Iterable[Long]): Int = {
     node = n
     ids = input.toSeq
+    ids.size
   }
 
   def getOrCreateLabelId(labelName: String) = labels(labelName)
@@ -114,7 +115,7 @@ class SnitchingQueryContext extends QueryContext {
 
   def relationshipOps = ???
 
-  def removeLabelsFromNode(node: Long, labelIds: Iterable[Long]) {???}
+  def removeLabelsFromNode(node: Long, labelIds: Iterable[Long]): Int = {???}
 
   def replaceLabelsOfNode(node: Long, labelIds: Iterable[Long]) {???}
 

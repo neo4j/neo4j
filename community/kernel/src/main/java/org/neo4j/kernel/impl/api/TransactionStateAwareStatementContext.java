@@ -37,13 +37,13 @@ public class TransactionStateAwareStatementContext extends DelegatingStatementCo
     }
 
     @Override
-    public void addLabelToNode( long labelId, long nodeId )
+    public boolean addLabelToNode( long labelId, long nodeId )
     {
         Set<Long> addedLabels = state.getAddedLabels( nodeId, true );
         Set<Long> removedLabels = state.getRemovedLabels( nodeId, false );
 
         removedLabels.remove( labelId );
-        addedLabels.add( labelId );
+        return addedLabels.add( labelId );
     }
 
     @Override
@@ -59,13 +59,13 @@ public class TransactionStateAwareStatementContext extends DelegatingStatementCo
                 return false;
         }
 
-        return super.isLabelSetOnNode( labelId, nodeId );
+        return delegate.isLabelSetOnNode( labelId, nodeId );
     }
 
     @Override
     public Iterable<Long> getLabelsForNode( long nodeId )
     {
-        Iterable<Long> committedLabels = super.getLabelsForNode( nodeId );
+        Iterable<Long> committedLabels = delegate.getLabelsForNode( nodeId );
         if ( !state.hasChanges() )
             return committedLabels;
 
@@ -76,13 +76,13 @@ public class TransactionStateAwareStatementContext extends DelegatingStatementCo
     }
 
     @Override
-    public void removeLabelFromNode( long labelId, long nodeId )
+    public boolean removeLabelFromNode( long labelId, long nodeId )
     {
         Set<Long> addedLabels = state.getAddedLabels( nodeId, false );
         Set<Long> removedLabels = state.getRemovedLabels( nodeId, true );
 
         addedLabels.remove( labelId );
-        removedLabels.add( labelId );
+        return removedLabels.add( labelId );
     }
 
     @Override
@@ -93,11 +93,11 @@ public class TransactionStateAwareStatementContext extends DelegatingStatementCo
             for ( TxState.NodeState node : state.getNodes() )
             {
                 for ( Long labelId : node.getAddedLabels() )
-                    super.addLabelToNode( labelId, node.getId() );
+                    delegate.addLabelToNode( labelId, node.getId() );
                 for ( Long labelId : node.getRemovedLabels() )
-                    super.removeLabelFromNode( labelId, node.getId() );
+                    delegate.removeLabelFromNode( labelId, node.getId() );
             }
         }
-        super.close( successful );
+        delegate.close( successful );
     }
 }

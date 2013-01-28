@@ -40,6 +40,6 @@ public class ConstraintEvaluatingStatementContext extends DelegatingStatementCon
                             label == null ? "null" : "'" + label + "'" ) );
         }
 
-        return super.getOrCreateLabelId( label );
+        return delegate.getOrCreateLabelId( label );
     }
 }

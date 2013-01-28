@@ -93,10 +93,15 @@ public class TemporaryLabelAsPropertyStatementContext implements StatementContex
     }
 
     @Override
-    public void addLabelToNode( long labelId, long nodeId )
+    public boolean addLabelToNode( long labelId, long nodeId )
     {
         PropertyIndex propertyIndex = propertyIndexManager.getKeyByIdOrNull( (int) labelId );
-        persistenceManager.nodeAddProperty( nodeId, propertyIndex, new LabelAsProperty( nodeId ) );
+        if ( !isLabelSetOnNode( labelId, nodeId ) )
+        {
+            persistenceManager.nodeAddProperty( nodeId, propertyIndex, new LabelAsProperty( nodeId ) );
+            return true;
+        }
+        return false;
     }
 
     @Override
@@ -104,21 +109,26 @@ public class TemporaryLabelAsPropertyStatementContext implements StatementContex
     {
         try
         {
-            ArrayMap<Integer, PropertyData> propertyMap = persistenceManager.loadNodeProperties( nodeId, true );
-            if ( propertyMap == null )
-                return false;
-
-            PropertyData propertyData = propertyMap.get( (int) labelId );
-            if ( propertyData == null )
-                return false;
-
-            ensureIsLabel( propertyData );
-            return true;
+            return getExistingPropertyData( labelId, nodeId ) != null;
         }
         catch ( InvalidRecordException e )
         {
             return false;
         }
+    }
+
+    private PropertyData getExistingPropertyData( long labelId, long nodeId )
+    {
+        ArrayMap<Integer, PropertyData> propertyMap = persistenceManager.loadNodeProperties( nodeId, true );
+        if ( propertyMap == null )
+            return null;
+
+        PropertyData propertyData = propertyMap.get( (int) labelId );
+        if ( propertyData == null )
+            return null;
+
+        ensureIsLabel( propertyData );
+        return propertyData;
     }
     
     @Override
@@ -155,18 +165,14 @@ public class TemporaryLabelAsPropertyStatementContext implements StatementContex
     }
 
     @Override
-    public void removeLabelFromNode( long labelId, long nodeId )
+    public boolean removeLabelFromNode( long labelId, long nodeId )
     {
-        ArrayMap<Integer, PropertyData> propertyMap = persistenceManager.loadNodeProperties( nodeId, true );
-        if ( propertyMap == null )
-            return;
-
-        PropertyData data = propertyMap.get( (int) labelId );
+        PropertyData data = getExistingPropertyData( labelId, nodeId );
         if ( data == null )
-            return;
-
-        ensureIsLabel( data );
+            return false;
+        
         persistenceManager.nodeRemoveProperty( nodeId, data );
+        return true;
     }
 
     private void ensureIsLabel( PropertyData data )

@@ -250,13 +250,12 @@ public class LabelsAcceptanceTest
         GraphDatabaseService beansAPI = dbRule.getGraphDatabaseService();
         Label label = Labels.MY_LABEL;
         createLabeledNode( label );
+        Node myNode = createLabeledNode();
 
         // When
         Transaction tx = beansAPI.beginTx();
-        Node myNode;
         try
         {
-            myNode = beansAPI.createNode();
             myNode.removeLabel( label );
             tx.success();
         }

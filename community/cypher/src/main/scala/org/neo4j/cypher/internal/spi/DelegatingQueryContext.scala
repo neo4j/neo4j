@@ -23,7 +23,7 @@ import org.neo4j.graphdb.{PropertyContainer, Direction, Node}
 
 
 class DelegatingQueryContext(inner: QueryContext) extends QueryContext {
-  def addLabelsToNode(node: Long, labelIds: Iterable[Long]) {
+  def addLabelsToNode(node: Long, labelIds: Iterable[Long]): Int = {
     inner.addLabelsToNode(node, labelIds)
   }
 
@@ -47,7 +47,7 @@ class DelegatingQueryContext(inner: QueryContext) extends QueryContext {
 
   def relationshipOps = inner.relationshipOps
 
-  def removeLabelsFromNode(node: Long, labelIds: Iterable[Long]) {
+  def removeLabelsFromNode(node: Long, labelIds: Iterable[Long]): Int = {
     inner.removeLabelsFromNode(node, labelIds)
   }
 

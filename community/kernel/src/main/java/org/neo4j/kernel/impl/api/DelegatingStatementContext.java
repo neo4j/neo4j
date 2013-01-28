@@ -25,7 +25,7 @@ import org.neo4j.kernel.api.StatementContext;
 
 public class DelegatingStatementContext implements StatementContext
 {
-    private final StatementContext delegate;
+    protected final StatementContext delegate;
 
     public DelegatingStatementContext( StatementContext delegate )
     {
@@ -45,9 +45,9 @@ public class DelegatingStatementContext implements StatementContext
     }
 
     @Override
-    public void addLabelToNode( long labelId, long nodeId )
+    public boolean addLabelToNode( long labelId, long nodeId )
     {
-        delegate.addLabelToNode( labelId, nodeId );
+        return delegate.addLabelToNode( labelId, nodeId );
     }
 
     @Override
@@ -69,9 +69,9 @@ public class DelegatingStatementContext implements StatementContext
     }
 
     @Override
-    public void removeLabelFromNode( long labelId, long nodeId )
+    public boolean removeLabelFromNode( long labelId, long nodeId )
     {
-        delegate.removeLabelFromNode( labelId, nodeId );
+        return delegate.removeLabelFromNode( labelId, nodeId );
     }
 
     @Override

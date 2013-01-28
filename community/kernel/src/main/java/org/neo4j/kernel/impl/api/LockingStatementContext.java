@@ -32,16 +32,16 @@ public class LockingStatementContext extends DelegatingStatementContext
     }
 
     @Override
-    public void addLabelToNode( long labelId, long nodeId )
+    public boolean addLabelToNode( long labelId, long nodeId )
     {
         lockHolder.acquireNodeWriteLock( nodeId );
-        super.addLabelToNode( labelId, nodeId );
+        return delegate.addLabelToNode( labelId, nodeId );
     }
 
     @Override
-    public void removeLabelFromNode( long labelId, long nodeId )
+    public boolean removeLabelFromNode( long labelId, long nodeId )
     {
         lockHolder.acquireNodeWriteLock( nodeId );
-        super.removeLabelFromNode( labelId, nodeId );
+        return delegate.removeLabelFromNode( labelId, nodeId );
     }
 }

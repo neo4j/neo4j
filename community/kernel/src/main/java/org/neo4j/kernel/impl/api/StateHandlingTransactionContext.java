@@ -56,5 +56,4 @@ public class StateHandlingTransactionContext extends DelegatingTransactionContex
         // - commit changes from tx state to the cache
         cache.apply( state );
     }
-
 }

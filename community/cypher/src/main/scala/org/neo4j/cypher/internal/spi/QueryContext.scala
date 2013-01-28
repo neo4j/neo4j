@@ -51,11 +51,11 @@ trait QueryContext {
 
   def getLabelsForNode(node: Long): Iterable[Long]
 
-  def addLabelsToNode(node: Long, labelIds: Iterable[Long])
+  def addLabelsToNode(node: Long, labelIds: Iterable[Long]): Int
 
   def replaceLabelsOfNode(node: Long, labelIds: Iterable[Long])
 
-  def removeLabelsFromNode(node: Long, labelIds: Iterable[Long])
+  def removeLabelsFromNode(node: Long, labelIds: Iterable[Long]): Int
 
   def close(success: Boolean)
 

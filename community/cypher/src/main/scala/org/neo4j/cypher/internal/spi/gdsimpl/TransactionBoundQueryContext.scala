@@ -33,8 +33,8 @@ class TransactionBoundQueryContext(graph: GraphDatabaseAPI) extends QueryContext
     .resolveDependency(classOf[ThreadToStatementContextBridge])
     .getCtxForWriting
 
-  def addLabelsToNode(node: Long, labelIds: Iterable[Long]) {
-    labelIds.foreach(label => ctx.addLabelToNode(label, node))
+  def addLabelsToNode(node: Long, labelIds: Iterable[Long]): Int = labelIds.foldLeft(0) {
+    case (count, labelId) => if ( ctx.addLabelToNode(labelId, node) ) count+1 else count 
   }
 
   def close(success: Boolean) {
@@ -67,8 +67,8 @@ class TransactionBoundQueryContext(graph: GraphDatabaseAPI) extends QueryContext
 
   val relationshipOps = new RelationshipOperations
 
-  def removeLabelsFromNode(node: Long, labelIds: Iterable[Long]) {
-    labelIds.foreach(label => ctx.removeLabelFromNode(label, node))
+  def removeLabelsFromNode(node: Long, labelIds: Iterable[Long]): Int = labelIds.foldLeft(0) {
+    case (count, labelId) => if ( ctx.removeLabelFromNode(labelId, node) ) count+1 else count
   }
 
   def replaceLabelsOfNode(node: Long, labelIds: Iterable[Long]) {

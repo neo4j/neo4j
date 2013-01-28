@@ -39,7 +39,7 @@ public class ReadOnlyStatementContext implements StatementContext
     }
 
     @Override
-    public void addLabelToNode( long labelId, long nodeId )
+    public boolean addLabelToNode( long labelId, long nodeId )
     {
         throw readOnlyException();
     }
@@ -69,7 +69,7 @@ public class ReadOnlyStatementContext implements StatementContext
     }
 
     @Override
-    public void removeLabelFromNode( long labelId, long nodeId )
+    public boolean removeLabelFromNode( long labelId, long nodeId )
     {
         throw readOnlyException();
     }

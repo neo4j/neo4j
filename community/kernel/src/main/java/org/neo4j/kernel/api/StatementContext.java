@@ -61,8 +61,10 @@ public interface StatementContext
      * 
      * @param labelId the label id to label the node with.
      * @param nodeId the node id to add the label to.
+     * @return {@code true} if the node didn't have this label before and was added,
+     * {@code false} if the node already had this label.
      */
-    void addLabelToNode( long labelId, long nodeId );
+    boolean addLabelToNode( long labelId, long nodeId );
     
     /**
      * Checks if a node is labeled with a certain label or not. Returns
@@ -111,6 +113,8 @@ public interface StatementContext
      *
      * @param labelId the label id to label the node with.
      * @param nodeId the node id to remove the label from.
+     * @return {@code true} if the node had this label and was removed,
+     * {@code false} if the node didn't have this label.
      */
-    void removeLabelFromNode( long labelId, long nodeId );
+    boolean removeLabelFromNode( long labelId, long nodeId );
 }
