@@ -25,17 +25,9 @@ import org.neo4j.cypher.{CypherTypeException, GraphDatabaseTestBase}
 import org.scalatest.Assertions
 import org.neo4j.cypher.internal.spi.QueryContext
 import org.neo4j.graphdb.{Direction, Node}
-import java.lang.{Iterable => JIterable}
-import collection.JavaConverters._
 import org.neo4j.cypher.internal.pipes.QueryState
 import org.junit.Test
-import java.lang
 import values.LabelName
-
-/*
- * Copyright (C) 2012 Neo Technology
- * All rights reserved
- */
 
 class LabelActionTest extends GraphDatabaseTestBase with Assertions {
   val ctx = ExecutionContext.empty
@@ -53,7 +45,7 @@ class LabelActionTest extends GraphDatabaseTestBase with Assertions {
     val result = given.exec(ctx, state)
 
     //THEN
-    assert(queryContext.node === n)
+    assert(queryContext.node === n.getId)
     assert(queryContext.ids === Seq(12))
     assert(result === Stream(ctx))
   }
@@ -68,7 +60,7 @@ class LabelActionTest extends GraphDatabaseTestBase with Assertions {
     val result = given.exec(ctx, state)
 
     //THEN
-    assert(queryContext.node === n)
+    assert(queryContext.node === n.getId)
     assert(queryContext.ids === Seq(12, 42))
     assert(result === Stream(ctx))
   }
@@ -88,44 +80,43 @@ class LabelActionTest extends GraphDatabaseTestBase with Assertions {
 
 class SnitchingQueryContext extends QueryContext {
 
-  var node: Node = null
+  var node: Long = -666
   var ids: Seq[Long] = null
 
   var highLabelId: Long = 0
   var labels: Map[String, Long] = Map("green" -> 12, "blue" -> 42)
 
 
-  override def addLabelsToNode(n: Node, input: JIterable[java.lang.Long]) {
+  override def addLabelsToNode(n: Long, input: Iterable[Long]) {
     node = n
-    ids = input.asScala.map(l => {
-      val x: Long = l
-      x
-    }).toSeq
+    ids = input.toSeq
   }
 
-  def close() {}
+  def getOrCreateLabelId(labelName: String) = labels(labelName)
+
+  def getLabelsForNode(node: Node) = Seq(12L)
+
+
+
+  def close(success: Boolean) {???}
 
   def createNode() = ???
 
   def createRelationship(start: Node, end: Node, relType: String) = ???
 
-  def getOrCreateLabelId(labelName: String) = labels(labelName)
-
-  def getRelationshipsFor(node: Node, dir: Direction, types: String*) = ???
-
-  def nodeOps() = ???
-
-  def relationshipOps() = ???
-
-  def getLabelName(id: lang.Long) = ???
-
-  def getLabelsForNode(node: Node) = Seq(12L.asInstanceOf[java.lang.Long]).toIterable.asJava
-
-  def replaceLabelsOfNode(node: Node, labelIds: lang.Iterable[lang.Long]) = ???
-
-  def removeLabelsFromNode(node: Node, labelIds: lang.Iterable[lang.Long]) = ???
-
-  def fail() {}
-
   def getLabelName(id: Long) = ???
+
+  def getLabelsForNode(node: Long) = ???
+
+  def getRelationshipsFor(node: Node, dir: Direction, types: Seq[String]) = ???
+
+  def nodeOps = ???
+
+  def relationshipOps = ???
+
+  def removeLabelsFromNode(node: Long, labelIds: Iterable[Long]) {???}
+
+  def replaceLabelsOfNode(node: Long, labelIds: Iterable[Long]) {???}
+
+  def getTransaction = ???
 }

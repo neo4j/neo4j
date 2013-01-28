@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.commands
 
 import expressions.{Literal, Expression}
-import scala.collection.JavaConverters._
 import org.neo4j.graphdb._
 import org.neo4j.cypher.internal.symbols._
 import org.neo4j.cypher.CypherTypeException
@@ -131,7 +130,7 @@ case class HasRelationshipTo(from: Expression, to: Expression, dir: Direction, r
       return false
     }
 
-    m.state.queryContext.getRelationshipsFor(fromNode, dir, relType:_*).asScala.
+    m.state.queryContext.getRelationshipsFor(fromNode, dir, relType).
       exists(rel => rel.getOtherNode(fromNode) == toNode)
   }
 
@@ -154,9 +153,9 @@ case class HasRelationship(from: Expression, dir: Direction, relType: Seq[String
       return false
     }
 
-    val matchingRelationships = m.state.queryContext.getRelationshipsFor(fromNode, dir, relType: _*)
+    val matchingRelationships = m.state.queryContext.getRelationshipsFor(fromNode, dir, relType)
 
-    matchingRelationships.iterator().hasNext
+    matchingRelationships.iterator.hasNext
   }
 
   def atoms: Seq[Predicate] = Seq(this)
@@ -196,8 +195,8 @@ case class True() extends Predicate {
 
 case class Has(identifier: Expression, propertyName: String) extends Predicate {
   def isMatch(m: ExecutionContext): Boolean = identifier(m) match {
-    case pc: Node         => m.state.queryContext.nodeOps().hasProperty(pc, propertyName)
-    case pc: Relationship => m.state.queryContext.relationshipOps().hasProperty(pc, propertyName)
+    case pc: Node         => m.state.queryContext.nodeOps.hasProperty(pc, propertyName)
+    case pc: Relationship => m.state.queryContext.relationshipOps.hasProperty(pc, propertyName)
     case null             => false
     case _                => throw new CypherTypeException("Expected " + identifier + " to be a property container.")
   }

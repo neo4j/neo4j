@@ -51,8 +51,8 @@ class MutationTest extends ExecutionEngineHelper with Assertions {
 
     val n = graph.getNodeById(1)
     assert(n.getProperty("name") === "Andres")
-    assert(queryState.createdNodes.count === 1)
-    assert(queryState.propertySet.count === 1)
+    assert(queryState.getStatistics.nodesCreated === 1)
+    assert(queryState.getStatistics.propertiesSet === 1)
   }
 
   @Test
@@ -104,8 +104,8 @@ class MutationTest extends ExecutionEngineHelper with Assertions {
     val r = graph.getRelationshipById(0)
     assert(r.getProperty("I") === "was here")
     assert(results === List(Map("r" -> r)))
-    assert(state.createdRelationships.count === 1)
-    assert(state.propertySet.count === 1)
+    assert(state.getStatistics.relationshipsCreated === 1)
+    assert(state.getStatistics.propertiesSet === 1)
   }
 
   @Test
@@ -127,7 +127,7 @@ class MutationTest extends ExecutionEngineHelper with Assertions {
     val state = createQueryState
     createNodePipe.createResults(state).toList
 
-    queryContext.close()
+    queryContext.close(success = true)
 
     intercept[NotFoundException](graph.getNodeById(node_id))
   }

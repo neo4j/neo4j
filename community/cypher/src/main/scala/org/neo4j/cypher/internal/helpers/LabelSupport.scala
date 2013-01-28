@@ -32,6 +32,7 @@ trait LabelSupport extends CollectionSupport {
           throw new CypherTypeException("Encountered label collection with non-label values")
      }
 
-  def labelSeqToJavaIds(context: ExecutionContext, queryCtx: QueryContext, labelSeqExpr: Expression) =
-    labelSeq(context, labelSeqExpr).map(_.resolveJavaId(queryCtx))
+
+  def getLabelsAsLongs(executionContext: ExecutionContext, labels: Expression, queryContext:QueryContext) =
+    labelSeq(executionContext, labels).map(_.resolveForId(queryContext).id)
 }

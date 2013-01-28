@@ -33,18 +33,13 @@ trait ExecutionResult extends Iterator[Map[String, Any]] {
   def queryStatistics():QueryStatistics
 }
 
-
-object QueryStatistics {
-  def empty = new QueryStatistics(0,0,0,0,0,0,0)
-}
-
-case class QueryStatistics(nodesCreated: Int,
-                           relationshipsCreated: Int,
-                           propertiesSet: Int,
-                           deletedNodes: Int,
-                           deletedRelationships: Int,
-                           addedLabels: Int,
-                           removedLabels: Int ) {
+case class QueryStatistics(nodesCreated: Int = 0,
+                           relationshipsCreated: Int = 0,
+                           propertiesSet: Int = 0,
+                           deletedNodes: Int = 0,
+                           deletedRelationships: Int = 0,
+                           addedLabels: Int = 0,
+                           removedLabels: Int = 0) {
   def containsUpdates = nodesCreated > 0 ||
   relationshipsCreated > 0 ||
   propertiesSet > 0 ||

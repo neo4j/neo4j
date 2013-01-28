@@ -51,7 +51,7 @@ class MapPropertySetActionTest extends GraphDatabaseTestBase {
     setThatShit(a, m)
 
     assert(a.getProperty("meaning_of_life") === 420)
-    assert(state.propertySet.count === 1)
+    assert(state.getStatistics.propertiesSet === 1)
   }
 
   @Test def set_multiple_properties() {
@@ -62,7 +62,7 @@ class MapPropertySetActionTest extends GraphDatabaseTestBase {
 
     assert(a.getProperty("A") === 1)
     assert(a.getProperty("b") === 2)
-    assert(state.propertySet.count === 2)
+    assert(state.getStatistics.propertiesSet === 2)
   }
 
   @Test def set_properties_on_relationship() {
@@ -75,7 +75,7 @@ class MapPropertySetActionTest extends GraphDatabaseTestBase {
 
     assert(r.getProperty("A") === 1)
     assert(r.getProperty("b") === 2)
-    assert(state.propertySet.count === 2)
+    assert(state.getStatistics.propertiesSet === 2)
   }
 
   @Test def transfer_properties_from_node_to_node() {
@@ -86,7 +86,7 @@ class MapPropertySetActionTest extends GraphDatabaseTestBase {
 
     assert(to.getProperty("foo") === "bar")
     assert(to.getProperty("buzz") === 42)
-    assert(state.propertySet.count === 2)
+    assert(state.getStatistics.propertiesSet === 2)
   }
 
   @Test def remove_properties_from_node() {
@@ -97,7 +97,7 @@ class MapPropertySetActionTest extends GraphDatabaseTestBase {
 
     assert(to.getProperty("a") === 1)
     assert(to.hasProperty("b") === false, "Expected the `b` property to removed")
-    assert(state.propertySet.count === 2)
+    assert(state.getStatistics.propertiesSet === 2)
   }
 
   @Test def should_overwrite_values() {
@@ -107,7 +107,7 @@ class MapPropertySetActionTest extends GraphDatabaseTestBase {
     setThatShit(to, from)
 
     assert(to.getProperty("a") === 1)
-    assert(state.propertySet.count === 1)
+    assert(state.getStatistics.propertiesSet === 1)
   }
 
   private def setThatShit(a: PropertyContainer, m: Any) {
