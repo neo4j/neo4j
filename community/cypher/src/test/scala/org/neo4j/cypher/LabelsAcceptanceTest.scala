@@ -50,7 +50,7 @@ class LabelsAcceptanceTest extends ExecutionEngineHelper with StatisticsChecker 
     assertThat("CREATE node LABEL [:BAR, :FOO] VALUES {name: 'Jacob'}", List("BAR", "FOO"))
     assertThat("CREATE node :FOO:BAR {name: 'Stefan'}", List("FOO", "BAR"))
     assertThat("CREATE node:FOO:BAR VALUES {name: 'Mattias'}", List("FOO", "BAR"))
-    assertThat("CREATE (n:Person)-[:OWNS]->(x:Dog)", List("Person"))
+    assertThat("CREATE (n:Person)-[:OWNS]->(x:Dog) RETURN n AS node", List("Person"))
   }
 
   @Test def `Recreating and labelling the same node twice is forbidden`() {
@@ -63,7 +63,7 @@ class LabelsAcceptanceTest extends ExecutionEngineHelper with StatisticsChecker 
 
   @Test def `Creating nodes with labels from expressions`() {
     assertThat("START n=node(0) WITH [:FOO,:BAR] as lbls CREATE node LABEL lbls", List("FOO", "BAR"))
-    assertThat("CREATE (n LABEL [:FOO, :BAR] VALUES {name:'Mattias'})-[:FOO]->x:Person", List("FOO", "BAR"))
+    assertThat("CREATE (n LABEL [:FOO, :BAR] VALUES {name:'Mattias'})-[:FOO]->x:Person RETURN n AS node", List("FOO", "BAR"))
   }
 
   @Test def `Add labels to nodes in a foreach`() {
