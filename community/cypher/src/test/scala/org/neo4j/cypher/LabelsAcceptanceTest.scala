@@ -139,6 +139,9 @@ class LabelsAcceptanceTest extends ExecutionEngineHelper with StatisticsChecker 
 
                   case Some(n:Node) =>
                     assert(n.labels === expectedLabels)
+
+                  case _ =>
+                    throw new AssertionError("assertThat used with result that is not a node")
                 }
       }
     }
