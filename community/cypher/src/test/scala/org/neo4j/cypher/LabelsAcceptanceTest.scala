@@ -24,7 +24,6 @@ import org.scalatest.Assertions
 import org.neo4j.test.ImpermanentGraphDatabase
 import org.neo4j.graphdb.Node
 
-@Ignore
 class LabelsAcceptanceTest extends ExecutionEngineHelper with StatisticsChecker with Assertions {
 
   @Test def `Adding single literal label`() {
@@ -40,6 +39,7 @@ class LabelsAcceptanceTest extends ExecutionEngineHelper with StatisticsChecker 
     assertThat("create n = {} add n :FOO:BAR", List("FOO", "BAR"))
   }
 
+  @Ignore
   @Test def `Adding labels using an expression`() {
     createLabeledNode("FOO", "BAR")
     assertThat("start x=node(1) create n = {} add n label labels(x)", List("FOO", "BAR"))
@@ -47,17 +47,25 @@ class LabelsAcceptanceTest extends ExecutionEngineHelper with StatisticsChecker 
   }
 
   @Test def `Creating nodes with literal labels`() {
-    assertThat("CREATE node LABEL [:BAR, :FOO] VALUES {name='Jacob'}", List("BAR", "FOO"))
-    assertThat("CREATE node :FOO:BAR {name='Stefan'}", List("FOO", "BAR"))
-    assertThat("CREATE node:FOO:BAR VALUES {name='Mattias'}", List("FOO", "BAR"))
+    assertThat("CREATE node LABEL [:BAR, :FOO] VALUES {name: 'Jacob'}", List("BAR", "FOO"))
+    assertThat("CREATE node :FOO:BAR {name: 'Stefan'}", List("FOO", "BAR"))
+    assertThat("CREATE node:FOO:BAR VALUES {name: 'Mattias'}", List("FOO", "BAR"))
     assertThat("CREATE (n:Person)-[:OWNS]->(x:Dog)", List("Person"))
-    assertDoesNotWork("CREATE n:FOO CREATE (n:Person)-[:OWNS]->(x:Dog)")
   }
 
+  @Test def `Recreating and labelling the same node twice is forbidden`() {
+    assertDoesNotWork("CREATE (n: FOO)-[:test]->b, (n: BAR)-[:test2]->c")
+    assertDoesNotWork("CREATE (n LABEL :Bar)-[:OWNS]->(n LABEL :Car)")
+    assertDoesNotWork("CREATE n :Foo CREATE (n :Bar)-[:OWNS]->(x:Dog)")
+    assertDoesNotWork("CREATE n {} CREATE (n :Bar)-[:OWNS]->(x:Dog)")
+    assertDoesNotWork("CREATE n :Foo CREATE (n {})-[:OWNS]->(x:Dog)")
+  }
+
+  @Ignore
   @Test def `Creating nodes with labels from expressions`() {
     assertThat("START n=node(0) WITH [:FOO,:BAR] as lbls CREATE node LABEL lbls", List("FOO", "BAR"))
     assertThat("CREATE (n LABEL <expr> VALUES <expr>)-[:FOO]->x:Person", List("FOO", "BAR"))
-    assertThat("CREATE node LABEL [:name, strlabel(“comic')] = {name=’susi’}", List("FOO", "BAR"))
+    assertThat("CREATE node LABEL [:name, strlabel(“comic')] = {name: ’susi’}", List("FOO", "BAR"))
   }
 
   @Test def `Add labels to nodes in a foreach`() {

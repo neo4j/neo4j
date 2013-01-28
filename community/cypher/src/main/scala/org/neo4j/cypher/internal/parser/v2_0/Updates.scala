@@ -41,8 +41,9 @@ trait Updates extends Base with Expressions with StartAndCreateClause {
   override def longLabelSeq: Parser[Expression]  = ignoreCase("LABEL") ~> (labelLitSeq | expression)
 
   private def add: Parser[UpdateAction] = ignoreCase("add") ~> identity ~ optLabelSeq  ^^ {
-      case entity ~ labelSetExpr =>
-        LabelAction(Identifier(entity), LabelAdd, labelSetExpr)
+      case entity ~ optLabels =>
+        val labelsVal = optLabels.getOrElse(Literal(Seq.empty))
+        LabelAction(Identifier(entity), LabelAdd, labelsVal)
     }
 
   private def delete: Parser[Seq[UpdateAction]] = ignoreCase("delete") ~> commaList(expression) ^^ {

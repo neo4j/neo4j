@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.symbols.{AnyCollectionType, NodeType, SymbolTab
 import org.neo4j.cypher.internal.commands._
 import collection.Map
 import collection.mutable
-import expressions.{Identifier, Expression}
+import expressions.{Literal, Identifier, Expression}
 import org.neo4j.cypher.SyntaxException
 import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.cypher.internal.commands.CreateNodeStartItem
@@ -72,18 +72,26 @@ trait UpdateCommandExpander {
     def distinctify(nodes: Seq[UpdateAction]): Seq[UpdateAction] = {
       val createdNodes = mutable.Set[String]()
 
-      nodes.flatMap {
-        case CreateNode(key, props, _)
-          if createdNodes.contains(key) && props.nonEmpty =>
-          throw new SyntaxException("Node `%s` has already been created. Can't assign properties to it again.".format(key))
+      nodes.flatMap { node =>
+        node match {
+          case CreateNode(key, props, _, _)
+            if createdNodes.contains(key) && props.nonEmpty =>
+            throw new SyntaxException("Node `%s` has already been created. Can't assign properties to it again.".format(key))
 
-        case CreateNode(key, _, _) if createdNodes.contains(key) => None
+          case CreateNode(key, props, labels, bare)
+            if !bare && createdNodes.contains(key) =>
+            throw new SyntaxException("Node `%s` has already been created. Can't assign properties or labels to it again.".format(key))
 
-        case x@CreateNode(key, _, _) =>
-          createdNodes += key
-          Some(x)
+          case CreateNode(key, _, _, _) if createdNodes.contains(key) =>
+            None
 
-        case x => Some(x)
+          case x@CreateNode(key, _, _, _) =>
+            createdNodes += key
+            Some(x)
+
+          case x =>
+            Some(x)
+        }
       }
     }
 
@@ -92,18 +100,19 @@ trait UpdateCommandExpander {
         val nodeFromUnderlyingPipe = symbols.checkType(name, NodeType())
 
         val nodeFromOtherCommand = commands.exists {
-          case CreateNode(n, _, _) => n == name
-          case _                  => false
+          case CreateNode(n, _, _, _) => n == name
+          case _                      => false
         }
 
         if (!nodeFromUnderlyingPipe && !nodeFromOtherCommand) {
-          Seq(CreateNode(name, e.props))
+          Seq(CreateNode(name, e.props, e.labels, e.bare))
         }
         else {
           Seq()
         }
 
-      case _ => Seq()
+      case _ =>
+        Seq()
     }
 
     val missingCreateNodeActions = commands.flatMap {
@@ -115,9 +124,11 @@ trait UpdateCommandExpander {
         alsoCreateNode(createRel.from, symbols, commands) ++
           alsoCreateNode(createRel.to, symbols, commands) ++ commands
       case _                             => commands
-    }.distinct
-
-    new SortedUpdateActionIterator(distinctify(missingCreateNodeActions), symbols).toSeq
+    }
+    val distinctMissingCreateNodeActions = missingCreateNodeActions.distinct
+    val distinctifiedCreateNodeActions = distinctify(distinctMissingCreateNodeActions)
+    val sortedCreateNodeActions = new SortedUpdateActionIterator(distinctifiedCreateNodeActions, symbols).toSeq
+    sortedCreateNodeActions
   }
 
   class SortedUpdateActionIterator(var commandsLeft: Seq[UpdateAction], var symbols: SymbolTable)

@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.ExecutionContext
 class CreateNodeActionTest extends ExecutionEngineHelper with Assertions {
 
   @Test def mixed_types_are_not_ok() {
-    val action = CreateNode("id", Map("*" -> Literal(Map("name" -> "Andres", "age" -> 37))))
+    val action = CreateNode("id", Map("*" -> Literal(Map("name" -> "Andres", "age" -> 37))), Literal(Seq.empty))
 
     val tx = graph.beginTx()
     action.exec(ExecutionContext.empty, new QueryState(graph, new TransactionBoundQueryContext(graph), Map.empty))
