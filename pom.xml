@@ -114,30 +114,8 @@
         <scala-test-compile-phase>none</scala-test-compile-phase>
       </properties>
     </profile>
-
-    <profile><!-- used for testing -->
-      <id>unix-dependency-tools.jar</id>
-      <activation>
-        <os><family>unix</family></os>
-      </activation>
-      <properties>
-        <toolsJar.path>${java.home}/../lib/tools.jar</toolsJar.path>
-        <jconsoleJar.path>${java.home}/../lib/jconsole.jar</jconsoleJar.path>
-      </properties>
-    </profile>
-
-    <profile><!-- used for testing -->
-      <id>Windows-dependency-tools.jar</id>
-      <activation>
-        <os><family>Windows</family></os>
-      </activation>
-      <properties>
-        <toolsJar.path>${java.home}\\..\\lib\\tools.jar</toolsJar.path>
-        <jconsoleJar.path>${java.home}\\..\\lib\\jconsole.jar</jconsoleJar.path>
-      </properties>
-    </profile>
   </profiles>
-
+  
   <dependencyManagement>
     <dependencies>
       <!-- special -->
@@ -203,25 +181,8 @@
         <scope>provided</scope>
         <optional>true</optional>
       </dependency>
-      <dependency>
-        <groupId>com.sun.tools</groupId>
-        <artifactId>tools</artifactId>
-        <version>${sun.tools.version}</version>
-        <scope>system</scope>
-        <systemPath>${toolsJar.path}</systemPath>
-        <optional>true</optional>
-      </dependency>
-      <dependency>
-        <groupId>com.sun.tools</groupId>
-        <artifactId>jconsole</artifactId>
-        <version>${sun.tools.version}</version>
-        <scope>system</scope>
-        <systemPath>${jconsoleJar.path}</systemPath>
-        <optional>true</optional>
-      </dependency>
     </dependencies>
   </dependencyManagement>
-
 
   <distributionManagement>
     <site>
