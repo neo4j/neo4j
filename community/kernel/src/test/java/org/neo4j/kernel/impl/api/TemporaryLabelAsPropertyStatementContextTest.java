@@ -43,10 +43,11 @@ import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.impl.core.PropertyIndexManager;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
+import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
-public class TemporaryLabelAsPropertyContextTest
+public class TemporaryLabelAsPropertyStatementContextTest
 {
     @Test
     public void should_be_able_to_add_label_to_node() throws Exception
@@ -241,6 +242,24 @@ public class TemporaryLabelAsPropertyContextTest
         assertTrue( "Label should not have been removed", removed );
     }
     
+    @Test
+    public void should_return_all_nodes_with_label() throws Exception
+    {
+        // GIVEN
+        Label label1 = label( "first-label" );
+        Label label2 = label( "second-label" );
+        Node node1 = createLabeledNode( db, map( "name", "First", "age", 1L ), label1 );
+        Node node2 = createLabeledNode( db, map( "type", "Node", "count", 10 ), label1, label2 );
+
+        // WHEN
+        Iterable<Long> nodesForLabel1 = statement.getNodesWithLabel( statement.getLabelId( label1.name() ) );
+        Iterable<Long> nodesForLabel2 = statement.getNodesWithLabel( statement.getLabelId( label2.name() ) );
+
+        // THEN
+        assertEquals( asSet( node1.getId(), node2.getId() ), asSet( nodesForLabel1 ) );
+        assertEquals( asSet( node2.getId() ), asSet( nodesForLabel2 ) );
+    }
+    
     private GraphDatabaseAPI db;
     private StatementContext statement;
 
@@ -250,7 +269,10 @@ public class TemporaryLabelAsPropertyContextTest
         db = new ImpermanentGraphDatabase();
         statement = new TemporaryLabelAsPropertyStatementContext(
                 db.getDependencyResolver().resolveDependency( PropertyIndexManager.class ),
-                db.getDependencyResolver().resolveDependency( PersistenceManager.class ) );
+                db.getDependencyResolver().resolveDependency( PersistenceManager.class ),
+                // Ooh, jucky
+                db.getDependencyResolver().resolveDependency( XaDataSourceManager.class )
+                        .getNeoStoreDataSource().getNeoStore().getPropertyStore() );
     }
 
     @After

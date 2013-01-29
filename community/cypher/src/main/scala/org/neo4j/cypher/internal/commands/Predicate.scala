@@ -23,8 +23,9 @@ import expressions.{Literal, Expression}
 import org.neo4j.graphdb._
 import org.neo4j.cypher.internal.symbols._
 import org.neo4j.cypher.CypherTypeException
-import org.neo4j.cypher.internal.helpers.{IsCollection, CollectionSupport}
+import org.neo4j.cypher.internal.helpers.{LabelSupport, CastSupport, IsCollection, CollectionSupport}
 import org.neo4j.cypher.internal.ExecutionContext
+import org.neo4j.cypher.internal.spi.QueryContext
 
 abstract class Predicate extends Expression {
   def apply(ctx: ExecutionContext) = isMatch(ctx)
@@ -283,4 +284,39 @@ case class NonEmpty(collection:Expression) extends Predicate with CollectionSupp
   }
 
   def symbolTableDependencies = collection.symbolTableDependencies
+}
+
+case class HasLabel(entity: Expression, labels: Expression) extends Predicate with LabelSupport with CollectionSupport {
+  def isMatch(m: ExecutionContext): Boolean = {
+    val node: Node               = CastSupport.erasureCastOrFail[Node](entity(m))
+    val nodeId                   = node.getId
+    val queryCtx: QueryContext   = m.state.queryContext
+    val labelIds: Iterable[Long] = getLabelsAsLongs(m, labels)
+
+    for (labelId <- labelIds if !queryCtx.isLabelSetOnNode(labelId, nodeId))
+      return false
+
+    true
+  }
+
+  override def toString = s"hasLabel(${entity}, ${labels})"
+
+
+  def rewrite(f: (Expression) => Expression) =
+    f(HasLabel(entity.rewrite(f), labels.rewrite(f))).asInstanceOf[Predicate]
+
+  def children = Seq(entity, labels)
+
+  def symbolTableDependencies = entity.symbolTableDependencies ++ labels.symbolTableDependencies
+
+  def atoms = Seq(this)
+
+  def assertInnerTypes(symbols: SymbolTable) {
+    entity.throwIfSymbolsMissing(symbols)
+    labels.throwIfSymbolsMissing(symbols)
+
+    entity.evaluateType(NodeType(), symbols)
+  }
+
+  def containsIsNull = false
 }

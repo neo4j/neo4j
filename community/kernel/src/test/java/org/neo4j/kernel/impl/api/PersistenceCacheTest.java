@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.api;
 
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
-import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -29,7 +28,9 @@ import static org.mockito.Mockito.when;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.junit.Before;
 import org.junit.Test;
+import org.neo4j.kernel.impl.api.PersistenceCache.CachedNodeEntity;
 import org.neo4j.kernel.impl.cache.LockStripedCache;
 
 public class PersistenceCacheTest
@@ -37,14 +38,9 @@ public class PersistenceCacheTest
     @Test
     public void shouldAddLabelsFromTxState() throws Exception
     {
-        long nodeId = 5;
-        LockStripedCache.Loader<PersistenceCache.CachedNodeEntity> loader = mock( LockStripedCache.Loader.class );
-        when( loader.loadById( nodeId ) ).thenReturn( new PersistenceCache.CachedNodeEntity( nodeId ) );
-        PersistenceCache cache = new PersistenceCache( loader );
-        TxState state = mock( TxState.class );
+        when( loader.loadById( nodeId ) ).thenReturn( new CachedNodeEntity( nodeId ) );
         Set<Long> labels = new HashSet<Long>( asList( 1L, 2L, 3L ) );
-        when( state.getAddedLabels( eq( nodeId ), anyBoolean() ) ).thenReturn( labels );
-        TxState.NodeState nodeState = new TxState.NodeState( nodeId );
+        when( state.getAddedLabels( eq( nodeId ) ) ).thenReturn( labels );
         nodeState.getAddedLabels().addAll( labels );
         when( state.getNodes() ).thenReturn( asList( nodeState ) );
         cache.getLabels( nodeId );
@@ -59,16 +55,11 @@ public class PersistenceCacheTest
     @Test
     public void shouldRemoveLabelsFromTxState() throws Exception
     {
-        long nodeId = 5;
-        LockStripedCache.Loader<PersistenceCache.CachedNodeEntity> loader = mock( LockStripedCache.Loader.class );
-        PersistenceCache.CachedNodeEntity cachedNode = new PersistenceCache.CachedNodeEntity( nodeId );
+        CachedNodeEntity cachedNode = new CachedNodeEntity( nodeId );
         Set<Long> initialLabels = new HashSet<Long>( asList( 1L, 2L, 3L ) );
         cachedNode.addLabels( initialLabels );
         when( loader.loadById( nodeId ) ).thenReturn( cachedNode );
-        PersistenceCache cache = new PersistenceCache( loader );
-        TxState state = mock( TxState.class );
-        when( state.getAddedLabels( eq( nodeId ), anyBoolean() ) ).thenReturn( initialLabels );
-        TxState.NodeState nodeState = new TxState.NodeState( nodeId );
+        when( state.getAddedLabels( eq( nodeId ) ) ).thenReturn( initialLabels );
         Set<Long> removedLabels = new HashSet<Long>( asList( 2L ) );
         nodeState.getRemovedLabels().addAll( removedLabels );
         when( state.getNodes() ).thenReturn( asList( nodeState ) );
@@ -81,5 +72,20 @@ public class PersistenceCacheTest
         Set<Long> expectedLabels = new HashSet<Long>( initialLabels );
         expectedLabels.removeAll( removedLabels );
         assertEquals( expectedLabels, cache.getLabels( nodeId ) );
+    }
+    
+    private final long nodeId = 5;
+    private LockStripedCache.Loader<PersistenceCache.CachedNodeEntity> loader;
+    private PersistenceCache cache;
+    private TxState state;
+    private TxState.NodeState nodeState;
+    
+    @Before
+    public void before() throws Exception
+    {
+        loader = mock( LockStripedCache.Loader.class );
+        cache = new PersistenceCache( loader );
+        state = mock( TxState.class );
+        nodeState = new TxState.NodeState( nodeId );
     }
 }

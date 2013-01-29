@@ -27,7 +27,11 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -39,10 +43,10 @@ public class TransactionStateAwareStatementContextTest
     public void addOnlyLabelShouldBeVisibleInTx() throws Exception
     {
         // GIVEN
-        commitLabels();
+        commitLabels( new Long[0] );
         
         // WHEN
-        tx.addLabelToNode( labelId1, nodeId );
+        txContext.addLabelToNode( labelId1, nodeId );
         
         // THEN
         assertLabels( labelId1 );
@@ -55,7 +59,7 @@ public class TransactionStateAwareStatementContextTest
         commitLabels( labelId1 );
         
         // WHEN
-        tx.addLabelToNode( labelId2, nodeId );
+        txContext.addLabelToNode( labelId2, nodeId );
         
         // THEN
         assertLabels( labelId1, labelId2 );
@@ -68,7 +72,7 @@ public class TransactionStateAwareStatementContextTest
         commitLabels( labelId1 );
         
         // WHEN
-        tx.addLabelToNode( labelId1, nodeId );
+        txContext.addLabelToNode( labelId1, nodeId );
         
         // THEN
         assertLabels( labelId1 );
@@ -81,7 +85,7 @@ public class TransactionStateAwareStatementContextTest
         commitLabels( labelId1, labelId2 );
         
         // WHEN
-        tx.removeLabelFromNode( labelId1, nodeId );
+        txContext.removeLabelFromNode( labelId1, nodeId );
         
         // THEN
         assertLabels( labelId2 );
@@ -94,8 +98,8 @@ public class TransactionStateAwareStatementContextTest
         commitLabels( labelId1 );
         
         // WHEN
-        tx.addLabelToNode( labelId2, nodeId );
-        tx.removeLabelFromNode( labelId2, nodeId );
+        txContext.addLabelToNode( labelId2, nodeId );
+        txContext.removeLabelFromNode( labelId2, nodeId );
         
         // THEN
         assertLabels( labelId1 );
@@ -108,22 +112,22 @@ public class TransactionStateAwareStatementContextTest
         commitLabels( labelId1 );
         
         // WHEN
-        tx.removeLabelFromNode( labelId1, nodeId );
-        tx.addLabelToNode( labelId1, nodeId );
+        txContext.removeLabelFromNode( labelId1, nodeId );
+        txContext.addLabelToNode( labelId1, nodeId );
         
         // THEN
         assertLabels( labelId1 );
     }
-    
+
     @Test
     public void unsuccessfulCloseShouldntDelegateDown() throws Exception
     {
         // GIVEN
-        commitLabels();
-        tx.addLabelToNode( labelId1, nodeId );
+        commitLabels( new Long[0] );
+        txContext.addLabelToNode( labelId1, nodeId );
         
         // WHEN
-        tx.close( false );
+        txContext.close( false );
 
         // THEN
         verify( store, never() ).addLabelToNode( labelId1, nodeId );
@@ -133,44 +137,114 @@ public class TransactionStateAwareStatementContextTest
     public void successfulCloseShouldDelegateDown() throws Exception
     {
         // GIVEN
-        commitLabels();
-        tx.addLabelToNode( labelId1, nodeId );
+        commitLabels( new Long[0] );
+        txContext.addLabelToNode( labelId1, nodeId );
         
         // WHEN
-        tx.close( true );
+        txContext.close( true );
 
         // THEN
         verify( store ).addLabelToNode( labelId1, nodeId );
     }
     
+    @Test
+    public void addedLabelsShouldBeReflectedWhenGettingNodesForLabel() throws Exception
+    {
+        // GIVEN
+        commitLabels(
+                labels( 0, 1L, 2L ),
+                labels( 1, 2L, 3L ),
+                labels( 2, 1L, 3L ) );
+
+        // WHEN
+        txContext.addLabelToNode( 2, 2 );
+
+        // THEN
+        assertEquals( asSet( 0L, 1L, 2L ), asSet( txContext.getNodesWithLabel( 2 ) ) );
+    }
+    
+    @Test
+    public void removedLabelsShouldBeReflectedWhenGettingNodesForLabel() throws Exception
+    {
+        // GIVEN
+        commitLabels(
+                labels( 0, 1L, 2L ),
+                labels( 1, 2L, 3L ),
+                labels( 2, 1L, 3L ) );
+
+        // WHEN
+        txContext.removeLabelFromNode( 2, 1 );
+
+        // THEN
+        assertEquals( asSet( 0L ), asSet( txContext.getNodesWithLabel( 2 ) ) );
+    }
+    
     private final long labelId1 = 10, labelId2 = 12, nodeId = 20;
     private StatementContext store;
     private TxState state;
-    private TransactionStateAwareStatementContext tx;
+    private StatementContext txContext;
     
     @Before
     public void before() throws Exception
     {
         store = mock( StatementContext.class );
         state = new TxState();
-        tx = new TransactionStateAwareStatementContext( store, state );
+        txContext = new TransactionStateAwareStatementContext( store, state );
+    }
+    
+    private static class Labels
+    {
+        private final long nodeId;
+        private final Long[] labelIds;
+
+        Labels( long nodeId, Long... labelIds )
+        {
+            this.nodeId = nodeId;
+            this.labelIds = labelIds;
+        }
+    }
+    
+    private static Labels labels( long nodeId, Long... labelIds )
+    {
+        return new Labels( nodeId, labelIds );
+    }
+    
+    private void commitLabels( Labels... labels )
+    {
+        Map<Long, Collection<Long>> allLabels = new HashMap<Long, Collection<Long>>();
+        for ( Labels nodeLabels : labels )
+        {
+            when( store.getLabelsForNode( nodeLabels.nodeId ) ).thenReturn( Arrays.<Long>asList( nodeLabels.labelIds ) );
+            for ( long label : nodeLabels.labelIds )
+            {
+                when( store.isLabelSetOnNode( label, nodeLabels.nodeId ) ).thenReturn( true );
+                Collection<Long> nodes = allLabels.get( label );
+                if ( nodes == null )
+                {
+                    nodes = new ArrayList<Long>();
+                    allLabels.put( label, nodes );
+                }
+                nodes.add( nodeLabels.nodeId );
+            }
+        }
+        
+        for ( Map.Entry<Long, Collection<Long>> entry : allLabels.entrySet() )
+        {
+            when( store.getNodesWithLabel( entry.getKey() ) ).thenReturn( entry.getValue() );
+        }
     }
 
     private void commitLabels( Long... labels )
     {
-        when( store.getLabelsForNode( nodeId ) ).thenReturn( Arrays.<Long>asList( labels ) );
-        for ( long label : labels )
-        {
-            when( store.isLabelSetOnNode( label, nodeId ) ).thenReturn( true );
-        }
+        commitLabels( labels( nodeId, labels ) );
     }
 
     private void assertLabels( Long... labels )
     {
-        assertEquals( asSet( labels ), asSet( tx.getLabelsForNode( nodeId ) ) );
+        assertEquals( asSet( labels ), asSet( txContext.getLabelsForNode( nodeId ) ) );
         for ( long label : labels )
         {
-            assertTrue( "Expected labels not found on node", tx.isLabelSetOnNode( label, nodeId ) );
+            assertTrue( "Expected labels not found on node", txContext.isLabelSetOnNode( label, nodeId ) );
         }
     }
 }

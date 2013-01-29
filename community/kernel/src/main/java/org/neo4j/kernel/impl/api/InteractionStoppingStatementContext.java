@@ -89,6 +89,13 @@ public class InteractionStoppingStatementContext implements StatementContext
         closed = true;
         delegate.close( successful );
     }
+    
+    @Override
+    public Iterable<Long> getNodesWithLabel( long labelId )
+    {
+        assertOperationsAllowed();
+        return delegate.getNodesWithLabel( labelId );
+    }
 
     private void assertOperationsAllowed()
     {
