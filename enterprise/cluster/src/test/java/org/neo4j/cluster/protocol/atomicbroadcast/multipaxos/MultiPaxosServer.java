@@ -220,28 +220,6 @@ public class MultiPaxosServer
         }
     }
 
-    public void create( String name )
-    {
-        cluster.create( name );
-    }
-
-    public void join( String nodeUri )
-            throws URISyntaxException
-    {
-        cluster.join( new URI( nodeUri ) );
-    }
-
-    public void leave()
-    {
-        cluster.leave();
-    }
-
-    public void broadcast( String value )
-            throws IOException
-    {
-        broadcast.broadcast( broadcastSerializer.broadcast( value ) );
-    }
-
     public void demote( String nodeUri )
             throws URISyntaxException
     {

@@ -22,8 +22,8 @@ package org.neo4j.cypher.internal.executionplan.builders
 import org.neo4j.cypher.internal.executionplan.PartiallySolvedQuery
 import org.junit.Test
 import org.junit.Assert._
-import org.hamcrest.core.IsInstanceOf.instanceOf
-import org.hamcrest.core.IsNot.not
+import org.hamcrest.CoreMatchers.instanceOf
+import org.hamcrest.CoreMatchers.not
 import org.neo4j.cypher.internal.pipes.{TransactionStartPipe, ExecuteUpdateCommandsPipe}
 import org.neo4j.cypher.internal.commands._
 import expressions.{HeadFunction, Identifier}
@@ -89,8 +89,7 @@ class CreateNodesAndRelationshipsBuilderTest extends BuilderTest {
     val p = resultPlan.pipe.asInstanceOf[ExecuteUpdateCommandsPipe]
 
     val inner = p.source
-
-    assertThat(inner, instanceOf(classOf[TransactionStartPipe]))
+    assertTrue("Expected a transaction pipe, got: " + inner.getClass(), inner.getClass() == classOf[TransactionStartPipe])
   }
 
   @Test
@@ -105,6 +104,6 @@ class CreateNodesAndRelationshipsBuilderTest extends BuilderTest {
 
     val inner = resultPlan.pipe.asInstanceOf[ExecuteUpdateCommandsPipe].source
 
-    assertThat(inner, not(instanceOf(classOf[TransactionStartPipe])))
+    assertFalse("Expected not a transaction pipe, got: " + inner.getClass(), inner.getClass() == classOf[TransactionStartPipe])
   }
 }

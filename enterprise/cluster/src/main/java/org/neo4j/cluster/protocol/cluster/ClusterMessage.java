@@ -157,4 +157,19 @@ public enum ClusterMessage
         }
     }
 
+    public static class ConfigurationTimeoutState
+    {
+        private final int remainingPings;
+
+        public ConfigurationTimeoutState( int remainingPings)
+        {
+            this.remainingPings = remainingPings;
+        }
+
+        public int getRemainingPings()
+        {
+            return remainingPings;
+        }
+    }
+
 }

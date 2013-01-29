@@ -154,6 +154,9 @@ classifier=test-sources
 tag=pessimisticLocking
 ----
 
+The passed in +lockNode+ is only used for locking while creating user nodes in this case.
+You can for example create a node to use only for this purpose.
+
 [[transactions-events]]
 == Transaction events ==
 

@@ -19,8 +19,9 @@
  */
 package org.neo4j.server.scripting.javascript;
 
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertThat;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -55,7 +56,7 @@ public class TestJavascriptSecurityRestrictions
         Object result = executor.execute( null );
 
         // Then
-        assertThat(result, is(Evaluation.class));
+        assertThat( result, is( instanceOf( Evaluation.class ) ) );
         assertThat( (Evaluation) result, is(Evaluation.INCLUDE_AND_CONTINUE) );
     }
 

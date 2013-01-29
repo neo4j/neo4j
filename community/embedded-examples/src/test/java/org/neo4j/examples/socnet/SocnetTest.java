@@ -19,7 +19,8 @@
 package org.neo4j.examples.socnet;
 
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.collection.IsCollectionContaining.hasItems;
+import static org.hamcrest.CoreMatchers.hasItems;
+import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.junit.Assert.assertThat;
 
 import java.util.ArrayList;
@@ -27,7 +28,6 @@ import java.util.Date;
 import java.util.Iterator;
 import java.util.Random;
 
-import org.hamcrest.CoreMatchers;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -77,7 +77,7 @@ public class SocnetTest
 
         StatusUpdate update = person.getStatus().iterator().next();
 
-        assertThat( update, CoreMatchers.<Object>notNullValue() );
+        assertThat( update, notNullValue() );
         assertThat( update.getStatusText(), equalTo( "Testing!" ) );
         assertThat( update.getPerson(), equalTo( person ) );
     }

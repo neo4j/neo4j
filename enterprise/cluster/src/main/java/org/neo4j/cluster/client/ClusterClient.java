@@ -416,9 +416,9 @@ public class ClusterClient extends LifecycleAdapter
     }
 
     @Override
-    public Future<ClusterConfiguration> join( URI otherServerUrl )
+    public Future<ClusterConfiguration> join( String clusterName, URI... otherServerUrls )
     {
-        return cluster.join( otherServerUrl );
+        return cluster.join( clusterName, otherServerUrls );
     }
 
     @Override

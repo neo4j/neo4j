@@ -23,13 +23,14 @@ import static org.junit.Assert.assertTrue;
 
 import java.util.Date;
 
+import javax.management.ObjectName;
+
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.jmx.Kernel;
-import org.neo4j.jmx.impl.JmxKernelExtension;
+import org.neo4j.jmx.JmxUtils;
 import org.neo4j.kernel.GraphDatabaseAPI;
 
 public class JmxTest
@@ -60,10 +61,9 @@ public class JmxTest
             GraphDatabaseService graphDbService )
     {
         GraphDatabaseAPI graphDb = (GraphDatabaseAPI) graphDbService;
-        Kernel kernel = graphDb.getDependencyResolver().resolveDependency( JmxKernelExtension.class )
-                .getSingleManagementBean( Kernel.class );
-        Date startTime = kernel.getKernelStartTime();
-        return startTime;
+        ObjectName objectName = JmxUtils.getObjectName( graphDb, "Kernel" );
+        Date date = JmxUtils.getAttribute( objectName, "KernelStartTime" );
+        return date;
     }
     // END SNIPPET: getStartTime
 }

@@ -35,6 +35,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
@@ -66,6 +67,8 @@ import org.neo4j.test.server.EntityOutputFormat;
 
 public class RestfulGraphDatabaseTest
 {
+    private static final String NODE_AUTO_INDEX = "node_auto_index";
+    private static final String RELATIONSHIP_AUTO_INDEX = "relationship_auto_index";
     private static final String BASE_URI = "http://neo4j.org/";
     private static RestfulGraphDatabase service;
     private static Database database;
@@ -86,16 +89,42 @@ public class RestfulGraphDatabaseTest
     }
 
     @Before
-    public void deleteAllIndexes()
+    public void deleteAllIndexes() throws JsonParseException
     {
         for ( String name : helper.getNodeIndexes() )
         {
-            service.deleteNodeIndex( FORCE, name );
+            if ( NODE_AUTO_INDEX.equals( name ) )
+            {
+                stopAutoIndexAllPropertiesAndDisableAutoIndex( "node" );
+            }
+            else
+            {
+                service.deleteNodeIndex( FORCE, name );
+            }
         }
         for ( String name : helper.getRelationshipIndexes() )
         {
-            service.deleteRelationshipIndex( FORCE, name );
+            if ( RELATIONSHIP_AUTO_INDEX.equals( name ) )
+            {
+                stopAutoIndexAllPropertiesAndDisableAutoIndex( "relationship" );
+            }
+            else
+            {
+                service.deleteRelationshipIndex( FORCE, name );
+            }
         }
+    }
+
+    protected void stopAutoIndexAllPropertiesAndDisableAutoIndex( String type )
+            throws JsonParseException
+    {
+        Response response = service.getAutoIndexedProperties( type );
+        List<String> properties = entityAsList( response );
+        for ( String property : properties )
+        {
+            service.stopAutoIndexingProperty( type, property );
+        }
+        Response enabled = service.setAutoIndexerEnabled( type, "false" );
     }
 
     @AfterClass
@@ -130,6 +159,14 @@ public class RestfulGraphDatabaseTest
         {
             throw new RuntimeException( "Could not decode UTF-8", e );
         }
+    }
+
+    private static List<String> entityAsList( Response response )
+            throws JsonParseException
+    {
+        String entity = entityAsString( response );
+        List<String> properties = (List<String>) JsonHelper.readJson( entity );
+        return properties;
     }
 
     @Test
@@ -859,10 +896,25 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWithNoContentNoNodeIndexesExist()
+    public void shouldRespondWithNoIndexOrOnlyNodeAutoIndex()
+            throws JsonParseException
     {
+        Response isEnabled = service.isAutoIndexerEnabled( "node" );
+        assertEquals( "false", entityAsString( isEnabled ) );
         Response response = service.getNodeIndexRoot();
-        assertEquals( 204, response.getStatus() );
+        if ( response.getStatus() == 200 )
+        {
+            Set<String> indexes = output.getResultAsMap()
+                    .keySet();
+            assertEquals( 1, indexes.size() );
+            assertTrue( indexes.iterator()
+                    .next()
+                    .equals( NODE_AUTO_INDEX ) );
+        }
+        else
+        {
+            assertEquals( 204, response.getStatus() );
+        }
     }
 
     @Test
@@ -874,7 +926,7 @@ public class RestfulGraphDatabaseTest
         assertEquals( 200, response.getStatus() );
 
         Map<String, Object> resultAsMap = output.getResultAsMap();
-        assertThat( resultAsMap.size(), is( 1 ) );
+        assertThat( resultAsMap.size(), is( 2 ) );
         assertThat( resultAsMap, hasKey( indexName ) );
     }
 
@@ -1200,16 +1252,16 @@ public class RestfulGraphDatabaseTest
     {
         String indexName = "myFancyIndex";
 
-        assertEquals( 0, helper.getNodeIndexes().length );
+        assertEquals( 1, helper.getNodeIndexes().length );
 
         helper.createNodeIndex( indexName );
 
-        assertEquals( 1, helper.getNodeIndexes().length );
+        assertEquals( 2, helper.getNodeIndexes().length );
 
         Response response = service.deleteNodeIndex( FORCE, indexName );
 
         assertEquals( 204, response.getStatus() );
-        assertEquals( 0, helper.getNodeIndexes().length );
+        assertEquals( 1, helper.getNodeIndexes().length );
     }
 
     @Test
@@ -1788,7 +1840,8 @@ public class RestfulGraphDatabaseTest
     private void addRemoveAutoindexProperties(String type) throws JsonParseException {
         Response response = service.getAutoIndexedProperties(type);
         assertEquals(200, response.getStatus());
-        List<String> properties = (List<String>) JsonHelper.readJson(entityAsString(response));
+        String entity = entityAsString( response );
+        List<String> properties = (List<String>) JsonHelper.readJson( entity );
         assertEquals(0, properties.size());
 
         response = service.startAutoIndexingProperty(type, "myAutoIndexedProperty1");
@@ -1800,7 +1853,8 @@ public class RestfulGraphDatabaseTest
 
         response = service.getAutoIndexedProperties(type);
         assertEquals(200, response.getStatus());
-        properties = (List<String>) JsonHelper.readJson(entityAsString(response));
+        entity = entityAsString( response );
+        properties = (List<String>) JsonHelper.readJson( entity );
         assertEquals(2, properties.size());
         assertTrue(properties.contains("myAutoIndexedProperty1"));
         assertTrue(properties.contains("myAutoIndexedProperty2"));
@@ -1810,7 +1864,8 @@ public class RestfulGraphDatabaseTest
 
         response = service.getAutoIndexedProperties(type);
         assertEquals(200, response.getStatus());
-        properties = (List<String>) JsonHelper.readJson(entityAsString(response));
+        entity = entityAsString( response );
+        properties = (List<String>) JsonHelper.readJson( entity );
         assertEquals(1, properties.size());
         assertTrue(properties.contains("myAutoIndexedProperty1"));
     }

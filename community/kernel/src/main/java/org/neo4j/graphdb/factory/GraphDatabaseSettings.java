@@ -91,7 +91,7 @@ public abstract class GraphDatabaseSettings
 
     @Description("Whether to allow a store upgrade in case the current version of the database starts against an " +
             "older store version. " +
-            "Setting this to true does not guarantee successful upgrade, just" +
+            "Setting this to true does not guarantee successful upgrade, just " +
             "that it allows an attempt at it.")
     public static BooleanSetting allow_store_upgrade = new BooleanSetting( setting("allow_store_upgrade", BOOLEAN, FALSE) );
 

@@ -79,7 +79,12 @@ class DocToIdIterator extends AbstractIndexHits<Long>
 
     public int size()
     {
-        return source.size()-exclude.size();
+        /*
+         * If stuff was removed from the index during this tx and during the same tx a query that matches them is
+         * issued, then it is possible to get negative size from the IndexHits result, if exclude is larger than source.
+         * To avoid such weirdness, we return at least 0. Note that the iterator will return no results, as it should.
+         */
+        return Math.max( 0, source.size() - exclude.size() );
     }
 
     private boolean isClosed()

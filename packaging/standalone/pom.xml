@@ -2,10 +2,10 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <artifactId>assembly-pom</artifactId>
-    <groupId>org.neo4j.build</groupId>
-    <version>35</version>
-    <relativePath />
+    <groupId>org.neo4j</groupId>
+    <artifactId>parent</artifactId>
+    <version>1.9-SNAPSHOT</version>
+    <relativePath>../..</relativePath>
   </parent>
 
   <groupId>org.neo4j.assembly</groupId>

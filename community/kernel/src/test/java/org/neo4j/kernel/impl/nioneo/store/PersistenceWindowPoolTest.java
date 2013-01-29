@@ -25,12 +25,17 @@ import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.Exceptions.launderedException;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verify;
+
 import java.io.File;
 import java.io.RandomAccessFile;
 import java.util.concurrent.Future;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
@@ -44,6 +49,8 @@ public class PersistenceWindowPoolTest
     public final TargetDirectory.TestDirectory directory = target.testDirectory();
     @Rule
     public final ResourceCollection resources = new ResourceCollection();
+    @Rule
+    public final ExpectedException expectedUnderlyingException = ExpectedException.none();
 
     @Test
     public void shouldBeAbleToReAcquireReleasedWindow() throws Exception
@@ -123,6 +130,31 @@ public class PersistenceWindowPoolTest
         pool.close();
         otherThread.shutdown();
     }
+
+    @Test()
+    public void releaseShouldUnlockWindowEvenIfExceptionIsThrown() throws Exception
+    {
+
+        String filename = new File( directory.directory(), "mapped.file" ).getAbsolutePath();
+        RandomAccessFile file = resources.add( new RandomAccessFile( filename, "rw" ) );
+        PersistenceWindowPool pool = new PersistenceWindowPool( new File("test.store"), 8, file.getChannel(), 0, false, false, StringLogger.DEV_NULL );
+
+        PersistenceRow row = mock(PersistenceRow.class);
+        when(row.writeOutAndCloseIfFree(false)).thenThrow(new UnderlyingStorageException("Unable to write record"));
+
+        expectedUnderlyingException.expect(UnderlyingStorageException.class);
+        try
+        {
+            pool.release(row);
+        }
+        finally
+        {
+            verify(row).unLock();
+        }
+
+
+    }
+
 
     private void writeBufferContents( final int blockSize, final PersistenceWindow t1Row )
     {
