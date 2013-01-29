@@ -319,11 +319,6 @@ terms of the relevant Commercial Agreement.
       <classifier>upgrade</classifier>
       <type>zip</type>
     </dependency>
-    <dependency>
-      <groupId>org.neo4j.server.plugin</groupId>
-      <artifactId>neo4j-gremlin-plugin</artifactId>
-      <version>${neo4j.version}</version>
-    </dependency>
   </dependencies>
 
   <distributionManagement>
