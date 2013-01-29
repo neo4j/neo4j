@@ -292,7 +292,7 @@ case class HasLabel(entity: Expression, labels: Expression) extends Predicate wi
 
 
   def rewrite(f: (Expression) => Expression) =
-    f(HasLabel(entity.rewrite(f), labels.rewrite(f))).asInstanceOf[Predicate]
+    HasLabel(entity.rewrite(f), labels.rewrite(f))
 
   def children = Seq(entity, labels)
 
