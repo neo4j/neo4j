@@ -24,16 +24,12 @@ import org.junit.Assert._
 import org.neo4j.graphdb.{Relationship, Node}
 
 class WhereTest extends DocumentingTestBase {
-  def graphDescription = List("Andres KNOWS Tobias", "Andres KNOWS Peter")
+  def graphDescription = List("Andres:Swedish KNOWS Tobias", "Andres KNOWS Peter")
 
   override val properties = Map(
     "Andres" -> Map("age" -> 36l, "belt" -> "white"),
     "Tobias" -> Map("age" -> 25l),
     "Peter" -> Map("age" -> 34l)
-  )
-
-  override val labelsDescription = Map(
-    "Andres" -> List("Swedish")
   )
 
   def section = "Where"

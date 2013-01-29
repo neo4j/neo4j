@@ -34,7 +34,7 @@ abstract class Predicate extends Expression {
 
   // This is the un-dividable list of predicates. They can all be ANDed
   // together
-  def atoms: Seq[Predicate]
+  def atoms: Seq[Predicate] = Seq(this)
   def rewrite(f: Expression => Expression): Predicate
   def containsIsNull: Boolean
   def assertInnerTypes(symbols: SymbolTable)
@@ -56,7 +56,6 @@ case class NullablePredicate(inner: Predicate, exp: Seq[(Expression, Boolean)]) 
     }
   }
 
-  def atoms = Seq(this)
   override def toString() = "nullable([" + exp.mkString(",") +"],["  +inner.toString+"])"
   def containsIsNull = inner.containsIsNull
 
@@ -76,7 +75,7 @@ case class NullablePredicate(inner: Predicate, exp: Seq[(Expression, Boolean)]) 
 
 case class And(a: Predicate, b: Predicate) extends Predicate {
   def isMatch(m: ExecutionContext): Boolean = a.isMatch(m) && b.isMatch(m)
-  def atoms: Seq[Predicate] = a.atoms ++ b.atoms
+  override def atoms: Seq[Predicate] = a.atoms ++ b.atoms
   override def toString(): String = "(" + a + " AND " + b + ")"
   def containsIsNull = a.containsIsNull||b.containsIsNull
   def rewrite(f: (Expression) => Expression) = And(a.rewrite(f), b.rewrite(f))
@@ -93,7 +92,6 @@ case class And(a: Predicate, b: Predicate) extends Predicate {
 
 case class Or(a: Predicate, b: Predicate) extends Predicate {
   def isMatch(m: ExecutionContext): Boolean = a.isMatch(m) || b.isMatch(m)
-  def atoms: Seq[Predicate] = Seq(this)
   override def toString(): String = "(" + a + " OR " + b + ")"
   def containsIsNull = a.containsIsNull||b.containsIsNull
   def rewrite(f: (Expression) => Expression) = Or(a.rewrite(f), b.rewrite(f))
@@ -110,7 +108,7 @@ case class Or(a: Predicate, b: Predicate) extends Predicate {
 
 case class Not(a: Predicate) extends Predicate {
   def isMatch(m: ExecutionContext): Boolean = !a.isMatch(m)
-  def atoms: Seq[Predicate] = a.atoms.map(Not(_))
+  override def atoms: Seq[Predicate] = a.atoms.map(Not(_))
   override def toString(): String = "NOT(" + a + ")"
   def containsIsNull = a.containsIsNull
   def rewrite(f: (Expression) => Expression) = Not(a.rewrite(f))
@@ -135,7 +133,6 @@ case class HasRelationshipTo(from: Expression, to: Expression, dir: Direction, r
       exists(rel => rel.getOtherNode(fromNode) == toNode)
   }
 
-  def atoms: Seq[Predicate] = Seq(this)
   def containsIsNull = false
   def rewrite(f: (Expression) => Expression) = HasRelationshipTo(from.rewrite(f), to.rewrite(f), dir, relType)
   def children = Seq(from, to)
@@ -159,7 +156,6 @@ case class HasRelationship(from: Expression, dir: Direction, relType: Seq[String
     matchingRelationships.iterator.hasNext
   }
 
-  def atoms: Seq[Predicate] = Seq(this)
   def containsIsNull = false
   def children = Seq(from)
   def rewrite(f: (Expression) => Expression) = HasRelationship(from.rewrite(f), dir, relType)
@@ -172,7 +168,6 @@ case class HasRelationship(from: Expression, dir: Direction, relType: Seq[String
 
 case class IsNull(expression: Expression) extends Predicate {
   def isMatch(m: ExecutionContext): Boolean = expression(m) == null
-  def atoms: Seq[Predicate] = Seq(this)
   override def toString(): String = expression + " IS NULL"
   def containsIsNull = true
   def rewrite(f: (Expression) => Expression) = IsNull(expression.rewrite(f))
@@ -185,7 +180,6 @@ case class IsNull(expression: Expression) extends Predicate {
 
 case class True() extends Predicate {
   def isMatch(m: ExecutionContext): Boolean = true
-  def atoms: Seq[Predicate] = Seq(this)
   override def toString(): String = "true"
   def containsIsNull = false
   def rewrite(f: (Expression) => Expression) = True()
@@ -201,8 +195,6 @@ case class Has(identifier: Expression, propertyName: String) extends Predicate {
     case null             => false
     case _                => throw new CypherTypeException("Expected " + identifier + " to be a property container.")
   }
-
-  def atoms: Seq[Predicate] = Seq(this)
 
   override def toString(): String = "hasProp(" + propertyName + ")"
 
@@ -223,7 +215,6 @@ case class LiteralRegularExpression(a: Expression, regex: Literal) extends Predi
   lazy val pattern = regex(ExecutionContext.empty).asInstanceOf[String].r.pattern
   
   def isMatch(m: ExecutionContext) = pattern.matcher(a(m).asInstanceOf[String]).matches()
-  def atoms = Seq(this)
   def containsIsNull = false
   def rewrite(f: (Expression) => Expression) = regex.rewrite(f) match {
     case lit:Literal => LiteralRegularExpression(a.rewrite(f), lit)
@@ -248,7 +239,6 @@ case class RegularExpression(a: Expression, regex: Expression) extends Predicate
     regularExp.r.pattern.matcher(value).matches()
   }
 
-  def atoms: Seq[Predicate] = Seq(this)
   override def toString(): String = a.toString() + " ~= /" + regex.toString() + "/"
   def containsIsNull = false
   def rewrite(f: (Expression) => Expression) = regex.rewrite(f) match {
@@ -274,7 +264,6 @@ case class NonEmpty(collection:Expression) extends Predicate with CollectionSupp
     }
   }
 
-  def atoms: Seq[Predicate] = Seq(this)
   override def toString(): String = "nonEmpty(" + collection.toString() + ")"
   def containsIsNull = false
   def rewrite(f: (Expression) => Expression) = NonEmpty(collection.rewrite(f))
@@ -308,8 +297,6 @@ case class HasLabel(entity: Expression, labels: Expression) extends Predicate wi
   def children = Seq(entity, labels)
 
   def symbolTableDependencies = entity.symbolTableDependencies ++ labels.symbolTableDependencies
-
-  def atoms = Seq(this)
 
   def assertInnerTypes(symbols: SymbolTable) {
     entity.throwIfSymbolsMissing(symbols)

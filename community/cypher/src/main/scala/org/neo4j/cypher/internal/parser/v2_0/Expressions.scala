@@ -139,7 +139,6 @@ trait Expressions extends Base with ParserPattern with Predicates with StringLit
   case class Function(acceptsTheseManyArguments: Int => Boolean, create: List[Expression] => Expression)
 
   val functions = Map(
-    "strlabel" -> func(1, args => StrLabelFunction(args.head)),
     "labels" -> func(1, args => LabelsFunction(args.head)),
     "type" -> func(1, args => RelationshipTypeFunction(args.head)),
     "id" -> func(1, args => IdFunction(args.head)),

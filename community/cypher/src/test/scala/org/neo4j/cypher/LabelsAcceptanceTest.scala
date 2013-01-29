@@ -27,33 +27,33 @@ import org.neo4j.graphdb.Node
 
 class LabelsAcceptanceTest extends ExecutionEngineHelper with StatisticsChecker with Assertions with CollectionSupport {
 
-  @Test def `Adding single literal label`() {
+  @Test def Adding_single_literal_label() {
     assertThat("create n = {} add n:FOO", List("FOO"))
     assertThat("create n = {} add n label :FOO", List("FOO"))
     assertThat("create n = {} add n :FOO", List("FOO"))
   }
 
-  @Test def `Adding multiple literal labels`() {
+  @Test def Adding_multiple_literal_labels() {
     assertThat("create n = {} add n label :FOO:BAR", List("FOO", "BAR"))
     assertThat("create n = {} add n:FOO:BAR", List("FOO", "BAR"))
     assertThat("create n = {} add n :FOO :BAR", List("FOO", "BAR"))
     assertThat("create n = {} add n :FOO:BAR", List("FOO", "BAR"))
   }
 
-  @Test def `Adding labels using an expression`() {
+  @Test def Adding_labels_using_an_expression() {
     createLabeledNode("FOO", "BAR")
     assertThat("start x=node(1) create n = {} add n label labels(x)", List("FOO", "BAR"))
     assertThat("create n = {} add n label [:FOO, :BAR]", List("FOO", "BAR"))
   }
 
-  @Test def `Creating nodes with literal labels`() {
+  @Test def Creating_nodes_with_literal_labels() {
     assertThat("CREATE node LABEL [:BAR, :FOO] VALUES {name: 'Jacob'}", List("BAR", "FOO"))
     assertThat("CREATE node :FOO:BAR {name: 'Stefan'}", List("FOO", "BAR"))
     assertThat("CREATE node:FOO:BAR VALUES {name: 'Mattias'}", List("FOO", "BAR"))
     assertThat("CREATE (n:Person)-[:OWNS]->(x:Dog) RETURN n AS node", List("Person"))
   }
 
-  @Test def `Recreating and labelling the same node twice is forbidden`() {
+  @Test def Recreating_and_labelling_the_same_node_twice_is_forbidden() {
     assertDoesNotWork("CREATE (n: FOO)-[:test]->b, (n: BAR)-[:test2]->c")
     assertDoesNotWork("CREATE (n LABEL :Bar)-[:OWNS]->(n LABEL :Car)")
     assertDoesNotWork("CREATE n :Foo CREATE (n :Bar)-[:OWNS]->(x:Dog)")
@@ -61,12 +61,12 @@ class LabelsAcceptanceTest extends ExecutionEngineHelper with StatisticsChecker 
     assertDoesNotWork("CREATE n :Foo CREATE (n {})-[:OWNS]->(x:Dog)")
   }
 
-  @Test def `Creating nodes with labels from expressions`() {
+  @Test def Creating_nodes_with_labels_from_expressions() {
     assertThat("START n=node(0) WITH [:FOO,:BAR] as lbls CREATE node LABEL lbls", List("FOO", "BAR"))
     assertThat("CREATE (n LABEL [:FOO, :BAR] VALUES {name:'Mattias'})-[:FOO]->x:Person RETURN n AS node", List("FOO", "BAR"))
   }
 
-  @Test def `Add labels to nodes in a foreach`() {
+  @Test def Add_labels_to_nodes_in_a_foreach() {
     assertThat("CREATE a,b,c WITH [a,b,c] as nodes FOREACH(n in nodes : ADD n label :FOO:BAR)", List("FOO", "BAR"))
   }
 
@@ -77,8 +77,55 @@ class LabelsAcceptanceTest extends ExecutionEngineHelper with StatisticsChecker 
     assertThat("START n = node(0) RETURN [:FOO, :BAR]", List("FOO", "BAR"))
   }
 
+
+  @Test def Removing_labels() {
+    usingLabels("FOO", "BAR").
+      assertThat("START n=node({node}) REMOVE n LABEL :FOO RETURN n").
+      returnsLabels("BAR")
+
+    usingLabels("LABEL1", "LABEL2", "LABEL3").
+      assertThat("START n=node({node}) REMOVE n LABEL labels(n) RETURN n").
+      returnsLabels()
+
+    usingLabels("FOO", "BAR").
+      assertThat("START n=node({node}) REMOVE n:FOO RETURN n").
+      returnsLabels("BAR")
+
+    usingLabels("FOO").
+      assertThat("START n=node({node}) REMOVE n:BAR RETURN n").
+      returnsLabels("FOO")
+  }
+
+
+  private class AssertThat(labels: Seq[String], query:String) {
+    def returnsLabels(expected:String*):AssertThat = {
+      val node = createLabeledNode(labels:_*)
+      val result = executeScalar[Node](query, "node"->node)
+
+      assert(result.labels === expected.toList)
+      this
+    }
+  }
+
+  private class UsingLabels(labels:Seq[String]) {
+    def assertThat(q:String):AssertThat = new AssertThat(labels, q)
+  }
+
+  private def usingLabels(labels:String*):UsingLabels = new UsingLabels(labels)
+ 
+ /*
+ Removing multiple literal labels
+ REMOVE n :BAR:BAZ
+ REMOVE n:BAR:BAZ
+
+ Removing multiple literal labels using an expression
+ REMOVE n LABEL <expr>
+
+   */
+
   /* STILL TO DO
    Setting labels literally
+
  Removing a single literal label
  REMOVE n LABEL :FOO
  REMOVE n:FOO
@@ -146,6 +193,11 @@ class LabelsAcceptanceTest extends ExecutionEngineHelper with StatisticsChecker 
       }
     }
 
+    insertNewCleanDatabase()
+  }
+
+
+  private def insertNewCleanDatabase() {
     graph.shutdown()
 
     graph = new ImpermanentGraphDatabase() with Snitch

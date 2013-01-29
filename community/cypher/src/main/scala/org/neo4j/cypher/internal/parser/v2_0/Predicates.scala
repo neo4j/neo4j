@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.commands._
 import expressions.{Property, Identifier, Nullable, Expression}
 
 
-trait Predicates extends Base with ParserPattern with StringLiteral with LabelParsing {
+trait Predicates extends Base with ParserPattern with StringLiteral with Labels {
   def predicate: Parser[Predicate] = predicateLvl1 ~ rep( ignoreCase("or") ~> predicateLvl1 ) ^^ {
     case head ~ rest => rest.foldLeft(head)((a,b) => Or(a,b))
   }
@@ -46,17 +46,13 @@ trait Predicates extends Base with ParserPattern with StringLiteral with LabelPa
       | aggregateFunctionNames ~> parens(expression) ~> failure("aggregate functions can not be used in the WHERE clause")
     )
 
-  def hasLabel: Parser[HasLabel] = entity ~ labelSeq ^^ {
-    case identifier ~ labels =>
-      HasLabel(identifier, labels)
+  def hasLabel: Parser[HasLabel] = entity ~ labelShortForm ^^ {
+    case identifier ~ labels => HasLabel(identifier, labels)
   }
 
   def hasProperty = ignoreCase("has") ~> parens(property) ^^ {
-    case x =>
-      val prop = x.asInstanceOf[Property]
-      Has(prop.mapExpr, prop.property)
+    case prop:Property => Has(prop.mapExpr, prop.property)
   }
-
 
   def sequencePredicate: Parser[Predicate] = allInSeq | anyInSeq | noneInSeq | singleInSeq | in
 

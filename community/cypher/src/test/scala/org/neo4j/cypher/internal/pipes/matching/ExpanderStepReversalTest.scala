@@ -118,8 +118,6 @@ class ExpanderStepReversalTest extends Assertions {
 case class Pred(identifier: String) extends Predicate {
   def isMatch(m: ExecutionContext) = false
 
-  def atoms = Seq(this)
-
   def rewrite(f: (Expression) => Expression) = null
 
   def containsIsNull = false

@@ -1937,7 +1937,7 @@ foreach(x in [1,2,3] :
   @Test def add_label() {
     val q2 = Query.
       start().
-      updates(LabelAction(Identifier("n"), LabelAdd, Literal(Seq(LabelName("LabelName"))))).
+      updates(LabelAction(Identifier("n"), LabelAdd, Literal(List(LabelName("LabelName"))))).
       returns()
 
     testFrom_2_0("START n=node(0) ADD n LABEL :LabelName",
@@ -1951,7 +1951,7 @@ foreach(x in [1,2,3] :
   @Test def add_short_label() {
     val q2 = Query.
       start().
-      updates(LabelAction(Identifier("n"), LabelAdd, Literal(Seq(LabelName("LabelName"))))).
+      updates(LabelAction(Identifier("n"), LabelAdd, Literal(List(LabelName("LabelName"))))).
       returns()
 
     testFrom_2_0("START n=node(0) ADD n:LabelName",
@@ -2007,20 +2007,6 @@ foreach(x in [1,2,3] :
     )
   }
 
-  @Test def add_string_label() {
-    val q2 = Query.
-      start().
-      updates(LabelAction(Identifier("n"), LabelAdd, StrLabelFunction(Literal("LabelName")))).
-      returns()
-
-    testFrom_2_0("START n=node(0) ADD n LABEL strlabel(\"LabelName\")",
-      Query.
-        start(NodeById("n", 0)).
-        tail(q2).
-        returns(AllIdentifiers())
-    )
-  }
-
   @Test def add_own_labels() {
     val q2 = Query.
       start().
@@ -2035,13 +2021,13 @@ foreach(x in [1,2,3] :
     )
   }
 
-  @Test def add_label_from_str_of_label() {
+  @Test def remove_label() {
     val q2 = Query.
       start().
-      updates(LabelAction(Identifier("n"), LabelAdd, StrLabelFunction(StrFunction(Literal(LabelName("foo")))))).
+      updates(LabelAction(Identifier("n"), LabelDel, Literal(Seq(LabelName("LabelName"))))).
       returns()
 
-    testFrom_2_0("START n=node(0) ADD n LABEL strlabel(str(:foo))",
+    testFrom_2_0("START n=node(0) REMOVE n LABEL :LabelName",
       Query.
         start(NodeById("n", 0)).
         tail(q2).
@@ -2049,22 +2035,8 @@ foreach(x in [1,2,3] :
     )
   }
 
-  @Test @Ignore def remove_label() {
-    val q2 = Query.
-      start().
-      updates(LabelAction(Identifier("n"), LabelDel, Literal(LabelName("LabelName")))).
-      returns()
-
-    testFrom_2_0("START n=node(0) REMOVE n LABEL n",
-      Query.
-        start(NodeById("n", 0)).
-        tail(q2).
-        returns(AllIdentifiers())
-    )
-  }
-
-  @Test @Ignore def remove_multiple_labels() {
-    val coll = Collection(Literal(LabelName("LabelName2")), Literal(LabelName("LabelName3")))
+  @Test def remove_multiple_labels() {
+    val coll = Literal(Seq(LabelName("LabelName2"), LabelName("LabelName3")))
     val q2   = Query.
       start().
       updates(LabelAction(Identifier("n"), LabelDel, coll)).
@@ -2093,44 +2065,6 @@ foreach(x in [1,2,3] :
         start(NodeById("n", 0)).
         where(HasLabel(Identifier("n"), Literal(Seq(LabelName("Foo"), LabelName("Bar"))))).
         returns(ReturnItem(Identifier("n"), "n"))
-    )
-  }
-
-  @Test def filter_by_labels_expr_in_where() {
-    testFrom_2_0("START n=node(0) WHERE n LABEL [:Foo, :Bar] RETURN n",
-      Query.
-        start(NodeById("n", 0)).
-        where(HasLabel(Identifier("n"), Collection(Literal(LabelName("Foo")), Literal(LabelName("Bar"))))).
-        returns(ReturnItem(Identifier("n"), "n"))
-    )
-  }
-
-  @Test @Ignore def replace_label() {
-    val q2 = Query.
-      start().
-      updates(LabelAction(Identifier("n"), LabelSet, Literal(LabelName("LabelName")))).
-      returns()
-
-    testFrom_2_0("START n=node(0) REPLACE n LABEL :LabelName",
-      Query.
-        start(NodeById("n", 0)).
-        tail(q2).
-        returns(AllIdentifiers())
-    )
-  }
-
-  @Test @Ignore def replace_multiple_labels() {
-    val coll = Collection(Literal(LabelName("LabelName2")), Literal(LabelName("LabelName3")))
-    val q2   = Query.
-      start().
-      updates(LabelAction(Identifier("n"), LabelSet, coll)).
-      returns()
-
-    testFrom_2_0("START n=node(0) REPLACE n LABEL :LabelName2:LabelName3",
-      Query.
-        start(NodeById("n", 0)).
-        tail(q2).
-        returns(AllIdentifiers())
     )
   }
 

@@ -94,8 +94,6 @@ abstract class Base extends JavaTokenParsers {
   def positiveNumber: Parser[String] = """\d+""".r
   def anything: Parser[String] = """[.\s]""".r
 
-  def labelLit: Parser[Literal] = ":" ~> identity ^^ { x => Literal(LabelName(x)) }
-
   def string: Parser[String] = (stringLiteral | apostropheString) ^^ (str => stripQuotes(str))
 
   def apostropheString: Parser[String] = ("\'" + """([^'\p{Cntrl}\\]|\\[\\/bfnrt]|\\u[a-fA-F0-9]{4})*""" + "\'").r
