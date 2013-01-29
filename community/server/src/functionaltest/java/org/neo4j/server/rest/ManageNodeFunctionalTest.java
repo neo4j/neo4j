@@ -152,6 +152,7 @@ public class ManageNodeFunctionalTest extends AbstractRestFunctionalTestBase
     public void shouldGet400WhenSupplyingNullValueForAProperty() throws Exception
     {
         gen.get()
+                .noGraph()
                 .payload( "{\"foo\":null}" )
                 .expectedStatus( 400 )
                 .post( functionalTestHelper.nodeUri() );

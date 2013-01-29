@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
+import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
@@ -98,7 +99,8 @@ public class UseJOTMAsTxManagerIT
         try
         {
             db = new ImpermanentGraphDatabase( config );
-            assertThat( db.getTxManager(), is( JOTMTransactionManager.class ) );
+            assertThat( db.getTxManager(),
+                    is( instanceOf( JOTMTransactionManager.class ) ) );
             
             Transaction tx = db.beginTx();
             Node node = null;

@@ -33,12 +33,16 @@ import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
 import ch.qos.logback.classic.LoggerContext;
 import org.junit.After;
-import org.junit.Rule;
+import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -49,6 +53,7 @@ import org.neo4j.cluster.ProtocolServer;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InMemoryAcceptorInstanceStore;
 import org.neo4j.cluster.protocol.election.ServerIdElectionCredentialsProvider;
 import org.neo4j.cluster.timeout.FixedTimeoutStrategy;
+import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -68,6 +73,15 @@ public class ClusterNetworkTest
         return Arrays.asList( new Object[][]
                 {
                         {
+                                3, new ClusterTestScriptDSL().
+                                join( 10L, 1, 2, 3 ).
+                                join( 0L, 2, 1, 3 ).
+                                join( 0L, 3, 1, 2 ).
+                                leave( 10000L, 3 ).
+                                leave( 100L, 2 ).
+                                leave( 100L, 1 )
+                        },
+/*                        {
                                 // 3 nodes join and then leaves
                                 3, new ClusterTestScriptDSL().
                                 join( 10L, 1 ).
@@ -101,11 +115,7 @@ public class ClusterNetworkTest
                                 join( 100L, 1 ).
                                 join( 100L, 2 ).
                                 join( 10L, 3 ).
-/*
-                                         join( 10L,"server4" ).
-                                         leave( 500L, "server4" ).
-*/
-        leave( 500L, 3 ).
+                                leave( 500L, 3 ).
                                 leave( 100L, 2 ).
                                 leave( 100L, 1 )
                         },
@@ -119,7 +129,7 @@ public class ClusterNetworkTest
                         },
                         {
                                 3, new ClusterTestScriptRandom( 1337830212532839000L )
-                        }
+                        }*/
                 } );
     }
 
@@ -127,7 +137,7 @@ public class ClusterNetworkTest
     static List<Cluster> out = new ArrayList<Cluster>();
     static List<Cluster> in = new ArrayList<Cluster>();
 
-    @Rule
+    @ClassRule
     public static LoggerRule logger = new LoggerRule();
 
     List<AtomicReference<ClusterConfiguration>> configurations = new ArrayList<AtomicReference<ClusterConfiguration>>();
@@ -137,6 +147,8 @@ public class ClusterNetworkTest
     Timer timer = new Timer();
 
     LifeSupport life = new LifeSupport();
+
+    static ExecutorService executor;
 
     public ClusterNetworkTest( int nrOfServers, ClusterTestScript script )
             throws URISyntaxException
@@ -177,6 +189,18 @@ public class ClusterNetworkTest
         life.start();
     }
 
+    @Before
+    public void setup()
+    {
+        executor = Executors.newSingleThreadExecutor( new NamedThreadFactory( "Threaded actions" ) );
+    }
+
+    @After
+    public void tearDown()
+    {
+        executor.shutdownNow();
+    }
+
     @Test
     public void testCluster()
             throws ExecutionException, InterruptedException, URISyntaxException, TimeoutException
@@ -202,7 +226,7 @@ public class ClusterNetworkTest
         }, 0, 10 );
 
         // Let messages settle
-        Thread.currentThread().sleep( 3000 );
+        Thread.sleep( script.getLength() + 1000 );
 
         logger.getLogger().debug( "All nodes leave" );
 
@@ -211,7 +235,7 @@ public class ClusterNetworkTest
         {
             logger.getLogger().debug( "Leaving:" + cluster );
             cluster.leave();
-            Thread.currentThread().sleep( 100 );
+            Thread.sleep( 100 );
         }
     }
 
@@ -289,6 +313,7 @@ public class ClusterNetworkTest
     public interface ClusterTestScript
     {
         void tick( long time );
+        long getLength();
     }
 
     public static class ClusterTestScriptDSL
@@ -304,7 +329,7 @@ public class ClusterNetworkTest
 
         private long now = 0;
 
-        public ClusterTestScriptDSL join( long time, final int joinServer )
+        public ClusterTestScriptDSL join( long time, final int joinServer, final int... joinServers )
         {
             ClusterAction joinAction = new ClusterAction()
             {
@@ -312,12 +337,73 @@ public class ClusterNetworkTest
                 public void run()
                 {
                     Cluster joinCluster = servers.get( joinServer - 1 );
-                    for ( Cluster cluster : out )
+                    for ( final Cluster cluster : out )
                     {
                         if ( cluster.equals( joinCluster ) )
                         {
                             out.remove( cluster );
                             logger.getLogger().debug( "Join:" + cluster.toString() );
+                            if (joinServers.length == 0)
+                            {
+                                if ( in.isEmpty() )
+                                {
+                                    cluster.create( "default" );
+                                } else
+                                {
+                                    // Use test info to figure out who to join
+                                    final Future<ClusterConfiguration> result = cluster.join( "default", URI.create( in.get( 0 ).toString() ) );
+                                    executor.submit( new Runnable()
+                                    {
+                                        @Override
+                                        public void run()
+                                        {
+                                            try
+                                            {
+                                                ClusterConfiguration clusterConfiguration = result.get();
+                                                logger.getLogger().debug( "**** Cluster configuration:" +
+                                                        clusterConfiguration );
+                                            }
+                                            catch ( Exception e )
+                                            {
+                                                logger.getLogger().debug( "**** Node "+joinServer+" could not join cluster:" + e
+                                                        .getMessage() );
+                                                out.add( cluster );
+                                            }
+                                        }
+                                    } );
+                                }
+                            } else
+                            {
+                                // List of servers to join was explicitly specified, so use that
+                                URI[] instanceUris = new URI[joinServers.length];
+                                for ( int i = 0; i < joinServers.length; i++ )
+                                {
+                                    int server = joinServers[i];
+                                    instanceUris[i] = URI.create( servers.get( server - 1 ).toString() );
+                                }
+
+                                final Future<ClusterConfiguration> result = cluster.join( "default", instanceUris );
+                                executor.submit( new Runnable()
+                                {
+                                    @Override
+                                    public void run()
+                                    {
+                                        try
+                                        {
+                                            ClusterConfiguration clusterConfiguration = result.get();
+                                            logger.getLogger().debug( "**** Cluster configuration:" +
+                                                    clusterConfiguration );
+                                        }
+                                        catch ( Exception e )
+                                        {
+                                            logger.getLogger().debug( "**** Node "+joinServer+" could not join cluster:" + e
+                                                    .getMessage() );
+                                            cluster.create( "default" );
+                                        }
+                                    }
+                                } );
+                            }
+                            /*
                             if ( in.isEmpty() )
                             {
                                 cluster.create( "default" );
@@ -326,13 +412,13 @@ public class ClusterNetworkTest
                             {
                                 try
                                 {
-                                    cluster.join( new URI( in.get( 0 ).toString() ) );
+                                    cluster.join( "default", new URI( in.get( 0 ).toString() ) );
                                 }
                                 catch ( URISyntaxException e )
                                 {
                                     e.printStackTrace();
                                 }
-                            }
+                            }*/
                             break;
                         }
                     }
@@ -379,6 +465,12 @@ public class ClusterNetworkTest
                 actions.poll().run();
             }
         }
+
+        @Override
+        public long getLength()
+        {
+            return now;
+        }
     }
 
     public static class ClusterTestScriptRandom
@@ -420,7 +512,7 @@ public class ClusterNetworkTest
                     {
                         try
                         {
-                            cluster.join( new URI( in.get( 0 ).toString() ) );
+                            cluster.join( "default", new URI( in.get( 0 ).toString() ) );
                         }
                         catch ( URISyntaxException e )
                         {
@@ -438,6 +530,12 @@ public class ClusterNetworkTest
                     logger.getLogger().debug( "Leave cluster:" + cluster.toString() );
                 }
             }
+        }
+
+        @Override
+        public long getLength()
+        {
+            return 5000;
         }
     }
 }

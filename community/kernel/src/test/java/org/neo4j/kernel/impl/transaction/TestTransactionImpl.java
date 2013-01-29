@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
+import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
@@ -77,7 +78,8 @@ public class TestTransactionImpl
         tx.registerSynchronization( meanSync2 );
         tx.doBeforeCompletion();
 
-        assertThat( tx.getRollbackCause(), is( MultipleCauseException.class ) );
+        assertThat( tx.getRollbackCause(),
+                is( instanceOf( MultipleCauseException.class ) ) );
 
         MultipleCauseException error = (MultipleCauseException) tx.getRollbackCause();
         assertThat( error.getCause(), is( (Throwable) firstException ) );

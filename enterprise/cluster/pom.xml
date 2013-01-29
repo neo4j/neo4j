@@ -2,10 +2,10 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
-    <groupId>org.neo4j.build</groupId>
-    <artifactId>parent-central</artifactId>
-    <version>35</version>
-    <relativePath/>
+    <groupId>org.neo4j</groupId>
+    <artifactId>parent</artifactId>
+    <version>1.9-SNAPSHOT</version>
+    <relativePath>../..</relativePath>
   </parent>
   <groupId>org.neo4j</groupId>
   <artifactId>neo4j-cluster</artifactId>
@@ -71,12 +71,26 @@
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>org.hamcrest</groupId>
+          <artifactId>hamcrest-core</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.hamcrest</groupId>
+      <artifactId>hamcrest-all</artifactId>
     </dependency>
     <dependency>
       <groupId>org.mockito</groupId>
-      <artifactId>mockito-all</artifactId>
-      <version>1.9.0</version>
-      <scope>test</scope>
+      <artifactId>mockito-core</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>org.hamcrest</groupId>
+          <artifactId>hamcrest-core</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
   </dependencies>
 

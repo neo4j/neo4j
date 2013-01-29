@@ -128,6 +128,7 @@ public class PerformanceAndSanityIT extends AbstractLuceneIndexTest
      * @throws Exception
      */
     @Test
+    @Ignore
     public void makeSureFilesAreClosedProperly() throws Exception
     {
         commitTx();
@@ -143,6 +144,7 @@ public class PerformanceAndSanityIT extends AbstractLuceneIndexTest
         {
             pool.execute( new Runnable()
             {
+                @Override
                 public void run()
                 {
                     for ( int i = 0; System.currentTimeMillis() - time < 60*1000*2; i++ )

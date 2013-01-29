@@ -69,6 +69,7 @@ class ExecutionPlanImpl(inputQuery: Query, graph: GraphDatabaseService) extends 
     }
 
     val columns = getQueryResultColumns(inputQuery, planInProgress.pipe.symbols)
+
     val (pipe, func) = if (planInProgress.containsTransaction) {
       val p = planInProgress.pipe
       (p, getEagerReadWriteQuery(p, columns))
@@ -205,7 +206,8 @@ The Neo4j Team""")
     new UpdateActionBuilder(graph),
     new EmptyResultBuilder,
     new TraversalMatcherBuilder(graph),
-    new TopPipeBuilder
+    new TopPipeBuilder,
+    new DistinctBuilder
   )
 
   override def toString = executionPlanText

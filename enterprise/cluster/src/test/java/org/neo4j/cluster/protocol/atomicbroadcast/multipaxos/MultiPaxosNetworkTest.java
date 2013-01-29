@@ -122,7 +122,7 @@ public class MultiPaxosNetworkTest
             @Override
             public void listeningAt( URI me )
             {
-                server2.newClient( Cluster.class ).join( server1.getServerId() );
+                server2.newClient( Cluster.class ).join( "default", server1.getServerId() );
             }
         } );
 
@@ -131,7 +131,7 @@ public class MultiPaxosNetworkTest
             @Override
             public void listeningAt( URI me )
             {
-                server3.newClient( Cluster.class ).join( server1.getServerId() );
+                server3.newClient( Cluster.class ).join( "default", server1.getServerId() );
             }
         } );
 

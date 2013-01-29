@@ -22,8 +22,11 @@ package org.neo4j.server.rest;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import java.io.IOException;
+
 import javax.ws.rs.core.Response.Status;
 
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
@@ -31,6 +34,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.impl.annotations.Documented;
+import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.repr.formats.StreamingJsonFormat;
@@ -45,6 +49,14 @@ import com.sun.jersey.api.client.ClientResponse;
 
 public class RelationshipFunctionalTest extends AbstractRestFunctionalTestBase
 {
+    private static FunctionalTestHelper functionalTestHelper;
+
+    @BeforeClass
+    public static void setupServer() throws IOException
+    {
+        functionalTestHelper = new FunctionalTestHelper( server() );
+    }
+
     @Test
     @Graph( nodes = { @NODE( name = "Romeo", setNameProperty = true ),
             @NODE( name = "Juliet", setNameProperty = true ) }, relationships = { @REL( start = "Romeo", end = "Juliet", type = "LOVES", properties = { @PROP( key = "cost", value = "high", type = GraphDescription.PropType.STRING ) } ) } )
@@ -53,7 +65,8 @@ public class RelationshipFunctionalTest extends AbstractRestFunctionalTestBase
     {
         Relationship loves = getNode( "Romeo" ).getRelationships().iterator().next();
         gen().expectedStatus( Status.NO_CONTENT.getStatusCode() ).delete(
-                getRelationshipUri( loves ) ).entity();
+                        functionalTestHelper.relationshipPropertiesUri( loves.getId() ) )
+                .entity();
     }
 
     @Test
@@ -125,9 +138,9 @@ public class RelationshipFunctionalTest extends AbstractRestFunctionalTestBase
     public void shouldReturn404WhenPropertiesRemovedFromARelationshipWhichDoesNotExist()
     {
         data.get();
-        gen().expectedStatus( Status.NOT_FOUND.getStatusCode() ).delete(
-                "http://localhost:7474/db/data/relationship/1234/properties" ).entity();
-
+        gen().expectedStatus( Status.NOT_FOUND.getStatusCode() )
+                .delete( functionalTestHelper.relationshipPropertiesUri( 1234L ) )
+                .entity();
     }
 
     /**
@@ -141,8 +154,11 @@ public class RelationshipFunctionalTest extends AbstractRestFunctionalTestBase
     public void shouldReturn404WhenPropertyRemovedFromARelationshipWhichDoesNotExist()
     {
         data.get();
-        gen().expectedStatus( Status.NOT_FOUND.getStatusCode() ).delete(
-                "http://localhost:7474/db/data/relationship/1234/properties/cost" ).entity();
+        gen().expectedStatus( Status.NOT_FOUND.getStatusCode() )
+                .delete(
+                        functionalTestHelper.relationshipPropertiesUri( 1234L )
+                                + "/cost" )
+                .entity();
 
     }
 
