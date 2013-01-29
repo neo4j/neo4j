@@ -33,6 +33,7 @@ import org.junit.Test
 import org.junit.Ignore
 import org.scalatest.Assertions
 import org.hamcrest.CoreMatchers.equalTo
+import values.LabelName
 
 class CypherParserTest extends JUnitSuite with Assertions {
   @Test def shouldParseEasiestPossibleQuery() {
@@ -50,7 +51,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def should_return_string_literal_with_escaped_sequence_in() {
-    testFrom_1_8("start s = node(1) return \"a\\tp\\\"a\"",
+    testAll("start s = node(1) return \"a\\tp\\\"a\"",
       Query.
         start(NodeById("s", 1)).
         returns(ReturnItem(Literal("a\tp\"a"), "\"a\\tp\\\"a\"")))
@@ -264,18 +265,9 @@ class CypherParserTest extends JUnitSuite with Assertions {
         returns(ReturnItem(Identifier("a"), "a")))
   }
 
-  @Test def shouldHandleRegularComparisonOld() {
-    test_1_7(
-      "start a = node(1) where \"Andres\" =~ /And.*/ return a",
-      Query.
-        start(NodeById("a", 1)).
-        where(LiteralRegularExpression(Literal("Andres"), Literal("And.*"))).
-        returns(ReturnItem(Identifier("a"), "a"))
-    )
-  }
 
   @Test def shouldHandleRegularComparison() {
-    testFrom_1_8(
+    testAll(
       "start a = node(1) where \"Andres\" =~ 'And.*' return a",
       Query.
         start(NodeById("a", 1)).
@@ -284,18 +276,9 @@ class CypherParserTest extends JUnitSuite with Assertions {
     )
   }
 
-  @Test def shouldHandleMultipleRegularComparison1_7() {
-    test_1_7(
-      """start a = node(1) where a.name =~ /And.*/ AnD a.name =~ /And.*/ return a""",
-      Query.
-        start(NodeById("a", 1)).
-        where(And(LiteralRegularExpression(Property(Identifier("a"), "name"), Literal("And.*")), LiteralRegularExpression(Property(Identifier("a"), "name"), Literal("And.*")))).
-        returns(ReturnItem(Identifier("a"), "a"))
-    )
-  }
 
   @Test def shouldHandleMultipleRegularComparison() {
-    testFrom_1_8(
+    testAll(
       """start a = node(1) where a.name =~ 'And.*' AnD a.name =~ 'And.*' return a""",
       Query.
         start(NodeById("a", 1)).
@@ -304,18 +287,8 @@ class CypherParserTest extends JUnitSuite with Assertions {
     )
   }
 
-  @Test def shouldHandleEscapedRegexs1_7() {
-    test_1_7(
-      """start a = node(1) where a.name =~ /And\/.*/ return a""",
-      Query.
-        start(NodeById("a", 1)).
-        where(LiteralRegularExpression(Property(Identifier("a"), "name"), Literal("And\\/.*"))).
-        returns(ReturnItem(Identifier("a"), "a"))
-    )
-  }
-
   @Test def shouldHandleEscapedRegexs() {
-    testFrom_1_8(
+    testAll(
       """start a = node(1) where a.name =~ 'And\\/.*' return a""",
       Query.
         start(NodeById("a", 1)).
@@ -385,17 +358,8 @@ class CypherParserTest extends JUnitSuite with Assertions {
         returns(ReturnItem(Identifier("a"), "a")))
   }
 
-  @Test def relatedTo17() {
-    test_1_7(
-      "start a = NODE(1) match a -[:KNOWS]-> (b) return a, b",
-      Query.
-        start(NodeById("a", 1)).
-        matches(RelatedTo("a", "b", "  UNNAMED1", Seq("KNOWS"), Direction.OUTGOING, false, True())).
-        returns(ReturnItem(Identifier("a"), "a"), ReturnItem(Identifier("b"), "b")))
-  }
-
   @Test def relatedTo() {
-    testFrom_1_8(
+    testAll(
       "start a = NODE(1) match a -[:KNOWS]-> (b) return a, b",
       Query.
         start(NodeById("a", 1)).
@@ -403,17 +367,8 @@ class CypherParserTest extends JUnitSuite with Assertions {
         returns(ReturnItem(Identifier("a"), "a"), ReturnItem(Identifier("b"), "b")))
   }
 
-  @Test def relatedToWithoutRelType17() {
-    test_1_7(
-      "start a = NODE(1) match a --> (b) return a, b",
-      Query.
-        start(NodeById("a", 1)).
-        matches(RelatedTo("a", "b", "  UNNAMED1", Seq(), Direction.OUTGOING, false, True())).
-        returns(ReturnItem(Identifier("a"), "a"), ReturnItem(Identifier("b"), "b")))
-  }
-
   @Test def relatedToWithoutRelType() {
-    testFrom_1_8(
+    testAll(
       "start a = NODE(1) match a --> (b) return a, b",
       Query.
         start(NodeById("a", 1)).
@@ -430,17 +385,8 @@ class CypherParserTest extends JUnitSuite with Assertions {
         returns(ReturnItem(Identifier("r"), "r")))
   }
 
-  @Test def relatedToTheOtherWay() {
-    testOlderParsers(
-      "start a = NODE(1) match a <-[:KNOWS]- (b) return a, b",
-      Query.
-        start(NodeById("a", 1)).
-        matches(RelatedTo("a", "b", "  UNNAMED1", Seq("KNOWS"), Direction.INCOMING, false, True())).
-        returns(ReturnItem(Identifier("a"), "a"), ReturnItem(Identifier("b"), "b")))
-  }
-
   @Test def relatedToTheOtherWay1_8() {
-    testFrom_1_8(
+    testAll(
       "start a = NODE(1) match a <-[:KNOWS]- (b) return a, b",
       Query.
         start(NodeById("a", 1)).
@@ -476,17 +422,9 @@ class CypherParserTest extends JUnitSuite with Assertions {
         returns(ReturnItem(Identifier("rel"), "rel")))
   }
 
-  @Test def relatedToWithoutEndName17() {
-    test_1_7(
-      "start a = NODE(1) match a -[r:MARRIED]-> () return a",
-      Query.
-        start(NodeById("a", 1)).
-        matches(RelatedTo("a", "  UNNAMED1", "r", Seq("MARRIED"), Direction.OUTGOING, false, True())).
-        returns(ReturnItem(Identifier("a"), "a")))
-  }
 
   @Test def relatedToWithoutEndName() {
-    testFrom_1_8(
+    testAll(
       "start a = NODE(1) match a -[r:MARRIED]-> () return a",
       Query.
         start(NodeById("a", 1)).
@@ -494,20 +432,8 @@ class CypherParserTest extends JUnitSuite with Assertions {
         returns(ReturnItem(Identifier("a"), "a")))
   }
 
-  @Test def relatedInTwoSteps1_7() {
-    test_1_7(
-      "start a = NODE(1) match a -[:KNOWS]-> b -[:FRIEND]-> (c) return c",
-      Query.
-        start(NodeById("a", 1)).
-        matches(
-        RelatedTo("a", "b", "  UNNAMED1", Seq("KNOWS"), Direction.OUTGOING, false, True()),
-        RelatedTo("b", "c", "  UNNAMED2", Seq("FRIEND"), Direction.OUTGOING, false, True())).
-        returns(ReturnItem(Identifier("c"), "c"))
-    )
-  }
-
   @Test def relatedInTwoSteps() {
-    testFrom_1_8(
+    testAll(
       "start a = NODE(1) match a -[:KNOWS]-> b -[:FRIEND]-> (c) return c",
       Query.
         start(NodeById("a", 1)).
@@ -527,19 +453,8 @@ class CypherParserTest extends JUnitSuite with Assertions {
         returns(ReturnItem(Identifier("c"), "c")))
   }
 
-  @Test def countTheNumberOfHits1_7() {
-    test_1_7(
-      "start a = NODE(1) match a --> b return a, b, count(*)",
-      Query.
-        start(NodeById("a", 1)).
-        matches(RelatedTo("a", "b", "  UNNAMED1", Seq(), Direction.OUTGOING, false, True())).
-        aggregation(CountStar()).
-        columns("a", "b", "count(*)").
-        returns(ReturnItem(Identifier("a"), "a"), ReturnItem(Identifier("b"), "b"), ReturnItem(CountStar(), "count(*)")))
-  }
-
   @Test def countTheNumberOfHits() {
-    testFrom_1_8(
+    testAll(
       "start a = NODE(1) match a --> b return a, b, count(*)",
       Query.
         start(NodeById("a", 1)).
@@ -560,18 +475,8 @@ class CypherParserTest extends JUnitSuite with Assertions {
         returns(ReturnItem(CountStar(), "count(*)")))
   }
 
-  @Test def distinct1_7() {
-    test_1_7(
-      "start a = NODE(1) match a --> b return distinct a, b",
-      Query.
-        start(NodeById("a", 1)).
-        matches(RelatedTo("a", "b", "  UNNAMED1", Seq(), Direction.OUTGOING, false, True())).
-        aggregation().
-        returns(ReturnItem(Identifier("a"), "a"), ReturnItem(Identifier("b"), "b")))
-  }
-
   @Test def distinct() {
-    testFrom_1_8(
+    testAll(
       "start a = NODE(1) match a -[r]-> b return distinct a, b",
       Query.
         start(NodeById("a", 1)).
@@ -592,7 +497,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def avgTheAgesOfPeople() {
-    testFrom_1_8(
+    testAll(
       "start a = NODE(1) match a --> b return a, b, avg(a.age)",
       Query.
         start(NodeById("a", 1)).
@@ -602,30 +507,8 @@ class CypherParserTest extends JUnitSuite with Assertions {
         returns(ReturnItem(Identifier("a"), "a"), ReturnItem(Identifier("b"), "b"), ReturnItem(Avg(Property(Identifier("a"), "age")), "avg(a.age)")))
   }
 
-  @Test def avgTheAgesOfPeople1_7() {
-    test_1_7(
-      "start a = NODE(1) match a --> b return a, b, avg(a.age)",
-      Query.
-        start(NodeById("a", 1)).
-        matches(RelatedTo("a", "b", "  UNNAMED1", Seq(), Direction.OUTGOING, false, True())).
-        aggregation(Avg(Property(Identifier("a"), "age"))).
-        columns("a", "b", "avg(a.age)").
-        returns(ReturnItem(Identifier("a"), "a"), ReturnItem(Identifier("b"), "b"), ReturnItem(Avg(Property(Identifier("a"), "age")), "avg(a.age)")))
-  }
-
-  @Test def minTheAgesOfPeople1_7() {
-    test_1_7(
-      "start a = NODE(1) match (a) --> b return a, b, min(a.age)",
-      Query.
-        start(NodeById("a", 1)).
-        matches(RelatedTo("a", "b", "  UNNAMED1", Seq(), Direction.OUTGOING, false, True())).
-        aggregation(Min(Property(Identifier("a"), "age"))).
-        columns("a", "b", "min(a.age)").
-        returns(ReturnItem(Identifier("a"), "a"), ReturnItem(Identifier("b"), "b"), ReturnItem(Min(Property(Identifier("a"), "age")), "min(a.age)")))
-  }
-
   @Test def minTheAgesOfPeople() {
-    testFrom_1_8(
+    testAll(
       "start a = NODE(1) match (a) --> b return a, b, min(a.age)",
       Query.
         start(NodeById("a", 1)).
@@ -636,26 +519,11 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def maxTheAgesOfPeople() {
-    testFrom_1_8(
+    testAll(
       "start a = NODE(1) match a --> b return a, b, max(a.age)",
       Query.
         start(NodeById("a", 1)).
         matches(RelatedTo("a", "b", "  UNNAMED3", Seq(), Direction.OUTGOING, false, True())).
-        aggregation(Max((Property(Identifier("a"), "age")))).
-        columns("a", "b", "max(a.age)").
-        returns(
-        ReturnItem(Identifier("a"), "a"),
-        ReturnItem(Identifier("b"), "b"),
-        ReturnItem(Max((Property(Identifier("a"), "age"))), "max(a.age)")
-      ))
-  }
-
-  @Test def maxTheAgesOfPeople1_7() {
-    test_1_7(
-      "start a = NODE(1) match a --> b return a, b, max(a.age)",
-      Query.
-        start(NodeById("a", 1)).
-        matches(RelatedTo("a", "b", "  UNNAMED1", Seq(), Direction.OUTGOING, false, True())).
         aggregation(Max((Property(Identifier("a"), "age")))).
         columns("a", "b", "max(a.age)").
         returns(
@@ -876,18 +744,8 @@ class CypherParserTest extends JUnitSuite with Assertions {
         returns(ReturnItem(Identifier("a"), "a")))
   }
 
-  @Test def simplePathExample17() {
-    test_1_7(
-      "start a = node(0) match p = a-->b return a",
-      Query.
-        start(NodeById("a", 0)).
-        matches(RelatedTo("a", "b", "  UNNAMED1", Seq(), Direction.OUTGOING, false, True())).
-        namedPaths(NamedPath("p", RelatedTo("a", "b", "  UNNAMED1", Seq(), Direction.OUTGOING, false, True()))).
-        returns(ReturnItem(Identifier("a"), "a")))
-  }
-
   @Test def simplePathExample() {
-    testFrom_1_8(
+    testAll(
       "start a = node(0) match p = a-->b return a",
       Query.
         start(NodeById("a", 0)).
@@ -920,17 +778,8 @@ class CypherParserTest extends JUnitSuite with Assertions {
         returns (ReturnItem(Identifier("a"), "a")))
   }
 
-  @Test def variableLengthPath17() {
-    test_1_7("start a=node(0) match a -[:knows*1..3]-> x return x",
-      Query.
-        start(NodeById("a", 0)).
-        matches(VarLengthRelatedTo("  UNNAMED1", "a", "x", Some(1), Some(3), "knows", Direction.OUTGOING)).
-        returns(ReturnItem(Identifier("x"), "x"))
-    )
-  }
-
   @Test def variableLengthPath() {
-    testFrom_1_8("start a=node(0) match a -[:knows*1..3]-> x return x",
+    testAll("start a=node(0) match a -[:knows*1..3]-> x return x",
       Query.
         start(NodeById("a", 0)).
         matches(VarLengthRelatedTo("  UNNAMED3", "a", "x", Some(1), Some(3), "knows", Direction.OUTGOING)).
@@ -938,17 +787,8 @@ class CypherParserTest extends JUnitSuite with Assertions {
     )
   }
 
-  @Test def variableLengthPathWithRelsIterable17() {
-    test_1_7("start a=node(0) match a -[r:knows*1..3]-> x return x",
-      Query.
-        start(NodeById("a", 0)).
-        matches(VarLengthRelatedTo("  UNNAMED1", "a", "x", Some(1), Some(3), Seq("knows"), Direction.OUTGOING, Some("r"), false, True())).
-        returns(ReturnItem(Identifier("x"), "x"))
-    )
-  }
-
   @Test def variableLengthPathWithRelsIterable() {
-    testFrom_1_8("start a=node(0) match a -[r:knows*1..3]-> x return x",
+    testAll("start a=node(0) match a -[r:knows*1..3]-> x return x",
       Query.
         start(NodeById("a", 0)).
         matches(VarLengthRelatedTo("  UNNAMED3", "a", "x", Some(1), Some(3), Seq("knows"), Direction.OUTGOING, Some("r"), false, True())).
@@ -956,17 +796,8 @@ class CypherParserTest extends JUnitSuite with Assertions {
     )
   }
 
-  @Test def fixedVarLengthPath1_7() {
-    test_1_7("start a=node(0) match a -[*3]-> x return x",
-      Query.
-        start(NodeById("a", 0)).
-        matches(VarLengthRelatedTo("  UNNAMED1", "a", "x", Some(3), Some(3), Seq(), Direction.OUTGOING, None, false, True())).
-        returns(ReturnItem(Identifier("x"), "x"))
-    )
-  }
-
   @Test def fixedVarLengthPath() {
-    testFrom_1_8("start a=node(0) match a -[*3]-> x return x",
+    testAll("start a=node(0) match a -[*3]-> x return x",
       Query.
         start(NodeById("a", 0)).
         matches(VarLengthRelatedTo("  UNNAMED3", "a", "x", Some(3), Some(3), Seq(), Direction.OUTGOING, None, false, True())).
@@ -974,17 +805,8 @@ class CypherParserTest extends JUnitSuite with Assertions {
     )
   }
 
-  @Test def variableLengthPathWithoutMinDepth17() {
-    test_1_7("start a=node(0) match p = a -[:knows*..3]-> x return x",
-      Query.
-        start(NodeById("a", 0)).
-        matches(VarLengthRelatedTo("p", "a", "x", None, Some(3), "knows", Direction.OUTGOING)).
-        returns(ReturnItem(Identifier("x"), "x"))
-    )
-  }
-
   @Test def variableLengthPathWithoutMinDepth() {
-    testFrom_1_8("start a=node(0) match a -[:knows*..3]-> x return x",
+    testAll("start a=node(0) match a -[:knows*..3]-> x return x",
       Query.
         start(NodeById("a", 0)).
         matches(VarLengthRelatedTo("  UNNAMED3", "a", "x", None, Some(3), "knows", Direction.OUTGOING)).
@@ -992,17 +814,8 @@ class CypherParserTest extends JUnitSuite with Assertions {
     )
   }
 
-  @Test def variableLengthPathWithRelationshipIdentifier17() {
-    test_1_7("start a=node(0) match a -[r:knows*2..]-> x return x",
-      Query.
-        start(NodeById("a", 0)).
-        matches(VarLengthRelatedTo("  UNNAMED1", "a", "x", Some(2), None, Seq("knows"), Direction.OUTGOING, Some("r"), false, True())).
-        returns(ReturnItem(Identifier("x"), "x"))
-    )
-  }
-
   @Test def variableLengthPathWithRelationshipIdentifier() {
-    testFrom_1_8("start a=node(0) match a -[r:knows*2..]-> x return x",
+    testAll("start a=node(0) match a -[r:knows*2..]-> x return x",
       Query.
         start(NodeById("a", 0)).
         matches(VarLengthRelatedTo("  UNNAMED3", "a", "x", Some(2), None, Seq("knows"), Direction.OUTGOING, Some("r"), false, True())).
@@ -1010,17 +823,8 @@ class CypherParserTest extends JUnitSuite with Assertions {
     )
   }
 
-  @Test def variableLengthPathWithoutMaxDepth17() {
-    test_1_7("start a=node(0) match p = a -[:knows*2..]-> x return x",
-      Query.
-        start(NodeById("a", 0)).
-        matches(VarLengthRelatedTo("p", "a", "x", Some(2), None, "knows", Direction.OUTGOING)).
-        returns(ReturnItem(Identifier("x"), "x"))
-    )
-  }
-
   @Test def variableLengthPathWithoutMaxDepth() {
-    testFrom_1_8("start a=node(0) match a -[:knows*2..]-> x return x",
+    testAll("start a=node(0) match a -[:knows*2..]-> x return x",
       Query.
         start(NodeById("a", 0)).
         matches(VarLengthRelatedTo("  UNNAMED3", "a", "x", Some(2), None, "knows", Direction.OUTGOING)).
@@ -1028,17 +832,8 @@ class CypherParserTest extends JUnitSuite with Assertions {
     )
   }
 
-  @Test def unboundVariableLengthPath17() {
-    test_1_7("start a=node(0) match a -[:knows*]-> x return x",
-      Query.
-        start(NodeById("a", 0)).
-        matches(VarLengthRelatedTo("  UNNAMED1", "a", "x", None, None, "knows", Direction.OUTGOING)).
-        returns(ReturnItem(Identifier("x"), "x"))
-    )
-  }
-
   @Test def unboundVariableLengthPath() {
-    testFrom_1_8("start a=node(0) match a -[:knows*]-> x return x",
+    testAll("start a=node(0) match a -[:knows*]-> x return x",
       Query.
         start(NodeById("a", 0)).
         matches(VarLengthRelatedTo("  UNNAMED3", "a", "x", None, None, "knows", Direction.OUTGOING)).
@@ -1046,17 +841,8 @@ class CypherParserTest extends JUnitSuite with Assertions {
     )
   }
 
-  @Test def optionalRelationship17() {
-    test_1_7(
-      "start a = node(1) match a -[?]-> (b) return b",
-      Query.
-        start(NodeById("a", 1)).
-        matches(RelatedTo("a", "b", "  UNNAMED1", Seq(), Direction.OUTGOING, true, True())).
-        returns(ReturnItem(Identifier("b"), "b")))
-  }
-
   @Test def optionalRelationship() {
-    testFrom_1_8(
+    testAll(
       "start a = node(1) match a -[?]-> (b) return b",
       Query.
         start(NodeById("a", 1)).
@@ -1082,17 +868,8 @@ class CypherParserTest extends JUnitSuite with Assertions {
         returns(ReturnItem(Identifier("a"), "a")))
   }
 
-  @Test def optionalTypedRelationship17() {
-    test_1_7(
-      "start a = node(1) match a -[?:KNOWS]-> (b) return b",
-      Query.
-        start(NodeById("a", 1)).
-        matches(RelatedTo("a", "b", "  UNNAMED1", Seq("KNOWS"), Direction.OUTGOING, true, True())).
-        returns(ReturnItem(Identifier("b"), "b")))
-  }
-
   @Test def optionalTypedRelationship() {
-    testFrom_1_8(
+    testAll(
       "start a = node(1) match a -[?:KNOWS]-> (b) return b",
       Query.
         start(NodeById("a", 1)).
@@ -1260,17 +1037,8 @@ class CypherParserTest extends JUnitSuite with Assertions {
         returns (ReturnItem(Distinct(Count(Identifier("a")), Identifier("a")), "count(distinct a)")))
   }
 
-  @Test def supportsHasRelationshipInTheWhereClauseOlder() {
-    testOlderParsers(
-      """start a=node(0), b=node(1) where a-->b return a""",
-      Query.
-        start(NodeById("a", 0), NodeById("b", 1)).
-        where(HasRelationshipTo(Identifier("a"), Identifier("b"), Direction.OUTGOING, Seq()))
-        returns (ReturnItem(Identifier("a"), "a")))
-  }
-
   @Test def supportsHasRelationshipInTheWhereClause() {
-    testFrom_1_8(
+    testAll(
       """start a=node(0), b=node(1) where a-->b return a""",
       Query.
         start(NodeById("a", 0), NodeById("b", 1)).
@@ -1278,17 +1046,8 @@ class CypherParserTest extends JUnitSuite with Assertions {
         returns (ReturnItem(Identifier("a"), "a")))
   }
 
-  @Test def supportsNotHasRelationshipInTheWhereClauseOlder() {
-    testOlderParsers(
-      """start a=node(0), b=node(1) where not(a-->()) return a""",
-      Query.
-        start(NodeById("a", 0), NodeById("b", 1)).
-        where(Not(HasRelationship(Identifier("a"), Direction.OUTGOING, Seq()))).
-        returns (ReturnItem(Identifier("a"), "a")))
-  }
-
   @Test def supportsNotHasRelationshipInTheWhereClause() {
-    testFrom_1_8(
+    testAll(
       """start a=node(0), b=node(1) where not(a-->()) return a""",
       Query.
         start(NodeById("a", 0), NodeById("b", 1)).
@@ -1435,53 +1194,26 @@ class CypherParserTest extends JUnitSuite with Assertions {
     )
   }
 
-  @Test def mutliple_relationship_type_in_match17() {
-    test_1_7("start x = NODE(1) match x-[:REL1|REL2|REL3]->z return x",
-      Query.
-        start(NodeById("x", 1)).
-        matches(RelatedTo("x", "z", "  UNNAMED1", Seq("REL1", "REL2", "REL3"), Direction.OUTGOING, false, True())).
-        returns(ReturnItem(Identifier("x"), "x"))
-    )
-  }
-
   @Test def mutliple_relationship_type_in_match() {
-    testFrom_1_8("start x = NODE(1) match x-[:REL1|REL2|REL3]->z return x",
+    testAll("start x = NODE(1) match x-[:REL1|REL2|REL3]->z return x",
       Query.
         start(NodeById("x", 1)).
         matches(RelatedTo("x", "z", "  UNNAMED3", Seq("REL1", "REL2", "REL3"), Direction.OUTGOING, false, True())).
-        returns(ReturnItem(Identifier("x"), "x"))
-    )
-  }
-
-  @Test def mutliple_relationship_type_in_varlength_rel17() {
-    test_1_7("start x = NODE(1) match x-[:REL1|REL2|REL3]->z return x",
-      Query.
-        start(NodeById("x", 1)).
-        matches(RelatedTo("x", "z", "  UNNAMED1", Seq("REL1", "REL2", "REL3"), Direction.OUTGOING, false, True())).
         returns(ReturnItem(Identifier("x"), "x"))
     )
   }
 
   @Test def mutliple_relationship_type_in_varlength_rel() {
-    testFrom_1_8("start x = NODE(1) match x-[:REL1|REL2|REL3]->z return x",
+    testAll("start x = NODE(1) match x-[:REL1|REL2|REL3]->z return x",
       Query.
         start(NodeById("x", 1)).
         matches(RelatedTo("x", "z", "  UNNAMED3", Seq("REL1", "REL2", "REL3"), Direction.OUTGOING, false, True())).
-        returns(ReturnItem(Identifier("x"), "x"))
-    )
-  }
-
-  @Test def mutliple_relationship_type_in_shortest_path17() {
-    test_1_7("start x = NODE(1) match x-[:REL1|REL2|REL3]->z return x",
-      Query.
-        start(NodeById("x", 1)).
-        matches(RelatedTo("x", "z", "  UNNAMED1", Seq("REL1", "REL2", "REL3"), Direction.OUTGOING, false, True())).
         returns(ReturnItem(Identifier("x"), "x"))
     )
   }
 
   @Test def mutliple_relationship_type_in_shortest_path() {
-    testFrom_1_8("start x = NODE(1) match x-[:REL1|REL2|REL3]->z return x",
+    testAll("start x = NODE(1) match x-[:REL1|REL2|REL3]->z return x",
       Query.
         start(NodeById("x", 1)).
         matches(RelatedTo("x", "z", "  UNNAMED3", Seq("REL1", "REL2", "REL3"), Direction.OUTGOING, false, True())).
@@ -1489,17 +1221,8 @@ class CypherParserTest extends JUnitSuite with Assertions {
     )
   }
 
-  @Test def multiple_relationship_type_in_relationship_predicate_1_7() {
-    test_1_7(
-      """start a=node(0), b=node(1) where a-[:KNOWS|BLOCKS]-b return a""",
-      Query.
-        start(NodeById("a", 0), NodeById("b", 1)).
-        where(HasRelationshipTo(Identifier("a"), Identifier("b"), Direction.BOTH, Seq("KNOWS", "BLOCKS")))
-        returns (ReturnItem(Identifier("a"), "a")))
-  }
-
   @Test def multiple_relationship_type_in_relationship_predicate() {
-    testFrom_1_8(
+    testAll(
       """start a=node(0), b=node(1) where a-[:KNOWS|BLOCKS]-b return a""",
       Query.
         start(NodeById("a", 0), NodeById("b", 1)).
@@ -1520,12 +1243,12 @@ class CypherParserTest extends JUnitSuite with Assertions {
       returns(ReturnItem(Identifier("x"), "x"))
 
 
-    testFrom_1_8("START x = node(1) WITH x WHERE x.foo = 42 RETURN x", q)
+    testAll("START x = node(1) WITH x WHERE x.foo = 42 RETURN x", q)
   }
 
   @Test def read_first_and_update_next() {
     val secondQ = Query.
-      start(CreateNodeStartItem(CreateNode("b", Map("age" -> Multiply(Property(Identifier("a"), "age"), Literal(2.0)))))).
+      start(CreateNodeStartItem(CreateNode("b", Map("age" -> Multiply(Property(Identifier("a"), "age"), Literal(2.0))), Literal(Seq.empty)))).
       returns(ReturnItem(Identifier("b"), "b"))
 
     val q = Query.
@@ -1534,20 +1257,11 @@ class CypherParserTest extends JUnitSuite with Assertions {
       returns(ReturnItem(Identifier("a"), "a"))
 
 
-    testFrom_1_8("start a = node(1) with a create (b {age : a.age * 2}) return b", q)
-  }
-
-  @Test def variable_length_path_with_collection_for_relationships17() {
-    test_1_7("start a=node(0) match a -[r?*1..3]-> x return x",
-      Query.
-        start(NodeById("a", 0)).
-        matches(VarLengthRelatedTo("  UNNAMED1", "a", "x", Some(1), Some(3), Seq(), Direction.OUTGOING, Some("r"), true, True())).
-        returns(ReturnItem(Identifier("x"), "x"))
-    )
+    testAll("start a = node(1) with a create (b {age : a.age * 2}) return b", q)
   }
 
   @Test def variable_length_path_with_collection_for_relationships() {
-    testFrom_1_8("start a=node(0) match a -[r?*1..3]-> x return x",
+    testAll("start a=node(0) match a -[r?*1..3]-> x return x",
       Query.
         start(NodeById("a", 0)).
         matches(VarLengthRelatedTo("  UNNAMED3", "a", "x", Some(1), Some(3), Seq(), Direction.OUTGOING, Some("r"), true, True())).
@@ -1572,57 +1286,124 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def create_node() {
-    testFrom_1_8("create a",
+    testAll("create a",
       Query.
-        start(CreateNodeStartItem(CreateNode("a", Map()))).
+        start(CreateNodeStartItem(CreateNode("a", Map(), Literal(Seq.empty)))).
         returns()
     )
   }
 
   @Test def create_node_with_a_property() {
-    testFrom_1_8("create (a {name : 'Andres'})",
+    testAll("create (a {name : 'Andres'})",
       Query.
-        start(CreateNodeStartItem(CreateNode("a", Map("name" -> Literal("Andres"))))).
+        start(CreateNodeStartItem(CreateNode("a", Map("name" -> Literal("Andres")), Literal(Seq.empty)))).
         returns()
     )
   }
 
   @Test def create_node_with_a_property2() {
-    testFrom_1_8("create a={name : 'Andres'}",
+    testAll("create a={name : 'Andres'}",
       Query.
-        start(CreateNodeStartItem(CreateNode("a", Map("name" -> Literal("Andres"))))).
+        start(CreateNodeStartItem(CreateNode("a", Map("name" -> Literal("Andres")), Literal(Seq.empty)))).
         returns()
     )
   }
 
-  @Test def create_node_with_a_property_and_return_it() {
-    testFrom_1_8("create (a {name : 'Andres'}) return a",
+  @Test def create_node_using_the_VALUES_keyword() {
+    testFrom_2_0("create a VALUES {name : 'Andres'}",
       Query.
-        start(CreateNodeStartItem(CreateNode("a", Map("name" -> Literal("Andres"))))).
+        start(CreateNodeStartItem(CreateNode("a", Map("name" -> Literal("Andres")), Literal(Seq.empty), false))).
+        returns()
+    )
+  }
+
+  @Test def create_node_using_LABEL_keyword_and_EQ() {
+    testFrom_2_0("create a:fii = {name : 'Andres'}",
+      Query.
+        start(CreateNodeStartItem(CreateNode("a", Map("name" -> Literal("Andres")), Literal(Seq(LabelName("fii"))), false))).
+        returns()
+    )
+  }
+
+  @Test def create_node_using_LABEL_and_VALUES_keyword() {
+    testFrom_2_0("create a :fii VALUES {name : 'Andres'}",
+      Query.
+        start(CreateNodeStartItem(CreateNode("a", Map("name" -> Literal("Andres")), Literal(Seq(LabelName("fii"))), false))).
+        returns()
+    )
+  }
+
+  @Test def create_node_using_LABEL_and_VALUES_keyword2() {
+    testFrom_2_0("create a:fii VALUES {name : 'Andres'}",
+      Query.
+        start(CreateNodeStartItem(CreateNode("a", Map("name" -> Literal("Andres")), Literal(Seq(LabelName("fii"))), false))).
+        returns()
+    )
+  }
+  @Test def create_node_with_a_property_and_return_it() {
+    testAll("create (a {name : 'Andres'}) return a",
+      Query.
+        start(CreateNodeStartItem(CreateNode("a", Map("name" -> Literal("Andres")), Literal(Seq.empty)))).
         returns (ReturnItem(Identifier("a"), "a"))
     )
   }
 
   @Test def create_two_nodes_with_a_property_and_return_it() {
-    testFrom_1_8("create (a {name : 'Andres'}), b return a,b",
+    testAll("create (a {name : 'Andres'}), b return a,b",
       Query.
-        start(CreateNodeStartItem(CreateNode("a", Map("name" -> Literal("Andres")))),
-        CreateNodeStartItem(CreateNode("b", Map()))).
+        start(CreateNodeStartItem(CreateNode("a", Map("name" -> Literal("Andres")), Literal(Seq.empty))),
+        CreateNodeStartItem(CreateNode("b", Map(), Literal(Seq.empty)))).
         returns(ReturnItem(Identifier("a"), "a"), ReturnItem(Identifier("b"), "b"))
     )
   }
 
   @Test def create_node_from_map_expression() {
-    testFrom_1_8("create (a {param})",
+    testAll("create (a {param})",
       Query.
-        start(CreateNodeStartItem(CreateNode("a", Map("*" -> ParameterExpression("param"))))).
+        start(CreateNodeStartItem(CreateNode("a", Map("*" -> ParameterExpression("param")), Literal(Seq.empty)))).
+        returns()
+    )
+  }
+
+  @Test def create_node_with_a_label() {
+    testFrom_2_0("create a label :FOO",
+      Query.
+        start(CreateNodeStartItem(CreateNode("a", Map(), Literal(Seq(LabelName("FOO"))), false))).
+        returns()
+    )
+  }
+
+  @Test def create_node_with_multiple_labels() {
+    testFrom_2_0("create a label :FOO:BAR",
+      Query.
+        start(CreateNodeStartItem(CreateNode("a", Map(), Literal(Seq(LabelName("FOO"), LabelName("BAR"))), false))).
+        returns()
+    )
+  }
+
+  @Test def create_node_with_multiple_labels_with_spaces() {
+    testFrom_2_0("create a label :FOO :BAR",
+      Query.
+        start(CreateNodeStartItem(CreateNode("a", Map(), Literal(Seq(LabelName("FOO"), LabelName("BAR"))), false))).
+        returns()
+    )
+  }
+
+  @Test def create_nodes_with_labels_and_a_rel() {
+    testFrom_2_0("CREATE (n:Person:Husband)-[:FOO]->x:Person",
+      Query.
+        start(CreateRelationshipStartItem(CreateRelationship("  UNNAMED1",
+        RelationshipEndpoint(Identifier("n"),Map(), Literal(Seq(LabelName("Person"), LabelName("Husband"))), false),
+        RelationshipEndpoint(Identifier("x"),Map(), Literal(Seq(LabelName("Person"))), false), "FOO", Map()))).
         returns()
     )
   }
 
   @Test def start_with_two_nodes_and_create_relationship() {
     val secondQ = Query.
-      start(CreateRelationshipStartItem(CreateRelationship("r", (Identifier("a"), Map()), (Identifier("b"),Map()), "REL", Map()))).
+      start(CreateRelationshipStartItem(CreateRelationship("r",
+      RelationshipEndpoint(Identifier("a"), Map(), Literal(Seq.empty), true),
+      RelationshipEndpoint(Identifier("b"),Map(), Literal(Seq.empty), true), "REL", Map()))).
       returns()
 
     val q = Query.
@@ -1631,12 +1412,14 @@ class CypherParserTest extends JUnitSuite with Assertions {
       returns(ReturnItem(Identifier("a"), "a"), ReturnItem(Identifier("b"), "b"))
 
 
-    testFrom_1_8("start a=node(0), b=node(1) with a,b create a-[r:REL]->b", q)
+    testAll("start a=node(0), b=node(1) with a,b create a-[r:REL]->b", q)
   }
 
   @Test def start_with_two_nodes_and_create_relationship_using_alternative_with_syntax() {
     val secondQ = Query.
-      start(CreateRelationshipStartItem(CreateRelationship("r", (Identifier("a"),Map()), (Identifier("b"),Map()), "REL", Map()))).
+      start(CreateRelationshipStartItem(CreateRelationship("r",
+        RelationshipEndpoint(Identifier("a"),Map(), Literal(Seq.empty), true),
+        RelationshipEndpoint(Identifier("b"),Map(), Literal(Seq.empty), true), "REL", Map()))).
       returns()
 
     val q = Query.
@@ -1645,7 +1428,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
       returns(ReturnItem(Identifier("a"), "a"), ReturnItem(Identifier("b"), "b"))
 
 
-    testFrom_1_8("""
+    testAll("""
 start a=node(0), b=node(1)
 ========= a,b ============
 create a-[r:REL]->b
@@ -1655,8 +1438,8 @@ create a-[r:REL]->b
   @Test def create_relationship_with_properties() {
     val secondQ = Query.
       start(CreateRelationshipStartItem(CreateRelationship("r",
-      (Identifier("a"),Map()),
-      (Identifier("b"),Map()), "REL", Map("why" -> Literal(42), "foo" -> Literal("bar"))))).
+      RelationshipEndpoint(Identifier("a"),Map(),Literal(Seq.empty), true),
+      RelationshipEndpoint(Identifier("b"),Map(),Literal(Seq.empty), true), "REL", Map("why" -> Literal(42), "foo" -> Literal("bar"))))).
       returns()
 
     val q = Query.
@@ -1665,27 +1448,34 @@ create a-[r:REL]->b
       returns(ReturnItem(Identifier("a"), "a"), ReturnItem(Identifier("b"), "b"))
 
 
-    testFrom_1_8("start a=node(0), b=node(1) with a,b create a-[r:REL {why : 42, foo : 'bar'}]->b", q)
+    testAll("start a=node(0), b=node(1) with a,b create a-[r:REL {why : 42, foo : 'bar'}]->b", q)
   }
 
   @Test def create_relationship_without_identifier() {
-    testFrom_1_8("create ({a})-[:REL]->({a})",
+    testAll("create ({a})-[:REL]->({a})",
       Query.
-        start(CreateRelationshipStartItem(CreateRelationship("  UNNAMED3", (ParameterExpression("a"),Map()), (ParameterExpression("a"),Map()), "REL", Map()))).
+        start(CreateRelationshipStartItem(CreateRelationship("  UNNAMED3",
+          RelationshipEndpoint(ParameterExpression("a"),Map(),Literal(Seq.empty), true),
+          RelationshipEndpoint(ParameterExpression("a"),Map(),Literal(Seq.empty), true), "REL", Map()))).
         returns())
   }
 
   @Test def create_relationship_with_properties_from_map() {
-    testFrom_1_8("create ({a})-[:REL {param}]->({a})",
+    testAll("create ({a})-[:REL {param}]->({a})",
       Query.
-        start(CreateRelationshipStartItem(CreateRelationship("  UNNAMED3", (ParameterExpression("a"),Map()), (ParameterExpression("a"),Map()), "REL", Map("*" -> ParameterExpression("param"))))).
+        start(CreateRelationshipStartItem(CreateRelationship("  UNNAMED3",
+          RelationshipEndpoint(ParameterExpression("a"),Map(),Literal(Seq.empty), true),
+          RelationshipEndpoint(ParameterExpression("a"),Map(),Literal(Seq.empty), true),
+        "REL", Map("*" -> ParameterExpression("param"))))).
         returns())
   }
 
   @Test def create_relationship_without_identifier2() {
-    testFrom_1_8("create ({a})-[:REL]->({a})",
+    testAll("create ({a})-[:REL]->({a})",
       Query.
-        start(CreateRelationshipStartItem(CreateRelationship("  UNNAMED3", (ParameterExpression("a"),Map()), (ParameterExpression("a"),Map()), "REL", Map()))).
+        start(CreateRelationshipStartItem(CreateRelationship("  UNNAMED3",
+          RelationshipEndpoint(ParameterExpression("a"),Map(),Literal(Seq.empty), true),
+          RelationshipEndpoint(ParameterExpression("a"),Map(),Literal(Seq.empty), true), "REL", Map()))).
         returns())
   }
 
@@ -1699,7 +1489,7 @@ create a-[r:REL]->b
       tail(secondQ).
       returns(ReturnItem(Identifier("a"), "a"))
 
-    testFrom_1_8("start a=node(0) with a delete a", q)
+    testAll("start a=node(0) with a delete a", q)
   }
 
   @Test def set_property_on_node() {
@@ -1712,7 +1502,7 @@ create a-[r:REL]->b
       tail(secondQ).
       returns(ReturnItem(Identifier("a"), "a"))
 
-    testFrom_1_8("start a=node(0) with a set a.hello = 'world'", q)
+    testAll("start a=node(0) with a set a.hello = 'world'", q)
   }
 
   @Test def update_property_with_expression() {
@@ -1725,7 +1515,7 @@ create a-[r:REL]->b
       tail(secondQ).
       returns(ReturnItem(Identifier("a"), "a"))
 
-    testFrom_1_8("start a=node(0) with a set a.salary = a.salary * 2 ", q)
+    testAll("start a=node(0) with a set a.salary = a.salary * 2 ", q)
   }
 
   @Test def foreach_on_path() {
@@ -1740,12 +1530,12 @@ create a-[r:REL]->b
       tail(secondQ).
       returns(ReturnItem(Identifier("p"), "p"))
 
-    testFrom_1_8("start a=node(0) match p = a-[r:REL]->b with p foreach(n in nodes(p) : set n.touched = true ) ", q)
+    testAll("start a=node(0) match p = a-[r:REL]->b with p foreach(n in nodes(p) : set n.touched = true ) ", q)
   }
 
   @Test def simple_read_first_and_update_next() {
     val secondQ = Query.
-      start(CreateNodeStartItem(CreateNode("b", Map("age" -> Multiply(Property(Identifier("a"), "age"), Literal(2.0)))))).
+      start(CreateNodeStartItem(CreateNode("b", Map("age" -> Multiply(Property(Identifier("a"), "age"), Literal(2.0))), Literal(Seq.empty)))).
       returns(ReturnItem(Identifier("b"), "b"))
 
     val q = Query.
@@ -1754,12 +1544,14 @@ create a-[r:REL]->b
       returns(AllIdentifiers())
 
 
-    testFrom_1_8("start a = node(1) create (b {age : a.age * 2}) return b", q)
+    testAll("start a = node(1) create (b {age : a.age * 2}) return b", q)
   }
 
   @Test def simple_start_with_two_nodes_and_create_relationship() {
     val secondQ = Query.
-      start(CreateRelationshipStartItem(CreateRelationship("r", (Identifier("a"), Map()), (Identifier("b"), Map()), "REL", Map()))).
+      start(CreateRelationshipStartItem(CreateRelationship("r",
+        RelationshipEndpoint(Identifier("a"), Map(), Literal(Seq.empty), true),
+      RelationshipEndpoint(Identifier("b"), Map(), Literal(Seq.empty), true), "REL", Map()))).
       returns()
 
     val q = Query.
@@ -1768,12 +1560,14 @@ create a-[r:REL]->b
       returns(AllIdentifiers())
 
 
-    testFrom_1_8("start a=node(0), b=node(1) create a-[r:REL]->b", q)
+    testAll("start a=node(0), b=node(1) create a-[r:REL]->b", q)
   }
 
   @Test def simple_create_relationship_with_properties() {
     val secondQ = Query.
-      start(CreateRelationshipStartItem(CreateRelationship("r", (Identifier("b"), Map()), (Identifier("a"), Map()), "REL",
+      start(CreateRelationshipStartItem(CreateRelationship("r",
+        RelationshipEndpoint(Identifier("b"), Map(), Literal(Seq.empty), true),
+        RelationshipEndpoint(Identifier("a"), Map(), Literal(Seq.empty), true), "REL",
       Map("why" -> Literal(42), "foo" -> Literal("bar"))
     ))).
       returns()
@@ -1784,7 +1578,7 @@ create a-[r:REL]->b
       returns(AllIdentifiers())
 
 
-    testFrom_1_8("start a=node(0), b=node(1) create a<-[r:REL {why : 42, foo : 'bar'}]-b", q)
+    testAll("start a=node(0), b=node(1) create a<-[r:REL {why : 42, foo : 'bar'}]-b", q)
   }
 
   @Test def simple_delete_node() {
@@ -1797,7 +1591,7 @@ create a-[r:REL]->b
       tail(secondQ).
       returns(AllIdentifiers())
 
-    testFrom_1_8("start a=node(0) delete a", q)
+    testAll("start a=node(0) delete a", q)
   }
 
   @Test def simple_set_property_on_node() {
@@ -1810,7 +1604,7 @@ create a-[r:REL]->b
       tail(secondQ).
       returns(AllIdentifiers())
 
-    testFrom_1_8("start a=node(0) set a.hello = 'world'", q)
+    testAll("start a=node(0) set a.hello = 'world'", q)
   }
 
   @Test def simple_update_property_with_expression() {
@@ -1823,7 +1617,7 @@ create a-[r:REL]->b
       tail(secondQ).
       returns(AllIdentifiers())
 
-    testFrom_1_8("start a=node(0) set a.salary = a.salary * 2 ", q)
+    testAll("start a=node(0) set a.salary = a.salary * 2 ", q)
   }
 
   @Test def simple_foreach_on_path() {
@@ -1838,11 +1632,11 @@ create a-[r:REL]->b
       tail(secondQ).
       returns(AllIdentifiers())
 
-    testFrom_1_8("start a=node(0) match p = a-[r:REL]->b foreach(n in nodes(p) : set n.touched = true ) ", q)
+    testAll("start a=node(0) match p = a-[r:REL]->b foreach(n in nodes(p) : set n.touched = true ) ", q)
   }
 
   @Test def returnAll() {
-    testFrom_1_8("start s = NODE(1) return *",
+    testAll("start s = NODE(1) return *",
       Query.
         start(NodeById("s", 1)).
         returns(AllIdentifiers()))
@@ -1857,7 +1651,7 @@ create a-[r:REL]->b
       start(NodeById("a", 1), NodeById("b", 2)).
       tail(secondQ).
       returns(AllIdentifiers())
-    testFrom_1_8("start a = node(1), b=node(2) create unique a-[:reltype]->b", q)
+    testAll("start a = node(1), b=node(2) create unique a-[:reltype]->b", q)
   }
 
   @Test def single_create_unique_with_rel() {
@@ -1869,7 +1663,7 @@ create a-[r:REL]->b
       start(NodeById("a", 1), NodeById("b", 2)).
       tail(secondQ).
       returns(AllIdentifiers())
-    testFrom_1_8("start a = node(1), b=node(2) create unique a-[r:reltype]->b", q)
+    testAll("start a = node(1), b=node(2) create unique a-[r:reltype]->b", q)
   }
 
   @Test def single_relate_with_empty_parenthesis() {
@@ -1881,7 +1675,7 @@ create a-[r:REL]->b
       start(NodeById("a", 1), NodeById("b", 2)).
       tail(secondQ).
       returns(AllIdentifiers())
-    testFrom_1_8("start a = node(1), b=node(2) create unique a-[:reltype]->()", q)
+    testAll("start a = node(1), b=node(2) create unique a-[:reltype]->()", q)
   }
 
   @Test def two_relates() {
@@ -1895,57 +1689,63 @@ create a-[r:REL]->b
       start(NodeById("a", 1)).
       tail(secondQ).
       returns(AllIdentifiers())
-    testFrom_1_8("start a = node(1) create unique a-[:X]->b<-[:X]-c", q)
+    testAll("start a = node(1) create unique a-[:X]->b<-[:X]-c", q)
   }
 
   @Test def relate_with_initial_values_for_node() {
     val secondQ = Query.
       unique(
-      UniqueLink(NamedExpectation("a"), NamedExpectation("b", Map[String, Expression]("name" -> Literal("Andres"))), NamedExpectation("  UNNAMED1"), "X", Direction.OUTGOING)).
+      UniqueLink(
+        NamedExpectation("a", true),
+        NamedExpectation("b", Map[String, Expression]("name" -> Literal("Andres")), true),
+        NamedExpectation("  UNNAMED1", true), "X", Direction.OUTGOING)).
       returns()
 
     val q = Query.
       start(NodeById("a", 1)).
       tail(secondQ).
       returns(AllIdentifiers())
-    testFrom_1_8("start a = node(1) create unique a-[:X]->(b {name:'Andres'})", q)
+    testAll("start a = node(1) create unique a-[:X]->(b {name:'Andres'})", q)
   }
 
   @Test def relate_with_initial_values_for_rel() {
     val secondQ = Query.
       unique(
-      UniqueLink(NamedExpectation("a"), NamedExpectation("b"), NamedExpectation("  UNNAMED1", Map[String, Expression]("name" -> Literal("Andres"))), "X", Direction.OUTGOING)).
+      UniqueLink(
+        NamedExpectation("a", true),
+        NamedExpectation("b", true),
+        NamedExpectation("  UNNAMED1", Map[String, Expression]("name" -> Literal("Andres")), true), "X", Direction.OUTGOING)).
       returns()
 
     val q = Query.
       start(NodeById("a", 1)).
       tail(secondQ).
       returns(AllIdentifiers())
-    testFrom_1_8("start a = node(1) create unique a-[:X {name:'Andres'}]->b", q)
+    testAll("start a = node(1) create unique a-[:X {name:'Andres'}]->b", q)
   }
 
   @Test def foreach_with_literal_collection() {
 
     val q2 = Query.updates(
-      ForeachAction(Collection(Literal(1.0), Literal(2.0), Literal(3.0)), "x", Seq(CreateNode("a", Map("number" -> Identifier("x")))))
+      ForeachAction(Collection(Literal(1.0), Literal(2.0), Literal(3.0)), "x", Seq(CreateNode("a", Map("number" -> Identifier("x")), Literal(Seq.empty))))
     ).returns()
 
-    testFrom_1_8(
+    testAll(
       "create root foreach(x in [1,2,3] : create (a {number:x}))",
       Query.
-        start(CreateNodeStartItem(CreateNode("root", Map.empty))).
+        start(CreateNodeStartItem(CreateNode("root", Map.empty, Literal(Seq.empty)))).
         tail(q2).
         returns(AllIdentifiers())
     )
   }
 
   @Test def string_literals_should_not_be_mistaken_for_identifiers() {
-    testFrom_1_8(
+    testAll(
       "create (tag1 {name:'tag2'}), (tag2 {name:'tag1'})",
       Query.
         start(
-        CreateNodeStartItem(CreateNode("tag1", Map("name"->Literal("tag2")))),
-        CreateNodeStartItem(CreateNode("tag2", Map("name"->Literal("tag1"))))
+        CreateNodeStartItem(CreateNode("tag1", Map("name"->Literal("tag2")), Literal(Seq.empty))),
+        CreateNodeStartItem(CreateNode("tag2", Map("name"->Literal("tag1")), Literal(Seq.empty)))
       ).returns()
     )
   }
@@ -1959,14 +1759,14 @@ create a-[r:REL]->b
 
     val q = Query.start(NodeById("root", 0)).tail(returns).returns(AllIdentifiers())
 
-    testFrom_1_8(
+    testAll(
       "start root=node(0) create unique x<-[r1:X]-root-[r2:Y]->x return x",
       q
     )
   }
 
   @Test def optional_shortest_path() {
-    testFrom_1_8(
+    testAll(
       """start a  = node(1), x = node(2,3)
          match p = shortestPath(a -[?*]-> x)
          return *""",
@@ -1978,7 +1778,7 @@ create a-[r:REL]->b
   }
 
   @Test def return_paths() {
-    testFrom_1_8("start a  = node(1) return a-->()",
+    testAll("start a  = node(1) return a-->()",
       Query.
         start(NodeById("a", 1)).
         returns(ReturnItem(PathExpression(Seq(RelatedTo("a", "  UNNAMED1", "  UNNAMED2", Seq(), Direction.OUTGOING, optional = false, predicate = True()))), "a-->()"))
@@ -1986,7 +1786,7 @@ create a-[r:REL]->b
   }
 
   @Test def not_with_parenthesis() {
-    testFrom_1_8("start a  = node(1) where not(1=2) or 2=3 return a",
+    testAll("start a  = node(1) where not(1=2) or 2=3 return a",
       Query.
         start(NodeById("a", 1)).
         where(Or(Not(Equals(Literal(1), Literal(2))), Equals(Literal(2), Literal(3)))).
@@ -1997,8 +1797,12 @@ create a-[r:REL]->b
   @Test def full_path_in_create() {
     val secondQ = Query.
       start(
-      CreateRelationshipStartItem(CreateRelationship("r1", (Identifier("a"), Map()), (Identifier("  UNNAMED1"), Map()), "KNOWS", Map())),
-      CreateRelationshipStartItem(CreateRelationship("r2", (Identifier("  UNNAMED1"), Map()), (Identifier("b"), Map()), "LOVES", Map()))).
+      CreateRelationshipStartItem(CreateRelationship("r1",
+        RelationshipEndpoint(Identifier("a"), Map(), Literal(Seq.empty), true),
+        RelationshipEndpoint(Identifier("  UNNAMED1"), Map(), Literal(Seq.empty), true), "KNOWS", Map())),
+      CreateRelationshipStartItem(CreateRelationship("r2",
+        RelationshipEndpoint(Identifier("  UNNAMED1"), Map(), Literal(Seq.empty), true),
+        RelationshipEndpoint(Identifier("b"), Map(), Literal(Seq.empty), true), "LOVES", Map()))).
       returns()
     val q = Query.
       start(NodeById("a", 1), NodeById("b", 2)).
@@ -2006,24 +1810,28 @@ create a-[r:REL]->b
       returns(AllIdentifiers())
 
 
-    testFrom_1_8("start a=node(1), b=node(2) create a-[r1:KNOWS]->()<-[r2:LOVES]->b", q)
+    testAll("start a=node(1), b=node(2) create a-[r1:KNOWS]->()<-[r2:LOVES]->b", q)
   }
 
 
   @Test def create_and_assign_to_path_identifier() {
-    testFrom_1_8(
+    testAll(
       "create p = a-[r:KNOWS]->() return p",
       Query.
-      start(CreateRelationshipStartItem(CreateRelationship("r", (Identifier("a"), Map()), (Identifier("  UNNAMED1"), Map()), "KNOWS", Map()))).
+      start(CreateRelationshipStartItem(CreateRelationship("r",
+        RelationshipEndpoint(Identifier("a"), Map(), Literal(Seq.empty), true),
+        RelationshipEndpoint(Identifier("  UNNAMED1"), Map(), Literal(Seq.empty), true), "KNOWS", Map()))).
       namedPaths(NamedPath("p", RelatedTo("a", "  UNNAMED1", "r", "KNOWS", Direction.OUTGOING, optional = false, predicate = True()))).
       returns(ReturnItem(Identifier("p"), "p")))
   }
 
   @Test def undirected_relationship() {
-    testFrom_1_8(
+    testAll(
       "create (a {name:'A'})-[:KNOWS]-(b {name:'B'})",
       Query.
-        start(CreateRelationshipStartItem(CreateRelationship("  UNNAMED1", (Identifier("a"), Map("name" -> Literal("A"))), (Identifier("b"), Map("name" -> Literal("B"))), "KNOWS", Map()))).
+        start(CreateRelationshipStartItem(CreateRelationship("  UNNAMED1",
+          RelationshipEndpoint(Identifier("a"), Map("name" -> Literal("A")), Literal(Seq.empty), true),
+          RelationshipEndpoint(Identifier("b"), Map("name" -> Literal("B")), Literal(Seq.empty), true), "KNOWS", Map()))).
         returns())
   }
 
@@ -2038,18 +1846,20 @@ create a-[r:REL]->b
       tail(q2).
       returns(AllIdentifiers())
 
-    testFrom_1_8("start a=node(0) create unique p = a-[r:KNOWS]->() return p", q)
+    testAll("start a=node(0) create unique p = a-[r:KNOWS]->() return p", q)
   }
 
   @Test(expected = classOf[SyntaxException]) def assign_to_path_inside_foreach_should_work() {
-    testFrom_1_8(
+    testAll(
 """start n=node(0)
 foreach(x in [1,2,3] :
   create p = ({foo:x})-[:X]->()
   foreach( i in p :
     set i.touched = true))""",
       Query.
-      start(CreateRelationshipStartItem(CreateRelationship("r", (Identifier("a"), Map()), (Identifier("  UNNAMED1"), Map()), "KNOWS", Map()))).
+      start(CreateRelationshipStartItem(CreateRelationship("r",
+        RelationshipEndpoint(Identifier("a"), Map(), Literal(Seq.empty), true),
+        RelationshipEndpoint(Identifier("  UNNAMED1"), Map(), Literal(Seq.empty), true), "KNOWS", Map()))).
       namedPaths(NamedPath("p", RelatedTo("a", "  UNNAMED1", "r", "KNOWS", Direction.OUTGOING, optional = false, predicate = True()))).
       returns(ReturnItem(Identifier("p"), "p")))
   }
@@ -2065,9 +1875,9 @@ foreach(x in [1,2,3] :
   }
 
   @Test def create_unique_should_support_parameter_maps() {
-    val start = NamedExpectation("n")
-    val rel = NamedExpectation("  UNNAMED2")
-    val end = NamedExpectation("  UNNAMED1", ParameterExpression("param"), Map.empty)
+    val start = NamedExpectation("n", true)
+    val rel = NamedExpectation("  UNNAMED2", true)
+    val end = new NamedExpectation("  UNNAMED1", ParameterExpression("param"), Map.empty, Literal(Seq.empty), true)
 
     val secondQ = Query.
                   unique(UniqueLink(start, end, rel, "foo", Direction.OUTGOING)).
@@ -2124,6 +1934,205 @@ foreach(x in [1,2,3] :
         returns(AllIdentifiers()))
   }
 
+  @Test def add_label() {
+    val q2 = Query.
+      start().
+      updates(LabelAction(Identifier("n"), LabelAdd, Literal(Seq(LabelName("LabelName"))))).
+      returns()
+
+    testFrom_2_0("START n=node(0) ADD n LABEL :LabelName",
+      Query.
+        start(NodeById("n", 0)).
+        tail(q2).
+        returns(AllIdentifiers())
+    )
+  }
+
+  @Test def add_short_label() {
+    val q2 = Query.
+      start().
+      updates(LabelAction(Identifier("n"), LabelAdd, Literal(Seq(LabelName("LabelName"))))).
+      returns()
+
+    testFrom_2_0("START n=node(0) ADD n:LabelName",
+      Query.
+        start(NodeById("n", 0)).
+        tail(q2).
+        returns(AllIdentifiers())
+    )
+  }
+
+  @Test def add_multiple_labels() {
+    val coll = Literal(Seq(LabelName("LabelName2"), LabelName("LabelName3")))
+    val q2   = Query.
+      start().
+      updates(LabelAction(Identifier("n"), LabelAdd, coll)).
+      returns()
+
+    testFrom_2_0("START n=node(0) ADD n LABEL :LabelName2 :LabelName3",
+      Query.
+        start(NodeById("n", 0)).
+        tail(q2).
+        returns(AllIdentifiers())
+    )
+  }
+
+  @Test def add_multiple_short_labels() {
+    val coll = Literal(Seq(LabelName("LabelName2"), LabelName("LabelName3")))
+    val q2   = Query.
+      start().
+      updates(LabelAction(Identifier("n"), LabelAdd, coll)).
+      returns()
+
+    testFrom_2_0("START n=node(0) ADD n:LabelName2:LabelName3",
+      Query.
+        start(NodeById("n", 0)).
+        tail(q2).
+        returns(AllIdentifiers())
+    )
+  }
+
+  @Test def add_multiple_short_labels2() {
+    val coll = Literal(Seq(LabelName("LabelName2"), LabelName("LabelName3")))
+    val q2   = Query.
+      start().
+      updates(LabelAction(Identifier("n"), LabelAdd, coll)).
+      returns()
+
+    testFrom_2_0("START n=node(0) ADD n :LabelName2 :LabelName3",
+      Query.
+        start(NodeById("n", 0)).
+        tail(q2).
+        returns(AllIdentifiers())
+    )
+  }
+
+  @Test def add_string_label() {
+    val q2 = Query.
+      start().
+      updates(LabelAction(Identifier("n"), LabelAdd, StrLabelFunction(Literal("LabelName")))).
+      returns()
+
+    testFrom_2_0("START n=node(0) ADD n LABEL strlabel(\"LabelName\")",
+      Query.
+        start(NodeById("n", 0)).
+        tail(q2).
+        returns(AllIdentifiers())
+    )
+  }
+
+  @Test def add_own_labels() {
+    val q2 = Query.
+      start().
+      updates(LabelAction(Identifier("n"), LabelAdd, LabelsFunction(Identifier("n")))).
+      returns()
+
+    testFrom_2_0("START n=node(0) ADD n LABEL labels(n)",
+      Query.
+        start(NodeById("n", 0)).
+        tail(q2).
+        returns(AllIdentifiers())
+    )
+  }
+
+  @Test def add_label_from_str_of_label() {
+    val q2 = Query.
+      start().
+      updates(LabelAction(Identifier("n"), LabelAdd, StrLabelFunction(StrFunction(Literal(LabelName("foo")))))).
+      returns()
+
+    testFrom_2_0("START n=node(0) ADD n LABEL strlabel(str(:foo))",
+      Query.
+        start(NodeById("n", 0)).
+        tail(q2).
+        returns(AllIdentifiers())
+    )
+  }
+
+  @Test @Ignore def remove_label() {
+    val q2 = Query.
+      start().
+      updates(LabelAction(Identifier("n"), LabelDel, Literal(LabelName("LabelName")))).
+      returns()
+
+    testFrom_2_0("START n=node(0) REMOVE n LABEL n",
+      Query.
+        start(NodeById("n", 0)).
+        tail(q2).
+        returns(AllIdentifiers())
+    )
+  }
+
+  @Test @Ignore def remove_multiple_labels() {
+    val coll = Collection(Literal(LabelName("LabelName2")), Literal(LabelName("LabelName3")))
+    val q2   = Query.
+      start().
+      updates(LabelAction(Identifier("n"), LabelDel, coll)).
+      returns()
+
+    testFrom_2_0("START n=node(0) REMOVE n LABEL :LabelName2:LabelName3",
+      Query.
+        start(NodeById("n", 0)).
+        tail(q2).
+        returns(AllIdentifiers())
+    )
+  }
+
+  @Test def filter_by_label_in_where() {
+    testFrom_2_0("START n=node(0) WHERE n:Foo RETURN n",
+      Query.
+        start(NodeById("n", 0)).
+        where(HasLabel(Identifier("n"), Literal(Seq(LabelName("Foo"))))).
+        returns(ReturnItem(Identifier("n"), "n"))
+    )
+  }
+
+  @Test def filter_by_labels_in_where() {
+    testFrom_2_0("START n=node(0) WHERE n:Foo:Bar RETURN n",
+      Query.
+        start(NodeById("n", 0)).
+        where(HasLabel(Identifier("n"), Literal(Seq(LabelName("Foo"), LabelName("Bar"))))).
+        returns(ReturnItem(Identifier("n"), "n"))
+    )
+  }
+
+  @Test def filter_by_labels_expr_in_where() {
+    testFrom_2_0("START n=node(0) WHERE n LABEL [:Foo, :Bar] RETURN n",
+      Query.
+        start(NodeById("n", 0)).
+        where(HasLabel(Identifier("n"), Collection(Literal(LabelName("Foo")), Literal(LabelName("Bar"))))).
+        returns(ReturnItem(Identifier("n"), "n"))
+    )
+  }
+
+  @Test @Ignore def replace_label() {
+    val q2 = Query.
+      start().
+      updates(LabelAction(Identifier("n"), LabelSet, Literal(LabelName("LabelName")))).
+      returns()
+
+    testFrom_2_0("START n=node(0) REPLACE n LABEL :LabelName",
+      Query.
+        start(NodeById("n", 0)).
+        tail(q2).
+        returns(AllIdentifiers())
+    )
+  }
+
+  @Test @Ignore def replace_multiple_labels() {
+    val coll = Collection(Literal(LabelName("LabelName2")), Literal(LabelName("LabelName3")))
+    val q2   = Query.
+      start().
+      updates(LabelAction(Identifier("n"), LabelSet, coll)).
+      returns()
+
+    testFrom_2_0("START n=node(0) REPLACE n LABEL :LabelName2:LabelName3",
+      Query.
+        start(NodeById("n", 0)).
+        tail(q2).
+        returns(AllIdentifiers())
+    )
+  }
 
   @Ignore("slow test") @Test def multi_thread_parsing() {
     val q = """start root=node(0) return x"""
@@ -2159,8 +2168,8 @@ foreach(x in [1,2,3] :
 
 
   def test_1_9(query: String, expectedQuery: Query) {
-    testQuery(None, query, expectedQuery)
-    testQuery(None, query + ";", expectedQuery)
+    testQuery(Some("1.9"), query, expectedQuery)
+    testQuery(Some("1.9"), query + ";", expectedQuery)
   }
 
   def test_1_8(query: String, expectedQuery: Query) {
@@ -2168,27 +2177,23 @@ foreach(x in [1,2,3] :
     testQuery(Some("1.8"), query + ";", expectedQuery)
   }
 
-  def test_1_7(query: String, expectedQuery: Query) {
-    testQuery(Some("1.7"), query, expectedQuery)
-  }
-
-  def testFrom_1_8(query: String, expectedQuery: Query) {
-    test_1_8(query, expectedQuery)
-    test_1_9(query, expectedQuery)
-  }
-
   def testFrom_1_9(query: String, expectedQuery: Query) {
     test_1_9(query, expectedQuery)
+    test_2_0(query, expectedQuery)
+  }
+
+  def testFrom_2_0(query: String, expectedQuery: Query) {
+    test_2_0(query, expectedQuery)
+  }
+
+  def test_2_0(query: String, expectedQuery: Query) {
+    testQuery(None, query, expectedQuery)
+    testQuery(None, query + ";", expectedQuery)
   }
 
   def testAll(query: String, expectedQuery: Query) {
-    test_1_7(query, expectedQuery)
     test_1_8(query, expectedQuery)
     test_1_9(query, expectedQuery)
-  }
-
-  def testOlderParsers(queryText: String, queryAst: Query) {
-    test_1_7(queryText, queryAst)
   }
 
   def testQuery(version: Option[String], query: String, expectedQuery: Query) {

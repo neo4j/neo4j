@@ -29,7 +29,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
-import org.neo4j.kernel.impl.transaction.LockManager;
 
 public class TopLevelTransaction implements Transaction
 {
@@ -66,17 +65,16 @@ public class TopLevelTransaction implements Transaction
     
     private final AbstractTransactionManager transactionManager;
     protected final TransactionOutcome transactionOutcome = new TransactionOutcome();
-    private final LockManager lockManager;
     private final TransactionState state;
 
-    public TopLevelTransaction( AbstractTransactionManager transactionManager, LockManager lockManager,
+    public TopLevelTransaction( AbstractTransactionManager transactionManager,
             TransactionState state )
     {
         this.transactionManager = transactionManager;
-        this.lockManager = lockManager;
         this.state = state;
     }
 
+    @Override
     public void failure()
     {
         transactionOutcome.failed();
@@ -96,6 +94,7 @@ public class TopLevelTransaction implements Transaction
         }
     }
 
+    @Override
     public void success()
     {
         transactionOutcome.success();
@@ -114,6 +113,7 @@ public class TopLevelTransaction implements Transaction
         }
     }
 
+    @Override
     public void finish()
     {
         try

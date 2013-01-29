@@ -36,7 +36,7 @@ import org.neo4j.cypher.internal.commands.True
 import org.neo4j.cypher.internal.commands.Equals
 import org.neo4j.cypher.internal.commands.AllInCollection
 import org.neo4j.cypher.internal.pipes.{QueryState}
-import org.neo4j.cypher.internal.spi.gdsimpl.GDSBackedQueryContext
+import org.neo4j.cypher.internal.spi.gdsimpl.TransactionBoundQueryContext
 import org.neo4j.cypher.internal.ExecutionContext
 
 class MatchingContextTest extends GraphDatabaseTestBase with Assertions with PatternGraphBuilder {
@@ -45,7 +45,7 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions with Pat
   var c: Node = null
   var d: Node = null
 
-  private def ctx(x: (String, Any)*) = ExecutionContext(state = new QueryState(graph, new GDSBackedQueryContext(graph), Map.empty)).newWith(x.toMap)
+  private def ctx(x: (String, Any)*) = ExecutionContext(state = new QueryState(graph, new TransactionBoundQueryContext(graph), Map.empty)).newWith(x.toMap)
 
   @Before
   def init() {

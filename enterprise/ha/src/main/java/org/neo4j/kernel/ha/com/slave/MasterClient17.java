@@ -126,6 +126,12 @@ public class MasterClient17 extends Client<Master> implements MasterClient
     }
 
     @Override
+    public Response<Integer> createPropertyKey( RequestContext context, String name )
+    {
+        throw new UnsupportedOperationException( "Should never be called from the client side" );
+    }
+    
+    @Override
     public Response<Void> initializeTx( RequestContext context )
     {
         return sendRequest( HaRequestType17.INITIALIZE_TX, context, EMPTY_SERIALIZER, VOID_DESERIALIZER );

@@ -33,8 +33,8 @@ import org.neo4j.com.RequestContext;
 import org.neo4j.com.RequestType;
 import org.neo4j.com.Server;
 import org.neo4j.com.TxChecksumVerifier;
-import org.neo4j.kernel.ha.com.HaRequestType18;
-import org.neo4j.kernel.ha.com.slave.MasterClient18;
+import org.neo4j.kernel.ha.HaRequestType20;
+import org.neo4j.kernel.ha.MasterClient20;
 import org.neo4j.kernel.ha.transaction.UnableToResumeTransactionException;
 import org.neo4j.kernel.logging.Logging;
 
@@ -49,13 +49,13 @@ public class MasterServer extends Server<Master, Void>
     public MasterServer( Master requestTarget, Logging logging, Configuration config,
                          TxChecksumVerifier txVerifier ) throws IOException
     {
-        super( requestTarget, config, logging, FRAME_LENGTH, MasterClient18.PROTOCOL_VERSION, txVerifier );
+        super( requestTarget, config, logging, FRAME_LENGTH, MasterClient20.PROTOCOL_VERSION, txVerifier );
     }
 
     @Override
     protected RequestType<Master> getRequestContext( byte id )
     {
-        return HaRequestType18.values()[id];
+        return HaRequestType20.values()[id];
     }
 
     @Override

@@ -20,12 +20,12 @@
 package org.neo4j.cypher.internal.commands
 
 import expressions.{Literal, Expression}
-import scala.collection.JavaConverters._
 import org.neo4j.graphdb._
 import org.neo4j.cypher.internal.symbols._
 import org.neo4j.cypher.CypherTypeException
-import org.neo4j.cypher.internal.helpers.{IsCollection, CollectionSupport}
+import org.neo4j.cypher.internal.helpers.{LabelSupport, CastSupport, IsCollection, CollectionSupport}
 import org.neo4j.cypher.internal.ExecutionContext
+import org.neo4j.cypher.internal.spi.QueryContext
 
 abstract class Predicate extends Expression {
   def apply(ctx: ExecutionContext) = isMatch(ctx)
@@ -131,7 +131,7 @@ case class HasRelationshipTo(from: Expression, to: Expression, dir: Direction, r
       return false
     }
 
-    m.state.query.getRelationshipsFor(fromNode, dir, relType:_*).asScala.
+    m.state.queryContext.getRelationshipsFor(fromNode, dir, relType).
       exists(rel => rel.getOtherNode(fromNode) == toNode)
   }
 
@@ -154,9 +154,9 @@ case class HasRelationship(from: Expression, dir: Direction, relType: Seq[String
       return false
     }
 
-    val matchingRelationships = m.state.query.getRelationshipsFor(fromNode, dir, relType: _*)
+    val matchingRelationships = m.state.queryContext.getRelationshipsFor(fromNode, dir, relType)
 
-    matchingRelationships.iterator().hasNext
+    matchingRelationships.iterator.hasNext
   }
 
   def atoms: Seq[Predicate] = Seq(this)
@@ -196,8 +196,8 @@ case class True() extends Predicate {
 
 case class Has(identifier: Expression, propertyName: String) extends Predicate {
   def isMatch(m: ExecutionContext): Boolean = identifier(m) match {
-    case pc: Node         => m.state.query.nodeOps().hasProperty(pc, propertyName)
-    case pc: Relationship => m.state.query.relationshipOps().hasProperty(pc, propertyName)
+    case pc: Node         => m.state.queryContext.nodeOps.hasProperty(pc, propertyName)
+    case pc: Relationship => m.state.queryContext.relationshipOps.hasProperty(pc, propertyName)
     case null             => false
     case _                => throw new CypherTypeException("Expected " + identifier + " to be a property container.")
   }
@@ -284,4 +284,39 @@ case class NonEmpty(collection:Expression) extends Predicate with CollectionSupp
   }
 
   def symbolTableDependencies = collection.symbolTableDependencies
+}
+
+case class HasLabel(entity: Expression, labels: Expression) extends Predicate with LabelSupport with CollectionSupport {
+  def isMatch(m: ExecutionContext): Boolean = {
+    val node: Node               = CastSupport.erasureCastOrFail[Node](entity(m))
+    val nodeId                   = node.getId
+    val queryCtx: QueryContext   = m.state.queryContext
+    val labelIds: Iterable[Long] = getLabelsAsLongs(m, labels)
+
+    for (labelId <- labelIds if !queryCtx.isLabelSetOnNode(labelId, nodeId))
+      return false
+
+    true
+  }
+
+  override def toString = s"hasLabel(${entity}, ${labels})"
+
+
+  def rewrite(f: (Expression) => Expression) =
+    f(HasLabel(entity.rewrite(f), labels.rewrite(f))).asInstanceOf[Predicate]
+
+  def children = Seq(entity, labels)
+
+  def symbolTableDependencies = entity.symbolTableDependencies ++ labels.symbolTableDependencies
+
+  def atoms = Seq(this)
+
+  def assertInnerTypes(symbols: SymbolTable) {
+    entity.throwIfSymbolsMissing(symbols)
+    labels.throwIfSymbolsMissing(symbols)
+
+    entity.evaluateType(NodeType(), symbols)
+  }
+
+  def containsIsNull = false
 }

@@ -20,12 +20,11 @@
 package org.neo4j.cypher.internal.pipes
 
 import org.neo4j.cypher.internal.symbols.SymbolTable
-import org.neo4j.graphdb.{GraphDatabaseService, Transaction}
+import org.neo4j.graphdb.GraphDatabaseService
 import scala.collection.JavaConverters._
 import org.neo4j.kernel.GraphDatabaseAPI
-import java.util.concurrent.atomic.AtomicInteger
-import org.neo4j.cypher.internal.spi.QueryContext
-import org.neo4j.cypher.internal.spi.gdsimpl.GDSBackedQueryContext
+import org.neo4j.cypher.internal.spi.{UpdateCountingQueryContext, QueryContext}
+import org.neo4j.cypher.internal.spi.gdsimpl.TransactionBoundQueryContext
 import org.neo4j.cypher.internal.ExecutionContext
 
 /**
@@ -39,7 +38,7 @@ trait Pipe {
 
   def symbols: SymbolTable
 
-  def executionPlan(): String
+  def executionPlanDescription(): String
 }
 
 class NullPipe extends Pipe {
@@ -47,7 +46,7 @@ class NullPipe extends Pipe {
 
   def symbols: SymbolTable = new SymbolTable()
 
-  def executionPlan(): String = ""
+  def executionPlanDescription(): String = ""
 }
 
 object MutableMaps {
@@ -68,31 +67,20 @@ object MutableMaps {
 
 object QueryState {
   def apply() = new QueryState(null, null, Map.empty)
-  def apply(db: GraphDatabaseService) = new QueryState(db, new GDSBackedQueryContext(db), Map.empty, None)
+  def apply(db: GraphDatabaseAPI) = new QueryState(db, new TransactionBoundQueryContext(db), Map.empty)
 }
 
 class QueryState(val db: GraphDatabaseService,
-                 val query: QueryContext,
-                 val params: Map[String, Any],
-                 var transaction: Option[Transaction] = None) {
-  val createdNodes = new Counter
-  val createdRelationships = new Counter
-  val propertySet = new Counter
-  val deletedNodes = new Counter
-  val deletedRelationships = new Counter
+                 inner: QueryContext,
+                 val params: Map[String, Any]) {
+
+  private val updateTrackingQryCtx: UpdateCountingQueryContext = new UpdateCountingQueryContext(inner)
+  val queryContext: QueryContext = updateTrackingQryCtx
+
+  def getStatistics = updateTrackingQryCtx.getStatistics
 
   def graphDatabaseAPI: GraphDatabaseAPI = if (db.isInstanceOf[GraphDatabaseAPI])
     db.asInstanceOf[GraphDatabaseAPI]
   else
     throw new IllegalStateException("Graph database does not implement GraphDatabaseAPI")
-}
-
-class Counter {
-  private val counter: AtomicInteger = new AtomicInteger()
-
-  def count: Int = counter.get()
-
-  def increase() {
-    counter.incrementAndGet()
-  }
 }

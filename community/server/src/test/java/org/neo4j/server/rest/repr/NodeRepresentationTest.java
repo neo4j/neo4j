@@ -110,6 +110,12 @@ public class NodeRepresentationTest
         assertNotNull( repr );
         verifySerialisation( repr );
     }
+    
+    @Test
+    public void shouldHaveLabelsLink() throws BadInputException
+    {
+        assertUriMatches( uriPattern( "/labels" ), noderep( 1234 ).labelsUriTemplate() );
+    }
 
     private NodeRepresentation noderep( long id )
     {
@@ -146,6 +152,7 @@ public class NodeRepresentationTest
                 .toString() );
         assertUriMatches( uriPattern( "/properties/\\{key\\}" ), (String) noderep.get( "property" ) );
         assertUriMatches( uriPattern( "/traverse/\\{returnType\\}" ), (String) noderep.get( "traverse" ) );
+        assertUriMatches( uriPattern( "/labels" ), (String) noderep.get( "labels" ) );
         assertNotNull( noderep.get( "data" ) );
     }
 }

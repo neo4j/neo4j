@@ -19,12 +19,15 @@
  */
 package org.neo4j.server.rest.domain;
 
+import static org.neo4j.graphdb.DynamicLabel.label;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.graphdb.DynamicRelationshipType;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
@@ -32,6 +35,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.AutoIndexer;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexManager;
+import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.server.database.Database;
 
@@ -97,12 +101,12 @@ public class GraphDbHelper
         }
     }
 
-    public long createNode()
+    public long createNode( Label... labels )
     {
         Transaction tx = database.getGraph().beginTx();
         try
         {
-            Node node = database.getGraph().createNode();
+            Node node = database.getGraph().createNode( labels );
             tx.success();
             return node.getId();
         }
@@ -112,12 +116,12 @@ public class GraphDbHelper
         }
     }
 
-    public long createNode( Map<String, Object> properties )
+    public long createNode( Map<String, Object> properties, Label... labels )
     {
         Transaction tx = database.getGraph().beginTx();
         try
         {
-            Node node = database.getGraph().createNode();
+            Node node = database.getGraph().createNode( labels );
             for ( Map.Entry<String, Object> entry : properties.entrySet() )
             {
                 node.setProperty( entry.getKey(), entry.getValue() );
@@ -394,5 +398,31 @@ public class GraphDbHelper
     {
         return database.getIndexManager()
                 .forRelationships( named );
+    }
+
+    public Iterable<String> getNodeLabels( long node )
+    {
+        return new IterableWrapper<String, Label>( database.getGraph().getNodeById( node ).getLabels() )
+        {
+            @Override
+            protected String underlyingObjectToObject( Label object )
+            {
+                return object.name();
+            }
+        };
+    }
+
+    public void addLabelToNode( long node, String labelName )
+    {
+        Transaction tx = database.getGraph().beginTx();
+        try
+        {
+            database.getGraph().getNodeById( node ).addLabel( label( labelName ) );
+            tx.success();
+        }
+        finally
+        {
+            tx.finish();
+        }
     }
 }

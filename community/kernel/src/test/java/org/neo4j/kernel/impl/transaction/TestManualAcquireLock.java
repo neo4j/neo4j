@@ -110,6 +110,7 @@ public class TestManualAcquireLock extends AbstractNeo4jTestCase
         catch ( Exception e )
         {
         }
+        commit();
         tx.success();
         tx.finish();
         worker.finishTx();

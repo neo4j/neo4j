@@ -22,70 +22,43 @@ package org.neo4j.kernel.impl.core;
 import static java.lang.System.arraycopy;
 
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.neo4j.graphdb.NotFoundException;
-import org.neo4j.graphdb.NotInTransactionException;
-import org.neo4j.kernel.impl.nioneo.store.NameData;
 import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
+import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.util.CopyOnWriteHashMap;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
-public class PropertyIndexManager
-    extends LifecycleAdapter
+public class PropertyIndexManager extends KeyHolder<PropertyIndex>
 {
     private static final PropertyIndex[] EMPTY_PROPERTY_INDEXES = new PropertyIndex[0];
     
-    private Map<String, PropertyIndex[]> indexMap = new CopyOnWriteHashMap<String, PropertyIndex[]>();
-    private Map<Integer, PropertyIndex> idToIndexMap = new CopyOnWriteHashMap<Integer, PropertyIndex>();
+    private final Map<String, PropertyIndex[]> indexMap = new CopyOnWriteHashMap<String, PropertyIndex[]>();
 
-    private final PersistenceManager persistenceManager;
-    private final EntityIdGenerator idGenerator;
-
-    private boolean hasAll = false;
-
-    public PropertyIndexManager( PersistenceManager persistenceManager, EntityIdGenerator idGenerator )
+    public PropertyIndexManager( AbstractTransactionManager txManager, PersistenceManager persistenceManager,
+            EntityIdGenerator idGenerator, KeyCreator keyCreator )
     {
-        this.persistenceManager = persistenceManager;
-        this.idGenerator = idGenerator;
+        super( txManager, persistenceManager, idGenerator, keyCreator );
     }
 
     @Override
     public void stop()
     {
-        indexMap = new ConcurrentHashMap<String, PropertyIndex[]>();
-        idToIndexMap = new ConcurrentHashMap<Integer, PropertyIndex>();
+        super.stop();
+        indexMap.clear();
     }
 
-    @Override
-    public void shutdown()
-    {
-    }
-
-    public PropertyIndex[] index( String key, TransactionState state )
+    /*
+     * TODO Since legacy databases can have multiple ids for any given property key
+     * this legacy method is left behind and used specifically for property indexes
+     * until migration has been added to dedup them.
+     */
+    public PropertyIndex[] index( String key )
     {
         PropertyIndex[] existing = null;
         if ( key != null )
         {
             existing = indexMap.get( key );
-            if ( state != null )
-            {
-                PropertyIndex[] fullList;
-                PropertyIndex added = state.getPropertyIndex( key );
-                if ( added != null )
-                {
-                    if ( existing != null )
-                    {
-                        fullList = new PropertyIndex[existing.length+1];
-                        arraycopy( existing, 0, fullList, 0, existing.length );
-                    }
-                    else
-                        fullList = new PropertyIndex[1];
-                    fullList[fullList.length-1] = added;
-                    return fullList;
-                }
-            }
         }
         if ( existing == null )
         {
@@ -93,96 +66,60 @@ public class PropertyIndexManager
         }
         return existing;
     }
-
-    void setHasAll( boolean status )
+    
+    @Override
+    public PropertyIndex getKeyByIdOrNull( int id )
     {
-        hasAll = status;
-    }
-
-    boolean hasAll()
-    {
-        return hasAll;
-    }
-
-    public boolean hasIndexFor( int keyId )
-    {
-        return idToIndexMap.get( keyId ) != null;
-    }
-
-    void addPropertyIndexes( NameData[] indexes )
-    {
-        for ( NameData rawIndex : indexes )
-        {
-            addPropertyIndex( new PropertyIndex( rawIndex.getName(),
-                rawIndex.getId() ) );
-        }
-    }
-
-    void addPropertyIndex( NameData rawIndex )
-    {
-        addPropertyIndex( new PropertyIndex( rawIndex.getName(),
-            rawIndex.getId() ) );
-    }
-
-    public PropertyIndex getIndexFor( int keyId, TransactionState state )
-    {
-        PropertyIndex index = idToIndexMap.get( keyId );
-        if ( index == null )
-        {
-            if ( state != null )
-            {
-                PropertyIndex added = state.getPropertyIndex( keyId );
-                if ( added != null )
-                    return added;
-            }
-            String indexString;
-            indexString = persistenceManager.loadIndex( keyId );
-            if ( indexString == null )
-            {
-                throw new NotFoundException( "Index not found [" + keyId + "]" );
-            }
-            index = new PropertyIndex( indexString, keyId );
-            addPropertyIndex( index );
-        }
+        PropertyIndex index = super.getKeyByIdOrNull( id );
+        if ( index != null )
+            return index;
+        
+        // Try load it
+        String keyName = persistenceManager.loadIndex( id );
+        if ( keyName == null )
+            throw new NotFoundException( "Index not found [" + id + "]" );
+        
+        index = new PropertyIndex( keyName, id );
+        addKeyEntry( keyName, id );
         return index;
     }
-
-    // need synch here so we don't create multiple lists
-    synchronized void addPropertyIndex( PropertyIndex index )
+    
+    @Override
+    protected PropertyIndex newKey( String key, int id )
     {
-        PropertyIndex[] list = indexMap.get( index.getKey() );
+        return new PropertyIndex( key, id );
+    }
+
+    /*
+     * Need synchronization here so we don't create multiple lists.
+     * 
+     * TODO Since legacy databases can have multiple ids for any given property key
+     * this legacy method is left behind and used specifically for property indexes
+     * until migration has been added to dedup them.
+     */
+    @Override
+    protected void addKeyEntry( String name, int id )
+    {
+        super.addKeyEntry( name, id );
+        PropertyIndex[] list = indexMap.get( name );
+        PropertyIndex key = newKey( name, id );
         if ( list == null )
         {
-            list = new PropertyIndex[] { index };
+            list = new PropertyIndex[] { key };
         }
         else
         {
             PropertyIndex[] extendedList = new PropertyIndex[list.length+1];
             arraycopy( list, 0, extendedList, 0, list.length );
-            extendedList[list.length] = index;
+            extendedList[list.length] = key;
             list = extendedList;
         }
-        indexMap.put( index.getKey(), list );
-        idToIndexMap.put( index.getKeyId(), index );
+        indexMap.put( name, list );
     }
-    
-    // concurrent transactions may create duplicate keys, oh well
-    PropertyIndex createPropertyIndex( String key, TransactionState state )
+
+    @Override
+    protected String nameOf( PropertyIndex key )
     {
-        if ( state == null )
-        {
-            throw new NotInTransactionException(
-                "Unable to create property index for " + key );
-        }
-        PropertyIndex index = state.getPropertyIndex( key );
-        if ( index != null )
-        {
-            return index;
-        }
-        int id = (int) idGenerator.nextId( PropertyIndex.class );
-        index = new PropertyIndex( key, id );
-        state.addPropertyIndex( index );
-        persistenceManager.createPropertyIndex( key, id );
-        return index;
+        return key.getKey();
     }
 }

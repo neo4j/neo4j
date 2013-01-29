@@ -42,6 +42,11 @@ public class NotInTransactionException extends RuntimeException
         super( message );
     }
 
+    public NotInTransactionException( Throwable cause )
+    {
+        super( cause );
+    }
+
     public NotInTransactionException( String message, Throwable cause )
     {
         super( message, cause );

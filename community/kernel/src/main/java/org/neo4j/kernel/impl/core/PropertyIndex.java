@@ -25,7 +25,7 @@ public class PropertyIndex
     private final String key;
     private final int keyId;
 
-    protected PropertyIndex( String key, int keyId )
+    public PropertyIndex( String key, int keyId )
     {
         this.key = key;
         this.keyId = keyId;

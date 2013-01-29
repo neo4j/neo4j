@@ -35,14 +35,7 @@ class EagerPipeExecutionResult(result: Iterator[Map[String, Any]],
   override def next() = inner.next().toMap
   override def hasNext = inner.hasNext
 
-  override def queryStatistics = {
-    QueryStatistics(
-      nodesCreated = state.createdNodes.count,
-      relationshipsCreated = state.createdRelationships.count,
-      propertiesSet = state.propertySet.count,
-      deletedNodes = state.deletedNodes.count,
-      deletedRelationships = state.deletedRelationships.count)
-  }
+  override def queryStatistics = state.getStatistics
 
   override def createTimedResults = (eagerResult,timeTaken)
 }

@@ -21,30 +21,23 @@ package org.neo4j.cypher.internal.executionplan.builders
 
 import org.neo4j.cypher.internal.executionplan.{ExecutionPlanInProgress, PlanBuilder}
 import org.neo4j.graphdb.GraphDatabaseService
-import org.neo4j.cypher.internal.pipes.{Pipe, ExecuteUpdateCommandsPipe, TransactionStartPipe}
+import org.neo4j.cypher.internal.pipes.{Pipe, ExecuteUpdateCommandsPipe}
 import org.neo4j.cypher.internal.mutation.UpdateAction
 import org.neo4j.cypher.internal.commands.{UpdatingStartItem, StartItem}
 
 class UpdateActionBuilder(db: GraphDatabaseService) extends PlanBuilder with UpdateCommandExpander {
   def apply(plan: ExecutionPlanInProgress) = {
-
-    val p = if (plan.containsTransaction) {
-      plan.pipe
-    } else {
-      new TransactionStartPipe(plan.pipe, db)
-    }
-
-    val updateCmds: Seq[QueryToken[UpdateAction]] = extractValidUpdateActions(plan, p)
-    val startItems: Seq[QueryToken[StartItem]] = extractValidStartItems(plan, p)
+    val updateCmds: Seq[QueryToken[UpdateAction]] = extractValidUpdateActions(plan, plan.pipe)
+    val startItems: Seq[QueryToken[StartItem]] = extractValidStartItems(plan, plan.pipe)
     val startCmds = startItems.map(_.map(_.asInstanceOf[UpdatingStartItem].updateAction))
 
     val updateActions = (startCmds ++ updateCmds).map(_.token)
-    val commands = expandCommands(updateActions, p.symbols)
+    val commands = expandCommands(updateActions, plan.pipe.symbols)
 
-    val resultPipe = new ExecuteUpdateCommandsPipe(p, db, commands)
+    val resultPipe = new ExecuteUpdateCommandsPipe(plan.pipe, db, commands)
 
     plan.copy(
-      containsTransaction = true,
+      isUpdating = true,
       query = plan.query.copy(
         updates = plan.query.updates.filterNot(updateCmds.contains) ++ updateCmds.map(_.solve),
         start = plan.query.start.filterNot(startItems.contains) ++ startItems.map(_.solve)),

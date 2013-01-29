@@ -14,7 +14,7 @@ borrows expression approaches from http://en.wikipedia.org/wiki/SPARQL[SPARQL].
 
 Being a declarative language, Cypher focuses on the clarity of expressing _what_ to retrieve from a graph, not _how_
 to do it, in contrast to imperative languages like Java, and scripting languages like
-http://gremlin.tinkerpop.com[Gremlin] (supported via the <<gremlin-plugin>>) and
+http://gremlin.tinkerpop.com[Gremlin] and
 http://neo4j.rubyforge.org/[the JRuby Neo4j bindings]. This makes the concern of how to optimize queries an
 implementation detail not exposed to the user.
 

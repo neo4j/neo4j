@@ -95,8 +95,15 @@ public class RelationshipProxy implements Relationship
 
     public RelationshipType getType()
     {
-        return relationshipLookups.getNodeManager().getRelationshipTypeById( relationshipLookups.lookupRelationship( relId )
-                                                                                 .getTypeId() );
+        try
+        {
+            return relationshipLookups.getNodeManager().getRelationshipTypeById( relationshipLookups.lookupRelationship( relId )
+                                                                                     .getTypeId() );
+        }
+        catch ( KeyNotFoundException e )
+        {
+            throw new NotFoundException( e );
+        }
     }
 
     public Iterable<String> getPropertyKeys()
@@ -136,7 +143,14 @@ public class RelationshipProxy implements Relationship
 
     public boolean isType( RelationshipType type )
     {
-        return relationshipLookups.getNodeManager().getRelationshipTypeById( relationshipLookups.lookupRelationship( relId ).getTypeId() ).name().equals( type.name() );
+        try
+        {
+            return relationshipLookups.getNodeManager().getRelationshipTypeById( relationshipLookups.lookupRelationship( relId ).getTypeId() ).name().equals( type.name() );
+        }
+        catch ( KeyNotFoundException e )
+        {
+            throw new NotFoundException( e );
+        }
     }
 
     public int compareTo( Object rel )

@@ -28,7 +28,8 @@ import java.io.{StringWriter, PrintWriter}
 import collection.immutable.{Map => ImmutableMap}
 import collection.Map
 
-class PipeExecutionResult(result: Iterator[Map[String, Any]], val columns: List[String], state:QueryState)
+class
+PipeExecutionResult(result: Iterator[Map[String, Any]], val columns: List[String], state:QueryState)
   extends ExecutionResult
   with StringExtras
   with CollectionSupport
@@ -59,7 +60,7 @@ class PipeExecutionResult(result: Iterator[Map[String, Any]], val columns: List[
 
     result.foreach((m) => {
       m.foreach((kv) => {
-        val length = text(kv._2, state.query).size
+        val length = text(kv._2, state.queryContext).size
         if (!columnSizes.contains(kv._1) || columnSizes.get(kv._1).get < length) {
           columnSizes.put(kv._1, length)
         }
@@ -130,7 +131,7 @@ class PipeExecutionResult(result: Iterator[Map[String, Any]], val columns: List[
   private def createString(columns: List[String], columnSizes: Map[String, Int], m: Map[String, Any]): String = {
     columns.map(c => {
       val length = columnSizes.get(c).get
-      val txt = text(m.get(c).get, state.query)
+      val txt = text(m.get(c).get, state.queryContext)
       val value = makeSize(txt, length)
       value
     }).mkString("| ", " | ", " |")
@@ -140,6 +141,6 @@ class PipeExecutionResult(result: Iterator[Map[String, Any]], val columns: List[
 
   def next(): ImmutableMap[String, Any] = result.next().toMap
 
-  def queryStatistics = QueryStatistics.empty
+  def queryStatistics = QueryStatistics()
 }
 

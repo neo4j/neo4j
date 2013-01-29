@@ -38,6 +38,8 @@ import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
 
 import org.neo4j.helpers.Exceptions;
+import org.neo4j.kernel.api.StatementContext;
+import org.neo4j.kernel.api.TransactionContext;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
@@ -65,11 +67,13 @@ class TransactionImpl implements Transaction
     private final int eventIdentifier;
 
     private final TxManager txManager;
-    private StringLogger logger;
+    private final StringLogger logger;
     private final ForceMode forceMode;
     private Thread owner;
 
     private final TransactionState state;
+    private StatementContext currentStatementContext;
+    private TransactionContext transactionContext;
 
     TransactionImpl( TxManager txManager, ForceMode forceMode, TransactionStateFactory stateFactory, StringLogger logger )
     {
@@ -132,6 +136,23 @@ class TransactionImpl implements Transaction
     {
         // make sure tx not suspended
         txManager.commit();
+        transactionContext.success();
+        transactionContext.finish();
+    }
+
+    void ensureStatementContextClosed()
+    {
+        if ( currentStatementContext != null )
+        {
+            try
+            {
+                currentStatementContext.close( getStatus() != Status.STATUS_MARKED_ROLLBACK );
+            }
+            finally
+            {
+                currentStatementContext = null;
+            }
+        }
     }
 
     boolean isGlobalStartRecordWritten()
@@ -145,6 +166,8 @@ class TransactionImpl implements Transaction
     {
         // make sure tx not suspended
         txManager.rollback();
+        transactionContext.failure();
+        transactionContext.finish();
     }
 
     @Override
@@ -595,6 +618,32 @@ class TransactionImpl implements Transaction
             }
         }
         status = Status.STATUS_ROLLEDBACK;
+    }
+
+    public StatementContext getCurrentStatementContext()
+    {
+        if ( currentStatementContext == null )
+        {
+            currentStatementContext = transactionContext.newStatementContext();
+        }
+
+        return currentStatementContext;
+    }
+
+    /*
+     * There is a circular dependency between creating the transaction context and this
+     * transactionimpl. As we move forward with introducing the KernelAPI, having TransactionImpl
+     * and TxManager handle TransactionContext like this should be refactored and moved to a point
+     * where the Neo4j transaction handling lives cleanly under the Kernel API, and is not tied to
+     * threads. The thread-bound, JTA-based, transaction management should probably live outside
+     * the kernel API entirely.
+     *
+     * However, in the spirit of baby steps, we hook into the current tx infrastructure at a few
+     * points to not have to do the full move in one step.
+     */
+    public void setTranscationContext( TransactionContext transactionContext )
+    {
+        this.transactionContext = transactionContext;
     }
 
     private static class ResourceElement

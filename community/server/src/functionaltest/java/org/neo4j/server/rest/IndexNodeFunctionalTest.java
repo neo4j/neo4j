@@ -293,6 +293,7 @@ public class IndexNodeFunctionalTest extends AbstractRestFunctionalTestBase
     @Test
     public void orderedResultsAreSupersetOfUnordered() throws Exception
     {
+        // Given
         String indexName = "bobTheIndex";
         String key = "Name";
         String value = "Builder";
@@ -307,6 +308,7 @@ public class IndexNodeFunctionalTest extends AbstractRestFunctionalTestBase
         Collection<?> hits = (Collection<?>) JsonHelper.jsonToSingleValue( entity );
         LinkedHashMap<String, String> nodeMapUnordered = (LinkedHashMap) hits.iterator().next();
 
+        // When
         entity = gen().expectedStatus( 200 ).get(
                 functionalTestHelper.indexNodeUri( indexName )
                         + "?query=Name:Build~0.1%20AND%20Gender:Male&order=score" ).entity();
@@ -314,6 +316,7 @@ public class IndexNodeFunctionalTest extends AbstractRestFunctionalTestBase
         hits = (Collection<?>) JsonHelper.jsonToSingleValue( entity );
         LinkedHashMap<String, String> nodeMapOrdered = (LinkedHashMap) hits.iterator().next();
 
+        // Then
         for ( Map.Entry<String, String> unorderedEntry : nodeMapUnordered.entrySet() )
         {
             assertEquals( "wrong entry for key: " + unorderedEntry.getKey(),

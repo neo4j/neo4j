@@ -44,12 +44,6 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.IndexProvider;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.ha.com.master.DefaultSlaveFactory;
-import org.neo4j.kernel.ha.com.master.Master;
-import org.neo4j.kernel.ha.com.RequestContextFactory;
-import org.neo4j.kernel.ha.com.master.Slaves;
-import org.neo4j.kernel.ha.management.ClusterDatabaseInfoProvider;
-import org.neo4j.kernel.ha.management.HighlyAvailableKernelData;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.KernelData;
@@ -64,15 +58,21 @@ import org.neo4j.kernel.ha.cluster.SimpleHighAvailabilityMemberContext;
 import org.neo4j.kernel.ha.cluster.member.ClusterMembers;
 import org.neo4j.kernel.ha.cluster.member.HighAvailabilitySlaves;
 import org.neo4j.kernel.ha.cluster.zoo.ZooKeeperHighAvailabilityEvents;
+import org.neo4j.kernel.ha.com.RequestContextFactory;
+import org.neo4j.kernel.ha.com.master.DefaultSlaveFactory;
+import org.neo4j.kernel.ha.com.master.Master;
+import org.neo4j.kernel.ha.com.master.Slaves;
 import org.neo4j.kernel.ha.id.HaIdGeneratorFactory;
 import org.neo4j.kernel.ha.lock.LockManagerModeSwitcher;
+import org.neo4j.kernel.ha.management.ClusterDatabaseInfoProvider;
+import org.neo4j.kernel.ha.management.HighlyAvailableKernelData;
 import org.neo4j.kernel.ha.switchover.Switchover;
 import org.neo4j.kernel.ha.transaction.OnDiskLastTxIdGetter;
 import org.neo4j.kernel.ha.transaction.TxHookModeSwitcher;
 import org.neo4j.kernel.ha.transaction.TxIdGeneratorModeSwitcher;
 import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.core.Caches;
-import org.neo4j.kernel.impl.core.RelationshipTypeCreator;
+import org.neo4j.kernel.impl.core.KeyCreator;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.core.WritableTransactionState;
 import org.neo4j.kernel.impl.transaction.LockManager;
@@ -145,6 +145,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         run();
     }
 
+    @Override
     protected void create()
     {
         life.add( new BranchedDataMigrator( storeDir ) );
@@ -195,6 +196,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         return super.beginTx( forceMode );
     }
 
+    @Override
     protected Logging createLogging()
     {
         try
@@ -218,7 +220,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
             public TransactionState create( Transaction tx )
             {
                 return new WritableTransactionState( snapshot( lockManager ),
-                        propertyIndexManager, nodeManager, logging, tx, snapshot( txHook ),
+                        nodeManager, logging, tx, snapshot( txHook ),
                         snapshot( txIdGenerator ) );
             }
         };
@@ -412,18 +414,31 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     }
 
     @Override
-    protected RelationshipTypeCreator createRelationshipTypeCreator()
+    protected KeyCreator createRelationshipTypeCreator()
     {
-        DelegateInvocationHandler<RelationshipTypeCreator> relationshipTypeCreatorDelegate =
-                new DelegateInvocationHandler<RelationshipTypeCreator>();
-        RelationshipTypeCreator relationshipTypeCreator =
-                (RelationshipTypeCreator) Proxy.newProxyInstance( RelationshipTypeCreator.class.getClassLoader(),
-                        new Class[]{RelationshipTypeCreator.class}, relationshipTypeCreatorDelegate );
+        DelegateInvocationHandler<KeyCreator> relationshipTypeCreatorDelegate =
+                new DelegateInvocationHandler<KeyCreator>();
+        KeyCreator relationshipTypeCreator =
+                (KeyCreator) Proxy.newProxyInstance( KeyCreator.class.getClassLoader(),
+                        new Class[]{KeyCreator.class}, relationshipTypeCreatorDelegate );
         new RelationshipTypeCreatorModeSwitcher( memberStateMachine, relationshipTypeCreatorDelegate,
-                (HaXaDataSourceManager) xaDataSourceManager, master, requestContextFactory );
+                (HaXaDataSourceManager) xaDataSourceManager, master, requestContextFactory, logging );
         return relationshipTypeCreator;
     }
 
+    @Override
+    protected KeyCreator createPropertyKeyCreator()
+    {
+        DelegateInvocationHandler<KeyCreator> propertyKeyCreatorDelegate =
+                new DelegateInvocationHandler<KeyCreator>();
+        KeyCreator propertyKeyCreator =
+                (KeyCreator) Proxy.newProxyInstance( KeyCreator.class.getClassLoader(),
+                        new Class[]{KeyCreator.class}, propertyKeyCreatorDelegate );
+        new PropertyKeyCreatorModeSwitcher( memberStateMachine, propertyKeyCreatorDelegate,
+                (HaXaDataSourceManager) xaDataSourceManager, master, requestContextFactory, logging );
+        return propertyKeyCreator;
+    }
+    
     @Override
     protected Caches createCaches()
     {

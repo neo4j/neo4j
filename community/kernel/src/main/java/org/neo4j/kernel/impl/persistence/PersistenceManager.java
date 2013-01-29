@@ -83,7 +83,7 @@ public class PersistenceManager
         return getReadOnlyResourceIfPossible().loadIndex( id );
     }
 
-    public NameData[] loadPropertyIndexes( int maxCount )
+    public NameData[] loadPropertyIndexes()
     {
         /* Using getReadOnlyResource here since loadPropertyIndexes doesn't
          * follow transaction state visibility standard anyway. There's also
@@ -92,7 +92,7 @@ public class PersistenceManager
          * done on all data sources, meaning that a call to getTransaction
          * could fail.
          */
-        return getReadOnlyResource/*IfPossible*/().loadPropertyIndexes( maxCount );
+        return getReadOnlyResource/*IfPossible*/().loadPropertyIndexes();
     }
 
     public long getRelationshipChainPosition( long nodeId )

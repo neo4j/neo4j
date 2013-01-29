@@ -21,10 +21,8 @@ package org.neo4j.kernel.impl.core;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
@@ -55,7 +53,6 @@ public class WritableTransactionState implements TransactionState
 {
     // Dependencies
     private final LockManager lockManager;
-    private final PropertyIndexManager propertyIndexManager;
     private final NodeManager nodeManager;
     private final StringLogger log;
     private final Transaction tx;
@@ -65,8 +62,6 @@ public class WritableTransactionState implements TransactionState
     // State
     private List<LockElement> lockElements;
     private PrimitiveElement primitiveElement;
-    private Map<String,PropertyIndex> createdIndexes;
-    private Map<Integer,PropertyIndex> idToIndex;
 
     public static class PrimitiveElement
     {
@@ -231,11 +226,9 @@ public class WritableTransactionState implements TransactionState
     }
 
     public WritableTransactionState( LockManager lockManager,
-            PropertyIndexManager propertyIndexManager, NodeManager nodeManager,
-            Logging logging, Transaction tx, TxHook txHook, TxIdGenerator txIdGenerator )
+            NodeManager nodeManager, Logging logging, Transaction tx, TxHook txHook, TxIdGenerator txIdGenerator )
     {
         this.lockManager = lockManager;
-        this.propertyIndexManager = propertyIndexManager;
         this.nodeManager = nodeManager;
         this.tx = tx;
         this.txHook = txHook;
@@ -338,7 +331,6 @@ public class WritableTransactionState implements TransactionState
     @Override
     public void commitCows()
     {
-        commitPropertyIndices();
         releaseCows( Status.STATUS_COMMITTED );
     }
 
@@ -353,17 +345,6 @@ public class WritableTransactionState implements TransactionState
     public boolean hasLocks()
     {
         return lockElements != null && !lockElements.isEmpty();
-    }
-
-    private void commitPropertyIndices()
-    {
-        if ( createdIndexes != null )
-        {
-            for ( PropertyIndex index : getAddedPropertyIndexes() )
-            {
-                propertyIndexManager.addPropertyIndex( index );
-            }
-        }
     }
 
     private void releaseLocks()
@@ -608,7 +589,7 @@ public class WritableTransactionState implements TransactionState
             {
                 for ( PropertyData data : relElement.propertyAddMap.values() )
                 {
-                    String key = nodeManager.getKeyForProperty( data, this );
+                    String key = nodeManager.getKeyForProperty( data );
                     Object oldValue = relImpl.getCommittedPropertyValue( nodeManager, key, this );
                     Object newValue = data.getValue();
                     result.assignedProperty( rel, key, newValue, oldValue );
@@ -618,7 +599,7 @@ public class WritableTransactionState implements TransactionState
             {
                 for ( PropertyData data : relElement.propertyRemoveMap.values() )
                 {
-                    String key = nodeManager.getKeyForProperty( data, this );
+                    String key = nodeManager.getKeyForProperty( data );
                     Object oldValue = data.getValue();
                     if ( oldValue != null && !relElement.deleted )
                     {
@@ -677,7 +658,7 @@ public class WritableTransactionState implements TransactionState
             {
                 for ( PropertyData data : nodeElement.propertyAddMap.values() )
                 {
-                    String key = nodeManager.getKeyForProperty( data, this );
+                    String key = nodeManager.getKeyForProperty( data );
                     Object oldValue = nodeImpl.getCommittedPropertyValue( nodeManager, key, this );
                     Object newValue = data.getValue();
                     result.assignedProperty( node, key, newValue, oldValue );
@@ -687,7 +668,7 @@ public class WritableTransactionState implements TransactionState
             {
                 for ( PropertyData data : nodeElement.propertyRemoveMap.values() )
                 {
-                    String key = nodeManager.getKeyForProperty( data, this );
+                    String key = nodeManager.getKeyForProperty( data );
                     Object oldValue = data.getValue();
                     if ( oldValue == null && !nodeElement.deleted )
                     {
@@ -735,38 +716,6 @@ public class WritableTransactionState implements TransactionState
             }
             result.created( nodeManager.newNodeProxyById( nodeId ) );
         }
-    }
-
-    @Override
-    public void addPropertyIndex( PropertyIndex index )
-    {
-        if ( createdIndexes == null )
-        {
-            createdIndexes = new HashMap<String, PropertyIndex>();
-            idToIndex = new HashMap<Integer, PropertyIndex>();
-        }
-        assert !createdIndexes.containsKey( index.getKey() );
-        createdIndexes.put( index.getKey(), index );
-        idToIndex.put( index.getKeyId(), index );
-    }
-
-    @Override
-    public PropertyIndex getPropertyIndex( String key )
-    {
-        return createdIndexes != null ? createdIndexes.get( key ) : null;
-    }
-    
-    @Override
-    public PropertyIndex getPropertyIndex( int keyId )
-    {
-        return idToIndex != null ? idToIndex.get( keyId ) : null;
-    }
-
-    @Override
-    public PropertyIndex[] getAddedPropertyIndexes()
-    {
-        return createdIndexes != null ? createdIndexes.values().toArray( new PropertyIndex[createdIndexes.size()] ) :
-            null;
     }
     
     @Override

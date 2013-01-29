@@ -22,6 +22,8 @@ include::node-properties.asciidoc[]
 
 include::relationship-properties.asciidoc[]
 
+include::node-labels.asciidoc[]
+
 include::indexes.asciidoc[]
 
 include::indexes-unique.asciidoc[]

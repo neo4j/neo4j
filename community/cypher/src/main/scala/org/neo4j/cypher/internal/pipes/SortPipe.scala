@@ -40,7 +40,7 @@ class SortPipe(source: Pipe, sortDescription: List[SortItem]) extends PipeWithSo
     sortWith((a, b) => compareBy(a, b, sortDescription)).iterator
 
 
-  override def executionPlan(): String = source.executionPlan() + "\r\nSort(" + sortDescription.mkString(",") + ")"
+  override def executionPlanDescription(): String = source.executionPlanDescription() + "\r\nSort(" + sortDescription.mkString(",") + ")"
 }
 
 trait ExecutionContextComparer extends Comparer {

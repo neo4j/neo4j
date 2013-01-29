@@ -149,7 +149,7 @@ public class TestGcrCacheRemoveSizeDiverge
         enableBreakpoints();
         graphdb.getNodeById( node.getId() );
         final Cache<?> nodeCache = graphdb.getNodeManager().caches().iterator().next();
-        assertTrue( "We didn't get a hold of the right cache object", nodeCache.toString().toLowerCase().contains( "node" ) );
+        assertTrue( "We didn't get a hold of the right cache object", nodeCache.getName().toLowerCase().contains( "node" ) );
 
         Thread t1 = new Thread( "T1: Relationship loader" )
         {
