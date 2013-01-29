@@ -93,7 +93,6 @@ subgraph cluster_packaging {
  "standalone" -> "server-advanced"
  "standalone" -> "neo4j-enterprise"
  "standalone" -> "server-enterprise"
- "standalone" -> "gremlin-plugin"
  "standalone" -> "windows-wrapper"
  "standalone" -> "manual"
  "neo4j-enterprise-windows" -> "standalone" [arrowhead="none"]
