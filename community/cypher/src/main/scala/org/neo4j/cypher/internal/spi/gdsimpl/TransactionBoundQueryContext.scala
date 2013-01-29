@@ -57,6 +57,10 @@ class TransactionBoundQueryContext(graph: GraphDatabaseAPI) extends QueryContext
   def getLabelsForNode(node: Long) =
     ctx.getLabelsForNode(node).asScala.map(_.asInstanceOf[Long])
 
+
+  override def isLabelSetOnNode(label: Long, node: Long) =
+    ctx.isLabelSetOnNode(label, node)
+
   def getOrCreateLabelId(labelName: String) =
     ctx.getOrCreateLabelId(labelName)
 

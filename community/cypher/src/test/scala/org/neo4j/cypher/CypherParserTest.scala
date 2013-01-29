@@ -2078,6 +2078,33 @@ foreach(x in [1,2,3] :
     )
   }
 
+  @Test def filter_by_label_in_where() {
+    testFrom_2_0("START n=node(0) WHERE n:Foo RETURN n",
+      Query.
+        start(NodeById("n", 0)).
+        where(HasLabel(Identifier("n"), Literal(Seq(LabelName("Foo"))))).
+        returns(ReturnItem(Identifier("n"), "n"))
+    )
+  }
+
+  @Test def filter_by_labels_in_where() {
+    testFrom_2_0("START n=node(0) WHERE n:Foo:Bar RETURN n",
+      Query.
+        start(NodeById("n", 0)).
+        where(HasLabel(Identifier("n"), Literal(Seq(LabelName("Foo"), LabelName("Bar"))))).
+        returns(ReturnItem(Identifier("n"), "n"))
+    )
+  }
+
+  @Test def filter_by_labels_expr_in_where() {
+    testFrom_2_0("START n=node(0) WHERE n LABEL [:Foo, :Bar] RETURN n",
+      Query.
+        start(NodeById("n", 0)).
+        where(HasLabel(Identifier("n"), Collection(Literal(LabelName("Foo")), Literal(LabelName("Bar"))))).
+        returns(ReturnItem(Identifier("n"), "n"))
+    )
+  }
+
   @Test @Ignore def replace_label() {
     val q2 = Query.
       start().

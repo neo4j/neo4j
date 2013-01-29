@@ -44,8 +44,7 @@ case class CreateNode(key: String, properties: Map[String, Expression], labels: 
       setProperties(node, props, context, state)
 
       val queryCtx = state.queryContext
-
-      val labelIds: Iterable[Long] = getLabelsAsLongs(context, labels, queryCtx)
+      val labelIds: Iterable[Long] = getLabelsAsLongs(context, labels)
 
       queryCtx.addLabelsToNode(node.getId, labelIds)
 

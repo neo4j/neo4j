@@ -23,9 +23,11 @@ import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.TransactionContext;
 import org.neo4j.kernel.impl.core.PropertyIndexManager;
+import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.transaction.LockManager;
+import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 
 /**
  * This is the beginnings of an implementation of the Kernel API, which is meant to be an internal API for consumption by
@@ -41,15 +43,17 @@ public class Kernel implements KernelAPI
     private final AbstractTransactionManager transactionManager;
     private final PropertyIndexManager propertyIndexManager;
     private final PersistenceManager persistenceManager;
+    private final XaDataSourceManager dataSourceManager;
     private final LockManager lockManager;
     private final PersistenceCache cache;
 
     public Kernel( AbstractTransactionManager transactionManager, PropertyIndexManager propertyIndexManager,
-            PersistenceManager persistenceManager, LockManager lockManager )
+            PersistenceManager persistenceManager, XaDataSourceManager dataSourceManager, LockManager lockManager )
     {
         this.transactionManager = transactionManager;
         this.propertyIndexManager = propertyIndexManager;
         this.persistenceManager = persistenceManager;
+        this.dataSourceManager = dataSourceManager;
         this.lockManager = lockManager;
         this.cache = new PersistenceCache( new TemporaryLabelAsPropertyLoader( persistenceManager ) );
     }
@@ -58,7 +62,9 @@ public class Kernel implements KernelAPI
     public TransactionContext newTransactionContext()
     {
         // I/O
-        TransactionContext result = new TemporaryLabelAsPropertyTransactionContext( propertyIndexManager, persistenceManager );
+        // TODO figure out another way to get access to the PropertyStore, or to not having to pass it in
+        TransactionContext result = new TemporaryLabelAsPropertyTransactionContext( propertyIndexManager,
+                persistenceManager, propertyStore() );
         // + Transaction life cycle
         // XXX: This is disabled during transition phase, we are still using the legacy transaction management stuff
         //result = new TransactionLifecycleTransactionContext( result, transactionManager, propertyIndexManager, persistenceManager, cache );
@@ -80,12 +86,18 @@ public class Kernel implements KernelAPI
     public StatementContext newReadOnlyStatementContext()
     {
         // I/O
-        StatementContext result = new TemporaryLabelAsPropertyStatementContext( propertyIndexManager, persistenceManager );
+        StatementContext result = new TemporaryLabelAsPropertyStatementContext( propertyIndexManager,
+                persistenceManager, propertyStore() );
         // + Cache
         result = new CachingStatementContext( result, cache );
         // + Read only access
         result = new ReadOnlyStatementContext( result );
 
         return result;
+    }
+    
+    private PropertyStore propertyStore()
+    {
+        return dataSourceManager.getNeoStoreDataSource().getNeoStore().getPropertyStore();
     }
 }

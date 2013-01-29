@@ -19,12 +19,21 @@
  */
 package org.neo4j.tooling;
 
+import java.util.Collections;
 import java.util.Iterator;
+
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.ThreadToStatementContextBridge;
+import org.neo4j.kernel.api.LabelNotFoundKernelException;
+import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.impl.core.NodeManager;
 
 /**
@@ -33,10 +42,14 @@ import org.neo4j.kernel.impl.core.NodeManager;
 public class GlobalGraphOperations
 {
     private final NodeManager nodeManager;
+    private final ThreadToStatementContextBridge statementCtxProvider;
 
     private GlobalGraphOperations( GraphDatabaseService db )
     {
-        this.nodeManager = ((GraphDatabaseAPI) db).getNodeManager();
+        GraphDatabaseAPI dbApi = (GraphDatabaseAPI) db;
+        DependencyResolver resolver = dbApi.getDependencyResolver();
+        this.nodeManager = resolver.resolveDependency( NodeManager.class );
+        this.statementCtxProvider = resolver.resolveDependency( ThreadToStatementContextBridge.class );
     }
 
     /**
@@ -98,5 +111,56 @@ public class GlobalGraphOperations
     public Iterable<RelationshipType> getAllRelationshipTypes()
     {
         return nodeManager.getRelationshipTypes();
+    }
+    
+    /**
+     * Returns all {@link Node nodes} with a specific {@link Label label}.
+     * 
+     * @param label the {@link Label} to return nodes for.
+     * @return an {@link Iterable} containing nodes with a specific label.
+     */
+    public Iterable<Node> getAllNodesWithLabel( Label label )
+    {
+        StatementContext context = statementCtxProvider.getCtxForReading();
+        try
+        {
+            long labelId = context.getLabelId( label.name() );
+            final Iterable<Long> nodeIds = context.getNodesWithLabel( labelId );
+            return new Iterable<Node>()
+            {
+                @Override
+                public Iterator<Node> iterator()
+                {
+                    final Iterator<Long> nodeIdIterator = nodeIds.iterator();
+                    return new PrefetchingIterator<Node>()
+                    {
+                        @Override
+                        protected Node fetchNextOrNull()
+                        {
+                            while ( nodeIdIterator.hasNext() )
+                            {
+                                long nodeId = nodeIdIterator.next();
+                                try
+                                {
+                                    Node node = nodeManager.getNodeByIdOrNull( nodeId );
+                                    if ( node != null )
+                                        return node;
+                                }
+                                catch ( NotFoundException e )
+                                {
+                                    // OK
+                                }
+                            }
+                            return null;
+                        }
+                    };
+                }
+            };
+        }
+        catch ( LabelNotFoundKernelException e )
+        {
+            // That label hasn't been created yet, there cannot possibly be any nodes labeled with it
+            return Collections.emptyList();
+        }
     }
 }

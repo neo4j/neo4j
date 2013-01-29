@@ -19,11 +19,15 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import static org.neo4j.helpers.collection.Iterables.concat;
+import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
 
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.neo4j.helpers.Predicate;
 import org.neo4j.kernel.api.StatementContext;
 
 public class TransactionStateAwareStatementContext extends DelegatingStatementContext
@@ -39,11 +43,7 @@ public class TransactionStateAwareStatementContext extends DelegatingStatementCo
     @Override
     public boolean addLabelToNode( long labelId, long nodeId )
     {
-        Set<Long> addedLabels = state.getAddedLabels( nodeId, true );
-        Set<Long> removedLabels = state.getRemovedLabels( nodeId, false );
-
-        removedLabels.remove( labelId );
-        return addedLabels.add( labelId );
+        return state.addLabelToNode( labelId, nodeId );
     }
 
     @Override
@@ -51,12 +51,9 @@ public class TransactionStateAwareStatementContext extends DelegatingStatementCo
     {
         if ( state.hasChanges() )
         {
-            Set<Long> addedLabels = state.getAddedLabels( nodeId, false );
-            if ( addedLabels.contains( labelId ) )
-                return true;
-            Set<Long> removedLabels = state.getRemovedLabels( nodeId, false );
-            if ( removedLabels.contains( labelId ) )
-                return false;
+            Boolean labelState = state.getLabelState( nodeId, labelId );
+            if ( labelState != null )
+                return labelState.booleanValue();
         }
 
         return delegate.isLabelSetOnNode( labelId, nodeId );
@@ -70,19 +67,41 @@ public class TransactionStateAwareStatementContext extends DelegatingStatementCo
             return committedLabels;
 
         Set<Long> result = addToCollection( committedLabels, new HashSet<Long>() );
-        result.addAll( state.getAddedLabels( nodeId, false ) );
-        result.removeAll( state.getRemovedLabels( nodeId, false ) );
+        result.addAll( state.getAddedLabels( nodeId ) );
+        result.removeAll( state.getRemovedLabels( nodeId ) );
         return result;
     }
 
     @Override
     public boolean removeLabelFromNode( long labelId, long nodeId )
     {
-        Set<Long> addedLabels = state.getAddedLabels( nodeId, false );
-        Set<Long> removedLabels = state.getRemovedLabels( nodeId, true );
-
-        addedLabels.remove( labelId );
-        return removedLabels.add( labelId );
+        return state.removeLabelFromNode( labelId, nodeId );
+    }
+    
+    @SuppressWarnings( "unchecked" )
+    @Override
+    public Iterable<Long> getNodesWithLabel( long labelId )
+    {
+        Iterable<Long> committed = delegate.getNodesWithLabel( labelId );
+        if ( !state.hasChanges() )
+            return committed;
+        
+        Iterable<Long> result = committed;
+        final Collection<Long> removed = state.getRemovedNodesWithLabel( labelId );
+        if ( !removed.isEmpty() )
+        {
+            result = filter( new Predicate<Long>()
+            {
+                @Override
+                public boolean accept( Long item )
+                {
+                    return !removed.contains( item );
+                }
+            }, result );
+        }
+        
+        Iterable<Long> added = state.getAddedNodesWithLabel( labelId );
+        return concat( result, added );
     }
 
     @Override
