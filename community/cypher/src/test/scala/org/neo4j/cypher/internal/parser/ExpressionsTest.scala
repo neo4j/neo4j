@@ -17,22 +17,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.parser.v2_0
+package org.neo4j.cypher.internal.parser
 
-import org.neo4j.cypher.internal.commands.expressions.{Expression, Literal}
-import org.neo4j.cypher.internal.commands.values.LabelValue
+import v2_0.{AbstractPattern, Expressions}
+import org.junit.Test
+import org.neo4j.cypher.internal.commands.expressions.{Collection, Literal}
+import org.neo4j.cypher.internal.commands.values.LabelName
 
-trait LabelParsing {
-  self: Base =>
+class ExpressionsTest extends Expressions with ParserTest {
 
-  def optLabelSeq = opt(labelSeq)
+  @Test def label_literals() {
+    implicit val parserToTest = expression
 
-  def labelSeq = longLabelSeq | shortLabelSeq
-
-  def longLabelSeq: Parser[Expression]  = ignoreCase("LABEL") ~> labelLitSeq
-  def shortLabelSeq: Parser[Literal]    = labelLitSeq
-
-  def labelLitSeq = rep1(labelLit) ^^ { (x: List[Literal]) =>
-    Literal(x map { _.v.asInstanceOf[LabelValue] } )
+    parsing(":swedish") shouldGive Literal(LabelName("swedish"))
+    parsing("[:swedish, :argentinian]") shouldGive Collection(Literal(LabelName("swedish")), Literal(LabelName("argentinian")))
   }
+
+  def createProperty(entity: String, propName: String) = ???
+
+  def matchTranslator(abstractPattern: AbstractPattern) = ???
 }

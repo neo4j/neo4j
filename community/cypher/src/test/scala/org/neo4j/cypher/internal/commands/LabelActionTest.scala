@@ -30,10 +30,9 @@ import org.junit.Test
 import values.{ResolvedLabel, LabelName}
 
 class LabelActionTest extends GraphDatabaseTestBase with Assertions {
-  val ctx = ExecutionContext.empty
   val queryContext = new SnitchingQueryContext
   val state = new QueryState(graph, queryContext, Map.empty)
-
+  val ctx = ExecutionContext(state = state)
 
   @Test
   def set_single_label_on_node() {
@@ -75,7 +74,6 @@ class LabelActionTest extends GraphDatabaseTestBase with Assertions {
     val n = createNode()
     val given = LabelAction(Literal(n), LabelAdd, Literal(Seq(label("green"), "blue")))
 
-    //THEN
     intercept[CypherTypeException](given.exec(ctx, state))
   }
 }

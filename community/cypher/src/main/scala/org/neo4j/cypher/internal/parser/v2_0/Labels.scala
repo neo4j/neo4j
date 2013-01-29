@@ -17,29 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.commands
+package org.neo4j.cypher.internal.parser.v2_0
 
-import expressions.{Literal, StrLabelFunction}
-import org.junit.Test
-import org.scalatest.Assertions
-import org.neo4j.cypher.internal.ExecutionContext
-import org.neo4j.cypher.CypherTypeException
-import values.LabelName
+import org.neo4j.cypher.internal.commands.expressions.{Expression, Literal}
+import org.neo4j.cypher.internal.commands.values.LabelName
 
-class StrLabelFunctionTest extends Assertions {
-
-  @Test
-  def testWithCorrectType() {
-    assert(StrLabelFunction(Literal("bluey"))(ExecutionContext.empty) === LabelName("bluey"))
-  }
-
-  @Test
-  def testWithIncorrectType() {
-    intercept[CypherTypeException] { StrLabelFunction(Literal(3))(ExecutionContext.empty) }
-  }
-
-  @Test
-  def testCalculateTypeThrows() {
-    intercept[CypherTypeException] { StrLabelFunction(Literal(3)).calculateType(null) }
-  }
+trait Labels extends Base {
+  def labelLit: Parser[Literal] = ":" ~> identity ^^ { x => Literal(LabelName(x)) }
+  def labelShortForm: Parser[Literal] = rep1(labelLit) ^^ (coll => Literal(coll.map(_.v)))
+  def labelLongForm: Parser[Expression] = labelShortForm | ignoreCase("label") ~> (labelShortForm | expression)
+  def expression: Parser[Expression]
 }

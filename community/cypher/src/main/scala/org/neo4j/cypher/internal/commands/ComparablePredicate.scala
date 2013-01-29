@@ -37,7 +37,6 @@ abstract sealed class ComparablePredicate(left: Expression, right: Expression) e
   }
 
   def sign: String
-  def atoms: Seq[Predicate] = Seq(this)
   override def toString() = left.toString() + " " + sign + " " + right.toString()
   def containsIsNull = false
 
@@ -63,7 +62,6 @@ case class Equals(a: Expression, b: Expression) extends Predicate with Comparer 
     }
   }
 
-  def atoms = Seq(this)
   override def toString() = a.toString() + " == " + b.toString()
   def containsIsNull = false
   def rewrite(f: (Expression) => Expression) = Equals(a.rewrite(f), b.rewrite(f))

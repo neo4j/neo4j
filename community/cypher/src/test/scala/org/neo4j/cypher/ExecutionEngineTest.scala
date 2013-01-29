@@ -2399,12 +2399,6 @@ RETURN x0.name?
     assert(result.toList === List(Map((":foo" -> "foo"))))
   }
 
-  @Test def should_return_label_as_string() {
-    val result = parseAndExecute("""START a=node(0) return strlabel("foo") as r""")
-
-    assert(result.toList === List(Map(("r" -> "foo"))))
-  }
-
   @Test def should_return_label_collection_as_string_collection() {
     val result = parseAndExecute("""START a=node(0) return [:foo, :bar] as r""")
 

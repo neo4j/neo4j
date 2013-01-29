@@ -124,8 +124,6 @@ abstract class DocumentingTestBase extends Assertions with DocumentationHelper {
 
   def graphDescription: List[String]
 
-  def labelsDescription: Map[String, List[String]] = Map.empty
-
   def indexProps: List[String] = List()
 
   def dumpToFile(dir: File, writer: PrintWriter, title: String, query: String, returns: String, text: String, result: ExecutionResult, consoleData: String) {
@@ -212,13 +210,6 @@ abstract class DocumentingTestBase extends Assertions with DocumentationHelper {
 
       asNodeMap(properties) foreach { case (n: Node, seq: Map[String, Any]) =>
           seq foreach { case (k, v) => n.setProperty(k, v) }
-      }
-
-      asNodeMap(labelsDescription) foreach {
-        case (n, labels) =>
-          labels.foreach {
-            label => n.addLabel(dynamicLabel(label))
-          }
       }
     })
   }

@@ -19,31 +19,17 @@
  */
 package org.neo4j.test;
 
+import org.neo4j.graphdb.*;
+import org.neo4j.graphdb.index.AutoIndexer;
+import org.neo4j.tooling.GlobalGraphOperations;
+
+import java.lang.annotation.*;
+import java.util.*;
+
 import static java.util.Arrays.asList;
 import static java.util.Arrays.copyOfRange;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.test.GraphDescription.PropType.STRING;
-
-import java.lang.annotation.Annotation;
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Inherited;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-
-import org.neo4j.graphdb.DynamicRelationshipType;
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.PropertyContainer;
-import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.index.AutoIndexer;
-import org.neo4j.tooling.GlobalGraphOperations;
 
 public class GraphDescription implements GraphDefinition
 {
@@ -317,7 +303,8 @@ public class GraphDescription implements GraphDefinition
                 joinedLabels.add( label.value() );
             }
 
-            nodes.put( name, new NodeWithAddedLabels(preexistingNode, labels));
+            String[] labelNameArray = joinedLabels.toArray(new String[joinedLabels.size()]);
+            nodes.put( name, new NodeWithAddedLabels(preexistingNode, labelNameArray));
         }
     }
 
