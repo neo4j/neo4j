@@ -27,12 +27,9 @@ import org.neo4j.cypher.internal.spi.QueryContext
 
 trait LabelSupport extends CollectionSupport {
 
-  def labelSeq(context: ExecutionContext, labelSeqExpr: Expression): Iterable[LabelValue] =
-    liftAsCollection[LabelValue]({ case (l: LabelValue) => l})(labelSeqExpr(context)).getOrElse {
-          throw new CypherTypeException("Encountered label collection with non-label values")
-     }
-
-
-  def getLabelsAsLongs(executionContext: ExecutionContext, labels: Expression) =
-    labelSeq(executionContext, labels).map(_.resolveForId(executionContext.state.queryContext).id)
+  def getLabelsAsLongs(context: ExecutionContext, labels: Expression) =
+    makeTraversable(labels(context)).map {
+      case x: LabelValue => x.resolveForId(context.state.queryContext).id
+      case _             => throw new CypherTypeException("Label expressions must return labels")
+    }
 }

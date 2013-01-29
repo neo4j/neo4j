@@ -60,7 +60,7 @@ class SemanticErrorTest extends ExecutionEngineHelper {
 
   @Test def shouldKnowNotToCompareStringsAndNumbers() {
     expectedError("start a=node(0) where a.age =~ 13 return a",
-      "Literal expected to be of type String but it is of type Number")
+      "Literal(13) expected to be of type String but it is of type Number")
   }
 
   @Test def shouldComplainAboutUnknownIdentifier() {

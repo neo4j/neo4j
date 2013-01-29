@@ -25,7 +25,7 @@ import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.cypher.internal.commands.expressions.{Literal, Expression, Identifier}
 import org.neo4j.cypher.internal.commands.values.LabelValue
 
-trait ParserPattern extends Base with LabelParsing {
+trait ParserPattern extends Base with Labels {
 
   def usePattern[T](translator: AbstractPattern => Maybe[T], acceptable: Seq[T] => Boolean): Parser[Seq[T]] = Parser {
     case in =>
@@ -80,30 +80,33 @@ trait ParserPattern extends Base with LabelParsing {
     case pathName ~ "=" ~ patterns => Seq(ParsedNamedPath(pathName, patterns))
   }
 
-  private def node: Parser[ParsedEntity] =
+  def node: Parser[ParsedEntity] =
       parens(nodeFromExpression) | // whatever expression, but inside parenthesis
       singleNodeDefinition | // x optLabelSeq optValues
       nodeInParenthesis | // (singleNodeDefinition)
       failure("expected an expression that is a node")
 
 
-  private def optValues = opt( (("="|ignoreCase("values")) ~> curlyMapWithExpression) | curlyMap )
+  private def values = (("="|ignoreCase("values")) ~> curlyMapWithExpression) | curlyMap
 
-  private def singleNodeDefinition =
-    (identity ~ optLabelSeq ~ optValues) ^^ {
-      case name ~ optLabels ~ optMap =>
-        val mapVal = optMap.getOrElse(Map.empty)
-        val labelsVal = optLabels.getOrElse(Literal(Seq.empty))
-        val bare = optMap.isEmpty && optLabels.isEmpty
-        ParsedEntity(name, Identifier(name), mapVal, True(), labelsVal, bare)
-    }
-
-  private def nodeInParenthesis = parens(opt(identity) ~ optLabelSeq ~ optValues) ^^ {
-    case id ~ optLabels~ optMap =>
-      val name = namer.name(id)
+  private def labelsAndValues: Parser[(Expression, Map[String, Expression], Boolean)] = opt(labelLongForm) ~ opt(values) ^^ {
+    case optLabels ~ optMap =>
       val mapVal = optMap.getOrElse(Map.empty)
       val labelsVal = optLabels.getOrElse(Literal(Seq.empty))
       val bare = optMap.isEmpty && optLabels.isEmpty
+      (labelsVal, mapVal, bare)
+  }
+
+  private def singleNodeDefinition = identity ~ labelsAndValues ^^ {
+    case name ~ labelsAndValues =>
+      val (labelsVal, mapVal, bare) = labelsAndValues
+      ParsedEntity(name, Identifier(name), mapVal, True(), labelsVal, bare)
+  }
+
+  private def nodeInParenthesis = parens(opt(identity) ~ labelsAndValues) ^^ {
+    case id ~ labelsAndValues =>
+      val name = namer.name(id)
+      val (labelsVal, mapVal, bare) = labelsAndValues
       ParsedEntity(name, Identifier(name), mapVal, True(), labelsVal, bare)
   }
 
@@ -119,10 +122,6 @@ trait ParserPattern extends Base with LabelParsing {
         failure("expected an expression that is a node", rest)
     }
   }
-
-//  private def nodeIdentifier = identity ~ optLabelSeq ^^ {
-//    case name ~ labels => ParsedEntity(name, Identifier(name), Map[String, Expression](), True(), labels)
-//  }
 
   private def path: Parser[List[AbstractPattern]] = relationship | shortestPath
   private def pathFacingOut: Parser[List[AbstractPattern]] = relationshipFacingOut | shortestPath
@@ -217,7 +216,6 @@ trait ParserPattern extends Base with LabelParsing {
     case (None, Some(_)) => Direction.OUTGOING
     case (Some(_), None) => Direction.INCOMING
     case _ => Direction.BOTH
-
   }
 
   private def propertyAssignment: Parser[(String, Expression)] = identity ~ ":" ~ expression ^^ {

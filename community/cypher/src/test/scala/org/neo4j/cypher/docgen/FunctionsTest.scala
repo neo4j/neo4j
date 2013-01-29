@@ -26,7 +26,7 @@ import org.neo4j.cypher.ExecutionResult
 
 class FunctionsTest extends DocumentingTestBase {
   def graphDescription = List(
-    "A KNOWS B",
+    "A:foo:bar KNOWS B",
     "A KNOWS C",
     "B KNOWS D",
     "C KNOWS D",
@@ -38,10 +38,6 @@ class FunctionsTest extends DocumentingTestBase {
     "C" -> Map("age" -> 53, "eyes" -> "green"),
     "D" -> Map("age" -> 54, "eyes" -> "brown"),
     "E" -> Map("age" -> 41, "eyes" -> "blue", "array" -> Array("one", "two", "three"))
-  )
-
-  override def labelsDescription = Map(
-    "A" -> List("foo", "bar")
   )
 
   def section = "functions"
