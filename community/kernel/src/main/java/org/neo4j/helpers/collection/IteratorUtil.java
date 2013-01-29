@@ -473,18 +473,18 @@ public abstract class IteratorUtil
         return new LinesOfFileIterator( file );
     }
     
-    public static <T> void streamToFile( Iterable<T> iterable, File file ) throws IOException
+    public static <T> void streamToFile( Iterable<T> iterable, File file, String encoding ) throws IOException
     {
-        streamToFile( iterable.iterator(), file );
+        streamToFile( iterable.iterator(), file, encoding );
     }
 
-    public static <T> void streamToFile( Iterator<T> iterator, File file ) throws IOException
+    public static <T> void streamToFile( Iterator<T> iterator, File file, String encoding ) throws IOException
     {
         if ( file.exists() ) throw new IOException( "File '" + file + "' already exists" );
         PrintStream out = null;
         try
         {
-            out = new PrintStream( file );
+            out = new PrintStream( file, encoding );
             while ( iterator.hasNext() ) out.println( iterator.next().toString() );
         }
         finally

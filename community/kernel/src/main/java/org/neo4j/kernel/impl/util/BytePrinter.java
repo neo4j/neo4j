@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.util;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
+import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 
 /**
@@ -136,10 +137,18 @@ public class BytePrinter
      */
     public static String hex( ByteBuffer bytes, int offset, int length )
     {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        PrintStream ps = new PrintStream(baos);
-        print( bytes, ps, offset, length );
-        return baos.toString();
+        try
+        {
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            PrintStream ps = null;
+            ps = new PrintStream(baos, true, "UTF-8");
+            print( bytes, ps, offset, length );
+            return baos.toString("UTF-8");
+        }
+        catch ( UnsupportedEncodingException e )
+        {
+            throw new RuntimeException( e );
+        }
     }
 
     /**

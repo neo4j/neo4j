@@ -20,6 +20,7 @@
 package org.neo4j.helpers;
 
 import java.io.PrintStream;
+import java.io.UnsupportedEncodingException;
 
 /**
  * A generic interface for reporting progress by a tool. Can be implemented to
@@ -225,7 +226,15 @@ public interface ProgressIndicator
 
         public UnknownEndProgress( long stepSize, String doneMessage )
         {
-            this(stepSize, doneMessage, new PrintStream(System.out));
+            try {
+                this.stepSize = stepSize;
+                this.doneMessage = doneMessage;
+                this.out = new PrintStream(System.out, /* auto-flush=*/false, "utf-8" );
+            } catch(UnsupportedEncodingException e)
+            {
+                throw new RuntimeException("Your platform does not support utf-8 encoded strings, " +
+                        "which is required for this library to work.", e);
+            }
         }
         
         public UnknownEndProgress(long stepSize, String doneMessage, PrintStream out)
