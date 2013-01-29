@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.api;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -43,7 +44,7 @@ public class TransactionStateAwareStatementContextTest
     public void addOnlyLabelShouldBeVisibleInTx() throws Exception
     {
         // GIVEN
-        commitLabels( new Long[0] );
+        commitNoLabels();
         
         // WHEN
         txContext.addLabelToNode( labelId1, nodeId );
@@ -123,7 +124,7 @@ public class TransactionStateAwareStatementContextTest
     public void unsuccessfulCloseShouldntDelegateDown() throws Exception
     {
         // GIVEN
-        commitLabels( new Long[0] );
+        commitNoLabels();
         txContext.addLabelToNode( labelId1, nodeId );
         
         // WHEN
@@ -137,7 +138,7 @@ public class TransactionStateAwareStatementContextTest
     public void successfulCloseShouldDelegateDown() throws Exception
     {
         // GIVEN
-        commitLabels( new Long[0] );
+        commitNoLabels();
         txContext.addLabelToNode( labelId1, nodeId );
         
         // WHEN
@@ -177,6 +178,58 @@ public class TransactionStateAwareStatementContextTest
 
         // THEN
         assertEquals( asSet( 0L ), asSet( txContext.getNodesWithLabel( 2 ) ) );
+    }
+    
+    @Test
+    public void addingNewLabelToNodeShouldRespondTrue() throws Exception
+    {
+        // GIVEN
+        commitNoLabels();
+
+        // WHEN
+        boolean added = txContext.addLabelToNode( labelId1, nodeId );
+
+        // THEN
+        assertTrue( "Should have been added now", added );
+    }
+    
+    @Test
+    public void addingExistingLabelToNodeShouldRespondFalse() throws Exception
+    {
+        // GIVEN
+        commitLabels( labelId1 );
+
+        // WHEN
+        boolean added = txContext.addLabelToNode( labelId1, nodeId );
+
+        // THEN
+        assertFalse( "Shouldn't have been added now", added );
+    }
+    
+    @Test
+    public void removingExistingLabelFromNodeShouldRespondTrue() throws Exception
+    {
+        // GIVEN
+        commitLabels( labelId1 );
+
+        // WHEN
+        boolean removed = txContext.removeLabelFromNode( labelId1, nodeId );
+
+        // THEN
+        assertTrue( "Should have been removed now", removed );
+    }
+    
+    @Test
+    public void removingNonExistentLabelFromNodeShouldRespondFalse() throws Exception
+    {
+        // GIVEN
+        commitNoLabels();
+
+        // WHEN
+        boolean removed = txContext.removeLabelFromNode( labelId1, nodeId );
+
+        // THEN
+        assertFalse( "Shouldn't have been removed now", removed );
     }
     
     private final long labelId1 = 10, labelId2 = 12, nodeId = 20;
@@ -232,6 +285,11 @@ public class TransactionStateAwareStatementContextTest
         {
             when( store.getNodesWithLabel( entry.getKey() ) ).thenReturn( entry.getValue() );
         }
+    }
+    
+    private void commitNoLabels()
+    {
+        commitLabels( new Long[0] );
     }
 
     private void commitLabels( Long... labels )

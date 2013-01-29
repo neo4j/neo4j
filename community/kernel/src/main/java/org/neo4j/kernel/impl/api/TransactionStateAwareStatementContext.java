@@ -43,7 +43,10 @@ public class TransactionStateAwareStatementContext extends DelegatingStatementCo
     @Override
     public boolean addLabelToNode( long labelId, long nodeId )
     {
-        return state.addLabelToNode( labelId, nodeId );
+        boolean addedToState = state.addLabelToNode( labelId, nodeId );
+        if ( !addedToState || delegate.isLabelSetOnNode( labelId, nodeId ) )
+            return false;
+        return true;
     }
 
     @Override
@@ -75,7 +78,10 @@ public class TransactionStateAwareStatementContext extends DelegatingStatementCo
     @Override
     public boolean removeLabelFromNode( long labelId, long nodeId )
     {
-        return state.removeLabelFromNode( labelId, nodeId );
+        boolean removedFromState = state.removeLabelFromNode( labelId, nodeId );
+        if ( !removedFromState || !delegate.isLabelSetOnNode( labelId, nodeId ) )
+            return false;
+        return true;
     }
     
     @SuppressWarnings( "unchecked" )
