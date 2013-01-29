@@ -53,7 +53,6 @@ public class WritableTransactionState implements TransactionState
 {
     // Dependencies
     private final LockManager lockManager;
-    private final PropertyIndexManager propertyIndexManager;
     private final NodeManager nodeManager;
     private final StringLogger log;
     private final Transaction tx;
@@ -227,11 +226,9 @@ public class WritableTransactionState implements TransactionState
     }
 
     public WritableTransactionState( LockManager lockManager,
-            PropertyIndexManager propertyIndexManager, NodeManager nodeManager,
-            Logging logging, Transaction tx, TxHook txHook, TxIdGenerator txIdGenerator )
+            NodeManager nodeManager, Logging logging, Transaction tx, TxHook txHook, TxIdGenerator txIdGenerator )
     {
         this.lockManager = lockManager;
-        this.propertyIndexManager = propertyIndexManager;
         this.nodeManager = nodeManager;
         this.tx = tx;
         this.txHook = txHook;

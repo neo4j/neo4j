@@ -60,6 +60,7 @@ import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.KernelData;
 import org.neo4j.kernel.PlaceboTransaction;
 import org.neo4j.kernel.TransactionBuilder;
+import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.core.NodeManager;
@@ -216,6 +217,12 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
         public TransactionState getTransactionState()
         {
             return TransactionState.NO_STATE;
+        }
+
+        @Override
+        @Deprecated
+        public void setKernel( KernelAPI kernel )
+        {
         }
     };
 

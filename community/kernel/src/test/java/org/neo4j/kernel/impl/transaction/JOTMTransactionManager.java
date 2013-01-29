@@ -37,6 +37,7 @@ import javax.transaction.TransactionManager;
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 
+import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
@@ -254,5 +255,12 @@ public class JOTMTransactionManager extends AbstractTransactionManager
         {
             throw new RuntimeException( e );
         }
+    }
+    
+    @Override
+    @Deprecated
+    public void setKernel( KernelAPI kernel )
+    {
+        throw new UnsupportedOperationException( "Not implemented" );
     }
 }

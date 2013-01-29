@@ -418,7 +418,7 @@ public abstract class InternalAbstractGraphDatabase
                 createNodeManager( readOnly, cacheProvider, nodeCache, relCache );
 
         life.add( nodeManager );
-        stateFactory.setDependencies( lockManager, propertyIndexManager, nodeManager, txHook, txIdGenerator );
+        stateFactory.setDependencies( lockManager, nodeManager, txHook, txIdGenerator );
 
         indexStore = life.add( new IndexStore( this.storeDir, fileSystem ) );
 

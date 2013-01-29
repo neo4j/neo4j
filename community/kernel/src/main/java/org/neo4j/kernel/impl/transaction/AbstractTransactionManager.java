@@ -41,8 +41,6 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
  */
 public abstract class AbstractTransactionManager implements TransactionManager, Lifecycle
 {
-    private KernelAPI kernel;
-
     public void begin( ForceMode forceMode ) throws NotSupportedException, SystemException
     {
         begin();
@@ -104,8 +102,5 @@ public abstract class AbstractTransactionManager implements TransactionManager, 
      * @param kernel
      */
     @Deprecated
-    public void setKernel( KernelAPI kernel )
-    {
-
-    }
+    public abstract void setKernel( KernelAPI kernel );
 }
