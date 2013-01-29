@@ -21,6 +21,7 @@ package org.neo4j.server.rest;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.server.rest.domain.JsonHelper.createJsonFrom;
 
@@ -29,8 +30,10 @@ import java.util.Map;
 
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
+import org.neo4j.helpers.Function;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.rest.domain.JsonHelper;
+import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.web.PropertyValueException;
 import org.neo4j.test.GraphDescription;
 import org.neo4j.test.GraphDescription.LABEL;
@@ -132,5 +135,38 @@ public class LabelsFunctionalTest  extends AbstractRestFunctionalTestBase
             .delete( nodeUri + "/labels/" + labelName );
         
         node.hasLabel( label( labelName ) );
+    }
+    
+    /**
+     * Get all nodes with a label.
+     * @throws JsonParseException
+     */
+    @Documented
+    @Test
+    @GraphDescription.Graph( nodes = {
+            @NODE( name = "a", setNameProperty = true, labels = { @LABEL( "first" ), @LABEL( "second" ) } ),
+            @NODE( name = "b", setNameProperty = true, labels = { @LABEL( "first" ) } ),
+            @NODE( name = "c", setNameProperty = true, labels = { @LABEL( "second" ) } )
+            } )
+    public void get_all_nodes_with_label() throws JsonParseException
+    {
+        Map<String,Node> nodes = data.get();
+        String uri = getNodesWithLabelUri( "first" );
+        String body = gen.get()
+            .expectedStatus( 200 )
+            .get( uri )
+            .entity();
+        
+        List<?> parsed = (List<?>) JsonHelper.readJson( body );
+        assertEquals( asSet( "a", "b" ), asSet( map( new Function<Object, String>()
+        {
+            @Override
+            public String apply( Object from )
+            {
+                Map<?,?> node = (Map<?, ?>) from;
+                Map<?,?> data = (Map<?, ?>) node.get( "data" );
+                return (String) data.get( "name" );
+            }
+        }, parsed ) ) );
     }
 }

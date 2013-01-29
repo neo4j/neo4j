@@ -101,12 +101,12 @@ public class GraphDbHelper
         }
     }
 
-    public long createNode()
+    public long createNode( Label... labels )
     {
         Transaction tx = database.getGraph().beginTx();
         try
         {
-            Node node = database.getGraph().createNode();
+            Node node = database.getGraph().createNode( labels );
             tx.success();
             return node.getId();
         }
@@ -116,12 +116,12 @@ public class GraphDbHelper
         }
     }
 
-    public long createNode( Map<String, Object> properties )
+    public long createNode( Map<String, Object> properties, Label... labels )
     {
         Transaction tx = database.getGraph().beginTx();
         try
         {
-            Node node = database.getGraph().createNode();
+            Node node = database.getGraph().createNode( labels );
             for ( Map.Entry<String, Object> entry : properties.entrySet() )
             {
                 node.setProperty( entry.getKey(), entry.getValue() );

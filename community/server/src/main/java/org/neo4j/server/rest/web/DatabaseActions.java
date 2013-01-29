@@ -92,6 +92,7 @@ import org.neo4j.server.rest.repr.ScoredNodeRepresentation;
 import org.neo4j.server.rest.repr.ScoredRelationshipRepresentation;
 import org.neo4j.server.rest.repr.ValueRepresentation;
 import org.neo4j.server.rest.repr.WeightedPathRepresentation;
+import org.neo4j.tooling.GlobalGraphOperations;
 
 import com.sun.jersey.api.core.HttpContext;
 
@@ -1533,9 +1534,25 @@ public class DatabaseActions
     
     private void assertIsLegalIndexName(String indexName)
     {
-        if(indexName == null || indexName.equals("")) 
+        if ( indexName == null || indexName.equals( "" ) )
         {
-            throw new IllegalArgumentException("Index name must not be empty.");
+            throw new IllegalArgumentException( "Index name must not be empty." );
         }
+    }
+
+    public ListRepresentation getNodesWithLabel( String labelName )
+    {
+        Iterable<Node> nodes = GlobalGraphOperations.at( graphDb ).getAllNodesWithLabel( label( labelName ) );
+        IterableWrapper<NodeRepresentation, Node> nodeRepresentations =
+                new IterableWrapper<NodeRepresentation, Node>( nodes )
+        {
+            @Override
+            protected NodeRepresentation underlyingObjectToObject( Node node )
+            {
+                return new NodeRepresentation( node );
+            }
+        };
+
+        return new ListRepresentation( RepresentationType.NODE, nodeRepresentations );
     }
 }

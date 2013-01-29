@@ -216,4 +216,9 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
     protected String getDocumentationSectionName() {
         return "dev/rest-api";
     }
+    
+    public String getNodesWithLabelUri( String label )
+    {
+        return getDataUri() + "nodes/labeled/" + label;
+    }
 }

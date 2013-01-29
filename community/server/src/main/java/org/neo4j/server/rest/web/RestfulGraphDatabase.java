@@ -61,7 +61,6 @@ import org.neo4j.server.rest.web.DatabaseActions.RelationshipDirection;
 @Path( "/" )
 public class RestfulGraphDatabase
 {
-
     @SuppressWarnings( "serial" )
     public static class AmpersandSeparatedCollection extends LinkedHashSet<String>
     {
@@ -115,6 +114,9 @@ public class RestfulGraphDatabase
     protected static final String PATH_AUTO_INDEXED_PROPERTIES = PATH_AUTO_INDEX + "/properties";
     protected static final String PATH_AUTO_INDEX_PROPERTY_DELETE = PATH_AUTO_INDEXED_PROPERTIES + "/{property}";
     protected static final String PATH_AUTO_INDEX_GET = PATH_AUTO_INDEX + "/{key}/{value}";
+    
+    public static final String PATH_ALL_NODES = "nodes";
+    public static final String PATH_ALL_NODES_LABELED = PATH_ALL_NODES + "/labeled/{label}";
 
     public static final String NODE_AUTO_INDEX_TYPE = "node";
     public static final String RELATIONSHIP_AUTO_INDEX_TYPE = "relationship";
@@ -1501,6 +1503,20 @@ public class RestfulGraphDatabase
             return output.badRequest( e );
         }
     }
-
-
+    
+    @GET
+    @Path( PATH_ALL_NODES_LABELED )
+    public Response allNodesWithLabel( @PathParam( "label" ) String labelName )
+    {
+        try
+        {
+            if ( labelName.isEmpty() )
+                throw new BadInputException( "Empty label name" );
+            return output.ok( actions.getNodesWithLabel( labelName ) );
+        }
+        catch ( BadInputException e )
+        {
+            return output.badRequest( e );
+        }
+    }
 }
