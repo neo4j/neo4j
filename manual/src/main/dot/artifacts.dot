@@ -60,13 +60,6 @@ subgraph cluster_enterprise {
  "server-enterprise" -> "shell" 
 }
 
-subgraph cluster_serverplugins {
- label="Server plugins"
- "gremlin-plugin" -> "server-api"
- "gremlin-plugin" -> "server"
- "gremlin-plugin" -> "neo4j"
-}
-
 subgraph cluster_langs {
  label="Language bindings"
  "neo4js"
@@ -93,7 +86,6 @@ subgraph cluster_packaging {
  "standalone" -> "server-advanced"
  "standalone" -> "neo4j-enterprise"
  "standalone" -> "server-enterprise"
- "standalone" -> "gremlin-plugin"
  "standalone" -> "windows-wrapper"
  "standalone" -> "manual"
  "neo4j-enterprise-windows" -> "standalone" [arrowhead="none"]
