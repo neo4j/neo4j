@@ -20,11 +20,13 @@
 
 -->
 <included>
+<!--
   <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
     <encoder>
       <pattern>%property{host} %-5level %25c{0}: %message%n</pattern>
     </encoder>
   </appender>
+-->
 
   <!--
     Debug Paxos state machines
@@ -42,11 +44,13 @@
   </logger>
 
 
+<!--
   <root level="debug">
     <appender-ref ref="CONSOLE"/>
   </root>
+-->
 
-  <logger name="org.neo4j" additive="true">
+  <logger name="org.neo4j" level="warn" additive="true">
   </logger>
 
 </included>

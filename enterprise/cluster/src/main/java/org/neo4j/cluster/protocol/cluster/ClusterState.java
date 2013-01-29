@@ -155,7 +155,7 @@ public enum ClusterState
                                             Message.FROM ) ), newState ) );
                                 }
 
-                                context.getLogger( ClusterState.class ).info( "Setup join timeout for " + message
+                                context.getLogger( ClusterState.class ).debug( "Setup join timeout for " + message
                                         .getHeader( Message.CONVERSATION_ID ) );
                                 context.timeouts.setTimeout( "join", timeout( ClusterMessage.joiningTimeout, message,
                                         new URI( message.getHeader( Message.FROM ) ) ) );

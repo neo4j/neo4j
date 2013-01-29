@@ -37,6 +37,7 @@ import java.util.concurrent.TimeUnit;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
+import ch.qos.logback.classic.LoggerContext;
 import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.client.ClusterClient;
@@ -61,11 +62,13 @@ import org.neo4j.kernel.ha.UpdatePuller;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.kernel.logging.LogbackService;
 import org.neo4j.kernel.logging.LogbackService.Slf4jStringLogger;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.management.Neo4jManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.impl.StaticLoggerBinder;
 import org.w3c.dom.Document;
 
 public class ClusterManager
@@ -423,15 +426,9 @@ public class ClusterManager
                         ClusterSettings.cluster_name.name(), name,
                         ClusterSettings.initial_hosts.name(), initialHosts.toString(),
                         ClusterSettings.cluster_server.name(), member.getHost() );
-                Logging clientLogging = new Logging()
-                {
-                    @Override
-                    public StringLogger getLogger( Class loggingClass )
-                    {
-                        return new Slf4jStringLogger( logger );
-                    }
-                };
-                life.add( new ClusterClient( ClusterClient.adapt( new Config( config ) ),
+                Config config1 = new Config( config );
+                Logging clientLogging =life.add(new LogbackService( config1, (LoggerContext) StaticLoggerBinder.getSingleton().getLoggerFactory() ));
+                life.add( new ClusterClient( ClusterClient.adapt( config1 ),
                         clientLogging, new NotElectableElectionCredentialsProvider() ) );
             }
 

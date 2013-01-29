@@ -119,16 +119,26 @@ public class ElectionContext
             @Override
             public URI pickWinner( List<Vote> voteList )
             {
+
+                // Remove blank votes
+                List<Vote> filteredVoteList = Iterables.toList( Iterables.filter( new Predicate<Vote>()
+                {
+                    @Override
+                    public boolean accept( Vote item )
+                    {
+                        return !(item.getCredentials() instanceof NotElectableElectionCredentials);
+                    }
+                }, voteList ) );
+
                 // Sort based on credentials
                 // The most suited candidate should come out on top
-                Collections.sort( voteList );
-                Collections.reverse( voteList );
+                Collections.sort( filteredVoteList );
+                Collections.reverse( filteredVoteList );
 
-                for ( Vote vote : voteList )
+                for ( Vote vote : filteredVoteList )
                 {
                     // Don't elect as winner the node we are trying to demote
-                    // Also don't elect someone that explicitly doesn't want to win
-                    if ( !vote.getSuggestedNode().equals( demoteNode ) && !(vote.getCredentials() instanceof NotElectableElectionCredentials))
+                    if ( !vote.getSuggestedNode().equals( demoteNode ))
                     {
                         return vote.getSuggestedNode();
                     }
@@ -147,18 +157,24 @@ public class ElectionContext
             @Override
             public URI pickWinner( List<Vote> voteList )
             {
+                // Remove blank votes
+                List<Vote> filteredVoteList = Iterables.toList( Iterables.filter( new Predicate<Vote>()
+                {
+                    @Override
+                    public boolean accept( Vote item )
+                    {
+                        return !(item.getCredentials() instanceof NotElectableElectionCredentials);
+                    }
+                }, voteList ) );
+
                 // Sort based on credentials
                 // The most suited candidate should come out on top
-                Collections.sort( voteList );
-                Collections.reverse( voteList );
+                Collections.sort( filteredVoteList );
+                Collections.reverse( filteredVoteList );
 
-                for ( Vote vote : voteList )
+                for ( Vote vote : filteredVoteList )
                 {
-                    // Don't elect someone that explicitly doesn't want to win
-                    if ( !(vote.getCredentials() instanceof NotElectableElectionCredentials))
-                    {
-                        return vote.getSuggestedNode();
-                    }
+                    return vote.getSuggestedNode();
                 }
 
                 // No possible winner
@@ -175,16 +191,25 @@ public class ElectionContext
             public URI pickWinner( List<Vote> voteList )
             {
 
+                // Remove blank votes
+                List<Vote> filteredVoteList = Iterables.toList( Iterables.filter( new Predicate<Vote>()
+                {
+                    @Override
+                    public boolean accept( Vote item )
+                    {
+                        return !(item.getCredentials() instanceof NotElectableElectionCredentials);
+                    }
+                }, voteList ) );
+
                 // Sort based on credentials
                 // The most suited candidate should come out on top
-                Collections.sort( voteList );
-                Collections.reverse( voteList );
+                Collections.sort( filteredVoteList );
+                Collections.reverse( filteredVoteList );
 
-                for ( Vote vote : voteList )
+                for ( Vote vote : filteredVoteList )
                 {
                     // Don't elect as winner the node we are trying to demote
-                    // Also don't elect someone that explicitly doesn't want to win
-                    if ( !vote.getSuggestedNode().equals( promoteNode ) && !(vote.getCredentials() instanceof NotElectableElectionCredentials))
+                    if ( !vote.getSuggestedNode().equals( promoteNode ))
                     {
                         return vote.getSuggestedNode();
                     }
