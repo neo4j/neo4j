@@ -261,6 +261,5 @@ public class JOTMTransactionManager extends AbstractTransactionManager
     @Deprecated
     public void setKernel( KernelAPI kernel )
     {
-        throw new UnsupportedOperationException( "Not implemented" );
     }
 }
