@@ -41,6 +41,7 @@ public class StreamingBatchOperationResults
 {
     public static final int HEAD_BUFFER = 10;
     public static final int IS_ERROR = -1;
+    private final String encoding = "UTF-8";
     private final Map<Integer, String> locations = new HashMap<Integer, String>();
     private final JsonGenerator g;
     private final ServletOutputStream output;
@@ -148,7 +149,7 @@ public class StreamingBatchOperationResults
         if (message!=null && !message.trim().isEmpty())  g.writeStringField( "message", message);
         else {
             if (errorStream!=null) {
-                g.writeStringField( "message", errorStream.toString());
+                g.writeStringField( "message", errorStream.toString( encoding ));
             }
         }
         g.close();

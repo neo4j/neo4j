@@ -18,6 +18,8 @@
  */
 package org.neo4j.examples.server.unmanaged;
 
+import java.nio.charset.Charset;
+
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
@@ -47,7 +49,7 @@ public class HelloWorldResource
     {
         // Do stuff with the database
         return Response.status( Status.OK ).entity(
-                ( "Hello World, nodeId=" + nodeId ).getBytes() ).build();
+                ("Hello World, nodeId=" + nodeId).getBytes( Charset.forName("UTF-8") ) ).build();
     }
 }
 // END SNIPPET: HelloWorldResource

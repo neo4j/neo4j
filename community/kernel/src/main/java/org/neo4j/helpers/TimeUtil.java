@@ -25,7 +25,7 @@ public final class TimeUtil
 {
     private static final TimeUnit DEFAULT_TIME_UNIT = TimeUnit.SECONDS;
 
-    public static Function<String, Long> parseTimeMillis = new Function<String, Long>()
+    public static final Function<String, Long> parseTimeMillis = new Function<String, Long>()
     {
         @Override
         public Long apply( String timeWithOrWithoutUnit )

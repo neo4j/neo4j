@@ -28,7 +28,12 @@ public class RebuildCompoundFile
 {
     public static void main( String[] args ) throws Exception
     {
-        String path = "/home/chris/index";
+        if(args.length != 1)
+        {
+            System.out.println("Usage: RebuildCompoundFile <INDEX DIRECTORY>");
+            System.exit( 0 );
+        }
+        String path = args[0];
         File baseDirectory = new File( path );
         Directory directory = FSDirectory.open( baseDirectory );
         CompoundFileWriter writer = new CompoundFileWriter( directory, "_drr.cfs" );

@@ -136,12 +136,14 @@ public class WrappingNeoServerBootstrapperTest extends ExclusiveServerTestBase
     @Test
     public void shouldAllowModifyingListenPorts() throws UnknownHostException
     {
-
         ServerConfigurator config = new ServerConfigurator(
                 myDb );
         String hostAddress = InetAddress.getLocalHost().getHostAddress();
         config.configuration().setProperty(
                 Configurator.WEBSERVER_ADDRESS_PROPERTY_KEY, hostAddress );
+        config.configuration().setProperty(
+                Configurator.WEBSERVER_PORT_PROPERTY_KEY, "8484" );
+
 
         WrappingNeoServerBootstrapper srv = new WrappingNeoServerBootstrapper(
                 myDb, config );
@@ -159,7 +161,7 @@ public class WrappingNeoServerBootstrapperTest extends ExclusiveServerTestBase
         }
 
         gen.get().expectedStatus( Status.OK.getStatusCode() ).get(
-                "http://" + hostAddress + ":7474/db/data/" );
+                "http://" + hostAddress + ":8484/db/data/" );
 
         srv.stop();
     }

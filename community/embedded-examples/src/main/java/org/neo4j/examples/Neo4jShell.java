@@ -96,7 +96,7 @@ public class Neo4jShell
             throws Exception
     {
         System.out.print( textToSystemOut );
-        return new BufferedReader( new InputStreamReader( System.in ) )
+        return new BufferedReader( new InputStreamReader( System.in, "UTF-8" ) )
                 .readLine();
     }
 

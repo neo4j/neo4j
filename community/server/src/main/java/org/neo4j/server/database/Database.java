@@ -44,7 +44,7 @@ import org.rrd4j.core.RrdDb;
  */
 public class Database implements Lifecycle
 {
-    public static Logger log = Logger.getLogger( Database.class );
+    public static final Logger log = Logger.getLogger( Database.class );
 
     /**
      * Please use {@link #getGraph()} instead. This will be removed in
