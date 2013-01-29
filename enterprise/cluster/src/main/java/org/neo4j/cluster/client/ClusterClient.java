@@ -47,6 +47,7 @@ import org.neo4j.cluster.protocol.cluster.Cluster;
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.protocol.cluster.ClusterListener;
 import org.neo4j.cluster.protocol.cluster.ClusterMessage;
+import org.neo4j.cluster.protocol.election.Election;
 import org.neo4j.cluster.protocol.election.ElectionCredentialsProvider;
 import org.neo4j.cluster.protocol.election.ElectionMessage;
 import org.neo4j.cluster.protocol.heartbeat.Heartbeat;
@@ -68,7 +69,7 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.Logging;
 
 public class ClusterClient extends LifecycleAdapter
-        implements ClusterMonitor, Cluster, AtomicBroadcast, Snapshot, BindingNotifier
+        implements ClusterMonitor, Cluster, AtomicBroadcast, Snapshot, Election, BindingNotifier
 {
     public interface Configuration
     {
@@ -230,6 +231,7 @@ public class ClusterClient extends LifecycleAdapter
     private final AtomicBroadcast broadcast;
     private final Heartbeat heartbeat;
     private final Snapshot snapshot;
+    private final Election election;
 
     private final ProtocolServer server;
 
@@ -368,6 +370,7 @@ public class ClusterClient extends LifecycleAdapter
         broadcast = server.newClient( AtomicBroadcast.class );
         heartbeat = server.newClient( Heartbeat.class );
         snapshot = server.newClient( Snapshot.class );
+        election = server.newClient( Election.class );
     }
 
     @Override
@@ -446,6 +449,24 @@ public class ClusterClient extends LifecycleAdapter
     public void removeHeartbeatListener( HeartbeatListener listener )
     {
         heartbeat.removeHeartbeatListener( listener );
+    }
+
+    @Override
+    public void demote( URI node )
+    {
+        election.demote( node );
+    }
+
+    @Override
+    public void performRoleElections()
+    {
+        election.performRoleElections();
+    }
+
+    @Override
+    public void promote( URI node, String role )
+    {
+        election.promote( node, role );
     }
 
     @Override

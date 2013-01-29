@@ -51,7 +51,7 @@ import org.neo4j.cluster.protocol.election.ElectionCredentialsProvider;
 import org.neo4j.cluster.protocol.election.ElectionMessage;
 import org.neo4j.cluster.protocol.election.ElectionRole;
 import org.neo4j.cluster.protocol.election.ElectionState;
-import org.neo4j.cluster.protocol.election.HeartbeatFailedReelectionListener;
+import org.neo4j.cluster.protocol.election.HeartbeatReelectionListener;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatContext;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatIAmAliveProcessor;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatJoinListener;
@@ -149,7 +149,7 @@ public class MultiPaxosServerFactory
         server.newClient( Cluster.class ).addClusterListener( new HeartbeatJoinListener( connectedStateMachines
                 .getOutgoing() ) );
 
-        heartbeatContext.addHeartbeatListener( new HeartbeatFailedReelectionListener( server.newClient( Election
+        heartbeatContext.addHeartbeatListener( new HeartbeatReelectionListener( server.newClient( Election
                 .class ) ) );
         clusterContext.addClusterListener( new ClusterLeaveReelectionListener( server.newClient( Election.class ) ) );
         electionContext.setElectionCredentialsProvider( electionCredentialsProvider );

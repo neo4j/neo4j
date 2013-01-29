@@ -103,7 +103,6 @@ public class ClusterJoin
     public void start() throws Throwable
     {
         cluster = protocolServer.newClient( Cluster.class );
-
         acquireServerId();
 
         // Now that we have our own id, do cluster join

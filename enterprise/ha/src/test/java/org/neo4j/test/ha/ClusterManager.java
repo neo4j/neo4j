@@ -43,13 +43,13 @@ import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.client.Clusters;
 import org.neo4j.cluster.client.ClustersXMLSerializer;
 import org.neo4j.cluster.com.NetworkInstance;
-import org.neo4j.cluster.protocol.election.CoordinatorIncapableCredentialsProvider;
+import org.neo4j.cluster.protocol.election.NotElectableElectionCredentialsProvider;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
-import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
 import org.neo4j.helpers.Predicate;
+import org.neo4j.helpers.Settings;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.jmx.Kernel;
 import org.neo4j.jmx.impl.JmxKernelExtension;
@@ -141,6 +141,28 @@ public class ClusterManager
         return provided( clusters );
     }
     
+    /**
+     * Provides a cluster specification with default values
+     * @param haMemberCount the total number of members in the cluster to start.
+     */
+    public static Provider clusterWithAdditionalArbiters( int haMemberCount, int arbiterCount)
+    {
+        Clusters.Cluster cluster = new Clusters.Cluster( "neo4j.ha" );
+        int counter = 0;
+        for ( int i = 0; i < arbiterCount; i++, counter++ )
+        {
+            cluster.getMembers().add( new Clusters.Member( 5001 + counter, false ) );
+        }
+        for ( int i = 0; i < haMemberCount; i++, counter++ )
+        {
+            cluster.getMembers().add( new Clusters.Member( 5001 + counter, true ) );
+        }
+
+        final Clusters clusters = new Clusters();
+        clusters.getClusters().add( cluster );
+        return provided( clusters );
+    }
+
     public static Provider provided( final Clusters clusters )
     {
         return new Provider()
@@ -347,8 +369,8 @@ public class ClusterManager
             network.stop();
             
             int serverId = db.getDependencyResolver().resolveDependency( Config.class ).get( HaSettings.server_id );
-            db.shutdown();
-            return new StartDatabaseAgainKit( this, serverId );
+            //db.shutdown();
+            return new StartNetworkAgainKit( db, network );
         }
 
         private void startMember( int serverId, boolean initialStartup ) throws URISyntaxException
@@ -368,7 +390,7 @@ public class ClusterManager
                                 setConfig( HaSettings.server_id, serverId + "" ).
                                 setConfig( ClusterSettings.cluster_server, member.getHost() ).
                                 setConfig( HaSettings.ha_server, ":" + haPort ).
-                                setConfig( OnlineBackupSettings.online_backup_enabled, GraphDatabaseSetting.FALSE ).
+                                setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE ).
                                 setConfig( commonConfig );
                 if ( instanceConfig.containsKey( serverId ) )
                 {
@@ -410,7 +432,7 @@ public class ClusterManager
                     }
                 };
                 life.add( new ClusterClient( ClusterClient.adapt( new Config( config ) ),
-                        clientLogging, new CoordinatorIncapableCredentialsProvider() ) );
+                        clientLogging, new NotElectableElectionCredentialsProvider() ) );
             }
 
             // logger.info( "Started cluster node " + serverId + " in cluster "

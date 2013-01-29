@@ -127,12 +127,41 @@ public class ElectionContext
                 for ( Vote vote : voteList )
                 {
                     // Don't elect as winner the node we are trying to demote
-                    if ( !vote.getSuggestedNode().equals( demoteNode ) )
+                    // Also don't elect someone that explicitly doesn't want to win
+                    if ( !vote.getSuggestedNode().equals( demoteNode ) && !(vote.getCredentials() instanceof NotElectableElectionCredentials))
                     {
                         return vote.getSuggestedNode();
                     }
                 }
 
+                // No possible winner
+                return null;
+            }
+        } ) );
+    }
+
+    public void startElectionProcess( String role )
+    {
+        elections.put( role, new Election( new WinnerStrategy()
+        {
+            @Override
+            public URI pickWinner( List<Vote> voteList )
+            {
+                // Sort based on credentials
+                // The most suited candidate should come out on top
+                Collections.sort( voteList );
+                Collections.reverse( voteList );
+
+                for ( Vote vote : voteList )
+                {
+                    // Don't elect someone that explicitly doesn't want to win
+                    if ( !(vote.getCredentials() instanceof NotElectableElectionCredentials))
+                    {
+                        return vote.getSuggestedNode();
+                    }
+                }
+
+                // No possible winner
                 return null;
             }
         } ) );
@@ -154,12 +183,14 @@ public class ElectionContext
                 for ( Vote vote : voteList )
                 {
                     // Don't elect as winner the node we are trying to demote
-                    if ( vote.getSuggestedNode().equals( promoteNode ) )
+                    // Also don't elect someone that explicitly doesn't want to win
+                    if ( !vote.getSuggestedNode().equals( promoteNode ) && !(vote.getCredentials() instanceof NotElectableElectionCredentials))
                     {
                         return vote.getSuggestedNode();
                     }
                 }
 
+                // No possible winner
                 return null;
             }
         } ) );
@@ -267,6 +298,11 @@ public class ElectionContext
         public String toString()
         {
             return suggestedNode + ":" + voteCredentials;
+        }
+
+        public Comparable<Object> getCredentials()
+        {
+            return voteCredentials;
         }
     }
 

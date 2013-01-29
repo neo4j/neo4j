@@ -19,73 +19,107 @@
  */
 package org.neo4j.ha;
 
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.neo4j.test.TargetDirectory.forTest;
+import static org.neo4j.test.ha.ClusterManager.fromXml;
 
+import java.net.URI;
+import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+
+import org.hamcrest.CoreMatchers;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.neo4j.cluster.client.ClusterClient;
+import org.neo4j.cluster.protocol.cluster.ClusterListener;
+import org.neo4j.cluster.protocol.heartbeat.HeartbeatListener;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState;
 import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.ha.ClusterManager;
+import sun.util.logging.resources.logging;
 
-@Ignore("There are no slave only instances yet")
 public class TestSlaveOnlyCluster
 {
-    private HighlyAvailableGraphDatabase master;
-    private final HighlyAvailableGraphDatabase[] slaves = new HighlyAvailableGraphDatabase[2];
-    private final TargetDirectory dir = forTest( getClass() );
-
-    @Before
-    public void doBefore() throws Exception
-    {
-        /*
-         * instantiate master and slaves
-         */
-    }
-
-    @After
-    public void doAfter() throws Exception
-    {
-        for ( HighlyAvailableGraphDatabase db : slaves )
-        {
-            if ( db != null )
-            {
-                db.shutdown();
-            }
-        }
-        master.shutdown();
-    }
-
     @Test
-    public void testMasterElectionAfterMasterRecoversInSlaveOnlyCluster() throws Exception
+    public void testMasterElectionAfterMasterRecoversInSlaveOnlyCluster() throws Throwable
     {
-        /*
-         * Shutdown and start master. Since the other two instances are slaves they will not elect
-         * themselves. So when the old master comes back up it should be picked up as the master.
-         */
-        master.shutdown();
-        Thread.sleep( 1000 ); // Make sure everything is shut down, including ZK threads
-        /*
-         * Instantiate master here
-         */
-        while ( !master.isMaster() )
+        ClusterManager clusterManager = new ClusterManager( fromXml( getClass().getResource( "/threeinstances.xml" ).toURI() ),
+                TargetDirectory.forTest( getClass() ).directory( "testCluster", true ), MapUtil.stringMap(),
+                MapUtil.<Integer, Map<String, String>>genericMap( 2, MapUtil.stringMap( HaSettings.slave_only.name(), "true" ),
+                                                                  3, MapUtil.stringMap( HaSettings.slave_only.name(), "true" )) );
+
+
+        try
         {
-            ;
+            clusterManager.start();
+
+            final CountDownLatch failedLatch = new CountDownLatch( 2 );
+            final CountDownLatch electedLatch = new CountDownLatch( 2 );
+            HeartbeatListener masterDownListener = new HeartbeatListener()
+            {
+                @Override
+                public void failed( URI server )
+                {
+                    failedLatch.countDown();
+                }
+
+                @Override
+                public void alive( URI server )
+                {
+                }
+            };
+
+            for ( HighlyAvailableGraphDatabase highlyAvailableGraphDatabase : clusterManager.getDefaultCluster().getAllMembers() )
+            {
+                if (!highlyAvailableGraphDatabase.isMaster())
+                {
+                    highlyAvailableGraphDatabase.getDependencyResolver().resolveDependency( ClusterClient.class ).addHeartbeatListener( masterDownListener );
+
+                    highlyAvailableGraphDatabase.getDependencyResolver().resolveDependency( ClusterClient.class ).addClusterListener( new ClusterListener.Adapter()
+                    {
+                        @Override
+                        public void elected( String role, URI electedMember )
+                        {
+                            electedLatch.countDown();
+                        }
+                    } );
+                }
+            }
+
+            HighlyAvailableGraphDatabase master = clusterManager.getDefaultCluster().getMaster();
+            ClusterManager.RepairKit repairKit = clusterManager.getDefaultCluster().fail( master );
+
+            failedLatch.await();
+
+            repairKit.repair();
+
+            electedLatch.await();
+
+            HighlyAvailableGraphDatabase slaveDatabase = clusterManager.getDefaultCluster().getAnySlave(  );
+            Transaction tx = slaveDatabase.beginTx();
+            Node node = slaveDatabase.createNode();
+            node.setProperty( "foo", "bar" );
+            long nodeId = node.getId();
+            tx.success();
+            tx.finish();
+
+            node = master.getNodeById( nodeId );
+
+            Assert.assertThat(node.getProperty( "foo" ).toString(), equalTo( "bar" ));
         }
-        while ( !slaves[0].getInstanceState().equals( HighAvailabilityMemberState.SLAVE ) )
+        finally
         {
-            ;
+            clusterManager.stop();
         }
-        while ( !slaves[1].getInstanceState().equals( HighAvailabilityMemberState.SLAVE ) )
-        {
-            ;
-        }
-        // Execute a tx on one slave, make sure a master has been picked
-        Transaction tx = slaves[0].beginTx();
-        slaves[0].createNode();
-        tx.success();
-        tx.finish();
     }
 }

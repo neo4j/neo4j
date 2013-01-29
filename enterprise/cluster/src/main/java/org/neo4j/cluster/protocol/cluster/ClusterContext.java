@@ -164,18 +164,15 @@ public class ClusterContext
 
     public void elected( final String name, final URI node )
     {
-        if ( !node.equals( configuration.getElected( name ) ) )
+        configuration.elected( name, node );
+        Listeners.notifyListeners( listeners, executor, new Listeners.Notification<ClusterListener>()
         {
-            configuration.elected( name, node );
-            Listeners.notifyListeners( listeners, executor, new Listeners.Notification<ClusterListener>()
+            @Override
+            public void notify( ClusterListener listener )
             {
-                @Override
-                public void notify( ClusterListener listener )
-                {
-                    listener.elected( name, node );
-                }
-            } );
-        }
+                listener.elected( name, node );
+            }
+        } );
     }
 
     public synchronized void setMe( URI me )
