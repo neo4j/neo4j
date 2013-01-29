@@ -92,12 +92,6 @@ terms of the relevant Commercial Agreement.
           <type>pom</type>
         </dependency>
         <dependency>
-          <groupId>org.neo4j.server.plugin</groupId>
-          <artifactId>neo4j-gremlin-plugin</artifactId>
-          <version>${project.version}</version>
-          <type>pom</type>
-        </dependency>
-        <dependency>
           <groupId>org.neo4j.doc</groupId>
           <artifactId>neo4j-manual</artifactId>
           <version>${project.version}</version>
