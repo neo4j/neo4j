@@ -55,7 +55,7 @@ class DistinctPipe(source: Pipe, expressions: Map[String, Expression]) extends P
     }
   }
 
-  def executionPlan() = source.executionPlan() + "\nDistinct()"
+  def executionPlanDescription() = source.executionPlanDescription() + "\nDistinct()"
 
   def symbols: SymbolTable = {
     val identifiers = expressions.mapValues(e => e.evaluateType(AnyType(), source.symbols))

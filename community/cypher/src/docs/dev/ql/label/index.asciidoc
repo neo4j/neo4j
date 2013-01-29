@@ -1,0 +1,10 @@
+[[query-add-label]]
+Add Label
+=========
+
+Adding labels to nodes is done with the +ADD+ +LABEL+ clause.
+
+:leveloffset: 2
+
+include::add-a-label-to-a-node.asciidoc[]
+include::add-multiple-labels-to-a-node.asciidoc[]

@@ -24,17 +24,24 @@ import org.neo4j.cypher.internal.symbols.{SymbolTable, TypeSafe}
 import org.neo4j.graphdb.{Relationship, Node, PropertyContainer}
 import collection.Map
 import org.neo4j.cypher.internal.helpers.{IsCollection, IsMap, CollectionSupport}
-import org.neo4j.cypher.internal.spi.QueryContext
+import org.neo4j.cypher.internal.spi.Operations
 import org.neo4j.cypher.internal.ExecutionContext
 
 object NamedExpectation {
-  def apply(name: String): NamedExpectation = NamedExpectation(name, Map.empty)
+  def apply(name: String, bare: Boolean): NamedExpectation = NamedExpectation(name, Map.empty, bare)
 
-  def apply(name: String, properties: Map[String, Expression]): NamedExpectation =
-    new NamedExpectation(name, Identifier(name), properties)
+  def apply(name: String, properties: Map[String, Expression], bare: Boolean): NamedExpectation =
+    NamedExpectation(name, properties, Literal(Seq.empty), bare)
+
+  def apply(name: String, e: Expression, properties: Map[String, Expression], bare: Boolean): NamedExpectation =
+    new NamedExpectation(name, e, properties, Literal(Seq.empty), bare)
+
+  def apply(name: String, properties: Map[String, Expression], labels: Expression, bare: Boolean): NamedExpectation =
+    new NamedExpectation(name, Identifier(name), properties, labels, bare)
 }
 
-case class NamedExpectation(name: String, e: Expression, properties: Map[String, Expression])
+case class NamedExpectation(name: String, e: Expression, properties: Map[String, Expression],
+                            labels: Expression, bare: Boolean)
   extends GraphElementPropertyFunctions
   with CollectionSupport
   with TypeSafe {
@@ -51,7 +58,7 @@ case class NamedExpectation(name: String, e: Expression, properties: Map[String,
       e(ctx) match {
         case _: PropertyContainer => properties
         case IsMap(f)             =>
-          val m = f(ctx.state.query)
+          val m = f(ctx.state.queryContext)
           m.map {
             case (k, v) => k -> Literal(v)
           }
@@ -63,13 +70,13 @@ case class NamedExpectation(name: String, e: Expression, properties: Map[String,
     val expectations = getExpectations(ctx)
 
     pc match {
-      case n: Node         => compareWithExpectation(n, ctx.state.query.nodeOps(), ctx, expectations)
-      case n: Relationship => compareWithExpectation(n, ctx.state.query.relationshipOps(), ctx, expectations)
+      case n: Node         => compareWithExpectation(n, ctx.state.queryContext.nodeOps, ctx, expectations)
+      case n: Relationship => compareWithExpectation(n, ctx.state.queryContext.relationshipOps, ctx, expectations)
     }
   }
 
   private def compareWithExpectation[T <: PropertyContainer](x: T,
-                                                             ops: QueryContext.Operations[T],
+                                                             ops: Operations[T],
                                                              ctx: ExecutionContext,
                                                              expectations: Map[String, Expression]): Boolean =
     expectations.forall {
@@ -89,9 +96,9 @@ case class NamedExpectation(name: String, e: Expression, properties: Map[String,
         }
     }
 
-  def symbolTableDependencies = symbolTableDependencies(properties)
+  def symbolTableDependencies = properties.symboltableDependencies
 
   def throwIfSymbolsMissing(symbols: SymbolTable) {
-    throwIfSymbolsMissing(properties, symbols)
+    properties.throwIfSymbolsMissing(symbols)
   }
 }

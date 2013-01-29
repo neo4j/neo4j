@@ -28,7 +28,7 @@ import java.util.HashMap
 
 class MutatingIntegrationTest extends ExecutionEngineHelper with Assertions with StatisticsChecker {
 
-  val stats = QueryStatistics.empty
+  val stats = QueryStatistics()
 
   @Test
   def create_a_single_node() {
@@ -368,16 +368,16 @@ return distinct center""")
 
   @Test
   def concatenate_to_a_collection() {
-    val result = executeScalar[Array[Long]]("create a={foo:[1,2,3]} set a.foo = a.foo + [4,5] return a.foo")
+    val result = executeScalar[Iterable[Long]]("create a={foo:[1,2,3]} set a.foo = a.foo + [4,5] return a.foo")
 
-    assert(result === Array(1,2,3,4,5))
+    assert(result.toList === List(1,2,3,4,5))
   }
 
   @Test
   def concatenate_to_a_collection_in_reverse() {
-    val result = executeScalar[Array[Long]]("create a={foo:[3,4,5]} set a.foo = [1,2] + a.foo return a.foo")
+    val result = executeScalar[Iterable[Long]]("create a={foo:[3,4,5]} set a.foo = [1,2] + a.foo return a.foo")
 
-    assert(result === Array(1,2,3,4,5))
+    assert(result.toList === List(1,2,3,4,5))
   }
 
   @Test
@@ -390,10 +390,10 @@ return distinct center""")
     map.put("arrayProp", list)
 
     val q = "create a={param} return a.arrayProp"
-    val result =  executeScalar[Array[String]](q, "param" -> map)
+    val result =  executeScalar[Iterable[String]](q, "param" -> map)
 
     assertStats(parseAndExecute(q, "param"->map), nodesCreated = 1, propertiesSet = 1)
-    assert(result === Array("foo","bar"))
+    assert(result.toList === List("foo","bar"))
   }
 
   @Test
@@ -521,6 +521,24 @@ return distinct center""")
 
     assert(result.toList === List())
   }
+
+  @Test
+  def should_be_able_to_create_node_with_labels() {
+    val result = parseAndExecute("create n:FOO:BAR return n")
+    val createdNode = result.columnAs[Node]("n").next()
+
+    assert(createdNode.getLabels.asScala.map(_.name()) === List("FOO", "BAR"))
+    assertStats(result, nodesCreated = 1, addedLabels = 2);
+  }
+  
+  @Test
+  def should_be_able_to_add_label_to_node() {
+    val result = parseAndExecute("start n=node(0) add n:FOO return n")
+    val createdNode = result.columnAs[Node]("n").next()
+
+    assert(createdNode.getLabels.asScala.map(_.name()) === List("FOO"))
+    assertStats(result, addedLabels = 1);
+  }
 }
 
 trait StatisticsChecker extends Assertions {
@@ -529,9 +547,12 @@ trait StatisticsChecker extends Assertions {
                   relationshipsCreated: Int = 0,
                   propertiesSet: Int = 0,
                   deletedNodes: Int = 0,
-                  deletedRelationships: Int = 0) {
+                  deletedRelationships: Int = 0,
+                  addedLabels: Int = 0,
+                  removedLabels: Int = 0) {
     val statistics = result.queryStatistics()
-    assert(statistics === QueryStatistics(nodesCreated, relationshipsCreated, propertiesSet, deletedNodes, deletedRelationships)
+    assert(statistics === QueryStatistics(nodesCreated, relationshipsCreated, propertiesSet, deletedNodes,
+                                deletedRelationships, addedLabels, removedLabels)
     )
   }
 }

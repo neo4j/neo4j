@@ -201,8 +201,7 @@ public interface Node extends PropertyContainer
      * @return all relationships attached to this node that match the given type
      *         and direction
      */
-    public Iterable<Relationship> getRelationships( RelationshipType type,
-            Direction dir );
+    public Iterable<Relationship> getRelationships( RelationshipType type, Direction dir );
 
     /**
      * Returns <code>true</code> if there are any relationships of the given
@@ -258,8 +257,7 @@ public interface Node extends PropertyContainer
      * @throws RuntimeException if more than one relationship matches the given
      *             type and direction
      */
-    public Relationship getSingleRelationship( RelationshipType type,
-            Direction dir );
+    public Relationship getSingleRelationship( RelationshipType type, Direction dir );
 
     /**
      * Creates a relationship between this node and another node. The
@@ -274,22 +272,8 @@ public interface Node extends PropertyContainer
      * @param type the type of the new relationship
      * @return the newly created relationship
      */
-    public Relationship createRelationshipTo( Node otherNode,
-            RelationshipType type );
+    public Relationship createRelationshipTo( Node otherNode, RelationshipType type );
 
-    /* Expansion, tentatively added - save this for a later refactoring
-    Expansion<Relationship> expandAll();
-
-    Expansion<Relationship> expand( RelationshipType type );
-
-    Expansion<Relationship> expand( RelationshipType type, Direction direction );
-
-    Expansion<Relationship> expand( Direction direction );
-
-    Expansion<Relationship> expand( RelationshipExpander expander );
-    */
-
-    // Traversal
     /**
      * Instantiates a traverser that will start at this node and traverse
      * according to the given order and evaluators along the specified
@@ -301,6 +285,7 @@ public interface Node extends PropertyContainer
      * once. For more information about traversal, see the {@link Traverser}
      * documentation.
      * 
+     *
      * @param traversalOrder the traversal order
      * @param stopEvaluator an evaluator instructing the new traverser about
      *            when to stop traversing, either a predefined evaluator such as
@@ -324,6 +309,7 @@ public interface Node extends PropertyContainer
      *             and then calling
      *             {@link TraversalDescription#traverse(Node...)}
      */
+    @Deprecated
     public Traverser traverse( Traverser.Order traversalOrder,
             StopEvaluator stopEvaluator,
             ReturnableEvaluator returnableEvaluator,
@@ -368,6 +354,7 @@ public interface Node extends PropertyContainer
      * behaviours to it and then calling
      * {@link TraversalDescription#traverse(Node...)}
      */
+    @Deprecated
     public Traverser traverse( Traverser.Order traversalOrder,
             StopEvaluator stopEvaluator,
             ReturnableEvaluator returnableEvaluator,
@@ -422,8 +409,41 @@ public interface Node extends PropertyContainer
      * behaviours to it and then calling
      * {@link TraversalDescription#traverse(Node...)}
      */
+    @Deprecated
     public Traverser traverse( Traverser.Order traversalOrder,
             StopEvaluator stopEvaluator,
             ReturnableEvaluator returnableEvaluator,
             Object... relationshipTypesAndDirections );
+
+    /**
+     * Adds a {@link Label} to this node. If this node doesn't already have
+     * this label it will be added. If it already has the label, nothing will happen.
+     *
+     * @param label the label to add to this node.
+     */
+    public void addLabel( Label label );
+
+    /**
+     * Removes a {@link Label} from this node. If this node doesn't have this label,
+     * nothing will happen.
+     *
+     * @param label the label to remove from this node.
+     */
+    public void removeLabel( Label label );
+
+    /**
+     * Checks whether or not this node has the given label.
+     *
+     * @param label the label to check for.
+     * @return {@code true} if this node has the given label, otherwise {@code false}.
+     */
+    public boolean hasLabel( Label label );
+    
+    /**
+     * Lists all labels attached to this node. If this node has no
+     * labels an empty {@link Iterable} will be returned.
+     * 
+     * @return all labels attached to this node.
+     */
+    public Iterable<Label> getLabels();
 }

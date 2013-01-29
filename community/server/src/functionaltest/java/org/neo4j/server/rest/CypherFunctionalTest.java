@@ -21,9 +21,7 @@ package org.neo4j.server.rest;
 
 import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.CoreMatchers.not;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 import static org.junit.matchers.JUnitMatchers.containsString;
 
 import java.io.UnsupportedEncodingException;
@@ -48,7 +46,6 @@ import org.neo4j.test.TestData.Title;
 
 public class CypherFunctionalTest extends AbstractRestFunctionalTestBase {
 
-    
     /**
      * A simple query returning all nodes connected to node 1, returning the
      * node and the name property, if it exists, otherwise `null`:

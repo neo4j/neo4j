@@ -379,7 +379,6 @@ public class BatchOperationFunctionalTest extends AbstractRestFunctionalTestBase
                 .post( batchUri() )
                 .entity();
 
-        System.out.println("entity = " + entity);
         // Pull out the property value from the depths of the response
         Map<String, Object> result = JsonHelper.jsonToMap(entity);
         String exception = (String) result.get("exception");
@@ -637,7 +636,6 @@ public class BatchOperationFunctionalTest extends AbstractRestFunctionalTestBase
         assertEquals(200, response.getStatus());
 
         final String entity = response.getEntity();
-        System.out.println("entity = " + entity);
         List<Map<String, Object>> results = JsonHelper.jsonToList(entity);
         assertEquals(6, results.size());
         Map<String, Object> andresResult1 = results.get(1);

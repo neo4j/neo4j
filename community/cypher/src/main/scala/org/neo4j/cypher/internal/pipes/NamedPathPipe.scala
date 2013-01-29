@@ -33,6 +33,6 @@ class NamedPathPipe(source: Pipe, path: NamedPath) extends Pipe {
 //  val symbols = source.symbols.add(Identifier(path.pathName, PathType()))
   val symbols = source.symbols.add(path.pathName, PathType())
 
-  override def executionPlan(): String = source.executionPlan() + "\r\nExtractPath(" + path.pathName + " = " + path.pathPattern.mkString(", ") + ")"
+  override def executionPlanDescription(): String = source.executionPlanDescription() + "\r\nExtractPath(" + path.pathName + " = " + path.pathPattern.mkString(", ") + ")"
 
 }

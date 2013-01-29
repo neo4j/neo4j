@@ -33,6 +33,7 @@ import org.neo4j.helpers.UTF8;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.api.LabelAsProperty;
 import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
 
@@ -576,6 +577,11 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
                 valueRecord.setType( PropertyType.ARRAY.intValue() );
                 block.addValueRecord( valueRecord );
             }
+        }
+        else if ( value instanceof LabelAsProperty )
+        {
+            long keyAndType = keyId | (((long) PropertyType.LABEL.intValue()) << 24);
+            block.setValueBlocks( new long[]{keyAndType, ((LabelAsProperty) value).getNodeId()} );
         }
         else
         {

@@ -169,8 +169,6 @@ public class CloneSubgraphPluginTest extends ExclusiveServerTestBase
 
         String entity = response.getEntity( String.class );
 
-        System.out.println( entity );
-
         Map<String, Object> map = JsonHelper.jsonToMap( entity );
 
         HashMap<?, ?> extensionsMap = (HashMap<?, ?>) map.get( "extensions" );

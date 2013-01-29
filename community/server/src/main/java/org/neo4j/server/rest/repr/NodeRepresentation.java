@@ -40,6 +40,7 @@ public final class NodeRepresentation extends ObjectRepresentation implements Ex
         return Long.toString( node.getId() );
     }
 
+    @Override
     @Mapping( "self" )
     public ValueRepresentation selfUri()
     {
@@ -101,6 +102,12 @@ public final class NodeRepresentation extends ObjectRepresentation implements Ex
     public ValueRepresentation outgoingTypedRelationshipsUriTemplate()
     {
         return ValueRepresentation.template( path( "/relationships/out/{-list|&|types}" ) );
+    }
+    
+    @Mapping( "labels" )
+    public ValueRepresentation labelsUriTemplate()
+    {
+        return ValueRepresentation.template( path( "/labels" ) );
     }
 
     @Mapping( "properties" )

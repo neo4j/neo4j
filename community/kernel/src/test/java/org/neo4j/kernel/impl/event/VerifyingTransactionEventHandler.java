@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.event;
 
+import static org.neo4j.helpers.collection.IteratorUtil.count;
+
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 
@@ -43,6 +45,11 @@ public class VerifyingTransactionEventHandler implements
 
     public Object beforeCommit( TransactionData data ) throws Exception
     {
+        // TODO Hmm, makes me think... should we really call transaction event handlers
+        // for these relationship type / property index transasctions?
+        if ( count( data.createdNodes() ) == 0 )
+            return null;
+        
         this.expectedData.compareTo( data );
         this.hasBeenCalled = true;
         return null;

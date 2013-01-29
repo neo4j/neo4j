@@ -43,6 +43,8 @@ import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.event.ErrorState;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.UTF8;
+import org.neo4j.kernel.api.KernelAPI;
+import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
@@ -83,12 +85,13 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
 
     private final StringLogger log;
 
-    private XaDataSourceManager xaDataSourceManager;
+    private final XaDataSourceManager xaDataSourceManager;
     private final FileSystemAbstraction fileSystem;
     private TxManager.TxManagerDataSourceRegistrationListener dataSourceRegistrationListener;
 
     private Throwable recoveryError;
-    private TransactionStateFactory stateFactory;
+    private final TransactionStateFactory stateFactory;
+    private KernelAPI kernel;
 
     public TxManager( File txLogDir,
                       XaDataSourceManager xaDataSourceManager,
@@ -303,7 +306,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
         if ( blocked )
         {
             throw new SystemException( "TxManager is preventing new transactions from starting " +
-                    "due a shutdown is imminent" );
+                    "because a shutdown is imminent." );
         }
 
         assertTmOk( "tx begin" );
@@ -322,6 +325,8 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
         }
         startedTxCount.incrementAndGet();
         // start record written on resource enlistment
+
+        tx.setTranscationContext(kernel.newTransactionContext() );
     }
 
     private void assertTmOk( String source ) throws SystemException
@@ -380,12 +385,12 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
                         + getTxStatusAsString( tx.getStatus() ) ) );
             }
 
-
             tx.doBeforeCompletion();
             // delist resources?
             if ( tx.getStatus() == Status.STATUS_ACTIVE )
             {
                 comittedTxCount.incrementAndGet();
+                tx.ensureStatementContextClosed();
                 commit( thread, tx );
             }
             else if ( tx.getStatus() == Status.STATUS_MARKED_ROLLBACK )
@@ -625,6 +630,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
                 try
                 {
                     rolledBackTxCount.incrementAndGet();
+                    tx.ensureStatementContextClosed();
                     tx.doRollback();
                 }
                 catch ( XAException e )
@@ -805,6 +811,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
         }
     }
 
+    @Override
     public void doRecovery()
     {
         if ( txLog == null )
@@ -982,6 +989,27 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
             throw new RuntimeException( e );
         }
         return tx != null ? ((TransactionImpl)tx).getState() : TransactionState.NO_STATE;
+    }
+
+    @Override
+    public StatementContext getStatementContext()
+    {
+        Transaction tx;
+        try
+        {
+            tx = getTransaction();
+        }
+        catch ( SystemException e )
+        {
+            throw new RuntimeException( e );
+        }
+        return tx != null ? ((TransactionImpl)tx).getCurrentStatementContext() : null;
+    }
+
+    @Override
+    public void setKernel(KernelAPI kernel)
+    {
+        this.kernel = kernel;
     }
     
     private class TxManagerDataSourceRegistrationListener implements DataSourceRegistrationListener

@@ -27,7 +27,13 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.helpers.collection.Iterables.map;
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.helpers.collection.IteratorUtil.count;
+import static org.neo4j.helpers.collection.IteratorUtil.single;
 import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.server.rest.repr.RepresentationTestAccess.nodeUriToId;
 import static org.neo4j.server.rest.repr.RepresentationTestAccess.serialize;
 
 import java.io.IOException;
@@ -48,6 +54,7 @@ import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.helpers.Function;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
 import org.neo4j.server.ServerTestUtils;
@@ -1039,6 +1046,78 @@ public class DatabaseActionsTest
                 nodes[1],
                 map( "max_depth", 2, "algorithm", "shortestPath", "relationships",
                         map( "type", "to", "direction", "in" ), "single", false ) ) );
+    }
+    
+    @Test
+    public void shouldAddLabelToNode() throws Exception
+    {
+        // GIVEN
+        long node = actions.createNode( null ).getId();
+
+        // WHEN
+        String labelName = "labello";
+        actions.addLabelToNode( node, labelName );
+        Iterable<String> labels = graphdbHelper.getNodeLabels( node );
+
+        // THEN
+        assertEquals( labelName, single( labels ) );
+    }
+    
+    @Test
+    public void shouldRemoveLabelFromNode() throws Exception
+    {
+        // GIVEN
+        String labelName = "mylabel";
+        long node = actions.createNode( null, label( labelName ) ).getId();
+
+        // WHEN
+        actions.removeLabelFromNode( node, labelName );
+        Iterable<String> labels = graphdbHelper.getNodeLabels( node );
+
+        // THEN
+        assertEquals( 0, count( labels ) );
+    }
+    
+    @Test
+    public void shouldListExistingLabelsOnNode() throws Exception
+    {
+        // GIVEN
+        long node = graphdbHelper.createNode();
+        String labelName1 = "LabelOne", labelName2 = "labelTwo";
+        graphdbHelper.addLabelToNode( node, labelName1 );
+        graphdbHelper.addLabelToNode( node, labelName2 );
+
+        // WHEN
+        List<Object> labels = serialize( actions.getNodeLabels( node ) );
+
+        // THEN
+        assertEquals(
+                asSet( labelName1, labelName2 ),
+                asSet( labels ) );
+    }
+    
+    @Test
+    public void getNodesWithLabel() throws Exception
+    {
+        // GIVEN
+        String label1 = "first", label2 = "second";
+        long node1 = graphdbHelper.createNode( label( label1 ) );
+        long node2 = graphdbHelper.createNode( label( label1 ), label( label2 ) );
+        graphdbHelper.createNode( label( label2 ) );
+
+        // WHEN
+        List<Object> representation = serialize( actions.getNodesWithLabel( label1 ) );
+
+        // THEN
+        assertEquals( asSet( node1, node2 ), asSet( map( new Function<Object, Long>()
+        {
+            @Override
+            public Long apply( Object from )
+            {
+                Map<?, ?> nodeMap = (Map<?, ?>) from;
+                return nodeUriToId( (String) nodeMap.get( "self" ) );
+            }
+        }, representation ) ) );
     }
 
     private void assertPaths( int numPaths, long[] nodes, int length, List<Object> result )

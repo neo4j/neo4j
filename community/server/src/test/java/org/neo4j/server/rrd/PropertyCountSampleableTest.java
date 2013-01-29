@@ -45,7 +45,7 @@ public class PropertyCountSampleableTest
     public void setupReferenceNode()
     {
         db = new WrappingDatabase( new ImpermanentGraphDatabase() );
-        sampleable = new PropertyCountSampleable( db.getGraph() );
+        sampleable = new PropertyCountSampleable( db.getGraph().getNodeManager() );
 
         Transaction tx = db.getGraph().beginTx();
         referenceNodeId = db.getGraph().createNode().getId();

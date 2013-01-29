@@ -63,31 +63,42 @@ class ExecuteUpdateCommandsPipe(source: Pipe, db: GraphDatabaseService, commands
   }
 
 
-  private def extractEntitiesWithProperties(action: UpdateAction): Seq[NamedExpectation] = action match {
-    case CreateNode(key, props)                      => Seq(NamedExpectation(key, props))
-    case CreateRelationship(key, from, to, _, props) => Seq(NamedExpectation(key, props)) ++ extractIfEntity(from) ++ extractIfEntity(to)
-    case CreateUniqueAction(links@_*)                         => links.flatMap(l => Seq(l.start, l.end, l.rel))
-    case _                                                    => Seq()
+  private def extractEntities(action: UpdateAction): Seq[NamedExpectation] = action match
+  {
+    case CreateNode(key, props, labels, bare) =>
+      Seq(NamedExpectation(key, props, labels, bare))
+    case CreateRelationship(key, from, to, _, props) =>
+      Seq(NamedExpectation(key, props, true)) ++ extractIfEntity(from) ++ extractIfEntity(to)
+    case CreateUniqueAction(links@_*) =>
+      links.flatMap(l => Seq(l.start, l.end, l.rel))
+    case _ =>
+      Seq()
   }
 
 
-  def extractIfEntity(from: (Expression, Map[String, Expression])): Option[NamedExpectation] = {
+  def extractIfEntity(from: RelationshipEndpoint): Option[NamedExpectation] = {
     from match {
-      case (Identifier(key), props) => Some(NamedExpectation(key, props))
-      case _                        => None
+      case RelationshipEndpoint(Identifier(key), props, labels, bare) => Some(NamedExpectation(key, props, labels, bare))
+      case _                                                          => None
     }
   }
 
   private def assertNothingIsCreatedWhenItShouldNot() {
-    val entitiesAndProps: Seq[NamedExpectation] = commands.flatMap(cmd => extractEntitiesWithProperties(cmd))
-    val entitiesWithProps = entitiesAndProps.filter(_.properties.nonEmpty)
+    val entities: Seq[NamedExpectation] = commands.flatMap(cmd => extractEntities(cmd))
 
+    val entitiesWithProps = entities.filter(_.properties.nonEmpty)
     entitiesWithProps.foreach(l => if (source.symbols.keys.contains(l.name))
       throw new SyntaxException("Can't create `%s` with properties here. It already exists in this context".format(l.name))
     )
+
+    // lush is the opposite of bare
+    val lushEntities = entities.filter(! _.bare)
+    lushEntities.foreach(l => if (source.symbols.keys.contains(l.name))
+      throw new SyntaxException("Can't create `%s` with properties or labels here. It already exists in this context".format(l.name))
+    )
   }
 
-  def executionPlan() = source.executionPlan() + "\nUpdateGraph(" + commands.mkString + ")"
+  def executionPlanDescription() = source.executionPlanDescription() + "\nUpdateGraph(" + commands.mkString + ")"
 
   def symbols = source.symbols.add(commands.flatMap(_.identifiers).toMap)
 

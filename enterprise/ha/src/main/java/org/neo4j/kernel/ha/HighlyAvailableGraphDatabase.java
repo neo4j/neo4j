@@ -72,7 +72,7 @@ import org.neo4j.kernel.ha.transaction.TxHookModeSwitcher;
 import org.neo4j.kernel.ha.transaction.TxIdGeneratorModeSwitcher;
 import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.core.Caches;
-import org.neo4j.kernel.impl.core.RelationshipTypeCreator;
+import org.neo4j.kernel.impl.core.KeyCreator;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.core.WritableTransactionState;
 import org.neo4j.kernel.impl.transaction.LockManager;
@@ -412,18 +412,31 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     }
 
     @Override
-    protected RelationshipTypeCreator createRelationshipTypeCreator()
+    protected KeyCreator createRelationshipTypeCreator()
     {
-        DelegateInvocationHandler<RelationshipTypeCreator> relationshipTypeCreatorDelegate =
-                new DelegateInvocationHandler<RelationshipTypeCreator>();
-        RelationshipTypeCreator relationshipTypeCreator =
-                (RelationshipTypeCreator) Proxy.newProxyInstance( RelationshipTypeCreator.class.getClassLoader(),
-                        new Class[]{RelationshipTypeCreator.class}, relationshipTypeCreatorDelegate );
+        DelegateInvocationHandler<KeyCreator> relationshipTypeCreatorDelegate =
+                new DelegateInvocationHandler<KeyCreator>();
+        KeyCreator relationshipTypeCreator =
+                (KeyCreator) Proxy.newProxyInstance( KeyCreator.class.getClassLoader(),
+                        new Class[]{KeyCreator.class}, relationshipTypeCreatorDelegate );
         new RelationshipTypeCreatorModeSwitcher( memberStateMachine, relationshipTypeCreatorDelegate,
-                (HaXaDataSourceManager) xaDataSourceManager, master, requestContextFactory );
+                (HaXaDataSourceManager) xaDataSourceManager, master, requestContextFactory, logging );
         return relationshipTypeCreator;
     }
 
+    @Override
+    protected KeyCreator createPropertyKeyCreator()
+    {
+        DelegateInvocationHandler<KeyCreator> propertyKeyCreatorDelegate =
+                new DelegateInvocationHandler<KeyCreator>();
+        KeyCreator propertyKeyCreator =
+                (KeyCreator) Proxy.newProxyInstance( KeyCreator.class.getClassLoader(),
+                        new Class[]{KeyCreator.class}, propertyKeyCreatorDelegate );
+        new PropertyKeyCreatorModeSwitcher( memberStateMachine, propertyKeyCreatorDelegate,
+                (HaXaDataSourceManager) xaDataSourceManager, master, requestContextFactory, logging );
+        return propertyKeyCreator;
+    }
+    
     @Override
     protected Caches createCaches()
     {

@@ -39,7 +39,7 @@ class ExtractPipe(source: Pipe, val expressions: Map[String, Expression]) extend
     subgraph
   })
 
-  override def executionPlan(): String = source.executionPlan() + "\r\nExtract([" + source.symbols.keys.mkString(",") + "] => [" + expressions.keys.mkString(", ") + "])"
+  override def executionPlanDescription(): String = source.executionPlanDescription() + "\r\nExtract([" + source.symbols.keys.mkString(",") + "] => [" + expressions.keys.mkString(", ") + "])"
 
   def throwIfSymbolsMissing(symbols: SymbolTable) {
     expressions.foreach(_._2.throwIfSymbolsMissing(symbols))

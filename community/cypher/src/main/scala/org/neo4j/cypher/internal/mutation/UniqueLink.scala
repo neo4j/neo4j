@@ -26,22 +26,23 @@ import expressions.Identifier._
 import expressions.Literal
 import org.neo4j.cypher.internal.symbols.{RelationshipType, NodeType, SymbolTable}
 import org.neo4j.graphdb.{Node, Direction}
-import org.neo4j.cypher.internal.pipes.{QueryState}
+import org.neo4j.cypher.internal.pipes.QueryState
 import org.neo4j.cypher.{SyntaxException, CypherTypeException, UniquePathNotUniqueException}
-import collection.JavaConverters._
 import collection.Map
 import org.neo4j.cypher.internal.helpers.{IsMap, MapSupport}
 import org.neo4j.cypher.internal.ExecutionContext
 
 object UniqueLink {
   def apply(start: String, end: String, relName: String, relType: String, dir: Direction): UniqueLink =
-    new UniqueLink(NamedExpectation(start, Map.empty), NamedExpectation(end, Map.empty), NamedExpectation(relName, Map.empty), relType, dir)
+    new UniqueLink(NamedExpectation(start, Map.empty, true), NamedExpectation(end, Map.empty, true), NamedExpectation(relName, Map.empty, true), relType, dir)
 }
 
 case class UniqueLink(start: NamedExpectation, end: NamedExpectation, rel: NamedExpectation, relType: String, dir: Direction)
   extends GraphElementPropertyFunctions with Pattern with MapSupport {
 
   def exec(context: ExecutionContext, state: QueryState): Option[(UniqueLink, CreateUniqueResult)] = {
+
+    def tx = state.queryContext.getTransaction
 
     def getNode(expect: NamedExpectation): Option[Node] = context.get(expect.name) match {
       case Some(n: Node)                             => Some(n)
@@ -58,17 +59,18 @@ case class UniqueLink(start: NamedExpectation, end: NamedExpectation, rel: Named
     // If any matching rels are found, they are returned. Otherwise, a new one is
     // created and returned.
     def twoNodes(startNode: Node, endNode: Node): Option[(UniqueLink, CreateUniqueResult)] = {
-      val rels = context.state.query.getRelationshipsFor(startNode, dir, relType).asScala.
+      val rels = context.state.queryContext.getRelationshipsFor(startNode, dir, Seq(relType)).
         filter(r => r.getOtherNode(startNode) == endNode && rel.compareWithExpectations(r, context) ).
         toList
 
       rels match {
         case List() =>
-          val tx = state.transaction.getOrElse(throw new RuntimeException("I need a transaction!"))
-
           val expectations = rel.getExpectations(context)
-          val createRel = CreateRelationship(rel.name, (Literal(startNode), Map()), (Literal(endNode), Map()), relType, expectations)
+          val createRel = CreateRelationship(rel.name, RelationshipEndpoint(Literal(startNode), Map(), Literal(Seq.empty), true), RelationshipEndpoint(Literal(endNode), Map(), Literal(Seq.empty), true), relType, expectations)
           Some(this->Update(Seq(UpdateWrapper(Seq(), createRel, rel.name)), () => {
+            // TODO: This should not be done here. The QueryContext should take the necessary locks while reading the
+            // graph. For now, let's rip out the inside of objects and get to the transaction.
+
             Seq(tx.acquireWriteLock(startNode), tx.acquireWriteLock(endNode))
           }))
         case List(r) => Some(this->Traverse(rel.name -> r))
@@ -84,23 +86,22 @@ case class UniqueLink(start: NamedExpectation, end: NamedExpectation, rel: Named
       def createUpdateActions(): Seq[UpdateWrapper] = {
         val relExpectations = rel.getExpectations(context)
         val createRel = if (dir == Direction.OUTGOING) {
-          CreateRelationship(rel.name, (Literal(startNode), Map()), (Identifier(other.name), Map()), relType, relExpectations)
+          CreateRelationship(rel.name, RelationshipEndpoint(Literal(startNode), Map(), Literal(Seq.empty), true), RelationshipEndpoint(Identifier(other.name), Map(), Literal(Seq.empty), true), relType, relExpectations)
         } else {
-          CreateRelationship(rel.name, (Identifier(other.name), Map()), (Literal(startNode), Map()), relType, relExpectations)
+          CreateRelationship(rel.name, RelationshipEndpoint(Identifier(other.name), Map(), Literal(Seq.empty), true), RelationshipEndpoint(Literal(startNode), Map(), Literal(Seq.empty), true), relType, relExpectations)
         }
 
         val relUpdate = UpdateWrapper(Seq(other.name), createRel, createRel.key)
-        val nodeCreate = UpdateWrapper(Seq(), CreateNode(other.name, other.getExpectations(context)), other.name)
+        val nodeCreate = UpdateWrapper(Seq(), CreateNode(other.name, other.getExpectations(context), Literal(Seq.empty)), other.name)
 
         Seq(nodeCreate, relUpdate)
       }
 
-      val rels = context.state.query.getRelationshipsFor(startNode, dir, relType).asScala.
+      val rels = context.state.queryContext.getRelationshipsFor(startNode, dir, Seq(relType)).
         filter(r => rel.compareWithExpectations(r, context) && other.compareWithExpectations(r.getOtherNode(startNode), context)).toList
 
       rels match {
         case List() =>
-          val tx = state.transaction.getOrElse(throw new RuntimeException("I need a transaction!"))
           Some(this -> Update(createUpdateActions(), () => Seq(tx.acquireWriteLock(startNode))))
 
         case List(r) => Some(this -> Traverse(rel.name -> r, other.name -> r.getOtherNode(startNode)))
@@ -136,14 +137,14 @@ case class UniqueLink(start: NamedExpectation, end: NamedExpectation, rel: Named
 
   lazy val identifier2 = Seq(start.name -> NodeType(), end.name -> NodeType(), rel.name -> RelationshipType())
 
-  def symbolTableDependencies:Set[String] = symbolTableDependencies(start.properties) ++
-    symbolTableDependencies(end.properties) ++
-    symbolTableDependencies(rel.properties)
+  def symbolTableDependencies:Set[String] = start.properties.symboltableDependencies ++
+    end.properties.symboltableDependencies ++
+    rel.properties.symboltableDependencies
 
   def rewrite(f: (Expression) => Expression): UniqueLink = {
-    val s = NamedExpectation(start.name, rewrite(start.properties, f))
-    val e = NamedExpectation(end.name, rewrite(end.properties, f))
-    val r = NamedExpectation(rel.name, rewrite(rel.properties, f))
+    val s = NamedExpectation(start.name, start.properties.rewrite(f), start.labels.rewrite(f), start.bare)
+    val e = NamedExpectation(end.name, end.properties.rewrite(f), end.labels.rewrite(f), end.bare)
+    val r = NamedExpectation(rel.name, rel.properties.rewrite(f), rel.labels.rewrite(f), rel.bare)
     UniqueLink(s, e, r, relType, dir)
   }
 
@@ -159,9 +160,9 @@ case class UniqueLink(start: NamedExpectation, end: NamedExpectation, rel: Named
   def children = Seq(start.e, end.e, rel.e)
 
   def throwIfSymbolsMissing(symbols: SymbolTable) {
-    throwIfSymbolsMissing(start.properties, symbols)
-    throwIfSymbolsMissing(end.properties, symbols)
-    throwIfSymbolsMissing(rel.properties, symbols)
+    start.properties.throwIfSymbolsMissing(symbols)
+    end.properties.throwIfSymbolsMissing(symbols)
+    rel.properties.throwIfSymbolsMissing(symbols)
   }
 
   def optional: Boolean = false

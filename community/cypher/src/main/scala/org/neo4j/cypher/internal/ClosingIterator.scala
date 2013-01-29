@@ -19,16 +19,16 @@
  */
 package org.neo4j.cypher.internal
 
+import org.neo4j.graphdb.ConstraintViolationException
 import spi.QueryContext
-import org.neo4j.graphdb.{TransactionFailureException, Transaction}
-import org.neo4j.kernel.impl.nioneo.store.ConstraintViolationException
+import org.neo4j.graphdb.TransactionFailureException
 import org.neo4j.cypher.NodeStillHasRelationshipsException
 
 /**
  * An iterator that decorates an inner iterator, and calls close() on the QueryContext once
  * the inner iterator is empty.
  */
-class ClosingIterator[T](inner: Iterator[T], queryContext: QueryContext, tx: Transaction) extends Iterator[T] {
+class ClosingIterator[T](inner: Iterator[T], queryContext: QueryContext) extends Iterator[T] {
   private var closed: Boolean = false
   lazy val still_has_relationships = "Node record Node\\[(\\d),.*] still has relationships".r
 
@@ -52,10 +52,8 @@ class ClosingIterator[T](inner: Iterator[T], queryContext: QueryContext, tx: Tra
     translateException {
       if (!closed) {
         closed = true
-        queryContext.close()
+        queryContext.close(success = true)
       }
-      tx.success()
-      tx.finish()
     }
   }
 
@@ -86,8 +84,7 @@ class ClosingIterator[T](inner: Iterator[T], queryContext: QueryContext, tx: Tra
     f
   } catch {
     case t: Throwable if !closed =>
-      tx.failure()
-      tx.finish()
+      queryContext.close(success = false)
       throw t
   }
 }

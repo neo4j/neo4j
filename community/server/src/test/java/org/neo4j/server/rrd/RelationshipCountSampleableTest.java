@@ -65,7 +65,7 @@ public class RelationshipCountSampleableTest
     public void setUp() throws Exception
     {
         db = new ImpermanentGraphDatabase();
-        sampleable = new RelationshipCountSampleable( db );
+        sampleable = new RelationshipCountSampleable( db.getNodeManager() );
     }
 
     @After

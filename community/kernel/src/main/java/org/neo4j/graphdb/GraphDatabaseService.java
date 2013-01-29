@@ -56,6 +56,14 @@ public interface GraphDatabaseService
     public Node createNode();
 
     /**
+     * Creates a new node and adds the provided labels to it.
+     *
+     * @param labels {@link Label labels} to add to the created node.
+     * @return the created node.
+     */
+    public Node createNode( Label... labels );
+
+    /**
      * Looks up a node by id. Please note: Neo4j reuses its internal ids when
      * nodes and relationships are deleted, which means it's bad practice to
      * refer to them this way. Instead, use application generated ids.

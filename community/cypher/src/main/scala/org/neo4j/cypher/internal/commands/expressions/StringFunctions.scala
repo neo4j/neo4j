@@ -20,12 +20,12 @@
 package org.neo4j.cypher.internal.commands.expressions
 
 import org.neo4j.cypher.CypherTypeException
-import scala.collection.JavaConverters._
 import org.neo4j.cypher.internal.helpers.{IsCollection, CollectionSupport}
 import org.neo4j.graphdb.{PropertyContainer, Relationship, Node}
 import org.neo4j.cypher.internal.symbols._
 import org.neo4j.cypher.internal.{ExecutionContext, StringExtras}
 import org.neo4j.cypher.internal.spi.QueryContext
+import org.neo4j.cypher.internal.commands.values.LabelValue
 
 abstract class StringFunction(arg: Expression) extends NullInNullOutExpression(arg) with StringHelper with CollectionSupport {
   def innerExpectedType = StringType()
@@ -47,8 +47,8 @@ trait StringHelper {
   protected def props(x: PropertyContainer, q: QueryContext): String = {
 
     val keyValStrings = x match {
-      case n: Node         => q.nodeOps().propertyKeys(n).asScala.map(key => key + ":" + text(q.nodeOps().getProperty(n, key), q))
-      case r: Relationship => q.relationshipOps().propertyKeys(r).asScala.map(key => key + ":" + text(q.relationshipOps().getProperty(r, key), q))
+      case n: Node         => q.nodeOps.propertyKeys(n).map(key => key + ":" + text(q.nodeOps.getProperty(n, key), q))
+      case r: Relationship => q.relationshipOps.propertyKeys(r).map(key => key + ":" + text(q.relationshipOps.getProperty(r, key), q))
     }
 
     keyValStrings.mkString("{", ",", "}")
@@ -59,6 +59,7 @@ trait StringHelper {
     case x: Relationship    => ":" + x.getType.toString + "[" + x.getId + "] " + props(x, ctx)
     case IsCollection(coll) => coll.map(elem => text(elem, ctx)).mkString("[", ",", "]")
     case x: String          => "\"" + x + "\""
+    case v: LabelValue      => v.resolveForName(ctx).name
     case Some(x)            => x.toString
     case null               => "<null>"
     case x                  => x.toString
@@ -66,7 +67,7 @@ trait StringHelper {
 }
 
 case class StrFunction(argument: Expression) extends StringFunction(argument) with StringHelper with StringExtras {
-  def compute(value: Any, m: ExecutionContext): Any = text(argument(m), m.state.query)
+  def compute(value: Any, m: ExecutionContext): Any = text(argument(m), m.state.queryContext)
 
   def rewrite(f: (Expression) => Expression) = f(StrFunction(argument.rewrite(f)))
 }

@@ -1,0 +1,8 @@
+[[rest-api-node-labels]]
+== Node labels ==
+
+include::adding-a-label-to-a-node.asciidoc[]
+
+include::adding-a-label-with-an-invalid-name.asciidoc[]
+
+include::listing-labels-for-a-node.asciidoc[]

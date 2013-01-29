@@ -50,7 +50,7 @@ class SemanticErrorTest extends ExecutionEngineHelper {
 
   @Test def cantUseLENGTHOnNodes() {
     expectedError("start n=node(0) return length(n)",
-      "Expected `n` to be a Collection but it was a Node")
+      "Expected `n` to be a Collection<Any> but it was a Node")
   }
 
   @Test def cantReUseRelationshipIdentifier() {

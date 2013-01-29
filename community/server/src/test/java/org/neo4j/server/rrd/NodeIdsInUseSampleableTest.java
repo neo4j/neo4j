@@ -67,7 +67,7 @@ public class NodeIdsInUseSampleableTest
     public void setUp() throws Exception
     {
         db = new WrappingDatabase( new ImpermanentGraphDatabase() );
-        sampleable = new NodeIdsInUseSampleable( db.getGraph() );
+        sampleable = new NodeIdsInUseSampleable( db.getGraph().getNodeManager() );
     }
 
     @After

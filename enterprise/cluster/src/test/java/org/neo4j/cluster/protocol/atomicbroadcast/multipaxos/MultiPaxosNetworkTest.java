@@ -25,10 +25,9 @@ import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Semaphore;
 
-import ch.qos.logback.classic.Logger;
-import ch.qos.logback.classic.LoggerContext;
 import org.hamcrest.CoreMatchers;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.cluster.BindingListener;
 import org.neo4j.cluster.ClusterSettings;
@@ -53,9 +52,13 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.LogbackService;
 import org.neo4j.test.TargetDirectory;
 
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.LoggerContext;
+
 /**
  * TODO
  */
+@Ignore
 public class MultiPaxosNetworkTest
 {
     @Test

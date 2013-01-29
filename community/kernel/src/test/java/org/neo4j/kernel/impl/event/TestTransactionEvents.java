@@ -123,8 +123,6 @@ public class TestTransactionEvents extends AbstractNeo4jTestCase
     @Test
     public void shouldGetCorrectTransactionDataUponCommit()
     {
-        makeSureRelationshipTypeIsCreated( RelTypes.TXEVENT );
-        
         // Create new data, nothing modified, just added/created
         ExpectedTransactionData expectedData = new ExpectedTransactionData();
         VerifyingTransactionEventHandler handler = new VerifyingTransactionEventHandler(
@@ -229,15 +227,6 @@ public class TestTransactionEvents extends AbstractNeo4jTestCase
         {
             getGraphDb().unregisterTransactionEventHandler( handler );
         }
-    }
-
-    private void makeSureRelationshipTypeIsCreated( RelationshipType type )
-    {
-        Node dummy1 = getGraphDb().createNode();
-        Node dummy2 = getGraphDb().createNode();
-        dummy1.createRelationshipTo( dummy2, type ).delete();
-        dummy1.delete();
-        dummy2.delete();
     }
 
     @Test

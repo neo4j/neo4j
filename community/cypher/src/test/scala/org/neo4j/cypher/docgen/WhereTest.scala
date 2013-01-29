@@ -32,7 +32,20 @@ class WhereTest extends DocumentingTestBase {
     "Peter" -> Map("age" -> 34l)
   )
 
+  override val labelsDescription = Map(
+    "Andres" -> List("Swedish")
+  )
+
   def section = "Where"
+
+  @Test def filter_on_node_label() {
+    testQuery(
+      title = "Filter on node label",
+      text = "To filter nodes by label, write a label predicate after the `WHERE` keyword using either the short `WHERE n:foo` or the long `WHERE n LABEL [:foo, :bar]` form",
+      queryText = """start n=node(%Andres%, %Peter%) where n:Swedish return n""",
+      returns = """The "+Andres+" node will be returned.""",
+      assertions = (p) => assertEquals(List(node("Andres")), p.columnAs[Node]("n").toList))
+  }
 
   @Test def filter_on_property() {
     testQuery(

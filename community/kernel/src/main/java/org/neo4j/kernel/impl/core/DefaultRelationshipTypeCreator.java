@@ -19,103 +19,23 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import javax.transaction.TransactionManager;
-
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.graphdb.TransactionFailureException;
-import org.neo4j.kernel.impl.nioneo.store.NameData;
 import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
+import org.neo4j.kernel.logging.Logging;
 
-public class DefaultRelationshipTypeCreator implements RelationshipTypeCreator
+public class DefaultRelationshipTypeCreator extends IsolatedTransactionKeyCreator
 {
-    public int getOrCreate( TransactionManager txManager, EntityIdGenerator idGenerator,
-            PersistenceManager persistence, RelationshipTypeHolder relTypeHolder, String name )
+    public DefaultRelationshipTypeCreator( Logging logging )
     {
-        RelTypeCreater createrThread = new RelTypeCreater( name, txManager, idGenerator,
-                persistence );
-        synchronized ( createrThread )
-        {
-            createrThread.start();
-            while ( createrThread.isAlive() )
-            {
-                try
-                {
-                    createrThread.wait( 50 );
-                }
-                catch ( InterruptedException e )
-                {
-                    Thread.interrupted();
-                }
-            }
-        }
-        if ( createrThread.succeded() )
-        {
-            int id = createrThread.getRelTypeId();
-            relTypeHolder.addRawRelationshipType( new NameData( id, name ) );
-            return id;
-        }
-        throw new TransactionFailureException(
-                "Unable to create relationship type " + name );
+        super( logging );
     }
 
-    // TODO: this should be fixed to run in same thread
-    private static class RelTypeCreater extends Thread
+    @Override
+    protected int createKey( EntityIdGenerator idGenerator, PersistenceManager persistence, String name )
     {
-        private boolean success = false;
-        private String name;
-        private int id = -1;
-        private final TransactionManager txManager;
-        private final PersistenceManager persistence;
-        private final EntityIdGenerator idGenerator;
-
-        RelTypeCreater( String name, TransactionManager txManager, EntityIdGenerator idGenerator,
-                PersistenceManager persistence )
-        {
-            super();
-            this.name = name;
-            this.txManager = txManager;
-            this.idGenerator = idGenerator;
-            this.persistence = persistence;
-        }
-
-        synchronized boolean succeded()
-        {
-            return success;
-        }
-
-        synchronized int getRelTypeId()
-        {
-            return id;
-        }
-
-        @Override
-        public synchronized void run()
-        {
-            try
-            {
-                txManager.begin();
-                id = (int) idGenerator.nextId( RelationshipType.class );
-                persistence.createRelationshipType( id, name );
-                txManager.commit();
-                success = true;
-            }
-            catch ( Throwable t )
-            {
-                t.printStackTrace();
-                try
-                {
-                    txManager.rollback();
-                }
-                catch ( Throwable tt )
-                {
-                    tt.printStackTrace();
-                }
-            }
-            finally
-            {
-                this.notify();
-            }
-        }
+        int id = (int) idGenerator.nextId( RelationshipType.class );
+        persistence.createRelationshipType( id, name );
+        return id;
     }
 }
