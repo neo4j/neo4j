@@ -410,7 +410,8 @@ public abstract class InternalAbstractGraphDatabase
         // XXX: Circular dependency, temporary during transition to KernelAPI
         txManager.setKernel(kernelAPI);
 
-        statementContextProvider = life.add( new ThreadToStatementContextBridge( kernelAPI, txManager ) );
+        statementContextProvider = life.add( new ThreadToStatementContextBridge( kernelAPI, txManager,
+                xaDataSourceManager ) );
 
         nodeManager = guard != null ?
                 createGuardedNodeManager( readOnly, cacheProvider, nodeCache, relCache ) :

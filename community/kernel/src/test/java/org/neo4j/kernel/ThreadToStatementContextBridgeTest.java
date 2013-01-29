@@ -19,7 +19,8 @@
  */
 package org.neo4j.kernel;
 
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import org.junit.Test;
 import org.neo4j.graphdb.NotInTransactionException;
@@ -33,10 +34,9 @@ public class ThreadToStatementContextBridgeTest
         // Given
         AbstractTransactionManager txManager = mock( AbstractTransactionManager.class );
         when( txManager.getStatementContext() ).thenReturn( null );
-        ThreadToStatementContextBridge bridge = new ThreadToStatementContextBridge(null, txManager );
+        ThreadToStatementContextBridge bridge = new ThreadToStatementContextBridge( null, txManager, null );
 
         // When
         bridge.getCtxForWriting();
     }
-
 }
