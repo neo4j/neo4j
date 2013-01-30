@@ -122,4 +122,26 @@ public class TestSlaveOnlyCluster
             clusterManager.stop();
         }
     }
+
+    @Test
+    public void testMasterElectionAfterSlaveOnlyInstancesStartFirst() throws Throwable
+    {
+        ClusterManager clusterManager = new ClusterManager( fromXml( getClass().getResource( "/threeinstances.xml" ).toURI() ),
+                TargetDirectory.forTest( getClass() ).directory( "testCluster", true ), MapUtil.stringMap(),
+                MapUtil.<Integer, Map<String, String>>genericMap( 1, MapUtil.stringMap( HaSettings.slave_only.name(), "true" ),
+                                       2, MapUtil.stringMap( HaSettings.slave_only.name(), "true" )) );
+
+
+        try
+        {
+            clusterManager.start();
+
+            HighlyAvailableGraphDatabase master = clusterManager.getDefaultCluster().getMaster();
+            Assert.assertThat( clusterManager.getDefaultCluster().getServerId( master ), CoreMatchers.equalTo( 3 ));
+        }
+        finally
+        {
+            clusterManager.stop();
+        }
+    }
 }
