@@ -20,7 +20,6 @@
 package org.neo4j.shell.impl;
 
 import java.io.File;
-import java.lang.reflect.InvocationTargetException;
 
 import org.neo4j.shell.Console;
 import org.neo4j.shell.ShellClient;
@@ -31,7 +30,7 @@ import org.neo4j.shell.ShellClient;
  */
 public class JLineConsole implements Console
 {
-	private Object consoleReader;
+	private final Object consoleReader;
 	
 	static JLineConsole newConsoleOrNullIfNotFound( ShellClient client )
 	{
@@ -79,12 +78,14 @@ public class JLineConsole implements Console
 		this.consoleReader = consoleReader;
 	}
 	
-	public void format( String format, Object... args )
+	@Override
+    public void format( String format, Object... args )
 	{
 		System.out.print( format );
 	}
 	
-	public String readLine( String prompt )
+	@Override
+    public String readLine( String prompt )
 	{
 		try
 		{
