@@ -52,31 +52,29 @@ public enum SnapshotState
 
                         case refreshSnapshot:
                         {
-                            URI coordinator = context.getClusterContext().getConfiguration().getMembers().get( 0 );
-                            outgoing.offer( Message.to( SnapshotMessage.sendSnapshot, coordinator ) );
-                            return refreshing;
-                        }
-
-                        case join:
-                        {
                             if ( context.getClusterContext().getConfiguration().getMembers().size() <= 1 ||
                                     context.getSnapshotProvider() == null )
                             {
-                                return ready;
+                                return start;
                             }
                             else
                             {
-                                URI coordinator = context.getClusterContext().getConfiguration().getElected(
-                                        ClusterConfiguration.COORDINATOR );
+                                URI coordinator = context.getClusterContext().getConfiguration().getElected(ClusterConfiguration.COORDINATOR );
                                 if (coordinator != null)
                                 {
                                     outgoing.offer( Message.to( SnapshotMessage.sendSnapshot, coordinator ) );
                                     return refreshing;
                                 } else
                                 {
-                                    return ready;
+                                    return start;
                                 }
                             }
+                        }
+
+                        case join:
+                        {
+                            return ready;
+
                         }
                     }
                     return this;
@@ -118,6 +116,27 @@ public enum SnapshotState
                 {
                     switch ( message.getMessageType() )
                     {
+                        case refreshSnapshot:
+                         {
+                             if ( context.getClusterContext().getConfiguration().getMembers().size() <= 1 ||
+                                     context.getSnapshotProvider() == null )
+                             {
+                                 return ready;
+                             }
+                             else
+                             {
+                                 URI coordinator = context.getClusterContext().getConfiguration().getElected(ClusterConfiguration.COORDINATOR );
+                                 if (coordinator != null)
+                                 {
+                                     outgoing.offer( Message.to( SnapshotMessage.sendSnapshot, coordinator ) );
+                                     return refreshing;
+                                 } else
+                                 {
+                                     return ready;
+                                 }
+                             }
+                         }
+
                         case sendSnapshot:
                         {
                             outgoing.offer( Message.respond( SnapshotMessage.snapshot, message,

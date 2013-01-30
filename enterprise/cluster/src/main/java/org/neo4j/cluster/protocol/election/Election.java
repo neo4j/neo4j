@@ -30,5 +30,6 @@ import java.net.URI;
 public interface Election
 {
     void demote( URI node);
+    void performRoleElections();
     void promote( URI node, String role);
 }

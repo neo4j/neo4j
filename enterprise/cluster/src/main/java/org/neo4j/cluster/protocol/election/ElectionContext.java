@@ -119,20 +119,65 @@ public class ElectionContext
             @Override
             public URI pickWinner( List<Vote> voteList )
             {
+
+                // Remove blank votes
+                List<Vote> filteredVoteList = Iterables.toList( Iterables.filter( new Predicate<Vote>()
+                {
+                    @Override
+                    public boolean accept( Vote item )
+                    {
+                        return !(item.getCredentials() instanceof NotElectableElectionCredentials);
+                    }
+                }, voteList ) );
+
                 // Sort based on credentials
                 // The most suited candidate should come out on top
-                Collections.sort( voteList );
-                Collections.reverse( voteList );
+                Collections.sort( filteredVoteList );
+                Collections.reverse( filteredVoteList );
 
-                for ( Vote vote : voteList )
+                for ( Vote vote : filteredVoteList )
                 {
                     // Don't elect as winner the node we are trying to demote
-                    if ( !vote.getSuggestedNode().equals( demoteNode ) )
+                    if ( !vote.getSuggestedNode().equals( demoteNode ))
                     {
                         return vote.getSuggestedNode();
                     }
                 }
 
+                // No possible winner
+                return null;
+            }
+        } ) );
+    }
+
+    public void startElectionProcess( String role )
+    {
+        elections.put( role, new Election( new WinnerStrategy()
+        {
+            @Override
+            public URI pickWinner( List<Vote> voteList )
+            {
+                // Remove blank votes
+                List<Vote> filteredVoteList = Iterables.toList( Iterables.filter( new Predicate<Vote>()
+                {
+                    @Override
+                    public boolean accept( Vote item )
+                    {
+                        return !(item.getCredentials() instanceof NotElectableElectionCredentials);
+                    }
+                }, voteList ) );
+
+                // Sort based on credentials
+                // The most suited candidate should come out on top
+                Collections.sort( filteredVoteList );
+                Collections.reverse( filteredVoteList );
+
+                for ( Vote vote : filteredVoteList )
+                {
+                    return vote.getSuggestedNode();
+                }
+
+                // No possible winner
                 return null;
             }
         } ) );
@@ -146,20 +191,31 @@ public class ElectionContext
             public URI pickWinner( List<Vote> voteList )
             {
 
+                // Remove blank votes
+                List<Vote> filteredVoteList = Iterables.toList( Iterables.filter( new Predicate<Vote>()
+                {
+                    @Override
+                    public boolean accept( Vote item )
+                    {
+                        return !(item.getCredentials() instanceof NotElectableElectionCredentials);
+                    }
+                }, voteList ) );
+
                 // Sort based on credentials
                 // The most suited candidate should come out on top
-                Collections.sort( voteList );
-                Collections.reverse( voteList );
+                Collections.sort( filteredVoteList );
+                Collections.reverse( filteredVoteList );
 
-                for ( Vote vote : voteList )
+                for ( Vote vote : filteredVoteList )
                 {
                     // Don't elect as winner the node we are trying to demote
-                    if ( vote.getSuggestedNode().equals( promoteNode ) )
+                    if ( !vote.getSuggestedNode().equals( promoteNode ))
                     {
                         return vote.getSuggestedNode();
                     }
                 }
 
+                // No possible winner
                 return null;
             }
         } ) );
@@ -267,6 +323,11 @@ public class ElectionContext
         public String toString()
         {
             return suggestedNode + ":" + voteCredentials;
+        }
+
+        public Comparable<Object> getCredentials()
+        {
+            return voteCredentials;
         }
     }
 
