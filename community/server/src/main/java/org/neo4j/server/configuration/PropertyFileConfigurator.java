@@ -44,7 +44,7 @@ public class PropertyFileConfigurator implements Configurator
 
     private static final String NEO4J_PROPERTIES_FILENAME = "neo4j.properties";
 
-    public static Logger log = Logger.getLogger( PropertyFileConfigurator.class );
+    public static final Logger log = Logger.getLogger( PropertyFileConfigurator.class );
 
     private CompositeConfiguration serverConfiguration = new CompositeConfiguration();
     private File propertyFileDirectory;

@@ -169,8 +169,8 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             if ( !record.inUse() && record.getNextRel() !=
                 Record.NO_NEXT_RELATIONSHIP.intValue() )
             {
-                throw Exceptions.withCause( new XAException( XAException.XA_RBINTEGRITY ), new ConstraintViolationException("Node record " + record
-                        + " still has relationships"));
+                throw Exceptions.withCause( new XAException( XAException.XA_RBINTEGRITY ),
+                        new ConstraintViolationException("Node record " + record + " still has relationships"));
             }
             Command.NodeCommand command = new Command.NodeCommand(
                 neoStore.getNodeStore(), record );

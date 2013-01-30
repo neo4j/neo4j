@@ -22,7 +22,20 @@ We encourage everyone to experiment with Neo4j. You can build extensions to Neo4
 Building Neo4j
 --------------
 
-This build will build all of our product, including documentation. If you don't have the tools for documentation (e.g. asciidoc, LaTeX), then use pass the -DskipNativeDeps flag to Maven.
+Neo4j is built using [Apache Maven](http://maven.apache.org/) version 3.
+
+A plain `mvn clean install` will build the individual jar files, but not assemble them into product packages.
+The documentation won't get built either, nor will the Python embedded bindings.
+Execution of unit test is included in the build.
+
+To add execution of integration tests, use: `mvn clean install -DrunITs`
+
+In case you just want the jars, not even compiling the tests, this is for you: `mvn clean install -DminimalBuild`
+
+To build everything, including running all tests, producing documentation and assembling product packages, use `mvn clean install -DfullBuild`
+
+The Python part of the build requires a working JPype installation.
+For how to make the documentation build go, see: [manual/](https://github.com/neo4j/neo4j/tree/master/manual)
 
 
 We also supply commercial licenses. Please contact [Neo Technology](sales@neotechnology.com) for more information.
