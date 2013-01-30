@@ -41,4 +41,59 @@ class ExecutionResultTest extends ExecutionEngineHelper with Assertions {
 
     assertTrue( "Columns did not apperar in the expected order: \n" + result.dumpToString(), pattern.matcher(result.dumpToString()).find() );
   }
+
+  @Test def correctLabelStatisticsForCreate() {
+    val result = parseAndExecute("create n:foo:bar")
+    val stats  = result.queryStatistics()
+
+    assert(stats.addedLabels === 2)
+    assert(stats.removedLabels === 0)
+  }
+
+  @Test def correctLabelStatisticsForAdd() {
+    val n      = createNode()
+    val result = parseAndExecute(s"start n=node(${n.getId}) add n:foo:bar")
+    val stats  = result.queryStatistics()
+
+    assert(stats.addedLabels === 2)
+    assert(stats.removedLabels === 0)
+  }
+
+  @Test def correctLabelStatisticsForRemove() {
+    val n      = createNode()
+    parseAndExecute(s"start n=node(${n.getId}) add n:foo:bar")
+    val result = parseAndExecute(s"start n=node(${n.getId}) remove n:foo:bar")
+    val stats  = result.queryStatistics()
+
+    assert(stats.addedLabels === 0)
+    assert(stats.removedLabels === 2)
+  }
+
+  @Test def correctLabelStatisticsForAddAndRemove() {
+    val n      = createLabeledNode("foo", "bar")
+    val result = parseAndExecute(s"start n=node(${n.getId}) add n:baz remove n:foo:bar")
+    val stats  = result.queryStatistics()
+
+    assert(stats.addedLabels === 1)
+    assert(stats.removedLabels === 2)
+  }
+
+
+  @Test def correctLabelStatisticsForLabelAddedTwice() {
+    val n      = createLabeledNode("foo", "bar")
+    val result = parseAndExecute(s"start n=node(${n.getId}) add n:bar:baz")
+    val stats  = result.queryStatistics()
+
+    assert(stats.addedLabels === 1)
+    assert(stats.removedLabels === 0)
+  }
+
+  @Test def correctLabelStatisticsForRemovalOfUnsetLabel() {
+    val n      = createLabeledNode("foo", "bar")
+    val result = parseAndExecute(s"start n=node(${n.getId}) remove n:baz:foo")
+    val stats  = result.queryStatistics()
+
+    assert(stats.addedLabels === 0)
+    assert(stats.removedLabels === 1)
+  }
 }
