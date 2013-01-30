@@ -77,6 +77,22 @@ public class QueryStatistics
     }
 
     /**
+     * Returns the number of labels added to any node by this query.
+     * @return the number of labels added to any node by this query.
+     */
+    public int getAddedLabels() {
+        return inner.addedLabels();
+    }
+
+    /**
+     * Returns the number of labels removed from any node by this query.
+     * @return the number of labels removed from any node by this query.
+     */
+    public int getRemovedLabels() {
+        return inner.removedLabels();
+    }
+
+    /**
      * If the query updated the graph in any way, this method will return true.
      * @return if the graph has been updated.
      */
