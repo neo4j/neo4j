@@ -228,19 +228,15 @@ Apache Software License, Version 2.0
   ConcurrentLinkedHashMap
   Data Mapper for Jackson
   ExplorerCanvas
-  Groovy
   Jackson
-  jansi
   JAX-RS provider for JSON content type
   JCL 1.1.1 implemented over SLF4J
-  Jettison
   Jetty Server
   Jetty Utilities
   JTA 1.1
   Lucene Core
   RRD4J
   Servlet Specification API
-  StAX API
   The Netty Project
   zookeeper
 ------------------------------------------------------------------------------
@@ -528,18 +524,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ------------------------------------------------------------------------------
 BSD License
-  AntLR Parser Generator
-  ASM Analysis
-  ASM Commons
-  ASM Tree
-  ASM Util
-  Blueprints-Core
-  Blueprints-Neo4jGraph
   Easing Equations (in easing.js)
-  Gremlin-Groovy: Gremlin for the Groovy Language
-  Gremlin-Java: Gremlin for the Java Language
   Janino
-  Pipes: A Lazy Data Flow Framework
   Pure Feature Detection Library (has.js)
 ------------------------------------------------------------------------------
 
