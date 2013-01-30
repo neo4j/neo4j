@@ -35,6 +35,16 @@ class LabelTest extends DocumentingTestBase {
 
   def section = "Label"
 
+  @Test def create_node_with_label() {
+    testQuery(
+      title = "Create a node and label it",
+      text = "To create and add a label to it, use the label form of +CREATE+.",
+      queryText = "create n:swedish return n",
+      returns = "The newly labeled node is returned by the query.",
+      assertions = (p) => assert(getLabelsFromNode(p) === List("swedish"))
+    )
+  }
+
   @Test def add_a_label_to_a_node() {
     testQuery(
       title = "Add a label to a node",
@@ -79,7 +89,7 @@ class LabelTest extends DocumentingTestBase {
     testQuery(
       title = "Remove a label from a node",
       text = "To remove labels, you use +REMOVE+ +LABEL+",
-      queryText = "start n = node(%Emil%) remove n label :Swedish return n",
+      queryText = "start n = node(%Emil%) remove n:Swedish return n",
       returns = "",
       assertions = (p) => assert(getLabelsFromNode(p) === List("Person", "Bossman"))
     )
@@ -89,7 +99,7 @@ class LabelTest extends DocumentingTestBase {
     testQuery(
       title = "Removing multiple labels",
       text = "Removing multiple labels using the short form.",
-      queryText = "start n = node(%Emil%) remove n label :Person:Bossman return n",
+      queryText = "start n = node(%Emil%) remove n:Person:Bossman return n",
       returns = "",
       assertions = (p) => assert(getLabelsFromNode(p) === List("Swedish"))
     )

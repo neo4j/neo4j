@@ -11,6 +11,7 @@ labels - removing a label that's not set on a node is a no-op.
 
 :leveloffset: 2
 
+include::create-node-with-label.asciidoc[]
 include::add-a-label-to-a-node.asciidoc[]
 include::add-multiple-labels-to-a-node.asciidoc[]
 include::add-multiple-labels-to-a-node-using-the-short-form.asciidoc[]
