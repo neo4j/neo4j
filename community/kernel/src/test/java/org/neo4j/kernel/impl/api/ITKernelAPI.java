@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
 import org.junit.After;
@@ -75,9 +76,6 @@ public class ITKernelAPI
     @Test
     public void mixingBeansApiWithKernelAPI() throws Exception
     {
-        ThreadToStatementContextBridge statementContextProvider = db.getDependencyResolver().resolveDependency(
-                ThreadToStatementContextBridge.class );
-
         // 1: Start your transactions through the Beans API
         Transaction beansAPITx = db.beginTx();
 
@@ -126,9 +124,6 @@ public class ITKernelAPI
     public void changesInTransactionContextShouldBeRolledBackWhenTxIsRolledBack() throws Exception
     {
         // GIVEN
-        ThreadToStatementContextBridge statementContextProvider = db.getDependencyResolver().resolveDependency(
-                ThreadToStatementContextBridge.class );
-
         Transaction tx = db.beginTx();
         StatementContext statement = statementContextProvider.getCtxForWriting();
 
@@ -147,9 +142,6 @@ public class ITKernelAPI
     @Test
     public void shouldNotBeAbleToCommitIfFailedTransactionContext() throws Exception
     {
-        ThreadToStatementContextBridge statementContextProvider = db.getDependencyResolver().resolveDependency(
-                ThreadToStatementContextBridge.class );
-
         Transaction tx = db.beginTx();
         StatementContext statement = statementContextProvider.getCtxForWriting();
 
@@ -170,9 +162,6 @@ public class ITKernelAPI
     @Test
     public void transactionStateShouldRemovePreviouslyAddedLabel() throws Exception
     {
-        ThreadToStatementContextBridge statementContextProvider = db.getDependencyResolver().resolveDependency(
-                ThreadToStatementContextBridge.class );
-
         Transaction tx = db.beginTx();
         StatementContext statement = statementContextProvider.getCtxForWriting();
 
@@ -194,9 +183,6 @@ public class ITKernelAPI
     @Test
     public void transactionStateShouldReflectRemovingAddedLabelImmediately() throws Exception
     {
-        ThreadToStatementContextBridge statementContextProvider = db.getDependencyResolver().resolveDependency(
-                ThreadToStatementContextBridge.class );
-
         Transaction tx = db.beginTx();
         StatementContext statement = statementContextProvider.getCtxForWriting();
 
@@ -220,8 +206,6 @@ public class ITKernelAPI
     public void transactionStateShouldReflectRemovingLabelImmediately() throws Exception
     {
         // GIVEN
-        ThreadToStatementContextBridge statementContextProvider = db.getDependencyResolver().resolveDependency(
-                ThreadToStatementContextBridge.class );
         Transaction tx = db.beginTx();
         StatementContext statement = statementContextProvider.getCtxForWriting();
         Node node = db.createNode();
@@ -243,13 +227,98 @@ public class ITKernelAPI
         tx.success();
         tx.finish();
     }
+    
+    @Test
+    public void addingNewLabelToNodeShouldRespondTrue() throws Exception
+    {
+        // GIVEN
+        Transaction tx = db.beginTx();
+        Node node = db.createNode();
+        StatementContext statement = statementContextProvider.getCtxForWriting();
+        long labelId = statement.getOrCreateLabelId( "mylabel" );
+        statement.addLabelToNode( labelId, node.getId() );
+        tx.success();
+        tx.finish();
 
+        // WHEN
+        tx = db.beginTx();
+        statement = statementContextProvider.getCtxForWriting();
+        boolean added = statement.addLabelToNode( labelId, node.getId() );
+
+        // THEN
+        assertFalse( "Shouldn't have been added now", added );
+    }
+    
+    @Test
+    public void addingExistingLabelToNodeShouldRespondFalse() throws Exception
+    {
+        // GIVEN
+        Transaction tx = db.beginTx();
+        Node node = db.createNode();
+        StatementContext statement = statementContextProvider.getCtxForWriting();
+        long labelId = statement.getOrCreateLabelId( "mylabel" );
+        tx.success();
+        tx.finish();
+
+        // WHEN
+        tx = db.beginTx();
+        statement = statementContextProvider.getCtxForWriting();
+        boolean added = statement.addLabelToNode( labelId, node.getId() );
+
+        // THEN
+        assertTrue( "Should have been added now", added );
+    }
+
+    @Test
+    public void removingExistingLabelFromNodeShouldRespondTrue() throws Exception
+    {
+        // GIVEN
+        Transaction tx = db.beginTx();
+        Node node = db.createNode();
+        StatementContext statement = statementContextProvider.getCtxForWriting();
+        long labelId = statement.getOrCreateLabelId( "mylabel" );
+        statement.addLabelToNode( labelId, node.getId() );
+        tx.success();
+        tx.finish();
+
+        // WHEN
+        tx = db.beginTx();
+        statement = statementContextProvider.getCtxForWriting();
+        boolean removed = statement.removeLabelFromNode( labelId, node.getId() );
+
+        // THEN
+        assertTrue( "Should have been removed now", removed );
+    }
+    
+    @Test
+    public void removingNonExistentLabelFromNodeShouldRespondFalse() throws Exception
+    {
+        // GIVEN
+        Transaction tx = db.beginTx();
+        Node node = db.createNode();
+        StatementContext statement = statementContextProvider.getCtxForWriting();
+        long labelId = statement.getOrCreateLabelId( "mylabel" );
+        tx.success();
+        tx.finish();
+
+        // WHEN
+        tx = db.beginTx();
+        statement = statementContextProvider.getCtxForWriting();
+        boolean removed = statement.removeLabelFromNode( labelId, node.getId() );
+
+        // THEN
+        assertFalse( "Shouldn't have been removed now", removed );
+    }
+    
     private GraphDatabaseAPI db;
+    private ThreadToStatementContextBridge statementContextProvider;
     
     @Before
     public void before() throws Exception
     {
         db = new ImpermanentGraphDatabase();
+        statementContextProvider = db.getDependencyResolver().resolveDependency(
+                ThreadToStatementContextBridge.class );
     }
 
     @After
