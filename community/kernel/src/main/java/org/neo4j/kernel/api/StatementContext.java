@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api;
 
+import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 
 /**
  * Interface for accessing and modifying the underlying graph.
@@ -123,4 +124,20 @@ public interface StatementContext
      * @return ids of all nodes that have the given label
      */
     Iterable<Long> getNodesWithLabel( long labelId );
+    
+    /**
+     * Adds a {@link SchemaRule} to the database which applies globally on both
+     * existing as well as new data.
+     * 
+     * @param labelId the label id to attach the rule to.
+     * @param propertyKey the property key to index.
+     * @throws SchemaException if a similar or conflicting rule already exists.
+     */
+    void addIndexRule( long labelId, String propertyKey ) throws SchemaException;
+    
+    /**
+     * @param labelId the label to get rules for.
+     * @return all indexed properties keys for that labelId.
+     */
+    Iterable<String> getIndexRules( long labelId );
 }

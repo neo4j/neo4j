@@ -238,6 +238,20 @@ public class MasterClient20 extends Client<Master> implements MasterClient
     }
 
     @Override
+    public Response<LockResult> acquireSchemaReadLock( RequestContext context )
+    {
+        return sendRequest( HaRequestType20.ACQUIRE_SCHEMA_READ_LOCK, context,
+                EMPTY_SERIALIZER, LOCK_RESULT_DESERIALIZER );
+    }
+
+    @Override
+    public Response<LockResult> acquireSchemaWriteLock( RequestContext context )
+    {
+        return sendRequest( HaRequestType20.ACQUIRE_SCHEMA_WRITE_LOCK, context,
+                EMPTY_SERIALIZER, LOCK_RESULT_DESERIALIZER );
+    }
+    
+    @Override
     public Response<Long> commitSingleResourceTransaction( RequestContext context,
                                                            final String resource, final TxExtractor txGetter )
     {

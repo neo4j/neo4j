@@ -32,6 +32,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.Map;
 
 import org.junit.Before;
@@ -121,7 +122,51 @@ public class TransactionStateAwareStatementContextTest
     }
 
     @Test
-    public void unsuccessfulCloseShouldntDelegateDown() throws Exception
+    public void addedRuleShouldBeVisibleInTx() throws Exception
+    {
+        // GIVEN
+        commitNoLabels();
+
+        // WHEN
+        txContext.addIndexRule( labelId1, key1 );
+
+        // THEN
+        assertEquals( asSet( key1 ), asSet( txContext.getIndexRules( labelId1 ) ) );
+        assertEquals( asSet(), asSet( store.getIndexRules( labelId1 ) ) );
+    }
+
+    @Test
+    public void addedAdditionalRuleShouldBeVisibleInTx() throws Exception
+    {
+        // GIVEN
+        commitNoLabels();
+
+        // WHEN
+        txContext.addIndexRule( labelId1, key1 );
+        txContext.addIndexRule( labelId1, key2 );
+
+        // THEN
+        assertEquals( asSet( key1, key2 ), asSet( txContext.getIndexRules( labelId1 ) ) );
+        assertEquals( asSet(), asSet( store.getIndexRules( labelId1 ) ) );
+    }
+
+    @Test
+    public void addedExistingRuleShouldBeVisibleInTx() throws Exception
+    {
+        // GIVEN
+        commitNoLabels();
+
+        // WHEN
+        txContext.addIndexRule( labelId1, key1 );
+        txContext.addIndexRule( labelId1, key1 );
+
+        // THEN
+        assertEquals( asSet( key1 ), asSet( txContext.getIndexRules( labelId1 ) ) );
+        assertEquals( asSet(), asSet( store.getIndexRules( labelId1 ) ) );
+    }
+
+    @Test
+    public void unsuccessfulCloseShouldntDelegateDownLabels() throws Exception
     {
         // GIVEN
         commitNoLabels();
@@ -135,7 +180,22 @@ public class TransactionStateAwareStatementContextTest
     }
     
     @Test
-    public void successfulCloseShouldDelegateDown() throws Exception
+    public void unsuccessfulCloseShouldntDelegateDownRules() throws Exception
+    {
+        // GIVEN
+        commitNoLabels();
+        txContext.addIndexRule( labelId1, key1 );
+
+        // WHEN
+        txContext.close( false );
+
+        // THEN
+        verify( store, never() ).addIndexRule( labelId1, key1 );
+    }
+
+
+    @Test
+    public void successfulCloseShouldDelegateDownLabels() throws Exception
     {
         // GIVEN
         commitNoLabels();
@@ -148,6 +208,20 @@ public class TransactionStateAwareStatementContextTest
         verify( store ).addLabelToNode( labelId1, nodeId );
     }
     
+    @Test
+    public void successfulCloseShouldDelegateDownRules() throws Exception
+    {
+        // GIVEN
+        commitNoLabels();
+        txContext.addIndexRule( labelId1, key1 );
+
+        // WHEN
+        txContext.close( true );
+
+        // THEN
+        verify( store ).addIndexRule( labelId1, key1 );
+    }
+
     @Test
     public void addedLabelsShouldBeReflectedWhenGettingNodesForLabel() throws Exception
     {
@@ -233,6 +307,12 @@ public class TransactionStateAwareStatementContextTest
     }
     
     private final long labelId1 = 10, labelId2 = 12, nodeId = 20;
+    private final String key1 = "rule1a", key2 = "rule1b", key3 = "rule2";
+
+//    private final IndexRule rule1a = new IndexRule( labelId1, "rule1a" );
+//    private final IndexRule rule1b = new IndexRule( labelId1, "rule1b" );
+//    private final IndexRule rule2  = new IndexRule( labelId2, "rule2" );
+
     private StatementContext store;
     private TxState state;
     private StatementContext txContext;
@@ -241,6 +321,7 @@ public class TransactionStateAwareStatementContextTest
     public void before() throws Exception
     {
         store = mock( StatementContext.class );
+        when( store.getIndexRules( labelId1 ) ).thenReturn( new LinkedList<String>() );
         state = new TxState();
         txContext = new TransactionStateAwareStatementContext( store, state );
     }

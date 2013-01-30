@@ -19,11 +19,39 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import static java.util.Arrays.asList;
+import static org.mockito.Matchers.anyLong;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import org.junit.Test;
+import org.mockito.Mockito;
 import org.neo4j.kernel.api.ConstraintViolationKernelException;
+import org.neo4j.kernel.api.SchemaException;
+import org.neo4j.kernel.api.StatementContext;
+import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 
 public class ConstraintEvaluatingStatementContextTest
 {
+    @Test
+    public void shouldIgnoreExistingSchemaRules() throws SchemaException
+    {
+        // GIVEN
+        int label = 0;
+        String propertyKey = "blubberzisch";
+        IndexRule rule = new IndexRule( label, label, propertyKey );
+        StatementContext inner = Mockito.mock(StatementContext.class);
+        ConstraintEvaluatingStatementContext ctx = new ConstraintEvaluatingStatementContext( inner );
+        when( inner.getIndexRules( rule.getLabel() ) ).thenReturn( asList( rule.getPropertyKey() ) );
+
+        // WHEN
+        ctx.addIndexRule( label, propertyKey );
+
+        // THEN
+        verify( inner, never() ).addIndexRule( anyLong(), anyString() );
+    }
 
     @Test(expected = ConstraintViolationKernelException.class)
     public void shouldFailInvalidLabelNames() throws Exception

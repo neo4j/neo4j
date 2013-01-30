@@ -44,14 +44,9 @@ public class DynamicArrayStore extends AbstractDynamicStore
     static final int NUMBER_HEADER_SIZE = 3;
     static final int STRING_HEADER_SIZE = 5;
     
-    public static abstract class Configuration
-        extends AbstractDynamicStore.Configuration
-    {
-    }
-    
     // store version, each store ends with this string (byte encoded)
-    public static final String VERSION = "ArrayPropertyStore v0.A.0";
     public static final String TYPE_DESCRIPTOR = "ArrayPropertyStore";
+    public static final String VERSION = buildTypeDescriptorAndVersion( TYPE_DESCRIPTOR );
 
     public DynamicArrayStore(File fileName, Config configuration, IdType idType,
                              IdGeneratorFactory idGeneratorFactory, WindowPoolFactory windowPoolFactory,
@@ -96,7 +91,7 @@ public class DynamicArrayStore extends AbstractDynamicStore
             bytes[0] = (byte) type.intValue();
             bytes[1] = (byte) bitsUsedInLastByte;
             bytes[2] = (byte) requiredBits;
-            if ( isPrimitiveByteArray ) arraycopy( (byte[]) array, 0, bytes, NUMBER_HEADER_SIZE, length );
+            if ( isPrimitiveByteArray ) arraycopy( array, 0, bytes, NUMBER_HEADER_SIZE, length );
             else
             {
                 Byte[] source = (Byte[]) array;

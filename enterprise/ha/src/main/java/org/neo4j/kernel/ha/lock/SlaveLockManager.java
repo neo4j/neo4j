@@ -32,7 +32,7 @@ import org.neo4j.kernel.ha.InstanceAccessGuard;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.impl.core.GraphProperties;
-import org.neo4j.kernel.impl.core.NodeManager.IndexLock;
+import org.neo4j.kernel.impl.core.IndexLock;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.transaction.IllegalResourceException;
 import org.neo4j.kernel.impl.transaction.LockManager;

@@ -20,13 +20,14 @@
 package org.neo4j.kernel.impl.api;
 
 import org.neo4j.kernel.api.ConstraintViolationKernelException;
+import org.neo4j.kernel.api.SchemaException;
 import org.neo4j.kernel.api.StatementContext;
 
 public class ConstraintEvaluatingStatementContext extends DelegatingStatementContext
 {
-    public ConstraintEvaluatingStatementContext( StatementContext actual )
+    public ConstraintEvaluatingStatementContext( StatementContext delegate )
     {
-        super( actual );
+        super( delegate );
     }
 
     @Override
@@ -41,5 +42,17 @@ public class ConstraintEvaluatingStatementContext extends DelegatingStatementCon
         }
 
         return delegate.getOrCreateLabelId( label );
+    }
+    
+    @Override
+    public void addIndexRule( long labelId, String propertyKey ) throws SchemaException
+    {
+        for ( String existingRule : getIndexRules( labelId ) )
+        {
+            if ( existingRule.equals( propertyKey ) )
+                // TODO throw or just skip?
+                return;
+        }
+        delegate.addIndexRule( labelId, propertyKey );
     }
 }

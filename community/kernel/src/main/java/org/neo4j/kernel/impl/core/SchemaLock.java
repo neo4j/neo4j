@@ -17,31 +17,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api;
+package org.neo4j.kernel.impl.core;
 
-import org.neo4j.kernel.api.StatementContext;
-import org.neo4j.kernel.api.TransactionContext;
-
-/**
- * Adds constraint checking to the kernel implementation, for instance ensuring label names are valid.
- */
-public class ConstraintEvaluatingTransactionContext extends DelegatingTransactionContext
+public class SchemaLock
 {
-    // Note: This could be refactored to use arbitrary constraint rules, so this could evaluate
-    // both user and system level constraints.
-
-    public ConstraintEvaluatingTransactionContext( TransactionContext delegate )
-    {
-        super( delegate );
-    }
-
     @Override
-    public StatementContext newStatementContext()
+    public int hashCode()
     {
-        StatementContext result = super.newStatementContext();
-        // + Constraints
-        result = new ConstraintEvaluatingStatementContext( result );
-
-        return result;
+        return 40591; // a centered triangular prime
+    }
+    
+    @Override
+    public boolean equals( Object obj )
+    {
+        return obj instanceof SchemaLock;
     }
 }

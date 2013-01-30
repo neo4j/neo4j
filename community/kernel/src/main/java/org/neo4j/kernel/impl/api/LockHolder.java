@@ -55,18 +55,32 @@ public class LockHolder
 
     public void acquireNodeReadLock( long nodeId )
     {
-        NodeLock resource = new NodeLock( nodeId, LockType.READ );
-        lockManager.getReadLock( resource );
+        NodeLock resource = new NodeLock( LockType.READ, nodeId );
+        lockManager.getReadLock( resource, tx );
         locks.add( resource );
     }
 
     public void acquireNodeWriteLock( long nodeId )
     {
-        NodeLock resource = new NodeLock( nodeId, LockType.WRITE );
-        lockManager.getWriteLock( resource );
+        NodeLock resource = new NodeLock( LockType.WRITE, nodeId );
+        lockManager.getWriteLock( resource, tx );
+        locks.add( resource );
+    }
+    
+    public void acquireSchemaReadLock()
+    {
+        SchemaLock resource = new SchemaLock( LockType.READ );
+        lockManager.getReadLock( resource, tx );
         locks.add( resource );
     }
 
+    public void acquireSchemaWriteLock()
+    {
+        SchemaLock resource = new SchemaLock( LockType.WRITE );
+        lockManager.getWriteLock( resource, tx );
+        locks.add( resource );
+    }
+    
     public void releaseLocks()
     {
         Collection<Releasable> releaseFailures = null;
@@ -92,30 +106,33 @@ public class LockHolder
         }
     }
     
-    private interface Releasable
+    private abstract class Releasable
     {
-        void release();
-    }
-
-    // Have them be releasable also since they are internal and will save the
-    // amount of garbage produced
-    private class NodeLock implements Node, Releasable
-    {
-        private final long id;
         private final LockType lockType;
-
-        public NodeLock( long id, LockType lockType )
+        
+        public Releasable( LockType lockType )
         {
-            this.id = id;
             this.lockType = lockType;
         }
         
-        @Override
         public void release()
         {
             lockType.release( lockManager, this, tx );
         }
+    }
 
+    // Have them be releasable also since they are internal and will save the
+    // amount of garbage produced
+    private class NodeLock extends Releasable implements Node
+    {
+        private final long id;
+
+        public NodeLock( LockType lockType, long id )
+        {
+            super( lockType );
+            this.id = id;
+        }
+        
         @Override
         public boolean equals( Object o )
         {
@@ -313,6 +330,28 @@ public class LockHolder
         private UnsupportedOperationException unsupportedOperation()
         {
             return new UnsupportedOperationException( "NodeLock does not support this operation." );
+        }
+    }
+
+    class SchemaLock extends Releasable
+    {
+        private final org.neo4j.kernel.impl.core.SchemaLock actual = new org.neo4j.kernel.impl.core.SchemaLock();
+        
+        public SchemaLock( LockType lockType )
+        {
+            super( lockType );
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return actual.hashCode();
+        }
+        
+        @Override
+        public boolean equals( Object obj )
+        {
+            return actual.equals( obj );
         }
     }
 }

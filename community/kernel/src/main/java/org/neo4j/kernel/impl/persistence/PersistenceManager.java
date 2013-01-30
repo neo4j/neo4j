@@ -39,6 +39,7 @@ import org.neo4j.kernel.impl.nioneo.store.NameData;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
+import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 import org.neo4j.kernel.impl.nioneo.xa.NioNeoDbPersistenceSource;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.transaction.xaframework.XaConnection;
@@ -50,7 +51,7 @@ import org.neo4j.kernel.impl.util.StringLogger;
 public class PersistenceManager
 {
     private final PersistenceSource persistenceSource;
-    private StringLogger msgLog;
+    private final StringLogger msgLog;
     private final AbstractTransactionManager transactionManager;
 
     private final ArrayMap<Transaction,NeoStoreTransaction> txConnectionMap =
@@ -396,18 +397,13 @@ public class PersistenceManager
         return getResource( true ).getCreatedNodes();
     }
 
-    public boolean isNodeCreated( long nodeId )
-    {
-        return getResource( true ).isNodeCreated( nodeId );
-    }
-
-    public boolean isRelationshipCreated( long relId )
-    {
-        return getResource( true ).isRelationshipCreated( relId );
-    }
-
     public int getKeyIdForProperty( PropertyData property )
     {
         return getReadOnlyResourceIfPossible().getKeyIdForProperty( property );
+    }
+    
+    public void createSchemaRule( SchemaRule rule )
+    {
+        getResource( true ).createSchemaRule( rule );
     }
 }

@@ -22,27 +22,27 @@ package org.neo4j.kernel.impl.api;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.TransactionContext;
 import org.neo4j.kernel.impl.core.PropertyIndexManager;
-import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
+import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 
 public class TemporaryLabelAsPropertyTransactionContext implements TransactionContext
 {
     private final PropertyIndexManager propertyIndexManager;
     private final PersistenceManager persistenceManager;
-    private final PropertyStore propertyStore;
+    private final NeoStore neoStore;
 
     public TemporaryLabelAsPropertyTransactionContext( PropertyIndexManager propertyIndexManager,
-            PersistenceManager persistenceManager, PropertyStore propertyStore )
+            PersistenceManager persistenceManager, NeoStore neoStore )
     {
         this.propertyIndexManager = propertyIndexManager;
         this.persistenceManager = persistenceManager;
-        this.propertyStore = propertyStore;
+        this.neoStore = neoStore;
     }
     
     @Override
     public StatementContext newStatementContext()
     {
-        return new TemporaryLabelAsPropertyStatementContext( propertyIndexManager, persistenceManager, propertyStore );
+        return new TemporaryLabelAsPropertyStatementContext( propertyIndexManager, persistenceManager, neoStore );
     }
 
     @Override

@@ -27,16 +27,28 @@ public class DynamicRecord extends Abstract64BitRecord
     private long nextBlock = Record.NO_NEXT_BLOCK.intValue();
     private boolean isLight = true;
     private int type;
+    private boolean startRecord = true;
 
     public DynamicRecord( long id )
     {
         super( id );
+    }
+    
+    public void setStartRecord( boolean startRecord )
+    {
+        this.startRecord = startRecord;
+    }
+    
+    public boolean isStartRecord()
+    {
+        return startRecord;
     }
 
     public int getType()
     {
         return type;
     }
+    
 
     public void setType( int type )
     {
@@ -105,9 +117,11 @@ public class DynamicRecord extends Abstract64BitRecord
     public String toString()
     {
         StringBuilder buf = new StringBuilder();
-        buf.append( "DynamicRecord[" ).append( getId() ).append( ",used=" ).append(
-                inUse() ).append( "," ).append( "light=" ).append( isLight ).append(
-                "(" ).append( length ).append( "),type=" );
+        buf.append( "DynamicRecord[" )
+                .append( getId() )
+                .append( ",used=" ).append(inUse() ).append( "," )
+                .append( "light=" ).append( isLight )
+                .append("(" ).append( length ).append( "),type=" );
         PropertyType type = PropertyType.getPropertyType( this.type << 24, true );
         if ( type == null ) buf.append( this.type ); else buf.append( type.name() );
         buf.append( ",data=" );
@@ -141,7 +155,8 @@ public class DynamicRecord extends Abstract64BitRecord
         {
             buf.append( "null," );
         }
-        buf.append( "next=" ).append( nextBlock ).append( "]" );
+        buf.append( "start=" ).append( startRecord );
+        buf.append( ",next=" ).append( nextBlock ).append( "]" );
         return buf.toString();
     }
 }

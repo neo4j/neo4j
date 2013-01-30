@@ -23,11 +23,16 @@ import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.TransactionContext;
 import org.neo4j.kernel.impl.core.PropertyIndexManager;
-import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
+import org.neo4j.kernel.impl.nioneo.store.NeoStore;
+import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
+import org.neo4j.kernel.impl.transaction.DataSourceRegistrationListener;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
+import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 /**
  * This is the beginnings of an implementation of the Kernel API, which is meant to be an internal API for consumption by
@@ -37,25 +42,71 @@ import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
  * implementation together with the beans API (eg. perform operations within the same transactions), then you should
  * use the beans API to start transactions, and use the Beans2KernelTransition class to get an {@link StatementContext}
  * that is hooked into that transaction.
+ * 
+ * The cake:
+ * 
+ * <ol>
+ *   <li>Locking</li>
+ *   <li>Constraint evaluation</li>
+ *   <li>Transaction state</li>
+ *   <li>Caching</li>
+ *   <li>Store</li>
+ * </ol>
  */
-public class Kernel implements KernelAPI
+public class Kernel extends LifecycleAdapter implements KernelAPI
 {
     private final AbstractTransactionManager transactionManager;
     private final PropertyIndexManager propertyIndexManager;
     private final PersistenceManager persistenceManager;
     private final XaDataSourceManager dataSourceManager;
     private final LockManager lockManager;
-    private final PersistenceCache cache;
+    private final PersistenceCache persistenceCache;
+    private final SchemaCache schemaCache;
+    private NeoStore neoStore;
 
     public Kernel( AbstractTransactionManager transactionManager, PropertyIndexManager propertyIndexManager,
-            PersistenceManager persistenceManager, XaDataSourceManager dataSourceManager, LockManager lockManager )
+            PersistenceManager persistenceManager, XaDataSourceManager dataSourceManager, LockManager lockManager,
+            SchemaCache schemaCache )
     {
         this.transactionManager = transactionManager;
         this.propertyIndexManager = propertyIndexManager;
         this.persistenceManager = persistenceManager;
         this.dataSourceManager = dataSourceManager;
         this.lockManager = lockManager;
-        this.cache = new PersistenceCache( new TemporaryLabelAsPropertyLoader( persistenceManager ) );
+        this.persistenceCache = new PersistenceCache( new TemporaryLabelAsPropertyLoader( persistenceManager ) );
+        this.schemaCache = schemaCache;
+    }
+    
+    @Override
+    public void start() throws Throwable
+    {
+        dataSourceManager.addDataSourceRegistrationListener( new DataSourceRegistrationListener()
+        {
+            @Override
+            public void registeredDataSource( XaDataSource ds )
+            {
+                if ( isNeoDataSource( ds ) )
+                {
+                    neoStore = ((NeoStoreXaDataSource) ds).getNeoStore();
+                    for ( SchemaRule schemaRule : neoStore.getSchemaStore().loadAll() )
+                        schemaCache.addSchemaRule( schemaRule );
+                }
+            }
+
+            @Override
+            public void unregisteredDataSource( XaDataSource ds )
+            {
+                if ( isNeoDataSource( ds ) )
+                {
+                    neoStore = null;
+                }
+            }
+            
+            private boolean isNeoDataSource( XaDataSource ds )
+            {
+                return ds.getName().equals( NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME );
+            }
+        } );
     }
     
     @Override
@@ -64,13 +115,14 @@ public class Kernel implements KernelAPI
         // I/O
         // TODO figure out another way to get access to the PropertyStore, or to not having to pass it in
         TransactionContext result = new TemporaryLabelAsPropertyTransactionContext( propertyIndexManager,
-                persistenceManager, propertyStore() );
+                persistenceManager, neoStore );
         // + Transaction life cycle
         // XXX: This is disabled during transition phase, we are still using the legacy transaction management stuff
         //result = new TransactionLifecycleTransactionContext( result, transactionManager, propertyIndexManager, persistenceManager, cache );
 
         // + Transaction state and Caching
-        result = new StateHandlingTransactionContext( result, cache, transactionManager.getTransactionState() );
+        result = new StateHandlingTransactionContext( result, persistenceCache,
+                transactionManager.getTransactionState(), schemaCache );
         // + Constraints evaluation
         result = new ConstraintEvaluatingTransactionContext( result );
         // + Locking
@@ -87,17 +139,12 @@ public class Kernel implements KernelAPI
     {
         // I/O
         StatementContext result = new TemporaryLabelAsPropertyStatementContext( propertyIndexManager,
-                persistenceManager, propertyStore() );
+                persistenceManager, neoStore );
         // + Cache
-        result = new CachingStatementContext( result, cache );
+        result = new CachingStatementContext( result, persistenceCache, schemaCache );
         // + Read only access
         result = new ReadOnlyStatementContext( result );
 
         return result;
-    }
-    
-    private PropertyStore propertyStore()
-    {
-        return dataSourceManager.getNeoStoreDataSource().getNeoStore().getPropertyStore();
     }
 }

@@ -103,7 +103,7 @@ public class TestArrayStore
     public void stringArrayGetsStoredAsUtf8() throws Exception
     {
         String[] array = new String[] { "first", "second" };
-        Collection<DynamicRecord> records = arrayStore.allocateRecords( arrayStore.nextBlockId(), array );
+        Collection<DynamicRecord> records = arrayStore.allocateRecords( arrayStore.nextId(), array );
         Pair<byte[], byte[]> loaded = loadArray( records );
         assertStringHeader( loaded.first(), array.length );
         ByteBuffer buffer = ByteBuffer.wrap( loaded.other() );
@@ -143,7 +143,7 @@ public class TestArrayStore
 
     private Collection<DynamicRecord> storeArray( Object array )
     {
-        Collection<DynamicRecord> records = arrayStore.allocateRecords( arrayStore.nextBlockId(), array );
+        Collection<DynamicRecord> records = arrayStore.allocateRecords( arrayStore.nextId(), array );
         for ( DynamicRecord record : records )
             arrayStore.updateRecord( record );
         return records;

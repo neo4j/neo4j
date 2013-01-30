@@ -22,8 +22,6 @@ package org.neo4j.kernel.impl.core;
 import java.util.Collection;
 
 import org.neo4j.graphdb.event.TransactionData;
-import org.neo4j.kernel.impl.core.WritableTransactionState.PrimitiveElement;
-import org.neo4j.kernel.impl.nioneo.store.NameData;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.transaction.TxHook;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
@@ -71,29 +69,19 @@ public interface TransactionState
 
     ArrayMap<Integer, PropertyData> getCowPropertyAddMap( Primitive primitive );
 
-    PrimitiveElement getPrimitiveElement( boolean create );
-
     ArrayMap<Integer, PropertyData> getOrCreateCowPropertyAddMap(
             Primitive primitive );
 
     ArrayMap<Integer, PropertyData> getOrCreateCowPropertyRemoveMap(
             Primitive primitive );
+    
+    void createNode( long id );
 
-    void deletePrimitive( Primitive primitive );
+    void createRelationship( long id );
+    
+    void deleteNode( long id );
 
-    void removeNodeFromCache( long nodeId );
-
-    void addRelationshipType( NameData type );
-
-    void addPropertyIndex( NameData index );
-
-    void removeRelationshipFromCache( long id );
-
-    void removeRelationshipTypeFromCache( int id );
-
-    void removeGraphPropertiesFromCache();
-
-    void clearCache();
+    void deleteRelationship( long id );
 
     TransactionData getTransactionData();
     

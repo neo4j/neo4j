@@ -17,23 +17,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.graphdb;
+package org.neo4j.kernel.impl.core;
 
-/**
- * Thrown when the database is asked to modify data in a way that violates one or more
- * constraints that it is expected to uphold.
- *
- * For instance, if removing a node that still has relationships.
- */
-public class ConstraintViolationException extends RuntimeException
+import org.neo4j.kernel.impl.nioneo.store.NameData;
+import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
+
+public interface CacheAccessBackDoor
 {
-    public ConstraintViolationException( String msg )
-    {
-        super(msg);
-    }
+    void removeNodeFromCache( long nodeId );
+    
+    void removeRelationshipFromCache( long id );
 
-    public ConstraintViolationException( String msg, Throwable cause )
-    {
-        super(msg, cause);
-    }
+    void removeRelationshipTypeFromCache( int id );
+
+    void removeGraphPropertiesFromCache();
+    
+    void addSchemaRule( SchemaRule schemaRule );
+    
+    void removeSchemaRuleFromCache( long id );
+
+    void addRelationshipType( NameData type );
+
+    void addPropertyIndex( NameData index );
 }

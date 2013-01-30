@@ -43,6 +43,7 @@ import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.TransactionInterceptorProviders;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.core.PropertyIndex;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.index.IndexStore;
@@ -96,10 +97,10 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
     public static final byte BRANCH_ID[] = UTF8.encode( "414141" );
     public static final String LOGICAL_LOG_DEFAULT_NAME = "nioneo_logical.log";
 
-    private StoreFactory storeFactory;
-    private XaFactory xaFactory;
+    private final StoreFactory storeFactory;
+    private final XaFactory xaFactory;
 
-    private Config config;
+    private final Config config;
     private NeoStore neoStore;
     private XaContainer xaContainer;
     private ArrayMap<Class<?>,Store> idGenerators;
@@ -114,6 +115,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
 
     private final StringLogger msgLog;
     private final TransactionStateFactory stateFactory;
+    private final CacheAccessBackDoor cacheAccess;
 
     private enum Diagnostics implements DiagnosticsExtractor<NeoStoreXaDataSource>
     {
@@ -199,12 +201,14 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
      */
     public NeoStoreXaDataSource( Config config, StoreFactory sf, LockManager lockManager,
                                  StringLogger stringLogger, XaFactory xaFactory, TransactionStateFactory stateFactory,
+                                 CacheAccessBackDoor cacheAccess,
                                  TransactionInterceptorProviders providers, DependencyResolver dependencyResolver )
             throws IOException
     {
         super( BRANCH_ID, Config.DEFAULT_DATA_SOURCE_NAME );
         this.config = config;
         this.stateFactory = stateFactory;
+        this.cacheAccess = cacheAccess;
         this.providers = providers;
 
         readOnly = config.get( Configuration.read_only );
@@ -358,8 +362,8 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
         public XaTransaction create( int identifier, TransactionState state )
         {
             TransactionInterceptor first = providers.resolveChain( NeoStoreXaDataSource.this );
-            return new InterceptingWriteTransaction( identifier, getLogicalLog(), neoStore, state, lockManager,
-                    first );
+            return new InterceptingWriteTransaction( identifier, getLogicalLog(), neoStore, state, cacheAccess,
+                    lockManager, first );
         }
     }
 
@@ -369,7 +373,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
         public XaTransaction create( int identifier, TransactionState state )
         {
             return new WriteTransaction( identifier, getLogicalLog(), state,
-                neoStore );
+                neoStore, cacheAccess );
         }
 
         @Override
@@ -578,11 +582,13 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
         return new ClosableIterable<File>()
         {
 
+            @Override
             public Iterator<File> iterator()
             {
                 return files.iterator();
             }
 
+            @Override
             public void close()
             {
             }

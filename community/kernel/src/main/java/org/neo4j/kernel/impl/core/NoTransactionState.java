@@ -23,8 +23,6 @@ import java.util.Collection;
 
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.event.TransactionData;
-import org.neo4j.kernel.impl.core.WritableTransactionState.PrimitiveElement;
-import org.neo4j.kernel.impl.nioneo.store.NameData;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.transaction.TxHook;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
@@ -115,12 +113,6 @@ public class NoTransactionState implements TransactionState
     }
 
     @Override
-    public PrimitiveElement getPrimitiveElement( boolean create )
-    {
-        return null;
-    }
-
-    @Override
     public ArrayMap<Integer, PropertyData> getOrCreateCowPropertyAddMap( Primitive primitive )
     {
         throw new NotInTransactionException();
@@ -133,46 +125,29 @@ public class NoTransactionState implements TransactionState
     }
 
     @Override
-    public void deletePrimitive( Primitive primitive )
+    public void deleteNode( long id )
     {
         throw new NotInTransactionException();
     }
 
     @Override
-    public void removeNodeFromCache( long nodeId )
+    public void deleteRelationship( long id )
     {
+        throw new NotInTransactionException();
     }
-
+    
     @Override
-    public void addRelationshipType( NameData type )
+    public void createNode( long id )
     {
+        throw new NotInTransactionException();
     }
-
+    
     @Override
-    public void addPropertyIndex( NameData index )
+    public void createRelationship( long id )
     {
+        throw new NotInTransactionException();
     }
-
-    @Override
-    public void removeRelationshipFromCache( long id )
-    {
-    }
-
-    @Override
-    public void removeRelationshipTypeFromCache( int id )
-    {
-    }
-
-    @Override
-    public void removeGraphPropertiesFromCache()
-    {
-    }
-
-    @Override
-    public void clearCache()
-    {
-    }
-
+    
     @Override
     public TransactionData getTransactionData()
     {

@@ -49,6 +49,7 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 
 public class TemporaryLabelAsPropertyStatementContextTest
 {
+
     @Test
     public void should_be_able_to_add_label_to_node() throws Exception
     {
@@ -272,7 +273,7 @@ public class TemporaryLabelAsPropertyStatementContextTest
                 db.getDependencyResolver().resolveDependency( PersistenceManager.class ),
                 // Ooh, jucky
                 db.getDependencyResolver().resolveDependency( XaDataSourceManager.class )
-                        .getNeoStoreDataSource().getNeoStore().getPropertyStore() );
+                        .getNeoStoreDataSource().getNeoStore() );
     }
 
     @After

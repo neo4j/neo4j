@@ -113,7 +113,7 @@ public abstract class IoPrimitiveUtils
         return charArray;
     }
 
-    private static boolean readAndFlip( ReadableByteChannel channel, ByteBuffer buffer, int bytes )
+    public static boolean readAndFlip( ReadableByteChannel channel, ByteBuffer buffer, int bytes )
             throws IOException
     {
         buffer.clear();

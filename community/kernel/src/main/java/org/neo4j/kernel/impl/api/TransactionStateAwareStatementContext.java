@@ -25,9 +25,13 @@ import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
 
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
+import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Predicate;
+import org.neo4j.kernel.api.SchemaException;
 import org.neo4j.kernel.api.StatementContext;
 
 public class TransactionStateAwareStatementContext extends DelegatingStatementContext
@@ -115,14 +119,57 @@ public class TransactionStateAwareStatementContext extends DelegatingStatementCo
     {
         if ( successful )
         {
-            for ( TxState.NodeState node : state.getNodes() )
-            {
-                for ( Long labelId : node.getAddedLabels() )
-                    delegate.addLabelToNode( labelId, node.getId() );
-                for ( Long labelId : node.getRemovedLabels() )
-                    delegate.removeLabelFromNode( labelId, node.getId() );
-            }
+            commitLabelState();
+            commitSchemaState();
         }
         delegate.close( successful );
+    }
+
+    private void commitLabelState()
+    {
+        for ( TxState.NodeState node : state.getNodes() )
+        {
+            for ( Long labelId : node.getAddedLabels() )
+                delegate.addLabelToNode( labelId, node.getId() );
+            for ( Long labelId : node.getRemovedLabels() )
+                delegate.removeLabelFromNode( labelId, node.getId() );
+        }
+    }
+
+    private void commitSchemaState()
+    {
+        try
+        {
+            for ( Map.Entry<Long, Collection<Pair<Long,String>>> entry : state.getAddedIndexRules().entrySet() )
+                for ( Pair<Long,String> indexedProperty : entry.getValue() )
+                    delegate.addIndexRule( entry.getKey(), indexedProperty.other() );
+        }
+        catch ( SchemaException e )
+        {
+            throw new TransactionFailureException( "Late unexpected schema exception", e );
+        }
+    }
+
+    @Override
+    public void addIndexRule( long labelId, String propertyKey ) throws SchemaException
+    {
+        for ( String existingPropertyKey : getIndexRules( labelId ) )
+        {
+            if ( propertyKey.equals( existingPropertyKey ) )
+                return;
+        }
+        
+        state.addIndexRule( labelId, propertyKey );
+    }
+    
+    @SuppressWarnings( "unchecked" )
+    @Override
+    public Iterable<String> getIndexRules( long labelId )
+    {
+        Iterable<String> committedRules = delegate.getIndexRules( labelId ), result = committedRules;
+        Collection<String> addedSchemaRules = state.getAddedIndexRules( labelId );
+        if ( !addedSchemaRules.isEmpty() )
+            result = concat( committedRules, addedSchemaRules );
+        return result;
     }
 }

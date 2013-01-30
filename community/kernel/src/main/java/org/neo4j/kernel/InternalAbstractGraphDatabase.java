@@ -24,6 +24,7 @@ import static org.slf4j.impl.StaticLoggerBinder.getSingleton;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -63,9 +64,11 @@ import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.extension.KernelExtensions;
 import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.impl.api.Kernel;
+import org.neo4j.kernel.impl.api.SchemaCache;
 import org.neo4j.kernel.impl.cache.Cache;
 import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.cache.MonitorGc;
+import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.core.Caches;
 import org.neo4j.kernel.impl.core.DefaultCaches;
 import org.neo4j.kernel.impl.core.DefaultPropertyKeyCreator;
@@ -85,6 +88,7 @@ import org.neo4j.kernel.impl.core.TxEventSyncHookFactory;
 import org.neo4j.kernel.impl.index.IndexStore;
 import org.neo4j.kernel.impl.nioneo.store.DefaultWindowPoolFactory;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
@@ -201,6 +205,7 @@ public abstract class InternalAbstractGraphDatabase
     protected TransactionStateFactory stateFactory;
     protected KernelAPI kernelAPI;
     protected ThreadToStatementContextBridge statementContextProvider;
+    protected BridgingCacheAccess cacheBridge;
 
     protected final LifeSupport life = new LifeSupport();
     private final Map<String,CacheProvider> cacheProviders;
@@ -404,9 +409,11 @@ public abstract class InternalAbstractGraphDatabase
         caches.configure( cacheProvider, config );
         Cache<NodeImpl> nodeCache = diagnosticsManager.tryAppendProvider( caches.node() );
         Cache<RelationshipImpl> relCache = diagnosticsManager.tryAppendProvider( caches.relationship() );
+        
+        SchemaCache schemaCache = new SchemaCache( Collections.<SchemaRule>emptyList() );
 
-        kernelAPI = new Kernel( txManager, propertyIndexManager, persistenceManager,
-                xaDataSourceManager, lockManager );
+        kernelAPI = life.add( new Kernel( txManager, propertyIndexManager, persistenceManager,
+                xaDataSourceManager, lockManager, schemaCache ) );
         // XXX: Circular dependency, temporary during transition to KernelAPI
         txManager.setKernel(kernelAPI);
 
@@ -463,6 +470,8 @@ public abstract class InternalAbstractGraphDatabase
         xaFactory = new XaFactory( config, txIdGenerator, txManager, logBufferFactory, fileSystem,
                 logging, recoveryVerifier, LogPruneStrategies.fromConfigValue(
                 fileSystem, keepLogicalLogsConfig ) );
+        
+        cacheBridge = new BridgingCacheAccess( nodeManager, schemaCache );
 
         createNeoDataSource();
 
@@ -781,7 +790,7 @@ public abstract class InternalAbstractGraphDatabase
             // TODO IO stuff should be done in lifecycle. Refactor!
             neoDataSource = new NeoStoreXaDataSource( config,
                     storeFactory, lockManager, logging.getLogger( NeoStoreXaDataSource.class ),
-                    xaFactory, stateFactory, transactionInterceptorProviders, dependencyResolver );
+                    xaFactory, stateFactory, cacheBridge, transactionInterceptorProviders, dependencyResolver );
             xaDataSourceManager.registerDataSource( neoDataSource );
 
         }
@@ -1341,6 +1350,10 @@ public abstract class InternalAbstractGraphDatabase
             else if ( ThreadToStatementContextBridge.class.isAssignableFrom( type ) )
             {
                 return (T) statementContextProvider;
+            }
+            else if ( CacheAccessBackDoor.class.isAssignableFrom( type ) )
+            {
+                return (T) cacheBridge;
             }
             else
             {

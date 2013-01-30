@@ -161,22 +161,22 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
 
     private long nextStringBlockId()
     {
-        return stringPropertyStore.nextBlockId();
+        return stringPropertyStore.nextId();
     }
 
     public void freeStringBlockId( long blockId )
     {
-        stringPropertyStore.freeBlockId( blockId );
+        stringPropertyStore.freeId( blockId );
     }
 
     private long nextArrayBlockId()
     {
-        return arrayPropertyStore.nextBlockId();
+        return arrayPropertyStore.nextId();
     }
 
     public void freeArrayBlockId( long blockId )
     {
-        arrayPropertyStore.freeBlockId( blockId );
+        arrayPropertyStore.freeId( blockId );
     }
 
     public PropertyIndexStore getIndexStore()
@@ -199,6 +199,7 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
         }
     }
 
+    @Override
     public void updateRecord( PropertyRecord record )
     {
         PersistenceWindow window = acquireWindow( record.getId(),
@@ -340,6 +341,7 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
         }
     }
 
+    @Override
     public PropertyRecord getRecord( long id )
     {
         PropertyRecord record;

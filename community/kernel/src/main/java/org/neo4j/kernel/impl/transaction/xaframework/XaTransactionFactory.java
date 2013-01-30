@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.transaction.xaframework;
 
 import org.neo4j.kernel.impl.core.TransactionState;
 
-
 /**
  * Factory for creating {@link XaTransaction XaTransactions} used during
  * recovery.

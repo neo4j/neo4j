@@ -20,6 +20,8 @@
 package org.neo4j.kernel.impl.api;
 
 import static java.util.Collections.emptyList;
+import static org.neo4j.helpers.collection.Iterables.filter;
+import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.kernel.impl.api.LabelAsPropertyData.representsLabel;
 
 import java.util.ArrayList;
@@ -28,19 +30,27 @@ import java.util.Collections;
 import java.util.Iterator;
 
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.helpers.Function;
+import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.api.ConstraintViolationKernelException;
 import org.neo4j.kernel.api.LabelNotFoundKernelException;
+import org.neo4j.kernel.api.SchemaException;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.impl.core.KeyNotFoundException;
 import org.neo4j.kernel.impl.core.PropertyIndex;
 import org.neo4j.kernel.impl.core.PropertyIndexManager;
+import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
+import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyBlock;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyType;
+import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
+import org.neo4j.kernel.impl.nioneo.store.SchemaRule.Kind;
+import org.neo4j.kernel.impl.nioneo.store.SchemaStore;
 import org.neo4j.kernel.impl.nioneo.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.util.ArrayMap;
@@ -52,14 +62,16 @@ public class TemporaryLabelAsPropertyStatementContext implements StatementContex
 
     private final PropertyIndexManager propertyIndexManager;
     private final PersistenceManager persistenceManager;
-    private final PropertyStore propertyStore;
+    private final NeoStore neoStore;
 
     public TemporaryLabelAsPropertyStatementContext( PropertyIndexManager propertyIndexManager,
-            PersistenceManager persistenceManager, PropertyStore propertyStore )
+            PersistenceManager persistenceManager, NeoStore neoStore )
     {
+        if ( neoStore == null )
+            throw new AssertionError();
         this.propertyIndexManager = propertyIndexManager;
         this.persistenceManager = persistenceManager;
-        this.propertyStore = propertyStore;
+        this.neoStore = neoStore;
     }
 
     @Override
@@ -211,6 +223,7 @@ public class TemporaryLabelAsPropertyStatementContext implements StatementContex
     @Override
     public Iterable<Long> getNodesWithLabel( final long labelId )
     {
+        final PropertyStore propertyStore = neoStore.getPropertyStore();
         final long highestId = propertyStore.getHighestPossibleIdInUse();
         return new Iterable<Long>()
         {
@@ -272,5 +285,34 @@ public class TemporaryLabelAsPropertyStatementContext implements StatementContex
     @Override
     public void close( boolean successful )
     {
+    }
+
+    @Override
+    public void addIndexRule( long labelId, String propertyKey ) throws SchemaException
+    {
+        SchemaStore schemaStore = neoStore.getSchemaStore();
+        long id = schemaStore.nextId();
+        persistenceManager.createSchemaRule( new IndexRule( id, labelId, propertyKey ) );
+    }
+
+    @Override
+    public Iterable<String> getIndexRules( final long labelId )
+    {
+        Iterable<SchemaRule> filtered = filter( new Predicate<SchemaRule>()
+        {
+            @Override
+            public boolean accept( SchemaRule rule )
+            {
+                return rule.getLabel() == labelId && rule.getKind() == Kind.INDEX_RULE;
+            }
+        }, neoStore.getSchemaStore().loadAll() );
+        return map( new Function<SchemaRule, String>()
+        {
+            @Override
+            public String apply( SchemaRule from )
+            {
+                return ((IndexRule) from).getPropertyKey();
+            }
+        }, filtered );
     }
 }

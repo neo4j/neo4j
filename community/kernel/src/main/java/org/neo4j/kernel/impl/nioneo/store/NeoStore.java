@@ -70,6 +70,7 @@ public class NeoStore extends AbstractStore
     private PropertyStore propStore;
     private RelationshipStore relStore;
     private RelationshipTypeStore relTypeStore;
+    private SchemaStore schemaStore;
     private final TxHook txHook;
     private boolean isStarted;
     private long lastCommittedTx = -1;
@@ -82,7 +83,8 @@ public class NeoStore extends AbstractStore
                     IdGeneratorFactory idGeneratorFactory, WindowPoolFactory windowPoolFactory,
                     FileSystemAbstraction fileSystemAbstraction,
                     StringLogger stringLogger, TxHook txHook,
-                    RelationshipTypeStore relTypeStore, PropertyStore propStore, RelationshipStore relStore, NodeStore nodeStore)
+                    RelationshipTypeStore relTypeStore, PropertyStore propStore, RelationshipStore relStore,
+                    NodeStore nodeStore, SchemaStore schemaStore)
     {
         super( fileName, conf, IdType.NEOSTORE_BLOCK, idGeneratorFactory, windowPoolFactory,
                 fileSystemAbstraction, stringLogger);
@@ -92,6 +94,7 @@ public class NeoStore extends AbstractStore
         this.propStore = propStore;
         this.relStore = relStore;
         this.nodeStore = nodeStore;
+        this.schemaStore = schemaStore;
         REL_GRAB_SIZE = conf.get( Configuration.relationship_grab_size );
         this.txHook = txHook;
 
@@ -240,13 +243,18 @@ public class NeoStore extends AbstractStore
             nodeStore.close();
             nodeStore = null;
         }
+        if ( schemaStore != null )
+        {
+            schemaStore.close();
+            schemaStore = null;
+        }
     }
 
     @Override
     public void flushAll()
     {
         if ( relTypeStore == null || propStore == null || relStore == null ||
-                nodeStore == null )
+                nodeStore == null || schemaStore == null )
         {
             return;
         }
@@ -255,6 +263,7 @@ public class NeoStore extends AbstractStore
         propStore.flushAll();
         relStore.flushAll();
         nodeStore.flushAll();
+        schemaStore.flushAll();
     }
 
     @Override
@@ -499,6 +508,14 @@ public class NeoStore extends AbstractStore
     {
         return nodeStore;
     }
+    
+    /**
+     * @return the schema store.
+     */
+    public SchemaStore getSchemaStore()
+    {
+        return schemaStore;
+    }
 
     /**
      * The relationship store.
@@ -537,6 +554,7 @@ public class NeoStore extends AbstractStore
         propStore.makeStoreOk();
         relStore.makeStoreOk();
         nodeStore.makeStoreOk();
+        schemaStore.makeStoreOk();
         super.makeStoreOk();
         isStarted = true;
     }
@@ -548,6 +566,7 @@ public class NeoStore extends AbstractStore
         propStore.rebuildIdGenerators();
         relStore.rebuildIdGenerators();
         nodeStore.rebuildIdGenerators();
+        schemaStore.rebuildIdGenerators();
         super.rebuildIdGenerators();
     }
 
@@ -558,6 +577,7 @@ public class NeoStore extends AbstractStore
         propStore.updateIdGenerators();
         relStore.updateHighId();
         nodeStore.updateHighId();
+        schemaStore.updateHighId();
     }
 
     public int getRelationshipGrabSize()
@@ -568,7 +588,9 @@ public class NeoStore extends AbstractStore
     @Override
     public List<WindowPoolStats> getAllWindowPoolStats()
     {
+        // Reverse order from everything else
         List<WindowPoolStats> list = new ArrayList<WindowPoolStats>();
+        // TODO no stats for schema store?
         list.addAll( nodeStore.getAllWindowPoolStats() );
         list.addAll( propStore.getAllWindowPoolStats() );
         list.addAll( relStore.getAllWindowPoolStats() );
@@ -580,6 +602,7 @@ public class NeoStore extends AbstractStore
     public void logAllWindowPoolStats( StringLogger.LineLogger logger )
     {
         super.logAllWindowPoolStats( logger );
+        // TODO no stats for schema store?
         nodeStore.logAllWindowPoolStats( logger );
         relStore.logAllWindowPoolStats( logger );
         relTypeStore.logAllWindowPoolStats( logger );
@@ -589,7 +612,7 @@ public class NeoStore extends AbstractStore
     public boolean isStoreOk()
     {
         return getStoreOk() && relTypeStore.getStoreOk() &&
-            propStore.getStoreOk() && relStore.getStoreOk() && nodeStore.getStoreOk();
+            propStore.getStoreOk() && relStore.getStoreOk() && nodeStore.getStoreOk() && schemaStore.getStoreOk();
     }
 
     @Override
@@ -598,10 +621,11 @@ public class NeoStore extends AbstractStore
         msgLog.logLine( "Store versions:" );
 
         super.logVersions( msgLog );
+        schemaStore.logVersions( msgLog );
         nodeStore.logVersions( msgLog );
         relStore.logVersions( msgLog );
         relTypeStore.logVersions( msgLog );
-        propStore.logVersions(msgLog  );
+        propStore.logVersions( msgLog );
 
         stringLogger.flush();
     }
@@ -610,9 +634,10 @@ public class NeoStore extends AbstractStore
     public void logIdUsage( StringLogger.LineLogger msgLog )
     {
         msgLog.logLine( "Id usage:" );
-        nodeStore.logIdUsage(msgLog );
-        relStore.logIdUsage(msgLog );
-        relTypeStore.logIdUsage( msgLog);
+        schemaStore.logIdUsage( msgLog );
+        nodeStore.logIdUsage( msgLog );
+        relStore.logIdUsage( msgLog );
+        relTypeStore.logIdUsage( msgLog );
         propStore.logIdUsage( msgLog );
         stringLogger.flush();
     }

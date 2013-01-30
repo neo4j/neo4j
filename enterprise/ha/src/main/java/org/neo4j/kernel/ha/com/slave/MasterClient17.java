@@ -93,12 +93,14 @@ public class MasterClient17 extends Client<Master> implements MasterClient
     {
         return sendRequest( HaRequestType17.ALLOCATE_IDS, RequestContext.EMPTY, new Serializer()
         {
+            @Override
             public void write( ChannelBuffer buffer, ByteBuffer readBuffer ) throws IOException
             {
                 buffer.writeByte( idType.ordinal() );
             }
         }, new Deserializer<IdAllocation>()
         {
+            @Override
             public IdAllocation read( ChannelBuffer buffer, ByteBuffer temporaryBuffer ) throws IOException
             {
                 return readIdAllocation( buffer );
@@ -111,12 +113,14 @@ public class MasterClient17 extends Client<Master> implements MasterClient
     {
         return sendRequest( HaRequestType17.CREATE_RELATIONSHIP_TYPE, context, new Serializer()
         {
+            @Override
             public void write( ChannelBuffer buffer, ByteBuffer readBuffer ) throws IOException
             {
                 writeString( buffer, name );
             }
         }, new Deserializer<Integer>()
         {
+            @Override
             @SuppressWarnings( "boxing" )
             public Integer read( ChannelBuffer buffer, ByteBuffer temporaryBuffer ) throws IOException
             {
@@ -196,11 +200,24 @@ public class MasterClient17 extends Client<Master> implements MasterClient
     }
 
     @Override
+    public Response<LockResult> acquireSchemaReadLock( RequestContext context )
+    {
+        throw new UnsupportedOperationException( "Should never be called from the client side" );
+    }
+    
+    @Override
+    public Response<LockResult> acquireSchemaWriteLock( RequestContext context )
+    {
+        throw new UnsupportedOperationException( "Should never be called from the client side" );
+    }
+    
+    @Override
     public Response<Long> commitSingleResourceTransaction( RequestContext context,
             final String resource, final TxExtractor txGetter )
     {
         return sendRequest( HaRequestType17.COMMIT, context, new Serializer()
         {
+            @Override
             public void write( ChannelBuffer buffer, ByteBuffer readBuffer ) throws IOException
             {
                 writeString( buffer, resource );
@@ -210,6 +227,7 @@ public class MasterClient17 extends Client<Master> implements MasterClient
             }
         }, new Deserializer<Long>()
         {
+            @Override
             @SuppressWarnings( "boxing" )
             public Long read( ChannelBuffer buffer, ByteBuffer temporaryBuffer ) throws IOException
             {
@@ -225,6 +243,7 @@ public class MasterClient17 extends Client<Master> implements MasterClient
         {
             return sendRequest( HaRequestType17.FINISH, context, new Serializer()
             {
+                @Override
                 public void write( ChannelBuffer buffer, ByteBuffer readBuffer ) throws IOException
                 {
                     buffer.writeByte( success ? 1 : 0 );
@@ -268,6 +287,7 @@ public class MasterClient17 extends Client<Master> implements MasterClient
     {
         return sendRequest( HaRequestType17.GET_MASTER_ID_FOR_TX, RequestContext.EMPTY, new Serializer()
         {
+            @Override
             public void write( ChannelBuffer buffer, ByteBuffer readBuffer ) throws IOException
             {
                 buffer.writeLong( txId );
@@ -303,6 +323,7 @@ public class MasterClient17 extends Client<Master> implements MasterClient
         context = stripFromTransactions( context );
         return sendRequest( HaRequestType17.COPY_TRANSACTIONS, context, new Serializer()
         {
+            @Override
             public void write( ChannelBuffer buffer, ByteBuffer readBuffer )
                     throws IOException
             {
@@ -344,6 +365,7 @@ public class MasterClient17 extends Client<Master> implements MasterClient
             this.entities = entities;
         }
 
+        @Override
         public void write( ChannelBuffer buffer, ByteBuffer readBuffer ) throws IOException
         {
             buffer.writeInt( entities.length );

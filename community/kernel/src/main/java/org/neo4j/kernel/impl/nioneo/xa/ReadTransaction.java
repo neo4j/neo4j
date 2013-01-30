@@ -45,6 +45,7 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
 import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipStore;
+import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 import org.neo4j.kernel.impl.persistence.NeoStoreTransaction;
 import org.neo4j.kernel.impl.transaction.xaframework.XaConnection;
 import org.neo4j.kernel.impl.util.ArrayMap;
@@ -441,6 +442,18 @@ class ReadTransaction implements NeoStoreTransaction
 
     @Override
     public void graphRemoveProperty( PropertyData index )
+    {
+        throw readOnlyException();
+    }
+    
+    @Override
+    public void createSchemaRule( SchemaRule schemaRule )
+    {
+        throw readOnlyException();
+    }
+    
+    @Override
+    public void deleteSchemaRule( long id )
     {
         throw readOnlyException();
     }

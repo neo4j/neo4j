@@ -181,7 +181,7 @@ public class TestDynamicStore
         {
             createEmptyStore( dynamicStoreFile(), 30 );
             DynamicArrayStore store = newStore();
-            long blockId = store.nextBlockId();
+            long blockId = store.nextId();
             Collection<DynamicRecord> records = store.allocateRecords( blockId,
                     new byte[10] );
             for ( DynamicRecord record : records )
@@ -225,7 +225,7 @@ public class TestDynamicStore
             final String STR = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
             createEmptyStore( dynamicStoreFile(), 30 );
             DynamicArrayStore store = newStore();
-            long blockId = store.nextBlockId();
+            long blockId = store.nextId();
             char[] chars = new char[STR.length()];
             STR.getChars( 0, STR.length(), chars, 0 );
             Collection<DynamicRecord> records = store.allocateRecords( blockId,
@@ -281,7 +281,7 @@ public class TestDynamicStore
                 else
                 {
                     byte bytes[] = createRandomBytes( random );
-                    long blockId = store.nextBlockId();
+                    long blockId = store.nextId();
                     Collection<DynamicRecord> records = store.allocateRecords(
                             blockId, (Object) bytes );
                     for ( DynamicRecord record : records )
@@ -368,7 +368,7 @@ public class TestDynamicStore
 
     private long create( DynamicArrayStore store, Object arrayToStore )
     {
-        long blockId = store.nextBlockId();
+        long blockId = store.nextId();
         Collection<DynamicRecord> records = store.allocateRecords( blockId,
                 arrayToStore );
         for ( DynamicRecord record : records )

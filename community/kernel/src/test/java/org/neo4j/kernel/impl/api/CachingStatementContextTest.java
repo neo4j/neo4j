@@ -44,7 +44,7 @@ public class CachingStatementContextTest
         PersistenceCache cache = mock( PersistenceCache.class );
         when( cache.getLabels( nodeId ) ).thenReturn( labels );
         StatementContext actual = mock( StatementContext.class );
-        StatementContext context = new CachingStatementContext( actual, cache );
+        StatementContext context = new CachingStatementContext( actual, cache, null );
         
         // WHEN
         Iterable<Long> recievedLabels = context.getLabelsForNode( nodeId );
@@ -62,7 +62,7 @@ public class CachingStatementContextTest
         PersistenceCache cache = mock( PersistenceCache.class );
         when( cache.getLabels( nodeId ) ).thenReturn( labels );
         StatementContext actual = mock( StatementContext.class );
-        StatementContext context = new CachingStatementContext( actual, cache );
+        StatementContext context = new CachingStatementContext( actual, cache, null );
 
         // WHEN
         boolean added = context.addLabelToNode( 2L, nodeId );
@@ -81,7 +81,7 @@ public class CachingStatementContextTest
         PersistenceCache cache = mock( PersistenceCache.class );
         when( cache.getLabels( nodeId ) ).thenReturn( labels );
         StatementContext actual = mock( StatementContext.class );
-        StatementContext context = new CachingStatementContext( actual, cache );
+        StatementContext context = new CachingStatementContext( actual, cache, null );
 
         // WHEN
         boolean removed = context.removeLabelFromNode( 2L, nodeId );

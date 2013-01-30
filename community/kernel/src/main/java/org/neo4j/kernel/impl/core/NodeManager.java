@@ -231,6 +231,7 @@ public class NodeManager
             }
 
             nodeCache.put( node );
+            transactionState.createNode( id );
             success = true;
             return proxy;
         }
@@ -621,85 +622,6 @@ public class NodeManager
         return null;
     }
 
-    public static class IndexLock
-    {
-        private final String index;
-        private final String key;
-
-        public IndexLock( String index, String key )
-        {
-            this.index = index;
-            this.key = key;
-        }
-
-        public String getIndex()
-        {
-            return index;
-        }
-
-        public String getKey()
-        {
-            return key;
-        }
-
-        @Override
-        public int hashCode()
-        {   // Auto-generated
-            final int prime = 31;
-            int result = 1;
-            result = prime * result + ((index == null) ? 0 : index.hashCode());
-            result = prime * result + ((key == null) ? 0 : key.hashCode());
-            return result;
-        }
-
-        @Override
-        public boolean equals( Object obj )
-        {   // Auto-generated
-            if ( this == obj )
-            {
-                return true;
-            }
-            if ( obj == null )
-            {
-                return false;
-            }
-            if ( getClass() != obj.getClass() )
-            {
-                return false;
-            }
-            IndexLock other = (IndexLock) obj;
-            if ( index == null )
-            {
-                if ( other.index != null )
-                {
-                    return false;
-                }
-            }
-            else if ( !index.equals( other.index ) )
-            {
-                return false;
-            }
-            if ( key == null )
-            {
-                if ( other.key != null )
-                {
-                    return false;
-                }
-            }
-            else if ( !key.equals( other.key ) )
-            {
-                return false;
-            }
-            return true;
-        }
-
-        @Override
-        public String toString()
-        {
-            return "IndexLock[" + index + ":" + key + "]";
-        }
-    }
-
     public long getHighestPossibleIdInUse( Class<?> clazz )
     {
         return idGenerator.getHighestPossibleIdInUse( clazz );
@@ -783,7 +705,7 @@ public class NodeManager
     {
         deleteFromTrackers( node, nodePropertyTrackers );
 
-        tx.deletePrimitive( node );
+        tx.deleteNode( node.getId() );
         return persistenceManager.nodeDelete( node.getId() );
         // remove from node cache done via event
     }
@@ -852,7 +774,7 @@ public class NodeManager
     {
         deleteFromTrackers( rel, relationshipPropertyTrackers );
 
-        tx.deletePrimitive( rel );
+        tx.deleteRelationship( rel.getId() );
         return persistenceManager.relDelete( rel.getId() );
         // remove in rel cache done via event
     }
@@ -914,12 +836,12 @@ public class NodeManager
         return relCache.getIfCached( nodeId );
     }
 
-    void addRelationshipType( NameData type )
+    public void addRelationshipType( NameData type )
     {
         relTypeHolder.addKeyEntries( type );
     }
 
-    void addPropertyIndex( NameData index )
+    public void addPropertyIndex( NameData index )
     {
         propertyIndexManager.addKeyEntries( index );
     }
@@ -927,16 +849,6 @@ public class NodeManager
     RelIdArray getCreatedNodes()
     {
         return persistenceManager.getCreatedNodes();
-    }
-
-    boolean nodeCreated( long nodeId )
-    {
-        return persistenceManager.isNodeCreated( nodeId );
-    }
-
-    boolean relCreated( long relId )
-    {
-        return persistenceManager.isRelationshipCreated( relId );
     }
 
     public String getKeyForProperty( PropertyData property )

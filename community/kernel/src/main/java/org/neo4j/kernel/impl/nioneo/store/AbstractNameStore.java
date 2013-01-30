@@ -98,9 +98,9 @@ public abstract class AbstractNameStore<T extends AbstractNameRecord> extends Ab
         this.updateHighId();
     }
 
-    public void freeBlockId( int id )
+    public void freeId( int id )
     {
-        nameStore.freeBlockId( id );
+        nameStore.freeId( id );
     }
 
     @Override
@@ -263,6 +263,7 @@ public abstract class AbstractNameStore<T extends AbstractNameRecord> extends Ab
         }
     }
 
+    @Override
     public void updateRecord( T record )
     {
         PersistenceWindow window = acquireWindow( record.getId(),
@@ -301,7 +302,7 @@ public abstract class AbstractNameStore<T extends AbstractNameRecord> extends Ab
 
     public int nextNameId()
     {
-        return (int) nameStore.nextBlockId();
+        return (int) nameStore.nextId();
     }
 
     protected abstract T newRecord( int id );

@@ -84,4 +84,8 @@ public interface Master
 
     Response<Void> copyTransactions( RequestContext context, String dsName,
                                      long startTxId, long endTxId );
+
+    Response<LockResult> acquireSchemaReadLock( RequestContext context );
+
+    Response<LockResult> acquireSchemaWriteLock( RequestContext context );
 }

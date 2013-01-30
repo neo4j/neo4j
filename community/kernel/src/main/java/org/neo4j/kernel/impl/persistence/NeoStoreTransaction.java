@@ -30,6 +30,7 @@ import org.neo4j.kernel.impl.nioneo.store.NameData;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
+import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 import org.neo4j.kernel.impl.transaction.xaframework.XaConnection;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.RelIdArray;
@@ -337,4 +338,8 @@ public interface NeoStoreTransaction
 
     boolean delistResource( Transaction tx, int tmsuccess )
         throws SystemException;
+    
+    void createSchemaRule( SchemaRule schemaRule );
+    
+    void deleteSchemaRule( long id );
 }

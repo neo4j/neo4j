@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -36,6 +37,10 @@ public class TxState
     // Label ID --> Node IDs (added, removed)
     private final Map<Long, Pair<Collection<Long>,Collection<Long>>> labels =
             new HashMap<Long, Pair<Collection<Long>,Collection<Long>>>();
+    
+    // TODO temporary use of SchemaCache?
+    private final Map<Long, Collection<Pair<Long,String>>> indexRules =
+            new HashMap<Long, Collection<Pair<Long,String>>>();
     
     public boolean hasChanges()
     {
@@ -177,5 +182,33 @@ public class TxState
     {
         Pair<Collection<Long>, Collection<Long>> nodeLabels = labels.get( labelId );
         return nodeLabels != null ? nodeLabels.other() : Collections.<Long>emptyList();
+    }
+
+    public void addIndexRule( long labelId, String propertyKey )
+    {
+        Collection<Pair<Long, String>> rules = indexRules.get( labelId );
+        if ( rules == null )
+        {
+            rules = new ArrayList<Pair<Long,String>>();
+            indexRules.put( labelId, rules );
+        }
+        rules.add( Pair.of( labelId, propertyKey ) );
+    }
+
+    public Map<Long,Collection<Pair<Long,String>>> getAddedIndexRules()
+    {
+        return Collections.unmodifiableMap( indexRules );
+    }
+    
+    public Collection<String> getAddedIndexRules( long labelId )
+    {
+        Collection<Pair<Long, String>> rules = indexRules.get( labelId );
+        if ( rules == null )
+            return Collections.emptyList();
+
+        Collection<String> result = new ArrayList<String>();
+        for ( Pair<Long,String> rule : rules )
+            result.add( rule.other() );
+        return result;
     }
 }

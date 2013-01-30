@@ -105,7 +105,9 @@ public class StoreFactory
                 newRelationshipTypeStore(new File(fileName.getPath() + ".relationshiptypestore.db")),
                 newPropertyStore(new File( fileName.getPath() + ".propertystore.db")),
                 newRelationshipStore(new File( fileName.getPath() + ".relationshipstore.db")),
-                newNodeStore(new File( fileName.getPath() + ".nodestore.db")));
+                newNodeStore(new File( fileName.getPath() + ".nodestore.db")),
+                // We don't need any particular upgrade when we add the schema store
+                newOrCreateSchemaStore(new File( fileName.getPath() + ".schemastore.db")));
     }
 
     private void tryToUpgradeStores( File fileName )
@@ -115,6 +117,19 @@ public class StoreFactory
                 new DatabaseFiles(), idGeneratorFactory, fileSystemAbstraction ).attemptUpgrade( fileName );
     }
 
+    public SchemaStore newSchemaStore( File file )
+    {
+        return new SchemaStore( file, config, IdType.SCHEMA, idGeneratorFactory, windowPoolFactory,
+                fileSystemAbstraction, stringLogger );
+    }
+    
+    private SchemaStore newOrCreateSchemaStore( File file )
+    {
+        if ( !fileSystemAbstraction.fileExists( file ) )
+            createSchemaStore( file );
+        return newSchemaStore( file );
+    }
+    
     private DynamicStringStore newDynamicStringStore(File fileName, IdType nameIdType)
     {
         return new DynamicStringStore( fileName, config, nameIdType, idGeneratorFactory, windowPoolFactory,
@@ -173,6 +188,7 @@ public class StoreFactory
         createRelationshipStore(new File( fileName.getPath() + ".relationshipstore.db"));
         createPropertyStore(new File( fileName.getPath() + ".propertystore.db"));
         createRelationshipTypeStore(new File( fileName.getPath() + ".relationshiptypestore.db"));
+        createSchemaStore(new File( fileName.getPath() + ".schemastore.db"));
 /*
         if ( !config.containsKey( "neo_store" ) )
         {
@@ -282,6 +298,11 @@ public class StoreFactory
     public void createDynamicArrayStore( File fileName, int blockSize)
     {
         createEmptyDynamicStore(fileName, blockSize, DynamicArrayStore.VERSION, IdType.ARRAY_BLOCK);
+    }
+    
+    public void createSchemaStore( File fileName )
+    {
+        createEmptyDynamicStore( fileName, SchemaStore.BLOCK_SIZE, SchemaStore.VERSION, IdType.SCHEMA );
     }
 
     /**

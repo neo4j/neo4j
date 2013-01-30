@@ -57,6 +57,7 @@ import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.TransactionInterceptorProviders;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
+import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.core.PropertyIndex;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaConnection;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
@@ -173,6 +174,7 @@ public class TestNeoStore extends AbstractNeo4jTestCase
                 new XaFactory(config, TxIdGenerator.DEFAULT, new PlaceboTm( lockManager, getEmbeddedGraphDb().getTxIdGenerator() ),
                         new DefaultLogBufferFactory(), fileSystem, new DevNullLoggingService(), RecoveryVerifier.ALWAYS_VALID,
                         LogPruneStrategies.NO_PRUNING ), TransactionStateFactory.noStateFactory( new DevNullLoggingService() ),
+                        getEmbeddedGraphDb().getDependencyResolver().resolveDependency( CacheAccessBackDoor.class ),
                         new TransactionInterceptorProviders( Collections.<TransactionInterceptorProvider>emptyList(), new DependencyResolver()
 
         {
@@ -250,6 +252,10 @@ public class TestNeoStore extends AbstractNeo4jTestCase
         file = file( "neo.relationshiptypestore.db.names" );
         file.delete();
         file = file( "neo.relationshiptypestore.db.names.id" );
+        file.delete();
+        file = file( "neo.schemastore.db" );
+        file.delete();
+        file = file( "neo.schemastore.db.id" );
         file.delete();
         file = new File( "." );
         for ( File nioFile : file.listFiles() )

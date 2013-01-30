@@ -25,8 +25,9 @@ import org.neo4j.kernel.impl.core.TransactionState;
 
 public class StateHandlingTransactionContext extends DelegatingTransactionContext
 {
-    private final PersistenceCache cache;
+    private final PersistenceCache persistenceCache;
     private final TxState state;
+    private final SchemaCache schemaCache;
     
     /**
      * This is tech debt and coupled with {@link OldBridgingTransactionStateStatementContext}
@@ -34,12 +35,13 @@ public class StateHandlingTransactionContext extends DelegatingTransactionContex
     @Deprecated
     private final TransactionState oldTransactionState;
 
-    public StateHandlingTransactionContext( TransactionContext actual, PersistenceCache cache,
-            TransactionState oldTransactionState )
+    public StateHandlingTransactionContext( TransactionContext actual, PersistenceCache persistenceCache,
+            TransactionState oldTransactionState, SchemaCache schemaCache )
     {
         super(actual);
-        this.cache = cache;
+        this.persistenceCache = persistenceCache;
         this.oldTransactionState = oldTransactionState;
+        this.schemaCache = schemaCache;
         this.state = new TxState();
     }
 
@@ -49,7 +51,7 @@ public class StateHandlingTransactionContext extends DelegatingTransactionContex
         // Store stuff
         StatementContext result = super.newStatementContext();
         // + Caching
-        result = new CachingStatementContext( result, cache );
+        result = new CachingStatementContext( result, persistenceCache, schemaCache );
         // + Transaction-local state awareness
         result = new TransactionStateAwareStatementContext( result, state );
         // + Old transaction state bridge
@@ -64,7 +66,11 @@ public class StateHandlingTransactionContext extends DelegatingTransactionContex
     {
         // - Ensure transaction is committed to disk at this point
         super.finish();
+        // - commit schema changes from tx state to the schema cache
+        //   (this is instead currently done via WriteTransaction, so that even externally applied
+        //    transactions updates the schema cache)
+//        schemaCache.apply( state );
         // - commit changes from tx state to the cache
-        cache.apply( state );
+        persistenceCache.apply( state );
     }
 }

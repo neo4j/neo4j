@@ -17,23 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.graphdb;
+package org.neo4j.kernel.impl.nioneo.store;
 
-/**
- * Thrown when the database is asked to modify data in a way that violates one or more
- * constraints that it is expected to uphold.
- *
- * For instance, if removing a node that still has relationships.
- */
-public class ConstraintViolationException extends RuntimeException
+import java.nio.ByteBuffer;
+
+public interface RecordSerializable
 {
-    public ConstraintViolationException( String msg )
-    {
-        super(msg);
-    }
-
-    public ConstraintViolationException( String msg, Throwable cause )
-    {
-        super(msg, cause);
-    }
+    int length();
+    
+    void append( ByteBuffer target );
 }

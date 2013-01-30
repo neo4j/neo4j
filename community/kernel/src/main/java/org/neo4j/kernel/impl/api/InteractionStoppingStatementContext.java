@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api;
 
 import org.neo4j.kernel.api.ConstraintViolationKernelException;
 import org.neo4j.kernel.api.LabelNotFoundKernelException;
+import org.neo4j.kernel.api.SchemaException;
 import org.neo4j.kernel.api.StatementContext;
 
 public class InteractionStoppingStatementContext implements StatementContext
@@ -95,6 +96,20 @@ public class InteractionStoppingStatementContext implements StatementContext
     {
         assertOperationsAllowed();
         return delegate.getNodesWithLabel( labelId );
+    }
+
+    @Override
+    public void addIndexRule( long labelId, String propertyKey ) throws SchemaException
+    {
+        assertOperationsAllowed();
+        delegate.addIndexRule( labelId, propertyKey );
+    }
+
+    @Override
+    public Iterable<String> getIndexRules( long labelId )
+    {
+        assertOperationsAllowed();
+        return delegate.getIndexRules( labelId );
     }
 
     private void assertOperationsAllowed()

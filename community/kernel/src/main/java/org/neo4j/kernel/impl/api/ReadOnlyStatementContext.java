@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api;
 
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.kernel.api.LabelNotFoundKernelException;
+import org.neo4j.kernel.api.SchemaException;
 import org.neo4j.kernel.api.StatementContext;
 
 public class ReadOnlyStatementContext implements StatementContext
@@ -78,6 +79,18 @@ public class ReadOnlyStatementContext implements StatementContext
     public Iterable<Long> getNodesWithLabel( long labelId )
     {
         return delegate.getNodesWithLabel( labelId );
+    }
+
+    @Override
+    public void addIndexRule( long labelId, String propertyKey ) throws SchemaException
+    {
+        throw readOnlyException();
+    }
+
+    @Override
+    public Iterable<String> getIndexRules( long labelId )
+    {
+        return delegate.getIndexRules( labelId );
     }
 
     @Override

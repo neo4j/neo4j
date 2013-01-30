@@ -56,6 +56,7 @@ import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.TransactionInterceptorProviders;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
+import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.core.PropertyIndex;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaConnection;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
@@ -454,7 +455,7 @@ public class TestXa extends AbstractNeo4jTestCase
                 new XaFactory( config, TxIdGenerator.DEFAULT, txManager,
                         logBufferFactory, fileSystem, new DevNullLoggingService(), RecoveryVerifier.ALWAYS_VALID,
                         LogPruneStrategies.NO_PRUNING ), TransactionStateFactory.noStateFactory( new DevNullLoggingService() ),
-                        new TransactionInterceptorProviders( Collections.<TransactionInterceptorProvider>emptyList(),
+                        noCacheAccess(), new TransactionInterceptorProviders( Collections.<TransactionInterceptorProvider>emptyList(),
                         new DependencyResolver()
 
                         {
@@ -466,6 +467,52 @@ public class TestXa extends AbstractNeo4jTestCase
                         } ), null );
         neoStoreXaDataSource.start();
         return neoStoreXaDataSource;
+    }
+
+    private CacheAccessBackDoor noCacheAccess()
+    {
+        return new CacheAccessBackDoor()
+        {
+            @Override
+            public void removeSchemaRuleFromCache( long id )
+            {
+            }
+            
+            @Override
+            public void removeRelationshipTypeFromCache( int id )
+            {
+            }
+            
+            @Override
+            public void removeRelationshipFromCache( long id )
+            {
+            }
+            
+            @Override
+            public void removeNodeFromCache( long nodeId )
+            {
+            }
+            
+            @Override
+            public void removeGraphPropertiesFromCache()
+            {
+            }
+            
+            @Override
+            public void addSchemaRule( SchemaRule schemaRule )
+            {
+            }
+            
+            @Override
+            public void addRelationshipType( NameData type )
+            {
+            }
+            
+            @Override
+            public void addPropertyIndex( NameData index )
+            {
+            }
+        };
     }
 
     @Test

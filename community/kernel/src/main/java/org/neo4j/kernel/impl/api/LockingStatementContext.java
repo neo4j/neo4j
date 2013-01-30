@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import org.neo4j.kernel.api.SchemaException;
 import org.neo4j.kernel.api.StatementContext;
 
 public class LockingStatementContext extends DelegatingStatementContext
@@ -43,5 +44,19 @@ public class LockingStatementContext extends DelegatingStatementContext
     {
         lockHolder.acquireNodeWriteLock( nodeId );
         return delegate.removeLabelFromNode( labelId, nodeId );
+    }
+    
+    @Override
+    public void addIndexRule( long labelId, String propertyKey ) throws SchemaException
+    {
+        lockHolder.acquireSchemaWriteLock();
+        delegate.addIndexRule( labelId, propertyKey );
+    }
+    
+    @Override
+    public Iterable<String> getIndexRules( long labelId )
+    {
+        lockHolder.acquireSchemaReadLock();
+        return delegate.getIndexRules( labelId );
     }
 }

@@ -338,7 +338,46 @@ public enum HaRequestType20 implements RequestType<Master>
         {
             return master.createPropertyKey( context, readString( input ) );
         }
-    }, INTEGER_SERIALIZER, true );
+    }, INTEGER_SERIALIZER, true ),
+    
+    // ====
+    ACQUIRE_SCHEMA_READ_LOCK( new TargetCaller<Master, LockResult>()
+    {
+        @Override
+        public Response<LockResult> call( Master master, RequestContext context, ChannelBuffer input,
+                ChannelBuffer target )
+        {
+            return master.acquireSchemaReadLock( context );
+        }
+
+    }, LOCK_SERIALIZER, true )
+    {
+        @Override
+        public boolean isLock()
+        {
+            return true;
+        }
+    },
+
+    // ====
+    ACQUIRE_SCHEMA_WRITE_LOCK( new TargetCaller<Master, LockResult>()
+    {
+        @Override
+        public Response<LockResult> call( Master master, RequestContext context, ChannelBuffer input,
+                ChannelBuffer target )
+        {
+            return master.acquireSchemaWriteLock( context );
+        }
+
+    }, LOCK_SERIALIZER, true )
+    {
+        @Override
+        public boolean isLock()
+        {
+            return true;
+        }
+    };
+
 
     @SuppressWarnings( "rawtypes" )
     final TargetCaller caller;

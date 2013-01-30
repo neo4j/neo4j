@@ -17,31 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api;
+package org.neo4j.kernel.api;
 
-import org.neo4j.kernel.api.StatementContext;
-import org.neo4j.kernel.api.TransactionContext;
-
-/**
- * Adds constraint checking to the kernel implementation, for instance ensuring label names are valid.
- */
-public class ConstraintEvaluatingTransactionContext extends DelegatingTransactionContext
+public abstract class SchemaException extends KernelException
 {
-    // Note: This could be refactored to use arbitrary constraint rules, so this could evaluate
-    // both user and system level constraints.
-
-    public ConstraintEvaluatingTransactionContext( TransactionContext delegate )
+    public SchemaException( String message, Throwable cause )
     {
-        super( delegate );
+        super( message, cause );
     }
 
-    @Override
-    public StatementContext newStatementContext()
+    public SchemaException( String message )
     {
-        StatementContext result = super.newStatementContext();
-        // + Constraints
-        result = new ConstraintEvaluatingStatementContext( result );
+        super( message );
+    }
 
-        return result;
+    public SchemaException( Throwable cause )
+    {
+        super( cause );
     }
 }

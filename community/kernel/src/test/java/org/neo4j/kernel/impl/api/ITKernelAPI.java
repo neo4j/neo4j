@@ -341,6 +341,68 @@ public class ITKernelAPI
         assertEquals( asSet(), nodes );
     }
     
+    @Test
+    public void addIndexRuleInATransaction() throws Exception
+    {
+        // GIVEN
+        Transaction tx = db.beginTx();
+        StatementContext statement = statementContextProvider.getCtxForWriting();
+        int labelId = 5;
+        String propertyKey = "name";
+
+        // WHEN
+        statement.addIndexRule( labelId, propertyKey );
+        tx.success();
+        tx.finish();
+
+        // THEN
+        statement = statementContextProvider.getCtxForReading();
+        assertEquals( asSet( propertyKey ), asSet( statement.getIndexRules( labelId ) ) );
+    }
+    
+    @Test
+    public void committedAndTransactionalIndexRulesShouldBeMerged() throws Exception
+    {
+        // GIVEN
+        int labelId = 5;
+        String propertyKey = "name";
+        Transaction tx = db.beginTx();
+        StatementContext statement = statementContextProvider.getCtxForWriting();
+        statement.addIndexRule( labelId, propertyKey );
+        tx.success();
+        tx.finish();
+
+        // WHEN
+        tx = db.beginTx();
+        statement = statementContextProvider.getCtxForWriting();
+        String propertyKey2 = "age";
+        statement.addIndexRule( labelId, propertyKey2 );
+        Set<String> indexRulesInTx = asSet( statement.getIndexRules( labelId ) );
+        tx.success();
+        tx.finish();
+
+        // THEN
+        assertEquals( asSet( propertyKey, propertyKey2 ), indexRulesInTx );
+    }
+    
+    @Test
+    public void rollBackIndexRuleShouldNotBeCommitted() throws Exception
+    {
+        // GIVEN
+        int labelId = 5;
+        String propertyKey = "name";
+        Transaction tx = db.beginTx();
+        StatementContext statement = statementContextProvider.getCtxForWriting();
+
+        // WHEN
+        statement.addIndexRule( labelId, propertyKey );
+        // don't mark as success
+        tx.finish();
+
+        // THEN
+        assertEquals( asSet(), asSet( statementContextProvider.getCtxForReading().getIndexRules( labelId ) ) );
+    }
+    
     private GraphDatabaseAPI db;
     private ThreadToStatementContextBridge statementContextProvider;
     
