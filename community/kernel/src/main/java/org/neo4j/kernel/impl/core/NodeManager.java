@@ -990,12 +990,12 @@ public class NodeManager
     
     public boolean isDeleted( Node resource )
     {
-        return getTransactionState().isDeleted( resource );
+        return getTransactionState().nodeIsDeleted( resource.getId() );
     }
     
     public boolean isDeleted( Relationship resource )
     {
-        return getTransactionState().isDeleted( resource );
+        return getTransactionState().relationshipIsDeleted( resource.getId() );
     }        
     
     PersistenceManager getPersistenceManager()

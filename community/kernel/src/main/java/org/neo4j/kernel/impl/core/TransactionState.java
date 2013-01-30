@@ -21,8 +21,6 @@ package org.neo4j.kernel.impl.core;
 
 import java.util.Collection;
 
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.kernel.impl.core.WritableTransactionState.PrimitiveElement;
 import org.neo4j.kernel.impl.nioneo.store.NameData;
@@ -98,10 +96,10 @@ public interface TransactionState
     void clearCache();
 
     TransactionData getTransactionData();
-
-    boolean isDeleted( Node node );
-
-    boolean isDeleted( Relationship relationship );
+    
+    boolean nodeIsDeleted( long nodeId );
+    
+    boolean relationshipIsDeleted( long relationshpId );
     
     boolean hasChanges();
     

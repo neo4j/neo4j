@@ -22,11 +22,15 @@ package org.neo4j.kernel.impl.api;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+
+import java.util.Set;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.GraphDatabaseAPI;
@@ -308,6 +312,33 @@ public class ITKernelAPI
 
         // THEN
         assertFalse( "Shouldn't have been removed now", removed );
+    }
+    
+    @Test
+    public void deletingNodeWithLabelsShouldHaveThoseLabelRemovalsReflectedInTransaction() throws Exception
+    {
+        // GIVEN
+        Transaction tx = db.beginTx();
+        Label label = label( "labello" );
+        Node node = db.createNode( label );
+        tx.success();
+        tx.finish();
+
+        // WHEN
+        tx = db.beginTx();
+        node.delete();
+        StatementContext statement = statementContextProvider.getCtxForWriting();
+        long labelId = statement.getLabelId( label.name() );
+        Set<Long> labels = asSet( statement.getLabelsForNode( node.getId() ) );
+        boolean labelIsSet = statement.isLabelSetOnNode( labelId, node.getId() );
+        Set<Long> nodes = asSet( statement.getNodesWithLabel( labelId ) );
+        tx.success();
+        tx.finish();
+
+        // THEN
+        assertEquals( asSet(), labels );
+        assertFalse( "Label should not be set on node here", labelIsSet );
+        assertEquals( asSet(), nodes );
     }
     
     private GraphDatabaseAPI db;

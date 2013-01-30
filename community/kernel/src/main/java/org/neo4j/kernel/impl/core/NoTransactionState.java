@@ -21,9 +21,7 @@ package org.neo4j.kernel.impl.core;
 
 import java.util.Collection;
 
-import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotInTransactionException;
-import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.kernel.impl.core.WritableTransactionState.PrimitiveElement;
 import org.neo4j.kernel.impl.nioneo.store.NameData;
@@ -180,15 +178,15 @@ public class NoTransactionState implements TransactionState
     {
         throw new NotInTransactionException();
     }
-
+    
     @Override
-    public boolean isDeleted( Node node )
+    public boolean nodeIsDeleted( long nodeId )
     {
         return false;
     }
-
+    
     @Override
-    public boolean isDeleted( Relationship relationship )
+    public boolean relationshipIsDeleted( long relationshpId )
     {
         return false;
     }

@@ -70,7 +70,7 @@ public class Kernel implements KernelAPI
         //result = new TransactionLifecycleTransactionContext( result, transactionManager, propertyIndexManager, persistenceManager, cache );
 
         // + Transaction state and Caching
-        result = new StateHandlingTransactionContext( result, cache );
+        result = new StateHandlingTransactionContext( result, cache, transactionManager.getTransactionState() );
         // + Constraints evaluation
         result = new ConstraintEvaluatingTransactionContext( result );
         // + Locking

@@ -30,8 +30,6 @@ import javax.transaction.Status;
 import javax.transaction.Synchronization;
 import javax.transaction.Transaction;
 
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.kernel.impl.nioneo.store.NameData;
@@ -719,20 +717,20 @@ public class WritableTransactionState implements TransactionState
     }
     
     @Override
-    public boolean isDeleted( Node node )
+    public boolean nodeIsDeleted( long nodeId )
     {
         if ( primitiveElement == null )
             return false;
-        CowNodeElement nodeElement = primitiveElement.nodeElement( node.getId(), false );
+        CowNodeElement nodeElement = primitiveElement.nodeElement( nodeId, false );
         return nodeElement != null ? nodeElement.deleted : false;
     }
     
     @Override
-    public boolean isDeleted( Relationship relationship )
+    public boolean relationshipIsDeleted( long relationshipId )
     {
         if ( primitiveElement == null )
             return false;
-        CowRelElement relationshipElement = primitiveElement.relationshipElement( relationship.getId(), false );
+        CowRelElement relationshipElement = primitiveElement.relationshipElement( relationshipId, false );
         return relationshipElement != null ? relationshipElement.deleted : false;
     }
     
