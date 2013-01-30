@@ -33,6 +33,11 @@ trait ExecutionResult extends Iterator[Map[String, Any]] {
   def queryStatistics():QueryStatistics
 }
 
+// Whenever you add a field here, please update accordingly in server:
+//
+// org.neo4j.cypher.javacompat.QueryStatistics
+// org.neo4j.server.rest.repr.CypherResultRepresentation
+//
 case class QueryStatistics(nodesCreated: Int = 0,
                            relationshipsCreated: Int = 0,
                            propertiesSet: Int = 0,

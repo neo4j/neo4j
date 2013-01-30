@@ -38,6 +38,9 @@ public class CypherService {
 
     private static final String PARAMS_KEY = "params";
     private static final String QUERY_KEY = "query";
+    private static final String STATS_KEY = "stats";
+
+    private static final boolean INCLUDE_STATS_DEFAULT = false;
 
     private CypherExecutor cypherExecutor;
     private OutputFormat output;
@@ -57,12 +60,16 @@ public class CypherService {
         if( !command.containsKey(QUERY_KEY) ) {
             return output.badRequest(new BadInputException( "You have to provide the 'query' parameter." ));
         }
-        
+
+        boolean includeStats =
+                command.containsKey( STATS_KEY ) ? (Boolean) command.get( STATS_KEY ) : INCLUDE_STATS_DEFAULT;
+
         String query =  (String) command.get(QUERY_KEY);
-        Map<String,Object> params = (Map<String, Object>) (command.containsKey(PARAMS_KEY) ? command.get(PARAMS_KEY) : new HashMap<String, Object>());
+        Map<String,Object> params = (Map<String, Object>)
+                (command.containsKey(PARAMS_KEY) ? command.get(PARAMS_KEY) : new HashMap<String, Object>());
         try {
             ExecutionResult result = cypherExecutor.getExecutionEngine().execute( query, params );
-            return output.ok(new CypherResultRepresentation( result ));
+            return output.ok(new CypherResultRepresentation( result, includeStats ));
         } catch(Exception e) {
             return output.badRequest(e);
         }
