@@ -19,6 +19,15 @@
  */
 package org.neo4j.server.rest.web;
 
+import java.util.HashMap;
+import java.util.Map;
+
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+import javax.ws.rs.QueryParam;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.Response;
+
 import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.server.database.CypherExecutor;
 import org.neo4j.server.rest.repr.BadInputException;
@@ -26,18 +35,14 @@ import org.neo4j.server.rest.repr.CypherResultRepresentation;
 import org.neo4j.server.rest.repr.InputFormat;
 import org.neo4j.server.rest.repr.OutputFormat;
 
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.Response;
-import java.util.HashMap;
-import java.util.Map;
-
 @Path( "/cypher" )
 public class CypherService {
 
     private static final String PARAMS_KEY = "params";
     private static final String QUERY_KEY = "query";
+    private static final String INCLUDE_STATS_PARAM = "includeStats";
+
+    private static final boolean INCLUDE_STATS_DEFAULT = false;
 
     private CypherExecutor cypherExecutor;
     private OutputFormat output;
@@ -51,18 +56,19 @@ public class CypherService {
 
     @POST
     @SuppressWarnings({ "unchecked" })
-    public Response cypher(String body) throws BadInputException {
+    public Response cypher(String body,  @QueryParam( INCLUDE_STATS_PARAM ) boolean includeStats) throws BadInputException {
         Map<String,Object> command = input.readMap( body );
         
         if( !command.containsKey(QUERY_KEY) ) {
             return output.badRequest(new BadInputException( "You have to provide the 'query' parameter." ));
         }
-        
+
         String query =  (String) command.get(QUERY_KEY);
-        Map<String,Object> params = (Map<String, Object>) (command.containsKey(PARAMS_KEY) ? command.get(PARAMS_KEY) : new HashMap<String, Object>());
+        Map<String,Object> params = (Map<String, Object>)
+                (command.containsKey(PARAMS_KEY) ? command.get(PARAMS_KEY) : new HashMap<String, Object>());
         try {
             ExecutionResult result = cypherExecutor.getExecutionEngine().execute( query, params );
-            return output.ok(new CypherResultRepresentation( result ));
+            return output.ok(new CypherResultRepresentation( result, includeStats ));
         } catch(Exception e) {
             return output.badRequest(e);
         }

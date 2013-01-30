@@ -338,6 +338,38 @@ public class DatabaseActions
             tx.finish();
         }
     }
+
+
+    public void setLabelsOnNode( long nodeId, Collection<String> labels ) throws NodeNotFoundException, BadInputException
+
+    {
+        Node node = node( nodeId );
+        Transaction tx = beginTx();
+        try
+        {
+            // Remove current labels
+            for ( Label label : node.getLabels() )
+            {
+                node.removeLabel( label );
+            }
+
+            // Add new labels
+            for ( String labelName : labels )
+            {
+                node.addLabel( label( labelName ) );
+            }
+
+            tx.success();
+        }
+        catch( ConstraintViolationException e )
+        {
+            throw new BadInputException( "Unable to add label, see nested exception.", e );
+        }
+        finally
+        {
+            tx.finish();
+        }
+    }
     
     public void removeLabelFromNode( long nodeId, String labelName ) throws NodeNotFoundException
     {
