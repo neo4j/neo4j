@@ -56,6 +56,9 @@ public class NodeImpl extends ArrayBasedPrimitive
 
     private volatile RelIdArray[] relationships;
 
+    /*
+     * This is the id of the next relationship to load from disk.
+     */
     private volatile long relChainPosition = Record.NO_NEXT_RELATIONSHIP.intValue();
     private final long id;
 

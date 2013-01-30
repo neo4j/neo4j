@@ -102,7 +102,7 @@ public final class Settings
         if ( defaultValue != null )
         {
             //noinspection StringEquality
-            if ( defaultValue == MANDATORY )
+            if ( defaultValue.equals( MANDATORY ) )
             {
                 defaultLookup = mandatory( valueLookup );
             }
@@ -305,7 +305,7 @@ public final class Settings
         }
     };
 
-    public static Function<String, Long> DURATION = new Function<String, Long>()
+    public static final Function<String, Long> DURATION = new Function<String, Long>()
     {
         @Override
         public Long apply( String value )
@@ -320,7 +320,7 @@ public final class Settings
         }
     };
 
-    public static Function<String, Long> BYTES = new Function<String, Long>()
+    public static final Function<String, Long> BYTES = new Function<String, Long>()
     {
         @Override
         public Long apply( String value )
@@ -361,7 +361,7 @@ public final class Settings
         }
     };
 
-    public static Function<String, URI> URI =
+    public static final Function<String, URI> URI =
             new Function<String, URI>()
             {
                 @Override
@@ -384,7 +384,7 @@ public final class Settings
                 }
             };
 
-    public static Function<String, File> PATH = new Function<String, File>()
+    public static final Function<String, File> PATH = new Function<String, File>()
     {
         @Override
         public File apply( String setting )
@@ -532,7 +532,7 @@ public final class Settings
         return Functions.<T, Function<String, String>>compose2().apply( min( min ), max( max ) );
     }
 
-    public static Function2<Integer, Function<String, String>, Integer> port =
+    public static final Function2<Integer, Function<String, String>, Integer> port =
             illegalValueMessage( "must be a valid port number(1-65535)", range( 1, 65535 ) );
 
     public static <T> Function2<T, Function<String, String>, T> illegalValueMessage( final String message,

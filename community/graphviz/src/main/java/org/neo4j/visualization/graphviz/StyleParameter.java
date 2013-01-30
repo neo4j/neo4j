@@ -168,7 +168,7 @@ public interface StyleParameter
 				public String getParameterValue( Relationship relationship,
 				    String key )
 				{
-                    if ( key == "color" )
+                    if ( key.equals( "color" ) )
                     {
                         return getColor( relationship );
                     }
@@ -271,11 +271,11 @@ public interface StyleParameter
 			{
 				public String getParameterValue( Node node, String key )
 				{
-					if ( key == "color" )
+					if ( key.equals( "color" ) )
 					{
 						return getColor( node );
 					}
-					else if ( key == "fontcolor" )
+					else if ( key.equals( "fontcolor" ) )
 					{
 						return getFontColor( node );
 					}

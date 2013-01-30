@@ -22,7 +22,7 @@ package org.neo4j.helpers;
 import java.io.UnsupportedEncodingException;
 
 /**
- * Utility class for converting strings to an from UTF-8 encoded bytes.
+ * Utility class for converting strings to and from UTF-8 encoded bytes.
  *
  * @author Tobias Ivarsson <tobias.ivarsson@neotechnology.com>
  */
