@@ -19,7 +19,10 @@
  */
 package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos;
 
+import java.util.Deque;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.Map;
 
 /**
@@ -28,8 +31,8 @@ import java.util.Map;
 public class InMemoryAcceptorInstanceStore
         implements AcceptorInstanceStore
 {
-    // TODO Add mechanism to purge these
-    Map<InstanceId, AcceptorInstance> instances = new HashMap<InstanceId, AcceptorInstance>();
+    Map<InstanceId, AcceptorInstance> instances = new HashMap<InstanceId, AcceptorInstance>(  );
+    Deque<InstanceId> currentInstances = new LinkedList<InstanceId>();
 
     @Override
     public AcceptorInstance getAcceptorInstance( InstanceId instanceId )
@@ -39,6 +42,13 @@ public class InMemoryAcceptorInstanceStore
         {
             instance = new AcceptorInstance();
             instances.put( instanceId, instance );
+
+            // Ensure that it doesn't grow unbounded
+            currentInstances.offer( instanceId );
+            if (instances.size() > 500)
+            {
+                instances.remove( currentInstances.poll());
+            }
         }
 
         return instance;
@@ -60,5 +70,6 @@ public class InMemoryAcceptorInstanceStore
     public void clear()
     {
         instances.clear();
+        currentInstances.clear();
     }
 }
