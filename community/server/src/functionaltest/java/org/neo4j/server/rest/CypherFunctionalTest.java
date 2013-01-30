@@ -23,8 +23,11 @@ import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.CoreMatchers.not;
 import static org.junit.Assert.*;
 import static org.junit.matchers.JUnitMatchers.containsString;
+import static org.neo4j.test.GraphDescription.LABEL;
 
 import java.io.UnsupportedEncodingException;
+import java.lang.Object;
+import java.lang.String;
 import java.util.Map;
 
 import javax.ws.rs.core.Response.Status;
@@ -37,6 +40,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.rest.domain.JsonHelper;
+import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.test.GraphDescription;
 import org.neo4j.test.GraphDescription.Graph;
 import org.neo4j.test.GraphDescription.NODE;
@@ -70,6 +74,26 @@ public class CypherFunctionalTest extends AbstractRestFunctionalTestBase {
         assertThat( response, containsString( "him" ) );
         assertThat( response, containsString( "25" ) );
         assertThat( response, not( containsString( "\"x\"" ) ) );
+    }
+
+    /**
+     * A simple label update query that shows how to retrieve Cypher query statistics from the REST API
+     */
+    @Test
+    @Documented
+    @Title( "Examine Query Statistics" )
+    @Graph( nodes = { @NODE( name = "I", labels = { @LABEL("bar") } ) } )
+    public void testQueryStatistics() throws JsonParseException
+    {
+        String script = createScript( "start n = node(%I%) add n :foo remove n :bar return labels(n)" );
+        String response = cypherRestCall( script, Status.OK, new Pair[] { Pair.of( "stats", "true" ) } );
+
+        Map<String, Object> output = JsonHelper.jsonToMap( response );
+        Map<String, Object> stats = (Map<String, Object>) output.get( "stats" );
+        assert( stats != null );
+        assert( (Integer) stats.get( "num_added_labels" ) == 1 );
+        assert( (Integer) stats.get( "num_removed_labels" ) == 1 );
+        assert( (Boolean) stats.get( "contains_update" ) );
     }
 
     /**

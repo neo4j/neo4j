@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.cypher.javacompat.ExecutionResult;
+import org.neo4j.cypher.javacompat.QueryStatistics;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
@@ -34,13 +35,34 @@ public class CypherResultRepresentation extends MappingRepresentation
 {
     private final ListRepresentation resultRepresentation;
     private final ListRepresentation columns;
+    private final MappingRepresentation statsRepresentation;
 
 
-    public CypherResultRepresentation( ExecutionResult result )
+    public CypherResultRepresentation( ExecutionResult result, boolean includeStats )
     {
         super( RepresentationType.STRING );
         resultRepresentation = createResultRepresentation(result);
         columns = ListRepresentation.string( result.columns() );
+        statsRepresentation = includeStats ? createStatsRepresentation( result.getQueryStatistics() ) : null;
+    }
+
+    private MappingRepresentation createStatsRepresentation( final QueryStatistics stats )
+    {
+        return new MappingRepresentation( "stats" )
+        {
+            @Override
+            protected void serialize( MappingSerializer serializer )
+            {
+                serializer.putBoolean( "contains_updates", stats.containsUpdates() );
+                serializer.putNumber( "num_nodes_created", stats.getNodesCreated() );
+                serializer.putNumber( "num_nodes_deleted", stats.getDeletedNodes() );
+                serializer.putNumber( "num_properties_set", stats.getPropertiesSet() );
+                serializer.putNumber( "num_relationships_created", stats.getRelationshipsCreated() );
+                serializer.putNumber( "num_relationships_deleted", stats.getDeletedRelationships() );
+                serializer.putNumber( "num_labels_added", stats.getAddedLabels() );
+                serializer.putNumber( "num_labels_removed", stats.getRemovedLabels() );
+            }
+        };
     }
 
     @Override
@@ -48,6 +70,8 @@ public class CypherResultRepresentation extends MappingRepresentation
     {
         serializer.putList( "columns", columns );
         serializer.putList( "data", resultRepresentation );
+        if (statsRepresentation != null)
+            serializer.putMapping( "stats", statsRepresentation );
     }
 
     private ListRepresentation createResultRepresentation(ExecutionResult executionResult) {
