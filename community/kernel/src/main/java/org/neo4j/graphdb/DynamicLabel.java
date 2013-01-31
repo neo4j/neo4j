@@ -52,4 +52,16 @@ public class DynamicLabel implements Label
     {
         return this.name;
     }
+
+    @Override
+    public boolean equals(Object other)
+    {
+        return other instanceof Label && ((Label) other).name().equals( name );
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return 26578 ^ name.hashCode();
+    }
 }

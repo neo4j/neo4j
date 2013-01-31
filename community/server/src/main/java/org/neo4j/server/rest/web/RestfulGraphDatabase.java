@@ -23,6 +23,8 @@ import static java.lang.String.format;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Map;
@@ -405,13 +407,52 @@ public class RestfulGraphDatabase
         try
         {
             Object rawInput = input.readValue( body );
-            if ( !(rawInput instanceof String) )
+            if ( rawInput instanceof String )
             {
-                throw new BadInputException( format( "Label name must be a string. Got: '%s'", rawInput ) );
+                ArrayList<String> s = new ArrayList<String>();
+                s.add((String) rawInput);
+                actions( force ).addLabelToNode( nodeId, s );
+            }
+            else if(rawInput instanceof Collection)
+            {
+                actions( force ).addLabelToNode( nodeId, (Collection<String>) rawInput );
             }
             else
             {
-                actions( force ).addLabelToNode( nodeId, (String) rawInput );
+                throw new BadInputException( format( "Label name must be a string. Got: '%s'", rawInput ) );
+            }
+        }
+        catch ( BadInputException e )
+        {
+            return output.badRequest( e );
+        }
+        catch ( ArrayStoreException ase )
+        {
+            return generateBadRequestDueToMangledJsonResponse( body );
+        }
+        catch ( NodeNotFoundException e )
+        {
+            return output.notFound( e );
+        }
+        return nothing();
+    }
+
+    @PUT
+    @Path( PATH_NODE_LABELS )
+    public Response setNodeLabels( @HeaderParam( HEADER_TRANSACTION ) ForceMode force,
+                                  @PathParam( "nodeId" ) long nodeId,
+                                  String body )
+    {
+        try
+        {
+            Object rawInput = input.readValue( body );
+            if ( !(rawInput instanceof Collection) )
+            {
+                throw new BadInputException( format( "Input must be an array of Strings. Got: '%s'", rawInput ) );
+            }
+            else
+            {
+                actions( force ).setLabelsOnNode( nodeId, (Collection<String>) rawInput );
             }
         }
         catch ( BadInputException e )
@@ -457,6 +498,22 @@ public class RestfulGraphDatabase
         catch ( NodeNotFoundException e )
         {
             return output.notFound( e );
+        }
+    }
+
+    @GET
+    @Path( PATH_ALL_NODES_LABELED )
+    public Response allNodesWithLabel( @PathParam( "label" ) String labelName )
+    {
+        try
+        {
+            if ( labelName.isEmpty() )
+                throw new BadInputException( "Empty label name" );
+            return output.ok( actions.getNodesWithLabel( labelName ) );
+        }
+        catch ( BadInputException e )
+        {
+            return output.badRequest( e );
         }
     }
 
@@ -1499,22 +1556,6 @@ public class RestfulGraphDatabase
             return output.badRequest( e );
         }
         catch ( ClassCastException e )
-        {
-            return output.badRequest( e );
-        }
-    }
-    
-    @GET
-    @Path( PATH_ALL_NODES_LABELED )
-    public Response allNodesWithLabel( @PathParam( "label" ) String labelName )
-    {
-        try
-        {
-            if ( labelName.isEmpty() )
-                throw new BadInputException( "Empty label name" );
-            return output.ok( actions.getNodesWithLabel( labelName ) );
-        }
-        catch ( BadInputException e )
         {
             return output.badRequest( e );
         }
