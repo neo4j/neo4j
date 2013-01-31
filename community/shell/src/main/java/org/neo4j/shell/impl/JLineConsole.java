@@ -30,7 +30,7 @@ import org.neo4j.shell.ShellClient;
  */
 public class JLineConsole implements Console
 {
-	private final Object consoleReader;
+	private Object consoleReader;
 	
 	static JLineConsole newConsoleOrNullIfNotFound( ShellClient client )
 	{
@@ -78,14 +78,12 @@ public class JLineConsole implements Console
 		this.consoleReader = consoleReader;
 	}
 	
-	@Override
-    public void format( String format, Object... args )
+	public void format( String format, Object... args )
 	{
 		System.out.print( format );
 	}
 	
-	@Override
-    public String readLine( String prompt )
+	public String readLine( String prompt )
 	{
 		try
 		{

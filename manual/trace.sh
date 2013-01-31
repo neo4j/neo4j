@@ -29,10 +29,10 @@ if [[ ! -d "target/docs" ]] ; then
 fi
 
 case "$1" in
-  -t) grep --color=always -i -n -r "$2" target/docs/*
+  -t) grep --color=always -i -n -r "$2" target/docs/* target/src/*
   ;;
   -c) grep --color=always -i -n -r "$2" target/sources/* target/test-sources/*
   ;;
-  *) grep --color=always -i -n -r "$1" target/docs/* target/sources/* target/test-sources/*
+  *) grep --color=always -i -n -r "$1" target/docs/* target/sources/* target/test-sources/* target/src/*
 esac
 
