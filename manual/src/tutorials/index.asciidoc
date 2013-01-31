@@ -34,10 +34,6 @@ include::languages.asciidoc[]
 
 :leveloffset: 1
 
-include::{importdir}/neo4j-python-embedded-docs-jar/dev/tutorial/index.asciidoc[]
-
-:leveloffset: 1
-
 include::{importdir}/neo4j-server-examples-docs-jar/dev/index.asciidoc[]
 
 
