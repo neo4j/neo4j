@@ -19,10 +19,7 @@
  */
 package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos;
 
-import java.util.Deque;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
 import java.util.Map;
 
 /**
