@@ -195,20 +195,6 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>org.neo4j.drivers</groupId>
-      <artifactId>neo4j-python-embedded</artifactId>
-      <version>${neo4j.version}</version>
-      <classifier>docs</classifier>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j.drivers</groupId>
-      <artifactId>neo4j-python-embedded</artifactId>
-      <version>${neo4j.version}</version>
-      <classifier>test-sources</classifier>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
       <groupId>org.neo4j.build.plugins</groupId>
       <artifactId>neo4j-doctools</artifactId>
       <version>1</version>
@@ -297,7 +283,7 @@
               <excludes>META-INF,META-INF/**</excludes>
               <type>jar</type>
               <outputDirectory>${docs.test-sources}</outputDirectory>
-              <includeArtifactIds>neo4j-cypher,neo4j-examples,neo4j-server,neo4j-python-embedded,neo4j-lucene-index,neo4j-backup,neo4j-kernel</includeArtifactIds>
+              <includeArtifactIds>neo4j-cypher,neo4j-examples,neo4j-server,neo4j-lucene-index,neo4j-backup,neo4j-kernel</includeArtifactIds>
             </configuration>
           </execution>
           <execution>
