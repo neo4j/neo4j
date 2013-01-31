@@ -19,16 +19,21 @@
  */
 package org.neo4j.server.rest;
 
-import static org.junit.Assert.assertEquals;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.*;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.Iterables.map;
+import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.server.rest.domain.JsonHelper.createJsonFrom;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
 import org.junit.Test;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.helpers.Function;
 import org.neo4j.kernel.impl.annotations.Documented;
@@ -77,7 +82,35 @@ public class LabelsFunctionalTest  extends AbstractRestFunctionalTestBase
             .payload( createJsonFrom( "" ) )
             .post( nodeUri + "/labels"  );
     }
-    
+
+    /**
+     * Replacing labels on a node.
+     *
+     * This removes any labels currently on a node, and replaces them with the labels passed in as the
+     * request body.
+     */
+    @Documented
+    @Test
+    @GraphDescription.Graph( nodes = { @NODE( name = "I", setNameProperty = true,
+                                              labels = { @LABEL( "Me" ), @LABEL( "You" ) }) } )
+    public void replacing_labels_on_a_node() throws PropertyValueException
+    {
+        Map<String,Node> nodes = data.get();
+        String nodeUri = getNodeUri( nodes.get( "I" ) );
+
+        // When
+        gen.get()
+                .expectedStatus( 204 )
+                .payload( createJsonFrom( new String[]{"MyOtherLabel", "MyThirdLabel"}) )
+                .put( nodeUri + "/labels" );
+
+        // Then
+        Collection<Label> actual = asCollection(nodes.get( "I" ).getLabels());
+        assertThat( actual.size(), is( 2 ) );
+        assertThat( "Labels should be correct", actual, containsInAnyOrder( label( "MyOtherLabel" ),
+                label( "MyThirdLabel" ) ));
+    }
+
     /**
      * Listing labels for a node.
      */
