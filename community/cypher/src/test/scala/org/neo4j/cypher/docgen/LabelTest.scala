@@ -38,7 +38,7 @@ class LabelTest extends DocumentingTestBase {
   @Test def create_node_with_label() {
     testQuery(
       title = "Create a node and label it",
-      text = "To create and add a label to it, use the label form of +CREATE+.",
+      text = "To create a node and add a label to it, use the label form of +CREATE+.",
       queryText = "create n:swedish return n",
       returns = "The newly labeled node is returned by the query.",
       assertions = (p) => assert(getLabelsFromNode(p) === List("swedish"))
