@@ -160,7 +160,7 @@ public class NetworkInstance
     public void stop()
             throws Throwable
     {
-        sendExecutor.shutdownNow();
+        sendExecutor.shutdown();
         if ( !sendExecutor.awaitTermination( 10, TimeUnit.SECONDS ) )
         {
             msgLog.warn( "Could not shut down send executor" );
@@ -170,7 +170,7 @@ public class NetworkInstance
         nioChannelFactory.releaseExternalResources();
         clientBootstrap.releaseExternalResources();
 
-        receiveExecutor.shutdownNow();
+        receiveExecutor.shutdown();
         if ( !receiveExecutor.awaitTermination( 10, TimeUnit.SECONDS ) )
         {
             msgLog.warn( "Could not shut down receive executor" );
