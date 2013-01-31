@@ -19,13 +19,13 @@
  */
 package org.neo4j.shell;
 
-import static java.lang.Runtime.getRuntime;
-import static java.lang.System.getProperty;
-import static org.junit.Assert.assertEquals;
-import static org.neo4j.test.TargetDirectory.forTest;
-
 import org.junit.Test;
 import org.neo4j.test.ProcessStreamHandler;
+
+import static java.lang.Runtime.*;
+import static java.lang.System.*;
+import static org.junit.Assert.*;
+import static org.neo4j.test.TargetDirectory.*;
 
 public class TestRmiPublication
 {
@@ -43,7 +43,7 @@ public class TestRmiPublication
 
     private int spawnJvm( Class<?> mainClass, String name ) throws Exception
     {
-        String dir = forTest( getClass() ).directory( name, true ).getAbsolutePath();
+        String dir = forTest( getClass() ).directory( "client", true ).getAbsolutePath();
         return waitForExit( getRuntime().exec( new String[] { "java", "-cp", getProperty( "java.class.path" ),
                 mainClass.getName(), dir } ), 20 );
     }
@@ -71,7 +71,6 @@ public class TestRmiPublication
         finally
         {
             streamHandler.cancel();
-            streamHandler.done();
         }
     }
 }
