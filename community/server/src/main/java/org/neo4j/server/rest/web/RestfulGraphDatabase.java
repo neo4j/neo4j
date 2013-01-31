@@ -23,6 +23,7 @@ import static java.lang.String.format;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Map;
@@ -428,6 +429,39 @@ public class RestfulGraphDatabase
         }
         return nothing();
     }
+
+    @PUT
+    @Path( PATH_NODE_LABELS )
+    public Response setNodeLabels( @HeaderParam( HEADER_TRANSACTION ) ForceMode force,
+                                  @PathParam( "nodeId" ) long nodeId,
+                                  String body )
+    {
+        try
+        {
+            Object rawInput = input.readValue( body );
+            if ( !(rawInput instanceof Collection) )
+            {
+                throw new BadInputException( format( "Input must be an array of Strings. Got: '%s'", rawInput ) );
+            }
+            else
+            {
+                actions( force ).setLabelsOnNode( nodeId, (Collection<String>) rawInput );
+            }
+        }
+        catch ( BadInputException e )
+        {
+            return output.badRequest( e );
+        }
+        catch ( ArrayStoreException ase )
+        {
+            return generateBadRequestDueToMangledJsonResponse( body );
+        }
+        catch ( NodeNotFoundException e )
+        {
+            return output.notFound( e );
+        }
+        return nothing();
+    }
     
     @DELETE
     @Path( PATH_NODE_LABEL )
@@ -457,6 +491,22 @@ public class RestfulGraphDatabase
         catch ( NodeNotFoundException e )
         {
             return output.notFound( e );
+        }
+    }
+
+    @GET
+    @Path( PATH_ALL_NODES_LABELED )
+    public Response allNodesWithLabel( @PathParam( "label" ) String labelName )
+    {
+        try
+        {
+            if ( labelName.isEmpty() )
+                throw new BadInputException( "Empty label name" );
+            return output.ok( actions.getNodesWithLabel( labelName ) );
+        }
+        catch ( BadInputException e )
+        {
+            return output.badRequest( e );
         }
     }
 
@@ -1499,22 +1549,6 @@ public class RestfulGraphDatabase
             return output.badRequest( e );
         }
         catch ( ClassCastException e )
-        {
-            return output.badRequest( e );
-        }
-    }
-    
-    @GET
-    @Path( PATH_ALL_NODES_LABELED )
-    public Response allNodesWithLabel( @PathParam( "label" ) String labelName )
-    {
-        try
-        {
-            if ( labelName.isEmpty() )
-                throw new BadInputException( "Empty label name" );
-            return output.ok( actions.getNodesWithLabel( labelName ) );
-        }
-        catch ( BadInputException e )
         {
             return output.badRequest( e );
         }
