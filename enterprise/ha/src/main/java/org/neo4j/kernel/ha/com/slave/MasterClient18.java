@@ -70,7 +70,6 @@ public class MasterClient18 extends Client<Master> implements MasterClient
     public static final byte PROTOCOL_VERSION = 4;
 
     private final long lockReadTimeout;
-    private Config config;
 
     public MasterClient18( String hostNameOrIp, int port, Logging logging, StoreId storeId,
                            long readTimeoutSeconds, long lockReadTimeout, int maxConcurrentChannels, int chunkSize )
@@ -88,7 +87,8 @@ public class MasterClient18 extends Client<Master> implements MasterClient
                 config.get( HaSettings.lock_read_timeout ),
                 config.get( HaSettings.max_concurrent_channels_per_slave ),
                 config.get( HaSettings.com_chunk_size ).intValue() );
-        this.config = config;
+        
+        new Exception().printStackTrace();
     }
 
     @Override
@@ -151,6 +151,12 @@ public class MasterClient18 extends Client<Master> implements MasterClient
         );
     }
 
+    @Override
+    public Response<Integer> createPropertyKey( RequestContext context, String name )
+    {
+        throw new UnsupportedOperationException( "Should never be called from the client side" );
+    }
+    
     @Override
     public Response<Void> initializeTx( RequestContext context )
     {

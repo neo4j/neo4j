@@ -68,7 +68,15 @@ build neo4j (this requires asciidoc toolchain and, currently, python with jpype 
 
 install the ASCIIDOC toolchain
 
-    brew install docbook asciidoc w3m fop graphviz && sudo docbook-register
+    brew install docbook asciidoc w3m fop graphviz
+
+register docbook dtd
+
+    sudo src/build/osx-register-docbook
+
+on os x, in the manual toplevel directory, please do
+
+   sudo src/build/osx-register-docbook
 
 
 Working with the source code in Eclipse IDE

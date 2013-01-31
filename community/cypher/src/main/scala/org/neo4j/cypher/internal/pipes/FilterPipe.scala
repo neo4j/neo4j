@@ -28,7 +28,7 @@ class FilterPipe(source: Pipe, predicate: Predicate) extends PipeWithSource(sour
 
   def createResults(state: QueryState) = source.createResults(state).filter(ctx => predicate.isMatch(ctx))
 
-  override def executionPlan(): String = source.executionPlan() + "\r\n" + "Filter(" + predicate.toString + ")"
+  override def executionPlanDescription(): String = source.executionPlanDescription() + "\r\n" + "Filter(" + predicate.toString + ")"
 
   def throwIfSymbolsMissing(symbols: SymbolTable) {
     predicate.throwIfSymbolsMissing(symbols)

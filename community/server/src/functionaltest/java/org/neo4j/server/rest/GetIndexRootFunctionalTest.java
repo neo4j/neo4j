@@ -49,7 +49,7 @@ public class GetIndexRootFunctionalTest extends AbstractRestFunctionalTestBase
 
     /**
      * /db/data/index is not itself a resource
-     * 
+     *
      */
     @Test
     public void shouldRespondWith404ForNonResourceIndexPath() throws Exception
@@ -61,7 +61,7 @@ public class GetIndexRootFunctionalTest extends AbstractRestFunctionalTestBase
 
     /**
      * /db/data/index/node should be a resource with no content
-     * 
+     *
      * @throws Exception
      */
     @Test
@@ -83,7 +83,7 @@ public class GetIndexRootFunctionalTest extends AbstractRestFunctionalTestBase
 
     /**
      * /db/data/index/relationship should be a resource with no content
-     * 
+     *
      * @throws Exception
      */
     @Test

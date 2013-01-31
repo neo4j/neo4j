@@ -1,0 +1,20 @@
+[[query-add-label]]
+Adding and removing labels
+==========================
+
+Adding labels to nodes is done with the +ADD+ +LABEL+ clause. To remove them, use the +REMOVE+ +LABEL+.
+
+When using only literal labels, you can omit the +LABEL+ part. Adding and removing labels are idempotent
+operations - if you try to add a label to a node that already has that label on it, nothing happens. The
+query statistics will tell you if something needed to be done or not. The same thing goes for removing
+labels - removing a label that's not set on a node is a no-op.
+
+:leveloffset: 2
+
+include::create-a-node-and-label-it.asciidoc[]
+include::add-a-label-to-a-node.asciidoc[]
+include::add-multiple-labels-to-a-node.asciidoc[]
+include::add-multiple-labels-to-a-node-using-the-short-form.asciidoc[]
+include::adding-labels-using-an-expression.asciidoc[]
+include::remove-a-label-from-a-node.asciidoc[]
+include::removing-multiple-labels.asciidoc[]

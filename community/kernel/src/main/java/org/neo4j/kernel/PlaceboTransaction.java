@@ -22,7 +22,6 @@ package org.neo4j.kernel;
 import org.neo4j.graphdb.Lock;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
-import org.neo4j.kernel.impl.transaction.LockManager;
 
 public class PlaceboTransaction extends TopLevelTransaction
 {
@@ -34,10 +33,10 @@ public class PlaceboTransaction extends TopLevelTransaction
         }
     };
     
-    public PlaceboTransaction( AbstractTransactionManager transactionManager, LockManager lockManager,
+    public PlaceboTransaction( AbstractTransactionManager transactionManager,
             TransactionState state )
     {
-        super( transactionManager, lockManager, state );
+        super( transactionManager, state );
     }
 
     @Override

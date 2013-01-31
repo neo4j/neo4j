@@ -19,27 +19,17 @@
  */
 package org.neo4j.test;
 
-import static org.neo4j.test.GraphDescription.PropType.STRING;
-
-import java.lang.annotation.Annotation;
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Inherited;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import org.neo4j.graphdb.DynamicRelationshipType;
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.PropertyContainer;
-import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.*;
 import org.neo4j.graphdb.index.AutoIndexer;
 import org.neo4j.tooling.GlobalGraphOperations;
+
+import java.lang.annotation.*;
+import java.util.*;
+
+import static java.util.Arrays.asList;
+import static java.util.Arrays.copyOfRange;
+import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.test.GraphDescription.PropType.STRING;
 
 public class GraphDescription implements GraphDefinition
 {
@@ -65,6 +55,8 @@ public class GraphDescription implements GraphDefinition
         String name();
 
         PROP[] properties() default {};
+        
+        LABEL[] labels() default {};
 
         boolean setNameProperty() default false;
     }
@@ -93,6 +85,12 @@ public class GraphDescription implements GraphDefinition
         String value();
 
         PropType type() default STRING;
+    }
+    
+    @Target( {} )
+    public @interface LABEL
+    {
+        String value();
     }
 
     @SuppressWarnings( "boxing" )
@@ -164,8 +162,12 @@ public class GraphDescription implements GraphDefinition
             graphdb.index().getRelationshipAutoIndexer().setEnabled( autoIndexRelationships );
             for ( NODE def : nodes )
             {
-                result.put( def.name(),
-                        init( graphdb.createNode(), def.setNameProperty() ? def.name() : null, def.properties(), graphdb.index().getNodeAutoIndexer(), autoIndexNodes ));
+                Node node = init( graphdb.createNode(), def.setNameProperty() ? def.name() : null, def.properties(), graphdb.index().getNodeAutoIndexer(), autoIndexNodes );
+                for ( LABEL label : def.labels() )
+                {
+                    node.addLabel( label( label.value() ) );
+                }
+                result.put( def.name(), node );
             }
             for ( REL def : rels )
             {
@@ -285,9 +287,38 @@ public class GraphDescription implements GraphDefinition
         return new GraphDescription( nodes.values().toArray( NO_NODES ), relationships.toArray( NO_RELS ), graph.autoIndexNodes(), graph.autoIndexRelationships() );
     }
 
-    private static void createIfAbsent( Map<String, NODE> nodes, String name )
+    private static void createIfAbsent( Map<String, NODE> nodes, String name, String ... labels )
     {
-        if ( !nodes.containsKey( name ) ) nodes.put( name, new DefaultNode( name ) );
+        if ( !nodes.containsKey( name ) )
+        {
+            nodes.put( name, new DefaultNode( name, labels ) );
+        }
+        else
+        {
+            NODE preexistingNode = nodes.get( name );
+            // Join with any new labels
+            HashSet<String> joinedLabels = new HashSet<String>( asList( labels ));
+            for ( LABEL label : preexistingNode.labels() )
+            {
+                joinedLabels.add( label.value() );
+            }
+
+            String[] labelNameArray = joinedLabels.toArray(new String[joinedLabels.size()]);
+            nodes.put( name, new NodeWithAddedLabels(preexistingNode, labelNameArray));
+        }
+    }
+
+    private static String parseAndCreateNodeIfAbsent( Map<String, NODE> nodes, String descriptionToParse )
+    {
+        String[] parts = descriptionToParse.split( ":" );
+        if ( parts.length == 0 )
+        {
+            throw new IllegalArgumentException( "Empty node names are not allowed." );
+        }
+
+        createIfAbsent( nodes, parts[0], copyOfRange( parts, 1, parts.length ) );
+        return parts[0];
+
     }
 
     private static void parse( String[] description, Map<String, NODE> nodes, List<REL> relationships )
@@ -301,9 +332,10 @@ public class GraphDescription implements GraphDefinition
                 {
                     throw new IllegalArgumentException( "syntax error: \"" + line + "\"" );
                 }
-                createIfAbsent( nodes, defined( components[0] ) );
-                createIfAbsent( nodes, defined( components[2] ) );
-                relationships.add( new DefaultRel( components[0], components[1], components[2] ) );
+
+                String startName = parseAndCreateNodeIfAbsent( nodes, defined( components[0] ) );
+                String endName = parseAndCreateNodeIfAbsent( nodes, defined( components[2] ) );
+                relationships.add( new DefaultRel( startName, components[1], endName ) );
             }
         }
     }
@@ -357,9 +389,72 @@ public class GraphDescription implements GraphDefinition
 
     private static class DefaultNode extends Default implements NODE
     {
-        DefaultNode( String name )
+        private final LABEL[] labels;
+
+        DefaultNode( String name, String[] labelNames )
         {
             super( name );
+            labels = new LABEL[labelNames.length];
+            for(int i=0;i<labelNames.length;i++)
+            {
+                labels[i] = new DefaultLabel(labelNames[i]);
+            }
+        }
+
+        @Override
+        public LABEL[] labels()
+        {
+            return labels;
+        }
+    }
+
+    /*
+     * Used if the user has defined the same node twice, with different labels, this combines
+     * all labels the user has added.
+     */
+    private static class NodeWithAddedLabels implements NODE
+    {
+        private final LABEL[] labels;
+        private final NODE inner;
+
+        NodeWithAddedLabels( NODE inner, String[] labelNames )
+        {
+            this.inner = inner;
+            labels = new LABEL[labelNames.length];
+            for(int i=0;i<labelNames.length;i++)
+            {
+                labels[i] = new DefaultLabel(labelNames[i]);
+            }
+        }
+
+        @Override
+        public String name()
+        {
+            return inner.name();
+        }
+
+        @Override
+        public PROP[] properties()
+        {
+            return inner.properties();
+        }
+
+        @Override
+        public LABEL[] labels()
+        {
+            return labels;
+        }
+
+        @Override
+        public boolean setNameProperty()
+        {
+            return inner.setNameProperty();
+        }
+
+        @Override
+        public Class<? extends Annotation> annotationType()
+        {
+            return inner.annotationType();
         }
     }
 
@@ -393,4 +488,30 @@ public class GraphDescription implements GraphDefinition
             return type;
         }
     }
+
+    private static class DefaultLabel implements LABEL
+    {
+
+        private final String name;
+
+        public DefaultLabel( String name )
+        {
+
+            this.name = name;
+        }
+
+        @Override
+        public Class<? extends Annotation> annotationType()
+        {
+            throw new UnsupportedOperationException( "this is not a real annotation" );
+        }
+
+        @Override
+        public String value()
+        {
+            return name;
+        }
+    }
+
+
 }

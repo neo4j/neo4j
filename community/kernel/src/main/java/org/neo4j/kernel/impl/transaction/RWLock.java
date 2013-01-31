@@ -337,6 +337,7 @@ class RWLock implements Visitor<LineLogger>
         {
             tx = new PlaceboTransaction();
         }
+
         TxLockElement tle = txLockElementMap.get( tx );
         if ( tle == null )
         {

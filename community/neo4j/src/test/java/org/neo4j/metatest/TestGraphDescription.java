@@ -19,30 +19,24 @@
  */
 package org.neo4j.metatest;
 
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
-import org.neo4j.graphdb.Direction;
-import org.neo4j.graphdb.DynamicRelationshipType;
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Relationship;
-import org.neo4j.test.GraphDescription;
+import org.neo4j.graphdb.*;
+import org.neo4j.test.*;
 import org.neo4j.test.GraphDescription.Graph;
 import org.neo4j.test.GraphDescription.NODE;
 import org.neo4j.test.GraphDescription.PROP;
 import org.neo4j.test.GraphDescription.REL;
-import org.neo4j.test.GraphHolder;
-import org.neo4j.test.TargetDirectory;
-import org.neo4j.test.TestData;
-import org.neo4j.test.TestGraphDatabaseFactory;
+
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
 
 import static org.junit.Assert.*;
+import static org.neo4j.graphdb.DynamicLabel.label;
 
 public class TestGraphDescription implements GraphHolder
 {
@@ -81,7 +75,32 @@ public class TestGraphDescription implements GraphHolder
         }
         assertEquals( graph.size(), unique.size() );
     }
-    
+
+    @Test
+    @Graph( { "a:Person EATS b:Banana" } )
+    public void ensurePeopleCanEatBananas() throws Exception
+    {
+        Map<String, Node> graph = data.get();
+        Node a = graph.get( "a" );
+        Node b = graph.get( "b" );
+
+        assertTrue( a.hasLabel( label( "Person" ) ) );
+        assertTrue( b.hasLabel( label( "Banana" ) ) );
+    }
+
+    @Test
+    @Graph( { "a:Person EATS b:Banana", "a EATS b:Apple" } )
+    public void ensurePeopleCanEatBananasAndApples() throws Exception
+    {
+        Map<String, Node> graph = data.get();
+        Node a = graph.get( "a" );
+        Node b = graph.get( "b" );
+
+        assertTrue( "Person label missing", a.hasLabel( label( "Person" ) ) );
+        assertTrue( "Banana label missing", b.hasLabel( label( "Banana" ) ) );
+        assertTrue( "Apple label missing", b.hasLabel( label( "Apple" ) ) );
+    }
+
     @Test
     @Graph( value = { "I know you" }, autoIndexNodes=true )
     public void canAutoIndexNodes() throws Exception
@@ -116,7 +135,7 @@ public class TestGraphDescription implements GraphHolder
     public void canCreateMoreInvolvedGraphWithPropertiesAndAutoIndex()
             throws Exception
     {
-        System.out.println( data.get() );
+        data.get();
         verifyIknowYou( "knows", "me" );
         assertEquals( true, data.get().get( "I" ).getProperty( "bool" ) );
         assertFalse( "node autoindex enabled.",

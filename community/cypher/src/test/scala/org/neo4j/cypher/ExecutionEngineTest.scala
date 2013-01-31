@@ -21,16 +21,34 @@ package org.neo4j.cypher
 
 import internal.commands._
 import expressions._
+import expressions.CountStar
+import expressions.Literal
+import expressions.Nullable
+import expressions.ParameterExpression
+import expressions.Property
+import expressions.RelationshipTypeFunction
+import internal.commands.And
+import internal.commands.Equals
+import internal.commands.LessThan
+import internal.commands.NodeByIndex
+import internal.commands.NodeByIndexQuery
+import internal.commands.Or
+import internal.commands.RegularExpression
+import internal.commands.ReturnItem
+import internal.commands.ShortestPath
+import internal.commands.SortItem
+import internal.commands.True
 import org.junit.Assert._
 import java.lang.String
 import scala.collection.JavaConverters._
 import org.junit.matchers.JUnitMatchers._
-import org.neo4j.graphdb.{Path, Relationship, Direction, Node}
+import org.neo4j.graphdb._
 import org.junit.{Ignore, Test}
 import org.neo4j.index.lucene.ValueContext
 import org.neo4j.test.ImpermanentGraphDatabase
 import collection.mutable
 import util.Random
+import org.neo4j.kernel.TopLevelTransaction
 
 class ExecutionEngineTest extends ExecutionEngineHelper {
 
@@ -1406,7 +1424,7 @@ order by a.COL1
     relate(a, b)
     val result = parseAndExecute( """START n=node(1)
 MATCH n-->x0-[?]->x1
-WHERE has(x1.type) AND x1.type="http://dbpedia.org/ontology/Film" AND has(x1.label) AND x1.label="Reservoir Dogs"
+WHERE has(x1.type) AND x1.type="http://dbpedia.org/ontology/Film" AND has(x1.`label`) AND x1.`label`="Reservoir Dogs"
 RETURN x0.name?
                                   """)
     assert(List() === result.toList)
@@ -1631,10 +1649,10 @@ RETURN x0.name?
 
     val result = parseAndExecute("start a=node(1,2,3) return distinct a.color, count(*)").toList
     result.foreach(x => {
-      val c = x("a.color").asInstanceOf[Array[_]]
-      if (c.deep == Array("red").deep)
+      val c = x("a.color").asInstanceOf[Iterable[_]]
+      if (c.toList == List("red"))
         assertEquals(2L, x("count(*)"))
-      else if (c.deep == Array("blue").deep)
+      else if (c.toList == List("blue"))
         assertEquals(1L, x("count(*)"))
       else fail("wut?")
     })
@@ -2211,7 +2229,7 @@ RETURN x0.name?
     val result = parseAndExecute("START n=node(0) SET n.array = [1,2,3,4,5] RETURN tail(tail(n.array))").
       toList.
       head("tail(tail(n.array))").
-      asInstanceOf[mutable.WrappedArray[_]]
+      asInstanceOf[Iterable[_]]
 
     assert(result.toList === List(3,4,5))
   }
@@ -2356,4 +2374,101 @@ RETURN x0.name?
     assert(result.toList === List())
   }
 
+  @Test def syntax_errors_should_not_leave_dangling_transactions() {
+
+    val engine = new ExecutionEngine(graph)
+
+    try {
+      engine.execute("BABY START SMILING, YOU KNOW THE SUN IS SHINING.")
+    } catch {
+      case _ : Throwable => // We mean it
+    }
+
+    // Until we have a clean cut way where statement context is injected into cypher,
+    // I don't know a non-hairy way to tell if this was done correctly, so here goes:
+    val tx  = graph.beginTx()
+    val isTopLevelTx = tx.getClass === classOf[TopLevelTransaction]
+    tx.finish()
+
+    assert(isTopLevelTx)
+  }
+
+  @Test def should_return_literal_label_as_string() {
+    val result = parseAndExecute("""START a=node(0) return :foo""")
+
+    assert(result.toList === List(Map((":foo" -> "foo"))))
+  }
+
+  @Test def should_return_label_collection_as_string_collection() {
+    val result = parseAndExecute("""START a=node(0) return [:foo, :bar] as r""")
+
+    assert(result.toList === List(Map(("r" -> List("foo", "bar")))))
+  }
+
+  @Test def should_add_label_to_node() {
+    val a = createNode()
+    val result = parseAndExecute("""START a=node(1) ADD a LABEL :foo RETURN a""")
+
+    assert(result.toList === List(Map("a" -> a)))
+  }
+
+  @Test def should_add_multiple_labels_to_node() {
+    val a = createNode()
+    val result = parseAndExecute("""START a=node(1) ADD a LABEL :foo:bar RETURN a""")
+
+    assert(result.toList === List(Map("a" -> a)))
+  }
+
+  @Test def should_set_label_on_node() {
+    val a = createNode()
+    val result = parseAndExecute("""START a=node(1) ADD a LABEL :foo RETURN a""")
+
+    assert(result.toList === List(Map("a" -> a)))
+  }
+
+  @Test def should_set_multiple_labels_on_node() {
+    val a = createNode()
+    val result = parseAndExecute("""START a=node(1) ADD a LABEL :foo:bar RETURN a""")
+
+    assert(result.toList === List(Map("a" -> a)))
+  }
+
+  @Test def should_filter_nodes_by_single_label() {
+    // GIVEN
+    val a = createLabeledNode("foo")
+    val b = createLabeledNode("foo", "bar")
+    val c = createNode()
+
+    // WHEN
+    val result = parseAndExecute("""START n=node(1, 2, 3) WHERE n:foo RETURN n""")
+
+    // THEN
+    assert(result.toList === List(Map("n" -> a), Map("n" -> b)))
+  }
+
+  @Test def should_filter_nodes_by_single_negated_label() {
+    // GIVEN
+    val a = createLabeledNode("foo")
+    val b = createLabeledNode("foo", "bar")
+    val c = createNode()
+
+    // WHEN
+    val result = parseAndExecute("""START n=node(1, 2, 3) WHERE not(n:foo) RETURN n""")
+
+    // THEN
+    assert(result.toList === List(Map("n" -> c)))
+  }
+
+  @Test def should_filter_nodes_by_multiple_labels() {
+    // GIVEN
+    val a = createLabeledNode("foo")
+    val b = createLabeledNode("foo", "bar")
+    val c = createNode()
+
+    // WHEN
+    val result = parseAndExecute("""START n=node(1, 2, 3) WHERE n:foo:bar RETURN n""")
+
+    // THEN
+    assert(result.toList === List(Map("n" -> b)))
+  }
 }

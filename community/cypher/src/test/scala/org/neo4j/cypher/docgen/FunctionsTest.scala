@@ -23,10 +23,14 @@ import org.junit.Test
 import org.junit.Assert._
 import org.neo4j.graphdb.Node
 import org.neo4j.cypher.ExecutionResult
-import collection.mutable.WrappedArray
 
 class FunctionsTest extends DocumentingTestBase {
-  def graphDescription = List("A KNOWS B", "A KNOWS C", "B KNOWS D", "C KNOWS D", "B MARRIED E")
+  def graphDescription = List(
+    "A:foo:bar KNOWS B",
+    "A KNOWS C",
+    "B KNOWS D",
+    "C KNOWS D",
+    "B MARRIED E:Spouse")
 
   override val properties = Map(
     "A" -> Map("age" -> 38, "eyes" -> "brown"),
@@ -110,6 +114,22 @@ class FunctionsTest extends DocumentingTestBase {
       assertions = (p) => assertEquals(2, p.columnAs[Int]("length(p)").toList.head))
   }
 
+  @Test def labels() {
+    testThis(
+      title = "LABELS",
+      syntax = "LABELS( node )",
+      arguments = List("node" -> "Any expression that returns a single node"),
+      text = """Returns a collection of string representations for the labels attached to a node.""",
+      queryText = """start a=node(%A%) return labels(a)""",
+      returns = """The labels of `n` is returned by the query.""",
+      assertions = {
+        (p) =>
+          val iter: Iterable[String] = p.columnAs[Iterable[String]]("labels(a)").next()
+          assert(iter.toList === List("foo", "bar"))
+      }
+    )
+  }
+
   @Test def extract() {
     testThis(
       title = "EXTRACT",
@@ -183,7 +203,7 @@ class FunctionsTest extends DocumentingTestBase {
       queryText = """start a=node(%E%) return a.array, tail(a.array)""",
       returns = "This returns the property named `array` and all elements of that property except the first one.",
       assertions = (p) => {
-        val toList = p.columnAs[WrappedArray[_]]("tail(a.array)").toList.head.toList
+        val toList = p.columnAs[Iterable[_]]("tail(a.array)").toList.head.toList
         assert(toList === List("two","three"))
       })
   }
@@ -197,7 +217,7 @@ class FunctionsTest extends DocumentingTestBase {
       queryText = """start a=node(%E%) return a.array, filter(x in a.array : length(x) = 3)""",
       returns = "This returns the property named `array` and a list of values in it, which have the length `3`.",
       assertions = (p) => {
-        val array = p.columnAs[WrappedArray[_]]("filter(x in a.array : length(x) = 3)").toList.head
+        val array = p.columnAs[Iterable[_]]("filter(x in a.array : length(x) = 3)").toList.head
         assert(List("one","two") === array.toList)
       })
   }

@@ -67,11 +67,13 @@ public class TestStandaloneLogExtractor
             assertEquals( expectedTxId++, txId );
 
             /* first tx=2
-             * 1 tx for relationship type + 1 for the first tx
-             * 5 additional tx
-             * ==> 9
+             * 1 tx for relationship type
+             * 1 tx for property index
+             * 1 for the first tx
+             * 5 additional tx + 1 tx for the other property index
+             * ==> 11
              */
-            if ( expectedTxId == 9 ) expectedTxId = -1;
+            if ( expectedTxId == 11 ) expectedTxId = -1;
             if ( txId == -1 ) break;
             ds.applyCommittedTransaction( txId, buffer );
         }

@@ -28,5 +28,5 @@ class ParameterPipe() extends Pipe {
 
   val symbols = new SymbolTable()
 
-  override def executionPlan(): String = "Parameters()"
+  override def executionPlanDescription(): String = "Parameters()"
 }

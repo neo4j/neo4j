@@ -25,9 +25,9 @@ import org.neo4j.test.ImpermanentGraphDatabase
 import java.lang.Iterable
 import org.neo4j.graphdb.Traverser.Order
 import org.neo4j.graphdb._
-import org.neo4j.cypher.internal.pipes.{QueryState}
+import org.neo4j.cypher.internal.pipes.QueryState
 import collection.JavaConverters._
-import org.neo4j.cypher.internal.spi.gdsimpl.GDSBackedQueryContext
+import org.neo4j.cypher.internal.spi.gdsimpl.TransactionBoundQueryContext
 import org.neo4j.cypher.internal.ExecutionContext
 
 /*
@@ -43,43 +43,45 @@ class DoubleCheckCreateUniqueTest extends Assertions {
   val db = new ImpermanentGraphDatabase() with TripIt
 
   @Test def double_check_unique() {
-
+    //GIVEN
     db.afterGetRelationship = createRel
+    val a = createNode()
+    val state = createQueryState()
 
-    val tx = db.beginTx
+    //WHEN we create a relationship just after seeing an empty iterable
+    relateAction.exec(createExecutionContext(state, a), state)
 
-    val a = try {
-      val a = db.createNode()
-
-      relateAction.exec(createExecutionContext(a, tx), createQueryState(tx))
-
-      tx.success()
-      a
-    } finally {
-      tx.finish()
-    }
-
+    //THEN we double-check, and don't create a second rel
     assert(a.getRelationships.asScala.size === 1)
   }
 
   val relateAction = CreateUniqueAction(UniqueLink("a", "b", "r", "X", Direction.OUTGOING))
 
 
-  private def createExecutionContext(a: Node, tx: Transaction): ExecutionContext = {
-    ExecutionContext(state = createQueryState(tx)).newWith(Map("a" -> a))
+  private def createExecutionContext(state:QueryState, a: Node): ExecutionContext = {
+    ExecutionContext(state = state).newWith(Map("a" -> a))
   }
 
-  private def createQueryState(tx: Transaction): QueryState = {
-    new QueryState(db, new GDSBackedQueryContext(db), Map.empty, Some(tx))
+  private def createQueryState(): QueryState = {
+    new QueryState(db, new TransactionBoundQueryContext(db), Map.empty)
+  }
+  private def createNode(): Node = {
+    val tx = db.beginTx()
+    try {
+      val n = db.createNode()
+      tx.success()
+      return n
+    } finally {
+      tx.finish()
+    }
   }
 
-  private def createRel(node:Node) {
+  private def createRel(node: Node) {
     if (!done) {
       done = true
       val x = db.createNode()
       node.createRelationshipTo(x, DynamicRelationshipType.withName("X"))
     }
-
   }
 }
 
@@ -96,7 +98,7 @@ class PausingNode(n: Node, afterGetRelationship: Node => Unit) extends Node {
   def getId: Long = n.getId
 
   def delete() {
-    throw new RuntimeException
+    ???
   }
 
   def getRelationships: Iterable[Relationship] = {
@@ -105,56 +107,68 @@ class PausingNode(n: Node, afterGetRelationship: Node => Unit) extends Node {
     rels.toIterable.asJava
   }
 
-  def hasRelationship: Boolean = throw new RuntimeException
+  def hasRelationship: Boolean = ???
 
-  def getRelationships(types: RelationshipType*): Iterable[Relationship] = throw new RuntimeException
+  def getRelationships(types: RelationshipType*): Iterable[Relationship] = ???
 
   def getRelationships(direction: Direction, types: RelationshipType*): Iterable[Relationship] = getRelationships
 
-  def hasRelationship(types: RelationshipType*): Boolean = throw new RuntimeException
+  def hasRelationship(types: RelationshipType*): Boolean = ???
 
-  def hasRelationship(direction: Direction, types: RelationshipType*): Boolean = throw new RuntimeException
+  def hasRelationship(direction: Direction, types: RelationshipType*): Boolean = ???
 
-  def getRelationships(dir: Direction): Iterable[Relationship] = throw new RuntimeException
+  def getRelationships(dir: Direction): Iterable[Relationship] = ???
 
-  def hasRelationship(dir: Direction): Boolean = throw new RuntimeException
+  def hasRelationship(dir: Direction): Boolean = ???
 
   def getRelationships(`type`: RelationshipType, dir: Direction): Iterable[Relationship] = {
-    val rels =  n.getRelationships(`type`, dir).asScala.toList
+    val rels = n.getRelationships(`type`, dir).asScala.toList
     afterGetRelationship(n)
     rels.toIterable.asJava
   }
 
 
-  def hasRelationship(`type`: RelationshipType, dir: Direction): Boolean = throw new RuntimeException
+  def hasRelationship(`type`: RelationshipType, dir: Direction): Boolean = ???
 
-  def getSingleRelationship(`type`: RelationshipType, dir: Direction): Relationship = throw new RuntimeException
+  def getSingleRelationship(`type`: RelationshipType, dir: Direction): Relationship = ???
 
   def createRelationshipTo(otherNode: Node, `type`: RelationshipType): Relationship = {
     n.createRelationshipTo(otherNode, `type`)
   }
 
-  def traverse(traversalOrder: Order, stopEvaluator: StopEvaluator, returnableEvaluator: ReturnableEvaluator, relationshipType: RelationshipType, direction: Direction): Traverser = throw new RuntimeException
+  def traverse(traversalOrder: Order, stopEvaluator: StopEvaluator, returnableEvaluator: ReturnableEvaluator, relationshipType: RelationshipType, direction: Direction): Traverser = ???
 
-  def traverse(traversalOrder: Order, stopEvaluator: StopEvaluator, returnableEvaluator: ReturnableEvaluator, firstRelationshipType: RelationshipType, firstDirection: Direction, secondRelationshipType: RelationshipType, secondDirection: Direction): Traverser = throw new RuntimeException
+  def traverse(traversalOrder: Order, stopEvaluator: StopEvaluator, returnableEvaluator: ReturnableEvaluator, firstRelationshipType: RelationshipType, firstDirection: Direction, secondRelationshipType: RelationshipType, secondDirection: Direction): Traverser = ???
 
-  def traverse(traversalOrder: Order, stopEvaluator: StopEvaluator, returnableEvaluator: ReturnableEvaluator, relationshipTypesAndDirections: AnyRef*): Traverser = throw new RuntimeException
+  def traverse(traversalOrder: Order, stopEvaluator: StopEvaluator, returnableEvaluator: ReturnableEvaluator, relationshipTypesAndDirections: AnyRef*): Traverser = ???
 
-  def getGraphDatabase: GraphDatabaseService = throw new RuntimeException
+  def getGraphDatabase: GraphDatabaseService = ???
 
-  def hasProperty(key: String): Boolean = throw new RuntimeException
+  def hasProperty(key: String): Boolean = ???
 
-  def getProperty(key: String): AnyRef = throw new RuntimeException
+  def getProperty(key: String): AnyRef = ???
 
-  def getProperty(key: String, defaultValue: Any): AnyRef = throw new RuntimeException
+  def getProperty(key: String, defaultValue: Any): AnyRef = ???
 
   def setProperty(key: String, value: Any) {
-    throw new RuntimeException
+    ???
   }
 
-  def removeProperty(key: String): AnyRef = throw new RuntimeException
+  def removeProperty(key: String): AnyRef = ???
 
-  def getPropertyKeys: Iterable[String] = throw new RuntimeException
+  def getPropertyKeys: Iterable[String] = ???
 
-  def getPropertyValues: Iterable[AnyRef] = throw new RuntimeException
+  def getPropertyValues: Iterable[AnyRef] = ???
+
+  def addLabel(label: Label) {
+    ???
+  }
+
+  def removeLabel(label: Label) {
+    ???
+  }
+
+  def hasLabel(label: Label) = ???
+
+  def getLabels() = ???
 }

@@ -144,6 +144,12 @@ public class MasterClient153 extends Client<Master> implements Master, MasterCli
             }
         } );
     }
+    
+    @Override
+    public Response<Integer> createPropertyKey( RequestContext context, String name )
+    {
+        throw new UnsupportedOperationException( "Should never be called from the client side" );
+    }
 
     @Override
     public Response<Void> initializeTx( RequestContext context )

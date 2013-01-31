@@ -80,7 +80,6 @@ public abstract class AbstractWebadminTest extends SharedServerTestBase {
             try
             {
                 File screenshotFile = ((TakesScreenshot)webDriver).getScreenshotAs(FILE);
-                System.out.println(screenshotFile.getAbsolutePath());
                 File dir = new File("target/docs/webadmin/images");
                 dir.mkdirs();
                 String imageName = string+".png";

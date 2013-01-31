@@ -24,10 +24,9 @@ import org.junit.Test
 import org.junit.Assert._
 import org.hamcrest.CoreMatchers.instanceOf
 import org.hamcrest.CoreMatchers.not
-import org.neo4j.cypher.internal.pipes.{TransactionStartPipe, ExecuteUpdateCommandsPipe}
 import org.neo4j.cypher.internal.commands._
-import expressions.{HeadFunction, Identifier}
-import org.neo4j.cypher.internal.mutation.{CreateRelationship, CreateNode}
+import expressions.{Literal, HeadFunction, Identifier}
+import org.neo4j.cypher.internal.mutation.{RelationshipEndpoint, CreateRelationship, CreateNode}
 
 class CreateNodesAndRelationshipsBuilderTest extends BuilderTest {
 
@@ -44,7 +43,7 @@ class CreateNodesAndRelationshipsBuilderTest extends BuilderTest {
   @Test
   def does_offer_to_solve_queries_without_start_items() {
     val q = PartiallySolvedQuery().
-      copy(start = Seq(Unsolved(CreateNodeStartItem(CreateNode("r", Map())))))
+      copy(start = Seq(Unsolved(CreateNodeStartItem(CreateNode("r", Map(), Literal(Seq.empty))))))
 
     assertTrue("Should be able to build on this", builder.canWorkWith(plan(q)))
   }
@@ -52,8 +51,12 @@ class CreateNodesAndRelationshipsBuilderTest extends BuilderTest {
   @Test
   def full_path() {
     val q = PartiallySolvedQuery().copy(start = Seq(
-      Unsolved(CreateRelationshipStartItem(CreateRelationship("r1", (Identifier("a"), Map()), (Identifier("  UNNAMED1"), Map()), "KNOWS", Map()))),
-      Unsolved(CreateRelationshipStartItem(CreateRelationship("r2", (Identifier("b"), Map()), (Identifier("  UNNAMED1"), Map()), "LOVES", Map())))))
+      Unsolved(CreateRelationshipStartItem(CreateRelationship("r1",
+        RelationshipEndpoint(Identifier("a"), Map(), Literal(Seq.empty), true),
+        RelationshipEndpoint(Identifier("  UNNAMED1"), Map(), Literal(Seq.empty), true), "KNOWS", Map()))),
+      Unsolved(CreateRelationshipStartItem(CreateRelationship("r2",
+        RelationshipEndpoint(Identifier("b"), Map(), Literal(Seq.empty), true),
+        RelationshipEndpoint(Identifier("  UNNAMED1"), Map(), Literal(Seq.empty), true), "LOVES", Map())))))
 
 
     val startPipe = createPipe(Seq("a", "b"))
@@ -64,7 +67,9 @@ class CreateNodesAndRelationshipsBuilderTest extends BuilderTest {
   @Test
   def single_relationship_missing_nodes() {
     val q = PartiallySolvedQuery().copy(start = Seq(
-      Unsolved(CreateRelationshipStartItem(CreateRelationship("r", (Identifier("a"), Map()), (Identifier("b"), Map()), "LOVES", Map())))))
+      Unsolved(CreateRelationshipStartItem(CreateRelationship("r",
+        RelationshipEndpoint(Identifier("a"), Map(), Literal(Seq.empty), true),
+        RelationshipEndpoint(Identifier("b"), Map(), Literal(Seq.empty), true), "LOVES", Map())))))
 
     assertTrue("Should be able to build on this", builder.canWorkWith(plan(q)))
   }
@@ -72,38 +77,10 @@ class CreateNodesAndRelationshipsBuilderTest extends BuilderTest {
   @Test
   def single_relationship_missing_nodes_with_expression() {
     val q = PartiallySolvedQuery().copy(updates = Seq(
-      Unsolved(CreateRelationship("r", (HeadFunction(Identifier("p")), Map()), (Identifier("b"), Map()), "LOVES", Map()))))
+      Unsolved(CreateRelationship("r",
+        RelationshipEndpoint(HeadFunction(Identifier("p")), Map(), Literal(Seq.empty), true),
+        RelationshipEndpoint(Identifier("b"), Map(), Literal(Seq.empty), true), "LOVES", Map()))))
 
     assertFalse("Should not be able to build on this", builder.canWorkWith(plan(q)))
-  }
-
-  @Test
-  def inserts_tx_start_pipe() {
-    val q = PartiallySolvedQuery().
-      copy(start = Seq(Unsolved(CreateNodeStartItem(CreateNode("r", Map())))))
-
-    val resultPlan = builder(plan(q))
-
-    assertTrue("The execution plan should be markes as containing a transaction", resultPlan.containsTransaction)
-
-    val p = resultPlan.pipe.asInstanceOf[ExecuteUpdateCommandsPipe]
-
-    val inner = p.source
-    assertTrue("Expected a transaction pipe, got: " + inner.getClass(), inner.getClass() == classOf[TransactionStartPipe])
-  }
-
-  @Test
-  def does_not_start_transaction() {
-    val q = PartiallySolvedQuery().
-      copy(start = Seq(Unsolved(CreateNodeStartItem(CreateNode("r", Map())))))
-
-    val inputPlan = plan(q).copy(containsTransaction = true)
-    val resultPlan = builder(inputPlan)
-
-    assertTrue(resultPlan.containsTransaction)
-
-    val inner = resultPlan.pipe.asInstanceOf[ExecuteUpdateCommandsPipe].source
-
-    assertFalse("Expected not a transaction pipe, got: " + inner.getClass(), inner.getClass() == classOf[TransactionStartPipe])
   }
 }

@@ -33,21 +33,26 @@ trait ExecutionResult extends Iterator[Map[String, Any]] {
   def queryStatistics():QueryStatistics
 }
 
-
-object QueryStatistics {
-  def empty = new QueryStatistics(0,0,0,0,0)
-}
-
-case class QueryStatistics(nodesCreated: Int,
-                           relationshipsCreated: Int,
-                           propertiesSet: Int,
-                           deletedNodes: Int,
-                           deletedRelationships: Int) {
+// Whenever you add a field here, please update the following classes:
+//
+// org.neo4j.cypher.javacompat.QueryStatistics
+// org.neo4j.server.rest.repr.CypherResultRepresentation
+// org.neo4j.server.rest.CypherFunctionalTest
+//
+case class QueryStatistics(nodesCreated: Int = 0,
+                           relationshipsCreated: Int = 0,
+                           propertiesSet: Int = 0,
+                           deletedNodes: Int = 0,
+                           deletedRelationships: Int = 0,
+                           addedLabels: Int = 0,
+                           removedLabels: Int = 0) {
   def containsUpdates = nodesCreated > 0 ||
   relationshipsCreated > 0 ||
   propertiesSet > 0 ||
   deletedNodes > 0 ||
-  deletedRelationships > 0
+  deletedRelationships > 0 ||
+  addedLabels > 0 ||
+  removedLabels > 0
 
   override def toString = {
     val builder = new StringBuilder
@@ -57,6 +62,8 @@ case class QueryStatistics(nodesCreated: Int,
     includeIfNonZero(builder, "Properties set: ", propertiesSet)
     includeIfNonZero(builder, "Nodes deleted: ", deletedNodes)
     includeIfNonZero(builder, "Relationships deleted: ", deletedRelationships)
+    includeIfNonZero(builder, "Labels added: ", addedLabels)
+    includeIfNonZero(builder, "Labels removed: ", removedLabels)
 
     builder.toString()
   }

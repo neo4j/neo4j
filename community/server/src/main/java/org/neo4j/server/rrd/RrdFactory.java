@@ -40,6 +40,7 @@ import org.apache.commons.configuration.Configuration;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.logging.Logger;
 import org.neo4j.server.rrd.sampler.NodeIdsInUseSampleable;
@@ -67,10 +68,12 @@ public class RrdFactory
 
     public RrdDb createRrdDbAndSampler( final Database db, JobScheduler scheduler ) throws IOException
     {
+        NodeManager nodeManager = db.getGraph().getDependencyResolver().resolveDependency( NodeManager.class );
+
         Sampleable[] primitives = {
-                new NodeIdsInUseSampleable( db.getGraph() ),
-                new PropertyCountSampleable( db.getGraph() ),
-                new RelationshipCountSampleable( db.getGraph() )
+                new NodeIdsInUseSampleable( nodeManager ),
+                new PropertyCountSampleable( nodeManager ),
+                new RelationshipCountSampleable( nodeManager )
         };
 
         Sampleable[] usage = {};

@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.core;
 
 import static java.lang.System.arraycopy;
+import static org.neo4j.kernel.impl.api.LabelAsPropertyData.representsLabel;
 import static org.neo4j.kernel.impl.cache.SizeOfs.withArrayOverheadIncludingReferences;
 import static org.neo4j.kernel.impl.util.RelIdArray.empty;
 import static org.neo4j.kernel.impl.util.RelIdArray.wrap;
@@ -32,6 +33,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.PropertyContainer;
@@ -134,7 +136,32 @@ public class NodeImpl extends ArrayBasedPrimitive
     protected ArrayMap<Integer, PropertyData> loadProperties(
             NodeManager nodeManager, boolean light )
     {
-        return nodeManager.loadProperties( this, light );
+        return filterLabels( nodeManager.loadProperties( this, light ) );
+    }
+
+    /**
+     * At the moment labels are stored in the database as properties with special keys.
+     * That means that they will be loaded when loading properties from disk.
+     * They need to filtered out to not leak out as properties.
+     * 
+     * TODO please remove this filtering when the store solution changes for labels.
+     */
+    private ArrayMap<Integer, PropertyData> filterLabels( ArrayMap<Integer, PropertyData> properties )
+    {
+        if ( properties == null )
+        {
+            return properties;
+        }
+        
+        ArrayMap<Integer, PropertyData> result = new ArrayMap<Integer, PropertyData>();
+        for ( PropertyData data : properties.values() )
+        {
+            if ( !representsLabel( data ) )
+            {
+                result.put( data.getIndex(), data );
+            }
+        }
+        return result;
     }
 
     Iterable<Relationship> getAllRelationships( NodeManager nodeManager, DirectionWrapper direction )
@@ -226,10 +253,16 @@ public class NodeImpl extends ArrayBasedPrimitive
         int actualLength = 0;
         for ( int i = 0; i < types.length; i++ )
         {
-            Integer typeId = nodeManager.getRelationshipTypeIdFor( types[i] );
-            if ( typeId == null )
+            int typeId;
+            try
+            {
+                typeId = nodeManager.getRelationshipTypeIdFor( types[i] );
+            }
+            catch ( KeyNotFoundException e )
+            {
                 // This relationship type doesn't even exist in this database
                 continue;
+            }
             
             result[actualLength++] = getRelationshipsIterator( nodeManager, direction,
                     addMap != null ? addMap.get( typeId ) : null,
@@ -312,6 +345,11 @@ public class NodeImpl extends ArrayBasedPrimitive
         Direction dir )
     {
         return getAllRelationshipsOfType( nodeManager, wrap( dir ), new RelationshipType[] { type } );
+    }
+
+    public void addLabel( Label label )
+    {
+
     }
 
     public void delete( NodeManager nodeManager, Node proxy )
@@ -484,7 +522,7 @@ public class NodeImpl extends ArrayBasedPrimitive
     {
         return getRelChainPosition() != Record.NO_NEXT_RELATIONSHIP.intValue();
     }
-    
+
     static enum LoadStatus
     {
         NOTHING( false, false ),

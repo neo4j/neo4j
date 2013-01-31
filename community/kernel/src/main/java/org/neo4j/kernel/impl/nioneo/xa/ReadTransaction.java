@@ -278,21 +278,12 @@ class ReadTransaction implements NeoStoreTransaction
     }
 
     @Override
-    public NameData[] loadPropertyIndexes( int count )
+    public NameData[] loadPropertyIndexes()
     {
         PropertyIndexStore indexStore = getPropertyStore().getIndexStore();
-        return indexStore.getNames( count );
+        return indexStore.getNames( Integer.MAX_VALUE );
     }
 
-    /*
-        @Override
-        public int getKeyIdForProperty( long propertyId )
-        {
-            PropertyRecord propRecord =
-                getPropertyStore().getLightRecord( propertyId );
-            return propRecord.getKeyIndexId();
-        }
-    */
     @Override
     public void setXaConnection( XaConnection connection )
     {

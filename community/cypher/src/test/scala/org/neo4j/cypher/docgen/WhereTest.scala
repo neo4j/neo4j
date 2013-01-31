@@ -24,7 +24,9 @@ import org.junit.Assert._
 import org.neo4j.graphdb.{Relationship, Node}
 
 class WhereTest extends DocumentingTestBase {
-  def graphDescription = List("Andres KNOWS Tobias", "Andres KNOWS Peter")
+  def graphDescription = List(
+    "Andres KNOWS Tobias",
+    "Andres:Swedish KNOWS Peter")
 
   override val properties = Map(
     "Andres" -> Map("age" -> 36l, "belt" -> "white"),
@@ -33,6 +35,15 @@ class WhereTest extends DocumentingTestBase {
   )
 
   def section = "Where"
+
+  @Test def filter_on_node_label() {
+    testQuery(
+      title = "Filter on node label",
+      text = "To filter nodes by label, write a label predicate after the `WHERE` keyword using either the short `WHERE n:foo` or the long `WHERE n LABEL [:foo, :bar]` form",
+      queryText = """start n=node(%Andres%, %Peter%) where n:Swedish return n""",
+      returns = """The "+Andres+" node will be returned.""",
+      assertions = (p) => assertEquals(List(node("Andres")), p.columnAs[Node]("n").toList))
+  }
 
   @Test def filter_on_property() {
     testQuery(

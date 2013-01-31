@@ -26,34 +26,38 @@ import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberStateMachine;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.impl.core.DefaultRelationshipTypeCreator;
-import org.neo4j.kernel.impl.core.RelationshipTypeCreator;
+import org.neo4j.kernel.impl.core.KeyCreator;
+import org.neo4j.kernel.logging.Logging;
 
-public class RelationshipTypeCreatorModeSwitcher extends AbstractModeSwitcher<RelationshipTypeCreator>
+public class RelationshipTypeCreatorModeSwitcher extends AbstractModeSwitcher<KeyCreator>
 {
     private final HaXaDataSourceManager xaDsm;
     private final Master master;
     private final RequestContextFactory requestContextFactory;
+    private final Logging logging;
 
     public RelationshipTypeCreatorModeSwitcher( HighAvailabilityMemberStateMachine stateMachine,
-                                                DelegateInvocationHandler<RelationshipTypeCreator> delegate,
+                                                DelegateInvocationHandler<KeyCreator> delegate,
                                                 HaXaDataSourceManager xaDsm,
-                                                Master master, RequestContextFactory requestContextFactory
+                                                Master master, RequestContextFactory requestContextFactory,
+                                                Logging logging
     )
     {
         super( stateMachine, delegate );
         this.xaDsm = xaDsm;
         this.master = master;
         this.requestContextFactory = requestContextFactory;
+        this.logging = logging;
     }
 
     @Override
-    protected RelationshipTypeCreator getMasterImpl()
+    protected KeyCreator getMasterImpl()
     {
-        return new DefaultRelationshipTypeCreator();
+        return new DefaultRelationshipTypeCreator( logging );
     }
 
     @Override
-    protected RelationshipTypeCreator getSlaveImpl( URI serverHaUri )
+    protected KeyCreator getSlaveImpl( URI serverHaUri )
     {
         return new SlaveRelationshipTypeCreator( master, requestContextFactory, xaDsm );
     }

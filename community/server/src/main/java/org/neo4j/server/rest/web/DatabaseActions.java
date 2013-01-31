@@ -19,21 +19,24 @@
  */
 package org.neo4j.server.rest.web;
 
+import static org.neo4j.graphdb.DynamicLabel.label;
+
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import com.sun.jersey.api.core.HttpContext;
 import org.apache.lucene.search.Sort;
 import org.neo4j.graphalgo.CommonEvaluators;
 import org.neo4j.graphalgo.CostEvaluator;
 import org.neo4j.graphalgo.GraphAlgoFactory;
 import org.neo4j.graphalgo.PathFinder;
 import org.neo4j.graphalgo.WeightedPath;
+import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Expander;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Path;
@@ -89,6 +92,9 @@ import org.neo4j.server.rest.repr.ScoredNodeRepresentation;
 import org.neo4j.server.rest.repr.ScoredRelationshipRepresentation;
 import org.neo4j.server.rest.repr.ValueRepresentation;
 import org.neo4j.server.rest.repr.WeightedPathRepresentation;
+import org.neo4j.tooling.GlobalGraphOperations;
+
+import com.sun.jersey.api.core.HttpContext;
 
 public class DatabaseActions
 {
@@ -103,6 +109,7 @@ public class DatabaseActions
     private final TraversalDescriptionBuilder traversalDescriptionBuilder;
     private final boolean enableScriptSandboxing;
     private final PropertySettingStrategy propertySetter;
+
 
     public static class Provider extends InjectableProvider<DatabaseActions>
     {
@@ -178,7 +185,7 @@ public class DatabaseActions
 
     // Nodes
 
-    public NodeRepresentation createNode( Map<String, Object> properties )
+    public NodeRepresentation createNode( Map<String, Object> properties, Label... labels )
             throws PropertyValueException
     {
         final NodeRepresentation result;
@@ -187,6 +194,11 @@ public class DatabaseActions
         {
             Node node = graphDb.createNode();
             propertySetter.setProperties( node, properties );
+            if ( labels != null )
+            {
+                for ( Label label : labels )
+                    node.addLabel( label );
+            }
             result = new NodeRepresentation( node );
             tx.success();
         }
@@ -304,6 +316,87 @@ public class DatabaseActions
             throws NodeNotFoundException, PropertyValueException
     {
         propertySetter.setAllProperties( node( nodeId ), null );
+    }
+
+    // Labels
+
+    public void addLabelToNode( long nodeId, String labelName ) throws NodeNotFoundException, BadInputException
+    {
+        Node node = node( nodeId );
+        Transaction tx = beginTx();
+        try
+        {
+            node.addLabel( label( labelName ) );
+            tx.success();
+        }
+        catch( ConstraintViolationException e )
+        {
+            throw new BadInputException( "Unable to add label, see nested exception.", e );
+        }
+        finally
+        {
+            tx.finish();
+        }
+    }
+
+
+    public void setLabelsOnNode( long nodeId, Collection<String> labels ) throws NodeNotFoundException, BadInputException
+
+    {
+        Node node = node( nodeId );
+        Transaction tx = beginTx();
+        try
+        {
+            // Remove current labels
+            for ( Label label : node.getLabels() )
+            {
+                node.removeLabel( label );
+            }
+
+            // Add new labels
+            for ( String labelName : labels )
+            {
+                node.addLabel( label( labelName ) );
+            }
+
+            tx.success();
+        }
+        catch( ConstraintViolationException e )
+        {
+            throw new BadInputException( "Unable to add label, see nested exception.", e );
+        }
+        finally
+        {
+            tx.finish();
+        }
+    }
+    
+    public void removeLabelFromNode( long nodeId, String labelName ) throws NodeNotFoundException
+    {
+        Node node = node( nodeId );
+        Transaction tx = beginTx();
+        try
+        {
+            node.removeLabel( label( labelName ) );
+            tx.success();
+        }
+        finally
+        {
+            tx.finish();
+        }
+    }
+    
+    public ListRepresentation getNodeLabels( long nodeId ) throws NodeNotFoundException
+    {
+        Iterable<String> labels = new IterableWrapper<String, Label>( node( nodeId ).getLabels() )
+        {
+            @Override
+            protected String underlyingObjectToObject( Label object )
+            {
+                return object.name();
+            }
+        };
+        return ListRepresentation.string( labels );
     }
 
     public String[] getNodeIndexNames()
@@ -1473,9 +1566,25 @@ public class DatabaseActions
     
     private void assertIsLegalIndexName(String indexName)
     {
-        if(indexName == null || indexName.equals("")) 
+        if ( indexName == null || indexName.equals( "" ) )
         {
-            throw new IllegalArgumentException("Index name must not be empty.");
+            throw new IllegalArgumentException( "Index name must not be empty." );
         }
+    }
+
+    public ListRepresentation getNodesWithLabel( String labelName )
+    {
+        Iterable<Node> nodes = GlobalGraphOperations.at( graphDb ).getAllNodesWithLabel( label( labelName ) );
+        IterableWrapper<NodeRepresentation, Node> nodeRepresentations =
+                new IterableWrapper<NodeRepresentation, Node>( nodes )
+        {
+            @Override
+            protected NodeRepresentation underlyingObjectToObject( Node node )
+            {
+                return new NodeRepresentation( node );
+            }
+        };
+
+        return new ListRepresentation( RepresentationType.NODE, nodeRepresentations );
     }
 }

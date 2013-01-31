@@ -19,19 +19,17 @@
  */
 package org.neo4j.kernel.ha;
 
-import javax.transaction.TransactionManager;
-
 import org.neo4j.com.Response;
-import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
-import org.neo4j.kernel.impl.core.RelationshipTypeCreator;
-import org.neo4j.kernel.impl.core.RelationshipTypeHolder;
+import org.neo4j.kernel.ha.com.master.Master;
+import org.neo4j.kernel.impl.core.KeyCreator;
 import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
+import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 
-public class SlaveRelationshipTypeCreator implements RelationshipTypeCreator
+public class SlaveRelationshipTypeCreator implements KeyCreator
 {
-    private Master master;
+    private final Master master;
     private final RequestContextFactory requestContextFactory;
     private final HaXaDataSourceManager xaDsm;
 
@@ -44,8 +42,8 @@ public class SlaveRelationshipTypeCreator implements RelationshipTypeCreator
     }
 
     @Override
-    public int getOrCreate( TransactionManager txManager, EntityIdGenerator idGenerator,
-            PersistenceManager persistence, RelationshipTypeHolder relTypeHolder, String name )
+    public int getOrCreate( AbstractTransactionManager txManager, EntityIdGenerator idGenerator,
+            PersistenceManager persistence, String name )
     {
         Response<Integer> response = master.createRelationshipType( requestContextFactory.newRequestContext(), name );
         xaDsm.applyTransactions( response );

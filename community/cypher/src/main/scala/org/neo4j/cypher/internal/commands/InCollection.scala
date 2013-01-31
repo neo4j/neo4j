@@ -38,8 +38,6 @@ abstract class InCollection(collection: Expression, id: String, predicate: Predi
     seqMethod(seq)(item =>predicate.isMatch(m.newWith(id -> item)))
   }
 
-  def atoms: Seq[Predicate] = Seq(this)
-
   def name: String
 
   override def toString() = name + "(" + id + " in " + collection + " where " + predicate + ")"

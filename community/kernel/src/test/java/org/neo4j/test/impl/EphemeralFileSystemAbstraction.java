@@ -630,7 +630,27 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction, Li
                 // Use soft references to the buffers to allow the GC to reclaim
                 // unused buffers if memory gets scarce.
                 SoftReference<ByteBuffer> ref = new SoftReference<ByteBuffer>( buf );
-                ( sizeIndex < pool.length() ? pool.get( sizeIndex ) : growPool( sizeIndex ) ).add( ref );
+
+                // Get or create the queue of references to add this new buffer reference to
+                Queue<Reference<ByteBuffer>> references = null;
+                if(sizeIndex < pool.length())
+                {
+                    references = pool.get( sizeIndex );
+                    // Temp check to catch a flighty bug
+                    if(references == null)
+                    {
+                        throw new RuntimeException( "Expected a queue to put references in, got null." );
+                    }
+                } else {
+                    references = growPool( sizeIndex );
+                    // Temp check to catch a flighty bug
+                    if(references == null)
+                    {
+                        throw new RuntimeException( "Expected a queue to put references in, got null." );
+                    }
+                }
+
+                references.add( ref );
             }
             finally
             {

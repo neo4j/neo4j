@@ -21,8 +21,6 @@ package org.neo4j.kernel.impl.core;
 
 import java.util.Collection;
 
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.kernel.impl.core.WritableTransactionState.PrimitiveElement;
 import org.neo4j.kernel.impl.nioneo.store.NameData;
@@ -99,17 +97,9 @@ public interface TransactionState
 
     TransactionData getTransactionData();
     
-    void addPropertyIndex( PropertyIndex index );
-
-    PropertyIndex getPropertyIndex( String key );
-
-    PropertyIndex getPropertyIndex( int keyId );
+    boolean nodeIsDeleted( long nodeId );
     
-    boolean isDeleted( Node node );
-
-    boolean isDeleted( Relationship relationship );
-    
-    PropertyIndex[] getAddedPropertyIndexes();
+    boolean relationshipIsDeleted( long relationshpId );
     
     boolean hasChanges();
     

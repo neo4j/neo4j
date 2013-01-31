@@ -8,7 +8,6 @@
 #target/docs/neo4j-cypher-docs-jar/dev/index.txt:52:[[cypher-parameters]]
 #target/docs/neo4j-cypher-docs-jar/dev/index.txt:114:[[cypher-identifiers]]
 #target/docs/neo4j-cypher-docs-jar/dev/ql/cookbook/index.txt:1:[[cypher-cookbook]]
-#target/docs/neo4j-cypher-plugin-docs-jar/dev/plugins/cypher/index.txt:1:[[cypher-plugin]]
 
 if test -z "$1"
 then

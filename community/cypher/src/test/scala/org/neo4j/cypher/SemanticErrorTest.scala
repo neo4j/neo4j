@@ -50,7 +50,7 @@ class SemanticErrorTest extends ExecutionEngineHelper {
 
   @Test def cantUseLENGTHOnNodes() {
     expectedError("start n=node(0) return length(n)",
-      "Expected `n` to be a Collection but it was a Node")
+      "Expected `n` to be a Collection<Any> but it was a Node")
   }
 
   @Test def cantReUseRelationshipIdentifier() {
@@ -60,7 +60,7 @@ class SemanticErrorTest extends ExecutionEngineHelper {
 
   @Test def shouldKnowNotToCompareStringsAndNumbers() {
     expectedError("start a=node(0) where a.age =~ 13 return a",
-      "Literal expected to be of type String but it is of type Number")
+      "Literal(13) expected to be of type String but it is of type Number")
   }
 
   @Test def shouldComplainAboutUnknownIdentifier() {

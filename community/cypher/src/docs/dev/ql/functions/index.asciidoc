@@ -54,6 +54,8 @@ include::nodes.asciidoc[]
 
 include::relationships.asciidoc[]
 
+include::labels.asciidoc[]
+
 include::extract.asciidoc[]
 
 include::filter.asciidoc[]

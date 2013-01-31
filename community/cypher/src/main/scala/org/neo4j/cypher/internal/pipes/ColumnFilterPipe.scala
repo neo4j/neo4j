@@ -47,8 +47,8 @@ class ColumnFilterPipe(source: Pipe, val returnItems: Seq[ReturnItem])
     })
   }
 
-  override def executionPlan(): String =
-    "%s\r\nColumnFilter([%s] => [%s])".format(source.executionPlan(), source.symbols.keys, returnItemNames.mkString(","))
+  override def executionPlanDescription(): String =
+    "%s\r\nColumnFilter([%s] => [%s])".format(source.executionPlanDescription(), source.symbols.keys, returnItemNames.mkString(","))
 
   def dependencies = Seq()
 

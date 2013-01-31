@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.commands
 
 import expressions.{ReduceFunction, Identifier, LengthFunction, Add, Literal}
-import org.neo4j.cypher.internal.symbols.{SymbolTable, StringType, NumberType, AnyCollectionType}
+import org.neo4j.cypher.internal.symbols._
 import org.scalatest.Assertions
 import org.junit.Test
 import org.neo4j.cypher.internal.ExecutionContext
@@ -74,6 +74,6 @@ class ReduceTest extends Assertions {
     val reduce = ReduceFunction(collection, "n", expression, "acc", Literal(Seq(1,2)))
     val typ = reduce.calculateType(new SymbolTable())
 
-    assert(typ === AnyCollectionType())
+    assert(typ === new CollectionType(NumberType()))
   }
 }

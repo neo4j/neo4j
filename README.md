@@ -12,6 +12,8 @@ Using Neo4j
 
 Neo4j is available both as a standalone server, or an embedded component.  You can [download](http://neo4j.org/download/) or [try online](http://console.neo4j.org/).
 
+We also supply commercial licenses. Please contact [Neo Technology](sales@neotechnology.com) for more information.
+
 Extending Neo4j
 ---------------
 
@@ -37,5 +39,5 @@ To build everything, including running all tests, producing documentation and as
 The Python part of the build requires a working JPype installation.
 For how to make the documentation build go, see: [manual/](https://github.com/neo4j/neo4j/tree/master/manual)
 
+For further details on building, please consult community/README.md.
 
-We also supply commercial licenses. Please contact [Neo Technology](sales@neotechnology.com) for more information.

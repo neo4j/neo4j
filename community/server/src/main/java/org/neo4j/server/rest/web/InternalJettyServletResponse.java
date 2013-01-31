@@ -220,7 +220,7 @@ public class InternalJettyServletResponse extends Response
 
     public void setCharacterEncoding( String encoding )
     {
-        System.out.println("calling");
+
     }
 
     public void setContentLength( int len )

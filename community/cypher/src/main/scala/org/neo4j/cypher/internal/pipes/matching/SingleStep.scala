@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.pipes.matching
 
 import org.neo4j.graphdb.{Node, Relationship, Direction}
 import org.neo4j.cypher.internal.commands.{And, Predicate}
-import collection.JavaConverters._
 import org.neo4j.cypher.internal.ExecutionContext
 
 case class SingleStep(id: Int,
@@ -41,7 +40,7 @@ case class SingleStep(id: Int,
   }
 
   def expand(node: Node, parameters: ExecutionContext): (Iterable[Relationship], Option[ExpanderStep]) = {
-    val intermediate = parameters.state.query.getRelationshipsFor(node, direction, typ:_*).asScala
+    val intermediate = parameters.state.queryContext.getRelationshipsFor(node, direction, typ)
 
     val rels = new FilteringIterable(intermediate, node, And(relPredicate, nodePredicate), parameters)
     (rels, next)
