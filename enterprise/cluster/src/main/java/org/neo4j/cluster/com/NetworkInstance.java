@@ -493,7 +493,7 @@ public class NetworkInstance
         public void messageReceived( ChannelHandlerContext ctx, MessageEvent event ) throws Exception
         {
             final Message message = (Message) event.getMessage();
-//            msgLog.logMessage("Received:" + message, true);
+            msgLog.debug("Received:" + message);
 //            receive( message );
             receiveExecutor.submit( new Runnable()
             {

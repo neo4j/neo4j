@@ -216,7 +216,7 @@ public class AtomicBroadcastMap<K, V>
 
     private synchronized void checkUpToDate()
     {
-        int tries = 10;
+        int tries = 100;
         while ( lastCommand != null  && tries > 0)
         {
             try

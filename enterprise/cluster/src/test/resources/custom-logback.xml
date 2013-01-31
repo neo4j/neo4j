@@ -35,6 +35,7 @@
   <!--
     Debug network messages sent -->
     <logger name="org.neo4j.cluster.com" level="debug">
+      <appender-ref ref="CONSOLE"/>
     </logger>
 
 

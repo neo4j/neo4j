@@ -130,6 +130,7 @@ public enum AtomicBroadcastState
                     switch ( message.getMessageType() )
                     {
                         case broadcast:
+                        case failed:
                         {
                             URI coordinator = context.getCoordinator();
                             if ( coordinator != null )
