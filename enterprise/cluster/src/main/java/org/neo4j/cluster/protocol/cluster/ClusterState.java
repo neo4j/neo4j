@@ -83,7 +83,7 @@ public enum ClusterState
                             Object[] args = message.<Object[]>getPayload();
                             String name = ( String ) args[0];
                             URI[] clusterInstanceUris = ( URI[] ) args[1];
-                            context.joining( name, Iterables.iterable( clusterInstanceUris ) );
+                            context.joining( name, Iterables.<URI,URI>iterable( clusterInstanceUris ) );
 
                             for ( URI potentialClusterInstanceUri : clusterInstanceUris )
                             {
