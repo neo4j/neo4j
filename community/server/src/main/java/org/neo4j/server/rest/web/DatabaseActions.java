@@ -26,6 +26,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import com.sun.jersey.api.core.HttpContext;
 import org.apache.lucene.search.Sort;
 import org.neo4j.graphalgo.CommonEvaluators;
 import org.neo4j.graphalgo.CostEvaluator;
@@ -93,8 +94,6 @@ import org.neo4j.server.rest.repr.ScoredRelationshipRepresentation;
 import org.neo4j.server.rest.repr.ValueRepresentation;
 import org.neo4j.server.rest.repr.WeightedPathRepresentation;
 import org.neo4j.tooling.GlobalGraphOperations;
-
-import com.sun.jersey.api.core.HttpContext;
 
 public class DatabaseActions
 {
@@ -320,13 +319,16 @@ public class DatabaseActions
 
     // Labels
 
-    public void addLabelToNode( long nodeId, String labelName ) throws NodeNotFoundException, BadInputException
+    public void addLabelToNode( long nodeId, Collection<String> labelNames ) throws NodeNotFoundException, BadInputException
     {
         Node node = node( nodeId );
         Transaction tx = beginTx();
         try
         {
-            node.addLabel( label( labelName ) );
+            for ( String labelName : labelNames )
+            {
+                node.addLabel( label( labelName ) );
+            }
             tx.success();
         }
         catch( ConstraintViolationException e )

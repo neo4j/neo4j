@@ -1053,14 +1053,16 @@ public class DatabaseActionsTest
     {
         // GIVEN
         long node = actions.createNode( null ).getId();
+        Collection<String> labels = new ArrayList<String>();
+        String labelName = "Wonk";
+        labels.add( labelName );
 
         // WHEN
-        String labelName = "labello";
-        actions.addLabelToNode( node, labelName );
-        Iterable<String> labels = graphdbHelper.getNodeLabels( node );
+        actions.addLabelToNode( node, labels );
 
         // THEN
-        assertEquals( labelName, single( labels ) );
+        Iterable<String> result = graphdbHelper.getNodeLabels( node );
+        assertEquals( labelName, single( result ) );
     }
     
     @Test

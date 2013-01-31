@@ -64,6 +64,29 @@ public class LabelsFunctionalTest  extends AbstractRestFunctionalTestBase
     }
 
     /**
+     * Adding multiple labels to a node.
+     */
+    @Documented
+    @Test
+    @GraphDescription.Graph( nodes = { @NODE( name = "I", setNameProperty = true ) } )
+    public void adding_multiple_labels_to_a_node() throws PropertyValueException
+    {
+        Map<String,Node> nodes = data.get();
+        String nodeUri = getNodeUri( nodes.get( "I" ) );
+
+        gen.get()
+                .expectedStatus( 204 )
+                .payload( createJsonFrom( new String[]{"MyLabel", "MyOtherLabel"} ) )
+                .post( nodeUri + "/labels"  );
+
+        // Then
+        Collection<Label> actual = asCollection(nodes.get( "I" ).getLabels());
+        assertThat( actual.size(), is( 2 ) );
+        assertThat( "Labels should be correct", actual, containsInAnyOrder( label( "MyLabel" ),
+                label( "MyOtherLabel" ) ));
+    }
+
+    /**
      * Adding a label with an invalid name.
      *
      * Labels with empty names are not allowed, however, all other valid strings are accepted as label names.

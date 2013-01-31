@@ -23,6 +23,7 @@ import static java.lang.String.format;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashSet;
@@ -406,13 +407,19 @@ public class RestfulGraphDatabase
         try
         {
             Object rawInput = input.readValue( body );
-            if ( !(rawInput instanceof String) )
+            if ( rawInput instanceof String )
             {
-                throw new BadInputException( format( "Label name must be a string. Got: '%s'", rawInput ) );
+                ArrayList<String> s = new ArrayList<String>();
+                s.add((String) rawInput);
+                actions( force ).addLabelToNode( nodeId, s );
+            }
+            else if(rawInput instanceof Collection)
+            {
+                actions( force ).addLabelToNode( nodeId, (Collection<String>) rawInput );
             }
             else
             {
-                actions( force ).addLabelToNode( nodeId, (String) rawInput );
+                throw new BadInputException( format( "Label name must be a string. Got: '%s'", rawInput ) );
             }
         }
         catch ( BadInputException e )
