@@ -52,11 +52,6 @@
       </listitem>
       <listitem>
         <para>
-          <link linkend="tutorials-python-embedded">Using Neo4j embedded in Python applications</link>
-        </para>
-      </listitem>
-      <listitem>
-        <para>
           <link linkend="tutorials-rest">Remote Client Libraries</link>
         </para>
       </listitem>

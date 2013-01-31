@@ -41,7 +41,6 @@
         </property>
       </activation>
       <modules>
-        <module>python-embedded</module>
         <module>manual</module>
         <module>packaging</module>
         <module>packaging/installer-linux</module>
@@ -87,7 +86,6 @@
         </property>
       </activation>
       <modules>
-        <module>python-embedded</module>
         <module>manual</module>
       </modules>
       <properties>
