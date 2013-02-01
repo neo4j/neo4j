@@ -40,7 +40,7 @@ object PartiallySolvedQuery {
       start = q.start.map(Unsolved(_)),
       updates = q.updatedCommands.map(Unsolved(_)),
       patterns = patterns,
-      where = q.where.toSeq.flatMap(_.atoms.map(Unsolved(_))),
+      where = q.where.atoms.map(Unsolved(_)),
       aggregation = q.aggregation.toSeq.flatten.map(Unsolved(_)),
       sort = q.sort.map(Unsolved(_)),
       slice = q.slice.map(Unsolved(_)),

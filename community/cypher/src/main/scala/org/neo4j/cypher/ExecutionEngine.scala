@@ -65,8 +65,10 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
   def execute(query: String, params: JavaMap[String, Any]): ExecutionResult = execute(query, params.asScala.toMap)
 
   @throws(classOf[SyntaxException])
-  def prepare(query: String): ExecutionPlan =
-    executionPlanCache.getOrElseUpdate(query, planBuilder.build(parser.parse(query)))
+  def prepare(query: String): ExecutionPlan =  {
+    val parsedQuery = parser.parse(query)
+    executionPlanCache.getOrElseUpdate(query, planBuilder.build(parsedQuery))
+  }
 
   def isPrepared(query : String) : Boolean =
     executionPlanCache.containsKey(query)

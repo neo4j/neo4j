@@ -39,7 +39,7 @@ with ActualParser {
   def parse(text: String): AbstractQuery = {
     namer = new NodeNamer
     parseAll(query, text) match {
-      case Success(r, q) => ReattachAliasedExpressions(r.setQueryString(text))
+      case Success(r, q) => ReattachAliasedExpressions(r.setQueryText(text))
       case NoSuccess(message, input) => {
         if (message.startsWith("INNER"))
           throw new SyntaxException(message.substring(5), text, input.offset)
@@ -117,14 +117,14 @@ Thank you, the Neo4j Team.
   private def expandQuery(start: Seq[StartItem], namedPaths: Seq[NamedPath], updates: Seq[UpdateAction], body: Body): Query = body match {
     case b: BodyWith => {
       checkForAggregates(b.where)
-      Query(b.returns, start, updates, b.matching, b.where, b.aggregate, b.order, b.slice, b.namedPath ++ namedPaths, Some(expandQuery(b.start, b.startPaths, b.updates, b.next)))
+      Query(b.returns, start, updates, b.matching, b.where.getOrElse(True()), b.aggregate, b.order, b.slice, b.namedPath ++ namedPaths, Some(expandQuery(b.start, b.startPaths, b.updates, b.next)))
     }
     case b: BodyReturn => {
       checkForAggregates(b.where)
-      Query(b.returns, start, updates, b.matching, b.where, b.aggregate, b.order, b.slice, b.namedPath ++ namedPaths, None)
+      Query(b.returns, start, updates, b.matching, b.where.getOrElse(True()), b.aggregate, b.order, b.slice, b.namedPath ++ namedPaths, None)
     }
     case NoBody() => {
-      Query(Return(List()), start, updates, Seq(), None, None, Seq(), None, namedPaths, None)
+      Query(Return(List()), start, updates, Seq(), True(), None, Seq(), None, namedPaths, None)
     }
   }
 

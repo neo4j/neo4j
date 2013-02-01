@@ -28,12 +28,14 @@ import org.neo4j.cypher.internal.commands.ShortestPath
 import org.neo4j.cypher.internal.commands.True
 
 trait MatchClause extends Base with ParserPattern {
-  def matching: Parser[(Seq[Pattern], Seq[NamedPath])] = ignoreCase("match") ~> usePattern(matchTranslator) ^^ {
-    case matches =>
+  def matching: Parser[(Seq[Pattern], Seq[NamedPath], Predicate)] = ignoreCase("match") ~> usePattern(labelTranslator) ^^ {
+    case results: Seq[(Any, Predicate)] =>
+      val matches = results.map(_._1)
+      val predicates = results.map(_._2)
       val namedPaths = sift[NamedPath](matches)
       val patterns = sift[List[Pattern]](matches).flatten ++ sift[Pattern](matches) ++ namedPaths.flatMap(_.pathPattern)
 
-      (patterns.distinct, namedPaths)
+      (patterns.distinct, namedPaths, True().andWith(predicates:_*))
   }
 
   type TransformType = (ParsedEntity, ParsedEntity, Map[String, Expression], (String, String) => Pattern) => Maybe[Pattern]
@@ -64,19 +66,30 @@ trait MatchClause extends Base with ParserPattern {
 
   def matchTranslator(transform: TransformType, abstractPattern: AbstractPattern): Maybe[Any] =
     abstractPattern match {
-      case ParsedNamedPath(name, patterns) => parsedPath(name, patterns, transform)
+      case ParsedNamedPath(name, patterns) =>
+        parsedPath(name, patterns, transform)
 
       case ParsedRelation(name, props, left, right, relType, dir, optional, predicate) =>
-        transform(left, right, props, (l, r) => RelatedTo(left = l, right = r, relName = name, relTypes = relType, direction = dir, optional = optional, predicate = True()))
+        transform(left, right, props, (l, r) =>
+          RelatedTo(left = l, right = r, relName = name, relTypes = relType, direction = dir, optional = optional, predicate = predicate))
 
       case ParsedVarLengthRelation(name, props, left, right, relType, dir, optional, predicate, min, max, relIterator) =>
-        transform(left, right, props, (l, r) => VarLengthRelatedTo(pathName = name, start = l, end = r, minHops = min, maxHops = max, relTypes = relType, direction = dir, relIterator = relIterator, optional = optional, predicate = predicate))
+        transform(left, right, props, (l, r) =>
+          VarLengthRelatedTo(pathName = name, start = l, end = r, minHops = min, maxHops = max, relTypes = relType, direction = dir, relIterator = relIterator, optional = optional, predicate = predicate))
 
       case ParsedShortestPath(name, props, left, right, relType, dir, optional, predicate, max, single, relIterator) =>
-        transform(left, right, props, (l, r) => ShortestPath(pathName = name, start = l, end = r, relTypes = relType, dir = dir, maxDepth = max, optional = optional, single = single, relIterator = relIterator, predicate = predicate))
+        transform(left, right, props, (l, r) =>
+          ShortestPath(pathName = name, start = l, end = r, relTypes = relType, dir = dir, maxDepth = max, optional = optional, single = single, relIterator = relIterator, predicate = predicate))
 
       case x => No(Seq("failed to parse MATCH pattern"))
+  }
+
+  def labelTranslator(abstractPattern: AbstractPattern): Maybe[(Any, Predicate)] =
+    matchTranslator(abstractPattern).map { (pat: Any) =>
+      val predicates: Seq[HasLabel] = abstractPattern.parsedLabelPredicates
+      (pat,  True().andWith(predicates: _*) )
     }
+
 
   private def parsedPath(name: String, patterns: Seq[AbstractPattern], transform: TransformType): Maybe[NamedPath] = {
     val namedPathPatterns = patterns.map(matchTranslator(transform, _))

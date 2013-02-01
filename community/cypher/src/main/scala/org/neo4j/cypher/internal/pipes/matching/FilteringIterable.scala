@@ -23,7 +23,6 @@ import org.neo4j.graphdb.{Node, Relationship}
 import org.neo4j.cypher.internal.commands.Predicate
 import org.neo4j.cypher.internal.ExecutionContext
 
-
 class FilteringIterable(inner: Iterable[Relationship], startNode:Node, predicate: Predicate, ctx:ExecutionContext)
   extends Iterable[Relationship] {
 
@@ -62,12 +61,6 @@ class FilteringIterable(inner: Iterable[Relationship], startNode:Node, predicate
       }
     }
   }
-
-  private def filter(r: Relationship, n: Node, ctx: ExecutionContext): Boolean = {
-    val m = new MiniMap(r, n, ctx.state)
-    predicate.isMatch(m)
-  }
-
 
   def iterator = new FilteringIterator(inner.iterator)
 }

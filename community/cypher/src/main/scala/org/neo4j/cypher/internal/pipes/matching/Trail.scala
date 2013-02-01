@@ -45,15 +45,15 @@ abstract class Trail {
   /**
    * @return The original predicates that this Trail uses
    */
-  def predicates: Seq[Predicate]
+  def predicates: Seq[Seq[Predicate]]
 
   def patterns: Seq[Pattern]
 
-  def nodeNames:Seq[String]
+  def nodeNames: Seq[String]
 
-  def add(f: String=>Trail):Trail
+  def add(f: String => Trail): Trail
 
-  def filter(f:Trail=>Boolean):Iterable[Trail]
+  def filter(f: Trail => Boolean): Iterable[Trail]
 
-  def asSeq: Seq[Trail] = filter(x=>true).toSeq
+  def asSeq: Seq[Trail] = filter(x => true).toSeq
 }

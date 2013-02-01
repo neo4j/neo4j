@@ -2471,4 +2471,36 @@ RETURN x0.name?
     // THEN
     assert(result.toList === List(Map("n" -> b)))
   }
+
+  @Test def should_filter_nodes_by_label_given_in_match() {
+    // GIVEN
+    val a = createNode()
+    val b1 = createLabeledNode("foo")
+    val b2 = createNode()
+
+    relate(a, b1)
+    relate(a, b2)
+
+    // WHEN
+    val result = parseAndExecute("START a=node(1) MATCH a-->b:foo RETURN b")
+
+    // THEN
+    assert(result.toList === List(Map("b" -> b1)))
+  }
+
+  @Test def should_filter_nodes_by_label_given_in_match_even_if_nodes_are_start_nodes() {
+    // GIVEN
+    val a1 = createLabeledNode("bar")
+    val a2 = createLabeledNode("baz")
+    val b = createLabeledNode("foo")
+
+    relate(a1, b)
+    relate(a2, b)
+
+    // WHEN
+    val result = parseAndExecute( "START a=node(1,2), b=node(3) MATCH a:bar --> b:foo RETURN a")
+
+    // THEN
+    assert(result.toList === List(Map("a" -> a1)))
+  }
 }

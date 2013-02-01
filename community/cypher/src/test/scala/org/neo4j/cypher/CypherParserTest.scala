@@ -2046,6 +2046,59 @@ foreach(x in [1,2,3] :
       CreateIndex("MyLabel", Seq("prop1", "prop2")))
   }
 
+  @Test def match_left_with_single_label() {
+    val query    = "start a = NODE(1) match a:foo -[r:MARRIED]-> () return a"
+    val pred     = HasLabel(Identifier("a"), Literal(Seq(LabelName("foo"))))
+    val expected =
+      Query.
+        start(NodeById("a", 1)).
+        matches(RelatedTo("a", "  UNNAMED3", "r", Seq("MARRIED"), Direction.OUTGOING, false, True())).
+        where(pred).
+        returns(ReturnItem(Identifier("a"), "a"))
+
+    testFrom_2_0(query, expected)
+  }
+
+  @Test def match_left_with_multiple_labels() {
+    val query    = "start a = NODE(1) match a:foo:bar -[r:MARRIED]-> () return a"
+    val pred     = HasLabel(Identifier("a"), Literal(Seq(LabelName("foo"), LabelName("bar"))))
+    val expected =
+      Query.
+        start(NodeById("a", 1)).
+        matches(RelatedTo("a", "  UNNAMED3", "r", Seq("MARRIED"), Direction.OUTGOING, false, True())).
+        where(pred).
+        returns(ReturnItem(Identifier("a"), "a"))
+
+    testFrom_2_0(query, expected)
+  }
+
+  @Test def match_right_with_multiple_labels() {
+    val query    = "start a = NODE(1) match () -[r:MARRIED]-> a:foo:bar return a"
+    val pred     = HasLabel(Identifier("a"), Literal(Seq(LabelName("foo"), LabelName("bar"))))
+    val expected =
+      Query.
+        start(NodeById("a", 1)).
+        matches(RelatedTo("  UNNAMED3", "a", "r", Seq("MARRIED"), Direction.OUTGOING, false, True())).
+        where(pred).
+        returns(ReturnItem(Identifier("a"), "a"))
+
+    testFrom_2_0(query, expected)
+  }
+
+  @Test def match_both_with_labels() {
+    val query    = "start a = NODE(1) match b:foo -[r:MARRIED]-> a:bar return a"
+    val pred     = And(HasLabel(Identifier("b"), Literal(Seq(LabelName("foo")))),
+                       HasLabel(Identifier("a"), Literal(Seq(LabelName("bar")))))
+    val expected =
+      Query.
+        start(NodeById("a", 1)).
+        matches(RelatedTo("b", "a", "r", Seq("MARRIED"), Direction.OUTGOING, false, True())).
+        where(pred).
+        returns(ReturnItem(Identifier("a"), "a"))
+
+    testFrom_2_0(query, expected)
+  }
+
   @Ignore("slow test") @Test def multi_thread_parsing() {
     val q = """start root=node(0) return x"""
     val parser = new CypherParser()
@@ -2117,7 +2170,6 @@ foreach(x in [1,2,3] :
     }
 
     val ast = parser.parse(qWithVer)
-
     try {
       assertThat(message, ast, equalTo(expectedQuery))
     } catch {

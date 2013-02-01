@@ -22,11 +22,21 @@ package org.neo4j.cypher.internal.parser.v2_0
 import org.neo4j.graphdb.Direction
 import collection.Map
 import org.neo4j.cypher.SyntaxException
-import org.neo4j.cypher.internal.commands.expressions.{Literal, Identifier, Expression}
-import org.neo4j.cypher.internal.commands.Predicate
+import org.neo4j.cypher.internal.commands.expressions.{Collection, Literal, Identifier, Expression}
+import org.neo4j.cypher.internal.commands.{True, And, HasLabel, Predicate}
+import org.neo4j.cypher.internal.helpers.IsCollection
 
 abstract sealed class AbstractPattern {
   def makeOutgoing:AbstractPattern
+
+  def parsedEntities: Seq[ParsedEntity]
+
+  def parsedLabelPredicates: Seq[HasLabel] =
+    parsedEntities.flatMap { (entity: ParsedEntity) => entity.labels match {
+      case IsCollection(coll) if coll.isEmpty => None
+      case Literal(IsCollection(coll)) if coll.isEmpty => None
+      case expr => Some(HasLabel(Identifier(entity.name), expr))
+    } }
 }
 
 object PatternWithEnds {
@@ -50,6 +60,8 @@ case class ParsedEntity(name: String,
                         labels: Expression,
                         bare: Boolean) extends AbstractPattern {
   def makeOutgoing = this
+
+  def parsedEntities = Seq(this)
 }
 
 case class ParsedRelation(name: String,
@@ -64,6 +76,8 @@ case class ParsedRelation(name: String,
 
   def turn(start: ParsedEntity, end: ParsedEntity, dir: Direction): AbstractPattern =
     copy(start = start, end = end, dir = dir)
+
+  def parsedEntities = Seq(start, end)
 }
 
 trait Turnable {
@@ -105,6 +119,8 @@ case class ParsedVarLengthRelation(name: String,
 
   def turn(start: ParsedEntity, end: ParsedEntity, dir: Direction): AbstractPattern =
     copy(start = start, end = end, dir = dir)
+
+  def parsedEntities = Seq(start, end)
 }
 
 case class ParsedShortestPath(name: String,
@@ -118,13 +134,17 @@ case class ParsedShortestPath(name: String,
                               maxDepth: Option[Int],
                               single: Boolean,
                               relIterator: Option[String]) extends PatternWithPathName(name) {
-def rename(newName: String): PatternWithPathName = copy(name = newName)
+  def rename(newName: String): PatternWithPathName = copy(name = newName)
 
   def makeOutgoing = this
+
+  def parsedEntities = Seq(start, end)
 }
 
 case class ParsedNamedPath(name: String, pieces: Seq[AbstractPattern]) extends PatternWithPathName(name) {
   def rename(newName: String): PatternWithPathName = copy(name = newName)
 
   def makeOutgoing = this
+
+  def parsedEntities = pieces.flatMap(_.parsedEntities)
 }

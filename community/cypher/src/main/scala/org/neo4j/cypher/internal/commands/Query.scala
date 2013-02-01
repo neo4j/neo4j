@@ -29,37 +29,22 @@ object Query {
 }
 
 trait AbstractQuery {
-  def setQueryString(t:String):AbstractQuery
+  def queryString: QueryString
+  def setQueryText(t:String):AbstractQuery
+  def getQueryText : String = queryString.text
 }
 
 case class Query(returns: Return,
                  start: Seq[StartItem],
                  updatedCommands:Seq[UpdateAction],
                  matching: Seq[Pattern],
-                 where: Option[Predicate],
+                 where: Predicate,
                  aggregation: Option[Seq[AggregationExpression]],
                  sort: Seq[SortItem],
                  slice: Option[Slice],
                  namedPaths: Seq[NamedPath],
                  tail:Option[Query] = None,
-                 queryString: String = "") extends AbstractQuery {
-
-  override def equals(p1: Any): Boolean = p1 match {
-    case null         => false
-
-    case other: Query => returns == other.returns &&
-      start == other.start &&
-      updatedCommands == other.updatedCommands &&
-      matching == other.matching &&
-      where == other.where &&
-      aggregation == other.aggregation &&
-      sort == other.sort &&
-      slice == other.slice &&
-      namedPaths == other.namedPaths &&
-      tail == other.tail
-
-    case _            => false
-  }
+                 queryString: QueryString = QueryString.empty) extends AbstractQuery {
 
   override def toString: String =
 """
@@ -86,7 +71,7 @@ next   : %s
   tail
 )
 
-  def setQueryString(t: String): Query = copy(queryString = t)
+  def setQueryText(t: String): Query = copy(queryString = QueryString(t))
 }
 
 case class Return(columns: List[String], returnItems: ReturnColumn*)

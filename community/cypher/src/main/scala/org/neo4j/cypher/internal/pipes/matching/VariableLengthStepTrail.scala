@@ -23,7 +23,6 @@ import org.neo4j.graphdb.{Relationship, Node, PropertyContainer, Direction}
 import org.neo4j.cypher.internal.commands.{True, Pattern}
 import org.neo4j.cypher.internal.pipes.MutableMaps
 import org.neo4j.cypher.internal.symbols._
-import org.neo4j.graphdb.DynamicRelationshipType._
 import org.neo4j.cypher.PathImpl
 
 final case class VariableLengthStepTrail(next: Trail,

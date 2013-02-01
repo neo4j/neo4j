@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.mutation.UpdateAction
 class QueryBuilder(startItems: Seq[StartItem]) {
   var updates = Seq[UpdateAction]()
   var matching: Seq[Pattern] = Seq()
-  var where: Option[Predicate] = None
+  var where: Predicate = True()
   var aggregation: Option[Seq[AggregationExpression]] = None
   var orderBy: Seq[SortItem] = Seq()
   var skip: Option[Expression] = None
@@ -43,7 +43,7 @@ class QueryBuilder(startItems: Seq[StartItem]) {
   }
 
   def where(predicate: Predicate): QueryBuilder = store {
-    where = Some(predicate)
+    where = predicate
   }
 
   def aggregation(aggregationItems: AggregationExpression*): QueryBuilder = store {

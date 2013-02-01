@@ -68,7 +68,7 @@ final case class SingleStepTrail(next: Trail,
 
   def contains(target: String): Boolean = next.contains(target) || target == end
 
-  def predicates = originalPredicates ++ next.predicates
+  def predicates = Seq(originalPredicates) ++ next.predicates
 
   def patterns = next.patterns :+ pattern
 

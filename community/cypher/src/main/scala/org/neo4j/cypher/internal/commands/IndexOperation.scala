@@ -22,24 +22,22 @@ package org.neo4j.cypher.internal.commands
 
 sealed abstract class IndexOperation extends AbstractQuery
 
-case class CreateIndex(label: String, properties: Seq[String], queryString: String = "") extends IndexOperation {
-  def setQueryString(t: String): CreateIndex = copy(queryString = t)
-
-  override def equals(p1: Any): Boolean = p1 match {
-    case null               => false
-    case other: CreateIndex => label == other.label && properties == other.properties
-    case _                  => false
-  }
-
+final case class CreateIndex(label: String, properties: Seq[String], queryString: QueryString = QueryString.empty) extends IndexOperation {
+  def setQueryText(t: String): CreateIndex = copy(queryString = QueryString(t))
 }
 
-case class DeleteIndex(label: String, properties: Seq[String], queryString: String = "") extends IndexOperation {
-  def setQueryString(t: String): DeleteIndex = copy(queryString = t)
+final case class DeleteIndex(label: String, properties: Seq[String], queryString: QueryString = QueryString.empty) extends IndexOperation {
+  def setQueryText(t: String): DeleteIndex = copy(queryString = QueryString(t))
+}
 
+object QueryString {
+  lazy val empty = QueryString("")
+}
+
+case class QueryString(text: String) {
   override def equals(p1: Any): Boolean = p1 match {
-    case null             => false
-    case other: DeleteIndex => label == other.label && properties == other.properties
-    case _                => false
+    case null           => false
+    case _: QueryString => true
+    case _              => false
   }
-
 }

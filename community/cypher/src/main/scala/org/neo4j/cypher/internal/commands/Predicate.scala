@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.spi.QueryContext
 
 abstract class Predicate extends Expression {
   def apply(ctx: ExecutionContext) = isMatch(ctx)
-  def ++(other: Predicate): Predicate = And(this, other)
+  def ++(other: Predicate): Predicate = And.apply(this, other)
   def isMatch(m: ExecutionContext): Boolean
 
   // This is the un-dividable list of predicates. They can all be ANDed
@@ -42,6 +42,12 @@ abstract class Predicate extends Expression {
     assertInnerTypes(symbols)
     BooleanType()
   }
+
+  def andWith(preds: Predicate*): Predicate = { preds match {
+    case _ if preds.isEmpty => this
+    case _ => preds.fold(this)(_ ++ _)
+  } }
+
 }
 
 case class NullablePredicate(inner: Predicate, exp: Seq[(Expression, Boolean)]) extends Predicate {
@@ -72,8 +78,16 @@ case class NullablePredicate(inner: Predicate, exp: Seq[(Expression, Boolean)]) 
   def symbolTableDependencies = inner.symbolTableDependencies ++ exp.flatMap(_._1.symbolTableDependencies).toSet
 }
 
+object And {
+  def apply(a: Predicate, b: Predicate) = (a, b) match {
+    case (True(), other) => other
+    case (other, True()) => other
+    case (_, _)          => new And(a, b)
+  }
+}
 
-case class And(a: Predicate, b: Predicate) extends Predicate {
+
+class And(val a: Predicate, val b: Predicate) extends Predicate {
   def isMatch(m: ExecutionContext): Boolean = a.isMatch(m) && b.isMatch(m)
   override def atoms: Seq[Predicate] = a.atoms ++ b.atoms
   override def toString(): String = "(" + a + " AND " + b + ")"
@@ -85,6 +99,12 @@ case class And(a: Predicate, b: Predicate) extends Predicate {
   def assertInnerTypes(symbols: SymbolTable) {
     a.throwIfSymbolsMissing(symbols)
     b.throwIfSymbolsMissing(symbols)
+  }
+
+  override def equals(p1: Any) = p1 match {
+    case null       => false
+    case other: And => a == other.a && b == other.b
+    case _          => false
   }
 
   def symbolTableDependencies = a.symbolTableDependencies ++ b.symbolTableDependencies
@@ -277,15 +297,12 @@ case class NonEmpty(collection:Expression) extends Predicate with CollectionSupp
 
 case class HasLabel(entity: Expression, labels: Expression) extends Predicate with LabelSupport with CollectionSupport {
   def isMatch(m: ExecutionContext): Boolean = {
-    val node: Node               = CastSupport.erasureCastOrFail[Node](entity(m))
-    val nodeId                   = node.getId
-    val queryCtx: QueryContext   = m.state.queryContext
-    val labelIds: Iterable[Long] = getLabelsAsLongs(m, labels)
+    val node           = CastSupport.erasureCastOrFail[Node](entity(m))
+    val nodeId         = node.getId
+    val queryCtx       = m.state.queryContext
+    val expectedLabels = getLabelsAsLongs(m, labels)
 
-    for (labelId <- labelIds if !queryCtx.isLabelSetOnNode(labelId, nodeId))
-      return false
-
-    true
+    expectedLabels.forall(queryCtx.isLabelSetOnNode(_, nodeId))
   }
 
   override def toString = s"hasLabel(${entity}, ${labels})"
