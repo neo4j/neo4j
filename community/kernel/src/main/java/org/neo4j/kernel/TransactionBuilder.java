@@ -33,13 +33,13 @@ import org.neo4j.graphdb.Transaction;
  * Transaction tx = graphDb.tx().begin();
  * 
  * // To begin a transaction with relaxed force
- * Transaction tx = graphDb.tx().relaxed().begin();
+ * Transaction tx = graphDb.tx().unforced().begin();
  * 
  * // To have relaxed force optionally set by a condition
  * TransactionBuilder txBuilder = graphDb.tx();
  * if ( condition )
  * {
- *     txBuilder = txBuilder.relaxed();
+ *     txBuilder = txBuilder.unforced();
  * }
  * Transaction tx = txBuilder.begin();
  * </pre>
