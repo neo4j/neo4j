@@ -564,10 +564,10 @@ public class NodeManager
 
     private void invalidateNode( long nodeId, long relIdDeleted, long nextRelId )
     {
-        NodeImpl firstNode = nodeCache.get( nodeId );
-        if ( firstNode != null && firstNode.getRelChainPosition() == relIdDeleted )
+        NodeImpl node = nodeCache.get( nodeId );
+        if ( node != null && node.getRelChainPosition() == relIdDeleted )
         {
-            firstNode.setRelChainPosition( nextRelId );
+            node.setRelChainPosition( nextRelId );
         }
     }
 

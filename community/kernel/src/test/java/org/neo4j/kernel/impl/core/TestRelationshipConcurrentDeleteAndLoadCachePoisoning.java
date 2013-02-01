@@ -23,7 +23,6 @@ import static org.junit.Assert.assertEquals;
 import static org.neo4j.test.subprocess.DebuggerDeadlockCallback.RESUME_THREAD;
 
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.neo4j.graphdb.DynamicRelationshipType;
@@ -46,13 +45,14 @@ import org.neo4j.test.subprocess.SubProcessTestRunner;
 /**
  * This test tests the exact same issue as {@link TestConcurrentModificationOfRelationshipChains}. The difference is
  * that it tries to cut it as close as possible by doing the relationship cache load right after the removal of the
- * relationship from the cache. It really doesn't make a difference but it's a shame to throw it out.
+ * relationship from the cache. This causes the node to be loaded with wrong information about the next relationship
+ * since it has not been deleted on disk yet. It is purely a cache thing and dealt with by invalidation of deleted
+ * relationships on commit instead of on prepare.
  */
 @ForeignBreakpoints( {
         @ForeignBreakpoints.BreakpointDef( type = "org.neo4j.kernel.impl.nioneo.xa.WriteTransaction",
                 method = "doPrepare", on = BreakPoint.Event.EXIT ) } )
 @RunWith( SubProcessTestRunner.class )
-@Ignore("currently fails, awaiting fix")
 public class TestRelationshipConcurrentDeleteAndLoadCachePoisoning
 {
     private static final int RelationshipGrabSize = 2;
@@ -108,7 +108,7 @@ public class TestRelationshipConcurrentDeleteAndLoadCachePoisoning
             public void run()
             {
                 waitForPrepare();
-                // Get the first batch into the cache - relChainPosition shows to theOneAfterTheGap
+                // Get the first batch into the cache - relChainPosition points to theOneAfterTheGap
                 first.getRelationships().iterator().next();
                 readDone();
             }
@@ -130,7 +130,7 @@ public class TestRelationshipConcurrentDeleteAndLoadCachePoisoning
         {
             count++;
         }
-        assertEquals("Should have read relationships created minus one", RelationshipGrabSize - 1, count);
+        assertEquals("Should have read relationships created minus one", RelationshipGrabSize, count);
     }
 
     @BreakpointHandler( "doPrepare" )
@@ -144,9 +144,7 @@ public class TestRelationshipConcurrentDeleteAndLoadCachePoisoning
         self.disable();
         committer = di.thread();
         committer.suspend( RESUME_THREAD );
-        System.out.println("suspended writer");
         reader.resume();
-        System.out.println("resumed reader");
     }
 
     @BreakpointTrigger("waitForPrepare")
@@ -160,7 +158,6 @@ public class TestRelationshipConcurrentDeleteAndLoadCachePoisoning
         self.disable();
         reader = di.thread();
         reader.suspend( RESUME_THREAD );
-        System.out.println("Suspended reader");
     }
 
     @BreakpointTrigger("readDone")
@@ -173,6 +170,5 @@ public class TestRelationshipConcurrentDeleteAndLoadCachePoisoning
     {
         self.disable();
         committer.resume();
-        System.out.println("Resumed writer");
     }
 }
