@@ -153,6 +153,13 @@ the relevant Commercial Agreement.
         </executions>
       </plugin>
       <plugin>
+        <groupId>pl.project13.maven</groupId>
+        <artifactId>git-commit-id-plugin</artifactId>
+        <configuration>
+          <dotGitDirectory>${project.build.directory}../../.git</dotGitDirectory>
+        </configuration>
+      </plugin>
+      <plugin>
         <artifactId>maven-antrun-plugin</artifactId>
         <executions>
           <execution>
@@ -162,16 +169,7 @@ the relevant Commercial Agreement.
               <property environment="env" />
               <target>
                 <mkdir dir="target/generated-sources/version/org/neo4j/kernel/impl/" />
-                <exec executable="${git.executable}" failifexecutionfails="false" failonerror="false">
-                  <arg value="fetch" />
-                  <arg value="--tags" />
-                </exec>
-                <exec executable="${git.executable}" outputproperty="git.describe" errorproperty="git.describe.error" failifexecutionfails="false" failonerror="false">
-                  <arg value="describe" />
-                  <arg value="--dirty" />
-                  <arg value="--always" />
-                </exec>
-                <property name="git.describe" value="" />
+                <property name="git.describe" value="${git.commit.id.describe}" />
                 <echo file="target/generated-sources/version/org/neo4j/${short-name}/impl/ComponentVersion.java">package org.neo4j.${short-name}.impl;
 
 import org.neo4j.kernel.Version;
