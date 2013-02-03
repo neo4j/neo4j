@@ -28,8 +28,13 @@ import java.util.Map;
 public class InMemoryAcceptorInstanceStore
         implements AcceptorInstanceStore
 {
-    // TODO Add mechanism to purge these
-    Map<InstanceId, AcceptorInstance> instances = new HashMap<InstanceId, AcceptorInstance>();
+    Map<InstanceId, AcceptorInstance> instances = new HashMap<InstanceId, AcceptorInstance>(  );
+
+    long lastDeliveredInstanceId = -1;
+
+    public InMemoryAcceptorInstanceStore()
+    {
+    }
 
     @Override
     public AcceptorInstance getAcceptorInstance( InstanceId instanceId )
@@ -54,6 +59,17 @@ public class InMemoryAcceptorInstanceStore
     public void accept( AcceptorInstance instance, Object value )
     {
         instance.accept( value );
+    }
+
+    @Override
+    public void lastDelivered( InstanceId instanceId )
+    {
+        for ( long i = lastDeliveredInstanceId; i <= instanceId.getId(); i++ )
+        {
+            instances.remove( new InstanceId(i) );
+        }
+
+        lastDeliveredInstanceId = instanceId.getId();
     }
 
     @Override

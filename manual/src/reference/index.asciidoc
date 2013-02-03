@@ -1,0 +1,46 @@
+[[reference-documentation]]
+Reference
+=========
+[partintro]
+--
+The reference part is the authoritative source for details on Neo4j usage.
+It covers details on capabilities, transactions, indexing and queries among other topics.
+--
+
+:leveloffset: 1
+
+include::capabilities/cap-details.asciidoc[]
+
+:leveloffset: 1
+
+include::{importdir}/neo4j-kernel-docs-jar/dev/transactions.asciidoc[]
+
+:leveloffset: 1
+
+include::import/import.asciidoc[]
+
+:leveloffset: 1
+
+include::{importdir}/neo4j-lucene-index-docs-jar/dev/index.asciidoc[]
+
+:leveloffset: 1
+
+include::{importdir}/neo4j-cypher-docs-jar/dev/index.asciidoc[]
+
+:leveloffset: 1
+
+include::{importdir}/neo4j-graph-algo-docs-jar/dev/index.asciidoc[]
+
+:leveloffset: 1
+
+include::{importdir}/neo4j-server-docs-jar/dev/index.asciidoc[]
+
+:leveloffset: 1
+
+include::{importdir}/neo4j-server-docs-jar/dev/rest-api/index.asciidoc[]
+
+:leveloffset: 2
+
+include::{importdir}/neo4j-gremlin-plugin-docs-jar/dev/rest-api/index.asciidoc[]
+
+

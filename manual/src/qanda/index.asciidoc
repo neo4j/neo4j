@@ -1,0 +1,117 @@
+[[questions]]
+[appendix]
+Questions & Answers
+===================
+
+[qanda]
+
+What is the maximum number of nodes supported?  What is the maximum number of edges supported per node?::
+        At the moment it is 34.4 billion nodes, 34.4 billion relationships, and at a minimum 68.7 billion properties (maximum is 274 billion, depending on the property types), in total.
+
+What is the largest complete connected graph supported (i.e. every node is connecting to all other nodes)?::
+        Theoretical limits can be derived from numbers above: It basically comes out to a full graph of 262144 nodes and 34359607296 relationships. We have never seen this use case though.
+ 
+Are read/write depending on the number of nodes/edges in the DB?::
+        This question can mean a couple of different things. The performance of a single read/write operation does not depend on the size of the DB. Whether the graph has 10 nodes or 10 million nodes does not matter.
+        -- There is however another facet here, which is that if your graph is big on disk, you may not be able to fit it all into the cache in RAM. Therefore, you may end up hitting disk more often. Most customers don't have graphs of this size, but some do. If you happen to reach these sizes, we have approaches for scaling out on multiple machines to mitigate the performance impact by increasing the cache "surface area" across machines.
+ 
+How many concurrent read/write requests supported?::
+        There is no limit on the number of concurrent requests. The amount of requests we can serve per second depends very much on the operation performed (heavy write operation, simple read, complex traversal, etc.), and the hardware used. A rough estimate is 1,000 hops per millisecond while traversing the graph in the simplest way possible. After a discussion about the specific use case, we would be able to give a better idea of the performance one can expect.
+ 
+How is data consistency maintained in cluster environment?::
+        Master-slave replication. Slaves pull changes from the master. The pull interval can be configured per slave, from subsecond to minutes, as necessary. HA can also write through slaves. When that happens, the slave that is being written through catches up with the master, and then the write is made durable on the slave and the master. The other slaves then catch up as normal.
+
+How is the latency in updating all the servers when there is an update on the DB from one of them?::
+        Pull interval can be configured per slave, from subsecond to minutes, as necessary. When writing through a slave, the slave is immediately synchronized with the master before the write is committed on the slave and the master.  In general, read/write load does not affect slaves syncing up. A heavy write load will however put pressure on the filesystem of the master, which is also required for reading changes for the slaves. In practice, we have however not seen this become a notable issue.
+ 
+Will the latency increase proportional to the number of servers in the cluster?::
+        When scaling beyond 10s of slaves in a cluster, we anticipate that the number of pull requests coming from slaves will reduce the performance of the master. Only write performance on the cluster would be affected. Read performance would continue to scale linearly.
+ 
+Is online expansion supported?  In other words, do we need to bring down all the servers and the DB if we want to add new servers to the cluster?::
+        New slaves can be added to an existing cluster without having to stop and start the whole cluster. Our HA protocol will bring a newly added slave up-to-date. Slaves can also be removed simply by shutting them down.
+ 
+How long will it take for the newly joined servers to sync up?::
+        We recommend providing a new slave with a recent snapshot of the database before bringing it online. This is typically done from a backup. The slave will then only need to synchronize the most recent updates, which will typically be a matter of seconds. 
+ 
+How long does it take to reboot?::
+        If by reboot, you mean take the cluster down and take it up again, it's pretty much dependent on how fast you can type. So it could be <10s. The Neo4j caches will however not auto-warm up, but the OS filesystem cache will retain its data.
+ 
+Are there any backup and restore/recovery mechanisms?::
+        Neo4j Enterprise Edition provides an online backup feature for full and incremental backups during operation.
+
+Is cross-continental clustering supported?  Say, can servers in the cluster be located in different continents provided that the chance for inter-continental communication is much lower than the intra one?::
+        We have customers who have tested multi-region deployments in AWS. Cross-continental latencies will have an impact, however on the efficiency of the cluster management and synchronization protocols; large latencies in the cluster management can trigger frequent master re-elections, which will slow down the cluster. Feature support in this area will be improving over time.
+ 
+Is there any special handling/policy for this kind of setup?::
+        We'd have to have a more in-depth discussion about the requirements pertaining to this specific deployment.
+ 
+Is writing to the DB thread-safe? Or is it the application logic to protect writing to the same nodes/edges?::
+        Whether in single instance or HA mode, the database provides thread safety by way of locking on nodes and relationships upon modification.
+
+What is the best strategy for reading back your writes on HA?::
+        1. Sticky sessions.
+        2. Send back data in response, removing the need to read back in a separate request.
+        3. Force a pull of updates from the master when required by the operation.
+
+What is the best strategy for get-or-create semantics?::
+        1. Single thread.
+        2. If not exists, pessimistically lock on a common node (or set of common nodes).
+        3. If not exists, optimistically create, and then double check afterwards.
+
+How does locking work?::
+        Pessimistic locking.
+        Locks are never required for reading. Writers will not block readers. It's impossible to make a read operation block without using explicit locking facilities.
+        Read locks prevent writes. Acquiring a read lock means consistent view for all holders while held.
+        Grabbing write locks is done automatically when a node/rel is modified/created, or through explicit locking facilities. It can be used to provide read committed semantics and data consistency when necessary.
+        
+What about on-size storage?::
+        Neo4j is currently not suitable for storing BLOBs/CLOBs.
+        Nodes, relationships, and properties are not co-located on disk. This might be introduced in the future.
+
+What about indexing?::
+        Neo4j supports composite property indices.
+        Promote index providers over in-graph indices.
+        Lucene engine manages index paging separately and requires some heap for itself
+        Neo4j currently supports one auto indexer and many individual indexes (search done via API)
+
+How do I query the database?::
+        Core API, Traversal API, REST API, Cypher, Gremlin
+
+Does Neo4j use journaling?::
+        Based on write change delta between master and slaves in HA cluster.
+
+How do I tune Neo4j for performance?::
+        Uses memory-mapped store files
+        Neo4j caching strategies need to be explained:
+        * Soft-ref cache: Soft references are cleaned when the GC thinks it's needed. Use if app load isn't very high & needs memory-sensitive cache
+        * Weak-ref cache: GC cleans weak references whenever it finds it. Use if app is under heavy load with lots of reads and traversals
+        * Strong-ref cache: all nodes & edges are fully cached in memory
+        JVM needs pausing under heavy load, e.g., 1/2 minutes pause interval.
+        Larger heap sizes good, however 12G and beyond is impractical with GC.
+        100x performance improvement with memory mapped file cache and 1000 improvement with Java heap comparing to fetching from disk I/O
+
+ACID transactions between master & slaves::
+        Synchronous between slave-initiated transaction to master, eventual from master to slaves.
+        Concurrent multi slave-initiated transaction support with deadlock detection.
+        It's fully consistent from a data integrity point of view, but eventually consistent from sync point of view.
+
+What about the standalone server?::
+        The REST API is completely stateless, but it can do batches for larger transaction scopes.
+        Thread pooling & thread per socket: For standalone server & HA nodes, Neo4j uses Jetty for connection pooling (e.g., 25/node in HA cluster)
+
+How is a load balancer used with HA?::
+        Typically a small server extension can be written to return 200 or 404 depending on whether the machine is master or slave.
+        This extension can then be polled by the load balancer to determine the master and slave machine sets.
+        Writing only to slaves ensures that committed transactions exist in at least two places.
+
+What kind of monitoring support does Neo4j provide?::
+        Neo4j does not currently have built-in tracing or explain plans.
+        JMX is the primary interface for statistics and monitoring.
+        Thread dumps can be used to debug a malfunctioning system.
+
+How do I import my data into Neo4j?::
+        The Neo4j batch inserter can be used to fill an initial database with data.
+        After batch insertion, the store can be used in an embedded or HA environment.
+        Future data load/refresh should go directly to Production server
+        SQL Importer (built on top of Batch Inserter) is not officially supported.
+

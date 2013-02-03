@@ -2,10 +2,10 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <artifactId>assembly-pom</artifactId>
-    <groupId>org.neo4j.build</groupId>
-    <version>35</version>
-    <relativePath />
+    <groupId>org.neo4j</groupId>
+    <artifactId>parent</artifactId>
+    <version>1.9-SNAPSHOT</version>
+    <relativePath>../..</relativePath>
   </parent>
 
   <groupId>org.neo4j.assembly</groupId>
@@ -38,7 +38,7 @@
 
     <!-- other filter properties -->
     <wrapper.conf>conf/neo4j-wrapper.conf</wrapper.conf>
-    <neo4j.version>1.9-SNAPSHOT</neo4j.version>
+    <neo4j.version>${project.version}</neo4j.version>
     <windows-wrapper.version>4</windows-wrapper.version>
     <windows-wrapper.filename>windows-service-wrapper-*.jar</windows-wrapper.filename>
     

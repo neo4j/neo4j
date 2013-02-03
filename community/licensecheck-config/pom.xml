@@ -3,7 +3,7 @@
   <parent>
     <artifactId>grandparent</artifactId>
     <groupId>org.neo4j.build</groupId>
-    <version>35</version>
+    <version>36</version>
     <relativePath />
   </parent>
   <groupId>org.neo4j.build</groupId>

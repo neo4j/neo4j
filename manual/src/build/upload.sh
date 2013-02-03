@@ -58,3 +58,4 @@ scp $DIR/target/pdf/neo4j-manual.pdf $DOCS_SERVER:$ROOTPATHDOCS/pdf/neo4j-manual
 
 echo Apparently, successfully published to $DOCS_SERVER.
 
+

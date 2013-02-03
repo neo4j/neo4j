@@ -83,7 +83,7 @@ public class RelIdArray implements SizeOf
         return new EmptyRelIdArray( type );
     }
     
-    public static RelIdArray EMPTY = new EmptyRelIdArray( -1 );
+    public static final RelIdArray EMPTY = new EmptyRelIdArray( -1 );
     
     private final int type;
     private IdBlock lastOutBlock;

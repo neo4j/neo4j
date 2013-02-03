@@ -1,2 +1,0 @@
-include::main.asciidoc[depth=100]
-

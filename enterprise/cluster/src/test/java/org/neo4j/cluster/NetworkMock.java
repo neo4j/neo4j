@@ -206,6 +206,9 @@ public class NetworkMock
             }
         }
 
+        // Allow other threads (listeners) to process
+        Thread.yield();
+
         return messageDeliveries.size();
     }
 

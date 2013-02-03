@@ -58,26 +58,10 @@ prepare the repo:
     mkdir build
     cd build
 
-build community:
+build neo4j (this requires asciidoc toolchain and, currently, python with jpype installed. Run the mvn command with -DskipNativeDeps to skip that)
 
-    git clone git@github.com:neo4j/community.git
-    cd community
-    git pull origin master
-    mvn clean install -Dmaven.test.skip=true
-    cd ..
-
-build advanced
-
-    git clone git@github.com:neo4j/advanced.git
-    cd advanced
-    git pull origin master
-    mvn clean install -Dmaven.test.skip=true
-    cd ..
-
-build enterprise
-
-    git clone git@github.com:neo4j/enterprise.git
-    cd enterprise
+    git clone git://github.com/neo4j/neo4j.git
+    cd neo4j
     git pull origin master
     mvn clean install -Dmaven.test.skip=true
     cd ..
@@ -85,22 +69,6 @@ build enterprise
 install the ASCIIDOC toolchain
 
     brew install docbook asciidoc w3m fop graphviz && sudo docbook-register
-
-build the manual
-
-    git clone git@github.com:neo4j/manual.git
-    cd manual
-    git pull origin master
-    mvn clean install -Dmaven.test.skip=true
-    cd ..
-
-Build the standalone distributions
-
-    git clone git@github.com:neo4j/packaging.git
-    cd packaging
-    git pull origin master
-    cd standalone
-    mvn clean package
 
 
 Working with the source code in Eclipse IDE

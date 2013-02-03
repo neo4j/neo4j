@@ -84,7 +84,7 @@ public class TxLog
         @Override
         public boolean equals( Object obj )
         {
-            return Arrays.equals( bytes, ((ByteArrayKey)obj).bytes );
+            return obj != null && Arrays.equals( bytes, ((ByteArrayKey)obj).bytes );
         }
     }
 

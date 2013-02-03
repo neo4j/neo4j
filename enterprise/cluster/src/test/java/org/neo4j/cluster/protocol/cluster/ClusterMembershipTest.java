@@ -200,4 +200,16 @@ public class ClusterMembershipTest
                 leave( 0, 2 )
         );
     }
+
+    @Test
+    public void threeNodesJoinAtSameTime()
+            throws URISyntaxException, ExecutionException, TimeoutException, InterruptedException
+    {
+        testCluster( 3, DEFAULT_NETWORK(), new ClusterTestScriptDSL().
+                rounds( 500 ).
+                join( 0, 1, 2, 3 ).
+                join( 0, 2, 1, 3 ).
+                join( 0, 3, 1, 2 ).
+                message( 3300, "*** Cluster formed" ));
+    }
 }

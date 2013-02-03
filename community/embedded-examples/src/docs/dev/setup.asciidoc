@@ -149,6 +149,9 @@ tag=shutdownHook
 
 If you want a _read-only view_ of the database, use +http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/kernel/EmbeddedReadOnlyGraphDatabase.html[EmbeddedReadOnlyGraphDatabase]+. 
 
+[[tutorials-java-embedded-setup-config]]
+=== Starting an embedded database with configuration settings ===
+
 To start Neo4j with configuration settings, a Neo4j properties file can be loaded like this:
 
 [snippet,java]
@@ -159,7 +162,16 @@ classifier=test-sources
 tag=startDbWithConfig
 ----
 
-Or you could of course create you own +Map<String, String>+ programatically and use that instead.
+Or you could of course create you own +Map<String, String>+ programatically and use that instead, like so:
+
+[snippet,java]
+----
+component=neo4j-examples
+source=org/neo4j/examples/StartWithConfiguration.java
+classifier=test-sources
+tag=startDbWithConfigInMap
+----
 
 For configuration settings, see <<embedded-configuration>>.
+
 

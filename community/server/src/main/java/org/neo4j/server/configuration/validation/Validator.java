@@ -27,7 +27,7 @@ import org.neo4j.server.logging.Logger;
 public class Validator
 {
 
-    public static Logger log = Logger.getLogger( Validator.class );
+    private static final Logger log = Logger.getLogger( Validator.class );
     private final ArrayList<ValidationRule> validationRules = new ArrayList<ValidationRule>();
 
     public Validator( ValidationRule... rules )

@@ -21,12 +21,12 @@ package org.neo4j.cluster.member.paxos;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
-import static org.junit.internal.matchers.IsCollectionContaining.hasItems;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
 
 import java.net.URI;
 
 import org.hamcrest.BaseMatcher;
+import org.hamcrest.CoreMatchers;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.junit.Test;
@@ -51,9 +51,13 @@ public class ClusterMembersSnapshotTest
         // THEN
         // -- getting the snapshot list should only reveal the last one
         assertEquals( 1, count( snapshot.getCurrentAvailable( clusterUri ) ) );
-        assertThat( snapshot.getCurrentAvailable( clusterUri ), hasItems( memberIsAvailable( memberIsAvailable ) ) );
+        assertThat(
+                snapshot.getCurrentAvailable( clusterUri ),
+                CoreMatchers.<MemberIsAvailable>hasItem( memberIsAvailable( memberIsAvailable ) ) );
         assertEquals( 1, count( snapshot.getCurrentAvailableMembers() ) );
-        assertThat( snapshot.getCurrentAvailableMembers(), hasItems( memberIsAvailable( memberIsAvailable ) ) );
+        assertThat(
+                snapshot.getCurrentAvailableMembers(),
+                CoreMatchers.<MemberIsAvailable>hasItems( memberIsAvailable( memberIsAvailable ) ) );
     }
     
     @Test
@@ -74,9 +78,15 @@ public class ClusterMembersSnapshotTest
         // THEN
         // -- getting the snapshot list should reveal both
         assertEquals( 2, count( snapshot.getCurrentAvailable( clusterUri ) ) );
-        assertThat( snapshot.getCurrentAvailable( clusterUri ), hasItems( memberIsAvailable( event1 ), memberIsAvailable( event2 ) ) );
+        assertThat(
+                snapshot.getCurrentAvailable( clusterUri ),
+                CoreMatchers.<MemberIsAvailable>hasItems(
+                        memberIsAvailable( event1 ), memberIsAvailable( event2 ) ) );
         assertEquals( 2, count( snapshot.getCurrentAvailableMembers() ) );
-        assertThat( snapshot.getCurrentAvailableMembers(), hasItems( memberIsAvailable( event1 ), memberIsAvailable( event2 ) ) );
+        assertThat(
+                snapshot.getCurrentAvailableMembers(),
+                CoreMatchers.<MemberIsAvailable>hasItems(
+                        memberIsAvailable( event1 ), memberIsAvailable( event2 ) ) );
     }
     
     @Test
@@ -98,9 +108,13 @@ public class ClusterMembersSnapshotTest
         // THEN
         // -- getting the snapshot list should only reveal the last member added, as it had the same role
         assertEquals( 1, count( snapshot.getCurrentAvailable( clusterUri ) ) );
-        assertThat( snapshot.getCurrentAvailable( clusterUri ), hasItems( memberIsAvailable( otherEvent ) ) );
+        assertThat(
+                snapshot.getCurrentAvailable( clusterUri ),
+                CoreMatchers.<MemberIsAvailable>hasItems( memberIsAvailable( otherEvent ) ) );
         assertEquals( 1, count( snapshot.getCurrentAvailableMembers() ) );
-        assertThat( snapshot.getCurrentAvailableMembers(), hasItems( memberIsAvailable( otherEvent ) ) );
+        assertThat(
+                snapshot.getCurrentAvailableMembers(),
+                CoreMatchers.<MemberIsAvailable>hasItems( memberIsAvailable( otherEvent ) ) );
     }
     
     private static final String URI = "http://me";

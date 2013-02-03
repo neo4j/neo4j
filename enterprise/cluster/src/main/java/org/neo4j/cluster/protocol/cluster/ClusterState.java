@@ -26,6 +26,7 @@ import static org.neo4j.cluster.com.message.Message.to;
 
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
 
@@ -35,6 +36,7 @@ import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.AtomicBroadcastMess
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.ProposerMessage;
 import org.neo4j.cluster.statemachine.State;
+import org.neo4j.helpers.collection.Iterables;
 
 /**
  * State machine for the Cluster API
@@ -77,10 +79,20 @@ public enum ClusterState
 
                         case join:
                         {
-                            URI clusterNodeUri = message.getPayload();
-                            outgoing.offer( to( ClusterMessage.configurationRequest, clusterNodeUri ) );
-                            context.timeouts.setTimeout( clusterNodeUri,
-                                    timeout( ClusterMessage.configurationTimeout, message, clusterNodeUri ) );
+                            // Send configuration request to all instances
+                            Object[] args = message.<Object[]>getPayload();
+                            String name = ( String ) args[0];
+                            URI[] clusterInstanceUris = ( URI[] ) args[1];
+                            context.joining( name, Iterables.<URI,URI>iterable( clusterInstanceUris ) );
+
+                            for ( URI potentialClusterInstanceUri : clusterInstanceUris )
+                            {
+                                outgoing.offer( to( ClusterMessage.configurationRequest,
+                                        potentialClusterInstanceUri ) );
+                            }
+                            context.timeouts.setTimeout( "discovery",
+                                    timeout( ClusterMessage.configurationTimeout, message,
+                                            new ClusterMessage.ConfigurationTimeoutState( 4 ) ) );
                             return acquiringConfiguration;
                         }
                     }
@@ -94,11 +106,12 @@ public enum ClusterState
                 public State<?, ?> handle( ClusterContext context, Message<ClusterMessage> message,
                                            MessageHolder outgoing ) throws Throwable
                 {
+                    List<URI> discoveredInstances = context.getDiscoveredInstances();
                     switch ( message.getMessageType() )
                     {
                         case configurationResponse:
                         {
-                            context.timeouts.cancelTimeout( new URI( message.getHeader( Message.FROM ) ) );
+                            context.timeouts.cancelTimeout( "discovery" );
 
                             ClusterMessage.ConfigurationResponseState state = message.getPayload();
 
@@ -106,9 +119,8 @@ public enum ClusterState
                             if ( !context.getConfiguration().getName().equals( state.getClusterName() ) )
                             {
                                 context.getLogger( ClusterState.class ).warn( "Joined cluster name is different than " +
-                                        "the one configured." +
-                                        "Expected " + context.getConfiguration().getName() + ", got "
-                                        + state.getClusterName() + "." );
+                                        "the one configured. Expected " + context.getConfiguration().getName() +
+                                        ", got " + state.getClusterName() + "." );
                             }
 
                             List<URI> memberList = new ArrayList<URI>( state.getMembers() );
@@ -123,8 +135,8 @@ public enum ClusterState
                                 context.acquiredConfiguration( memberList, state.getRoles() );
 
                                 context.getLogger( ClusterState.class ).info( String.format( "%s joining:%s, " +
-                                        "last delivered:%d",
-                                        context.me.toString(), context.getConfiguration().toString(),
+                                        "last delivered:%d", context.me.toString(),
+                                        context.getConfiguration().toString(),
                                         state.getLatestReceivedInstanceId().getId() ) );
 
                                 ClusterMessage.ConfigurationChangeState newState = new ClusterMessage
@@ -144,8 +156,7 @@ public enum ClusterState
                                 }
 
                                 context.getLogger( ClusterState.class ).info( "Setup join timeout for " + message
-                                        .getHeader( Message
-                                        .CONVERSATION_ID ) );
+                                        .getHeader( Message.CONVERSATION_ID ) );
                                 context.timeouts.setTimeout( "join", timeout( ClusterMessage.joiningTimeout, message,
                                         new URI( message.getHeader( Message.FROM ) ) ) );
 
@@ -170,23 +181,82 @@ public enum ClusterState
 
                         case configurationTimeout:
                         {
-                            // The member I got the configuration from, put it last on the list
-                            // and then try the member at the top of the list
-                            List<URI> members = context.getConfiguration().getMembers();
-                            members.remove( message.<URI>getPayload() );
-
-                            if ( context.getConfiguration().getMembers().isEmpty() )
+                            ClusterMessage.ConfigurationTimeoutState state = message.getPayload();
+                            if ( state.getRemainingPings() > 0 )
                             {
-                                outgoing.offer( internal( ClusterMessage.joinFailure,
-                                        new TimeoutException( "Join failed, timeout waiting for configuration" ) ) );
-                                return start;
+                                // Send out requests again
+                                for ( URI potentialClusterInstanceUri : context.getJoiningInstances() )
+                                {
+                                    outgoing.offer( to( ClusterMessage.configurationRequest,
+                                            potentialClusterInstanceUri ) );
+                                }
+                                context.timeouts.setTimeout( "join",
+                                        timeout( ClusterMessage.configurationTimeout, message,
+                                                new ClusterMessage.ConfigurationTimeoutState(
+                                                        state.getRemainingPings()-1 ) ) );
+
+
                             }
                             else
                             {
-                                URI nextMember = members.get( 0 );
+                                // No responses
+                                // Check if we picked up any other instances' requests during this phase
+                                if ( !discoveredInstances.isEmpty() )
+                                {
+                                    Collections.sort( discoveredInstances );
+                                    /*
+                                     * The assumption here is that the lowest in the list of discovered instances
+                                     * will create the cluster. Keep in mind that this is run on all instances so
+                                     * everyone will pick the same one.
+                                     * If the one picked up is configured to not init a cluster then the timeout
+                                     * set in else{} will take care of that.
+                                     */
+                                    if ( discoveredInstances.get( 0 ).compareTo( context.getMe() ) > 0 )
+                                    {
+                                        discoveredInstances.clear();
 
-                                outgoing.offer( internal( ClusterMessage.join, nextMember ) );
-                                return start;
+                                        // I'm supposed to create the cluster - fail the join
+                                        outgoing.offer( internal( ClusterMessage.joinFailure,
+                                                new TimeoutException(
+                                                        "Join failed, timeout waiting for configuration" ) ) );
+                                        return start;
+                                    }
+                                    else
+                                    {
+                                        discoveredInstances.clear();
+
+                                        // Someone else is supposed to create the cluster - restart the join discovery
+                                        for ( URI potentialClusterInstanceUri : context.getJoiningInstances() )
+                                        {
+                                            outgoing.offer( to( ClusterMessage.configurationRequest,
+                                                    potentialClusterInstanceUri ) );
+                                        }
+                                        context.timeouts.setTimeout( "discovery",
+                                                timeout( ClusterMessage.configurationTimeout, message,
+                                                        new ClusterMessage.ConfigurationTimeoutState( 4 ) ) );
+                                    }
+                                }
+                                else
+                                {
+                                    // Join failed
+                                    outgoing.offer( internal( ClusterMessage.joinFailure,
+                                            new TimeoutException(
+                                                    "Join failed, timeout waiting for configuration" ) ) );
+                                    return start;
+                                }
+                            }
+
+                            return this;
+                        }
+
+                        case configurationRequest:
+                        {
+                            // We're listening for existing clusters, but if all instances start up at the same time
+                            // and look for each other, this allows us to pick that up
+                            URI joiningInstanceUri = new URI( message.getHeader( Message.FROM ) );
+                            if ( !discoveredInstances.contains( joiningInstanceUri ) )
+                            {
+                                discoveredInstances.add( joiningInstanceUri );
                             }
                         }
                     }
@@ -230,15 +300,17 @@ public enum ClusterState
                             context.getLogger( ClusterState.class ).info( "Join timeout for " + message.getHeader(
                                     Message.CONVERSATION_ID ) );
 
-                            // The member I got the configuration from, put it last on the list
-                            // and then try the member at the top of the list
-                            List<URI> members = context.getConfiguration().getMembers();
-                            members.remove( message.<URI>getPayload() );
-                            members.add( message.<URI>getPayload() );
-                            URI nextMember = members.get( 0 );
+                            // Go back to requesting configurations from potential members
+                            for ( URI potentialClusterInstanceUri : context.getJoiningInstances() )
+                            {
+                                outgoing.offer( to( ClusterMessage.configurationRequest,
+                                        potentialClusterInstanceUri ) );
+                            }
+                            context.timeouts.setTimeout( "discovery",
+                                    timeout( ClusterMessage.configurationTimeout, message,
+                                            new ClusterMessage.ConfigurationTimeoutState( 4 ) ) );
 
-                            outgoing.offer( internal( ClusterMessage.join, nextMember ) );
-                            return start;
+                            return acquiringConfiguration;
                         }
 
                         case joinFailure:

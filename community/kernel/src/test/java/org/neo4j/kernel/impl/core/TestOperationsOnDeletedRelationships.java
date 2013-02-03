@@ -19,12 +19,14 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.core.IsNot.not;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import org.junit.Test;
 import org.neo4j.graphdb.NotFoundException;
@@ -57,7 +59,7 @@ public class TestOperationsOnDeletedRelationships
 
         // Then
         assertThat(exceptionCaught, not(nullValue()));
-        assertThat( exceptionCaught, is( NotFoundException.class) );
+        assertThat( exceptionCaught, is( instanceOf( NotFoundException.class ) ) );
     }
 
     @Test
@@ -87,7 +89,7 @@ public class TestOperationsOnDeletedRelationships
 
         // Then
         assertThat( exceptionCaught, not( nullValue() ) );
-        assertThat( exceptionCaught, is( NotFoundException.class) );
+        assertThat( exceptionCaught, is( instanceOf( NotFoundException.class ) ) );
     }
 
 }

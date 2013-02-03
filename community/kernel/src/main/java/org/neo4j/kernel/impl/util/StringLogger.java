@@ -22,8 +22,9 @@ package org.neo4j.kernel.impl.util;
 import static org.neo4j.helpers.collection.IteratorUtil.loop;
 
 import java.io.File;
-import java.io.FileWriter;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.Writer;
 import java.util.Iterator;
@@ -36,6 +37,7 @@ import org.neo4j.helpers.collection.Visitor;
 public abstract class StringLogger
 {
     public static final String DEFAULT_NAME = "messages.log";
+    public static final String DEFAULT_ENCODING = "UTF-8";
     public static final StringLogger SYSTEM =
             new ActualStringLogger( new PrintWriter( System.out, true ) )
             {
@@ -57,7 +59,8 @@ public abstract class StringLogger
     {
         try
         {
-            return new ActualStringLogger( new PrintWriter( new FileWriter( logfile, true ) ) );
+            return new ActualStringLogger( new PrintWriter(
+                    new OutputStreamWriter( new FileOutputStream( logfile, true), DEFAULT_ENCODING ) ) );
         }
         catch ( IOException cause )
         {
@@ -410,6 +413,7 @@ public abstract class StringLogger
         private final Integer rotationThreshold;
         private final File file;
         private final List<Runnable> onRotation = new CopyOnWriteArrayList<Runnable>();
+        private String encoding = "UTF-8";
 
         private ActualStringLogger( String filename, int rotationThreshold )
         {
@@ -444,7 +448,7 @@ public abstract class StringLogger
 
         private void instantiateWriter() throws IOException
         {
-            out = new PrintWriter( new FileWriter( file, true ) );
+            out = new PrintWriter( new OutputStreamWriter( new FileOutputStream( file, true ), encoding ) );
             for ( Runnable trigger : onRotation )
             {
                 trigger.run();
@@ -454,7 +458,6 @@ public abstract class StringLogger
         @Override
         public synchronized void logMessage( String msg, boolean flush )
         {
-//            ensureOpen();
             out.println( time() + " INFO  [org.neo4j]: " + msg );
             if ( flush )
             {
@@ -471,7 +474,6 @@ public abstract class StringLogger
         @Override
         public synchronized void logMessage( String msg, Throwable cause, boolean flush )
         {
-//            ensureOpen();
             out.println( time() + " ERROR [org.neo4j]: " + msg + " " + cause.getMessage());
             cause.printStackTrace( out );
             if ( flush )
@@ -498,30 +500,6 @@ public abstract class StringLogger
         {
             out.println( "    " + line );
         }
-
-//        private void ensureOpen()
-//        {
-//            /*
-//             * Since StringLogger has instances in its own static map and HA graph db
-//             * does internal restarts of the database the StringLogger instances are kept
-//             * whereas the actual files can be removed/replaced, making the PrintWriter
-//             * fail at writing stuff and also swallowing those exceptions(!). Since we
-//             * have this layout of static map of loggers we'll have to reopen the PrintWriter
-//             * in such occasions. It'd be better to tie each StringLogger to a GraphDatabaseService.
-//             */
-//            if ( out.checkError() )
-//            {
-//                out.close();
-//                try
-//                {
-//                    instantiateWriter();
-//                }
-//                catch ( IOException e )
-//                {
-//                    throw new RuntimeException( e );
-//                }
-//            }
-//        }
 
         private volatile boolean doingRotation = false;
 

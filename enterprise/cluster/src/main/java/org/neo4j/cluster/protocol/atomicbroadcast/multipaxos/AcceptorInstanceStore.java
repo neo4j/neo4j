@@ -30,5 +30,7 @@ public interface AcceptorInstanceStore
 
     void accept( AcceptorInstance instance, Object value );
 
+    void lastDelivered(InstanceId instanceId);
+
     void clear();
 }

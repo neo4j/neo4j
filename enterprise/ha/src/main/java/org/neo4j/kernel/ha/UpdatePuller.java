@@ -24,6 +24,8 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.com.ComException;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.ha.com.master.Master;
+import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifecycle;

@@ -91,9 +91,9 @@ public abstract class GraphDatabaseSettings
 
     @Description("Whether to allow a store upgrade in case the current version of the database starts against an " +
             "older store version. " +
-            "Setting this to true does not guarantee successful upgrade, just" +
+            "Setting this to true does not guarantee successful upgrade, just " +
             "that it allows an attempt at it.")
-    public static BooleanSetting allow_store_upgrade = new BooleanSetting( setting("allow_store_upgrade", BOOLEAN, FALSE) );
+    public static final BooleanSetting allow_store_upgrade = new BooleanSetting( setting("allow_store_upgrade", BOOLEAN, FALSE) );
 
     @Description("Determines whether any TransactionInterceptors loaded will intercept " +
             "externally received transactions (e.g. in HA) before they reach the " +
@@ -122,7 +122,7 @@ public abstract class GraphDatabaseSettings
 
     // Remote logging
     @Description("Whether to enable logging to a remote server or not.")
-    public static GraphDatabaseSetting<Boolean> remote_logging_enabled = new BooleanSetting(setting("remote_logging_enabled", BOOLEAN, FALSE ));
+    public static final GraphDatabaseSetting<Boolean> remote_logging_enabled = new BooleanSetting(setting("remote_logging_enabled", BOOLEAN, FALSE ));
 
     @Description("Host for remote logging using LogBack SocketAppender.")
     public static final StringSetting remote_logging_host = new StringSetting( setting("remote_logging_host", STRING, "127.0.0.1", illegalValueMessage( "Must be a valid hostname", matches( ANY ) ) ));

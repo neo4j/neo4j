@@ -33,10 +33,6 @@ enum PrimitiveTypeFetcher
         @Override
         long getId( Path source )
         {
-            if ( source == null )
-                System.out.println( "source null" );
-            if ( source.endNode() == null )
-                System.out.println( "endNode null for " + source );
             return source.endNode().getId();
         }
 
