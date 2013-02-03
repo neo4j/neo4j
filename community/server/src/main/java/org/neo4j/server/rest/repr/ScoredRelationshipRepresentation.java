@@ -30,6 +30,12 @@ public final class ScoredRelationshipRepresentation extends
     }
 
     @Override
+    protected ValueRepresentation getId()
+    {
+        return getDelegate().id();
+    }
+
+    @Override
     public String getIdentity()
     {
         return getDelegate().getIdentity();

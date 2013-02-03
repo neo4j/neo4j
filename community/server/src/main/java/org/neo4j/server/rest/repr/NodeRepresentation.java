@@ -46,6 +46,12 @@ public final class NodeRepresentation extends ObjectRepresentation implements Ex
         return ValueRepresentation.uri( path( "" ) );
     }
 
+    @Mapping( "id" )
+    public ValueRepresentation id()
+    {
+        return ValueRepresentation.number( getId() );
+    }
+
     public long getId()
     {
         return node.getId();

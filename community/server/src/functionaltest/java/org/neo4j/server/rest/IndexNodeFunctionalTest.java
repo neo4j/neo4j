@@ -305,20 +305,22 @@ public class IndexNodeFunctionalTest extends AbstractRestFunctionalTestBase
                         + "?query=Name:Build~0.1%20AND%20Gender:Male" ).entity();
 
         Collection<?> hits = (Collection<?>) JsonHelper.jsonToSingleValue( entity );
-        LinkedHashMap<String, String> nodeMapUnordered = (LinkedHashMap) hits.iterator().next();
+        Map<String, String> nodeMapUnordered = (Map<String, String>) hits.iterator().next();
 
         entity = gen().expectedStatus( 200 ).get(
                 functionalTestHelper.indexNodeUri( indexName )
                         + "?query=Name:Build~0.1%20AND%20Gender:Male&order=score" ).entity();
 
         hits = (Collection<?>) JsonHelper.jsonToSingleValue( entity );
-        LinkedHashMap<String, String> nodeMapOrdered = (LinkedHashMap) hits.iterator().next();
+        Map<String, String> nodeMapOrdered = (Map<String, String>) hits.iterator().next();
 
         for ( Map.Entry<String, String> unorderedEntry : nodeMapUnordered.entrySet() )
         {
-            assertEquals( "wrong entry for key: " + unorderedEntry.getKey(),
+            String k = unorderedEntry.getKey();
+            assertTrue("value missing: " + k, nodeMapOrdered.containsKey(k) );
+            assertEquals( "wrong entry for key: " + k,
                     unorderedEntry.getValue(),
-                    nodeMapOrdered.get( unorderedEntry.getKey() ) );
+                    nodeMapOrdered.get(k) );
         }
         assertTrue( "There should be only one extra value for the ordered map",
                 nodeMapOrdered.size() == nodeMapUnordered.size() + 1 );
