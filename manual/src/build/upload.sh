@@ -8,7 +8,7 @@ DIR=$(cd `dirname $0` && cd ../../ && pwd)
 
 
 # Which version the documentation is now.
-VERSION=$(cat $DIR/target/classes/version)
+VERSION=$(cat $DIR/target/src/version)
 
 # Name of the symlink created on the docs server, pointing to this version.
 if [[ $VERSION == *SNAPSHOT* ]]
