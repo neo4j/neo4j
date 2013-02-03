@@ -28,6 +28,8 @@ object Query {
   def unique(cmds:UniqueLink*) = new QueryBuilder(Seq(CreateUniqueStartItem(CreateUniqueAction(cmds:_*))))
 }
 
+trait AbstractQuery
+
 case class Query(returns: Return,
                  start: Seq[StartItem],
                  updatedCommands:Seq[UpdateAction],
@@ -38,7 +40,7 @@ case class Query(returns: Return,
                  slice: Option[Slice],
                  namedPaths: Seq[NamedPath],
                  tail:Option[Query] = None,
-                 queryString: String = "") {
+                 queryString: String = "") extends AbstractQuery {
   override def equals(p1: Any): Boolean =
     if (p1 == null)
       false

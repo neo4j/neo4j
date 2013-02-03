@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher
 
-import internal.commands.Query
+import internal.commands.AbstractQuery
 
 class CypherParser(version: String) {
   def this() = this("2.0")
@@ -31,7 +31,7 @@ class CypherParser(version: String) {
   val v20 = new internal.parser.v2_0.CypherParserImpl
 
   @throws(classOf[SyntaxException])
-  def parse(queryText: String): Query = {
+  def parse(queryText: String): AbstractQuery = {
 
     val (v, q) = queryText match {
       case hasVersionDefined(v1, q1) => (v1, q1)

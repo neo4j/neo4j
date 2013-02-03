@@ -2130,7 +2130,7 @@ foreach(x in [1,2,3] :
     test_1_9(query, expectedQuery)
   }
 
-  def testQuery(version: Option[String], query: String, expectedQuery: Query) {
+  def testQuery(version: Option[String], query: String, expectedQuery: AbstractQuery) {
     val parser = new CypherParser()
 
     val (qWithVer, message) = version match {

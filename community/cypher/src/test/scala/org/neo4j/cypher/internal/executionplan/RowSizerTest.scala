@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.executionplan
 import org.junit.{Before, Test}
 import org.scalatest.Assertions
 import org.neo4j.cypher.CypherParser
+import org.neo4j.cypher.internal.commands.Query
 
 class RowSizerTest extends Assertions {
   var sizer: RowSizer = null
@@ -72,5 +73,5 @@ class RowSizerTest extends Assertions {
 
   val parser = new CypherParser()
 
-  def parse(s: String): PartiallySolvedQuery = PartiallySolvedQuery(parser.parse(s))
+  def parse(s: String): PartiallySolvedQuery = PartiallySolvedQuery(parser.parse(s).asInstanceOf[Query])
 }

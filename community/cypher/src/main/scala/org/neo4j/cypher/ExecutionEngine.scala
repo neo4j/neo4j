@@ -73,15 +73,15 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
 
   @throws(classOf[SyntaxException])
   @deprecated(message = "You should not parse queries manually any more. Use the execute(String) instead")
-  def execute(query: Query): ExecutionResult = execute(query, Map[String, Any]())
+  def execute(query: AbstractQuery): ExecutionResult = execute(query, Map[String, Any]())
 
   @throws(classOf[SyntaxException])
   @deprecated(message = "You should not parse queries manually any more. Use the execute(String) instead")
-  def execute(query: Query, map: JavaMap[String, Any]): ExecutionResult = execute(query, map.asScala.toMap)
+  def execute(query: AbstractQuery, map: JavaMap[String, Any]): ExecutionResult = execute(query, map.asScala.toMap)
 
   @throws(classOf[SyntaxException])
   @deprecated(message = "You should not parse queries manually any more. Use the execute(String) instead")
-  def execute(query: Query, params: Map[String, Any]): ExecutionResult = {
+  def execute(query: AbstractQuery, params: Map[String, Any]): ExecutionResult = {
     val ctx = new TransactionBoundQueryContext(graph.asInstanceOf[GraphDatabaseAPI])
     planBuilder.build(query).execute(ctx, params)
   }
