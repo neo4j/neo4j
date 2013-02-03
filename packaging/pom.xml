@@ -86,12 +86,6 @@ terms of the relevant Commercial Agreement.
           <type>pom</type>
         </dependency>
         <dependency>
-          <groupId>org.neo4j.drivers</groupId>
-          <artifactId>neo4j-python-embedded</artifactId>
-          <version>${project.version}</version>
-          <type>pom</type>
-        </dependency>
-        <dependency>
           <groupId>org.neo4j.server.plugin</groupId>
           <artifactId>neo4j-cypher-plugin</artifactId>
           <version>${project.version}</version>
