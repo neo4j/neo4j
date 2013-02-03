@@ -1,4 +1,29 @@
 .overlay
-  #splash
-    %img#splash-logo(src="img/logo.png")
-    %h1(style="background: url('@@splash.icon@@') no-repeat scroll center top transparent") @@neo4j.version@@ @@neo4j.codename@@
+#guide
+  #guide-header
+    %ul.button-bar.grouped
+      %li
+        %a.micro-button.close-guide
+          %i.icon-remove
+    %h1(style="background: url('@@splash.icon@@') no-repeat scroll center top transparent") 
+      %img#splash-logo(src="img/logo.png")
+      @@neo4j.version@@ @@neo4j.codename@@
+  %article.deck-container
+    %section.slide
+      %h2 This look
+      %ol
+        %li
+          %h3 Write Slides
+          %p Slide content is simple HTML.
+        %li
+          %h3 Choose Themes
+          %p One for slide styles and one for deck transitions
+    %section.slide
+      %h2 Sliding Too
+      %ol
+        %li
+          %h3 Write Slides
+          %p Slide content is simple HTML.
+        %li
+          %h3 Choose Themes
+          %p One for slide styles and one for deck transitions

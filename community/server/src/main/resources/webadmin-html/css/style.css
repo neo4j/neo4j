@@ -8,6 +8,8 @@
 @import url(grid.css);
 @import url(../lib/colorpicker/css/colorpicker.css);
 @import url(../js/lib/codemirror2/codemirror.css);
+@import url(../lib/deck/css/deck-neo4j.css);
+@import url(../lib/bootstrap/css/bootstrap.css);
 
 body { 
   width:100%; 
@@ -39,7 +41,7 @@ body {
 
 #splash {
   margin: 15% auto;
-  width: 152px;
+  /*width: 152px;*/
 }
 
 #splash h1 {
@@ -582,7 +584,7 @@ body {
   background: none repeat scroll 0 0 black;
   bottom: 0;
   left: 0;
-  opacity: 0.9;
+  opacity: 0.7;
   position: fixed;
   right: 0;
   top: 0;

@@ -1,0 +1,39 @@
+@import url(deck.core.css);
+@import url(deck.goto.css);
+@import url(deck.menu.css);
+@import url(deck.navigation.css);
+@import url(deck.status.css);
+@import url(deck.hash.css);
+@import url(deck.scale.css);
+@import url(horizontal-slide.css);
+
+@import url(neon.css);
+
+#guide {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 100%;
+  margin: 2em;
+
+  display: none;
+  z-index:1001;
+}
+
+#guide-header { 
+  position:  fixed;
+  top: 0;
+  left: 0;
+  width:100%; 
+  height:50px; 
+  background:url("../img/tab_shade.png") repeat-x scroll center bottom #333333;  
+}
+
+#guide-header .button-bar {
+  float: right;
+}
+
+#guide-header h1 {
+  color: white;
+}

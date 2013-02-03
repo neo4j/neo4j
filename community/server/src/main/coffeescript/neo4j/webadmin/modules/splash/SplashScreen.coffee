@@ -21,29 +21,44 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 define( 
   ['./splash'
    'ribcage/storage/CookieStorage'
-   'lib/amd/jQuery'], 
-  (template, CookieStorage, $) ->
+   'lib/amd/jQuery'
+   'neo4j/webadmin/modules/baseui/models/MainMenuModel'
+   'lib/amd/Deck'
+   ], 
+  (template, CookieStorage, $, MainMenuModel, Deck) ->
     
     class Splash
-      
+
       constructor : ->
         @cookies = new CookieStorage
 
       init : ->
+        # Show boot screen for flashiness
+        @splash = $(template())
+        $("body").append(@splash)
+
+        $('.close-guide').click( (event) =>
+          @hide()
+        )
         if not @hasBeenShownForThisSession()
           @show()
 
       hasBeenShownForThisSession : ->
         @cookies.get("splashShown1.6") != null
+        false
 
-      show : ->
+      show : (deckUrl) ->
+        deckUrl = (if (typeof deckUrl is "undefined") then "/webadmin/deck/welcome.html" else deckUrl)
+        $('.deck-container').load(deckUrl, =>
+            Deck('.slide')
+        )
+        @splash.fadeIn(200)
         @cookies.set("splashShown1.6", "1")
-        # Show boot screen for flashiness
-        splash = $(template())
-        $("body").append(splash)
+
         
-        hideSplash = ->
-          splash.fadeOut(600)
+      hide : ->
+        @splash.fadeOut(400, => 
+          @cookies.set("splashShown1.6", "0")
+        )
         
-        setTimeout hideSplash, 1500
 )
