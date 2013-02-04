@@ -188,28 +188,9 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
-<<<<<<< HEAD
-      <groupId>org.neo4j.drivers</groupId>
-      <artifactId>neo4j-python-embedded</artifactId>
-=======
-      <groupId>org.neo4j.server.plugin</groupId>
-      <artifactId>neo4j-gremlin-plugin</artifactId>
->>>>>>> master
-      <version>${neo4j.version}</version>
-      <classifier>docs</classifier>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-<<<<<<< HEAD
-      <groupId>org.neo4j.drivers</groupId>
-      <artifactId>neo4j-python-embedded</artifactId>
-      <version>${neo4j.version}</version>
-      <classifier>test-sources</classifier>
-=======
       <groupId>org.neo4j.build.plugins</groupId>
       <artifactId>neo4j-doctools</artifactId>
       <version>1</version>
->>>>>>> master
       <scope>provided</scope>
     </dependency>
   </dependencies>
