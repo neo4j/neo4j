@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher
 
-import internal.commands.{AbstractQuery, Query}
+import internal.commands.AbstractQuery
 import internal.spi.gdsimpl.TransactionBoundQueryContext
 import org.junit.Before
-import org.neo4j.graphdb.{DynamicLabel, Node}
+import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.DynamicLabel.label
 import collection.JavaConverters._
 

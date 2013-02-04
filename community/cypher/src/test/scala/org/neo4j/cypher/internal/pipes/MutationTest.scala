@@ -26,7 +26,7 @@ import org.neo4j.cypher.{CypherTypeException, ExecutionEngineHelper}
 import collection.mutable.{Map => MutableMap}
 import org.neo4j.graphdb.{Node, NotFoundException}
 import org.neo4j.cypher.internal.symbols.{SymbolTable, CypherType, NodeType}
-import org.neo4j.cypher.internal.commands.expressions.{Expression, Literal}
+import org.neo4j.cypher.internal.commands.expressions.{Collection, Expression, Literal}
 import org.neo4j.cypher.internal.spi.gdsimpl.TransactionBoundQueryContext
 import org.neo4j.cypher.internal.ExecutionContext
 import org.neo4j.cypher.internal.spi.QueryContext
@@ -44,7 +44,7 @@ class MutationTest extends ExecutionEngineHelper with Assertions {
   @Test
   def create_node() {
     val start = new NullPipe
-    val createNode = new ExecuteUpdateCommandsPipe(start, graph, Seq(CreateNode("n", Map("name" -> Literal("Andres")), Literal(Seq.empty))))
+    val createNode = new ExecuteUpdateCommandsPipe(start, graph, Seq(CreateNode("n", Map("name" -> Literal("Andres")), Collection.empty)))
 
     val queryState = createQueryState
     createNode.createResults(queryState).toList
@@ -59,7 +59,7 @@ class MutationTest extends ExecutionEngineHelper with Assertions {
   def join_existing_transaction_and_rollback() {
     val tx = graph.beginTx()
     val start = new NullPipe
-    val createNode = new ExecuteUpdateCommandsPipe(start, graph, Seq(CreateNode("n", Map("name" -> Literal("Andres")), Literal(Seq.empty))))
+    val createNode = new ExecuteUpdateCommandsPipe(start, graph, Seq(CreateNode("n", Map("name" -> Literal("Andres")), Collection.empty)))
 
     createNode.createResults(createQueryState).toList
 
@@ -73,7 +73,7 @@ class MutationTest extends ExecutionEngineHelper with Assertions {
   def join_existing_transaction_and_commit() {
     val tx = graph.beginTx()
     val start = new NullPipe
-    val createNode = new ExecuteUpdateCommandsPipe(start, graph, Seq(CreateNode("n", Map("name" -> Literal("Andres")), Literal(Seq.empty))))
+    val createNode = new ExecuteUpdateCommandsPipe(start, graph, Seq(CreateNode("n", Map("name" -> Literal("Andres")), Collection.empty)))
 
     createNode.createResults(createQueryState).toList
 
@@ -92,8 +92,8 @@ class MutationTest extends ExecutionEngineHelper with Assertions {
     val b = createNode()
 
     val createRel = CreateRelationship("r",
-      RelationshipEndpoint(getNode("a", a), Map(), Literal(Seq.empty), true),
-      RelationshipEndpoint(getNode("b", b), Map(), Literal(Seq.empty), true), "REL", Map("I" -> Literal("was here")))
+      RelationshipEndpoint(getNode("a", a), Map(), Collection.empty, true),
+      RelationshipEndpoint(getNode("b", b), Map(), Collection.empty, true), "REL", Map("I" -> Literal("was here")))
 
     val startPipe = new NullPipe
     val createNodePipe = new ExecuteUpdateCommandsPipe(startPipe, graph, Seq(createRel))

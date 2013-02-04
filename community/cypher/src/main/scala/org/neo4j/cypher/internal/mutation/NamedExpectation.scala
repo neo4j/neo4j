@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.mutation
 
-import org.neo4j.cypher.internal.commands.expressions.{Literal, Identifier, Expression}
+import org.neo4j.cypher.internal.commands.expressions.{Collection, Literal, Identifier, Expression}
 import org.neo4j.cypher.internal.symbols.{SymbolTable, TypeSafe}
 import org.neo4j.graphdb.{Relationship, Node, PropertyContainer}
 import collection.Map
@@ -31,10 +31,10 @@ object NamedExpectation {
   def apply(name: String, bare: Boolean): NamedExpectation = NamedExpectation(name, Map.empty, bare)
 
   def apply(name: String, properties: Map[String, Expression], bare: Boolean): NamedExpectation =
-    NamedExpectation(name, properties, Literal(Seq.empty), bare)
+    NamedExpectation(name, properties, Collection.empty, bare)
 
   def apply(name: String, e: Expression, properties: Map[String, Expression], bare: Boolean): NamedExpectation =
-    new NamedExpectation(name, e, properties, Literal(Seq.empty), bare)
+    new NamedExpectation(name, e, properties, Collection.empty, bare)
 
   def apply(name: String, properties: Map[String, Expression], labels: Expression, bare: Boolean): NamedExpectation =
     new NamedExpectation(name, Identifier(name), properties, labels, bare)

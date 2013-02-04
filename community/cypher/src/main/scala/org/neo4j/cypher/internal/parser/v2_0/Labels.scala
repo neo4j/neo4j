@@ -24,7 +24,32 @@ import org.neo4j.cypher.internal.commands.values.LabelName
 
 trait Labels extends Base {
   def labelLit: Parser[Literal] = ":" ~> identity ^^ { x => Literal(LabelName(x)) }
-  def labelShortForm: Parser[Literal] = rep1(labelLit) ^^ (coll => Literal(coll.map(_.v)))
-  def labelLongForm: Parser[Expression] = labelShortForm | ignoreCase("label") ~> (labelShortForm | expression)
+
+  def labelShortForm: Parser[LabelSet] = rep1(labelLit) ^^ {
+    case litList =>
+      LabelSet(Some(Literal(litList.map(_.v))))
+  }
+
+  private def labelExpr: Parser[LabelSet] = expression ^^ (expr => LabelSet(Some(expr)))
+
+  private def labelKeywordForm: Parser[LabelSet] = ignoreCase("label") ~> (labelShortForm | labelExpr)
+
+  private def labelGroupsForm: Parser[LabelSpec] = rep1sep(labelShortForm, "|") ^^ {
+    case labelSets => LabelChoice(labelSets: _*).simplify
+  }
+
+  def labelChoiceForm: Parser[LabelSpec] = labelGroupsForm | labelKeywordForm
+
+  def optLabelChoiceForm: Parser[LabelSpec] = opt(labelChoiceForm) ^^ {
+    case optSpec => optSpec.getOrElse(LabelSet.empty)
+  }
+
+  def labelLongForm: Parser[LabelSet] = labelShortForm | labelKeywordForm
+
+  def optLabelLongForm: Parser[LabelSet] = opt(labelLongForm) ^^ {
+    case optSpec => optSpec.getOrElse(LabelSet.empty)
+  }
+
   def expression: Parser[Expression]
 }
+

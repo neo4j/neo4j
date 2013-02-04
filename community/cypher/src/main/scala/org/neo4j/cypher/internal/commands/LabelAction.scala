@@ -33,16 +33,16 @@ sealed abstract class LabelOp
 case object LabelAdd extends LabelOp
 case object LabelDel extends LabelOp
 
-case class LabelAction(entity: Expression, labelOp: LabelOp, labelSetExpr: Expression)
-  extends UpdateAction with GraphElementPropertyFunctions with CollectionSupport with LabelSupport {
+case class LabelAction(entity: Expression, labelOp: LabelOp, labelSet: Expression)
+  extends UpdateAction with GraphElementPropertyFunctions with CollectionSupport {
 
-  def children = Seq(entity, labelSetExpr)
-  def rewrite(f: (Expression) => Expression) = LabelAction(entity.rewrite(f), labelOp, labelSetExpr.rewrite(f))
+  def children = labelSet.children :+ entity
+  def rewrite(f: (Expression) => Expression) = LabelAction(entity.rewrite(f), labelOp, labelSet.rewrite(f))
 
   def exec(context: ExecutionContext, state: QueryState) = {
     val node      = CastSupport.erasureCastOrFail[Node](entity(context))
     val queryCtx  = state.queryContext
-    val labelIds: Iterable[Long] = getLabelsAsLongs(context, labelSetExpr)
+    val labelIds: Iterable[Long] = LabelSupport.getLabelsAsLongs(context, labelSet)
 
     labelOp match {
       case LabelAdd => queryCtx.addLabelsToNode(node.getId, labelIds)
@@ -56,8 +56,8 @@ case class LabelAction(entity: Expression, labelOp: LabelOp, labelSetExpr: Expre
 
   def throwIfSymbolsMissing(symbols: SymbolTable) {
     entity.throwIfSymbolsMissing(symbols)
-    labelSetExpr.throwIfSymbolsMissing(symbols)
+    labelSet.throwIfSymbolsMissing(symbols)
   }
 
-  def symbolTableDependencies = entity.symbolTableDependencies ++ labelSetExpr.symbolTableDependencies
+  def symbolTableDependencies = entity.symbolTableDependencies ++ labelSet.symbolTableDependencies
 }

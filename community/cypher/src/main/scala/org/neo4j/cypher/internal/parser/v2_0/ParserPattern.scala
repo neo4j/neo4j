@@ -89,12 +89,11 @@ trait ParserPattern extends Base with Labels {
 
   private def values = (("="|ignoreCase("values")) ~> curlyMapWithExpression) | curlyMap
 
-  private def labelsAndValues: Parser[(Expression, Map[String, Expression], Boolean)] = opt(labelLongForm) ~ opt(values) ^^ {
-    case optLabels ~ optMap =>
+  private def labelsAndValues: Parser[(LabelSpec, Map[String, Expression], Boolean)] = optLabelChoiceForm ~ opt(values) ^^ {
+    case labelSpec ~ optMap =>
       val mapVal = optMap.getOrElse(Map.empty)
-      val labelsVal = optLabels.getOrElse(Literal(Seq.empty))
-      val bare = optMap.isEmpty && optLabels.isEmpty
-      (labelsVal, mapVal, bare)
+      val bare = labelSpec.bare && optMap.isEmpty
+      (labelSpec, mapVal, bare)
   }
 
   private def singleNodeDefinition = identity ~ labelsAndValues ^^ {
@@ -113,9 +112,9 @@ trait ParserPattern extends Base with Labels {
   private def nodeFromExpression = Parser {
     case in => expression(in) match {
       case Success(exp@Identifier(name), rest) =>
-        Success(ParsedEntity(name, exp, Map[String, Expression](), True(), Literal(Seq.empty), true), rest)
+        Success(ParsedEntity(name, exp, Map[String, Expression](), True(), LabelSet.empty, true), rest)
       case Success(exp, rest) =>
-        Success(ParsedEntity(namer.name(None), exp, Map[String, Expression](), True(), Literal(Seq.empty), true), rest)
+        Success(ParsedEntity(namer.name(None), exp, Map[String, Expression](), True(), LabelSet.empty, true), rest)
       case x: Error =>
         x
       case Failure(msg, rest) =>

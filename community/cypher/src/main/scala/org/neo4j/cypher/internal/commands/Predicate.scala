@@ -25,7 +25,6 @@ import org.neo4j.cypher.internal.symbols._
 import org.neo4j.cypher.CypherTypeException
 import org.neo4j.cypher.internal.helpers.{LabelSupport, CastSupport, IsCollection, CollectionSupport}
 import org.neo4j.cypher.internal.ExecutionContext
-import org.neo4j.cypher.internal.spi.QueryContext
 
 abstract class Predicate extends Expression {
   def apply(ctx: ExecutionContext) = isMatch(ctx)
@@ -295,12 +294,12 @@ case class NonEmpty(collection:Expression) extends Predicate with CollectionSupp
   def symbolTableDependencies = collection.symbolTableDependencies
 }
 
-case class HasLabel(entity: Expression, labels: Expression) extends Predicate with LabelSupport with CollectionSupport {
+case class HasLabel(entity: Expression, labels: Expression) extends Predicate with CollectionSupport {
   def isMatch(m: ExecutionContext): Boolean = {
     val node           = CastSupport.erasureCastOrFail[Node](entity(m))
     val nodeId         = node.getId
     val queryCtx       = m.state.queryContext
-    val expectedLabels = getLabelsAsLongs(m, labels)
+    val expectedLabels = LabelSupport.getLabelsAsLongs(m, labels)
 
     expectedLabels.forall(queryCtx.isLabelSetOnNode(_, nodeId))
   }

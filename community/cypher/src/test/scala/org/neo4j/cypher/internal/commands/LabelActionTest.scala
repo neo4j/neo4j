@@ -28,6 +28,7 @@ import org.neo4j.graphdb.{Direction, Node}
 import org.neo4j.cypher.internal.pipes.QueryState
 import org.junit.Test
 import values.{ResolvedLabel, LabelName}
+import org.neo4j.cypher.internal.parser.v2_0.LabelSet
 
 class LabelActionTest extends GraphDatabaseTestBase with Assertions {
   val queryContext = new SnitchingQueryContext

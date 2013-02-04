@@ -36,7 +36,8 @@ case class RelationshipEndpoint(node: Expression, props: Map[String, Expression]
     labels.throwIfSymbolsMissing(symbols)
   }
 
-  def symbolTableDependencies: Set[String] = props.symboltableDependencies ++ labels.symbolTableDependencies
+  def symbolTableDependencies: Set[String] =
+    props.symboltableDependencies ++ labels.symbolTableDependencies
 }
 
 case class CreateRelationship(key: String,
