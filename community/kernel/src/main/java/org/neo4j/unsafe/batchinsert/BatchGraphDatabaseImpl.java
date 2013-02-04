@@ -35,6 +35,7 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ReturnableEvaluator;
+import org.neo4j.graphdb.Schema;
 import org.neo4j.graphdb.StopEvaluator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.Traverser;
@@ -822,6 +823,12 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
             KernelEventHandler handler )
     {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Schema schema()
+    {
+        throw new UnsupportedOperationException("Schema modification is currently not available through the Batch API.");
     }
 
     @Override

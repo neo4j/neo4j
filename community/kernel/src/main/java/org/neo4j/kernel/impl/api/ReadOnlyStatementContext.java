@@ -20,8 +20,8 @@
 package org.neo4j.kernel.impl.api;
 
 import org.neo4j.graphdb.NotInTransactionException;
+import org.neo4j.kernel.api.ConstraintViolationKernelException;
 import org.neo4j.kernel.api.LabelNotFoundKernelException;
-import org.neo4j.kernel.api.SchemaException;
 import org.neo4j.kernel.api.StatementContext;
 
 public class ReadOnlyStatementContext implements StatementContext
@@ -82,7 +82,7 @@ public class ReadOnlyStatementContext implements StatementContext
     }
 
     @Override
-    public void addIndexRule( long labelId, String propertyKey ) throws SchemaException
+    public void addIndexRule( long labelId, String propertyKey ) throws ConstraintViolationKernelException
     {
         throw readOnlyException();
     }

@@ -104,6 +104,7 @@ public interface GraphDatabaseService
      * @return all nodes in the graph.
      * @deprecated this operation can be found in {@link GlobalGraphOperations} instead.
      */
+    @Deprecated
     public Iterable<Node> getAllNodes();
     
     /**
@@ -119,6 +120,7 @@ public interface GraphDatabaseService
      * @return all relationship types in the underlying store
      * @deprecated this operation can be found in {@link GlobalGraphOperations} instead.
      */
+    @Deprecated
     public Iterable<RelationshipType> getRelationshipTypes();
 
     /**
@@ -201,7 +203,9 @@ public interface GraphDatabaseService
      */
     public KernelEventHandler unregisterKernelEventHandler(
             KernelEventHandler handler );
-    
+
+    public Schema schema();
+
     /**
      * Returns the {@link IndexManager} paired with this graph database service
      * and is the entry point for managing indexes coupled with this database.

@@ -42,6 +42,7 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ReturnableEvaluator;
+import org.neo4j.graphdb.Schema;
 import org.neo4j.graphdb.StopEvaluator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.Traverser;
@@ -333,6 +334,12 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
     public KernelEventHandler unregisterKernelEventHandler( KernelEventHandler handler )
     {
         return readOnly();
+    }
+
+    @Override
+    public Schema schema()
+    {
+        return new ReadOnlySchemaProxy(actual.schema());
     }
 
     @Override
@@ -1006,6 +1013,29 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
         public float currentScore()
         {
             return actual.currentScore();
+        }
+    }
+
+    private class ReadOnlySchemaProxy implements Schema
+    {
+        private final Schema actual;
+
+        public ReadOnlySchemaProxy( Schema actual )
+        {
+
+            this.actual = actual;
+        }
+
+        @Override
+        public void createIndex( Label label, String propertyKey )
+        {
+            readOnly();
+        }
+
+        @Override
+        public Iterable<String> getIndexes( Label label )
+        {
+            return actual.getIndexes( label );
         }
     }
 

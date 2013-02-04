@@ -31,7 +31,7 @@ import java.util.Set;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Predicate;
-import org.neo4j.kernel.api.SchemaException;
+import org.neo4j.kernel.api.ConstraintViolationKernelException;
 import org.neo4j.kernel.api.StatementContext;
 
 public class TransactionStateAwareStatementContext extends DelegatingStatementContext
@@ -119,13 +119,13 @@ public class TransactionStateAwareStatementContext extends DelegatingStatementCo
     {
         if ( successful )
         {
-            commitLabelState();
-            commitSchemaState();
+            applyLabelChangesToTransaction();
+            applySchemaChangesToTransaction();
         }
         delegate.close( successful );
     }
 
-    private void commitLabelState()
+    private void applyLabelChangesToTransaction()
     {
         for ( TxState.NodeState node : state.getNodes() )
         {
@@ -136,7 +136,7 @@ public class TransactionStateAwareStatementContext extends DelegatingStatementCo
         }
     }
 
-    private void commitSchemaState()
+    private void applySchemaChangesToTransaction()
     {
         try
         {
@@ -144,14 +144,14 @@ public class TransactionStateAwareStatementContext extends DelegatingStatementCo
                 for ( Pair<Long,String> indexedProperty : entry.getValue() )
                     delegate.addIndexRule( entry.getKey(), indexedProperty.other() );
         }
-        catch ( SchemaException e )
+        catch ( ConstraintViolationKernelException e )
         {
             throw new TransactionFailureException( "Late unexpected schema exception", e );
         }
     }
 
     @Override
-    public void addIndexRule( long labelId, String propertyKey ) throws SchemaException
+    public void addIndexRule( long labelId, String propertyKey ) throws ConstraintViolationKernelException
     {
         for ( String existingPropertyKey : getIndexRules( labelId ) )
         {

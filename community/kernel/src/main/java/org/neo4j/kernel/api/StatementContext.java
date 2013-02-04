@@ -131,9 +131,9 @@ public interface StatementContext
      * 
      * @param labelId the label id to attach the rule to.
      * @param propertyKey the property key to index.
-     * @throws SchemaException if a similar or conflicting rule already exists.
+     * @throws ConstraintViolationKernelException if a similar or conflicting rule already exists.
      */
-    void addIndexRule( long labelId, String propertyKey ) throws SchemaException;
+    void addIndexRule( long labelId, String propertyKey ) throws ConstraintViolationKernelException;
     
     /**
      * @param labelId the label to get rules for.

@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.neo4j.kernel.api.SchemaException;
+import org.neo4j.kernel.api.ConstraintViolationKernelException;
 import org.neo4j.kernel.api.StatementContext;
 
 public class LockingStatementContext extends DelegatingStatementContext
@@ -47,7 +47,7 @@ public class LockingStatementContext extends DelegatingStatementContext
     }
     
     @Override
-    public void addIndexRule( long labelId, String propertyKey ) throws SchemaException
+    public void addIndexRule( long labelId, String propertyKey ) throws ConstraintViolationKernelException
     {
         lockHolder.acquireSchemaWriteLock();
         delegate.addIndexRule( labelId, propertyKey );

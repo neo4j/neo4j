@@ -20,23 +20,21 @@
 package org.neo4j.kernel.impl.api;
 
 import static java.util.Arrays.asList;
+import static org.junit.Assert.fail;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.anyString;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 import org.junit.Test;
 import org.mockito.Mockito;
 import org.neo4j.kernel.api.ConstraintViolationKernelException;
-import org.neo4j.kernel.api.SchemaException;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 
 public class ConstraintEvaluatingStatementContextTest
 {
     @Test
-    public void shouldIgnoreExistingSchemaRules() throws SchemaException
+    public void shouldDisallowReAddingExistingSchemaRules() throws Exception
     {
         // GIVEN
         int label = 0;
@@ -47,7 +45,11 @@ public class ConstraintEvaluatingStatementContextTest
         when( inner.getIndexRules( rule.getLabel() ) ).thenReturn( asList( rule.getPropertyKey() ) );
 
         // WHEN
-        ctx.addIndexRule( label, propertyKey );
+        try
+        {
+            ctx.addIndexRule( label, propertyKey );
+            fail("Should have thrown exception.");
+        } catch(ConstraintViolationKernelException e) { }
 
         // THEN
         verify( inner, never() ).addIndexRule( anyLong(), anyString() );

@@ -35,7 +35,6 @@ import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.api.ConstraintViolationKernelException;
 import org.neo4j.kernel.api.LabelNotFoundKernelException;
-import org.neo4j.kernel.api.SchemaException;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.impl.core.KeyNotFoundException;
 import org.neo4j.kernel.impl.core.PropertyIndex;
@@ -288,7 +287,7 @@ public class TemporaryLabelAsPropertyStatementContext implements StatementContex
     }
 
     @Override
-    public void addIndexRule( long labelId, String propertyKey ) throws SchemaException
+    public void addIndexRule( long labelId, String propertyKey ) throws ConstraintViolationKernelException
     {
         SchemaStore schemaStore = neoStore.getSchemaStore();
         long id = schemaStore.nextId();

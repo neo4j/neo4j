@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.api;
 
 import org.neo4j.kernel.api.ConstraintViolationKernelException;
-import org.neo4j.kernel.api.SchemaException;
 import org.neo4j.kernel.api.StatementContext;
 
 public class ConstraintEvaluatingStatementContext extends DelegatingStatementContext
@@ -45,13 +44,12 @@ public class ConstraintEvaluatingStatementContext extends DelegatingStatementCon
     }
     
     @Override
-    public void addIndexRule( long labelId, String propertyKey ) throws SchemaException
+    public void addIndexRule( long labelId, String propertyKey ) throws ConstraintViolationKernelException
     {
         for ( String existingRule : getIndexRules( labelId ) )
         {
             if ( existingRule.equals( propertyKey ) )
-                // TODO throw or just skip?
-                return;
+                throw new ConstraintViolationKernelException("Property " + propertyKey + " is already indexed for label " + labelId + ".");
         }
         delegate.addIndexRule( labelId, propertyKey );
     }

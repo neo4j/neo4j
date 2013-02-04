@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.api;
 
 import org.neo4j.kernel.api.ConstraintViolationKernelException;
 import org.neo4j.kernel.api.LabelNotFoundKernelException;
-import org.neo4j.kernel.api.SchemaException;
 import org.neo4j.kernel.api.StatementContext;
 
 public class DelegatingStatementContext implements StatementContext
@@ -88,7 +87,7 @@ public class DelegatingStatementContext implements StatementContext
     }
 
     @Override
-    public void addIndexRule( long labelId, String propertyKey ) throws SchemaException
+    public void addIndexRule( long labelId, String propertyKey ) throws ConstraintViolationKernelException
     {
         delegate.addIndexRule( labelId, propertyKey );
     }

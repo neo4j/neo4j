@@ -35,6 +35,7 @@ import javax.transaction.NotSupportedException;
 import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
 
+import ch.qos.logback.classic.LoggerContext;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -42,6 +43,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.Schema;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.config.Setting;
@@ -129,8 +131,6 @@ import org.neo4j.kernel.logging.LogbackService;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.tooling.GlobalGraphOperations;
 
-import ch.qos.logback.classic.LoggerContext;
-
 /**
  * Base implementation of GraphDatabaseService. Responsible for creating services, handling dependencies between them,
  * and lifecycle management of these.
@@ -138,7 +138,6 @@ import ch.qos.logback.classic.LoggerContext;
 public abstract class InternalAbstractGraphDatabase
         extends AbstractGraphDatabase implements GraphDatabaseService, GraphDatabaseAPI
 {
-
 
     public static class Configuration
     {
@@ -177,6 +176,7 @@ public abstract class InternalAbstractGraphDatabase
     protected NodeManager nodeManager;
     protected Iterable<IndexProvider> indexProviders;
     protected IndexManagerImpl indexManager;
+    protected Schema schema;
     protected KernelPanicEventGenerator kernelPanicEventGenerator;
     protected TxHook txHook;
     protected FileSystemAbstraction fileSystem;
@@ -449,6 +449,8 @@ public abstract class InternalAbstractGraphDatabase
 //            kernelExtensionLoader = new DefaultKernelExtensionLoader( extensions );
             life.add( kernelExtensions );
         }
+
+        schema = new SchemaImpl(statementContextProvider);
 
         if ( indexProviders == null )
         {
@@ -965,6 +967,12 @@ public abstract class InternalAbstractGraphDatabase
     public IndexManager index()
     {
         return indexManager;
+    }
+
+    @Override
+    public Schema schema()
+    {
+        return schema;
     }
 
     // GraphDatabaseSPI implementation - THESE SHOULD EVENTUALLY BE REMOVED! DON'T ADD dependencies on these!
