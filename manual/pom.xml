@@ -197,7 +197,7 @@
     <dependency>
       <groupId>org.neo4j.build.plugins</groupId>
       <artifactId>neo4j-doctools</artifactId>
-      <version>1</version>
+      <version>5</version>
       <scope>provided</scope>
     </dependency>
   </dependencies>

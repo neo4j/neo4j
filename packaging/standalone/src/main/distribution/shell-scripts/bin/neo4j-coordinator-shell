@@ -18,5 +18,5 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-echo "The Coordinator functionality and corresponding scripts are no longer required for Neo4j HA operations since version 1.9"
+echo "The Coordinator functionality and corresponding scripts are no longer required for Neo4j HA operations since version 1.9" >&2
 exit 1
