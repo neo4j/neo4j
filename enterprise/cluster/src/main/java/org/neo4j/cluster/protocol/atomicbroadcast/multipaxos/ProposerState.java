@@ -135,8 +135,7 @@ public enum ProposerState
                             {
                                 if ( instance.ballot > 10000 )
                                 {
-                                    context.clusterContext.getLogger( ProposerState.class ).warn( "Propose failed due" +
-                                            " to phase 1 timeout" );
+                                    context.clusterContext.getLogger( ProposerState.class ).warn( "Propose failed due to phase 1 timeout" );
 
                                     // Fail this propose
                                     outgoing.offer( Message.internal( AtomicBroadcastMessage.failed,

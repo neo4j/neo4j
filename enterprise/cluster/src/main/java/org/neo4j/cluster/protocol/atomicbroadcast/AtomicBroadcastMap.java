@@ -216,7 +216,8 @@ public class AtomicBroadcastMap<K, V>
 
     private synchronized void checkUpToDate()
     {
-        while ( lastCommand != null )
+        int tries = 100;
+        while ( lastCommand != null  && tries > 0)
         {
             try
             {
@@ -226,7 +227,11 @@ public class AtomicBroadcastMap<K, V>
             {
                 e.printStackTrace();
             }
+            tries--;
         }
+
+        if (tries == 0)
+            throw new IllegalStateException( "Timed out waiting for state to be synchronized" );
     }
 
     public interface MapCommand

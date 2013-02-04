@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <!--
 
     Copyright (c) 2002-2013 "Neo Technology,"
@@ -19,35 +20,32 @@
     along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 -->
-<included>
-  <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
-    <encoder>
-      <pattern>%property{host} %-5level %25c{0}: %message%n</pattern>
-    </encoder>
-  </appender>
+<assembly>
+  <id>contents</id>
+  <includeBaseDirectory>false</includeBaseDirectory>
+  <formats>
+    <format>jar</format>
+  </formats>
+  <fileSets>
+    <fileSet>
+      <directory>target</directory>
+      <outputDirectory>/</outputDirectory>
+      <includes>
+        <include>src/**</include>
+        <include>sources/**</include>
+        <include>test-sources/**</include>
+      </includes>
+    </fileSet>
+    <fileSet>
+      <directory>target</directory>
+      <outputDirectory>/</outputDirectory>
+      <includes>
+        <include>docs/**</include>
+      </includes>
+      <excludes>
+        <exclude>**/images/**</exclude>
+      </excludes>
+    </fileSet>
+  </fileSets>
+</assembly>
 
-  <!--
-    Debug Paxos state machines
-    -->
-    <logger name="org.neo4j.cluster.protocol.atomicbroadcast.multipaxos" level="debug">
-    </logger>
-
-  <!--
-    Debug network messages sent -->
-    <logger name="org.neo4j.cluster.com" level="debug">
-      <appender-ref ref="CONSOLE"/>
-    </logger>
-
-
-  <logger name="org.neo4j.kernel.info.DiagnosticsManager" level="warn">
-  </logger>
-
-
-  <root level="debug">
-    <appender-ref ref="CONSOLE"/>
-  </root>
-
-  <logger name="org.neo4j" additive="true">
-  </logger>
-
-</included>

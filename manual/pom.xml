@@ -21,7 +21,9 @@
     <docs.sourcecode>${project.build.directory}/sources</docs.sourcecode>
     <docs.test-sources>${project.build.directory}/test-sources</docs.test-sources>
     <docs.images>${project.build.outputDirectory}/images</docs.images>
-    <neo4j.version>2.0-SNAPSHOT</neo4j.version>
+    <docs.tools>${project.build.directory}/tools</docs.tools>
+    <neo4j.version>${project.version}</neo4j.version>
+    <attach-docs-phase>none</attach-docs-phase>
   </properties>
 
   <scm>
@@ -186,17 +188,28 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
+<<<<<<< HEAD
       <groupId>org.neo4j.drivers</groupId>
       <artifactId>neo4j-python-embedded</artifactId>
+=======
+      <groupId>org.neo4j.server.plugin</groupId>
+      <artifactId>neo4j-gremlin-plugin</artifactId>
+>>>>>>> master
       <version>${neo4j.version}</version>
       <classifier>docs</classifier>
       <scope>provided</scope>
     </dependency>
     <dependency>
+<<<<<<< HEAD
       <groupId>org.neo4j.drivers</groupId>
       <artifactId>neo4j-python-embedded</artifactId>
       <version>${neo4j.version}</version>
       <classifier>test-sources</classifier>
+=======
+      <groupId>org.neo4j.build.plugins</groupId>
+      <artifactId>neo4j-doctools</artifactId>
+      <version>1</version>
+>>>>>>> master
       <scope>provided</scope>
     </dependency>
   </dependencies>
@@ -204,7 +217,7 @@
   <build>
     <resources>
       <resource>
-        <directory>src/main/resources</directory>
+        <directory>src</directory>
         <filtering>true</filtering>
         <includes>
           <include>version</include>
@@ -212,7 +225,7 @@
         </includes>
       </resource>
       <resource>
-        <directory>src/main/resources</directory>
+        <directory>src</directory>
         <filtering>false</filtering>
         <excludes>
           <exclude>version</exclude>
@@ -229,12 +242,27 @@
             <goals>
               <goal>resources</goal>
             </goals>
+            <configuration>
+              <outputDirectory>${project.build.directory}/src</outputDirectory>
+            </configuration>
           </execution>
         </executions>
       </plugin>
       <plugin>
         <artifactId>maven-dependency-plugin</artifactId>
         <executions>
+          <execution>
+            <id>unpack-doctools</id>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>unpack-dependencies</goal>
+            </goals>
+            <configuration>
+              <type>jar</type>
+              <includeArtifactIds>neo4j-doctools</includeArtifactIds>
+              <outputDirectory>${docs.tools}</outputDirectory>
+            </configuration>
+          </execution>
           <execution>
             <id>unpack-asciidoc-sources</id>
             <phase>generate-sources</phase>
@@ -267,7 +295,7 @@
               <excludes>META-INF,META-INF/**</excludes>
               <type>jar</type>
               <outputDirectory>${docs.test-sources}</outputDirectory>
-              <includeArtifactIds>neo4j-cypher,neo4j-examples,neo4j-server,neo4j-python-embedded,neo4j-lucene-index,neo4j-backup,neo4j-kernel</includeArtifactIds>
+              <includeArtifactIds>neo4j-cypher,neo4j-examples,neo4j-server,neo4j-lucene-index,neo4j-backup,neo4j-kernel</includeArtifactIds>
             </configuration>
           </execution>
           <execution>
@@ -303,95 +331,12 @@
             <configuration>
               <executable>make</executable>
               <arguments>
-                <argument>dist</argument>
-                <argument>VERSION=${project.version}</argument>
-                <argument>IMPORTDIR=${docs.sources}</argument>
+                <argument>init</argument>
+                <argument>preview</argument>
               </arguments>
             </configuration>
           </execution>
         </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-assembly-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>zip</id>
-            <phase>package</phase>
-            <goals>
-              <goal>single</goal>
-            </goals>
-            <configuration>
-              <descriptors>
-                <descriptor>src/main/assemblies/zip.xml</descriptor>
-              </descriptors>
-              <finalName>${project.artifactId}-${project.version}</finalName>
-              <appendAssemblyId>false</appendAssemblyId>
-              <attach>true</attach>
-            </configuration>
-          </execution>
-          <execution>
-            <id>manpages</id>
-            <phase>package</phase>
-            <goals>
-              <goal>single</goal>
-            </goals>
-            <configuration>
-              <descriptors>
-                <descriptor>src/main/assemblies/manpages.xml</descriptor>
-              </descriptors>
-              <finalName>${project.artifactId}-${project.version}</finalName>
-              <appendAssemblyId>true</appendAssemblyId>
-              <attach>true</attach>
-            </configuration>
-          </execution>
-          <execution>
-            <id>manpagesenterprise</id>
-            <phase>package</phase>
-            <goals>
-              <goal>single</goal>
-            </goals>
-            <configuration>
-              <descriptors>
-                <descriptor>src/main/assemblies/manpages-enterprise.xml</descriptor>
-              </descriptors>
-              <finalName>${project.artifactId}-${project.version}</finalName>
-              <appendAssemblyId>true</appendAssemblyId>
-              <attach>true</attach>
-            </configuration>
-          </execution>
-          <execution>
-            <id>upgrade</id>
-            <phase>package</phase>
-            <goals>
-              <goal>single</goal>
-            </goals>
-            <configuration>
-              <descriptors>
-                <descriptor>src/main/assemblies/upgrade.xml</descriptor>
-              </descriptors>
-              <finalName>${project.artifactId}-${project.version}</finalName>
-              <appendAssemblyId>true</appendAssemblyId>
-              <attach>true</attach>
-            </configuration>
-          </execution>
-          <execution>
-            <id>contents</id>
-            <phase>package</phase>
-            <goals>
-              <goal>single</goal>
-            </goals>
-            <configuration>
-              <descriptors>
-                <descriptor>src/main/assemblies/contents.xml</descriptor>
-              </descriptors>
-              <finalName>${project.artifactId}-${project.version}</finalName>
-              <appendAssemblyId>true</appendAssemblyId>
-              <attach>true</attach>
-            </configuration>
-          </execution>
-        </executions>
-        
       </plugin>
       <plugin>
         <groupId>org.neo4j.build.plugins</groupId>
@@ -401,6 +346,7 @@
             <exclude>src/main/resources/js/**</exclude>
             <exclude>src/main/resources/css/**</exclude>
             <exclude>src/bin/asciidoc/**</exclude>
+            <exclude>src/js/**</exclude>
           </excludes>
         </configuration>
       </plugin>
@@ -451,8 +397,6 @@
                   <executable>make</executable>
                   <arguments>
                     <argument>dist</argument>
-                    <argument>VERSION=${project.version}</argument>
-                    <argument>IMPORTDIR=${docs.sources}</argument>
                     <argument>KEEP=1</argument>
                     <argument>VERBOSE=1</argument>
                   </arguments>
@@ -464,11 +408,11 @@
       </build>
     </profile>
     <profile>
-      <id>check-asciidoc</id>
+      <id>neo-full-build</id>
       <activation>
         <activeByDefault>false</activeByDefault>
         <property>
-          <name>check</name>
+          <name>fullBuild</name>
         </property>
       </activation>
       <build>
@@ -486,16 +430,110 @@
                 <configuration>
                   <executable>make</executable>
                   <arguments>
-                    <argument>check</argument>
-                    <argument>VERSION=${project.version}</argument>
-                    <argument>IMPORTDIR=${docs.sources}</argument>
+                    <argument>dist</argument>
                   </arguments>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-assembly-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>zip</id>
+                <phase>package</phase>
+                <goals>
+                  <goal>single</goal>
+                </goals>
+                <configuration>
+                  <descriptors>
+                    <descriptor>assemblies/zip.xml</descriptor>
+                  </descriptors>
+                  <finalName>${project.artifactId}-${project.version}</finalName>
+                  <appendAssemblyId>false</appendAssemblyId>
+                  <attach>true</attach>
+                </configuration>
+              </execution>
+              <execution>
+                <id>manpages</id>
+                <phase>package</phase>
+                <goals>
+                  <goal>single</goal>
+                </goals>
+                <configuration>
+                  <descriptors>
+                    <descriptor>assemblies/manpages.xml</descriptor>
+                  </descriptors>
+                  <finalName>${project.artifactId}-${project.version}</finalName>
+                  <appendAssemblyId>true</appendAssemblyId>
+                  <attach>true</attach>
+                </configuration>
+              </execution>
+              <execution>
+                <id>manpagesenterprise</id>
+                <phase>package</phase>
+                <goals>
+                  <goal>single</goal>
+                </goals>
+                <configuration>
+                  <descriptors>
+                    <descriptor>assemblies/manpages-enterprise.xml</descriptor>
+                  </descriptors>
+                  <finalName>${project.artifactId}-${project.version}</finalName>
+                  <appendAssemblyId>true</appendAssemblyId>
+                  <attach>true</attach>
+                </configuration>
+              </execution>
+              <execution>
+                <id>upgrade</id>
+                <phase>package</phase>
+                <goals>
+                  <goal>single</goal>
+                </goals>
+                <configuration>
+                  <descriptors>
+                    <descriptor>assemblies/upgrade.xml</descriptor>
+                  </descriptors>
+                  <finalName>${project.artifactId}-${project.version}</finalName>
+                  <appendAssemblyId>true</appendAssemblyId>
+                  <attach>true</attach>
+                </configuration>
+              </execution>
+              <execution>
+                <id>contents</id>
+                <phase>package</phase>
+                <goals>
+                  <goal>single</goal>
+                </goals>
+                <configuration>
+                  <descriptors>
+                    <descriptor>assemblies/contents.xml</descriptor>
+                  </descriptors>
+                  <finalName>${project.artifactId}-${project.version}</finalName>
+                  <appendAssemblyId>true</appendAssemblyId>
+                  <attach>true</attach>
                 </configuration>
               </execution>
             </executions>
           </plugin>
         </plugins>
       </build>
+      <properties>
+        <attach-docs-phase>none</attach-docs-phase>
+      </properties>
+    </profile>
+    <profile>
+      <id>neo-docs-build</id>
+      <activation>
+        <activeByDefault>false</activeByDefault>
+        <property>
+          <name>docsBuild</name>
+        </property>
+      </activation>
+      <properties>
+        <attach-docs-phase>none</attach-docs-phase>
+      </properties>
     </profile>
     <profile>
       <id>annotated</id>
@@ -520,11 +558,8 @@
                 <configuration>
                   <executable>make</executable>
                   <arguments>
-                    <argument>annotated</argument>
-                    <argument>VERSION=${project.version}</argument>
-                    <argument>IMPORTDIR=${docs.sources}</argument>
-                    <argument>KEEP=1</argument>
-                    <argument>VERBOSE=1</argument>
+                    <argument>init</argument>
+                    <argument>commented</argument>
                   </arguments>
                 </configuration>
               </execution>
@@ -534,11 +569,11 @@
       </build>
     </profile>
     <profile>
-      <id>single</id>
+      <id>neo-full-manual-build</id>
       <activation>
         <activeByDefault>false</activeByDefault>
         <property>
-          <name>single</name>
+          <name>fullManualBuild</name>
         </property>
       </activation>
       <build>
@@ -556,9 +591,7 @@
                 <configuration>
                   <executable>make</executable>
                   <arguments>
-                    <argument>singlehtml</argument>
-                    <argument>VERSION=${project.version}</argument>
-                    <argument>IMPORTDIR=${docs.sources}</argument>
+                    <argument>dist</argument>
                   </arguments>
                 </configuration>
               </execution>
@@ -566,6 +599,9 @@
           </plugin>
         </plugins>
       </build>
+      <properties>
+        <attach-docs-phase>none</attach-docs-phase>
+      </properties>
     </profile>
     <profile>
       <id>publish-manual</id>

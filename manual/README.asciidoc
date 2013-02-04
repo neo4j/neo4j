@@ -1,5 +1,4 @@
-About Neo4j Manual
-==================
+= About Neo4j Manual =
 
 The documents use the asciidoc format, see:
 
@@ -8,7 +7,7 @@ The documents use the asciidoc format, see:
 
 == Building the documentation ==
 
-Asciidoc version 8.6.3 is a requirement
+Asciidoc version 8.6.8 is a requirement
 together with whatever dependencies it needs
 and specifically docbook, w3m, fop and graphviz.
 
@@ -16,12 +15,20 @@ http://maven.apache.org/[Apache Maven] together with http://www.gnu.org/software
 Note that running parallel jobs with Make (-j option) is not supported.
 
 To build the documentation, use: +
-`mvn clean install`
+`mvn clean install` +
+This will produce a single html5 page (in 'target/html5').
+Note that this won't suffice in order to build the download packages of Neo4j.
+However, the build requirements are limited to Python and Graphviz (and Maven, Java).
+This build checks for missing include files and AsciiDoc syntax errors.
 
-To perform a faster check of the document structure and to see if snippets and images are correctly resolved, use:
-`mvn clean compile -Dcheck`
-which will only produce html for offline use and text outputs (including the manpages).
-Note that this profile can't be used together with the `package` goal.
+To build all artifacts, use: +
+`mvn clean install -DfullBuild`
+or +
+`mvn clean install -DfullManualBuild`
+
+To build all dependencies of the manual, use the following at the top level of the repository: +
+`mvn clean install -DdocsBuild` +
+In order to build all the artifacts of the manual too, add `-DfullManualBuild`
 
 === With brew on OSX ===
 
@@ -31,7 +38,7 @@ Install libraries
 
 Register the docbook xml DTD
 
-  sudo src/build/osx-register-docbook
+  sudo ./osx-register-docbook
 
 === With apt-get on Ubuntu ===
 

@@ -29,6 +29,13 @@ public class LearnerContext
     private long lastLearnedInstanceId = -1;
     private long lastKnownLearnedInstanceInCluster = -1;
 
+    private AcceptorInstanceStore acceptorStore;
+
+    public LearnerContext( AcceptorInstanceStore acceptorStore )
+    {
+        this.acceptorStore = acceptorStore;
+    }
+
     public long getLastDeliveredInstanceId()
     {
         return lastDeliveredInstanceId;
@@ -37,6 +44,7 @@ public class LearnerContext
     public void setLastDeliveredInstanceId( long lastDeliveredInstanceId )
     {
         this.lastDeliveredInstanceId = lastDeliveredInstanceId;
+        acceptorStore.lastDelivered( new InstanceId(lastDeliveredInstanceId ));
     }
 
     public long getLastLearnedInstanceId()

@@ -101,7 +101,7 @@ public class MultiPaxosServerFactory
         connectedStateMachines.addMessageProcessor( latencyCalculator );
 
         AcceptorContext acceptorContext = new AcceptorContext( logging, acceptorInstanceStore );
-        LearnerContext learnerContext = new LearnerContext();
+        LearnerContext learnerContext = new LearnerContext(acceptorInstanceStore);
         ProposerContext proposerContext = new ProposerContext();
         final ClusterContext clusterContext = new ClusterContext( proposerContext, learnerContext,
                 new ClusterConfiguration( initialConfig.getName(), initialConfig.getMembers() ), timeouts, executor,

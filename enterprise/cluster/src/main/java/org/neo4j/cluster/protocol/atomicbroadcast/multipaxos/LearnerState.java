@@ -134,7 +134,7 @@ public enum LearnerState
 
                         case learnTimedout:
                         {
-                            // Timed out waiting for learned values - send explicit request to someone
+                            // Timed out waiting for learned values - send explicit request to everyone that is not failed
                             if ( !context.learnerContext.hasDeliveredAllKnownInstances() )
                             {
                                 for ( long instanceId = context.learnerContext.getLastDeliveredInstanceId() + 1;
@@ -154,7 +154,6 @@ public enum LearnerState
                                                         new LearnerMessage.LearnRequestState() ).setHeader(
                                                         InstanceId.INSTANCE,
                                                         id.toString() ) );
-                                                break;
                                             }
                                         }
                                     }
