@@ -17,10 +17,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.parser
+package org.neo4j.cypher.internal.parser.v2_0
 
-import org.neo4j.cypher.internal.commands.AbstractQuery
+import org.neo4j.cypher.internal.commands.expressions.Literal
+import org.neo4j.cypher.internal.commands.values.LabelName
+import org.neo4j.cypher.internal.commands.{DeleteIndex, CreateIndex}
 
-trait ActualParser {
-  def parse(queryText: String): AbstractQuery
+
+trait Index extends Base with Labels {
+  def createIndex = ignoreCase("CREATE") ~> indexOps ^^ {
+    case (label, properties) => CreateIndex(label, properties)
+  }
+
+  def deleteIndex = ignoreCase("DELETE") ~> indexOps ^^ {
+    case (label, properties) => DeleteIndex(label, properties)
+  }
+
+  private def indexOps: Parser[(String, List[String])] = ignoreCase("INDEX") ~> ignoreCase("ON") ~> labelLit ~ parens(commaList(identity)) ^^ {
+    case Literal(LabelName(label)) ~ properties => (label, properties)
+  }
 }

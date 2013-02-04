@@ -28,7 +28,9 @@ object Query {
   def unique(cmds:UniqueLink*) = new QueryBuilder(Seq(CreateUniqueStartItem(CreateUniqueAction(cmds:_*))))
 }
 
-trait AbstractQuery
+trait AbstractQuery {
+  def setQueryString(t:String):AbstractQuery
+}
 
 case class Query(returns: Return,
                  start: Seq[StartItem],
@@ -41,24 +43,23 @@ case class Query(returns: Return,
                  namedPaths: Seq[NamedPath],
                  tail:Option[Query] = None,
                  queryString: String = "") extends AbstractQuery {
-  override def equals(p1: Any): Boolean =
-    if (p1 == null)
-      false
-    else if (!p1.isInstanceOf[Query])
-      false
-    else {
-      val other = p1.asInstanceOf[Query]
-      returns == other.returns &&
-        start == other.start &&
-        updatedCommands == other.updatedCommands &&
-        matching == other.matching &&
-        where == other.where &&
-        aggregation == other.aggregation &&
-        sort == other.sort &&
-        slice == other.slice &&
-        namedPaths == other.namedPaths &&
-        tail == other.tail
-    }
+
+  override def equals(p1: Any): Boolean = p1 match {
+    case null         => false
+
+    case other: Query => returns == other.returns &&
+      start == other.start &&
+      updatedCommands == other.updatedCommands &&
+      matching == other.matching &&
+      where == other.where &&
+      aggregation == other.aggregation &&
+      sort == other.sort &&
+      slice == other.slice &&
+      namedPaths == other.namedPaths &&
+      tail == other.tail
+
+    case _            => false
+  }
 
   override def toString: String =
 """
@@ -84,6 +85,8 @@ next   : %s
   slice,
   tail
 )
+
+  def setQueryString(t: String): Query = copy(queryString = t)
 }
 
 case class Return(columns: List[String], returnItems: ReturnColumn*)

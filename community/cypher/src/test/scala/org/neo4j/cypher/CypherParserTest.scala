@@ -94,24 +94,6 @@ class CypherParserTest extends JUnitSuite with Assertions {
         returns(ReturnItem(Identifier("a"), "a")))
   }
 
-  @Ignore
-  @Test def sourceIsParsedAdvancedLuceneQuery() {
-    testAll(
-      """start a = node:index(key="value" AND otherKey="otherValue") return a""",
-      Query.
-        start(NodeByIndexQuery("a", "index", Literal("key:\"value\" AND otherKey:\"otherValue\""))).
-        returns(ReturnItem(Identifier("a"), "a")))
-  }
-
-  @Ignore
-  @Test def parsedOrIdxQuery() {
-    testAll(
-      """start a = node:index(key="value" or otherKey="otherValue") return a""",
-      Query.
-        start(NodeByIndexQuery("a", "index", Literal("key:\"value\" OR otherKey:\"otherValue\""))).
-        returns(ReturnItem(Identifier("a"), "a")))
-  }
-
   @Test def shouldParseEasiestPossibleRelationshipQuery() {
     testAll(
       "start s = relationship(1) return s",
@@ -1062,15 +1044,6 @@ class CypherParserTest extends JUnitSuite with Assertions {
         start(NodeById("a", 0)).
         where(Equals(Property(Identifier("a"), "prop"), Literal(12)))
         returns (ReturnItem(Identifier("a"), "a")))
-  }
-
-  @Ignore @Test def shouldAcceptRelationshipWithPredicate() {
-    testAll(
-      "start a = node(1) match a-[r WHERE r.foo = 'bar']->b return b",
-      Query.
-        start(NodeById("a", 1)).
-        matches(RelatedTo("a", "b", "r", Seq(), Direction.OUTGOING, false, Equals(Property(Identifier("r"), "foo"), Literal("bar"))))
-        returns (ReturnItem(Identifier("b"), "b")))
   }
 
   @Test def shouldHandleUpperCaseDistinct() {
@@ -2068,6 +2041,11 @@ foreach(x in [1,2,3] :
     )
   }
 
+  @Test def create_index() {
+    testFrom_2_0("create index on :MyLabel(prop1, prop2)",
+      CreateIndex("MyLabel", Seq("prop1", "prop2")))
+  }
+
   @Ignore("slow test") @Test def multi_thread_parsing() {
     val q = """start root=node(0) return x"""
     val parser = new CypherParser()
@@ -2101,31 +2079,31 @@ foreach(x in [1,2,3] :
     }
 
 
-  def test_1_9(query: String, expectedQuery: Query) {
+  def test_1_9(query: String, expectedQuery: AbstractQuery) {
     testQuery(Some("1.9"), query, expectedQuery)
     testQuery(Some("1.9"), query + ";", expectedQuery)
   }
 
-  def test_1_8(query: String, expectedQuery: Query) {
+  def test_1_8(query: String, expectedQuery: AbstractQuery) {
     testQuery(Some("1.8"), query, expectedQuery)
     testQuery(Some("1.8"), query + ";", expectedQuery)
   }
 
-  def testFrom_1_9(query: String, expectedQuery: Query) {
+  def testFrom_1_9(query: String, expectedQuery: AbstractQuery) {
     test_1_9(query, expectedQuery)
     test_2_0(query, expectedQuery)
   }
 
-  def testFrom_2_0(query: String, expectedQuery: Query) {
+  def testFrom_2_0(query: String, expectedQuery: AbstractQuery) {
     test_2_0(query, expectedQuery)
   }
 
-  def test_2_0(query: String, expectedQuery: Query) {
+  def test_2_0(query: String, expectedQuery: AbstractQuery) {
     testQuery(None, query, expectedQuery)
     testQuery(None, query + ";", expectedQuery)
   }
 
-  def testAll(query: String, expectedQuery: Query) {
+  def testAll(query: String, expectedQuery: AbstractQuery) {
     test_1_8(query, expectedQuery)
     test_1_9(query, expectedQuery)
   }
