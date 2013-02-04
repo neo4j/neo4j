@@ -122,7 +122,7 @@
         <include>org.apache.zookeeper:zookeeper</include>
         <include>org.slf4j:slf4j-api</include>
         <include>org.scala-lang:scala-library</include>
-        <!-- include>org.slf4j:log4j-over-slf4j</include-->
+        <include>com.googlecode.concurrentlinkedhashmap:concurrentlinkedhashmap-lru</include>
       </includes>
       <excludes>
         <exclude>*:javadoc:*</exclude>
@@ -134,7 +134,6 @@
         <exclude>org.neo4j:neo4j-enterprise:jar</exclude>
         <exclude>org.neo4j:neo4j-udc:jar:neo4j</exclude>
         <exclude>org.neo4j.app:windows-service-wrapper:*</exclude>
-        
         <exclude>org.neo4j:neo4j-advanced</exclude>
         <exclude>org.neo4j:neo4j-community</exclude>
       </excludes>
@@ -163,6 +162,7 @@
         <exclude>commons-logging:*</exclude>
         <exclude>org.scala-lang:scala-library</exclude>
         <exclude>org.neo4j.app:windows-service-wrapper:*</exclude>
+        <exclude>com.googlecode.concurrentlinkedhashmap:concurrentlinkedhashmap-lru</exclude>
       </excludes>
     </dependencySet>
     <dependencySet>
