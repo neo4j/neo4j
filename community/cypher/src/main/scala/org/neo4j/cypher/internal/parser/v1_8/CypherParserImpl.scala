@@ -36,10 +36,10 @@ with OrderByClause
 with Updates
 with ActualParser {
   @throws(classOf[SyntaxException])
-  def parse(text: String): Query = {
+  def parse(text: String): AbstractQuery = {
     namer = new NodeNamer
     parseAll(query, text) match {
-      case Success(r, q) => ReattachAliasedExpressions(r.copy(queryString = text))
+      case Success(r, q) => ReattachAliasedExpressions(r.setQueryString(text))
       case NoSuccess(message, input) => {
         if (message.startsWith("INNER"))
           throw new SyntaxException(message.substring(5), text, input.offset)

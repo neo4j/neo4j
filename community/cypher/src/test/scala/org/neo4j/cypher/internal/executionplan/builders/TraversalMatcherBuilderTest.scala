@@ -89,5 +89,5 @@ class TraversalMatcherBuilderTest extends GraphDatabaseTestBase with Assertions 
 
   val parser = new CypherParserImpl
 
-  private def query(text: String): PartiallySolvedQuery = PartiallySolvedQuery(parser.parse(text))
+  private def query(text: String): PartiallySolvedQuery = PartiallySolvedQuery(parser.parse(text).asInstanceOf[Query])
 }

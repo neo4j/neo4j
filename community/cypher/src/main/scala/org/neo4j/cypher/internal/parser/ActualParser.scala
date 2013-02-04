@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.parser
 
-import org.neo4j.cypher.internal.commands.Query
+import org.neo4j.cypher.internal.commands.AbstractQuery
 
 trait ActualParser {
-  def parse(queryText: String): Query
+  def parse(queryText: String): AbstractQuery
 }

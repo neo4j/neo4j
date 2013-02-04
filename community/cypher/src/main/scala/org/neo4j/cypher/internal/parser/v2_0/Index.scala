@@ -17,32 +17,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher
+package org.neo4j.cypher.internal.parser.v2_0
 
-import internal.commands.AbstractQuery
+import org.neo4j.cypher.internal.commands.expressions.Literal
+import org.neo4j.cypher.internal.commands.values.LabelName
+import org.neo4j.cypher.internal.commands.{DeleteIndex, CreateIndex}
 
-class CypherParser(version: String) {
-  def this() = this("2.0")
 
-  val hasVersionDefined = """(?si)^\s*cypher\s*([^\s]+)\s*(.*)""".r
+trait Index extends Base with Labels {
+  def createIndex = ignoreCase("CREATE") ~> indexOps ^^ {
+    case (label, properties) => CreateIndex(label, properties)
+  }
 
-  val v18 = new internal.parser.v1_8.CypherParserImpl
-  val v19 = new internal.parser.v1_9.CypherParserImpl
-  val v20 = new internal.parser.v2_0.CypherParserImpl
+  def deleteIndex = ignoreCase("DELETE") ~> indexOps ^^ {
+    case (label, properties) => DeleteIndex(label, properties)
+  }
 
-  @throws(classOf[SyntaxException])
-  def parse(queryText: String): AbstractQuery = {
-
-    val (v, q) = queryText match {
-      case hasVersionDefined(v1, q1) => (v1, q1)
-      case _ => (version, queryText)
-    }
-
-    v match {
-      case "1.8" => v18.parse(q)
-      case "1.9" => v19.parse(q)
-      case "2.0" => v20.parse(q)
-      case _ => throw new SyntaxException("Versions supported are 1.8, 1.9 and 2.0")
-    }
+  private def indexOps: Parser[(String, List[String])] = ignoreCase("INDEX") ~> ignoreCase("ON") ~> labelLit ~ parens(commaList(identity)) ^^ {
+    case Literal(LabelName(label)) ~ properties => (label, properties)
   }
 }
