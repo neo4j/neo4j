@@ -107,19 +107,6 @@ public class TestJetty6WebServer {
         ImpermanentGraphDatabase db = new ImpermanentGraphDatabase()
         {
             @Override
-            public Node getNodeById( long id )
-            {
-                try
-                {
-                    Thread.sleep( 100 );
-                } catch ( InterruptedException e )
-                {
-                    throw new RuntimeException( e );
-                }
-                return super.getNodeById( id );
-            }
-
-            @Override
             public Guard getGuard() {
                 return dummyGuard;
             }
