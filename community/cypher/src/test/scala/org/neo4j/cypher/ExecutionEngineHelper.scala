@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher
 
-import internal.commands.Query
+import internal.commands.{AbstractQuery, Query}
 import internal.spi.gdsimpl.TransactionBoundQueryContext
 import org.junit.Before
 import org.neo4j.graphdb.{DynamicLabel, Node}
@@ -42,7 +42,7 @@ trait ExecutionEngineHelper extends GraphDatabaseTestBase {
     engine = new ExecutionEngine(graph)
   }
 
-  def execute(query: Query, params:(String,Any)*) = {
+  def execute(query: AbstractQuery, params:(String,Any)*) = {
     val result = engine.execute(query, params.toMap)
     result
   }

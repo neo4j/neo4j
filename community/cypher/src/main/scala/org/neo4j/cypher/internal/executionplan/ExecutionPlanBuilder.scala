@@ -32,29 +32,30 @@ import org.neo4j.cypher.ExecutionResult
 
 class ExecutionPlanBuilder(graph: GraphDatabaseService) extends PatternGraphBuilder {
 
-  def build(inputQuery: Query): ExecutionPlan = {
+  def build(inputQuery: AbstractQuery): ExecutionPlan = {
 
-    val planInProgress = buildPipes(inputQuery)
+    val (p, isUpdating) = buildPipes(inputQuery)
 
-    val columns = getQueryResultColumns(inputQuery, planInProgress.pipe.symbols)
-    val (pipe, func) = if (planInProgress.isUpdating) {
-      val p = planInProgress.pipe
+    val columns = getQueryResultColumns(inputQuery, p.symbols)
+    val (pipe, func) = if (isUpdating) {
       (p, getEagerReadWriteQuery(p, columns))
     } else {
-      (planInProgress.pipe, getLazyReadonlyQuery(planInProgress.pipe, columns))
+      (p, getLazyReadonlyQuery(p, columns))
     }
 
     val executionPlanDescription = pipe.executionPlanDescription()
 
     new ExecutionPlan {
       def execute(queryContext: QueryContext, params: Map[String, Any]) = func(queryContext, params)
-
       def description = executionPlanDescription
     }
   }
 
+  def buildPipes(in: AbstractQuery): (Pipe, Boolean) = in match {
+    case q:Query => buildQuery(q)
+  }
 
-  def buildPipes(inputQuery: Query): ExecutionPlanInProgress = {
+  def buildQuery(inputQuery: Query): (Pipe, Boolean) = {
     var continue = true
     var planInProgress = ExecutionPlanInProgress(PartiallySolvedQuery(inputQuery), new ParameterPipe(), isUpdating = false)
     checkFirstQueryPattern(planInProgress)
@@ -86,7 +87,7 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService) extends PatternGraphBuil
     }
 
     // TODO Get back to this when we touch the type system
-    planInProgress.copy(pipe = new ResultValueMapperPipe(planInProgress.pipe))
+    (new ResultValueMapperPipe(planInProgress.pipe), planInProgress.isUpdating)
   }
 
   private def checkFirstQueryPattern(planInProgress: ExecutionPlanInProgress) {
@@ -119,19 +120,23 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService) extends PatternGraphBuil
     symbols
   }
 
-  private def getQueryResultColumns(q: Query, currentSymbols: SymbolTable) = {
-    var query = q
-    while (query.tail.isDefined) {
-      query = query.tail.get
-    }
+  private def getQueryResultColumns(q: AbstractQuery, currentSymbols: SymbolTable): List[String] = q match {
+    case in: Query =>
 
-    val columns = query.returns.columns.flatMap {
-      case "*" => currentSymbols.identifiers.keys
-      case x   => Seq(x)
-    }
+      // Find the last query part
+      var query = in
+      while (query.tail.isDefined) {
+        query = query.tail.get
+      }
 
-    columns
+      query.returns.columns.flatMap {
+        case "*" => currentSymbols.identifiers.keys
+        case x   => Seq(x)
+      }
+
+    case _ => List.empty
   }
+
 
   private def getLazyReadonlyQuery(pipe: Pipe, columns: List[String]): (QueryContext, Map[String, Any]) => ExecutionResult = {
     val func = (queryContext: QueryContext, params: Map[String, Any]) => {

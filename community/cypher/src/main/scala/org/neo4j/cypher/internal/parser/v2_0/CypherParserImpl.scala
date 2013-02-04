@@ -34,12 +34,13 @@ with ReturnClause
 with SkipLimitClause
 with OrderByClause
 with Updates
+with Index
 with ActualParser {
   @throws(classOf[SyntaxException])
-  def parse(text: String): Query = {
+  def parse(text: String): AbstractQuery = {
     namer = new NodeNamer
-    parseAll(query, text) match {
-      case Success(r, q) => ReattachAliasedExpressions(r.copy(queryString = text))
+    parseAll(cypherQuery, text) match {
+      case Success(r, q) => ReattachAliasedExpressions(r.setQueryString(text))
       case NoSuccess(message, input) => {
         if (message.startsWith("INNER"))
           throw new SyntaxException(message.substring(5), text, input.offset)
@@ -54,7 +55,9 @@ Thank you, the Neo4j Team.
     }
   }
 
-  def query = start ~ body <~ opt(";") ^^ {
+  def cypherQuery: Parser[AbstractQuery] = (createIndex|query) <~ opt(";")
+
+  def query: Parser[Query] = start ~ body ^^ {
     case start ~ body => {
       val q: Query = expandQuery(start._1, start._2, Seq(), body)
 
