@@ -29,6 +29,7 @@ import collection.Map
 import org.neo4j.cypher.internal.commands.expressions.{Identifier, Expression}
 import org.neo4j.cypher.internal.symbols.SymbolTable
 import org.neo4j.cypher.internal.ExecutionContext
+import org.neo4j.cypher.internal.parser.v2_0.NoLabels
 
 class ExecuteUpdateCommandsPipe(source: Pipe, db: GraphDatabaseService, commands: Seq[UpdateAction])
   extends PipeWithSource(source) {
@@ -68,7 +69,7 @@ class ExecuteUpdateCommandsPipe(source: Pipe, db: GraphDatabaseService, commands
     case CreateNode(key, props, labels, bare) =>
       Seq(NamedExpectation(key, props, labels, bare))
     case CreateRelationship(key, from, to, _, props) =>
-      Seq(NamedExpectation(key, props, true)) ++ extractIfEntity(from) ++ extractIfEntity(to)
+      Seq(NamedExpectation(key, props, NoLabels, true)) ++ extractIfEntity(from) ++ extractIfEntity(to)
     case CreateUniqueAction(links@_*) =>
       links.flatMap(l => Seq(l.start, l.end, l.rel))
     case _ =>

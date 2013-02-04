@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.ExecutionContext
 import org.neo4j.cypher.internal.pipes.QueryState
 import org.neo4j.graphdb.Node
 import org.neo4j.cypher.internal.helpers.{LabelSupport, CastSupport, CollectionSupport}
+import org.neo4j.cypher.internal.parser.v2_0.LabelSet
 
 
 sealed abstract class LabelOp
@@ -33,16 +34,16 @@ sealed abstract class LabelOp
 case object LabelAdd extends LabelOp
 case object LabelDel extends LabelOp
 
-case class LabelAction(entity: Expression, labelOp: LabelOp, labelSetExpr: Expression)
+case class LabelAction(entity: Expression, labelOp: LabelOp, labelSet: LabelSet)
   extends UpdateAction with GraphElementPropertyFunctions with CollectionSupport with LabelSupport {
 
-  def children = Seq(entity, labelSetExpr)
-  def rewrite(f: (Expression) => Expression) = LabelAction(entity.rewrite(f), labelOp, labelSetExpr.rewrite(f))
+  def children = Seq(entity, labelSet)
+  def rewrite(f: (Expression) => Expression) = LabelAction(entity.rewrite(f), labelOp, labelSet.rewrite(f))
 
   def exec(context: ExecutionContext, state: QueryState) = {
     val node      = CastSupport.erasureCastOrFail[Node](entity(context))
     val queryCtx  = state.queryContext
-    val labelIds: Iterable[Long] = getLabelsAsLongs(context, labelSetExpr)
+    val labelIds: Iterable[Long] = getLabelsAsLongs(context, labelSet.expr)
 
     labelOp match {
       case LabelAdd => queryCtx.addLabelsToNode(node.getId, labelIds)
@@ -56,8 +57,8 @@ case class LabelAction(entity: Expression, labelOp: LabelOp, labelSetExpr: Expre
 
   def throwIfSymbolsMissing(symbols: SymbolTable) {
     entity.throwIfSymbolsMissing(symbols)
-    labelSetExpr.throwIfSymbolsMissing(symbols)
+    labelSet.throwIfSymbolsMissing(symbols)
   }
 
-  def symbolTableDependencies = entity.symbolTableDependencies ++ labelSetExpr.symbolTableDependencies
+  def symbolTableDependencies = entity.symbolTableDependencies ++ labelSet.symbolTableDependencies
 }

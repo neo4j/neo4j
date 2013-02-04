@@ -28,6 +28,7 @@ import org.neo4j.graphdb.{Direction, Node}
 import org.neo4j.cypher.internal.pipes.QueryState
 import org.junit.Test
 import values.{ResolvedLabel, LabelName}
+import org.neo4j.cypher.internal.parser.v2_0.LabelSet
 
 class LabelActionTest extends GraphDatabaseTestBase with Assertions {
   val queryContext = new SnitchingQueryContext
@@ -38,7 +39,7 @@ class LabelActionTest extends GraphDatabaseTestBase with Assertions {
   def set_single_label_on_node() {
     //GIVEN
     val n = createNode()
-    val given = LabelAction(Literal(n), LabelAdd, Literal(resolvedLabel(12, "green")))
+    val given = LabelAction(Literal(n), LabelAdd, LabelSet(Literal(resolvedLabel(12, "green"))))
 
     //WHEN
     val result = given.exec(ctx, state)
@@ -53,7 +54,7 @@ class LabelActionTest extends GraphDatabaseTestBase with Assertions {
   def set_two_labels_on_node() {
     //GIVEN
     val n = createNode()
-    val given = LabelAction(Literal(n), LabelAdd, Literal(Seq(resolvedLabel(12, "green"), resolvedLabel(42, "blue"))))
+    val given = LabelAction(Literal(n), LabelAdd, LabelSet(Literal(Seq(resolvedLabel(12, "green"), resolvedLabel(42, "blue")))))
 
     //WHEN
     val result = given.exec(ctx, state)
@@ -72,7 +73,7 @@ class LabelActionTest extends GraphDatabaseTestBase with Assertions {
   def set_invalid_label_set_on_node() {
     //GIVEN
     val n = createNode()
-    val given = LabelAction(Literal(n), LabelAdd, Literal(Seq(label("green"), "blue")))
+    val given = LabelAction(Literal(n), LabelAdd, LabelSet(Literal(Seq(label("green"), "blue"))))
 
     intercept[CypherTypeException](given.exec(ctx, state))
   }

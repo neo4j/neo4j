@@ -86,7 +86,7 @@ trait MatchClause extends Base with ParserPattern {
 
   def labelTranslator(abstractPattern: AbstractPattern): Maybe[(Any, Predicate)] =
     matchTranslator(abstractPattern).map { (pat: Any) =>
-      val predicates: Seq[HasLabel] = abstractPattern.parsedLabelPredicates
+      val predicates = abstractPattern.parsedLabelPredicates
       (pat,  True().andWith(predicates: _*) )
     }
 

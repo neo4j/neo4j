@@ -105,7 +105,7 @@ trait UpdateCommandExpander {
         }
 
         if (!nodeFromUnderlyingPipe && !nodeFromOtherCommand) {
-          Seq(CreateNode(name, e.props, e.labels, e.bare))
+          Seq(CreateNode(name, e.props, e.labels.asOptLabelSet, e.bare))
         }
         else {
           Seq()

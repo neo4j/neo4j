@@ -26,11 +26,12 @@ import org.neo4j.cypher.internal.pipes.{MutableMaps, QueryState}
 import org.neo4j.cypher.internal.commands.expressions.Literal
 import org.neo4j.cypher.internal.spi.gdsimpl.TransactionBoundQueryContext
 import org.neo4j.cypher.internal.ExecutionContext
+import org.neo4j.cypher.internal.parser.v2_0.NoLabels
 
 class CreateNodeActionTest extends ExecutionEngineHelper with Assertions {
 
   @Test def mixed_types_are_not_ok() {
-    val action = CreateNode("id", Map("*" -> Literal(Map("name" -> "Andres", "age" -> 37))), Literal(Seq.empty))
+    val action = CreateNode("id", Map("*" -> Literal(Map("name" -> "Andres", "age" -> 37))), NoLabels)
 
     val tx = graph.beginTx()
     action.exec(ExecutionContext.empty, new QueryState(graph, new TransactionBoundQueryContext(graph), Map.empty))

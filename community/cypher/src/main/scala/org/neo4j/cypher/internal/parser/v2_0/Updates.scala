@@ -46,7 +46,7 @@ trait Updates extends Base with Expressions with StartAndCreateClause {
   private def labelAction: Parser[UpdateAction] = (ignoreCase("add") | ignoreCase("remove")) ~ identity ~ labelLongForm ^^ {
       case verb ~ entity ~ labels =>
         val action = getActionFromVerb(verb)
-        LabelAction(Identifier(entity), action, labels)
+        LabelAction(Identifier(entity), action, labels.asLabelSet)
     }
 
   private def delete: Parser[Seq[UpdateAction]] = ignoreCase("delete") ~> commaList(expression) ^^ {

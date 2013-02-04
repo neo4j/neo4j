@@ -25,8 +25,9 @@ import org.neo4j.cypher.internal.pipes.QueryState
 import org.neo4j.cypher.internal.symbols.{SymbolTable, NodeType}
 import collection.Map
 import org.neo4j.cypher.internal.ExecutionContext
+import org.neo4j.cypher.internal.parser.v2_0.{LabelSet, OptLabelSet}
 
-case class CreateNode(key: String, properties: Map[String, Expression], labels: Expression, bare: Boolean = true)
+case class CreateNode(key: String, properties: Map[String, Expression], labels: OptLabelSet, bare: Boolean = true)
   extends UpdateAction
   with GraphElementPropertyFunctions
   with CollectionSupport
@@ -44,9 +45,13 @@ case class CreateNode(key: String, properties: Map[String, Expression], labels: 
       setProperties(node, props, context, state)
 
       val queryCtx = state.queryContext
-      val labelIds: Iterable[Long] = getLabelsAsLongs(context, labels)
-
-      queryCtx.addLabelsToNode(node.getId, labelIds)
+      labels match {
+        case LabelSet(expr) =>
+          val labelIds: Iterable[Long] = getLabelsAsLongs(context, expr)
+          queryCtx.addLabelsToNode(node.getId, labelIds)
+        case _ =>
+          ()
+      }
 
       val newContext = context.newWith(key -> node)
       newContext
@@ -84,7 +89,7 @@ case class CreateNode(key: String, properties: Map[String, Expression], labels: 
 
   def identifiers = Seq(key -> NodeType())
 
-  override def children = properties.map(_._2).toSeq :+ labels
+  override def children = properties.map(_._2).toSeq ++ labels.children
 
   override def rewrite(f: (Expression) => Expression): CreateNode =
     CreateNode(key, properties.rewrite(f), labels.rewrite(f), bare)
@@ -94,5 +99,6 @@ case class CreateNode(key: String, properties: Map[String, Expression], labels: 
     labels throwIfSymbolsMissing symbols
   }
 
-  override def symbolTableDependencies: Set[String] = properties.symboltableDependencies ++ labels.symbolTableDependencies
+  override def symbolTableDependencies: Set[String] =
+    properties.symboltableDependencies ++ labels.symbolTableDependencies
 }

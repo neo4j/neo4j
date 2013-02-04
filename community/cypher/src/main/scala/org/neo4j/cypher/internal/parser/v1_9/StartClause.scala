@@ -24,6 +24,7 @@ import expressions.{Literal, Expression, ParameterExpression, Identifier}
 import org.neo4j.graphdb.Direction
 import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.cypher.internal.mutation.{RelationshipEndpoint, CreateNode, CreateRelationship}
+import org.neo4j.cypher.internal.parser.v2_0.NoLabels
 
 
 trait StartClause extends Base with Expressions with CreateUnique {
@@ -79,13 +80,13 @@ trait StartClause extends Base with Expressions with CreateUnique {
                        else
                          (b, a)
 
-      Yes(Seq(CreateRelationshipStartItem(CreateRelationship(name, RelationshipEndpoint(from, startProps, Literal(Seq.empty), true), RelationshipEndpoint(to, endProps, Literal(Seq.empty), true), relType.head, props))))
+      Yes(Seq(CreateRelationshipStartItem(CreateRelationship(name, RelationshipEndpoint(from, startProps, NoLabels, true), RelationshipEndpoint(to, endProps, NoLabels, true), relType.head, props))))
 
     case ParsedEntity(_, Identifier(name), props, True()) =>
-      Yes(Seq(CreateNodeStartItem(CreateNode(name, props, Literal(Seq.empty)))))
+      Yes(Seq(CreateNodeStartItem(CreateNode(name, props, NoLabels))))
 
     case ParsedEntity(_, p: ParameterExpression, _, True()) =>
-      Yes(Seq(CreateNodeStartItem(CreateNode(namer.name(None), Map[String, Expression]("*" -> p), Literal(Seq.empty)))))
+      Yes(Seq(CreateNodeStartItem(CreateNode(namer.name(None), Map[String, Expression]("*" -> p), NoLabels))))
 
     case _ => No(Seq(""))
   }
