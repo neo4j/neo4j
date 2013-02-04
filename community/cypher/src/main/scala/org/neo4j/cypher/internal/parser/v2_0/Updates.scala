@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.parser.v2_0
 
 import org.neo4j.cypher.internal.mutation._
 import org.neo4j.cypher.internal.commands._
-import expressions.{Property, Identifier}
+import expressions.{Collection, Property, Identifier}
 import org.neo4j.cypher.SyntaxException
 
 trait Updates extends Base with Expressions with StartAndCreateClause {
@@ -46,7 +46,7 @@ trait Updates extends Base with Expressions with StartAndCreateClause {
   private def labelAction: Parser[UpdateAction] = (ignoreCase("add") | ignoreCase("remove")) ~ identity ~ labelLongForm ^^ {
       case verb ~ entity ~ labels =>
         val action = getActionFromVerb(verb)
-        LabelAction(Identifier(entity), action, labels)
+        LabelAction(Identifier(entity), action, labels.asExpr)
     }
 
   private def delete: Parser[Seq[UpdateAction]] = ignoreCase("delete") ~> commaList(expression) ^^ {

@@ -22,8 +22,8 @@ package org.neo4j.cypher.internal.parser.v2_0
 import org.neo4j.graphdb.Direction
 import collection.Map
 import org.neo4j.cypher.SyntaxException
-import org.neo4j.cypher.internal.commands.expressions.{Collection, Literal, Identifier, Expression}
-import org.neo4j.cypher.internal.commands.{True, And, HasLabel, Predicate}
+import org.neo4j.cypher.internal.commands.expressions.{Literal, Identifier, Expression}
+import org.neo4j.cypher.internal.commands.{Or, HasLabel, Predicate}
 import org.neo4j.cypher.internal.helpers.IsCollection
 
 abstract sealed class AbstractPattern {
@@ -31,12 +31,17 @@ abstract sealed class AbstractPattern {
 
   def parsedEntities: Seq[ParsedEntity]
 
-  def parsedLabelPredicates: Seq[HasLabel] =
-    parsedEntities.flatMap { (entity: ParsedEntity) => entity.labels match {
-      case IsCollection(coll) if coll.isEmpty => None
-      case Literal(IsCollection(coll)) if coll.isEmpty => None
-      case expr => Some(HasLabel(Identifier(entity.name), expr))
-    } }
+  def parsedLabelPredicates: Seq[Predicate] =
+    parsedEntities.flatMap { (entity: ParsedEntity) =>
+      val labelPreds: Seq[HasLabel] = entity.labels.allSets.flatMap { (labelSet: AbstractLabelSet) =>
+        labelSet.expr match {
+           case IsCollection(coll) if coll.isEmpty => None
+           case Literal(IsCollection(coll)) if coll.isEmpty => None
+           case expr => Some(HasLabel(Identifier(entity.name), expr))
+        }
+      }
+      if (labelPreds.isEmpty) None else Some(labelPreds.reduce(Or))
+    }
 }
 
 object PatternWithEnds {
@@ -57,7 +62,7 @@ case class ParsedEntity(name: String,
                         expression: Expression,
                         props: Map[String, Expression],
                         predicate: Predicate,
-                        labels: Expression,
+                        labels: LabelSpec,
                         bare: Boolean) extends AbstractPattern {
   def makeOutgoing = this
 

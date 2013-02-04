@@ -2503,4 +2503,49 @@ RETURN x0.name?
     // THEN
     assert(result.toList === List(Map("a" -> a1)))
   }
+
+  @Test def should_filter_nodes_by_choice_label_predicate_in_match() {
+    // GIVEN
+    val a = createLabeledNode("bar")
+
+    val b = createLabeledNode("foo", "bar")
+    val c = createLabeledNode("zoo")
+    val d = createLabeledNode("bond")
+
+    relate(a, b)
+    relate(a, c)
+    relate(a, d)
+
+    // WHEN
+    val result =
+      parseAndExecute("""START a=node(1), b=node(2, 3, 4) MATCH a:bar --> b:bond|:zoo RETURN b""").toSet
+
+    // THEN
+    assert(result === Set(Map("b" -> c), Map("b" -> d)))
+
+  }
+
+
+  @Test def should_filter_nodes_by_complex_label_predicate_in_match() {
+    // GIVEN
+    val a = createLabeledNode("bar")
+
+    val b = createLabeledNode("foo", "bar")
+    val c = createLabeledNode("zoo")
+    val d = createLabeledNode("bond")
+    val e = createLabeledNode("zoo", "apa")
+
+    relate(a, b)
+    relate(a, c)
+    relate(a, d)
+    relate(a, e)
+
+    // WHEN
+    val result =
+      parseAndExecute("""START a=node(1), b=node(2, 3, 4, 5) MATCH a:bar --> b:bond|:zoo:apa RETURN b""").toSet
+
+    // THEN
+    assert(result === Set(Map("b" -> d), Map("b" -> e)))
+
+  }
 }

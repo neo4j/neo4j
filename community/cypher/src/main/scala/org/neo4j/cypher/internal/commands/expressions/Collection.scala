@@ -22,6 +22,10 @@ package org.neo4j.cypher.internal.commands.expressions
 import org.neo4j.cypher.internal.symbols._
 import org.neo4j.cypher.internal.ExecutionContext
 
+object Collection {
+  val empty = Literal(Seq())
+}
+
 case class Collection(children: Expression*) extends Expression {
   def apply(ctx: ExecutionContext): Any = children.map(e => e(ctx))
 

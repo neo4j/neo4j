@@ -19,11 +19,9 @@
  */
 package org.neo4j.cypher.internal.mutation
 
-import org.neo4j.cypher.internal.commands.expressions.Expression
 import org.neo4j.cypher.internal.commands._
-import expressions.Identifier
+import expressions.{Expression, Identifier, Literal, Collection}
 import expressions.Identifier._
-import expressions.Literal
 import org.neo4j.cypher.internal.symbols.{RelationshipType, NodeType, SymbolTable}
 import org.neo4j.graphdb.{Node, Direction}
 import org.neo4j.cypher.internal.pipes.QueryState
@@ -31,6 +29,7 @@ import org.neo4j.cypher.{SyntaxException, CypherTypeException, UniquePathNotUniq
 import collection.Map
 import org.neo4j.cypher.internal.helpers.{IsMap, MapSupport}
 import org.neo4j.cypher.internal.ExecutionContext
+import org.neo4j.cypher.internal.parser.v2_0.NoLabels
 
 object UniqueLink {
   def apply(start: String, end: String, relName: String, relType: String, dir: Direction): UniqueLink =
@@ -66,7 +65,7 @@ case class UniqueLink(start: NamedExpectation, end: NamedExpectation, rel: Named
       rels match {
         case List() =>
           val expectations = rel.getExpectations(context)
-          val createRel = CreateRelationship(rel.name, RelationshipEndpoint(Literal(startNode), Map(), Literal(Seq.empty), true), RelationshipEndpoint(Literal(endNode), Map(), Literal(Seq.empty), true), relType, expectations)
+          val createRel = CreateRelationship(rel.name, RelationshipEndpoint(Literal(startNode), Map(), Collection.empty, true), RelationshipEndpoint(Literal(endNode), Map(), Collection.empty, true), relType, expectations)
           Some(this->Update(Seq(UpdateWrapper(Seq(), createRel, rel.name)), () => {
             // TODO: This should not be done here. The QueryContext should take the necessary locks while reading the
             // graph. For now, let's rip out the inside of objects and get to the transaction.
@@ -86,13 +85,13 @@ case class UniqueLink(start: NamedExpectation, end: NamedExpectation, rel: Named
       def createUpdateActions(): Seq[UpdateWrapper] = {
         val relExpectations = rel.getExpectations(context)
         val createRel = if (dir == Direction.OUTGOING) {
-          CreateRelationship(rel.name, RelationshipEndpoint(Literal(startNode), Map(), Literal(Seq.empty), true), RelationshipEndpoint(Identifier(other.name), Map(), Literal(Seq.empty), true), relType, relExpectations)
+          CreateRelationship(rel.name, RelationshipEndpoint(Literal(startNode), Map(), Collection.empty, true), RelationshipEndpoint(Identifier(other.name), Map(), Collection.empty, true), relType, relExpectations)
         } else {
-          CreateRelationship(rel.name, RelationshipEndpoint(Identifier(other.name), Map(), Literal(Seq.empty), true), RelationshipEndpoint(Literal(startNode), Map(), Literal(Seq.empty), true), relType, relExpectations)
+          CreateRelationship(rel.name, RelationshipEndpoint(Identifier(other.name), Map(), Collection.empty, true), RelationshipEndpoint(Literal(startNode), Map(), Collection.empty, true), relType, relExpectations)
         }
 
         val relUpdate = UpdateWrapper(Seq(other.name), createRel, createRel.key)
-        val nodeCreate = UpdateWrapper(Seq(), CreateNode(other.name, other.getExpectations(context), Literal(Seq.empty)), other.name)
+        val nodeCreate = UpdateWrapper(Seq(), CreateNode(other.name, other.getExpectations(context), Collection.empty), other.name)
 
         Seq(nodeCreate, relUpdate)
       }

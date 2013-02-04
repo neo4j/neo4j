@@ -20,16 +20,18 @@
 package org.neo4j.cypher.internal.helpers
 
 import org.neo4j.cypher.internal.ExecutionContext
-import org.neo4j.cypher.internal.commands.values.LabelValue
+import org.neo4j.cypher.internal.commands.values.{LabelName, LabelValue}
 import org.neo4j.cypher.CypherTypeException
-import org.neo4j.cypher.internal.commands.expressions.Expression
+import org.neo4j.cypher.internal.commands.expressions.{Literal, Expression}
 import org.neo4j.cypher.internal.spi.QueryContext
 
-trait LabelSupport extends CollectionSupport {
+object LabelSupport extends CollectionSupport {
 
   def getLabelsAsLongs(context: ExecutionContext, labels: Expression) =
     makeTraversable(labels(context)).map {
       case x: LabelValue => x.resolveForId(context.state.queryContext).id
       case _             => throw new CypherTypeException("Label expressions must return labels")
     }
+
+  def labelCollection(elems: String*): Expression = Literal(Seq(elems.map(LabelName(_)): _*))
 }

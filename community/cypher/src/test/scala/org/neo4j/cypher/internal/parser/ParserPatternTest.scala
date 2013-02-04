@@ -19,24 +19,41 @@
  */
 package org.neo4j.cypher.internal.parser
 
-import v2_0.{AbstractPattern, Expressions, ParsedEntity, ParserPattern}
+import v2_0._
 import org.junit.Test
-import org.neo4j.cypher.internal.commands.expressions.{Identifier, Literal}
-import org.neo4j.cypher.internal.commands.True
+import org.neo4j.cypher.internal.commands.expressions.Identifier
+import org.neo4j.cypher.internal.commands.expressions.Literal
 import org.neo4j.cypher.internal.commands.values.LabelName
+import org.neo4j.cypher.internal.commands.True
+import org.neo4j.cypher.internal.helpers.LabelSupport
 
 class ParserPatternTest extends ParserPattern with ParserTest with Expressions {
 
-  @Test def label_literal_list_short_form() {
+  @Test def label_literal_list_parsing() {
     implicit val parserToTest = labelLongForm
 
     parsing(":FOO") or
     parsing("label :FOO") shouldGive
-      Literal(List(LabelName("FOO")))
+      LabelSet(Literal(List(LabelName("FOO"))))
 
     parsing(":FOO:BAR") or
     parsing("label :FOO:BAR") shouldGive
-      Literal(List(LabelName("FOO"), LabelName("BAR")))
+      LabelSet(Literal(List(LabelName("FOO"), LabelName("BAR"))))
+
+    assertFails("[:foo, :bar]")
+  }
+
+  @Test def label_literal_choice_parsing() {
+    implicit val parserToTest = labelChoiceForm
+
+    parsing(":FOO") shouldGive
+      LabelSet(LabelSupport.labelCollection("FOO"))
+
+    parsing(":FOO|:BAZ") shouldGive
+      LabelChoice(LabelSet(LabelSupport.labelCollection("FOO")), LabelSet(LabelSupport.labelCollection("BAZ")))
+
+    parsing(":Sun:Day|:Night:Moon") shouldGive
+      LabelChoice(LabelSet(LabelSupport.labelCollection("Sun", "Day")), LabelSet(LabelSupport.labelCollection("Night", "Moon")))
 
     assertFails("[:foo, :bar]")
   }
@@ -45,19 +62,19 @@ class ParserPatternTest extends ParserPattern with ParserTest with Expressions {
     implicit val parserToTest = node
 
     parsing("n") shouldGive
-      ParsedEntity("n", Identifier("n"), Map.empty, True(), Literal(Seq.empty), true)
+      ParsedEntity("n", Identifier("n"), Map.empty, True(), NoLabels, true)
 
     parsing("(n)") shouldGive
-      ParsedEntity("n", Identifier("n"), Map.empty, True(), Literal(Seq.empty), true)
+      ParsedEntity("n", Identifier("n"), Map.empty, True(), NoLabels, true)
 
     parsing("n {name:'Andres'}") shouldGive
-      ParsedEntity("n", Identifier("n"), Map("name"->Literal("Andres")), True(), Literal(Seq.empty), false)
+      ParsedEntity("n", Identifier("n"), Map("name"->Literal("Andres")), True(), NoLabels, false)
 
     parsing("n VALUES {name:'Andres'}") shouldGive
-      ParsedEntity("n", Identifier("n"), Map("name"->Literal("Andres")), True(), Literal(Seq.empty), false)
+      ParsedEntity("n", Identifier("n"), Map("name"->Literal("Andres")), True(), NoLabels, false)
 
     parsing("n LABEL :FOO") shouldGive
-      ParsedEntity("n", Identifier("n"), Map.empty, True(), Literal(List(LabelName("FOO"))), false)
+      ParsedEntity("n", Identifier("n"), Map.empty, True(), LabelSet(Literal(List(LabelName("FOO")))), false)
   }
 
   def matchTranslator(abstractPattern: AbstractPattern) = ???

@@ -29,8 +29,7 @@ import org.neo4j.cypher.internal.ExecutionContext
 case class CreateNode(key: String, properties: Map[String, Expression], labels: Expression, bare: Boolean = true)
   extends UpdateAction
   with GraphElementPropertyFunctions
-  with CollectionSupport
-  with LabelSupport {
+  with CollectionSupport {
 
 
 
@@ -44,8 +43,7 @@ case class CreateNode(key: String, properties: Map[String, Expression], labels: 
       setProperties(node, props, context, state)
 
       val queryCtx = state.queryContext
-      val labelIds: Iterable[Long] = getLabelsAsLongs(context, labels)
-
+      val labelIds: Iterable[Long] = LabelSupport.getLabelsAsLongs(context, labels)
       queryCtx.addLabelsToNode(node.getId, labelIds)
 
       val newContext = context.newWith(key -> node)
@@ -84,7 +82,7 @@ case class CreateNode(key: String, properties: Map[String, Expression], labels: 
 
   def identifiers = Seq(key -> NodeType())
 
-  override def children = properties.map(_._2).toSeq :+ labels
+  override def children = properties.map(_._2).toSeq ++ labels.children
 
   override def rewrite(f: (Expression) => Expression): CreateNode =
     CreateNode(key, properties.rewrite(f), labels.rewrite(f), bare)
@@ -94,5 +92,6 @@ case class CreateNode(key: String, properties: Map[String, Expression], labels: 
     labels throwIfSymbolsMissing symbols
   }
 
-  override def symbolTableDependencies: Set[String] = properties.symboltableDependencies ++ labels.symbolTableDependencies
+  override def symbolTableDependencies: Set[String] =
+    properties.symboltableDependencies ++ labels.symbolTableDependencies
 }

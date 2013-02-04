@@ -20,10 +20,24 @@
 package org.neo4j.cypher.internal.parser.v1_8
 
 import org.neo4j.cypher.internal.commands._
-import expressions.{Literal, Expression, ParameterExpression, Identifier}
+import expressions._
+import expressions.Literal
+import expressions.ParameterExpression
 import org.neo4j.graphdb.Direction
 import org.neo4j.helpers.ThisShouldNotHappenError
-import org.neo4j.cypher.internal.mutation.{RelationshipEndpoint, CreateNode, CreateRelationship}
+import org.neo4j.cypher.internal.commands.AllNodes
+import org.neo4j.cypher.internal.commands.NodeByIndex
+import org.neo4j.cypher.internal.mutation.CreateNode
+import org.neo4j.cypher.internal.mutation.CreateRelationship
+import org.neo4j.cypher.internal.commands.RelationshipByIndexQuery
+import org.neo4j.cypher.internal.commands.AllRelationships
+import org.neo4j.cypher.internal.commands.NodeByIndexQuery
+import org.neo4j.cypher.internal.commands.True
+import org.neo4j.cypher.internal.commands.NamedPath
+import org.neo4j.cypher.internal.commands.CreateRelationshipStartItem
+import org.neo4j.cypher.internal.mutation.RelationshipEndpoint
+import org.neo4j.cypher.internal.commands.CreateNodeStartItem
+import org.neo4j.cypher.internal.commands.RelationshipByIndex
 
 
 trait StartClause extends Base with Expressions with CreateUnique {
@@ -79,14 +93,17 @@ trait StartClause extends Base with Expressions with CreateUnique {
                        else
                          (b, a)
 
-      Yes(Seq(CreateRelationshipStartItem(CreateRelationship(name, RelationshipEndpoint(from, startProps, Literal(Seq.empty), true), RelationshipEndpoint(to, endProps, Literal(Seq.empty), true), relType.head, props))))
+      Yes(Seq(CreateRelationshipStartItem(
+        CreateRelationship(name,
+          RelationshipEndpoint(from, startProps, Collection.empty, true),
+          RelationshipEndpoint(to, endProps, Collection.empty, true), relType.head, props))))
 
 
     case ParsedEntity(_, Identifier(name), props, True()) =>
-      Yes(Seq(CreateNodeStartItem(CreateNode(name, props, Literal(Seq.empty)))))
+      Yes(Seq(CreateNodeStartItem(CreateNode(name, props, Collection.empty))))
 
     case ParsedEntity(_, p: ParameterExpression, _, True()) =>
-      Yes(Seq(CreateNodeStartItem(CreateNode(namer.name(None), Map[String, Expression]("*" -> p), Literal(Seq.empty)))))
+      Yes(Seq(CreateNodeStartItem(CreateNode(namer.name(None), Map[String, Expression]("*" -> p), Collection.empty))))
 
     case _ => No(Seq(""))
   }

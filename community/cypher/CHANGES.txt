@@ -2,6 +2,7 @@
 ---
 o Added the possibility to add/remove labels to nodes
 o Now uses the labels specified in MATCH while matching
+* Supports label matching with or ("|") syntax in MATCH
 
 1.9.RC
 ------

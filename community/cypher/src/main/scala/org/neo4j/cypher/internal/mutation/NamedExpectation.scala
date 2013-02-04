@@ -19,22 +19,23 @@
  */
 package org.neo4j.cypher.internal.mutation
 
-import org.neo4j.cypher.internal.commands.expressions.{Literal, Identifier, Expression}
+import org.neo4j.cypher.internal.commands.expressions.{Collection, Literal, Identifier, Expression}
 import org.neo4j.cypher.internal.symbols.{SymbolTable, TypeSafe}
 import org.neo4j.graphdb.{Relationship, Node, PropertyContainer}
 import collection.Map
 import org.neo4j.cypher.internal.helpers.{IsCollection, IsMap, CollectionSupport}
 import org.neo4j.cypher.internal.spi.Operations
 import org.neo4j.cypher.internal.ExecutionContext
+import org.neo4j.cypher.internal.parser.v2_0.{NoLabels, LabelSpec}
 
 object NamedExpectation {
   def apply(name: String, bare: Boolean): NamedExpectation = NamedExpectation(name, Map.empty, bare)
 
   def apply(name: String, properties: Map[String, Expression], bare: Boolean): NamedExpectation =
-    NamedExpectation(name, properties, Literal(Seq.empty), bare)
+    NamedExpectation(name, properties, Collection.empty, bare)
 
   def apply(name: String, e: Expression, properties: Map[String, Expression], bare: Boolean): NamedExpectation =
-    new NamedExpectation(name, e, properties, Literal(Seq.empty), bare)
+    new NamedExpectation(name, e, properties, Collection.empty, bare)
 
   def apply(name: String, properties: Map[String, Expression], labels: Expression, bare: Boolean): NamedExpectation =
     new NamedExpectation(name, Identifier(name), properties, labels, bare)
