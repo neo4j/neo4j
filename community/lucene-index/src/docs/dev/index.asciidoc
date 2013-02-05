@@ -1,19 +1,18 @@
 [[indexing]]
-Indexing
-========
+Legacy Indexing
+===============
 
-Indexing in Neo4j can be done in two different ways:
+NOTE: This is not the same as <<graphdb-neo4j-schema, indexes defined in the schema>>, the documentation below is for the legacy indexing in Neo4j.
 
-. The database itself is a _natural index_ consisting of its relationships of different types between nodes.
-  For example a tree structure can be layered on top of the data and used for index lookups performed by a traverser.
-. Separate index engines can be used, with http://lucene.apache.org/java/{lucene-version}/index.html[Apache Lucene] being the default backend included with Neo4j.
+This chapter focuses on how to use the Manual Indexes and Autoindexes.
+As of Neo4j 2.0, this is not  the favored method of indexing data in Neo4j, instead we recommend defining indexes in the database schema.
 
-This chapter demonstrate how to use the second type of indexing, focusing on Lucene.
+However, support for legacy indexes remains, because certain features, such as uniqueness constraints, are not yet handled by the new indexes.
 
 [[indexing-introduction]]
 == Introduction ==
 
-Indexing operations are part of the http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/index/package-summary.html[Neo4j index API].
+Legacy Indexing operations are part of the http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/index/package-summary.html[Neo4j index API].
 
 Each index is tied to a unique, user-specified name (for example "first_name" or "books") and can index either http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/Node.html[nodes] or http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/Relationship.html[relationships].
 

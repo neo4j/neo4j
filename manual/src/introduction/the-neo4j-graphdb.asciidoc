@@ -255,3 +255,16 @@ For Java code examples see <<tutorials-java-embedded-traversal>>.
 You can also use <<cypher-query-lang, The Cypher Query Language>> as a powerful declarative way to query the graph.
 
 
+[[graphdb-neo4j-schema]]
+== Schema ==
+
+Neo4j is a schema-optional graph database; you can use Neo4j without any schema, but optionally introduce it in order to gain performance or modelling benefits.
+This allows a way of working where the schema does not get in your way until you are at a stage where you want to reap the benefits of having one.
+
+=== Indexes ===
+
+NOTE: This feature was introduced in Neo4j 2.0, and is not the same as the <<indexing, legacy indexes>>.
+
+Performance is gained by introducing indexes, which improve the speed of looking up nodes in the database.
+Once you’ve specified which properties to index, Neo4j will make sure your indexes are kept up to date as your graph evolves.
+Any operation that looks up nodes by the newly indexed properties will see a significant performance boost.
