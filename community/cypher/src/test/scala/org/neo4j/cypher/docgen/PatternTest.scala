@@ -61,13 +61,13 @@ Patterns have bound points, or starting points. They are the parts of the patter
 graph nodes or relationships. All parts of the pattern must be directly or indirectly connected to a starting point -- a pattern
 where parts of the pattern are not reachable from any starting point will be rejected.
 
-[options="header", cols=">s,^,^,^,^,^", width="100%"]
+[options="header", cols=">s,^,^,^,^,^,^", width="100%"]
 |===================
-|Clause|Optional|Multiple rel. types|Varlength|Paths|Maps
-|Match|Yes|Yes|Yes|Yes|-
-|Create|-|-|-|Yes|Yes
-|Create Unique|-|-|-|Yes|Yes
-|Expressions|-|Yes|Yes|-|-
+|Clause|Optional|Multiple rel. types|Varlength|Paths|Maps|Label OR syntax
+|Match|Yes|Yes|Yes|Yes|-|Yes
+|Create|-|-|-|Yes|Yes|-
+|Create Unique|-|-|-|Yes|Yes|-
+|Expressions|-|Yes|Yes|-|-|Yes
 |===================
 
 == Patterns for related nodes ==
@@ -89,6 +89,27 @@ the one we saw above -- the difference is purely aesthetic.
 If you don't care about a node, you don't need to name it. Empty parenthesis are used for these nodes, like so:
 
 +`a-->()<--b`+
+
+== Labels ==
+
+You can declare that nodes should have a certain label in your pattern.
+
++`a:User-->b`+
+
+Or that it should have multiple labels.
+
++`a:User:Admin-->b`+
+
+For usage in +MATCH+ and expressions, there is an OR-style syntax available.
+For instance, a match with this syntax:
+
++`MATCH a:User|:Admin-->b`+
+
+Is equivalent to:
+
++`MATCH a-->b WHERE a:User OR a:Admin`+
+
+This is, for obvious reasons, not available in +CREATE+ or +CREATE+ +UNIQUE+ statements.
 
 == Working with relationships ==
 
@@ -219,7 +240,7 @@ When used with `CREATE UNIQUE`, they are used to try to match a pattern element 
 The match is successful if the properties on the pattern element can be matched exactly against properties on the graph
 elements. The graph element can have additional properties, and they do not affect the match. If Neo4j fails to find
 matching graph elements, the maps is used to set the properties on the newly created elements.
-"""
+    """
 }
 
 
