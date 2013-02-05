@@ -27,7 +27,13 @@ import org.junit.Test
 class MatchTest extends DocumentingTestBase {
   override def indexProps: List[String] = List("name")
 
-  def graphDescription = List("A KNOWS B", "A BLOCKS C", "D KNOWS A", "B KNOWS E", "C KNOWS E", "B BLOCKS D")
+  def graphDescription = List(
+    "A:Foo KNOWS B:Bar",
+    "A BLOCKS C:Baz",
+    "D KNOWS A",
+    "B KNOWS E",
+    "C KNOWS E",
+    "B BLOCKS D")
 
   override val properties = Map(
     "A" -> Map("name" -> "Anders"),
@@ -275,6 +281,26 @@ Cypher will try to match the relationship where the connected nodes switch sides
       queryText = "start a=node(%A%), b=node(%E%) match a-[?:KNOWS]-x-[?:KNOWS]-b return x",
       returns = "This query is saying: give me the nodes that are connected to `a`, or `b`, or both.",
       assertions = p => assertEquals(Set(node("D"), node("B"), node("C")), p.columnAs[Node]("x").toSet)
+    )
+  }
+
+  @Test def match_with_labels() {
+    testQuery(
+      title = "Match with labels",
+      text = "To constrain your pattern with labels on nodes, you add it to your pattern nodes, using the label syntax.",
+      queryText = "start a=node(%A%) match a:Foo-->x:Baz return x",
+      returns = "Any nodes connected with the Anders node that are labeled :Baz",
+      assertions = p => assertEquals(List(node("C")), p.columnAs[Node]("x").toList)
+    )
+  }
+
+  @Test def match_with_labels_or() {
+    testQuery(
+      title = "Match with either one or another label",
+      text = "The logical OR between two labels are expressed using the +|+ symbol",
+      queryText = "start a=node(%A%) match a:Foo-->x:Baz return x",
+      returns = "Any nodes connected with the Anders node that are labeled :Baz",
+      assertions = p => assertEquals(List(node("C")), p.columnAs[Node]("x").toList)
     )
   }
 }

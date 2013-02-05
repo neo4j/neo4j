@@ -25,6 +25,10 @@ include::match-by-multiple-relationship-types.asciidoc[]
 
 include::match-by-relationship-type-and-use-an-identifier.asciidoc[]
 
+include::match-with-labels.asciidoc[]
+
+include::match-with-either-one-or-another-label.asciidoc[]
+
 include::relationship-types-with-uncommon-characters.asciidoc[]
 
 include::multiple-relationships.asciidoc[]

@@ -60,7 +60,7 @@ class CreateTest extends DocumentingTestBase with StatisticsChecker {
 
   @Test def create_single_node_with_labels_and_properties() {
     testQuery(
-      title = "Create node and add labels",
+      title = "Create node labels and properties",
       text = "To add labels to the newly created node, you can either you a normal expression," +
         "or you can use the labels short form from +MATCH+.",
       queryText = "create n label :Person = {name : 'Andres', title : 'Developer'}",
