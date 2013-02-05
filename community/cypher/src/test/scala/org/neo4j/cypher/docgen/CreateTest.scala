@@ -21,8 +21,9 @@ package org.neo4j.cypher.docgen
 
 import org.junit.Test
 import org.neo4j.cypher.CuteGraphDatabaseService.gds2cuteGds
-import org.neo4j.graphdb.{Node, Relationship}
+import org.neo4j.graphdb.{DynamicLabel, Node, Relationship}
 import org.neo4j.cypher.StatisticsChecker
+import scala.collection.JavaConverters._
 
 class CreateTest extends DocumentingTestBase with StatisticsChecker {
   def graphDescription = List()
@@ -172,6 +173,22 @@ will be created. """,
         assert(result.size === 1)
         val r = result.head("r").asInstanceOf[Relationship]
         assert(r.getProperty("name") === "Andres<->Michael")
+      }
+    )
+  }
+
+  @Test def create_index_on_label() {
+    testQuery(
+      title = "Create index on a label",
+      text = "To create an index on all nodes that have a label, use +CREATE+ +INDEX+ +ON+.",
+      queryText = "create index on :Person(name)",
+      returns = "Nothing",
+      assertions = { (p) =>
+        val expected = Seq("name")
+        val indexDefinitions = db.schema().getIndexes(DynamicLabel.label("Person")).asScala
+        assert(1 === indexDefinitions.size)
+        val actual = indexDefinitions.head.getPropertyKeys.asScala.toSeq
+        assert(expected === actual)
       }
     )
   }

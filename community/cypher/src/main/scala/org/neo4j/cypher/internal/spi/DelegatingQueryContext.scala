@@ -56,6 +56,12 @@ class DelegatingQueryContext(inner: QueryContext) extends QueryContext {
   }
 
   def getTransaction = inner.getTransaction
+
+  def getOrCreatePropertyKeyId(propertyKey: String) = inner.getOrCreatePropertyKeyId(propertyKey)
+
+  def getPropertyKeyId(propertyKey: String) = inner.getPropertyKeyId(propertyKey)
+
+  def addIndexRule(labelIds: Long, propertyKeyId: Long) = inner.addIndexRule(labelIds, propertyKeyId)
 }
 
 class DelegatingOperations[T <: PropertyContainer](protected val inner: Operations[T]) extends Operations[T] {

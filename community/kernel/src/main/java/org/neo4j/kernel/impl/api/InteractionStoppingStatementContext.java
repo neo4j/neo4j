@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api;
 
 import org.neo4j.kernel.api.ConstraintViolationKernelException;
 import org.neo4j.kernel.api.LabelNotFoundKernelException;
+import org.neo4j.kernel.api.PropertyKeyNotFoundException;
 import org.neo4j.kernel.api.StatementContext;
 
 public class InteractionStoppingStatementContext implements StatementContext
@@ -109,6 +110,20 @@ public class InteractionStoppingStatementContext implements StatementContext
     {
         assertOperationsAllowed();
         return delegate.getIndexRules( labelId );
+    }
+    
+    @Override
+    public long getOrCreatePropertyKeyId( String propertyKey )
+    {
+        assertOperationsAllowed();
+        return delegate.getOrCreatePropertyKeyId( propertyKey );
+    }
+
+    @Override
+    public long getPropertyKeyId( String propertyKey ) throws PropertyKeyNotFoundException
+    {
+        assertOperationsAllowed();
+        return delegate.getPropertyKeyId( propertyKey );
     }
 
     private void assertOperationsAllowed()

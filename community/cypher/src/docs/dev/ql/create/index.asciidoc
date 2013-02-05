@@ -71,3 +71,13 @@ tag=create_multiple_nodes_from_map
 classifier=test-sources
 ----
 
+[[create-label-index]]
+== Create index on all nodes that have a label ==
+
+Cypher allows to create indexes on certain properties for all nodes that have a given label.
+These indexes are automatically managed and updated by the database whenever a matching node is updated.
+
+:leveloffset: 2
+
+include::create-index-on-a-label.asciidoc[]
+

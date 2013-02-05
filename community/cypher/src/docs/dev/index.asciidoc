@@ -20,6 +20,8 @@ include::updating.asciidoc[]
 
 include::transactions.asciidoc[]
 
+include::schema.asciidoc[]
+
 :leveloffset: 2
 
 include::ql/introduction/pattern.asciidoc[]

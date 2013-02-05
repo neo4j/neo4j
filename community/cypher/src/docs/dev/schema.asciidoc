@@ -1,0 +1,11 @@
+[[cypher-schema]]
+
+Schema and Indexing
+===================
+
+Neo4j 2.0 introduced an optional schema for the graph, based around the concept of +LABELS+.
+Cypher allows you to manipulate that schema using the Cypher data definition language (DDL).
+
+The currently supported operations are:
+
+. Create schema based indexes

@@ -17,16 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.commands
+package org.neo4j.kernel.api;
 
-sealed abstract class IndexOperation extends AbstractQuery {
-  val label: String
-}
-
-final case class CreateIndex(label: String, propertyKeys: Seq[String], queryString: QueryString = QueryString.empty) extends IndexOperation {
-  def setQueryText(t: String): CreateIndex = copy(queryString = QueryString(t))
-}
-
-final case class DeleteIndex(label: String, propertyKeys: Seq[String], queryString: QueryString = QueryString.empty) extends IndexOperation {
-  def setQueryText(t: String): DeleteIndex = copy(queryString = QueryString(t))
+public class PropertyKeyNotFoundException extends KernelException
+{
+    public PropertyKeyNotFoundException( String propertyKey )
+    {
+        super( "Property key '" + propertyKey + "' not found" );
+    }
+    
+    public PropertyKeyNotFoundException( String propertyKey, Exception cause )
+    {
+        super( "Property key '" + propertyKey + "' not found", cause );
+    }
 }

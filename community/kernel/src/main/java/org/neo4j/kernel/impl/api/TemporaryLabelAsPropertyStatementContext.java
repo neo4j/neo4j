@@ -35,6 +35,7 @@ import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.api.ConstraintViolationKernelException;
 import org.neo4j.kernel.api.LabelNotFoundKernelException;
+import org.neo4j.kernel.api.PropertyKeyNotFoundException;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.impl.core.KeyNotFoundException;
 import org.neo4j.kernel.impl.core.PropertyIndex;
@@ -313,5 +314,24 @@ public class TemporaryLabelAsPropertyStatementContext implements StatementContex
                 return ((IndexRule) from).getPropertyKeys()[0];
             }
         }, filtered );
+    }
+
+    @Override
+    public long getOrCreatePropertyKeyId( String propertyKey )
+    {
+        return propertyIndexManager.getOrCreateId( propertyKey );
+    }
+
+    @Override
+    public long getPropertyKeyId( String propertyKey ) throws PropertyKeyNotFoundException
+    {
+        try
+        {
+            return propertyIndexManager.getIdByKeyName( propertyKey );
+        }
+        catch ( KeyNotFoundException e )
+        {
+            throw new PropertyKeyNotFoundException( propertyKey, e );
+        }
     }
 }

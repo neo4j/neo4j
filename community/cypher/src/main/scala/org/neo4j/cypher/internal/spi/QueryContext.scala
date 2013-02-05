@@ -59,6 +59,12 @@ trait QueryContext {
 
   def removeLabelsFromNode(node: Long, labelIds: Iterable[Long]): Int
 
+  def getOrCreatePropertyKeyId(propertyKey: String): Long
+
+  def getPropertyKeyId(propertyKey: String): Long
+
+  def addIndexRule(labelIds: Long, propertyKeyId: Long)
+
   def close(success: Boolean)
 
   /**

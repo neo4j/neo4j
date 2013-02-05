@@ -27,7 +27,6 @@ import expressions.Literal
 import expressions.Property
 import internal.helpers.LabelSupport
 import internal.mutation._
-import internal.parser.v2_0.LabelSet
 import org.junit.Assert._
 import org.neo4j.graphdb.Direction
 import org.scalatest.junit.JUnitSuite
@@ -2043,7 +2042,17 @@ foreach(x in [1,2,3] :
     )
   }
 
-  @Test def create_index() {
+  @Test(expected = classOf[SyntaxException]) def create_no_index_without_properties() {
+    testFrom_2_0("create index on :MyLabel",
+      CreateIndex("MyLabel", Seq()))
+  }
+
+  @Test def create_index_on_single_property() {
+    testFrom_2_0("create index on :MyLabel(prop1)",
+      CreateIndex("MyLabel", Seq("prop1")))
+  }
+
+  @Test def create_index_on_multiple_properties() {
     testFrom_2_0("create index on :MyLabel(prop1, prop2)",
       CreateIndex("MyLabel", Seq("prop1", "prop2")))
   }

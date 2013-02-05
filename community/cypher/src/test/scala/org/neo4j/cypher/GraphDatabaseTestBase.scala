@@ -25,9 +25,11 @@ import org.scalatest.junit.JUnitSuite
 import collection.Map
 import org.neo4j.graphdb._
 import org.neo4j.test.ImpermanentGraphDatabase
-import org.neo4j.kernel.GraphDatabaseAPI
+import org.neo4j.kernel.{ThreadToStatementContextBridge, GraphDatabaseAPI}
+import org.neo4j.kernel.api.StatementContext
 
-class GraphDatabaseTestBase extends JUnitSuite  {
+class GraphDatabaseTestBase extends JUnitSuite {
+
   var graph: GraphDatabaseAPI with Snitch = null
   var refNode: Node = null
   var nodes: List[Node] = null
@@ -92,6 +94,18 @@ class GraphDatabaseTestBase extends JUnitSuite  {
     tx.success()
     tx.finish()
 
+    result
+  }
+
+  def execStatement[T](f: (StatementContext => T)): T = {
+    val tx  = graph.beginTx
+    val ctx = graph
+        .getDependencyResolver
+        .resolveDependency(classOf[ThreadToStatementContextBridge])
+        .getCtxForWriting
+    val result = f(ctx)
+    tx.success()
+    tx.finish()
     result
   }
 

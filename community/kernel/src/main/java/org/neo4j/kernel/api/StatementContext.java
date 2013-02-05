@@ -45,7 +45,7 @@ public interface StatementContext
     long getOrCreateLabelId( String label ) throws ConstraintViolationKernelException;
     
     /**
-     * Returns a label if for a label name. If the label doesn't exist a
+     * Returns a label id for a label name. If the label doesn't exist a
      * {@link LabelNotFoundKernelException} will be thrown.
      * 
      * @param label the name of the label to get the id for.
@@ -140,4 +140,25 @@ public interface StatementContext
      * @return all indexed properties keys for that labelId.
      */
     Iterable<Long> getIndexRules( long labelId );
+    
+    /**
+     * Returns a property key id for a property key. If the key doesn't exist prior to
+     * this call it gets created.
+     * 
+     * @param propertyKey the name property key to get the id for.
+     * @return the property key id for the given property key.
+     * @throws ConstraintViolationKernelException if the property key violates some
+     * constraint, for example if it's null or of zero length.
+     */
+    long getOrCreatePropertyKeyId( String propertyKey );
+
+    /**
+     * Returns a property key id for the given property key. If the property key doesn't exist a
+     * {@link PropertyKeyNotFoundException} will be thrown.
+     * 
+     * @param propertyKey the property key to get the id for.
+     * @return the property key id for the given property key.
+     * @throws PropertyKeyNotFoundException if the property key doesn't exist.
+     */
+    long getPropertyKeyId( String propertyKey ) throws PropertyKeyNotFoundException;
 }

@@ -46,9 +46,10 @@ import org.neo4j.graphdb._
 import org.junit.{Ignore, Test}
 import org.neo4j.index.lucene.ValueContext
 import org.neo4j.test.ImpermanentGraphDatabase
-import collection.mutable
 import util.Random
 import org.neo4j.kernel.TopLevelTransaction
+import org.neo4j.kernel.api.ConstraintViolationKernelException
+
 
 class ExecutionEngineTest extends ExecutionEngineHelper {
 
@@ -2525,7 +2526,6 @@ RETURN x0.name?
 
   }
 
-
   @Test def should_filter_nodes_by_complex_label_predicate_in_match() {
     // GIVEN
     val a = createLabeledNode("bar")
@@ -2547,5 +2547,31 @@ RETURN x0.name?
     // THEN
     assert(result === Set(Map("b" -> d), Map("b" -> e)))
 
+  }
+
+  @Test def should_create_index() {
+    // GIVEN
+    val labelName = "Person"
+    val propertyKeys = Seq("name")
+
+    // WHEN
+    parseAndExecute(s"""CREATE INDEX ON :${labelName}(${propertyKeys.reduce(_ ++ "," ++ _)})""")
+
+    // THEN
+    val indexDefinitions = graph.schema().getIndexes(DynamicLabel.label(labelName)).asScala.toSet
+    assert(1 === indexDefinitions.size)
+
+    val actual = indexDefinitions.head.getPropertyKeys.asScala.toSeq
+    assert(propertyKeys == actual)
+  }
+
+  @Test(expected = classOf[ConstraintViolationKernelException]) def should_not_create_existing_index() {
+    // GIVEN
+    val labelName = "Person"
+    val propertyKeys = Seq("name")
+    parseAndExecute(s"""CREATE INDEX ON :${labelName}(${propertyKeys.reduce(_ ++ "," ++ _)})""")
+
+    // WHEN
+    parseAndExecute(s"""CREATE INDEX ON :${labelName}(${propertyKeys.reduce(_ ++ "," ++ _)})""")
   }
 }

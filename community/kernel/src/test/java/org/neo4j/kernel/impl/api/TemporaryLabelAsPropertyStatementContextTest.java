@@ -23,6 +23,7 @@ import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.cache_type;
 import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
@@ -40,6 +41,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.api.PropertyKeyNotFoundException;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.impl.core.PropertyIndexManager;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
@@ -259,6 +261,62 @@ public class TemporaryLabelAsPropertyStatementContextTest
         // THEN
         assertEquals( asSet( node1.getId(), node2.getId() ), asSet( nodesForLabel1 ) );
         assertEquals( asSet( node2.getId() ), asSet( nodesForLabel2 ) );
+    }
+    
+    @Test
+    public void should_create_property_key_if_not_exists() throws Exception
+    {
+        // GIVEN
+        String propertyKey = "name";
+
+        // WHEN
+        long id = statement.getOrCreatePropertyKeyId( propertyKey );
+
+        // THEN
+        assertTrue( "Should have created a non-negative id", id >= 0 );
+    }
+    
+    @Test
+    public void should_get_previously_created_property_key() throws Exception
+    {
+        // GIVEN
+        String propertyKey = "name";
+        long id = statement.getOrCreatePropertyKeyId( propertyKey );
+
+        // WHEN
+        long secondId = statement.getPropertyKeyId( propertyKey );
+
+        // THEN
+        assertEquals( id, secondId );
+    }
+    
+    @Test
+    public void should_be_able_to_get_or_create_previously_created_property_key() throws Exception
+    {
+        // GIVEN
+        String propertyKey = "name";
+        long id = statement.getOrCreatePropertyKeyId( propertyKey );
+
+        // WHEN
+        long secondId = statement.getOrCreatePropertyKeyId( propertyKey );
+
+        // THEN
+        assertEquals( id, secondId );
+    }
+    
+    @Test
+    public void should_fail_if_get_non_existent_property_key() throws Exception
+    {
+        // WHEN
+        try
+        {
+            statement.getPropertyKeyId( "non-existent-property-key" );
+            fail( "Should have failed with property key not found exception" );
+        }
+        catch ( PropertyKeyNotFoundException e )
+        {
+            // Good
+        }
     }
     
     private GraphDatabaseAPI db;

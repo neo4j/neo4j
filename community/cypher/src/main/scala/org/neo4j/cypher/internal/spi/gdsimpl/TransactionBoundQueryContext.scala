@@ -98,6 +98,18 @@ class TransactionBoundQueryContext(graph: GraphDatabaseAPI) extends QueryContext
     def getById(id: Long) = graph.getRelationshipById(id)
   }
 
+
+  def getOrCreatePropertyKeyId(propertyKey: String) =
+    ctx.getOrCreatePropertyKeyId(propertyKey)
+
+  def getPropertyKeyId(propertyKey: String) =
+    ctx.getPropertyKeyId(propertyKey)
+
+
+  def addIndexRule(labelIds: Long, propertyKeyId: Long) {
+    ctx.addIndexRule(labelIds, propertyKeyId)
+  }
+
   abstract class BaseOperations[T <: PropertyContainer] extends Operations[T] {
     def getProperty(obj: T, propertyKey: String) = obj.getProperty(propertyKey)
 

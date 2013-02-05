@@ -23,7 +23,7 @@ Please use JDK 6 (OpenJDK is fine) to build Neo4j.
 In addition, you need to allow enough memory to the Maven build process,
 for example by adding before launching Maven:
 
-    export JAVA_OPTS='-Xms384M -Xmx512M -XX:MaxPermSize=256M'
+    export MAVEN_OPTS='-Xms384M -Xmx1g -XX:MaxPermSize=256M'
 
 At least on OpenJDK 1.6.0_23, building Neo4j with the default settings
 throws misleading exceptions such as: (reproduced here for your information)

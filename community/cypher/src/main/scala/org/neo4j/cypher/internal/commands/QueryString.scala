@@ -19,14 +19,14 @@
  */
 package org.neo4j.cypher.internal.commands
 
-sealed abstract class IndexOperation extends AbstractQuery {
-  val label: String
+object QueryString {
+  lazy val empty = QueryString("")
 }
 
-final case class CreateIndex(label: String, propertyKeys: Seq[String], queryString: QueryString = QueryString.empty) extends IndexOperation {
-  def setQueryText(t: String): CreateIndex = copy(queryString = QueryString(t))
-}
-
-final case class DeleteIndex(label: String, propertyKeys: Seq[String], queryString: QueryString = QueryString.empty) extends IndexOperation {
-  def setQueryText(t: String): DeleteIndex = copy(queryString = QueryString(t))
+case class QueryString(text: String) {
+  override def equals(p1: Any): Boolean = p1 match {
+    case null           => false
+    case _: QueryString => true
+    case _              => false
+  }
 }
