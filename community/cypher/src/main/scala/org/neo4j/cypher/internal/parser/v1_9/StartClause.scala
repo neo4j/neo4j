@@ -25,7 +25,6 @@ import expressions.Literal
 import expressions.ParameterExpression
 import org.neo4j.graphdb.Direction
 import org.neo4j.helpers.ThisShouldNotHappenError
-import org.neo4j.cypher.internal.parser.v2_0.NoLabels
 import org.neo4j.cypher.internal.commands.AllNodes
 import org.neo4j.cypher.internal.commands.NodeByIndex
 import org.neo4j.cypher.internal.mutation.CreateNode

@@ -112,9 +112,9 @@ trait ParserPattern extends Base with Labels {
   private def nodeFromExpression = Parser {
     case in => expression(in) match {
       case Success(exp@Identifier(name), rest) =>
-        Success(ParsedEntity(name, exp, Map[String, Expression](), True(), NoLabels, true), rest)
+        Success(ParsedEntity(name, exp, Map[String, Expression](), True(), LabelSet.empty, true), rest)
       case Success(exp, rest) =>
-        Success(ParsedEntity(namer.name(None), exp, Map[String, Expression](), True(), NoLabels, true), rest)
+        Success(ParsedEntity(namer.name(None), exp, Map[String, Expression](), True(), LabelSet.empty, true), rest)
       case x: Error =>
         x
       case Failure(msg, rest) =>

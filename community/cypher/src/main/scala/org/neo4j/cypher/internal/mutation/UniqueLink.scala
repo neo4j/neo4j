@@ -29,7 +29,6 @@ import org.neo4j.cypher.{SyntaxException, CypherTypeException, UniquePathNotUniq
 import collection.Map
 import org.neo4j.cypher.internal.helpers.{IsMap, MapSupport}
 import org.neo4j.cypher.internal.ExecutionContext
-import org.neo4j.cypher.internal.parser.v2_0.NoLabels
 
 object UniqueLink {
   def apply(start: String, end: String, relName: String, relType: String, dir: Direction): UniqueLink =

@@ -82,7 +82,7 @@ case class CreateNode(key: String, properties: Map[String, Expression], labels: 
 
   def identifiers = Seq(key -> NodeType())
 
-  override def children = properties.map(_._2).toSeq ++ labels.children
+  override def children = properties.map(_._2).toSeq :+ labels
 
   override def rewrite(f: (Expression) => Expression): CreateNode =
     CreateNode(key, properties.rewrite(f), labels.rewrite(f), bare)

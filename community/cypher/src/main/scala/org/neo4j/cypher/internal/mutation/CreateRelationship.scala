@@ -48,7 +48,7 @@ extends UpdateAction
   with GraphElementPropertyFunctions {
 
   override def children =
-    props.map(_._2).toSeq ++ Seq(from.node, to.node) ++ from.props.map(_._2) ++ to.props.map(_._2) ++ to.labels.children ++ from.labels.children
+    props.map(_._2).toSeq ++ Seq(from.node, to.node) ++ from.props.map(_._2) ++ to.props.map(_._2) :+ to.labels :+ from.labels
 
   override def rewrite(f: (Expression) => Expression) = {
       val newFrom = from.rewrite(f)

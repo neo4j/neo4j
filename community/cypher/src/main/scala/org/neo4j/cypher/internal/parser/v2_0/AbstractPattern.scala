@@ -33,13 +33,8 @@ abstract sealed class AbstractPattern {
 
   def parsedLabelPredicates: Seq[Predicate] =
     parsedEntities.flatMap { (entity: ParsedEntity) =>
-      val labelPreds: Seq[HasLabel] = entity.labels.allSets.flatMap { (labelSet: AbstractLabelSet) =>
-        labelSet.expr match {
-           case IsCollection(coll) if coll.isEmpty => None
-           case Literal(IsCollection(coll)) if coll.isEmpty => None
-           case expr => Some(HasLabel(Identifier(entity.name), expr))
-        }
-      }
+      val ident: Identifier = Identifier(entity.name)
+      val labelPreds: Seq[HasLabel] = entity.labels.allSets.flatMap(_.asOptPredicate(ident))
       if (labelPreds.isEmpty) None else Some(labelPreds.reduce(Or))
     }
 }

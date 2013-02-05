@@ -21,19 +21,18 @@ package org.neo4j.cypher.internal.parser.v2_0
 
 import org.neo4j.cypher.internal.commands.expressions.{Expression, Literal}
 import org.neo4j.cypher.internal.commands.values.LabelName
-import org.neo4j.cypher.SyntaxException
 
 trait Labels extends Base {
   def labelLit: Parser[Literal] = ":" ~> identity ^^ { x => Literal(LabelName(x)) }
 
   def labelShortForm: Parser[LabelSet] = rep1(labelLit) ^^ {
     case litList =>
-      LabelSet(Literal(litList.map(_.v)))
+      LabelSet(Some(Literal(litList.map(_.v))))
   }
 
-  private def labelExpr: Parser[AbstractLabelSet] = expression ^^ (expr => LabelSet(expr))
+  private def labelExpr: Parser[LabelSet] = expression ^^ (expr => LabelSet(Some(expr)))
 
-  private def labelKeywordForm: Parser[AbstractLabelSet] = ignoreCase("label") ~> (labelShortForm | labelExpr)
+  private def labelKeywordForm: Parser[LabelSet] = ignoreCase("label") ~> (labelShortForm | labelExpr)
 
   private def labelGroupsForm: Parser[LabelSpec] = rep1sep(labelShortForm, "|") ^^ {
     case labelSets => LabelChoice(labelSets: _*).simplify
@@ -42,50 +41,15 @@ trait Labels extends Base {
   def labelChoiceForm: Parser[LabelSpec] = labelGroupsForm | labelKeywordForm
 
   def optLabelChoiceForm: Parser[LabelSpec] = opt(labelChoiceForm) ^^ {
-    case optSpec => optSpec.getOrElse(NoLabels)
+    case optSpec => optSpec.getOrElse(LabelSet.empty)
   }
 
-  def labelLongForm: Parser[AbstractLabelSet] = labelShortForm | labelKeywordForm
+  def labelLongForm: Parser[LabelSet] = labelShortForm | labelKeywordForm
 
-  def optLabelLongForm: Parser[AbstractLabelSet] = opt(labelLongForm) ^^ {
-    case optSpec => optSpec.getOrElse(NoLabels)
+  def optLabelLongForm: Parser[LabelSet] = opt(labelLongForm) ^^ {
+    case optSpec => optSpec.getOrElse(LabelSet.empty)
   }
 
   def expression: Parser[Expression]
 }
 
-sealed abstract class LabelSpec {
-  def allSets: Seq[AbstractLabelSet]
-  def bare: Boolean
-
-  def asLabelSet: AbstractLabelSet = throw new SyntaxException("Required single label set or none but found too many")
-  def simplify: LabelSpec = this
-
-  final def asExpr = asLabelSet.expr
-}
-
-sealed abstract class AbstractLabelSet(val expr: Expression) extends LabelSpec {
-  def allSets = Seq(this)
-  def bare = false
-
-  override def asLabelSet: AbstractLabelSet = this
-}
-
-case object NoLabels extends AbstractLabelSet(Literal(Seq.empty)) {
-  override def allSets = Seq.empty
-  override def bare = true
-}
-
-case class LabelSet(override val expr: Expression) extends AbstractLabelSet(expr)
-
-final case class LabelChoice(override val allSets: LabelSet*) extends LabelSpec {
-  def bare = allSets.isEmpty
-
-  override def simplify: LabelSpec =
-    if (allSets.isEmpty)
-      NoLabels
-    else if (allSets.tail.isEmpty)
-      allSets.head
-    else
-      this
-}

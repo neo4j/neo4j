@@ -47,7 +47,7 @@ trait Predicates extends Base with ParserPattern with StringLiteral with Labels 
     )
 
   def hasLabel: Parser[HasLabel] = entity ~ labelShortForm ^^ {
-    case identifier ~ labels => HasLabel(identifier, labels.expr)
+    case identifier ~ labels => HasLabel(identifier, labels.asExpr)
   }
 
   def hasProperty = ignoreCase("has") ~> parens(property) ^^ {
