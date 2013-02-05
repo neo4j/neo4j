@@ -614,6 +614,26 @@ public class LockReleaser
         }
     }
 
+    /**
+     * Patches the relationship chain loading parts of the start and end nodes of deleted relationships. This is
+     * a good idea to call when deleting relationships, otherwise the in memory representation of relationship chains
+     * may become damaged.
+     * This is not expected to remove the deleted relationship from the cache - use
+     * {@link #removeRelationshipFromCache(long)} for that purpose before calling this method.
+     *
+     * @param relId The relId of the relationship deleted
+     * @param firstNodeId The relId of the first node
+     * @param firstNodeNextRelId The next relationship relId of the first node in its relationship chain
+     * @param secondNodeId The relId of the second node
+     * @param secondNodeNextRelId The next relationship relId of the second node in its relationship chain
+     */
+    public void patchDeletedRelationshipNodes( long relId, long firstNodeId, long firstNodeNextRelId, long secondNodeId,
+                                        long secondNodeNextRelId )
+    {
+        nodeManager.patchDeletedRelationshipNodes( relId, firstNodeId, firstNodeNextRelId, secondNodeId,
+                secondNodeNextRelId );
+    }
+
     public void removeRelationshipTypeFromCache( int id )
     {
         if ( nodeManager != null )

@@ -1,3 +1,8 @@
+1.8.2 (2013-02-??)
+-------------------
+o Cached nodes have their relationship chain information properly updated on relationship deletes, so traversals will
+  complete successfully even with concurrent modifications from other transactions.
+
 1.8.1
 -----
 o Neo4j logical log now handles running out of disk space at a critical point gracefully.

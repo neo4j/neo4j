@@ -433,6 +433,8 @@ public abstract class Command extends XaCommand
         void removeFromCache( LockReleaser lockReleaser )
         {
             lockReleaser.removeRelationshipFromCache( getKey() );
+            lockReleaser.patchDeletedRelationshipNodes( getKey(), record.getFirstNode(), record.getFirstNextRel(),
+                record.getSecondNode(), record.getSecondNextRel() );
             if ( this.getFirstNode() != -1 || this.getSecondNode() != -1 )
             {
                 lockReleaser.removeNodeFromCache( this.getFirstNode() );

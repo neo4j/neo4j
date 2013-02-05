@@ -1,5 +1,11 @@
 For Release Notes, see http://neo4j.org/release-notes
 
+1.8.2 (2013-02-??)
+-------------------
+Kernel:
+ o Cached nodes have their relationship chain information properly updated on relationship deletes, so traversals will
+   complete successfully even with concurrent modifications from other transactions.
+
 1.8.1 (2012-12-13)
 --------------------
 Java 7 Support:
