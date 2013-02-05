@@ -19,19 +19,23 @@
  */
 package org.neo4j.graphdb;
 
-import static junit.framework.Assert.assertEquals;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsNot.not;
 import static org.hamcrest.core.IsNull.nullValue;
+import static org.junit.Assert.assertEquals;
+import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.helpers.collection.IteratorUtil.single;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.graphdb.schema.Schema;
+import org.neo4j.helpers.Function;
 import org.neo4j.test.ImpermanentDatabaseRule;
 
 public class SchemaAcceptanceTest
 {
-
     public @Rule
     ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule();
 
@@ -53,7 +57,7 @@ public class SchemaAcceptanceTest
         Transaction tx = beansAPI.beginTx();
         try
         {
-            schema.createIndex( Labels.MY_LABEL, property );
+            schema.indexCreator( Labels.MY_LABEL ).on( property ).create();
             tx.success();
         }
         finally
@@ -62,7 +66,19 @@ public class SchemaAcceptanceTest
         }
 
         // Then
-        assertEquals( asSet( property ), asSet( schema.getIndexes( Labels.MY_LABEL ) ));
+        assertEquals( asSet( property ), asSet( singlePropertyKey( schema.getIndexes( Labels.MY_LABEL ) ) ) );
+    }
+
+    private Iterable<String> singlePropertyKey( Iterable<IndexDefinition> indexes )
+    {
+        return map( new Function<IndexDefinition, String>()
+        {
+            @Override
+            public String apply( IndexDefinition from )
+            {
+                return single( from.getPropertyKeys() );
+            }
+        }, indexes );
     }
 
     @Test(expected = ConstraintViolationException.class)
@@ -77,8 +93,8 @@ public class SchemaAcceptanceTest
         Transaction tx = beansAPI.beginTx();
         try
         {
-            schema.createIndex( Labels.MY_LABEL, property );
-            schema.createIndex( Labels.MY_LABEL, property );
+            schema.indexCreator( Labels.MY_LABEL ).on( property ).create();
+            schema.indexCreator( Labels.MY_LABEL ).on( property ).create();
             tx.success();
         }
         finally
@@ -97,7 +113,7 @@ public class SchemaAcceptanceTest
 
         // And given
         Transaction tx = beansAPI.beginTx();
-        schema.createIndex( Labels.MY_LABEL, property );
+        schema.indexCreator( Labels.MY_LABEL ).on( property ).create();
         tx.success();
         tx.finish();
 
@@ -106,7 +122,7 @@ public class SchemaAcceptanceTest
         tx = beansAPI.beginTx();
         try
         {
-            schema.createIndex( Labels.MY_LABEL, property );
+            schema.indexCreator( Labels.MY_LABEL ).on( property ).create();
             tx.success();
         }
         catch(ConstraintViolationException e)
@@ -121,5 +137,4 @@ public class SchemaAcceptanceTest
         // Then
         assertThat(caught, not(nullValue()));
     }
-
 }

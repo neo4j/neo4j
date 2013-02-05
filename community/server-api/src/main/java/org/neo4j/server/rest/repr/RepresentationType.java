@@ -27,6 +27,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.schema.IndexDefinition;
 
 public final class RepresentationType
 {
@@ -56,6 +57,7 @@ public final class RepresentationType
             INDEX = new RepresentationType( "index" ),//
             NODE_INDEX_ROOT = new RepresentationType( "node-index" ),//
             RELATIONSHIP_INDEX_ROOT = new RepresentationType( "relationship-index" ),//
+            INDEX_DEFINITION = new RepresentationType( "index-definition", "index-definitions", IndexDefinition.class ),//
             PLUGINS = new RepresentationType( "plugins" ),//
             PLUGIN = new RepresentationType( "plugin" ),//
             PLUGIN_DESCRIPTION = new RepresentationType( "plugin-point" ),//

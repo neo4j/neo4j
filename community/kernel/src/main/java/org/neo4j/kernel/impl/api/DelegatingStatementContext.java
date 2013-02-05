@@ -87,13 +87,13 @@ public class DelegatingStatementContext implements StatementContext
     }
 
     @Override
-    public void addIndexRule( long labelId, String propertyKey ) throws ConstraintViolationKernelException
+    public void addIndexRule( long labelId, long propertyKey ) throws ConstraintViolationKernelException
     {
         delegate.addIndexRule( labelId, propertyKey );
     }
 
     @Override
-    public Iterable<String> getIndexRules( long labelId )
+    public Iterable<Long> getIndexRules( long labelId )
     {
         return delegate.getIndexRules( labelId );
     }

@@ -20,6 +20,7 @@
 package org.neo4j.server.rest.web;
 
 import static java.lang.String.format;
+import static org.neo4j.helpers.collection.IteratorUtil.singleOrNull;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -27,6 +28,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 
 import javax.ws.rs.Consumes;
@@ -44,6 +46,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
+import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
@@ -119,6 +122,10 @@ public class RestfulGraphDatabase
     
     public static final String PATH_ALL_NODES = "nodes";
     public static final String PATH_ALL_NODES_LABELED = PATH_ALL_NODES + "/labeled/{label}";
+    
+    public static final String PATH_SCHEMA = "schema";
+    public static final String PATH_SCHEMA_INDEX = PATH_SCHEMA + "/index";
+    public static final String PATH_SCHEMA_INDEX_LABEL = PATH_SCHEMA_INDEX + "/{label}";
 
     public static final String NODE_AUTO_INDEX_TYPE = "node";
     public static final String RELATIONSHIP_AUTO_INDEX_TYPE = "relationship";
@@ -1559,5 +1566,43 @@ public class RestfulGraphDatabase
         {
             return output.badRequest( e );
         }
+    }
+    
+    @POST
+    @Path( PATH_SCHEMA_INDEX_LABEL )
+    public Response createSchemaIndex( @PathParam( "label" ) String labelName, String body )
+    {
+        try
+        {
+            Map<String, Object> data = input.readMap( body, "property_keys" );
+            Object propertyKeys = data.get( "property_keys" );
+            String singlePropertyKey = null;
+            if ( propertyKeys instanceof List )
+                singlePropertyKey = (String) singleOrNull( (List<?>) propertyKeys );
+            else if ( singlePropertyKey instanceof String )
+                singlePropertyKey = (String) propertyKeys;
+            
+            if ( singlePropertyKey == null )
+            {
+                return output.badRequest( new IllegalArgumentException(
+                        "Supply single property key or list of property keys" ) );
+            }
+            return output.ok( actions.createSchemaIndex( labelName, singlePropertyKey ) );
+        }
+        catch ( BadInputException e )
+        {
+            return output.badRequest( e );
+        }
+        catch ( ConstraintViolationException e )
+        {
+            return output.conflict( e );
+        }
+    }
+    
+    @GET
+    @Path( PATH_SCHEMA_INDEX_LABEL )
+    public Response getSchemaIndexes( @PathParam( "label" ) String labelName )
+    {
+        return output.ok( actions.getSchemaIndexes( labelName ) );
     }
 }

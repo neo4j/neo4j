@@ -19,6 +19,7 @@
  */
 package org.neo4j.graphdb;
 
+
 /**
  * A dynamically instantiated and named {@link Label}. This class is
  * a convenience implementation of <code>Label</code> that is

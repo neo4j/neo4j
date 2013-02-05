@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import static java.util.Collections.unmodifiableMap;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -39,8 +41,8 @@ public class TxState
             new HashMap<Long, Pair<Collection<Long>,Collection<Long>>>();
     
     // TODO temporary use of SchemaCache?
-    private final Map<Long, Collection<Pair<Long,String>>> indexRules =
-            new HashMap<Long, Collection<Pair<Long,String>>>();
+    private final Map<Long, Collection<Pair<Long,Long>>> indexRules =
+            new HashMap<Long, Collection<Pair<Long,Long>>>();
     
     public boolean hasChanges()
     {
@@ -184,30 +186,30 @@ public class TxState
         return nodeLabels != null ? nodeLabels.other() : Collections.<Long>emptyList();
     }
 
-    public void addIndexRule( long labelId, String propertyKey )
+    public void addIndexRule( long labelId, long propertyKey )
     {
-        Collection<Pair<Long, String>> rules = indexRules.get( labelId );
+        Collection<Pair<Long, Long>> rules = indexRules.get( labelId );
         if ( rules == null )
         {
-            rules = new ArrayList<Pair<Long,String>>();
+            rules = new ArrayList<Pair<Long,Long>>();
             indexRules.put( labelId, rules );
         }
         rules.add( Pair.of( labelId, propertyKey ) );
     }
 
-    public Map<Long,Collection<Pair<Long,String>>> getAddedIndexRules()
+    public Map<Long,Collection<Pair<Long,Long>>> getAddedIndexRules()
     {
-        return Collections.unmodifiableMap( indexRules );
+        return unmodifiableMap( indexRules );
     }
     
-    public Collection<String> getAddedIndexRules( long labelId )
+    public Collection<Long> getAddedIndexRules( long labelId )
     {
-        Collection<Pair<Long, String>> rules = indexRules.get( labelId );
+        Collection<Pair<Long, Long>> rules = indexRules.get( labelId );
         if ( rules == null )
             return Collections.emptyList();
 
-        Collection<String> result = new ArrayList<String>();
-        for ( Pair<Long,String> rule : rules )
+        Collection<Long> result = new ArrayList<Long>();
+        for ( Pair<Long,Long> rule : rules )
             result.add( rule.other() );
         return result;
     }

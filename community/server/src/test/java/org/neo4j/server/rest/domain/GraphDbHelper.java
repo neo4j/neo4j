@@ -35,6 +35,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.AutoIndexer;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexManager;
+import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.server.database.Database;
@@ -418,6 +419,25 @@ public class GraphDbHelper
         try
         {
             database.getGraph().getNodeById( node ).addLabel( label( labelName ) );
+            tx.success();
+        }
+        finally
+        {
+            tx.finish();
+        }
+    }
+
+    public Iterable<IndexDefinition> getSchemaIndexes( String labelName )
+    {
+        return database.getGraph().schema().getIndexes( label( labelName ) );
+    }
+
+    public void createSchemaIndex( String labelName, String propertyKey )
+    {
+        Transaction tx = database.getGraph().beginTx();
+        try
+        {
+            database.getGraph().schema().indexCreator( label( labelName ) ).on( propertyKey ).create();
             tx.success();
         }
         finally

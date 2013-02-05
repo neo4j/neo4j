@@ -44,12 +44,15 @@ public class ConstraintEvaluatingStatementContext extends DelegatingStatementCon
     }
     
     @Override
-    public void addIndexRule( long labelId, String propertyKey ) throws ConstraintViolationKernelException
+    public void addIndexRule( long labelId, long propertyKey ) throws ConstraintViolationKernelException
     {
-        for ( String existingRule : getIndexRules( labelId ) )
+        for ( long existingRule : getIndexRules( labelId ) )
         {
-            if ( existingRule.equals( propertyKey ) )
-                throw new ConstraintViolationKernelException("Property " + propertyKey + " is already indexed for label " + labelId + ".");
+            if ( existingRule == propertyKey )
+            {
+                throw new ConstraintViolationKernelException("Property " + propertyKey +
+                        " is already indexed for label " + labelId + ".");
+            }
         }
         delegate.addIndexRule( labelId, propertyKey );
     }

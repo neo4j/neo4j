@@ -20,13 +20,13 @@
 package org.neo4j.server.rest.web;
 
 import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.helpers.collection.Iterables.map;
 
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import com.sun.jersey.api.core.HttpContext;
 import org.apache.lucene.search.Sort;
 import org.neo4j.graphalgo.CommonEvaluators;
 import org.neo4j.graphalgo.CostEvaluator;
@@ -55,7 +55,9 @@ import org.neo4j.graphdb.index.ReadableIndex;
 import org.neo4j.graphdb.index.ReadableRelationshipIndex;
 import org.neo4j.graphdb.index.RelationshipIndex;
 import org.neo4j.graphdb.index.UniqueFactory;
+import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.traversal.TraversalDescription;
+import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.index.lucene.QueryContext;
@@ -76,6 +78,7 @@ import org.neo4j.server.rest.paging.LeaseManager;
 import org.neo4j.server.rest.paging.PagedTraverser;
 import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.repr.DatabaseRepresentation;
+import org.neo4j.server.rest.repr.IndexDefinitionRepresentation;
 import org.neo4j.server.rest.repr.IndexRepresentation;
 import org.neo4j.server.rest.repr.IndexedEntityRepresentation;
 import org.neo4j.server.rest.repr.ListRepresentation;
@@ -94,6 +97,8 @@ import org.neo4j.server.rest.repr.ScoredRelationshipRepresentation;
 import org.neo4j.server.rest.repr.ValueRepresentation;
 import org.neo4j.server.rest.repr.WeightedPathRepresentation;
 import org.neo4j.tooling.GlobalGraphOperations;
+
+import com.sun.jersey.api.core.HttpContext;
 
 public class DatabaseActions
 {
@@ -1588,5 +1593,35 @@ public class DatabaseActions
         };
 
         return new ListRepresentation( RepresentationType.NODE, nodeRepresentations );
+    }
+    
+    public IndexDefinitionRepresentation createSchemaIndex( String labelName, String propertyKey )
+    {
+        Transaction tx = graphDb.beginTx();
+        try
+        {
+            IndexDefinitionRepresentation result = new IndexDefinitionRepresentation(
+                    graphDb.schema().indexCreator( label( labelName ) ).on( propertyKey ).create() );
+            tx.success();
+            return result;
+        }
+        finally
+        {
+            tx.finish();
+        }
+    }
+    
+    public ListRepresentation getSchemaIndexes( String labelName )
+    {
+        Iterable<IndexDefinition> definitions = graphDb.schema().getIndexes( label( labelName ) );
+        Iterable<IndexDefinitionRepresentation> representations = map( new Function<IndexDefinition, IndexDefinitionRepresentation>()
+        {
+            @Override
+            public IndexDefinitionRepresentation apply( IndexDefinition definition )
+            {
+                return new IndexDefinitionRepresentation( definition );
+            }
+        }, definitions );
+        return new ListRepresentation( RepresentationType.INDEX_DEFINITION, representations );
     }
 }

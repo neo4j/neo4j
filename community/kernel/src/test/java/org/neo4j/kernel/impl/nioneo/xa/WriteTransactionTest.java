@@ -60,7 +60,7 @@ public class WriteTransactionTest
 
         // WHEN
         final int ruleId = 1;
-        IndexRule schemaRule = new IndexRule( ruleId, 10, "name" );
+        IndexRule schemaRule = new IndexRule( ruleId, 10, new long[] {8} );
         writeTransaction.createSchemaRule( schemaRule );
         writeTransaction.prepare();
         writeTransaction.commit();
@@ -74,9 +74,10 @@ public class WriteTransactionTest
     {
         // GIVEN
         long ruleId = schemaStore.nextId(), labelId = 10;
-        String propertyKey = "key";
-        for ( DynamicRecord record : schemaStore.allocateFrom( ruleId, new IndexRule( ruleId, labelId, propertyKey ) ) )
-                schemaStore.updateRecord( record );
+        long propertyKey = 10;
+        IndexRule rule = new IndexRule( ruleId, labelId, new long[] {propertyKey} );
+        for ( DynamicRecord record : schemaStore.allocateFrom( ruleId, rule ) )
+            schemaStore.updateRecord( record );
         WriteTransaction writeTransaction = new WriteTransaction( 0, log, transactionState, neoStore,
                 cacheAccessBackDoor );
         writeTransaction.setCommitTxId( 1 );
@@ -100,7 +101,7 @@ public class WriteTransactionTest
 
         // WHEN
         final int ruleId = 1;
-        writeTransaction.createSchemaRule( new IndexRule( ruleId, 10, "name" ) );
+        writeTransaction.createSchemaRule( new IndexRule( ruleId, 10, new long[] {7} ) );
         writeTransaction.prepare();
         writeTransaction.rollback();
 

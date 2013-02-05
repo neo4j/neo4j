@@ -347,8 +347,7 @@ public class ITKernelAPI
         // GIVEN
         Transaction tx = db.beginTx();
         StatementContext statement = statementContextProvider.getCtxForWriting();
-        int labelId = 5;
-        String propertyKey = "name";
+        long labelId = 5, propertyKey = 8;
 
         // WHEN
         statement.addIndexRule( labelId, propertyKey );
@@ -364,8 +363,7 @@ public class ITKernelAPI
     public void committedAndTransactionalIndexRulesShouldBeMerged() throws Exception
     {
         // GIVEN
-        int labelId = 5;
-        String propertyKey = "name";
+        long labelId = 5, propertyKey = 8;
         Transaction tx = db.beginTx();
         StatementContext statement = statementContextProvider.getCtxForWriting();
         statement.addIndexRule( labelId, propertyKey );
@@ -375,9 +373,9 @@ public class ITKernelAPI
         // WHEN
         tx = db.beginTx();
         statement = statementContextProvider.getCtxForWriting();
-        String propertyKey2 = "age";
+        long propertyKey2 = 10;
         statement.addIndexRule( labelId, propertyKey2 );
-        Set<String> indexRulesInTx = asSet( statement.getIndexRules( labelId ) );
+        Set<Long> indexRulesInTx = asSet( statement.getIndexRules( labelId ) );
         tx.success();
         tx.finish();
 
@@ -389,8 +387,7 @@ public class ITKernelAPI
     public void rollBackIndexRuleShouldNotBeCommitted() throws Exception
     {
         // GIVEN
-        int labelId = 5;
-        String propertyKey = "name";
+        long labelId = 5, propertyKey = 11;
         Transaction tx = db.beginTx();
         StatementContext statement = statementContextProvider.getCtxForWriting();
 

@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.nioneo.store;
 import static java.nio.ByteBuffer.wrap;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.helpers.UTF8.encode;
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.util.StringLogger.SYSTEM;
@@ -47,16 +46,15 @@ public class SchemaStoreTest
     public void serializationAndDeserialization() throws Exception
     {
         // GIVEN
-        String propertyKey = "hello world";
-        byte[] encodedPropertyKey = encode( propertyKey );
+        long propertyKey = 4;
         int labelId = 0;
-        ByteBuffer expected = wrap( new byte[4+1+2+encodedPropertyKey.length] );
+        ByteBuffer expected = wrap( new byte[4+1+2+8] );
         expected.putInt( labelId );
         expected.put( Kind.INDEX_RULE.id() );
-        expected.putShort( (short) encodedPropertyKey.length );
-        expected.put( encodedPropertyKey );
+        expected.putShort( (short) 1 );
+        expected.putLong( propertyKey );
         long blockId = store.nextId();
-        SchemaRule indexRule = new IndexRule( blockId, labelId, propertyKey );
+        SchemaRule indexRule = new IndexRule( blockId, labelId, new long[] {propertyKey} );
 
         // WHEN
         Collection<DynamicRecord> records = store.allocateFrom( blockId, indexRule );
@@ -77,7 +75,8 @@ public class SchemaStoreTest
     {
         // GIVEN
         Collection<SchemaRule> rules = Arrays.<SchemaRule>asList(
-                new IndexRule( 1, 0, "name" ), new IndexRule( 2, 1, "age" ), new IndexRule( 3, 1, "name" ) );
+                new IndexRule( 1, 0, new long[] {5} ), new IndexRule( 2, 1, new long[] {6} ),
+                new IndexRule( 3, 1, new long[] {7} ) );
         for ( SchemaRule rule : rules )
             storeRule( rule );
 
@@ -93,7 +92,7 @@ public class SchemaStoreTest
     {
         // GIVEN
 
-        Collection<SchemaRule> rules = Arrays.<SchemaRule>asList( createLongIndexRule( 0, "bart" ) );
+        Collection<SchemaRule> rules = Arrays.<SchemaRule>asList( createLongIndexRule( 0, 50 ) );
         for ( SchemaRule rule : rules )
             storeRule( rule );
 
@@ -110,7 +109,7 @@ public class SchemaStoreTest
         // GIVEN
 
         Collection<SchemaRule> rules = Arrays.<SchemaRule>asList(
-                createLongIndexRule( 0, "name" ), createLongIndexRule( 1, "size" ), createLongIndexRule( 2, "hair" ) );
+                createLongIndexRule( 0, 100 ), createLongIndexRule( 1, 6 ), createLongIndexRule( 2, 50 ) );
         for ( SchemaRule rule : rules )
             storeRule( rule );
 
@@ -121,11 +120,12 @@ public class SchemaStoreTest
         assertEquals( rules, readRules );
     }
 
-    private IndexRule createLongIndexRule( long label, String tag ) {
-        StringBuilder builder = new StringBuilder( tag );
-        for (int i = 1; i < SchemaStore.BLOCK_SIZE; i++)
-            builder.append( (i % 2 == 1) ? "ding" : "dong" );
-        return new IndexRule( 1, label, builder.toString() );
+    private IndexRule createLongIndexRule( long label, int numberOfPropertyKeys )
+    {
+        long[] propertyKeys = new long[numberOfPropertyKeys];
+        for ( int i = 0; i < propertyKeys.length; i++ )
+            propertyKeys[i] = i;
+        return new IndexRule( 1, label, propertyKeys );
     }
 
     private long storeRule( SchemaRule rule )

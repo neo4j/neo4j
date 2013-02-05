@@ -287,15 +287,15 @@ public class TemporaryLabelAsPropertyStatementContext implements StatementContex
     }
 
     @Override
-    public void addIndexRule( long labelId, String propertyKey ) throws ConstraintViolationKernelException
+    public void addIndexRule( long labelId, long propertyKey ) throws ConstraintViolationKernelException
     {
         SchemaStore schemaStore = neoStore.getSchemaStore();
         long id = schemaStore.nextId();
-        persistenceManager.createSchemaRule( new IndexRule( id, labelId, propertyKey ) );
+        persistenceManager.createSchemaRule( new IndexRule( id, labelId, new long[] {propertyKey} ) );
     }
 
     @Override
-    public Iterable<String> getIndexRules( final long labelId )
+    public Iterable<Long> getIndexRules( final long labelId )
     {
         Iterable<SchemaRule> filtered = filter( new Predicate<SchemaRule>()
         {
@@ -305,12 +305,12 @@ public class TemporaryLabelAsPropertyStatementContext implements StatementContex
                 return rule.getLabel() == labelId && rule.getKind() == Kind.INDEX_RULE;
             }
         }, neoStore.getSchemaStore().loadAll() );
-        return map( new Function<SchemaRule, String>()
+        return map( new Function<SchemaRule, Long>()
         {
             @Override
-            public String apply( SchemaRule from )
+            public Long apply( SchemaRule from )
             {
-                return ((IndexRule) from).getPropertyKey();
+                return ((IndexRule) from).getPropertyKeys()[0];
             }
         }, filtered );
     }

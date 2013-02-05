@@ -133,11 +133,11 @@ public interface StatementContext
      * @param propertyKey the property key to index.
      * @throws ConstraintViolationKernelException if a similar or conflicting rule already exists.
      */
-    void addIndexRule( long labelId, String propertyKey ) throws ConstraintViolationKernelException;
+    void addIndexRule( long labelId, long propertyKey ) throws ConstraintViolationKernelException;
     
     /**
      * @param labelId the label to get rules for.
      * @return all indexed properties keys for that labelId.
      */
-    Iterable<String> getIndexRules( long labelId );
+    Iterable<Long> getIndexRules( long labelId );
 }

@@ -19,6 +19,7 @@
  */
 package org.neo4j.server.rest.web;
 
+import static java.util.Arrays.asList;
 import static org.hamcrest.Matchers.hasKey;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -31,6 +32,7 @@ import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
+import static org.neo4j.helpers.collection.IteratorUtil.first;
 import static org.neo4j.helpers.collection.IteratorUtil.single;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.server.rest.repr.RepresentationTestAccess.nodeUriToId;
@@ -54,6 +56,7 @@ import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
@@ -1136,5 +1139,38 @@ public class DatabaseActionsTest
                     .endsWith( "/" + nodes[1] ) );
             assertEquals( length, serialized.get( "length" ) );
         }
+    }
+    
+    @Test
+    public void shouldCreateSchemaIndex() throws Exception
+    {
+        // GIVEN
+        String labelName = "person", propertyKey = "name";
+
+        // WHEN
+        actions.createSchemaIndex( labelName, propertyKey );
+
+        // THEN
+        Iterable<IndexDefinition> defs = graphdbHelper.getSchemaIndexes( labelName );
+        assertEquals( 1, count( defs ) );
+        assertEquals( propertyKey, first( first( defs ).getPropertyKeys() ) );
+    }
+    
+    @Test
+    public void shouldGetSchemaIndexes() throws Exception
+    {
+        // GIVEN
+        String labelName = "mylabel", propertyKey = "name";
+        graphdbHelper.createSchemaIndex( labelName, propertyKey );
+
+        // WHEN
+        ListRepresentation indexes = actions.getSchemaIndexes( labelName );
+
+        // THEN
+        List<Object> serialized = serialize( indexes );
+        assertEquals( 1, serialized.size() );
+        Map<?,?> definition = (Map<?, ?>) serialized.get( 0 );
+        assertEquals( labelName, definition.get( "label" ) );
+        assertEquals( asList( propertyKey ), definition.get( "property-keys" ) );
     }
 }

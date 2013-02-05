@@ -221,4 +221,9 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
     {
         return getDataUri() + "nodes/labeled/" + label;
     }
+    
+    public String getSchemaIndexLabelUri( String label )
+    {
+        return getDataUri() + "schema/index/" + label;
+    }
 }

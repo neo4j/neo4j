@@ -47,14 +47,14 @@ public class LockingStatementContext extends DelegatingStatementContext
     }
     
     @Override
-    public void addIndexRule( long labelId, String propertyKey ) throws ConstraintViolationKernelException
+    public void addIndexRule( long labelId, long propertyKey ) throws ConstraintViolationKernelException
     {
         lockHolder.acquireSchemaWriteLock();
         delegate.addIndexRule( labelId, propertyKey );
     }
     
     @Override
-    public Iterable<String> getIndexRules( long labelId )
+    public Iterable<Long> getIndexRules( long labelId )
     {
         lockHolder.acquireSchemaReadLock();
         return delegate.getIndexRules( labelId );

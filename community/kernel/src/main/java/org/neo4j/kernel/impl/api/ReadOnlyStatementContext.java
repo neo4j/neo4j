@@ -82,13 +82,13 @@ public class ReadOnlyStatementContext implements StatementContext
     }
 
     @Override
-    public void addIndexRule( long labelId, String propertyKey ) throws ConstraintViolationKernelException
+    public void addIndexRule( long labelId, long propertyKey ) throws ConstraintViolationKernelException
     {
         throw readOnlyException();
     }
 
     @Override
-    public Iterable<String> getIndexRules( long labelId )
+    public Iterable<Long> getIndexRules( long labelId )
     {
         return delegate.getIndexRules( labelId );
     }

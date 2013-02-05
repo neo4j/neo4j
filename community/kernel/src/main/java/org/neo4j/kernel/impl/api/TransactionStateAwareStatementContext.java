@@ -140,8 +140,8 @@ public class TransactionStateAwareStatementContext extends DelegatingStatementCo
     {
         try
         {
-            for ( Map.Entry<Long, Collection<Pair<Long,String>>> entry : state.getAddedIndexRules().entrySet() )
-                for ( Pair<Long,String> indexedProperty : entry.getValue() )
+            for ( Map.Entry<Long, Collection<Pair<Long,Long>>> entry : state.getAddedIndexRules().entrySet() )
+                for ( Pair<Long,Long> indexedProperty : entry.getValue() )
                     delegate.addIndexRule( entry.getKey(), indexedProperty.other() );
         }
         catch ( ConstraintViolationKernelException e )
@@ -151,11 +151,11 @@ public class TransactionStateAwareStatementContext extends DelegatingStatementCo
     }
 
     @Override
-    public void addIndexRule( long labelId, String propertyKey ) throws ConstraintViolationKernelException
+    public void addIndexRule( long labelId, long propertyKey ) throws ConstraintViolationKernelException
     {
-        for ( String existingPropertyKey : getIndexRules( labelId ) )
+        for ( long existingPropertyKey : getIndexRules( labelId ) )
         {
-            if ( propertyKey.equals( existingPropertyKey ) )
+            if ( propertyKey == existingPropertyKey )
                 return;
         }
         
@@ -164,10 +164,10 @@ public class TransactionStateAwareStatementContext extends DelegatingStatementCo
     
     @SuppressWarnings( "unchecked" )
     @Override
-    public Iterable<String> getIndexRules( long labelId )
+    public Iterable<Long> getIndexRules( long labelId )
     {
-        Iterable<String> committedRules = delegate.getIndexRules( labelId ), result = committedRules;
-        Collection<String> addedSchemaRules = state.getAddedIndexRules( labelId );
+        Iterable<Long> committedRules = delegate.getIndexRules( labelId ), result = committedRules;
+        Collection<Long> addedSchemaRules = state.getAddedIndexRules( labelId );
         if ( !addedSchemaRules.isEmpty() )
             result = concat( committedRules, addedSchemaRules );
         return result;

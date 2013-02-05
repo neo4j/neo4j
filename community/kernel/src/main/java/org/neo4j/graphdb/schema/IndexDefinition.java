@@ -17,28 +17,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.graphdb;
+package org.neo4j.graphdb.schema;
+
+import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.index.IndexManager;
 
 /**
- * Interface for managing the schema of your graph database. This currently includes
- * the new indexing support, added in Neo4j 2.0, please see the Neo4j manual for details.
+ * Definition for an index
+ * 
+ * NOTE: This is part of the new index API introduced in Neo4j 2.0.
+ * The former index API lives in {@link IndexManager}.
  */
-public interface Schema
+public interface IndexDefinition
 {
     /**
-     * Enable indexing of the specified property for nodes with the specified label.
-     * All existing and all future nodes with the specified label will be indexed, speeding
-     * up future operations to look up these nodes using the indexed property.
-     *
-     * @param label Label to tie index rule to.
-     * @param propertyKey Property to index.
+     * @return the {@link Label label} this index definition is associated with.
      */
-    void createIndex( Label label, String propertyKey );
-
+    Label getLabel();
+    
     /**
-     * Retrieve a list of indexed property keys.
-     * @param label
-     * @return the property keys that have indexes for the given label.
+     * @return the property keys this index was created on.
      */
-    Iterable<String> getIndexes( Label label );
+    Iterable<String> getPropertyKeys();
 }

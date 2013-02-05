@@ -42,7 +42,6 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ReturnableEvaluator;
-import org.neo4j.graphdb.Schema;
 import org.neo4j.graphdb.StopEvaluator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.Traverser;
@@ -55,6 +54,9 @@ import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.graphdb.index.RelationshipAutoIndexer;
 import org.neo4j.graphdb.index.RelationshipIndex;
+import org.neo4j.graphdb.schema.IndexCreator;
+import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.IdGeneratorFactory;
@@ -249,7 +251,12 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
 
     private static <T> T readOnly()
     {
-        throw new UnsupportedOperationException( "Read only Graph Database!" );
+        throw readOnlyException();
+    }
+
+    private static UnsupportedOperationException readOnlyException()
+    {
+        return new UnsupportedOperationException( "Read only Graph Database!" );
     }
 
     @Override
@@ -902,8 +909,6 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
         }
     }
 
-    ;
-
     class ReadOnlyRelationshipIndexProxy extends
             ReadOnlyIndexProxy<Relationship, RelationshipIndex> implements RelationshipIndex
     {
@@ -1027,13 +1032,13 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
         }
 
         @Override
-        public void createIndex( Label label, String propertyKey )
+        public IndexCreator indexCreator( Label label )
         {
-            readOnly();
+            throw readOnlyException();
         }
 
         @Override
-        public Iterable<String> getIndexes( Label label )
+        public Iterable<IndexDefinition> getIndexes( Label label )
         {
             return actual.getIndexes( label );
         }

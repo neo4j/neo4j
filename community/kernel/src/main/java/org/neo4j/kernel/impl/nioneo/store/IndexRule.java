@@ -20,60 +20,60 @@
 package org.neo4j.kernel.impl.nioneo.store;
 
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 import org.neo4j.graphdb.Label;
-import org.neo4j.helpers.UTF8;
 
 /**
  * A {@link Label} can have zero or more index rules which will have data specified in the rules indexed.
  */
 public class IndexRule extends AbstractSchemaRule
 {
-    private final String propertyKey;
-    private final byte[] encodedPropertyKey;
+    private final long[] propertyKeys;
 
     public IndexRule( long id, long label, ByteBuffer serialized )
     {
-        this( id, label, readPropertyKey( serialized ) );
+        this( id, label, readPropertyKeys( serialized ) );
     }
 
-    public IndexRule( long id, long label, String propertyKey )
+    public IndexRule( long id, long label, long[] propertyKeys )
     {
         super( id, label, SchemaRule.Kind.INDEX_RULE );
-        this.propertyKey = propertyKey;
-        this.encodedPropertyKey = UTF8.encode( propertyKey );
+        this.propertyKeys = propertyKeys;
     }
 
-    private static String readPropertyKey( ByteBuffer serialized )
+    private static long[] readPropertyKeys( ByteBuffer serialized )
     {
-        byte[] encoded = new byte[serialized.getShort()];
-        serialized.get( encoded );
-        return UTF8.decode( encoded );
+        long[] result = new long[serialized.getShort()];
+        for ( int i = 0; i < result.length; i++ )
+            result[i] = serialized.getLong();
+        return result;
     }
     
-    public String getPropertyKey()
+    public long[] getPropertyKeys()
     {
-        return this.propertyKey;
+        return propertyKeys;
     }
 
     @Override
     public int length()
     {
-        return super.length() + 2 + encodedPropertyKey.length;
+        return super.length() + 2 /*number of property keys*/ + propertyKeys.length*8 /*the property keys*/;
     }
 
     @Override
     public void append( ByteBuffer target )
     {
         super.append( target );
-        target.putShort( (short) encodedPropertyKey.length );
-        target.put( encodedPropertyKey );
+        target.putShort( (short) propertyKeys.length );
+        for ( long key : propertyKeys )
+            target.putLong( key );
     }
 
     @Override
     public int hashCode()
     {
-        return 31 * super.hashCode() + propertyKey.hashCode();
+        return 31 * super.hashCode() + Arrays.hashCode( propertyKeys );
     }
 
     @Override
@@ -86,12 +86,7 @@ public class IndexRule extends AbstractSchemaRule
         if ( getClass() != obj.getClass() )
             return false;
         IndexRule other = (IndexRule) obj;
-        if ( propertyKey == null )
-        {
-            if ( other.propertyKey != null )
-                return false;
-        }
-        else if ( !propertyKey.equals( other.propertyKey ) )
+        if ( !Arrays.equals( propertyKeys, other.propertyKeys ) )
             return false;
         return true;
     }

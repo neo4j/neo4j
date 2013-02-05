@@ -19,6 +19,7 @@
  */
 package org.neo4j.graphdb;
 
+
 /**
  * A label is a grouping facility for {@link Node} where all nodes having a label
  * are part of the same group. Labels on nodes are optional and any node can

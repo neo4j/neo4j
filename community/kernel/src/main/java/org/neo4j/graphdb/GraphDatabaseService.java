@@ -22,6 +22,7 @@ package org.neo4j.graphdb;
 import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.graphdb.index.IndexManager;
+import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.tooling.GlobalGraphOperations;
 
@@ -204,6 +205,12 @@ public interface GraphDatabaseService
     public KernelEventHandler unregisterKernelEventHandler(
             KernelEventHandler handler );
 
+    /**
+     * Returns the {@link Schema schema manager} where all things related to schema,
+     * for example constraints and indexing on {@link Label labels}.
+     * 
+     * @return the {@link Schema schema manager} for this database.
+     */
     public Schema schema();
 
     /**

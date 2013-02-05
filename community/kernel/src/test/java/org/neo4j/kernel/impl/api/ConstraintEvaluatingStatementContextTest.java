@@ -22,8 +22,9 @@ package org.neo4j.kernel.impl.api;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import org.junit.Test;
 import org.mockito.Mockito;
@@ -37,22 +38,24 @@ public class ConstraintEvaluatingStatementContextTest
     public void shouldDisallowReAddingExistingSchemaRules() throws Exception
     {
         // GIVEN
-        int label = 0;
-        String propertyKey = "blubberzisch";
-        IndexRule rule = new IndexRule( label, label, propertyKey );
+        long id = 3, label = 0, propertyKey = 7;
+        IndexRule rule = new IndexRule( id, label, new long[] {propertyKey} );
         StatementContext inner = Mockito.mock(StatementContext.class);
         ConstraintEvaluatingStatementContext ctx = new ConstraintEvaluatingStatementContext( inner );
-        when( inner.getIndexRules( rule.getLabel() ) ).thenReturn( asList( rule.getPropertyKey() ) );
+        when( inner.getIndexRules( rule.getLabel() ) ).thenReturn( asList( propertyKey ) );
 
         // WHEN
         try
         {
             ctx.addIndexRule( label, propertyKey );
-            fail("Should have thrown exception.");
-        } catch(ConstraintViolationKernelException e) { }
+            fail( "Should have thrown exception." );
+        }
+        catch ( ConstraintViolationKernelException e )
+        {
+        }
 
         // THEN
-        verify( inner, never() ).addIndexRule( anyLong(), anyString() );
+        verify( inner, never() ).addIndexRule( anyLong(), anyLong() );
     }
 
     @Test(expected = ConstraintViolationKernelException.class)

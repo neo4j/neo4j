@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import static junit.framework.Assert.assertEquals;
+import static org.junit.Assert.assertEquals;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
 import java.util.Arrays;
@@ -31,9 +31,9 @@ import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 
 public class SchemaCacheTest
 {
-    final IndexRule hans = createIndexRule( 1, 0, "hans" );
-    final IndexRule witch = createIndexRule( 2, 3, "witch" );
-    final IndexRule gretel = createIndexRule( 3, 0, "gretel" );
+    final IndexRule hans = createIndexRule( 1, 0, 5 );
+    final IndexRule witch = createIndexRule( 2, 3, 6 );
+    final IndexRule gretel = createIndexRule( 3, 0, 7 );
 
     @Test
     public void should_construct_schema_cache()
@@ -77,8 +77,8 @@ public class SchemaCacheTest
         assertEquals( asSet( hans, gretel ), asSet( cache.getSchemaRules( ) ) );
     }
 
-    private IndexRule createIndexRule( long id, long label, String propertyKey )
+    private IndexRule createIndexRule( long id, long label, long propertyKey )
     {
-        return new IndexRule( id, label, propertyKey );
+        return new IndexRule( id, label, new long[] {propertyKey} );
     }
 }

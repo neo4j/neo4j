@@ -307,7 +307,7 @@ public class TransactionStateAwareStatementContextTest
     }
     
     private final long labelId1 = 10, labelId2 = 12, nodeId = 20;
-    private final String key1 = "rule1a", key2 = "rule1b", key3 = "rule2";
+    private final long key1 = 45, key2 = 46, key3 = 47;
 
 //    private final IndexRule rule1a = new IndexRule( labelId1, "rule1a" );
 //    private final IndexRule rule1b = new IndexRule( labelId1, "rule1b" );
@@ -321,7 +321,7 @@ public class TransactionStateAwareStatementContextTest
     public void before() throws Exception
     {
         store = mock( StatementContext.class );
-        when( store.getIndexRules( labelId1 ) ).thenReturn( new LinkedList<String>() );
+        when( store.getIndexRules( labelId1 ) ).thenReturn( new LinkedList<Long>() );
         state = new TxState();
         txContext = new TransactionStateAwareStatementContext( store, state );
     }

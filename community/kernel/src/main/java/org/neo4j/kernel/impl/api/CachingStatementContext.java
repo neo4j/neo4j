@@ -38,11 +38,13 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import static org.neo4j.helpers.collection.Iterables.filter;
+import static org.neo4j.helpers.collection.Iterables.map;
+
 import java.util.Set;
 
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Predicate;
-import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
@@ -50,13 +52,13 @@ import org.neo4j.kernel.impl.nioneo.store.SchemaRule.Kind;
 
 public class CachingStatementContext extends DelegatingStatementContext
 {
-    private static final Function<? super SchemaRule, ? extends String> INDEX_RULE_PROPERTY_KEY =
-            new Function<SchemaRule, String>()
+    private static final Function<? super SchemaRule, Long> INDEX_RULE_PROPERTY_KEY =
+            new Function<SchemaRule, Long>()
     {
         @Override
-        public String apply( SchemaRule from )
+        public Long apply( SchemaRule from )
         {
-            return ((IndexRule) from).getPropertyKey();
+            return ((IndexRule) from).getPropertyKeys()[0];
         }
     };
     private final PersistenceCache persistenceCache;
@@ -106,9 +108,9 @@ public class CachingStatementContext extends DelegatingStatementContext
     }
 
     @Override
-    public Iterable<String> getIndexRules( long labelId )
+    public Iterable<Long> getIndexRules( long labelId )
     {
-        Iterable<SchemaRule> filtered = Iterables.filter( new Predicate<SchemaRule>()
+        Iterable<SchemaRule> filtered = filter( new Predicate<SchemaRule>()
         {
             @Override
             public boolean accept( SchemaRule item )
@@ -117,6 +119,6 @@ public class CachingStatementContext extends DelegatingStatementContext
             }
         }, schemaCache.getSchemaRules( labelId ) );
         
-        return Iterables.map( INDEX_RULE_PROPERTY_KEY, filtered );
+        return map( INDEX_RULE_PROPERTY_KEY, filtered );
     }
 }

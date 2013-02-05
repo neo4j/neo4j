@@ -98,14 +98,14 @@ public class InteractionStoppingStatementContext implements StatementContext
     }
 
     @Override
-    public void addIndexRule( long labelId, String propertyKey ) throws ConstraintViolationKernelException
+    public void addIndexRule( long labelId, long propertyKey ) throws ConstraintViolationKernelException
     {
         assertOperationsAllowed();
         delegate.addIndexRule( labelId, propertyKey );
     }
 
     @Override
-    public Iterable<String> getIndexRules( long labelId )
+    public Iterable<Long> getIndexRules( long labelId )
     {
         assertOperationsAllowed();
         return delegate.getIndexRules( labelId );

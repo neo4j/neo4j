@@ -20,45 +20,50 @@
 package org.neo4j.kernel;
 
 import static java.util.Collections.emptyList;
+import static org.neo4j.helpers.collection.Iterables.map;
 
-import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Label;
-import org.neo4j.graphdb.Schema;
-import org.neo4j.kernel.api.ConstraintViolationKernelException;
+import org.neo4j.graphdb.schema.IndexCreator;
+import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.graphdb.schema.Schema;
+import org.neo4j.helpers.Function;
 import org.neo4j.kernel.api.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.StatementContext;
+import org.neo4j.kernel.impl.core.KeyHolder;
+import org.neo4j.kernel.impl.core.PropertyIndex;
 
 public class SchemaImpl implements Schema
 {
-
     private final ThreadToStatementContextBridge ctxProvider;
+    private final KeyHolder<PropertyIndex> propertyKeyManager;
 
-    public SchemaImpl(ThreadToStatementContextBridge ctxProvider)
+    public SchemaImpl( ThreadToStatementContextBridge ctxProvider, KeyHolder<PropertyIndex> propertyKeyManager )
     {
         this.ctxProvider = ctxProvider;
+        this.propertyKeyManager = propertyKeyManager;
     }
 
     @Override
-    public void createIndex( Label label, String propertyKey )
+    public IndexCreator indexCreator( Label label )
     {
-        try
-        {
-            StatementContext ctx = ctxProvider.getCtxForWriting();
-            ctx.addIndexRule( ctx.getOrCreateLabelId( label.name() ), propertyKey );
-        }
-        catch ( ConstraintViolationKernelException e )
-        {
-            throw new ConstraintViolationException( "Unable to create index.", e );
-        }
+        return new IndexCreatorImpl( ctxProvider.getCtxForWriting(), propertyKeyManager, label );
     }
 
     @Override
-    public Iterable<String> getIndexes( Label label )
+    public Iterable<IndexDefinition> getIndexes( final Label label )
     {
+        StatementContext context = ctxProvider.getCtxForReading();
         try
         {
-            StatementContext ctx = ctxProvider.getCtxForReading();
-            return ctx.getIndexRules( ctx.getLabelId( label.name() ));
+            return map( new Function<Long, IndexDefinition>()
+            {
+                @Override
+                public IndexDefinition apply( Long propertyKey )
+                {
+                    return new IndexDefinitionImpl( label,
+                            propertyKeyManager.getKeyByIdOrNull( propertyKey.intValue() ).getKey() );
+                }
+            }, context.getIndexRules( context.getLabelId( label.name() ) ) );
         }
         catch ( LabelNotFoundKernelException e )
         {
