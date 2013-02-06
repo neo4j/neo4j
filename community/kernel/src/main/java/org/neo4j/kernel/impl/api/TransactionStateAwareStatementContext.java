@@ -25,11 +25,9 @@ import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
 
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 
 import org.neo4j.graphdb.TransactionFailureException;
-import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.kernel.api.ConstraintViolationKernelException;
 import org.neo4j.kernel.api.StatementContext;
@@ -120,29 +118,21 @@ public class TransactionStateAwareStatementContext extends DelegatingStatementCo
         if ( successful )
         {
             applyLabelChangesToTransaction();
-            applySchemaChangesToTransaction();
+            applyNodeChangesToTransaction();
         }
         delegate.close( successful );
     }
 
     private void applyLabelChangesToTransaction()
     {
-        for ( TxState.NodeState node : state.getNodes() )
-        {
-            for ( Long labelId : node.getAddedLabels() )
-                delegate.addLabelToNode( labelId, node.getId() );
-            for ( Long labelId : node.getRemovedLabels() )
-                delegate.removeLabelFromNode( labelId, node.getId() );
-        }
-    }
-
-    private void applySchemaChangesToTransaction()
-    {
         try
         {
-            for ( Map.Entry<Long, Collection<Pair<Long,Long>>> entry : state.getAddedIndexRules().entrySet() )
-                for ( Pair<Long,Long> indexedProperty : entry.getValue() )
-                    delegate.addIndexRule( entry.getKey(), indexedProperty.other() );
+            for ( TxState.LabelState labelState : state.getLabelStates() )
+            {
+                long labelId = labelState.getId();
+                for ( long propertyKey : labelState.getAddedIndexRules() )
+                    delegate.addIndexRule( labelId, propertyKey );
+            }
         }
         catch ( ConstraintViolationKernelException e )
         {
@@ -150,6 +140,17 @@ public class TransactionStateAwareStatementContext extends DelegatingStatementCo
         }
     }
 
+    private void applyNodeChangesToTransaction()
+    {
+        for ( TxState.NodeState node : state.getNodeStates() )
+        {
+            for ( Long labelId : node.getAddedLabels() )
+                delegate.addLabelToNode( labelId, node.getId() );
+            for ( Long labelId : node.getRemovedLabels() )
+                delegate.removeLabelFromNode( labelId, node.getId() );
+        }
+    }
+    
     @Override
     public void addIndexRule( long labelId, long propertyKey ) throws ConstraintViolationKernelException
     {

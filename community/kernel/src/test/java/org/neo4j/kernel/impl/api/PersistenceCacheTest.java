@@ -42,7 +42,7 @@ public class PersistenceCacheTest
         Set<Long> labels = new HashSet<Long>( asList( 1L, 2L, 3L ) );
         when( state.getAddedLabels( eq( nodeId ) ) ).thenReturn( labels );
         nodeState.getAddedLabels().addAll( labels );
-        when( state.getNodes() ).thenReturn( asList( nodeState ) );
+        when( state.getNodeStates() ).thenReturn( asList( nodeState ) );
         cache.getLabels( nodeId );
 
         // WHEN
@@ -62,7 +62,7 @@ public class PersistenceCacheTest
         when( state.getAddedLabels( eq( nodeId ) ) ).thenReturn( initialLabels );
         Set<Long> removedLabels = new HashSet<Long>( asList( 2L ) );
         nodeState.getRemovedLabels().addAll( removedLabels );
-        when( state.getNodes() ).thenReturn( asList( nodeState ) );
+        when( state.getNodeStates() ).thenReturn( asList( nodeState ) );
         cache.getLabels( nodeId );
 
         // WHEN

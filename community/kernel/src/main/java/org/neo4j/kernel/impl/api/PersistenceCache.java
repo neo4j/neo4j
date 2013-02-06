@@ -48,7 +48,7 @@ public class PersistenceCache
     
     public void apply( TxState state )
     {
-        for ( NodeState stateEntity : state.getNodes() )
+        for ( NodeState stateEntity : state.getNodeStates() )
         {
             CachedNodeEntity entity = nodeCache.getIfCached( stateEntity.getId() );
             if ( entity == null )

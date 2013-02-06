@@ -19,9 +19,6 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import static java.util.Collections.unmodifiableMap;
-
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -29,78 +26,46 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import org.neo4j.helpers.Pair;
-
 public class TxState
 {
     // Node ID --> NodeState
     private final Map<Long, NodeState> nodeStates = new HashMap<Long, NodeState>();
     
-    // Label ID --> Node IDs (added, removed)
-    private final Map<Long, Pair<Collection<Long>,Collection<Long>>> labels =
-            new HashMap<Long, Pair<Collection<Long>,Collection<Long>>>();
-    
-    // TODO temporary use of SchemaCache?
-    private final Map<Long, Collection<Pair<Long,Long>>> indexRules =
-            new HashMap<Long, Collection<Pair<Long,Long>>>();
+    // Label ID --> LabelState
+    private final Map<Long, LabelState> labelStates = new HashMap<Long, LabelState>();
     
     public boolean hasChanges()
     {
-        return !nodeStates.isEmpty();
+        return !nodeStates.isEmpty() || !labelStates.isEmpty();
     }
     
-    public Iterable<NodeState> getNodes()
+    public Iterable<NodeState> getNodeStates()
     {
         return nodeStates.values();
     }
     
-    private NodeState getNodeState( long nodeId, boolean create )
-    {
-        NodeState result = nodeStates.get( nodeId );
-        if ( result != null )
-            return result;
-        
-        if ( create )
-        {
-            result = new NodeState( nodeId );
-            nodeStates.put( nodeId, result );
-        }
-        return result;
-    }
-    
     public boolean addLabelToNode( long labelId, long nodeId )
     {
-        Pair<Collection<Long>, Collection<Long>> nodeLabels = getNodeLabels( labelId );
-        nodeLabels.first().add( nodeId );
-        nodeLabels.other().remove( nodeId );
+        LabelState labelState = getState( labelStates, labelId, LABEL_STATE_CREATOR );
+        labelState.getAddedNodes().add( nodeId );
+        labelState.getRemovedNodes().remove( nodeId );
         
-        NodeState nodeState = getNodeState( nodeId, true );
+        NodeState nodeState = getState( nodeStates, nodeId, NODE_STATE_CREATOR );
         nodeState.getRemovedLabels().remove( labelId );
         return nodeState.getAddedLabels().add( labelId );
     }
     
     public boolean removeLabelFromNode( long labelId, long nodeId )
     {
-        Pair<Collection<Long>, Collection<Long>> nodeLabels = getNodeLabels( labelId );
-        nodeLabels.first().remove( nodeId );
-        nodeLabels.other().add( nodeId );
+        LabelState labelState = getState( labelStates, labelId, LABEL_STATE_CREATOR );
+        labelState.getRemovedNodes().add( nodeId );
+        labelState.getAddedNodes().remove( nodeId );
         
-        NodeState nodeState = getNodeState( nodeId, true );
+        NodeState nodeState = getState( nodeStates, nodeId, NODE_STATE_CREATOR );
         nodeState.getAddedLabels().remove( labelId );
         return nodeState.getRemovedLabels().add( labelId );
     }
     
-    private Pair<Collection<Long>, Collection<Long>> getNodeLabels( long labelId )
-    {
-        Pair<Collection<Long>, Collection<Long>> labelNodes = labels.get( labelId );
-        if ( labelNodes == null )
-        {
-            labelNodes = Pair.<Collection<Long>,Collection<Long>>of( new HashSet<Long>(), new HashSet<Long>() );
-            labels.put( labelId, labelNodes );
-        }
-        return labelNodes;
-    }
-
     /**
      * @return
      *      {@code true} if it has been added in this transaction.
@@ -109,7 +74,7 @@ public class TxState
      */
     public Boolean getLabelState( long nodeId, long labelId )
     {
-        NodeState nodeState = getNodeState( nodeId, false );
+        NodeState nodeState = getState( nodeStates, nodeId, null );
         if ( nodeState != null )
         {
             if ( nodeState.getAddedLabels().contains( labelId ) )
@@ -122,15 +87,106 @@ public class TxState
     
     public Collection<Long> getAddedLabels( long nodeId )
     {
-        NodeState nodeState = getNodeState( nodeId, false );
+        NodeState nodeState = getState( nodeStates, nodeId, null );
         return nodeState != null ? nodeState.getAddedLabels() : Collections.<Long>emptySet();
     }
     
     public Collection<Long> getRemovedLabels( long nodeId )
     {
-        NodeState nodeState = getNodeState( nodeId, false );
+        NodeState nodeState = getState( nodeStates, nodeId, null );
         return nodeState != null ? nodeState.getRemovedLabels() : Collections.<Long>emptySet();
     }
+    
+    /**
+     * Returns all nodes that, in this tx, has got labelId added.
+     */
+    public Iterable<Long> getAddedNodesWithLabel( long labelId )
+    {
+        LabelState state = getState( labelStates, labelId, null );
+        return state != null ? state.getAddedNodes() : Collections.<Long>emptyList();
+    }
+
+    /**
+     * Returns all nodes that, in this tx, has got labelId removed.
+     */
+    public Collection<Long> getRemovedNodesWithLabel( long labelId )
+    {
+        LabelState state = getState( labelStates, labelId, null );
+        return state != null ? state.getRemovedNodes() : Collections.<Long>emptyList();
+    }
+
+    public void addIndexRule( long labelId, long propertyKey )
+    {
+        getState( labelStates, labelId, LABEL_STATE_CREATOR ).getAddedIndexRules().add( propertyKey );
+    }
+
+    public Iterable<LabelState> getLabelStates()
+    {
+        return labelStates.values();
+    }
+    
+    public Collection<Long> getAddedIndexRules( long labelId )
+    {
+        LabelState state = getState( labelStates, labelId, null );
+        return state != null ? state.getAddedIndexRules() : Collections.<Long>emptyList();
+    }
+
+    public Map<Long,Object> getAddedNodeProperties( long nodeId )
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    public Map<Long,Boolean> getRemovedNodeProperties( long nodeId )
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    public void setNodeProperty( long nodeId, long propertyKeyId, Object value )
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    public void removeNodeProperty( long nodeId, long propertyKeyId )
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    private static interface StateCreator<STATE>
+    {
+        STATE newState( long id );
+    }
+    
+    private <STATE> STATE getState( Map<Long,STATE> states, long id, StateCreator<STATE> creator )
+    {
+        STATE result = states.get( id );
+        if ( result != null )
+            return result;
+        
+        if ( creator != null )
+        {
+            result = creator.newState( id );
+            states.put( id, result );
+        }
+        return result;
+    }
+    
+    private static final StateCreator<NodeState> NODE_STATE_CREATOR = new StateCreator<NodeState>()
+    {
+        @Override
+        public NodeState newState( long id )
+        {
+            return new NodeState( id );
+        }
+    };
+    
+    private static final StateCreator<LabelState> LABEL_STATE_CREATOR = new StateCreator<LabelState>()
+    {
+        @Override
+        public LabelState newState( long id )
+        {
+            return new LabelState( id );
+        }
+    };
     
     static class EntityState
     {
@@ -167,50 +223,37 @@ public class TxState
             return removedLabels;
         }
     }
-
-    /**
-     * Returns all nodes that, in this tx, has got labelId added.
-     */
-    public Iterable<Long> getAddedNodesWithLabel( long labelId )
-    {
-        Pair<Collection<Long>, Collection<Long>> nodeLabels = labels.get( labelId );
-        return nodeLabels != null ? nodeLabels.first() : Collections.<Long>emptyList();
-    }
-
-    /**
-     * Returns all nodes that, in this tx, has got labelId removed.
-     */
-    public Collection<Long> getRemovedNodesWithLabel( long labelId )
-    {
-        Pair<Collection<Long>, Collection<Long>> nodeLabels = labels.get( labelId );
-        return nodeLabels != null ? nodeLabels.other() : Collections.<Long>emptyList();
-    }
-
-    public void addIndexRule( long labelId, long propertyKey )
-    {
-        Collection<Pair<Long, Long>> rules = indexRules.get( labelId );
-        if ( rules == null )
-        {
-            rules = new ArrayList<Pair<Long,Long>>();
-            indexRules.put( labelId, rules );
-        }
-        rules.add( Pair.of( labelId, propertyKey ) );
-    }
-
-    public Map<Long,Collection<Pair<Long,Long>>> getAddedIndexRules()
-    {
-        return unmodifiableMap( indexRules );
-    }
     
-    public Collection<Long> getAddedIndexRules( long labelId )
+    public static class LabelState
     {
-        Collection<Pair<Long, Long>> rules = indexRules.get( labelId );
-        if ( rules == null )
-            return Collections.emptyList();
+        private final long id;
+        private final Collection<Long> addedNodes = new HashSet<Long>();
+        private final Collection<Long> removedNodes = new HashSet<Long>();
+        private final Collection<Long> addedIndexRules = new HashSet<Long>(); // Long = property key ID
 
-        Collection<Long> result = new ArrayList<Long>();
-        for ( Pair<Long,Long> rule : rules )
-            result.add( rule.other() );
-        return result;
+        LabelState( long id )
+        {
+            this.id = id;
+        }
+        
+        public long getId()
+        {
+            return id;
+        }
+        
+        public Collection<Long> getAddedNodes()
+        {
+            return addedNodes;
+        }
+        
+        public Collection<Long> getRemovedNodes()
+        {
+            return removedNodes;
+        }
+        
+        public Collection<Long> getAddedIndexRules()
+        {
+            return addedIndexRules;
+        }
     }
 }
