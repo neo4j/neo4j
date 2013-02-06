@@ -22,25 +22,23 @@ package org.neo4j.cypher.internal.pipes
 import org.neo4j.cypher.internal.ExecutionContext
 import org.neo4j.cypher.internal.commands.{CreateIndex, IndexOperation}
 import org.neo4j.cypher.SyntaxException
+import org.neo4j.cypher.internal.symbols.SymbolTable
 
-class IndexOperationPipe(source: Pipe, indexOp: IndexOperation) extends Pipe {
+class IndexOperationPipe(indexOp: IndexOperation) extends Pipe {
   def createResults(state: QueryState) = {
     val queryContext = state.queryContext
-    val result: Iterator[ExecutionContext] = source.createResults(state).map { (ctx: ExecutionContext) =>
 
-      val labelId = queryContext.getOrCreateLabelId(indexOp.label)
+    val labelId = queryContext.getOrCreateLabelId(indexOp.label)
 
-      indexOp match {
-        case CreateIndex(_, propertyKeys, _) =>
-          val propertyKeyIds: Seq[Long] = propertyKeys.map( queryContext.getOrCreatePropertyKeyId(_) )
-          queryContext.addIndexRule(labelId, single(propertyKeyIds))
-        case _ =>
-          throw new UnsupportedOperationException("Unknown IndexOperation encountered")
-      }
-      ctx
+    indexOp match {
+      case CreateIndex(_, propertyKeys, _) =>
+        val propertyKeyIds: Seq[Long] = propertyKeys.map( queryContext.getOrCreatePropertyKeyId(_) )
+        queryContext.addIndexRule(labelId, single(propertyKeyIds))
+      case _ =>
+        throw new UnsupportedOperationException("Unknown IndexOperation encountered")
     }
 
-    result
+    Seq(ExecutionContext.empty).toIterator
   }
 
   private def single[T](s: Seq[T]): T = {
@@ -49,7 +47,7 @@ class IndexOperationPipe(source: Pipe, indexOp: IndexOperation) extends Pipe {
     s(0)
   }
 
-  def symbols = source.symbols
+  def symbols = new SymbolTable()
 
   def executionPlanDescription() = s"IndexOperationsPipe(${indexOp})"
 }

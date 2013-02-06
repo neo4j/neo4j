@@ -56,13 +56,7 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService) extends PatternGraphBuil
     case q:IndexOperation => buildIndexQuery(q)
   }
 
-
-  def buildIndexQuery(op: IndexOperation): (Pipe, Boolean) = {
-    val source = new NullPipe
-    val pipe   = new IndexOperationPipe(source, op)
-    (pipe, true)
-  }
-
+  def buildIndexQuery(op: IndexOperation): (Pipe, Boolean) = (new IndexOperationPipe(op), true)
 
   def buildQuery(inputQuery: Query): (Pipe, Boolean) = {
     var continue = true
