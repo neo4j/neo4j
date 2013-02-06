@@ -233,11 +233,11 @@ public class MultiPaxosNetworkTest
 
         map2.put( "foo2", "666" );
 
-        logger.info( "Read value2:" + map2.get( "foo1" ) );
-        logger.info( "Read value3:" + map2.get( "foo2" ) );
+        logger.warn( "Read value2:" + map2.get( "foo1" ) );
+        logger.warn( "Read value3:" + map2.get( "foo2" ) );
 
-        logger.info( "Read value4:" + map3.get( "foo1" ) );
-        logger.info( "Read value5:" + map3.get( "foo99" ) );
+        logger.warn( "Read value4:" + map3.get( "foo1" ) );
+        logger.warn( "Read value5:" + map3.get( "foo99" ) );
         Assert.assertThat( map3.get( "foo1" ), CoreMatchers.equalTo( "bar1" ) );
         Assert.assertThat( map3.get( "foo99" ), CoreMatchers.equalTo( "bar99" ) );
 

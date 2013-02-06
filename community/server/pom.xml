@@ -123,19 +123,16 @@
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
-            <version>0.9.30</version>
         </dependency>
 
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-access</artifactId>
-            <version>0.9.30</version>
         </dependency>
 
         <dependency>
             <groupId>janino</groupId>
             <artifactId>janino</artifactId>
-            <version>2.5.10</version>
         </dependency>
 
         <dependency>
@@ -147,7 +144,6 @@
         <dependency>
             <groupId>com.sun.jersey</groupId>
             <artifactId>jersey-server</artifactId>
-            <version>1.9</version>
         </dependency>
 
         <dependency>

@@ -72,7 +72,7 @@ public class ClusterMembershipTest
                 rounds( 3 ).
                 sleep( 10 ).
                 join( 0, 1 ).
-                message( 0, "*** Cluster formed, now leave" ).
+                message( 100, "*** Cluster formed, now leave" ).
                 leave( 0, 1 ).verifyConfigurations( 0 ) );
     }
 

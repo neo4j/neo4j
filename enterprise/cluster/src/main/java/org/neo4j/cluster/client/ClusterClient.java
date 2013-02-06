@@ -22,6 +22,7 @@ package org.neo4j.cluster.client;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
@@ -32,6 +33,7 @@ import org.neo4j.cluster.BindingListener;
 import org.neo4j.cluster.ClusterMonitor;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.ConnectedStateMachines;
+import org.neo4j.cluster.ExecutorLifecycleAdapter;
 import org.neo4j.cluster.MultiPaxosServerFactory;
 import org.neo4j.cluster.ProtocolServer;
 import org.neo4j.cluster.com.BindingNotifier;
@@ -60,7 +62,9 @@ import org.neo4j.cluster.timeout.FixedTimeoutStrategy;
 import org.neo4j.cluster.timeout.MessageTimeoutStrategy;
 import org.neo4j.cluster.timeout.Timeouts;
 import org.neo4j.helpers.DaemonThreadFactory;
+import org.neo4j.helpers.Factory;
 import org.neo4j.helpers.HostnamePort;
+import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -263,8 +267,17 @@ public class ClusterClient extends LifecycleAdapter
             }
         }, logging );
 
+        ExecutorLifecycleAdapter stateMachineExecutor = new ExecutorLifecycleAdapter( new Factory<ExecutorService>()
+        {
+            @Override
+            public ExecutorService newInstance()
+            {
+                return Executors.newSingleThreadExecutor( new NamedThreadFactory( "State machine" ) );
+            }
+        } );
+
         server = protocolServerFactory.newProtocolServer( timeoutStrategy, networkNodeTCP, networkNodeTCP,
-                acceptorInstanceStore, electionCredentialsProvider );
+                acceptorInstanceStore, electionCredentialsProvider, stateMachineExecutor );
 
         networkNodeTCP.addNetworkChannelsListener( new NetworkInstance.NetworkChannelsListener()
         {
@@ -285,6 +298,8 @@ public class ClusterClient extends LifecycleAdapter
             {
             }
         } );
+
+        life.add( stateMachineExecutor );
 
         life.add( networkNodeTCP );
 

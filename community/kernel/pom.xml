@@ -245,12 +245,10 @@ public class ComponentVersion extends Version
                   <additionnalDependency>
                     <groupId>ch.qos.logback</groupId>
                     <artifactId>logback-classic</artifactId>
-                    <version>1.0.0</version>
                   </additionnalDependency>
                   <additionnalDependency>
                     <groupId>ch.qos.logback</groupId>
                     <artifactId>logback-core</artifactId>
-                    <version>1.0.0</version>
                   </additionnalDependency>
                   <additionnalDependency>
                     <groupId>org.slf4j</groupId>
@@ -300,12 +298,10 @@ public class ComponentVersion extends Version
             <additionnalDependency>
               <groupId>ch.qos.logback</groupId>
               <artifactId>logback-classic</artifactId>
-              <version>1.0.0</version>
             </additionnalDependency>
             <additionnalDependency>
               <groupId>ch.qos.logback</groupId>
               <artifactId>logback-core</artifactId>
-              <version>1.0.0</version>
             </additionnalDependency>
             <additionnalDependency>
               <groupId>org.slf4j</groupId>
@@ -374,7 +370,6 @@ public class ComponentVersion extends Version
     <dependency>
     	<groupId>ch.qos.logback</groupId>
     	<artifactId>logback-classic</artifactId>
-    	<version>1.0.0</version>
       <optional>true</optional>
     </dependency>
 <!--     <dependency>
@@ -390,13 +385,11 @@ public class ComponentVersion extends Version
     <dependency>
       <groupId>com.google.code.gson</groupId>
       <artifactId>gson</artifactId>
-      <version>2.1</version>
-      <scope>test</scope>
+      <version>2.2.2</version>
     </dependency>
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-all</artifactId>
-      <version>1.9.0</version>
       <scope>test</scope>
     </dependency>
     <dependency>
