@@ -20,6 +20,7 @@
 package org.neo4j.cluster.statemachine;
 
 import java.net.URI;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.cluster.BindingListener;
 
@@ -31,12 +32,12 @@ import org.neo4j.cluster.BindingListener;
 public class StateMachineConversations
         implements BindingListener
 {
-    private long nextConversationId = 0;
+    private AtomicLong nextConversationId = new AtomicLong();
     private String serverId;
 
-    public synchronized String getNextConversationId()
+    public String getNextConversationId()
     {
-        return serverId + "/" + (nextConversationId++) + "#";
+        return serverId + "/" + nextConversationId.incrementAndGet() + "#";
     }
 
     @Override
