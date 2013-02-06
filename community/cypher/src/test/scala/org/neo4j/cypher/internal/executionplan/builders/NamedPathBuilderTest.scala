@@ -34,8 +34,8 @@ class NamedPathBuilderTest extends BuilderTest {
   def should_not_accept_if_pattern_is_not_yet_solved() {
     val q = PartiallySolvedQuery().
       copy(start = Seq(Solved(NodeById("l", 0))),
-      patterns = Seq(Unsolved(RelatedTo("l", "r", "rel", Seq(), Direction.OUTGOING, false, True()))),
-      namedPaths = Seq(Unsolved(NamedPath("p", RelatedTo("l", "r", "rel", Seq(), Direction.OUTGOING, false, True()))))
+      patterns = Seq(Unsolved(RelatedTo("l", "r", "rel", Seq(), Direction.OUTGOING, false))),
+      namedPaths = Seq(Unsolved(NamedPath("p", RelatedTo("l", "r", "rel", Seq(), Direction.OUTGOING, false))))
     )
 
     val p = createPipe(nodes = Seq("l"))
@@ -47,8 +47,8 @@ class NamedPathBuilderTest extends BuilderTest {
   def should_accept_if_pattern_is_solved() {
     val q = PartiallySolvedQuery().
       copy(start = Seq(Solved(NodeById("l", 0))),
-      patterns = Seq(Solved(RelatedTo("l", "r", "rel", Seq(), Direction.OUTGOING, false, True()))),
-      namedPaths = Seq(Unsolved(NamedPath("p", RelatedTo("l", "r", "rel", Seq(), Direction.OUTGOING, false, True()))))
+      patterns = Seq(Solved(RelatedTo("l", "r", "rel", Seq(), Direction.OUTGOING, false))),
+      namedPaths = Seq(Unsolved(NamedPath("p", RelatedTo("l", "r", "rel", Seq(), Direction.OUTGOING, false))))
     )
 
     val p = createPipe(nodes = Seq("l", "r"), relationships = Seq("rel"))
@@ -57,7 +57,7 @@ class NamedPathBuilderTest extends BuilderTest {
 
     val resultPlan = builder(plan(p, q))
 
-    assert(resultPlan.query.namedPaths == Seq(Solved(NamedPath("p", RelatedTo("l", "r", "rel", Seq(), Direction.OUTGOING, false, True())))))
+    assert(resultPlan.query.namedPaths == Seq(Solved(NamedPath("p", RelatedTo("l", "r", "rel", Seq(), Direction.OUTGOING, false)))))
   }
 
   @Test
@@ -65,12 +65,12 @@ class NamedPathBuilderTest extends BuilderTest {
     val q = PartiallySolvedQuery().
       copy(start = Seq(Solved(NodeById("l", 0))),
       patterns = Seq(
-        Solved(RelatedTo("l", "r", "rel", Seq(), Direction.OUTGOING, false, True())),
-        Unsolved(RelatedTo("r", "x", "rel2", Seq(), Direction.OUTGOING, false, True()))
+        Solved(RelatedTo("l", "r", "rel", Seq(), Direction.OUTGOING, false)),
+        Unsolved(RelatedTo("r", "x", "rel2", Seq(), Direction.OUTGOING, false))
       ),
       namedPaths = Seq(Unsolved(NamedPath("p",
-        RelatedTo("l", "r", "rel", Seq(), Direction.OUTGOING, false, True()),
-        RelatedTo("r", "x", "rel2", Seq(), Direction.OUTGOING, false, True()))))
+        RelatedTo("l", "r", "rel", Seq(), Direction.OUTGOING, false),
+        RelatedTo("r", "x", "rel2", Seq(), Direction.OUTGOING, false))))
     )
 
     val p = createPipe(nodes = Seq("l", "r"), relationships = Seq("rel"))

@@ -19,21 +19,48 @@
  */
 package org.neo4j.cypher.internal.parser
 
-import v2_0.{AbstractPattern, Expressions}
+import v2_0.{MatchClause, Expressions}
 import org.junit.Test
-import org.neo4j.cypher.internal.commands.expressions.{Collection, Literal}
+import org.neo4j.cypher.internal.commands.expressions.{Identifier, Collection, Literal}
 import org.neo4j.cypher.internal.commands.values.LabelName
+import org.neo4j.cypher.internal.commands.{And, HasLabel, RelatedTo, PathExpression}
+import org.neo4j.graphdb.Direction
 
-class ExpressionsTest extends Expressions with ParserTest {
+class ExpressionsTest extends Expressions with MatchClause with ParserTest {
 
   @Test def label_literals() {
     implicit val parserToTest = expression
 
-    parsing(":swedish") shouldGive Literal(LabelName("swedish"))
-    parsing("[:swedish, :argentinian]") shouldGive Collection(Literal(LabelName("swedish")), Literal(LabelName("argentinian")))
+    parsing(":swedish") shouldGive
+      Literal(LabelName("swedish"))
+
+    parsing("[:swedish, :argentinian]") shouldGive
+      Collection(Literal(LabelName("swedish")), Literal(LabelName("argentinian")))
+  }
+
+  @Test def pattern_expressions() {
+    implicit val parserToTest = pathExpression
+
+    parsing("a-->(:Foo)") shouldGive
+      PathExpression(Seq(RelatedTo("a", "  UNNAMED1", "  UNNAMED2", Seq.empty, Direction.OUTGOING, false)), HasLabel(Identifier("  UNNAMED1"), Literal(Seq(LabelName("Foo")))))
+
+    parsing("a-->(n:Foo)") shouldGive
+      PathExpression(Seq(RelatedTo("a", "n", "  UNNAMED3", Seq.empty, Direction.OUTGOING, false)), HasLabel(Identifier("n"), Literal(Seq(LabelName("Foo")))))
+
+    parsing("a-->(:Bar:Foo)") shouldGive
+      PathExpression(Seq(RelatedTo("a", "  UNNAMED6", "  UNNAMED7", Seq.empty, Direction.OUTGOING, false)), HasLabel(Identifier("  UNNAMED6"), Literal(Seq(LabelName("Bar"), LabelName("Foo")))))
+
+    val patterns = Seq(
+      RelatedTo("a", "  UNNAMED8", "  UNNAMED10", Seq.empty, Direction.OUTGOING, false),
+      RelatedTo("  UNNAMED8", "  UNNAMED9", "  UNNAMED11", Seq.empty, Direction.OUTGOING, false))
+
+    val predicate = And(
+      HasLabel(Identifier("  UNNAMED8"), Literal(Seq(LabelName("First")))),
+      HasLabel(Identifier("  UNNAMED9"), Literal(Seq(LabelName("Second")))))
+
+    parsing("a-->(:First)-->(:Second)") shouldGive
+      PathExpression(patterns, predicate)
   }
 
   def createProperty(entity: String, propName: String) = ???
-
-  def matchTranslator(abstractPattern: AbstractPattern) = ???
 }

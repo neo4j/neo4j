@@ -28,14 +28,14 @@ import org.neo4j.graphdb.Path
 import org.neo4j.cypher.internal.executionplan.builders.PatternGraphBuilder
 import org.neo4j.cypher.internal.ExecutionContext
 
-case class PathExpression(pathPattern: Seq[Pattern])
+case class PathExpression(pathPattern: Seq[Pattern], predicate:Predicate=True())
   extends Expression
   with PathExtractor
   with PatternGraphBuilder {
   val identifiers: Seq[(String, CypherType)] = pathPattern.flatMap(pattern => pattern.possibleStartPoints.filter(p => isNamed(p._1)))
 
   val symbols2 = new SymbolTable(identifiers.toMap)
-  val matchingContext = new MatchingContext(symbols2, Seq(), buildPatternGraph(symbols2, pathPattern))
+  val matchingContext = new MatchingContext(symbols2, predicate.atoms, buildPatternGraph(symbols2, pathPattern))
   val interestingPoints: Seq[String] = pathPattern.
     flatMap(_.possibleStartPoints.map(_._1)).
     filter(isNamed).
@@ -58,13 +58,14 @@ case class PathExpression(pathPattern: Seq[Pattern])
   }
 
   def getMatches(v1: ExecutionContext): Traversable[Path] = {
-    val matches = matchingContext.getMatches(v1)
-    matches.map(getPath)
+    val matches: Traversable[ExecutionContext] = matchingContext.getMatches(v1)
+    val result: Traversable[Path] = matches.map(getPath)
+    result
   }
 
   def children = pathPattern
 
-  def rewrite(f: (Expression) => Expression): Expression = f(PathExpression(pathPattern.map(_.rewrite(f))))
+  def rewrite(f: (Expression) => Expression): Expression = f(PathExpression(pathPattern.map(_.rewrite(f)), predicate.rewrite(f)))
 
   def calculateType(symbols: SymbolTable): CypherType = {
     pathPattern.foreach(_.throwIfSymbolsMissing(symbols))
@@ -77,5 +78,5 @@ case class PathExpression(pathPattern: Seq[Pattern])
     patternDependencies ++ startPointDependencies
   }
 
-  override def toString() = pathPattern.mkString
+  override def toString() = s"PathExpression(${pathPattern.mkString(",")}, $predicate)"
 }

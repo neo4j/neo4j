@@ -23,7 +23,7 @@ import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.commands.True
 import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.cypher.internal.commands.expressions.{Literal, Expression, Identifier}
-import org.neo4j.cypher.internal.commands.values.LabelValue
+import org.neo4j.cypher.internal.commands.values.{LabelName, LabelValue}
 
 trait ParserPattern extends Base with Labels {
 
@@ -99,22 +99,28 @@ trait ParserPattern extends Base with Labels {
   private def singleNodeDefinition = identity ~ labelsAndValues ^^ {
     case name ~ labelsAndValues =>
       val (labelsVal, mapVal, bare) = labelsAndValues
-      ParsedEntity(name, Identifier(name), mapVal, True(), labelsVal, bare)
+      ParsedEntity(name, Identifier(name), mapVal, labelsVal, bare)
   }
 
   private def nodeInParenthesis = parens(opt(identity) ~ labelsAndValues) ^^ {
     case id ~ labelsAndValues =>
       val name = namer.name(id)
       val (labelsVal, mapVal, bare) = labelsAndValues
-      ParsedEntity(name, Identifier(name), mapVal, True(), labelsVal, bare)
+      ParsedEntity(name, Identifier(name), mapVal, labelsVal, bare)
   }
 
   private def nodeFromExpression = Parser {
     case in => expression(in) match {
       case Success(exp@Identifier(name), rest) =>
-        Success(ParsedEntity(name, exp, Map[String, Expression](), True(), LabelSet.empty, true), rest)
+        Success(ParsedEntity(name, exp, Map[String, Expression](), LabelSet.empty, true), rest)
+
+      case Success(exp@Literal(n:LabelName), rest) =>
+        val name = namer.name(None)
+        Success(ParsedEntity(name, Identifier(name), Map[String, Expression](), LabelSet(Some(Literal(Seq(n)))), true), rest)
+
       case Success(exp, rest) =>
-        Success(ParsedEntity(namer.name(None), exp, Map[String, Expression](), True(), LabelSet.empty, true), rest)
+        Success(ParsedEntity(namer.name(None), exp, Map[String, Expression](), LabelSet.empty, true), rest)
+
       case x: Error =>
         x
       case Failure(msg, rest) =>
@@ -133,11 +139,11 @@ trait ParserPattern extends Base with Labels {
         var start = head
         val links = tails.map {
           case Tail(dir, relName, relProps, end, None, types, optional) =>
-            val t = ParsedRelation(namer.name(relName), relProps, start, end, types, dir, optional, True())
+            val t = ParsedRelation(namer.name(relName), relProps, start, end, types, dir, optional)
             start = end
             t
           case Tail(dir, relName, relProps, end, Some((min, max)), types, optional) =>
-            val t = ParsedVarLengthRelation(namer.name(None), relProps, start, end, types, dir, optional, True(), min, max, relName)
+            val t = ParsedVarLengthRelation(namer.name(None), relProps, start, end, types, dir, optional, min, max, relName)
             start = end
             t
         }
@@ -155,7 +161,7 @@ trait ParserPattern extends Base with Labels {
         case "allshortestpaths" => false
       }
 
-      val PatternWithEnds(start, end, typez, dir, optional, maxDepth, relIterator, predicate) = relInfo
+      val PatternWithEnds(start, end, typez, dir, optional, maxDepth, relIterator) = relInfo
 
       List(ParsedShortestPath(name = namer.name(None),
         props = Map(),
@@ -164,7 +170,6 @@ trait ParserPattern extends Base with Labels {
         typ = typez,
         dir = dir,
         optional = optional,
-        predicate = predicate,
         maxDepth = maxDepth,
         single = single,
         relIterator = relIterator))

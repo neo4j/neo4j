@@ -19,15 +19,19 @@
  */
 package org.neo4j.cypher.internal.commands
 
-import expressions.ShortestPathExpression
+import expressions.{Literal, Identifier, ShortestPathExpression}
 import org.neo4j.cypher.GraphDatabaseTestBase
 import org.scalatest.Assertions
 import org.junit.Test
 import org.junit.Assert._
 import org.neo4j.graphdb.{Path, Direction}
 import org.neo4j.cypher.internal.ExecutionContext
+import values.LabelName
+import org.neo4j.cypher.internal.pipes.QueryState
+import org.neo4j.cypher.internal.spi.gdsimpl.TransactionBoundQueryContext
 
 class PathExpressionTest extends GraphDatabaseTestBase with Assertions {
+
   @Test def shouldAcceptShortestPathExpressions() {
     val a = createNode()
     val b = createNode()
@@ -45,8 +49,7 @@ class PathExpressionTest extends GraphDatabaseTestBase with Assertions {
       maxDepth = None,
       optional = false,
       single = true,
-      relIterator = None,
-      predicate = True())
+      relIterator = None)
 
     val expression = ShortestPathExpression(pattern)
 
@@ -57,5 +60,33 @@ class PathExpressionTest extends GraphDatabaseTestBase with Assertions {
     assertEquals(result.startNode(), a)
     assertEquals(result.endNode(), c)
     assertEquals(result.length(), 2)
+  }
+
+  @Test def should_handle_expressions_with_labels() {
+    // GIVEN
+    val a = createNode()
+    val b = createLabeledNode("Tror_Inte_Det")
+    val c = createLabeledNode("Tror_Inte_Det2")
+
+    relate(a, b)
+    relate(a, c)
+
+    val pattern = RelatedTo("a", "  UNNAMED1", "  UNNAMED2", Seq.empty, Direction.OUTGOING, false)
+    val pred = HasLabel(Identifier("  UNNAMED1"), Literal(Seq(LabelName("Tror_Inte_Det"))))
+    val expression = PathExpression(Seq(pattern), pred)
+    val m = createExecutionContext(Map("a" -> a))
+
+    // WHEN
+    val result: Seq[Path] = expression(m).asInstanceOf[Seq[Path]]
+
+    // THEN
+    assert(result.size === 1)
+  }
+
+  private def createExecutionContext(m: Map[String, Any]):ExecutionContext = {
+    val ctx = new TransactionBoundQueryContext(graph)
+    val state = new QueryState(graph, ctx, Map.empty)
+
+    ExecutionContext(state = state).newFrom(m)
   }
 }

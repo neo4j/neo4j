@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.symbols.NodeType
 
 class SingleShortestPathPipeTest extends GraphDatabaseTestBase with Assertions {
 
-  val path = ShortestPath("p", "a", "b", Seq(), Direction.BOTH, Some(15), optional = true, single = true, relIterator = None, predicate = True())
+  val path = ShortestPath("p", "a", "b", Seq(), Direction.BOTH, Some(15), optional = true, single = true, relIterator = None)
 
   def runThroughPipeAndGetPath(a: Node, b: Node, path: ShortestPath): Path = {
     val source = new FakePipe(List(Map("a" -> a, "b" -> b)), "a"->NodeType(), "b"->NodeType())
@@ -62,29 +62,5 @@ class SingleShortestPathPipeTest extends GraphDatabaseTestBase with Assertions {
     // The secret is in what's not there - there is no relationship between a and b
 
     assert(runThroughPipeAndGetPath(a, b, path) === null)
-  }
-
-  @Ignore
-  @Test def shouldReturnLongerPathIfShorterDoesntMatchPredicate() {
-    // Two paths exist: a->b->c, and a->c
-    // The shorter is not a match, because of a property
-    // on the relationship.
-    
-    val a = createNode()
-    val b = createNode()
-    val c = createNode()
-
-
-    relate(a, b, "rel", Map("foo" -> "bar"))
-    relate(b, c, "rel", Map("foo" -> "bar"))
-
-    relate(a, c, "rel", Map("foo" -> "notBar"))
-
-    val pred = AllInCollection(RelationshipFunction(Identifier("p")), "r", Equals(Property(Identifier("r"), "foo"), Literal("bar")))
-    val path = ShortestPath("p", "a", "b", Seq(), Direction.OUTGOING, None, false, true, Some("r"), pred)
-
-
-    val result = runThroughPipeAndGetPath(a, c, path)
-    assert(2 === result.length())
   }
 }

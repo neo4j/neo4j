@@ -62,20 +62,17 @@ class MatchBuilder extends PlanBuilder with PatternGraphBuilder {
 
   private def yesOrNo(q: QueryToken[_], p: Pipe, start: Seq[QueryToken[StartItem]]) = q match {
     case Unsolved(x: ShortestPath) => false
-    case Unsolved(x: Pattern) => {
+    case Unsolved(x: Pattern)      => {
       val patternIdentifiers: Seq[String] = x.possibleStartPoints.map(_._1)
 
-      val apa = start.map(si => patternIdentifiers.find(_ == si.token.identifierName) match {
+      val areStartPointsResolved = start.map(si => patternIdentifiers.find(_ == si.token.identifierName) match {
         case Some(_) => si.solved
-        case None => true
-      })
+        case None    => true
+      }).foldLeft(true)(_ && _)
 
-      val resolvedStartPoints =  apa.foldLeft(true)(_ && _)
-      val pipeSatisfied = x.predicate.symbolDependenciesMet(p.symbols)
-
-      resolvedStartPoints && pipeSatisfied
+      areStartPointsResolved
     }
-    case _ => false
+    case _                         => false
   }
 
   def priority = PlanBuilder.Match
@@ -91,7 +88,7 @@ trait PatternGraphBuilder {
       foreach(id => patternNodeMap(id._1) = new PatternNode(id._1)) //...and create patternNodes for them
 
     patterns.foreach(_ match {
-      case RelatedTo(left, right, rel, relType, dir, optional, predicate) => {
+      case RelatedTo(left, right, rel, relType, dir, optional) => {
         val leftNode: PatternNode = patternNodeMap.getOrElseUpdate(left, new PatternNode(left))
         val rightNode: PatternNode = patternNodeMap.getOrElseUpdate(right, new PatternNode(right))
 
@@ -99,12 +96,12 @@ trait PatternGraphBuilder {
           throw new SyntaxException("Can't re-use pattern relationship '%s' with different start/end nodes.".format(rel))
         }
 
-        patternRelMap(rel) = leftNode.relateTo(rel, rightNode, relType, dir, optional, predicate)
+        patternRelMap(rel) = leftNode.relateTo(rel, rightNode, relType, dir, optional)
       }
-      case VarLengthRelatedTo(pathName, start, end, minHops, maxHops, relType, dir, relsCollection, optional, predicate) => {
+      case VarLengthRelatedTo(pathName, start, end, minHops, maxHops, relType, dir, relsCollection, optional) => {
         val startNode: PatternNode = patternNodeMap.getOrElseUpdate(start, new PatternNode(start))
         val endNode: PatternNode = patternNodeMap.getOrElseUpdate(end, new PatternNode(end))
-        patternRelMap(pathName) = startNode.relateViaVariableLengthPathTo(pathName, endNode, minHops, maxHops, relType, dir, relsCollection, optional, predicate)
+        patternRelMap(pathName) = startNode.relateViaVariableLengthPathTo(pathName, endNode, minHops, maxHops, relType, dir, relsCollection, optional)
       }
       case _ =>
     })

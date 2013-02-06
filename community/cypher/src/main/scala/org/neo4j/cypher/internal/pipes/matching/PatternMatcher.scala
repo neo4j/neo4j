@@ -90,11 +90,6 @@ class PatternMatcher(bindings: Map[String, MatchingPair], predicates: Seq[Predic
 
       val newHistory = history.add(current)
 
-      currentRel.predicate match {
-        case True() =>
-        case p => if(!p.isMatch(newHistory.toMap)) return false
-      }
-
       if (isMatchSoFar(newHistory)) {
         val nextNode = rel.getOtherNode(gNode)
 

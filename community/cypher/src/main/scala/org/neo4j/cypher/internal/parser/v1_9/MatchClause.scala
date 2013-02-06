@@ -65,13 +65,13 @@ trait MatchClause extends Base with ParserPattern {
       case ParsedNamedPath(name, patterns) => parsedPath(name, patterns, transform)
 
       case ParsedRelation(name, props, left, right, relType, dir, optional, predicate) =>
-        transform(left, right, props, (l, r) => RelatedTo(left = l, right = r, relName = name, relTypes = relType, direction = dir, optional = optional, predicate = True()))
+        transform(left, right, props, (l, r) => RelatedTo(left = l, right = r, relName = name, relTypes = relType, direction = dir, optional = optional))
 
       case ParsedVarLengthRelation(name, props, left, right, relType, dir, optional, predicate, min, max, relIterator) =>
-        transform(left, right, props, (l, r) => VarLengthRelatedTo(pathName = name, start = l, end = r, minHops = min, maxHops = max, relTypes = relType, direction = dir, relIterator = relIterator, optional = optional, predicate = predicate))
+        transform(left, right, props, (l, r) => VarLengthRelatedTo(pathName = name, start = l, end = r, minHops = min, maxHops = max, relTypes = relType, direction = dir, relIterator = relIterator, optional = optional))
 
       case ParsedShortestPath(name, props, left, right, relType, dir, optional, predicate, max, single, relIterator) =>
-        transform(left, right, props, (l, r) => ShortestPath(pathName = name, start = l, end = r, relTypes = relType, dir = dir, maxDepth = max, optional = optional, single = single, relIterator = relIterator, predicate = predicate))
+        transform(left, right, props, (l, r) => ShortestPath(pathName = name, start = l, end = r, relTypes = relType, dir = dir, maxDepth = max, optional = optional, single = single, relIterator = relIterator))
 
       case x => No(Seq("failed to parse MATCH pattern"))
     }

@@ -40,11 +40,11 @@ abstract sealed class AbstractPattern {
 }
 
 object PatternWithEnds {
-  def unapply(p: AbstractPattern): Option[(ParsedEntity, ParsedEntity, Seq[String], Direction, Boolean, Option[Int], Option[String], Predicate)] = p match {
-    case ParsedVarLengthRelation(name, _, start, end, typ, dir, optional, predicate, None, maxHops, relIterator) => Some((start, end, typ, dir, optional, maxHops, relIterator, predicate))
-    case ParsedVarLengthRelation(_, _, _, _, _, _, _, _, Some(x), _, _) => throw new SyntaxException("Shortest path does not support a minimal length")
-    case ParsedRelation(name, _, start, end, typ, dir, optional, predicate) => Some((start, end, typ, dir, optional, Some(1), Some(name), predicate))
-    case _ => None
+  def unapply(p: AbstractPattern): Option[(ParsedEntity, ParsedEntity, Seq[String], Direction, Boolean, Option[Int], Option[String])] = p match {
+    case ParsedVarLengthRelation(name, _, start, end, typ, dir, optional, None, maxHops, relIterator) => Some((start, end, typ, dir, optional, maxHops, relIterator))
+    case ParsedVarLengthRelation(_, _, _, _, _, _, _, Some(x), _, _)                                  => throw new SyntaxException("Shortest path does not support a minimal length")
+    case ParsedRelation(name, _, start, end, typ, dir, optional)                                      => Some((start, end, typ, dir, optional, Some(1), Some(name)))
+    case _                                                                                            => None
   }
 }
 
@@ -56,7 +56,6 @@ abstract class PatternWithPathName(val pathName: String) extends AbstractPattern
 case class ParsedEntity(name: String,
                         expression: Expression,
                         props: Map[String, Expression],
-                        predicate: Predicate,
                         labels: LabelSpec,
                         bare: Boolean) extends AbstractPattern {
   def makeOutgoing = this
@@ -70,8 +69,7 @@ case class ParsedRelation(name: String,
                           end: ParsedEntity,
                           typ: Seq[String],
                           dir: Direction,
-                          optional: Boolean,
-                          predicate: Predicate) extends PatternWithPathName(name) with Turnable {
+                          optional: Boolean) extends PatternWithPathName(name) with Turnable {
   def rename(newName: String): PatternWithPathName = copy(name = newName)
 
   def turn(start: ParsedEntity, end: ParsedEntity, dir: Direction): AbstractPattern =
@@ -111,7 +109,6 @@ case class ParsedVarLengthRelation(name: String,
                                    typ: Seq[String],
                                    dir: Direction,
                                    optional: Boolean,
-                                   predicate: Predicate,
                                    minHops: Option[Int],
                                    maxHops: Option[Int],
                                    relIterator: Option[String]) extends PatternWithPathName(name) with Turnable {
@@ -130,7 +127,6 @@ case class ParsedShortestPath(name: String,
                               typ: Seq[String],
                               dir: Direction,
                               optional: Boolean,
-                              predicate: Predicate,
                               maxDepth: Option[Int],
                               single: Boolean,
                               relIterator: Option[String]) extends PatternWithPathName(name) {

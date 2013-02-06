@@ -212,7 +212,7 @@ class PatternGraphTest extends Assertions {
   private def relate(a: PatternNode, x: PatternNode, key: String): PatternRelationship = relate(a, x, key, optional = true)
 
   private def relate(a: PatternNode, x: PatternNode, key: String, optional: Boolean): PatternRelationship = {
-    val r = a.relateTo(key, x, Seq(), Direction.OUTGOING, optional, predicate = True())
+    val r = a.relateTo(key, x, Seq(), Direction.OUTGOING, optional)
     rels = rels + (key -> r)
     r
   }

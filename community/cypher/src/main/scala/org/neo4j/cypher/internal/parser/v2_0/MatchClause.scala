@@ -20,12 +20,13 @@
 package org.neo4j.cypher.internal.parser.v2_0
 
 import org.neo4j.cypher.internal.commands._
-import expressions.{Identifier, Expression}
+import expressions.{Literal, Identifier, Expression}
 import collection.Map
 import org.neo4j.cypher.internal.helpers.CastSupport._
 import org.neo4j.cypher.internal.commands.NamedPath
 import org.neo4j.cypher.internal.commands.ShortestPath
 import org.neo4j.cypher.internal.commands.True
+import values.LabelName
 
 trait MatchClause extends Base with ParserPattern {
   def matching: Parser[(Seq[Pattern], Seq[NamedPath], Predicate)] = ignoreCase("match") ~> usePattern(labelTranslator) ^^ {
@@ -50,11 +51,11 @@ trait MatchClause extends Base with ParserPattern {
       else
         Yes(Seq())
 
-    def checkExpressions(x: ParsedEntity): Maybe[T] =
-      if (x.expression.isInstanceOf[Identifier])
-        Yes(Seq())
-      else
-        No(Seq("MATCH end points have to be node identifiers - found: " + x.expression))
+    def checkExpressions(x: ParsedEntity): Maybe[T] = x.expression match {
+      case _: Identifier         => Yes(Seq())
+      case Literal(_: LabelName) => Yes(Seq())
+      case e                     => No(Seq(s"MATCH end points have to be node identifiers - found: $e"))
+    }
 
     val props: Maybe[T] = checkProps(left.props) ++ checkProps(right.props) ++ checkProps(relProps)
     val expressions = checkExpressions(left) ++ checkExpressions(right)
@@ -69,17 +70,17 @@ trait MatchClause extends Base with ParserPattern {
       case ParsedNamedPath(name, patterns) =>
         parsedPath(name, patterns, transform)
 
-      case ParsedRelation(name, props, left, right, relType, dir, optional, predicate) =>
+      case ParsedRelation(name, props, left, right, relType, dir, optional) =>
         transform(left, right, props, (l, r) =>
-          RelatedTo(left = l, right = r, relName = name, relTypes = relType, direction = dir, optional = optional, predicate = predicate))
+          RelatedTo(left = l, right = r, relName = name, relTypes = relType, direction = dir, optional = optional))
 
-      case ParsedVarLengthRelation(name, props, left, right, relType, dir, optional, predicate, min, max, relIterator) =>
+      case ParsedVarLengthRelation(name, props, left, right, relType, dir, optional, min, max, relIterator) =>
         transform(left, right, props, (l, r) =>
-          VarLengthRelatedTo(pathName = name, start = l, end = r, minHops = min, maxHops = max, relTypes = relType, direction = dir, relIterator = relIterator, optional = optional, predicate = predicate))
+          VarLengthRelatedTo(pathName = name, start = l, end = r, minHops = min, maxHops = max, relTypes = relType, direction = dir, relIterator = relIterator, optional = optional))
 
-      case ParsedShortestPath(name, props, left, right, relType, dir, optional, predicate, max, single, relIterator) =>
+      case ParsedShortestPath(name, props, left, right, relType, dir, optional, max, single, relIterator) =>
         transform(left, right, props, (l, r) =>
-          ShortestPath(pathName = name, start = l, end = r, relTypes = relType, dir = dir, maxDepth = max, optional = optional, single = single, relIterator = relIterator, predicate = predicate))
+          ShortestPath(pathName = name, start = l, end = r, relTypes = relType, dir = dir, maxDepth = max, optional = optional, single = single, relIterator = relIterator))
 
       case x => No(Seq("failed to parse MATCH pattern"))
   }

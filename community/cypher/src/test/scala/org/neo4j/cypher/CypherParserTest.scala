@@ -346,7 +346,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
       "start a = NODE(1) match a -[:KNOWS]-> (b) return a, b",
       Query.
         start(NodeById("a", 1)).
-        matches(RelatedTo("a", "b", "  UNNAMED3", Seq("KNOWS"), Direction.OUTGOING, false, True())).
+        matches(RelatedTo("a", "b", "  UNNAMED3", Seq("KNOWS"), Direction.OUTGOING, false)).
         returns(ReturnItem(Identifier("a"), "a"), ReturnItem(Identifier("b"), "b")))
   }
 
@@ -355,7 +355,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
       "start a = NODE(1) match a --> (b) return a, b",
       Query.
         start(NodeById("a", 1)).
-        matches(RelatedTo("a", "b", "  UNNAMED3", Seq(), Direction.OUTGOING, false, True())).
+        matches(RelatedTo("a", "b", "  UNNAMED3", Seq(), Direction.OUTGOING, false)).
         returns(ReturnItem(Identifier("a"), "a"), ReturnItem(Identifier("b"), "b")))
   }
 
@@ -364,7 +364,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
       "start a = NODE(1) match a-[r]->b return r",
       Query.
         start(NodeById("a", 1)).
-        matches(RelatedTo("a", "b", "r", Seq(), Direction.OUTGOING, false, True())).
+        matches(RelatedTo("a", "b", "r", Seq(), Direction.OUTGOING, false)).
         returns(ReturnItem(Identifier("r"), "r")))
   }
 
@@ -373,7 +373,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
       "start a = NODE(1) match a <-[:KNOWS]- (b) return a, b",
       Query.
         start(NodeById("a", 1)).
-        matches(RelatedTo("b", "a", "  UNNAMED3", Seq("KNOWS"), Direction.OUTGOING, false, True())).
+        matches(RelatedTo("b", "a", "  UNNAMED3", Seq("KNOWS"), Direction.OUTGOING, false)).
         returns(ReturnItem(Identifier("a"), "a"), ReturnItem(Identifier("b"), "b")))
   }
 
@@ -401,7 +401,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
       "start a = NODE(1) match a -[rel:KNOWS]-> (b) return rel",
       Query.
         start(NodeById("a", 1)).
-        matches(RelatedTo("a", "b", "rel", Seq("KNOWS"), Direction.OUTGOING, false, True())).
+        matches(RelatedTo("a", "b", "rel", Seq("KNOWS"), Direction.OUTGOING, false)).
         returns(ReturnItem(Identifier("rel"), "rel")))
   }
 
@@ -411,7 +411,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
       "start a = NODE(1) match a -[r:MARRIED]-> () return a",
       Query.
         start(NodeById("a", 1)).
-        matches(RelatedTo("a", "  UNNAMED3", "r", Seq("MARRIED"), Direction.OUTGOING, false, True())).
+        matches(RelatedTo("a", "  UNNAMED3", "r", Seq("MARRIED"), Direction.OUTGOING, false)).
         returns(ReturnItem(Identifier("a"), "a")))
   }
 
@@ -421,8 +421,8 @@ class CypherParserTest extends JUnitSuite with Assertions {
       Query.
         start(NodeById("a", 1)).
         matches(
-        RelatedTo("a", "b", "  UNNAMED5", Seq("KNOWS"), Direction.OUTGOING, false, True()),
-        RelatedTo("b", "c", "  UNNAMED6", Seq("FRIEND"), Direction.OUTGOING, false, True())).
+        RelatedTo("a", "b", "  UNNAMED5", Seq("KNOWS"), Direction.OUTGOING, false),
+        RelatedTo("b", "c", "  UNNAMED6", Seq("FRIEND"), Direction.OUTGOING, false)).
         returns(ReturnItem(Identifier("c"), "c"))
     )
   }
@@ -432,7 +432,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
       "start a = NODE(1) match a -[r:`<<KNOWS>>`]-> b return c",
       Query.
         start(NodeById("a", 1)).
-        matches(RelatedTo("a", "b", "r", Seq("<<KNOWS>>"), Direction.OUTGOING, false, True())).
+        matches(RelatedTo("a", "b", "r", Seq("<<KNOWS>>"), Direction.OUTGOING, false)).
         returns(ReturnItem(Identifier("c"), "c")))
   }
 
@@ -441,7 +441,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
       "start a = NODE(1) match a --> b return a, b, count(*)",
       Query.
         start(NodeById("a", 1)).
-        matches(RelatedTo("a", "b", "  UNNAMED3", Seq(), Direction.OUTGOING, false, True())).
+        matches(RelatedTo("a", "b", "  UNNAMED3", Seq(), Direction.OUTGOING, false)).
         aggregation(CountStar()).
         columns("a", "b", "count(*)").
         returns(ReturnItem(Identifier("a"), "a"), ReturnItem(Identifier("b"), "b"), ReturnItem(CountStar(), "count(*)")))
@@ -463,7 +463,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
       "start a = NODE(1) match a -[r]-> b return distinct a, b",
       Query.
         start(NodeById("a", 1)).
-        matches(RelatedTo("a", "b", "r", Seq(), Direction.OUTGOING, false, True())).
+        matches(RelatedTo("a", "b", "r", Seq(), Direction.OUTGOING, false)).
         aggregation().
         returns(ReturnItem(Identifier("a"), "a"), ReturnItem(Identifier("b"), "b")))
   }
@@ -473,7 +473,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
       "start a = NODE(1) match a -[r]-> b return a, b, sum(a.age)",
       Query.
         start(NodeById("a", 1)).
-        matches(RelatedTo("a", "b", "r", Seq(), Direction.OUTGOING, false, True())).
+        matches(RelatedTo("a", "b", "r", Seq(), Direction.OUTGOING, false)).
         aggregation(Sum(Property(Identifier("a"), "age"))).
         columns("a", "b", "sum(a.age)").
         returns(ReturnItem(Identifier("a"), "a"), ReturnItem(Identifier("b"), "b"), ReturnItem(Sum(Property(Identifier("a"), "age")), "sum(a.age)")))
@@ -484,7 +484,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
       "start a = NODE(1) match a --> b return a, b, avg(a.age)",
       Query.
         start(NodeById("a", 1)).
-        matches(RelatedTo("a", "b", "  UNNAMED3", Seq(), Direction.OUTGOING, false, True())).
+        matches(RelatedTo("a", "b", "  UNNAMED3", Seq(), Direction.OUTGOING, false)).
         aggregation(Avg(Property(Identifier("a"), "age"))).
         columns("a", "b", "avg(a.age)").
         returns(ReturnItem(Identifier("a"), "a"), ReturnItem(Identifier("b"), "b"), ReturnItem(Avg(Property(Identifier("a"), "age")), "avg(a.age)")))
@@ -495,7 +495,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
       "start a = NODE(1) match (a) --> b return a, b, min(a.age)",
       Query.
         start(NodeById("a", 1)).
-        matches(RelatedTo("a", "b", "  UNNAMED3", Seq(), Direction.OUTGOING, false, True())).
+        matches(RelatedTo("a", "b", "  UNNAMED3", Seq(), Direction.OUTGOING, false)).
         aggregation(Min(Property(Identifier("a"), "age"))).
         columns("a", "b", "min(a.age)").
         returns(ReturnItem(Identifier("a"), "a"), ReturnItem(Identifier("b"), "b"), ReturnItem(Min(Property(Identifier("a"), "age")), "min(a.age)")))
@@ -506,7 +506,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
       "start a = NODE(1) match a --> b return a, b, max(a.age)",
       Query.
         start(NodeById("a", 1)).
-        matches(RelatedTo("a", "b", "  UNNAMED3", Seq(), Direction.OUTGOING, false, True())).
+        matches(RelatedTo("a", "b", "  UNNAMED3", Seq(), Direction.OUTGOING, false)).
         aggregation(Max((Property(Identifier("a"), "age")))).
         columns("a", "b", "max(a.age)").
         returns(
@@ -633,7 +633,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
       "start n=NODE(1) match n-[r]->(x) where type(r) = \"something\" return r",
       Query.
         start(NodeById("n", 1)).
-        matches(RelatedTo("n", "x", "r", Seq(), Direction.OUTGOING, false, True())).
+        matches(RelatedTo("n", "x", "r", Seq(), Direction.OUTGOING, false)).
         where(Equals(RelationshipTypeFunction(Identifier("r")), Literal("something"))).
         returns(ReturnItem(Identifier("r"), "r")))
   }
@@ -643,8 +643,8 @@ class CypherParserTest extends JUnitSuite with Assertions {
       "start n=NODE(1) match p=(n-[r]->x) where LENGTH(p) = 10 return p",
       Query.
         start(NodeById("n", 1)).
-        matches(RelatedTo("n", "x", "r", Seq(), Direction.OUTGOING, false, True())).
-        namedPaths(NamedPath("p", RelatedTo("n", "x", "r", Seq(), Direction.OUTGOING, false, True()))).
+        matches(RelatedTo("n", "x", "r", Seq(), Direction.OUTGOING, false)).
+        namedPaths(NamedPath("p", RelatedTo("n", "x", "r", Seq(), Direction.OUTGOING, false))).
         where(Equals(LengthFunction(Identifier("p")), Literal(10.0))).
         returns(ReturnItem(Identifier("p"), "p")))
   }
@@ -655,7 +655,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
 
       Query.
         start(NodeById("n", 1)).
-        matches(RelatedTo("n", "x", "r", Seq(), Direction.OUTGOING, false, True())).
+        matches(RelatedTo("n", "x", "r", Seq(), Direction.OUTGOING, false)).
         returns(ReturnItem(RelationshipTypeFunction(Identifier("r")), "TYPE(r)")))
   }
 
@@ -665,7 +665,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
       "start n=NODE(1) match n-[r]->(x) return COALESCE(r.name,x.name)",
       Query.
         start(NodeById("n", 1)).
-        matches(RelatedTo("n", "x", "r", Seq(), Direction.OUTGOING, false, True())).
+        matches(RelatedTo("n", "x", "r", Seq(), Direction.OUTGOING, false)).
         returns(ReturnItem(CoalesceFunction(Property(Identifier("r"), "name"), Property(Identifier("x"), "name")), "COALESCE(r.name,x.name)")))
   }
 
@@ -675,8 +675,8 @@ class CypherParserTest extends JUnitSuite with Assertions {
 
       Query.
         start(NodeById("n", 1)).
-        matches(RelatedTo("n", "x", "r", Seq(), Direction.OUTGOING, false, True())).
-        namedPaths(NamedPath("p", RelatedTo("n", "x", "r", Seq(), Direction.OUTGOING, false, True()))).
+        matches(RelatedTo("n", "x", "r", Seq(), Direction.OUTGOING, false)).
+        namedPaths(NamedPath("p", RelatedTo("n", "x", "r", Seq(), Direction.OUTGOING, false))).
         returns(ReturnItem(RelationshipFunction(Identifier("p")), "RELATIONSHIPS(p)")))
   }
 
@@ -686,8 +686,8 @@ class CypherParserTest extends JUnitSuite with Assertions {
 
       Query.
         start(NodeById("n", 1)).
-        matches(RelatedTo("n", "x", "r", Seq(), Direction.OUTGOING, false, True())).
-        namedPaths(NamedPath("p", RelatedTo("n", "x", "r", Seq(), Direction.OUTGOING, false, True()))).
+        matches(RelatedTo("n", "x", "r", Seq(), Direction.OUTGOING, false)).
+        namedPaths(NamedPath("p", RelatedTo("n", "x", "r", Seq(), Direction.OUTGOING, false))).
         where(Equals(LengthFunction(RelationshipFunction(Identifier("p"))), Literal(1))).
         returns (ReturnItem(Identifier("p"), "p")))
   }
@@ -732,8 +732,8 @@ class CypherParserTest extends JUnitSuite with Assertions {
       "start a = node(0) match p = a-->b return a",
       Query.
         start(NodeById("a", 0)).
-        matches(RelatedTo("a", "b", "  UNNAMED3", Seq(), Direction.OUTGOING, false, True())).
-        namedPaths(NamedPath("p", RelatedTo("a", "b", "  UNNAMED3", Seq(), Direction.OUTGOING, false, True()))).
+        matches(RelatedTo("a", "b", "  UNNAMED3", Seq(), Direction.OUTGOING, false)).
+        namedPaths(NamedPath("p", RelatedTo("a", "b", "  UNNAMED3", Seq(), Direction.OUTGOING, false))).
         returns(ReturnItem(Identifier("a"), "a")))
   }
 
@@ -743,11 +743,11 @@ class CypherParserTest extends JUnitSuite with Assertions {
       Query.
         start(NodeById("a", 0)).
         matches(
-          RelatedTo("a", "b", "r1", Seq(), Direction.OUTGOING, false, True()),
-          RelatedTo("b", "c", "r2", Seq(), Direction.OUTGOING, false, True())).
+          RelatedTo("a", "b", "r1", Seq(), Direction.OUTGOING, false),
+          RelatedTo("b", "c", "r2", Seq(), Direction.OUTGOING, false)).
         namedPaths(NamedPath("p",
-          RelatedTo("a", "b", "r1", Seq(), Direction.OUTGOING, false, True()),
-          RelatedTo("b", "c", "r2", Seq(), Direction.OUTGOING, false, True()))).
+          RelatedTo("a", "b", "r1", Seq(), Direction.OUTGOING, false),
+          RelatedTo("b", "c", "r2", Seq(), Direction.OUTGOING, false))).
         returns(ReturnItem(Identifier("a"), "a")))
   }
 
@@ -756,8 +756,8 @@ class CypherParserTest extends JUnitSuite with Assertions {
       "start a = node(0) match p = a-[r]->b return a",
       Query.
         start(NodeById("a", 0)).
-        matches(RelatedTo("a", "b", "r", Seq(), Direction.OUTGOING, false, True())).
-        namedPaths(NamedPath("p", RelatedTo("a", "b", "r", Seq(), Direction.OUTGOING, false, True()))).
+        matches(RelatedTo("a", "b", "r", Seq(), Direction.OUTGOING, false)).
+        namedPaths(NamedPath("p", RelatedTo("a", "b", "r", Seq(), Direction.OUTGOING, false))).
         returns (ReturnItem(Identifier("a"), "a")))
   }
 
@@ -774,7 +774,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
     testAll("start a=node(0) match a -[r:knows*1..3]-> x return x",
       Query.
         start(NodeById("a", 0)).
-        matches(VarLengthRelatedTo("  UNNAMED3", "a", "x", Some(1), Some(3), Seq("knows"), Direction.OUTGOING, Some("r"), false, True())).
+        matches(VarLengthRelatedTo("  UNNAMED3", "a", "x", Some(1), Some(3), Seq("knows"), Direction.OUTGOING, Some("r"), false)).
         returns(ReturnItem(Identifier("x"), "x"))
     )
   }
@@ -783,7 +783,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
     testAll("start a=node(0) match a -[*3]-> x return x",
       Query.
         start(NodeById("a", 0)).
-        matches(VarLengthRelatedTo("  UNNAMED3", "a", "x", Some(3), Some(3), Seq(), Direction.OUTGOING, None, false, True())).
+        matches(VarLengthRelatedTo("  UNNAMED3", "a", "x", Some(3), Some(3), Seq(), Direction.OUTGOING, None, false)).
         returns(ReturnItem(Identifier("x"), "x"))
     )
   }
@@ -801,7 +801,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
     testAll("start a=node(0) match a -[r:knows*2..]-> x return x",
       Query.
         start(NodeById("a", 0)).
-        matches(VarLengthRelatedTo("  UNNAMED3", "a", "x", Some(2), None, Seq("knows"), Direction.OUTGOING, Some("r"), false, True())).
+        matches(VarLengthRelatedTo("  UNNAMED3", "a", "x", Some(2), None, Seq("knows"), Direction.OUTGOING, Some("r"), false)).
         returns(ReturnItem(Identifier("x"), "x"))
     )
   }
@@ -829,7 +829,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
       "start a = node(1) match a -[?]-> (b) return b",
       Query.
         start(NodeById("a", 1)).
-        matches(RelatedTo("a", "b", "  UNNAMED3", Seq(), Direction.OUTGOING, true, True())).
+        matches(RelatedTo("a", "b", "  UNNAMED3", Seq(), Direction.OUTGOING, true)).
         returns(ReturnItem(Identifier("b"), "b")))
   }
 
@@ -856,7 +856,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
       "start a = node(1) match a -[?:KNOWS]-> (b) return b",
       Query.
         start(NodeById("a", 1)).
-        matches(RelatedTo("a", "b", "  UNNAMED3", Seq("KNOWS"), Direction.OUTGOING, true, True())).
+        matches(RelatedTo("a", "b", "  UNNAMED3", Seq("KNOWS"), Direction.OUTGOING, true)).
         returns(ReturnItem(Identifier("b"), "b")))
   }
 
@@ -865,7 +865,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
       "start a = node(1) match a -[r?:KNOWS]-> (b) return b",
       Query.
         start(NodeById("a", 1)).
-        matches(RelatedTo("a", "b", "r", Seq("KNOWS"), Direction.OUTGOING, true, True())).
+        matches(RelatedTo("a", "b", "r", Seq("KNOWS"), Direction.OUTGOING, true)).
         returns(ReturnItem(Identifier("b"), "b")))
   }
 
@@ -874,7 +874,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
       "start a = node(1) match a -[r?]-> (b) return b",
       Query.
         start(NodeById("a", 1)).
-        matches(RelatedTo("a", "b", "r", Seq(), Direction.OUTGOING, true, True())).
+        matches(RelatedTo("a", "b", "r", Seq(), Direction.OUTGOING, true)).
         returns(ReturnItem(Identifier("b"), "b")))
   }
 
@@ -1025,7 +1025,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
       """start a=node(0), b=node(1) where a-->b return a""",
       Query.
         start(NodeById("a", 0), NodeById("b", 1)).
-        where(NonEmpty(PathExpression(Seq(RelatedTo("a", "b", "  UNNAMED39", Seq(), Direction.OUTGOING, optional = false, predicate = True()))))).
+        where(NonEmpty(PathExpression(Seq(RelatedTo("a", "b", "  UNNAMED39", Seq(), Direction.OUTGOING, optional = false))))).
         returns (ReturnItem(Identifier("a"), "a")))
   }
 
@@ -1034,7 +1034,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
       """start a=node(0), b=node(1) where not(a-->()) return a""",
       Query.
         start(NodeById("a", 0), NodeById("b", 1)).
-        where(Not(NonEmpty(PathExpression(Seq(RelatedTo("a", "  UNNAMED143", "  UNNAMED144", Seq(), Direction.OUTGOING, optional = false, predicate = True())))))).
+        where(Not(NonEmpty(PathExpression(Seq(RelatedTo("a", "  UNNAMED143", "  UNNAMED144", Seq(), Direction.OUTGOING, optional = false)))))).
         returns (ReturnItem(Identifier("a"), "a")))
   }
 
@@ -1103,7 +1103,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def first_last_and_rest() {
-    val p1 = RelatedTo("x", "z", "r", Seq(), Direction.OUTGOING, false, True())
+    val p1 = RelatedTo("x", "z", "r", Seq(), Direction.OUTGOING, false)
     testAll("start x = NODE(1) match p=x-[r]->z return head(nodes(p)), last(nodes(p)), tail(nodes(p))",
       Query.
         start(NodeById("x", 1)).
@@ -1120,8 +1120,8 @@ class CypherParserTest extends JUnitSuite with Assertions {
     testAll("start x = NODE(1) match p=x-[r]->z return filter(x in p : x.prop = 123)",
       Query.
         start(NodeById("x", 1)).
-        matches(RelatedTo("x", "z", "r", Seq(), Direction.OUTGOING, false, True())).
-        namedPaths(NamedPath("p", RelatedTo("x", "z", "r", Seq(), Direction.OUTGOING, false, True()))).
+        matches(RelatedTo("x", "z", "r", Seq(), Direction.OUTGOING, false)).
+        namedPaths(NamedPath("p", RelatedTo("x", "z", "r", Seq(), Direction.OUTGOING, false))).
         returns(
         ReturnItem(FilterFunction(Identifier("p"), "x", Equals(Property(Identifier("x"), "prop"), Literal(123))), "filter(x in p : x.prop = 123)")
       ))
@@ -1172,7 +1172,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
     testAll("start x = NODE(1) match x-[:REL1|REL2|REL3]->z return x",
       Query.
         start(NodeById("x", 1)).
-        matches(RelatedTo("x", "z", "  UNNAMED3", Seq("REL1", "REL2", "REL3"), Direction.OUTGOING, false, True())).
+        matches(RelatedTo("x", "z", "  UNNAMED3", Seq("REL1", "REL2", "REL3"), Direction.OUTGOING, false)).
         returns(ReturnItem(Identifier("x"), "x"))
     )
   }
@@ -1181,7 +1181,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
     testAll("start x = NODE(1) match x-[:REL1|REL2|REL3]->z return x",
       Query.
         start(NodeById("x", 1)).
-        matches(RelatedTo("x", "z", "  UNNAMED3", Seq("REL1", "REL2", "REL3"), Direction.OUTGOING, false, True())).
+        matches(RelatedTo("x", "z", "  UNNAMED3", Seq("REL1", "REL2", "REL3"), Direction.OUTGOING, false)).
         returns(ReturnItem(Identifier("x"), "x"))
     )
   }
@@ -1190,7 +1190,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
     testAll("start x = NODE(1) match x-[:REL1|REL2|REL3]->z return x",
       Query.
         start(NodeById("x", 1)).
-        matches(RelatedTo("x", "z", "  UNNAMED3", Seq("REL1", "REL2", "REL3"), Direction.OUTGOING, false, True())).
+        matches(RelatedTo("x", "z", "  UNNAMED3", Seq("REL1", "REL2", "REL3"), Direction.OUTGOING, false)).
         returns(ReturnItem(Identifier("x"), "x"))
     )
   }
@@ -1200,7 +1200,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
       """start a=node(0), b=node(1) where a-[:KNOWS|BLOCKS]-b return a""",
       Query.
         start(NodeById("a", 0), NodeById("b", 1)).
-        where(NonEmpty(PathExpression(Seq(RelatedTo("a", "b", "  UNNAMED39", Seq("KNOWS","BLOCKS"), Direction.BOTH, optional = false, predicate = True())))))
+        where(NonEmpty(PathExpression(Seq(RelatedTo("a", "b", "  UNNAMED39", Seq("KNOWS","BLOCKS"), Direction.BOTH, optional = false)))))
         returns (ReturnItem(Identifier("a"), "a")))
   }
 
@@ -1238,7 +1238,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
     testAll("start a=node(0) match a -[r?*1..3]-> x return x",
       Query.
         start(NodeById("a", 0)).
-        matches(VarLengthRelatedTo("  UNNAMED3", "a", "x", Some(1), Some(3), Seq(), Direction.OUTGOING, Some("r"), true, True())).
+        matches(VarLengthRelatedTo("  UNNAMED3", "a", "x", Some(1), Some(3), Seq(), Direction.OUTGOING, Some("r"), true)).
         returns(ReturnItem(Identifier("x"), "x"))
     )
   }
@@ -1755,7 +1755,7 @@ create a-[r:REL]->b
     testAll("start a  = node(1) return a-->()",
       Query.
         start(NodeById("a", 1)).
-        returns(ReturnItem(PathExpression(Seq(RelatedTo("a", "  UNNAMED1", "  UNNAMED2", Seq(), Direction.OUTGOING, optional = false, predicate = True()))), "a-->()"))
+        returns(ReturnItem(PathExpression(Seq(RelatedTo("a", "  UNNAMED1", "  UNNAMED2", Seq(), Direction.OUTGOING, optional = false))), "a-->()"))
     )
   }
 
@@ -1795,7 +1795,7 @@ create a-[r:REL]->b
       start(CreateRelationshipStartItem(CreateRelationship("r",
         RelationshipEndpoint(Identifier("a"), Map(), Collection.empty, true),
         RelationshipEndpoint(Identifier("  UNNAMED1"), Map(), Collection.empty, true), "KNOWS", Map()))).
-      namedPaths(NamedPath("p", RelatedTo("a", "  UNNAMED1", "r", "KNOWS", Direction.OUTGOING, optional = false, predicate = True()))).
+      namedPaths(NamedPath("p", RelatedTo("a", "  UNNAMED1", "r", "KNOWS", Direction.OUTGOING, optional = false))).
       returns(ReturnItem(Identifier("p"), "p")))
   }
 
@@ -1812,7 +1812,7 @@ create a-[r:REL]->b
   @Test def relate_and_assign_to_path_identifier() {
     val q2 = Query.
       start(CreateUniqueStartItem(CreateUniqueAction(UniqueLink("a", "  UNNAMED1", "r", "KNOWS", Direction.OUTGOING)))).
-      namedPaths(NamedPath("p", RelatedTo("a", "  UNNAMED1", "r", "KNOWS", Direction.OUTGOING, optional = false, predicate = True()))).
+      namedPaths(NamedPath("p", RelatedTo("a", "  UNNAMED1", "r", "KNOWS", Direction.OUTGOING, optional = false))).
       returns(ReturnItem(Identifier("p"), "p"))
 
     val q = Query.
@@ -1834,7 +1834,7 @@ foreach(x in [1,2,3] :
       start(CreateRelationshipStartItem(CreateRelationship("r",
         RelationshipEndpoint(Identifier("a"), Map(), Collection.empty, true),
         RelationshipEndpoint(Identifier("  UNNAMED1"), Map(), Collection.empty, true), "KNOWS", Map()))).
-      namedPaths(NamedPath("p", RelatedTo("a", "  UNNAMED1", "r", "KNOWS", Direction.OUTGOING, optional = false, predicate = True()))).
+      namedPaths(NamedPath("p", RelatedTo("a", "  UNNAMED1", "r", "KNOWS", Direction.OUTGOING, optional = false))).
       returns(ReturnItem(Identifier("p"), "p")))
   }
 
@@ -2063,7 +2063,7 @@ foreach(x in [1,2,3] :
     val expected =
       Query.
         start(NodeById("a", 1)).
-        matches(RelatedTo("a", "  UNNAMED3", "r", Seq("MARRIED"), Direction.OUTGOING, false, True())).
+        matches(RelatedTo("a", "  UNNAMED3", "r", Seq("MARRIED"), Direction.OUTGOING, false)).
         where(pred).
         returns(ReturnItem(Identifier("a"), "a"))
 
@@ -2076,7 +2076,7 @@ foreach(x in [1,2,3] :
     val expected =
       Query.
         start(NodeById("a", 1)).
-        matches(RelatedTo("a", "  UNNAMED3", "r", Seq("MARRIED"), Direction.OUTGOING, false, True())).
+        matches(RelatedTo("a", "  UNNAMED3", "r", Seq("MARRIED"), Direction.OUTGOING, false)).
         where(pred).
         returns(ReturnItem(Identifier("a"), "a"))
 
@@ -2089,7 +2089,7 @@ foreach(x in [1,2,3] :
     val expected =
       Query.
         start(NodeById("a", 1)).
-        matches(RelatedTo("  UNNAMED3", "a", "r", Seq("MARRIED"), Direction.OUTGOING, false, True())).
+        matches(RelatedTo("  UNNAMED3", "a", "r", Seq("MARRIED"), Direction.OUTGOING, false)).
         where(pred).
         returns(ReturnItem(Identifier("a"), "a"))
 
@@ -2103,7 +2103,7 @@ foreach(x in [1,2,3] :
     val expected =
       Query.
         start(NodeById("a", 1)).
-        matches(RelatedTo("b", "a", "r", Seq("MARRIED"), Direction.OUTGOING, false, True())).
+        matches(RelatedTo("b", "a", "r", Seq("MARRIED"), Direction.OUTGOING, false)).
         where(pred).
         returns(ReturnItem(Identifier("a"), "a"))
 
@@ -2118,7 +2118,7 @@ foreach(x in [1,2,3] :
     val expected =
       Query.
         start(NodeById("a", 1)).
-        matches(RelatedTo("a", "  UNNAMED3", "r", Seq("MARRIED"), Direction.OUTGOING, false, True())).
+        matches(RelatedTo("a", "  UNNAMED3", "r", Seq("MARRIED"), Direction.OUTGOING, false)).
         where(pred).
         returns(ReturnItem(Identifier("a"), "a"))
 
@@ -2133,7 +2133,7 @@ foreach(x in [1,2,3] :
     val expected =
       Query.
         start(NodeById("a", 1)).
-        matches(RelatedTo("  UNNAMED3", "a", "r", Seq("MARRIED"), Direction.OUTGOING, false, True())).
+        matches(RelatedTo("  UNNAMED3", "a", "r", Seq("MARRIED"), Direction.OUTGOING, false)).
         where(pred).
         returns(ReturnItem(Identifier("a"), "a"))
 
@@ -2151,7 +2151,7 @@ foreach(x in [1,2,3] :
     val expected =
       Query.
         start(NodeById("a", 1)).
-        matches(RelatedTo("b", "a", "r", Seq("MARRIED"), Direction.OUTGOING, false, True())).
+        matches(RelatedTo("b", "a", "r", Seq("MARRIED"), Direction.OUTGOING, false)).
         where(pred).
         returns(ReturnItem(Identifier("a"), "a"))
 

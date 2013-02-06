@@ -401,7 +401,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
 
     val query = Query.
       start(NodeById("n", n1.getId, n4.getId)).
-      matches(RelatedTo("n", "x", "rel", Seq(), Direction.OUTGOING, false, True())).
+      matches(RelatedTo("n", "x", "rel", Seq(), Direction.OUTGOING, false)).
       where(Equals(Property(Identifier("n"), "animal"), Property(Identifier("x"), "animal"))).
       returns(ReturnItem(Identifier("n"), "n"), ReturnItem(Identifier("x"), "x"))
 
@@ -455,7 +455,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
 
     val query = Query.
       start(NodeById("a", refNode.getId)).
-      matches(RelatedTo("a", "b", "rel", Seq(), Direction.OUTGOING, false, True())).
+      matches(RelatedTo("a", "b", "rel", Seq(), Direction.OUTGOING, false)).
       aggregation(CountStar()).
       returns(ReturnItem(Identifier("a"), "a"), ReturnItem(CountStar(), "count(*)"))
 
@@ -603,7 +603,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
 
     val query = Query.
       start(NodeById("n", 1)).
-      matches(RelatedTo("n", "x", "r", Seq(), Direction.OUTGOING, false, True())).
+      matches(RelatedTo("n", "x", "r", Seq(), Direction.OUTGOING, false)).
       where(Equals(RelationshipTypeFunction(Identifier("r")), Literal("KNOWS"))).
       returns(ReturnItem(Identifier("x"), "x"))
 
@@ -668,7 +668,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
 
     val query = Query.
       start(NodeById("n", 1)).
-      matches(RelatedTo("n", "x", "r", Seq(), Direction.OUTGOING, false, True())).
+      matches(RelatedTo("n", "x", "r", Seq(), Direction.OUTGOING, false)).
       where(Or(Equals(RelationshipTypeFunction(Identifier("r")), Literal("KNOWS")), Equals(RelationshipTypeFunction(Identifier("r")), Literal("HATES")))).
       returns(ReturnItem(Identifier("x"), "x"))
 
@@ -1981,7 +1981,7 @@ RETURN x0.name?
     relate(a, b)
     relate(b, c)
 
-    val result = parseAndExecute("start a=node(1),c=node(3) return shortestPath(a-[*]->c)").columnAs[List[Path]]("shortestPath(a-[*]->c)").toList.head.head
+    val result = parseAndExecute("start a=node(1), c=node(3) return shortestPath(a-[*]->c)").columnAs[List[Path]]("shortestPath(a-[*]->c)").toList.head.head
     assertEquals(result.endNode(), c)
     assertEquals(result.startNode(), a)
     assertEquals(result.length(), 2)
@@ -2546,7 +2546,26 @@ RETURN x0.name?
 
     // THEN
     assert(result === Set(Map("b" -> d), Map("b" -> e)))
+  }
 
+  @Test def should_handle_path_expressions_with_labels() {
+    // GIVEN
+    val a = createNode()
+
+    val b1 = createLabeledNode("A")
+    val b2 = createLabeledNode("B")
+    val b3 = createLabeledNode("C")
+
+    relate(a, b1)
+    relate(a, b2)
+    relate(a, b3)
+
+    // WHEN
+    val result = parseAndExecute("START n=node(1) RETURN n-->(:A)")
+
+    val x = result.toList.head("n-->(:A)").asInstanceOf[Seq[Path]]
+
+    assert(x.size === 1)
   }
 
   @Test def should_create_index() {

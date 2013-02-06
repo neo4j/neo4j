@@ -209,16 +209,31 @@ trait Expressions extends Base with ParserPattern with Predicates with StringLit
 
   def countStar: Parser[Expression] = ignoreCase("count") ~> parens("*") ^^^ CountStar()
 
-  def pathExpression: Parser[Expression] = usePath(translate) ^^ {//(pathPattern => PathExpression(pathPattern))
-    case Seq(x:ShortestPath) => ShortestPathExpression(x)
-    case patterns => PathExpression(patterns)
+  // TODO Clean up
+  def pathExpression: Parser[Expression] = usePath(translate) ^^ {
+    case Seq((x: ShortestPath, pred:Predicate)) => ShortestPathExpression(x)
+
+    case combo:Seq[(Pattern,Predicate)] =>
+
+      val patterns: Seq[Pattern] = combo.map(_._1)
+      val predicates: Seq[Predicate] = combo.map(_._2)
+
+      val atoms = True().andWith(predicates: _*).atoms.distinct
+      val pred = True().andWith(atoms: _*)
+
+      PathExpression(patterns, pred)
   }
 
-  private def translate(abstractPattern: AbstractPattern): Maybe[Pattern] = matchTranslator(abstractPattern) match {
-      case Yes(Seq(np)) if np.isInstanceOf[NamedPath] => No(Seq("Can't assign to an identifier in a pattern expression"))
-      case Yes(p@Seq(pattern:Pattern)) => Yes(p.asInstanceOf[Seq[Pattern]])
-      case n: No => n
-    }
+  private def translate(abstractPattern: AbstractPattern): Maybe[(Pattern, Predicate)] = matchTranslator(abstractPattern) match {
+    case Yes(Seq(np)) if np.isInstanceOf[NamedPath] => No(Seq("Can't assign to an identifier in a pattern expression"))
+    case n: No                                      => n
+    case Yes(p@Seq(pattern: Pattern))               =>
+      val patterns = p.asInstanceOf[Seq[Pattern]]
+      val predicates = abstractPattern.parsedLabelPredicates
+      val pred = True().andWith(predicates: _*)
+
+      Yes(patterns.map( (_, pred) ))
+  }
 
   def matchTranslator(abstractPattern: AbstractPattern): Maybe[Any]
 }

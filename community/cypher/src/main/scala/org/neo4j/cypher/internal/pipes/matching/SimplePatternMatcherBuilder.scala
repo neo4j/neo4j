@@ -99,7 +99,7 @@ class SimplePatternMatcherBuilder(pattern: PatternGraph, predicates: Seq[Predica
 object SimplePatternMatcherBuilder {
   def canHandle(graph: PatternGraph): Boolean = {
     val a = !graph.containsOptionalElements
-    val b = !graph.patternRels.values.exists(pr => pr.isInstanceOf[VariableLengthPatternRelationship] || pr.predicate != True() || pr.startNode == pr.endNode || pr.relTypes.size > 1)
+    val b = !graph.patternRels.values.exists(pr => pr.isInstanceOf[VariableLengthPatternRelationship] || pr.startNode == pr.endNode || pr.relTypes.size > 1)
     val c = !graph.patternRels.keys.exists(graph.boundElements.contains)
     val d = !graph.patternNodes.values.exists(pn => pn.relationships.isEmpty)
     a && b && c && d

@@ -61,19 +61,19 @@ class ParserPatternTest extends ParserPattern with ParserTest with Expressions {
     implicit val parserToTest = node
 
     parsing("n") shouldGive
-      ParsedEntity("n", Identifier("n"), Map.empty, True(), LabelSet.empty, true)
+      ParsedEntity("n", Identifier("n"), Map.empty, LabelSet.empty, true)
 
     parsing("(n)") shouldGive
-      ParsedEntity("n", Identifier("n"), Map.empty, True(), LabelSet.empty, true)
+      ParsedEntity("n", Identifier("n"), Map.empty, LabelSet.empty, true)
 
     parsing("n {name:'Andres'}") shouldGive
-      ParsedEntity("n", Identifier("n"), Map("name"->Literal("Andres")), True(), LabelSet.empty, false)
+      ParsedEntity("n", Identifier("n"), Map("name"->Literal("Andres")), LabelSet.empty, false)
 
     parsing("n VALUES {name:'Andres'}") shouldGive
-      ParsedEntity("n", Identifier("n"), Map("name"->Literal("Andres")), True(), LabelSet.empty, false)
+      ParsedEntity("n", Identifier("n"), Map("name"->Literal("Andres")), LabelSet.empty, false)
 
     parsing("n LABEL :FOO") shouldGive
-      ParsedEntity("n", Identifier("n"), Map.empty, True(), LabelSet(Some(LabelSupport.labelCollection("FOO"))), false)
+      ParsedEntity("n", Identifier("n"), Map.empty, LabelSet(Some(LabelSupport.labelCollection("FOO"))), false)
   }
 
   def matchTranslator(abstractPattern: AbstractPattern) = ???

@@ -65,7 +65,7 @@ class PatternGraph(val patternNodes: Map[String, PatternNode],
       case pr: PatternRelationship               =>
         val s = newNodes(pr.startNode.key)
         val e = newNodes(pr.endNode.key)
-        pr.key -> s.relateTo(pr.key, e, pr.relTypes, pr.dir, pr.optional, pr.predicate)
+        pr.key -> s.relateTo(pr.key, e, pr.relTypes, pr.dir, pr.optional)
     }.toMap
 
     new PatternGraph(newNodes, newRelationships, boundPoints)
