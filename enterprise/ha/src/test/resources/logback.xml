@@ -19,23 +19,6 @@
     along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 -->
-<included>
-  <!--
-  <logger name="neo4j.diagnostics" level="debug">
-  </logger>
-
-  <logger name="org.neo4j.cluster" level="debug">
-  </logger>
-
-  <logger name="org.neo4j.cluster.NetworkMock" level="warn">
-  </logger>
-
-  <logger name="org.neo4j.kernel.ha" level="debug">
-  </logger>
-
-  <root level="debug">
-  </root>
-  <logger name="org.neo4j.kernel.info.DiagnosticsManager" level="warn">
-  </logger>
-  -->
-</included>
+<configuration>
+  <include resource="custom-logback.xml"/>
+</configuration>

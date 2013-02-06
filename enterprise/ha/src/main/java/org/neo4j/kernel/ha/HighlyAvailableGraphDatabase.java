@@ -23,6 +23,7 @@ import static org.neo4j.kernel.ha.DelegateInvocationHandler.snapshot;
 
 import java.io.File;
 import java.lang.reflect.Proxy;
+import java.net.URI;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -37,7 +38,11 @@ import org.neo4j.cluster.member.ClusterMemberEvents;
 import org.neo4j.cluster.member.paxos.MemberIsAvailable;
 import org.neo4j.cluster.member.paxos.PaxosClusterMemberAvailability;
 import org.neo4j.cluster.member.paxos.PaxosClusterMemberEvents;
+import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
+import org.neo4j.cluster.protocol.cluster.ClusterListener;
 import org.neo4j.cluster.protocol.election.DefaultElectionCredentialsProvider;
+import org.neo4j.cluster.protocol.election.ElectionCredentialsProvider;
+import org.neo4j.cluster.protocol.election.NotElectableElectionCredentialsProvider;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -254,8 +259,9 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
          *  out we are not going to need zookeeper, just assign them to the class fields. The difference is in when
          *  they start().
          */
-        DefaultElectionCredentialsProvider electionCredentialsProvider = new DefaultElectionCredentialsProvider(
-                config.get( HaSettings.server_id ), new OnDiskLastTxIdGetter( new File( getStoreDir() ) ) );
+        ElectionCredentialsProvider electionCredentialsProvider = config.get( HaSettings.slave_only ) ?
+                new NotElectableElectionCredentialsProvider() :
+                new DefaultElectionCredentialsProvider(config.get( HaSettings.server_id ), new OnDiskLastTxIdGetter( new File( getStoreDir() ) ) );
 
         clusterClient = new ClusterClient( ClusterClient.adapt( config ), logging, electionCredentialsProvider );
         PaxosClusterMemberEvents localClusterEvents = new PaxosClusterMemberEvents( clusterClient, clusterClient,
@@ -280,6 +286,27 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                 return true;
             }
         } );
+
+        // Force a reelection after we enter the cluster
+        // and when that election is finished refresh the snapshot
+        clusterClient.addClusterListener( new ClusterListener.Adapter()
+        {
+            @Override
+            public void enteredCluster( ClusterConfiguration clusterConfiguration )
+            {
+                clusterClient.performRoleElections();
+            }
+
+            @Override
+            public void elected( String role, URI electedMember )
+            {
+                if (role.equals( ClusterConfiguration.COORDINATOR ))
+                {
+                    clusterClient.refreshSnapshot();
+                    clusterClient.removeClusterListener( this );
+                }
+            }
+        });
 
         HighAvailabilityMemberContext localMemberContext = new SimpleHighAvailabilityMemberContext( clusterClient );
         PaxosClusterMemberAvailability localClusterMemberAvailability = new PaxosClusterMemberAvailability(
