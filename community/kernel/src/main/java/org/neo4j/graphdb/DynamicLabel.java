@@ -19,17 +19,23 @@
  */
 package org.neo4j.graphdb;
 
-
 /**
  * A dynamically instantiated and named {@link Label}. This class is
  * a convenience implementation of <code>Label</code> that is
  * typically used when labels are created and named after a
  * condition that can only be detected at runtime.
+ * 
+ * For statically known labels please consider the enum approach as described
+ * in {@link Label} documentation.
  *
  * @see Label
  */
 public class DynamicLabel implements Label
 {
+    /**
+     * @param labelName the name of the label.
+     * @return a {@link Label} instance for the given {@code labelName}.
+     */
     public static Label label( String labelName )
     {
         return new DynamicLabel( labelName );

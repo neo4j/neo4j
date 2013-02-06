@@ -19,7 +19,6 @@
  */
 package org.neo4j.graphdb;
 
-
 /**
  * A label is a grouping facility for {@link Node} where all nodes having a label
  * are part of the same group. Labels on nodes are optional and any node can
@@ -40,6 +39,20 @@ package org.neo4j.graphdb;
  * However, you usually want to check whether a specific node
  * <i>instance</i> has a certain label. That is best achieved with the
  * {@link Node#hasLabel(Label)} method.
+ * 
+ * For labels that your application know up front you should specify using an enum,
+ * and since the name is accessed using the {@link #name()} method it fits nicely.
+ * <code>
+ * public enum MyLabels implements Label
+ * {
+ *     PERSON,
+ *     RESTAURANT;
+ * }
+ * </code>
+ * 
+ * For labels that your application don't know up front you can make use of
+ * {@link DynamicLabel#label(String)}, or your own implementation of this interface,
+ * as it's just the name that matters.
  *
  * @see DynamicLabel
  * @see Node
