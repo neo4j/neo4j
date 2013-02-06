@@ -34,6 +34,7 @@ import org.neo4j.cluster.ConnectedStateMachines;
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageProcessor;
 import org.neo4j.cluster.com.message.MessageType;
+import org.slf4j.LoggerFactory;
 
 /**
  * Used to generate dynamic proxies whose methods are backed by a {@link StateMachine}. Method
@@ -104,7 +105,7 @@ public class StateMachineProxyFactory
             }
             else
             {
-                ResponseFuture future = new ResponseFuture( typeAsEnum );
+                ResponseFuture future = new ResponseFuture( conversationId, typeAsEnum );
                 responseFutureMap.put( conversationId, future );
                 stateMachines.process( message );
 
@@ -193,12 +194,14 @@ public class StateMachineProxyFactory
     class ResponseFuture
             implements Future<Object>
     {
+        private String conversationId;
         private MessageType initiatedByMessageType;
 
         private Message response;
 
-        ResponseFuture( MessageType initiatedByMessageType )
+        ResponseFuture( String conversationId, MessageType initiatedByMessageType )
         {
+            this.conversationId = conversationId;
             this.initiatedByMessageType = initiatedByMessageType;
         }
 
@@ -208,6 +211,7 @@ public class StateMachineProxyFactory
             {
                 this.response = response;
                 this.notifyAll();
+                LoggerFactory.getLogger(StateMachineProxyFactory.class).info( "Notify all:"+conversationId );
                 return true;
             }
             else
@@ -249,7 +253,9 @@ public class StateMachineProxyFactory
                 return getResult();
             }
 
+            LoggerFactory.getLogger(StateMachineProxyFactory.class).info( "Waiting for:"+conversationId );
             this.wait();
+            LoggerFactory.getLogger(StateMachineProxyFactory.class).info( "Wait interrupted:"+conversationId );
 
             return getResult();
         }
