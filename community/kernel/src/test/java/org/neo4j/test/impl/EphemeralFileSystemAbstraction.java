@@ -28,8 +28,6 @@ import java.io.IOException;
 import java.lang.ref.Reference;
 import java.lang.ref.SoftReference;
 import java.lang.ref.WeakReference;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
@@ -75,8 +73,6 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction, Li
     {
         for (EphemeralFileData file : files.values()) free(file);
         files.clear();
-
-        DynamicByteBuffer.dispose();
     }
 
     @Override
@@ -488,32 +484,15 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction, Li
     private static class DynamicByteBuffer
     {
         private static final int[] SIZES;
-        private static volatile AtomicReferenceArray<Queue<Reference<ByteBuffer>>> POOL;
+
+        /**
+         * Holds a set of pools of unused BytBuffers, where pools are implemented by {@link Queue}s.
+         * Each pool contains only {@link ByteBuffer} of the same size. This way, we have pools for
+         * different sized {@link ByteBuffer}, and can pick an available byte buffer that suits what
+         * we want to store quickly.
+         */
+        private static volatile AtomicReferenceArray<Queue<Reference<ByteBuffer>>> POOLS;
         private static final byte[] zeroBuffer = new byte[1024];
-
-        static void dispose()
-        {
-            for (int i = POOL.length(); i < POOL.length(); i++)
-            {
-                for( Reference<ByteBuffer> byteBufferReference : POOL.get( i ) )
-                {
-                    ByteBuffer byteBuffer = byteBufferReference.get();
-                    if ( byteBuffer != null)
-                    {
-                        try
-                        {
-                            destroyDirectByteBuffer( byteBuffer );
-                        }
-                        catch( Throwable e )
-                        {
-                            e.printStackTrace();
-                        }
-                    }
-                }
-            }
-
-            init();
-        }
 
         @Override
         public DynamicByteBuffer clone()
@@ -521,29 +500,14 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction, Li
             return new DynamicByteBuffer( buf );
         }
 
-        private static void destroyDirectByteBuffer(ByteBuffer toBeDestroyed)
-            throws IllegalArgumentException, IllegalAccessException,
-                   InvocationTargetException, SecurityException, NoSuchMethodException
-        {
-            Method cleanerMethod = toBeDestroyed.getClass().getMethod("cleaner");
-            cleanerMethod.setAccessible(true);
-            Object cleaner = cleanerMethod.invoke(toBeDestroyed);
-            Method cleanMethod = cleaner.getClass().getMethod("clean");
-            cleanMethod.setAccessible(true);
-            cleanMethod.invoke(cleaner);
-        }
-
-        private static void init()
-        {
-            AtomicReferenceArray<Queue<Reference<ByteBuffer>>> pool = POOL = new AtomicReferenceArray<Queue<Reference<ByteBuffer>>>( SIZES.length );
-            for ( int i = 0; i < SIZES.length; i++ ) pool.set( i, new ConcurrentLinkedQueue<Reference<ByteBuffer>>() );
-        }
-
         static
         {
             int K = 1024;
             SIZES = new int[] { 64 * K, 128 * K, 256 * K, 512 * K, 1024 * K };
-            init();
+
+            POOLS = new AtomicReferenceArray<Queue<Reference<ByteBuffer>>>( SIZES.length );
+            for ( int sizeIndex = 0; sizeIndex < SIZES.length; sizeIndex++ )
+                POOLS.set( sizeIndex, new ConcurrentLinkedQueue<Reference<ByteBuffer>>() );
         }
 
         private ByteBuffer buf;
@@ -593,9 +557,9 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction, Li
         private ByteBuffer allocate( int sizeIndex )
         {
             for (int enlargement = 0; enlargement < 2; enlargement++) {
-                AtomicReferenceArray<Queue<Reference<ByteBuffer>>> pool = POOL;
-                if (sizeIndex + enlargement < pool.length()) {
-                    Queue<Reference<ByteBuffer>> queue = pool.get( sizeIndex+enlargement );
+                AtomicReferenceArray<Queue<Reference<ByteBuffer>>> pools = POOLS;
+                if (sizeIndex + enlargement < pools.length()) {
+                    Queue<Reference<ByteBuffer>> queue = pools.get( sizeIndex+enlargement );
                     if ( queue != null )
                     {
                         for (;;)
@@ -626,11 +590,13 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction, Li
                 {
                     sizeIndex += SIZES.length - 1;
                 }
-                AtomicReferenceArray<Queue<Reference<ByteBuffer>>> pool = POOL;
+                AtomicReferenceArray<Queue<Reference<ByteBuffer>>> pools = POOLS;
                 // Use soft references to the buffers to allow the GC to reclaim
                 // unused buffers if memory gets scarce.
                 SoftReference<ByteBuffer> ref = new SoftReference<ByteBuffer>( buf );
-                ( sizeIndex < pool.length() ? pool.get( sizeIndex ) : growPool( sizeIndex ) ).add( ref );
+
+                // Put our buffer into a pool, create a pool for the buffer size if one does not exist
+                ( sizeIndex < pools.length() ? pools.get( sizeIndex ) : getOrCreatePoolForSize( sizeIndex ) ).add( ref );
             }
             finally
             {
@@ -638,20 +604,20 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction, Li
             }
         }
 
-        private static synchronized Queue<Reference<ByteBuffer>> growPool( int sizeIndex )
+        private static synchronized Queue<Reference<ByteBuffer>> getOrCreatePoolForSize( int sizeIndex )
         {
-            AtomicReferenceArray<Queue<Reference<ByteBuffer>>> pool = POOL;
-            if ( sizeIndex >= pool.length()) {
-                int newSize = pool.length();
+            AtomicReferenceArray<Queue<Reference<ByteBuffer>>> pools = POOLS;
+            if ( sizeIndex >= pools.length()) {
+                int newSize = pools.length();
                 while ( sizeIndex >= newSize ) newSize <<= 1;
                 AtomicReferenceArray<Queue<Reference<ByteBuffer>>> newPool = new AtomicReferenceArray<Queue<Reference<ByteBuffer>>>( newSize );
-                for ( int i = 0; i < pool.length(); i++ )
-                    newPool.set( i, pool.get( i ) );
-                for ( int i = pool.length(); i < newPool.length(); i++ )
+                for ( int i = 0; i < pools.length(); i++ )
+                    newPool.set( i, pools.get( i ) );
+                for ( int i = pools.length(); i < newPool.length(); i++ )
                     newPool.set( i, new ConcurrentLinkedQueue<Reference<ByteBuffer>>() );
-                POOL = pool = newPool;
+                POOLS = pools = newPool;
             }
-            return pool.get( sizeIndex );
+            return pools.get( sizeIndex );
         }
 
         void put(int pos, byte[] bytes, int offset, int length)

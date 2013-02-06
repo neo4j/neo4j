@@ -161,6 +161,12 @@ public class NoTransactionState implements TransactionState
     }
 
     @Override
+    public void patchDeletedRelationshipNodes( long relId, long firstNodeId, long firstNodeNextRelId, long secondNodeId,
+                                               long secondNodeNextRelId )
+    {
+    }
+
+    @Override
     public void removeRelationshipTypeFromCache( int id )
     {
     }
