@@ -206,7 +206,7 @@ public class ClusterMembershipTest
             throws URISyntaxException, ExecutionException, TimeoutException, InterruptedException
     {
         testCluster( 3, DEFAULT_NETWORK(), new ClusterTestScriptDSL().
-                rounds( 500 ).
+                rounds( 1000 ).
                 join( 0, 1, 2, 3 ).
                 join( 0, 2, 1, 3 ).
                 join( 0, 3, 1, 2 ).
