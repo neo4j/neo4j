@@ -17,16 +17,19 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.neo4j.cluster.protocol.election;
 
 /**
- * Election credentials ensuring that it is never elected as coordinator.
+ * For clients who should never be elected as coordinators or masters, use this election credentials provider.
+ *
  */
-public class CoordinatorIncapableCredentialsProvider implements ElectionCredentialsProvider
+public class NotElectableElectionCredentialsProvider
+    implements ElectionCredentialsProvider
 {
     @Override
-    public DefaultElectionCredentials getCredentials( String role )
+    public ElectionCredentials getCredentials( String role )
     {
-        return new DefaultElectionCredentials( -1, -1 );
+        return new NotElectableElectionCredentials();
     }
 }

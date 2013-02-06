@@ -35,7 +35,7 @@ import java.util.Map;
 import org.jboss.netty.channel.ChannelException;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.client.ClusterClient;
-import org.neo4j.cluster.protocol.election.CoordinatorIncapableCredentialsProvider;
+import org.neo4j.cluster.protocol.election.NotElectableElectionCredentialsProvider;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.Args;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
@@ -106,7 +106,7 @@ public class StandaloneClusterClient
         try
         {
             new StandaloneClusterClient( new ClusterClient( adapt( new Config( config ) ),
-                    logging(), new CoordinatorIncapableCredentialsProvider() ) );
+                    logging(), new NotElectableElectionCredentialsProvider() ) );
         }
         catch ( LifecycleException e )
         {
