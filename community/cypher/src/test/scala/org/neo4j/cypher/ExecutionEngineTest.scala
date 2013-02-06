@@ -2568,6 +2568,26 @@ RETURN x0.name?
     assert(x.size === 1)
   }
 
+  @Test def should_handle_path_expressions_with_OR_labels() {
+    // GIVEN
+    val a = createNode()
+
+    val b1 = createLabeledNode("A")
+    val b2 = createLabeledNode("B")
+    val b3 = createLabeledNode("C")
+
+    relate(a, b1)
+    relate(a, b2)
+    relate(a, b3)
+
+    // WHEN
+    val result = parseAndExecute("START n=node(1) RETURN n-->(:A|:C)")
+
+    //THEN
+    val x = result.toList.head("n-->(:A|:C)").asInstanceOf[Seq[Path]]
+    assert(x.size === 2)
+  }
+
   @Test def should_create_index() {
     // GIVEN
     val labelName = "Person"

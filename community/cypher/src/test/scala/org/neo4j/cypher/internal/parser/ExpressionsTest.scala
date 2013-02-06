@@ -20,11 +20,15 @@
 package org.neo4j.cypher.internal.parser
 
 import v2_0.{MatchClause, Expressions}
-import org.junit.Test
-import org.neo4j.cypher.internal.commands.expressions.{Identifier, Collection, Literal}
-import org.neo4j.cypher.internal.commands.values.LabelName
-import org.neo4j.cypher.internal.commands.{And, HasLabel, RelatedTo, PathExpression}
+import org.neo4j.cypher.internal.commands.expressions.{Identifier, Collection}
+import org.neo4j.cypher.internal.commands._
+import expressions.Literal
 import org.neo4j.graphdb.Direction
+import org.neo4j.cypher.internal.commands.PathExpression
+import values.LabelName
+import org.neo4j.cypher.internal.commands.HasLabel
+import org.junit.Test
+
 
 class ExpressionsTest extends Expressions with MatchClause with ParserTest {
 
@@ -60,6 +64,14 @@ class ExpressionsTest extends Expressions with MatchClause with ParserTest {
 
     parsing("a-->(:First)-->(:Second)") shouldGive
       PathExpression(patterns, predicate)
+
+    val orPred = Or(
+      HasLabel(Identifier("  UNNAMED14"), Literal(Seq(LabelName("Bar")))),
+      HasLabel(Identifier("  UNNAMED14"), Literal(Seq(LabelName("Foo"))))
+    )
+
+    parsing("a-->(:Bar|:Foo)") shouldGive
+      PathExpression(Seq(RelatedTo("a", "  UNNAMED14", "  UNNAMED15", Seq.empty, Direction.OUTGOING, false)), orPred)
   }
 
   def createProperty(entity: String, propName: String) = ???
