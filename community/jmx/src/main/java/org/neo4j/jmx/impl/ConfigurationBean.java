@@ -27,6 +27,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
 import javax.management.Attribute;
 import javax.management.AttributeList;
 import javax.management.AttributeNotFoundException;
@@ -39,7 +40,6 @@ import javax.management.NotCompliantMBeanException;
 import javax.management.ReflectionException;
 
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.jmx.Description;
 import org.neo4j.kernel.KernelData;
 import org.neo4j.kernel.configuration.Config;
@@ -51,7 +51,7 @@ public final class ConfigurationBean extends Neo4jMBean
 {
     public static final String CONFIGURATION_MBEAN_NAME = "Configuration";
     private final Map<String, String> config;
-    private Config configuration;
+    private final Config configuration;
 
     private final Map<String, String> parameterDescriptions;
 

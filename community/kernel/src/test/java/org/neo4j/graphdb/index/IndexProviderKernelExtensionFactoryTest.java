@@ -19,8 +19,6 @@
  */
 package org.neo4j.graphdb.index;
 
-import java.util.Iterator;
-
 import org.hamcrest.CoreMatchers;
 import org.junit.Assert;
 import org.junit.Rule;

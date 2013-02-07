@@ -63,8 +63,6 @@ import org.neo4j.cluster.timeout.MessageTimeoutStrategy;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.test.LoggerRule;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Base class for cluster tests
