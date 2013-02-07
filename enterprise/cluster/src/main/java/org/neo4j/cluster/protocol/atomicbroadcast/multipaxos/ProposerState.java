@@ -322,10 +322,19 @@ public enum ProposerState
                                         // configuration changes
                                         for ( URI learner : context.getLearners() )
                                         {
-                                            outgoing.offer( message.copyHeadersTo( Message.to( LearnerMessage
-                                                    .learn, learner,
-                                                    new LearnerMessage.LearnState( instance.value_2 ) ),
-                                                    InstanceId.INSTANCE ) );
+                                            if ( learner.equals( context.clusterContext.getMe() ))
+                                            {
+                                                outgoing.offer( message.copyHeadersTo( Message.internal( LearnerMessage
+                                                        .learn, new LearnerMessage.LearnState( instance.value_2 ) ),
+                                                        InstanceId.INSTANCE ) );
+                                            }
+                                            else
+                                            {
+                                                outgoing.offer( message.copyHeadersTo( Message.to( LearnerMessage
+                                                        .learn, learner,
+                                                        new LearnerMessage.LearnState( instance.value_2 ) ),
+                                                        InstanceId.INSTANCE ) );
+                                            }
                                         }
 
                                         // Tell joiner of this cluster configuration change
