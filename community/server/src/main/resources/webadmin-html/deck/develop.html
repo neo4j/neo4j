@@ -1,0 +1,50 @@
+
+<!-- Begin slides. Just make elements with a class of slide.-->
+<section class="slide">
+    <h1>Develop</h1>
+</section>
+<section class="slide">
+    <h2>Three Levels of API</h2><img src="/webadmin/deck/img/dashboard.png">
+    <ul>
+        <li><em>Discover</em> the graph with REST</li>
+        <li><em>Work</em> with Cypher queries to change or query data</li>
+        <li><em>Customize</em> advanced work with plugins</li>
+    </ul>
+</section>
+<section class="slide">
+    <h2>Discover - the REST inferface</h2>
+    <img src="/webadmin/deck/img/console.png">
+    <ul>
+        <li>information about the database</li>
+        <li>incremental graph traversal</li>
+        <li>basic monitoring</li>
+        <li>not recommended for production-level interaction</li>
+    </ul>
+</section>
+<section class="slide">
+    <h2>Work - with Cypher queries</h2>
+    <img src="/webadmin/deck/img/console.png">
+    <ul>
+        <li>create a node for yourself...
+            <pre>create (me { name: &quot;Andreas&quot; });</pre>
+        </li>
+        <li>then find it..
+            <pre>start n=node(*) where n.name! = &quot;Andreas&quot; return n;</pre>
+        </li>
+    </ul>
+</section>
+<section class="slide">
+    <h2>Learn More</h2>
+    <img src="/webadmin/deck/img/console.png">
+    <ul>
+        <li> <a href="http://docs.neo4j.org/chunked/stable">Read </a>the official Neo4j manual</li>
+    </ul>
+
+    <p class="hint"><a class="deck-url" href="/webadmin/deck/tour.html">Guide</a> to other information.</p>
+</section>
+<!-- End slides.-->
+<!-- Begin extension snippets. Add or remove as needed.-->
+<!-- deck.navigation snippet-->
+<a href="#" title="Previous" class="deck-prev-link">←</a>
+<a href="#" title="Next" class="deck-next-link">→</a>
+<!-- End extension snippets.-->

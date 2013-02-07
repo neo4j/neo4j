@@ -45,12 +45,15 @@ define(
 
       hasBeenShownForThisSession : ->
         @cookies.get("splashShown1.6") != null
-        false
 
       show : (deckUrl) ->
-        deckUrl = (if (typeof deckUrl is "undefined") then "/webadmin/deck/welcome.html" else deckUrl)
-        $('.deck-container').load(deckUrl, =>
-            Deck('.slide')
+        deckUrl = (if (typeof deckUrl is "undefined") then "/webadmin/deck/guide.html" else deckUrl)
+        $('.deck-container').load(deckUrl, (responseTxt,statusTxt,xhr) =>
+            Deck('.slide');
+            $('.deck-url').click( ( event ) =>
+                event.preventDefault();
+                @show($(event.target).attr("href"));
+            );
         )
         @splash.fadeIn(200)
         @cookies.set("splashShown1.6", "1")

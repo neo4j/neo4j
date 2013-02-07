@@ -4,9 +4,7 @@
       .loading-spinner Loading
     %ul.button-bar.grouped#help_menu
       %li
-        %a.micro-button(target="_blank" href="http://docs.neo4j.org/chunked/@@neo4j.version@@/") Documentation
-      %li
-        %a.micro-button Guide
+        %a.micro-button#guide-button(href="") Guide
   %img#logo(src="img/logo.png")
   #mainmenu
 
@@ -14,14 +12,14 @@
   
 
 #footer
-  %p.copyright Copyright (c) 2002-2012
+  %p.copyright Copyright (c) 2002-2013
     \ 
     %a(href="http://neotechnology.com") Neo Technology
     \.
-    \ This is free software, available under the 
+    \  
+    \ License:
+    %a(href="http://www.gnu.org/licenses/gpl.html") GPLv3
     \ 
-    %a(href="http://www.gnu.org/licenses/gpl.html") GNU General Public License
-    \ version 3 or greater.
     \ Icons by
     \ 
     %a(href="http://glyphish.com/") Glyphish

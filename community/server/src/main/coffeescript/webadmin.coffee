@@ -49,6 +49,9 @@ define(
         loading: new GlobalLoadingIndicator
         more: new MoreInfo
     }
+
+    # ABK: yes, hacked in cross-module reference
+    modules.baseui.useGuide(modules.splash)
     
     boot = new Bootstrapper
     boot.bootstrap [

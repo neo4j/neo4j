@@ -1,0 +1,53 @@
+
+<!-- Begin slides. Just make elements with a class of slide.-->
+<section class="slide">
+    <h1>Welcome to Neo4j</h1>
+    <p class="hint">Care to take a brief tour? Just tap the right arrow...</p>
+</section>
+<section class="slide">
+    <h2>Dashboard - an overview</h2><img src="/webadmin/deck/img/dashboard.png">
+    <ul>
+        <li>convenient head's up summary of Key Performance Indicators</li>
+        <li>estimate of node, relationship and property counts</li>
+        <li>more fields available in Advanced and Enterprise</li>
+    </ul>
+</section>
+<section class="slide">
+    <h2>Data browser - visual exploration</h2>
+    <img src="/webadmin/deck/img/browser.png">
+    <ul>
+        <li>"browse" parts of the graph</li>
+        <li>incrementally add more of the graph</li>
+        <li>apply custom styling</li>
+    </ul>
+</section>
+<section class="slide">
+    <h2>Console - graph queries</h2>
+    <img src="/webadmin/deck/img/console.png">
+    <ul>
+        <li>use <a href="http://docs.neo4j.org/chunked/stable/cypher-query-lang.html">Cypher </a>to query and create graph data</li>
+        <li>create a node for yourself...
+            <pre>create (me { name: &quot;Andreas&quot; });</pre>
+        </li>
+        <li>then find it..
+            <pre>start n=node(*) where n.name! = &quot;Andreas&quot; return n;</pre>
+        </li>
+    </ul>
+</section>
+<section class="slide">
+    <h2>Get Started</h2>
+    <img src="/webadmin/deck/img/neo4j-org.png">
+    <ul>
+        <li><a href="http://neo4j.org">neo4j.org</a> connects you to everything about Neo4j</li>
+        <li> <a href="http://watch.neo4j.org">watch</a> videos about Neo4j</li>
+        <li> <a href="http://neo4j.meetup.com">attend </a>a meetup near you </li>
+        <li> <a href="http://docs.neo4j.org/chunked/stable">read </a>the official Neo4j manual</li>
+        <li> <a href="http://www.neo4j.org/develop/drivers">download </a>a driver for your language of choice</li>
+    </ul>
+</section>
+<!-- End slides.-->
+<!-- Begin extension snippets. Add or remove as needed.-->
+<!-- deck.navigation snippet-->
+<a href="#" title="Previous" class="deck-prev-link">←</a>
+<a href="#" title="Next" class="deck-next-link">→</a>
+<!-- End extension snippets.-->

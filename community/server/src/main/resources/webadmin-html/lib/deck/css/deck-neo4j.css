@@ -7,7 +7,7 @@
 @import url(deck.scale.css);
 @import url(horizontal-slide.css);
 
-@import url(neon.css);
+@import url(neo4j.css);
 
 #guide {
   position: fixed;
@@ -21,13 +21,17 @@
   z-index:1001;
 }
 
+.overlay {
+  display: none;
+}
+
 #guide-header { 
   position:  fixed;
   top: 0;
   left: 0;
   width:100%; 
   height:50px; 
-  background:url("../img/tab_shade.png") repeat-x scroll center bottom #333333;  
+  background:url("/webadmin/img/tab_shade.png") repeat-x scroll center bottom #333333;  
 }
 
 #guide-header .button-bar {
