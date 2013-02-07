@@ -1,6 +1,6 @@
 Neo4j
-Copyright © 2002-2012 Network Engine for Objects in Lund AB (referred to
-in this notice as “Neo Technology”)
+Copyright © 2002-2013 Network Engine for Objects in Lund AB (referred to
+in this notice as "Neo Technology")
    [http://neotechnology.com]
 
 This product includes software ("Software") developed by Neo Technology.
@@ -20,42 +20,43 @@ such Commercial Agreement will supersede the GPL and you may use the
 software solely pursuant to the terms of the relevant Commercial
 Agreement.
 
-
-Third party libraries
----------------------
-
 Full license texts are found in LICENSES.txt.
 
+Third-party licenses
+--------------------
 
-The bundled Apache Geronimo JTA library is copyright
-The Apache Software Foundation  (http://www.apache.org/)
-under the Apache License version 2.0.
+Apache Software License, Version 2.0
+  Commons BeanUtils
+  Commons BeanUtils Core
+  Commons Collections
+  Commons Configuration
+  Commons Digester
+  Commons Lang
+  Commons Logging
+  JTA 1.1
 
-The bundled Lucene text search engine library is copyright
-The Apache Software Foundation  (http://www.apache.org/)
-under the Apache License version 2.0.
+Common Development and Distribution License Version 1.1
+  jersey-client
+  jersey-core
+  jsr311-api
 
-The  bundled  Apache Commons  library,  containing Commons  BeanUtils,
-Commons  BeanUtils  Core,  Commons  Collections, Commons  IO,  Commons
-Configuration, Commons Digester, Commons Lang, and Commons Logging, is
-copyright  The  Apache  Software  Foundation  (http://www.apache.org/)
-under the Apache License version 2.0.
+GNU General Public License, version 2 with the Classpath Exception
+  jersey-client
+  jersey-core
+  jsr311-api
 
-The bundled JLine library is copyright under the
-BSD License  (http://www.opensource.org/licenses/bsd-license.php).
+Dependencies with multiple licenses
+-----------------------------------
 
-The bundled Jackson library,  containing Jackson Core, Jackson JAX-RS,
-and  Data Mapper  for Jackson,  is licensed  under the  Apache License
-version 2.0.
+jersey-client
+  Common Development and Distribution License Version 1.1
+  GNU General Public License, version 2 with the Classpath Exception
 
-The   bundled  ASM  library   is  licensed   under  the   BDS  license
-(http://www.opensource.org/licenses/bsd-license.php).
+jersey-core
+  Common Development and Distribution License Version 1.1
+  GNU General Public License, version 2 with the Classpath Exception
 
-The  bundled JAX-RS  (JSR311) API  is licensed  under the  GNU General
-Public  License  Version 2  with  classpath exception.   Alternatively
-under the Common Development and Distribution License, version 1.1.
+jsr311-api
+  Common Development and Distribution License Version 1.1
+  GNU General Public License, version 2 with the Classpath Exception
 
-The bundled Jersey library, containing Jersey Core, Jersey Server, and
-Jersey  Client,  is licensed  under  the  GNU  General Public  License
-Version 2  with classpath  exception.  Alternatively under  the Common
-Development and Distribution License, version 1.1.
