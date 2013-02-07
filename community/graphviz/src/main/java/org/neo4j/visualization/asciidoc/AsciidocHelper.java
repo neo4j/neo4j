@@ -173,7 +173,9 @@ public class AsciidocHelper
         String[] keywordsToBreakOn = new String[] {"start", "create unique", "set", "delete", "foreach",
         "match", "where", "with", "return", "skip", "limit", "order by", "asc", "ascending",
         "desc", "descending", "create"};
-        return createLanguageSnippet( query, "cypher", keywordsToBreakOn );
+        // Add extra leading blank to short keywords here to avoid uppercasing parts of identifiers accidentally
+        String[] unbreakableKeywords = new String[] {" label", " values", " on"};
+        return createLanguageSnippet( query, "cypher", keywordsToBreakOn, unbreakableKeywords );
     }
 
     public static String createSqlSnippet( final String query )
@@ -181,13 +183,16 @@ public class AsciidocHelper
         String[] keywordsToBreakOn = new String[] { "select", "from", "where",
                 "skip", "limit", "order by", "asc", "ascending", "desc",
                 "descending", "join", "group by" };
-        return createLanguageSnippet( query, "sql", keywordsToBreakOn );
+        String[] unbreakableKeywords = new String[] {};
+        return createLanguageSnippet( query, "sql", keywordsToBreakOn, unbreakableKeywords );
     }
 
     private static String createLanguageSnippet( String query,
-            String language, String[] keywordsToBreakOn )
+                                                 String language,
+                                                 String[] keywordsToBreakOn,
+                                                 String[] unbreakableKeywords )
     {
-        String formattedQuery = breakOnKeywords( query, keywordsToBreakOn );
+        String formattedQuery = uppercaseKeywords( breakOnKeywords( query, keywordsToBreakOn ), unbreakableKeywords );
         String result = "[source," + language + "]\n----\n" + formattedQuery
                         + ( formattedQuery.endsWith( "\n" ) ? "" : "\n" )
                         + "----\n";
@@ -203,8 +208,16 @@ public class AsciidocHelper
             String upperKeyword = keyword.toUpperCase();
             result = result.
                     replace(keyword+" ", upperKeyword+" ").
-                    replace(keyword+" ", upperKeyword+" ").
                     replace(" " + upperKeyword + " ", "\n" + upperKeyword + " ");
+        }
+        return result;
+    }
+
+    private static String uppercaseKeywords( String query, String[] uppercaseKeywords ) {
+        String result = query;
+        for ( String keyword : uppercaseKeywords ) {
+            String upperKeyword = keyword.toUpperCase();
+            result = result.replace(keyword+" ", upperKeyword+" ");
         }
         return result;
     }

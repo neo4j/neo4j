@@ -198,7 +198,7 @@ You might create an "Offline" label for phones that are offline, a "Happy" label
 === Label names ===
 
 Any non-empty unicode string can be used as a label name.
-In Cypher, you may need to use the backtick (``) syntax to avoid clashes with cypher keywords.
+In Cypher, you may need to use the backtick (``) syntax to avoid clashes with Cypher identifier rules.
 By convention, labels are written with CamelCase notation, with the first letter in upper case.
 For instance, 'User' or 'CarOwner'.
 
@@ -258,8 +258,7 @@ You can also use <<cypher-query-lang, The Cypher Query Language>> as a powerful 
 [[graphdb-neo4j-schema]]
 == Schema ==
 
-Neo4j is a schema-optional graph database; you can use Neo4j without any schema, but optionally introduce it in order to gain performance or modelling benefits.
-This allows a way of working where the schema does not get in your way until you are at a stage where you want to reap the benefits of having one.
+Neo4j is a schema-optional graph database. You can use Neo4j without any schema.  Optionally you can introduce it in order to gain performance or modeling benefits. This allows a way of working where the schema does not get in your way until you are at a stage where you want to reap the benefits of having one.
 
 === Indexes ===
 
