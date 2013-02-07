@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.commands.values.{LabelValue, LabelName}
 abstract class Base extends JavaTokenParsers {
   var namer = new NodeNamer
   val keywords = List("start", "create", "set", "delete", "foreach", "match", "where", "label", "values", "add",
-    "with", "return", "skip", "limit", "order", "by", "asc", "ascending", "desc", "descending")
+    "with", "return", "skip", "limit", "order", "by", "asc", "ascending", "desc", "descending", "on")
 
   def ignoreCase(str: String): Parser[String] = ("""(?i)\b""" + str + """\b""").r ^^ (x => x.toLowerCase)
 

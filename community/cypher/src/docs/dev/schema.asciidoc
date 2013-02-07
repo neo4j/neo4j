@@ -9,3 +9,4 @@ Cypher allows you to manipulate that schema using the Cypher data definition lan
 The currently supported operations are:
 
 . Create schema based indexes
+

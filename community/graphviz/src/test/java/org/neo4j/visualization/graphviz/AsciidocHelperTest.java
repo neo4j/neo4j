@@ -19,6 +19,7 @@
  */
 package org.neo4j.visualization.graphviz;
 
+import static junit.framework.TestCase.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
@@ -39,6 +40,16 @@ public class AsciidocHelperTest
         
         String snippet = AsciidocHelper.createCypherSnippet( cypher );
         assertTrue(snippet.contains( "n,\n" ));
-        }
+    }
 
+    @Test
+    public void testUpcasingLabelsAndValues() {
+        String queryString  = "create n label :Person values {} on tail";
+        String snippet = AsciidocHelper.createCypherSnippet( queryString );
+
+        assertTrue( snippet.contains( "LABEL" ) );
+        assertTrue( snippet.contains( "VALUES" ) );
+        assertTrue( snippet.contains( "ON" ) );
+        assertFalse( snippet.contains( ":PersON" ) );
+    }
 }

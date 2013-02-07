@@ -19,11 +19,10 @@
  */
 package org.neo4j.cypher.docgen
 
-import org.junit.{Ignore, Test}
+import org.junit.Test
 import org.neo4j.cypher.CuteGraphDatabaseService.gds2cuteGds
-import org.neo4j.graphdb.{DynamicLabel, Node, Relationship}
+import org.neo4j.graphdb.{Node, Relationship}
 import org.neo4j.cypher.StatisticsChecker
-import scala.collection.JavaConverters._
 
 class CreateTest extends DocumentingTestBase with StatisticsChecker {
   def graphDescription = List()
@@ -52,8 +51,8 @@ class CreateTest extends DocumentingTestBase with StatisticsChecker {
   @Test def create_single_node_with_labels() {
     testQuery(
       title = "Create node and add labels",
-      text = "To add labels to the newly created node, you can either you a normal expression," +
-        "or you can use the labels short form from +MATCH+.",
+      text = "To add labels to the newly created node, you can either use +LABEL+ followed by an expression," +
+        "or you can use the labels short form syntax.",
       queryText = "create n:Person",
       returns = "Nothing is returned from this query.",
       assertions = (p) => assertStats(p, nodesCreated = 1, addedLabels = 1))
@@ -61,10 +60,9 @@ class CreateTest extends DocumentingTestBase with StatisticsChecker {
 
   @Test def create_single_node_with_labels_and_properties() {
     testQuery(
-      title = "Create node labels and properties",
-      text = "To add labels to the newly created node, you can either you a normal expression," +
-        "or you can use the labels short form from +MATCH+.",
-      queryText = "create n label :Person = {name : 'Andres', title : 'Developer'}",
+      title = "Create node and add labels and properties",
+      text = "When creating a new node with labels, you can add properties using +VALUES+ at the same time",
+      queryText = "create n label :Person values {name : 'Andres', title : 'Developer'}",
       returns = "Nothing is returned from this query.",
       assertions = (p) => assertStats(p, nodesCreated = 1, propertiesSet = 2, addedLabels = 1))
   }
@@ -173,23 +171,6 @@ will be created. """,
         assert(result.size === 1)
         val r = result.head("r").asInstanceOf[Relationship]
         assert(r.getProperty("name") === "Andres<->Michael")
-      }
-    )
-  }
-
-  @Ignore("enable as soon as the docs work with empty results again")
-  @Test def create_index_on_label() {
-    testQuery(
-      title = "Create index on a label",
-      text = "To create an index on all nodes that have a label, use +CREATE+ +INDEX+ +ON+.",
-      queryText = "create index on :Person(name)",
-      returns = "Nothing",
-      assertions = { (p) =>
-        val expected = Seq("name")
-        val indexDefinitions = db.schema().getIndexes(DynamicLabel.label("Person")).asScala
-        assert(1 === indexDefinitions.size)
-        val actual = indexDefinitions.head.getPropertyKeys.asScala.toSeq
-        assert(expected === actual)
       }
     )
   }
