@@ -52,6 +52,7 @@ import org.jboss.netty.channel.SimpleChannelHandler;
 import org.jboss.netty.channel.group.ChannelGroup;
 import org.jboss.netty.channel.group.DefaultChannelGroup;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
+import org.jboss.netty.util.Version;
 import org.neo4j.com.RequestContext.Tx;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.NamedThreadFactory;
@@ -583,8 +584,9 @@ public abstract class Server<T, R> extends Protocol implements ChannelPipelineFa
         requestTarget = null;
         txVerifier = null;
 
-        // TODO This should work, but blocks with busy wait sometimes
-//        channelFactory.releaseExternalResources();
+        // This only works after 3.5.7.Final - earlier versions may busy block forever
+        if (Version.ID.compareTo( "3.5.7.Final" ) >= 0)
+            channelFactory.releaseExternalResources();
     }
 
     protected abstract void finishOffChannel( Channel channel, RequestContext context );
