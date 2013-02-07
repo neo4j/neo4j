@@ -92,6 +92,10 @@ include::ql/functions/index.asciidoc[]
 
 :leveloffset: 2
 
+include::ql/create-index/index.asciidoc[]
+
+:leveloffset: 2
+
 include::compatibility.asciidoc[]
 
 :leveloffset: 2

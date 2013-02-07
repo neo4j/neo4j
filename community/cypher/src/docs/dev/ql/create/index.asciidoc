@@ -15,7 +15,7 @@ include::create-single-node-and-set-properties.asciidoc[]
 
 include::create-node-and-add-labels.asciidoc[]
 
-include::create-node-labels-and-properties.asciidoc[]
+include::create-node-and-add-labels-and-properties.asciidoc[]
 
 include::return-created-node.asciidoc[]
 
@@ -71,9 +71,4 @@ tag=create_multiple_nodes_from_map
 classifier=test-sources
 ----
 
-[[create-label-index]]
-== Create index on all nodes that have a label ==
-
-Cypher allows to create indexes on certain properties for all nodes that have a given label.
-These indexes are automatically managed and updated by the database whenever a matching node is updated.
 
