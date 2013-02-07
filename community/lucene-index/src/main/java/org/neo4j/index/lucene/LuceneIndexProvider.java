@@ -46,15 +46,12 @@ import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.impl.transaction.xaframework.XaFactory;
 import org.neo4j.kernel.logging.Logging;
 
+/**
+ * This has been replace by the Lucene Kernel Extension
+ */
+@Deprecated
 public class LuceneIndexProvider extends IndexProvider
 {
-    private static List<WeakReference<LuceneIndexImplementation>> previousProviders = new ArrayList<WeakReference<LuceneIndexImplementation>>();
-    
-    public static abstract class Configuration
-    {
-        public static final GraphDatabaseSetting<Boolean> read_only = GraphDatabaseSettings.read_only;
-    }
-
     public LuceneIndexProvider( )
     {
         super( LuceneIndexImplementation.SERVICE_NAME );
@@ -63,38 +60,7 @@ public class LuceneIndexProvider extends IndexProvider
     @Override
     public IndexImplementation load( DependencyResolver dependencyResolver)
     {
-        Config config = dependencyResolver.resolveDependency(Config.class);
-        InternalAbstractGraphDatabase gdb = dependencyResolver.resolveDependency(InternalAbstractGraphDatabase.class);
-        TransactionManager txManager = dependencyResolver.resolveDependency(TransactionManager.class);
-        IndexStore indexStore = dependencyResolver.resolveDependency(IndexStore.class);
-        XaFactory xaFactory = dependencyResolver.resolveDependency(XaFactory.class);
-        FileSystemAbstraction fileSystemAbstraction = dependencyResolver.resolveDependency(FileSystemAbstraction.class);
-        XaDataSourceManager xaDataSourceManager = dependencyResolver.resolveDependency( XaDataSourceManager.class );
-        Logging logging = dependencyResolver.resolveDependency( Logging.class );
-        TxIdGenerator txIdGenerator = gdb.getTxIdGenerator();
-
-        LuceneDataSource luceneDataSource = new LuceneDataSource(config, indexStore, fileSystemAbstraction, xaFactory, txIdGenerator, logging);
-
-        xaDataSourceManager.registerDataSource(luceneDataSource);
-
-        IndexConnectionBroker<LuceneXaConnection> broker = config.get( Configuration.read_only ) ?
-                  new ReadOnlyIndexConnectionBroker<LuceneXaConnection>( txManager )
-                : new ConnectionBroker( txManager, luceneDataSource );
-
-        // TODO This is a hack to support reload of HA instances. Remove if HA supports start/stop of single instance instead
-        for( Iterator<WeakReference<LuceneIndexImplementation>> iterator = previousProviders.iterator(); iterator.hasNext(); )
-        {
-            WeakReference<LuceneIndexImplementation> previousProvider = iterator.next();
-            LuceneIndexImplementation indexImplementation = previousProvider.get();
-            if (indexImplementation == null)
-                iterator.remove();
-            else if ( indexImplementation.matches( gdb ) )
-                indexImplementation.reset( luceneDataSource, broker );
-        }
-        
-        LuceneIndexImplementation indexImplementation = new LuceneIndexImplementation( gdb, luceneDataSource, broker );
-        previousProviders.add( new WeakReference<LuceneIndexImplementation>( indexImplementation ) );
-        return indexImplementation;
+        // No-op. The kernel extension will do what this class used to do
+        return null;
     }
-
 }
