@@ -727,9 +727,10 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
         assertTmOk( "tx suspend" );
         // check for ACTIVE/MARKED_ROLLBACK?
         TransactionImpl tx = txThreadMap.get();
-        txThreadMap.remove();
         if ( tx != null )
         {
+            txThreadMap.remove();
+
             // generate pro-active event suspend
             tx.markAsSuspended();
         }

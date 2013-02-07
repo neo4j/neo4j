@@ -51,9 +51,11 @@ import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.graphdb.index.IndexProvider;
+import org.neo4j.graphdb.index.IndexProviderKernelExtensionFactory;
 import org.neo4j.graphdb.index.IndexProviders;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.helpers.DaemonThreadFactory;
+import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.Settings;
 import org.neo4j.helpers.collection.Iterables;
@@ -175,7 +177,6 @@ public abstract class InternalAbstractGraphDatabase
     protected TransactionEventHandlers transactionEventHandlers;
     protected RelationshipTypeHolder relationshipTypeHolder;
     protected NodeManager nodeManager;
-    protected Iterable<IndexProvider> indexProviders;
     protected IndexManagerImpl indexManager;
     protected Schema schema;
     protected KernelPanicEventGenerator kernelPanicEventGenerator;
@@ -226,9 +227,22 @@ public abstract class InternalAbstractGraphDatabase
         params.put( Configuration.store_dir.name(), storeDir );
 
         // SPI - provided services
-        this.indexProviders = indexProviders;
         this.cacheProviders = mapCacheProviders( cacheProviders );
         config = new Config( params, getSettingsClasses( settingsClasses, kernelExtensions, cacheProviders ) );
+
+        // Convert IndexProviders into KernelExtensionFactories
+        // Remove this when the deprecated IndexProvider is removed
+        Iterable<KernelExtensionFactory<?>> indexProviderKernelExtensions = Iterables.map( new Function<IndexProvider, KernelExtensionFactory<?>>()
+        {
+            @Override
+            public KernelExtensionFactory<?> apply( IndexProvider from )
+            {
+                return new IndexProviderKernelExtensionFactory( from );
+            }
+        }, indexProviders );
+
+        kernelExtensions = Iterables.concat( kernelExtensions, indexProviderKernelExtensions );
+
         this.kernelExtensions = new KernelExtensions( kernelExtensions, config, dependencyResolver );
         this.transactionInterceptorProviders = new TransactionInterceptorProviders( transactionInterceptorProviders,
                 dependencyResolver );
@@ -453,10 +467,6 @@ public abstract class InternalAbstractGraphDatabase
 
         schema = new SchemaImpl( statementContextProvider, propertyIndexManager );
 
-        if ( indexProviders == null )
-        {
-            indexProviders = new LegacyIndexIterable();
-        }
         indexManager = new IndexManagerImpl( config, indexStore, xaDataSourceManager, txManager, this );
         nodeAutoIndexer = life.add( new NodeAutoIndexerImpl( config, indexManager, nodeManager ) );
         relAutoIndexer = life.add( new RelationshipAutoIndexerImpl( config, indexManager, nodeManager ) );
@@ -1363,6 +1373,10 @@ public abstract class InternalAbstractGraphDatabase
             else if ( CacheAccessBackDoor.class.isAssignableFrom( type ) )
             {
                 return (T) cacheBridge;
+            }
+            else if ( DependencyResolver.class.isAssignableFrom( type ) )
+            {
+                return (T) DependencyResolverImpl.this;
             }
             else
             {

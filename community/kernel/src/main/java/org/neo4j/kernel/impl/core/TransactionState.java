@@ -78,7 +78,7 @@ public interface TransactionState
     void createNode( long id );
 
     void createRelationship( long id );
-    
+
     void deleteNode( long id );
 
     void deleteRelationship( long id );

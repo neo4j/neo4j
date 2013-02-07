@@ -83,4 +83,12 @@ public class BridgingCacheAccess implements CacheAccessBackDoor
     {
         nodeManager.addPropertyIndex( index );
     }
+    
+    @Override
+    public void patchDeletedRelationshipNodes( long relId, long firstNodeId, long firstNodeNextRelId,
+            long secondNodeId, long secondNodeNextRelId )
+    {
+        nodeManager.patchDeletedRelationshipNodes( relId, firstNodeId, firstNodeNextRelId, secondNodeId,
+                secondNodeNextRelId );
+    }
 }

@@ -221,9 +221,16 @@ public abstract class Server<T, R> extends Protocol implements ChannelPipelineFa
         // Close all open connections
         shuttingDown = true;
 
-        silentChannelExecutor.shutdown();
-        unfinishedTransactionExecutor.shutdown();
+        executor.shutdown();
+        executor.awaitTermination( 10, TimeUnit.SECONDS );
+        workerExecutor.shutdown();
+        workerExecutor.awaitTermination( 10, TimeUnit.SECONDS );
         targetCallExecutor.shutdown();
+        targetCallExecutor.awaitTermination( 10, TimeUnit.SECONDS );
+        unfinishedTransactionExecutor.shutdown();
+        unfinishedTransactionExecutor.awaitTermination( 10, TimeUnit.SECONDS );
+        silentChannelExecutor.shutdown();
+        silentChannelExecutor.awaitTermination( 10, TimeUnit.SECONDS );
 
         channelGroup.close().awaitUninterruptibly();
 

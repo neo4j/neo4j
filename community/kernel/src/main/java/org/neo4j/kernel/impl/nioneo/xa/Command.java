@@ -425,6 +425,8 @@ public abstract class Command extends XaCommand
         void removeFromCache( CacheAccessBackDoor cacheAccess )
         {
             cacheAccess.removeRelationshipFromCache( getKey() );
+            cacheAccess.patchDeletedRelationshipNodes( getKey(), record.getFirstNode(), record.getFirstNextRel(),
+                    record.getSecondNode(), record.getSecondNextRel() );
             if ( this.getFirstNode() != -1 || this.getSecondNode() != -1 )
             {
                 cacheAccess.removeNodeFromCache( this.getFirstNode() );

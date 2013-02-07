@@ -23,6 +23,7 @@
     <docs.images>${project.build.outputDirectory}/images</docs.images>
     <docs.tools>${project.build.directory}/tools</docs.tools>
     <neo4j.version>${project.version}</neo4j.version>
+    <doctools.version>3</doctools.version>
     <attach-docs-phase>none</attach-docs-phase>
   </properties>
 
@@ -190,7 +191,7 @@
     <dependency>
       <groupId>org.neo4j.build.plugins</groupId>
       <artifactId>neo4j-doctools</artifactId>
-      <version>1</version>
+      <version>${doctools.version}</version>
       <scope>provided</scope>
     </dependency>
   </dependencies>
@@ -202,7 +203,6 @@
         <filtering>true</filtering>
         <includes>
           <include>version</include>
-          <include>js/version.js</include>
         </includes>
       </resource>
       <resource>
@@ -210,8 +210,27 @@
         <filtering>false</filtering>
         <excludes>
           <exclude>version</exclude>
-          <exclude>js/version.js</exclude>
         </excludes>
+      </resource>
+      <resource>
+        <directory>js</directory>
+        <targetPath>js</targetPath>
+        <filtering>true</filtering>
+        <includes>
+          <include>version.js</include>
+        </includes>
+      </resource>
+      <resource>
+        <directory>js</directory>
+        <targetPath>js</targetPath>
+        <filtering>false</filtering>
+        <excludes>
+          <exclude>version.js</exclude>
+        </excludes>
+      </resource>
+      <resource>
+        <directory>css</directory>
+        <targetPath>css</targetPath>
       </resource>
     </resources>
     <plugins>

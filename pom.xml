@@ -161,16 +161,53 @@
         <version>${pico.version}</version>
         <scope>test</scope>
       </dependency>
+      <dependency>
+        <groupId>org.mockito</groupId>
+        <artifactId>mockito-all</artifactId>
+        <version>1.9.0</version>
+        <scope>test</scope>
+      </dependency>
+
       <!-- other -->
+      <dependency>
+        <groupId>com.google.code.gson</groupId>
+        <artifactId>gson</artifactId>
+        <version>2.2.2</version>
+      </dependency>
       <dependency>
         <groupId>commons-io</groupId>
         <artifactId>commons-io</artifactId>
         <version>1.4</version>
       </dependency>
       <dependency>
+        <groupId>io.netty</groupId>
+        <artifactId>netty</artifactId>
+        <version>3.5.7.Final</version>
+      </dependency>
+      <dependency>
         <groupId>log4j</groupId>
         <artifactId>log4j</artifactId>
         <version>1.2.16</version>
+      </dependency>
+      <dependency>
+        <groupId>ch.qos.logback</groupId>
+        <artifactId>logback-classic</artifactId>
+        <version>0.9.30</version>
+      </dependency>
+      <dependency>
+        <groupId>ch.qos.logback</groupId>
+        <artifactId>logback-core</artifactId>
+        <version>0.9.30</version>
+      </dependency>
+      <dependency>
+          <groupId>ch.qos.logback</groupId>
+          <artifactId>logback-access</artifactId>
+          <version>0.9.30</version>
+      </dependency>
+      <dependency>
+          <groupId>janino</groupId>
+          <artifactId>janino</artifactId>
+          <version>2.5.10</version>
       </dependency>
       <dependency>
         <groupId>org.osgi</groupId>
@@ -185,6 +222,16 @@
         <version>1.0</version>
         <scope>provided</scope>
         <optional>true</optional>
+      </dependency>
+      <dependency>
+        <groupId>com.sun.jersey</groupId>
+        <artifactId>jersey-client</artifactId>
+        <version>1.9</version>
+      </dependency>
+      <dependency>
+        <groupId>com.sun.jersey</groupId>
+        <artifactId>jersey-server</artifactId>
+        <version>1.9</version>
       </dependency>
     </dependencies>
   </dependencyManagement>

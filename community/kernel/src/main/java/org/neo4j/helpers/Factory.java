@@ -17,28 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.index.lucene;
+package org.neo4j.helpers;
 
-import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.graphdb.index.IndexImplementation;
-import org.neo4j.graphdb.index.IndexProvider;
-import org.neo4j.index.impl.lucene.LuceneIndexImplementation;
-
-/**
- * This has been replace by the Lucene Kernel Extension
- */
-@Deprecated
-public class LuceneIndexProvider extends IndexProvider
+public interface Factory<T>
 {
-    public LuceneIndexProvider( )
-    {
-        super( LuceneIndexImplementation.SERVICE_NAME );
-    }
-
-    @Override
-    public IndexImplementation load( DependencyResolver dependencyResolver)
-    {
-        // No-op. The kernel extension will do what this class used to do
-        return null;
-    }
+    T newInstance();
 }

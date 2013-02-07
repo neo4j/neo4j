@@ -512,6 +512,12 @@ public class TestXa extends AbstractNeo4jTestCase
             public void addPropertyIndex( NameData index )
             {
             }
+
+            @Override
+            public void patchDeletedRelationshipNodes( long relId, long firstNodeId, long firstNodeNextRelId,
+                    long secondNodeId, long secondNodeNextRelId )
+            {
+            }
         };
     }
 

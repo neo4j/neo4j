@@ -22,6 +22,7 @@ package org.neo4j.cluster;
 import static org.neo4j.cluster.com.message.Message.internal;
 
 import java.net.URI;
+import java.util.concurrent.Executor;
 
 import org.neo4j.cluster.com.message.MessageSender;
 import org.neo4j.cluster.com.message.MessageSource;
@@ -88,7 +89,8 @@ public class MultiPaxosServerFactory
     public ProtocolServer newProtocolServer( TimeoutStrategy timeoutStrategy, MessageSource input,
                                              MessageSender output,
                                              AcceptorInstanceStore acceptorInstanceStore,
-                                             ElectionCredentialsProvider electionCredentialsProvider )
+                                             ElectionCredentialsProvider electionCredentialsProvider,
+                                             Executor stateMachineExecutor )
     {
         LatencyCalculator latencyCalculator = new LatencyCalculator( timeoutStrategy, input );
 
@@ -96,7 +98,7 @@ public class MultiPaxosServerFactory
 
         // Create state machines
         ConnectedStateMachines connectedStateMachines = new ConnectedStateMachines( input, output, latencyCalculator,
-                executor );
+                executor, stateMachineExecutor );
         Timeouts timeouts = connectedStateMachines.getTimeouts();
         connectedStateMachines.addMessageProcessor( latencyCalculator );
 
