@@ -19,32 +19,10 @@
  */
 package org.neo4j.index.lucene;
 
-import java.lang.ref.WeakReference;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-
-import javax.transaction.TransactionManager;
-
 import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.graphdb.factory.GraphDatabaseSetting;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.IndexImplementation;
 import org.neo4j.graphdb.index.IndexProvider;
-import org.neo4j.index.impl.lucene.ConnectionBroker;
-import org.neo4j.index.impl.lucene.LuceneDataSource;
 import org.neo4j.index.impl.lucene.LuceneIndexImplementation;
-import org.neo4j.index.impl.lucene.LuceneXaConnection;
-import org.neo4j.kernel.InternalAbstractGraphDatabase;
-import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.index.IndexConnectionBroker;
-import org.neo4j.kernel.impl.index.IndexStore;
-import org.neo4j.kernel.impl.index.ReadOnlyIndexConnectionBroker;
-import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
-import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
-import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
-import org.neo4j.kernel.impl.transaction.xaframework.XaFactory;
-import org.neo4j.kernel.logging.Logging;
 
 /**
  * This has been replace by the Lucene Kernel Extension
