@@ -35,7 +35,7 @@ import org.neo4j.kernel.impl.nioneo.store.Record;
 
 public class LegacyNodeStoreReader
 {
-    public static final String FROM_VERSION = "NodeStore v0.9.9";
+    public static final String FROM_VERSION = "NodeStore " + LegacyStore.LEGACY_VERSION;
     public static final int RECORD_LENGTH = 9;
 
     private final FileChannel fileChannel;

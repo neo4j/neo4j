@@ -32,8 +32,8 @@ import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeRecord;
 
 public class LegacyRelationshipTypeStoreReader
 {
-    public static final String FROM_VERSION = "RelationshipTypeStore v0.9.9";
-    private File fileName;
+    public static final String FROM_VERSION = "RelationshipTypeStore " + LegacyStore.LEGACY_VERSION;
+    private final File fileName;
 
     public LegacyRelationshipTypeStoreReader( File fileName )
     {

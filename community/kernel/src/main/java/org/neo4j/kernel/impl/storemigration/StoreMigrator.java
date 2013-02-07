@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
+import static org.neo4j.helpers.collection.IteratorUtil.first;
 import static org.neo4j.kernel.impl.nioneo.store.PropertyStore.encodeString;
 
 import java.io.IOException;
@@ -48,9 +49,16 @@ import org.neo4j.kernel.impl.storemigration.legacystore.LegacyRelationshipTypeSt
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 
+/**
+ * Migrates a neo4j database from one version to the next. Instantiated with a {@link LegacyStore}
+ * representing the old version and a {@link NeoStore} representing the new version.
+ * 
+ * Since only one store migration is supported at any given version (migration from the previous store version)
+ * the migration code is specific for the current upgrade and changes with each store format version.
+ */
 public class StoreMigrator
 {
-    private MigrationProgressMonitor progressMonitor;
+    private final MigrationProgressMonitor progressMonitor;
 
     public StoreMigrator( MigrationProgressMonitor progressMonitor )
     {
@@ -66,9 +74,9 @@ public class StoreMigrator
 
     protected class Migration
     {
-        private LegacyStore legacyStore;
-        private NeoStore neoStore;
-        private long totalEntities;
+        private final LegacyStore legacyStore;
+        private final NeoStore neoStore;
+        private final long totalEntities;
         private int percentComplete = 0;
 
         public Migration( LegacyStore legacyStore, NeoStore neoStore )
@@ -212,10 +220,9 @@ public class StoreMigrator
 
             record.setInUse( true );
             record.setCreated();
-            int keyBlockId = (int) relationshipTypeStore.nextNameId();
-            record.setNameId( keyBlockId );
             Collection<DynamicRecord> keyRecords = relationshipTypeStore.allocateNameRecords(
-                    keyBlockId, encodeString( name ) );
+                    encodeString( name ) );
+            record.setNameId( (int) first( keyRecords ).getId() );
             for ( DynamicRecord keyRecord : keyRecords )
             {
                 record.addNameRecord( keyRecord );
@@ -249,10 +256,9 @@ public class StoreMigrator
 
             record.setInUse( true );
             record.setCreated();
-            int keyBlockId = propIndexStore.nextNameId();
-            record.setNameId( keyBlockId );
             Collection<DynamicRecord> keyRecords = propIndexStore.allocateNameRecords(
-                    keyBlockId, encodeString( key ) );
+                    encodeString( key ) );
+            record.setNameId( (int) first( keyRecords ).getId() );
             for ( DynamicRecord keyRecord : keyRecords )
             {
                 record.addNameRecord( keyRecord );

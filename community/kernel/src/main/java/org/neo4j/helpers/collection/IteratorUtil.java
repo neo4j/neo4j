@@ -572,4 +572,32 @@ public abstract class IteratorUtil
             }
         }
     }
+    
+    public static Iterable<Long> asIterable( final long... array )
+    {
+        return new Iterable<Long>()
+        {
+            @Override
+            public Iterator<Long> iterator()
+            {
+                return new PrefetchingIterator<Long>()
+                {
+                    private int index;
+                    
+                    @Override
+                    protected Long fetchNextOrNull()
+                    {
+                        try
+                        {
+                            return index < array.length ? array[index] : null;
+                        }
+                        finally
+                        {
+                            index++;
+                        }
+                    }
+                };
+            }
+        };
+    }
 }

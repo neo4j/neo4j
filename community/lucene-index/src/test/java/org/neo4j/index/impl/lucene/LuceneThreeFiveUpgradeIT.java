@@ -27,6 +27,7 @@ import java.io.File;
 import java.net.URL;
 import java.util.Map;
 
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
@@ -42,6 +43,7 @@ import org.neo4j.test.TargetDirectory;
  * Tests upgrade from a neo4j 1.5 store (which had lucene version 3.1.0) to a
  * new neo4j version which has lucene version 3.5.0
  */
+@Ignore( "Not valid since 2.0 and forwards, since the store format was changed" )
 public class LuceneThreeFiveUpgradeIT
 {
     public final @Rule TestName testName = new TestName();

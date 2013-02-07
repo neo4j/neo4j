@@ -23,21 +23,22 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
+import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.util.FileUtils;
 
 public class StoreFiles
 {
     public static final String[] fileNames = {
             NeoStore.DEFAULT_NAME,
-            "neostore.nodestore.db",
-            "neostore.propertystore.db",
-            "neostore.propertystore.db.arrays",
-            "neostore.propertystore.db.index",
-            "neostore.propertystore.db.index.keys",
-            "neostore.propertystore.db.strings",
-            "neostore.relationshipstore.db",
-            "neostore.relationshiptypestore.db",
-            "neostore.relationshiptypestore.db.names",
+            neoStore( StoreFactory.NODE_STORE_NAME ),
+            neoStore( StoreFactory.PROPERTY_STORE_NAME ),
+            neoStore( StoreFactory.PROPERTY_ARRAYS_STORE_NAME ),
+            neoStore( StoreFactory.PROPERTY_INDEX_STORE_NAME ),
+            neoStore( StoreFactory.PROPERTY_INDEX_KEYS_STORE_NAME ),
+            neoStore( StoreFactory.PROPERTY_STRINGS_STORE_NAME ),
+            neoStore( StoreFactory.RELATIONSHIP_STORE_NAME ),
+            neoStore( StoreFactory.RELATIONSHIP_TYPE_STORE_NAME ),
+            neoStore( StoreFactory.RELATIONSHIP_TYPE_NAMES_STORE_NAME ),
     };
 
     /**
@@ -58,6 +59,11 @@ public class StoreFiles
             moveFile( fileName, fromDirectory, toDirectory );
             moveFile( fileName + ".id", fromDirectory, toDirectory );
         }
+    }
+
+    private static String neoStore( String part )
+    {
+        return NeoStore.DEFAULT_NAME + part;
     }
 
     /**

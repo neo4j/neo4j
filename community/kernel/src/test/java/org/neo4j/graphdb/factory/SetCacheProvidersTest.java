@@ -22,12 +22,14 @@ package org.neo4j.graphdb.factory;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import java.io.File;
 import java.util.ArrayList;
 
 import org.junit.Test;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.cache.SoftCacheProvider;
+import org.neo4j.test.TargetDirectory;
 
 public class SetCacheProvidersTest
 {
@@ -39,7 +41,7 @@ public class SetCacheProvidersTest
         gdbf.setCacheProviders( cacheList );
         try
         {
-            gdbf.newEmbeddedDatabase( "target/db" );
+            gdbf.newEmbeddedDatabase( storeDir.getAbsolutePath() );
         }
         catch ( IllegalArgumentException iae )
         {
@@ -54,8 +56,10 @@ public class SetCacheProvidersTest
         GraphDatabaseFactory gdbf = new GraphDatabaseFactory();
         cacheList.add( new SoftCacheProvider() );
         gdbf.setCacheProviders( cacheList );
-        EmbeddedGraphDatabase db = (EmbeddedGraphDatabase) gdbf.newEmbeddedDatabase( "target/db" );
+        EmbeddedGraphDatabase db = (EmbeddedGraphDatabase) gdbf.newEmbeddedDatabase( storeDir.getAbsolutePath() );
         assertEquals( SoftCacheProvider.NAME,
                 db.getNodeManager().getCacheType().getName() );
     }
+    
+    private final File storeDir = TargetDirectory.forTest( getClass() ).graphDbDir( true );
 }

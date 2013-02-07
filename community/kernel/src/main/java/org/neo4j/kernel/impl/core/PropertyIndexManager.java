@@ -23,7 +23,6 @@ import static java.lang.System.arraycopy;
 
 import java.util.Map;
 
-import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
@@ -67,32 +66,7 @@ public class PropertyIndexManager extends KeyHolder<PropertyIndex>
         return existing;
     }
     
-    @Override
-    public PropertyIndex getKeyByIdOrNull( int id )
-    {
-        PropertyIndex index = super.getKeyByIdOrNull( id );
-        if ( index != null )
-            return index;
-        
-        // Try load it
-        String keyName = persistenceManager.loadIndex( id );
-        if ( keyName == null )
-            throw new NotFoundException( "Index not found [" + id + "]" );
-        
-        index = new PropertyIndex( keyName, id );
-        addKeyEntry( keyName, id );
-        return index;
-    }
-    
-    @Override
-    protected PropertyIndex newKey( String key, int id )
-    {
-        return new PropertyIndex( key, id );
-    }
-
     /*
-     * Need synchronization here so we don't create multiple lists.
-     * 
      * TODO Since legacy databases can have multiple ids for any given property key
      * this legacy method is left behind and used specifically for property indexes
      * until migration has been added to dedup them.
@@ -117,6 +91,12 @@ public class PropertyIndexManager extends KeyHolder<PropertyIndex>
         indexMap.put( name, list );
     }
 
+    @Override
+    protected PropertyIndex newKey( String key, int id )
+    {
+        return new PropertyIndex( key, id );
+    }
+    
     @Override
     protected String nameOf( PropertyIndex key )
     {

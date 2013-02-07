@@ -24,6 +24,7 @@ import static org.junit.Assert.assertEquals;
 import java.io.File;
 import java.net.URL;
 
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
@@ -32,6 +33,7 @@ import org.neo4j.kernel.impl.nioneo.store.ProduceUncleanStore;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.test.TargetDirectory;
 
+@Ignore( "Only applicable between versions 1.5 and 1.6. Left here for informational reasons, if any." )
 public class NeoStoreVersionRecordUpgradeIssueIT
 {
     public final @Rule TestName testName = new TestName();

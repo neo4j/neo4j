@@ -32,8 +32,8 @@ import org.neo4j.kernel.impl.nioneo.store.Record;
 
 public class LegacyPropertyIndexStoreReader
 {
-    public static final String FROM_VERSION = "PropertyIndex v0.9.9";
-    private File fileName;
+    public static final String FROM_VERSION = "PropertyIndex " + LegacyStore.LEGACY_VERSION;
+    private final File fileName;
 
     public LegacyPropertyIndexStoreReader( File fileName )
     {

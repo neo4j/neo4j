@@ -26,6 +26,8 @@ import java.lang.reflect.Array;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 
 import org.neo4j.helpers.Pair;
@@ -68,7 +70,7 @@ public class DynamicArrayStore extends AbstractDynamicStore
         return TYPE_DESCRIPTOR;
     }
 
-    private Collection<DynamicRecord> allocateFromNumbers( long startBlock, Object array )
+    private Collection<DynamicRecord> allocateFromNumbers( Object array, Iterator<DynamicRecord> recordsToUseFirst )
     {
         Class<?> componentType = array.getClass().getComponentType();
         boolean isPrimitiveByteArray = componentType.equals( Byte.TYPE );
@@ -107,11 +109,10 @@ public class DynamicArrayStore extends AbstractDynamicStore
             type.writeAll(array,length,requiredBits,bits);
             bytes = bits.asBytes();
         }
-        return allocateRecords( startBlock, bytes );
+        return allocateRecordsFromBytes( bytes, recordsToUseFirst );
     }
 
-    private Collection<DynamicRecord> allocateFromString( long startBlock,
-        String[] array )
+    private Collection<DynamicRecord> allocateFromString( String[] array, Iterator<DynamicRecord> recordsToUseFirst )
     {
         List<byte[]> stringsAsBytes = new ArrayList<byte[]>();
         int totalBytesRequired = STRING_HEADER_SIZE; // 1b type + 4b array length
@@ -130,10 +131,15 @@ public class DynamicArrayStore extends AbstractDynamicStore
             buf.putInt( stringAsBytes.length );
             buf.put( stringAsBytes );
         }
-        return allocateRecords( startBlock, buf.array() );
+        return allocateRecordsFromBytes( buf.array(), recordsToUseFirst );
     }
 
-    public Collection<DynamicRecord> allocateRecords( long startBlock, Object array )
+    public Collection<DynamicRecord> allocateRecords( Object array )
+    {
+        return allocateRecords( array, Collections.<DynamicRecord>emptyList().iterator() );
+    }
+    
+    public Collection<DynamicRecord> allocateRecords( Object array, Iterator<DynamicRecord> recordsToUseFirst )
     {
         if ( !array.getClass().isArray() )
         {
@@ -143,11 +149,11 @@ public class DynamicArrayStore extends AbstractDynamicStore
         Class<?> type = array.getClass().getComponentType();
         if ( type.equals( String.class ) )
         {
-            return allocateFromString( startBlock, (String[]) array );
+            return allocateFromString( (String[]) array, recordsToUseFirst );
         }
         else
         {
-            return allocateFromNumbers( startBlock, array );
+            return allocateFromNumbers( array, recordsToUseFirst );
         }
     }
 
@@ -194,4 +200,8 @@ public class DynamicArrayStore extends AbstractDynamicStore
         }
     }
 
+    public Object getArrayFor( Iterable<DynamicRecord> records )
+    {
+        return getRightArray( readFullByteArray( records, PropertyType.ARRAY ) );
+    }
 }

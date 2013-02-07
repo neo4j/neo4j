@@ -33,7 +33,7 @@ import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 
 public class LegacyRelationshipStoreReader
 {
-    public static final String FROM_VERSION = "RelationshipStore v0.9.9";
+    public static final String FROM_VERSION = "RelationshipStore " + LegacyStore.LEGACY_VERSION;
     public static final int RECORD_LENGTH = 33;
 
     private final FileChannel fileChannel;

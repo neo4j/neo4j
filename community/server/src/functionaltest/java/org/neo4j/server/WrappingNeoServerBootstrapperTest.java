@@ -19,14 +19,14 @@
  */
 package org.neo4j.server;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
-import com.sun.jersey.api.client.ClientHandlerException;
-import com.sun.jersey.api.client.ClientResponse.Status;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -45,8 +45,12 @@ import org.neo4j.server.rest.RESTDocsGenerator;
 import org.neo4j.server.rest.RestRequest;
 import org.neo4j.shell.ShellSettings;
 import org.neo4j.test.ImpermanentGraphDatabase;
+import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestData;
 import org.neo4j.test.server.ExclusiveServerTestBase;
+
+import com.sun.jersey.api.client.ClientHandlerException;
+import com.sun.jersey.api.client.ClientResponse.Status;
 
 public class WrappingNeoServerBootstrapperTest extends ExclusiveServerTestBase
 {
@@ -96,7 +100,7 @@ public class WrappingNeoServerBootstrapperTest extends ExclusiveServerTestBase
         // START SNIPPET: customConfiguredWrappingNeoServerBootstrapper
         // let the database accept remote neo4j-shell connections
         GraphDatabaseAPI graphdb = (GraphDatabaseAPI) new GraphDatabaseFactory()
-                .newEmbeddedDatabaseBuilder( "target/configDb" )
+                .newEmbeddedDatabaseBuilder( TargetDirectory.forTest( getClass() ).graphDbDir( true ).getAbsolutePath() )
                 .setConfig( ShellSettings.remote_shell_enabled, Settings.TRUE )
                 .newGraphDatabase();
         ServerConfigurator config;

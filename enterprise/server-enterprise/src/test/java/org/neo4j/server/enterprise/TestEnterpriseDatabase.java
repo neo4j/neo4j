@@ -25,16 +25,18 @@ import static org.junit.Assert.assertThat;
 import org.apache.commons.configuration.Configuration;
 import org.junit.Test;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.MapBasedConfiguration;
-
+import org.neo4j.test.TargetDirectory;
 
 public class TestEnterpriseDatabase
 {
-
     @Test
     public void shouldStartInSingleModeByDefault() throws Throwable
     {
         Configuration config = new MapBasedConfiguration();
+        config.getString( Configurator.DATABASE_LOCATION_PROPERTY_KEY,
+                TargetDirectory.forTest( getClass() ).graphDbDir( true ).getAbsolutePath() );
         EnterpriseDatabase db = new EnterpriseDatabase( config );
 
         try

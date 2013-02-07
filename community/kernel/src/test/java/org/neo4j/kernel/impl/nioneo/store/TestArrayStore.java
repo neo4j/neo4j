@@ -19,9 +19,8 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import static junit.framework.Assert.assertEquals;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.helpers.collection.IteratorUtil.first;
 
 import java.io.File;
 import java.lang.reflect.Array;
@@ -103,7 +102,7 @@ public class TestArrayStore
     public void stringArrayGetsStoredAsUtf8() throws Exception
     {
         String[] array = new String[] { "first", "second" };
-        Collection<DynamicRecord> records = arrayStore.allocateRecords( arrayStore.nextId(), array );
+        Collection<DynamicRecord> records = arrayStore.allocateRecords( array );
         Pair<byte[], byte[]> loaded = loadArray( records );
         assertStringHeader( loaded.first(), array.length );
         ByteBuffer buffer = ByteBuffer.wrap( loaded.other() );
@@ -143,7 +142,7 @@ public class TestArrayStore
 
     private Collection<DynamicRecord> storeArray( Object array )
     {
-        Collection<DynamicRecord> records = arrayStore.allocateRecords( arrayStore.nextId(), array );
+        Collection<DynamicRecord> records = arrayStore.allocateRecords( array );
         for ( DynamicRecord record : records )
             arrayStore.updateRecord( record );
         return records;
@@ -151,6 +150,6 @@ public class TestArrayStore
     
     private Pair<byte[], byte[]> loadArray( Collection<DynamicRecord> records )
     {
-        return PropertyStore.readFullByteArray( first( records ).getId(), records, arrayStore, PropertyType.ARRAY );
+        return arrayStore.readFullByteArray( records, PropertyType.ARRAY );
     }
 }

@@ -35,9 +35,9 @@ import org.neo4j.kernel.impl.util.StringLogger;
 
 public class LegacyPropertyStoreReader
 {
-    public static final String FROM_VERSION = "PropertyStore v0.9.9";
+    public static final String FROM_VERSION = "PropertyStore " + LegacyStore.LEGACY_VERSION;
     public static final int RECORD_LENGTH = 25;
-    private PersistenceWindowPool windowPool;
+    private final PersistenceWindowPool windowPool;
     private final FileChannel fileChannel;
 
     public LegacyPropertyStoreReader( File fileNamed ) throws FileNotFoundException

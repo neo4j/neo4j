@@ -221,6 +221,10 @@ public class TestNeoStore extends AbstractNeo4jTestCase
         file.delete();
         file = file( "neo.nodestore.db.id" );
         file.delete();
+        file = file( "neo.nodestore.db.labels" );
+        file.delete();
+        file = file( "neo.nodestore.db.labels.id" );
+        file.delete();
         file = file( "neo.propertystore.db" );
         file.delete();
         file = file( "neo.propertystore.db.id" );

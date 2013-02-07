@@ -21,12 +21,16 @@ package org.neo4j.kernel.impl.nioneo.store;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
+import org.neo4j.kernel.impl.nioneo.xa.NodeLabelRecordLogic;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
@@ -41,14 +45,18 @@ public class NodeStore extends AbstractStore implements Store, RecordStore<NodeR
 
     public static final String TYPE_DESCRIPTOR = "NodeStore";
 
-    // in_use(byte)+next_rel_id(int)+next_prop_id(int)
-    public static final int RECORD_SIZE = 9;
+    // in_use(byte)+next_rel_id(int)+next_prop_id(int)+labels(5)
+    public static final int RECORD_SIZE = 14;
+
+    private DynamicArrayStore dynamicLabelStore;
 
     public NodeStore(File fileName, Config config,
                      IdGeneratorFactory idGeneratorFactory, WindowPoolFactory windowPoolFactory,
-                     FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger)
+                     FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger,
+                     DynamicArrayStore dynamicLabelStore )
     {
         super(fileName, config, IdType.NODE, idGeneratorFactory, windowPoolFactory, fileSystemAbstraction, stringLogger);
+        this.dynamicLabelStore = dynamicLabelStore;
     }
 
     @Override
@@ -73,6 +81,15 @@ public class NodeStore extends AbstractStore implements Store, RecordStore<NodeR
     public int getRecordHeaderSize()
     {
         return getRecordSize();
+    }
+    
+    public void makeHeavy( NodeRecord node, long firstDynamicLabelRecord )
+    {
+        if ( !node.isLight() )
+            return;
+        
+        // Load any dynamic labels and populate the node record
+        node.setLabelField( node.getLabelField(), dynamicLabelStore.getRecords( firstDynamicLabelRecord ) );
     }
 
     @Override
@@ -221,9 +238,15 @@ public class NodeStore extends AbstractStore implements Store, RecordStore<NodeR
 
         long relModifier = (inUseByte & 0xEL) << 31;
         long propModifier = (inUseByte & 0xF0L) << 28;
+        
+        long lsbLabels = buffer.getUnsignedInt();
+        long hsbLabels = buffer.get();
+        long labels = lsbLabels | (hsbLabels << 32);
 
         NodeRecord nodeRecord = new NodeRecord( id, longFromIntAndMod( nextRel, relModifier ), longFromIntAndMod( nextProp, propModifier ) );
         nodeRecord.setInUse( inUse );
+        nodeRecord.setLabelField( labels );
+        
         return nodeRecord;
     }
 
@@ -245,6 +268,12 @@ public class NodeStore extends AbstractStore implements Store, RecordStore<NodeR
             short inUseUnsignedByte = ( record.inUse() ? Record.IN_USE : Record.NOT_IN_USE ).byteValue();
             inUseUnsignedByte = (short) ( inUseUnsignedByte | relModifier | propModifier );
             buffer.put( (byte) inUseUnsignedByte ).putInt( (int) nextRel ).putInt( (int) nextProp );
+            
+            // lsb of labels
+            long labelField = record.getLabelField();
+            buffer.putInt( (int) labelField );
+            // msb of labels
+            buffer.put( (byte) ((labelField&0xFF00000000L) >>> 32) );
         }
         else
         {
@@ -262,5 +291,56 @@ public class NodeStore extends AbstractStore implements Store, RecordStore<NodeR
         List<WindowPoolStats> list = new ArrayList<WindowPoolStats>();
         list.add( getWindowPoolStats() );
         return list;
+    }
+    
+    public DynamicArrayStore getDynamicLabelStore()
+    {
+        return dynamicLabelStore;
+    }
+    
+    @Override
+    protected void closeStorage()
+    {
+        if ( dynamicLabelStore != null )
+        {
+            dynamicLabelStore.close();
+            dynamicLabelStore = null;
+        }
+    }
+    
+    public Collection<DynamicRecord> allocateRecordsForDynamicLabels( long[] labels )
+    {
+        return allocateRecordsForDynamicLabels( labels, Collections.<DynamicRecord>emptyList().iterator() );
+    }
+    
+    public Collection<DynamicRecord> allocateRecordsForDynamicLabels( long[] labels, Iterator<DynamicRecord> useFirst )
+    {
+        return dynamicLabelStore.allocateRecords( labels, useFirst );
+    }
+
+    public long[] getDynamicLabelsArray( Iterable<DynamicRecord> records )
+    {
+        return (long[]) dynamicLabelStore.getRightArray( dynamicLabelStore.readFullByteArray(
+                records, PropertyType.ARRAY ) );
+    }
+    
+    public void updateDynamicLabelRecords( Iterable<DynamicRecord> dynamicLabelRecords )
+    {
+        for ( DynamicRecord record : dynamicLabelRecords )
+            dynamicLabelStore.updateRecord( record );
+    }
+    
+    public long[] getLabelsForNode( NodeRecord node )
+    {
+        long labels = node.getLabelField();
+        byte header = NodeLabelRecordLogic.getHeader( labels );
+        if ( !NodeLabelRecordLogic.highHeaderBitSet( header ) )
+            return NodeLabelRecordLogic.parseInlined( labels, header );
+        else
+        {
+            long firstDynamicRecord = NodeLabelRecordLogic.parseLabelsBody( labels );
+            makeHeavy( node, firstDynamicRecord );
+            return getDynamicLabelsArray( node.getDynamicLabelRecords() );
+        }
     }
 }

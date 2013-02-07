@@ -290,6 +290,13 @@ public abstract class GraphDatabaseSettings
     public static final IntegerSetting array_block_size =
             new IntegerSetting( setting("array_block_size", INTEGER, "120",min(1)));
 
+    @Description("Specifies the block size for storing labels exceeding in-lined space in node record. " +
+    		"This parameter is only honored when the store is created, otherwise it is ignored. " +
+            "The default block size is 60 bytes, and the overhead of each block is the same as for string blocks, " +
+            "i.e., 8 bytes.")
+    public static final IntegerSetting label_block_size =
+            new IntegerSetting( setting("label_block_size", INTEGER, "60",min(1)));
+
     @Description("Mark this database as a backup slave.")
     public static final BooleanSetting backup_slave = new BooleanSetting( setting("backup_slave", BOOLEAN, FALSE ));
 

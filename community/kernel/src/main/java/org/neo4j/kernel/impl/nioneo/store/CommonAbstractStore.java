@@ -57,7 +57,7 @@ public abstract class CommonAbstractStore
         public static final GraphDatabaseSetting.BooleanSetting use_memory_mapped_buffers = GraphDatabaseSettings.use_memory_mapped_buffers;
     }
 
-    public static final String ALL_STORES_VERSION = "v0.A.0";
+    public static final String ALL_STORES_VERSION = "v0.A.1";
     public static final String UNKNOWN_VERSION = "Uknown";
 
     protected Config configuration;
