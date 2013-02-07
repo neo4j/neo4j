@@ -134,10 +134,10 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     private DelegateInvocationHandler clusterMemberAvailabilityDelegateInvocationHandler;
 
     public HighlyAvailableGraphDatabase( String storeDir, Map<String, String> params,
-                                         List<IndexProvider> indexProviders, List<KernelExtensionFactory<?>>
-            kernelExtensions,
-                                         List<CacheProvider> cacheProviders, List<TransactionInterceptorProvider>
-            txInterceptorProviders )
+                                         Iterable<IndexProvider> indexProviders,
+                                         Iterable<KernelExtensionFactory<?>> kernelExtensions,
+                                         Iterable<CacheProvider> cacheProviders,
+                                         Iterable<TransactionInterceptorProvider> txInterceptorProviders )
     {
         super( storeDir, params, Iterables.<Class<?>,Class<?>>iterable( GraphDatabaseSettings.class, HaSettings.class,
                 NetworkInstance.Configuration.class, ClusterSettings.class ), indexProviders, kernelExtensions,
