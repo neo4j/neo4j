@@ -24,6 +24,9 @@ include::create-node-if-missing.asciidoc[]
 
 include::create-nodes-with-values.asciidoc[]
 
+include::create-labeled-node-if-missing.asciidoc[]
+
 include::create-relationship-with-values.asciidoc[]
 
 include::describe-complex-pattern.asciidoc[]
+

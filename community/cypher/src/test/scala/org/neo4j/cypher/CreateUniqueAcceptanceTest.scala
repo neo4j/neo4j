@@ -29,6 +29,60 @@ class CreateUniqueAcceptanceTest extends ExecutionEngineHelper with Assertions w
   val stats = QueryStatistics()
 
   @Test
+  def create_new_node_with_labels_on_the_right() {
+    val a = createNode()
+    val b = createNode()
+    relate(a, b, "X")
+
+    val result = parseAndExecute("start a = node(1) create unique a-[r:X]->b:FOO return b")
+    val createdNode = result.columnAs[Node]("b").toList.head
+
+    assertStats(result, relationshipsCreated =  1, nodesCreated = 1, addedLabels = 1)
+    assert(createdNode.labels === List("FOO"))
+  }
+
+  @Test
+  def create_new_node_with_labels_on_the_left() {
+    val a = createNode()
+    val b = createNode()
+    relate(a, b, "X")
+
+    val result = parseAndExecute("start b = node(1) create unique a:FOO-[r:X]->b return a")
+    val createdNode = result.columnAs[Node]("a").toList.head
+
+    assertStats(result, relationshipsCreated =  1, nodesCreated = 1, addedLabels = 1)
+    assert(createdNode.labels === List("FOO"))
+  }
+
+  @Test
+  def create_new_node_with_labels_everywhere() {
+    val a = createNode()
+
+    val result = parseAndExecute("start a = node(1) create unique a-[:X]->(b:FOO)-[:X]->(c:BAR)-[:X]->(d:BAZ) RETURN d")
+    val createdNode = result.columnAs[Node]("d").toList.head
+
+    assertStats(result, relationshipsCreated = 3, nodesCreated = 3, addedLabels = 3)
+    assert(createdNode.labels === List("BAZ"))
+  }
+
+  @Test
+  def create_new_node_with_labels_and_values() {
+    val a = createLabeledNode(Map("name"-> "Andres"), "FOO")
+    val b = createNode()
+    relate(a, b, "X")
+
+    val result = parseAndExecute(s"start b = node(${b.getId}) create unique (a:FOO VALUES {name: 'Andres'})-[r:X]->b return a, b")
+
+    val row: Map[String, Any] = result.toList.head
+    val resultA = row("a").asInstanceOf[Node]
+    val resultB = row("b").asInstanceOf[Node]
+
+    assertStats(result)
+    assert(resultA === a)
+    assert(resultB === b)
+  }
+
+  @Test
   def create_a_missing_relationship() {
     val a = createNode()
     val b = createNode()

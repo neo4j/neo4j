@@ -12,7 +12,7 @@ In Neo4j, both nodes and relationships can contain <<graphdb-neo4j-properties,pr
 
 Nodes are often used to represent _entities,_ but depending on the domain relationships may be used for that purpose as well.
 
-Apart from properties and relationships, nodes can also be <<graphdb-neo4j-labels,labelled>> with zero or more labels.
+Apart from properties and relationships, nodes can also be <<graphdb-neo4j-labels,labeled>> with zero or more labels.
 
 ["dot", "graphdb-nodes-overview.svg", "meta"]
 ----
@@ -177,9 +177,9 @@ For further details on float/double values, see http://docs.oracle.com/javase/sp
 This is a new feature in Neo4j, it is experimental and may still change.
 Your feedback on this addition to the model is very welcome.
 
-A label is a named graph construct that is used to group nodes into sets; all nodes labelled with the same label belongs to the same set.
+A label is a named graph construct that is used to group nodes into sets; all nodes labeled with the same label belongs to the same set.
 Many database queries can work with these sets instead of the whole graph, making queries easier to write and more efficient.
-A node may be labelled with any number of labels, including none, making labels an optional addition to the graph.
+A node may be labeled with any number of labels, including none, making labels an optional addition to the graph.
 
 ["dot", "graphdb-labels.svg", "meta"]
 ----

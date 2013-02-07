@@ -64,7 +64,9 @@ case class UniqueLink(start: NamedExpectation, end: NamedExpectation, rel: Named
       rels match {
         case List() =>
           val expectations = rel.getExpectations(context)
-          val createRel = CreateRelationship(rel.name, RelationshipEndpoint(Literal(startNode), Map(), Collection.empty, true), RelationshipEndpoint(Literal(endNode), Map(), Collection.empty, true), relType, expectations)
+          val createRel = CreateRelationship(rel.name,
+            RelationshipEndpoint(Literal(startNode), Map(), Collection.empty, bare = true),
+            RelationshipEndpoint(Literal(endNode), Map(), Collection.empty, bare = true), relType, expectations.properties)
           Some(this->Update(Seq(UpdateWrapper(Seq(), createRel, rel.name)), () => {
             // TODO: This should not be done here. The QueryContext should take the necessary locks while reading the
             // graph. For now, let's rip out the inside of objects and get to the transaction.
@@ -84,13 +86,18 @@ case class UniqueLink(start: NamedExpectation, end: NamedExpectation, rel: Named
       def createUpdateActions(): Seq[UpdateWrapper] = {
         val relExpectations = rel.getExpectations(context)
         val createRel = if (dir == Direction.OUTGOING) {
-          CreateRelationship(rel.name, RelationshipEndpoint(Literal(startNode), Map(), Collection.empty, true), RelationshipEndpoint(Identifier(other.name), Map(), Collection.empty, true), relType, relExpectations)
+          CreateRelationship(rel.name,
+            RelationshipEndpoint(Literal(startNode), Map(), Collection.empty, bare = true),
+            RelationshipEndpoint(Identifier(other.name), Map(), Collection.empty, bare = true), relType, relExpectations.properties)
         } else {
-          CreateRelationship(rel.name, RelationshipEndpoint(Identifier(other.name), Map(), Collection.empty, true), RelationshipEndpoint(Literal(startNode), Map(), Collection.empty, true), relType, relExpectations)
+          CreateRelationship(rel.name,
+            RelationshipEndpoint(Identifier(other.name), Map(), Collection.empty, bare = true),
+            RelationshipEndpoint(Literal(startNode), Map(), Collection.empty, bare = true), relType, relExpectations.properties)
         }
 
         val relUpdate = UpdateWrapper(Seq(other.name), createRel, createRel.key)
-        val nodeCreate = UpdateWrapper(Seq(), CreateNode(other.name, other.getExpectations(context), Collection.empty), other.name)
+        val expectations = other.getExpectations(context)
+        val nodeCreate = UpdateWrapper(Seq(), CreateNode(other.name, expectations.properties, expectations.labels), other.name)
 
         Seq(nodeCreate, relUpdate)
       }

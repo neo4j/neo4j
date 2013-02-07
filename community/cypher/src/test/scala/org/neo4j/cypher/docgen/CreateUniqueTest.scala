@@ -81,4 +81,16 @@ class CreateUniqueTest extends DocumentingTestBase with StatisticsChecker {
       returns = "This example pattern uses two paths, separated by a comma.",
       assertions = (p) => assertStats(p, relationshipsCreated = 2, nodesCreated = 1))
   }
+
+  @Test def create_labeled_node_if_labels_missing() {
+    testQuery(
+      title = "Create labeled node if missing",
+      text = "If the pattern described needs a labeled node and there is none with the given labels, " +
+             "Cypher will create a new one",
+      queryText = "start a=node(%A%) create unique a-[:KNOWS]-c:blue return c",
+      returns = "The A node is connected in a `KNOWS` relationship to the c node, but since C doesn't have " +
+                "the `:blue` label, a new node labeled as `:blue` is created along with a `KNOWS` relationship "+
+                "from A to it",
+      assertions = (p) => assertStats(p, relationshipsCreated = 1, nodesCreated = 1, addedLabels = 1))
+  }
 }

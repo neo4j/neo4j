@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.commands.expressions.{Collection, Literal, Iden
 import org.neo4j.cypher.internal.symbols.{SymbolTable, TypeSafe}
 import org.neo4j.graphdb.{Relationship, Node, PropertyContainer}
 import collection.Map
-import org.neo4j.cypher.internal.helpers.{IsCollection, IsMap, CollectionSupport}
+import org.neo4j.cypher.internal.helpers.{LabelSupport, IsCollection, IsMap, CollectionSupport}
 import org.neo4j.cypher.internal.spi.Operations
 import org.neo4j.cypher.internal.ExecutionContext
 
@@ -46,23 +46,28 @@ case class NamedExpectation(name: String, e: Expression, properties: Map[String,
   with CollectionSupport
   with TypeSafe {
 
+  case class DataExpectation(properties: Map[String, Expression], labels: Expression)
+
   /*
   The expectation expression for a node can either be an expression that returns a node,
   and if so, we check our given properties map to see if we have a match.
 
   If the expectation returns a map, we'll use the map as our property expectations
   */
-  def getExpectations(ctx: ExecutionContext): Map[String, Expression] = e match {
-    case _: Identifier => properties
-    case _             =>
-      e(ctx) match {
-        case _: PropertyContainer => properties
-        case IsMap(f)             =>
-          val m = f(ctx.state.queryContext)
-          m.map {
-            case (k, v) => k -> Literal(v)
-          }
-      }
+  def getExpectations(ctx: ExecutionContext): DataExpectation = {
+    val expectedProps = e match {
+      case _: Identifier =>
+        properties
+      case _             =>
+        e(ctx) match {
+          case _: PropertyContainer =>
+            properties
+          case IsMap(f)             =>
+            val m = f(ctx.state.queryContext)
+            m.mapValues( Literal(_) )
+        }
+    }
+    DataExpectation(expectedProps, labels)
   }
 
 
@@ -78,11 +83,12 @@ case class NamedExpectation(name: String, e: Expression, properties: Map[String,
   private def compareWithExpectation[T <: PropertyContainer](x: T,
                                                              ops: Operations[T],
                                                              ctx: ExecutionContext,
-                                                             expectations: Map[String, Expression]): Boolean =
-    expectations.forall {
-      case ("*", expression) => getMapFromExpression(expression(ctx)).forall {
-        case (k, value) => ops.hasProperty(x, k) && ops.getProperty(x, k) == value
-      }
+                                                             expectations: DataExpectation): Boolean = {
+    val propsOk = expectations.properties.forall {
+      case ("*", expression) =>
+        getMapFromExpression(expression(ctx)).forall {
+          case (k, value) => ops.hasProperty(x, k) && ops.getProperty(x, k) == value
+        }
 
       case (k, _) if !ops.hasProperty(x, k) => false
 
@@ -95,6 +101,19 @@ case class NamedExpectation(name: String, e: Expression, properties: Map[String,
           case (l, r)                             => l == r
         }
     }
+
+    val labelsOk = x match {
+      case node: Node =>
+        val qtx      = ctx.state.queryContext
+        val nodeId   = node.getId
+        val labelIds = LabelSupport.getLabelsAsLongs(ctx, expectations.labels)
+        labelIds.forall( qtx.isLabelSetOnNode(_, nodeId) )
+      case _ =>
+        true
+    }
+
+    propsOk && labelsOk
+  }
 
   def symbolTableDependencies = properties.symboltableDependencies
 
