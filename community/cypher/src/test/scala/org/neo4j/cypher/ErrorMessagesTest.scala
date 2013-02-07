@@ -250,6 +250,14 @@ class ErrorMessagesTest extends ExecutionEngineHelper with Assertions with Strin
       "Aggregation expressions must be listed in the RETURN clause to be used in ORDER BY")
   }
 
+  @Test def unions_must_have_the_same_columns() {
+    expectError(
+"""START a=node(0) RETURN a
+   UNION
+   START b=node(0) RETURN b""",
+      "All sub queries in an UNION must have the same column names")
+  }
+
   private def expectError(query: String, expectedError: String):CypherException = {
     val error = intercept[CypherException](engine.execute(query).toList)
     val s = """

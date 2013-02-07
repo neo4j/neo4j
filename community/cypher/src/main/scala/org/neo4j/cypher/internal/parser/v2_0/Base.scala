@@ -105,6 +105,12 @@ abstract class Base extends JavaTokenParsers {
   override def failure(msg: String): Parser[Nothing] = "" ~> super.failure("INNER" + msg)
 
   def failure(msg:String, input:Input) = Failure("INNER" + msg, input)
+
+  def rep2sep[T](p : => Parser[T], q : => Parser[Any]): Parser[List[T]] =
+    p ~ q ~ p ~ rep(q ~> p) ^^ {
+      case a ~ _ ~ b ~ c => a :: b :: c
+    }
+
 }
 class NodeNamer {
   var lastNodeNumber = 0

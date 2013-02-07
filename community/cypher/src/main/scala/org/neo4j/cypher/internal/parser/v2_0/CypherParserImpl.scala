@@ -55,7 +55,12 @@ Thank you, the Neo4j Team.
     }
   }
 
-  def cypherQuery: Parser[AbstractQuery] = (createIndex|query) <~ opt(";")
+  def cypherQuery: Parser[AbstractQuery] = (createIndex|union|query) <~ opt(";")
+
+  def union: Parser[AbstractQuery] = rep2sep(query, "UNION") ^^ {
+    queries => Union(queries, distinct = false)
+  }
+
 
   def query: Parser[Query] = start ~ body ^^ {
     case start ~ body => {

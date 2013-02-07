@@ -2613,4 +2613,12 @@ RETURN x0.name?
     // WHEN
     parseAndExecute(s"""CREATE INDEX ON :${labelName}(${propertyKeys.reduce(_ ++ "," ++ _)})""")
   }
+
+  @Test def union_ftw() {
+    // WHEN
+    val result = parseAndExecute("START n=node(0) RETURN 1 as x UNION START n=node(0) RETURN 2 as x")
+
+    // THEN
+    assert(result.toList === List(Map("x" -> 1), Map("x" -> 2)))
+  }
 }

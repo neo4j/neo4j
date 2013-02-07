@@ -1366,7 +1366,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
   @Test def create_nodes_with_labels_and_a_rel() {
     testFrom_2_0("CREATE (n:Person:Husband)-[:FOO]->x:Person",
       Query.
-        start(CreateRelationshipStartItem(CreateRelationship("  UNNAMED1",
+        start(CreateRelationshipStartItem(CreateRelationship("  UNNAMED2",
         RelationshipEndpoint(Identifier("n"),Map(), LabelSupport.labelCollection("Person", "Husband"), false),
         RelationshipEndpoint(Identifier("x"),Map(), LabelSupport.labelCollection("Person"), false), "FOO", Map()))).
         returns()
@@ -1850,19 +1850,36 @@ foreach(x in [1,2,3] :
 
   @Test def create_unique_should_support_parameter_maps() {
     val start = NamedExpectation("n", true)
-    val rel = NamedExpectation("  UNNAMED2", true)
-    val end = new NamedExpectation("  UNNAMED1", ParameterExpression("param"), Map.empty, Collection.empty, true)
+    val rel = NamedExpectation("  UNNAMED4", true)
+    val end = new NamedExpectation("  UNNAMED3", ParameterExpression("param"), Map.empty, Collection.empty, true)
 
     val secondQ = Query.
                   unique(UniqueLink(start, end, rel, "foo", Direction.OUTGOING)).
                   returns(AllIdentifiers())
 
-    testFrom_1_9("START n=node(0) CREATE UNIQUE n-[:foo]->({param}) RETURN *",
+    testFrom_2_0("START n=node(0) CREATE UNIQUE n-[:foo]->({param}) RETURN *",
                  Query.
                  start(NodeById("n", 0)).
                  tail(secondQ).
                  returns(AllIdentifiers()))
   }
+
+  @Test def create_unique_should_support_parameter_maps_1_9() {
+    val start = NamedExpectation("n", true)
+    val rel = NamedExpectation("  UNNAMED2", true)
+    val end = new NamedExpectation("  UNNAMED1", ParameterExpression("param"), Map.empty, Collection.empty, true)
+
+    val secondQ = Query.
+      unique(UniqueLink(start, end, rel, "foo", Direction.OUTGOING)).
+      returns(AllIdentifiers())
+
+    test_1_9("START n=node(0) CREATE UNIQUE n-[:foo]->({param}) RETURN *",
+      Query.
+        start(NodeById("n", 0)).
+        tail(secondQ).
+        returns(AllIdentifiers()))
+  }
+
 
   @Test def with_limit() {
     testFrom_1_9("start n=node(0,1,2) with n limit 2 where ID(n) = 1 return n",
@@ -2063,7 +2080,7 @@ foreach(x in [1,2,3] :
     val expected =
       Query.
         start(NodeById("a", 1)).
-        matches(RelatedTo("a", "  UNNAMED3", "r", Seq("MARRIED"), Direction.OUTGOING, false)).
+        matches(RelatedTo("a", "  UNNAMED6", "r", Seq("MARRIED"), Direction.OUTGOING, false)).
         where(pred).
         returns(ReturnItem(Identifier("a"), "a"))
 
@@ -2076,7 +2093,7 @@ foreach(x in [1,2,3] :
     val expected =
       Query.
         start(NodeById("a", 1)).
-        matches(RelatedTo("a", "  UNNAMED3", "r", Seq("MARRIED"), Direction.OUTGOING, false)).
+        matches(RelatedTo("a", "  UNNAMED6", "r", Seq("MARRIED"), Direction.OUTGOING, false)).
         where(pred).
         returns(ReturnItem(Identifier("a"), "a"))
 
@@ -2089,7 +2106,7 @@ foreach(x in [1,2,3] :
     val expected =
       Query.
         start(NodeById("a", 1)).
-        matches(RelatedTo("  UNNAMED3", "a", "r", Seq("MARRIED"), Direction.OUTGOING, false)).
+        matches(RelatedTo("  UNNAMED6", "a", "r", Seq("MARRIED"), Direction.OUTGOING, false)).
         where(pred).
         returns(ReturnItem(Identifier("a"), "a"))
 
@@ -2118,7 +2135,7 @@ foreach(x in [1,2,3] :
     val expected =
       Query.
         start(NodeById("a", 1)).
-        matches(RelatedTo("a", "  UNNAMED3", "r", Seq("MARRIED"), Direction.OUTGOING, false)).
+        matches(RelatedTo("a", "  UNNAMED6", "r", Seq("MARRIED"), Direction.OUTGOING, false)).
         where(pred).
         returns(ReturnItem(Identifier("a"), "a"))
 
@@ -2133,7 +2150,7 @@ foreach(x in [1,2,3] :
     val expected =
       Query.
         start(NodeById("a", 1)).
-        matches(RelatedTo("  UNNAMED3", "a", "r", Seq("MARRIED"), Direction.OUTGOING, false)).
+        matches(RelatedTo("  UNNAMED6", "a", "r", Seq("MARRIED"), Direction.OUTGOING, false)).
         where(pred).
         returns(ReturnItem(Identifier("a"), "a"))
 
@@ -2172,6 +2189,16 @@ foreach(x in [1,2,3] :
 
     runners.foreach(_.report())
   }
+
+  @Test def union_ftw() {
+    val q = Query.
+      start(NodeById("s", 1)).
+      returns(ReturnItem(Identifier("s"), "s"))
+
+    testFrom_2_0("start s = NODE(1) return s UNION start s = NODE(1) return s",
+      Union(Seq(q, q), QueryString.empty, false))
+  }
+
 
   private def run(f: () => Unit) =
     new Runnable() {

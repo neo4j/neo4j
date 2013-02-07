@@ -1,0 +1,10 @@
+[[query-union]]
+Union
+=====
+
+Combining results from multiple queries is done through the UNION operator.
+
+.Graph
+include::includes/cypher-union-graph.asciidoc[]
+
+include::union-two-queries.asciidoc[]
