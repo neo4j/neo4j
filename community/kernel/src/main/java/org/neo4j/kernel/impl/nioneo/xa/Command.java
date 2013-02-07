@@ -414,12 +414,16 @@ public abstract class Command extends XaCommand
     static class RelationshipCommand extends Command
     {
         private final RelationshipRecord record;
+        // before update stores the record as it looked before the command is executed
+        private RelationshipRecord beforeUpdate;
         private final RelationshipStore store;
 
         RelationshipCommand( RelationshipStore store, RelationshipRecord record )
         {
             super( record.getId() );
             this.record = record;
+            // the default (common) case is that the record to be written is complete and not from recovery or HA
+            this.beforeUpdate = record;
             this.store = store;
         }
         
@@ -433,12 +437,24 @@ public abstract class Command extends XaCommand
         void removeFromCache( LockReleaser lockReleaser )
         {
             lockReleaser.removeRelationshipFromCache( getKey() );
-            lockReleaser.patchDeletedRelationshipNodes( getKey(), record.getFirstNode(), record.getFirstNextRel(),
-                record.getSecondNode(), record.getSecondNextRel() );
-            if ( this.getFirstNode() != -1 || this.getSecondNode() != -1 )
+            /*
+             * If isRecovered() then beforeUpdate is the correct one UNLESS this is the second time this command
+             * is executed, where it might have been actually written out to disk so the fields are already -1. So
+             * we still need to check.
+             * If !isRecovered() then beforeUpdate is the same as record, so we are still ok.
+             * We don't check for !inUse() though because that is implicit in the call of this method.
+             * The above is a hand waiving proof that the conditions that lead to the patchDeletedRelationshipNodes()
+             * in the if below are the same as in RelationshipCommand.execute() so it should be safe.
+             */
+            if ( beforeUpdate.getFirstNode() != -1 || beforeUpdate.getSecondNode() != -1 )
             {
-                lockReleaser.removeNodeFromCache( this.getFirstNode() );
-                lockReleaser.removeNodeFromCache( this.getSecondNode() );
+                lockReleaser.patchDeletedRelationshipNodes( getKey(), beforeUpdate.getFirstNode(),
+                        beforeUpdate.getFirstNextRel(), beforeUpdate.getSecondNode(), beforeUpdate.getSecondNextRel() );
+            }
+            if ( record.getFirstNode() != -1 || record.getSecondNode() != -1 )
+            {
+                lockReleaser.removeNodeFromCache( record.getFirstNode() );
+                lockReleaser.removeNodeFromCache( record.getSecondNode() );
             }
         }
 
@@ -454,24 +470,19 @@ public abstract class Command extends XaCommand
             return !record.inUse();
         }
 
-        long getFirstNode()
-        {
-            return record.getFirstNode();
-        }
-
-        long getSecondNode()
-        {
-            return record.getSecondNode();
-        }
-
-        boolean isRemove()
-        {
-            return !record.inUse();
-        }
-
         @Override
         public void execute()
         {
+            if ( isRecovered() && !record.inUse() )
+            {
+                /*
+                 * If read from a log (either on recovery or HA) then all the fields but for the Id are -1. If the
+                 * record is deleted, then we'll need to invalidate the cache and patch the node's relationship chains.
+                 * Therefore, we need to read the record from the store. This is not too expensive, since the window
+                 * will be either in memory or will soon be anyway and we are just saving the write the trouble.
+                 */
+                beforeUpdate = store.forceGetRaw( record.getId() );
+            }
             if ( isRecovered() )
             {
                 logger.fine( this.toString() );
@@ -499,13 +510,15 @@ public abstract class Command extends XaCommand
             buffer.put( inUse );
             if ( record.inUse() )
             {
-                buffer.putLong( record.getFirstNode() ).putLong(
-                    record.getSecondNode() ).putInt( record.getType() ).putLong(
-                    record.getFirstPrevRel() )
-                    .putLong( record.getFirstNextRel() ).putLong(
-                        record.getSecondPrevRel() ).putLong(
-                        record.getSecondNextRel() ).putLong(
-                        record.getNextProp() );
+                buffer.putLong( record.getFirstNode() )
+                        .putLong( record.getSecondNode() )
+                        .putInt( record.getType() )
+                        .putLong( record.getFirstPrevRel() )
+                        .putLong( record.getFirstNextRel() )
+                        .putLong( record.getSecondPrevRel() )
+                        .putLong( record.getSecondNextRel() )
+                        .putLong( record.getNextProp() )
+                        ;
             }
         }
 
