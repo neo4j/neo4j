@@ -20,11 +20,11 @@
 package org.neo4j.server.rest.web;
 
 import static java.lang.String.format;
-import static org.neo4j.helpers.collection.IteratorUtil.singleOrNull;
 
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashSet;
@@ -1576,11 +1576,11 @@ public class RestfulGraphDatabase
         {
             Map<String, Object> data = input.readMap( body, "property_keys" );
             Object propertyKeys = data.get( "property_keys" );
-            String singlePropertyKey = null;
+            Iterable<String> singlePropertyKey = null;
             if ( propertyKeys instanceof List )
-                singlePropertyKey = (String) singleOrNull( (List<?>) propertyKeys );
-            else if ( singlePropertyKey instanceof String )
-                singlePropertyKey = (String) propertyKeys;
+                singlePropertyKey = (List<String>) propertyKeys;
+            else if ( propertyKeys instanceof String )
+                singlePropertyKey = Arrays.asList((String)propertyKeys);
             
             if ( singlePropertyKey == null )
             {
@@ -1588,6 +1588,10 @@ public class RestfulGraphDatabase
                         "Supply single property key or list of property keys" ) );
             }
             return output.ok( actions.createSchemaIndex( labelName, singlePropertyKey ) );
+        }
+        catch( UnsupportedOperationException e )
+        {
+            return output.badRequest( e );
         }
         catch ( BadInputException e )
         {

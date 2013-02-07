@@ -58,7 +58,8 @@ public class CachingStatementContext extends DelegatingStatementContext
         @Override
         public Long apply( SchemaRule from )
         {
-            return ((IndexRule) from).getPropertyKeys()[0];
+            IndexRule rule = (IndexRule) from;
+            return rule.getPropertyKeys()[0];
         }
     };
     private final PersistenceCache persistenceCache;

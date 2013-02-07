@@ -1148,7 +1148,7 @@ public class DatabaseActionsTest
         String labelName = "person", propertyKey = "name";
 
         // WHEN
-        actions.createSchemaIndex( labelName, propertyKey );
+        actions.createSchemaIndex( labelName, Arrays.asList( propertyKey ) );
 
         // THEN
         Iterable<IndexDefinition> defs = graphdbHelper.getSchemaIndexes( labelName );

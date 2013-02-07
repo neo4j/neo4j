@@ -1,5 +1,5 @@
 [[rest-api-unique-indexes]]
-== Unique Indexes ==
+== Unique Indexing ==
 
 For uniqueness enforcements, there are two modes:
 

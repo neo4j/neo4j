@@ -63,7 +63,7 @@ public class IndexCreatorImpl implements IndexCreator
     public IndexCreator on( String propertyKey )
     {
         if ( !propertyKeys.isEmpty() )
-            throw new UnsupportedOperationException( "Only a single property key is supported at the moment" );
+            throw new UnsupportedOperationException( "Compound indexes are not yet supported, only one property per index is allowed." );
         return new IndexCreatorImpl( context, propertyKeyManager, label,
                 addToCollection( asList( propertyKey ), new ArrayList<String>( propertyKeys ) ) );
     }
@@ -83,7 +83,8 @@ public class IndexCreatorImpl implements IndexCreator
         }
         catch ( ConstraintViolationKernelException e )
         {
-            throw new ConstraintViolationException( "", e );
+            throw new ConstraintViolationException( String.format(
+                    "Unable to create index for label '%s' on properties %s.", label.name(), propertyKeys ), e );
         }
     }
 }

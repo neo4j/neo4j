@@ -22,7 +22,7 @@ package org.neo4j.graphdb;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsNot.not;
 import static org.hamcrest.core.IsNull.nullValue;
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.single;
@@ -136,5 +136,27 @@ public class SchemaAcceptanceTest
 
         // Then
         assertThat(caught, not(nullValue()));
+    }
+
+    @Test(expected = UnsupportedOperationException.class)
+    public void shouldThrowConstraintViolationIfAskedToCreateCompoundIdex() throws Exception
+    {
+        // Given
+        GraphDatabaseService beansAPI = dbRule.getGraphDatabaseService();
+        Schema schema = beansAPI.schema();
+
+        // When
+        Transaction tx = beansAPI.beginTx();
+        try
+        {
+            schema.indexCreator( Labels.MY_LABEL )
+                    .on( "my_property_key" )
+                    .on( "other_property" ).create();
+            tx.success();
+        }
+        finally
+        {
+            tx.finish();
+        }
     }
 }

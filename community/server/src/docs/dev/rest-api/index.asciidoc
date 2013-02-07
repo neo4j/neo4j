@@ -26,17 +26,19 @@ include::node-labels.asciidoc[]
 
 include::indexes.asciidoc[]
 
-include::indexes-unique.asciidoc[]
-
-include::indexes-auto.asciidoc[]
-
-include::indexes-configurable-auto.asciidoc[]
-
 include::traversals.asciidoc[]
 
 include::graph-algos.asciidoc[]
 
 include::batch-operations.asciidoc[]
+
+include::legacy-indexes.asciidoc[]
+
+include::indexes-unique.asciidoc[]
+
+include::indexes-auto.asciidoc[]
+
+include::indexes-configurable-auto.asciidoc[]
 
 include::wadl.asciidoc[]
 

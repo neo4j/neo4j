@@ -55,6 +55,7 @@ import org.neo4j.graphdb.index.ReadableIndex;
 import org.neo4j.graphdb.index.ReadableRelationshipIndex;
 import org.neo4j.graphdb.index.RelationshipIndex;
 import org.neo4j.graphdb.index.UniqueFactory;
+import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.helpers.Function;
@@ -1595,13 +1596,18 @@ public class DatabaseActions
         return new ListRepresentation( RepresentationType.NODE, nodeRepresentations );
     }
     
-    public IndexDefinitionRepresentation createSchemaIndex( String labelName, String propertyKey )
+    public IndexDefinitionRepresentation createSchemaIndex( String labelName, Iterable<String> propertyKey )
     {
         Transaction tx = graphDb.beginTx();
         try
         {
-            IndexDefinitionRepresentation result = new IndexDefinitionRepresentation(
-                    graphDb.schema().indexCreator( label( labelName ) ).on( propertyKey ).create() );
+            IndexCreator indexCreator = graphDb.schema().indexCreator( label( labelName ) );
+            for ( String key : propertyKey )
+            {
+                indexCreator = indexCreator.on( key );
+            }
+
+            IndexDefinitionRepresentation result = new IndexDefinitionRepresentation(indexCreator.create() );
             tx.success();
             return result;
         }

@@ -39,7 +39,7 @@ import org.neo4j.test.GraphDescription;
 public class SchemaIndexFunctionalTest extends AbstractRestFunctionalTestBase
 {
     /**
-     * Create a schema index for a label and property key.
+     * Create schema index.
      */
     @Documented
     @Test
@@ -63,7 +63,7 @@ public class SchemaIndexFunctionalTest extends AbstractRestFunctionalTestBase
     }
 
     /**
-     * Get schema indexes for a label.
+     * List indexes for a label.
      */
     @Documented
     @Test
@@ -103,6 +103,20 @@ public class SchemaIndexFunctionalTest extends AbstractRestFunctionalTestBase
             .expectedStatus( 409 )
             .payload( createJsonFrom( definition ) )
             .post( getSchemaIndexLabelUri( labelName ) );
+    }
+
+    /**
+     * Create a compound schema index should not yet be supported
+     */
+    @Test
+    public void create_compound_schema_index() throws PropertyValueException
+    {
+        Map<String, Object> definition = map( "property_keys", asList( "first", "other" ) );
+
+        gen.get()
+                .expectedStatus( 400 )
+                .payload( createJsonFrom( definition ) )
+                .post( getSchemaIndexLabelUri( "a_label" ) );
     }
     
     private void createSchemaIndex( String labelName, String propertyKey )

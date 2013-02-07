@@ -741,7 +741,7 @@ public final class Iterables
                         }
                     }
                 }
-                return null;
+                throw new NoSuchElementException( "This iterator is exhausted." );
             }
 
             @Override
