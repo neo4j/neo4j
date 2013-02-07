@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.pipes
 
-import org.neo4j.cypher.internal.ExecutionContext
 import org.neo4j.cypher.internal.commands.{CreateIndex, IndexOperation}
 import org.neo4j.cypher.SyntaxException
 import org.neo4j.cypher.internal.symbols.SymbolTable
@@ -38,7 +37,7 @@ class IndexOperationPipe(indexOp: IndexOperation) extends Pipe {
         throw new UnsupportedOperationException("Unknown IndexOperation encountered")
     }
 
-    Seq(ExecutionContext.empty).toIterator
+    Iterator.empty
   }
 
   private def single[T](s: Seq[T]): T = {
