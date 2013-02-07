@@ -119,5 +119,6 @@ exec "$JAVACMD" $JAVA_OPTS \
   -Dapp.pid="$$" \
   -Dapp.repo="$REPO" \
   -Dbasedir="$BASEDIR" \
+  -Dfile.encoding=UTF-8 \
   org.neo4j.shell.StartClient \
   "$@"
