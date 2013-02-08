@@ -31,7 +31,6 @@ import java.util.concurrent.CountDownLatch;
 
 import javax.transaction.xa.Xid;
 
-import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.backup.OnlineBackup;
 import org.neo4j.backup.OnlineBackupSettings;
@@ -56,7 +55,6 @@ import org.neo4j.test.subprocess.DebugInterface;
 import org.neo4j.test.subprocess.DebuggedThread;
 import org.neo4j.test.subprocess.KillSubProcess;
 
-@Ignore
 @SuppressWarnings( "serial" )
 public class TestDoubleRecovery extends AbstractSubProcessTestBase
 {
