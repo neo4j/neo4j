@@ -20,7 +20,6 @@
 package org.neo4j.ha;
 
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.neo4j.test.TargetDirectory.forTest;
 import static org.neo4j.test.ha.ClusterManager.fromXml;
 
 import java.net.URI;
@@ -28,25 +27,18 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 
 import org.hamcrest.CoreMatchers;
-import org.junit.After;
 import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.protocol.cluster.ClusterListener;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatListener;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
-import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.ClusterManager;
-import sun.util.logging.resources.logging;
 
 public class TestSlaveOnlyCluster
 {
