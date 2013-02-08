@@ -7,16 +7,16 @@ This product includes software ("Software") developed by Neo Technology.
 
 The copyright in the bundled Neo4j graph database (including the
 Software) is owned by Neo Technology. The Software developed and owned
-by Neo Technology is licensed under the GNU GENERAL PUBLIC LICENSE
-Version 3 (http://www.fsf.org/licensing/licenses/gpl-3.0.html) ("GPL")
-to all third parties and that license, as required by the GPL, is
-included in the LICENSE.txt file.
+by Neo Technology is licensed under the GNU AFFERO GENERAL PUBLIC
+LICENSE Version 3 (http://www.fsf.org/licensing/licenses/agpl-3.0.html)
+("AGPL") to all third parties and that license, as required by the AGPL,
+is included in the LICENSE.txt file.
 
 However, if you have executed an End User Software License and Services
 Agreement or an OEM Software License and Support Services Agreement, or
 another commercial license agreement with Neo Technology or one of its
 affiliates (each, a "Commercial Agreement"), the terms of the license in
-such Commercial Agreement will supersede the GPL and you may use the
+such Commercial Agreement will supersede the AGPL and you may use the
 software solely pursuant to the terms of the relevant Commercial
 Agreement.
 
@@ -26,10 +26,36 @@ Third-party licenses
 --------------------
 
 Apache Software License, Version 2.0
+  Apache Log4j
   ConcurrentLinkedHashMap
   JTA 1.1
   Lucene Core
+  The Netty Project
+  zookeeper
 
 BSD - Scala License
   Scala Library
+
+Eclipse Public License, Version 1.0
+  Logback Classic Module
+  Logback Core Module
+
+GNU Lesser General Public License, Version 2.1
+  Jackson
+  Logback Classic Module
+  Logback Core Module
+
+MIT License
+  SLF4J API Module
+
+Dependencies with multiple licenses
+-----------------------------------
+
+Logback Classic Module
+  Eclipse Public License, Version 1.0
+  GNU Lesser General Public License, Version 2.1
+
+Logback Core Module
+  Eclipse Public License, Version 1.0
+  GNU Lesser General Public License, Version 2.1
 

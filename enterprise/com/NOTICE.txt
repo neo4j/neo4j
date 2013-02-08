@@ -1,6 +1,6 @@
 Neo4j
-Copyright © 2002-2012 Network Engine for Objects in Lund AB (referred to
-in this notice as “Neo Technology”)
+Copyright © 2002-2013 Network Engine for Objects in Lund AB (referred to
+in this notice as "Neo Technology")
    [http://neotechnology.com]
 
 This product includes software ("Software") developed by Neo Technology.
@@ -20,13 +20,34 @@ such Commercial Agreement will supersede the AGPL and you may use the
 software solely pursuant to the terms of the relevant Commercial
 Agreement.
 
+Full license texts are found in LICENSES.txt.
 
-Third party libraries
----------------------
+Third-party licenses
+--------------------
 
-The bundled Apache Geronimo JTA library is copyright
-The Apache Software Foundation  (http://www.apache.org/)
-under the Apache License version 2.0.
+Apache Software License, Version 2.0
+  JTA 1.1
+  The Netty Project
 
-The bundled Netty library  is copyright The Apache Software Foundation
-(http://www.apache.org/) under the Apache License version 2.0.
+Eclipse Public License, Version 1.0
+  Logback Classic Module
+  Logback Core Module
+
+GNU Lesser General Public License, Version 2.1
+  Logback Classic Module
+  Logback Core Module
+
+MIT License
+  SLF4J API Module
+
+Dependencies with multiple licenses
+-----------------------------------
+
+Logback Classic Module
+  Eclipse Public License, Version 1.0
+  GNU Lesser General Public License, Version 2.1
+
+Logback Core Module
+  Eclipse Public License, Version 1.0
+  GNU Lesser General Public License, Version 2.1
+

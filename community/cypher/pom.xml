@@ -13,6 +13,7 @@
     <scala.version>2.10.0</scala.version>
     <license-text.header>GPL-3-header.txt</license-text.header>
     <docs.url>http://docs.neo4j.org/chunked/${project.version}/cypher-query-lang.html</docs.url>
+    <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
   </properties>
 
   <modelVersion>4.0.0</modelVersion>

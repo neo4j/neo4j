@@ -1,6 +1,6 @@
 Neo4j
-Copyright © 2002-2012 Network Engine for Objects in Lund AB (referred to
-in this notice as “Neo Technology”)
+Copyright © 2002-2013 Network Engine for Objects in Lund AB (referred to
+in this notice as "Neo Technology")
    [http://neotechnology.com]
 
 This product includes software ("Software") developed by Neo Technology.
@@ -20,30 +20,41 @@ such Commercial Agreement will supersede the AGPL and you may use the
 software solely pursuant to the terms of the relevant Commercial
 Agreement.
 
-
-Third party libraries
----------------------
-
 Full license texts are found in LICENSES.txt.
 
-The bundled Apache Geronimo JTA library is copyright
-The Apache Software Foundation  (http://www.apache.org/)
-under the Apache License version 2.0.
+Third-party licenses
+--------------------
 
-The bundled Lucene text search engine library is copyright
-The Apache Software Foundation  (http://www.apache.org/)
-under the Apache License version 2.0.
+Apache Software License, Version 2.0
+  Apache Log4j
+  ConcurrentLinkedHashMap
+  JTA 1.1
+  Lucene Core
+  The Netty Project
+  zookeeper
 
-The bundled Netty library  is copyright The Apache Software Foundation
-(http://www.apache.org/) under the Apache License version 2.0.
+BSD - Scala License
+  Scala Library
 
-The  bundled  ZooKeeper  library  is  copyright  The  Apache  Software
-Foundation (http://www.apache.org/) under the Apache License version 2.0.
+Eclipse Public License, Version 1.0
+  Logback Classic Module
+  Logback Core Module
 
-The bundled Log4j library  is copyright The Apache Software Foundation
-(http://www.apache.org/) under the Apache License version 2.0.
+GNU Lesser General Public License, Version 2.1
+  Logback Classic Module
+  Logback Core Module
 
-The bundled Scala library is copyright 2002-2011 Programming Methods
-Laboratory of the Swiss Federal Institute of Technology (EPFL), Lausanne,
-under the Scala License.
+MIT License
+  SLF4J API Module
+
+Dependencies with multiple licenses
+-----------------------------------
+
+Logback Classic Module
+  Eclipse Public License, Version 1.0
+  GNU Lesser General Public License, Version 2.1
+
+Logback Core Module
+  Eclipse Public License, Version 1.0
+  GNU Lesser General Public License, Version 2.1
 
