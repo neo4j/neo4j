@@ -29,6 +29,7 @@ import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.LoggerContext;
 import org.hamcrest.CoreMatchers;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.cluster.BindingListener;
 import org.neo4j.cluster.ClusterSettings;
@@ -59,6 +60,7 @@ import org.neo4j.test.TargetDirectory;
 public class MultiPaxosNetworkTest
 {
     @Test
+    @Ignore
     public void testBroadcast()
             throws ExecutionException, InterruptedException, URISyntaxException, BrokenBarrierException
     {
