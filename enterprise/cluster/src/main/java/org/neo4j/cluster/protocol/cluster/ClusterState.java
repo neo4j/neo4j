@@ -197,7 +197,6 @@ public enum ClusterState
                                 if ( !discoveredInstances.isEmpty() )
                                 {
                                     Collections.sort( discoveredInstances );
-                                    System.out.println(context.getMe()+": After sorting, instances are " + discoveredInstances);
                                     /*
                                      * The assumption here is that the lowest in the list of discovered instances
                                      * will create the cluster. Keep in mind that this is run on all instances so
@@ -248,10 +247,8 @@ public enum ClusterState
                             // We're listening for existing clusters, but if all instances start up at the same time
                             // and look for each other, this allows us to pick that up
                             URI joiningInstanceUri = new URI( message.getHeader( Message.FROM ) );
-                            System.out.println(context.getMe() + ": Got contacted by "+joiningInstanceUri);
                             if ( !discoveredInstances.contains( joiningInstanceUri ) )
                             {
-                                System.out.println(context.getMe() + ": "+ joiningInstanceUri + " is a new one, adding");
                                 discoveredInstances.add( joiningInstanceUri );
                             }
                         }
