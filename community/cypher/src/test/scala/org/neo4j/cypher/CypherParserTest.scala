@@ -2059,6 +2059,16 @@ foreach(x in [1,2,3] :
     )
   }
 
+  @Test def filter_by_labels_in_where_with_or_syntax() {
+    testFrom_2_0("START n=node(0) WHERE n:Foo|:Bar RETURN n",
+      Query.
+        start(NodeById("n", 0)).
+        where(Or(HasLabel(Identifier("n"), Literal(Seq(LabelName("Foo")))),
+                 HasLabel(Identifier("n"), Literal(Seq(LabelName("Bar")))))).
+        returns(ReturnItem(Identifier("n"), "n"))
+    )
+  }
+
   @Test(expected = classOf[SyntaxException]) def create_no_index_without_properties() {
     testFrom_2_0("create index on :MyLabel",
       CreateIndex("MyLabel", Seq()))

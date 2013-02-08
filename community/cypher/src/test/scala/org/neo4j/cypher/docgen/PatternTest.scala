@@ -96,11 +96,13 @@ You can declare that nodes should have a certain label in your pattern.
 
 +`a:User-->b`+
 
-Or that it should have multiple labels.
+Or that it should have multiple labels:
 
 +`a:User:Admin-->b`+
 
-For usage in +MATCH+ and expressions, there is an OR-style syntax available.
+== Labels OR syntax ==
+
+For usage in +MATCH+ and expressions, there is a shorthand +OR+ syntax available.
 For instance, a match with this syntax:
 
 +`MATCH a:User|:Admin-->b`+
@@ -109,7 +111,15 @@ Is equivalent to:
 
 +`MATCH a-->b WHERE a:User OR a:Admin`+
 
-This is, for obvious reasons, not available in +CREATE+ or +CREATE+ +UNIQUE+ statements.
+This can be combined with the shorthand +AND+ syntax:
+
++`MATCH a:User:Manager|:Admin-->b`+
+
+Is equivalent to:
+
++`MATCH a-->b WHERE (a:User AND a:Manager) OR a:Admin`+
+
+The shorthand OR syntax is not available in +CREATE+ or +CREATE+ +UNIQUE+ statements.
 
 == Working with relationships ==
 
