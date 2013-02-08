@@ -433,6 +433,7 @@ public class PersistenceWindowPool implements WindowPool
             BrickElement be = brickArray[i];
             if ( be.getWindow() != null )
             {
+                be.snapshotHitCount();
                 mappedBricks.add( be );
             }
         }
@@ -545,6 +546,7 @@ public class PersistenceWindowPool implements WindowPool
         for ( int i = 0; i < brickCount; i++ )
         {
             BrickElement be = brickArray[i];
+            be.snapshotHitCount();
             if ( be.getWindow() != null )
                 mappedBricks.add( be );
             else
@@ -670,6 +672,7 @@ public class PersistenceWindowPool implements WindowPool
     {
         private final int index;
         private int hitCount;
+        private int hitCountSnapshot;
         private volatile LockableWindow window;
 
         BrickElement( int index )
@@ -718,6 +721,16 @@ public class PersistenceWindowPool implements WindowPool
             }
         }
 
+        void snapshotHitCount()
+        {
+            hitCountSnapshot = hitCount;
+        }
+
+        int getHitCountSnapshot()
+        {
+            return hitCountSnapshot;
+        }
+
         @Override
         public String toString()
         {
@@ -734,7 +747,7 @@ public class PersistenceWindowPool implements WindowPool
     {
         public int compare( BrickElement o1, BrickElement o2 )
         {
-            return o1.getHit() - o2.getHit();
+            return o1.getHitCountSnapshot() - o2.getHitCountSnapshot();
         }
     };
 }
