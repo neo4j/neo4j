@@ -2630,9 +2630,17 @@ RETURN x0.name?
 
   @Test def union_ftw() {
     // WHEN
-    val result = parseAndExecute("START n=node(0) RETURN 1 as x UNION START n=node(0) RETURN 2 as x")
+    val result = parseAndExecute("START n=node(0) RETURN 1 as x UNION ALL START n=node(0) RETURN 2 as x")
 
     // THEN
     assert(result.toList === List(Map("x" -> 1), Map("x" -> 2)))
+  }
+
+  @Test def union_distinct() {
+    // WHEN
+    val result = parseAndExecute("START n=node(0) RETURN 1 as x UNION START n=node(0) RETURN 1 as x")
+
+    // THEN
+    assert(result.toList === List(Map("x" -> 1)))
   }
 }

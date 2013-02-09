@@ -258,6 +258,16 @@ class ErrorMessagesTest extends ExecutionEngineHelper with Assertions with Strin
       "All sub queries in an UNION must have the same column names")
   }
 
+  @Test def can_not_mix_union_and_union_all() {
+    expectError(
+"""START a=node(0) RETURN a
+   UNION
+   START a=node(0) RETURN a
+   UNION ALL
+   START a=node(0) RETURN a""",
+      "can't mix UNION and UNION ALL")
+  }
+
   private def expectError(query: String, expectedError: String):CypherException = {
     val error = intercept[CypherException](engine.execute(query).toList)
     val s = """

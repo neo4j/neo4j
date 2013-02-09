@@ -1366,7 +1366,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
   @Test def create_nodes_with_labels_and_a_rel() {
     testFrom_2_0("CREATE (n:Person:Husband)-[:FOO]->x:Person",
       Query.
-        start(CreateRelationshipStartItem(CreateRelationship("  UNNAMED2",
+        start(CreateRelationshipStartItem(CreateRelationship("  UNNAMED4",
         RelationshipEndpoint(Identifier("n"),Map(), LabelSupport.labelCollection("Person", "Husband"), false),
         RelationshipEndpoint(Identifier("x"),Map(), LabelSupport.labelCollection("Person"), false), "FOO", Map()))).
         returns()
@@ -1850,8 +1850,8 @@ foreach(x in [1,2,3] :
 
   @Test def create_unique_should_support_parameter_maps() {
     val start = NamedExpectation("n", true)
-    val rel = NamedExpectation("  UNNAMED4", true)
-    val end = new NamedExpectation("  UNNAMED3", ParameterExpression("param"), Map.empty, Collection.empty, true)
+    val rel = NamedExpectation("  UNNAMED8", true)
+    val end = new NamedExpectation("  UNNAMED7", ParameterExpression("param"), Map.empty, Collection.empty, true)
 
     val secondQ = Query.
                   unique(UniqueLink(start, end, rel, "foo", Direction.OUTGOING)).
@@ -2090,7 +2090,7 @@ foreach(x in [1,2,3] :
     val expected =
       Query.
         start(NodeById("a", 1)).
-        matches(RelatedTo("a", "  UNNAMED6", "r", Seq("MARRIED"), Direction.OUTGOING, false)).
+        matches(RelatedTo("a", "  UNNAMED12", "r", Seq("MARRIED"), Direction.OUTGOING, false)).
         where(pred).
         returns(ReturnItem(Identifier("a"), "a"))
 
@@ -2103,7 +2103,7 @@ foreach(x in [1,2,3] :
     val expected =
       Query.
         start(NodeById("a", 1)).
-        matches(RelatedTo("a", "  UNNAMED6", "r", Seq("MARRIED"), Direction.OUTGOING, false)).
+        matches(RelatedTo("a", "  UNNAMED12", "r", Seq("MARRIED"), Direction.OUTGOING, false)).
         where(pred).
         returns(ReturnItem(Identifier("a"), "a"))
 
@@ -2116,7 +2116,7 @@ foreach(x in [1,2,3] :
     val expected =
       Query.
         start(NodeById("a", 1)).
-        matches(RelatedTo("  UNNAMED6", "a", "r", Seq("MARRIED"), Direction.OUTGOING, false)).
+        matches(RelatedTo("  UNNAMED12", "a", "r", Seq("MARRIED"), Direction.OUTGOING, false)).
         where(pred).
         returns(ReturnItem(Identifier("a"), "a"))
 
@@ -2145,7 +2145,7 @@ foreach(x in [1,2,3] :
     val expected =
       Query.
         start(NodeById("a", 1)).
-        matches(RelatedTo("a", "  UNNAMED6", "r", Seq("MARRIED"), Direction.OUTGOING, false)).
+        matches(RelatedTo("a", "  UNNAMED12", "r", Seq("MARRIED"), Direction.OUTGOING, false)).
         where(pred).
         returns(ReturnItem(Identifier("a"), "a"))
 
@@ -2160,7 +2160,7 @@ foreach(x in [1,2,3] :
     val expected =
       Query.
         start(NodeById("a", 1)).
-        matches(RelatedTo("  UNNAMED6", "a", "r", Seq("MARRIED"), Direction.OUTGOING, false)).
+        matches(RelatedTo("  UNNAMED12", "a", "r", Seq("MARRIED"), Direction.OUTGOING, false)).
         where(pred).
         returns(ReturnItem(Identifier("a"), "a"))
 
@@ -2205,8 +2205,17 @@ foreach(x in [1,2,3] :
       start(NodeById("s", 1)).
       returns(ReturnItem(Identifier("s"), "s"))
 
+    testFrom_2_0("start s = NODE(1) return s UNION all start s = NODE(1) return s",
+      Union(Seq(q, q), QueryString.empty, distinct = false))
+  }
+
+  @Test def union_distinct() {
+    val q = Query.
+      start(NodeById("s", 1)).
+      returns(ReturnItem(Identifier("s"), "s"))
+
     testFrom_2_0("start s = NODE(1) return s UNION start s = NODE(1) return s",
-      Union(Seq(q, q), QueryString.empty, false))
+      Union(Seq(q, q), QueryString.empty, distinct = true))
   }
 
 

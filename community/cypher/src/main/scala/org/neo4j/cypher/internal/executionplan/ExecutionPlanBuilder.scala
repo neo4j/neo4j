@@ -57,35 +57,9 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService) extends PatternGraphBuil
     case q: Union          => buildUnionQuery(q)
   }
 
-  def buildUnionQuery(union: Union): (Pipe, Boolean) = {
-    checkQueriesHaveSameColumns(union)
+  val unionBuilder = new UnionBuilder(this)
 
-    val combined = union.queries.map(buildQuery)
-
-    val pipes = combined.map(_._1)
-    val updating = combined.map(_._2).reduce(_ || _)
-
-    (new UnionPipe(pipes), updating)
-  }
-
-  private def checkQueriesHaveSameColumns(union: Union) {
-    val allColumns: Seq[List[String]] = union.queries.map(columns)
-    val first = allColumns.head
-    val allTheSame = allColumns.forall(x => x == first)
-
-    if (!allTheSame) {
-      throw new SyntaxException("All sub queries in an UNION must have the same column names")
-    }
-  }
-
-  private def columns(q:Query):List[String] = {
-    var last = q
-
-    while(last.tail.nonEmpty)
-      last = last.tail.get
-
-    last.returns.columns
-  }
+  def buildUnionQuery(union: Union): (Pipe, Boolean) = unionBuilder.buildUnionQuery(union)
 
   def buildIndexQuery(op: IndexOperation): (Pipe, Boolean) = (new IndexOperationPipe(op), true)
 
