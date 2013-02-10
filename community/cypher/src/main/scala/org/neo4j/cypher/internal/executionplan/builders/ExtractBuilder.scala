@@ -60,7 +60,7 @@ object ExtractBuilder {
       }
       ))
 
-      val resultPipe = new ExtractPipe(pipe, expressions)
+      val resultPipe = ExtractPipe(pipe, expressions)
       val resultQuery = newPsq.copy(extracted = true)
       plan.copy(pipe = resultPipe, query = resultQuery)
     } else {

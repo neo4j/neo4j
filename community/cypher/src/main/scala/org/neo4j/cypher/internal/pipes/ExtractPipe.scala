@@ -22,6 +22,13 @@ package org.neo4j.cypher.internal.pipes
 import org.neo4j.cypher.internal.symbols._
 import org.neo4j.cypher.internal.commands.expressions.Expression
 
+object ExtractPipe {
+  def apply(source: Pipe, expressions: Map[String, Expression]): ExtractPipe = source match {
+    case p: ExtractPipe => new ExtractPipe(p.source, p.expressions ++ expressions)
+    case _              => new ExtractPipe(source, expressions)
+  }
+}
+
 class ExtractPipe(source: Pipe, val expressions: Map[String, Expression]) extends PipeWithSource(source) {
   val symbols: SymbolTable = {
     val newIdentifiers = expressions.map {
