@@ -24,6 +24,8 @@ include::transactions.asciidoc[]
 
 include::ql/introduction/pattern.asciidoc[]
 
+include::plans.asciidoc[]
+
 :leveloffset: 2
 
 include::ql/start/index.asciidoc[]

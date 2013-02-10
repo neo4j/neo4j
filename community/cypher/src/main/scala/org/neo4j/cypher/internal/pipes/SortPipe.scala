@@ -39,8 +39,7 @@ class SortPipe(source: Pipe, sortDescription: List[SortItem]) extends PipeWithSo
     source.createResults(state).toList.
     sortWith((a, b) => compareBy(a, b, sortDescription)).iterator
 
-
-  override def executionPlan(): String = source.executionPlan() + "\r\nSort(" + sortDescription.mkString(",") + ")"
+  override def executionPlanDescription = source.executionPlanDescription.andThen("Sort", "descr" -> sortDescription)
 }
 
 trait ExecutionContextComparer extends Comparer {
