@@ -54,7 +54,6 @@ object PartiallySolvedQuery {
     )
   }
 
-
   def apply() = new PartiallySolvedQuery(
     returns = Seq(),
     start = Seq(),
