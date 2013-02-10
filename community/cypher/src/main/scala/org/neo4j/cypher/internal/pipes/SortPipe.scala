@@ -27,8 +27,6 @@ import collection.mutable.Map
 import org.neo4j.cypher.internal.symbols.SymbolTable
 
 class SortPipe(source: Pipe, sortDescription: List[SortItem]) extends PipeWithSource(source) with ExecutionContextComparer {
-  def symbols = source.symbols
-
   def throwIfSymbolsMissing(symbols: SymbolTable) {
     sortDescription.foreach {
       case SortItem(e,_) => e.throwIfSymbolsMissing(source.symbols)
@@ -39,8 +37,7 @@ class SortPipe(source: Pipe, sortDescription: List[SortItem]) extends PipeWithSo
     source.createResults(state).toList.
     sortWith((a, b) => compareBy(a, b, sortDescription)).iterator
 
-
-  override def executionPlanDescription(): String = source.executionPlanDescription() + "\r\nSort(" + sortDescription.mkString(",") + ")"
+  override def executionPlanDescription = source.executionPlanDescription.andThen("Sort", "descr" -> sortDescription)
 }
 
 trait ExecutionContextComparer extends Comparer {

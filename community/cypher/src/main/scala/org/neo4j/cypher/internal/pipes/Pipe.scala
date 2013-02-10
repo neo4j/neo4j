@@ -26,6 +26,8 @@ import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.cypher.internal.spi.{UpdateCountingQueryContext, QueryContext}
 import org.neo4j.cypher.internal.spi.gdsimpl.TransactionBoundQueryContext
 import org.neo4j.cypher.internal.ExecutionContext
+import org.neo4j.cypher.PlanDescription
+import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * Pipe is a central part of Cypher. Most pipes are decorators - they
@@ -38,7 +40,7 @@ trait Pipe {
 
   def symbols: SymbolTable
 
-  def executionPlanDescription(): String
+  def executionPlanDescription: PlanDescription
 }
 
 class NullPipe extends Pipe {
@@ -46,8 +48,9 @@ class NullPipe extends Pipe {
 
   def symbols: SymbolTable = new SymbolTable()
 
-  def executionPlanDescription(): String = ""
+  def executionPlanDescription = PlanDescription("Null")
 }
+
 
 object MutableMaps {
   def empty = collection.mutable.Map[String, Any]()
@@ -83,4 +86,14 @@ class QueryState(val db: GraphDatabaseService,
     db.asInstanceOf[GraphDatabaseAPI]
   else
     throw new IllegalStateException("Graph database does not implement GraphDatabaseAPI")
+}
+
+class Counter {
+  private val counter: AtomicInteger = new AtomicInteger()
+
+  def count: Int = counter.get()
+
+  def increase() {
+    counter.incrementAndGet()
+  }
 }

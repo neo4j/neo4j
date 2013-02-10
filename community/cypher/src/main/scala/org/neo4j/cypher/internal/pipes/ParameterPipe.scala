@@ -19,14 +19,14 @@
  */
 package org.neo4j.cypher.internal.pipes
 
-import java.lang.String
 import org.neo4j.cypher.internal.symbols.SymbolTable
 import org.neo4j.cypher.internal.ExecutionContext
+import org.neo4j.cypher.PlanDescription
 
 class ParameterPipe() extends Pipe {
   def createResults(state: QueryState) = Iterator(ExecutionContext(state = state))
 
   val symbols = new SymbolTable()
 
-  override def executionPlanDescription(): String = "Parameters()"
+  override def executionPlanDescription = PlanDescription("ParameterPipe")
 }

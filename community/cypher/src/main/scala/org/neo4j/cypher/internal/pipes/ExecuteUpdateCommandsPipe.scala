@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.pipes
 
 import org.neo4j.cypher.internal.mutation._
 import org.neo4j.graphdb.{GraphDatabaseService, NotInTransactionException}
-import org.neo4j.cypher.{SyntaxException, ParameterWrongTypeException, InternalException}
+import org.neo4j.cypher.{PlanDescription, SyntaxException, ParameterWrongTypeException, InternalException}
 import org.neo4j.cypher.internal.mutation.CreateUniqueAction
 import scala.Some
 import org.neo4j.cypher.internal.mutation.CreateNode
@@ -97,9 +97,10 @@ class ExecuteUpdateCommandsPipe(source: Pipe, db: GraphDatabaseService, commands
     )
   }
 
-  def executionPlanDescription() = source.executionPlanDescription() + "\nUpdateGraph(" + commands.mkString + ")"
+  override def executionPlanDescription =
+    source.executionPlanDescription.andThen("UpdateGraph", "commands" -> commands.map(_.toString))
 
-  def symbols = source.symbols.add(commands.flatMap(_.identifiers).toMap)
+  override def symbols = source.symbols.add(commands.flatMap(_.identifiers).toMap)
 
   def throwIfSymbolsMissing(symbols: SymbolTable) {
     commands.foreach(_.throwIfSymbolsMissing(symbols))

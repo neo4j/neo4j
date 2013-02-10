@@ -31,7 +31,7 @@ import org.neo4j.walk.Walker
 import org.neo4j.visualization.asciidoc.AsciidocHelper
 import org.neo4j.cypher.CuteGraphDatabaseService.gds2cuteGds
 import org.neo4j.cypher.javacompat.GraphImpl
-import org.neo4j.cypher.{CypherParser, ExecutionResult, ExecutionEngine}
+import org.neo4j.cypher.{ExecutionResult, CypherParser, PipeExecutionResult, ExecutionEngine}
 import org.neo4j.test.{ImpermanentGraphDatabase, TestGraphDatabaseFactory, GraphDescription}
 import org.neo4j.test.GeoffService
 import org.scalatest.Assertions

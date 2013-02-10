@@ -43,11 +43,11 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService) extends PatternGraphBuil
       (p, getLazyReadonlyQuery(p, columns))
     }
 
-    val executionPlanDescription = pipe.executionPlanDescription()
+    val executionPlanDescription = pipe.executionPlanDescription
 
     new ExecutionPlan {
       def execute(queryContext: QueryContext, params: Map[String, Any]) = func(queryContext, params)
-      def description = executionPlanDescription
+      def description = executionPlanDescription.toString
     }
   }
 
@@ -145,17 +145,6 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService) extends PatternGraphBuil
     case _ => List.empty
   }
 
-
-  private def getLazyReadonlyQuery(pipe: Pipe, columns: List[String]): (QueryContext, Map[String, Any]) => ExecutionResult = {
-    val func = (queryContext: QueryContext, params: Map[String, Any]) => {
-      val (state, results) = prepareStateAndResult(queryContext, params, pipe)
-
-      new PipeExecutionResult(results, columns, state)
-    }
-
-    func
-  }
-
   private def prepareStateAndResult(queryContext: QueryContext, params: Map[String, Any], pipe: Pipe): (QueryState, Iterator[ExecutionContext]) = {
     val state = new QueryState(graph, queryContext, params)
     val results = pipe.createResults(state)
@@ -171,12 +160,20 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService) extends PatternGraphBuil
     }
   }
 
-  private def getEagerReadWriteQuery(pipe: Pipe, columns: List[String]): (QueryContext, Map[String, Any]) => ExecutionResult = {
+  private def getLazyReadonlyQuery(pipe: Pipe, columns: List[String]): ((QueryContext, Map[String, Any]) => ExecutionResult) = {
     val func = (queryContext: QueryContext, params: Map[String, Any]) => {
       val (state, results) = prepareStateAndResult(queryContext, params, pipe)
-      new EagerPipeExecutionResult(results, columns, state, graph)
-    }
 
+      new PipeExecutionResult(results, columns, state, pipe.executionPlanDescription.toString)
+    }
+    func
+  }
+
+  private def getEagerReadWriteQuery(pipe: Pipe, columns: List[String]): ((QueryContext, Map[String, Any]) => ExecutionResult) = {
+    val func = (queryContext: QueryContext, params: Map[String, Any]) => {
+      val (state, results) = prepareStateAndResult(queryContext, params, pipe)
+      new EagerPipeExecutionResult(results, columns, state, graph, pipe.executionPlanDescription.toString)
+    }
     func
   }
 

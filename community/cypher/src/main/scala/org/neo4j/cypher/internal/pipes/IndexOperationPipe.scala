@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.pipes
 
 import org.neo4j.cypher.internal.commands.{CreateIndex, IndexOperation}
-import org.neo4j.cypher.SyntaxException
+import org.neo4j.cypher.{PlanDescription, SyntaxException}
 import org.neo4j.cypher.internal.symbols.SymbolTable
 
 class IndexOperationPipe(indexOp: IndexOperation) extends Pipe {
@@ -48,5 +48,5 @@ class IndexOperationPipe(indexOp: IndexOperation) extends Pipe {
 
   def symbols = new SymbolTable()
 
-  def executionPlanDescription() = s"IndexOperationsPipe(${indexOp})"
+  def executionPlanDescription = PlanDescription("IndexOperationsPipe", "indexOp" -> indexOp)
 }
