@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.DefaultWindowPoolFactory;
@@ -33,16 +34,24 @@ import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
 
+/**
+ * Uses {@link StoreMigrator} to upgrade automatically when starting up a database, given the right source database,
+ * environment and configuration for doing so. The migration will happen to a separate, isolated directory
+ * so that an incomplete migration will not affect the original database. Only when a successful migration
+ * has taken place the migrated store will replace the original database.
+ * 
+ * @see StoreMigrator
+ */
 public class StoreUpgrader
 {
-    private Config originalConfig;
-    private UpgradeConfiguration upgradeConfiguration;
-    private UpgradableDatabase upgradableDatabase;
-    private StoreMigrator storeMigrator;
-    private DatabaseFiles databaseFiles;
-    private StringLogger msgLog;
-    private IdGeneratorFactory idGeneratorFactory;
-    private FileSystemAbstraction fileSystemAbstraction;
+    private final Config originalConfig;
+    private final UpgradeConfiguration upgradeConfiguration;
+    private final UpgradableDatabase upgradableDatabase;
+    private final StoreMigrator storeMigrator;
+    private final DatabaseFiles databaseFiles;
+    private final StringLogger msgLog;
+    private final IdGeneratorFactory idGeneratorFactory;
+    private final FileSystemAbstraction fileSystemAbstraction;
 
     public StoreUpgrader( Config originalConfig, StringLogger msgLog, UpgradeConfiguration upgradeConfiguration,
                           UpgradableDatabase upgradableDatabase, StoreMigrator storeMigrator,
@@ -79,8 +88,8 @@ public class StoreUpgrader
     {
         try
         {
-            FileUtils.copyFile( new File( workingDirectory, "messages.log" ),
-                    new File( backupDirectory, "messages.log" ) );
+            FileUtils.copyFile( new File( workingDirectory, StringLogger.DEFAULT_NAME ),
+                    new File( backupDirectory, StringLogger.DEFAULT_NAME ) );
         }
         catch ( IOException e )
         {

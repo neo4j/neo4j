@@ -48,7 +48,6 @@ public class DynamicRecord extends Abstract64BitRecord
     {
         return type;
     }
-    
 
     public void setType( int type )
     {

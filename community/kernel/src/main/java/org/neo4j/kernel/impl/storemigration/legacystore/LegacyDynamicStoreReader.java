@@ -38,11 +38,11 @@ import org.neo4j.kernel.impl.util.StringLogger;
 
 public class LegacyDynamicStoreReader
 {
-    public static final String FROM_VERSION_ARRAY = "ArrayPropertyStore v0.9.9";
-    public static final String FROM_VERSION_STRING = "StringPropertyStore v0.9.9";
+    public static final String FROM_VERSION_ARRAY = "ArrayPropertyStore " + LegacyStore.LEGACY_VERSION;
+    public static final String FROM_VERSION_STRING = "StringPropertyStore " + LegacyStore.LEGACY_VERSION;
 
-    private PersistenceWindowPool windowPool;
-    private int blockSize;
+    private final PersistenceWindowPool windowPool;
+    private final int blockSize;
 
     // in_use(byte)+prev_block(int)+nr_of_bytes(int)+next_block(int)
     protected static final int BLOCK_HEADER_SIZE = 1 + 4 + 4 + 4;

@@ -175,6 +175,16 @@ public class TestXa extends AbstractNeo4jTestCase
         {
             assertTrue( file.delete() );
         }
+        file = file( "neo.nodestore.db.labels" );
+        if ( file.exists() )
+        {
+            assertTrue( file.delete() );
+        }
+        file = file( "neo.nodestore.db.labels.id" );
+        if ( file.exists() )
+        {
+            assertTrue( file.delete() );
+        }
         file = file( "neo.propertystore.db" );
         if ( file.exists() )
         {
@@ -872,7 +882,7 @@ public class TestXa extends AbstractNeo4jTestCase
         ds.stop();
         deleteLogicalLogIfExist();
         renameCopiedLogicalLog( path() );
-        truncateLogicalLog( 264 );
+        truncateLogicalLog( 288 );
         ds = newNeoStore();
         xaCon = ds.getXaConnection();
         xaRes = xaCon.getXaResource();

@@ -38,6 +38,10 @@ import org.neo4j.kernel.impl.storemigration.legacystore.LegacyRelationshipStoreR
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyRelationshipTypeStoreReader;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
 
+/**
+ * Logic to check whether a database version is upgradable to the current version. It looks at the
+ * version information found in the store files themselves.
+ */
 public class UpgradableDatabase
 {
     /*

@@ -38,6 +38,11 @@ import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
 import org.neo4j.kernel.impl.storemigration.monitoring.VisibleMigrationProgressMonitor;
 import org.neo4j.kernel.impl.util.StringLogger;
 
+/**
+ * Stand alone tool for migrating/upgrading a neo4j database from one version to the next.
+ * 
+ * @see StoreMigrator
+ */
 public class StoreMigrationTool
 {
     public static void main( String[] args ) throws IOException

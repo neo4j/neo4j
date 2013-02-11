@@ -354,6 +354,9 @@ public abstract class Command extends XaCommand
             {
                 store.updateRecord( record );
             }
+            
+            // Dynamic labels
+            store.updateDynamicLabelRecords( record.getDynamicLabelRecords() );
         }
 
         @Override
@@ -366,8 +369,11 @@ public abstract class Command extends XaCommand
             buffer.put( inUse );
             if ( record.inUse() )
             {
-                buffer.putLong( record.getNextRel() ).putLong(
-                    record.getNextProp() );
+                buffer.putLong( record.getNextRel() ).putLong( record.getNextProp() );
+                
+                // labels
+                buffer.putLong( record.getLabelField() );
+                writeDynamicRecords( buffer, record.getDynamicLabelRecords() );
             }
         }
 
@@ -391,9 +397,15 @@ public abstract class Command extends XaCommand
             NodeRecord record;
             if ( inUse )
             {
-                if ( !readAndFlip( byteChannel, buffer, 16 ) )
+                if ( !readAndFlip( byteChannel, buffer, 8*3 ) )
                     return null;
                 record = new NodeRecord( id, buffer.getLong(), buffer.getLong() );
+                
+                // labels
+                long labelField = buffer.getLong();
+                Collection<DynamicRecord> dynamicLabelRecords = new ArrayList<DynamicRecord>();
+                readDynamicRecords( byteChannel, buffer, dynamicLabelRecords, COLLECTION_DYNAMIC_RECORD_ADDER );
+                record.setLabelField( labelField, dynamicLabelRecords );
             }
             else
                 record = new NodeRecord( id, Record.NO_NEXT_RELATIONSHIP.intValue(),

@@ -31,7 +31,8 @@ public enum IdType
     RELATIONSHIP_TYPE( 16, false ),
     RELATIONSHIP_TYPE_BLOCK( false ),
     NEOSTORE_BLOCK( false ),
-    SCHEMA( 35, true );
+    SCHEMA( 35, true ),
+    NODE_LABELS( 35, true );
 
     private final long max;
     private final boolean allowAggressiveReuse;

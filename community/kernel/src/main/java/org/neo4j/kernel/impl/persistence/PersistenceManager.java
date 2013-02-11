@@ -406,4 +406,19 @@ public class PersistenceManager
     {
         getResource( true ).createSchemaRule( rule );
     }
+
+    public void addLabelToNode( long labelId, long nodeId )
+    {
+        getResource( true ).addLabelToNode( labelId, nodeId );
+    }
+    
+    public void removeLabelFromNode( long labelId, long nodeId )
+    {
+        getResource( true ).removeLabelFromNode( labelId, nodeId );
+    }
+    
+    public Iterable<Long> getLabelsForNode( long nodeId )
+    {
+        return getReadOnlyResourceIfPossible().getLabelsForNode( nodeId );
+    }
 }

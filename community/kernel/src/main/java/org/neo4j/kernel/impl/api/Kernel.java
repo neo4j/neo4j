@@ -73,7 +73,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
         this.persistenceManager = persistenceManager;
         this.dataSourceManager = dataSourceManager;
         this.lockManager = lockManager;
-        this.persistenceCache = new PersistenceCache( new TemporaryLabelAsPropertyLoader( persistenceManager ) );
+        this.persistenceCache = new PersistenceCache( new NodeCacheLoader( persistenceManager ) );
         this.schemaCache = schemaCache;
     }
     
@@ -138,7 +138,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     public StatementContext newReadOnlyStatementContext()
     {
         // I/O
-        StatementContext result = new TemporaryLabelAsPropertyStatementContext( propertyIndexManager,
+        StatementContext result = new StoreStatementContext( propertyIndexManager,
                 persistenceManager, neoStore );
         // + Cache
         result = new CachingStatementContext( result, persistenceCache, schemaCache );

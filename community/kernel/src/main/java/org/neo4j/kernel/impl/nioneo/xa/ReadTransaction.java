@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
+import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumMap;
@@ -456,5 +458,24 @@ class ReadTransaction implements NeoStoreTransaction
     public void deleteSchemaRule( long id )
     {
         throw readOnlyException();
+    }
+
+    @Override
+    public void addLabelToNode( long labelId, long nodeId )
+    {
+        throw readOnlyException();
+    }
+
+    @Override
+    public void removeLabelFromNode( long labelId, long nodeId )
+    {
+        throw readOnlyException();
+    }
+    
+    @Override
+    public Iterable<Long> getLabelsForNode( long nodeId )
+    {
+        NodeRecord node = getNodeStore().getRecord( nodeId );
+        return asIterable( getNodeStore().getLabelsForNode( node ) );
     }
 }

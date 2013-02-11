@@ -19,6 +19,11 @@
  */
 package matching;
 
+import static java.util.Arrays.asList;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -26,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
+
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -48,10 +54,8 @@ import org.neo4j.test.GraphDescription;
 import org.neo4j.test.GraphDescription.Graph;
 import org.neo4j.test.GraphHolder;
 import org.neo4j.test.ProcessStreamHandler;
+import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestData;
-
-import static java.util.Arrays.*;
-import static org.junit.Assert.*;
 
 public class TestPatternMatching implements GraphHolder
 {
@@ -87,7 +91,7 @@ public class TestPatternMatching implements GraphHolder
     @BeforeClass
     public static void setUpDb()
     {
-        graphDb = new EmbeddedGraphDatabase( "target/var/db" );
+        graphDb = new EmbeddedGraphDatabase( TargetDirectory.forTest( TestPatternMatching.class ).graphDbDir( true ).getAbsolutePath() );
     }
 
     @Before

@@ -19,12 +19,21 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyLong;
+import static org.mockito.Matchers.argThat;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.nio.channels.ReadableByteChannel;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -34,19 +43,12 @@ import org.junit.Test;
 import org.junit.internal.matchers.TypeSafeMatcher;
 import org.mockito.InOrder;
 import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
+import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.transaction.xaframework.InMemoryLogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionReader;
-
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.argThat;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.inOrder;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 public class TransactionWriterTest
 {
@@ -58,6 +60,7 @@ public class TransactionWriterTest
         TransactionWriter writer = new TransactionWriter( buffer, 1 );
 
         NodeRecord node = new NodeRecord( 0, -1, -1 );
+        node.setLabelField( 0, Collections.<DynamicRecord>emptyList() );
         RelationshipRecord relationship = new RelationshipRecord( 0, 1, 1, 6 );
 
         // when

@@ -18,14 +18,15 @@
  */
 package org.neo4j.examples;
 
+import static org.junit.Assert.assertNotNull;
+
 import java.util.HashMap;
 import java.util.Map;
 
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-
-import static org.junit.Assert.*;
+import org.neo4j.test.TargetDirectory;
 
 public class StartWithConfiguration
 {
@@ -35,7 +36,7 @@ public class StartWithConfiguration
         String pathToConfig = "src/test/resources/";
         // START SNIPPET: startDbWithConfig
         GraphDatabaseService graphDb = new GraphDatabaseFactory()
-            .newEmbeddedDatabaseBuilder( "target/database/location" )
+            .newEmbeddedDatabaseBuilder( storeDir )
             .loadPropertiesFromFile( pathToConfig + "neo4j.properties" )
             .newGraphDatabase();
         // END SNIPPET: startDbWithConfig
@@ -52,11 +53,13 @@ public class StartWithConfiguration
         config.put( "string_block_size", "60" );
         config.put( "array_block_size", "300" );
         GraphDatabaseService graphDb = new GraphDatabaseFactory()
-            .newEmbeddedDatabaseBuilder( "target/database/location" )
+            .newEmbeddedDatabaseBuilder( storeDir )
             .setConfig( config )
             .newGraphDatabase();
         // END SNIPPET: startDbWithConfigInMap
         assertNotNull( graphDb );
         graphDb.shutdown();
     }
+    
+    private final String storeDir = TargetDirectory.forTest( getClass() ).graphDbDir( true ).getAbsolutePath();
 }

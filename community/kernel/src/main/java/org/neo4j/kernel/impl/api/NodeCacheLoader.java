@@ -19,23 +19,18 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import static org.neo4j.kernel.impl.api.LabelAsPropertyData.representsLabel;
-
-import java.util.HashSet;
-import java.util.Set;
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
 import org.neo4j.kernel.impl.api.PersistenceCache.CachedNodeEntity;
 import org.neo4j.kernel.impl.cache.LockStripedCache;
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
-import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
-import org.neo4j.kernel.impl.util.ArrayMap;
 
-class TemporaryLabelAsPropertyLoader implements LockStripedCache.Loader<CachedNodeEntity>
+class NodeCacheLoader implements LockStripedCache.Loader<CachedNodeEntity>
 {
     private final PersistenceManager persistenceManager;
 
-    TemporaryLabelAsPropertyLoader( PersistenceManager persistenceManager )
+    NodeCacheLoader( PersistenceManager persistenceManager )
     {
         this.persistenceManager = persistenceManager;
     }
@@ -45,20 +40,9 @@ class TemporaryLabelAsPropertyLoader implements LockStripedCache.Loader<CachedNo
     {
         try
         {
-            ArrayMap<Integer, PropertyData> properties = persistenceManager.loadNodeProperties( id, true );
-            if ( properties == null )
-                return null;
-            
+            Iterable<Long> labels = persistenceManager.getLabelsForNode( id );
             CachedNodeEntity result = new CachedNodeEntity( id );
-            Set<Long> labels = new HashSet<Long>();
-            for ( PropertyData data : properties.values() )
-            {
-                if ( representsLabel( data ) )
-                {
-                    labels.add( (long) data.getIndex() );
-                }
-            }
-            result.addLabels( labels );
+            result.addLabels( asSet( labels ) );
             return result;
         }
         catch ( InvalidRecordException e )
