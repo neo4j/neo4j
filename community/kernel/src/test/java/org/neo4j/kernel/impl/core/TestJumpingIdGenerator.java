@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.core;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.kernel.impl.AbstractNeo4jTestCase.deleteFileOrDirectory;
+import static org.neo4j.kernel.impl.nioneo.store.NodeStore.RECORD_SIZE;
 
 import java.io.File;
 import java.io.IOException;
@@ -43,7 +44,7 @@ public class TestJumpingIdGenerator
         IdGenerator generator = factory.get( IdType.NODE );
         for ( int i = 0; i < sizePerJump/2; i++ )
         {
-            assertEquals( (long)i, generator.nextId() );
+            assertEquals( i, generator.nextId() );
         }
         
         for ( int i = 0; i < sizePerJump-1; i++ )
@@ -95,8 +96,8 @@ public class TestJumpingIdGenerator
 
     private byte readSomethingLikeNodeRecord( JumpingFileChannel channel, long id ) throws IOException
     {
-        ByteBuffer buffer = ByteBuffer.allocate( 9 );
-        channel.position( id*9 );
+        ByteBuffer buffer = ByteBuffer.allocate( RECORD_SIZE );
+        channel.position( id*RECORD_SIZE );
         channel.read( buffer );
         buffer.flip();
         buffer.getLong();
@@ -105,8 +106,8 @@ public class TestJumpingIdGenerator
 
     private void writeSomethingLikeNodeRecord( JumpingFileChannel channel, long id, int justAByte ) throws IOException
     {
-        channel.position( id*9 );
-        ByteBuffer buffer = ByteBuffer.allocate( 9 );
+        channel.position( id*RECORD_SIZE );
+        ByteBuffer buffer = ByteBuffer.allocate( RECORD_SIZE );
         buffer.putLong( 4321 );
         buffer.put( (byte) justAByte );
         buffer.flip();

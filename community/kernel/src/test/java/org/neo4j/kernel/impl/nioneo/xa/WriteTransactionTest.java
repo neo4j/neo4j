@@ -73,11 +73,12 @@ public class WriteTransactionTest
     public void shouldRemoveSchemaRuleFromCacheWhenApplyingTransactionThatDeletesOne() throws Exception
     {
         // GIVEN
-        long ruleId = schemaStore.nextId(), labelId = 10;
-        long propertyKey = 10;
-        IndexRule rule = new IndexRule( ruleId, labelId, new long[] {propertyKey} );
-        for ( DynamicRecord record : schemaStore.allocateFrom( ruleId, rule ) )
+        long labelId = 10, propertyKey = 10;
+        IndexRule rule = new IndexRule( -1, labelId, new long[] {propertyKey} );
+        Collection<DynamicRecord> records = schemaStore.allocateFrom( rule );
+        for ( DynamicRecord record : records )
             schemaStore.updateRecord( record );
+        long ruleId = first( records ).getId();
         WriteTransaction writeTransaction = new WriteTransaction( 0, log, transactionState, neoStore,
                 cacheAccessBackDoor );
         writeTransaction.setCommitTxId( 1 );

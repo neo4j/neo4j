@@ -47,26 +47,11 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.impl.nioneo.store.FileLock;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
-import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
-public class EphemeralFileSystemAbstraction implements FileSystemAbstraction, Lifecycle
+public class EphemeralFileSystemAbstraction extends LifecycleAdapter implements FileSystemAbstraction
 {
     private final Map<File, EphemeralFileData> files = new HashMap<File, EphemeralFileData>();
-
-    @Override
-    public void init()
-    {
-    }
-
-    @Override
-    public void start()
-    {
-    }
-
-    @Override
-    public void stop()
-    {
-    }
 
     @Override
     public void shutdown()

@@ -19,13 +19,9 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import static java.util.Collections.emptyList;
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.map;
-import static org.neo4j.kernel.impl.api.LabelAsPropertyData.representsLabel;
 
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 
@@ -38,33 +34,26 @@ import org.neo4j.kernel.api.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.PropertyKeyNotFoundException;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.impl.core.KeyNotFoundException;
-import org.neo4j.kernel.impl.core.PropertyIndex;
 import org.neo4j.kernel.impl.core.PropertyIndexManager;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
-import org.neo4j.kernel.impl.nioneo.store.PropertyBlock;
-import org.neo4j.kernel.impl.nioneo.store.PropertyData;
-import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
-import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
-import org.neo4j.kernel.impl.nioneo.store.PropertyType;
+import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
+import org.neo4j.kernel.impl.nioneo.store.NodeStore;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule.Kind;
 import org.neo4j.kernel.impl.nioneo.store.SchemaStore;
 import org.neo4j.kernel.impl.nioneo.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
-import org.neo4j.kernel.impl.util.ArrayMap;
 
 // TODO This is the hack where we temporarily store the labels in the property store
-public class TemporaryLabelAsPropertyStatementContext implements StatementContext
+public class StoreStatementContext implements StatementContext
 {
-    private static final String LABEL_PREFIX = "___label___";
-
     private final PropertyIndexManager propertyIndexManager;
     private final PersistenceManager persistenceManager;
     private final NeoStore neoStore;
 
-    public TemporaryLabelAsPropertyStatementContext( PropertyIndexManager propertyIndexManager,
+    public StoreStatementContext( PropertyIndexManager propertyIndexManager,
             PersistenceManager persistenceManager, NeoStore neoStore )
     {
         if ( neoStore == null )
@@ -79,7 +68,7 @@ public class TemporaryLabelAsPropertyStatementContext implements StatementContex
     {
         try
         {
-            return propertyIndexManager.getOrCreateId( toInternalLabelName( label ) );
+            return propertyIndexManager.getOrCreateId( label );
         }
         catch ( TransactionFailureException e )
         {
@@ -105,7 +94,7 @@ public class TemporaryLabelAsPropertyStatementContext implements StatementContex
     {
         try
         {
-            return propertyIndexManager.getIdByKeyName( toInternalLabelName( label ) );
+            return propertyIndexManager.getIdByKeyName( label );
         }
         catch ( KeyNotFoundException e )
         {
@@ -116,13 +105,11 @@ public class TemporaryLabelAsPropertyStatementContext implements StatementContex
     @Override
     public boolean addLabelToNode( long labelId, long nodeId )
     {
-        PropertyIndex propertyIndex = propertyIndexManager.getKeyByIdOrNull( (int) labelId );
-        if ( !isLabelSetOnNode( labelId, nodeId ) )
-        {
-            persistenceManager.nodeAddProperty( nodeId, propertyIndex, new LabelAsProperty( nodeId ) );
-            return true;
-        }
-        return false;
+        if ( isLabelSetOnNode( labelId, nodeId ) )
+            return false;
+        
+        persistenceManager.addLabelToNode( labelId, nodeId );
+        return true;
     }
 
     @Override
@@ -130,45 +117,29 @@ public class TemporaryLabelAsPropertyStatementContext implements StatementContex
     {
         try
         {
-            return getExistingPropertyData( labelId, nodeId ) != null;
+            for ( Long existingLabel : persistenceManager.getLabelsForNode( nodeId ) )
+                if ( existingLabel.longValue() == labelId )
+                    return true;
+            return false;
         }
         catch ( InvalidRecordException e )
         {
             return false;
         }
     }
-
-    private PropertyData getExistingPropertyData( long labelId, long nodeId )
-    {
-        ArrayMap<Integer, PropertyData> propertyMap = persistenceManager.loadNodeProperties( nodeId, true );
-        if ( propertyMap == null )
-            return null;
-
-        PropertyData propertyData = propertyMap.get( (int) labelId );
-        if ( propertyData == null )
-            return null;
-
-        ensureIsLabel( propertyData );
-        return propertyData;
-    }
     
     @Override
     public Iterable<Long> getLabelsForNode( long nodeId )
     {
-        ArrayMap<Integer, PropertyData> propertyMap = persistenceManager.loadNodeProperties( nodeId, true );
-        if ( propertyMap == null )
-            return emptyList();
-        
-        // TODO just wrap propertyMap and return lazy iterable/iterator instead?
-        Collection<Long> result = new ArrayList<Long>();
-        for ( PropertyData data : propertyMap.values() )
+        try
         {
-            if ( representsLabel( data ) )
-            {
-                result.add( (long) data.getIndex() );
-            }
+            return persistenceManager.getLabelsForNode( nodeId );
         }
-        return result;
+        catch ( InvalidRecordException e )
+        {   // TODO Might hide invalid dynamic record problem. It's here because this method
+            // might get called with a nodeId that doesn't exist.
+            return Collections.emptyList();
+        }
     }
     
     @Override
@@ -176,8 +147,7 @@ public class TemporaryLabelAsPropertyStatementContext implements StatementContex
     {
         try
         {
-            String rawKey = propertyIndexManager.getKeyById( (int) labelId ).getKey();
-            return fromInternalLabelName( rawKey );
+            return propertyIndexManager.getKeyById( (int) labelId ).getKey();
         }
         catch ( KeyNotFoundException e )
         {
@@ -188,43 +158,18 @@ public class TemporaryLabelAsPropertyStatementContext implements StatementContex
     @Override
     public boolean removeLabelFromNode( long labelId, long nodeId )
     {
-        PropertyData data = getExistingPropertyData( labelId, nodeId );
-        if ( data == null )
+        if ( !isLabelSetOnNode( labelId, nodeId ) )
             return false;
         
-        persistenceManager.nodeRemoveProperty( nodeId, data );
+        persistenceManager.removeLabelFromNode( labelId, nodeId );
         return true;
-    }
-    
-    private static class LabelPropertyBlockToNodeIterator extends PrefetchingIterator<Long>
-    {
-        private final Iterator<PropertyBlock> blocks;
-        private final long matchingLabelId;
-
-        LabelPropertyBlockToNodeIterator( Iterator<PropertyBlock> blocks, long labelId )
-        {
-            this.blocks = blocks;
-            this.matchingLabelId = labelId;
-        }
-
-        @Override
-        protected Long fetchNextOrNull()
-        {
-            while ( blocks.hasNext() )
-            {
-                PropertyBlock block = blocks.next();
-                if ( block.getType() == PropertyType.LABEL && block.getKeyIndexId() == matchingLabelId )
-                    return block.getValueBlocks()[1];
-            }
-            return null;
-        }
     }
     
     @Override
     public Iterable<Long> getNodesWithLabel( final long labelId )
     {
-        final PropertyStore propertyStore = neoStore.getPropertyStore();
-        final long highestId = propertyStore.getHighestPossibleIdInUse();
+        final NodeStore nodeStore = neoStore.getNodeStore();
+        final long highestId = nodeStore.getHighestPossibleIdInUse();
         return new Iterable<Long>()
         {
             @Override
@@ -232,54 +177,23 @@ public class TemporaryLabelAsPropertyStatementContext implements StatementContex
             {
                 return new PrefetchingIterator<Long>()
                 {
-                    private long id = 0L;
-                    private Iterator<Long> blockNodes = Collections.<Long>emptyList().iterator();
+                    private long id = 0;
                     
                     @Override
                     protected Long fetchNextOrNull()
                     {
-                        if ( !blockNodes.hasNext() )
+                        while ( id <= highestId )
                         {
-                            while ( id <= highestId )
-                            {
-                                PropertyRecord record = propertyStore.forceGetRecord( id++ );
-                                if ( !record.inUse() )
-                                    continue;
-
-                                blockNodes = new LabelPropertyBlockToNodeIterator(
-                                        record.getPropertyBlocks().iterator(), labelId );
-                                if ( blockNodes.hasNext() )
-                                    return blockNodes.next();
-                            }
-                            // scan exhausted
-                            return null;
+                            NodeRecord node = nodeStore.forceGetRecord( id++ );
+                            for ( long label : nodeStore.getLabelsForNode( node ) )
+                                if ( label == labelId )
+                                    return node.getId();
                         }
-                        else
-                        {
-                            return blockNodes.next();
-                        }
+                        return null;
                     }
                 };
             }
         };
-    }
-
-    private void ensureIsLabel( PropertyData data )
-    {
-        if ( !representsLabel( data ) )
-        {
-            throw new IllegalArgumentException( "Label id " + data.getIndex() + " doesn't correspond to label" );
-        }
-    }
-
-    private String toInternalLabelName( String label )
-    {
-        return LABEL_PREFIX + label;
-    }
-
-    private String fromInternalLabelName( String label )
-    {
-        return label.substring( LABEL_PREFIX.length() );
     }
     
     @Override

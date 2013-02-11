@@ -19,10 +19,17 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
+import static java.util.Collections.emptyList;
+
+import java.util.Collection;
+
 public class NodeRecord extends PrimitiveRecord
 {
     private final long committedNextRel;
     private long nextRel;
+    private long labels;
+    private Collection<DynamicRecord> dynamicLabelRecords = emptyList();
+    private boolean isLight = true;
 
     public NodeRecord( long id, long nextRel, long nextProp )
     {
@@ -44,12 +51,60 @@ public class NodeRecord extends PrimitiveRecord
     {
         return isCreated() ? Record.NO_NEXT_RELATIONSHIP.intValue() : committedNextRel;
     }
+    
+    /**
+     * Sets the label field to an in-lined field, no dynamic records were changed by doing this.
+     * 
+     * @param labels this will be in-lined labels.
+     */
+    public void setLabelField( long labels )
+    {
+        this.labels = labels;
+        this.dynamicLabelRecords = emptyList();
+        this.isLight = true;
+    }
+    
+    /**
+     * Sets the label field to a pointer to the first changed dynamic record. All changed
+     * dynamic records by doing this are supplied here.
+     * 
+     * @param labels this will be either in-lined labels, or an id where to get the labels
+     * @param changedDynamicRecords all changed dynamic records by doing this.
+     */
+    public void setLabelField( long labels, Collection<DynamicRecord> changedDynamicRecords )
+    {
+        this.labels = labels;
+        this.dynamicLabelRecords = changedDynamicRecords;
+        this.isLight = false;
+    }
+    
+    public long getLabelField()
+    {
+        return this.labels;
+    }
+    
+    public boolean isLight()
+    {
+        return isLight;
+    }
+    
+    public Collection<DynamicRecord> getDynamicLabelRecords()
+    {
+        return this.dynamicLabelRecords;
+    }
 
     @Override
     public String toString()
     {
-        return new StringBuilder( "Node[" ).append( getId() ).append( ",used=" ).append( inUse() ).append( ",rel=" ).append(
-                nextRel ).append( ",prop=" ).append( getNextProp() ).append( "]" ).toString();
+        StringBuilder builder = new StringBuilder( "Node[" ).append( getId() )
+                .append( ",used=" ).append( inUse() )
+                .append( ",rel=" ).append( nextRel )
+                .append( ",prop=" ).append( getNextProp() )
+                .append( ",labels=" ).append( getLabelField() )
+                .append( "," ).append( isLight ? "light" : "heavy" );
+        if ( !isLight && !dynamicLabelRecords.isEmpty() )
+            builder.append( ",dynlabels=" ).append( dynamicLabelRecords );
+        return builder.append( "]" ).toString();
     }
 
     @Override

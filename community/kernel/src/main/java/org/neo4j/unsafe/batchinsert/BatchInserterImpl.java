@@ -20,6 +20,7 @@
 package org.neo4j.unsafe.batchinsert;
 
 import static java.lang.Boolean.parseBoolean;
+import static org.neo4j.helpers.collection.IteratorUtil.first;
 import static org.neo4j.kernel.impl.nioneo.store.PropertyStore.encodeString;
 
 import java.io.File;
@@ -844,10 +845,9 @@ public class BatchInserterImpl implements BatchInserter
         PropertyIndexRecord record = new PropertyIndexRecord( keyId );
         record.setInUse( true );
         record.setCreated();
-        int nameId = idxStore.nextNameId();
-        record.setNameId( nameId );
         Collection<DynamicRecord> keyRecords =
-                idxStore.allocateNameRecords( nameId, encodeString( stringKey ) );
+                idxStore.allocateNameRecords( encodeString( stringKey ) );
+        record.setNameId( (int) first( keyRecords ).getId() );
         for ( DynamicRecord keyRecord : keyRecords )
         {
             record.addNameRecord( keyRecord );
@@ -864,9 +864,8 @@ public class BatchInserterImpl implements BatchInserter
         RelationshipTypeRecord record = new RelationshipTypeRecord( id );
         record.setInUse( true );
         record.setCreated();
-        int nameId = typeStore.nextNameId();
-        record.setNameId( nameId );
-        Collection<DynamicRecord> nameRecords = typeStore.allocateNameRecords( nameId, encodeString( name ) );
+        Collection<DynamicRecord> nameRecords = typeStore.allocateNameRecords( encodeString( name ) );
+        record.setNameId( (int) first( nameRecords ).getId() );
         for ( DynamicRecord typeRecord : nameRecords )
         {
             record.addNameRecord( typeRecord );
@@ -957,6 +956,7 @@ public class BatchInserterImpl implements BatchInserter
     /**
      * @deprecated as of Neo4j 1.7
      */
+    @Deprecated
     public GraphDatabaseService getBatchGraphDbService()
     {
         return new BatchGraphDatabaseImpl( this );

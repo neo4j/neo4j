@@ -19,21 +19,19 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
+import static org.neo4j.helpers.collection.IteratorUtil.first;
+
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.api.LabelAsProperty;
 import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
 
@@ -89,7 +87,7 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
         return stringPropertyStore;
     }
 
-    DynamicArrayStore getArrayStore()
+    public DynamicArrayStore getArrayStore()
     {
         return arrayPropertyStore;
     }
@@ -517,15 +515,14 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
         this.updateHighId();
     }
 
-    private Collection<DynamicRecord> allocateStringRecords( long valueBlockId, byte[] chars )
+    private Collection<DynamicRecord> allocateStringRecords( byte[] chars )
     {
-        return stringPropertyStore.allocateRecords( valueBlockId, chars );
+        return stringPropertyStore.allocateRecordsFromBytes( chars );
     }
 
-    private Collection<DynamicRecord> allocateArrayRecords( long valueBlockId,
-        Object array )
+    private Collection<DynamicRecord> allocateArrayRecords( Object array )
     {
-        return arrayPropertyStore.allocateRecords( valueBlockId, array );
+        return arrayPropertyStore.allocateRecords( array );
     }
 
     public void encodeValue( PropertyBlock block, int keyId, Object value )
@@ -537,10 +534,9 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
                     PropertyType.getPayloadSize() ) ) return;
 
             // Fall back to dynamic string store
-            long stringBlockId = nextStringBlockId();
-            setSingleBlockValue( block, keyId, PropertyType.STRING, stringBlockId );
             byte[] encodedString = encodeString( string );
-            Collection<DynamicRecord> valueRecords = allocateStringRecords( stringBlockId, encodedString );
+            Collection<DynamicRecord> valueRecords = allocateStringRecords( encodedString );
+            setSingleBlockValue( block, keyId, PropertyType.STRING, first( valueRecords ).getId() );
             for ( DynamicRecord valueRecord : valueRecords )
             {
                 valueRecord.setType( PropertyType.STRING.intValue() );
@@ -571,20 +567,19 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
             if ( ShortArray.encode( keyId, value, block, PropertyType.getPayloadSize() ) ) return;
 
             // Fall back to dynamic array store
-            long arrayBlockId = nextArrayBlockId();
-            setSingleBlockValue( block, keyId, PropertyType.ARRAY, arrayBlockId );
-            Collection<DynamicRecord> arrayRecords = allocateArrayRecords( arrayBlockId, value );
+            Collection<DynamicRecord> arrayRecords = allocateArrayRecords( value );
+            setSingleBlockValue( block, keyId, PropertyType.ARRAY, first( arrayRecords ).getId() );
             for ( DynamicRecord valueRecord : arrayRecords )
             {
                 valueRecord.setType( PropertyType.ARRAY.intValue() );
                 block.addValueRecord( valueRecord );
             }
         }
-        else if ( value instanceof LabelAsProperty )
-        {
-            long keyAndType = keyId | (((long) PropertyType.LABEL.intValue()) << 24);
-            block.setValueBlocks( new long[]{keyAndType, ((LabelAsProperty) value).getNodeId()} );
-        }
+//        else if ( value instanceof LabelAsProperty )
+//        {
+//            long keyAndType = keyId | (((long) PropertyType.LABEL.intValue()) << 24);
+//            block.setValueBlocks( new long[]{keyAndType, ((LabelAsProperty) value).getNodeId()} );
+//        }
         else
         {
             throw new IllegalArgumentException( "Unknown property type on: "
@@ -615,7 +610,7 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
 
     public static Object getStringFor( AbstractDynamicStore store, long startRecord, Collection<DynamicRecord> dynamicRecords )
     {
-        Pair<byte[], byte[]> source = readFullByteArray( startRecord, dynamicRecords, store, PropertyType.STRING );
+        Pair<byte[], byte[]> source = store.readFullByteArray( dynamicRecords, PropertyType.STRING );
         // A string doesn't have a header in the data array
         return getStringFor( source.other() );
     }
@@ -628,58 +623,13 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
     public Object getArrayFor( PropertyBlock propertyBlock )
     {
         assert !propertyBlock.isLight();
-        return getArrayFor( propertyBlock.getSingleValueLong(), propertyBlock.getValueRecords(), arrayPropertyStore );
+        return getArrayFor( propertyBlock.getValueRecords() );
     }
 
-    public static Object getArrayFor( long startRecord, Iterable<DynamicRecord> records,
-            DynamicArrayStore arrayPropertyStore )
+    public Object getArrayFor( Iterable<DynamicRecord> records )
     {
         return arrayPropertyStore.getRightArray(
-                readFullByteArray( startRecord, records, arrayPropertyStore, PropertyType.ARRAY ) );
-    }
-
-    public static Pair<byte[]/*header in the first record*/,byte[]/*all other bytes*/> readFullByteArray(
-            long startRecord, Iterable<DynamicRecord> records, AbstractDynamicStore store, PropertyType propertyType )
-    {
-        long recordToFind = startRecord;
-        Map<Long,DynamicRecord> recordsMap = new HashMap<Long,DynamicRecord>();
-        for ( DynamicRecord record : records )
-        {
-            recordsMap.put( record.getId(), record );
-        }
-        byte[] header = null;
-        List<byte[]> byteList = new LinkedList<byte[]>();
-        int totalSize = 0;
-        while ( recordToFind != Record.NO_NEXT_BLOCK.intValue() )
-        {
-            DynamicRecord record = recordsMap.get( recordToFind );
-            if ( record.isLight() )
-            {
-                store.makeHeavy( record );
-            }
-            
-            int offset = 0;
-            if ( recordToFind == startRecord )
-            {   // This is the first one, read out the header separately
-                header = propertyType.readDynamicRecordHeader( record.getData() );
-                offset = header.length;
-            }
-            
-            byteList.add( record.getData() );
-            totalSize += (record.getData().length-offset);
-            recordToFind = record.getNextBlock();
-        }
-        byte[] bArray = new byte[totalSize];
-        int sourceOffset = header.length;
-        int offset = 0;
-        for ( byte[] currentArray : byteList )
-        {
-            System.arraycopy( currentArray, sourceOffset, bArray, offset,
-                currentArray.length-sourceOffset );
-            offset += (currentArray.length-sourceOffset);
-            sourceOffset = 0;
-        }
-        return Pair.of( header, bArray );
+                arrayPropertyStore.readFullByteArray( records, PropertyType.ARRAY ) );
     }
 
     @Override

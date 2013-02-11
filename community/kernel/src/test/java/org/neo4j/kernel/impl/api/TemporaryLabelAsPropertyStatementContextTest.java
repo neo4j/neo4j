@@ -86,7 +86,8 @@ public class TemporaryLabelAsPropertyStatementContextTest
 
         // THEN
         Iterable<Long> readLabels = statement.getLabelsForNode( nodeId );
-        assertEquals( new HashSet<Long>( asList( labelId1, labelId2 ) ), addToCollection( readLabels, new HashSet<Long>() ) );
+        assertEquals( new HashSet<Long>( asList( labelId1, labelId2 ) ),
+                addToCollection( readLabels, new HashSet<Long>() ) );
     }
     
     @Test
@@ -326,7 +327,7 @@ public class TemporaryLabelAsPropertyStatementContextTest
     public void before()
     {
         db = new ImpermanentGraphDatabase();
-        statement = new TemporaryLabelAsPropertyStatementContext(
+        statement = new StoreStatementContext(
                 db.getDependencyResolver().resolveDependency( PropertyIndexManager.class ),
                 db.getDependencyResolver().resolveDependency( PersistenceManager.class ),
                 // Ooh, jucky

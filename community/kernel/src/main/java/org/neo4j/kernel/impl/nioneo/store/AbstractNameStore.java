@@ -228,9 +228,9 @@ public abstract class AbstractNameStore<T extends AbstractNameRecord> extends Ab
         return forceGetRecord( id );
     }
 
-    public Collection<DynamicRecord> allocateNameRecords( int nameId, byte[] chars )
+    public Collection<DynamicRecord> allocateNameRecords( byte[] chars )
     {
-        return nameStore.allocateRecords( nameId, chars );
+        return nameStore.allocateRecordsFromBytes( chars );
     }
 
     public T getLightRecord( int id )
@@ -382,8 +382,8 @@ public abstract class AbstractNameStore<T extends AbstractNameRecord> extends Ab
                 records = nameRecord.getNameRecords().iterator();
             }
         }
-        return (String) PropertyStore.getStringFor( PropertyStore.readFullByteArray(
-                nameRecord.getNameId(), relevantRecords, nameStore, PropertyType.STRING ).other() );
+        return (String) PropertyStore.getStringFor( nameStore.readFullByteArray(
+                relevantRecords, PropertyType.STRING ).other() );
     }
 
     @Override

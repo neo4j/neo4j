@@ -29,8 +29,9 @@ public abstract class LogEntry
 {
     /* version 1 as of 2011-02-22
      * version 2 as of 2011-10-17
+     * version 3 as of 2013-02-09: neo4j 2.0 Labels & Indexing
      */
-    static final byte CURRENT_VERSION = (byte) 2;
+    static final byte CURRENT_VERSION = (byte) 3;
     // empty record due to memory mapped file
     public static final byte EMPTY = (byte) 0;
     public static final byte TX_START = (byte) 1;

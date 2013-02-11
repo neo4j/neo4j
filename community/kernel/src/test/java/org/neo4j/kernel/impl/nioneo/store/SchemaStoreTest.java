@@ -23,6 +23,7 @@ import static java.nio.ByteBuffer.wrap;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
+import static org.neo4j.helpers.collection.IteratorUtil.first;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.util.StringLogger.SYSTEM;
 
@@ -53,11 +54,11 @@ public class SchemaStoreTest
         expected.put( Kind.INDEX_RULE.id() );
         expected.putShort( (short) 1 );
         expected.putLong( propertyKey );
-        long blockId = store.nextId();
-        SchemaRule indexRule = new IndexRule( blockId, labelId, new long[] {propertyKey} );
+        SchemaRule indexRule = new IndexRule( -1, labelId, new long[] {propertyKey} );
 
         // WHEN
-        Collection<DynamicRecord> records = store.allocateFrom( blockId, indexRule );
+        Collection<DynamicRecord> records = store.allocateFrom( indexRule );
+        long blockId = first( records ).getId();
         for ( DynamicRecord record : records )
             store.updateRecord( record );
         
@@ -130,11 +131,10 @@ public class SchemaStoreTest
 
     private long storeRule( SchemaRule rule )
     {
-        long id = store.nextId();
-        Collection<DynamicRecord> records = store.allocateFrom( id, rule );
+        Collection<DynamicRecord> records = store.allocateFrom( rule );
         for ( DynamicRecord record : records )
             store.updateRecord( record );
-        return id;
+        return first( records ).getId();
     }
 
     private Config config;

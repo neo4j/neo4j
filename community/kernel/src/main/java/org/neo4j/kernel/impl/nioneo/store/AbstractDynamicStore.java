@@ -24,11 +24,14 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
@@ -211,18 +214,23 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
     
     // [next][type][data]
 
-    protected Collection<DynamicRecord> allocateRecords( long startBlock,
-        byte src[] )
+    protected Collection<DynamicRecord> allocateRecordsFromBytes( byte src[] )
+    {
+        return allocateRecordsFromBytes( src, Collections.<DynamicRecord>emptyList().iterator() );
+    }
+    
+    protected Collection<DynamicRecord> allocateRecordsFromBytes( byte src[], Iterator<DynamicRecord> recordsToUseFirst )
     {
         assert getFileChannel() != null : "Store closed, null file channel";
         assert src != null : "Null src argument";
         List<DynamicRecord> recordList = new LinkedList<DynamicRecord>();
-        long nextBlock = startBlock;
+        DynamicRecord nextRecord = recordsToUseFirst.hasNext() ?
+                recordsToUseFirst.next() : new DynamicRecord( nextId() );
         int srcOffset = 0;
         int dataSize = getBlockSize() - BLOCK_HEADER_SIZE;
         do
         {
-            DynamicRecord record = new DynamicRecord( nextBlock );
+            DynamicRecord record = nextRecord;
             record.setStartRecord( srcOffset == 0 );
             record.setCreated();
             record.setInUse( true );
@@ -231,8 +239,9 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
                 byte data[] = new byte[dataSize];
                 System.arraycopy( src, srcOffset, data, 0, dataSize );
                 record.setData( data );
-                nextBlock = nextId();
-                record.setNextBlock( nextBlock );
+                nextRecord = recordsToUseFirst.hasNext() ?
+                        recordsToUseFirst.next() : new DynamicRecord( nextId() );
+                record.setNextBlock( nextRecord.getId() );
                 srcOffset += dataSize;
             }
             else
@@ -240,14 +249,14 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
                 byte data[] = new byte[src.length - srcOffset];
                 System.arraycopy( src, srcOffset, data, 0, data.length );
                 record.setData( data );
-                nextBlock = Record.NO_NEXT_BLOCK.intValue();
-                record.setNextBlock( nextBlock );
+                nextRecord = null;
+                record.setNextBlock( Record.NO_NEXT_BLOCK.intValue() );
             }
             recordList.add( record );
             assert !record.isLight();
             assert record.getData() != null;
         }
-        while ( nextBlock != Record.NO_NEXT_BLOCK.intValue() );
+        while ( nextRecord != null );
         return recordList;
     }
 
@@ -432,6 +441,23 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
      * @return a {@link ByteBuffer#slice() sliced} {@link ByteBuffer} wrapping {@code target} or,
      * if necessary a new larger {@code byte[]} and containing exactly all concatenated data read from records
      */
+    public static ByteBuffer concatData( Collection<DynamicRecord> records )
+    {
+        return concatData( records, new byte[totalDataLength( records )] );
+    }
+    
+    private static int totalDataLength( Collection<DynamicRecord> records )
+    {
+        int length = 0;
+        for ( DynamicRecord record : records )
+            length += record.getLength();
+        return length;
+    }
+
+    /**
+     * @return a {@link ByteBuffer#slice() sliced} {@link ByteBuffer} wrapping {@code target} or,
+     * if necessary a new larger {@code byte[]} and containing exactly all concatenated data read from records
+     */
     public static ByteBuffer concatData( Collection<DynamicRecord> records, byte[] target )
     {
         int totalLength = 0;
@@ -571,5 +597,39 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
     public String toString()
     {
         return super.toString() + "[blockSize:" + (getRecordSize()-getRecordHeaderSize()) + "]";
+    }
+
+    public Pair<byte[]/*header in the first record*/,byte[]/*all other bytes*/> readFullByteArray(
+            Iterable<DynamicRecord> records, PropertyType propertyType )
+    {
+        byte[] header = null;
+        List<byte[]> byteList = new LinkedList<byte[]>();
+        int totalSize = 0, i = 0;
+        for ( DynamicRecord record : records )
+        {
+            if ( record.isLight() )
+                makeHeavy( record );
+            
+            int offset = 0;
+            if ( i++ == 0 )
+            {   // This is the first one, read out the header separately
+                header = propertyType.readDynamicRecordHeader( record.getData() );
+                offset = header.length;
+            }
+            
+            byteList.add( record.getData() );
+            totalSize += (record.getData().length-offset);
+        }
+        byte[] bArray = new byte[totalSize];
+        int sourceOffset = header.length;
+        int offset = 0;
+        for ( byte[] currentArray : byteList )
+        {
+            System.arraycopy( currentArray, sourceOffset, bArray, offset,
+                currentArray.length-sourceOffset );
+            offset += (currentArray.length-sourceOffset);
+            sourceOffset = 0;
+        }
+        return Pair.of( header, bArray );
     }
 }

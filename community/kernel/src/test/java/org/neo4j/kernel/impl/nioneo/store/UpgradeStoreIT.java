@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.nioneo.store;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.neo4j.helpers.collection.IteratorUtil.first;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.AbstractNeo4jTestCase.deleteFileOrDirectory;
 
@@ -314,9 +315,8 @@ public class UpgradeStoreIT
             RelationshipTypeRecord record = new RelationshipTypeRecord( i );
             record.setCreated();
             record.setInUse( true );
-            int nameId = (int) store.nextNameId();
-            record.setNameId( nameId );
-            Collection<DynamicRecord> typeRecords = store.allocateNameRecords( nameId, PropertyStore.encodeString( name ) );
+            Collection<DynamicRecord> typeRecords = store.allocateNameRecords( PropertyStore.encodeString( name ) );
+            record.setNameId( (int) first( typeRecords ).getId() );
             for ( DynamicRecord typeRecord : typeRecords )
             {
                 record.addNameRecord( typeRecord );
@@ -361,6 +361,7 @@ public class UpgradeStoreIT
     {
         private final Map<IdType, IdGenerator> generators = new HashMap<IdType, IdGenerator>();
 
+        @Override
         public IdGenerator open( FileSystemAbstraction fs, File fileName, int grabSize, IdType idType, long highId )
         {
             IdGenerator generator = new IdGeneratorImpl( fs, fileName, grabSize, Long.MAX_VALUE, false, highId );
@@ -368,11 +369,13 @@ public class UpgradeStoreIT
             return generator;
         }
 
+        @Override
         public IdGenerator get( IdType idType )
         {
             return generators.get( idType );
         }
 
+        @Override
         public void create( FileSystemAbstraction fs, File fileName, long highId )
         {
             IdGeneratorImpl.createGenerator( fs, fileName, highId );

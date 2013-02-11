@@ -63,7 +63,7 @@ public class TestGrowingFileMemoryMapping
                 NodeStore.TYPE_DESCRIPTOR ) );
 
         NodeStore nodeStore = new NodeStore( fileName, config, idGeneratorFactory, new DefaultWindowPoolFactory(),
-                new DefaultFileSystemAbstraction(), StringLogger.SYSTEM );
+                new DefaultFileSystemAbstraction(), StringLogger.SYSTEM, null );
 
         // when
         for ( int i = 0; i < 2 * NUMBER_OF_RECORDS; i++ )

@@ -47,6 +47,7 @@ import org.neo4j.graphmatching.PatternMatch;
 import org.neo4j.graphmatching.PatternMatcher;
 import org.neo4j.graphmatching.PatternNode;
 import org.neo4j.helpers.collection.IteratorWrapper;
+import org.neo4j.test.TargetDirectory;
 
 public class TestMatchingOfCircularPattern
 {
@@ -70,6 +71,7 @@ public class TestMatchingOfCircularPattern
             message.createRelationshipTo( start, withName( "IS_VISIBLE_BY" ) );
         }
 
+        @Override
         public Iterator<Node> iterator()
         {
             Iterable<PatternMatch> matches = PatternMatcher.getMatcher().match(
@@ -221,6 +223,7 @@ public class TestMatchingOfCircularPattern
         return startNode.traverse( Order.BREADTH_FIRST, stopAtDepth( 2 ),
                 new ReturnableEvaluator()
                 {
+                    @Override
                     public boolean isReturnableNode( TraversalPosition pos )
                     {
                         Node node = pos.currentNode();
@@ -235,6 +238,7 @@ public class TestMatchingOfCircularPattern
     {
         return new StopEvaluator()
         {
+            @Override
             public boolean isStopNode( TraversalPosition currentPos )
             {
                 return currentPos.depth() >= depth;
@@ -265,7 +269,7 @@ public class TestMatchingOfCircularPattern
     @BeforeClass
     public static void setUpDb()
     {
-        graphdb = new GraphDatabaseFactory().newEmbeddedDatabase( "target/var/db" );
+        graphdb = new GraphDatabaseFactory().newEmbeddedDatabase( TargetDirectory.forTest( TestMatchingOfCircularPattern.class ).graphDbDir( true ).getAbsolutePath() );
         Transaction tx = graphdb.beginTx();
         try
         {

@@ -42,7 +42,7 @@ public class TemporaryLabelAsPropertyTransactionContext implements TransactionCo
     @Override
     public StatementContext newStatementContext()
     {
-        return new TemporaryLabelAsPropertyStatementContext( propertyIndexManager, persistenceManager, neoStore );
+        return new StoreStatementContext( propertyIndexManager, persistenceManager, neoStore );
     }
 
     @Override
