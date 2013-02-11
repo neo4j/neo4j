@@ -19,13 +19,13 @@
  */
 package org.neo4j.cypher.internal.pipes
 
-import org.neo4j.cypher.internal.symbols.SymbolTable
+import org.neo4j.cypher.internal.symbols.{AnyType, SymbolTable}
 import org.neo4j.cypher.internal.ExecutionContext
 
-class UnionPipe(in: Seq[Pipe]) extends Pipe {
+class UnionPipe(in: Seq[Pipe], columns:List[String]) extends Pipe {
   def createResults(state: QueryState): Iterator[ExecutionContext] = new UnionIterator(in, state)
 
   def executionPlanDescription(): String = in.map(_.executionPlanDescription()).mkString("\n  UNION\n")
 
-  def symbols: SymbolTable = new SymbolTable()
+  def symbols: SymbolTable = new SymbolTable(columns.map(k => k -> AnyType()).toMap)
 }
