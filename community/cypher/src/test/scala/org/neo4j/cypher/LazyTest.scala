@@ -128,6 +128,30 @@ class LazyTest extends ExecutionEngineHelper with Assertions with MockitoSugar {
     iter.next()
   }
 
+  @Test def union_is_lazy()
+  {
+    //Given:
+    val a = mock[Node]
+    val b = mock[Node]
+    val c = mock[Node]
+
+    when(a.hasProperty("name")).thenReturn(true)
+    when(a.getProperty("name")).thenReturn("Andres", Array())
+    when(b.hasProperty("name")).thenReturn(true)
+    when(b.getProperty("name")).thenReturn("Jake", Array())
+
+    // Because we use a pre-fetching iterator, it will cache one more result than we have pulled
+    when(c.hasProperty("name")).thenThrow(new RuntimeException("Union was not lazy!"))
+
+    val engine = new ExecutionEngine(graph)
+
+    //When:
+    val iter = engine.execute("start n=node({a}) return n.name UNION ALL start n=node({b}) return n.name", Map("a" -> a, "b" -> Seq(b, c)))
+
+    //Then, no Runtime exception is thrown
+    iter.next()
+  }
+
   @Test def execution_of_query_is_eager() {
     //Given:
     var touched = false

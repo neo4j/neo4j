@@ -72,6 +72,16 @@ next   : %s
 )
 
   def setQueryText(t: String): Query = copy(queryString = QueryString(t))
+
+  def columns: List[String] = {
+    var last: Query = this
+
+    while (last.tail.nonEmpty)
+      last = last.tail.get
+
+    last.returns.columns
+  }
+
 }
 
 case class Return(columns: List[String], returnItems: ReturnColumn*)

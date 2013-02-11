@@ -57,10 +57,23 @@ Thank you, the Neo4j Team.
 
   def cypherQuery: Parser[AbstractQuery] = (createIndex|union|query) <~ opt(";")
 
-  def union: Parser[AbstractQuery] = rep2sep(query, "UNION") ^^ {
-    queries => Union(queries, distinct = false)
+  def mixedUnion = Parser {
+    case in =>
+      val parser = query ~> ignoreCase("UNION") ~> opt(ignoreCase("ALL"))
+
+      parser.apply(in) match {
+        case Success(first, rest) => parser.apply(rest) match {
+          case Success(second, remaining) if first.isDefined && second.isEmpty => throw new SyntaxException("can't mix UNION and UNION ALL")
+          case Success(second, remaining) if first.isEmpty && second.isDefined => throw new SyntaxException("can't mix UNION and UNION ALL")
+          case _                                                               => Failure("", rest)
+        }
+        case _                    => Failure("", in)
+      }
   }
 
+  def union: Parser[AbstractQuery] = mixedUnion |
+    rep2sep(query, ignoreCase("UNION")) ^^ { queries => Union(queries, distinct = true) } |
+    rep2sep(query, ignoreCase("UNION") ~ ignoreCase("ALL")) ^^ { queries => Union(queries, distinct = false) }
 
   def query: Parser[Query] = start ~ body ^^ {
     case start ~ body => {
