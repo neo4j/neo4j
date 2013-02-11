@@ -85,9 +85,11 @@ the relevant Commercial Agreement.
       </properties>
     </profile>
     <profile><!-- used for testing -->
-      <id>Linux-dependency-tools.jar</id>
+      <id>unix-dependency-tools.jar</id>
       <activation>
-        <os><name>Linux</name></os>
+        <file>
+          <exists>${java.home}/../lib/tools.jar</exists>
+        </file>
       </activation>
       <dependencies>
         <dependency>
