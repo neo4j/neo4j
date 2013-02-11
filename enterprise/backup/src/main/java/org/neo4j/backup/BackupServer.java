@@ -52,7 +52,7 @@ class BackupServer extends Server<TheBackupInterface, Object>
             @Override
             public int getMaxConcurrentTransactions()
             {
-                return DEFAULT_MAX_NUMBER_OF_CONCURRENT_TRANSACTIONS;
+                return 3;
             }
 
             @Override

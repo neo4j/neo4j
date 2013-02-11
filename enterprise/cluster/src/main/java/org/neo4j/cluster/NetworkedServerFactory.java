@@ -20,6 +20,7 @@
 package org.neo4j.cluster;
 
 import java.net.URI;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -30,7 +31,9 @@ import org.neo4j.cluster.protocol.election.ElectionCredentialsProvider;
 import org.neo4j.cluster.statemachine.StateTransitionLogger;
 import org.neo4j.cluster.timeout.TimeoutStrategy;
 import org.neo4j.helpers.DaemonThreadFactory;
+import org.neo4j.helpers.Factory;
 import org.neo4j.helpers.HostnamePort;
+import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -67,8 +70,17 @@ public class NetworkedServerFactory
             }
         }, logging );
 
+        ExecutorLifecycleAdapter stateMachineExecutor = new ExecutorLifecycleAdapter( new Factory<ExecutorService>()
+        {
+            @Override
+            public ExecutorService newInstance()
+            {
+                return Executors.newSingleThreadExecutor( new NamedThreadFactory( "State machine" ) );
+            }
+        } );
+
         final ProtocolServer protocolServer = protocolServerFactory.newProtocolServer( timeoutStrategy, node, node,
-                acceptorInstanceStore, electionCredentialsProvider );
+                acceptorInstanceStore, electionCredentialsProvider, stateMachineExecutor );
         node.addNetworkChannelsListener( new NetworkInstance.NetworkChannelsListener()
         {
             @Override
@@ -88,6 +100,8 @@ public class NetworkedServerFactory
             {
             }
         } );
+
+        life.add( stateMachineExecutor );
 
         // Timeout timer - triggers every 10 ms
         life.add( new Lifecycle()

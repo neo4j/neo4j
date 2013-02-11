@@ -25,6 +25,7 @@ Integration layer between Neo4j and Lucene, providing one possible implementatio
     <license-text.header>GPL-3-header.txt</license-text.header>
     <docs-plugin.filter>true</docs-plugin.filter>
     <docs.url>http://docs.neo4j.org/chunked/${project.version}/indexing.html</docs.url>
+    <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
   </properties>
 
   <packaging>jar</packaging>

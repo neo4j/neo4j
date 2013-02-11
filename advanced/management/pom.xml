@@ -32,9 +32,9 @@
     <profile>
       <id>Linux-dependency-jconsole.jar</id>
       <activation>
-        <os>
-          <name>Linux</name>
-        </os>
+        <file>
+          <exists>${java.home}/../lib/jconsole.jar</exists>
+        </file>
       </activation>
       <dependencies>
         <dependency>
@@ -50,9 +50,6 @@
     <profile>
       <id>Mac-OS-X-dependency-jconsole.jar</id>
       <activation>
-        <os>
-          <family>mac</family>
-        </os>
         <file>
           <exists>${java.home}/lib/jconsole.jar</exists>
         </file>

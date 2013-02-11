@@ -59,7 +59,7 @@ To understand the strategy, let's divide the query into five steps:
 
 . First Get the list of all my friends (along with me) through `FRIEND` relationship (`MATCH me-[rels:FRIEND*0..1]-myfriend`). Also,  the `WHERE` predicate can be added to check whether the friend request is pending or confirmed.
 . Get the latest status update of my friends through Status relationship (`MATCH myfriend-[:STATUS]-latestupdate`).
-. Get subsequent status updates (along with the latest one) of my friends through `NEXT` relationships (`MATCH myfriend-[:STATUS]-latestupdate-[:NEXT*0..1]-statusupdates`).
+. Get subsequent status updates (along with the latest one) of my friends through `NEXT` relationships (`MATCH myfriend-[:STATUS]-latestupdate-[:NEXT*0..1]-statusupdates`) which will give you the latest and one additional statusupdate, adjust `0..1` to whatever suits your case.
 . Sort the status updates by posted date (`ORDER BY statusupdates.date DESC`).
 . `LIMIT` the number of updates you need in every query (`LIMIT x SKIP x*y`).""",
       assertions = (p) => assertEquals(List(Map("name" -> "Joe", "date" -> 6, "text" -> "Joe status2"),

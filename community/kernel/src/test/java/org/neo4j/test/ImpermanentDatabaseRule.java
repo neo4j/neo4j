@@ -23,6 +23,7 @@ import java.io.IOException;
 import org.junit.rules.ExternalResource;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.GraphDatabaseAPI;
 
 /**
@@ -49,14 +50,21 @@ public class ImpermanentDatabaseRule
     public void create()
         throws IOException
     {
-        GraphDatabaseBuilder builder = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder();
+        TestGraphDatabaseFactory databaseFactory = new TestGraphDatabaseFactory();
+        configure( databaseFactory );
+        GraphDatabaseBuilder builder = databaseFactory.newImpermanentDatabaseBuilder();
         configure(builder);
         database = (GraphDatabaseAPI) builder.newGraphDatabase();
     }
 
+    protected void configure( GraphDatabaseFactory databaseFactory )
+    {
+        // Override to configure the database factory
+    }
+
     protected void configure( GraphDatabaseBuilder builder )
     {
-        // Override to configure the database
+        // Override to configure the database builder
     }
     
     public GraphDatabaseService getGraphDatabaseService()

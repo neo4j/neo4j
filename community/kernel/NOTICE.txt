@@ -1,14 +1,14 @@
 Neo4j
-Copyright © 2002-2012 Network Engine for Objects in Lund AB (referred to
-in this notice as “Neo Technology”)
+Copyright © 2002-2013 Network Engine for Objects in Lund AB (referred to
+in this notice as "Neo Technology")
    [http://neotechnology.com]
 
 This product includes software ("Software") developed by Neo Technology.
 
-The copyright in the Software is owned by Neo Technology.
-The Software developed and owned by Neo Technology is licensed under
-the GNU GENERAL PUBLIC LICENSE Version 3
-(http://www.fsf.org/licensing/licenses/gpl-3.0.html) ("GPL")
+The copyright in the bundled Neo4j graph database (including the
+Software) is owned by Neo Technology. The Software developed and owned
+by Neo Technology is licensed under the GNU GENERAL PUBLIC LICENSE
+Version 3 (http://www.fsf.org/licensing/licenses/gpl-3.0.html) ("GPL")
 to all third parties and that license, as required by the GPL, is
 included in the LICENSE.txt file.
 
@@ -20,10 +20,33 @@ such Commercial Agreement will supersede the GPL and you may use the
 software solely pursuant to the terms of the relevant Commercial
 Agreement.
 
+Full license texts are found in LICENSES.txt.
 
-Third party libraries
----------------------
+Third-party licenses
+--------------------
 
-The bundled Apache Geronimo JTA library is copyright
-The Apache Software Foundation  (http://www.apache.org/)
-under the Apache License version 2.0.
+Apache Software License, Version 2.0
+  JTA 1.1
+
+Eclipse Public License, Version 1.0
+  Logback Classic Module
+  Logback Core Module
+
+GNU Lesser General Public License, Version 2.1
+  Logback Classic Module
+  Logback Core Module
+
+MIT License
+  SLF4J API Module
+
+Dependencies with multiple licenses
+-----------------------------------
+
+Logback Classic Module
+  Eclipse Public License, Version 1.0
+  GNU Lesser General Public License, Version 2.1
+
+Logback Core Module
+  Eclipse Public License, Version 1.0
+  GNU Lesser General Public License, Version 2.1
+

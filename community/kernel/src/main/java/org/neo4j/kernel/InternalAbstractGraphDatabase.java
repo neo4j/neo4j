@@ -33,6 +33,7 @@ import java.util.concurrent.Executors;
 import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
 
+import ch.qos.logback.classic.LoggerContext;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -48,8 +49,10 @@ import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.graphdb.index.IndexProvider;
+import org.neo4j.graphdb.index.IndexProviderKernelExtensionFactory;
 import org.neo4j.graphdb.index.IndexProviders;
 import org.neo4j.helpers.DaemonThreadFactory;
+import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.Settings;
 import org.neo4j.helpers.collection.Iterables;
@@ -120,8 +123,6 @@ import org.neo4j.kernel.logging.LogbackService;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.tooling.GlobalGraphOperations;
 
-import ch.qos.logback.classic.LoggerContext;
-
 /**
  * Base implementation of GraphDatabaseService. Responsible for creating services, handling dependencies between them,
  * and lifecycle management of these.
@@ -165,7 +166,6 @@ public abstract class InternalAbstractGraphDatabase
     protected TransactionEventHandlers transactionEventHandlers;
     protected RelationshipTypeHolder relationshipTypeHolder;
     protected NodeManager nodeManager;
-    protected Iterable<IndexProvider> indexProviders;
     protected IndexManagerImpl indexManager;
     protected KernelPanicEventGenerator kernelPanicEventGenerator;
     protected TxHook txHook;
@@ -213,9 +213,22 @@ public abstract class InternalAbstractGraphDatabase
         params.put( Configuration.store_dir.name(), storeDir );
 
         // SPI - provided services
-        this.indexProviders = indexProviders;
         this.cacheProviders = mapCacheProviders( cacheProviders );
         config = new Config( params, getSettingsClasses( settingsClasses, kernelExtensions, cacheProviders ) );
+
+        // Convert IndexProviders into KernelExtensionFactories
+        // Remove this when the deprecated IndexProvider is removed
+        Iterable<KernelExtensionFactory<?>> indexProviderKernelExtensions = Iterables.map( new Function<IndexProvider, KernelExtensionFactory<?>>()
+        {
+            @Override
+            public KernelExtensionFactory<?> apply( IndexProvider from )
+            {
+                return new IndexProviderKernelExtensionFactory( from );
+            }
+        }, indexProviders );
+
+        kernelExtensions = Iterables.concat( kernelExtensions, indexProviderKernelExtensions );
+
         this.kernelExtensions = new KernelExtensions( kernelExtensions, config, dependencyResolver );
         this.transactionInterceptorProviders = new TransactionInterceptorProviders( transactionInterceptorProviders,
                 dependencyResolver );
@@ -426,10 +439,6 @@ public abstract class InternalAbstractGraphDatabase
             life.add( kernelExtensions );
         }
 
-        if ( indexProviders == null )
-        {
-            indexProviders = new LegacyIndexIterable();
-        }
         indexManager = new IndexManagerImpl( config, indexStore, xaDataSourceManager, txManager, this );
         nodeAutoIndexer = life.add( new NodeAutoIndexerImpl( config, indexManager, nodeManager ) );
         relAutoIndexer = life.add( new RelationshipAutoIndexerImpl( config, indexManager, nodeManager ) );
@@ -1295,6 +1304,10 @@ public abstract class InternalAbstractGraphDatabase
             else if ( DiagnosticsManager.class.isAssignableFrom( type ) )
             {
                 return (T) diagnosticsManager;
+            }
+            else if ( DependencyResolver.class.isAssignableFrom( type ) )
+            {
+                return (T) DependencyResolverImpl.this;
             }
             else
             {

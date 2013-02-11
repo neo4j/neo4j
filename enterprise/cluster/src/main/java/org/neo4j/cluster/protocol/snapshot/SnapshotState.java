@@ -52,31 +52,33 @@ public enum SnapshotState
 
                         case refreshSnapshot:
                         {
-                            URI coordinator = context.getClusterContext().getConfiguration().getMembers().get( 0 );
-                            outgoing.offer( Message.to( SnapshotMessage.sendSnapshot, coordinator ) );
-                            return refreshing;
-                        }
-
-                        case join:
-                        {
                             if ( context.getClusterContext().getConfiguration().getMembers().size() <= 1 ||
                                     context.getSnapshotProvider() == null )
                             {
-                                return ready;
+                                // we are the only instance or there are no snapshots
+                                return start;
                             }
                             else
                             {
                                 URI coordinator = context.getClusterContext().getConfiguration().getElected(
                                         ClusterConfiguration.COORDINATOR );
-                                if (coordinator != null)
+                                if ( coordinator != null )
                                 {
+                                    // there is a coordinator - ask from that
                                     outgoing.offer( Message.to( SnapshotMessage.sendSnapshot, coordinator ) );
                                     return refreshing;
-                                } else
+                                }
+                                else
                                 {
-                                    return ready;
+                                    return start;
                                 }
                             }
+                        }
+
+                        case join:
+                        {
+                            // go to ready state, if someone needs snapshots they should ask for it explicitly.
+                            return ready;
                         }
                     }
                     return this;
@@ -118,6 +120,32 @@ public enum SnapshotState
                 {
                     switch ( message.getMessageType() )
                     {
+                        case refreshSnapshot:
+                         {
+                             if ( context.getClusterContext().getConfiguration().getMembers().size() <= 1 ||
+                                     context.getSnapshotProvider() == null )
+                             {
+                                 // we are the only instance in the cluster or snapshots are not meaningful
+                                 return ready;
+                             }
+                             else
+                             {
+                                 URI coordinator = context.getClusterContext().getConfiguration().getElected(
+                                         ClusterConfiguration.COORDINATOR );
+                                 if ( coordinator != null )
+                                 {
+                                     // coordinator exists, ask for the snapshot
+                                     outgoing.offer( Message.to( SnapshotMessage.sendSnapshot, coordinator ) );
+                                     return refreshing;
+                                 }
+                                 else
+                                 {
+                                     // coordinator is unknown, can't do much
+                                     return ready;
+                                 }
+                             }
+                         }
+
                         case sendSnapshot:
                         {
                             outgoing.offer( Message.respond( SnapshotMessage.snapshot, message,
@@ -135,5 +163,4 @@ public enum SnapshotState
                     return this;
                 }
             }
-
 }

@@ -21,7 +21,6 @@
     <cxf.version>2.3.1</cxf.version>
     <servlet-api.version>2.5</servlet-api.version>
     <neo4j.version>${project.version}</neo4j.version>
-    <jersey.server.version>1.6</jersey.server.version>
     <license-text.header>GPL-3-header.txt</license-text.header>
     <bundle.namespace>org.neo4j.server.plugin.cypher</bundle.namespace>
     <docs.url>http://docs.neo4j.org/chunked/${project.version}/cypher-plugin.html</docs.url>
@@ -86,13 +85,11 @@ the relevant Commercial Agreement.
     <dependency>
       <groupId>com.sun.jersey</groupId>
       <artifactId>jersey-client</artifactId>
-      <version>${jersey.server.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>com.sun.jersey</groupId>
       <artifactId>jersey-server</artifactId>
-      <version>${jersey.server.version}</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -138,7 +135,6 @@ the relevant Commercial Agreement.
     <dependency>
       <groupId>com.google.code.gson</groupId>
       <artifactId>gson</artifactId>
-      <version>2.2.2</version>
       <scope>test</scope>
     </dependency>
 

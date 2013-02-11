@@ -22,6 +22,12 @@ package org.neo4j.graphdb.index;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.Service;
 
+/**
+ * IndexProvider has been replaced with KernelExtensions. Essentially, an extension implementing IndexImplementations
+ * should provide a KernelExtensionFactory whose KernelExtension on start() creates and registers an IndexImplementation
+ * with the IndexProviders collection. See LuceneKernelExtension for an example of this.
+ */
+@Deprecated
 public abstract class IndexProvider extends Service
 {
     private final String identifier;

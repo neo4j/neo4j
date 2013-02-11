@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.core;
 import java.util.Iterator;
 
 import org.junit.After;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.graphdb.DynamicRelationshipType;
@@ -53,7 +52,6 @@ import org.neo4j.test.ImpermanentDatabaseRule;
  *   other is the read happening from the iterator already acquired or from a node re-read from scratch. A fix should
  *   make all 4 green.
  */
-@Ignore("Fails, awaits fix")
 public class TestConcurrentModificationOfRelationshipChains
 {
     private static final int RelationshipGrabSize = 2;

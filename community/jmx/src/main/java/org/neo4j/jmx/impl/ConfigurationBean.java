@@ -27,6 +27,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
 import javax.management.Attribute;
 import javax.management.AttributeList;
 import javax.management.AttributeNotFoundException;
@@ -39,7 +40,6 @@ import javax.management.NotCompliantMBeanException;
 import javax.management.ReflectionException;
 
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.jmx.Description;
 import org.neo4j.kernel.KernelData;
 import org.neo4j.kernel.configuration.Config;
@@ -51,7 +51,9 @@ public final class ConfigurationBean extends Neo4jMBean
 {
     public static final String CONFIGURATION_MBEAN_NAME = "Configuration";
     private final Map<String, String> config;
-    private Config configuration;
+    private final Config configuration;
+
+    private final Map<String, String> parameterDescriptions;
 
     ConfigurationBean( KernelData kernel, ManagementSupport support ) throws NotCompliantMBeanException
     {
@@ -59,37 +61,43 @@ public final class ConfigurationBean extends Neo4jMBean
         this.config = new HashMap<String, String>(kernel.getConfig().getParams());
         this.configuration = kernel.getConfig();
         configuration.addConfigurationChangeListener( new UpdatedConfigurationListener() );
-    }
 
-    private static final Map<String, String> parameterDescriptions;
-    static
-    {
-        final Map<String, String> descriptions = new HashMap<String, String>();
-        for ( final Field field : GraphDatabaseSettings.class.getFields() )
+        Map<String, String> descriptions = new HashMap<String, String>();
+
+        for ( Class<?> settingsClass : configuration.getSettingsClasses() )
         {
-            if ( Modifier.isStatic( field.getModifiers() ) && Modifier.isFinal( field.getModifiers() ) )
+            for ( final Field field : settingsClass.getFields() )
             {
-                final org.neo4j.graphdb.factory.Description documentation = field.getAnnotation( org.neo4j.graphdb.factory.Description.class );
-                if ( documentation == null || !Setting.class.isAssignableFrom(field.getType()) ) continue;
-                try
+                if ( Modifier.isStatic( field.getModifiers() ) && Modifier.isFinal( field.getModifiers() ) )
                 {
-                    if ( !field.isAccessible() ) field.setAccessible( true );
-                    
-                    String description = documentation.value();
-                    Setting setting = (Setting) field.get( null );
+                    final org.neo4j.graphdb.factory.Description documentation = field.getAnnotation( org.neo4j.graphdb.factory.Description.class );
+                    if ( documentation == null || !Setting.class.isAssignableFrom(field.getType()) ) continue;
+                    try
+                    {
+                        if ( !field.isAccessible() ) field.setAccessible( true );
 
-                    descriptions.put( setting.name(), description );
-                }
-                catch ( Exception e )
-                {
-                    continue;
+                        String description = documentation.value();
+                        Setting setting = (Setting) field.get( null );
+
+                        descriptions.put( setting.name(), description );
+
+                        String value = configuration.getParams().get( setting.name() );
+                        if (value == null)
+                            value = setting.getDefaultValue();
+                        config.put( setting.name(), value );
+                    }
+                    catch ( Exception e )
+                    {
+                        continue;
+                    }
                 }
             }
         }
         parameterDescriptions = Collections.unmodifiableMap( descriptions );
+
     }
 
-    private static String describeConfigParameter( String param )
+    private String describeConfigParameter( String param )
     {
         String description = parameterDescriptions.get( param );
         return description != null ? description : "Configuration attribute";
