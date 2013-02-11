@@ -42,7 +42,7 @@ class TraversalMatchPipe(source: Pipe, matcher: TraversalMatcher, trail: Trail) 
 
   def symbols = trail.symbols(source.symbols)
 
-  def executionPlanDescription() = "TraversalMatcher()"
+  def executionPlanDescription() = source.executionPlanDescription() + "\nTraversalMatcher(" + trail+")"
 
   def throwIfSymbolsMissing(symbols: SymbolTable) {
   }

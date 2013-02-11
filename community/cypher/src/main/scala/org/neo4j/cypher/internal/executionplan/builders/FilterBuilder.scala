@@ -39,10 +39,9 @@ package org.neo4j.cypher.internal.executionplan.builders
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import org.neo4j.cypher.internal.commands.Predicate
+import org.neo4j.cypher.internal.commands.{True, Predicate}
 import org.neo4j.cypher.internal.pipes.{FilterPipe, Pipe}
 import org.neo4j.cypher.internal.executionplan.{ExecutionPlanInProgress, PlanBuilder}
-import org.neo4j.cypher.{CypherException, CypherTypeException, SyntaxException}
 
 class FilterBuilder extends PlanBuilder {
   def apply(plan: ExecutionPlanInProgress) = {
@@ -51,7 +50,13 @@ class FilterBuilder extends PlanBuilder {
 
     val item = q.where.filter(pred => yesOrNo(pred, p))
     val pred: Predicate = item.map(_.token).reduce(_ ++ _)
-    val newPipe = new FilterPipe(p, pred)
+
+    val newPipe = if (pred == True()) {
+      p
+    } else {
+      new FilterPipe(p, pred)
+    }
+
     val newQuery = q.where.filterNot(item.contains) ++ item.map(_.solve)
 
     plan.copy(
