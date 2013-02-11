@@ -1,8 +1,0 @@
-usr/share/neo4j-coordinator/lib      var/lib/neo4j-coordinator/lib
-usr/share/neo4j-coordinator/system   var/lib/neo4j-coordinator/system
-
-var/log/neo4j-coordinator            var/lib/neo4j-coordinator/data/log
-
-etc/neo4j-coordinator                var/lib/neo4j-coordinator/conf
-
-var/lib/neo4j-coordinator/bin/neo4j-coordinator-shell   usr/bin/neo4j-coordinator-shell
