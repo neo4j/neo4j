@@ -22,9 +22,10 @@ package org.neo4j.cypher.internal.spi.gdsimpl
 import org.neo4j.cypher.internal.spi.{Operations, QueryContext}
 import org.neo4j.graphdb._
 import org.neo4j.kernel.{ThreadToStatementContextBridge, GraphDatabaseAPI}
-import org.neo4j.kernel.api.StatementContext
+import org.neo4j.kernel.api.{ConstraintViolationKernelException, StatementContext}
 import collection.JavaConverters._
 import org.neo4j.graphdb.DynamicRelationshipType.withName
+import org.neo4j.cypher.IndexAlreadyDefinedException
 
 class TransactionBoundQueryContext(graph: GraphDatabaseAPI) extends QueryContext {
   val tx: Transaction = graph.beginTx()
@@ -98,16 +99,21 @@ class TransactionBoundQueryContext(graph: GraphDatabaseAPI) extends QueryContext
     def getById(id: Long) = graph.getRelationshipById(id)
   }
 
-
   def getOrCreatePropertyKeyId(propertyKey: String) =
     ctx.getOrCreatePropertyKeyId(propertyKey)
 
   def getPropertyKeyId(propertyKey: String) =
     ctx.getPropertyKeyId(propertyKey)
 
-
   def addIndexRule(labelIds: Long, propertyKeyId: Long) {
-    ctx.addIndexRule(labelIds, propertyKeyId)
+    try {
+      ctx.addIndexRule(labelIds, propertyKeyId)
+    } catch {
+      case e: ConstraintViolationKernelException =>
+        val labelName = getLabelName(labelIds)
+        val propName = ctx.getPropertyKeyName(propertyKeyId)
+        throw new IndexAlreadyDefinedException(labelName, propName, e)
+    }
   }
 
   abstract class BaseOperations[T <: PropertyContainer] extends Operations[T] {

@@ -2618,14 +2618,14 @@ RETURN x0.name?
     assert(propertyKeys == actual)
   }
 
-  @Test(expected = classOf[ConstraintViolationKernelException]) def should_not_create_existing_index() {
+  @Test def should_not_create_existing_index() {
     // GIVEN
     val labelName = "Person"
     val propertyKeys = Seq("name")
     parseAndExecute(s"""CREATE INDEX ON :${labelName}(${propertyKeys.reduce(_ ++ "," ++ _)})""")
 
     // WHEN
-    parseAndExecute(s"""CREATE INDEX ON :${labelName}(${propertyKeys.reduce(_ ++ "," ++ _)})""")
+    intercept[IndexAlreadyDefinedException](parseAndExecute(s"""CREATE INDEX ON :${labelName}(${propertyKeys.reduce(_ ++ "," ++ _)})"""))
   }
 
   @Test def union_ftw() {

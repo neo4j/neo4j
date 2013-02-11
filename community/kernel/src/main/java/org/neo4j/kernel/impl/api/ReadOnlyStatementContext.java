@@ -22,9 +22,15 @@ package org.neo4j.kernel.impl.api;
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.kernel.api.ConstraintViolationKernelException;
 import org.neo4j.kernel.api.LabelNotFoundKernelException;
+import org.neo4j.kernel.api.PropertyKeyIdNotFoundException;
 import org.neo4j.kernel.api.PropertyKeyNotFoundException;
 import org.neo4j.kernel.api.StatementContext;
 
+/*
+ * Don't make this class extends DelegatingStatementContext. We
+ * want any changes to StatementContext to be manually checked
+ * here and not simply passed on.
+ */
 public class ReadOnlyStatementContext implements StatementContext
 {
     private final StatementContext delegate;
@@ -104,6 +110,12 @@ public class ReadOnlyStatementContext implements StatementContext
     public long getPropertyKeyId( String propertyKey ) throws PropertyKeyNotFoundException
     {
         return delegate.getPropertyKeyId( propertyKey );
+    }
+
+    @Override
+    public String getPropertyKeyName( long propertyId ) throws PropertyKeyIdNotFoundException
+    {
+        return delegate.getPropertyKeyName( propertyId );
     }
 
     @Override

@@ -39,9 +39,9 @@ class LabelTest extends DocumentingTestBase {
     testQuery(
       title = "Create a node and label it",
       text = "To create a node and add a label to it, use the label form of +CREATE+.",
-      queryText = "create n:swedish return n",
+      queryText = "create n:Swedish return n",
       returns = "The newly labeled node is returned by the query.",
-      assertions = (p) => assert(getLabelsFromNode(p) === List("swedish"))
+      assertions = (p) => assert(getLabelsFromNode(p) === List("Swedish"))
     )
   }
 
@@ -49,9 +49,9 @@ class LabelTest extends DocumentingTestBase {
     testQuery(
       title = "Add a label to a node",
       text = "To add a label to a node, use +ADD+ +LABEL+.",
-      queryText = "start n = node(%Stefan%) add n label :swedish return n",
+      queryText = "start n = node(%Stefan%) add n label :Swedish return n",
       returns = "The newly labeled node is returned by the query.",
-      assertions = (p) => assert(getLabelsFromNode(p) === List("swedish"))
+      assertions = (p) => assert(getLabelsFromNode(p) === List("Swedish"))
     )
   }
 
@@ -59,9 +59,9 @@ class LabelTest extends DocumentingTestBase {
     testQuery(
       title = "Add multiple labels to a node",
       text = "To add multiple labels to a node, use +ADD+ +LABEL+ and separate the different lables using +:+.",
-      queryText = "start n = node(%Stefan%) add n label :swedish:polish return n",
+      queryText = "start n = node(%Stefan%) add n label :Swedish:Polish return n",
       returns = "The newly labeled node is returned by the query.",
-      assertions = (p) => assert(getLabelsFromNode(p) === List("swedish", "polish"))
+      assertions = (p) => assert(getLabelsFromNode(p) === List("Swedish", "Polish"))
     )
   }
 
@@ -69,9 +69,9 @@ class LabelTest extends DocumentingTestBase {
     testQuery(
       title = "Add multiple labels to a node using the short form",
       text = "The short form is also allowed here.",
-      queryText = "start n = node(%Stefan%) add n:swedish:polish return n",
+      queryText = "start n = node(%Stefan%) add n:Swedish:Polish return n",
       returns = "The newly labeled node is returned by the query.",
-      assertions = (p) => assert(getLabelsFromNode(p) === List("swedish", "polish"))
+      assertions = (p) => assert(getLabelsFromNode(p) === List("Swedish", "Polish"))
     )
   }
 
@@ -107,7 +107,7 @@ class LabelTest extends DocumentingTestBase {
 
   @Test def removing_labels_using_an_expression() {
     testQuery(
-      title = "Adding labels using an expression",
+      title = "Removing labels using an expression",
       text = "When the labels you want to set come from an expression, you can't use the short form.",
       queryText = "start n = node(%Anders%), emil = node(%Emil%) remove n label labels(emil) return n",
       returns = "",

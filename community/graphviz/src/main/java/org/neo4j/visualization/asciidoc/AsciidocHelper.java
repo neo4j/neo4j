@@ -172,9 +172,9 @@ public class AsciidocHelper
     {
         String[] keywordsToBreakOn = new String[] {"start", "create unique", "set", "delete", "foreach",
         "match", "where", "with", "return", "skip", "limit", "order by", "asc", "ascending",
-        "desc", "descending", "create"};
-        // Add extra leading blank to short keywords here to avoid uppercasing parts of identifiers accidentally
-        String[] unbreakableKeywords = new String[] {" label", " values", " on"};
+        "desc", "descending", "create", "add", "remove"};
+
+        String[] unbreakableKeywords = new String[] {"label", "values", "on", "index"};
         return createLanguageSnippet( query, "cypher", keywordsToBreakOn, unbreakableKeywords );
     }
 
@@ -207,7 +207,7 @@ public class AsciidocHelper
         {
             String upperKeyword = keyword.toUpperCase();
             result = result.
-                    replace(keyword+" ", upperKeyword+" ").
+                    replace(keyword+" ", upperKeyword + " ").
                     replace(" " + upperKeyword + " ", "\n" + upperKeyword + " ");
         }
         return result;
@@ -217,7 +217,7 @@ public class AsciidocHelper
         String result = query;
         for ( String keyword : uppercaseKeywords ) {
             String upperKeyword = keyword.toUpperCase();
-            result = result.replace(keyword+" ", upperKeyword+" ");
+            result = result.replace(" " + keyword + " ", " " + upperKeyword+" ");
         }
         return result;
     }

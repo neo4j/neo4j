@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.api;
 
-public class LabelNotFoundKernelException extends KernelException
+public class PropertyKeyIdNotFoundException extends KernelException
 {
-    public LabelNotFoundKernelException( String message, Exception cause )
+    public PropertyKeyIdNotFoundException( long propertyKeyId, Exception cause )
     {
-        super( message, cause );
+        super( "Property key id '" + propertyKeyId + "' not found", cause );
     }
 }

@@ -147,7 +147,6 @@ public interface StatementContext
      * 
      * @param propertyKey the name property key to get the id for.
      * @return the property key id for the given property key.
-     * @throws ConstraintViolationKernelException if the property key violates some
      * constraint, for example if it's null or of zero length.
      */
     long getOrCreatePropertyKeyId( String propertyKey );
@@ -161,4 +160,12 @@ public interface StatementContext
      * @throws PropertyKeyNotFoundException if the property key doesn't exist.
      */
     long getPropertyKeyId( String propertyKey ) throws PropertyKeyNotFoundException;
+
+    /**
+     * Returns the name of a property given it's property key id
+     * @param propertyId the property key id for the given property key.
+     * @return the property key for the property key id.
+     * @throws PropertyKeyIdNotFoundException if the property key id doesn't exist.
+     */
+    String getPropertyKeyName( long propertyId ) throws PropertyKeyIdNotFoundException;
 }

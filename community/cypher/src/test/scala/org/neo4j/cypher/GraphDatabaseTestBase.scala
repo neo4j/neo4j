@@ -27,6 +27,7 @@ import org.neo4j.graphdb._
 import org.neo4j.test.ImpermanentGraphDatabase
 import org.neo4j.kernel.{ThreadToStatementContextBridge, GraphDatabaseAPI}
 import org.neo4j.kernel.api.StatementContext
+import org.neo4j.graphdb.DynamicLabel._
 
 class GraphDatabaseTestBase extends JUnitSuite {
 
@@ -150,6 +151,19 @@ class GraphDatabaseTestBase extends JUnitSuite {
     nodes = names.map(x => createNode(Map("name" -> x))).toList
     nodes
   }
+
+  def createIndex(labelName: String, prop: String) = {
+    val tx = graph.beginTx()
+
+    graph.schema().
+      indexCreator(label(labelName)).
+      on(prop).
+      create()
+
+    tx.success()
+    tx.finish()
+  }
+
 
   def createDiamond(): (Node, Node, Node, Node) = {
     //    Graph:

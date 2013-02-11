@@ -52,5 +52,8 @@ class MissingIndexException(indexName:String) extends CypherException("Index `" 
 
 class InvalidAggregateException(message:String) extends CypherException(message)
 
-class NodeStillHasRelationshipsException(val nodeId:Long, cause:Throwable) extends CypherException("Node with id " + nodeId + " still has relationships, and can not be deleted.")
+class NodeStillHasRelationshipsException(val nodeId:Long, cause:Throwable)
+  extends CypherException("Node with id " + nodeId + " still has relationships, and can not be deleted.")
 
+class IndexAlreadyDefinedException(labelName:String, property:String, cause:Throwable)
+  extends CypherException(s"Property `$property` is already indexed for label `$labelName`.", cause)

@@ -31,6 +31,7 @@ import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.api.ConstraintViolationKernelException;
 import org.neo4j.kernel.api.LabelNotFoundKernelException;
+import org.neo4j.kernel.api.PropertyKeyIdNotFoundException;
 import org.neo4j.kernel.api.PropertyKeyNotFoundException;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.impl.core.KeyNotFoundException;
@@ -246,6 +247,19 @@ public class StoreStatementContext implements StatementContext
         catch ( KeyNotFoundException e )
         {
             throw new PropertyKeyNotFoundException( propertyKey, e );
+        }
+    }
+
+    @Override
+    public String getPropertyKeyName( long propertyId ) throws PropertyKeyIdNotFoundException
+    {
+        try
+        {
+            return propertyIndexManager.getKeyById( (int) propertyId ).getKey();
+        }
+        catch ( KeyNotFoundException e )
+        {
+            throw new PropertyKeyIdNotFoundException( propertyId, e );
         }
     }
 }
