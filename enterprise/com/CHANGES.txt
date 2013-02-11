@@ -1,3 +1,7 @@
+1.9.M05 (2013-02-12)]
+--------------------
+o Shutting down Server now takes proper care of executors and works with multiple versions of netty
+
 1.6 (2012-01-20)
 ---------------
 o New HA request type allows for copy of transaction interval from master to slave, to recover from missing logical log files.
