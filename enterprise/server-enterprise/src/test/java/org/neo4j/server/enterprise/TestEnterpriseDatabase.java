@@ -35,7 +35,7 @@ public class TestEnterpriseDatabase
     public void shouldStartInSingleModeByDefault() throws Throwable
     {
         Configuration config = new MapBasedConfiguration();
-        config.getString( Configurator.DATABASE_LOCATION_PROPERTY_KEY,
+        config.setProperty( Configurator.DATABASE_LOCATION_PROPERTY_KEY,
                 TargetDirectory.forTest( getClass() ).graphDbDir( true ).getAbsolutePath() );
         EnterpriseDatabase db = new EnterpriseDatabase( config );
 
