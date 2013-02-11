@@ -1,3 +1,10 @@
+1.9.M05 (2013-02-12)]
+--------------------
+o Concurrent modifications to relationship chains now do now lead to RecordNotInUse exceptions or
+  cache poisoning
+o Proper tx management will now make negative transaction counts impossible
+o IndexProvider is now deprecated, replaced by KernelExtensionFactory
+
 1.9.M04 (2013-01-17)
 --------------------
 o Start entries are now explicitly marked as written, solves a bug that might cause recovery to fail

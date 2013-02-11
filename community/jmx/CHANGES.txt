@@ -1,3 +1,7 @@
+1.9.M05 (2013-02-12)
+--------------------
+o JMX will now provide info on all configuration values, including the defaults not explicitly set
+
 1.7 (2011-04-18)
 ----------------
 o Configuration can now be changed via JMX
