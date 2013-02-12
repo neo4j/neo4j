@@ -23,7 +23,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.Writer;
 
-
 public class JavaDocsGenerator extends AsciiDocGenerator
 {
     private final static String DIRECTORY = "target" + File.separator + "docs";

@@ -23,7 +23,6 @@ import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 import org.neo4j.test.JavaDocsGenerator;
-import org.neo4j.test.TargetDirectory;
 import org.neo4j.visualization.asciidoc.AsciidocHelper;
 
 public class JavaQueryTest
@@ -31,7 +30,7 @@ public class JavaQueryTest
     @Test
     public void test()
     {
-        JavaDocsGenerator gen = new JavaDocsGenerator( "java-cypher-queries", storeDir );
+        JavaDocsGenerator gen = new JavaDocsGenerator( "java-cypher-queries", "dev/java" );
 
         JavaQuery jq = new JavaQuery();
         jq.run();
@@ -49,6 +48,4 @@ public class JavaQueryTest
         gen.saveToFile( "node", AsciidocHelper.createOutputSnippet( jq.nodeResult ) );
         gen.saveToFile( "rows", AsciidocHelper.createOutputSnippet( jq.rows ) );
     }
-    
-    private final String storeDir = TargetDirectory.forTest( getClass() ).graphDbDir( true ).getAbsolutePath();
 }
