@@ -25,9 +25,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Set;
 
-import javax.transaction.Synchronization;
 import javax.transaction.Transaction;
-import javax.transaction.xa.XAResource;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -130,16 +128,6 @@ class RWLock implements Visitor<LineLogger>
     }
 
     /**
-     * Calls {@link #acquireReadLock(Transaction)} with the transaction
-     * associated with the current thread.
-     *
-     * @throws DeadlockDetectedException
-     */
-    void acquireReadLock() throws DeadlockDetectedException {
-        acquireReadLock(ragManager.getCurrentTransaction());
-    }
-
-    /**
      * Tries to acquire read lock for a given transaction. If
      * <CODE>this.writeCount</CODE> is greater than the currents tx's write
      * count the transaction has to wait and the {@link RagManager#checkWaitOn}
@@ -153,10 +141,7 @@ class RWLock implements Visitor<LineLogger>
      */
     synchronized void acquireReadLock(Transaction tx) throws DeadlockDetectedException
     {
-        if ( tx == null && (tx = ragManager.getCurrentTransaction()) == null )
-        {
-            tx = new PlaceboTransaction();
-        }
+        assertTransaction( tx );
         TxLockElement tle = txLockElementMap.get( tx );
         if ( tle == null )
         {
@@ -210,10 +195,7 @@ class RWLock implements Visitor<LineLogger>
 	 */
     synchronized void releaseReadLock(Transaction tx) throws LockNotFoundException
     {
-        if ( tx == null && (tx = ragManager.getCurrentTransaction()) == null )
-        {
-            tx = new PlaceboTransaction();
-        }
+        assertTransaction( tx );
         TxLockElement tle = txLockElementMap.get( tx );
         if ( tle == null )
         {
@@ -308,6 +290,12 @@ class RWLock implements Visitor<LineLogger>
         }
     }
 
+    private void assertTransaction( Transaction tx )
+    {
+        if ( tx == null )
+            throw new IllegalArgumentException();
+    }
+
     /**
      * Calls {@link #acquireWriteLock(Transaction)} with the
      * transaction associated with the current thread.
@@ -333,11 +321,7 @@ class RWLock implements Visitor<LineLogger>
      */
     synchronized void acquireWriteLock(Transaction tx) throws DeadlockDetectedException
     {
-        if ( tx == null && (tx = ragManager.getCurrentTransaction()) == null )
-        {
-            tx = new PlaceboTransaction();
-        }
-
+        assertTransaction( tx );
         TxLockElement tle = txLockElementMap.get( tx );
         if ( tle == null )
         {
@@ -391,10 +375,7 @@ class RWLock implements Visitor<LineLogger>
 	 */
     synchronized void releaseWriteLock(Transaction tx) throws LockNotFoundException
     {
-        if ( tx == null && (tx = ragManager.getCurrentTransaction()) == null )
-        {
-            tx = new PlaceboTransaction();
-        }
+        assertTransaction( tx );
         TxLockElement tle = txLockElementMap.get( tx );
         if ( tle == null )
         {
@@ -540,79 +521,5 @@ class RWLock implements Visitor<LineLogger>
     public String toString()
     {
         return "RWLock[" + resource + "]";
-    }
-
-    private static class PlaceboTransaction implements Transaction
-    {
-        private final Thread currentThread;
-
-        PlaceboTransaction()
-        {
-            this.currentThread = Thread.currentThread();
-        }
-
-        @Override
-        public boolean equals( Object o )
-        {
-            if ( !(o instanceof PlaceboTransaction) )
-            {
-                return false;
-            }
-            return this.currentThread
-                .equals( ((PlaceboTransaction) o).currentThread );
-        }
-
-        @Override
-        public int hashCode()
-        {
-            return currentThread.hashCode();
-        }
-
-        @Override
-        public void commit()
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public boolean delistResource( XAResource arg0, int arg1 )
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public boolean enlistResource( XAResource arg0 )
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public int getStatus()
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public void registerSynchronization( Synchronization arg0 )
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public void rollback()
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public void setRollbackOnly()
-        {
-        }
-
-        @Override
-        public String toString()
-        {
-            return "Placebo tx for thread " + currentThread;
-        }
     }
 }

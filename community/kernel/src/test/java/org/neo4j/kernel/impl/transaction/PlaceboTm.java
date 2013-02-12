@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
+import static org.mockito.Mockito.mock;
+import static org.neo4j.helpers.Exceptions.launderedException;
+
 import javax.transaction.HeuristicMixedException;
 import javax.transaction.HeuristicRollbackException;
 import javax.transaction.InvalidTransactionException;
@@ -37,7 +40,8 @@ import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 public class PlaceboTm extends AbstractTransactionManager
 {
     private LockManager lockManager;
-    private TxIdGenerator txIdGenerator;
+    private final TxIdGenerator txIdGenerator;
+    private final Transaction tx = mock( Transaction.class );
 
     public PlaceboTm( LockManager lockManager, TxIdGenerator txIdGenerator )
     {
@@ -50,12 +54,14 @@ public class PlaceboTm extends AbstractTransactionManager
         this.lockManager = lockManager;
     }
     
+    @Override
     public void begin() throws NotSupportedException, SystemException
     {
         // TODO Auto-generated method stub
 
     }
 
+    @Override
     public void commit() throws RollbackException, HeuristicMixedException,
             HeuristicRollbackException, SecurityException, IllegalStateException,
             SystemException
@@ -64,18 +70,20 @@ public class PlaceboTm extends AbstractTransactionManager
 
     }
 
+    @Override
     public int getStatus() throws SystemException
     {
         // TODO Auto-generated method stub
         return 0;
     }
 
+    @Override
     public Transaction getTransaction() throws SystemException
     {
-        // TODO Auto-generated method stub
-        return null;
+        return tx;
     }
 
+    @Override
     public void resume( Transaction arg0 ) throws InvalidTransactionException,
             IllegalStateException, SystemException
     {
@@ -83,6 +91,7 @@ public class PlaceboTm extends AbstractTransactionManager
 
     }
 
+    @Override
     public void rollback() throws IllegalStateException, SecurityException,
             SystemException
     {
@@ -90,18 +99,21 @@ public class PlaceboTm extends AbstractTransactionManager
 
     }
 
+    @Override
     public void setRollbackOnly() throws IllegalStateException, SystemException
     {
         // TODO Auto-generated method stub
 
     }
 
+    @Override
     public void setTransactionTimeout( int arg0 ) throws SystemException
     {
         // TODO Auto-generated method stub
 
     }
 
+    @Override
     public Transaction suspend() throws SystemException
     {
         // TODO Auto-generated method stub
@@ -164,15 +176,31 @@ public class PlaceboTm extends AbstractTransactionManager
             @Override
             public LockElement acquireReadLock( Object resource )
             {
-                lockManager.getReadLock( resource );
-                return new LockElement( resource, LockType.READ, lockManager );
+                try
+                {
+                    Transaction tx = getTransaction();
+                    lockManager.getReadLock( resource, tx );
+                    return new LockElement( resource, tx, LockType.READ, lockManager );
+                }
+                catch ( Exception e )
+                {
+                    throw launderedException( e );
+                }
             }
             
             @Override
             public LockElement acquireWriteLock( Object resource )
             {
-                lockManager.getWriteLock( resource );
-                return new LockElement( resource, LockType.WRITE, lockManager );
+                try
+                {
+                    Transaction tx = getTransaction();
+                    lockManager.getWriteLock( resource, tx );
+                    return new LockElement( resource, tx, LockType.WRITE, lockManager );
+                }
+                catch ( SystemException e )
+                {
+                    throw launderedException( e );
+                }
             }
             
             @Override
