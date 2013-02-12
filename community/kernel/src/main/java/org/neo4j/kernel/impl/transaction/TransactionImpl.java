@@ -641,7 +641,7 @@ class TransactionImpl implements Transaction
      * However, in the spirit of baby steps, we hook into the current tx infrastructure at a few
      * points to not have to do the full move in one step.
      */
-    public void setTranscationContext( TransactionContext transactionContext )
+    public void setTransactionContext( TransactionContext transactionContext )
     {
         this.transactionContext = transactionContext;
     }
