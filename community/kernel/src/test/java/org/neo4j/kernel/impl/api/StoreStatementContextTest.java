@@ -49,9 +49,8 @@ import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
-public class TemporaryLabelAsPropertyStatementContextTest
+public class StoreStatementContextTest
 {
-
     @Test
     public void should_be_able_to_add_label_to_node() throws Exception
     {
