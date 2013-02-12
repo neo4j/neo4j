@@ -258,8 +258,8 @@ public class WritableTransactionState implements TransactionState
     @Override
     public LockElement acquireWriteLock( Object resource )
     {
-        lockManager.getWriteLock( resource );
-        LockElement lock = new LockElement( resource, LockType.WRITE, lockManager );
+        lockManager.getWriteLock( resource, tx );
+        LockElement lock = new LockElement( resource, tx, LockType.WRITE, lockManager );
         addLockToTransaction( lock );
         return lock;
     }
@@ -267,8 +267,8 @@ public class WritableTransactionState implements TransactionState
     @Override
     public LockElement acquireReadLock( Object resource )
     {
-        lockManager.getReadLock( resource );
-        LockElement lock = new LockElement( resource, LockType.READ, lockManager );
+        lockManager.getReadLock( resource, tx );
+        LockElement lock = new LockElement( resource, tx, LockType.READ, lockManager );
         addLockToTransaction( lock );
         return lock;
     }
@@ -376,7 +376,7 @@ public class WritableTransactionState implements TransactionState
             {
                 try
                 {
-                    lockElement.releaseIfAcquired( tx );
+                    lockElement.releaseIfAcquired();
                 }
                 catch ( Exception e )
                 {

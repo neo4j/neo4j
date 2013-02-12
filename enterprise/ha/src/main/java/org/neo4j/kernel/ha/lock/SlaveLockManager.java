@@ -81,15 +81,6 @@ public class SlaveLockManager implements LockManager
     }
 
     @Override
-    public void getReadLock( Object resource ) throws DeadlockDetectedException, IllegalResourceException
-    {
-        if ( getReadLockOnMaster( resource ) )
-        {
-            local.getReadLock( resource );
-        }
-    }
-
-    @Override
     public void getReadLock( Object resource, Transaction tx ) throws DeadlockDetectedException, IllegalResourceException
     {
         if ( getReadLockOnMaster( resource ) )
@@ -145,15 +136,6 @@ public class SlaveLockManager implements LockManager
         }
 
         return true;
-    }
-
-    @Override
-    public void getWriteLock( Object resource ) throws DeadlockDetectedException, IllegalResourceException
-    {
-        if ( getWriteLockOnMaster( resource ) )
-        {
-            local.getWriteLock( resource );
-        }
     }
 
     @Override

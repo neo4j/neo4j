@@ -63,27 +63,12 @@ public class LockManagerImpl implements LockManager
         this.ragManager = ragManager;
     }
 
+    @Override
     public long getDetectedDeadlockCount()
     {
         return ragManager.getDeadlockCount();
     }
 
-    /**
-     * Calls {{@link #getReadLock(Object, Transaction)} with parameters
-     * that will make the call try to get the read lock for the transaction
-     * associated with the current thread.
-     * 
-     * @param resource
-     * @throws DeadlockDetectedException
-     * @throws IllegalResourceException
-     */
-    @Override
-    public void getReadLock( Object resource )
-            throws DeadlockDetectedException, IllegalResourceException
-    {
-        getReadLock( resource, null );
-    }
-    
     /**
      * Tries to acquire read lock on <CODE>resource</CODE> for a given
      * transaction. If read lock can't be acquired the transaction will wait for
@@ -100,10 +85,7 @@ public class LockManagerImpl implements LockManager
     public void getReadLock( Object resource, Transaction tx )
         throws DeadlockDetectedException, IllegalResourceException
     {
-        if ( resource == null )
-        {
-            throw new IllegalResourceException( "Null parameter" );
-        }
+        assertValidArguments( resource, tx );
 
         RWLock lock = null;
         synchronized ( resourceLockMap )
@@ -120,22 +102,6 @@ public class LockManagerImpl implements LockManager
     }
 
     /**
-     * Calls {{@link #getWriteLock(Object, Transaction)} with parameters
-     * that will make the call try to get the write lock for the transaction
-     * associated with the current thread.
-     * 
-     * @param resource
-     * @throws DeadlockDetectedException
-     * @throws IllegalResourceException
-     */
-    @Override
-    public void getWriteLock( Object resource )
-            throws DeadlockDetectedException, IllegalResourceException
-    {
-        getWriteLock( resource, null );
-    }
-    
-    /**
      * Tries to acquire write lock on <CODE>resource</CODE> for a given
      * transaction. If write lock can't be acquired the transaction will wait
      * for the lock until it can acquire it. If waiting leads to dead lock a
@@ -151,10 +117,7 @@ public class LockManagerImpl implements LockManager
     public void getWriteLock( Object resource, Transaction tx )
         throws DeadlockDetectedException, IllegalResourceException
     {
-        if ( resource == null )
-        {
-            throw new IllegalResourceException( "Null parameter" );
-        }
+        assertValidArguments( resource, tx );
 
         RWLock lock = null;
         synchronized ( resourceLockMap )
@@ -168,6 +131,14 @@ public class LockManagerImpl implements LockManager
             lock.mark();
         }
         lock.acquireWriteLock(tx);
+    }
+
+    private void assertValidArguments( Object resource, Transaction tx )
+    {
+        if ( resource == null || tx == null )
+        {
+            throw new IllegalResourceException( "Null parameter" );
+        }
     }
 
     /**
@@ -184,10 +155,7 @@ public class LockManagerImpl implements LockManager
     public void releaseReadLock( Object resource, Transaction tx )
         throws LockNotFoundException, IllegalResourceException
     {
-        if ( resource == null )
-        {
-            throw new IllegalResourceException( "Null parameter" );
-        }
+        assertValidArguments( resource, tx );
 
         RWLock lock = null;
         synchronized ( resourceLockMap )
@@ -222,10 +190,7 @@ public class LockManagerImpl implements LockManager
     public void releaseWriteLock( Object resource, Transaction tx )
         throws LockNotFoundException, IllegalResourceException
     {
-        if ( resource == null )
-        {
-            throw new IllegalResourceException( "Null parameter" );
-        }
+        assertValidArguments( resource, tx );
 
         RWLock lock = null;
         synchronized ( resourceLockMap )
@@ -253,6 +218,7 @@ public class LockManagerImpl implements LockManager
      *
      * @param resource
      */
+    @Override
     public void dumpLocksOnResource( Object resource, Logging logging )
     {
         StringLogger logger = logging.getLogger( LockManager.class );
@@ -269,11 +235,13 @@ public class LockManagerImpl implements LockManager
         logger.logLongMessage( "Dump locks on resource " + resource, lock );
     }
 
+    @Override
     public List<LockInfo> getAllLocks()
     {
         return eachLock( new ListAppendingVisitor() ).result;
     }
 
+    @Override
     public List<LockInfo> getAwaitedLocks( long minWaitTime )
     {
         return eachAwaitedLock( new ListAppendingVisitor(), minWaitTime ).result;
@@ -326,6 +294,7 @@ public class LockManagerImpl implements LockManager
      * Utility method for debugging. Dumps the resource allocation graph to
      * console.
      */
+    @Override
     public void dumpRagStack( Logging logging )
     {
         logging.getLogger( getClass() ).logLongMessage( "RAG stack", ragManager );
@@ -334,6 +303,7 @@ public class LockManagerImpl implements LockManager
     /**
      * Utility method for debugging. Dumps info about each lock to console.
      */
+    @Override
     public void dumpAllLocks( Logging logging )
     {
         DumpVisitor dump = new DumpVisitor( logging );

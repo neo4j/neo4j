@@ -50,7 +50,7 @@ public class LockWorker extends OtherThreadExecutor<LockWorkerState>
             protected void acquireLock( LockWorkerState state )
             {
                 state.doing( "+R " + resource + ", wait:" + wait );
-                state.grabber.getReadLock( resource );
+                state.grabber.getReadLock( resource, state.tx );
                 state.done();
             }
         }, wait );
@@ -64,7 +64,7 @@ public class LockWorker extends OtherThreadExecutor<LockWorkerState>
             protected void acquireLock( LockWorkerState state )
             {
                 state.doing( "+W " + resource + ", wait:" + wait );
-                state.grabber.getWriteLock( resource );
+                state.grabber.getWriteLock( resource, state.tx );
                 state.done();
             }
         }, wait );
@@ -78,7 +78,7 @@ public class LockWorker extends OtherThreadExecutor<LockWorkerState>
             protected void acquireLock( LockWorkerState state )
             {
                 state.doing( "-R " + resource );
-                state.grabber.releaseReadLock( resource, null );
+                state.grabber.releaseReadLock( resource, state.tx );
                 state.done();
             }
         }, true );
@@ -92,7 +92,7 @@ public class LockWorker extends OtherThreadExecutor<LockWorkerState>
             protected void acquireLock( LockWorkerState state )
             {
                 state.doing( "-W " + resource );
-                state.grabber.releaseWriteLock( resource, null );
+                state.grabber.releaseWriteLock( resource, state.tx );
                 state.done();
             }
         }, true );
@@ -129,6 +129,7 @@ public class LockWorker extends OtherThreadExecutor<LockWorkerState>
             this.name = name;
         }
 
+        @Override
         public String toString()
         {
             return this.name;

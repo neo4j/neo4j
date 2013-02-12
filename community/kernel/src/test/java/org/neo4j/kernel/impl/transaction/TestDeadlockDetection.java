@@ -23,11 +23,14 @@ import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
 import static org.neo4j.kernel.impl.transaction.LockWorker.newResourceObject;
 
 import java.io.File;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
+
+import javax.transaction.Transaction;
 
 import org.junit.Test;
 import org.neo4j.kernel.DeadlockDetectedException;
@@ -44,7 +47,7 @@ public class TestDeadlockDetection
         ResourceObject r4 = newResourceObject( "R4" );
         
         PlaceboTm tm = new PlaceboTm( null, null );
-        LockManager lm = new LockManagerImpl( new RagManager( tm ) );
+        LockManager lm = new LockManagerImpl( new RagManager() );
         tm.setLockManager( lm );
         
         LockWorker t1 = new LockWorker( "T1", lm );
@@ -131,7 +134,7 @@ public class TestDeadlockDetection
         private static final Object READ = new Object();
         private static final Object WRITE = new Object();
         private static ResourceObject resources[] = new ResourceObject[10];
-        private Random rand = new Random( currentTimeMillis() );
+        private final Random rand = new Random( currentTimeMillis() );
         static
         {
             for ( int i = 0; i < resources.length; i++ )
@@ -144,6 +147,7 @@ public class TestDeadlockDetection
         private final float readWriteRatio;
         private final LockManager lm;
         private volatile Exception error;
+        private final Transaction tx = mock( Transaction.class );
 
         StressThread( String name, int numberOfIterations, int depthCount,
             float readWriteRatio, LockManager lm, CountDownLatch startSignal )
@@ -157,6 +161,7 @@ public class TestDeadlockDetection
             this.startSignal = startSignal;
         }
 
+        @Override
         public void run()
         {
             try
@@ -175,12 +180,12 @@ public class TestDeadlockDetection
                             int n = rand.nextInt( resources.length );
                             if ( f < readWriteRatio )
                             {
-                                lm.getReadLock( resources[n] );
+                                lm.getReadLock( resources[n], tx );
                                 lockStack.push( READ );
                             }
                             else
                             {
-                                lm.getWriteLock( resources[n] );
+                                lm.getWriteLock( resources[n], tx );
                                 lockStack.push( WRITE );
                             }
                             resourceStack.push( resources[n] );
@@ -194,11 +199,11 @@ public class TestDeadlockDetection
                         {
                             if ( lockStack.pop() == READ )
                             {
-                                lm.releaseReadLock( resourceStack.pop(), null );
+                                lm.releaseReadLock( resourceStack.pop(), tx );
                             }
                             else
                             {
-                                lm.releaseWriteLock( resourceStack.pop() , null);
+                                lm.releaseWriteLock( resourceStack.pop() , tx );
                             }
                         }
                     }
@@ -211,11 +216,11 @@ public class TestDeadlockDetection
                         {
                             if ( lockStack.pop() == READ )
                             {
-                                lm.releaseReadLock( resourceStack.pop(), null );
+                                lm.releaseReadLock( resourceStack.pop(), tx );
                             }
                             else
                             {
-                                lm.releaseWriteLock( resourceStack.pop(), null);
+                                lm.releaseWriteLock( resourceStack.pop(), tx );
                             }
                         }
                     }
@@ -227,6 +232,7 @@ public class TestDeadlockDetection
             }
         }
 
+        @Override
         public String toString()
         {
             return this.name;
@@ -242,7 +248,7 @@ public class TestDeadlockDetection
         }
         StressThread stressThreads[] = new StressThread[50];
         PlaceboTm tm = new PlaceboTm( null, null );
-        LockManager lm = new LockManagerImpl( new RagManager( tm ) );
+        LockManager lm = new LockManagerImpl( new RagManager() );
         tm.setLockManager( lm );
         CountDownLatch startSignal = new CountDownLatch( 1 );
         for ( int i = 0; i < stressThreads.length; i++ )
