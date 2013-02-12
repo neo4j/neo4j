@@ -27,11 +27,8 @@ import java.util.Map;
 import java.util.Stack;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import javax.transaction.SystemException;
 import javax.transaction.Transaction;
-import javax.transaction.TransactionManager;
 
-import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.impl.util.ArrayMap;
@@ -55,7 +52,7 @@ import org.neo4j.kernel.impl.util.StringLogger.LineLogger;
  * the tx (R->T) and when a transaction waits for a resource a relationship is
  * added from the tx to the resource (T->R). The only thing we need to do to see
  * if a deadlock occurs when some transaction waits for a resource is to
- * traverse node nodespace starting on the resource and see if we can get back
+ * traverse the graph starting on the resource and see if we can get back
  * to the tx ( T1 wants to wait on R1 and R1->T2->R2->T3->R8->T1 <==>
  * deadlock!).
  */
@@ -81,14 +78,7 @@ public class RagManager implements Visitor<LineLogger>
     private final ArrayMap<Transaction,Object> waitingTxMap =
         new ArrayMap<Transaction,Object>( (byte)5, false, true );
 
-    private final TransactionManager tm;
-
     private final AtomicInteger deadlockCount = new AtomicInteger();
-
-    public RagManager( TransactionManager tm )
-    {
-        this.tm = tm;
-    }
 
     long getDeadlockCount()
     {
@@ -307,18 +297,5 @@ public class RagManager implements Visitor<LineLogger>
             }
         }
         return true;
-    }
-
-    Transaction getCurrentTransaction()
-    {
-        try
-        {
-            return tm.getTransaction();
-        }
-        catch ( SystemException e )
-        {
-            throw new TransactionFailureException(
-                "Could not get current transaction.", e );
-        }
     }
 }

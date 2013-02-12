@@ -29,14 +29,8 @@ import org.neo4j.kernel.logging.Logging;
 
 public interface LockManager
 {
-    void getReadLock( Object resource )
-            throws DeadlockDetectedException, IllegalResourceException;
-
     void getReadLock( Object resource, Transaction tx )
                 throws DeadlockDetectedException, IllegalResourceException;
-
-    void getWriteLock( Object resource )
-                        throws DeadlockDetectedException, IllegalResourceException;
 
     void getWriteLock( Object resource, Transaction tx )
                             throws DeadlockDetectedException, IllegalResourceException;

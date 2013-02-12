@@ -777,7 +777,7 @@ public abstract class InternalAbstractGraphDatabase
 
     protected LockManager createLockManager()
     {
-        return new LockManagerImpl( new RagManager( txManager ) );
+        return new LockManagerImpl( new RagManager() );
     }
 
     protected Logging createLogging()
