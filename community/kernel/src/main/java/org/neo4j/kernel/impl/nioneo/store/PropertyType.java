@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import org.neo4j.kernel.impl.api.LabelAsProperty;
-import org.neo4j.kernel.impl.api.LabelAsPropertyData;
 
 /**
  * Defines valid property types.
@@ -54,7 +52,7 @@ public enum PropertyType
         @Override
         public Object getValue( PropertyBlock block, PropertyStore store )
         {
-            return Byte.valueOf( (byte) block.getSingleValueByte() );
+            return Byte.valueOf( block.getSingleValueByte() );
         }
 
         @Override
@@ -161,7 +159,7 @@ public enum PropertyType
 
         private float getValue( int propBlock )
         {
-            return Float.intBitsToFloat( (int) propBlock );
+            return Float.intBitsToFloat( propBlock );
         }
 
         @Override
@@ -300,26 +298,6 @@ public enum PropertyType
         {
             return ShortArray.calculateNumberOfBlocksUsed( firstBlock );
         }
-    },
-    LABEL( 13 )
-    {
-        @Override
-        public Object getValue( PropertyBlock block, PropertyStore store )
-        {
-            return new LabelAsProperty( block.getValueBlocks()[1] );
-        }
-
-        @Override
-        public PropertyData newPropertyData( PropertyBlock block, long propertyId, Object extractedValue )
-        {
-            return new LabelAsPropertyData( propertyId, block.getKeyIndexId(), getValue( block, null ) );
-        }
-
-        @Override
-        public int calculateNumberOfBlocksUsed( long firstBlock )
-        {
-            return 2;
-        }
     };
 
     private final int type;
@@ -389,8 +367,6 @@ public enum PropertyType
             return SHORT_STRING;
         case 12:
             return SHORT_ARRAY;
-        case 13:
-            return LABEL;
         default: if (nullOnIllegal) return null;
             throw new InvalidRecordException( "Unknown property type for type "
                                               + type );
