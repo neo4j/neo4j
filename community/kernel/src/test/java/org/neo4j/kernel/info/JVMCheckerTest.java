@@ -42,12 +42,34 @@ public class JVMCheckerTest
     }
 
     @Test
+    public void shouldNotIssueWarningWhenUsingHotspotServerVmVersion7() throws Exception
+    {
+        BufferingLogger bufferingLogger = new BufferingLogger();
+
+        new JvmChecker( bufferingLogger, new CannedJvmMetadataRepository( "Java HotSpot(TM) 64-Bit Server VM",
+                "1.7.0-b147" ) ).checkJvmCompatibilityAndIssueWarning();
+
+        assertTrue( bufferingLogger.toString().isEmpty() );
+    }
+
+    @Test
     public void shouldNotIssueWarningWhenUsingHotspotClientVmVersion6() throws Exception
     {
         BufferingLogger bufferingLogger = new BufferingLogger();
 
         new JvmChecker( bufferingLogger, new CannedJvmMetadataRepository( "Java HotSpot(TM) Client VM",
                 "1.6.42_87" ) ).checkJvmCompatibilityAndIssueWarning();
+
+        assertTrue( bufferingLogger.toString().isEmpty() );
+    }
+
+    @Test
+    public void shouldNotIssueWarningWhenUsingHotspotClientVmVersion7() throws Exception
+    {
+        BufferingLogger bufferingLogger = new BufferingLogger();
+
+        new JvmChecker( bufferingLogger, new CannedJvmMetadataRepository( "Java HotSpot(TM) Client VM",
+                "1.7.0-b147" ) ).checkJvmCompatibilityAndIssueWarning();
 
         assertTrue( bufferingLogger.toString().isEmpty() );
     }
@@ -69,7 +91,7 @@ public class JVMCheckerTest
         BufferingLogger bufferingLogger = new BufferingLogger();
 
         new JvmChecker( bufferingLogger, new CannedJvmMetadataRepository( "Java HotSpot(TM) 64-Bit Server VM",
-                "1.7.0_05" ) ).checkJvmCompatibilityAndIssueWarning();
+                "1.8.0_05" ) ).checkJvmCompatibilityAndIssueWarning();
 
         assertThat( bufferingLogger.toString().trim(), is( INCOMPATIBLE_JVM_VERSION_WARNING ) );
     }
