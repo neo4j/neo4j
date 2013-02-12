@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
-import static org.mockito.Mockito.mock;
 import static org.neo4j.helpers.Exceptions.launderedException;
 
 import javax.transaction.HeuristicMixedException;
@@ -27,8 +26,11 @@ import javax.transaction.HeuristicRollbackException;
 import javax.transaction.InvalidTransactionException;
 import javax.transaction.NotSupportedException;
 import javax.transaction.RollbackException;
+import javax.transaction.Status;
+import javax.transaction.Synchronization;
 import javax.transaction.SystemException;
 import javax.transaction.Transaction;
+import javax.transaction.xa.XAResource;
 
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.StatementContext;
@@ -41,7 +43,7 @@ public class PlaceboTm extends AbstractTransactionManager
 {
     private LockManager lockManager;
     private final TxIdGenerator txIdGenerator;
-    private final Transaction tx = mock( Transaction.class );
+    private final Transaction tx = new PlaceboTransaction();
 
     public PlaceboTm( LockManager lockManager, TxIdGenerator txIdGenerator )
     {
@@ -57,8 +59,6 @@ public class PlaceboTm extends AbstractTransactionManager
     @Override
     public void begin() throws NotSupportedException, SystemException
     {
-        // TODO Auto-generated method stub
-
     }
 
     @Override
@@ -66,15 +66,12 @@ public class PlaceboTm extends AbstractTransactionManager
             HeuristicRollbackException, SecurityException, IllegalStateException,
             SystemException
     {
-        // TODO Auto-generated method stub
-
     }
 
     @Override
     public int getStatus() throws SystemException
     {
-        // TODO Auto-generated method stub
-        return 0;
+        return Status.STATUS_ACTIVE;
     }
 
     @Override
@@ -87,44 +84,33 @@ public class PlaceboTm extends AbstractTransactionManager
     public void resume( Transaction arg0 ) throws InvalidTransactionException,
             IllegalStateException, SystemException
     {
-        // TODO Auto-generated method stub
-
     }
 
     @Override
     public void rollback() throws IllegalStateException, SecurityException,
             SystemException
     {
-        // TODO Auto-generated method stub
-
     }
 
     @Override
     public void setRollbackOnly() throws IllegalStateException, SystemException
     {
-        // TODO Auto-generated method stub
-
     }
 
     @Override
     public void setTransactionTimeout( int arg0 ) throws SystemException
     {
-        // TODO Auto-generated method stub
-
     }
 
     @Override
     public Transaction suspend() throws SystemException
     {
-        // TODO Auto-generated method stub
         return null;
     }
 
     @Override
     public void init()
     {
-        // TODO Auto-generated method stub
-
     }
 
     @Override
@@ -136,8 +122,6 @@ public class PlaceboTm extends AbstractTransactionManager
     @Override
     public void stop()
     {
-        // TODO Auto-generated method stub
-
     }
 
     @Override
@@ -209,5 +193,49 @@ public class PlaceboTm extends AbstractTransactionManager
                 return txIdGenerator;
             }
         };
+    }
+    
+    private static class PlaceboTransaction implements Transaction
+    {
+        @Override
+        public void commit() throws HeuristicMixedException, HeuristicRollbackException, RollbackException,
+                SecurityException, SystemException
+        {
+        }
+
+        @Override
+        public boolean delistResource( XAResource xaRes, int flag ) throws IllegalStateException, SystemException
+        {
+            return true;
+        }
+
+        @Override
+        public boolean enlistResource( XAResource xaRes ) throws IllegalStateException, RollbackException,
+                SystemException
+        {
+            return true;
+        }
+
+        @Override
+        public int getStatus() throws SystemException
+        {
+            return Status.STATUS_ACTIVE;
+        }
+
+        @Override
+        public void registerSynchronization( Synchronization synch ) throws IllegalStateException, RollbackException,
+                SystemException
+        {
+        }
+
+        @Override
+        public void rollback() throws IllegalStateException, SystemException
+        {
+        }
+
+        @Override
+        public void setRollbackOnly() throws IllegalStateException, SystemException
+        {
+        }
     }
 }
