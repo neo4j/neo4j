@@ -59,7 +59,7 @@ public abstract class AbstractSchemaRule implements SchemaRule
     }
     
     @Override
-    public void append( ByteBuffer target )
+    public void serialize( ByteBuffer target )
     {
         target.putInt( (int) label );
         target.put( kind.id() );
@@ -89,4 +89,12 @@ public abstract class AbstractSchemaRule implements SchemaRule
             return false;
         return true;
     }
+
+    @Override
+    public String toString()
+    {
+        return getClass().getSimpleName() + "[id="+ id +", label="+label+", kind="+ kind + innerToString() + "]";
+    }
+
+    protected abstract String innerToString();
 }

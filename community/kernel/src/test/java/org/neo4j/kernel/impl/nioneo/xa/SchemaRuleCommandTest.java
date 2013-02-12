@@ -26,6 +26,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.IteratorUtil.first;
+import static org.neo4j.kernel.impl.nioneo.store.IndexRule.State.POPULATING;
 import static org.neo4j.kernel.impl.nioneo.xa.Command.readCommand;
 
 import java.util.Arrays;
@@ -79,7 +80,7 @@ public class SchemaRuleCommandTest
     private final int labelId = 2;
     private final long propertyKey = 8;
     private final long id = 0;
-    private final IndexRule rule = new IndexRule( id, labelId, new long[] {propertyKey} );
+    private final IndexRule rule = new IndexRule( id, labelId, POPULATING, new long[] {propertyKey} );
 
     private Collection<DynamicRecord> serialize( SchemaRule rule, long id )
     {

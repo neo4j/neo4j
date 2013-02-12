@@ -43,7 +43,7 @@ public class RecordSerializer
         byte[] array = new byte[totalLength];
         ByteBuffer target = ByteBuffer.wrap( array );
         for ( int i = 0; i < serializables.size(); i++ )
-            serializables.get( i ).append( target );
+            serializables.get( i ).serialize( target );
         return array;
     }
 }

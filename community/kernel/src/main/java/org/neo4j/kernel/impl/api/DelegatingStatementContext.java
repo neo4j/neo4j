@@ -23,7 +23,9 @@ import org.neo4j.kernel.api.ConstraintViolationKernelException;
 import org.neo4j.kernel.api.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.PropertyKeyIdNotFoundException;
 import org.neo4j.kernel.api.PropertyKeyNotFoundException;
+import org.neo4j.kernel.api.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.StatementContext;
+import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 
 public class DelegatingStatementContext implements StatementContext
 {
@@ -101,9 +103,16 @@ public class DelegatingStatementContext implements StatementContext
     }
 
     @Override
-    public Iterable<Long> getIndexRules( long labelId )
+    public IndexRule.State getIndexState( long labelId, long propertyKey )
+            throws LabelNotFoundKernelException, PropertyKeyNotFoundException, SchemaRuleNotFoundException
     {
-        return delegate.getIndexRules( labelId );
+        return delegate.getIndexState( labelId, propertyKey );
+    }
+
+    @Override
+    public Iterable<Long> getIndexedProperties( long labelId )
+    {
+        return delegate.getIndexedProperties( labelId );
     }
 
     @Override

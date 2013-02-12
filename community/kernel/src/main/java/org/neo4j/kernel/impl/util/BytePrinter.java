@@ -166,4 +166,19 @@ public class BytePrinter
         return hex( bytes, 0, bytes.capacity() );
     }
 
+    /**
+     * Convert a full byte buffer to a human readable string of nicely formatted hex numbers.
+     * Output looks like:
+     *
+     * 01 02 03 04 05 06 07 08    01 02 03 04 05 06 07 08    01 02 03 04 05 06 07 08    01 02 03 04 05 06 07 08
+     * 01 02 03 04 05 06 07 08    01 02 03 04 05 06 07 08    01 02 03 04 05 06 07 08    01 02 03 04 05 06 07 08
+     *
+     * @param bytes
+     * @return
+     */
+    public static String hex(byte[] bytes)
+    {
+        return hex( ByteBuffer.wrap( bytes ) );
+    }
+
 }

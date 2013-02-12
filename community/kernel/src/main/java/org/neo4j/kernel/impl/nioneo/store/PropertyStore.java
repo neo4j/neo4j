@@ -25,6 +25,7 @@ import java.io.File;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.LinkedList;
 import java.util.List;
 
 import org.neo4j.helpers.Pair;
@@ -692,5 +693,22 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
     public String toString()
     {
         return super.toString() + "[blocksPerRecord:" + PropertyType.getPayloadSizeLongs() + "]";
+    }
+    
+    public Collection<PropertyRecord> getPropertyRecordChain( long firstRecordId )
+    {
+        long nextProp = firstRecordId;
+        List<PropertyRecord> toReturn = new LinkedList<PropertyRecord>();
+        if ( nextProp == Record.NO_NEXT_PROPERTY.intValue() )
+        {
+            return null;
+        }
+        while ( nextProp != Record.NO_NEXT_PROPERTY.intValue() )
+        {
+            PropertyRecord propRecord = getLightRecord( nextProp );
+            toReturn.add(propRecord);
+            nextProp = propRecord.getNextProp();
+        }
+        return toReturn;
     }
 }

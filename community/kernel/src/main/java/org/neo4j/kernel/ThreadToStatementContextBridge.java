@@ -86,11 +86,6 @@ public class ThreadToStatementContextBridge extends LifecycleAdapter
         throw new NotInTransactionException( "You have to start a transaction to perform write operations." );
     }
 
-    public boolean hasTransactionContextForThread()
-    {
-        return getStatementContext() != null;
-    }
-
     private StatementContext getStatementContext()
     {
         return txManager.getStatementContext();

@@ -17,13 +17,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.nioneo.store;
+package org.neo4j.kernel.impl.api.index;
 
-import java.nio.ByteBuffer;
+import java.util.Collection;
 
-public interface RecordSerializable
+import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
+
+/**
+ * TODO temporary name
+ *
+ * Used when committing for notifying schema indexes about updates made to the graph.
+ * Currently in the form of {@link PropertyRecord property records}.
+ */
+public class SchemaIndexing
 {
-    int length();
-    
-    void serialize( ByteBuffer target );
+    // To use PropertyRecord here might not be very good.
+    void apply( Collection<PropertyRecord> propertyRecords )
+    {
+        // TODO look at the schema and feed the properties to the appropriate indexes.
+        //      This gets called when committing a transaction.
+        throw new UnsupportedOperationException();
+    }
 }

@@ -45,7 +45,10 @@ public interface TransactionContext
      * @return a new {@link StatementContext} to do operations on.
      */
     StatementContext newStatementContext();
-    
+
+    // TODO: It should be possible to implement distributed txs on top of this
+    // replace with below methods with eg. .prepare(), .rollback() and .commit()
+
     /**
      * Marks this transaction as successful, so that a call to {@link #finish()} will
      * commit it. This call has no effect if {@link #failure()} has been called.

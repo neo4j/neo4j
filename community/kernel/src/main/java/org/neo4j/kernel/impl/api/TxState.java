@@ -123,7 +123,13 @@ public class TxState
         LabelState state = getState( labelStates, labelId, null );
         return state == null ? DiffSets.<Long>emptyDiffSets() : state.getIndexRuleDiffSets();
     }
-    
+
+    public boolean hasAddedIndexRule( long labelId, long propertyKey )
+    {
+        LabelState state = getState( labelStates, labelId, null );
+        return state != null ? state.hasAddedIndexRule( propertyKey ) : false;
+    }
+
     public Map<Long,Object> getAddedNodeProperties( long nodeId )
     {
         throw new UnsupportedOperationException();
@@ -236,6 +242,18 @@ public class TxState
         {
             return indexRuleDiffSets;
         }
-    }
 
+        public boolean hasAddedIndexRule( long propertyKey )
+        {
+            for ( long addedKey : indexRuleDiffSets.getAdded() )
+            {
+                if ( addedKey == propertyKey )
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+    }
 }

@@ -34,28 +34,28 @@ public interface RecordStore<R extends AbstractBaseRecord>
 
     WindowPoolStats getWindowPoolStats();
 
-    public long getHighId();
+    long getHighId();
 
-    public R getRecord( long id );
+    R getRecord( long id );
 
-    public void updateRecord( R record );
+    void updateRecord( R record );
 
-    public R forceGetRecord( long id );
+    R forceGetRecord( long id );
 
-    public R forceGetRaw( R record );
+    R forceGetRaw( R record );
 
-    public R forceGetRaw( long id );
+    R forceGetRaw( long id );
 
-    public void forceUpdateRecord( R record );
+    void forceUpdateRecord( R record );
 
-    public void accept( Processor processor, R record );
+    void accept( Processor processor, R record );
 
-    public int getRecordSize();
+    int getRecordSize();
 
-    public int getRecordHeaderSize();
+    int getRecordHeaderSize();
 
-    public void close();
-
+    void close();
+    
     public static final Predicate<AbstractBaseRecord> IN_USE = new Predicate<AbstractBaseRecord>()
     {
         @Override

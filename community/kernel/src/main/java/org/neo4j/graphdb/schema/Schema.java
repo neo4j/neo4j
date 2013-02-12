@@ -28,6 +28,17 @@ import org.neo4j.graphdb.Label;
 public interface Schema
 {
     /**
+     * The states that an index can be in. This mostly relates to tracking the background
+     * population of an index, to tell when it is done populating and is online serving
+     * requests.
+     */
+    public static enum IndexState
+    {
+        ONLINE,
+        POPULATING;
+    }
+
+    /**
      * Returns an {@link IndexCreator} where details about the index to create can be
      * specified. When all details have been entered {@link IndexCreator#create() create}
      * must be called for it to actually be created.
@@ -47,4 +58,15 @@ public interface Schema
      * @return all {@link IndexDefinition indexes} attached to the given {@link Label label}.
      */
     Iterable<IndexDefinition> getIndexes( Label label );
+
+    /**
+     * Poll the database for the state of a given index. This can be used to track
+     * when, during creation of a new index, an index is done populating itself and
+     * comes online to serve requests.
+     *
+     * @param index the index that we want to poll state for
+     * @return the current {@link IndexState} of the index
+     */
+    IndexState getIndexState( IndexDefinition index );
+
 }

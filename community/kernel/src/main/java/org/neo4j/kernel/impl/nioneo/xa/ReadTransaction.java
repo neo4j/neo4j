@@ -24,7 +24,6 @@ import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -175,23 +174,6 @@ class ReadTransaction implements NeoStoreTransaction
         return Pair.of( result, position );
     }
 
-    static List<PropertyRecord> getPropertyRecordChain(
-            PropertyStore propertyStore, long nextProp )
-    {
-        List<PropertyRecord> toReturn = new LinkedList<PropertyRecord>();
-        if ( nextProp == Record.NO_NEXT_PROPERTY.intValue() )
-        {
-            return null;
-        }
-        while ( nextProp != Record.NO_NEXT_PROPERTY.intValue() )
-        {
-            PropertyRecord propRecord = propertyStore.getLightRecord( nextProp );
-            toReturn.add(propRecord);
-            nextProp = propRecord.getNextProp();
-        }
-        return toReturn;
-    }
-
     static ArrayMap<Integer, PropertyData> propertyChainToMap(
             Collection<PropertyRecord> chain )
     {
@@ -215,8 +197,7 @@ class ReadTransaction implements NeoStoreTransaction
     static ArrayMap<Integer, PropertyData> loadProperties(
             PropertyStore propertyStore, long nextProp )
     {
-        Collection<PropertyRecord> chain = getPropertyRecordChain(
-                propertyStore, nextProp );
+        Collection<PropertyRecord> chain = propertyStore.getPropertyRecordChain( nextProp );
         if ( chain == null )
         {
             return null;

@@ -46,7 +46,7 @@ public class ConstraintEvaluatingStatementContext extends DelegatingStatementCon
     @Override
     public void addIndexRule( long labelId, long propertyKey ) throws ConstraintViolationKernelException
     {
-        for ( long existingRule : getIndexRules( labelId ) )
+        for ( long existingRule : getIndexedProperties( labelId ) )
         {
             if ( existingRule == propertyKey )
             {

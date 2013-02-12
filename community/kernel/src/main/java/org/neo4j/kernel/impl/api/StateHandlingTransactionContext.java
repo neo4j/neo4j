@@ -71,6 +71,7 @@ public class StateHandlingTransactionContext extends DelegatingTransactionContex
         //    transactions updates the schema cache)
 //        schemaCache.apply( state );
         // - commit changes from tx state to the cache
+        // TODO: This should *not* be done here, it should be done as part of transaction application (eg WriteTransaction)
         persistenceCache.apply( state );
     }
 }

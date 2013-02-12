@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.nioneo.xa;
 
 import java.util.List;
 
+import org.neo4j.kernel.impl.api.index.SchemaIndexing;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
@@ -34,9 +35,9 @@ public class InterceptingWriteTransaction extends WriteTransaction
 
     InterceptingWriteTransaction( int identifier, XaLogicalLog log,
             NeoStore neoStore, TransactionState state, CacheAccessBackDoor cacheAccess,
-            LockManager lockManager, TransactionInterceptor interceptor )
+            SchemaIndexing schemaIndexing, LockManager lockManager, TransactionInterceptor interceptor )
     {
-        super( identifier, log, state, neoStore, cacheAccess );
+        super( identifier, log, state, neoStore, cacheAccess, schemaIndexing );
         this.interceptor = interceptor;
     }
 

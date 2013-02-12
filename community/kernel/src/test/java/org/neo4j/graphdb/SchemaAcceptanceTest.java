@@ -25,6 +25,7 @@ import static org.hamcrest.core.IsNull.nullValue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.single;
@@ -62,6 +63,13 @@ public class SchemaAcceptanceTest
         // Then
         assertEquals( asSet( property ), asSet( singlePropertyKey( schema.getIndexes( label ) ) ) );
         assertTrue( asSet( schema.getIndexes( label ) ).contains( index ) );
+        
+        // Then
+        Iterable<IndexDefinition> indexes = schema.getIndexes( Labels.MY_LABEL );
+        long timeout = System.currentTimeMillis() + 1000 * 5;
+
+        assertEquals( asSet( property ), asSet( singlePropertyKey( indexes ) ) );
+        awaitIndexState( single( indexes ), Schema.IndexState.ONLINE, schema, timeout );
     }
 
     @Test(expected = ConstraintViolationException.class)
@@ -209,7 +217,8 @@ public class SchemaAcceptanceTest
             IndexDefinition result = beansAPI.schema().indexCreator( label ).on( property ).create();
             tx.success();
             return result;
-        } finally
+        }
+        finally
         {
             tx.finish();
         }
@@ -222,9 +231,22 @@ public class SchemaAcceptanceTest
         {
             index.drop();
             tx.success();
-        } finally
+        }
+        finally
         {
             tx.finish();
+        }
+    }
+    
+    private void awaitIndexState( IndexDefinition index, Schema.IndexState state, Schema schema, long timeout )
+    {
+        while( schema.getIndexState( index )  != state )
+        {
+            Thread.yield();
+            if ( System.currentTimeMillis() > timeout )
+            {
+                fail( "Expected index to come online within a reasonable time." );
+            }
         }
     }
 

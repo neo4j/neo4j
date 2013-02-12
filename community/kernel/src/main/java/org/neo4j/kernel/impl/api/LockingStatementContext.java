@@ -61,9 +61,9 @@ public class LockingStatementContext extends DelegatingStatementContext
     }
 
     @Override
-    public Iterable<Long> getIndexRules( long labelId )
+    public Iterable<Long> getIndexedProperties( long labelId )
     {
         lockHolder.acquireSchemaReadLock();
-        return delegate.getIndexRules( labelId );
+        return delegate.getIndexedProperties( labelId );
     }
 }

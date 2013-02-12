@@ -109,7 +109,7 @@ public class CachingStatementContext extends DelegatingStatementContext
     }
 
     @Override
-    public Iterable<Long> getIndexRules( long labelId )
+    public Iterable<Long> getIndexedProperties( long labelId )
     {
         Iterable<SchemaRule> filtered = filter( new Predicate<SchemaRule>()
         {

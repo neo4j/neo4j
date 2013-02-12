@@ -33,6 +33,7 @@ import org.neo4j.kernel.api.ConstraintViolationKernelException;
 import org.neo4j.kernel.api.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.PropertyKeyIdNotFoundException;
 import org.neo4j.kernel.api.PropertyKeyNotFoundException;
+import org.neo4j.kernel.api.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.impl.core.KeyNotFoundException;
 import org.neo4j.kernel.impl.core.PropertyIndexManager;
@@ -205,7 +206,8 @@ public class StoreStatementContext implements StatementContext
     {
         SchemaStore schemaStore = neoStore.getSchemaStore();
         long id = schemaStore.nextId();
-        persistenceManager.createSchemaRule( new IndexRule( id, labelId, new long[] {propertyKey} ) );
+        persistenceManager.createSchemaRule(
+                new IndexRule( id, labelId, IndexRule.State.POPULATING, new long[] {propertyKey} ));
     }
 
     @Override
@@ -237,11 +239,25 @@ public class StoreStatementContext implements StatementContext
         if (filtered.hasNext())
             throw new ConstraintViolationKernelException("Found more than one matching index");
 
-        persistenceManager.dropSchemaRule( new IndexRule( rule.getId(), labelId, new long[] {propertyKey} ) );
+        persistenceManager.dropSchemaRule( new IndexRule( rule.getId(), labelId, rule.getState(),
+                new long[] {propertyKey} ) );
     }
 
     @Override
-    public Iterable<Long> getIndexRules( final long labelId )
+    public Iterable<Long> getIndexedProperties( final long labelId )
+    {
+        Iterable<IndexRule> indexRules = indexRulesForLabel( labelId );
+        return map( new Function<IndexRule, Long>()
+        {
+            @Override
+            public Long apply( IndexRule from )
+            {
+                return from.getPropertyKeys()[0];
+            }
+        }, indexRules );
+    }
+
+    private Iterable<IndexRule> indexRulesForLabel( final long labelId )
     {
         Iterable<SchemaRule> filtered = filter( new Predicate<SchemaRule>()
         {
@@ -251,14 +267,30 @@ public class StoreStatementContext implements StatementContext
                 return rule.getLabel() == labelId && rule.getKind() == Kind.INDEX_RULE;
             }
         }, neoStore.getSchemaStore().loadAll() );
-        return map( new Function<SchemaRule, Long>()
+
+        return map( new Function<SchemaRule, IndexRule>()
         {
             @Override
-            public Long apply( SchemaRule from )
+            public IndexRule apply( SchemaRule from )
             {
-                return ((IndexRule) from).getPropertyKeys()[0];
+                return (IndexRule) from;
             }
         }, filtered );
+    }
+
+    @Override
+    public IndexRule.State getIndexState( long labelId, long propertyKey )
+            throws LabelNotFoundKernelException, PropertyKeyNotFoundException, SchemaRuleNotFoundException
+    {
+        for ( IndexRule rule : indexRulesForLabel( labelId ) )
+        {
+            if ( rule.getPropertyKeys()[0] == propertyKey )
+            {
+                return rule.getState();
+            }
+        }
+
+        throw new SchemaRuleNotFoundException( "No index rule for label:" + labelId + " and property key:" + propertyKey + " found." );
     }
 
     @Override

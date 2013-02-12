@@ -27,7 +27,11 @@ import java.util.Collection;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.kernel.api.ConstraintViolationKernelException;
+import org.neo4j.kernel.api.LabelNotFoundKernelException;
+import org.neo4j.kernel.api.PropertyKeyNotFoundException;
+import org.neo4j.kernel.api.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.StatementContext;
+import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 
 public class TransactionStateAwareStatementContext extends DelegatingStatementContext
 {
@@ -179,7 +183,7 @@ public class TransactionStateAwareStatementContext extends DelegatingStatementCo
     private int countMatchingIndexRules( long labelId, long propertyKey )
     {
         int i = 0;
-        for ( long existingPropertyKey : getIndexRules( labelId ) )
+        for ( long existingPropertyKey : getIndexedProperties( labelId ) )
         {
             if ( propertyKey == existingPropertyKey )
                 i++;
@@ -188,10 +192,21 @@ public class TransactionStateAwareStatementContext extends DelegatingStatementCo
     }
 
     @Override
-    public Iterable<Long> getIndexRules( long labelId )
+    public Iterable<Long> getIndexedProperties( long labelId )
     {
-        Iterable<Long> committedRules = delegate.getIndexRules( labelId );
+        Iterable<Long> committedRules = delegate.getIndexedProperties( labelId );
         DiffSets<Long> diffSets = state.getIndexRuleDiffSets( labelId );
         return diffSets.apply( committedRules ); 
+    }
+
+    @Override
+    public IndexRule.State getIndexState( long labelId, long propertyKey ) throws LabelNotFoundKernelException, PropertyKeyNotFoundException, SchemaRuleNotFoundException
+    {
+        if(state.hasAddedIndexRule( labelId, propertyKey ))
+        {
+            return IndexRule.State.POPULATING;
+        }
+
+        return delegate.getIndexState( labelId, propertyKey );
     }
 }

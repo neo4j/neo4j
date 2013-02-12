@@ -25,6 +25,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.IteratorUtil.first;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.impl.nioneo.store.IndexRule.State.POPULATING;
 import static org.neo4j.kernel.impl.util.StringLogger.SYSTEM;
 
 import java.io.File;
@@ -55,12 +56,12 @@ public class WriteTransactionTest
     {
         // GIVEN
         WriteTransaction writeTransaction = new WriteTransaction( 0, log, transactionState, neoStore,
-                cacheAccessBackDoor );
+                cacheAccessBackDoor, null );
         writeTransaction.setCommitTxId( 1 );
 
         // WHEN
         final long ruleId = schemaStore.nextId();
-        IndexRule schemaRule = new IndexRule( ruleId, 10, new long[] {8} );
+        IndexRule schemaRule = new IndexRule( ruleId, 10, POPULATING, new long[] {8} );
         writeTransaction.createSchemaRule( schemaRule );
         writeTransaction.prepare();
         writeTransaction.commit();
@@ -74,13 +75,13 @@ public class WriteTransactionTest
     {
         // GIVEN
         long labelId = 10, propertyKey = 10;
-        IndexRule rule = new IndexRule( schemaStore.nextId(), labelId, new long[] {propertyKey} );
+        IndexRule rule = new IndexRule( schemaStore.nextId(), labelId, POPULATING, new long[] {propertyKey} );
         Collection<DynamicRecord> records = schemaStore.allocateFrom( rule );
         for ( DynamicRecord record : records )
             schemaStore.updateRecord( record );
         long ruleId = first( records ).getId();
         WriteTransaction writeTransaction = new WriteTransaction( 0, log, transactionState, neoStore,
-                cacheAccessBackDoor );
+                cacheAccessBackDoor, null );
         writeTransaction.setCommitTxId( 1 );
 
         // WHEN
@@ -97,12 +98,12 @@ public class WriteTransactionTest
     {
         // GIVEN
         WriteTransaction writeTransaction = new WriteTransaction( 0, log, transactionState, neoStore,
-                cacheAccessBackDoor );
+                cacheAccessBackDoor, null );
         writeTransaction.setCommitTxId( 1 );
 
         // WHEN
         final long ruleId = schemaStore.nextId();
-        writeTransaction.createSchemaRule( new IndexRule( ruleId, 10, new long[] {7} ) );
+        writeTransaction.createSchemaRule( new IndexRule( ruleId, 10, POPULATING, new long[] {7} ) );
         writeTransaction.prepare();
         writeTransaction.rollback();
 

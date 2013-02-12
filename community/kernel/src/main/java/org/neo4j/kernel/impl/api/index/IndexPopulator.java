@@ -17,13 +17,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.nioneo.store;
+package org.neo4j.kernel.impl.api.index;
 
-import java.nio.ByteBuffer;
-
-public interface RecordSerializable
+public interface IndexPopulator
 {
-    int length();
+    /**
+     * Called when initially populating an index over existing data. Guaranteed to be
+     * called by the same thread every time.
+     * 
+     * @param n the n:th entry indexed in this population.
+     * @param nodeId node id to index.
+     * @param propertyValue property value for the entry to index.
+     */
+    void add( int n, long nodeId, Object propertyValue );
     
-    void serialize( ByteBuffer target );
+    void done();
 }

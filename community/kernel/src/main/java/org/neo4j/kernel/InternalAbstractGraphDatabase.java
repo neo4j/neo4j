@@ -68,6 +68,7 @@ import org.neo4j.kernel.extension.KernelExtensions;
 import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.impl.api.Kernel;
 import org.neo4j.kernel.impl.api.SchemaCache;
+import org.neo4j.kernel.impl.api.index.SchemaIndexing;
 import org.neo4j.kernel.impl.cache.Cache;
 import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.cache.MonitorGc;
@@ -209,6 +210,7 @@ public abstract class InternalAbstractGraphDatabase
     protected KernelAPI kernelAPI;
     protected ThreadToStatementContextBridge statementContextProvider;
     protected BridgingCacheAccess cacheBridge;
+    protected SchemaIndexing schemaIndexing;
 
     protected final LifeSupport life = new LifeSupport();
     private final Map<String,CacheProvider> cacheProviders;
@@ -489,6 +491,8 @@ public abstract class InternalAbstractGraphDatabase
                 fileSystem, keepLogicalLogsConfig ) );
         
         cacheBridge = new BridgingCacheAccess( nodeManager, schemaCache );
+        
+        schemaIndexing = new SchemaIndexing();
 
         createNeoDataSource();
 
@@ -807,7 +811,8 @@ public abstract class InternalAbstractGraphDatabase
             // TODO IO stuff should be done in lifecycle. Refactor!
             neoDataSource = new NeoStoreXaDataSource( config,
                     storeFactory, lockManager, logging.getLogger( NeoStoreXaDataSource.class ),
-                    xaFactory, stateFactory, cacheBridge, transactionInterceptorProviders, dependencyResolver );
+                    xaFactory, stateFactory, cacheBridge, schemaIndexing, transactionInterceptorProviders,
+                    dependencyResolver );
             xaDataSourceManager.registerDataSource( neoDataSource );
 
         }
@@ -1385,6 +1390,10 @@ public abstract class InternalAbstractGraphDatabase
             else if ( DependencyResolver.class.isAssignableFrom( type ) )
             {
                 return (T) DependencyResolverImpl.this;
+            }
+            else if ( SchemaIndexing.class.isAssignableFrom( type ) )
+            {
+                return (T) schemaIndexing;
             }
             else
             {

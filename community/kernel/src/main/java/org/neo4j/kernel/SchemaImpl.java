@@ -19,18 +19,24 @@
  */
 package org.neo4j.kernel;
 
+import static java.lang.String.format;
 import static java.util.Collections.emptyList;
 import static org.neo4j.helpers.collection.Iterables.map;
+import static org.neo4j.helpers.collection.IteratorUtil.single;
 
 import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.helpers.Function;
 import org.neo4j.kernel.api.LabelNotFoundKernelException;
+import org.neo4j.kernel.api.PropertyKeyNotFoundException;
+import org.neo4j.kernel.api.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.impl.core.KeyHolder;
 import org.neo4j.kernel.impl.core.PropertyIndex;
+import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 
 public class SchemaImpl implements Schema
 {
@@ -63,11 +69,47 @@ public class SchemaImpl implements Schema
                     return new IndexDefinitionImpl( ctxProvider, label,
                             propertyKeyManager.getKeyByIdOrNull( propertyKey.intValue() ).getKey() );
                 }
-            }, context.getIndexRules( context.getLabelId( label.name() ) ) );
+            }, context.getIndexedProperties( context.getLabelId( label.name() ) ) );
         }
         catch ( LabelNotFoundKernelException e )
         {
             return emptyList();
+        }
+    }
+
+    @Override
+    public IndexState getIndexState( IndexDefinition index )
+    {
+        StatementContext context = ctxProvider.getCtxForReading();
+        long labelId = 0, propertyKeyId = 0;
+        String propertyKey = single( index.getPropertyKeys() );
+        try
+        {
+            labelId = context.getLabelId( index.getLabel().name() );
+            propertyKeyId = context.getPropertyKeyId( propertyKey );
+            IndexRule.State indexState = context.getIndexState( labelId, propertyKeyId );
+            switch ( indexState )
+            {
+                case POPULATING:
+                    return IndexState.POPULATING;
+                case ONLINE:
+                    return IndexState.ONLINE;
+                default:
+                    throw new IllegalArgumentException( String.format( "Illegal value %s", indexState ) );
+            }
+        }
+        catch ( LabelNotFoundKernelException e )
+        {
+            throw new NotFoundException( format( "Label %s not found", index.getLabel().name() ) );
+        }
+        catch ( PropertyKeyNotFoundException e )
+        {
+            throw new NotFoundException( format( "Property key %s not found", propertyKey ) );
+        }
+        catch ( SchemaRuleNotFoundException e )
+        {
+            throw new NotFoundException( format( "No index for label %s on property %s",
+                    index.getLabel().name(), propertyKey ) );
         }
     }
 }

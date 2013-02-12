@@ -30,16 +30,47 @@ import org.neo4j.graphdb.Label;
 public class IndexRule extends AbstractSchemaRule
 {
     private final long[] propertyKeys;
+    private final State state;
+
+    public static enum State
+    {
+        POPULATING( (byte)0 ),
+        ONLINE    ( (byte)1 );
+
+        private final byte byteRepresentation;
+
+        private State(byte byteRepresentation)
+        {
+            this.byteRepresentation = byteRepresentation;
+        }
+
+        public byte toByte()
+        {
+            return byteRepresentation;
+        }
+
+        public static State fromByte( byte value )
+        {
+            switch ( value )
+            {
+                case 0: return POPULATING;
+                case 1: return ONLINE;
+                default:
+                    throw new IllegalArgumentException( "Invalid state value " + value );
+            }
+        }
+    }
 
     public IndexRule( long id, long label, ByteBuffer serialized )
     {
-        this( id, label, readPropertyKeys( serialized ) );
+        this( id, label, readState(serialized), readPropertyKeys( serialized ) );
     }
 
-    public IndexRule( long id, long label, long[] propertyKeys )
+    public IndexRule( long id, long label, State state, long[] propertyKeys )
     {
         super( id, label, SchemaRule.Kind.INDEX_RULE );
         this.propertyKeys = propertyKeys;
+        this.state = state;
     }
 
     private static long[] readPropertyKeys( ByteBuffer serialized )
@@ -49,22 +80,33 @@ public class IndexRule extends AbstractSchemaRule
             result[i] = serialized.getLong();
         return result;
     }
-    
+
+    private static State readState( ByteBuffer serialized )
+    {
+        return State.fromByte( serialized.get() );
+    }
+
     public long[] getPropertyKeys()
     {
         return propertyKeys;
     }
 
-    @Override
-    public int length()
+    public State getState()
     {
-        return super.length() + 2 /*number of property keys*/ + propertyKeys.length*8 /*the property keys*/;
+        return state;
     }
 
     @Override
-    public void append( ByteBuffer target )
+    public int length()
     {
-        super.append( target );
+        return super.length() + 1 /* state metadata */ + 2 /*number of property keys*/ + propertyKeys.length*8 /*the property keys*/;
+    }
+
+    @Override
+    public void serialize( ByteBuffer target )
+    {
+        super.serialize( target );
+        target.put( state.toByte() );
         target.putShort( (short) propertyKeys.length );
         for ( long key : propertyKeys )
             target.putLong( key );
@@ -89,5 +131,11 @@ public class IndexRule extends AbstractSchemaRule
         if ( !Arrays.equals( propertyKeys, other.propertyKeys ) )
             return false;
         return true;
+    }
+
+    @Override
+    protected String innerToString()
+    {
+        return ", properties=" + Arrays.toString( propertyKeys );
     }
 }

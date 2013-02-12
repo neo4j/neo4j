@@ -17,13 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.nioneo.store;
+package org.neo4j.kernel.api;
 
-import java.nio.ByteBuffer;
-
-public interface RecordSerializable
+public class SchemaRuleNotFoundException extends KernelException
 {
-    int length();
-    
-    void serialize( ByteBuffer target );
+    public SchemaRuleNotFoundException( String message )
+    {
+        super( message );
+    }
 }

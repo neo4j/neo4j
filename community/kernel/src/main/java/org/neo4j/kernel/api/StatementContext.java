@@ -148,8 +148,18 @@ public interface StatementContext
      * @param labelId the label to get rules for.
      * @return all indexed properties keys for that labelId.
      */
-    Iterable<Long> getIndexRules( long labelId );
-    
+    Iterable<Long> getIndexedProperties( long labelId );
+
+    /**
+     * @param labelId the label id for the rule.
+     * @param propertyKey the property key if for the rule.
+     * @return the index state of the index rule for the given label and property key.
+     * @throws LabelNotFoundKernelException if label doesn't exist.
+     * @throws PropertyKeyNotFoundException if property key doesn't exist.
+     */
+    IndexRule.State getIndexState( long labelId, long propertyKey )
+            throws LabelNotFoundKernelException, PropertyKeyNotFoundException, SchemaRuleNotFoundException;
+
     /**
      * Returns a property key id for a property key. If the key doesn't exist prior to
      * this call it gets created.
