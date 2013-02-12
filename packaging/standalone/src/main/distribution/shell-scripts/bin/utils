@@ -351,12 +351,12 @@ checkjvmcompatibility() {
   $JAVACMD -version 2>&1 | egrep -q "Java HotSpot\\(TM\\) (64-Bit Server|Client) VM"
   if [ $? -eq 1 ]
   then
-    echo "WARNING! You are using an unsupported Java runtime. Please use JDK 6."
+    echo "WARNING! You are using an unsupported Java runtime. Please use Oracle(R) Java(TM) Runtime Environment 6 or 7."
   else
-    $JAVACMD -version 2>&1 | egrep -q "java version \"1.6"
+    $JAVACMD -version 2>&1 | egrep -q "java version \"1.(6|7)"
     if [ $? -eq 1 ]
     then
-      echo "WARNING! You are using an unsupported version of the JDK. Please use JDK 6."
+      echo "WARNING! You are using an unsupported version of the Java runtime. Please use Oracle(R) Java(TM) Runtime Environment 6 or 7."
     fi
   fi
 }
