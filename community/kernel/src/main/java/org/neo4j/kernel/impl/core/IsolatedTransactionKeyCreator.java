@@ -19,7 +19,9 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import java.util.concurrent.atomic.AtomicInteger;
+import javax.transaction.InvalidTransactionException;
+import javax.transaction.SystemException;
+import javax.transaction.Transaction;
 
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
@@ -29,24 +31,14 @@ import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
 
+/**
+ * Creates a key within its own transaction, such that the command(s) for creating the key
+ * will be alone in a transaction. If there is a running a transaction while calling this
+ * it will be temporarily suspended meanwhile.
+ */
 public abstract class IsolatedTransactionKeyCreator implements KeyCreator
 {
     private final StringLogger logger;
-
-    private static class ExceptionContainer
-    {
-        private Throwable exc;
-
-        public void setException( Throwable exc )
-        {
-            this.exc = exc;
-        }
-
-        public Throwable getException()
-        {
-            return exc;
-        }
-    }
 
     public IsolatedTransactionKeyCreator( Logging logging )
     {
@@ -57,57 +49,44 @@ public abstract class IsolatedTransactionKeyCreator implements KeyCreator
     public synchronized int getOrCreate( final AbstractTransactionManager txManager, final EntityIdGenerator idGenerator,
             final PersistenceManager persistence, final String name )
     {
-        final AtomicInteger result = new AtomicInteger( -1 );
-        final ExceptionContainer exceptionContainer = new ExceptionContainer();
-
-        Thread isolatedCreator = new Thread()
+        try
         {
-            @Override
-            public void run()
-            {
-                try
-                {
-                    txManager.begin( ForceMode.unforced );
-                    int id = createKey( idGenerator, persistence, name );
-                    txManager.commit();
-                    result.set( id );
-                }
-                catch ( Throwable t )
-                {
-                    exceptionContainer.setException( t );
-                    logger.error( "Unable to create key '" + name + "'", t );
-                    try
-                    {
-                        txManager.rollback();
-                    }
-                    catch ( Throwable tt )
-                    {
-                        logger.error( "Unable to rollback after failure to create key '" + name + "'", t );
-                    }
-                }
-            }
-        };
-        
-        isolatedCreator.start();
-        while ( true )
-        {
+            Transaction runningTransaction = txManager.suspend();
             try
             {
-                isolatedCreator.join();
-                break;
+                txManager.begin( ForceMode.unforced );
+                int id = createKey( idGenerator, persistence, name );
+                txManager.commit();
+                return id;
             }
-            catch ( InterruptedException e )
+            catch ( Throwable t )
             {
-                logger.debug( "Got interrupted awaiting key creator for '" + name + "'");
+                logger.error( "Unable to create key '" + name + "'", t );
+                try
+                {
+                    txManager.rollback();
+                }
+                catch ( Throwable tt )
+                {
+                    logger.error( "Unable to rollback after failure to create key '" + name + "'", t );
+                }
+                throw new TransactionFailureException( "Unable to create key '" + name + "'" , t );
+            }
+            finally
+            {
+                if ( runningTransaction != null )
+                    txManager.resume( runningTransaction );
             }
         }
-        
-        int id = result.get();
-        if ( id == -1 )
-            throw new TransactionFailureException( "Unable to create key '" + name + "'" , exceptionContainer.getException());
-        
-        return id;
+        catch ( SystemException e )
+        {
+            throw new TransactionFailureException( "Unable to resume or suspend running transaction", e );
+        }
+        catch ( InvalidTransactionException e )
+        {
+            throw new TransactionFailureException( "Unable to resume or suspend running transaction", e );
+        }
     }
-
+    
     protected abstract int createKey( EntityIdGenerator idGenerator, PersistenceManager persistence, String name );
 }

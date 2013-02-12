@@ -326,7 +326,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
         startedTxCount.incrementAndGet();
         // start record written on resource enlistment
 
-        tx.setTranscationContext(kernel.newTransactionContext() );
+        tx.setTransactionContext(kernel.newTransactionContext() );
     }
 
     private void assertTmOk( String source ) throws SystemException
