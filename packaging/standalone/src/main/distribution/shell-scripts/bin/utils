@@ -363,5 +363,5 @@ checkjvmcompatibility() {
 
 checkclasspath() {
   echo $CLASSPATH | grep -q SNAPSHOT && \
-  echo "\nWARNING! Latest Development Build. Not intended for general-pupose use. May be unstable."
+  echo -e "\nWARNING! Latest Development Build. Not intended for general-pupose use. May be unstable."
 }

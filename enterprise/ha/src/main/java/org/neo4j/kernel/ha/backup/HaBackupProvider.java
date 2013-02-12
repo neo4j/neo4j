@@ -34,7 +34,7 @@ import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.member.ClusterMemberEvents;
 import org.neo4j.cluster.member.ClusterMemberListener;
 import org.neo4j.cluster.member.paxos.PaxosClusterMemberEvents;
-import org.neo4j.cluster.protocol.election.CoordinatorIncapableCredentialsProvider;
+import org.neo4j.cluster.protocol.election.NotElectableElectionCredentialsProvider;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.Predicates;
 import org.neo4j.helpers.Service;
@@ -94,7 +94,7 @@ public final class HaBackupProvider extends BackupExtensionService
                 ClusterSettings.class, OnlineBackupSettings.class );
 
         ClusterClient clusterClient = life.add( new ClusterClient( ClusterClient.adapt( config ), logging,
-                new CoordinatorIncapableCredentialsProvider() ) );
+                new NotElectableElectionCredentialsProvider() ) );
         ClusterMemberEvents events = life.add( new PaxosClusterMemberEvents( clusterClient, clusterClient,
                 clusterClient, new SystemOutLogging(), Predicates.<PaxosClusterMemberEvents.ClusterMembersSnapshot>TRUE() ) );
 

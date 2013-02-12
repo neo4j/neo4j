@@ -37,19 +37,20 @@ import java.util.concurrent.TimeUnit;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
+import ch.qos.logback.classic.LoggerContext;
 import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.client.Clusters;
 import org.neo4j.cluster.client.ClustersXMLSerializer;
 import org.neo4j.cluster.com.NetworkInstance;
-import org.neo4j.cluster.protocol.election.CoordinatorIncapableCredentialsProvider;
+import org.neo4j.cluster.protocol.election.NotElectableElectionCredentialsProvider;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
-import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
 import org.neo4j.helpers.Predicate;
+import org.neo4j.helpers.Settings;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.jmx.Kernel;
 import org.neo4j.jmx.impl.JmxKernelExtension;
@@ -58,14 +59,14 @@ import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.com.master.Slaves;
 import org.neo4j.kernel.ha.UpdatePuller;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.kernel.logging.LogbackService.Slf4jStringLogger;
+import org.neo4j.kernel.logging.LogbackService;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.management.Neo4jManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.impl.StaticLoggerBinder;
 import org.w3c.dom.Document;
 
 public class ClusterManager
@@ -141,6 +142,28 @@ public class ClusterManager
         return provided( clusters );
     }
     
+    /**
+     * Provides a cluster specification with default values
+     * @param haMemberCount the total number of members in the cluster to start.
+     */
+    public static Provider clusterWithAdditionalArbiters( int haMemberCount, int arbiterCount)
+    {
+        Clusters.Cluster cluster = new Clusters.Cluster( "neo4j.ha" );
+        int counter = 0;
+        for ( int i = 0; i < arbiterCount; i++, counter++ )
+        {
+            cluster.getMembers().add( new Clusters.Member( 5001 + counter, false ) );
+        }
+        for ( int i = 0; i < haMemberCount; i++, counter++ )
+        {
+            cluster.getMembers().add( new Clusters.Member( 5001 + counter, true ) );
+        }
+
+        final Clusters clusters = new Clusters();
+        clusters.getClusters().add( cluster );
+        return provided( clusters );
+    }
+
     public static Provider provided( final Clusters clusters )
     {
         return new Provider()
@@ -347,8 +370,8 @@ public class ClusterManager
             network.stop();
             
             int serverId = db.getDependencyResolver().resolveDependency( Config.class ).get( HaSettings.server_id );
-            db.shutdown();
-            return new StartDatabaseAgainKit( this, serverId );
+            //db.shutdown();
+            return new StartNetworkAgainKit( db, network );
         }
 
         private void startMember( int serverId, boolean initialStartup ) throws URISyntaxException
@@ -368,7 +391,7 @@ public class ClusterManager
                                 setConfig( HaSettings.server_id, serverId + "" ).
                                 setConfig( ClusterSettings.cluster_server, member.getHost() ).
                                 setConfig( HaSettings.ha_server, ":" + haPort ).
-                                setConfig( OnlineBackupSettings.online_backup_enabled, GraphDatabaseSetting.FALSE ).
+                                setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE ).
                                 setConfig( commonConfig );
                 if ( instanceConfig.containsKey( serverId ) )
                 {
@@ -401,16 +424,10 @@ public class ClusterManager
                         ClusterSettings.cluster_name.name(), name,
                         ClusterSettings.initial_hosts.name(), initialHosts.toString(),
                         ClusterSettings.cluster_server.name(), member.getHost() );
-                Logging clientLogging = new Logging()
-                {
-                    @Override
-                    public StringLogger getLogger( Class loggingClass )
-                    {
-                        return new Slf4jStringLogger( logger );
-                    }
-                };
-                life.add( new ClusterClient( ClusterClient.adapt( new Config( config ) ),
-                        clientLogging, new CoordinatorIncapableCredentialsProvider() ) );
+                Config config1 = new Config( config );
+                Logging clientLogging =life.add(new LogbackService( config1, (LoggerContext) StaticLoggerBinder.getSingleton().getLoggerFactory() ));
+                life.add( new ClusterClient( ClusterClient.adapt( config1 ),
+                        clientLogging, new NotElectableElectionCredentialsProvider() ) );
             }
 
             // logger.info( "Started cluster node " + serverId + " in cluster "

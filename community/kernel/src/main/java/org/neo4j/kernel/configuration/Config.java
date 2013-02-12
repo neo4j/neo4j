@@ -62,6 +62,7 @@ public class Config implements DiagnosticsProvider
     private StringLogger log = new BufferingLogger();
     private final ConfigurationValidator validator;
     private Function<String, String> settingsFunction;
+    private Iterable<Class<?>> settingsClasses;
 
     public Config()
     {
@@ -80,6 +81,7 @@ public class Config implements DiagnosticsProvider
 
     public Config( Map<String, String> inputParams, Iterable<Class<?>> settingsClasses )
     {
+        this.settingsClasses = settingsClasses;
         settingsFunction = Functions.map( params );
 
         this.migrator = new AnnotationBasedConfigurationMigrator( settingsClasses );
@@ -150,6 +152,11 @@ public class Config implements DiagnosticsProvider
                 listener.notifyConfigurationChanges( configurationChanges );
             }
         }
+    }
+
+    public Iterable<Class<?>> getSettingsClasses()
+    {
+        return settingsClasses;
     }
 
     public void setLogger( StringLogger log )
@@ -581,5 +588,4 @@ public class Config implements DiagnosticsProvider
     {
         return Enum.valueOf( enumType, get( graphDatabaseSetting ) );
     }
-
 }

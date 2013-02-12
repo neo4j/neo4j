@@ -124,16 +124,16 @@ public enum ClusterState
                             }
 
                             List<URI> memberList = new ArrayList<URI>( state.getMembers() );
+                            context.learnerContext.setLastDeliveredInstanceId( state.getLatestReceivedInstanceId
+                                    ().getId() );
+                            context.learnerContext.learnedInstanceId( state.getLatestReceivedInstanceId().getId() );
+                            context.proposerContext.nextInstanceId = state.getLatestReceivedInstanceId().getId()
+                                    + 1;
+
+                            context.acquiredConfiguration( memberList, state.getRoles() );
+
                             if ( !memberList.contains( context.me ) )
                             {
-                                context.learnerContext.setLastDeliveredInstanceId( state.getLatestReceivedInstanceId
-                                        ().getId() );
-                                context.learnerContext.learnedInstanceId( state.getLatestReceivedInstanceId().getId() );
-                                context.proposerContext.nextInstanceId = state.getLatestReceivedInstanceId().getId()
-                                        + 1;
-
-                                context.acquiredConfiguration( memberList, state.getRoles() );
-
                                 context.getLogger( ClusterState.class ).info( String.format( "%s joining:%s, " +
                                         "last delivered:%d", context.me.toString(),
                                         context.getConfiguration().toString(),
@@ -155,7 +155,7 @@ public enum ClusterState
                                             Message.FROM ) ), newState ) );
                                 }
 
-                                context.getLogger( ClusterState.class ).info( "Setup join timeout for " + message
+                                context.getLogger( ClusterState.class ).debug( "Setup join timeout for " + message
                                         .getHeader( Message.CONVERSATION_ID ) );
                                 context.timeouts.setTimeout( "join", timeout( ClusterMessage.joiningTimeout, message,
                                         new URI( message.getHeader( Message.FROM ) ) ) );
@@ -165,13 +165,6 @@ public enum ClusterState
                             else
                             {
                                 // Already in (probably due to crash of this server previously), go to entered state
-                                context.learnerContext.setLastDeliveredInstanceId( state.getLatestReceivedInstanceId
-                                        ().getId() );
-                                context.learnerContext.learnedInstanceId( state.getLatestReceivedInstanceId().getId() );
-                                context.proposerContext.nextInstanceId = state.getLatestReceivedInstanceId().getId()
-                                        + 1;
-
-                                context.acquiredConfiguration( memberList, state.getRoles() );
                                 context.joined();
                                 outgoing.offer( internal( ClusterMessage.joinResponse, context.getConfiguration() ) );
 

@@ -549,9 +549,26 @@ public class NodeManager
         nodeCache.remove( nodeId );
     }
 
-    public void removeRelationshipFromCache( long relId )
+    public void removeRelationshipFromCache( long id )
     {
-        relCache.remove( relId );
+        relCache.remove( id );
+    }
+
+
+    public void patchDeletedRelationshipNodes( long relId, long firstNodeId, long firstNodeNextRelId, long secondNodeId,
+                                               long secondNodeNextRelId )
+    {
+        invalidateNode( firstNodeId, relId, firstNodeNextRelId );
+        invalidateNode( secondNodeId, relId, secondNodeNextRelId );
+    }
+
+    private void invalidateNode( long nodeId, long relIdDeleted, long nextRelId )
+    {
+        NodeImpl node = nodeCache.get( nodeId );
+        if ( node != null && node.getRelChainPosition() == relIdDeleted )
+        {
+            node.setRelChainPosition( nextRelId );
+        }
     }
 
     Object loadPropertyValue( PropertyData property )

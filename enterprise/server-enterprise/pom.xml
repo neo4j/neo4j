@@ -30,7 +30,7 @@
     <testWithExternalServer>false</testWithExternalServer>
 
    
-    <webdriver.version>2.0b1</webdriver.version>
+    <webdriver.version>2.29.1</webdriver.version>
     <webdriver.impl.class>org.openqa.selenium.firefox.FirefoxDriver</webdriver.impl.class>
 
     <docs.url>http://docs.neo4j.org/chunked/${project.version}/server.html</docs.url>
@@ -107,7 +107,6 @@
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-all</artifactId>
-      <version>1.8.5</version>
       <scope>test</scope>
     </dependency>
 

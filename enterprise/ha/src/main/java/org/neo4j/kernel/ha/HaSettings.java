@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.ha;
 
+import static org.neo4j.helpers.Settings.BOOLEAN;
 import static org.neo4j.helpers.Settings.BYTES;
 import static org.neo4j.helpers.Settings.DURATION;
 import static org.neo4j.helpers.Settings.HOSTNAME_PORT;
@@ -39,6 +40,7 @@ import java.util.List;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.Description;
 import org.neo4j.helpers.HostnamePort;
+import org.neo4j.helpers.Settings;
 import org.neo4j.kernel.configuration.ConfigurationMigrator;
 import org.neo4j.kernel.configuration.Migrator;
 
@@ -68,6 +70,9 @@ public class HaSettings
 
     @Description( "Where to bind High Availability protocol server" )
     public static final Setting<HostnamePort> ha_server = setting( "ha.server", HOSTNAME_PORT, ":6361-6371" );
+
+    @Description("Whether this instance should only participate as slave in cluster. If enabled it will never be elected as master")
+    public static final Setting<Boolean> slave_only = setting( "ha.slave_only", BOOLEAN, Settings.FALSE );
 
     @Description( "Policy for how to handle branched data" )
     public static final Setting<BranchedDataPolicy> branched_data_policy = setting( "ha.branched_data_policy",

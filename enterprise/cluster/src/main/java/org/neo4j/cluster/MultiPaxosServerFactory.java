@@ -22,6 +22,7 @@ package org.neo4j.cluster;
 import static org.neo4j.cluster.com.message.Message.internal;
 
 import java.net.URI;
+import java.util.concurrent.Executor;
 
 import org.neo4j.cluster.com.message.MessageSender;
 import org.neo4j.cluster.com.message.MessageSource;
@@ -51,7 +52,7 @@ import org.neo4j.cluster.protocol.election.ElectionCredentialsProvider;
 import org.neo4j.cluster.protocol.election.ElectionMessage;
 import org.neo4j.cluster.protocol.election.ElectionRole;
 import org.neo4j.cluster.protocol.election.ElectionState;
-import org.neo4j.cluster.protocol.election.HeartbeatFailedReelectionListener;
+import org.neo4j.cluster.protocol.election.HeartbeatReelectionListener;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatContext;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatIAmAliveProcessor;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatJoinListener;
@@ -88,7 +89,8 @@ public class MultiPaxosServerFactory
     public ProtocolServer newProtocolServer( TimeoutStrategy timeoutStrategy, MessageSource input,
                                              MessageSender output,
                                              AcceptorInstanceStore acceptorInstanceStore,
-                                             ElectionCredentialsProvider electionCredentialsProvider )
+                                             ElectionCredentialsProvider electionCredentialsProvider,
+                                             Executor stateMachineExecutor )
     {
         LatencyCalculator latencyCalculator = new LatencyCalculator( timeoutStrategy, input );
 
@@ -96,7 +98,7 @@ public class MultiPaxosServerFactory
 
         // Create state machines
         ConnectedStateMachines connectedStateMachines = new ConnectedStateMachines( input, output, latencyCalculator,
-                executor );
+                executor, stateMachineExecutor );
         Timeouts timeouts = connectedStateMachines.getTimeouts();
         connectedStateMachines.addMessageProcessor( latencyCalculator );
 
@@ -149,7 +151,7 @@ public class MultiPaxosServerFactory
         server.newClient( Cluster.class ).addClusterListener( new HeartbeatJoinListener( connectedStateMachines
                 .getOutgoing() ) );
 
-        heartbeatContext.addHeartbeatListener( new HeartbeatFailedReelectionListener( server.newClient( Election
+        heartbeatContext.addHeartbeatListener( new HeartbeatReelectionListener( server.newClient( Election
                 .class ) ) );
         clusterContext.addClusterListener( new ClusterLeaveReelectionListener( server.newClient( Election.class ) ) );
         electionContext.setElectionCredentialsProvider( electionCredentialsProvider );

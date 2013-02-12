@@ -1,12 +1,12 @@
 This file contains the full license text of the included third party
 libraries. For an overview of the licenses see the NOTICE.txt file.
 
------------------------------
-Apache License 2.0:
- Apache Lucene
- ConcurrentLinkedHashMap
- Geronimo Java Transaction API
------------------------------
+------------------------------------------------------------------------------
+Apache Software License, Version 2.0
+  ConcurrentLinkedHashMap
+  JTA 1.1
+  Lucene Core
+------------------------------------------------------------------------------
 
                                  Apache License
                            Version 2.0, January 2004
@@ -210,14 +210,15 @@ Apache License 2.0:
    See the License for the specific language governing permissions and
    limitations under the License.
 
----------------
-Scala License:
- Scala library
----------------
+
+------------------------------------------------------------------------------
+BSD - Scala License
+  Scala Library
+------------------------------------------------------------------------------
 
 SCALA LICENSE
 
-Copyright (c) 2002-2011 EPFL, Lausanne, unless otherwise specified.
+Copyright (c) 2002-2012 EPFL, Lausanne, unless otherwise specified.
 All rights reserved.
 
 This software was developed by the Programming Methods Laboratory of the
@@ -250,4 +251,6 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
 LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
 OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 SUCH DAMAGE.
+
+
 

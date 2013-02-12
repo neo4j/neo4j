@@ -53,6 +53,7 @@ import org.jboss.netty.channel.SimpleChannelHandler;
 import org.jboss.netty.channel.group.ChannelGroup;
 import org.jboss.netty.channel.group.DefaultChannelGroup;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
+import org.jboss.netty.util.Version;
 import org.neo4j.com.RequestContext.Tx;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.HostnamePort;
@@ -221,13 +222,26 @@ public abstract class Server<T, R> extends Protocol implements ChannelPipelineFa
         // Close all open connections
         shuttingDown = true;
 
-        silentChannelExecutor.shutdown();
-        unfinishedTransactionExecutor.shutdown();
         targetCallExecutor.shutdown();
+        targetCallExecutor.awaitTermination( 10, TimeUnit.SECONDS );
+        unfinishedTransactionExecutor.shutdown();
+        unfinishedTransactionExecutor.awaitTermination( 10, TimeUnit.SECONDS );
+        silentChannelExecutor.shutdown();
+        silentChannelExecutor.awaitTermination( 10, TimeUnit.SECONDS );
 
         channelGroup.close().awaitUninterruptibly();
 
-        channelFactory.releaseExternalResources();
+        if ( Version.ID.compareTo( "3.5.7.Final" ) >= 0 )
+        {
+            channelFactory.releaseExternalResources();
+        }
+        else
+        {
+            executor.shutdown();
+            executor.awaitTermination( 10, TimeUnit.SECONDS );
+            workerExecutor.shutdown();
+            workerExecutor.awaitTermination( 10, TimeUnit.SECONDS );
+        }
     }
 
     @Override

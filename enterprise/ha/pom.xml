@@ -159,7 +159,6 @@
     <dependency>
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-classic</artifactId>
-      <version>1.0.3</version>
     </dependency>
     <dependency>
       <groupId>commons-io</groupId>
@@ -202,11 +201,11 @@
 
   <profiles>
     <profile><!-- used for testing -->
-      <id>Linux-dependency-tools.jar</id>
+      <id>unix-dependency-tools.jar</id>
       <activation>
-        <os>
-          <name>Linux</name>
-        </os>
+        <file>
+          <exists>${java.home}/../lib/tools.jar</exists>
+        </file>
       </activation>
       <dependencies>
         <dependency>

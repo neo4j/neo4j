@@ -1,0 +1,15 @@
+
+# Debian policy is that database data goes in /var/lib/[package] 
+# (see http://people.debian.org/~seanius/policy/dbapp-policy.html/)
+var/lib/neo4j-arbiter
+
+# Store neo4j log file in it's own directory, since log rotation is in place, so there will be
+# many of them.
+var/log/neo4j-arbiter
+
+# Jars go in usr/share
+usr/share/neo4j-arbiter
+
+# Configuration
+etc/neo4j-arbiter
+

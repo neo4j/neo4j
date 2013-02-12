@@ -22,6 +22,7 @@
     <license-text.header>GPL-3-header.txt</license-text.header>
     <docs.url>http://docs.neo4j.org/chunked/${project.version}/server-extending.html</docs.url>
     <docs-plugin.skip>true</docs-plugin.skip>
+    <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
   </properties>
 
   <scm>
