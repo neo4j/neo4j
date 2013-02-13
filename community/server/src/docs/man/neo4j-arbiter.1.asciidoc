@@ -23,7 +23,7 @@ COMMANDS
 --------
 
 *console*::
-  Start the server as an application, running as a foreground proces. Stop the server using `CTRL-C`.
+  Start the server as an application, running as a foreground process. Stop the server using `CTRL-C`.
 
 *start*::
   Start server as daemon, running as a background process.
