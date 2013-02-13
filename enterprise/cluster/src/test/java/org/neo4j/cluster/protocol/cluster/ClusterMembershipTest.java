@@ -203,7 +203,6 @@ public class ClusterMembershipTest
 
     @Ignore( "Ignore until fix available" )
     @Test
-    @Ignore ("ignored until we fix this, to keep the build from failing constantly")
     public void threeNodesJoinAtSameTime()
             throws URISyntaxException, ExecutionException, TimeoutException, InterruptedException
     {
