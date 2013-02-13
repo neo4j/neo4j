@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel;
 
+import static java.lang.String.format;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -35,11 +37,13 @@ import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.util.FileUtils;
 
 /**
-* Default file system abstraction that creates files using the underlying file system.
-*/
+ * Default file system abstraction that creates files using the underlying file system.
+ */
 public class DefaultFileSystemAbstraction
-    implements FileSystemAbstraction
+        implements FileSystemAbstraction
 {
+    static final String UNABLE_TO_CREATE_DIRECTORY_FORMAT = "Unable to create directory path [%s] for Neo4j store.";
+
     @Override
     public FileChannel open( File fileName, String mode ) throws IOException
     {
@@ -118,21 +122,17 @@ public class DefaultFileSystemAbstraction
     {
         return FileUtils.renameFile( from, to );
     }
-    
+
     @Override
     public void autoCreatePath( File path ) throws IOException
     {
-        if (!path.isDirectory())
-            path = path.getParentFile();
+        if (path.exists()) return;
 
-        if ( !path.exists() )
-        {
-            if ( !path.mkdirs() )
-            {
-                throw new IOException( "Unable to create directory path["
-                        + path + "] for Neo4j store." );
-            }
-        }
+        boolean directoriesWereCreated = path.mkdirs();
+
+        if (directoriesWereCreated) return;
+
+        throw new IOException( format( UNABLE_TO_CREATE_DIRECTORY_FORMAT, path ) );
     }
     
     @Override
