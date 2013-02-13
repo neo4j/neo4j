@@ -30,6 +30,7 @@ public class StoreLockerLifecycleAdapterTest
 {
     private static final String DATABASE_NAME_1 = "target/StoreLockerLifecycleAdapterTest/foo";
     private static final String DATABASE_NAME_2 = "target/StoreLockerLifecycleAdapterTest/bar";
+    private static final String DATABASE_NAME_3 = "target/StoreLockerLifecycleAdapterTest/baz";
 
     @Test
     public void shouldAllowDatabasesToUseFilesetsSequentially() throws Exception
@@ -58,11 +59,11 @@ public class StoreLockerLifecycleAdapterTest
     @Test
     public void shouldNotAllowDatabasesToUseFilesetsConcurrently() throws Exception
     {
-        EmbeddedGraphDatabase embeddedGraphDatabase1 = null;
+        EmbeddedGraphDatabase embeddedGraphDatabase = null;
 
         try
         {
-            embeddedGraphDatabase1 = new EmbeddedGraphDatabase( DATABASE_NAME_2 );
+            embeddedGraphDatabase = new EmbeddedGraphDatabase( DATABASE_NAME_2 );
 
             new EmbeddedGraphDatabase( DATABASE_NAME_2 );
 
@@ -74,7 +75,30 @@ public class StoreLockerLifecycleAdapterTest
         }
         finally
         {
-            embeddedGraphDatabase1.shutdown();
+            embeddedGraphDatabase.shutdown();
+        }
+    }
+
+    @Test
+    public void shouldNotAllowDatabasesToUseFilesetsConcurrentlyEvenIfTheyAreInReadOnlyMode() throws Exception
+    {
+        EmbeddedGraphDatabase embeddedGraphDatabase = null;
+
+        try
+        {
+            embeddedGraphDatabase = new EmbeddedGraphDatabase( DATABASE_NAME_3 );
+
+            new EmbeddedReadOnlyGraphDatabase( DATABASE_NAME_3 );
+
+            fail();
+        }
+        catch ( RuntimeException e )
+        {
+            assertThat( e.getCause().getCause().getMessage(), is( DATABASE_LOCKED_ERROR_MESSAGE ) );
+        }
+        finally
+        {
+            embeddedGraphDatabase.shutdown();
         }
     }
 }
