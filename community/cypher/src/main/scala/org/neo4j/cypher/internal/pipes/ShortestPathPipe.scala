@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.pipes
 
-import java.lang.String
 import collection.Seq
 import org.neo4j.cypher.internal.symbols._
 import org.neo4j.graphdb.Path
@@ -37,7 +36,7 @@ class ShortestPathPipe(source: Pipe, ast: ShortestPath) extends PipeWithSource(s
   private val expression = ShortestPathExpression(ast)
 
   def createResults(state: QueryState) = source.createResults(state).flatMap(ctx => {
-    val result: Stream[Path] = expression(ctx).asInstanceOf[Stream[Path]]
+    val result: Stream[Path] = expression(ctx)
 
     if (result.isEmpty) {
       if (optional)
@@ -50,9 +49,10 @@ class ShortestPathPipe(source: Pipe, ast: ShortestPath) extends PipeWithSource(s
 
   })
 
-  val symbols = source.symbols.add(pathName, PathType())
+  override val symbols = source.symbols.add(pathName, PathType())
 
-  override def executionPlanDescription(): String = source.executionPlanDescription() + "\r\n" + "ShortestPath(" + ast + ")"
+  override def executionPlanDescription =
+    source.executionPlanDescription.andThen("ShortestPath", "ast" -> ast)
 
   def throwIfSymbolsMissing(symbols: SymbolTable) {
     ast.throwIfSymbolsMissing(symbols)

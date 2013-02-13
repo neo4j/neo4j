@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.symbols.{AnyType, SymbolTable}
 import org.neo4j.cypher.internal.ExecutionContext
 import collection.mutable
 import org.neo4j.cypher.internal.commands.expressions.Expression
+import org.neo4j.cypher.PlanDescription
 
 class DistinctPipe(source: Pipe, expressions: Map[String, Expression]) extends PipeWithSource(source) {
 
@@ -55,14 +56,14 @@ class DistinctPipe(source: Pipe, expressions: Map[String, Expression]) extends P
     }
   }
 
-  def executionPlanDescription() = source.executionPlanDescription() + "\nDistinct()"
+  override def executionPlanDescription = source.executionPlanDescription.andThen("Distinct")
 
-  def symbols: SymbolTable = {
+  override def symbols: SymbolTable = {
     val identifiers = expressions.mapValues(e => e.evaluateType(AnyType(), source.symbols))
     new SymbolTable(identifiers)
   }
 
-  def throwIfSymbolsMissing(symbols: SymbolTable) {
+  override def throwIfSymbolsMissing(symbols: SymbolTable) {
     expressions.values.foreach(e => e.throwIfSymbolsMissing(symbols))
   }
 }

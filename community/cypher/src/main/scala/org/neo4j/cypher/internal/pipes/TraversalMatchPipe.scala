@@ -40,10 +40,10 @@ class TraversalMatchPipe(source: Pipe, matcher: TraversalMatcher, trail: Trail) 
     }
   }
 
-  def symbols = trail.symbols(source.symbols)
+  override def symbols = trail.symbols(source.symbols)
 
-  def executionPlanDescription() = source.executionPlanDescription() + "\nTraversalMatcher(" + trail+")"
+  override def executionPlanDescription = super.executionPlanDescription.andThen("TraversalMatcher", "trail" -> trail)
 
-  def throwIfSymbolsMissing(symbols: SymbolTable) {
-  }
+  def throwIfSymbolsMissing(symbols: SymbolTable)
+  {}
 }

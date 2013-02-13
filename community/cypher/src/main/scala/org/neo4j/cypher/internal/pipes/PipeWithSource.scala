@@ -22,6 +22,15 @@ package org.neo4j.cypher.internal.pipes
 import org.neo4j.cypher.internal.symbols.SymbolTable
 
 abstract class PipeWithSource(val source: Pipe) extends Pipe {
+  def dependencies = Seq()
+
+  def deps = Map()
+
+  def symbols = source.symbols
+
+
+  def executionPlanDescription = source.executionPlanDescription
+
   def throwIfSymbolsMissing(symbols: SymbolTable)
 
   throwIfSymbolsMissing(source.symbols)

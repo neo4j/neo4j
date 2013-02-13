@@ -28,8 +28,9 @@ import java.io.{StringWriter, PrintWriter}
 import collection.immutable.{Map => ImmutableMap}
 import collection.Map
 
-class
-PipeExecutionResult(result: Iterator[Map[String, Any]], val columns: List[String], state:QueryState)
+class PipeExecutionResult(result: Iterator[Map[String, Any]],
+                          val columns: List[String], state: QueryState,
+                          val executionPlanDescription: String)
   extends ExecutionResult
   with StringExtras
   with CollectionSupport

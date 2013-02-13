@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.pipes
 
 import org.neo4j.cypher.internal.symbols.SymbolTable
+import org.neo4j.cypher.PlanDescription
 
 class EmptyResultPipe(source: Pipe)
   extends PipeWithSource(source) {
@@ -33,13 +34,9 @@ class EmptyResultPipe(source: Pipe)
     Iterator()
   }
 
-  override def executionPlanDescription(): String = source.executionPlanDescription() + "\nEmptyResult()"
+  override def executionPlanDescription = super.executionPlanDescription.andThen("EmptyResult")
 
-  def dependencies = Seq()
-
-  def deps = Map()
-
-  def symbols = new SymbolTable()
+  override def symbols = new SymbolTable()
 
   def throwIfSymbolsMissing(symbols: SymbolTable) {}
 }

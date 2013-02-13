@@ -49,9 +49,9 @@ class ResultValueMapperPipe(source: Pipe) extends PipeWithSource(source) {
     result
   }
 
-  def executionPlanDescription() = source.executionPlanDescription() + "\nResultValueMapping()"
+  override def executionPlanDescription = super.executionPlanDescription.andThen("ResultValueMapping")
 
-  def symbols:SymbolTable = new SymbolTable(source.symbols.identifiers.mapValues { (t: CypherType) =>
+  override def symbols:SymbolTable = new SymbolTable(source.symbols.identifiers.mapValues { (t: CypherType) =>
     t.rewrite {
       case _: LabelType => StringType()
       case x => x

@@ -76,9 +76,9 @@ class TopPipe(source: Pipe, sortDescription: List[SortItem], countExpression: Ex
     result.toIterator
   }
 
-  def executionPlanDescription() = "%s\rTopPipe(ORDER BY %s LIMIT %s)".format(source.executionPlanDescription(), sortDescription.mkString(","), countExpression)
-
-  def symbols = source.symbols
+  override def executionPlanDescription =
+    super.executionPlanDescription
+      .andThen("Top", "orderBy" -> sortDescription.map(_.toString), "limit" -> countExpression)
 
   def throwIfSymbolsMissing(symbols: SymbolTable) {
     sortDescription.foreach(_.expression.throwIfSymbolsMissing(symbols))
