@@ -343,4 +343,45 @@ public class NodeStore extends AbstractStore implements Store, RecordStore<NodeR
             return getDynamicLabelsArray( node.getDynamicLabelRecords() );
         }
     }
+    
+    @Override
+    protected void setRecovered()
+    {
+        dynamicLabelStore.setRecovered();
+        super.setRecovered();
+    }
+    
+    @Override
+    protected void unsetRecovered()
+    {
+        dynamicLabelStore.unsetRecovered();
+        super.unsetRecovered();
+    }
+    
+    @Override
+    public void makeStoreOk()
+    {
+        dynamicLabelStore.makeStoreOk();
+        super.makeStoreOk();
+    }
+    
+    @Override
+    public void rebuildIdGenerators()
+    {
+        dynamicLabelStore.rebuildIdGenerators();
+        super.rebuildIdGenerators();
+    }
+    
+    protected void updateIdGenerators()
+    {
+        dynamicLabelStore.updateHighId();
+        super.updateHighId();
+    }
+    
+    @Override
+    public void flushAll()
+    {
+        dynamicLabelStore.flushAll();
+        super.flushAll();
+    }
 }

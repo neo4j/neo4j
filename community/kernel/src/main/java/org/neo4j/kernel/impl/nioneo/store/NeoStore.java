@@ -576,7 +576,7 @@ public class NeoStore extends AbstractStore
         relTypeStore.updateIdGenerators();
         propStore.updateIdGenerators();
         relStore.updateHighId();
-        nodeStore.updateHighId();
+        nodeStore.updateIdGenerators();
         schemaStore.updateHighId();
     }
 
