@@ -243,6 +243,9 @@ Which will get a response along the lines of the following:
     }
 ----
 
+[TIP]
+You can replace database #3 with an 'arbiter' instance, see <<arbiter-instances>>
+
 == Start Neo4j Embedded in HA mode ==
 
 If you are using Maven and Neo4j Embedded, simply add the following dependency to your project:
