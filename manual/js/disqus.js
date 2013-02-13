@@ -71,7 +71,10 @@ else
     }
   }
 }
+
 var disqus_url = window.location;
+var disqus_shortname = "neo4j";
+var disqus_developer = 0;
 if ( disqus_url.protocol === "http:" || disqus_url.protocol === "https:" )
 {
   var docsLocation = "http://docs.neo4j.org/chunked/snapshot/";
@@ -87,8 +90,49 @@ if ( disqus_url.protocol === "http:" || disqus_url.protocol === "https:" )
     disqus_url = docsLocation + page;
   }
 }
-var disqus_shortname = "neo4j";
-var disqus_developer = 1;
+else
+{
+  disqus_developer = 1;
+}
+
+var intro = $( '<div id="neo-disqus-intro"/>' );
+intro.append( '<h4>Asking questions</h4>',
+    "<p>Here's where to ask to get the best answers to your Neo4j questions:</p>" );
+
+var listWrapper = $( '<div class="itemizedlist">' );
+var list = $( '<ul type="disc" class="itemizedlist" />' );
+listWrapper.append( list );
+intro.append( listWrapper );
+
+function appendListItem(list, heading, content)
+{
+  list.append( "<li class='listitem'><em>" + heading + "</em> " + content + "</li>" );
+}
+
+appendListItem( list, "Having trouble running an example from the manual?",
+    "First make sure that you're using the same version of Neo4j as the manual was built for! "
+        + "There's a dropdown on all pages that lets you switch to a different version." );
+appendListItem(
+    list,
+    "Something doesn't work as expected with Neo4j?",
+    "The stackoverflow.com <a href='http://stackoverflow.com/questions/tagged/neo4j'>neo4j tag</a> is an excellent place for this!" );
+appendListItem(
+    list,
+    "Found a bug?",
+    "Then please report and track it using the GitHub <a href='https://github.com/neo4j/neo4j/issues'>Neo4j Issues</a> page. "
+        + "Note however, that you can report <i>documentation bugs</i> using the Disqus thread below as well." );
+appendListItem(
+    list,
+    "Have a data modeling question or want to participate in discussions around Neo4j and graphs?",
+    "The <a href='https://groups.google.com/forum/?fromgroups#!forum/neo4j'>Neo4j Google Group</a> is a great place for this." );
+appendListItem( list, "Is 140 characters enough for your question?", +"Then obviously Twitter is an option. "
+    + "There's lots of <a href='https://twitter.com/search?q=neo4j'>#neo4j</a> activity there." );
+appendListItem( list, "Have a question on the content of this page or missing something here?",
+    "Then you're all set, use the discussion thread below. "
+        + "Please post any comments or suggestions regarding the documentation right here!" );
+
+$( intro ).appendTo( "#neo-disqus-wrapper" );
+$( "<div id='disqus_thread'></div>" ).appendTo( "#neo-disqus-wrapper" );
 
 ( function()
 {
