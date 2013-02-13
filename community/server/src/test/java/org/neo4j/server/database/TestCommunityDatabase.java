@@ -22,8 +22,8 @@ package org.neo4j.server.database;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.StoreLockerLifecycleAdapter.DATABASE_LOCKED_ERROR_MESSAGE;
 import static org.neo4j.server.ServerTestUtils.createTempDir;
 
 import java.io.File;
@@ -118,7 +118,7 @@ public class TestCommunityDatabase
         catch ( RuntimeException e )
         {
             // Wrapped in a lifecycle exception, needs to be dug out
-            assertTrue( IllegalStateException.class.isAssignableFrom( e.getCause().getCause().getCause().getClass() ) );
+            assertThat( e.getCause().getCause().getMessage(), is( DATABASE_LOCKED_ERROR_MESSAGE ) );
         }
     }
 

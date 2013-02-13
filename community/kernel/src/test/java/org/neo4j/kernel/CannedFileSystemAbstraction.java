@@ -19,89 +19,99 @@
  */
 package org.neo4j.kernel;
 
-import static java.lang.String.format;
-
 import java.io.File;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.nio.channels.FileChannel;
+
 import org.neo4j.kernel.impl.nioneo.store.FileLock;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
-import org.neo4j.kernel.impl.util.FileUtils;
 
-/**
- * Default file system abstraction that creates files using the underlying file system.
- */
-public class DefaultFileSystemAbstraction
-        implements FileSystemAbstraction
+public class CannedFileSystemAbstraction implements FileSystemAbstraction
 {
-    static final String UNABLE_TO_CREATE_DIRECTORY_FORMAT = "Unable to create directory path [%s] for Neo4j store.";
+    private final boolean fileExists;
+    private final IOException cannotCreateStoreDir;
+    private final IOException cannotOpenLockFile;
+    private final boolean lockSuccess;
+
+    public CannedFileSystemAbstraction( boolean fileExists,
+                                        IOException cannotCreateStoreDir,
+                                        IOException cannotOpenLockFile,
+                                        boolean lockSuccess )
+    {
+        this.fileExists = fileExists;
+        this.cannotCreateStoreDir = cannotCreateStoreDir;
+        this.cannotOpenLockFile = cannotOpenLockFile;
+        this.lockSuccess = lockSuccess;
+    }
 
     @Override
     public FileChannel open( File fileName, String mode ) throws IOException
     {
-        // Returning only the channel is ok, because the channel, when close()d will close its parent File.
-        return new RandomAccessFile( fileName, mode ).getChannel();
+        if ( cannotOpenLockFile != null )
+        {
+            throw cannotOpenLockFile;
+        }
+
+        return null;
     }
 
     @Override
     public FileLock tryLock( File fileName, FileChannel channel ) throws IOException
     {
-        return FileLock.getOsSpecificFileLock( fileName, channel );
+        return lockSuccess ? SYMBOLIC_FILE_LOCK : null;
     }
 
     @Override
     public FileChannel create( File fileName ) throws IOException
     {
-        return open( fileName, "rw" );
+        throw new UnsupportedOperationException( "TODO" );
     }
 
     @Override
     public boolean fileExists( File fileName )
     {
-        return fileName.exists();
+        return fileExists;
     }
 
     @Override
     public long getFileSize( File fileName )
     {
-        return fileName.length();
+        throw new UnsupportedOperationException( "TODO" );
     }
 
     @Override
     public boolean deleteFile( File fileName )
     {
-        return FileUtils.deleteFile( fileName );
+        throw new UnsupportedOperationException( "TODO" );
     }
 
     @Override
     public boolean renameFile( File from, File to ) throws IOException
     {
-        return FileUtils.renameFile( from, to );
+        throw new UnsupportedOperationException( "TODO" );
     }
 
     @Override
-    public void copyFile( File fromFile, File toFile ) throws IOException
+    public void copyFile( File from, File to ) throws IOException
     {
-        if ( fromFile.isDirectory() )
-        {
-            FileUtils.copyRecursively( fromFile, toFile );
-        }
-        else
-        {
-            FileUtils.copyFile( fromFile, toFile );
-        }
+        throw new UnsupportedOperationException( "TODO" );
     }
 
     @Override
     public void autoCreatePath( File path ) throws IOException
     {
-        if (path.exists()) return;
-
-        boolean directoriesWereCreated = path.mkdirs();
-
-        if (directoriesWereCreated) return;
-
-        throw new IOException( format( UNABLE_TO_CREATE_DIRECTORY_FORMAT, path ) );
+        if ( cannotCreateStoreDir != null )
+        {
+            throw cannotCreateStoreDir;
+        }
     }
+
+    private static final FileLock SYMBOLIC_FILE_LOCK = new FileLock()
+    {
+        @Override
+        public void release() throws IOException
+        {
+
+        }
+    };
 }
