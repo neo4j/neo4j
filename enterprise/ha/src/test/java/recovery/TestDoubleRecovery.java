@@ -56,8 +56,8 @@ import org.neo4j.test.subprocess.DebugInterface;
 import org.neo4j.test.subprocess.DebuggedThread;
 import org.neo4j.test.subprocess.KillSubProcess;
 
-@Ignore
 @SuppressWarnings( "serial" )
+@Ignore
 public class TestDoubleRecovery extends AbstractSubProcessTestBase
 {
     private static final byte[] NEOKERNL = { 'N', 'E', 'O', 'K', 'E', 'R', 'N', 'L', '\0' };

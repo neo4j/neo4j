@@ -195,6 +195,18 @@ public enum HeartbeatState
                         {
                             return start;
                         }
+
+                        case addHeartbeatListener:
+                        {
+                            context.addHeartbeatListener( (HeartbeatListener) message.getPayload() );
+                            break;
+                        }
+
+                        case removeHeartbeatListener:
+                        {
+                            context.removeHeartbeatListener( (HeartbeatListener) message.getPayload() );
+                            break;
+                        }
                     }
 
                     return this;

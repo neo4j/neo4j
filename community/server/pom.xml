@@ -41,6 +41,7 @@
         <bundle.namespace>org.neo4j.server</bundle.namespace>
         <short-name>server</short-name>
         <license-text.header>GPL-3-header.txt</license-text.header>
+        <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
         <docs.url>http://docs.neo4j.org/chunked/${project.version}/server.html</docs.url>
         <docs-plugin.filter>true</docs-plugin.filter>
 

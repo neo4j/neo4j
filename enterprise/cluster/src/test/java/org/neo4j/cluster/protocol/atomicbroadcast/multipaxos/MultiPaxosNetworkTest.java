@@ -62,6 +62,7 @@ import ch.qos.logback.classic.LoggerContext;
 public class MultiPaxosNetworkTest
 {
     @Test
+    @Ignore
     public void testBroadcast()
             throws ExecutionException, InterruptedException, URISyntaxException, BrokenBarrierException
     {
@@ -206,7 +207,7 @@ public class MultiPaxosNetworkTest
 
         logger.info( "Joined cluster - set data" );
 
-        for ( int i = 0; i < 100; i++ )
+        for ( int i = 0; i < 50; i++ )
         {
             map.put( "foo" + i, "bar" + i );
         }

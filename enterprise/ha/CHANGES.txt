@@ -1,3 +1,8 @@
+1.9.M05 (2013-02-12)
+--------------------
+o Slave only mode is now available
+o HA server will now bind by default to all interfaces (0.0.0.0)
+
 1.9.M04 (2013-01-17)
 --------------------
 o Conflicting server IDs in a cluster will now make the latest joining instance to leave the cluster immediately and

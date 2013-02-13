@@ -17,7 +17,9 @@
   <properties>
     <bundle.namespace>org.neo4j.visualization</bundle.namespace>
     <license-text.header>GPL-3-header.txt</license-text.header>
+    <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
   </properties>
+
   <licenses>
     <license>
       <name>GNU General Public License, Version 3</name>

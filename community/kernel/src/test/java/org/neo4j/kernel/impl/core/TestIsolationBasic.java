@@ -31,11 +31,15 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 
-public class TestIsolation extends AbstractNeo4jTestCase
+public class TestIsolationBasic extends AbstractNeo4jTestCase
 {
+    /*
+     * Tests that changes performed in a transaction before commit are not apparent in another.
+     */
     @Test
-    public void testSimpleTransactionIsolation()
+    public void testSimpleTransactionIsolation() throws InterruptedException
     {
+        // Start setup - create base data
         commit();
         final CountDownLatch latch1 = new CountDownLatch( 1 );
         final CountDownLatch latch2 = new CountDownLatch( 1 );
@@ -72,6 +76,8 @@ public class TestIsolation extends AbstractNeo4jTestCase
         assertPropertyEqual( rel1, "key", "old" );
         assertRelationshipCount( node1, 1 );
         assertRelationshipCount( node2, 1 );
+
+        // This is the mutating transaction - it will change stuff which will be read in between
         Thread t1 = new Thread( new Runnable()
         {
             public void run()
@@ -111,29 +117,19 @@ public class TestIsolation extends AbstractNeo4jTestCase
             }
         } );
         t1.start();
-        try
-        {
-            latch1.await();
-        }
-        catch ( InterruptedException e )
-        {
-            Thread.interrupted();
-        }
 
+        latch1.await();
+
+        // The transaction started above that runs in t1 has not finished. The old values should still be visible.
         assertPropertyEqual( node1, "key", "old" );
         assertPropertyEqual( rel1, "key", "old" );
         assertRelationshipCount( node1, 1 );
         assertRelationshipCount( node2, 1 );
 
         latch2.countDown();
-        try
-        {
-            t1.join();
-        }
-        catch ( InterruptedException e )
-        {
-            Thread.interrupted();
-        }
+        t1.join();
+
+        // The transaction in t1 has finished but not committed. Its changes should still not be visible.
         assertPropertyEqual( node1, "key", "old" );
         assertPropertyEqual( rel1, "key", "old" );
         assertRelationshipCount( node1, 1 );
