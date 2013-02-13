@@ -42,12 +42,14 @@ import org.neo4j.com.TransactionStream;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.com.master.Slave;
 import org.neo4j.kernel.ha.com.master.SlavePriorities;
 import org.neo4j.kernel.ha.com.master.SlavePriority;
 import org.neo4j.kernel.ha.com.master.Slaves;
 import org.neo4j.kernel.ha.transaction.MasterTxIdGenerator;
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.transaction.xaframework.LogExtractor;
 import org.neo4j.kernel.impl.transaction.xaframework.XaConnection;
@@ -252,6 +254,8 @@ public class TestMasterCommittingAtSlave
         }
         return slaves;
     }
+    
+    private static final FileSystemAbstraction FS = new DefaultFileSystemAbstraction();
 
     private static class FakeDataSource extends XaDataSource
     {
@@ -275,7 +279,7 @@ public class TestMasterCommittingAtSlave
         @Override
         public LogExtractor getLogExtractor( long startTxId, long endTxIdHint ) throws IOException
         {
-            return LogExtractor.from( dir, startTxId );
+            return LogExtractor.from( FS, dir, startTxId );
         }
 
         @Override
@@ -349,7 +353,7 @@ public class TestMasterCommittingAtSlave
     private static class FakeStringLogger extends StringLogger
     {
         private volatile boolean anyMessageLogged;
-        private StringBuilder errors = new StringBuilder();
+        private final StringBuilder errors = new StringBuilder();
 
         @Override
         public void logLongMessage( String msg, Visitor<LineLogger> source, boolean flush )

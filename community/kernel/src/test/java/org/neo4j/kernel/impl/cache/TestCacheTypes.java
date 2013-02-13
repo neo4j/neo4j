@@ -22,28 +22,17 @@ package org.neo4j.kernel.impl.cache;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
-import java.io.File;
-
-import org.junit.BeforeClass;
 import org.junit.Test;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
+import org.neo4j.test.TestGraphDatabaseFactory;
 
 public class TestCacheTypes extends AbstractNeo4jTestCase
 {
-    private static final String PATH = getStorePath( "cache-db" );
-
-    @BeforeClass
-    public static void clear()
-    {
-        deleteFileOrDirectory( new File( PATH ) );
-    }
-    
     private GraphDatabaseAPI newDb( String cacheType )
     {
-        return (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( PATH ).setConfig( GraphDatabaseSettings.cache_type.name(), cacheType ).newGraphDatabase();
+        return (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().setConfig( GraphDatabaseSettings.cache_type.name(), cacheType ).newGraphDatabase();
     }
 
     @Test

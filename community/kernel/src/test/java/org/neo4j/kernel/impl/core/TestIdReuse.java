@@ -19,17 +19,18 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import static org.junit.Assert.assertEquals;
+
 import java.io.File;
+
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.impl.util.FileUtils;
-
-import static org.junit.Assert.*;
+import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
 public class TestIdReuse
 {
@@ -61,13 +62,14 @@ public class TestIdReuse
         makeSureIdsGetsReused( "neostore.propertystore.db.strings", string, 20 );
     }
     
+    private final EphemeralFileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
+    
     private void makeSureIdsGetsReused( String fileName, Object value, int iterations ) throws Exception
     {
         File storeDir = new File( "target/var/idreuse" );
-        FileUtils.deleteRecursively( storeDir );
         File file = new File( storeDir, fileName );
-        GraphDatabaseService db = new GraphDatabaseFactory().
-            newEmbeddedDatabaseBuilder( storeDir.getAbsolutePath() ).
+        GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fileSystem ).
+            newImpermanentDatabaseBuilder( storeDir.getPath() ).
             setConfig( GraphDatabaseSettings.use_memory_mapped_buffers.name(), GraphDatabaseSetting.BooleanSetting.FALSE ).
             newGraphDatabase();
         for ( int i = 0; i < 5; i++ )
@@ -76,7 +78,7 @@ public class TestIdReuse
         }
         db.shutdown();
         long sizeBefore = file.length();
-        db = new GraphDatabaseFactory().newEmbeddedDatabase( storeDir.getAbsolutePath() );
+        db = new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentDatabase( storeDir.getPath() );
         for ( int i = 0; i < iterations; i++ )
         {
             setSomeAndRemoveSome( db.getReferenceNode(), value );

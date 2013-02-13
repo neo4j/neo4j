@@ -21,24 +21,31 @@ package org.neo4j.kernel.impl.core;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.RandomAccessFile;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.Reader;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
 
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.impl.nioneo.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.nioneo.store.FileLock;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NodeStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipStore;
-import org.neo4j.kernel.impl.util.FileUtils;
+import org.neo4j.test.impl.ChannelInputStream;
+import org.neo4j.test.impl.ChannelOutputStream;
+import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
 public class JumpingFileSystemAbstraction implements FileSystemAbstraction
 {
     private final int sizePerJump;
+    private final FileSystemAbstraction actualFileSystem = new EphemeralFileSystemAbstraction();
 
     public JumpingFileSystemAbstraction( int sizePerJump )
     {
@@ -48,18 +55,38 @@ public class JumpingFileSystemAbstraction implements FileSystemAbstraction
     @Override
     public FileChannel open( File fileName, String mode ) throws IOException
     {
-        if ( fileName.getName().equals( "neostore.nodestore.db" ) ||
+        FileChannel channel = actualFileSystem.open( fileName, mode );
+        if (
+                fileName.getName().equals( "neostore.nodestore.db" ) ||
+                fileName.getName().equals( "neostore.nodestore.db.labels" ) ||
                 fileName.getName().equals( "neostore.relationshipstore.db" ) ||
                 fileName.getName().equals( "neostore.propertystore.db" ) ||
                 fileName.getName().equals( "neostore.propertystore.db.strings" ) ||
                 fileName.getName().equals( "neostore.propertystore.db.arrays" ) )
         {        
-            return new JumpingFileChannel( new RandomAccessFile( fileName, mode ).getChannel(),
-                    recordSizeFor( fileName ) );
+            return new JumpingFileChannel( channel, recordSizeFor( fileName ) );
         }
-        return new RandomAccessFile( fileName, mode ).getChannel();
+        return channel;
     }
     
+    @Override
+    public OutputStream openAsOutputStream( File fileName, boolean append ) throws IOException
+    {
+        return new ChannelOutputStream( open( fileName, "rw" ), append );
+    }
+    
+    @Override
+    public InputStream openAsInputStream( File fileName ) throws IOException
+    {
+        return new ChannelInputStream( open( fileName, "r" ) );
+    }
+
+    @Override
+    public Reader openAsReader( File fileName, String encoding ) throws IOException
+    {
+        return new InputStreamReader( openAsInputStream( fileName ), encoding );
+    }
+
     @Override
     public FileChannel create( File fileName ) throws IOException
     {
@@ -69,53 +96,67 @@ public class JumpingFileSystemAbstraction implements FileSystemAbstraction
     @Override
     public boolean fileExists( File fileName )
     {
-        return fileName.exists();
+        return actualFileSystem.fileExists( fileName );
     }
     
     @Override
     public long getFileSize( File fileName )
     {
-        return fileName.length();
+        return actualFileSystem.getFileSize( fileName );
     }
     
     @Override
     public boolean deleteFile( File fileName )
     {
-        return FileUtils.deleteFile( fileName );
+        return actualFileSystem.deleteFile( fileName );
+    }
+    
+    @Override
+    public void deleteRecursively( File directory ) throws IOException
+    {
+        actualFileSystem.deleteRecursively( directory );
+    }
+    
+    @Override
+    public boolean mkdir( File fileName )
+    {
+        return actualFileSystem.mkdir( fileName );
+    }
+    
+    @Override
+    public boolean mkdirs( File fileName )
+    {
+        return actualFileSystem.mkdirs( fileName );
     }
     
     @Override
     public boolean renameFile( File from, File to ) throws IOException
     {
-        return FileUtils.renameFile( from, to );
+        return actualFileSystem.renameFile( from, to );
     }
     
     @Override
-    public void copyFile( File from, File to ) throws IOException
-    {
-        FileUtils.copyRecursively( from, to );
-    }
-
-    @Override
     public void autoCreatePath( File path ) throws IOException
     {
-        if (path.isFile())
-            path = path.getParentFile();
-
-        if ( !path.exists() )
-        {
-            if ( !path.mkdirs() )
-            {
-                throw new IOException( "Unable to create directory path["
-                        + path.getPath() + "] for Neo4j store." );
-            }
-        }
+        actualFileSystem.autoCreatePath( path );
     }
 
     @Override
     public FileLock tryLock( File fileName, FileChannel channel ) throws IOException
     {
-        return FileLock.getOsSpecificFileLock( fileName, channel );
+        return actualFileSystem.tryLock( fileName, channel );
+    }
+    
+    @Override
+    public File[] listFiles( File directory )
+    {
+        return actualFileSystem.listFiles( directory );
+    }
+    
+    @Override
+    public boolean isDirectory( File file )
+    {
+        return actualFileSystem.isDirectory( file );
     }
     
     private int recordSizeFor( File fileName )
@@ -136,6 +177,10 @@ public class JumpingFileSystemAbstraction implements FileSystemAbstraction
         else if ( fileName.getName().endsWith( "propertystore.db" ) )
         {
             return PropertyStore.RECORD_SIZE;
+        }
+        else if ( fileName.getName().endsWith( "nodestore.db.labels" ) )
+        {
+            return Integer.parseInt( GraphDatabaseSettings.label_block_size.getDefaultValue() );
         }
         throw new IllegalArgumentException( fileName.getPath() );
     }

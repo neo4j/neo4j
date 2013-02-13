@@ -19,39 +19,32 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import static org.junit.Assert.assertEquals;
+import static org.neo4j.kernel.impl.AbstractNeo4jTestCase.getStorePath;
+
 import java.io.File;
 import java.util.concurrent.atomic.AtomicInteger;
+
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.event.ErrorState;
 import org.neo4j.graphdb.event.KernelEventHandler;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
-import org.neo4j.kernel.impl.util.FileUtils;
-
-import static org.junit.Assert.*;
-import static org.neo4j.kernel.impl.AbstractNeo4jTestCase.*;
+import org.neo4j.test.ImpermanentGraphDatabase;
 
 public class TestShutdownSequence
 {
     private GraphDatabaseService graphDb;
     
-    @BeforeClass
-    public static void deleteDb() throws Exception
+    @Before
+    public void createGraphDb()
     {
-        FileUtils.deleteRecursively( new File( getStorePath( "shutdown" ) ) );
+        graphDb = new ImpermanentGraphDatabase();
     }
 
-    public @Before
-    void createGraphDb()
-    {
-        graphDb = new GraphDatabaseFactory().newEmbeddedDatabase( getStorePath( "shutdown" ) );
-    }
-
-    public @Test
-    void canInvokeShutdownMultipleTimes()
+    @Test
+    public void canInvokeShutdownMultipleTimes()
     {
         graphDb.shutdown();
         graphDb.shutdown();
@@ -63,21 +56,25 @@ public class TestShutdownSequence
         final AtomicInteger counter = new AtomicInteger();
         graphDb.registerKernelEventHandler( new KernelEventHandler()
         {
+            @Override
             public void beforeShutdown()
             {
                 counter.incrementAndGet();
             }
 
+            @Override
             public Object getResource()
             {
                 return null;
             }
 
+            @Override
             public void kernelPanic( ErrorState error )
             {
                 // do nothing
             }
 
+            @Override
             public ExecutionOrder orderComparedTo( KernelEventHandler other )
             {
                 return ExecutionOrder.DOESNT_MATTER;
@@ -102,21 +99,25 @@ public class TestShutdownSequence
     {
         graphDb.registerKernelEventHandler( new KernelEventHandler()
         {
+            @Override
             public void beforeShutdown()
             {
                 graphDb.shutdown();
             }
 
+            @Override
             public Object getResource()
             {
                 return null;
             }
 
+            @Override
             public void kernelPanic( ErrorState error )
             {
                 // do nothing
             }
 
+            @Override
             public ExecutionOrder orderComparedTo( KernelEventHandler other )
             {
                 return ExecutionOrder.DOESNT_MATTER;

@@ -68,7 +68,7 @@ public class IndexStore extends LifecycleAdapter
     
     private void read()
     {
-        File fileToReadFrom = file.exists() ? file : oldFile;
+        File fileToReadFrom = fileSystem.fileExists( file ) ? file : oldFile;
         if ( !fileSystem.fileExists( fileToReadFrom ) )
         {
             return;

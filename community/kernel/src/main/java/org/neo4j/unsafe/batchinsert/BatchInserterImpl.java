@@ -88,24 +88,31 @@ public class BatchInserterImpl implements BatchInserter
     private final IdGeneratorFactory idGeneratorFactory;
 
     private final StringLogger msgLog;
+    private final FileSystemAbstraction fileSystem;
 
     BatchInserterImpl( String storeDir )
     {
         this( storeDir, new HashMap<String, String>() );
     }
 
-    BatchInserterImpl( String storeDirStr,
+    BatchInserterImpl( String storeDir,
+            Map<String, String> stringParams )
+    {
+        this( storeDir, new DefaultFileSystemAbstraction(), stringParams );
+    }
+    
+    BatchInserterImpl( String storeDir, FileSystemAbstraction fileSystem,
                        Map<String, String> stringParams )
     {
-        storeDir = new File( FileUtils.fixSeparatorsInPath(storeDirStr) );
+        this.fileSystem = fileSystem;
+        this.storeDir = new File( FileUtils.fixSeparatorsInPath(storeDir) );
 
         rejectAutoUpgrade( stringParams );
-        msgLog = StringLogger.loggerDirectory( storeDir );
+        msgLog = StringLogger.loggerDirectory( fileSystem, this.storeDir );
         Map<String, String> params = getDefaultParams();
         params.put( GraphDatabaseSettings.use_memory_mapped_buffers.name(), Settings.FALSE );
-        params.put( InternalAbstractGraphDatabase.Configuration.store_dir.name(), storeDirStr );
+        params.put( InternalAbstractGraphDatabase.Configuration.store_dir.name(), storeDir );
         params.putAll( stringParams );
-        final FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
 
         Config config = new Config( params, GraphDatabaseSettings.class );
         boolean dump = config.get( GraphDatabaseSettings.dump_configuration );
@@ -114,7 +121,7 @@ public class BatchInserterImpl implements BatchInserter
         StoreFactory sf = new StoreFactory( config, idGeneratorFactory, new DefaultWindowPoolFactory(), fileSystem,
                 StringLogger.DEV_NULL, null );
 
-        File store = fixPath( storeDir, sf );
+        File store = fixPath( this.storeDir, sf );
 
         if ( dump )
         {
@@ -131,7 +138,7 @@ public class BatchInserterImpl implements BatchInserter
         indexHolder = new PropertyIndexHolder( indexes );
         NameData[] types = getRelationshipTypeStore().getNames( Integer.MAX_VALUE );
         typeHolder = new RelationshipTypeHolder( types );
-        indexStore = new IndexStore( storeDir, fileSystem );
+        indexStore = new IndexStore( this.storeDir, fileSystem );
     }
 
     private Map<String, String> getDefaultParams()
@@ -920,9 +927,9 @@ public class BatchInserterImpl implements BatchInserter
 
     private File fixPath( File dir, StoreFactory sf )
     {
-        if ( !dir.exists() )
+        if ( !fileSystem.fileExists( dir ) )
         {
-            if ( !dir.mkdirs() )
+            if ( !fileSystem.mkdirs( dir ) )
             {
                 throw new UnderlyingStorageException(
                         "Unable to create directory path["
@@ -930,7 +937,7 @@ public class BatchInserterImpl implements BatchInserter
             }
         }
         File store = new File( dir, NeoStore.DEFAULT_NAME);
-        if ( !store.exists() )
+        if ( !fileSystem.fileExists( store ) )
         {
             sf.createNeoStore( store ).close();
         }

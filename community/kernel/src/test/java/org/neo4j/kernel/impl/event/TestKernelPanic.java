@@ -19,24 +19,26 @@
  */
 package org.neo4j.kernel.impl.event;
 
-import java.io.File;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import java.io.FileNotFoundException;
-import java.util.Scanner;
+import java.util.concurrent.atomic.AtomicReference;
+
 import javax.transaction.Transaction;
 import javax.transaction.TransactionManager;
+
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.event.ErrorState;
 import org.neo4j.graphdb.event.KernelEventHandler;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.UTF8;
-import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
-import org.neo4j.kernel.impl.util.StringLogger;
-
-import static org.junit.Assert.*;
+import org.neo4j.kernel.logging.BufferingLogger;
+import org.neo4j.kernel.logging.Logging;
+import org.neo4j.kernel.logging.SingleLoggingService;
+import org.neo4j.test.ImpermanentGraphDatabase;
 
 public class TestKernelPanic
 {
@@ -44,8 +46,16 @@ public class TestKernelPanic
     public void panicTest() throws Exception
     {
         String path = "target/var/testdb";
-        AbstractNeo4jTestCase.deleteFileOrDirectory( new File( path ) );
-        GraphDatabaseService graphDb = new GraphDatabaseFactory().newEmbeddedDatabase( path );
+        final AtomicReference<BufferingLogger> logger = new AtomicReference<BufferingLogger>();
+        GraphDatabaseService graphDb = new ImpermanentGraphDatabase()
+        {
+            @Override
+            protected Logging createLogging()
+            {
+                logger.set( new BufferingLogger() );
+                return new SingleLoggingService( logger.get() );
+            }
+        };
         XaDataSourceManager xaDs =
             ((GraphDatabaseAPI)graphDb).getXaDataSourceManager();
         
@@ -80,46 +90,41 @@ public class TestKernelPanic
             graphDb.unregisterKernelEventHandler( panic );
         }
         assertTrue( panic.panic );
-        assertMessageLogContains(path,"at org.neo4j.kernel.impl.event.TestKernelPanic.panicTest");
+        assertTrue( "Log didn't contain expected string",
+                logger.get().toString().contains( "at org.neo4j.kernel.impl.event.TestKernelPanic.panicTest" ) );
         graphDb.shutdown();
     }
 
-    private void assertMessageLogContains(String path, String exceptionString) throws FileNotFoundException {
-        final File logFile = new File(path, StringLogger.DEFAULT_NAME);
-        assertTrue("exists "+logFile,logFile.exists() && logFile.isFile());
-        final Scanner scanner = new Scanner(logFile).useDelimiter("\n");
-        for (String line : IteratorUtil.asIterable(scanner)) {
-            if (line.contains(exceptionString)) return;
-        }
-        fail(logFile+" did not contain: "+exceptionString);
+    private void assertMessageLogContains(String log, String exceptionString) throws FileNotFoundException
+    {
+        
     }
 
     private static class Panic implements KernelEventHandler
     {
         boolean panic = false;
         
+        @Override
         public void beforeShutdown()
         {
-            // TODO Auto-generated method stub
-            
         }
 
+        @Override
         public Object getResource()
         {
-            // TODO Auto-generated method stub
             return null;
         }
 
+        @Override
         public void kernelPanic( ErrorState error )
         {
             panic = true;
         }
 
+        @Override
         public ExecutionOrder orderComparedTo( KernelEventHandler other )
         {
-            // TODO Auto-generated method stub
             return null;
         }
-        
     }
 }

@@ -99,11 +99,7 @@ public class AutoconfIT
             StringLogger dumpLogger = StringLogger.wrap( dumpBuffer );
             db.getDiagnosticsManager().extract( Config.class.getName(), dumpLogger );
             Map<String, String> readConfig = readDumpConfig( dumpBuffer.toString() );
-            return genericMap(
-                    NodeStore.class, asBytes( readConfig, "neostore.nodestore.db.mapped_memory" )
-//                    RelationshipStore.class, asBytes( params.get( "neostore.relationshipstore.db.mapped_memory" ) ),
-//                    PropertyStore.class, asBytes( params.get( "neostore.propertystore.db.mapped_memory" ) )
-                    );
+            return genericMap( NodeStore.class, asBytes( readConfig, "neostore.nodestore.db.mapped_memory" ) );
         }
         finally
         {

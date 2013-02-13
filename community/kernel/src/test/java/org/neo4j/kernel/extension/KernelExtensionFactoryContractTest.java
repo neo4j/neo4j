@@ -28,12 +28,12 @@ import java.util.Map;
 
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.TestGraphDatabaseFactory;
 
 /**
  * Base class for testing a {@link org.neo4j.kernel.extension.KernelExtensionFactory}. The base test cases in this
@@ -56,8 +56,7 @@ public abstract class KernelExtensionFactoryContractTest
     {
         Map<String, String> config = configuration( true, instance );
         config.put( GraphDatabaseSettings.load_kernel_extensions.name(), Boolean.toString( loadExtensions ) );
-        return (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( target.directory( name,
-                true ).getAbsolutePath() ).setConfig( config ).newGraphDatabase();
+        return (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().setConfig( config ).newGraphDatabase();
     }
 
     /**

@@ -19,15 +19,17 @@
  */
 package org.neo4j.kernel.impl.event;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.neo4j.kernel.impl.AbstractNeo4jTestCase.deleteFileOrDirectory;
+
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.event.ErrorState;
 import org.neo4j.graphdb.event.KernelEventHandler;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-
-import static org.junit.Assert.*;
-import static org.neo4j.kernel.impl.AbstractNeo4jTestCase.*;
+import org.neo4j.test.TestGraphDatabaseFactory;
 
 public class TestKernelEvents
 {
@@ -45,9 +47,10 @@ public class TestKernelEvents
     @Test
     public void testRegisterUnregisterHandlers()
     {
-        GraphDatabaseService graphDb = new GraphDatabaseFactory().newEmbeddedDatabase( PATH );
+        GraphDatabaseService graphDb = new TestGraphDatabaseFactory().newImpermanentDatabase();
         KernelEventHandler handler1 = new DummyKernelEventHandler( RESOURCE1 )
         {
+            @Override
             public ExecutionOrder orderComparedTo( KernelEventHandler other )
             {
                 return ExecutionOrder.DOESNT_MATTER;
@@ -55,6 +58,7 @@ public class TestKernelEvents
         };
         KernelEventHandler handler2 = new DummyKernelEventHandler( RESOURCE2 )
         {
+            @Override
             public ExecutionOrder orderComparedTo( KernelEventHandler other )
             {
                 return ExecutionOrder.DOESNT_MATTER;
@@ -103,9 +107,10 @@ public class TestKernelEvents
     @Test
     public void testShutdownEvents()
     {
-        GraphDatabaseService graphDb = new GraphDatabaseFactory().newEmbeddedDatabase( "target/var/neodb" );
+        GraphDatabaseService graphDb = new TestGraphDatabaseFactory().newImpermanentDatabase();
         DummyKernelEventHandler handler1 = new DummyKernelEventHandler( RESOURCE1 )
         {
+            @Override
             public ExecutionOrder orderComparedTo( KernelEventHandler other )
             {
                 if ( ((DummyKernelEventHandler) other).resource == RESOURCE2 )
@@ -117,6 +122,7 @@ public class TestKernelEvents
         };
         DummyKernelEventHandler handler2 = new DummyKernelEventHandler( RESOURCE1 )
         {
+            @Override
             public ExecutionOrder orderComparedTo( KernelEventHandler other )
             {
                 if ( ((DummyKernelEventHandler) other).resource == RESOURCE1 )
@@ -146,16 +152,19 @@ public class TestKernelEvents
             this.resource = resource;
         }
 
+        @Override
         public void beforeShutdown()
         {
             beforeShutdown = counter++;
         }
 
+        @Override
         public Object getResource()
         {
             return this.resource;
         }
 
+        @Override
         public void kernelPanic( ErrorState error )
         {
             kernelPanic = counter++;

@@ -20,78 +20,39 @@
 package org.neo4j.test;
 
 import java.io.IOException;
-import org.junit.rules.ExternalResource;
+
 import org.junit.rules.TemporaryFolder;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.kernel.GraphDatabaseAPI;
 
 /**
  * JUnit @Rule for configuring, creating and managing an EmbeddedGraphDatabase instance.
  */
-public class EmbeddedDatabaseRule
-    extends ExternalResource
+public class EmbeddedDatabaseRule extends DatabaseRule
 {
-    TemporaryFolder temp = new TemporaryFolder();
-    GraphDatabaseAPI database;
-
+    private final TemporaryFolder temp = new TemporaryFolder();
+    
     @Override
-    protected void before()
-        throws Throwable
+    protected GraphDatabaseFactory newFactory()
     {
-        create();
-    }
-
-    @Override
-    protected void after()
-    {
-        shutdown();
-    }
-
-    public void create()
-        throws IOException
-    {
-        temp.create();
-        try
-        {
-            GraphDatabaseBuilder builder = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( temp.getRoot().getAbsolutePath() );
-            configure(builder);
-            database = (GraphDatabaseAPI) builder.newGraphDatabase();
-        }
-        catch( RuntimeException e )
-        {
-            temp.delete();
-            throw e;
-        }
-    }
-
-    protected void configure( GraphDatabaseBuilder builder )
-    {
-        // Override to configure the database
+        return new GraphDatabaseFactory();
     }
     
-    public GraphDatabaseService getGraphDatabaseService()
+    @Override
+    protected GraphDatabaseBuilder newBuilder( GraphDatabaseFactory factory )
     {
-        return database;
+        return factory.newEmbeddedDatabaseBuilder( temp.getRoot().getAbsolutePath() );
     }
 
-    public GraphDatabaseAPI getGraphDatabaseAPI()
+    @Override
+    protected void createResources() throws IOException
     {
-        return database;
+        temp.create();
     }
-
-    public void shutdown()
+    
+    @Override
+    protected void deleteResources()
     {
-        try
-        {
-            if (database != null)
-                database.shutdown();
-        }
-        finally
-        {
-            temp.delete();
-            database = null;
-        }
+        temp.delete();
     }
 }

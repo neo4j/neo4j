@@ -25,14 +25,18 @@ import static org.neo4j.kernel.impl.util.FileUtils.deleteRecursively;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
+import java.nio.charset.Charset;
 
 import org.junit.Test;
 import org.neo4j.helpers.Pair;
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
 public class TestStringLogger
 {
+    private final FileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
+    
     @Test
     public void makeSureLogsAreRotated() throws Exception
     {
@@ -41,13 +45,14 @@ public class TestStringLogger
         File logFile = new File( path, StringLogger.DEFAULT_NAME );
         File oldFile = new File( path, StringLogger.DEFAULT_NAME + ".1" );
         File oldestFile = new File( path, StringLogger.DEFAULT_NAME + ".2" );
-        StringLogger logger = StringLogger.loggerDirectory( new File( path), 200 * 1024 );
-        assertFalse( oldFile.exists() );
+        StringLogger logger = StringLogger.loggerDirectory( fileSystem,
+                new File( path ), 200 * 1024 );
+        assertFalse( fileSystem.fileExists( oldFile ) );
         int counter = 0;
         String prefix = "Bogus message ";
 
         // First rotation
-        while ( !oldFile.exists() )
+        while ( !fileSystem.fileExists( oldFile ) )
         {
             logger.logMessage( prefix + counter++, true );
         }
@@ -58,7 +63,7 @@ public class TestStringLogger
         assertTrue( firstLineOfFile( logFile ).contains( prefix + (counter-1) ) );
 
         // Second rotation
-        while ( !oldestFile.exists() )
+        while ( !fileSystem.fileExists( oldestFile ) )
         {
             logger.logMessage( prefix + counter++, true );
         }
@@ -76,10 +81,10 @@ public class TestStringLogger
         while ( true )
         {
             logger.logMessage( prefix + counter++, true );
-            if ( logFile.length() < previousSize ) break;
-            previousSize = logFile.length();
+            if ( fileSystem.getFileSize( logFile ) < previousSize ) break;
+            previousSize = fileSystem.getFileSize( logFile );
         }
-        assertFalse( new File( path, StringLogger.DEFAULT_NAME + ".3" ).exists() );
+        assertFalse( fileSystem.fileExists( new File( path, StringLogger.DEFAULT_NAME + ".3" ) ) );
         assertTrue( firstLineOfFile( oldestFile ).contains( prefix + (mark1+1) ) );
         assertTrue( lastLineOfFile( oldestFile ).first().contains( prefix + mark2 ) );
     }
@@ -89,7 +94,8 @@ public class TestStringLogger
     {
         final String baseMessage = "base message";
         File target = TargetDirectory.forTest( TestStringLogger.class ).directory( "recursionTest", true );
-        final StringLogger logger = StringLogger.loggerDirectory( target, baseMessage.length()
+        final StringLogger logger = StringLogger.loggerDirectory( fileSystem, target,
+                baseMessage.length()
         /*rotation threshold*/ );
 
         /*
@@ -107,14 +113,14 @@ public class TestStringLogger
         logger.logMessage( baseMessage + " from main", true );
 
         File rotated = new File( target, "messages.log.1" );
-        assertTrue( "rotated file not present, should have been created", rotated.exists() );
+        assertTrue( "rotated file not present, should have been created", fileSystem.fileExists( rotated ) );
 
         Pair<String, Integer> rotatedInfo = lastLineOfFile( rotated );
         assertTrue( "rotated file should have only stuff from main", rotatedInfo.first().endsWith( " from main" )
                                                                      && rotatedInfo.other() == 1 );
 
         File current = new File( target, "messages.log" );
-        assertTrue( "should have created a new messages.log file", current.exists() );
+        assertTrue( "should have created a new messages.log file", fileSystem.fileExists( current ) );
         Pair<String, Integer> currentInfo = lastLineOfFile( current );
         assertTrue( "current file should have only stuff from trigger", currentInfo.first().endsWith( " from trigger" )
                                                                         && currentInfo.other() == 1 );
@@ -122,7 +128,7 @@ public class TestStringLogger
 
     private String firstLineOfFile( File file ) throws Exception
     {
-        BufferedReader reader = new BufferedReader( new FileReader( file ) );
+        BufferedReader reader = new BufferedReader( fileSystem.openAsReader( file, Charset.defaultCharset().name() ) );
         String result = reader.readLine();
         reader.close();
         return result;
@@ -135,7 +141,7 @@ public class TestStringLogger
     private Pair<String, Integer> lastLineOfFile( File file ) throws Exception
     {
         int count = 0;
-        BufferedReader reader = new BufferedReader( new FileReader( file ) );
+        BufferedReader reader = new BufferedReader( fileSystem.openAsReader( file, Charset.defaultCharset().name() ) );
         String line = null;
         String result = null;
         while ( (line = reader.readLine()) != null )

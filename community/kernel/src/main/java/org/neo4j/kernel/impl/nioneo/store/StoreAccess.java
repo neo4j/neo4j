@@ -89,20 +89,29 @@ public class StoreAccess
         this( path, defaultParams() );
     }
 
+    public StoreAccess( FileSystemAbstraction fileSystem, String path )
+    {
+        this( fileSystem, path, defaultParams() );
+    }
+    
     public StoreAccess( String path, Map<String, String> params )
+    {
+        this( new DefaultFileSystemAbstraction(), path, params );
+    }
+    
+    public StoreAccess( FileSystemAbstraction fileSystem, String path, Map<String, String> params )
     {
         this( new StoreFactory( new Config( requiredParams( params, path ) ),
                                 new DefaultIdGeneratorFactory(),
                                 new DefaultWindowPoolFactory(),
-                                new DefaultFileSystemAbstraction(),
-                                initLogger( path ),
+                                fileSystem, initLogger( fileSystem, path ),
                                 new DefaultTxHook() ).attemptNewNeoStore( new File( path, "neostore" ) ) );
         this.closeable = true;
     }
 
-    private static StringLogger initLogger( String path )
+    private static StringLogger initLogger( FileSystemAbstraction fileSystem, String path )
     {
-        StringLogger logger = StringLogger.loggerDirectory( new File( path ) );
+        StringLogger logger = StringLogger.loggerDirectory( fileSystem, new File( path ) );
         logger.logMessage( "Starting " + StoreAccess.class.getSimpleName() );
         return logger;
     }
@@ -110,7 +119,7 @@ public class StoreAccess
     private static Map<String, String> requiredParams( Map<String, String> params, String path )
     {
         params = new HashMap<String, String>( params );
-        params.put( "neo_store", new File( path, "neostore" ).getAbsolutePath() );
+        params.put( "neo_store", new File( path, "neostore" ).getPath() );
         return params;
     }
 

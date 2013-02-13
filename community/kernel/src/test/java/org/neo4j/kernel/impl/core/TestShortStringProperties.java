@@ -19,7 +19,13 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.neo4j.graphdb.DynamicRelationshipType.withName;
+
 import java.lang.reflect.Field;
+
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -29,16 +35,14 @@ import org.neo4j.kernel.impl.nioneo.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
 import org.neo4j.kernel.impl.nioneo.store.TestShortString;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
-import org.neo4j.test.EmbeddedDatabaseRule;
+import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.GraphTransactionRule;
-
-import static org.junit.Assert.*;
-import static org.neo4j.graphdb.DynamicRelationshipType.*;
+import org.neo4j.test.ImpermanentDatabaseRule;
 
 public class TestShortStringProperties extends TestShortString
 {
     @ClassRule
-    public static EmbeddedDatabaseRule graphdb = new EmbeddedDatabaseRule();
+    public static DatabaseRule graphdb = new ImpermanentDatabaseRule();
     
     @Rule
     public GraphTransactionRule tx = new GraphTransactionRule( graphdb );
@@ -46,18 +50,13 @@ public class TestShortStringProperties extends TestShortString
     public void commit()
     {
         tx.success();
-        clearCache();
+        graphdb.clearCache();
     }
 
     public void newTx()
     {
         tx.success();
         tx.begin();
-    }
-
-    private void clearCache()
-    {
-        graphdb.getGraphDatabaseAPI().getNodeManager().clearCache();
     }
 
     private static final String LONG_STRING = "this is a really long string, believe me!";
@@ -199,7 +198,7 @@ public class TestShortStringProperties extends TestShortString
         {
             assertTrue( recordCount < dynamicRecordsInUse() );
         }
-        clearCache();
+        graphdb.clearCache();
         assertEquals( string, node.getProperty( "key" ) );
     }
 

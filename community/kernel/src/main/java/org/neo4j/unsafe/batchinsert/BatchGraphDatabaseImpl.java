@@ -46,6 +46,7 @@ import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.kernel.PlaceboTransaction;
 import org.neo4j.kernel.impl.cache.LruCache;
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
+import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
 class BatchGraphDatabaseImpl implements GraphDatabaseService
 {
@@ -90,6 +91,12 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
         this.batchInserter = new BatchInserterImpl( storeDir, stringParams );
     }
 
+    BatchGraphDatabaseImpl( String storeDir, EphemeralFileSystemAbstraction fileSystem,
+            Map<String, String> stringParams )
+    {
+        this.batchInserter = new BatchInserterImpl( storeDir, fileSystem, stringParams );
+    }
+    
     /**
      * Intended for use in tests only.
      */

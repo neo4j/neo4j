@@ -19,10 +19,19 @@
  */
 package org.neo4j.kernel;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.io.RandomAccessFile;
+import java.io.Reader;
 import java.nio.channels.FileChannel;
+
 import org.neo4j.kernel.impl.nioneo.store.FileLock;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.util.FileUtils;
@@ -39,6 +48,24 @@ public class DefaultFileSystemAbstraction
         // Returning only the channel is ok, because the channel, when close()d will close its parent File.
         return new RandomAccessFile( fileName, mode ).getChannel();
     }
+    
+    @Override
+    public OutputStream openAsOutputStream( File fileName, boolean append ) throws IOException
+    {
+        return new BufferedOutputStream( new FileOutputStream( fileName, append ) );
+    }
+    
+    @Override
+    public InputStream openAsInputStream( File fileName ) throws IOException
+    {
+        return new BufferedInputStream( new FileInputStream( fileName ) );
+    }
+    
+    @Override
+    public Reader openAsReader( File fileName, String encoding ) throws IOException
+    {
+        return new InputStreamReader( new FileInputStream( fileName ), encoding );
+    }
 
     @Override
     public FileLock tryLock( File fileName, FileChannel channel ) throws IOException
@@ -50,6 +77,18 @@ public class DefaultFileSystemAbstraction
     public FileChannel create( File fileName ) throws IOException
     {
         return open( fileName, "rw" );
+    }
+    
+    @Override
+    public boolean mkdir( File fileName )
+    {
+        return fileName.mkdir();
+    }
+    
+    @Override
+    public boolean mkdirs( File fileName )
+    {
+        return fileName.mkdirs();
     }
 
     @Override
@@ -69,6 +108,12 @@ public class DefaultFileSystemAbstraction
     {
         return FileUtils.deleteFile( fileName );
     }
+    
+    @Override
+    public void deleteRecursively( File directory ) throws IOException
+    {
+        FileUtils.deleteRecursively( directory );
+    }
 
     @Override
     public boolean renameFile( File from, File to ) throws IOException
@@ -76,19 +121,6 @@ public class DefaultFileSystemAbstraction
         return FileUtils.renameFile( from, to );
     }
     
-    @Override
-    public void copyFile( File fromFile, File toFile ) throws IOException
-    {
-        if ( fromFile.isDirectory() )
-        {
-            FileUtils.copyRecursively( fromFile, toFile );
-        }
-        else
-        {
-            FileUtils.copyFile( fromFile, toFile );
-        }
-    }
-
     @Override
     public void autoCreatePath( File path ) throws IOException
     {
@@ -103,5 +135,17 @@ public class DefaultFileSystemAbstraction
                         + path + "] for Neo4j store." );
             }
         }
+    }
+    
+    @Override
+    public File[] listFiles( File directory )
+    {
+        return directory.listFiles();
+    }
+    
+    @Override
+    public boolean isDirectory( File file )
+    {
+        return file.isDirectory();
     }
 }

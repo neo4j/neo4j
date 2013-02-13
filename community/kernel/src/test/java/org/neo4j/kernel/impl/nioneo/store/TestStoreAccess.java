@@ -19,53 +19,65 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.RandomAccessFile;
-
-import org.junit.Rule;
-import org.junit.Test;
-import org.neo4j.test.TargetDirectory;
-import org.neo4j.test.TargetDirectory.TestDirectory;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
+
+import org.junit.Test;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
 public class TestStoreAccess
 {
-    public @Rule
-    TestDirectory testdir = TargetDirectory.testDirForTest( getClass() );
-
     @Test
     public void openingThroughStoreAccessShouldNotTriggerRecovery() throws Exception
     {
-        ProduceUncleanStore.atPath( testdir.directory() );
-        assertTrue( "Store should be unclean", isUnclean( testdir.directory() ) );
-        File messages = new File( testdir.directory(), "messages.log" );
-        long eof = messages.length();
-        new StoreAccess( testdir.directory().getAbsolutePath() ).close();
-        String data = readFrom( messages, eof );
+        EphemeralFileSystemAbstraction snapshot = produceUncleanStore();
+        assertTrue( "Store should be unclean", isUnclean( snapshot ) );
+        File messages = new File( storeDir, "messages.log" );
+        snapshot.deleteFile( messages );
+        
+        new StoreAccess( snapshot, storeDir.getPath(), stringMap() ).close();
+        String data = readFrom( snapshot, messages, 0 );
         // This doesn't actually check for recovery, it checks for startup of the DB (by
         // looking in the log) and we assume that recovery would happen during DB startup.
         assertFalse( "should not have started GraphDatabase", data.contains( "STARTED" ) );
-        assertTrue( "Store should be unclean", isUnclean( testdir.directory() ) );
+        assertTrue( "Store should be unclean", isUnclean( snapshot ) );
+    }
+    
+    private final EphemeralFileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
+    private final File storeDir = new File( "dir" );
+    
+    private EphemeralFileSystemAbstraction produceUncleanStore()
+    {
+        GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fileSystem )
+                .newImpermanentDatabase( storeDir.getPath() );
+        EphemeralFileSystemAbstraction snapshot = fileSystem.snapshot();
+        db.shutdown();
+        return snapshot;
     }
 
-    private boolean isUnclean( File directory ) throws IOException
+    private boolean isUnclean( FileSystemAbstraction fileSystem ) throws IOException
     {
-        char chr = activeLog( directory );
+        char chr = activeLog( fileSystem, storeDir );
         return chr == '1' || chr == '2';
     }
 
-    private String readFrom( File file, long start ) throws IOException
+    private String readFrom( FileSystemAbstraction fileSystem, File file, long start ) throws IOException
     {
-        RandomAccessFile input = new RandomAccessFile( file, "r" );
+        FileChannel input = fileSystem.open( file, "r" );
         try
         {
-            byte[] data = new byte[(int) ( input.length() - start )];
-            input.seek( start );
-            assertEquals( data.length, input.read( data ) );
+            byte[] data = new byte[(int) ( input.size() - start )];
+            input.position( start );
+            assertEquals( data.length, input.read( ByteBuffer.wrap( data ) ) );
             return new String( data );
         }
         finally
@@ -74,12 +86,15 @@ public class TestStoreAccess
         }
     }
 
-    private char activeLog( File directory ) throws IOException
+    private char activeLog( FileSystemAbstraction fileSystem, File directory ) throws IOException
     {
-        RandomAccessFile file = new RandomAccessFile( new File( directory, "nioneo_logical.log.active" ), "r" );
+        FileChannel file = fileSystem.open( new File( directory, "nioneo_logical.log.active" ), "r" );
         try
         {
-            return file.readChar();
+            ByteBuffer buffer = ByteBuffer.wrap( new byte[2] );
+            file.read( buffer );
+            buffer.flip();
+            return buffer.getChar();
         }
         finally
         {

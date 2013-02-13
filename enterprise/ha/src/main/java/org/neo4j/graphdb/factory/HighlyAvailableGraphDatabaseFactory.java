@@ -39,6 +39,7 @@ public class HighlyAvailableGraphDatabaseFactory
     {
         return new GraphDatabaseBuilder(new GraphDatabaseBuilder.DatabaseCreator()
         {
+            @Override
             public GraphDatabaseService newDatabase(Map<String, String> config)
             {
                 config.put( "ephemeral", "false" );
@@ -47,5 +48,4 @@ public class HighlyAvailableGraphDatabaseFactory
             }
         });
     }
-
 }

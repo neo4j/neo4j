@@ -21,11 +21,20 @@ package org.neo4j.kernel.impl.nioneo.store;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.Reader;
 import java.nio.channels.FileChannel;
 
 public interface FileSystemAbstraction
 {
     FileChannel open( File fileName, String mode ) throws IOException;
+    
+    OutputStream openAsOutputStream( File fileName, boolean append ) throws IOException;
+    
+    InputStream openAsInputStream( File fileName ) throws IOException;
+    
+    Reader openAsReader( File fileName, String encoding ) throws IOException;
     
     FileLock tryLock( File fileName, FileChannel channel ) throws IOException;
     
@@ -33,16 +42,22 @@ public interface FileSystemAbstraction
     
     boolean fileExists( File fileName );
     
+    boolean mkdir( File fileName );
+    
+    boolean mkdirs( File fileName );
+    
     long getFileSize( File fileName );
 
     boolean deleteFile( File fileName );
     
+    void deleteRecursively( File directory ) throws IOException;
+    
     boolean renameFile( File from, File to ) throws IOException;
-
-    void copyFile( File from, File to ) throws IOException;
 
     // TODO change the name to something more descriptive
     void autoCreatePath( File path ) throws IOException;
     
-//    String[] listFiles( String directory );
+    File[] listFiles( File directory );
+    
+    boolean isDirectory( File file );
 }

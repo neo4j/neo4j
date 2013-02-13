@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.util;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
@@ -36,6 +35,8 @@ import javax.transaction.xa.Xid;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.Format;
 import org.neo4j.helpers.Pair;
+import org.neo4j.kernel.DefaultFileSystemAbstraction;
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.xa.Command;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
@@ -45,14 +46,22 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaCommandFactory;
 
 public class DumpLogicalLog
 {
-    public int dump( String filenameOrDirectory, TimeZone timeZone ) throws IOException
+    private final FileSystemAbstraction fileSystem;
+
+    public DumpLogicalLog( FileSystemAbstraction fileSystem )
+    {
+        this.fileSystem = fileSystem;
+    }
+    
+    public int dump( String filenameOrDirectory,
+            TimeZone timeZone ) throws IOException
     {
         int logsFound = 0;
         for ( String fileName : filenamesOf( filenameOrDirectory, getLogPrefix() ) )
         {
             logsFound++;
             System.out.println( "=== " + fileName + " ===" );
-            FileChannel fileChannel = new RandomAccessFile( fileName, "r" ).getChannel();
+            FileChannel fileChannel = fileSystem.open( new File( fileName ), "r" );
             ByteBuffer buffer = ByteBuffer.allocateDirect( 9 + Xid.MAXGTRIDSIZE
                     + Xid.MAXBQUALSIZE * 10 );
             long logVersion, prevLastCommittedTx;
@@ -114,7 +123,8 @@ public class DumpLogicalLog
     public static void main( String args[] ) throws IOException
     {
         Pair<Iterable<String>, TimeZone> config = parseConfig( args );
-        for ( String file : config.first() ) new DumpLogicalLog().dump( file, config.other() );
+        for ( String file : config.first() )
+            new DumpLogicalLog( new DefaultFileSystemAbstraction() ).dump( file, config.other() );
     }
 
     public static Pair<Iterable<String>, TimeZone> parseConfig( String[] args )
@@ -133,6 +143,7 @@ public class DumpLogicalLog
         {
             File[] files = file.listFiles( new FilenameFilter()
             {
+                @Override
                 public boolean accept( File dir, String name )
                 {
                     return name.contains( prefix ) && !name.contains( "active" );

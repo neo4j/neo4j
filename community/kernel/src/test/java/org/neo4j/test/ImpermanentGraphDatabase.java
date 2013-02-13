@@ -24,9 +24,6 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSetting.TRUE;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.use_memory_mapped_buffers;
 import static org.neo4j.kernel.InternalAbstractGraphDatabase.Configuration.ephemeral;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.channels.FileChannel;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -37,16 +34,14 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.IndexProvider;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
-import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
+import org.neo4j.kernel.logging.SingleLoggingService;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
-import org.neo4j.test.impl.EphemeralIdGenerator;
-import org.neo4j.test.impl.FileChannelLoggingService;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 /**
@@ -54,7 +49,7 @@ import org.neo4j.tooling.GlobalGraphOperations;
  */
 public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
 {
-    private static final String PATH = "test-data/impermanent-db";
+    static final String PATH = "test-data/impermanent-db";
 
     public ImpermanentGraphDatabase()
     {
@@ -80,6 +75,11 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
         super( PATH, withForcedInMemoryConfiguration( params ) );
     }
 
+    public ImpermanentGraphDatabase( String storeDir, Map<String, String> params )
+    {
+        super( storeDir, withForcedInMemoryConfiguration( params ) );
+    }
+    
     public ImpermanentGraphDatabase( Map<String, String> params, Iterable<IndexProvider> indexProviders,
                                      Iterable<KernelExtensionFactory<?>> kernelExtensions,
                                      Iterable<CacheProvider> cacheProviders,
@@ -89,16 +89,19 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
                 transactionInterceptorProviders );
     }
 
+    public ImpermanentGraphDatabase( String storeDir, Map<String, String> params, Iterable<IndexProvider> indexProviders,
+                                        Iterable<KernelExtensionFactory<?>> kernelExtensions,
+                                        Iterable<CacheProvider> cacheProviders,
+                                        Iterable<TransactionInterceptorProvider> transactionInterceptorProviders )
+    {
+        super( storeDir, withForcedInMemoryConfiguration( params ), indexProviders, kernelExtensions, cacheProviders,
+                transactionInterceptorProviders );
+    }
+    
     @Override
     protected FileSystemAbstraction createFileSystemAbstraction()
     {
-        return new EphemeralFileSystemAbstraction();
-    }
-
-    @Override
-    protected IdGeneratorFactory createIdGeneratorFactory()
-    {
-        return new EphemeralIdGenerator.Factory();
+        return life.add( new EphemeralFileSystemAbstraction() );
     }
 
     private static Map<String, String> withForcedInMemoryConfiguration( Map<String, String> params )
@@ -121,20 +124,7 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
     @Override
     protected Logging createLogging()
     {
-        try
-        {
-            File storeDir = config.get( Configuration.store_dir );
-            File logFile = new File(storeDir, StringLogger.DEFAULT_NAME);
-            FileChannel fc = fileSystem.open( logFile, "rw" );
-            FileChannelLoggingService logging = new FileChannelLoggingService( fc );
-            life.add( logging );
-            return logging;
-        }
-        catch ( IOException e )
-        {
-            // really shouldn't happen: in-memory file system
-            throw new RuntimeException( "couldn't create log file in EphemeralFileSystemAbstraction", e );
-        }
+        return life.add( new SingleLoggingService( StringLogger.loggerDirectory( fileSystem, storeDir ) ) );
     }
 
     public void cleanContent( boolean retainReferenceNode )
