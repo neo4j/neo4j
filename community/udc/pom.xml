@@ -19,6 +19,7 @@
     <short-name>udc</short-name>
     <license-text.header>GPL-3-header.txt</license-text.header>
     <docs.url>http://docs.neo4j.org/chunked/${project.version}/usage-data-collector.html</docs.url>
+    <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
   </properties>
   
   <packaging>jar</packaging>

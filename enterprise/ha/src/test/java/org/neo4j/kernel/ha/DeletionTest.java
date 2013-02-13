@@ -19,9 +19,13 @@
  */
 package org.neo4j.kernel.ha;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.neo4j.graphdb.DynamicRelationshipType.withName;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+
 import java.util.Map;
 
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.cluster.ClusterSettings;
@@ -29,11 +33,6 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
 import org.neo4j.test.TargetDirectory;
-
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.neo4j.graphdb.DynamicRelationshipType.withName;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 /**
  * Test for a regression:
@@ -55,7 +54,6 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
  *     at org.neo4j.kernel.impl.nioneo.xa.WriteTransaction.applyCommit(WriteTransaction.java:476)
  *     at org.neo4j.kernel.impl.nioneo.xa.WriteTransaction.doCommit(WriteTransaction.java:426)
  */
-@Ignore("Fails due to changes in commit 2ad8f36c3950371ae963a40311dd41f52c8b90f5")
 public class DeletionTest
 {
     @Rule

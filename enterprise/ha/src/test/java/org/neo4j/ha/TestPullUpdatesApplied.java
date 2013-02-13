@@ -24,15 +24,20 @@ import static org.neo4j.test.TargetDirectory.forTest;
 
 import java.io.File;
 import java.io.InputStream;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.cluster.ClusterSettings;
+import org.neo4j.cluster.client.ClusterClient;
+import org.neo4j.cluster.protocol.cluster.ClusterListener;
+import org.neo4j.cluster.protocol.heartbeat.HeartbeatListener;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
 import org.neo4j.kernel.ha.HaSettings;
@@ -105,13 +110,49 @@ public class TestPullUpdatesApplied
         addNode( master );
         int toKill = (master + 1) % dbs.length;
         HighlyAvailableGraphDatabase dbToKill = dbs[toKill];
+
+        final CountDownLatch latch1 = new CountDownLatch( 1 );
+
+        final HighlyAvailableGraphDatabase masterDb = dbs[master];
+        masterDb.getDependencyResolver().resolveDependency( ClusterClient.class ).addClusterListener(
+                new ClusterListener.Adapter()
+        {
+            @Override
+            public void leftCluster( URI member )
+            {
+                latch1.countDown();
+                masterDb.getDependencyResolver().resolveDependency( ClusterClient.class ).removeClusterListener( this );
+            }
+        } );
+
         dbToKill.shutdown();
-        Thread.sleep( 5000 );
+
+        latch1.await();
 
         addNode( master ); // this will be pulled by tne next start up, applied
-        // but not written to log.
+                           // but not written to log.
         File targetDirectory = dir.directory( "" + toKill, false );
+
+        dbToKill.shutdown();
+
+        // Setup to detect shutdown of separate JVM, required since we don't exit cleanly. That is also why we go
+        // through the heartbeat and not through the cluster change as above.
+        final CountDownLatch latch2 = new CountDownLatch( 1 );
+
+        masterDb.getDependencyResolver().resolveDependency( ClusterClient.class ).addHeartbeatListener(
+                new HeartbeatListener.Adapter()
+        {
+            @Override
+            public void failed( URI server )
+            {
+                latch2.countDown();
+                masterDb.getDependencyResolver().resolveDependency( ClusterClient.class ).removeHeartbeatListener( this );
+            }
+        });
+
         runInOtherJvmToGetExitCode( new String[]{targetDirectory.getAbsolutePath(), "" + toKill} );
+        latch2.await();
+
         start( toKill, false ); // recovery and branching.
         boolean hasBranchedData = new File( targetDirectory, "branched" ).listFiles().length > 0;
         assertFalse( hasBranchedData );

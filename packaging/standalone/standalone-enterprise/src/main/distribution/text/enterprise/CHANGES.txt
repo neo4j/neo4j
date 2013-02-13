@@ -1,5 +1,42 @@
 For Release Notes, see http://neo4j.org/release-notes#neo4j-${project.version}
 
+1.9.M05 (2013-02-12)
+--------------------
+
+Now compiles and runs under JDK 7
+Introduces arbiter script for cluster client instances
+
+HA:
+o Slave only mode is now available
+o HA server will now bind by default to all interfaces (0.0.0.0)
+
+Backup:
+o Backup server now binds by default to 127.0.0.1
+
+Cluster:
+o Election happens for all roles when an instance comes online
+o Snapshots are no longer received automatically on cluster join
+o Instances starting concurrently will now discover each other instead of each starting
+  their own cluster
+o Acceptor store now does not grow unbounded and is garbage collected
+o Learn requests are made towards and responded from all cluster members
+o Cluster server will now by default bind to all interfaces (0.0.0.0)
+
+Com:
+o Shutting down Server now takes proper care of executors and works with multiple versions of netty
+
+Kernel:
+o Concurrent modifications to relationship chains now do now lead to RecordNotInUse exceptions or
+  cache poisoning
+o Proper tx management will now make negative transaction counts impossible
+o IndexProvider is now deprecated, replaced by KernelExtensionFactory
+
+Lucene Index:
+o LuceneIndexProvider is now replaced by LuceneKernelExtension
+
+JMX:
+o JMX will now provide info on all configuration values, including the defaults not explicitly set
+
 1.9.M04 (2013-01-17)
 --------------------
 HA:

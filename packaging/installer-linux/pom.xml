@@ -32,6 +32,7 @@
     <buildnumber>0</buildnumber>
     
     <neo4j.debian.maintainer>Anders Nawroth &lt;anders@neotechnology.com&gt;</neo4j.debian.maintainer>
+    <licensing.phase>none</licensing.phase>
   </properties>
 
   <dependencies>

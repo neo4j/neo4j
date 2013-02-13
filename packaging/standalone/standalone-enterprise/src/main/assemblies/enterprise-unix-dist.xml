@@ -123,7 +123,6 @@
         <include>org.slf4j:slf4j-api</include>
         <include>org.scala-lang:scala-library</include>
         <include>com.googlecode.concurrentlinkedhashmap:concurrentlinkedhashmap-lru</include>
-        <!-- include>org.slf4j:log4j-over-slf4j</include-->
       </includes>
       <excludes>
         <exclude>*:javadoc:*</exclude>
@@ -135,7 +134,6 @@
         <exclude>org.neo4j:neo4j-enterprise:jar</exclude>
         <exclude>org.neo4j:neo4j-udc:jar:neo4j</exclude>
         <exclude>org.neo4j.app:windows-service-wrapper:*</exclude>
-        
         <exclude>org.neo4j:neo4j-advanced</exclude>
         <exclude>org.neo4j:neo4j-community</exclude>
       </excludes>
@@ -159,7 +157,6 @@
         <exclude>org.apache.servicemix.bundles:org.apache.servicemix.bundles.netty</exclude>
         <exclude>org.apache.lucene:lucene-core</exclude>
         <exclude>io.netty:netty</exclude>
-        <exclude>log4j:log4j</exclude>
         <exclude>org.slf4j:slf4j-api</exclude>
         <exclude>org.slf4j:log4j-over-slf4j</exclude>
         <exclude>commons-logging:*</exclude>
@@ -167,16 +164,6 @@
         <exclude>org.neo4j.app:windows-service-wrapper:*</exclude>
         <exclude>com.googlecode.concurrentlinkedhashmap:concurrentlinkedhashmap-lru</exclude>
       </excludes>
-    </dependencySet>
-    <dependencySet>
-      <outputDirectory>system/coordinator/lib</outputDirectory>
-      <directoryMode>0755</directoryMode>
-      <fileMode>0755</fileMode>
-      <unpack>false</unpack>
-      <useProjectArtifact>false</useProjectArtifact>
-      <includes>
-        <include>log4j:log4j</include>
-      </includes>
     </dependencySet>
     <!-- java api docs -->
     <dependencySet>

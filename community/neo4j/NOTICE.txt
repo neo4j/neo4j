@@ -1,6 +1,6 @@
 Neo4j
-Copyright © 2002-2012 Network Engine for Objects in Lund AB (referred to
-in this notice as “Neo Technology”)
+Copyright © 2002-2013 Network Engine for Objects in Lund AB (referred to
+in this notice as "Neo Technology")
    [http://neotechnology.com]
 
 This product includes software ("Software") developed by Neo Technology.
@@ -20,20 +20,16 @@ such Commercial Agreement will supersede the GPL and you may use the
 software solely pursuant to the terms of the relevant Commercial
 Agreement.
 
+Full license texts are found in LICENSES.txt.
 
-Third party libraries
----------------------
+Third-party licenses
+--------------------
 
-The bundled Apache Geronimo JTA library is copyright
-The Apache Software Foundation  (http://www.apache.org/)
-under the Apache License version 2.0.
+Apache Software License, Version 2.0
+  ConcurrentLinkedHashMap
+  JTA 1.1
+  Lucene Core
 
-The bundled Lucene text search engine library is copyright
-The Apache Software Foundation  (http://www.apache.org/)
-under the Apache License version 2.0.
+BSD - Scala License
+  Scala Library
 
-The bundled Scala library is copyright 2002-2011 Programming Methods
-Laboratory of the Swiss Federal Institute of Technology (EPFL), Lausanne,
-under the Scala License.
-
-ConcurrentLinkedHashMap under Apache License version 2.0.

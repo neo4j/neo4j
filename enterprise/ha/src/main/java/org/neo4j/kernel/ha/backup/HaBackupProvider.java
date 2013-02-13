@@ -34,7 +34,9 @@ import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.member.ClusterMemberEvents;
 import org.neo4j.cluster.member.ClusterMemberListener;
 import org.neo4j.cluster.member.paxos.PaxosClusterMemberEvents;
-import org.neo4j.cluster.protocol.election.CoordinatorIncapableCredentialsProvider;
+import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
+import org.neo4j.cluster.protocol.cluster.ClusterListener;
+import org.neo4j.cluster.protocol.election.NotElectableElectionCredentialsProvider;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.Predicates;
 import org.neo4j.helpers.Service;
@@ -93,11 +95,21 @@ public final class HaBackupProvider extends BackupExtensionService
         final Config config = new Config( params,
                 ClusterSettings.class, OnlineBackupSettings.class );
 
-        ClusterClient clusterClient = life.add( new ClusterClient( ClusterClient.adapt( config ), logging,
-                new CoordinatorIncapableCredentialsProvider() ) );
+        final ClusterClient clusterClient = life.add( new ClusterClient( ClusterClient.adapt( config ), logging,
+                new NotElectableElectionCredentialsProvider() ) );
         ClusterMemberEvents events = life.add( new PaxosClusterMemberEvents( clusterClient, clusterClient,
                 clusterClient, new SystemOutLogging(), Predicates.<PaxosClusterMemberEvents.ClusterMembersSnapshot>TRUE() ) );
 
+        // Refresh the snapshot once we join
+        clusterClient.addClusterListener( new ClusterListener.Adapter()
+        {
+            @Override
+            public void enteredCluster( ClusterConfiguration clusterConfiguration )
+            {
+                clusterClient.refreshSnapshot();
+                clusterClient.removeClusterListener( this );
+            }
+        });
         final Semaphore infoReceivedLatch = new Semaphore( 0 );
         final AtomicReference<URI> backupUri = new AtomicReference<URI>(  );
         events.addClusterMemberListener( new ClusterMemberListener.Adapter()

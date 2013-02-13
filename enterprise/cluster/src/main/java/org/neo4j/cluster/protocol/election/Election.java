@@ -29,6 +29,13 @@ import java.net.URI;
  */
 public interface Election
 {
-    void demote( URI node);
-    void promote( URI node, String role);
+    void demote( URI node );
+
+    /**
+     * Asks an election to be performed for all currently known roles, regardless of someone holding that role
+     * currently. It is allowed for the same instance to be reelected.
+     */
+    void performRoleElections();
+
+    void promote( URI node, String role );
 }

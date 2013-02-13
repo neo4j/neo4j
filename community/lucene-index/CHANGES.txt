@@ -1,3 +1,7 @@
+1.9.M05 (2013-02-12)
+--------------------
+o LuceneIndexProvider is now replaced by LuceneKernelExtension
+
 1.8.M05 (2012-06-21)
 --------------------
 o Removed lucene_writers_cache_size and have lucene_searcher_cache_size decide for both, since

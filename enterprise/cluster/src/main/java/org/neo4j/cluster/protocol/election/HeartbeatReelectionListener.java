@@ -25,13 +25,14 @@ import org.neo4j.cluster.protocol.heartbeat.HeartbeatListener;
 
 /**
  * If an instance is considered failed, demote it from all its roles in the cluster.
+ * If an instance comes back, ensure that all roles are elected.
  */
-public class HeartbeatFailedReelectionListener
+public class HeartbeatReelectionListener
     implements HeartbeatListener
 {
     private final Election election;
 
-    public HeartbeatFailedReelectionListener( Election election )
+    public HeartbeatReelectionListener( Election election )
     {
         this.election = election;
     }
@@ -46,5 +47,6 @@ public class HeartbeatFailedReelectionListener
     @Override
     public void alive( URI server )
     {
+        election.performRoleElections();
     }
 }
