@@ -59,8 +59,8 @@ public abstract class ShellLobby
 	 * communicate with.
 	 * @return the new shell client.
 	 */
-	public static ShellClient newClient( ShellServer server )
-	{
+	public static ShellClient newClient( ShellServer server ) throws ShellException
+    {
 	    return newClient( server, new HashMap<String, Serializable>() );
 	}
 	
@@ -72,7 +72,7 @@ public abstract class ShellLobby
      * in addition to those provided by the server initially.
      * @return the new shell client.
      */
-    public static ShellClient newClient( ShellServer server, Map<String, Serializable> initialSession )
+    public static ShellClient newClient( ShellServer server, Map<String, Serializable> initialSession ) throws ShellException
     {
         return new SameJvmClient( initialSession, server );
     }

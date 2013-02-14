@@ -36,7 +36,7 @@ import org.neo4j.shell.Session;
 import org.neo4j.shell.ShellException;
 import org.neo4j.shell.ShellServer;
 import org.neo4j.shell.SimpleAppServer;
-import org.neo4j.shell.impl.AbstractClient;
+import org.neo4j.shell.Variables;
 import org.neo4j.shell.impl.BashVariableInterpreter;
 import org.neo4j.shell.impl.BashVariableInterpreter.Replacer;
 import org.neo4j.shell.kernel.apps.GraphDatabaseApp;
@@ -131,11 +131,10 @@ public class GraphDatabaseShellServer extends SimpleAppServer
     }
 
     @Override
-    protected void initialPopulateSession( Session session )
+    protected void initialPopulateSession( Session session ) throws ShellException
     {
-        session.set( AbstractClient.PROMPT_KEY, getShellPrompt() );
-        session.set( AbstractClient.TITLE_KEYS_KEY, ".*name.*,.*title.*" );
-        session.set( AbstractClient.TITLE_MAX_LENGTH, "40" );
+        session.set( Variables.TITLE_KEYS_KEY, ".*name.*,.*title.*" );
+        session.set( Variables.TITLE_MAX_LENGTH, "40" );
     }
 
     private static GraphDatabaseAPI instantiateGraphDb( String path, boolean readOnly,

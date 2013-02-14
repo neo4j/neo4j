@@ -68,7 +68,7 @@ class RemotelyAvailableServer extends UnicastRemoteObject implements ShellServer
     }
 
     @Override
-    public Welcome welcome( Map<String, Serializable> initialSession ) throws RemoteException
+    public Welcome welcome( Map<String, Serializable> initialSession ) throws RemoteException, ShellException
     {
         return actual.welcome( initialSession );
     }
@@ -113,7 +113,7 @@ class RemotelyAvailableServer extends UnicastRemoteObject implements ShellServer
     }
 
     @Override
-    public void setSessionVariable( Serializable clientID, String key, Object value ) throws RemoteException
+    public void setSessionVariable( Serializable clientID, String key, Object value ) throws RemoteException, ShellException
     {
         actual.setSessionVariable( clientID, key, value );
     }

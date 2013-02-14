@@ -30,6 +30,7 @@ import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.shell.apps.Export;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -122,6 +123,39 @@ public class ShellTest
         server.shutdown();
         db.shutdown();
     }
+
+    @Test
+    public void testDumpCypherResultSimple() throws Exception
+    {
+        GraphDatabaseAPI db = new ImpermanentGraphDatabase();
+        final GraphDatabaseShellServer server = new GraphDatabaseShellServer( db, false );
+
+        Documenter doc = new Documenter( "simple cypher result dump", server );
+        doc.add( "mknode --cd --np \"{'name':'Neo'}\"", "", "create a new node and go to it" );
+        doc.add( "mkrel -c -d i -t LIKES --np \"{'app':'foobar'}\"", "", "create a relationship" );
+        doc.add( "dump START n=node({self}) MATCH (n)-[r]-(m) return n,r,m;",
+                "create (_1 {`name`:\"Neo\"})", "Export the cypher statement results" );
+        doc.run();
+        server.shutdown();
+        db.shutdown();
+    }
+
+    @Test
+    public void testDumpDatabase() throws Exception
+    {
+        GraphDatabaseAPI db = new ImpermanentGraphDatabase();
+        final GraphDatabaseShellServer server = new GraphDatabaseShellServer( db, false );
+
+        Documenter doc = new Documenter( "database dump", server );
+        doc.add( "mknode --cd --np \"{'name':'Neo'}\"", "", "create a new node and go to it" );
+        doc.add( "mkrel -c -d i -t LIKES --np \"{'app':'foobar'}\"", "", "make an incoming relationship of type " +
+                "LIKES, create the end node with the node properties specified." );
+        doc.add( "dump", "(_1 {`name`:\"Neo\"})", "Export the whole database" );
+        doc.run();
+        server.shutdown();
+        db.shutdown();
+    }
+
 
     @Test
     public void testMatrix() throws Exception

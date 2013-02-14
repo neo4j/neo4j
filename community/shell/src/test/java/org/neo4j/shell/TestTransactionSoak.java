@@ -182,9 +182,20 @@ public class TestTransactionSoak
 
     private abstract class Tester implements Runnable
     {
-        ShellClient client = new SameJvmClient( new HashMap<String, Serializable>(), server );
+        ShellClient client;
         private boolean alive = true;
         private Exception exception = null;
+
+        protected Tester()
+        {
+            try
+            {
+                client = new SameJvmClient( new HashMap<String, Serializable>(), server );
+            } catch ( ShellException e )
+            {
+                throw new RuntimeException( "Error starting client", e );
+            }
+        }
 
         protected void execute( String cmd ) throws Exception
         {

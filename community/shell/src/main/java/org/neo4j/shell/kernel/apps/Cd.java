@@ -69,7 +69,7 @@ public class Cd extends ReadOnlyGraphDatabaseApp
     }
 
     @Override
-    public List<String> completionCandidates( String partOfLine, Session session )
+    public List<String> completionCandidates( String partOfLine, Session session ) throws ShellException
     {
         String lastWord = TextUtil.lastWordOrQuoteOf( partOfLine, false );
         if ( lastWord.startsWith( "-" ) )
@@ -238,7 +238,7 @@ public class Cd extends ReadOnlyGraphDatabaseApp
         return Continuation.INPUT_COMPLETE;
     }
 
-    private long findNodeWithTitle( Node node, String match, Session session )
+    private long findNodeWithTitle( Node node, String match, Session session ) throws ShellException
     {
         Object[] matchParts = splitNodeTitleAndId( match );
         if ( matchParts[1] != null )

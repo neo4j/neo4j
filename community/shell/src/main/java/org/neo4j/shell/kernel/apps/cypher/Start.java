@@ -17,17 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.shell.kernel.apps;
-
-import java.rmi.RemoteException;
-import java.util.HashMap;
-import java.util.Map;
+package org.neo4j.shell.kernel.apps.cypher;
 
 import org.neo4j.cypher.CypherException;
 import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.Service;
+import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.shell.App;
@@ -36,13 +33,34 @@ import org.neo4j.shell.Continuation;
 import org.neo4j.shell.Output;
 import org.neo4j.shell.Session;
 import org.neo4j.shell.ShellException;
+import org.neo4j.shell.kernel.apps.NodeOrRelationship;
+import org.neo4j.shell.kernel.apps.ReadOnlyGraphDatabaseApp;
+
+import java.rmi.RemoteException;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.regex.Pattern;
 
 @Service.Implementation(App.class)
 public class Start extends ReadOnlyGraphDatabaseApp
 {
-    public Start()
+
+    private ExecutionEngine engine;
+
+    protected ExecutionEngine getEngine()
     {
-        super();
+        if ( this.engine == null )
+        {
+            synchronized (this)
+            {
+                if ( this.engine == null )
+                {
+                    this.engine = new ExecutionEngine( getServer().getDb(), getCypherLogger() );
+                }
+            }
+        }
+        return this.engine;
     }
 
     @Override
@@ -51,33 +69,52 @@ public class Start extends ReadOnlyGraphDatabaseApp
         return "Executes a Cypher query. Usage: start <rest of query>;\n" +
                 "Example: START me = node({self}) MATCH me-[:KNOWS]->you RETURN you.name;\n" +
                 "where {self} will be replaced with the current location in the graph." +
-                "Please, note that the query must end with a semicolon.";
+                "Please, note that the query must end with a semicolon. Other parameters are\n" +
+                "taken from shell variables, see 'help export'.";
     }
 
     @Override
     protected Continuation exec( AppCommandParser parser, Session session, Output out )
             throws ShellException, RemoteException
     {
-        String query = parser.getLine();
+        String query = parser.getLine().trim();
 
         if ( isComplete( query ) )
         {
-            String queryWithoutSemicolon = query.substring( 0, query.lastIndexOf( ";" ) );
 
-            ExecutionEngine engine = new ExecutionEngine( getServer().getDb(), getCypherLogger() );
             try
             {
-                ExecutionResult result = engine.execute( queryWithoutSemicolon, getParameters( session ) );
-                out.println( result.dumpToString() );
+                final long startTime = System.currentTimeMillis();
+                ExecutionResult result = getEngine().execute( trimQuery( query ), getParameters( session ) );
+                handleResult( out, result, startTime, session, parser );
             } catch ( CypherException e )
             {
                 throw ShellException.wrapCause( e );
             }
             return Continuation.INPUT_COMPLETE;
-        } else
+        }
+        else
         {
             return Continuation.INPUT_INCOMPLETE;
         }
+    }
+
+    protected String trimQuery( String query )
+    {
+        return query.substring( 0, query.lastIndexOf( ";" ) );
+    }
+
+    protected void handleResult( Output out, ExecutionResult result, long startTime, Session session, AppCommandParser parser ) throws RemoteException, ShellException
+    {
+        final Collection<Map<String, Object>> rows = IteratorUtil.asCollection( result );
+        final long time = System.currentTimeMillis() - startTime;
+        printResult( out, result, rows, time );
+    }
+
+    private void printResult( Output out, ExecutionResult result, Collection<Map<String, Object>> rows, long time ) throws RemoteException
+    {
+        final ResultPrinter resultPrinter = new ResultPrinter();
+        resultPrinter.outputResults( result.columns(), rows, time, result.getQueryStatistics(), out );
     }
 
     private StringLogger getCypherLogger()
@@ -89,19 +126,19 @@ public class Start extends ReadOnlyGraphDatabaseApp
 
     private Map<String, Object> getParameters( Session session ) throws ShellException
     {
-        Map<String, Object> params = new HashMap<String, Object>();
         try
         {
             NodeOrRelationship self = getCurrent( session );
-            params.put( "self", self.isNode() ? self.asNode() : self.asRelationship() );
+            session.set( "self", self.isNode() ? self.asNode() : self
+                    .asRelationship() );
         } catch ( ShellException e )
         { // OK, current didn't exist
         }
-        return params;
+        return session.asMap();
     }
 
-    private boolean isComplete( String query )
+    protected boolean isComplete( String query )
     {
-        return query.trim().endsWith( ";" );
+        return query.endsWith( ";" );
     }
 }

@@ -56,7 +56,6 @@ import org.neo4j.shell.Session;
 import org.neo4j.shell.ShellException;
 import org.neo4j.shell.TextUtil;
 import org.neo4j.shell.impl.AbstractApp;
-import org.neo4j.shell.impl.AbstractClient;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 import org.neo4j.shell.util.json.JSONException;
 import org.neo4j.tooling.GlobalGraphOperations;
@@ -74,17 +73,11 @@ public abstract class GraphDatabaseApp extends AbstractApp
         "org.neo4j.graphdb.traversal",
         "org.neo4j.kernel"
     };
-    
-    private static final String CURRENT_KEY = "CURRENT_DIR";
+
     protected static final OptionDefinition OPTION_DEF_FOR_C = new OptionDefinition(
             OptionValueType.MUST,
             "Command to run for each returned node. Use $i for node/relationship id, example:\n" +
             "-c \"ls -f name $i\". Multiple commands can be supplied with && in between" );
-    /**
-     * The {@link Session} key to use to store the current node and working
-     * directory (i.e. the path which the client got to it).
-     */
-    public static final String WORKING_DIR_KEY = "WORKING_DIR";
 
     /**
      * @param server the {@link GraphDatabaseShellServer} to get the current
@@ -97,7 +90,7 @@ public abstract class GraphDatabaseApp extends AbstractApp
     public static NodeOrRelationship getCurrent(
         GraphDatabaseShellServer server, Session session ) throws ShellException
     {
-        String currentThing = ( String ) session.get( CURRENT_KEY );
+        String currentThing = session.getCurrent();
         NodeOrRelationship result = null;
         if ( currentThing == null )
         {
@@ -119,29 +112,29 @@ public abstract class GraphDatabaseApp extends AbstractApp
         }
         return result;
     }
-    
+
     protected NodeOrRelationship getCurrent( Session session )
         throws ShellException
     {
         return getCurrent( getServer(), session );
     }
 
-    public static boolean isCurrent( Session session, NodeOrRelationship thing )
+    public static boolean isCurrent( Session session, NodeOrRelationship thing ) throws ShellException
     {
-        String currentThing = ( String ) session.get( CURRENT_KEY );
+        String currentThing = session.getCurrent();
         return currentThing != null && currentThing.equals(
                 thing.getTypedId().toString() );
     }
     
     protected static void clearCurrent( Session session )
     {
-        session.set( CURRENT_KEY, new TypedId( NodeOrRelationship.TYPE_NODE, 0 ).toString() );
+        session.setCurrent( new TypedId( NodeOrRelationship.TYPE_NODE, 0 ).toString() );
     }
 
     protected static void setCurrent( Session session,
-        NodeOrRelationship current )
+                                      NodeOrRelationship current ) throws ShellException
     {
-        session.set( CURRENT_KEY, current.getTypedId().toString() );
+        session.setCurrent( current.getTypedId().toString() );
     }
 
     protected void assertCurrentIsNode( Session session )
@@ -378,9 +371,9 @@ public abstract class GraphDatabaseApp extends AbstractApp
     }
 
     protected static String findTitle( GraphDatabaseShellServer server,
-        Session session, Node node )
+        Session session, Node node ) throws ShellException
     {
-        String keys = ( String ) session.get( AbstractClient.TITLE_KEYS_KEY );
+        String keys = session.getTitleKeys();
         if ( keys == null )
         {
             return null;
@@ -406,9 +399,9 @@ public abstract class GraphDatabaseApp extends AbstractApp
         return null;
     }
 
-    private static String trimLength( Session session, String string )
+    private static String trimLength( Session session, String string ) throws ShellException
     {
-        String maxLengthString = ( String ) session.get( AbstractClient.TITLE_MAX_LENGTH );
+        String maxLengthString = session.getMaxTitleLength();
         int maxLength = maxLengthString != null ?
             Integer.parseInt( maxLengthString ) : Integer.MAX_VALUE;
         if ( string.length() > maxLength )
@@ -621,7 +614,7 @@ public abstract class GraphDatabaseApp extends AbstractApp
     }
 
     /**
-     * Reads the session variable specified in {@link #WORKING_DIR_KEY} and
+     * Reads the session variable specified in {@link org.neo4j.shell.Variables#WORKING_DIR_KEY} and
      * returns it as a list of typed ids.
      * @param session the session to read from.
      * @return the working directory as a list.
@@ -630,7 +623,7 @@ public abstract class GraphDatabaseApp extends AbstractApp
     public static List<TypedId> readCurrentWorkingDir( Session session ) throws RemoteException
     {
         List<TypedId> list = new ArrayList<TypedId>();
-        String path = (String) session.get( WORKING_DIR_KEY );
+        String path = session.getPath();
         if ( path != null && path.trim().length() > 0 )
         {
             for ( String typedId : path.split( "," ) )
@@ -643,12 +636,13 @@ public abstract class GraphDatabaseApp extends AbstractApp
     
     public static void writeCurrentWorkingDir( List<TypedId> paths, Session session ) throws RemoteException
     {
-        session.set( WORKING_DIR_KEY, makePath( paths ) );
+        String path = makePath( paths );
+        session.setPath( path );
     }
 
     private static String makePath( List<TypedId> paths )
     {
-        StringBuffer buffer = new StringBuffer();
+        StringBuilder buffer = new StringBuilder();
         for ( TypedId typedId : paths )
         {
             if ( buffer.length() > 0 )

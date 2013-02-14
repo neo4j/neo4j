@@ -97,8 +97,8 @@ public abstract class AbstractApp implements App
 	    // Default behaviour is to do nothing
 	}
 	
-	public List<String> completionCandidates( String partOfLine, Session session )
-	{
+	public List<String> completionCandidates( String partOfLine, Session session ) throws ShellException
+    {
 	    return Collections.emptyList();
 	}
 
