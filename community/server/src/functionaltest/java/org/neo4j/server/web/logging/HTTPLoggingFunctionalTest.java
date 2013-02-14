@@ -163,7 +163,7 @@ public class HTTPLoggingFunctionalTest extends ExclusiveServerTestBase
         {
             // then
             assertThat( e.getMessage(),
-                containsString( String.format( "HTTP log directory [%s] is not writable",
+                containsString( String.format( "HTTP log directory [%s]",
                     unwritableLogDir.getAbsolutePath() ) ) );
         }
     }
