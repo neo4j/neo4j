@@ -173,7 +173,7 @@ public class HTTPLoggingFunctionalTest extends ExclusiveServerTestBase
         File file;
         if ( osIsWindows() )
         {
-            file = new File( "\\\\" + UUID.randomUUID().toString() + "\\" );
+            file = new File( "\\\\" + UUID.randomUUID().toString() + "\\http.log" );
         }
         else
         {
