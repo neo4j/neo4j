@@ -25,11 +25,6 @@ import org.neo4j.shell.App;
 @Service.Implementation( App.class )
 public class Cypher extends Start
 {
-    public Cypher()
-    {
-        super();
-    }
-
     @Override
     public String getDescription()
     {
