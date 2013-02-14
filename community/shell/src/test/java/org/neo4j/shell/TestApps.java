@@ -394,4 +394,11 @@ public class TestApps extends AbstractShellTest
         }
         executeCommand( client, "env", allStrings );
     }
+
+    @Test
+    public void canExecuteCypherWithShellVariables() throws Exception {
+        Map<String, Serializable> variables = MapUtil.<String,Serializable>genericMap( "id", 0 );
+        ShellClient client = ShellLobby.newClient( shellServer, variables );
+        executeCommand( client, "start n=node({id}) return n;", "1 row" );
+    }
 }

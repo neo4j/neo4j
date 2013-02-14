@@ -40,18 +40,28 @@ import org.neo4j.shell.ShellException;
 @Service.Implementation(App.class)
 public class Start extends ReadOnlyGraphDatabaseApp
 {
-    public Start()
-    {
-        super();
-    }
 
+    private ExecutionEngine engine;
+
+    protected ExecutionEngine getEngine() {
+        if ( this.engine == null )
+        {
+            synchronized ( this ) {
+                if ( this.engine == null ) {
+                    this.engine = new ExecutionEngine( getServer().getDb(), getCypherLogger() );
+                }
+            }
+        }
+        return this.engine;
+    }
     @Override
     public String getDescription()
     {
         return "Executes a Cypher query. Usage: start <rest of query>;\n" +
                 "Example: START me = node({self}) MATCH me-[:KNOWS]->you RETURN you.name;\n" +
                 "where {self} will be replaced with the current location in the graph." +
-                "Please, note that the query must end with a semicolon.";
+                "Please, note that the query must end with a semicolon. Other parameters are\n" +
+                "taken from shell variables, see 'help export'.";
     }
 
     @Override
@@ -64,10 +74,9 @@ public class Start extends ReadOnlyGraphDatabaseApp
         {
             String queryWithoutSemicolon = query.substring( 0, query.lastIndexOf( ";" ) );
 
-            ExecutionEngine engine = new ExecutionEngine( getServer().getDb(), getCypherLogger() );
             try
             {
-                ExecutionResult result = engine.execute( queryWithoutSemicolon, getParameters( session ) );
+                ExecutionResult result = getEngine().execute( queryWithoutSemicolon, getParameters( session ) );
                 out.println( result.dumpToString() );
             } catch ( CypherException e )
             {
@@ -90,6 +99,7 @@ public class Start extends ReadOnlyGraphDatabaseApp
     private Map<String, Object> getParameters( Session session ) throws ShellException
     {
         Map<String, Object> params = new HashMap<String, Object>();
+        params.putAll( session.asMap() );
         try
         {
             NodeOrRelationship self = getCurrent( session );

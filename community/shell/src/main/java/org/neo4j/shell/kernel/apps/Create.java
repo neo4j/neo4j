@@ -25,17 +25,4 @@ import org.neo4j.shell.App;
 @Service.Implementation( App.class )
 public class Create extends Start
 {
-    public Create()
-    {
-        super();
-    }
-
-    @Override
-    public String getDescription()
-    {
-        return "Executes a Cypher query with an older parser. " +
-                "Usage: cypher <version> start <rest of query>\n" +
-                "Example: CYPHER 1.5 START me = node({self}) MATCH me-[:KNOWS]->you RETURN you.name\n" +
-                "where {self} will be replaced with the current location in the graph";
-    }
 }
