@@ -2356,4 +2356,9 @@ RETURN x0.name?
     assert(result.toList === List())
   }
 
+  @Test def mixed_type_collections_should_be_allowed() {
+    val result = parseAndExecute("START a=node(0) RETURN [1,'hello'] as mixed")
+
+    assert(result.toList.head === Map("mixed" -> List(1,"hello")))
+  }
 }
