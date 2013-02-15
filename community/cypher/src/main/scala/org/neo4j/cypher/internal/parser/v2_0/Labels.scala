@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.commands.expressions.{Expression, Literal}
 import org.neo4j.cypher.internal.commands.values.LabelName
 
 trait Labels extends Base {
-  def labelLit: Parser[Literal] = ":" ~> ident ^^ { x => Literal(LabelName(x)) }
+  def labelLit: Parser[Literal] = ":" ~> identity ^^ { x => Literal(LabelName(x)) }
 
   def labelShortForm: Parser[LabelSet] = rep1(labelLit) ^^ {
     case litList =>
