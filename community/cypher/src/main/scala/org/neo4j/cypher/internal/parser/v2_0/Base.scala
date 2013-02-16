@@ -22,10 +22,8 @@ package org.neo4j.cypher.internal.parser.v2_0
 import scala.util.parsing.combinator._
 import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.cypher.internal.commands.expressions.{ParameterExpression, Expression, Literal}
-import org.neo4j.cypher.internal.commands.values.{LabelValue, LabelName}
 
 abstract class Base extends JavaTokenParsers {
-  var namer = new NodeNamer
   val keywords = List("start", "create", "set", "delete", "foreach", "match", "where", "label", "values", "add",
     "with", "return", "skip", "limit", "order", "by", "asc", "ascending", "desc", "descending", "on")
 
@@ -111,15 +109,25 @@ abstract class Base extends JavaTokenParsers {
       case a ~ _ ~ b ~ c => a :: b :: c
     }
 
-}
-class NodeNamer {
-  var lastNodeNumber = 0
-
-  def name(s: Option[String]): String = s match {
-    case None => {
-      lastNodeNumber += 1
-      "  UNNAMED" + lastNodeNumber
+  /**
+   * A parser that returns either an auto-generated named pointing to the position in the string,
+   * or the name, if it can be found
+   * @return
+   */
+  def optionalName : Parser[String] = Parser {
+    in => (unnamed ~ opt(identity)).apply(in) match {
+      case Success(_ ~ Some(name), rest) => Success(name, rest)
+      case Success(name ~ None, rest)    => Success(name, rest)
+      case _                             => Failure("expected an optional name", in)
     }
-    case Some(x) => x
+  }
+
+  /**
+   * This parser returns an identifier pointing to this point in the string.
+   * Note: it doesn't eat anything from the input string
+   * @return
+   */
+  def unnamed : Parser[String] = Parser {
+    in => Success("  UNNAMED" + in.offset, in)
   }
 }
