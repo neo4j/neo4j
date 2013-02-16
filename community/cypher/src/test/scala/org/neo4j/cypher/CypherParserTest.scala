@@ -2226,6 +2226,17 @@ foreach(x in [1,2,3] :
       Union(Seq(q, q), QueryString.empty, distinct = true))
   }
 
+  @Test def keywords_in_reltype_and_label() {
+    testFrom_2_0("START n=node(0) MATCH n:On-[:WHERE]->() RETURN n",
+      Query.
+        start(NodeById("n", 0)).
+        matches(RelatedTo("n", "  UNNAMED38", "  UNNAMED28", Seq("WHERE"), Direction.OUTGOING, false)).
+        where(HasLabel(Identifier("n"), Literal(Seq(LabelName("On"))))).
+        returns(ReturnItem(Identifier("n"), "n"))
+    )
+  }
+
+
 
   private def run(f: () => Unit) =
     new Runnable() {
