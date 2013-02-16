@@ -38,7 +38,6 @@ with Index
 with ActualParser {
   @throws(classOf[SyntaxException])
   def parse(text: String): AbstractQuery = {
-    namer = new NodeNamer
     parseAll(cypherQuery, text) match {
       case Success(r, q) => ReattachAliasedExpressions(r.setQueryText(text))
       case NoSuccess(message, input) => {
