@@ -61,13 +61,7 @@ class ExpressionTest extends Assertions {
       Map("a" -> AnyType()),
       Map("a" -> MapType()),
 
-      Map("a" -> MapType()))
-  }
-
-  @Test def merge_two_deps_same_id_different_incompatible_types() {
-    expectFailure(
-      Map("a" -> StringType()),
-      Map("a" -> NumberType()))
+      Map("a" -> AnyType()))
   }
 
   @Test
