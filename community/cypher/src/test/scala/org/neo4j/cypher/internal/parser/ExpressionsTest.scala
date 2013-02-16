@@ -20,15 +20,13 @@
 package org.neo4j.cypher.internal.parser
 
 import v2_0.{MatchClause, Expressions}
-import org.neo4j.cypher.internal.commands.expressions.{Identifier, Collection}
 import org.neo4j.cypher.internal.commands._
-import expressions.Literal
+import expressions._
 import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.commands.PathExpression
 import values.LabelName
 import org.neo4j.cypher.internal.commands.HasLabel
 import org.junit.Test
-
 
 class ExpressionsTest extends Expressions with MatchClause with ParserTest {
 
@@ -72,6 +70,53 @@ class ExpressionsTest extends Expressions with MatchClause with ParserTest {
 
     parsing("a-->(:Bar|:Foo)") shouldGive
       PathExpression(Seq(RelatedTo("a", "  UNNAMED5", "  UNNAMED2", Seq.empty, Direction.OUTGOING, false)), orPred)
+  }
+
+  @Test def simple_cases() {
+    implicit val parserToTest = simpleCase
+
+    parsing("CASE 1 WHEN 1 THEN 'ONE' END") shouldGive
+      SimpleCase(Literal(1), Seq((Literal(1), Literal("ONE"))), None)
+
+    parsing(
+      """CASE 1
+           WHEN 1 THEN 'ONE'
+           WHEN 2 THEN 'TWO'
+         END""") shouldGive
+      SimpleCase(Literal(1), Seq((Literal(1), Literal("ONE")), (Literal(2), Literal("TWO"))), None)
+
+    parsing(
+      """CASE 1
+           WHEN 1 THEN 'ONE'
+           WHEN 2 THEN 'TWO'
+                  ELSE 'DEFAULT'
+         END""") shouldGive
+      SimpleCase(Literal(1), Seq((Literal(1), Literal("ONE")), (Literal(2), Literal("TWO"))), Some(Literal("DEFAULT")))
+  }
+
+  @Test def generic_cases() {
+    implicit val parserToTest = genericCase
+
+    parsing("CASE WHEN true THEN 'ONE' END") shouldGive
+      GenericCase(Seq((True(), Literal("ONE"))), None)
+
+    val alt1 = (Equals(Literal(1), Literal(2)), Literal("ONE"))
+    val alt2 = (Equals(Literal(2), Literal("apa")), Literal("TWO"))
+
+    parsing(
+      """CASE
+           WHEN 1=2     THEN 'ONE'
+           WHEN 2='apa' THEN 'TWO'
+         END""") shouldGive
+      GenericCase(Seq(alt1, alt2), None)
+
+    parsing(
+      """CASE
+           WHEN 1=2     THEN 'ONE'
+           WHEN 2='apa' THEN 'TWO'
+                        ELSE 'OTHER'
+         END""") shouldGive
+      GenericCase(Seq(alt1, alt2), Some(Literal("OTHER")))
   }
 
   def createProperty(entity: String, propName: String) = ???

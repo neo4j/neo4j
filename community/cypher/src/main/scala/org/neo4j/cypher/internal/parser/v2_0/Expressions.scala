@@ -49,10 +49,12 @@ trait Expressions extends Base with ParserPattern with Predicates with StringLit
   }
 
   def factor: Parser[Expression] =
-  (ignoreCase("true") ^^^ Literal(true)
-      | ignoreCase("false") ^^^ Literal(false)
-      | ignoreCase("null") ^^^ Literal(null)
+  (     ignoreCase("null") ^^^ Literal(null)
+      | ignoreCase("true") ^^^ True()
+      | ignoreCase("false") ^^^ Not(True())
       | pathExpression
+      | simpleCase
+      | genericCase
       | extract
       | reduce
       | function
@@ -71,7 +73,7 @@ trait Expressions extends Base with ParserPattern with Predicates with StringLit
       | parens(expression)
       | failure("illegal value"))
 
-  def expressionOrPredicate: Parser[Expression] = pathExpression | predicate | expression
+  def exprOrPred: Parser[Expression] = pathExpression | predicate | expression
 
   def numberLiteral: Parser[Expression] = number ^^ (x => {
     val value: Any = if (x.contains("."))
@@ -222,6 +224,28 @@ trait Expressions extends Base with ParserPattern with Predicates with StringLit
       val pred = True().andWith(atoms: _*)
 
       PathExpression(patterns, pred)
+  }
+
+  private def caseDefault: Parser[Expression] = ignoreCase("else") ~> expression
+
+  def simpleCase:Parser[Expression] = {
+    def alternative: Parser[(Expression, Expression)] = ignoreCase("when") ~ expression ~ ignoreCase("then") ~ expression ^^ {
+      case when ~ e1 ~ then ~ e2 => e1 -> e2
+    }
+
+    ignoreCase("case") ~ expression ~ rep1(alternative) ~ opt(caseDefault) ~ ignoreCase("end") ^^ {
+      case c ~ in ~ alternatives ~ default ~ end => SimpleCase(in, alternatives, default)
+    }
+  }
+
+  def genericCase:Parser[Expression] = {
+    def alternative: Parser[(Predicate, Expression)] = ignoreCase("when") ~ predicate ~ ignoreCase("then") ~ expression ^^ {
+      case when ~ e1 ~ then ~ e2 => e1 -> e2
+    }
+
+    ignoreCase("case") ~ rep1(alternative) ~ opt(caseDefault) ~ ignoreCase("end") ^^ {
+      case c ~ alternatives ~ default ~ end => GenericCase(alternatives, default)
+    }
   }
 
   private def translate(abstractPattern: AbstractPattern): Maybe[(Pattern, Predicate)] = matchTranslator(abstractPattern) match {

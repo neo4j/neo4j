@@ -25,9 +25,13 @@ import org.neo4j.cypher.internal.commands.expressions.{ParameterExpression, Expr
 
 abstract class Base extends JavaTokenParsers {
   val keywords = List("start", "create", "set", "delete", "foreach", "match", "where", "label", "values", "add",
-    "with", "return", "skip", "limit", "order", "by", "asc", "ascending", "desc", "descending", "on")
+    "with", "return", "skip", "limit", "order", "by", "asc", "ascending", "desc", "descending", "on", "when",
+    "case", "then", "else")
 
-  def ignoreCase(str: String): Parser[String] = ("""(?i)\b""" + str + """\b""").r ^^ (x => x.toLowerCase)
+  def ignoreCase(str: String): Parser[String] =
+    ("""(?i)\b""" + str + """\b""").r ^^ (x => x.toLowerCase) |
+    failure("expected " + str.toUpperCase)
+
 
   def onlyOne[T](msg: String, inner: Parser[List[T]]): Parser[T] = Parser {
     in => inner.apply(in) match {

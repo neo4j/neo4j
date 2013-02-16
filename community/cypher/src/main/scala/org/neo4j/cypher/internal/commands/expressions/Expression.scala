@@ -48,6 +48,9 @@ with AstNode[Expression] {
     t
   }
 
+  protected def calculateUpperTypeBound(expectedType: CypherType, symbols: SymbolTable, exprs: Seq[Expression]): CypherType =
+    exprs.map(_.evaluateType(expectedType, symbols)).reduce(_ mergeWith _)
+
   def throwIfSymbolsMissing(symbols: SymbolTable) {
     evaluateType(AnyType(), symbols)
   }

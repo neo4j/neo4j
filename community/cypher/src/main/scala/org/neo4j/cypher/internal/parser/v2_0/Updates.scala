@@ -64,7 +64,7 @@ trait Updates extends Base with Expressions with StartAndCreateClause {
     }
 
     def setSingleProperty: Parser[Seq[UpdateAction]] = {
-      def propertySet = property ~ "=" ~ expressionOrPredicate ^^ {
+      def propertySet = property ~ "=" ~ exprOrPred ^^ {
         case p ~ "=" ~ e => PropertySetAction(p.asInstanceOf[Property], e)
       }
 
