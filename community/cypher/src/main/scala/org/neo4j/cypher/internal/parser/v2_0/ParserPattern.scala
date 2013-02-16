@@ -20,10 +20,9 @@
 package org.neo4j.cypher.internal.parser.v2_0
 
 import org.neo4j.graphdb.Direction
-import org.neo4j.cypher.internal.commands.True
 import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.cypher.internal.commands.expressions.{Literal, Expression, Identifier}
-import org.neo4j.cypher.internal.commands.values.{LabelName, LabelValue}
+import org.neo4j.cypher.internal.commands.values.LabelName
 
 trait ParserPattern extends Base with Labels {
 
@@ -176,13 +175,13 @@ trait ParserPattern extends Base with Labels {
   }
 
 
-  private def tailWithRelData: Parser[Tail] = opt("<") ~ "-" ~ "[" ~ opt(identity) ~ opt("?") ~ opt(":" ~> rep1sep(identity, "|")) ~ variable_length ~ props ~ "]" ~ "-" ~ opt(">") ~ node ^^ {
+  private def tailWithRelData: Parser[Tail] = opt("<") ~ "-" ~ "[" ~ opt(identity) ~ opt("?") ~ opt(":" ~> rep1sep(escapableString, "|")) ~ variable_length ~ props ~ "]" ~ "-" ~ opt(">") ~ node ^^ {
     case l ~ "-" ~ "[" ~ rel ~ optional ~ typez ~ varLength ~ properties ~ "]" ~ "-" ~ r ~ end => Tail(direction(l, r), rel, properties, end, varLength, typez.toSeq.flatten.distinct, optional.isDefined)
   } | linkErrorMessages
 
   private def linkErrorMessages: Parser[Tail] =
-    opt("<") ~> "-" ~> "[" ~> opt(identity) ~> opt("?") ~> opt(":" ~> rep1sep(identity, "|")) ~> variable_length ~> props ~> "]" ~> failure("expected -") |
-      opt("<") ~> "-" ~> "[" ~> opt(identity) ~> opt("?") ~> opt(":" ~> rep1sep(identity, "|")) ~> variable_length ~> props ~> failure("unclosed bracket") |
+    opt("<") ~> "-" ~> "[" ~> opt(identity) ~> opt("?") ~> opt(":" ~> rep1sep(escapableString, "|")) ~> variable_length ~> props ~> "]" ~> failure("expected -") |
+      opt("<") ~> "-" ~> "[" ~> opt(identity) ~> opt("?") ~> opt(":" ~> rep1sep(escapableString, "|")) ~> variable_length ~> props ~> failure("unclosed bracket") |
       opt("<") ~> "-" ~> "[" ~> failure("expected relationship information") |
       opt("<") ~> "-" ~> failure("expected [ or -")
 
