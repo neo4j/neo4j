@@ -33,7 +33,9 @@ trait Predicates extends Base with ParserPattern with StringLiteral with Labels 
   }
 
   def predicateLvl2: Parser[Predicate] = (
-      hasLabel
+        ignoreCase("true") ^^^ True()
+      | ignoreCase("false") ^^^ Not(True())
+      | hasLabel
       | expressionOrEntity <~ ignoreCase("is null") ^^ (x => IsNull(x))
       | expressionOrEntity <~ ignoreCase("is not null") ^^ (x => Not(IsNull(x)))
       | operators
