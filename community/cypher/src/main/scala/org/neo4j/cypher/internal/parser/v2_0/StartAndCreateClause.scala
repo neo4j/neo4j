@@ -88,8 +88,8 @@ trait StartAndCreateClause extends Base with Expressions with CreateUnique {
     case ParsedEntity(_, Identifier(name), props, labels, bare) =>
       Yes(Seq(CreateNodeStartItem(CreateNode(name, props, labels.asExpr, bare))))
 
-    case ParsedEntity(_, p: ParameterExpression, _, labels, bare) =>
-      Yes(Seq(CreateNodeStartItem(CreateNode(namer.name(None), Map[String, Expression]("*" -> p), labels.asExpr, bare))))
+    case ParsedEntity(name, p: ParameterExpression, _, labels, bare) =>
+      Yes(Seq(CreateNodeStartItem(CreateNode(name, Map[String, Expression]("*" -> p), labels.asExpr, bare))))
 
     case _ => No(Seq(""))
   }
