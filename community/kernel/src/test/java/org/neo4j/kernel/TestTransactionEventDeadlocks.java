@@ -27,14 +27,15 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.graphdb.event.TransactionEventHandler;
-import org.neo4j.test.EmbeddedDatabaseRule;
+import org.neo4j.test.DatabaseRule;
+import org.neo4j.test.ImpermanentDatabaseRule;
 
 import static org.junit.Assert.*;
 
 public class TestTransactionEventDeadlocks
 {
     @Rule
-    public EmbeddedDatabaseRule database = new EmbeddedDatabaseRule();
+    public DatabaseRule database = new ImpermanentDatabaseRule();
     
     @Test
     public void canAvoidDeadlockThatWouldHappenIfTheRelationshipTypeCreationTransactionModifiedData() throws Exception

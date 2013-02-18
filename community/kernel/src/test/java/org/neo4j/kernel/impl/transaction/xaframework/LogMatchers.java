@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.transaction.xaframework;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
@@ -33,28 +32,30 @@ import javax.transaction.xa.Xid;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.junit.internal.matchers.TypeSafeMatcher;
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.util.DumpLogicalLog;
 
 /**
- * A set of hamcrest matchers for asserting logical logs look in certain ways. Please expand as necessary.
- *
- * Please note: Matching specific commands is done by matchers found in {@link org.neo4j.kernel.impl.nioneo.xa.CommandMatchers}.
+ * A set of hamcrest matchers for asserting logical logs look in certain ways.
+ * Please expand as necessary.
+ * 
+ * Please note: Matching specific commands is done by matchers found in
+ * {@link org.neo4j.kernel.impl.nioneo.xa.CommandMatchers}.
  */
 public class LogMatchers
 {
-
-    public static List<LogEntry> logEntries( String logPath ) throws IOException
+    public static List<LogEntry> logEntries( FileSystemAbstraction fileSystem, String logPath ) throws IOException
     {
-        FileChannel fileChannel = new RandomAccessFile( logPath, "r" ).getChannel();
-        ByteBuffer buffer = ByteBuffer.allocateDirect( 9 + Xid.MAXGTRIDSIZE
-                + Xid.MAXBQUALSIZE * 10 );
+        FileChannel fileChannel = fileSystem.open( new File( logPath ), "r" );
+        ByteBuffer buffer = ByteBuffer.allocateDirect( 9 + Xid.MAXGTRIDSIZE + Xid.MAXBQUALSIZE * 10 );
 
-        try {
+        try
+        {
             // Always a header
             LogIoUtils.readLogHeader( buffer, fileChannel, true );
 
             // Read all log entries
-            List<LogEntry> entries = new ArrayList<LogEntry>(  );
+            List<LogEntry> entries = new ArrayList<LogEntry>();
             DumpLogicalLog.CommandFactory cmdFactory = new DumpLogicalLog.CommandFactory();
             LogEntry entry;
             while ( (entry = LogIoUtils.readEntry( buffer, fileChannel, cmdFactory )) != null )
@@ -64,17 +65,18 @@ public class LogMatchers
 
             return entries;
         }
-        finally {
+        finally
+        {
             fileChannel.close();
         }
     }
 
-    public static Iterable<LogEntry> logEntries( File file ) throws IOException
+    public static Iterable<LogEntry> logEntries( FileSystemAbstraction fileSystem, File file ) throws IOException
     {
-        return logEntries( file.getAbsolutePath() );
+        return logEntries( fileSystem, file.getPath() );
     }
 
-    public static Matcher<Iterable<LogEntry>> containsExactly( final Matcher<? extends LogEntry> ... matchers )
+    public static Matcher<Iterable<LogEntry>> containsExactly( final Matcher<? extends LogEntry>... matchers )
     {
         return new TypeSafeMatcher<Iterable<LogEntry>>()
         {
@@ -82,24 +84,25 @@ public class LogMatchers
             public boolean matchesSafely( Iterable<LogEntry> item )
             {
                 Iterator<LogEntry> actualEntries = item.iterator();
-                for(Matcher<? extends LogEntry> matcher : matchers)
+                for ( Matcher<? extends LogEntry> matcher : matchers )
                 {
-                    if(actualEntries.hasNext())
+                    if ( actualEntries.hasNext() )
                     {
                         LogEntry next = actualEntries.next();
-                        if(! matcher.matches( next ) )
+                        if ( !matcher.matches( next ) )
                         {
                             // Wrong!
                             return false;
                         }
-                    } else
+                    }
+                    else
                     {
                         // Too few actual entries!
                         return false;
                     }
                 }
 
-                if(actualEntries.hasNext())
+                if ( actualEntries.hasNext() )
                 {
                     // Too many actual entries!
                     return false;
@@ -112,7 +115,7 @@ public class LogMatchers
             @Override
             public void describeTo( Description description )
             {
-                for(Matcher<? extends LogEntry> matcher : matchers)
+                for ( Matcher<? extends LogEntry> matcher : matchers )
                 {
                     description.appendDescriptionOf( matcher ).appendText( ",\n" );
                 }
@@ -120,37 +123,37 @@ public class LogMatchers
         };
     }
 
-    public static Matcher<? extends LogEntry> startEntry( final Integer identifier, final int masterId, final int localId )
+    public static Matcher<? extends LogEntry> startEntry( final Integer identifier, final int masterId,
+            final int localId )
     {
-        return new TypeSafeMatcher<LogEntry.Start>() {
+        return new TypeSafeMatcher<LogEntry.Start>()
+        {
 
             @Override
             public boolean matchesSafely( LogEntry.Start entry )
             {
-                return entry != null
-                        && entry.getIdentifier() == identifier
-                        && entry.getMasterId() == masterId
+                return entry != null && entry.getIdentifier() == identifier && entry.getMasterId() == masterId
                         && entry.getLocalId() == localId;
             }
 
             @Override
             public void describeTo( Description description )
             {
-                description.appendText( "Start["+identifier+",xid=<Any Xid>,master="+masterId+",me="+localId+",time=<Any Date>]" );
+                description.appendText( "Start[" + identifier + ",xid=<Any Xid>,master=" + masterId + ",me=" + localId
+                        + ",time=<Any Date>]" );
             }
         };
     }
 
     public static Matcher<? extends LogEntry> onePhaseCommitEntry( final int identifier, final int txId )
     {
-        return new TypeSafeMatcher<LogEntry.OnePhaseCommit>() {
+        return new TypeSafeMatcher<LogEntry.OnePhaseCommit>()
+        {
 
             @Override
             public boolean matchesSafely( LogEntry.OnePhaseCommit onePC )
             {
-                return onePC != null
-                        && onePC.getIdentifier() == identifier
-                        && onePC.getTxId() == txId;
+                return onePC != null && onePC.getIdentifier() == identifier && onePC.getTxId() == txId;
             }
 
             @Override
@@ -164,13 +167,13 @@ public class LogMatchers
 
     public static Matcher<? extends LogEntry> doneEntry( final int identifier )
     {
-        return new TypeSafeMatcher<LogEntry.Done>() {
+        return new TypeSafeMatcher<LogEntry.Done>()
+        {
 
             @Override
             public boolean matchesSafely( LogEntry.Done done )
             {
-                return done != null
-                        && done.getIdentifier() == identifier;
+                return done != null && done.getIdentifier() == identifier;
             }
 
             @Override

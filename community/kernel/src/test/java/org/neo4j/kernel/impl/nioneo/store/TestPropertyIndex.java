@@ -26,11 +26,12 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.junit.Test;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 import org.neo4j.unsafe.batchinsert.BatchInserter;
 import org.neo4j.unsafe.batchinsert.BatchInserters;
 
@@ -39,13 +40,14 @@ public class TestPropertyIndex
     @Test
     public void lazyLoadWithinWriteTransaction() throws Exception
     {
-        File dir = TargetDirectory.forTest( getClass() ).graphDbDir( true );
-        BatchInserter inserter = BatchInserters.inserter( dir.getAbsolutePath() );
+        File dir = new File( "dir" );
+        EphemeralFileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
+        BatchInserter inserter = BatchInserters.inserter( dir.getPath(), fileSystem );
         int count = 3000;
         long nodeId = inserter.createNode( mapWithManyProperties( count /* larger than initial property index load threshold */ ) );
         inserter.shutdown();
         
-        EmbeddedGraphDatabase db = new EmbeddedGraphDatabase( dir.getAbsolutePath() );
+        GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentDatabase( dir.getPath() );
         Transaction tx = db.beginTx();
         try
         {

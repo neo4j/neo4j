@@ -72,9 +72,11 @@ public class EmbeddedGraphDatabase extends InternalAbstractGraphDatabase
      */
     public EmbeddedGraphDatabase( String storeDir, Map<String, String> params )
     {
-        this( storeDir, params, Service.load( IndexProvider.class ), Iterables.<KernelExtensionFactory<?>,
-                KernelExtensionFactory>cast( Service.load( KernelExtensionFactory.class ) ),
-                Service.load( CacheProvider.class ), Service.load( TransactionInterceptorProvider.class ) );
+        this( storeDir, params,
+                Service.load( IndexProvider.class ),
+                Iterables.<KernelExtensionFactory<?>,KernelExtensionFactory>cast( Service.load( KernelExtensionFactory.class ) ),
+                Service.load( CacheProvider.class ),
+                Service.load( TransactionInterceptorProvider.class ) );
     }
 
     public EmbeddedGraphDatabase( String storeDir, Map<String, String> params, Iterable<IndexProvider> indexProviders,

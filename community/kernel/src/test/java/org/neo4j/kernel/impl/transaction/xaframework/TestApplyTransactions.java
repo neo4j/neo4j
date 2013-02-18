@@ -25,46 +25,26 @@ import java.io.File;
 
 import org.junit.Test;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.test.ProcessStreamHandler;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
 public class TestApplyTransactions
 {
     @Test
     public void testCommittedTransactionReceivedAreForcedToLog() throws Exception
     {
-        File baseStoreDir = TargetDirectory.forTest( TestApplyTransactions.class ).directory(
-                "testCommittedTransactionReceivedAreForcedToLog", true );
-        Process process = Runtime.getRuntime().exec(
-                new String[] { "java", "-cp", System.getProperty( "java.class.path" ),
-                        TestApplyTransactions.class.getName(), baseStoreDir.getAbsolutePath() } );
-        int exit = new ProcessStreamHandler( process, false ).waitForResult();
-        assertEquals( 0, exit );
-
-        /*
-         * Open crashed db, try to extract the transaction it reports as latest. It should be there.
-         */
-        File destStoreDir = new File( baseStoreDir, "destination" );
-        EmbeddedGraphDatabase dest = new EmbeddedGraphDatabase( destStoreDir.getAbsolutePath() );
-        XaDataSource destNeoDataSource = dest.getXaDataSourceManager().getXaDataSource( Config.DEFAULT_DATA_SOURCE_NAME );
-        int latestTxId = (int) destNeoDataSource.getLastCommittedTxId();
-        InMemoryLogBuffer theTx = new InMemoryLogBuffer();
-        long extractedTxId = destNeoDataSource.getLogExtractor( latestTxId, latestTxId ).extractNext( theTx );
-        assertEquals( latestTxId, extractedTxId );
-    }
-
-    public static void main( String[] args ) throws Exception
-    {
-        /*
+        /* GIVEN
          * Create a tx on a db (as if the master), extract that, apply on dest (as if pullUpdate on slave).
          * Let slave crash uncleanly.
          */
-        File baseStoreDir = new File( args[0] );
+        EphemeralFileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
+        File baseStoreDir = new File( "base" );
         File originStoreDir = new File( baseStoreDir, "origin" );
         File destStoreDir = new File( baseStoreDir, "destination" );
-        EmbeddedGraphDatabase origin = new EmbeddedGraphDatabase( originStoreDir.getAbsolutePath() );
+        GraphDatabaseAPI origin = (GraphDatabaseAPI) new TestGraphDatabaseFactory().setFileSystem( fileSystem )
+                .newImpermanentDatabase( originStoreDir.getPath() );
         Transaction tx = origin.beginTx();
         origin.createNode();
         tx.success();
@@ -72,15 +52,26 @@ public class TestApplyTransactions
         XaDataSource originNeoDataSource = origin.getXaDataSourceManager().getXaDataSource(
                 Config.DEFAULT_DATA_SOURCE_NAME );
         int latestTxId = (int) originNeoDataSource.getLastCommittedTxId();
-        System.out.println( "Xtracted tx id " + latestTxId );
         InMemoryLogBuffer theTx = new InMemoryLogBuffer();
         originNeoDataSource.getLogExtractor( latestTxId, latestTxId ).extractNext( theTx );
 
-        EmbeddedGraphDatabase dest = new EmbeddedGraphDatabase( destStoreDir.getAbsolutePath() );
+        GraphDatabaseAPI dest = (GraphDatabaseAPI) new TestGraphDatabaseFactory().setFileSystem( fileSystem )
+                .newImpermanentDatabase( destStoreDir.getPath() );
         XaDataSource destNeoDataSource = dest.getXaDataSourceManager().getXaDataSource( Config.DEFAULT_DATA_SOURCE_NAME );
         destNeoDataSource.applyCommittedTransaction( latestTxId, theTx );
-
         origin.shutdown();
-        // dest on purpose left to crash
+        EphemeralFileSystemAbstraction snapshot = fileSystem.snapshot();
+        dest.shutdown();
+
+        /*
+         * Open crashed db, try to extract the transaction it reports as latest. It should be there.
+         */
+        dest = (GraphDatabaseAPI) new TestGraphDatabaseFactory().setFileSystem( snapshot )
+                .newImpermanentDatabase( destStoreDir.getPath() );
+        destNeoDataSource = dest.getXaDataSourceManager().getXaDataSource( Config.DEFAULT_DATA_SOURCE_NAME );
+        latestTxId = (int) destNeoDataSource.getLastCommittedTxId();
+        theTx = new InMemoryLogBuffer();
+        long extractedTxId = destNeoDataSource.getLogExtractor( latestTxId, latestTxId ).extractNext( theTx );
+        assertEquals( latestTxId, extractedTxId );
     }
 }

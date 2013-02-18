@@ -19,6 +19,12 @@
  */
 package org.neo4j.kernel.impl.batchinsert;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.neo4j.helpers.collection.MapUtil.map;
+
 import java.io.File;
 import java.util.Arrays;
 import java.util.Collections;
@@ -27,6 +33,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+
 import org.junit.Test;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
@@ -35,14 +42,13 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
+import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.util.StringLogger;
-
-import static org.junit.Assert.*;
-import static org.neo4j.helpers.collection.MapUtil.*;
+import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
 public class TestBatchInsert
 {
@@ -85,6 +91,8 @@ public class TestBatchInsert
         properties.put( "key17", new boolean[] {true,false,true,false} );
         properties.put( "key18", new char[] {1,2,3,4,5,6,7,8,9} );
     }
+    
+    private EphemeralFileSystemAbstraction fileSystem;
 
     private BatchInserter newBatchInserter()
     {
@@ -93,14 +101,17 @@ public class TestBatchInsert
 
     private BatchInserter newBatchInserter( boolean eraseOld )
     {
-        String storePath = AbstractNeo4jTestCase.getStorePath( "neo-batch" );
-        if ( eraseOld )
-        {
-            AbstractNeo4jTestCase.deleteFileOrDirectory( new File( storePath ) );
-        }
-        return new BatchInserterImpl( storePath );
+        if ( eraseOld || fileSystem == null )
+            fileSystem = new EphemeralFileSystemAbstraction();
+        return new BatchInserterImpl( "neo-batch-db", fileSystem, MapUtil.stringMap() );
     }
 
+    private GraphDatabaseService switchToEmbeddedGraphDatabaseService( BatchInserter inserter )
+    {
+        inserter.shutdown();
+        return new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentDatabase( inserter.getStore() );
+    }
+    
     @Test
     public void testSimple()
     {
@@ -379,7 +390,7 @@ public class TestBatchInsert
         String storeDir = ((BatchInserterImpl)graphDb).getStore();
         graphDb.shutdown();
 
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( storeDir );
+        GraphDatabaseService db = switchToEmbeddedGraphDatabaseService( graphDb );
         Node realStartNode = db.getNodeById( startNode );
         Relationship realSelfRelationship = db.getRelationshipById( selfRelationship );
         Relationship realRelationship = db.getRelationshipById( relationship );
@@ -594,7 +605,7 @@ public class TestBatchInsert
         inserter.shutdown();
 
         // Delete node and all its relationships
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( storeDir );
+        GraphDatabaseService db = switchToEmbeddedGraphDatabaseService( inserter );
         Transaction tx = db.beginTx();
         Node node = db.getNodeById( nodeId );
         for ( Relationship relationship : node.getRelationships() )
@@ -610,8 +621,8 @@ public class TestBatchInsert
     @Test
     public void messagesLogGetsClosed() throws Exception
     {
-        BatchInserter inserter = newBatchInserter();
-        String storeDir = inserter.getStore();
+        String storeDir = TargetDirectory.forTest( getClass() ).graphDbDir( true ).getAbsolutePath();
+        BatchInserterImpl inserter = new BatchInserterImpl( storeDir, new DefaultFileSystemAbstraction(), MapUtil.stringMap() );
         inserter.shutdown();
         assertTrue( new File( storeDir, StringLogger.DEFAULT_NAME ).delete() );
     }

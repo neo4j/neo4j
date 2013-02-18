@@ -299,7 +299,7 @@ public abstract class InternalAbstractGraphDatabase
 
     protected void create()
     {
-        fileSystem = life.add( createFileSystemAbstraction() );
+        fileSystem = createFileSystemAbstraction();
 
         // Create logger
         this.logging = createLogging();

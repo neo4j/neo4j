@@ -19,16 +19,22 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+
 import java.util.Random;
+
 import javax.transaction.xa.Xid;
+
 import org.junit.Test;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.DynamicRelationshipType;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.transaction.XidImpl;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry.Start;
-import org.neo4j.test.ProcessStreamHandler;
-import org.neo4j.test.TargetDirectory;
-
-import static org.junit.Assert.*;
+import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
 public class TestTxEntries
 {
@@ -38,25 +44,23 @@ public class TestTxEntries
     private final int refMaster = 1;
     private final int refMe = 1;
     private final long startPosition = 1000;
+    private final String storeDir = "dir";
+    private final EphemeralFileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
 
-    @Test
     /*
      * Starts a JVM, executes a tx that fails on prepare and rollbacks,
      * triggering a bug where an extra start entry for that tx is written
      * in the xa log.
      */
+    @Test
     public void testStartEntryWrittenOnceOnRollback() throws Exception
     {
-        String storeDir = TargetDirectory.forTest( TestTxEntries.class ).directory(
-                "rollBack", true ).getAbsolutePath();
-        Process process = Runtime.getRuntime().exec(
-                new String[] { "java", "-cp",
-                        System.getProperty( "java.class.path" ),
-                        RollbackUnclean.class.getName(), storeDir } );
-        int exit = new ProcessStreamHandler( process, true ).waitForResult();
-        assertEquals( 0, exit );
-        // The bug tested by this case throws exception during recovery, below
-        new GraphDatabaseFactory().newEmbeddedDatabase( storeDir ).shutdown();
+        GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentDatabase( storeDir );
+        createSomeTransactions( db );
+        EphemeralFileSystemAbstraction snapshot = fileSystem.snapshot();
+        db.shutdown();
+        
+        new TestGraphDatabaseFactory().setFileSystem( snapshot ).newImpermanentDatabase( storeDir );
     }
     
     @Test
@@ -108,5 +112,38 @@ public class TestTxEntries
         byte[] bytes = new byte[random.nextInt( 10 )+5];
         for ( int i = 0; i < bytes.length; i++ ) bytes[i] = (byte) random.nextInt( 255 );
         return bytes;
+    }
+
+    private void createSomeTransactions( GraphDatabaseService db )
+    {
+        Transaction tx = db.beginTx();
+        Node node1 = db.createNode();
+        Node node2 = db.createNode();
+        node1.createRelationshipTo( node2,
+                DynamicRelationshipType.withName( "relType1" ) );
+        tx.success();
+        tx.finish();
+
+        tx = db.beginTx();
+        node1.delete();
+        tx.success();
+        try
+        {
+            // Will throw exception, causing the tx to be rolledback.
+            tx.finish();
+        }
+        catch ( Exception nothingToSeeHereMoveAlong )
+        {
+            // InvalidRecordException coming, node1 has rels
+        }
+        /*
+         *  The damage has already been done. The following just makes sure
+         *  the corrupting tx is flushed to disk, since we will exit
+         *  uncleanly.
+         */
+        tx = db.beginTx();
+        node1.setProperty( "foo", "bar" );
+        tx.success();
+        tx.finish();
     }
 }

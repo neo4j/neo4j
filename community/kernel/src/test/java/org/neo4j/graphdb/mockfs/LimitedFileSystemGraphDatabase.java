@@ -19,14 +19,12 @@
  */
 package org.neo4j.graphdb.mockfs;
 
-import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.test.ImpermanentGraphDatabase;
 
-public class LimitedFileSystemGraphDatabase extends EmbeddedGraphDatabase
+public class LimitedFileSystemGraphDatabase extends ImpermanentGraphDatabase
 {
-
     private LimitedFilesystemAbstraction fs;
-    private int runOutAfter;
 
     public LimitedFileSystemGraphDatabase( String storeDir )
     {
@@ -38,7 +36,6 @@ public class LimitedFileSystemGraphDatabase extends EmbeddedGraphDatabase
     {
         return fs = new LimitedFilesystemAbstraction( super.createFileSystemAbstraction() );
     }
-
 
     public void runOutOfDiskSpaceNao()
     {

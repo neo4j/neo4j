@@ -19,120 +19,126 @@
  */
 package org.neo4j.kernel.logging;
 
-import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.kernel.impl.util.StringLogger;
-
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.kernel.impl.util.StringLogger;
+
 /**
- * Buffers all messages sent to it, and is able to 
- * replay those messages into another StringLogger.
+ * Buffers all messages sent to it, and is able to replay those messages into
+ * another StringLogger.
  * 
- * This can be used to start up services that need logging
- * when they start, but where, for one reason or another, we
- * have not yet set up proper logging in the application lifecycle.
+ * This can be used to start up services that need logging when they start, but
+ * where, for one reason or another, we have not yet set up proper logging in
+ * the application lifecycle.
  * 
- * This will replay messages in the order they are recieved, *however*, 
- * it will not preserve the time stamps of the original messages.
+ * This will replay messages in the order they are recieved, *however*, it will
+ * not preserve the time stamps of the original messages.
  * 
- * You should not use this for logging messages where the time stamps are 
+ * You should not use this for logging messages where the time stamps are
  * important.
  */
-public class BufferingLogger extends StringLogger {
-
-    private static class LogMessage 
+public class BufferingLogger extends StringLogger
+{
+    private static class LogMessage
     {
-        public LogMessage(String message, Throwable throwable, boolean flush) 
+        public LogMessage( String message, Throwable throwable, boolean flush )
         {
             this.message = message;
             this.throwable = throwable;
             this.flush = flush;
         }
-        
+
         public String message;
         public Throwable throwable;
         public boolean flush;
     }
-    
+
     private List<LogMessage> buffer = new ArrayList<LogMessage>();
-    
+
     @Override
-    public void logMessage(String msg)
+    public void logMessage( String msg )
     {
-        logMessage(msg, null);
+        logMessage( msg, null );
     }
 
     @Override
-    public void logMessage(String msg, Throwable throwable)
+    public void logMessage( String msg, Throwable throwable )
     {
-        logMessage(msg, throwable, false);
+        logMessage( msg, throwable, false );
     }
 
-	@Override
-	public void logMessage(String msg, boolean flush) {
-		logMessage(msg, null, flush);
-	}
+    @Override
+    public void logMessage( String msg, boolean flush )
+    {
+        logMessage( msg, null, flush );
+    }
 
-	@Override
-	public void logMessage(String msg, Throwable cause, boolean flush) {
-		buffer.add(new LogMessage(msg, cause, flush));
-	}
+    @Override
+    public void logMessage( String msg, Throwable cause, boolean flush )
+    {
+        buffer.add( new LogMessage( msg, cause, flush ) );
+    }
 
-	@Override
-	public void logLongMessage(String msg, Visitor<LineLogger> source,
-			boolean flush) {
-		source.visit(new LineLoggerImpl(this));
-	}
+    @Override
+    public void logLongMessage( String msg, Visitor<LineLogger> source, boolean flush )
+    {
+        source.visit( new LineLoggerImpl( this ) );
+    }
 
-	@Override
-	public void addRotationListener(Runnable listener) {
-		throw new RuntimeException("Not implemented");
-	}
+    @Override
+    public void addRotationListener( Runnable listener )
+    {
+    }
 
-	@Override
-	protected void logLine(String line) {
-		logMessage(line);
-	}
+    @Override
+    protected void logLine( String line )
+    {
+        logMessage( line );
+    }
 
-	@Override
-	public void flush() {
-		logMessage("", true);
-	}
+    @Override
+    public void flush()
+    {
+        logMessage( "", true );
+    }
 
     @Override
     public void close()
     {
         // no-op
     }
-    
+
     /**
      * Replays buffered messages and clears the buffer.
      */
-    public void replayInto(StringLogger other) 
+    public void replayInto( StringLogger other )
     {
         List<LogMessage> oldBuffer = buffer;
         buffer = new ArrayList<LogMessage>();
-        
-        for(LogMessage message : oldBuffer) 
+
+        for ( LogMessage message : oldBuffer )
         {
             if ( message.throwable != null )
-                other.logMessage(message.message, message.throwable, message.flush);
+                other.logMessage( message.message, message.throwable, message.flush );
             else
                 other.logMessage( message.message, message.flush );
         }
     }
-    
-    public String toString() 
+
+    @Override
+    public String toString()
     {
         StringWriter stringWriter = new StringWriter();
-        PrintWriter sb = new PrintWriter(stringWriter);
-        for(LogMessage message : buffer) 
+        PrintWriter sb = new PrintWriter( stringWriter );
+        for ( LogMessage message : buffer )
         {
-            sb.println(message.message);
-            if (message.throwable != null) message.throwable.printStackTrace(sb);
+            sb.println( message.message );
+            if ( message.throwable != null )
+                message.throwable.printStackTrace( sb );
         }
         return stringWriter.toString();
     }

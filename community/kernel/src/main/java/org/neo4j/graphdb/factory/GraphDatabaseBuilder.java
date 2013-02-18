@@ -46,7 +46,6 @@ public class GraphDatabaseBuilder
     }
 
     DatabaseCreator creator;
-
     Map<String, String> config = new HashMap<String, String>();
 
     public GraphDatabaseBuilder( DatabaseCreator creator )
@@ -87,6 +86,7 @@ public class GraphDatabaseBuilder
      *             <p/>
      *             Set unvalidated config option
      */
+    @Deprecated
     public GraphDatabaseBuilder setConfig( String name, String value )
     {
         if ( value == null )

@@ -45,30 +45,30 @@ import org.objectweb.jotm.Jotm;
 
 public class UseJOTMAsTxManagerIT
 {
+    private final TransactionEventHandler<Object> failsBeforeCommitTransactionHandler = new TransactionEventHandler<Object>()
+    {
 
-    private TransactionEventHandler<Object> failsBeforeCommitTransactionHandler = new TransactionEventHandler<Object>(){
+        @Override
+        public Object beforeCommit( TransactionData data ) throws Exception
+        {
+            throw new RuntimeException("LURING!");
+        }
 
-                @Override
-                public Object beforeCommit( TransactionData data ) throws Exception
-                {
-                    throw new RuntimeException("LURING!");
-                }
+        @Override
+        public void afterCommit( TransactionData data, Object state )
+        {
+            // TODO Auto-generated method stub
+            
+        }
 
-                @Override
-                public void afterCommit( TransactionData data, Object state )
-                {
-                    // TODO Auto-generated method stub
-                    
-                }
-
-                @Override
-                public void afterRollback( TransactionData data, Object state )
-                {
-                    // TODO Auto-generated method stub
-                    
-                }
-                
-            };
+        @Override
+        public void afterRollback( TransactionData data, Object state )
+        {
+            // TODO Auto-generated method stub
+            
+        }
+        
+    };
 
     // TODO: This is meant to be a documented test case.
     /**

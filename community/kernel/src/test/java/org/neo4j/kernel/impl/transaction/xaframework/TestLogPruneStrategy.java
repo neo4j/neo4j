@@ -21,13 +21,12 @@ package org.neo4j.kernel.impl.transaction.xaframework;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static junit.framework.Assert.assertFalse;
-import static junit.framework.Assert.assertTrue;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
@@ -37,15 +36,14 @@ import java.util.Map;
 import java.util.Set;
 
 import org.junit.Test;
-import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.XidImpl;
 import org.neo4j.kernel.impl.transaction.xaframework.LogExtractor.LogLoader;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
 public class TestLogPruneStrategy
 {
-    private static final FileSystemAbstraction FS = new DefaultFileSystemAbstraction();
+    private final FileSystemAbstraction FS = new EphemeralFileSystemAbstraction();
     
     @Test
     public void noPruning() throws Exception
@@ -109,13 +107,13 @@ public class TestLogPruneStrategy
     @Test
     public void pruneByFileSize() throws Exception
     {
-        int maxSize = MockedLogLoader.MAX_LOG_SIZE*5;
+        int maxSize = MAX_LOG_SIZE*5;
         MockedLogLoader log = new MockedLogLoader( LogPruneStrategies.totalFileSize( FS, maxSize ) );
         
         for ( int i = 0; i < 100; i++ )
         {
             log.addTransactionsUntilRotationHappens();
-            assertTrue( log.getTotalSizeOfAllExistingLogFiles() < (maxSize+MockedLogLoader.MAX_LOG_SIZE) );
+            assertTrue( log.getTotalSizeOfAllExistingLogFiles() < (maxSize+MAX_LOG_SIZE) );
         }
     }
     
@@ -146,7 +144,7 @@ public class TestLogPruneStrategy
          * Prune 0 in the example above
          */
         
-        int seconds = 2;
+        int seconds = 1;
         int millisToKeep = (int) (SECONDS.toMillis( seconds ) / 10);
         MockedLogLoader log = new MockedLogLoader( LogPruneStrategies.transactionTimeSpan( FS, millisToKeep, MILLISECONDS ) );
         
@@ -158,6 +156,7 @@ public class TestLogPruneStrategy
             if ( log.addTransaction( 15, lastTimestamp ) )
             {
                 assertLogRangeByTimestampExists( log, millisToKeep, lastTimestamp );
+                System.out.println( "assert" );
                 if ( System.currentTimeMillis() > end )
                     break;
             }
@@ -226,21 +225,21 @@ public class TestLogPruneStrategy
         assertTrue( log.getHighestLogVersion() >= to );
         for ( long i = 0; i < from; i++ )
             assertFalse( "Log v" + i + " shouldn't exist when highest version is " + log.getHighestLogVersion() +
-                    " and prune strategy " + log.pruning, log.getFileName( i ).exists() );
+                    " and prune strategy " + log.pruning, FS.fileExists( log.getFileName( i ) ) );
         
         for ( long i = from; i <= to; i++ )
         {
             File file = log.getFileName( i );
             assertTrue( "Log v" + i + " should exist when highest version is " + log.getHighestLogVersion() +
-                    " and prune strategy " + log.pruning, file.exists() );
+                    " and prune strategy " + log.pruning, FS.fileExists( file ) );
             if ( empty.contains( i ) )
             {
-                assertEquals( "Log v" + i + " should be empty", LogIoUtils.LOG_HEADER_SIZE, file.length() );
+                assertEquals( "Log v" + i + " should be empty", LogIoUtils.LOG_HEADER_SIZE, FS.getFileSize( file ) );
                 empty.remove( i );
             }
             else
                 assertTrue( "Log v" + i + " should be at least size " + log.getLogSize(),
-                        file.length() >= log.getLogSize() );
+                        FS.getFileSize( file ) >= log.getLogSize() );
         }
         assertTrue( "Expected to find empty logs: " + empty, empty.isEmpty() );
     }
@@ -253,20 +252,21 @@ public class TestLogPruneStrategy
         return result;
     }
 
+    private static final int MAX_LOG_SIZE = 1000;
+    private static final byte[] RESOURCE_XID = new byte[] { 5,6,7,8,9 };
+    
     /**
      * A subset of what XaLogicaLog is. It's a LogLoader, add transactions to it's active log file,
      * and also rotate when max file size is reached. It uses the real xa command
      * serialization/deserialization so it's only the {@link LogLoader} aspect that is mocked.
      */
-    private static class MockedLogLoader implements LogLoader
+    private class MockedLogLoader implements LogLoader
     {
-        private static final int MAX_LOG_SIZE = 1000;
-        private static final byte[] RESOURCE_XID = new byte[] { 5,6,7,8,9 };
         private long version;
         private long tx;
-        private File baseFile;
-        private ByteBuffer activeBuffer;
-        private int identifier = 1;
+        private final File baseFile;
+        private final ByteBuffer activeBuffer;
+        private final int identifier = 1;
         private final LogPruneStrategy pruning;
         private final Map<Long, Long> lastCommittedTxs = new HashMap<Long, Long>();
         private final Map<Long, Long> timestamps = new HashMap<Long, Long>();
@@ -282,9 +282,7 @@ public class TestLogPruneStrategy
             this.logSize = logSize;
             this.pruning = pruning;
             activeBuffer = ByteBuffer.allocate( logSize*10 );
-            File directory = TargetDirectory.forTest( TestLogPruneStrategy.class ).directory( "logs", true );
-            directory.mkdirs();
-            baseFile = new File( directory, "log" );
+            baseFile = new File( "target/test-data/", "log" );
             clearAndWriteHeader();
         }
         
@@ -372,7 +370,7 @@ public class TestLogPruneStrategy
             try
             {
                 buffer.flip();
-                channel = new RandomAccessFile( fileName, "rw" ).getChannel();
+                channel = FS.open( fileName, "rw" );
                 channel.write( buffer );
             }
             finally
@@ -388,8 +386,8 @@ public class TestLogPruneStrategy
             for ( long version = getHighestLogVersion()-1; version >= 0; version-- )
             {
                 File file = getFileName( version );
-                if ( file.exists() )
-                    size += file.length();
+                if ( FS.fileExists( file ) )
+                    size += FS.getFileSize( file );
                 else
                     break;
             }
@@ -405,7 +403,7 @@ public class TestLogPruneStrategy
             while ( lower >= 0 )
             {
                 File file = getFileName( lower-1 );
-                if ( !file.exists() )
+                if ( !FS.fileExists( file ) )
                     break;
                 else
                     lower--;
