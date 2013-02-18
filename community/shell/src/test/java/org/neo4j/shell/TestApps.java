@@ -27,10 +27,13 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.util.FileUtils;
+import org.neo4j.shell.impl.CollectingOutput;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.Serializable;
+import java.rmi.RemoteException;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -392,5 +395,12 @@ public class TestApps extends AbstractShellTest
             allStrings[i++] = entry.getValue().toString();
         }
         executeCommand( client, "env", allStrings );
+    }
+
+    @Test
+    public void canExecuteCypherWithShellVariables() throws Exception {
+        Map<String, Serializable> variables = MapUtil.<String,Serializable>genericMap( "id", 0 );
+        ShellClient client = ShellLobby.newClient( shellServer, variables );
+        executeCommand( client, "start n=node({id}) return n;", "1 row" );
     }
 }
