@@ -92,9 +92,9 @@ public class TestXa
 
     private File path()
     {
-        String path = "/xatest";
+        String path = "xatest";
         File file = new File( path );
-        file.mkdirs();
+        fileSystem.mkdirs( file );
         return file;
     }
 
@@ -138,112 +138,30 @@ public class TestXa
         log = Logger
                 .getLogger( "org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource" );
         log.setLevel( level );
-        File file = file( "neo" );
-        if ( file.exists() )
+        
+        for ( String file : new String[] {
+                "neo",
+                "neo.nodestore.db",
+                "neo.propertystore.db",
+                "neo.propertystore.db.index",
+                "neo.propertystore.db.index.keys",
+                "neo.propertystore.db.strings",
+                "neo.propertystore.db.arrays",
+                "neo.relationshipstore.db",
+                "neo.relationshiptypestore.db",
+                "neo.relationshiptypestore.db.names",
+        } )
         {
-            assertTrue( file.delete() );
+            fileSystem.deleteFile( file( file ) );
+            fileSystem.deleteFile( file( file + ".id" ) );
         }
-        file = file( "neo.id" );
-        if ( file.exists() )
-        {
-            assertTrue( file.delete() );
-        }
-        file = file( "neo.nodestore.db" );
-        if ( file.exists() )
-        {
-            assertTrue( file.delete() );
-        }
-        file = file( "neo.nodestore.db.id" );
-        if ( file.exists() )
-        {
-            assertTrue( file.delete() );
-        }
-        file = file( "neo.propertystore.db" );
-        if ( file.exists() )
-        {
-            assertTrue( file.delete() );
-        }
-        file = file( "neo.propertystore.db.id" );
-        if ( file.exists() )
-        {
-            assertTrue( file.delete() );
-        }
-        file =file( "neo.propertystore.db.index" );
-        if ( file.exists() )
-        {
-            assertTrue( file.delete() );
-        }
-        file = file( "neo.propertystore.db.index.id" );
-        if ( file.exists() )
-        {
-            assertTrue( file.delete() );
-        }
-        file = file( "neo.propertystore.db.index.keys" );
-        if ( file.exists() )
-        {
-            assertTrue( file.delete() );
-        }
-        file = file( "neo.propertystore.db.index.keys.id" );
-        if ( file.exists() )
-        {
-            assertTrue( file.delete() );
-        }
-        file = file( "neo.propertystore.db.strings" );
-        if ( file.exists() )
-        {
-            assertTrue( file.delete() );
-        }
-        file = file( "neo.propertystore.db.strings.id" );
-        if ( file.exists() )
-        {
-            assertTrue( file.delete() );
-        }
-        file = file( "neo.propertystore.db.arrays" );
-        if ( file.exists() )
-        {
-            assertTrue( file.delete() );
-        }
-        file = file( "neo.propertystore.db.arrays.id" );
-        if ( file.exists() )
-        {
-            assertTrue( file.delete() );
-        }
-        file = file( "neo.relationshipstore.db" );
-        if ( file.exists() )
-        {
-            assertTrue( file.delete() );
-        }
-        file = file( "neo.relationshipstore.db.id" );
-        if ( file.exists() )
-        {
-            assertTrue( file.delete() );
-        }
-        file = file( "neo.relationshiptypestore.db" );
-        if ( file.exists() )
-        {
-            assertTrue( file.delete() );
-        }
-        file = file( "neo.relationshiptypestore.db.id" );
-        if ( file.exists() )
-        {
-            assertTrue( file.delete() );
-        }
-        file = file( "neo.relationshiptypestore.db.names" );
-        if ( file.exists() )
-        {
-            assertTrue( file.delete() );
-        }
-        file =  file( "neo.relationshiptypestore.db.names.id" );
-        if ( file.exists() )
-        {
-            assertTrue( file.delete() );
-        }
-        file = path();
-        for ( File nioFile : file.listFiles() )
+        
+        File file = new File( "." );
+        for ( File nioFile : fileSystem.listFiles( file ) )
         {
             if ( nioFile.getName().startsWith( "nioneo_logical.log" ) )
             {
-                assertTrue( "Couldn't delete '" + nioFile.getPath() + "'", nioFile.delete() );
+                assertTrue( "Couldn't delete '" + nioFile.getPath() + "'", fileSystem.deleteFile( nioFile ) );
             }
         }
     }
@@ -416,11 +334,11 @@ public class TestXa
 
         // Since these tests fiddle with copying logical logs and such themselves
         // make sure all history logs are removed before opening the store
-        for ( File file : path().listFiles() )
+        for ( File file : fileSystem.listFiles( path() ) )
         {
             if ( file.isFile() && file.getName().startsWith( LOGICAL_LOG_DEFAULT_NAME + ".v" ) )
             {
-                file.delete();
+                fileSystem.deleteFile( file );
             }
         }
 
