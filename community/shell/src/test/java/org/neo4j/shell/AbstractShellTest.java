@@ -27,6 +27,7 @@ import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 
 import java.io.Serializable;
 import java.rmi.RemoteException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -64,7 +65,7 @@ public abstract class AbstractShellTest
     {
         db = newDb();
         shellServer = newServer( db );
-        shellClient = ShellLobby.newClient( shellServer );
+        shellClient = ShellLobby.newClient( shellServer, Collections.<String, Serializable>singletonMap( "quiet", true ) );
     }
     
     protected GraphDatabaseAPI newDb()
@@ -168,7 +169,7 @@ public abstract class AbstractShellTest
             String... theseLinesMustExistRegEx ) throws Exception
     {
         CollectingOutput output = new CollectingOutput();
-        client.evaluate( command, output );
+        client.evaluate(command, output);
 
         for ( String lineThatMustExist : theseLinesMustExistRegEx )
         {

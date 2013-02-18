@@ -38,6 +38,7 @@ public class BashVariableInterpreter
 {
 	private static final Map<String, Replacer> REPLACERS =
 		new HashMap<String, Replacer>();
+/*
 	static
 	{
 		REPLACERS.put( "d", new DateReplacer( "EEE MMM dd" ) );
@@ -52,7 +53,7 @@ public class BashVariableInterpreter
 		REPLACERS.put( "v", new StaticReplacer( "1.0-b6" ) );
 		REPLACERS.put( "V", new StaticReplacer( "1.0-b6" ) );
 	}
-	
+*/
 	/**
 	 * Adds a customized replacer for a certain variable.
 	 * @param key the variable key, f.ex. "t".

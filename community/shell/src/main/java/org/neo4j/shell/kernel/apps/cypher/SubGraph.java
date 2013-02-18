@@ -17,12 +17,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.shell.kernel.apps;
+package org.neo4j.shell.kernel.apps.cypher;
 
-import org.neo4j.helpers.Service;
-import org.neo4j.shell.App;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
 
-@Service.Implementation( App.class )
-public class Create extends Start
+public interface SubGraph
 {
+
+    Iterable<Node> getNodes();
+
+    Iterable<Relationship> getRelationships();
+
+    Node getReferenceNode();
+
+    boolean contains( Relationship relationship );
 }

@@ -227,7 +227,10 @@ public abstract class AbstractClient implements ShellClient
         Welcome welcome = server.welcome( initialSession );
         id = welcome.getId();
         prompt = welcome.getPrompt();
-        getOutput().println( welcome.getMessage() );
+        if ( !welcome.getMessage().isEmpty() )
+        {
+            getOutput().println( welcome.getMessage() );
+        }
     }
 
     protected String readLine( String prompt )
