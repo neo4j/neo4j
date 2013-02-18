@@ -7,14 +7,14 @@
     <ROW Property="ADMIN_URL" Value="http://localhost:7474/"/>
     <ROW Property="AI_UPGRADE" Value="No"/>
     <ROW Property="ALLUSERS" Value="2"/>
-    <ROW Property="ARPCOMMENTS" Value="This is the installer for Neo4j Coordinator, an Apache Zookeeper server used to coordinate neo4j clusters." ValueLocId="*"/>
+    <ROW Property="ARPCOMMENTS" Value="This is the installer for Neo4j Arbiter." ValueLocId="*"/>
     <ROW Property="ARPPRODUCTICON" Value="icon.exe" Type="8"/>
     <ROW Property="ARPURLINFOABOUT" Value="http://neo4j.org"/>
     <ROW Property="INSTALL_DIR" Value="NOT_SET"/>
     <ROW Property="Manufacturer" Value="Neo Technology" ValueLocId="*"/>
     <ROW Property="ProductCode" Value="1033:{1F1A3D98-501E-4DD1-AE7D-7F4CE2173CB0} " Type="16"/>
     <ROW Property="ProductLanguage" Value="1033"/>
-    <ROW Property="ProductName" Value="Neo4j Coordinator" ValueLocId="*"/>
+    <ROW Property="ProductName" Value="Neo4j Arbiter" ValueLocId="*"/>
     <ROW Property="ProductVersion" Value="1.5"/>
     <ROW Property="SecureCustomProperties" Value="OLDPRODUCTS;AI_NEWERPRODUCTFOUND"/>
     <ROW Property="UpgradeCode" Value="{9E5ED25C-364A-45AA-91A8-AC5AB08D2A28}"/>
@@ -29,17 +29,17 @@
     <ROW Directory="data_Dir" Directory_Parent="APPDIR" DefaultDir="data"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiCompsComponent">
-    <ROW Component="Neo4j_Coordinator.exe" ComponentId="{F24CFC3C-15F9-4252-840E-33B358E514FC}" Directory_="APPDIR" Attributes="0" KeyPath="Neo4j_Coordinator.exe"/>
+    <ROW Component="Neo4j_Arbiter.exe" ComponentId="{F24CFC3C-15F9-4252-840E-33B358E514FC}" Directory_="APPDIR" Attributes="0" KeyPath="Neo4j_Arbiter.exe"/>
     <ROW Component="Neo4j_Server" ComponentId="{A64FC314-09B0-4BE2-89D5-682932D20E4D}" Directory_="Neo4j_Server_Dir" Attributes="0"/>
     <ROW Component="ProductInformation" ComponentId="{73351CE7-EF52-412F-ABFB-E3DA2C90752A}" Directory_="APPDIR" Attributes="4" KeyPath="ProductName_"/>
     <ROW Component="data" ComponentId="{2113B845-A06F-435E-A8FB-85C5A7282F2C}" Directory_="data_Dir" Attributes="0"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiFeatsComponent">
-    <ROW Feature="MainFeature" Title="MainFeature" Description="Description" Display="1" Level="1" Directory_="APPDIR" Attributes="0" Components="Neo4j_Coordinator.exe Neo4j_Server ProductInformation data"/>
+    <ROW Feature="MainFeature" Title="MainFeature" Description="Description" Display="1" Level="1" Directory_="APPDIR" Attributes="0" Components="Neo4j_Arbiter.exe Neo4j_Server ProductInformation data"/>
     <ATTRIBUTE name="CurrentFeature" value="MainFeature"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiFilesComponent">
-    <ROW File="Neo4j_Coordinator.exe" Component_="Neo4j_Coordinator.exe" FileName="Neo4jC~2.exe|Neo4j Coordinator.exe" Attributes="0" SourcePath="&lt;AI_STUBS_32U&gt;aijcl.exe" SelfReg="false" DigSign="true"/>
+    <ROW File="Neo4j_Arbiter.exe" Component_="Neo4j_Arbiter.exe" FileName="Neo4jA~2.exe|Neo4j Arbiter.exe" Attributes="0" SourcePath="&lt;AI_STUBS_32U&gt;aijcl.exe" SelfReg="false" DigSign="true"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.BuildComponent">
     <ROW BuildKey="Build" BuildName="Build" BuildOrder="1" BuildType="1" PackageFolder="BuildSetupFiles" PackageFileName="installer" Languages="en" InstallationType="4"/>
@@ -101,18 +101,18 @@
     <ROW Name="icon.exe" SourcePath="icon.ico" Index="0"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiIniFileComponent">
-    <ROW IniFile="Application_Type_1" FileName="Neo4jC~3.ini|Neo4j Coordinator.ini" DirProperty="APPDIR" Section="Application" Key="Application Type" Value="cmdline" Action="0" Component_="Neo4j_Coordinator.exe"/>
-    <ROW IniFile="Class_Path_1" FileName="Neo4jC~3.ini|Neo4j Coordinator.ini" DirProperty="APPDIR" Section="Class Path" Key="Class Path" Value="[APPDIR]\bin\*.jar;" Action="0" Component_="Neo4j_Coordinator.exe"/>
-    <ROW IniFile="Cmd_1" FileName="Neo4jC~3.ini|Neo4j Coordinator.ini" DirProperty="APPDIR" Section="Application" Key="Cmd" Value="&quot;Neo4jCoordinator&quot;" Action="0" Component_="Neo4j_Coordinator.exe"/>
-    <ROW IniFile="JVM_Source_1" FileName="Neo4jC~3.ini|Neo4j Coordinator.ini" DirProperty="APPDIR" Section="Java Runtime Environment" Key="JVM Source" Value="favor_JDK" Action="0" Component_="Neo4j_Coordinator.exe"/>
-    <ROW IniFile="JVM_Type_1" FileName="Neo4jC~3.ini|Neo4j Coordinator.ini" DirProperty="APPDIR" Section="Java Runtime Environment" Key="JVM Type" Value="favor_server" Action="0" Component_="Neo4j_Coordinator.exe"/>
-    <ROW IniFile="Main_Class_1" FileName="Neo4jC~3.ini|Neo4j Coordinator.ini" DirProperty="APPDIR" Section="Java Runtime Environment" Key="Main Class" Value="org.neo4j.wrapper.NeoServiceWrapper" Action="0" Component_="Neo4j_Coordinator.exe"/>
-    <ROW IniFile="Maximum_Version_1" FileName="Neo4jC~3.ini|Neo4j Coordinator.ini" DirProperty="APPDIR" Section="Java Runtime Environment" Key="Maximum Version" Value="any" Action="0" Component_="Neo4j_Coordinator.exe"/>
-    <ROW IniFile="Minimum_Version_1" FileName="Neo4jC~3.ini|Neo4j Coordinator.ini" DirProperty="APPDIR" Section="Java Runtime Environment" Key="Minimum Version" Value="1.4" Action="0" Component_="Neo4j_Coordinator.exe"/>
+    <ROW IniFile="Application_Type_1" FileName="Neo4jA~3.ini|Neo4j Arbiter.ini" DirProperty="APPDIR" Section="Application" Key="Application Type" Value="cmdline" Action="0" Component_="Neo4j_Arbiter.exe"/>
+    <ROW IniFile="Class_Path_1" FileName="Neo4jA~3.ini|Neo4j Arbiter.ini" DirProperty="APPDIR" Section="Class Path" Key="Class Path" Value="[APPDIR]\bin\*.jar;" Action="0" Component_="Neo4j_Arbiter.exe"/>
+    <ROW IniFile="Cmd_1" FileName="Neo4jA~3.ini|Neo4j Arbiter.ini" DirProperty="APPDIR" Section="Application" Key="Cmd" Value="&quot;Neo4jArbiter&quot;" Action="0" Component_="Neo4j_Arbiter.exe"/>
+    <ROW IniFile="JVM_Source_1" FileName="Neo4jA~3.ini|Neo4j Arbiter.ini" DirProperty="APPDIR" Section="Java Runtime Environment" Key="JVM Source" Value="favor_JDK" Action="0" Component_="Neo4j_Arbiter.exe"/>
+    <ROW IniFile="JVM_Type_1" FileName="Neo4jA~3.ini|Neo4j Arbiter.ini" DirProperty="APPDIR" Section="Java Runtime Environment" Key="JVM Type" Value="favor_server" Action="0" Component_="Neo4j_Arbiter.exe"/>
+    <ROW IniFile="Main_Class_1" FileName="Neo4jA~3.ini|Neo4j Arbiter.ini" DirProperty="APPDIR" Section="Java Runtime Environment" Key="Main Class" Value="org.neo4j.wrapper.NeoServiceWrapper" Action="0" Component_="Neo4j_Arbiter.exe"/>
+    <ROW IniFile="Maximum_Version_1" FileName="Neo4jA~3.ini|Neo4j Arbiter.ini" DirProperty="APPDIR" Section="Java Runtime Environment" Key="Maximum Version" Value="any" Action="0" Component_="Neo4j_Arbiter.exe"/>
+    <ROW IniFile="Minimum_Version_1" FileName="Neo4jA~3.ini|Neo4j Arbiter.ini" DirProperty="APPDIR" Section="Java Runtime Environment" Key="Minimum Version" Value="1.4" Action="0" Component_="Neo4j_Arbiter.exe"/>
     <ROW IniFile="URL" FileName="Docume~1.url|Documentation.url" DirProperty="Neo4j_Server_Dir" Section="InternetShortcut" Key="URL" Value="file://[APPDIR]doc\manual\html\index.html" Action="0" Component_="Neo4j_Server"/>
     <ROW IniFile="URL_1" FileName="JavaAP~1.url|Java API documentation.url" DirProperty="Neo4j_Server_Dir" Section="InternetShortcut" Key="URL" Value="file://[APPDIR]doc\java\api\index.html" Action="0" Component_="Neo4j_Server"/>
     <ROW IniFile="URL_2" FileName="Admini~1.url|Administration.url" DirProperty="Neo4j_Server_Dir" Section="InternetShortcut" Key="URL" Value="[ADMIN_URL]" Action="0" Component_="Neo4j_Server"/>
-    <ROW IniFile="Virtual_Machine_Parameters_1" FileName="Neo4jC~3.ini|Neo4j Coordinator.ini" DirProperty="APPDIR" Section="Java Runtime Environment" Key="Virtual Machine Parameters" Value="-DserverMainClass=org.apache.zookeeper.server.quorum.QuorumPeerMain -DserverClasspath=lib/zoo*.jar;system/coordinator/lib/*.jar -Djava.util.logging.config.file=conf/windows-wrapper-logging.properties -DworkingDir=&quot;[APPDIR]&quot; -DconfigFile=conf\coord-wrapper.conf " Action="0" Component_="Neo4j_Coordinator.exe"/>
+    <ROW IniFile="Virtual_Machine_Parameters_1" FileName="Neo4jA~3.ini|Neo4j Arbiter.ini" DirProperty="APPDIR" Section="Java Runtime Environment" Key="Virtual Machine Parameters" Value="-Djava.util.logging.config.file=conf/windows-wrapper-logging.properties -DworkingDir=&quot;[APPDIR]&quot; -DconfigFile=conf\arbiter-wrapper.conf -DserverMainClass=org.neo4j.server.enterprise.StandaloneClusterClient -DserverClasspath=lib/*.jar;system/lib/*.jar" Action="0" Component_="Neo4j_Arbiter.exe"/>
     <ROW IniFile="WorkingDirectory" FileName="Docume~1.url|Documentation.url" DirProperty="Neo4j_Server_Dir" Section="InternetShortcut" Key="WorkingDirectory" Value="[Neo4j_Server_Dir]" Action="0" Component_="Neo4j_Server"/>
     <ROW IniFile="WorkingDirectory_1" FileName="JavaAP~1.url|Java API documentation.url" DirProperty="Neo4j_Server_Dir" Section="InternetShortcut" Key="WorkingDirectory" Value="[Neo4j_Server_Dir]" Action="0" Component_="Neo4j_Server"/>
     <ROW IniFile="WorkingDirectory_2" FileName="Admini~1.url|Administration.url" DirProperty="Neo4j_Server_Dir" Section="InternetShortcut" Key="WorkingDirectory" Value="[Neo4j_Server_Dir]" Action="0" Component_="Neo4j_Server"/>
@@ -132,7 +132,7 @@
     <ROW Action="SetInstallDir" Condition="INSTALL_DIR=&quot;NOT_SET&quot;" Sequence="101"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiJavaComponent">
-    <ROW Name="Neo4j Coordinator.exe" Launcher="Neo4j_Coordinator.exe" MainClass="Main_Class_1" ClassPath="Class_Path_1" VMParams="Virtual_Machine_Parameters_1" JREMin="Minimum_Version_1" JREMax="Maximum_Version_1" AppType="Application_Type_1" JVMType="JVM_Type_1" MinusList="#Neo4j_Coordinator.exe;APPDIR;" MacDescription="[|CurrentJavaProductName] [|ProductVersion] © [|Manufacturer], Inc, 2011" MacBundleId="com.[|Manufacturer].[|ProductName].[|CurrentJavaProductName]" JVMSourcePreference="JVM_Source_1" UACExecutionLevel="0" CommandLineArguments="Cmd_1"/>
+    <ROW Name="Neo4j Coordinator.exe" Launcher="Neo4j_Arbiter.exe" MainClass="Main_Class_1" ClassPath="Class_Path_1" VMParams="Virtual_Machine_Parameters_1" JREMin="Minimum_Version_1" JREMax="Maximum_Version_1" AppType="Application_Type_1" JVMType="JVM_Type_1" MinusList="#Neo4j_Arbiter.exe;APPDIR;" MacDescription="[|CurrentJavaProductName] [|ProductVersion] © [|Manufacturer], Inc, 2011" MacBundleId="com.[|Manufacturer].[|ProductName].[|CurrentJavaProductName]" JVMSourcePreference="JVM_Source_1" UACExecutionLevel="0" CommandLineArguments="Cmd_1"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiLaunchConditionsComponent">
     <ROW Condition="VersionNT" Description="[ProductName] cannot be installed on [WindowsType9XDisplay]" DescriptionLocId="AI.LaunchCondition.No9X" IsPredefined="true" Builds="Build"/>
@@ -143,10 +143,10 @@
     <ROW Registry="Version" Root="-1" Key="Software\[Manufacturer]\[ProductName]" Name="Version" Value="[ProductVersion]" Component_="ProductInformation"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiServCtrlComponent">
-    <ROW ServiceControl="Neo4j_Coordinator.exe" Name="Neo4jCoordinator" Event="161" Wait="1" Component_="Neo4j_Coordinator.exe"/>
+    <ROW ServiceControl="Neo4j_Arbiter.exe" Name="Neo4jArbiter" Event="161" Wait="1" Component_="Neo4j_Arbiter.exe"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiServInstComponent">
-    <ROW ServiceInstall="Neo4j_Coordinator.exe" Name="Neo4jCoordinator" DisplayName="Neo4j Coordinator" ServiceType="16" StartType="2" ErrorControl="1" Component_="Neo4j_Coordinator.exe" Description="Zookeeper instance to coordinate a Neo4j Cluster"/>
+    <ROW ServiceInstall="Neo4j_Arbiter.exe" Name="Neo4jArbiter" DisplayName="Neo4j Arbiter" ServiceType="16" StartType="2" ErrorControl="1" Component_="Neo4j_Arbiter.exe" Description="Neo4j Arbiter"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiThemeComponent">
     <ATTRIBUTE name="UsedTheme" value="classic"/>
