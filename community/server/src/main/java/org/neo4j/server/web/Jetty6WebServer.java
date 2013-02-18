@@ -546,6 +546,11 @@ public class Jetty6WebServer implements WebServer
             throw new RuntimeException( "unable to use guard, enable guard-insertion in neo4j.properties" );
         }
 
+        if ( jetty == null )
+        {
+            throw new RuntimeException( "Jetty server not started before usage");
+        }
+
         jetty.addLifeCycleListener( new JettyLifeCycleListenerAdapter()
         {
             @Override
