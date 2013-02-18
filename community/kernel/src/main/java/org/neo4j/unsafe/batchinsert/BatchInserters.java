@@ -25,7 +25,6 @@ import java.util.Map;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
-import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
 /**
  * Provides instances of batch inserters.
@@ -121,7 +120,7 @@ public final class BatchInserters
      * @return a {@link GraphDatabaseService} that does not support deletions
      *         and transactions
      */
-    public static GraphDatabaseService batchDatabase( String storeDir, EphemeralFileSystemAbstraction fileSystem )
+    public static GraphDatabaseService batchDatabase( String storeDir, FileSystemAbstraction fileSystem )
     {
         return new BatchGraphDatabaseImpl( storeDir, fileSystem, MapUtil.stringMap() );
     }
@@ -136,7 +135,7 @@ public final class BatchInserters
      *         and transactions
      */
     public static GraphDatabaseService batchDatabase( String storeDir,
-            EphemeralFileSystemAbstraction fileSystem, Map<String, String> config )
+            FileSystemAbstraction fileSystem, Map<String, String> config )
     {
         return new BatchGraphDatabaseImpl( storeDir, fileSystem, config );
     }
