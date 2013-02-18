@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.symbols._
 import org.neo4j.cypher.internal.commands.expressions.{Expression, AggregationExpression}
 import collection.mutable.{Map => MutableMap}
 import org.neo4j.cypher.internal.ExecutionContext
+import org.neo4j.cypher.PlanDescription
 
 // Eager aggregation means that this pipe will eagerly load the whole resulting sub graphs before starting
 // to emit aggregated results.
@@ -90,7 +91,9 @@ class EagerAggregationPipe(source: Pipe, val keyExpressions: Map[String, Express
     }
   }
 
-  override def executionPlanDescription(): String = source.executionPlanDescription() + "\r\n" + "EagerAggregation( keys: [" + oldKeyExpressions.mkString(", ") + "], aggregates: [" + aggregations.mkString(", ") + "])"
+  override def executionPlanDescription =
+    source.executionPlanDescription
+      .andThen("EagerAggregation", "keys" -> oldKeyExpressions, "aggregates" -> aggregations.mapValues(_.toString()))
 
   def throwIfSymbolsMissing(symbols: SymbolTable) {
     keyExpressions.foreach(_._2.throwIfSymbolsMissing(symbols))

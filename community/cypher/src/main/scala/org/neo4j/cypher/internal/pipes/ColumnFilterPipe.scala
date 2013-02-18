@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.commands.expressions.Identifier
 import org.neo4j.cypher.internal.commands.expressions.Identifier.isNamed
 import org.neo4j.cypher.internal.commands.expressions.CachedExpression
 import org.neo4j.cypher.internal.commands.ReturnItem
+import org.neo4j.cypher.PlanDescription
 
 class ColumnFilterPipe(source: Pipe, val returnItems: Seq[ReturnItem])
   extends PipeWithSource(source) {
@@ -47,8 +48,9 @@ class ColumnFilterPipe(source: Pipe, val returnItems: Seq[ReturnItem])
     })
   }
 
-  override def executionPlanDescription(): String =
-    "%s\r\nColumnFilter([%s] => [%s])".format(source.executionPlanDescription(), source.symbols.keys, returnItemNames.mkString(","))
+  override def executionPlanDescription =
+    source.executionPlanDescription
+      .andThen("ColumnFilter", "symKeys" -> source.symbols.keys, "returnItemNames" -> returnItemNames)
 
   def dependencies = Seq()
 

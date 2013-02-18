@@ -110,7 +110,7 @@ public class HTTPLoggingPreparednessRuleTest
         // then
         assertFalse( result );
         assertEquals(
-            String.format( "HTTP log file [%s] does not exist", unwritableDirectory + File.separator + "http.log" ),
+            String.format( "HTTP log directory [%s] does not exist", unwritableDirectory  ),
             rule.getFailureMessage() );
     }
 

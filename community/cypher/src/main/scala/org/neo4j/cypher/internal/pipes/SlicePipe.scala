@@ -50,15 +50,15 @@ class SlicePipe(source:Pipe, skip:Option[Expression], limit:Option[Expression]) 
     }
   }
 
-  override def executionPlanDescription(): String = {
+  override def executionPlanDescription = {
 
-    val info = (skip, limit) match {
-      case (None, Some(l)) => "Limit: " + l.toString()
-      case (Some(s), None) => "Skip: " + s.toString()
-      case (Some(s), Some(l)) => "Skip: " + s.toString() + ", " + "Limit: " + l.toString()
+    val args = (skip, limit) match {
+      case (None, Some(l)) => Seq("limit" -> l)
+      case (Some(s), None) => Seq("skip" -> s)
+      case (Some(s), Some(l)) => Seq("skip" -> s, "limit" -> l)
       case (None, None)=>throw new ThisShouldNotHappenError("Andres Taylor", "A slice pipe that doesn't slice should never exist.")
     }
-    source.executionPlanDescription() + "\r\n" + "Slice(" + info + ")"
+    source.executionPlanDescription.andThen("Slice", args: _*)
   }
 }
 

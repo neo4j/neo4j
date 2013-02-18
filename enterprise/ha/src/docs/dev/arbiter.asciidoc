@@ -1,0 +1,26 @@
+[[arbiter-instances]]
+= Arbiter Instances =
+
+A typical deployment of Neo4j will use a cluster of 3 machines to provide fault-tolerance and read scalability.
+This setup is described in <<ha-setup-tutorial>>.
+
+While having at least 3 instances is necessary for failover to happen in case the master becomes unavailable, it is not
+required for all instances to run the full Neo4j stack, which includes the database engine. Instead, what is called
+arbiter instances can be deployed, which can be regarded as cluster participants that their only role is to take part
+in master elections, with the single purpose of breaking ties in the election process. That makes possible a scenario
+where you have a cluster of 2 Neo4j database instances and an additional arbiter instance and still enjoy tolerance
+of a single failure of either of the 3 instances.
+
+Arbiter instances are configured in the same way as Neo4j HA members are - through the +neo4j.properties+ file in the
+installation's +conf/+ directory. Settings that are not cluster specific are of course ignored, so you can easily
+start up an arbiter instance in place of a properly configured Neo4j instance.
+
+To start an arbiter instance, call
+
+[source,shell]
+----
+neo4j_home$ ./bin/neo4j-arbiter start
+----
+
+You can also stop, install and remove it as a service and ask for it's status in exactly the same way as for neo4j
+instances. See also <<server-installation>>.

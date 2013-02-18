@@ -43,11 +43,11 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService) extends PatternGraphBuil
       (p, getLazyReadonlyQuery(p, columns))
     }
 
-    val executionPlanDescription = pipe.executionPlanDescription()
+    val executionPlanDescription = pipe.executionPlanDescription
 
     new ExecutionPlan {
       def execute(queryContext: QueryContext, params: Map[String, Any]) = func(queryContext, params)
-      def description = executionPlanDescription
+      def description = executionPlanDescription.toString
     }
   }
 
@@ -150,7 +150,7 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService) extends PatternGraphBuil
     val func = (queryContext: QueryContext, params: Map[String, Any]) => {
       val (state, results) = prepareStateAndResult(queryContext, params, pipe)
 
-      new PipeExecutionResult(results, columns, state)
+      new PipeExecutionResult(results, columns, state, pipe.executionPlanDescription.toString)
     }
 
     func
@@ -174,7 +174,7 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService) extends PatternGraphBuil
   private def getEagerReadWriteQuery(pipe: Pipe, columns: List[String]): (QueryContext, Map[String, Any]) => ExecutionResult = {
     val func = (queryContext: QueryContext, params: Map[String, Any]) => {
       val (state, results) = prepareStateAndResult(queryContext, params, pipe)
-      new EagerPipeExecutionResult(results, columns, state, graph)
+      new EagerPipeExecutionResult(results, columns, state, graph, pipe.executionPlanDescription.toString)
     }
 
     func

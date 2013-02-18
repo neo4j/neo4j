@@ -88,7 +88,7 @@ for HA in "${INSTANCES[@]}"; do
 
         echo ha.server_id = $HA                 > $HACONF
         echo ha.server = localhost:600$HA       >>$HACONF
-        echo ha.coordinators = $ZKCLUSTER       >>$HACONF
+        echo ha.upgrade_coordinators = $ZKCLUSTER       >>$HACONF
         echo enable_remote_shell = port=133$HA  >>$HACONF
     fi
 

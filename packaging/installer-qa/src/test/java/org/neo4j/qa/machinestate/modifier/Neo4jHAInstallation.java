@@ -51,7 +51,7 @@ public class Neo4jHAInstallation implements MachineModifier {
 
         driver.setConfig(neo4jConf, "ha.server_id", "" + description.getId());
         driver.setConfig(neo4jConf, "ha.server", description.getIp() + ":6001");
-        driver.setConfig(neo4jConf, "ha.coordinators",
+        driver.setConfig(neo4jConf, "ha.upgrade_coordinators",
                 zkCluster.getAdressString());
 
         driver.setConfig(serverConf, "org.neo4j.server.database.mode", "HA");

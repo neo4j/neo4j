@@ -353,10 +353,10 @@ public class Jetty6WebServer implements WebServer
                 return o2.compareTo( o1 );
             }
         } );
-        
-        if(requestLoggingConfiguration != null)
+
+        if( requestLoggingConfiguration != null )
         {
-        	loadRequestLogging();
+            loadRequestLogging();
         }
 
         mountpoints.addAll( staticContent.keySet() );

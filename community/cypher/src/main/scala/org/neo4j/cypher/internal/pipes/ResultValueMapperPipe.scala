@@ -49,7 +49,7 @@ class ResultValueMapperPipe(source: Pipe) extends PipeWithSource(source) {
     result
   }
 
-  def executionPlanDescription() = source.executionPlanDescription() + "\nResultValueMapping()"
+  def executionPlanDescription() = source.executionPlanDescription.andThen("ResultValueMapper")
 
   def symbols:SymbolTable = new SymbolTable(source.symbols.identifiers.mapValues { (t: CypherType) =>
     t.rewrite {

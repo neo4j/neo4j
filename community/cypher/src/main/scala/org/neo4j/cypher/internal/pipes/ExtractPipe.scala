@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.pipes
 
 import org.neo4j.cypher.internal.symbols._
 import org.neo4j.cypher.internal.commands.expressions.Expression
+import org.neo4j.cypher.PlanDescription
 
 object ExtractPipe {
   def apply(source: Pipe, expressions: Map[String, Expression]): ExtractPipe = source match {
@@ -46,9 +47,11 @@ class ExtractPipe(source: Pipe, val expressions: Map[String, Expression]) extend
     subgraph
   })
 
-  override def executionPlanDescription(): String = source.executionPlanDescription() + "\r\nExtract([" + source.symbols.keys.mkString(",") + "] => [" + expressions.keys.mkString(", ") + "])"
+  override def executionPlanDescription =
+    source.executionPlanDescription
+      .andThen("Extract", "symKeys" -> source.symbols.keys, "exprKeys" -> expressions.keys)
 
-  def throwIfSymbolsMissing(symbols: SymbolTable) {
+  override def throwIfSymbolsMissing(symbols: SymbolTable) {
     expressions.foreach(_._2.throwIfSymbolsMissing(symbols))
   }
 }
