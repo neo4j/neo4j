@@ -22,28 +22,28 @@ package org.neo4j.cypher.internal.parser
 import org.junit.Test
 import v2_0.Index
 import org.neo4j.cypher.internal.commands.expressions.Expression
-import org.neo4j.cypher.internal.commands.{DeleteIndex, CreateIndex}
+import org.neo4j.cypher.internal.commands.{DropIndex, CreateIndex}
 
 
 class IndexTest extends Index with ParserTest {
   @Test def create() {
     implicit val parser = createIndex
 
-    parsing("create index on :MyLabel(prop1, prop2)") or
-    parsing("CREATE INDEX ON :MyLabel (prop1,prop2)") shouldGive
-      CreateIndex("MyLabel", Seq("prop1", "prop2"))
+    parsing("create index on :MyLabel(prop1)") or
+    parsing("CREATE INDEX ON :MyLabel (prop1)") shouldGive
+      CreateIndex("MyLabel", Seq("prop1"))
 
     assertFails("create index on :MyLabel()")
   }
 
-  @Test def delete() {
-    implicit val parser = deleteIndex
+  @Test def drop() {
+    implicit val parser = dropIndex
 
-    parsing("delete index on :MyLabel(prop1, prop2)") or
-    parsing("DELETE INDEX ON :MyLabel (prop1,prop2)") shouldGive
-      DeleteIndex("MyLabel", Seq("prop1", "prop2"))
+    parsing("drop index on :MyLabel(prop1)") or
+    parsing("DROP INDEX ON :MyLabel (prop1)") shouldGive
+      DropIndex("MyLabel", Seq("prop1"))
 
-    assertFails("delete index on :MyLabel()")
+    assertFails("drop index on :MyLabel()")
   }
 
   def expression: Parser[Expression] = ???

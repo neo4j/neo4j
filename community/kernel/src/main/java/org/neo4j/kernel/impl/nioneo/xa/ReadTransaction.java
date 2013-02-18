@@ -455,7 +455,7 @@ class ReadTransaction implements NeoStoreTransaction
     }
     
     @Override
-    public void deleteSchemaRule( long id )
+    public void dropSchemaRule( long id )
     {
         throw readOnlyException();
     }

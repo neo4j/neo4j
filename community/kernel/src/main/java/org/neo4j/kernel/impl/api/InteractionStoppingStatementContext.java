@@ -107,6 +107,13 @@ public class InteractionStoppingStatementContext implements StatementContext
     }
 
     @Override
+    public void dropIndexRule( long labelId, long propertyKey ) throws ConstraintViolationKernelException
+    {
+        assertOperationsAllowed();
+        delegate.dropIndexRule( labelId, propertyKey );
+    }
+
+    @Override
     public Iterable<Long> getIndexRules( long labelId )
     {
         assertOperationsAllowed();

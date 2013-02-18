@@ -95,6 +95,12 @@ public class ReadOnlyStatementContext implements StatementContext
     }
 
     @Override
+    public void dropIndexRule( long labelId, long propertyKey ) throws ConstraintViolationKernelException
+    {
+        throw readOnlyException();
+    }
+
+    @Override
     public Iterable<Long> getIndexRules( long labelId )
     {
         return delegate.getIndexRules( labelId );

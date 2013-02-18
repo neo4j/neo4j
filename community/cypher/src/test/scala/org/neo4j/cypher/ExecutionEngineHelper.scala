@@ -20,19 +20,15 @@
 package org.neo4j.cypher
 
 import internal.commands.AbstractQuery
+import internal.helpers.GraphIcing
 import internal.spi.gdsimpl.TransactionBoundQueryContext
 import org.junit.Before
-import org.neo4j.graphdb.Node
+import org.neo4j.graphdb.{DynamicLabel, Node}
 import org.neo4j.graphdb.DynamicLabel.label
 import collection.JavaConverters._
+import org.neo4j.kernel.GraphDatabaseAPI
 
-trait ExecutionEngineHelper extends GraphDatabaseTestBase {
-
-  implicit class RichNode(n: Node) {
-    def labels: List[String] = n.getLabels.asScala.map(_.name()).toList
-
-    def addLabels(input: String*) = input.foreach(l => n.addLabel(label(l)))
-  }
+trait ExecutionEngineHelper extends GraphDatabaseTestBase with GraphIcing {
 
 
   var engine: ExecutionEngine = null
@@ -46,7 +42,6 @@ trait ExecutionEngineHelper extends GraphDatabaseTestBase {
     val result = engine.execute(query, params.toMap)
     result
   }
-
 
   def parseAndExecute(q: String, params: (String, Any)*): ExecutionResult = {
     val plan = engine.prepare(q)

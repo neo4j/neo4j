@@ -116,6 +116,17 @@ class TransactionBoundQueryContext(graph: GraphDatabaseAPI) extends QueryContext
     }
   }
 
+  def dropIndexRule(labelIds: Long, propertyKeyId: Long) {
+    try {
+      ctx.dropIndexRule(labelIds, propertyKeyId)
+    } catch {
+      case e: ConstraintViolationKernelException =>
+        val labelName = getLabelName(labelIds)
+        val propName = ctx.getPropertyKeyName(propertyKeyId)
+        throw new RuntimeException(e); // TODO IndexNotFoundException(labelName, propName, e)
+    }
+  }
+
   abstract class BaseOperations[T <: PropertyContainer] extends Operations[T] {
     def getProperty(obj: T, propertyKey: String) = obj.getProperty(propertyKey)
 

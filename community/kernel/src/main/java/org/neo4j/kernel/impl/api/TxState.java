@@ -22,9 +22,7 @@ package org.neo4j.kernel.impl.api;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 
 public class TxState
 {
@@ -44,26 +42,26 @@ public class TxState
         return nodeStates.values();
     }
     
+    public DiffSets<Long> getLabelStateNodeDiffSets( long labelId )
+    {
+        return getState( labelStates, labelId, LABEL_STATE_CREATOR ).getNodeDiffSets();
+    }
+
+    public DiffSets<Long> getNodeStateLabelDiffSets( long nodeId )
+    {
+        return getState( nodeStates, nodeId, NODE_STATE_CREATOR ).getLabelDiffSets();
+    }
+    
     public boolean addLabelToNode( long labelId, long nodeId )
     {
-        LabelState labelState = getState( labelStates, labelId, LABEL_STATE_CREATOR );
-        labelState.getAddedNodes().add( nodeId );
-        labelState.getRemovedNodes().remove( nodeId );
-        
-        NodeState nodeState = getState( nodeStates, nodeId, NODE_STATE_CREATOR );
-        nodeState.getRemovedLabels().remove( labelId );
-        return nodeState.getAddedLabels().add( labelId );
+        getLabelStateNodeDiffSets( labelId ).add( nodeId );
+        return getNodeStateLabelDiffSets( nodeId ).add( labelId );
     }
     
     public boolean removeLabelFromNode( long labelId, long nodeId )
     {
-        LabelState labelState = getState( labelStates, labelId, LABEL_STATE_CREATOR );
-        labelState.getRemovedNodes().add( nodeId );
-        labelState.getAddedNodes().remove( nodeId );
-        
-        NodeState nodeState = getState( nodeStates, nodeId, NODE_STATE_CREATOR );
-        nodeState.getAddedLabels().remove( labelId );
-        return nodeState.getRemovedLabels().add( labelId );
+        getLabelStateNodeDiffSets( labelId ).remove( nodeId );
+        return getNodeStateLabelDiffSets( nodeId ).remove(  labelId );
     }
     
     /**
@@ -77,24 +75,13 @@ public class TxState
         NodeState nodeState = getState( nodeStates, nodeId, null );
         if ( nodeState != null )
         {
-            if ( nodeState.getAddedLabels().contains( labelId ) )
+            DiffSets<Long> labelDiff = nodeState.getLabelDiffSets();
+            if ( labelDiff.isAdded( labelId ) )
                 return Boolean.TRUE;
-            if ( nodeState.getRemovedLabels().contains( labelId ) )
+            if ( labelDiff.isRemoved( labelId ) )
                 return Boolean.FALSE;
         }
         return null;
-    }
-    
-    public Collection<Long> getAddedLabels( long nodeId )
-    {
-        NodeState nodeState = getState( nodeStates, nodeId, null );
-        return nodeState != null ? nodeState.getAddedLabels() : Collections.<Long>emptySet();
-    }
-    
-    public Collection<Long> getRemovedLabels( long nodeId )
-    {
-        NodeState nodeState = getState( nodeStates, nodeId, null );
-        return nodeState != null ? nodeState.getRemovedLabels() : Collections.<Long>emptySet();
     }
     
     /**
@@ -103,7 +90,7 @@ public class TxState
     public Iterable<Long> getAddedNodesWithLabel( long labelId )
     {
         LabelState state = getState( labelStates, labelId, null );
-        return state != null ? state.getAddedNodes() : Collections.<Long>emptyList();
+        return state == null ? Collections.<Long>emptySet() : state.getNodeDiffSets().getAdded();
     }
 
     /**
@@ -112,12 +99,19 @@ public class TxState
     public Collection<Long> getRemovedNodesWithLabel( long labelId )
     {
         LabelState state = getState( labelStates, labelId, null );
-        return state != null ? state.getRemovedNodes() : Collections.<Long>emptyList();
+        return state == null ? Collections.<Long>emptySet() : state.getNodeDiffSets().getRemoved();
     }
 
     public void addIndexRule( long labelId, long propertyKey )
     {
-        getState( labelStates, labelId, LABEL_STATE_CREATOR ).getAddedIndexRules().add( propertyKey );
+        LabelState labelState = getState( labelStates, labelId, LABEL_STATE_CREATOR );
+        labelState.getIndexRuleDiffSets().add( propertyKey );
+    }
+
+    public void removeIndexRule( long labelId, long propertyKey )
+    {
+        LabelState labelState = getState( labelStates, labelId, LABEL_STATE_CREATOR );
+        labelState.getIndexRuleDiffSets().remove( propertyKey );
     }
 
     public Iterable<LabelState> getLabelStates()
@@ -125,12 +119,11 @@ public class TxState
         return labelStates.values();
     }
     
-    public Collection<Long> getAddedIndexRules( long labelId )
-    {
+    public DiffSets<Long> getIndexRuleDiffSets( long labelId ) {
         LabelState state = getState( labelStates, labelId, null );
-        return state != null ? state.getAddedIndexRules() : Collections.<Long>emptyList();
+        return state == null ? DiffSets.<Long>emptyDiffSets() : state.getIndexRuleDiffSets();
     }
-
+    
     public Map<Long,Object> getAddedNodeProperties( long nodeId )
     {
         throw new UnsupportedOperationException();
@@ -210,26 +203,19 @@ public class TxState
             super( id );
         }
 
-        private final Set<Long> addedLabels = new HashSet<Long>();
-        private final Set<Long> removedLabels = new HashSet<Long>();
+        private final DiffSets<Long> labelDiffSets = new DiffSets<Long>();
 
-        public Set<Long> getAddedLabels()
+        public DiffSets<Long> getLabelDiffSets()
         {
-            return addedLabels;
-        }
-
-        public Set<Long> getRemovedLabels()
-        {
-            return removedLabels;
+            return labelDiffSets;
         }
     }
     
     public static class LabelState
     {
         private final long id;
-        private final Collection<Long> addedNodes = new HashSet<Long>();
-        private final Collection<Long> removedNodes = new HashSet<Long>();
-        private final Collection<Long> addedIndexRules = new HashSet<Long>(); // Long = property key ID
+        private final DiffSets<Long> nodeDiffSets = new DiffSets<Long>();
+        private final DiffSets<Long> indexRuleDiffSets = new DiffSets<Long>();
 
         LabelState( long id )
         {
@@ -241,19 +227,15 @@ public class TxState
             return id;
         }
         
-        public Collection<Long> getAddedNodes()
+        public DiffSets<Long> getNodeDiffSets()
         {
-            return addedNodes;
+            return nodeDiffSets;
         }
         
-        public Collection<Long> getRemovedNodes()
+        public DiffSets<Long> getIndexRuleDiffSets()
         {
-            return removedNodes;
-        }
-        
-        public Collection<Long> getAddedIndexRules()
-        {
-            return addedIndexRules;
+            return indexRuleDiffSets;
         }
     }
+
 }

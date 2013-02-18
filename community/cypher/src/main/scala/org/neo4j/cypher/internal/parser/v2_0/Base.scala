@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.commands.expressions.{ParameterExpression, Expr
 
 abstract class Base extends JavaTokenParsers {
   val keywords = List("start", "create", "set", "delete", "foreach", "match", "where", "label", "values", "add",
-    "with", "return", "skip", "limit", "order", "by", "asc", "ascending", "desc", "descending", "on", "when",
+    "with", "return", "skip", "limit", "order", "by", "asc", "ascending", "desc", "descending", "on", "when", "drop",
     "case", "then", "else")
 
   def ignoreCase(str: String): Parser[String] =

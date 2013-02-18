@@ -17,16 +17,32 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.commands
+package org.neo4j.cypher.internal.helpers
 
-sealed abstract class IndexOperation extends AbstractQuery {
-  val label: String
-}
+import org.neo4j.graphdb.{Transaction, DynamicLabel, Node}
+import org.neo4j.graphdb.DynamicLabel._
+import org.neo4j.kernel.GraphDatabaseAPI
+import collection.JavaConverters._
 
-final case class CreateIndex(label: String, propertyKeys: Seq[String], queryString: QueryString = QueryString.empty) extends IndexOperation {
-  def setQueryText(t: String): CreateIndex = copy(queryString = QueryString(t))
-}
+/*
+ * Copyright (C) 2012 Neo Technology
+ * All rights reserved
+ */
 
-final case class DropIndex(label: String, propertyKeys: Seq[String], queryString: QueryString = QueryString.empty) extends IndexOperation {
-  def setQueryText(t: String): DropIndex = copy(queryString = QueryString(t))
+trait GraphIcing {
+
+  implicit class RichNode(n: Node) {
+    def labels: List[String] = n.getLabels.asScala.map(_.name()).toList
+
+    def addLabels(input: String*) = input.foreach(l => n.addLabel(label(l)))
+  }
+
+
+  implicit class RichGraph(graph: GraphDatabaseAPI) {
+
+    def indexPropsForLabel(label: String): List[List[String]] = {
+      val indexDefs = graph.schema.getIndexes(DynamicLabel.label(label)).asScala.toList
+      indexDefs.map(_.getPropertyKeys.asScala.toList)
+    }
+  }
 }

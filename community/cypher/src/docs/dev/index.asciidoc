@@ -98,7 +98,7 @@ include::ql/functions/index.asciidoc[]
 
 :leveloffset: 2
 
-include::ql/create-index/index.asciidoc[]
+include::ql/schema-index/index.asciidoc[]
 
 :leveloffset: 2
 

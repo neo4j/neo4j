@@ -54,7 +54,7 @@ Thank you, the Neo4j Team.
     }
   }
 
-  def cypherQuery: Parser[AbstractQuery] = (createIndex|union|query) <~ opt(";")
+  def cypherQuery: Parser[AbstractQuery] = (createIndex|dropIndex|union|query) <~ opt(";")
 
   def mixedUnion = Parser {
     case in =>

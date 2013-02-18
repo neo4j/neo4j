@@ -47,7 +47,6 @@ import org.neo4j.kernel.impl.nioneo.store.SchemaStore;
 import org.neo4j.kernel.impl.nioneo.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 
-// TODO This is the hack where we temporarily store the labels in the property store
 public class StoreStatementContext implements StatementContext
 {
     private final PropertyIndexManager propertyIndexManager;
@@ -57,8 +56,7 @@ public class StoreStatementContext implements StatementContext
     public StoreStatementContext( PropertyIndexManager propertyIndexManager,
             PersistenceManager persistenceManager, NeoStore neoStore )
     {
-        if ( neoStore == null )
-            throw new AssertionError();
+        assert neoStore != null : "No neoStore provided";
         this.propertyIndexManager = propertyIndexManager;
         this.persistenceManager = persistenceManager;
         this.neoStore = neoStore;
@@ -208,6 +206,38 @@ public class StoreStatementContext implements StatementContext
         SchemaStore schemaStore = neoStore.getSchemaStore();
         long id = schemaStore.nextId();
         persistenceManager.createSchemaRule( new IndexRule( id, labelId, new long[] {propertyKey} ) );
+    }
+
+    @Override
+    public void dropIndexRule( final long labelId, final long propertyKey ) throws ConstraintViolationKernelException
+    {
+        SchemaStore schemaStore = neoStore.getSchemaStore();
+        Iterator<SchemaRule> filtered = filter( new Predicate<SchemaRule>()
+        {
+            @Override
+            public boolean accept( SchemaRule rule )
+            {
+                return
+                    rule.getLabel() == labelId
+                            && rule.getKind() == Kind.INDEX_RULE
+                            && matchesKey( propertyKey, ((IndexRule)rule).getPropertyKeys() );
+            }
+
+            private boolean matchesKey(long propertyKey, long[] ruleKeys) {
+                return ruleKeys.length == 1 && ruleKeys[0] == propertyKey;
+            }
+
+        }, neoStore.getSchemaStore().loadAll() ).iterator();
+
+        if (! filtered.hasNext())
+            throw new ConstraintViolationKernelException("Unknown Index");
+
+        IndexRule rule = (IndexRule) filtered.next();
+
+        if (filtered.hasNext())
+            throw new ConstraintViolationKernelException("Found more than one matching index");
+
+        persistenceManager.dropSchemaRule( new IndexRule( rule.getId(), labelId, new long[] {propertyKey} ) );
     }
 
     @Override

@@ -36,7 +36,7 @@ import org.neo4j.test.{ImpermanentGraphDatabase, TestGraphDatabaseFactory, Graph
 import org.neo4j.test.GeoffService
 import org.scalatest.Assertions
 import org.neo4j.test.AsciiDocGenerator
-import org.neo4j.kernel.AbstractGraphDatabase
+import org.neo4j.kernel.{GraphDatabaseAPI, AbstractGraphDatabase}
 import org.neo4j.graphdb.DynamicLabel.{label => dynamicLabel}
 
 
@@ -88,6 +88,14 @@ trait DocumentationHelper {
 
 abstract class DocumentingTestBase extends Assertions with DocumentationHelper {
   def testQuery(title: String, text: String, queryText: String, returns: String, assertions: (ExecutionResult => Unit)*) {
+    internalTestQuery(title, text, queryText, returns, None, assertions: _*)
+  }
+
+  def prepareAndTestQuery(title: String, text: String, queryText: String, returns: String, prepare: (()=> Any), assertions: (ExecutionResult => Unit)*) {
+    internalTestQuery(title, text, queryText, returns, Some(prepare), assertions: _*)
+  }
+
+  def internalTestQuery(title: String, text: String, queryText: String, returns: String, prepare: Option[() => Any], assertions: (ExecutionResult => Unit)*) {
     dumpGraphViz(dir, graphvizOptions.trim)
     var consoleData: String = ""
     if (generateConsole) {
@@ -99,7 +107,7 @@ abstract class DocumentingTestBase extends Assertions with DocumentationHelper {
       }
     }
 
-    val r = testWithoutDocs(queryText, assertions:_*)
+    val r = testWithoutDocs(queryText, prepare, assertions:_*)
     val result: ExecutionResult = r._1
     val query: String = r._2
 
@@ -107,7 +115,7 @@ abstract class DocumentingTestBase extends Assertions with DocumentationHelper {
     dumpToFile(dir, writer, title, query, returns, text, result, consoleData)
   }
 
-  var db: GraphDatabaseService = null
+  var db: GraphDatabaseAPI = null
   val parser: CypherParser = new CypherParser
   var engine: ExecutionEngine = null
   var nodes: Map[String, Long] = null
@@ -150,7 +158,9 @@ abstract class DocumentingTestBase extends Assertions with DocumentationHelper {
     }
   }
 
-  def testWithoutDocs(queryText: String, assertions: (ExecutionResult => Unit)*): (ExecutionResult, String) = {
+  def testWithoutDocs(queryText: String, prepare: Option[() => Any], assertions: (ExecutionResult => Unit)*): (ExecutionResult, String) = {
+    prepare.foreach(runThunkInTx(_))
+
     var query = queryText
     val tx = db.beginTx()
     try {
@@ -163,6 +173,21 @@ abstract class DocumentingTestBase extends Assertions with DocumentationHelper {
     }
 
     (engine.execute(query), query)
+  }
+
+
+  private def runThunkInTx(thunk: () => Any)
+  {
+    val tx = db.beginTx()
+    try
+    {
+      thunk()
+      tx.success()
+    }
+    finally
+    {
+      tx.finish()
+    }
   }
 
   def indexProperties[T <: PropertyContainer](n: T, index: Index[T]) {
@@ -188,7 +213,7 @@ abstract class DocumentingTestBase extends Assertions with DocumentationHelper {
     db = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().
       setConfig( GraphDatabaseSettings.node_keys_indexable, "name" ).
       setConfig( GraphDatabaseSettings.node_auto_indexing, GraphDatabaseSetting.TRUE ).
-      newGraphDatabase()
+      newGraphDatabase().asInstanceOf[GraphDatabaseAPI]
     engine = new ExecutionEngine(db)
 
     db.asInstanceOf[ImpermanentGraphDatabase].cleanContent(false)

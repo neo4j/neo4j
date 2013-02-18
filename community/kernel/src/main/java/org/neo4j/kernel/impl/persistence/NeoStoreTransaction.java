@@ -341,7 +341,7 @@ public interface NeoStoreTransaction
     
     void createSchemaRule( SchemaRule schemaRule );
     
-    void deleteSchemaRule( long id );
+    void dropSchemaRule( long id );
     
     void addLabelToNode( long labelId, long nodeId );
     

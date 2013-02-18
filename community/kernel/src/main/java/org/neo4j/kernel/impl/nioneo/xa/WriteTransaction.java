@@ -1871,7 +1871,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
     }
 
     @Override
-    public void deleteSchemaRule( long ruleId )
+    public void dropSchemaRule( long ruleId )
     {
         Pair<Collection<DynamicRecord>, SchemaRule> pair = schemaRuleRecords.get( ruleId );
         if ( pair == null )

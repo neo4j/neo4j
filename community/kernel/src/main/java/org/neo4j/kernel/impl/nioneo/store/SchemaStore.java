@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
+import static java.util.Arrays.asList;
 import static org.neo4j.kernel.impl.nioneo.store.SchemaRule.Kind.deserialize;
 
 import java.io.File;
@@ -63,7 +64,7 @@ public class SchemaStore extends AbstractDynamicStore
     {
         RecordSerializer serializer = new RecordSerializer();
         serializer = serializer.append( rule );
-        return allocateRecordsFromBytes( serializer.serialize() );
+        return allocateRecordsFromBytes( serializer.serialize(), asList( forceGetRecord( rule.getId() ) ).iterator() );
     }
     
     public Iterable<SchemaRule> loadAll()

@@ -21,11 +21,8 @@ package org.neo4j.kernel.impl.api;
 
 import static org.neo4j.helpers.collection.Iterables.concat;
 import static org.neo4j.helpers.collection.Iterables.filter;
-import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
 
 import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
 
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.Predicate;
@@ -67,14 +64,8 @@ public class TransactionStateAwareStatementContext extends DelegatingStatementCo
     @Override
     public Iterable<Long> getLabelsForNode( long nodeId )
     {
-        Iterable<Long> committedLabels = delegate.getLabelsForNode( nodeId );
-        if ( !state.hasChanges() )
-            return committedLabels;
-
-        Set<Long> result = addToCollection( committedLabels, new HashSet<Long>() );
-        result.addAll( state.getAddedLabels( nodeId ) );
-        result.removeAll( state.getRemovedLabels( nodeId ) );
-        return result;
+        Iterable<Long> committed = delegate.getLabelsForNode( nodeId );
+        return state.getNodeStateLabelDiffSets( nodeId ).apply( committed );
     }
 
     @Override
@@ -117,21 +108,24 @@ public class TransactionStateAwareStatementContext extends DelegatingStatementCo
     {
         if ( successful )
         {
-            applyLabelChangesToTransaction();
+            applyLabelAndIndexChangesToTransaction();
             applyNodeChangesToTransaction();
         }
         delegate.close( successful );
     }
 
-    private void applyLabelChangesToTransaction()
+    private void applyLabelAndIndexChangesToTransaction()
     {
         try
         {
             for ( TxState.LabelState labelState : state.getLabelStates() )
             {
                 long labelId = labelState.getId();
-                for ( long propertyKey : labelState.getAddedIndexRules() )
+                DiffSets<Long> indexRuleDiffSets = labelState.getIndexRuleDiffSets();
+                for ( long propertyKey : indexRuleDiffSets.getAdded() )
                     delegate.addIndexRule( labelId, propertyKey );
+                for ( long propertyKey : indexRuleDiffSets.getRemoved() )
+                    delegate.dropIndexRule( labelId, propertyKey );
             }
         }
         catch ( ConstraintViolationKernelException e )
@@ -144,9 +138,10 @@ public class TransactionStateAwareStatementContext extends DelegatingStatementCo
     {
         for ( TxState.NodeState node : state.getNodeStates() )
         {
-            for ( Long labelId : node.getAddedLabels() )
+            DiffSets<Long> labelDiffSets = node.getLabelDiffSets();
+            for ( Long labelId : labelDiffSets.getAdded() )
                 delegate.addLabelToNode( labelId, node.getId() );
-            for ( Long labelId : node.getRemovedLabels() )
+            for ( Long labelId : labelDiffSets.getRemoved() )
                 delegate.removeLabelFromNode( labelId, node.getId() );
         }
     }
@@ -154,23 +149,49 @@ public class TransactionStateAwareStatementContext extends DelegatingStatementCo
     @Override
     public void addIndexRule( long labelId, long propertyKey ) throws ConstraintViolationKernelException
     {
+        ensureNoMatchingIndexRule( labelId, propertyKey );
+        state.addIndexRule( labelId, propertyKey );
+    }
+
+    @Override
+    public void dropIndexRule( long labelId, long propertyKey ) throws ConstraintViolationKernelException
+    {
+        ensureSingleMatchingIndexRule( labelId, propertyKey );
+        state.removeIndexRule( labelId, propertyKey );
+    }
+
+    private void ensureSingleMatchingIndexRule(long labelId, long propertyKey) throws ConstraintViolationKernelException
+    {
+        int i = countMatchingIndexRules( labelId, propertyKey );
+        if (i == 0)
+            throw new ConstraintViolationKernelException( "No matching index found (expected one)" );
+        if (i > 1)
+            throw new ConstraintViolationKernelException( "Too many matching indexes found (expected one)" );
+    }
+
+    private void ensureNoMatchingIndexRule(long labelId, long propertyKey) throws ConstraintViolationKernelException
+    {
+        int i = countMatchingIndexRules( labelId, propertyKey );
+        if (i > 0)
+            throw new ConstraintViolationKernelException( "Matching indexes found (expected none)" );
+    }
+
+    private int countMatchingIndexRules( long labelId, long propertyKey )
+    {
+        int i = 0;
         for ( long existingPropertyKey : getIndexRules( labelId ) )
         {
             if ( propertyKey == existingPropertyKey )
-                return;
+                i++;
         }
-        
-        state.addIndexRule( labelId, propertyKey );
+        return i;
     }
-    
-    @SuppressWarnings( "unchecked" )
+
     @Override
     public Iterable<Long> getIndexRules( long labelId )
     {
-        Iterable<Long> committedRules = delegate.getIndexRules( labelId ), result = committedRules;
-        Collection<Long> addedSchemaRules = state.getAddedIndexRules( labelId );
-        if ( !addedSchemaRules.isEmpty() )
-            result = concat( committedRules, addedSchemaRules );
-        return result;
+        Iterable<Long> committedRules = delegate.getIndexRules( labelId );
+        DiffSets<Long> diffSets = state.getIndexRuleDiffSets( labelId );
+        return diffSets.apply( committedRules ); 
     }
 }

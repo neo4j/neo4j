@@ -315,6 +315,11 @@ public class PersistenceManager
         }
     }
 
+    public void dropSchemaRule( SchemaRule rule )
+    {
+        getResource( true ).dropSchemaRule( rule.getId() );
+    }
+
     private class TxCommitHook implements Synchronization
     {
         private final Transaction tx;

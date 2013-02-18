@@ -24,7 +24,6 @@ import static java.util.Collections.unmodifiableCollection;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 
@@ -42,7 +41,7 @@ import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
  */
 public class SchemaCache
 {
-    private final Map<Long, Collection<SchemaRule>> rulesMap = new HashMap<Long, Collection<SchemaRule>>();
+    private final Map<Long, Map<Long,SchemaRule>> rulesMap = new HashMap<Long, Map<Long,SchemaRule>>();
     private final Map<Long, SchemaRule> ruleByIdMap = new HashMap<Long, SchemaRule>();
     
     public SchemaCache( Iterable<SchemaRule> initialRules )
@@ -56,12 +55,12 @@ public class SchemaCache
             addSchemaRule( rule );
     }
 
-    private Collection<SchemaRule> getOrCreateSchemaRulesListForLabel( Long label )
+    private Map<Long,SchemaRule> getOrCreateSchemaRulesMapForLabel( Long label )
     {
-        Collection<SchemaRule> rulesForLabel = rulesMap.get( label );
+        Map<Long,SchemaRule> rulesForLabel = rulesMap.get( label );
         if ( rulesForLabel == null )
         {
-            rulesForLabel = new HashSet<SchemaRule>();
+            rulesForLabel = new HashMap<Long, SchemaRule>();
             rulesMap.put( label, rulesForLabel );
         }
         return rulesForLabel;
@@ -69,25 +68,26 @@ public class SchemaCache
     
     public Iterable<SchemaRule> getSchemaRules()
     {
-        return new NestingIterable<SchemaRule, Collection<SchemaRule>>( rulesMap.values() )
+        return new NestingIterable<SchemaRule, Map<Long,SchemaRule>>( rulesMap.values() )
         {
             @Override
-            protected Iterator<SchemaRule> createNestedIterator( Collection<SchemaRule> item )
+            protected Iterator<SchemaRule> createNestedIterator( Map<Long,SchemaRule> item )
             {
-                return item.iterator();
+                return item.values().iterator();
             }
         };
     }
     
     public Collection<SchemaRule> getSchemaRules( long label )
     {
-        Collection<SchemaRule> rulesForLabel = rulesMap.get( label );
-        return rulesForLabel != null ? unmodifiableCollection( rulesForLabel ) : Collections.<SchemaRule>emptyList();
+        Map<Long,SchemaRule> rulesForLabel = rulesMap.get( label );
+        return rulesForLabel != null ? unmodifiableCollection( rulesForLabel.values() ) :
+            Collections.<SchemaRule>emptyList();
     }
     
     public void addSchemaRule( SchemaRule rule )
     {
-        getOrCreateSchemaRulesListForLabel( rule.getLabel() ).add( rule );
+        getOrCreateSchemaRulesMapForLabel( rule.getLabel() ).put( rule.getId(), rule );
         ruleByIdMap.put( rule.getId(), rule );
     }
 
@@ -97,8 +97,8 @@ public class SchemaCache
         if ( rule == null )
             return;
         
-        Collection<SchemaRule> rules = rulesMap.get( rule.getLabel() );
-        if ( rules.remove( rules ) )
+        Map<Long, SchemaRule> rules = rulesMap.get( rule.getLabel() );
+        if ( rules.remove( id ) != null )
             if ( rules.isEmpty() )
                 rulesMap.remove( rule.getLabel() );
     }

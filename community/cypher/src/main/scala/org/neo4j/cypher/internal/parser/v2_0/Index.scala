@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.parser.v2_0
 
 import org.neo4j.cypher.internal.commands.expressions.Literal
 import org.neo4j.cypher.internal.commands.values.LabelName
-import org.neo4j.cypher.internal.commands.{DeleteIndex, CreateIndex}
+import org.neo4j.cypher.internal.commands.{DropIndex, CreateIndex}
 
 
 trait Index extends Base with Labels {
@@ -29,11 +29,11 @@ trait Index extends Base with Labels {
     case (label, properties) => CreateIndex(label, properties)
   }
 
-  def deleteIndex = ignoreCase("DELETE") ~> indexOps ^^ {
-    case (label, properties) => DeleteIndex(label, properties)
+  def dropIndex = ignoreCase("DROP") ~> indexOps ^^ {
+    case (label, properties) => DropIndex(label, properties)
   }
 
-  private def indexOps: Parser[(String, List[String])] = ignoreCase("INDEX") ~> ignoreCase("ON") ~> labelLit ~ parens(commaList(identity)) ^^ {
-    case Literal(LabelName(label)) ~ properties => (label, properties)
+  private def indexOps: Parser[(String, List[String])] = ignoreCase("INDEX") ~> ignoreCase("ON") ~> labelLit ~ parens(identity) ^^ {
+    case Literal(LabelName(label)) ~ property => (label, List(property))
   }
 }

@@ -21,10 +21,12 @@ package org.neo4j.cypher.docgen
 
 import org.neo4j.cypher.StatisticsChecker
 import org.junit.Test
-import org.neo4j.graphdb.DynamicLabel
+import org.neo4j.graphdb.{Transaction, DynamicLabel}
 import scala.collection.JavaConverters._
+import org.neo4j.cypher.internal.helpers.GraphIcing
+import org.neo4j.graphdb.schema.IndexDefinition
 
-class CreateIndexTest extends DocumentingTestBase with StatisticsChecker {
+class SchemaIndexTest extends DocumentingTestBase with StatisticsChecker with GraphIcing {
   def graphDescription = List(
     "root X A",
     "root X B",
@@ -40,13 +42,26 @@ class CreateIndexTest extends DocumentingTestBase with StatisticsChecker {
       text = "To create an index on all nodes that have a label, use +CREATE+ +INDEX+ +ON+.",
       queryText = "create index on :Person(name)",
       returns = "Nothing",
-      assertions = { (p) =>
-        val expected = Seq("name")
-        val indexDefinitions = db.schema().getIndexes(DynamicLabel.label("Person")).asScala
-        assert(1 === indexDefinitions.size)
-        val actual = indexDefinitions.head.getPropertyKeys.asScala.toSeq
-        assert(expected === actual)
-      }
+      assertions = (p) => assertIndexesOnLabels("Person", List(List("name")))
     )
   }
+
+
+  @Test def remove_index_on_a_label() {
+    prepareAndTestQuery(
+      title = "Remove index on a label",
+      text = "To remove an index, use the +DROP+ +INDEX+ clause",
+      prepare = { () =>
+        executeQuery("create index on :Person(name)")
+      },
+      queryText = "drop index on :Person(name)",
+      returns = "Nothing",
+      assertions = (p) => assertIndexesOnLabels("Person", List())
+    )
+  }
+
+  def assertIndexesOnLabels(label: String, expectedIndexes: List[List[String]]) {
+    assert(expectedIndexes === db.indexPropsForLabel(label))
+  }
+
 }

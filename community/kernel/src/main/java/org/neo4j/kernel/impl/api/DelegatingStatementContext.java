@@ -95,6 +95,12 @@ public class DelegatingStatementContext implements StatementContext
     }
 
     @Override
+    public void dropIndexRule( long labelId, long propertyKey ) throws ConstraintViolationKernelException
+    {
+        delegate.dropIndexRule( labelId, propertyKey );
+    }
+
+    @Override
     public Iterable<Long> getIndexRules( long labelId )
     {
         return delegate.getIndexRules( labelId );

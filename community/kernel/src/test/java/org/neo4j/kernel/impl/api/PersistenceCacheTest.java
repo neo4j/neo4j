@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.api;
 
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
-import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -40,8 +39,11 @@ public class PersistenceCacheTest
     {
         when( loader.loadById( nodeId ) ).thenReturn( new CachedNodeEntity( nodeId ) );
         Set<Long> labels = new HashSet<Long>( asList( 1L, 2L, 3L ) );
-        when( state.getAddedLabels( eq( nodeId ) ) ).thenReturn( labels );
-        nodeState.getAddedLabels().addAll( labels );
+        @SuppressWarnings( "unchecked" )
+        DiffSets<Long> diff = mock( DiffSets.class );
+        when( diff.getAdded() ).thenReturn( labels );
+        when( state.getNodeStateLabelDiffSets( nodeId ) ).thenReturn( diff );
+        nodeState.getLabelDiffSets().addAll( labels );
         when( state.getNodeStates() ).thenReturn( asList( nodeState ) );
         cache.getLabels( nodeId );
 
@@ -59,9 +61,12 @@ public class PersistenceCacheTest
         Set<Long> initialLabels = new HashSet<Long>( asList( 1L, 2L, 3L ) );
         cachedNode.addLabels( initialLabels );
         when( loader.loadById( nodeId ) ).thenReturn( cachedNode );
-        when( state.getAddedLabels( eq( nodeId ) ) ).thenReturn( initialLabels );
+        @SuppressWarnings( "unchecked" )
+        DiffSets<Long> diff = mock( DiffSets.class );
+        when( diff.getAdded() ).thenReturn( initialLabels );
+        when( state.getNodeStateLabelDiffSets( nodeId ) ).thenReturn( diff );
         Set<Long> removedLabels = new HashSet<Long>( asList( 2L ) );
-        nodeState.getRemovedLabels().addAll( removedLabels );
+        nodeState.getLabelDiffSets().removeAll( removedLabels );
         when( state.getNodeStates() ).thenReturn( asList( nodeState ) );
         cache.getLabels( nodeId );
 

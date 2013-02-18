@@ -226,8 +226,10 @@ public class ITKernelAPI
         statement.removeLabelFromNode( labelId2, node.getId() );
 
         // THEN
+        Iterable<Long> labelsIterable = statement.getLabelsForNode( node.getId() );
+        Set<Long> labels = asSet( labelsIterable );
         assertFalse( statement.isLabelSetOnNode( labelId2, node.getId() ) );
-        assertEquals( asSet( labelId1 ), asSet( statement.getLabelsForNode( node.getId() ) ) );
+        assertEquals( asSet( labelId1 ), labels );
         tx.success();
         tx.finish();
     }

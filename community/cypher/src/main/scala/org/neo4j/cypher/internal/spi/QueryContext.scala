@@ -65,6 +65,8 @@ trait QueryContext {
 
   def addIndexRule(labelIds: Long, propertyKeyId: Long)
 
+  def dropIndexRule(labelIds: Long, propertyKeyId: Long)
+
   def close(success: Boolean)
 
   /**

@@ -52,7 +52,14 @@ public class LockingStatementContext extends DelegatingStatementContext
         lockHolder.acquireSchemaWriteLock();
         delegate.addIndexRule( labelId, propertyKey );
     }
-    
+
+    @Override
+    public void dropIndexRule( long labelId, long propertyKey ) throws ConstraintViolationKernelException
+    {
+        lockHolder.acquireSchemaWriteLock();
+        delegate.dropIndexRule( labelId, propertyKey );
+    }
+
     @Override
     public Iterable<Long> getIndexRules( long labelId )
     {

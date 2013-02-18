@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.api;
 
-import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
+import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 
 /**
  * Interface for accessing and modifying the underlying graph.
@@ -103,7 +103,7 @@ public interface StatementContext
      * As an example statement-bound locks can be released when closing
      * a statement. 
      * 
-     * @param whether or not the statement has been successful.
+     * @param successful whether or not the statement has been successful.
      */
     void close( boolean successful );
 
@@ -126,7 +126,7 @@ public interface StatementContext
     Iterable<Long> getNodesWithLabel( long labelId );
     
     /**
-     * Adds a {@link SchemaRule} to the database which applies globally on both
+     * Adds a {@link IndexRule} to the database which applies globally on both
      * existing as well as new data.
      * 
      * @param labelId the label id to attach the rule to.
@@ -134,7 +134,16 @@ public interface StatementContext
      * @throws ConstraintViolationKernelException if a similar or conflicting rule already exists.
      */
     void addIndexRule( long labelId, long propertyKey ) throws ConstraintViolationKernelException;
-    
+
+    /**
+     * Drops a {@link IndexRule} from the database
+     *
+     * @param labelId the label id to attach the rule to.
+     * @param propertyKey the property key to index.
+     * @throws ConstraintViolationKernelException if the index is not found
+     */
+    void dropIndexRule( long labelId, long propertyKey ) throws ConstraintViolationKernelException;
+
     /**
      * @param labelId the label to get rules for.
      * @return all indexed properties keys for that labelId.

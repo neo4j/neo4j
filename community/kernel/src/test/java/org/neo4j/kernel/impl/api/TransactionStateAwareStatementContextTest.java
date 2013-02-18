@@ -37,6 +37,7 @@ import java.util.Map;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.neo4j.kernel.api.ConstraintViolationKernelException;
 import org.neo4j.kernel.api.StatementContext;
 
 public class TransactionStateAwareStatementContextTest
@@ -132,7 +133,7 @@ public class TransactionStateAwareStatementContextTest
 
         // THEN
         assertEquals( asSet( key1 ), asSet( txContext.getIndexRules( labelId1 ) ) );
-        assertEquals( asSet(), asSet( store.getIndexRules( labelId1 ) ) );
+        assert( asSet( store.getIndexRules( labelId1 ) ).isEmpty() );
     }
 
     @Test
@@ -147,11 +148,11 @@ public class TransactionStateAwareStatementContextTest
 
         // THEN
         assertEquals( asSet( key1, key2 ), asSet( txContext.getIndexRules( labelId1 ) ) );
-        assertEquals( asSet(), asSet( store.getIndexRules( labelId1 ) ) );
+        assert( asSet( store.getIndexRules( labelId1 ) ).isEmpty() );
     }
 
-    @Test
-    public void addedExistingRuleShouldBeVisibleInTx() throws Exception
+    @Test(expected = ConstraintViolationKernelException.class)
+    public void addedExistingRuleShouldFail() throws Exception
     {
         // GIVEN
         commitNoLabels();
@@ -159,10 +160,6 @@ public class TransactionStateAwareStatementContextTest
         // WHEN
         txContext.addIndexRule( labelId1, key1 );
         txContext.addIndexRule( labelId1, key1 );
-
-        // THEN
-        assertEquals( asSet( key1 ), asSet( txContext.getIndexRules( labelId1 ) ) );
-        assertEquals( asSet(), asSet( store.getIndexRules( labelId1 ) ) );
     }
 
     @Test

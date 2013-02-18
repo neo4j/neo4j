@@ -125,6 +125,7 @@ class SnitchingQueryContext extends QueryContext {
 
   def getPropertyKeyId(propertyKey: String) = ???
 
-  def addIndexRule(labelIds: Long, propertyKeyId: Long)
-  {}
+  def addIndexRule(labelIds: Long, propertyKeyId: Long) = ???
+
+  def dropIndexRule(labelIds: Long, propertyKeyId: Long) = ???
 }

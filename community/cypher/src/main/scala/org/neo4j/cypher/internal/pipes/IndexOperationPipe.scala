@@ -19,8 +19,9 @@
  */
 package org.neo4j.cypher.internal.pipes
 
-import org.neo4j.cypher.internal.commands.{CreateIndex, IndexOperation}
-import org.neo4j.cypher.{PlanDescription, SyntaxException}
+import org.neo4j.cypher.PlanDescription
+import org.neo4j.cypher.internal.commands.{DropIndex, CreateIndex, IndexOperation}
+import org.neo4j.cypher.SyntaxException
 import org.neo4j.cypher.internal.symbols.SymbolTable
 
 class IndexOperationPipe(indexOp: IndexOperation) extends Pipe {
@@ -33,6 +34,10 @@ class IndexOperationPipe(indexOp: IndexOperation) extends Pipe {
       case CreateIndex(_, propertyKeys, _) =>
         val propertyKeyIds: Seq[Long] = propertyKeys.map( queryContext.getOrCreatePropertyKeyId(_) )
         queryContext.addIndexRule(labelId, single(propertyKeyIds))
+      case DropIndex(_, propertyKeys, _) =>
+        val propertyKeyIds: Seq[Long] = propertyKeys.map( queryContext.getOrCreatePropertyKeyId(_) )
+        queryContext.dropIndexRule(labelId, single(propertyKeyIds))
+
       case _ =>
         throw new UnsupportedOperationException("Unknown IndexOperation encountered")
     }

@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.api;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
-import java.util.Collection;
+import java.util.Set;
 
 import org.junit.Test;
 
@@ -38,10 +38,10 @@ public class TxStateTest
         state.addLabelToNode( 2, 1 );
 
         // WHEN
-        Collection<Long> addedLabels = state.getAddedLabels( 1 );
+        Set<Long> addedLabels = state.getNodeStateLabelDiffSets( 1 ).getAdded();
 
         // THEN
-        assertEquals( asSet( 1L, 2L ), asSet( addedLabels ) );
+        assertEquals( asSet( 1L, 2L ), addedLabels );
     }
     
     @Test
@@ -54,10 +54,10 @@ public class TxStateTest
         state.removeLabelFromNode( 2, 1 );
 
         // WHEN
-        Collection<Long> removedLabels = state.getRemovedLabels( 1 );
+        Set<Long> removedLabels = state.getNodeStateLabelDiffSets( 1 ).getRemoved();
 
         // THEN
-        assertEquals( asSet( 1L, 2L ), asSet( removedLabels ) );
+        assertEquals( asSet( 1L, 2L ), removedLabels );
     }
     
     @Test
@@ -73,7 +73,7 @@ public class TxStateTest
         state.removeLabelFromNode( 1, 1 );
 
         // THEN
-        assertEquals( asSet( 2L ), asSet( state.getAddedLabels( 1 ) ) );
+        assertEquals( asSet( 2L ), state.getNodeStateLabelDiffSets( 1 ).getAdded() );
     }
     
     @Test
@@ -89,7 +89,7 @@ public class TxStateTest
         state.addLabelToNode( 1, 1 );
 
         // THEN
-        assertEquals( asSet( 2L ), asSet( state.getRemovedLabels( 1 ) ) );
+        assertEquals( asSet( 2L ), state.getNodeStateLabelDiffSets( 1 ).getRemoved() );
     }
     
     @Test

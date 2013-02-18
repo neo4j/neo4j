@@ -56,8 +56,8 @@ public class PersistenceCache
                 continue;
             }
             
-            entity.addLabels( stateEntity.getAddedLabels() );
-            entity.removeLabels( stateEntity.getRemovedLabels() );
+            entity.addLabels( stateEntity.getLabelDiffSets().getAdded() );
+            entity.removeLabels( stateEntity.getLabelDiffSets().getRemoved() );
         }
     }
 

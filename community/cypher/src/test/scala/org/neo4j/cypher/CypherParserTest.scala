@@ -2087,7 +2087,7 @@ foreach(x in [1,2,3] :
       CreateIndex("MyLabel", Seq("prop1")))
   }
 
-  @Test def create_index_on_multiple_properties() {
+  @Test(expected = classOf[SyntaxException]) def create_index_on_multiple_properties() {
     testFrom_2_0("create index on :MyLabel(prop1, prop2)",
       CreateIndex("MyLabel", Seq("prop1", "prop2")))
   }
@@ -2236,7 +2236,10 @@ foreach(x in [1,2,3] :
     )
   }
 
-
+  @Test def remove_index_on_single_property() {
+    testFrom_2_0("drop index on :MyLabel(prop1)",
+      DropIndex("MyLabel", Seq("prop1")))
+  }
 
   private def run(f: () => Unit) =
     new Runnable() {

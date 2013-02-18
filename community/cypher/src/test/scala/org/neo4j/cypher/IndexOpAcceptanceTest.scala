@@ -17,16 +17,28 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.commands
+package org.neo4j.cypher
 
-sealed abstract class IndexOperation extends AbstractQuery {
-  val label: String
-}
+import org.scalatest.Assertions
+import org.junit.Test
 
-final case class CreateIndex(label: String, propertyKeys: Seq[String], queryString: QueryString = QueryString.empty) extends IndexOperation {
-  def setQueryText(t: String): CreateIndex = copy(queryString = QueryString(t))
-}
+class IndexOpAcceptanceTest extends ExecutionEngineHelper with StatisticsChecker with Assertions {
+  @Test def createIndex() {
+    // WHEN
+    parseAndExecute("CREATE INDEX ON :Person(name)")
 
-final case class DropIndex(label: String, propertyKeys: Seq[String], queryString: QueryString = QueryString.empty) extends IndexOperation {
-  def setQueryText(t: String): DropIndex = copy(queryString = QueryString(t))
+    // THEN
+    assert(List(List("name")) === graph.indexPropsForLabel("Person"))
+  }
+
+  @Test def dropIndex() {
+    // GIVEN
+    parseAndExecute("CREATE INDEX ON :Person(name)")
+
+    // WHEN
+    parseAndExecute("DROP INDEX ON :Person(name)")
+
+    // THEN
+    assert(List.empty[List[String]] === graph.indexPropsForLabel("Person"))
+  }
 }
