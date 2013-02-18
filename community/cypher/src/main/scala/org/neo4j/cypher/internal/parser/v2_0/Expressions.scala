@@ -49,9 +49,9 @@ trait Expressions extends Base with ParserPattern with Predicates with StringLit
   }
 
   def factor: Parser[Expression] =
-  (     ignoreCase("null") ^^^ Literal(null)
-      | ignoreCase("true") ^^^ True()
-      | ignoreCase("false") ^^^ Not(True())
+  (     NULL ^^^ Literal(null)
+      | TRUE ^^^ True()
+      | FALSE ^^^ Not(True())
       | pathExpression
       | simpleCase
       | genericCase
@@ -101,19 +101,19 @@ trait Expressions extends Base with ParserPattern with Predicates with StringLit
     property <~ "?" ^^ (p => new Nullable(p) with DefaultTrue) |
     property <~ "!" ^^ (p => new Nullable(p) with DefaultFalse))
 
-  def extract: Parser[Expression] = ignoreCase("extract") ~> parens(identity ~ ignoreCase("in") ~ expression ~ ":" ~ expression) ^^ {
+  def extract: Parser[Expression] = EXTRACT ~> parens(identity ~ IN ~ expression ~ ":" ~ expression) ^^ {
     case (id ~ in ~ iter ~ ":" ~ expression) => ExtractFunction(iter, id, expression)
   }
 
-  def reduce: Parser[Expression] = ignoreCase("reduce") ~> parens(identity ~ "=" ~ expression ~ "," ~ identity ~ ignoreCase("in") ~ expression ~ ":" ~ expression) ^^ {
+  def reduce: Parser[Expression] = REDUCE ~> parens(identity ~ "=" ~ expression ~ "," ~ identity ~ IN ~ expression ~ ":" ~ expression) ^^ {
     case (acc ~ "=" ~ init ~ "," ~ id ~ in ~ iter ~ ":" ~ expression) => ReduceFunction(iter, id, expression, acc, init)
   }
 
-  def coalesceFunc: Parser[Expression] = ignoreCase("coalesce") ~> parens(commaList(expression)) ^^ {
+  def coalesceFunc: Parser[Expression] = COALESCE ~> parens(commaList(expression)) ^^ {
     case expressions => CoalesceFunction(expressions: _*)
   }
 
-  def filterFunc: Parser[Expression] = ignoreCase("filter") ~> parens(identity ~ ignoreCase("in") ~ expression ~ (ignoreCase("where") | ":") ~ predicate) ^^ {
+  def filterFunc: Parser[Expression] = FILTER ~> parens(identity ~ IN ~ expression ~ (WHERE | ":") ~ predicate) ^^ {
     case symbol ~ in ~ collection ~ where ~ pred => FilterFunction(collection, symbol, pred)
   }
 
@@ -177,9 +177,9 @@ trait Expressions extends Base with ParserPattern with Predicates with StringLit
 
   def aggregateExpression: Parser[Expression] = countStar | aggregationFunction
 
-  def aggregateFunctionNames: Parser[String] = ignoreCases("count", "sum", "min", "max", "avg", "collect")
+  def aggregateFunctionNames: Parser[String] = COUNT | SUM | MIN | MAX | AVG | COLLECT
 
-  def aggregationFunction: Parser[Expression] = aggregateFunctionNames ~ parens(opt(ignoreCase("distinct")) ~ expression) ^^ {
+  def aggregationFunction: Parser[Expression] = aggregateFunctionNames ~ parens(opt(DISTINCT) ~ expression) ^^ {
     case function ~ (distinct ~ inner) => {
 
       val aggregateExpression = function match {
@@ -200,7 +200,7 @@ trait Expressions extends Base with ParserPattern with Predicates with StringLit
     }
   }
 
-  def percentileFunctionNames: Parser[String] = ignoreCases("percentile_cont", "percentile_disc")
+  def percentileFunctionNames: Parser[String] = PERCENTILE_CONT | PERCENTILE_DISC
 
   def percentileFunction: Parser[Expression] = percentileFunctionNames ~ parens(expression ~ "," ~ expression) ^^ {
     case function ~ (property ~ "," ~ percentile) => function match {
@@ -209,7 +209,7 @@ trait Expressions extends Base with ParserPattern with Predicates with StringLit
     } 
   }
 
-  def countStar: Parser[Expression] = ignoreCase("count") ~> parens("*") ^^^ CountStar()
+  def countStar: Parser[Expression] = COUNT ~> parens("*") ^^^ CountStar()
 
   // TODO Clean up
   def pathExpression: Parser[Expression] = usePath(translate) ^^ {
@@ -226,24 +226,24 @@ trait Expressions extends Base with ParserPattern with Predicates with StringLit
       PathExpression(patterns, pred)
   }
 
-  private def caseDefault: Parser[Expression] = ignoreCase("else") ~> expression
+  private def caseDefault: Parser[Expression] = ELSE ~> expression
 
   def simpleCase:Parser[Expression] = {
-    def alternative: Parser[(Expression, Expression)] = ignoreCase("when") ~ expression ~ ignoreCase("then") ~ expression ^^ {
+    def alternative: Parser[(Expression, Expression)] = WHEN ~ expression ~ THEN ~ expression ^^ {
       case when ~ e1 ~ then ~ e2 => e1 -> e2
     }
 
-    ignoreCase("case") ~ expression ~ rep1(alternative) ~ opt(caseDefault) ~ ignoreCase("end") ^^ {
+    CASE ~ expression ~ rep1(alternative) ~ opt(caseDefault) ~ END ^^ {
       case c ~ in ~ alternatives ~ default ~ end => SimpleCase(in, alternatives, default)
     }
   }
 
   def genericCase:Parser[Expression] = {
-    def alternative: Parser[(Predicate, Expression)] = ignoreCase("when") ~ predicate ~ ignoreCase("then") ~ expression ^^ {
+    def alternative: Parser[(Predicate, Expression)] = WHEN ~ predicate ~ THEN ~ expression ^^ {
       case when ~ e1 ~ then ~ e2 => e1 -> e2
     }
 
-    ignoreCase("case") ~ rep1(alternative) ~ opt(caseDefault) ~ ignoreCase("end") ^^ {
+    CASE ~ rep1(alternative) ~ opt(caseDefault) ~ END ^^ {
       case c ~ alternatives ~ default ~ end => GenericCase(alternatives, default)
     }
   }

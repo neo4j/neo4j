@@ -24,23 +24,23 @@ import expressions.{Property, Identifier, Nullable, Expression}
 
 
 trait Predicates extends Base with ParserPattern with StringLiteral with Labels {
-  def predicate: Parser[Predicate] = predicateLvl1 ~ rep( ignoreCase("or") ~> predicateLvl1 ) ^^ {
+  def predicate: Parser[Predicate] = predicateLvl1 ~ rep( OR ~> predicateLvl1 ) ^^ {
     case head ~ rest => rest.foldLeft(head)((a,b) => Or(a,b))
   }
 
-  def predicateLvl1: Parser[Predicate] = predicateLvl2 ~ rep( ignoreCase("and") ~> predicateLvl2 ) ^^{
+  def predicateLvl1: Parser[Predicate] = predicateLvl2 ~ rep( AND ~> predicateLvl2 ) ^^{
     case head ~ rest => rest.foldLeft(head)((a,b) => And(a,b))
   }
 
   def predicateLvl2: Parser[Predicate] = (
-        ignoreCase("true") ^^^ True()
-      | ignoreCase("false") ^^^ Not(True())
+        TRUE ^^^ True()
+      | FALSE ^^^ Not(True())
       | hasLabel
-      | expressionOrEntity <~ ignoreCase("is null") ^^ (x => IsNull(x))
-      | expressionOrEntity <~ ignoreCase("is not null") ^^ (x => Not(IsNull(x)))
+      | expressionOrEntity <~ IS <~ NULL ^^ (x => IsNull(x))
+      | expressionOrEntity <~ IS <~ NOT <~ NULL ^^ (x => Not(IsNull(x)))
       | operators
-      | ignoreCase("not") ~> parens(predicate) ^^ ( inner => Not(inner) )
-      | ignoreCase("not") ~> predicate ^^ ( inner => Not(inner) )
+      | NOT ~> parens(predicate) ^^ ( inner => Not(inner) )
+      | NOT ~> predicate ^^ ( inner => Not(inner) )
       | hasProperty
       | parens(predicate)
       | sequencePredicate
@@ -53,24 +53,24 @@ trait Predicates extends Base with ParserPattern with StringLiteral with Labels 
       labels.map({ (l) => HasLabel(identifier, l.asExpr) }).reduce(Or)
   }
 
-  def hasProperty = ignoreCase("has") ~> parens(property) ^^ {
+  def hasProperty = HAS ~> parens(property) ^^ {
     case prop:Property => Has(prop.mapExpr, prop.property)
   }
 
   def sequencePredicate: Parser[Predicate] = allInSeq | anyInSeq | noneInSeq | singleInSeq | in
 
   def symbolIterablePredicate: Parser[(Expression, String, Predicate)] =
-    (identity ~ ignoreCase("in") ~ expression ~ ignoreCase("where")  ~ predicate ^^ { case symbol ~ in ~ collection ~ where ~ klas => (collection, symbol, klas) }
-      |identity ~> ignoreCase("in") ~ expression ~> failure("expected where"))
+    (identity ~ IN ~ expression ~ WHERE  ~ predicate ^^ { case symbol ~ in ~ collection ~ where ~ klas => (collection, symbol, klas) }
+      |identity ~> IN ~ expression ~> failure("expected where"))
 
-  def in: Parser[Predicate] = expression ~ ignoreCase("in") ~ expression ^^ {
+  def in: Parser[Predicate] = expression ~ IN ~ expression ^^ {
     case checkee ~ in ~ collection => nullable(AnyInCollection(collection, "-_-INNER-_-", Equals(checkee, Identifier("-_-INNER-_-"))), collection)
   }
 
-  def allInSeq: Parser[Predicate] = ignoreCase("all") ~> parens(symbolIterablePredicate) ^^ (x => nullable(AllInCollection(x._1, x._2, x._3), x._1))
-  def anyInSeq: Parser[Predicate] = ignoreCase("any") ~> parens(symbolIterablePredicate) ^^ (x => nullable(AnyInCollection(x._1, x._2, x._3), x._1))
-  def noneInSeq: Parser[Predicate] = ignoreCase("none") ~> parens(symbolIterablePredicate) ^^ (x => nullable(NoneInCollection(x._1, x._2, x._3), x._1))
-  def singleInSeq: Parser[Predicate] = ignoreCase("single") ~> parens(symbolIterablePredicate) ^^ (x => nullable(SingleInCollection(x._1, x._2, x._3), x._1))
+  def allInSeq: Parser[Predicate] = ALL ~> parens(symbolIterablePredicate) ^^ (x => nullable(AllInCollection(x._1, x._2, x._3), x._1))
+  def anyInSeq: Parser[Predicate] = ANY ~> parens(symbolIterablePredicate) ^^ (x => nullable(AnyInCollection(x._1, x._2, x._3), x._1))
+  def noneInSeq: Parser[Predicate] = NONE ~> parens(symbolIterablePredicate) ^^ (x => nullable(NoneInCollection(x._1, x._2, x._3), x._1))
+  def singleInSeq: Parser[Predicate] = SINGLE ~> parens(symbolIterablePredicate) ^^ (x => nullable(SingleInCollection(x._1, x._2, x._3), x._1))
 
   def operators:Parser[Predicate] =
     (expression ~ "=" ~ expression ^^ { case l ~ "=" ~ r => nullable(Equals(l, r),l,r)  } |

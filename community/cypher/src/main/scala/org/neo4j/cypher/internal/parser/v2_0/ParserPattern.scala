@@ -86,7 +86,7 @@ trait ParserPattern extends Base with Labels {
       failure("expected an expression that is a node")
 
 
-  private def values = (("="|ignoreCase("values")) ~> curlyMapWithExpression) | curlyMap
+  private def values = (("="|VALUES) ~> curlyMapWithExpression) | curlyMap
 
   private def labelsAndValues: Parser[(LabelSpec, Map[String, Expression], Boolean)] = optLabelChoiceForm ~ opt(values) ^^ {
     case labelSpec ~ optMap =>
@@ -151,12 +151,9 @@ trait ParserPattern extends Base with Labels {
 
   private def patternForShortestPath: Parser[AbstractPattern] = onlyOne("expected single path segment", relationship)
 
-  private def shortestPath: Parser[List[AbstractPattern]] = generatedName ~ (ignoreCase("shortestPath") | ignoreCase("allShortestPaths")) ~ parens(patternForShortestPath) ^^ {
+  private def shortestPath: Parser[List[AbstractPattern]] = generatedName ~ (SHORTESTPATH | ALLSHORTESTPATHS) ~ parens(patternForShortestPath) ^^ {
     case name ~ algo ~ relInfo =>
-      val single = algo match {
-        case "shortestpath" => true
-        case "allshortestpaths" => false
-      }
+      val single = algo.startsWith("s")
 
       val PatternWithEnds(start, end, typez, dir, optional, maxDepth, relIterator) = relInfo
 
