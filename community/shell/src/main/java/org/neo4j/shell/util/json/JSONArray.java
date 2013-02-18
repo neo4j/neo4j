@@ -46,10 +46,7 @@ SOFTWARE.
 import java.io.IOException;
 import java.io.Writer;
 import java.lang.reflect.Array;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.Map;
+import java.util.*;
 
 /**
  * A JSONArray is an ordered sequence of values. Its external text form is a
@@ -113,6 +110,11 @@ public class JSONArray {
      */
     public JSONArray() {
         this.myArrayList = new ArrayList<Object>();
+    }
+
+    public List<Object> toList()
+    {
+        return Collections.unmodifiableList( myArrayList );
     }
 
     /**
