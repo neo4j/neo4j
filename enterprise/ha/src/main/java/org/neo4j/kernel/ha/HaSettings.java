@@ -80,7 +80,7 @@ public class HaSettings
 
     @Description( "List of ZooKeeper coordinators. Only needed for rolling upgrade from 1.8 to 1.9" )
     @Deprecated
-    public static Setting<List<HostnamePort>> coordinators = setting( "ha.coordinators", list( ",", HOSTNAME_PORT ),
+    public static Setting<List<HostnamePort>> coordinators = setting( "ha.upgrade_coordinators", list( ",", HOSTNAME_PORT ),
             "" );
 
     @Description( "ZooKeeper session timeout. Only needed for rolling upgrade from 1.8 to 1.9" )
