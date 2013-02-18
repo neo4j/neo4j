@@ -2,6 +2,8 @@
 ------
 o Made it possible to run the parser concurrently
 o DISTINCT is now lazy, and keeps the incoming ordering
+o Added execution plan descriptions to execution results
+o Fixes #464 - getDeletedRelationships does not work for javacompat.ExecutionResult
 
 1.9.M04 (2013-01-17)
 --------------------

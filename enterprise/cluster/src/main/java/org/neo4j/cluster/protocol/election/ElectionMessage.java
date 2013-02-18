@@ -30,7 +30,7 @@ public enum ElectionMessage
     implements MessageType
 {
     created,join,leave,
-    demote, promote, vote, electionTimeout, voted;
+    demote, performRoleElections, promote, vote, electionTimeout, voted;
 
     public static class VotedData
         implements Serializable

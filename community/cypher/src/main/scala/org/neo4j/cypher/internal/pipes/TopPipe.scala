@@ -76,7 +76,9 @@ class TopPipe(source: Pipe, sortDescription: List[SortItem], countExpression: Ex
     result.toIterator
   }
 
-  def executionPlan() = "%s\rTopPipe(ORDER BY %s LIMIT %s)".format(source.executionPlan(), sortDescription.mkString(","), countExpression)
+  def executionPlanDescription =
+    source.executionPlanDescription
+      .andThen("Top", "orderBy" -> sortDescription.map(_.toString), "limit" -> countExpression)
 
   def symbols = source.symbols
 

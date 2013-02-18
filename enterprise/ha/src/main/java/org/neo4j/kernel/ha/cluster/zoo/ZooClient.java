@@ -75,12 +75,14 @@ import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.Listeners;
 import org.neo4j.helpers.Pair;
+import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.HaSettings;
-import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.ha.NeoStoreUtil;
+import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.ha.switchover.CompatibilityModeListener;
 import org.neo4j.kernel.ha.switchover.CompatibilityMonitor;
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.transaction.xaframework.LogExtractor;
 import org.neo4j.kernel.impl.transaction.xaframework.NullLogBuffer;
@@ -136,6 +138,7 @@ public class ZooClient implements Lifecycle, CompatibilityMonitor
     protected final StringLogger msgLog;
     private long sessionTimeout;
     private String haServer;
+    private final FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
 
     public ZooClient( StringLogger stringLogger, Config conf )
     {
@@ -812,7 +815,7 @@ public class ZooClient implements Lifecycle, CompatibilityMonitor
         LogExtractor extractor = null;
         try
         {
-            extractor = LogExtractor.from( storeDir, committedTx );
+            extractor = LogExtractor.from( fileSystem, storeDir, committedTx );
             long tx = extractor.extractNext( NullLogBuffer.INSTANCE );
             if ( tx != committedTx )
             {
@@ -1045,6 +1048,7 @@ public class ZooClient implements Lifecycle, CompatibilityMonitor
             log( "zoo watcher shut down" );
         }
 
+        @Override
         public void process( final WatchedEvent event )
         {
             /*
@@ -1346,6 +1350,7 @@ public class ZooClient implements Lifecycle, CompatibilityMonitor
 
     private class CompatibilitySlaveOnlyTxIdUpdater extends AbstractTxIdUpdater
     {
+        @Override
         public void init()
         {
             writeData( -1, -1 );
@@ -1784,5 +1789,5 @@ public class ZooClient implements Lifecycle, CompatibilityMonitor
         }
     }
 
-    public static final Machine NO_MACHINE = (Machine) ZooKeeperMachine.NO_MACHINE;
+    public static final Machine NO_MACHINE = ZooKeeperMachine.NO_MACHINE;
 }

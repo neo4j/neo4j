@@ -1,6 +1,6 @@
 Neo4j
-Copyright © 2002-2012 Network Engine for Objects in Lund AB (referred to
-in this notice as “Neo Technology”)
+Copyright © 2002-2013 Network Engine for Objects in Lund AB (referred to
+in this notice as "Neo Technology")
    [http://neotechnology.com]
 
 This product includes software ("Software") developed by Neo Technology.
@@ -20,15 +20,11 @@ such Commercial Agreement will supersede the GPL and you may use the
 software solely pursuant to the terms of the relevant Commercial
 Agreement.
 
+Full license texts are found in LICENSES.txt.
 
-Third party libraries
----------------------
+Third-party licenses
+--------------------
 
-The bundled jLine library is copyright mwp1@cornell.edu
-under the BSD License (http://www.opensource.org/licenses/bsd-license.php)
+Apache Software License, Version 2.0
+  Apache ServiceMix Bundles: jline-0.9.94
 
-The bundled Apache Geronimo JTA library is copyright
-The Apache Software Foundation  (http://www.apache.org/)
-under the Apache License version 2.0.
-
-ConcurrentLinkedHashMap under Apache License version 2.0.

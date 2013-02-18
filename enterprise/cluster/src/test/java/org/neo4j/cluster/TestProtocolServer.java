@@ -45,6 +45,7 @@ public class TestProtocolServer
     protected final TestMessageSender sender;
 
     protected ProtocolServer server;
+    private final DelayedDirectExecutor stateMachineExecutor;
 
     public TestProtocolServer( TimeoutStrategy timeoutStrategy, ProtocolServerFactory factory, URI serverId,
                                AcceptorInstanceStore acceptorInstanceStore,
@@ -53,8 +54,10 @@ public class TestProtocolServer
         this.receiver = new TestMessageSource();
         this.sender = new TestMessageSender();
 
+        stateMachineExecutor = new DelayedDirectExecutor();
+
         server = factory.newProtocolServer( timeoutStrategy, receiver, sender, acceptorInstanceStore,
-                electionCredentialsProvider );
+                electionCredentialsProvider, stateMachineExecutor );
 
         server.listeningAt( serverId );
     }
@@ -73,6 +76,7 @@ public class TestProtocolServer
     public void process( Message message )
     {
         receiver.process( message );
+
     }
 
     public void sendMessages( List<Message> output )
@@ -95,6 +99,8 @@ public class TestProtocolServer
     {
         // Time passes - check timeouts
         server.getTimeouts().tick( now );
+
+        stateMachineExecutor.drain();
     }
 
     @Override

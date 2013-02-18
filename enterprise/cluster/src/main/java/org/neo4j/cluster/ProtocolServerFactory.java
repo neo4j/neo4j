@@ -19,6 +19,8 @@
  */
 package org.neo4j.cluster;
 
+import java.util.concurrent.Executor;
+
 import org.neo4j.cluster.com.message.MessageSender;
 import org.neo4j.cluster.com.message.MessageSource;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.AcceptorInstanceStore;
@@ -34,5 +36,6 @@ public interface ProtocolServerFactory
 {
     ProtocolServer newProtocolServer( TimeoutStrategy timeouts, MessageSource input, MessageSender output,
                                       AcceptorInstanceStore acceptorInstanceStore,
-                                      ElectionCredentialsProvider electionCredentialsProvider );
+                                      ElectionCredentialsProvider electionCredentialsProvider,
+                                      Executor stateMachineExecutor );
 }

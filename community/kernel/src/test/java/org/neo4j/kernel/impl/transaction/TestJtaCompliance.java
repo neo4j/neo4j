@@ -47,8 +47,8 @@ public class TestJtaCompliance extends AbstractNeo4jTestCase
     public void setUpFramework()
     {
         getTransaction().finish();
-        tm = getEmbeddedGraphDb().getTxManager();
-        xaDsMgr = getEmbeddedGraphDb().getXaDataSourceManager();
+        tm = getGraphDbAPI().getTxManager();
+        xaDsMgr = getGraphDbAPI().getXaDataSourceManager();
         java.util.Map<String,String> map1 = new java.util.HashMap<String,String>();
         map1.put( "store_dir", "target/var" );
         java.util.Map<String,String> map2 = new java.util.HashMap<String,String>();

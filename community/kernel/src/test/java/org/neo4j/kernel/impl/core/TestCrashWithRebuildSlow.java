@@ -23,15 +23,22 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
 
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.junit.Test;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.test.ProcessStreamHandler;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.impl.MyRelTypes;
+import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 /**
@@ -43,19 +50,22 @@ public class TestCrashWithRebuildSlow
     @Test
     public void crashAndRebuildSlowWithDynamicStringDeletions() throws Exception
     {
-        // Produce the string store with holes in it
-        String dir = TargetDirectory.forTest( getClass() ).directory( "holes", true ).getAbsolutePath();
-        Process process = Runtime.getRuntime().exec( new String[]{
-            "java", "-cp", System.getProperty( "java.class.path" ),
-            ProduceNonCleanDefraggedStringStore.class.getName(), dir
-        } );
-
-        int processResult = new ProcessStreamHandler( process, true ).waitForResult();
-
-        assertEquals( 0, processResult );
+        EphemeralFileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
+        String storeDir = "dir";
+        GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory()
+                .setFileSystem( fileSystem ).newImpermanentDatabase( storeDir );
+        produceNonCleanDefraggedStringStore( db );
+        EphemeralFileSystemAbstraction snapshot = fileSystem.snapshot();
+        db.shutdown();
         
         // Recover with rebuild_idgenerators_fast=false
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( dir ).setConfig( GraphDatabaseSettings.rebuild_idgenerators_fast, GraphDatabaseSetting.FALSE ).newGraphDatabase();
+        assertNumberOfFreeIdsEquals( storeDir, snapshot, 0 );
+        db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().setFileSystem( snapshot )
+                .newImpermanentDatabaseBuilder( storeDir )
+                .setConfig( GraphDatabaseSettings.rebuild_idgenerators_fast, GraphDatabaseSetting.FALSE )
+                .newGraphDatabase();
+        assertNumberOfFreeIdsEquals( storeDir, snapshot, 4 );
+        
         try
         {
             int nameCount = 0;
@@ -76,5 +86,58 @@ public class TestCrashWithRebuildSlow
         {
             db.shutdown();
         }
+    }
+
+    private void assertNumberOfFreeIdsEquals( String storeDir, EphemeralFileSystemAbstraction snapshot, int numberOfFreeIds )
+    {
+        assertEquals( 9/*header*/ + 8*numberOfFreeIds,
+                snapshot.getFileSize( new File( storeDir, "neostore.propertystore.db.strings.id" ) ) );
+    }
+
+    private void produceNonCleanDefraggedStringStore( GraphDatabaseService db )
+    {
+        // Create some strings
+        List<Node> nodes = new ArrayList<Node>();
+        Transaction tx = db.beginTx();
+        try
+        {
+            Node previous = null;
+            for ( int i = 0; i < 20; i++ )
+            {
+                Node node = db.createNode();
+                node.setProperty( "name", "a looooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooong string" );
+                nodes.add( node );
+                if ( previous != null )
+                    previous.createRelationshipTo( node, MyRelTypes.TEST );
+                previous = node;
+            }
+            tx.success();
+        }
+        finally
+        {
+            tx.finish();
+        }
+        
+        // Delete some of them, but leave some in between deletions
+        tx = db.beginTx();
+        try
+        {
+            delete( nodes.get( 5 ) );
+            delete( nodes.get( 7 ) );
+            delete( nodes.get( 8 ) );
+            delete( nodes.get( 10 ) );
+            tx.success();
+        }
+        finally
+        {
+            tx.finish();
+        }
+    }
+
+    private static void delete( Node node )
+    {
+        for ( Relationship rel : node.getRelationships() )
+            rel.delete();
+        node.delete();
     }
 }

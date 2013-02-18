@@ -64,7 +64,6 @@ import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeStore;
-import org.neo4j.kernel.impl.nioneo.xa.Command.PropertyCommand;
 import org.neo4j.kernel.impl.persistence.NeoStoreTransaction;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
 import org.neo4j.kernel.impl.transaction.xaframework.XaConnection;
@@ -175,10 +174,6 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             Command.NodeCommand command = new Command.NodeCommand(
                 neoStore.getNodeStore(), record );
             nodeCommands.add( command );
-            if ( !record.inUse() )
-            {
-                removeNodeFromCache( record.getId() );
-            }
             commands.add( command );
         }
         for ( RelationshipRecord record : relRecords.values() )
@@ -187,10 +182,6 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
                 new Command.RelationshipCommand(
                     neoStore.getRelationshipStore(), record );
             relCommands.add( command );
-            if ( !record.inUse() )
-            {
-                removeRelationshipFromCache( record.getId() );
-            }
             commands.add( command );
         }
         if ( neoStoreRecord != null )
@@ -312,6 +303,8 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
                     getRelationshipStore().freeId( record.getId() );
                 }
                 removeRelationshipFromCache( record.getId() );
+                patchDeletedRelationshipNodes( record.getId(), record.getFirstNode(), record.getFirstNextRel(),
+                        record.getSecondNode(), record.getSecondNextRel() );
             }
             if ( neoStoreRecord != null )
             {
@@ -381,6 +374,12 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
     private void removeRelationshipTypeFromCache( int id )
     {
         state.removeRelationshipTypeFromCache( id );
+    }
+
+    private void patchDeletedRelationshipNodes( long id, long firstNodeId, long firstNodeNextRelId, long secondNodeId,
+                                                long secondNextRelId )
+    {
+        state.patchDeletedRelationshipNodes( id, firstNodeId, firstNodeNextRelId, secondNodeId, secondNextRelId );
     }
 
     private void removeRelationshipFromCache( long id )
@@ -474,7 +473,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             java.util.Collections.sort( propCommands, sorter );
             executeCreated( isRecovered, propCommands, relCommands, nodeCommands );
             executeModified( isRecovered, propCommands, relCommands, nodeCommands );
-            executeDeleted( isRecovered, propCommands, relCommands, nodeCommands );
+            executeDeleted( propCommands, relCommands, nodeCommands );
             if ( isRecovered )
                 neoStore.setRecoveredStatus( true );
             try
@@ -548,17 +547,19 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         }
     }
 
-    private void executeDeleted( boolean removeFromCache, List<? extends Command>... commands )
+    private void executeDeleted( List<? extends Command>... commands )
     {
         for ( List<? extends Command> c : commands ) for ( Command command : c )
         {
             if ( command.isDeleted() )
             {
+                /*
+                 * We always update the disk image and then always invalidate the cache. In the case of relationships
+                 * this is expected to also patch the relChainPosition in the start and end NodeImpls (if they actually
+                 * are in cache).
+                 */
                 command.execute();
-                if ( removeFromCache )
-                {
-                    command.removeFromCache( state );
-                }
+                command.removeFromCache( state );
             }
         }
     }
@@ -578,21 +579,6 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         relCommands.clear();
         relTypeCommands = null;
         neoStoreCommand = null;
-    }
-
-    private void removePropertyFromCache( PropertyCommand command )
-    {
-        long nodeId = command.getNodeId();
-        long relId = command.getRelId();
-        if ( nodeId != -1 )
-        {
-            removeNodeFromCache( nodeId );
-        }
-        else if ( relId != -1 )
-        {
-            removeRelationshipFromCache( relId );
-        }
-        // else means record value did not change
     }
 
     private RelationshipTypeStore getRelationshipTypeStore()

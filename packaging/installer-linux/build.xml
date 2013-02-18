@@ -39,7 +39,7 @@
                    compression="gzip"/>
 
             <!-- Handle the case of the co-ordinator -->
-            <copy toDir="${project.build.outputDirectory}/neo4j-coordinator-${neo4j.version}" failonerror="false">
+            <copy toDir="${project.build.outputDirectory}/neo4j-arbiter-${neo4j.version}" failonerror="false">
                 <fileset dir="${project.build.outputDirectory}/neo4j-enterprise-${neo4j.version}"/>
             </copy>
 
@@ -56,6 +56,7 @@
                     <include name="**/server/bin/neo4j-shell"/>
                     <include name="**/server/bin/utils"/>
                     <include name="**/server/bin/neo4j-backup"/>
+                    <include name="**/server/bin/neo4j-arbiter"/>
                     <include name="**/server/bin/neo4j-coordinator"/>
                     <include name="**/server/bin/neo4j-coordinator-shell"/>
                 </fileset>
@@ -78,16 +79,16 @@
         </sequential>
     </macrodef>
 
-    <target name="coordinator_dependency">
+    <target name="arbiter_dependency">
         <copy file="${project.build.directory}/neo4j-enterprise-${neo4j.version}-unix.tar.gz"
-              tofile="${project.build.directory}/neo4j-coordinator-${neo4j.version}-unix.tar.gz" />
+              tofile="${project.build.directory}/neo4j-arbiter-${neo4j.version}-unix.tar.gz" />
     </target>
 
     <target name="generate">
         <package name="community"/>
         <package name="advanced"/>
         <package name="enterprise"/>
-        <package name="coordinator"/>
+        <package name="arbiter"/>
     </target>
 
     <target name="publish_to_target" depends="generate">
@@ -105,9 +106,9 @@ other projects would have to figure out the debian compliant version). -->
                 file="${project.build.outputDirectory}/neo4j-enterprise_${neo4j.version.debian_compliant}_all.deb"
                 toFile="${project.build.directory}/neo4j-enterprise_${neo4j.version}_all.deb"/>
         <copy
-                file="${project.build.outputDirectory}/neo4j-coordinator_${neo4j.version.debian_compliant}_all.deb"
-                toFile="${project.build.directory}/neo4j-coordinator_${neo4j.version}_all.deb"/>
+                file="${project.build.outputDirectory}/neo4j-arbiter_${neo4j.version.debian_compliant}_all.deb"
+                toFile="${project.build.directory}/neo4j-arbiter_${neo4j.version}_all.deb"/>
     </target>
 
-    <target name="debian" depends="coordinator_dependency, publish_to_target"/>
+    <target name="debian" depends="arbiter_dependency, publish_to_target"/>
 </project>

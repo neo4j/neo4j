@@ -495,7 +495,7 @@ public class LuceneDataSource extends LogBackedXaDataSource
             IndexReader reopened = IndexReader.openIfChanged( reader, writer, true );
             if ( reopened != null )
             {
-                IndexSearcher newSearcher = new IndexSearcher( reopened );
+                IndexSearcher newSearcher = newIndexSearcher( searcher.getIdentifier(), reopened );
                 searcher.detachOrClose();
                 return new IndexReference( searcher.getIdentifier(), newSearcher, writer );
             }
@@ -587,7 +587,7 @@ public class LuceneDataSource extends LogBackedXaDataSource
             {
                 IndexWriter writer = newIndexWriter( identifier );
                 IndexReader reader = IndexReader.open( writer, true );
-                IndexSearcher indexSearcher = new IndexSearcher( reader );
+                IndexSearcher indexSearcher = newIndexSearcher( identifier, reader );
                 searcher = new IndexReference( identifier, indexSearcher, writer );
                 indexSearchers.put( identifier, searcher );
             }
@@ -605,6 +605,15 @@ public class LuceneDataSource extends LogBackedXaDataSource
         {
             throw new RuntimeException( e );
         }
+    }
+
+    private IndexSearcher newIndexSearcher( IndexIdentifier identifier, IndexReader reader )
+    {
+        IndexSearcher searcher = new IndexSearcher( reader );
+        IndexType type = getType( identifier, false );
+        if ( type.getSimilarity() != null )
+            searcher.setSimilarity( type.getSimilarity() );
+        return searcher;
     }
 
     private IndexReference refreshSearcherIfNeeded( IndexReference searcher )

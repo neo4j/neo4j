@@ -108,8 +108,8 @@ public class TestXaFramework extends AbstractNeo4jTestCase
     public void setUpFramework()
     {
         getTransaction().finish();
-        tm = getEmbeddedGraphDb().getTxManager();
-        xaDsMgr = getEmbeddedGraphDb().getXaDataSourceManager();
+        tm = getGraphDbAPI().getTxManager();
+        xaDsMgr = getGraphDbAPI().getXaDataSourceManager();
     }
 
     private static class DummyCommand extends XaCommand
@@ -256,7 +256,7 @@ public class TestXaFramework extends AbstractNeo4jTestCase
                             @Override
                             public TxIdGenerator getTxIdGenerator()
                             {
-                                return getEmbeddedGraphDb().getTxIdGenerator();
+                                return getGraphDbAPI().getTxIdGenerator();
                             }
                         };
                     }
@@ -407,7 +407,7 @@ public class TestXaFramework extends AbstractNeo4jTestCase
         xaDsMgr.registerDataSource( new DummyXaDataSource(
                 config, UTF8.encode( "DDDDDD" ), "dummy_datasource",
                 new XaFactory( new Config( config, GraphDatabaseSettings.class ),
-                        TxIdGenerator.DEFAULT, new PlaceboTm( null, getEmbeddedGraphDb().getTxIdGenerator() ), new DefaultLogBufferFactory(),
+                        TxIdGenerator.DEFAULT, new PlaceboTm( null, getGraphDbAPI().getTxIdGenerator() ), new DefaultLogBufferFactory(),
                         fileSystem, new DevNullLoggingService(),
                         RecoveryVerifier.ALWAYS_VALID, LogPruneStrategies.NO_PRUNING ) ) );
         XaDataSource xaDs = xaDsMgr.getXaDataSource( "dummy_datasource" );

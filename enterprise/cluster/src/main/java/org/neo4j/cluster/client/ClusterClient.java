@@ -22,6 +22,7 @@ package org.neo4j.cluster.client;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
@@ -32,6 +33,7 @@ import org.neo4j.cluster.BindingListener;
 import org.neo4j.cluster.ClusterMonitor;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.ConnectedStateMachines;
+import org.neo4j.cluster.ExecutorLifecycleAdapter;
 import org.neo4j.cluster.MultiPaxosServerFactory;
 import org.neo4j.cluster.ProtocolServer;
 import org.neo4j.cluster.com.BindingNotifier;
@@ -47,6 +49,7 @@ import org.neo4j.cluster.protocol.cluster.Cluster;
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.protocol.cluster.ClusterListener;
 import org.neo4j.cluster.protocol.cluster.ClusterMessage;
+import org.neo4j.cluster.protocol.election.Election;
 import org.neo4j.cluster.protocol.election.ElectionCredentialsProvider;
 import org.neo4j.cluster.protocol.election.ElectionMessage;
 import org.neo4j.cluster.protocol.heartbeat.Heartbeat;
@@ -60,7 +63,9 @@ import org.neo4j.cluster.timeout.FixedTimeoutStrategy;
 import org.neo4j.cluster.timeout.MessageTimeoutStrategy;
 import org.neo4j.cluster.timeout.Timeouts;
 import org.neo4j.helpers.DaemonThreadFactory;
+import org.neo4j.helpers.Factory;
 import org.neo4j.helpers.HostnamePort;
+import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -68,7 +73,7 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.Logging;
 
 public class ClusterClient extends LifecycleAdapter
-        implements ClusterMonitor, Cluster, AtomicBroadcast, Snapshot, BindingNotifier
+        implements ClusterMonitor, Cluster, AtomicBroadcast, Snapshot, Election, BindingNotifier
 {
     public interface Configuration
     {
@@ -230,6 +235,7 @@ public class ClusterClient extends LifecycleAdapter
     private final AtomicBroadcast broadcast;
     private final Heartbeat heartbeat;
     private final Snapshot snapshot;
+    private final Election election;
 
     private final ProtocolServer server;
 
@@ -263,8 +269,17 @@ public class ClusterClient extends LifecycleAdapter
             }
         }, logging );
 
+        ExecutorLifecycleAdapter stateMachineExecutor = new ExecutorLifecycleAdapter( new Factory<ExecutorService>()
+        {
+            @Override
+            public ExecutorService newInstance()
+            {
+                return Executors.newSingleThreadExecutor( new NamedThreadFactory( "State machine" ) );
+            }
+        } );
+
         server = protocolServerFactory.newProtocolServer( timeoutStrategy, networkNodeTCP, networkNodeTCP,
-                acceptorInstanceStore, electionCredentialsProvider );
+                acceptorInstanceStore, electionCredentialsProvider, stateMachineExecutor );
 
         networkNodeTCP.addNetworkChannelsListener( new NetworkInstance.NetworkChannelsListener()
         {
@@ -285,6 +300,8 @@ public class ClusterClient extends LifecycleAdapter
             {
             }
         } );
+
+        life.add( stateMachineExecutor );
 
         life.add( networkNodeTCP );
 
@@ -368,6 +385,7 @@ public class ClusterClient extends LifecycleAdapter
         broadcast = server.newClient( AtomicBroadcast.class );
         heartbeat = server.newClient( Heartbeat.class );
         snapshot = server.newClient( Snapshot.class );
+        election = server.newClient( Election.class );
     }
 
     @Override
@@ -446,6 +464,24 @@ public class ClusterClient extends LifecycleAdapter
     public void removeHeartbeatListener( HeartbeatListener listener )
     {
         heartbeat.removeHeartbeatListener( listener );
+    }
+
+    @Override
+    public void demote( URI node )
+    {
+        election.demote( node );
+    }
+
+    @Override
+    public void performRoleElections()
+    {
+        election.performRoleElections();
+    }
+
+    @Override
+    public void promote( URI node, String role )
+    {
+        election.promote( node, role );
     }
 
     @Override

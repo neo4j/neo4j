@@ -88,9 +88,10 @@ public class MeasureDoNothing extends Thread
         logger.logMessage( "GC Monitor stopped. " );
     }
     
-    public void stopMeasuring()
+    public synchronized void stopMeasuring()
     {
         measure = false;
+        this.interrupt();
     }
     
     public long getTimeInBlock()

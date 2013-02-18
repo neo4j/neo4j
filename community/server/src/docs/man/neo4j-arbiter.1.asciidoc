@@ -1,0 +1,55 @@
+NEO4J-ARBITER(1)
+================
+:author: The Neo4j Team
+
+NAME
+----
+neo4j-arbiter - Neo4j Arbiter for High-Availability clusters
+
+
+[[neo4j-arbiter-manpage]]
+SYNOPSIS
+--------
+
+*neo4j-arbiter* <command>
+
+[[neo4j-arbiter-manpage-description]]
+DESCRIPTION
+-----------
+Neo4j Arbiter is a service that can help break ties in Neo4j clusters that have an even number of cluster members.
+
+[[neo4j-arbiter-manpage-commands]]
+COMMANDS
+--------
+
+*console*::
+  Start the server as an application, running as a foreground process. Stop the server using `CTRL-C`.
+
+*start*::
+  Start server as daemon, running as a background process.
+
+*stop*::
+  Stops a running daemonized server.
+
+*restart*::
+  Restarts a running server.
+
+*status*::
+  Current running state of the server
+
+*install*::
+  Installs the server as a platform-appropriate system service.
+
+*remove*::
+  Uninstalls the system service
+
+[[neo4j-arbiter-manpage-files]]
+FILES
+-----
+
+*conf/arbiter.cfg*::
+  Arbiter server configuration.
+
+*conf/arbiter-wrapper.cfg*::
+  Configuration for service wrapper.
+

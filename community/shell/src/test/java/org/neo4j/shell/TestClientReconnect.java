@@ -21,25 +21,21 @@ package org.neo4j.shell;
 
 import static org.junit.Assert.assertTrue;
 
-import java.io.File;
 import java.io.Serializable;
 import java.util.Map;
 
 import org.junit.Test;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
-import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.test.TargetDirectory;
 
 public class TestClientReconnect extends AbstractShellTest
 {
-    private final File storeDir = TargetDirectory.forTest( getClass() ).graphDbDir( true );
-    
-    @Override
-    protected GraphDatabaseAPI newDb()
-    {
-        return new EmbeddedGraphDatabase( storeDir.getAbsolutePath() );
-    }
+//    private final File storeDir = TargetDirectory.forTest( getClass() ).graphDbDir( true );
+//    
+//    @Override
+//    protected GraphDatabaseAPI newDb()
+//    {
+//        return new EmbeddedGraphDatabase( storeDir.getAbsolutePath() );
+//    }
     
     @Test
     public void remoteClientAbleToReconnectAndContinue() throws Exception

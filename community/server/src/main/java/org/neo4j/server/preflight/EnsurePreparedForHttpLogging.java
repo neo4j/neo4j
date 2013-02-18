@@ -82,21 +82,21 @@ public class EnsurePreparedForHttpLogging implements PreflightTask
         }
         catch ( IOException e )
         {
-            failureMessage = String.format( "HTTP log file [%s] does not exist",
+            failureMessage = String.format( "HTTP log directory [%s] does not exist",
                 logLocation.getAbsolutePath() );
             return false;
         }
 
         if ( !logLocation.exists() )
         {
-            failureMessage = String.format( "HTTP log [%s] cannot be created",
+            failureMessage = String.format( "HTTP log directory [%s] cannot be created",
                 logLocation.getAbsolutePath() );
             return false;
         }
 
         if ( !logLocation.canWrite() )
         {
-            failureMessage = String.format( "HTTP log [%s] is not writable",
+            failureMessage = String.format( "HTTP log directory [%s] is not writable",
                 logLocation.getAbsolutePath() );
             return false;
         }
@@ -116,7 +116,7 @@ public class EnsurePreparedForHttpLogging implements PreflightTask
 
             final Node node = doc.getElementsByTagName( "file" ).item( 0 );
 
-            return new File( node.getTextContent() );
+            return new File( node.getTextContent() ).getParentFile();
         }
         catch ( Exception e )
         {

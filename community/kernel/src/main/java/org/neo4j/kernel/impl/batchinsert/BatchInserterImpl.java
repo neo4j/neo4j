@@ -20,15 +20,18 @@
 package org.neo4j.kernel.impl.batchinsert;
 
 import java.util.Map;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.impl.index.IndexStore;
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.unsafe.batchinsert.BatchInserters;
 
 /**
  * @deprecated see {@link BatchInserters} for what to use.
  */
+@Deprecated
 public class BatchInserterImpl implements BatchInserter
 {
     private final org.neo4j.unsafe.batchinsert.BatchInserterImpl batchInserter;
@@ -38,6 +41,13 @@ public class BatchInserterImpl implements BatchInserter
         batchInserter = (org.neo4j.unsafe.batchinsert.BatchInserterImpl) BatchInserters.inserter( storeDir );
     }
 
+    public BatchInserterImpl( String storeDir, FileSystemAbstraction fileSystem,
+            Map<String,String> stringParams )
+    {
+        batchInserter = (org.neo4j.unsafe.batchinsert.BatchInserterImpl) BatchInserters.inserter(
+                storeDir, fileSystem, stringParams );
+    }
+    
     public BatchInserterImpl( String storeDir,
         Map<String,String> stringParams )
     {
@@ -182,6 +192,7 @@ public class BatchInserterImpl implements BatchInserter
     /**
      * @deprecated as of Neo4j 1.7
      */
+    @Deprecated
     @Override
     public GraphDatabaseService getGraphDbService()
     {

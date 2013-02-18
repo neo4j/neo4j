@@ -40,7 +40,7 @@ public class Pwd extends ReadOnlyGraphDatabaseApp
     @Override
     public String getDescription()
     {
-        return "Prints path to current node or relatioship";
+        return "Prints path to current node or relationship";
     }
 
     @Override

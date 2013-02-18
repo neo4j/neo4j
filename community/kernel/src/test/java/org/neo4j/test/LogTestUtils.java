@@ -19,15 +19,14 @@
  */
 package org.neo4j.test;
 
-import static junit.framework.Assert.fail;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 import static org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils.readEntry;
 import static org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils.writeLogEntry;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
@@ -40,6 +39,7 @@ import javax.transaction.xa.Xid;
 
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Predicate;
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.TxLog;
 import org.neo4j.kernel.impl.transaction.XidImpl;
@@ -53,7 +53,6 @@ import org.neo4j.kernel.impl.util.DumpLogicalLog.CommandFactory;
  * Utility for reading and filtering logical logs as well as tx logs.
  * 
  * @author Mattias Persson
- *
  */
 public class LogTestUtils
 {
@@ -213,28 +212,32 @@ public class LogTestUtils
         }
     }
     
-    public static void filterTxLog( String storeDir, LogHook<Pair<Byte, List<byte[]>>> filter ) throws IOException
+    public static void filterTxLog( FileSystemAbstraction fileSystem, String storeDir,
+            LogHook<Pair<Byte, List<byte[]>>> filter ) throws IOException
     {
-        filterTxLog( storeDir, filter, 0 );
+        filterTxLog( fileSystem, storeDir, filter, 0 );
     }
     
-    public static void filterTxLog( String storeDir, LogHook<Pair<Byte, List<byte[]>>> filter, long startPosition ) throws IOException
+    public static void filterTxLog( FileSystemAbstraction fileSystem, String storeDir,
+            LogHook<Pair<Byte, List<byte[]>>> filter, long startPosition ) throws IOException
     {
         for ( File file : oneOrTwo( new File( storeDir, "tm_tx_log" ) ) )
-            filterTxLog( file, filter, startPosition );
+            filterTxLog( fileSystem, file, filter, startPosition );
     }
     
-    public static void filterTxLog( File file, LogHook<Pair<Byte, List<byte[]>>> filter ) throws IOException
+    public static void filterTxLog( FileSystemAbstraction fileSystem, File file,
+            LogHook<Pair<Byte, List<byte[]>>> filter ) throws IOException
     {
-        filterTxLog( file, filter, 0 );
+        filterTxLog( fileSystem, file, filter, 0 );
     }
     
-    public static void filterTxLog( File file, LogHook<Pair<Byte, List<byte[]>>> filter, long startPosition ) throws IOException
+    public static void filterTxLog( FileSystemAbstraction fileSystem, File file,
+            LogHook<Pair<Byte, List<byte[]>>> filter, long startPosition ) throws IOException
     {
-        File tempFile = new File( file.getAbsolutePath() + ".tmp" );
-        FileChannel in = new RandomAccessFile( file, "r" ).getChannel();
+        File tempFile = new File( file.getPath() + ".tmp" );
+        FileChannel in = fileSystem.open( file, "r" );
         in.position( startPosition );
-        FileChannel out = new RandomAccessFile( tempFile, "rw" ).getChannel();
+        FileChannel out = fileSystem.open( tempFile, "rw" );
         LogBuffer outBuffer = new DirectMappedLogBuffer( out );
         ByteBuffer buffer = ByteBuffer.allocate( 1024*1024 );
         boolean changed = false;
@@ -276,9 +279,10 @@ public class LogTestUtils
             tempFile.delete();
     }
 
-    public static void assertLogContains( String logPath, LogEntry ... expectedEntries ) throws IOException
+    public static void assertLogContains( FileSystemAbstraction fileSystem, String logPath,
+            LogEntry ... expectedEntries ) throws IOException
     {
-        FileChannel fileChannel = new RandomAccessFile( logPath, "r" ).getChannel();
+        FileChannel fileChannel = fileSystem.open( new File( logPath ), "r" );
         ByteBuffer buffer = ByteBuffer.allocateDirect( 9 + Xid.MAXGTRIDSIZE
                 + Xid.MAXBQUALSIZE * 10 );
 
@@ -323,25 +327,26 @@ public class LogTestUtils
         tempFile.renameTo( file );
     }
 
-    public static File[] filterNeostoreLogicalLog( String storeDir, LogHook<LogEntry> filter ) throws IOException
+    public static File[] filterNeostoreLogicalLog( FileSystemAbstraction fileSystem,
+            String storeDir, LogHook<LogEntry> filter ) throws IOException
     {
         File[] logFiles = oneOrTwo( new File( storeDir, NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME ) );
         for ( File file : logFiles )
         {
-            File filteredLog = filterNeostoreLogicalLog( file, filter );
+            File filteredLog = filterNeostoreLogicalLog( fileSystem, file, filter );
             replace( filteredLog, file );
         }
 
         return logFiles;
     }
 
-    public static File filterNeostoreLogicalLog( File file, LogHook<LogEntry> filter )
+    public static File filterNeostoreLogicalLog( FileSystemAbstraction fileSystem, File file, LogHook<LogEntry> filter )
             throws IOException
     {
         filter.file( file );
         File tempFile = new File( file.getAbsolutePath() + ".tmp" );
-        FileChannel in = new RandomAccessFile( file, "r" ).getChannel();
-        FileChannel out = new RandomAccessFile( tempFile, "rw" ).getChannel();
+        FileChannel in = fileSystem.open( file, "r" );;
+        FileChannel out = fileSystem.open( tempFile, "rw" );
         LogBuffer outBuffer = new DirectMappedLogBuffer( out );
         ByteBuffer buffer = ByteBuffer.allocate( 1024*1024 );
         transferLogicalLogHeader( in, outBuffer, buffer );
@@ -424,5 +429,77 @@ public class LogTestUtils
         if ( files.isEmpty() )
             throw new IllegalStateException( "Couldn't find any active tm log" );
         return files.toArray( new File[files.size()] );
+    }
+
+    public static NonCleanLogCopy copyLogicalLog( FileSystemAbstraction fileSystem,
+            File logBaseFileName ) throws IOException
+    {
+        char active = '1';
+        File activeLog = new File( logBaseFileName.getPath() + ".active" );
+        FileChannel af = fileSystem.open( activeLog, "r" );
+        ByteBuffer buffer = ByteBuffer.allocate( 1024 );
+        af.read( buffer );
+        buffer.flip();
+        File activeLogBackup = new File( logBaseFileName.getPath() + ".bak.active" );
+        FileChannel activeCopy = fileSystem.open( activeLogBackup, "rw" );
+        activeCopy.write( buffer );
+        activeCopy.close();
+        af.close();
+        buffer.flip();
+        active = buffer.asCharBuffer().get();
+        buffer.clear();
+        File currentLog = new File( logBaseFileName.getPath() + "." + active );
+        FileChannel source = fileSystem.open( currentLog, "r" );
+        File currentLogBackup = new File( logBaseFileName.getPath() + ".bak." + active );
+        FileChannel dest = fileSystem.open( currentLogBackup, "rw" );
+        int read = -1;
+        do
+        {
+            read = source.read( buffer );
+            buffer.flip();
+            dest.write( buffer );
+            buffer.clear();
+        }
+        while ( read == 1024 );
+        source.close();
+        dest.close();
+        return new NonCleanLogCopy(
+                new FileBackup( activeLog, activeLogBackup, fileSystem ),
+                new FileBackup( currentLog, currentLogBackup, fileSystem ) );
+    }
+    
+    private static class FileBackup
+    {
+        private final File file, backup;
+        private final FileSystemAbstraction fileSystem;
+        
+        FileBackup( File file, File backup, FileSystemAbstraction fileSystem )
+        {
+            this.file = file;
+            this.backup = backup;
+            this.fileSystem = fileSystem;
+        }
+        
+        public void restore() throws IOException
+        {
+            fileSystem.deleteFile( file );
+            fileSystem.renameFile( backup, file );
+        }
+    }
+    
+    public static class NonCleanLogCopy
+    {
+        private final FileBackup[] backups;
+
+        NonCleanLogCopy( FileBackup... backups )
+        {
+            this.backups = backups;
+        }
+        
+        public void reinstate() throws IOException
+        {
+            for ( FileBackup backup : backups )
+                backup.restore();
+        }
     }
 }

@@ -44,7 +44,8 @@ import org.neo4j.shell.impl.AbstractServer;
 import org.neo4j.shell.impl.CollectingOutput;
 import org.neo4j.shell.impl.RmiLocation;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
-import org.neo4j.test.ImpermanentGraphDatabase;
+import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
 @Ignore( "Not a unit test" )
 public abstract class AbstractShellTest
@@ -54,6 +55,7 @@ public abstract class AbstractShellTest
     private ShellClient shellClient;
     private Integer remotelyAvailableOnPort;
     protected static final RelationshipType RELATIONSHIP_TYPE = withName( "TYPE" );
+    private final EphemeralFileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
 
     private Transaction tx;
 
@@ -67,7 +69,7 @@ public abstract class AbstractShellTest
     
     protected GraphDatabaseAPI newDb()
     {
-        return new ImpermanentGraphDatabase();
+        return (GraphDatabaseAPI) new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentDatabase();
     }
 
     protected ShellServer newServer( GraphDatabaseAPI db ) throws ShellException, RemoteException

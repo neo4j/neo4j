@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.nioneo.store;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
@@ -280,13 +279,12 @@ public class NeoStore extends AbstractStore
      * @param version the version to set.
      * @return the previous version before writing.
      */
-    public static long setVersion( File storeDir, long version )
+    public static long setVersion( FileSystemAbstraction fileSystem, File storeDir, long version )
     {
-        RandomAccessFile file = null;
+        FileChannel channel = null;
         try
         {
-            file = new RandomAccessFile( new File( storeDir, NeoStore.DEFAULT_NAME ), "rw" );
-            FileChannel channel = file.getChannel();
+            channel = fileSystem.open( new File( storeDir, NeoStore.DEFAULT_NAME ), "rw" );
             channel.position( RECORD_SIZE*2+1/*inUse*/ );
             ByteBuffer buffer = ByteBuffer.allocate( 8 );
             channel.read( buffer );
@@ -306,7 +304,7 @@ public class NeoStore extends AbstractStore
         {
             try
             {
-                if ( file != null ) file.close();
+                if ( channel != null ) channel.close();
             }
             catch ( IOException e )
             {
@@ -315,22 +313,22 @@ public class NeoStore extends AbstractStore
         }
     }
 
-    public static long getStoreVersion( FileSystemAbstraction fs, File storeDir )
+    public static long getStoreVersion( FileSystemAbstraction fs, File neoStore )
     {
-        return getRecord( fs, storeDir, 4 );
+        return getRecord( fs, neoStore, 4 );
     }
 
-    public static long getTxId( FileSystemAbstraction fs, File storeDir )
+    public static long getTxId( FileSystemAbstraction fs, File neoStore )
     {
-        return getRecord( fs, storeDir, 3 );
+        return getRecord( fs, neoStore, 3 );
     }
 
-    private static long getRecord( FileSystemAbstraction fs, File storeDir, long recordPosition )
+    private static long getRecord( FileSystemAbstraction fs, File neoStore, long recordPosition )
     {
         FileChannel channel = null;
         try
         {
-            channel = fs.open( storeDir, "rw" );
+            channel = fs.open( neoStore, "r" );
             /*
              * We have to check size, because the store version
              * field was introduced with 1.5, so if there is a non-clean
@@ -355,7 +353,8 @@ public class NeoStore extends AbstractStore
         {
             try
             {
-                if ( channel != null ) channel.close();
+                if ( channel != null )
+                    channel.close();
             }
             catch ( IOException e )
             {

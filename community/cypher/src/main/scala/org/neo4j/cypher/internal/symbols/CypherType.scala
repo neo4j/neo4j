@@ -20,17 +20,18 @@
 package org.neo4j.cypher.internal.symbols
 
 import org.neo4j.cypher.CypherTypeException
+import org.neo4j.cypher.internal.helpers.{IsCollection, IsMap}
+
 
 trait CypherType {
   def isAssignableFrom(other: CypherType): Boolean = this.getClass.isAssignableFrom(other.getClass)
 
-  def iteratedType: CypherType = throw new RuntimeException("wut")
+  def iteratedType: CypherType = throw new CypherTypeException("This is not a collection type")
 
-  def mergeWith(other: CypherType): CypherType = {
-    if (this.isAssignableFrom(other)) other
-    else if (other.isAssignableFrom(this)) this
-    else throw new CypherTypeException("Failed merging " + this + " with " + other)
-  }
+  def mergeWith(other: CypherType): CypherType =
+    if (this.isAssignableFrom(other)) this
+    else if (other.isAssignableFrom(this)) other
+    else parentType mergeWith other.parentType
 
   def parentType: CypherType
 
@@ -38,21 +39,15 @@ trait CypherType {
 }
 
 object CypherType {
-  def fromJava(obj: Any): CypherType = {
-    if (obj.isInstanceOf[String] || obj.isInstanceOf[Char])
-      return StringType()
-
-    if (obj.isInstanceOf[Number])
-      return NumberType()
-
-    if (obj.isInstanceOf[Boolean])
-      return BooleanType()
-
-    if (obj.isInstanceOf[Seq[_]] || obj.isInstanceOf[Array[_]])
-      return AnyCollectionType()
-
-    AnyType()
-  }
+  def fromJava(obj: Any): CypherType =
+    obj match {
+      case _: String          => StringType()
+      case _: Number          => NumberType()
+      case _: Boolean         => BooleanType()
+      case IsMap(_)           => MapType()
+      case IsCollection(coll) => new CollectionType(coll.map(fromJava).reduce(_ mergeWith _))
+      case _                  => AnyType()
+    }
 }
 
 /*

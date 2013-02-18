@@ -25,17 +25,21 @@ import static org.neo4j.test.LogTestUtils.filterTxLog;
 import java.io.File;
 import java.io.IOException;
 
+import org.neo4j.kernel.DefaultFileSystemAbstraction;
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+
 public class DumpTxLog
 {
     public static void main( String[] args ) throws IOException
     {
+        FileSystemAbstraction fileSystemAbstraction = new DefaultFileSystemAbstraction();
         String file = arg( args, 0, "graph db store directory or file" );
         if ( new File( file ).isDirectory() )
             // Assume store directory
-            filterTxLog( file, DUMP );
+            filterTxLog( fileSystemAbstraction, file, DUMP );
         else
             // Point out a specific file
-            filterTxLog( new File( file ), DUMP );
+            filterTxLog( fileSystemAbstraction, new File( file ), DUMP );
     }
 
     private static String arg( String[] args, int i, String failureMessage )

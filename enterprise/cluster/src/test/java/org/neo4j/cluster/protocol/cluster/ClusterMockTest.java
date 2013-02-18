@@ -101,6 +101,16 @@ public class ClusterMockTest
     @After
     public void tearDown()
     {
+        logger.getLogger().info( "Current threads" );
+        for ( Map.Entry<Thread, StackTraceElement[]> threadEntry : Thread.getAllStackTraces().entrySet() )
+        {
+            logger.getLogger().info( threadEntry.getKey().getName() );
+            for ( StackTraceElement stackTraceElement : threadEntry.getValue() )
+            {
+                logger.getLogger().info( "   "+stackTraceElement.toString() );
+            }
+        }
+
         executor.shutdownNow();
     }
 

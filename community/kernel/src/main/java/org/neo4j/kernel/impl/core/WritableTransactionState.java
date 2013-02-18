@@ -552,6 +552,13 @@ public class WritableTransactionState implements TransactionState
     }
 
     @Override
+    public void patchDeletedRelationshipNodes( long relId, long firstNodeId, long firstNodeNextRelId, long secondNodeId,
+                                               long secondNodeNextRelId )
+    {
+        nodeManager.patchDeletedRelationshipNodes( relId, firstNodeId, firstNodeNextRelId, secondNodeId, secondNodeNextRelId );
+    }
+
+    @Override
     public void removeRelationshipTypeFromCache( int id )
     {
         nodeManager.removeRelationshipTypeFromCache( id );
