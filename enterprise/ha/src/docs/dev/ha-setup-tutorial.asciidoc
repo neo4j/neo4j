@@ -43,7 +43,7 @@ ha.server_id = 1
 # IP and port for this instance to bind to for communicating data with the
 # other neo4j instances in the cluster.
 ha.server = 127.0.0.1:6361
-online_backup_port = 6362
+online_backup_server = :6362
 
 # IP and port for this instance to bind to for communicating cluster information
 # with the other neo4j instances in the cluster.
@@ -64,7 +64,7 @@ ha.server_id = 2
 # IP and port for this instance to bind to for communicating data with the
 # other neo4j instances in the cluster.
 ha.server = 127.0.0.1:6363
-online_backup_port = 6364
+online_backup_server = :6364
 
 # IP and port for this instance to bind to for communicating cluster information
 # with the other neo4j instances in the cluster.
@@ -85,7 +85,7 @@ ha.server_id = 3
 # IP and port for this instance to bind to for communicating data with the
 # other neo4j instances in the cluster.
 ha.server = 127.0.0.1:6365
-online_backup_port = 6366
+online_backup_server = :6366
 
 # IP and port for this instance to bind to for communicating cluster information
 # with the other neo4j instances in the cluster.

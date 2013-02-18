@@ -29,7 +29,7 @@ are useful for passing multiple cluster members.
 [IMPORTANT]
 As of version 1.9, backups are enabled by default. That means that the configuration parameter `online_backup_enabled` defaults to true and that
 makes the backup service available on the default port (6362).
-To enable the backup service on a different port use `online_backup_port=9999`.
+To enable the backup service on a different port use `online_backup_server=:9999`.
 
 [[backup-embedded-and-server]]
 == Embedded and Server ==
