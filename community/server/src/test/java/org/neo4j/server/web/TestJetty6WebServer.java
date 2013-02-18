@@ -22,36 +22,23 @@ package org.neo4j.server.web;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import java.util.Arrays;
-import java.util.Map;
-import java.util.Set;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
-import org.apache.commons.configuration.Configuration;
-import org.apache.commons.configuration.PropertiesConfiguration;
 import org.junit.Test;
-import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.graphdb.Node;
 import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.impl.util.TestStringLogger;
-import org.neo4j.kernel.info.DiagnosticsManager;
-import org.neo4j.kernel.logging.DevNullLoggingService;
-import org.neo4j.kernel.logging.Logging;
 import org.neo4j.server.AbstractNeoServer;
 import org.neo4j.server.WrappingNeoServer;
 import org.neo4j.server.WrappingNeoServerBootstrapper;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.ServerConfigurator;
-import org.neo4j.server.configuration.ThirdPartyJaxRsPackage;
-import org.neo4j.server.guard.GuardingRequestFilter;
-import org.neo4j.kernel.guard.Guard;
 import org.neo4j.server.logging.InMemoryAppender;
 import org.neo4j.test.ImpermanentGraphDatabase;
 
