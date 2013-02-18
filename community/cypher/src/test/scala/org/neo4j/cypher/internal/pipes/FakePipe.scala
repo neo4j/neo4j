@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.pipes
 import org.neo4j.cypher.internal.symbols.{SymbolTable, CypherType}
 import collection.Map
 import org.neo4j.cypher.internal.ExecutionContext
+import org.neo4j.cypher.PlanDescription
 
 class FakePipe(val data: Iterator[Map[String, Any]], identifiers: (String, CypherType)*) extends Pipe {
 
@@ -31,5 +32,5 @@ class FakePipe(val data: Iterator[Map[String, Any]], identifiers: (String, Cyphe
 
   def createResults(state: QueryState) = data.map(m => ExecutionContext(collection.mutable.Map(m.toSeq: _*)))
 
-  def executionPlan(): String = "FAKE"
+  def executionPlanDescription = PlanDescription("Fake")
 }
