@@ -342,14 +342,14 @@ public abstract class AbstractNeoServer implements NeoServer
                         ) );
             }
 
+            webServer.start();
+
             Integer limit = getConfiguration().getInteger( Configurator.WEBSERVER_LIMIT_EXECUTION_TIME_PROPERTY_KEY,
                     null );
             if ( limit != null )
             {
                 webServer.addExecutionLimitFilter( limit, database.getGraph().getGuard() );
             }
-
-            webServer.start();
 
             if ( logger != null )
             {

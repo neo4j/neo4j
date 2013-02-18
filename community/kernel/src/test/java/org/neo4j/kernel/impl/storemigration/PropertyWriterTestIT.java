@@ -20,8 +20,6 @@
 package org.neo4j.kernel.impl.storemigration;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.neo4j.kernel.CommonFactories.defaultFileSystemAbstraction;
 import static org.neo4j.kernel.CommonFactories.defaultIdGeneratorFactory;
 import static org.neo4j.kernel.CommonFactories.defaultTxHook;
 
@@ -42,8 +40,8 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyType;
 import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
-import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
 public class PropertyWriterTestIT
 {
@@ -53,11 +51,10 @@ public class PropertyWriterTestIT
     {
         Config config = MigrationTestUtils.defaultConfig();
         File outputDir = new File( "target/outputDatabase" );
-        FileUtils.deleteRecursively( outputDir );
-        assertTrue( outputDir.mkdirs() );
         File fileName = new File( outputDir, "neostore" );
         StoreFactory storeFactory = new StoreFactory( config, defaultIdGeneratorFactory(),
-                new DefaultWindowPoolFactory(), defaultFileSystemAbstraction(), StringLogger.DEV_NULL, defaultTxHook() );
+                new DefaultWindowPoolFactory(), new EphemeralFileSystemAbstraction(),
+                StringLogger.DEV_NULL, defaultTxHook() );
         neoStore = storeFactory.createNeoStore( fileName );
         return neoStore.getPropertyStore();
     }

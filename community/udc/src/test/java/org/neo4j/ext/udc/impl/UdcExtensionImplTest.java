@@ -58,6 +58,7 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.server.rest.web.CollectUserAgentFilter;
 import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.TestGraphDatabaseFactory;
 // import org.neo4j.kernel.ha.HaSettings;
 
 /**
@@ -424,6 +425,7 @@ public class UdcExtensionImplTest
 
     private static final Condition<Integer> IS_ZERO = new Condition<Integer>()
     {
+        @Override
         public boolean isTrue( Integer value )
         {
             return value == 0;
@@ -432,6 +434,7 @@ public class UdcExtensionImplTest
 
     private static final Condition<Integer> IS_GREATER_THAN_ZERO = new Condition<Integer>()
     {
+        @Override
         public boolean isTrue( Integer value )
         {
             return value > 0;
@@ -470,14 +473,7 @@ public class UdcExtensionImplTest
 
     private GraphDatabaseService createDatabase( String name, Map<String, String> config ) throws IOException
     {
-        File possibleDirectory = new File( path, name );
-        if ( possibleDirectory.exists() )
-        {
-            FileUtils.deleteDirectory( possibleDirectory );
-        }
-
-        GraphDatabaseBuilder graphDatabaseBuilder = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(
-                possibleDirectory.getPath() );
+        GraphDatabaseBuilder graphDatabaseBuilder = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder();
         graphDatabaseBuilder.loadPropertiesFromURL( getClass().getResource( "/org/neo4j/ext/udc/udc.properties" ) );
 
         if ( config != null )

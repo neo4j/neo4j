@@ -40,40 +40,44 @@ public class FileUtils
 {
     private static int WINDOWS_RETRY_COUNT = 3;
 
-    public static void deleteRecursively( File directory )
-    throws IOException
+    public static void deleteRecursively( File directory ) throws IOException
     {
         Stack<File> stack = new Stack<File>();
         List<File> temp = new LinkedList<File>();
-        stack.push(directory.getAbsoluteFile());
-        while(!stack.isEmpty())
+        stack.push( directory.getAbsoluteFile() );
+        while ( !stack.isEmpty() )
         {
             File top = stack.pop();
-            if (top.listFiles() != null)
+            if ( top.listFiles() != null )
             {
-                for (File child : top.listFiles()) {
-                    if (child.isFile()) {
+                for ( File child : top.listFiles() )
+                {
+                    if ( child.isFile() )
+                    {
                         if ( !deleteFile( child ) )
                         {
-                            throw new IOException( "Failed to delete "
-                                    + child.getCanonicalPath() );
+                            throw new IOException( "Failed to delete " + child.getCanonicalPath() );
                         }
-                    } else {
-                        temp.add(child);
+                    }
+                    else
+                    {
+                        temp.add( child );
                     }
                 }
             }
-            if (top.listFiles() == null || top.listFiles().length == 0) {
+            if ( top.listFiles() == null || top.listFiles().length == 0 )
+            {
                 if ( !deleteFile( top ) )
                 {
-                    throw new IOException( "Failed to delete "
-                            + top.getCanonicalPath() );
+                    throw new IOException( "Failed to delete " + top.getCanonicalPath() );
                 }
-            } else {
-                stack.push(top);
-                for (File f : temp)
+            }
+            else
+            {
+                stack.push( top );
+                for ( File f : temp )
                 {
-                    stack.push(f);
+                    stack.push( f );
                 }
             }
             temp.clear();
@@ -208,7 +212,7 @@ public class FileUtils
     }
 
     public static void truncateFile( FileChannel fileChannel, long position )
-    throws IOException
+            throws IOException
     {
         int count = 0;
         boolean success = false;
@@ -315,28 +319,30 @@ public class FileUtils
             {
                 toFile.mkdir();
                 copyRecursively( fromFile, toFile );
-            } else
+            }
+            else
             {
                 copyFile( fromFile, toFile );
             }
         }
     }
     
-    public static void writeToFile( File target, String text, boolean append) throws IOException
+    public static void writeToFile( File target, String text, boolean append ) throws IOException
     {
-    	if(!target.exists()) 
-    	{
-    		target.getParentFile().mkdirs();
-    		target.createNewFile();
-    	}
-    	
-    	Writer out = new OutputStreamWriter(new FileOutputStream(target, append), "UTF-8");
-        try 
+        if ( !target.exists() )
         {
-          out.write(text);
+            target.getParentFile().mkdirs();
+            target.createNewFile();
         }
-        finally {
-          out.close();
+
+        Writer out = new OutputStreamWriter( new FileOutputStream( target, append ), "UTF-8" );
+        try
+        {
+            out.write( text );
+        }
+        finally
+        {
+            out.close();
         }
     }
 }

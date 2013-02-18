@@ -26,10 +26,11 @@ import java.io.File;
 import java.util.ArrayList;
 
 import org.junit.Test;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.cache.SoftCacheProvider;
 import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.TestGraphDatabaseFactory;
 
 public class SetCacheProvidersTest
 {
@@ -37,11 +38,11 @@ public class SetCacheProvidersTest
     public void testSetNoCache()
     {
         ArrayList<CacheProvider> cacheList = new ArrayList<CacheProvider>();
-        GraphDatabaseFactory gdbf = new GraphDatabaseFactory();
+        TestGraphDatabaseFactory gdbf = new TestGraphDatabaseFactory();
         gdbf.setCacheProviders( cacheList );
         try
         {
-            gdbf.newEmbeddedDatabase( storeDir.getAbsolutePath() );
+            gdbf.newImpermanentDatabase();
         }
         catch ( IllegalArgumentException iae )
         {
@@ -53,12 +54,11 @@ public class SetCacheProvidersTest
     public void testSetSoftRefCache()
     {
         ArrayList<CacheProvider> cacheList = new ArrayList<CacheProvider>();
-        GraphDatabaseFactory gdbf = new GraphDatabaseFactory();
+        TestGraphDatabaseFactory gdbf = new TestGraphDatabaseFactory();
         cacheList.add( new SoftCacheProvider() );
         gdbf.setCacheProviders( cacheList );
-        EmbeddedGraphDatabase db = (EmbeddedGraphDatabase) gdbf.newEmbeddedDatabase( storeDir.getAbsolutePath() );
-        assertEquals( SoftCacheProvider.NAME,
-                db.getNodeManager().getCacheType().getName() );
+        GraphDatabaseAPI db = (GraphDatabaseAPI) gdbf.newImpermanentDatabase();
+        assertEquals( SoftCacheProvider.NAME, db.getNodeManager().getCacheType().getName() );
     }
     
     private final File storeDir = TargetDirectory.forTest( getClass() ).graphDbDir( true );

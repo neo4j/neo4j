@@ -27,93 +27,55 @@ import java.io.IOException;
 import java.util.HashMap;
 
 import org.junit.Test;
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.kernel.impl.util.FileUtils;
+import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
+public class TestStoreRecoverer
+{
+    @Test
+    public void shouldNotWantToRecoverIntactStore() throws Exception
+    {
+        File store = null;
+        store = createIntactStore();
 
-public class TestStoreRecoverer {
+        StoreRecoverer recoverer = new StoreRecoverer( fileSystem );
 
-	@Test
-	public void shouldNotWantToRecoverIntactStore() throws Exception
-	{
-		File store = null;
-		try
-		{
-			store = createIntactStore();
-			
-			StoreRecoverer recoverer = new StoreRecoverer();
-			
-			assertThat(recoverer.recoveryNeededAt(store, new HashMap<String,String>()), is(false));
-			
-		} finally 
-		{
-			if(store != null)
-			{
-				FileUtils.deleteRecursively(store);
-			}
-		}
-		
-	}
-	
-	@Test
-	public void shouldWantToRecoverBrokenStore() throws Exception
-	{
-		File store = null;
-		try
-		{
-			store = createIntactStore();
-			new File(store,"nioneo_logical.log.active").delete();
-			
-			StoreRecoverer recoverer = new StoreRecoverer();
-			
-			assertThat(recoverer.recoveryNeededAt(store, new HashMap<String,String>()), is(true));
-			
-		} finally 
-		{
-			if(store != null)
-			{
-				FileUtils.deleteRecursively(store);
-			}
-		}
-		
-	}
+        assertThat( recoverer.recoveryNeededAt( store, new HashMap<String, String>() ), is( false ) );
+    }
 
-	@Test
-	public void shouldBeAbleToRecoverBrokenStore() throws Exception
-	{
-		File store = null;
-		try
-		{
-			store = createIntactStore();
-			new File(store,"nioneo_logical.log.active").delete();
-			
-			StoreRecoverer recoverer = new StoreRecoverer();
-			
-			assertThat(recoverer.recoveryNeededAt(store, new HashMap<String,String>()), is(true));
-			
-			recoverer.recover(store, new HashMap<String,String>());
-			
-			assertThat(recoverer.recoveryNeededAt(store, new HashMap<String,String>()), is(false));
-			
-		} finally 
-		{
-			if(store != null)
-			{
-				FileUtils.deleteRecursively(store);
-			}
-		}
-		
-	}
+    @Test
+    public void shouldWantToRecoverBrokenStore() throws Exception
+    {
+        File store = createIntactStore();
+        fileSystem.deleteFile( new File( store, "nioneo_logical.log.active" ) );
 
-	private File createIntactStore() throws IOException {
-		File tmpFile = File.createTempFile( "neo4j-test", "" );
-        tmpFile.delete();
-		GraphDatabaseService db = 
-				new GraphDatabaseFactory().newEmbeddedDatabase(tmpFile.getCanonicalPath());
-		
-		db.shutdown();
-		return tmpFile;
-	}
-	
+        StoreRecoverer recoverer = new StoreRecoverer( fileSystem );
+
+        assertThat( recoverer.recoveryNeededAt( store, new HashMap<String, String>() ), is( true ) );
+    }
+
+    @Test
+    public void shouldBeAbleToRecoverBrokenStore() throws Exception
+    {
+        File store = createIntactStore();
+        fileSystem.deleteFile( new File( store, "nioneo_logical.log.active" ) );
+
+        StoreRecoverer recoverer = new StoreRecoverer( fileSystem );
+
+        assertThat( recoverer.recoveryNeededAt( store, new HashMap<String, String>() ), is( true ) );
+
+        // Don't call recoverer.recover, because currently it's hard coded to start an embedded db
+        new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentDatabase( store.getPath() ).shutdown();
+
+        assertThat( recoverer.recoveryNeededAt( store, new HashMap<String, String>() ), is( false ) );
+    }
+
+    private File createIntactStore() throws IOException
+    {
+        File storeDir = new File( "dir" );
+        new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentDatabase( storeDir.getPath() ).shutdown();
+        return storeDir;
+    }
+
+    private final EphemeralFileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
 }

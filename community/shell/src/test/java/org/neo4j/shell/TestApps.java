@@ -19,24 +19,29 @@
  */
 package org.neo4j.shell;
 
-import org.junit.Ignore;
-import org.junit.Test;
-import org.neo4j.cypher.NodeStillHasRelationshipsException;
-import org.neo4j.graphdb.*;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.impl.util.FileUtils;
-import org.neo4j.shell.kernel.GraphDatabaseShellServer;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 
-import java.io.File;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.regex.Pattern;
 
-import static org.junit.Assert.*;
-import static org.neo4j.graphdb.DynamicRelationshipType.withName;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.neo4j.cypher.NodeStillHasRelationshipsException;
+import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.DynamicRelationshipType;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 
 public class TestApps extends AbstractShellTest
 {
@@ -248,24 +253,20 @@ public class TestApps extends AbstractShellTest
     @Test
     public void startEvenIfReferenceNodeHasBeenDeleted() throws Exception
     {
-        String storeDir = "target/test-data/db";
-        FileUtils.deleteRecursively( new File( storeDir ) );
-        GraphDatabaseAPI newDb = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabase( storeDir );
-        Transaction tx = newDb.beginTx();
-        newDb.getReferenceNode().delete();
-        Node node = newDb.createNode();
+        Transaction tx = db.beginTx();
+        db.getReferenceNode().delete();
+        Node node = db.createNode();
         String name = "Test";
         node.setProperty( "name", name );
         tx.success();
         tx.finish();
 
-        GraphDatabaseShellServer server = new GraphDatabaseShellServer( newDb );
+        GraphDatabaseShellServer server = new GraphDatabaseShellServer( db );
         ShellClient client = ShellLobby.newClient( server );
         executeCommand( client, "pwd", Pattern.quote( "(?)" ) );
         executeCommand( client, "ls " + node.getId(), "Test" );
         executeCommand( client, "cd -a " + node.getId() );
         executeCommand( client, "ls", "Test" );
-        newDb.shutdown();
     }
     
     @Test

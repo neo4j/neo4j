@@ -26,10 +26,8 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 import static org.neo4j.helpers.collection.MapUtil.map;
-import static org.neo4j.kernel.impl.AbstractNeo4jTestCase.deleteFileOrDirectory;
 import static org.neo4j.kernel.impl.core.BigStoreIT.machineIsOkToRunThisTest;
 
-import java.io.File;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
@@ -42,13 +40,18 @@ import org.junit.rules.TestName;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.IdType;
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
+import org.neo4j.unsafe.batchinsert.BatchInserters;
+import org.neo4j.unsafe.batchinsert.BatchRelationship;
 
 public class BigBatchStoreIT implements RelationshipType
 {
     private static final String PATH = "target/var/bigb";
-    private BatchInserter db;
+    private FileSystemAbstraction fileSystem;
+    private org.neo4j.unsafe.batchinsert.BatchInserter db;
     public @Rule
     TestName testName = new TestName()
     {
@@ -62,17 +65,14 @@ public class BigBatchStoreIT implements RelationshipType
     @Before
     public void doBefore()
     {
-        // Delete before just to be sure
-        deleteFileOrDirectory( new File( PATH ) );
-        db = new BatchInserterImpl( PATH );
+        fileSystem = new EphemeralFileSystemAbstraction();
+        db = BatchInserters.inserter( PATH, fileSystem );
     }
     
     @After
     public void doAfter()
     {
         db.shutdown();
-        // Delete after because it's so darn big
-        deleteFileOrDirectory( new File( PATH ) );
     }
     
     @Override
@@ -122,18 +122,18 @@ public class BigBatchStoreIT implements RelationshipType
 
         assertEquals( asSet( asList( relBelowTheLine, relAboveTheLine ) ), asIds( db.getRelationships( idBelow ) ) );
         db.shutdown();
-        db = new BatchInserterImpl( PATH );
+        db = BatchInserters.inserter( PATH, fileSystem );
         assertEquals( asSet( asList( relBelowTheLine, relAboveTheLine ) ), asIds( db.getRelationships( idBelow ) ) );
         db.shutdown();
         
-        GraphDatabaseService edb = new EmbeddedGraphDatabase( PATH );
+        GraphDatabaseService edb = new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentDatabase( PATH );
         assertEquals( nodeAboveTheLine, edb.getNodeById( highMark ).getId() );
         assertEquals( relBelowTheLine, edb.getNodeById( idBelow ).getSingleRelationship( this, Direction.OUTGOING ).getId() );
         assertEquals( relAboveTheLine, edb.getNodeById( idBelow ).getSingleRelationship( this, Direction.INCOMING ).getId() );
         assertEquals(   asSet( asList( edb.getRelationshipById( relBelowTheLine ), edb.getRelationshipById( relAboveTheLine ) ) ),
                         asSet( asCollection( edb.getNodeById( idBelow ).getRelationships() ) ) );
         edb.shutdown();
-        db = new BatchInserterImpl( PATH );
+        db = BatchInserters.inserter( PATH, fileSystem );
     }
     
     @Test( expected=IllegalArgumentException.class )
@@ -143,10 +143,10 @@ public class BigBatchStoreIT implements RelationshipType
         db.createNode( id, null );
     }
     
-    private Collection<Long> asIds( Iterable<SimpleRelationship> relationships )
+    private Collection<Long> asIds( Iterable<BatchRelationship> relationships )
     {
         Collection<Long> ids = new HashSet<Long>();
-        for ( SimpleRelationship rel : relationships )
+        for ( BatchRelationship rel : relationships )
         {
             ids.add( rel.getId() );
         }

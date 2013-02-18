@@ -32,10 +32,12 @@ import org.neo4j.com.ToFileStoreWriter;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Settings;
+import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.com.master.Master;
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
 import org.neo4j.kernel.impl.util.FileUtils;
@@ -45,6 +47,9 @@ public class SlaveStoreWriter
 {
     public static final String COPY_FROM_MASTER_TEMP = "temp-copy";
     private final Config config;
+    
+    // TODO Should be accepted as a dependency
+    private final FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
 
     public SlaveStoreWriter( Config config )
     {
@@ -66,10 +71,11 @@ public class SlaveStoreWriter
         Response response = master.copyStore( new RequestContext( 0,
                 config.get( HaSettings.server_id ), 0, new RequestContext.Tx[0], 0,
                 0 ), new ToFileStoreWriter( tempStore ) );
-        long highestLogVersion = XaLogicalLog.getHighestHistoryLogVersion( tempStore, LOGICAL_LOG_DEFAULT_NAME );
+        long highestLogVersion = XaLogicalLog.getHighestHistoryLogVersion( fileSystem,
+                tempStore, LOGICAL_LOG_DEFAULT_NAME );
         if ( highestLogVersion > -1 )
         {
-            NeoStore.setVersion( tempStore, highestLogVersion + 1 );
+            NeoStore.setVersion( fileSystem, tempStore, highestLogVersion + 1 );
         }
         GraphDatabaseAPI copiedDb = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(
                 tempStore.getAbsolutePath() ).setConfig(

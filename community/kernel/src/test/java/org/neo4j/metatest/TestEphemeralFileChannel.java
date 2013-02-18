@@ -21,11 +21,15 @@ package org.neo4j.metatest;
 
 import static java.nio.ByteBuffer.allocateDirect;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.util.Arrays;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
@@ -91,5 +95,60 @@ public class TestEphemeralFileChannel
         channel.read( buffer, 15 );
         buffer.flip();
         assertEquals( longValue, buffer.getLong() );
+    }
+    
+    @Test
+    @Ignore
+    public void absoluteVersusRelative() throws Exception
+    {
+        // GIVEN
+        File file = new File( "myfile" );
+        EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
+        FileChannel channel = fs.open( file, "rw" );
+        byte[] bytes = "test".getBytes();
+        channel.write( ByteBuffer.wrap( bytes ) );
+        channel.close();
+
+        // WHEN
+        channel = fs.open( new File( file.getAbsolutePath() ), "r" );
+        byte[] readBytes = new byte[bytes.length];
+        int nrOfReadBytes = channel.read( ByteBuffer.wrap( readBytes ) );
+
+        // THEN
+        assertEquals( bytes.length, nrOfReadBytes );
+        assertTrue( Arrays.equals( bytes, readBytes ) );
+    }
+    
+    @Test
+    public void listFiles() throws Exception
+    {
+        /* GIVEN
+         *                        root
+         *                       /    \
+         *         ----------- dir1   dir2
+         *        /       /     |       \
+         *    subdir1  file  file2      file
+         *       |
+         *     file
+         */
+        File root = new File( "root" );
+        File dir1 = new File( root, "dir1" );
+        File dir2 = new File( root, "dir2" );
+        File subdir1 = new File( dir1, "sub" );
+        File file1 = new File( dir1, "file" );
+        File file2 = new File( dir1, "file2" );
+        File file3 = new File( dir2, "file" );
+        File file4 = new File( subdir1, "file" );
+        EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
+        fs.create( file1 );
+        fs.create( file2 );
+        fs.create( file3 );
+        fs.create( file4 );
+
+        // THEN
+        assertEquals( asSet( dir1, dir2 ), asSet( fs.listFiles( root ) ) );
+        assertEquals( asSet( subdir1, file1, file2 ), asSet( fs.listFiles( dir1 ) ) );
+        assertEquals( asSet( file3 ), asSet( fs.listFiles( dir2 ) ) );
+        assertEquals( asSet( file4 ), asSet( fs.listFiles( subdir1 ) ) );
     }
 }

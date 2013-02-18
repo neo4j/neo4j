@@ -444,10 +444,10 @@ public abstract class IteratorUtil
     {
         return addToCollection( iterable, new HashSet<T>() );
     }
-    
+
     /**
      * Creates a {@link Set} from an array of items.
-     * 
+     *
      * @param items the items to add to the set.
      * @return the {@link Set} containing the items.
      */

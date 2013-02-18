@@ -26,9 +26,8 @@ import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.shell.impl.CollectingOutput;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.ImpermanentGraphDatabase;
 
 public class TestConfiguration
 {
@@ -38,8 +37,7 @@ public class TestConfiguration
     @Before
     public void before() throws Exception
     {
-        db = new EmbeddedGraphDatabase( TargetDirectory.forTest( getClass() ).graphDbDir( true ).getAbsolutePath(),
-                MapUtil.stringMap( "enable_remote_shell", "true" ) );
+        db = new ImpermanentGraphDatabase( MapUtil.stringMap( "enable_remote_shell", "true" ) );
         client = ShellLobby.newClient();
     }
 

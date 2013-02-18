@@ -23,12 +23,28 @@ import org.junit.Test
 import org.neo4j.cypher.internal.commands.values.LabelName
 import org.scalatest.Assertions
 
-
 class CypherTypeTest extends Assertions {
-  @Test def collections_should_be_types_correctly() {
+  @Test def collections_should_be_typed_correctly() {
     val value = Seq(Seq(LabelName("foo")))
     val typ = new CollectionType(new CollectionType(LabelType()))
 
     assert(CypherType.fromJava(value) === typ)
+  }
+  
+  @Test
+  def testTypeMerge() {
+    assertCorrectTypeMerging(NumberType(), NumberType(), NumberType())
+    assertCorrectTypeMerging(NumberType(), ScalarType(), ScalarType())
+    assertCorrectTypeMerging(NumberType(), StringType(), ScalarType())
+    assertCorrectTypeMerging(NumberType(), AnyCollectionType(), AnyType())
+    assertCorrectTypeMerging(LongType(), DoubleType(), NumberType())
+    assertCorrectTypeMerging(MapType(), DoubleType(), ScalarType())
+  }
+
+  def assertCorrectTypeMerging(a: CypherType, b: CypherType, result: CypherType) {
+    val simpleMergedType: CypherType = a mergeWith b
+    assert( simpleMergedType === result)
+    val collectionMergedType: CypherType = (new CollectionType(a)) mergeWith (new CollectionType(b))
+    assert( collectionMergedType === (new CollectionType(result)) )
   }
 }

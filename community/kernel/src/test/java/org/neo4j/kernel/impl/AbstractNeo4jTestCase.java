@@ -98,7 +98,7 @@ public abstract class AbstractNeo4jTestCase
                                       new TestGraphDatabaseFactory().newImpermanentDatabase());
     }
 
-    public GraphDatabaseAPI getEmbeddedGraphDb()
+    public GraphDatabaseAPI getGraphDbAPI()
     {
         return graphDb;
     }
@@ -223,7 +223,7 @@ public abstract class AbstractNeo4jTestCase
 
     protected void clearCache()
     {
-        getEmbeddedGraphDb().getNodeManager().clearCache();
+        getGraphDbAPI().getNodeManager().clearCache();
     }
 
     protected long propertyRecordsInUse()

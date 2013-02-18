@@ -19,25 +19,30 @@
  */
 package recovery;
 
+import static java.lang.Integer.parseInt;
+import static java.lang.System.exit;
+import static org.junit.Assert.assertEquals;
+import static org.neo4j.test.LogTestUtils.EVERYTHING_BUT_DONE_RECORDS;
+import static org.neo4j.test.LogTestUtils.filterNeostoreLogicalLog;
+import static org.neo4j.test.LogTestUtils.filterTxLog;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
+
 import org.junit.Ignore;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry.TwoPhaseCommit;
 import org.neo4j.test.LogTestUtils;
 import org.neo4j.test.ProcessStreamHandler;
 import org.neo4j.test.TargetDirectory;
-
-import static java.lang.Integer.*;
-import static java.lang.System.*;
-import static org.junit.Assert.*;
-import static org.neo4j.test.LogTestUtils.*;
 
 @Ignore( "Used from another test case and isn't a test case in itself" )
 public class CreateTransactionsAndDie
@@ -85,10 +90,11 @@ public class CreateTransactionsAndDie
     
     public static String produceNonCleanDbWhichWillRecover2PCsOnStartup( String name, int nrOf2PcTransactionsToRecover ) throws Exception, IOException
     {
+        FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
         String dir = TargetDirectory.forTest( CreateTransactionsAndDie.class ).directory( name, true ).getAbsolutePath();
         assertEquals( 0, createUncleanDb( dir, nrOf2PcTransactionsToRecover ) );
-        filterTxLog( dir, EVERYTHING_BUT_DONE_RECORDS );
-        remove2PCAndDoneFromLog( dir );
+        filterTxLog( fileSystem, dir, EVERYTHING_BUT_DONE_RECORDS );
+        remove2PCAndDoneFromLog( fileSystem, dir );
         // Here we have produced a state which looks like a couple of 2PC transactions
         // that are marked as committed, but not actually committed.
         return dir;
@@ -104,9 +110,9 @@ public class CreateTransactionsAndDie
         return new ProcessStreamHandler( process, true ).waitForResult();
     }
 
-    private static void remove2PCAndDoneFromLog( String dir ) throws IOException
+    private static void remove2PCAndDoneFromLog( FileSystemAbstraction fileSystem, String dir ) throws IOException
     {
-        filterNeostoreLogicalLog( dir, new LogTestUtils.LogHook<LogEntry>()
+        filterNeostoreLogicalLog( fileSystem, dir, new LogTestUtils.LogHook<LogEntry>()
         {
             private final Set<Integer> prune = new HashSet<Integer>();
             

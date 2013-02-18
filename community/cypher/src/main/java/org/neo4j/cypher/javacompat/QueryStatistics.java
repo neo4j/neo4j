@@ -73,7 +73,7 @@ public class QueryStatistics
      */
     public int getDeletedRelationships()
     {
-        return inner.deletedNodes();
+        return inner.deletedRelationships();
     }
 
     /**

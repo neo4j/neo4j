@@ -26,7 +26,6 @@ import static org.neo4j.helpers.collection.IteratorUtil.first;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -41,14 +40,13 @@ import java.util.logging.Logger;
 import org.junit.Test;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
 public class TestDynamicStore
 {
@@ -56,14 +54,14 @@ public class TestDynamicStore
             new DefaultIdGeneratorFactory();
     public static WindowPoolFactory WINDOW_POOL_FACTORY =
             new DefaultWindowPoolFactory();
-    public static FileSystemAbstraction FILE_SYSTEM =
-            new DefaultFileSystemAbstraction();
+    public FileSystemAbstraction FILE_SYSTEM =
+            new EphemeralFileSystemAbstraction();
 
     private File path()
     {
-        String path = AbstractNeo4jTestCase.getStorePath( "dynamicstore" );
+        String path = "dynamicstore";
         File file = new File( path );
-        file.mkdirs();
+        FILE_SYSTEM.mkdirs( file );
         return file;
     }
 
@@ -154,7 +152,7 @@ public class TestDynamicStore
         {
             log.setLevel( Level.OFF );
             createEmptyStore( dynamicStoreFile(), 30 );
-            FileChannel fileChannel = new RandomAccessFile( dynamicStoreFile(), "rw" ).getChannel();
+            FileChannel fileChannel = FILE_SYSTEM.open( dynamicStoreFile(), "rw" );
             fileChannel.truncate( fileChannel.size() - 2 );
             fileChannel.close();
             DynamicArrayStore store = newStore();

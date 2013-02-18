@@ -20,22 +20,14 @@
 package org.neo4j.test;
 
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
-/**
- * JUnit @Rule for configuring, creating and managing an ImpermanentGraphDatabase instance.
- */
-public class ImpermanentDatabaseRule extends DatabaseRule
+public class TestGraphDatabaseBuilder extends GraphDatabaseBuilder
 {
-    @Override
-    protected GraphDatabaseFactory newFactory()
-    {
-        return new TestGraphDatabaseFactory();
-    }
+    protected EphemeralFileSystemAbstraction fileSystem;
     
-    @Override
-    protected GraphDatabaseBuilder newBuilder( GraphDatabaseFactory factory )
+    public TestGraphDatabaseBuilder( DatabaseCreator creator )
     {
-        return ((TestGraphDatabaseFactory) factory).newImpermanentDatabaseBuilder();
+        super( creator );
     }
 }

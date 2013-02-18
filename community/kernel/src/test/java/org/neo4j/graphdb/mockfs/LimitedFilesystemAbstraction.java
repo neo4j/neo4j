@@ -21,14 +21,20 @@ package org.neo4j.graphdb.mockfs;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.Reader;
 import java.nio.channels.FileChannel;
 
 import org.neo4j.kernel.impl.nioneo.store.FileLock;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.test.impl.ChannelInputStream;
+import org.neo4j.test.impl.ChannelOutputStream;
 
 public class LimitedFilesystemAbstraction implements FileSystemAbstraction
 {
-    private FileSystemAbstraction inner;
+    private final FileSystemAbstraction inner;
     private boolean outOfSpace;
     private Integer bytesAtATime = null;
 
@@ -41,6 +47,24 @@ public class LimitedFilesystemAbstraction implements FileSystemAbstraction
     public FileChannel open( File fileName, String mode ) throws IOException
     {
         return new LimitedFileChannel( inner.open( fileName, mode ), this );
+    }
+    
+    @Override
+    public OutputStream openAsOutputStream( File fileName, boolean append ) throws IOException
+    {
+        return new ChannelOutputStream( open( fileName, "rw" ), append );
+    }
+
+    @Override
+    public InputStream openAsInputStream( File fileName ) throws IOException
+    {
+        return new ChannelInputStream( open( fileName, "r" ) );
+    }
+
+    @Override
+    public Reader openAsReader( File fileName, String encoding ) throws IOException
+    {
+        return new InputStreamReader( openAsInputStream( fileName ), encoding );
     }
 
     @Override
@@ -73,19 +97,30 @@ public class LimitedFilesystemAbstraction implements FileSystemAbstraction
     {
         return inner.deleteFile( fileName );
     }
+    
+    @Override
+    public void deleteRecursively( File directory ) throws IOException
+    {
+        inner.deleteRecursively( directory );
+    }
+
+    @Override
+    public boolean mkdir( File fileName )
+    {
+        return inner.mkdir( fileName );
+    }
+    
+    @Override
+    public boolean mkdirs( File fileName )
+    {
+        return inner.mkdirs( fileName );
+    }
 
     @Override
     public boolean renameFile( File from, File to ) throws IOException
     {
         ensureHasSpace();
         return inner.renameFile( from, to );
-    }
-
-    @Override
-    public void copyFile( File from, File to ) throws IOException
-    {
-        ensureHasSpace();
-        inner.copyFile( from, to );
     }
 
     @Override
@@ -111,5 +146,17 @@ public class LimitedFilesystemAbstraction implements FileSystemAbstraction
     public void limitWritesTo( int bytesAtATime )
     {
         this.bytesAtATime = bytesAtATime;
+    }
+    
+    @Override
+    public File[] listFiles( File directory )
+    {
+        return inner.listFiles( directory );
+    }
+    
+    @Override
+    public boolean isDirectory( File file )
+    {
+        return inner.isDirectory( file );
     }
 }

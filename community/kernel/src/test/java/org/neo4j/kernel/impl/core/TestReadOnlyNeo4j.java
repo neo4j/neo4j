@@ -22,10 +22,7 @@ package org.neo4j.kernel.impl.core;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
-import static org.neo4j.kernel.impl.AbstractNeo4jTestCase.deleteFileOrDirectory;
-import static org.neo4j.kernel.impl.AbstractNeo4jTestCase.getStorePath;
 
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
@@ -34,27 +31,26 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.test.DbRepresentation;
+import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
 public class TestReadOnlyNeo4j
 {
-    private static final String PATH = getStorePath( "read-only" );
+    private static final String PATH = "read-only";
+    private final EphemeralFileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
     
-    @BeforeClass
-    public static void doBefore()
-    {
-        deleteFileOrDirectory( PATH );
-    }
-
     @Test
     public void testSimple()
     {
         DbRepresentation someData = createSomeData();
-        GraphDatabaseService readGraphDb = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( PATH ).setConfig( GraphDatabaseSettings.read_only, GraphDatabaseSetting.TRUE ).newGraphDatabase();
+        GraphDatabaseService readGraphDb = new TestGraphDatabaseFactory().setFileSystem( fileSystem )
+                .newImpermanentDatabaseBuilder( PATH )
+                .setConfig( GraphDatabaseSettings.read_only, GraphDatabaseSetting.TRUE )
+                .newGraphDatabase();
         assertEquals( someData, DbRepresentation.of( readGraphDb ) );
 
         Transaction tx = readGraphDb.beginTx();
@@ -73,7 +69,7 @@ public class TestReadOnlyNeo4j
     private DbRepresentation createSomeData()
     {
         DynamicRelationshipType type = withName( "KNOWS" );
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( PATH );
+        GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentDatabase( PATH );
         Transaction tx = db.beginTx();
         Node prevNode = db.getReferenceNode();
         for ( int i = 0; i < 100; i++ )
@@ -93,7 +89,7 @@ public class TestReadOnlyNeo4j
     @Test
     public void testReadOnlyOperationsAndNoTransaction()
     {
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( PATH );
+        GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentDatabase( PATH );
 
         Transaction tx = db.beginTx();
         Node node1 = db.createNode();

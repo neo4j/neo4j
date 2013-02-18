@@ -19,7 +19,7 @@
  */
 package org.neo4j.graphdb.factory;
 
-import static org.neo4j.graphdb.factory.GraphDatabaseSetting.BooleanSetting.TRUE;
+import static org.neo4j.graphdb.factory.GraphDatabaseSetting.TRUE;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.read_only;
 
 import java.util.ArrayList;
@@ -35,6 +35,7 @@ import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.EmbeddedReadOnlyGraphDatabase;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.cache.CacheProvider;
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
 
 /**
@@ -46,6 +47,7 @@ public class GraphDatabaseFactory
     protected List<KernelExtensionFactory<?>> kernelExtensions;
     protected List<CacheProvider> cacheProviders;
     protected List<TransactionInterceptorProvider> txInterceptorProviders;
+    protected FileSystemAbstraction fileSystem;
 
     public GraphDatabaseFactory()
     {
@@ -68,6 +70,7 @@ public class GraphDatabaseFactory
     {
         return new GraphDatabaseBuilder( new GraphDatabaseBuilder.DatabaseCreator()
         {
+            @Override
             public GraphDatabaseService newDatabase( Map<String, String> config )
             {
                 config.put( "ephemeral", "false" );

@@ -34,6 +34,8 @@ import java.net.URL;
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.helpers.UTF8;
+import org.neo4j.kernel.DefaultFileSystemAbstraction;
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.util.FileUtils;
 
 public class UpgradableDatabaseTestIT
@@ -70,7 +72,7 @@ public class UpgradableDatabaseTestIT
 
         copyRecursively( resourceDirectory, workingDirectory );
 
-        changeVersionNumber( new File( workingDirectory, "neostore.nodestore.db" ), "v0.9.5" );
+        changeVersionNumber( fileSystem, new File( workingDirectory, "neostore.nodestore.db" ), "v0.9.5" );
 
         assertFalse( new UpgradableDatabase().storeFilesUpgradeable( new File( workingDirectory, "neostore" ) ) );
     }
@@ -87,7 +89,7 @@ public class UpgradableDatabaseTestIT
 
         copyRecursively( resourceDirectory, workingDirectory );
 
-        truncateFile( new File( workingDirectory, "neostore.nodestore.db" ), "StringPropertyStore v0.9.9" );
+        truncateFile( fileSystem, new File( workingDirectory, "neostore.nodestore.db" ), "StringPropertyStore v0.9.9" );
 
         assertFalse( new UpgradableDatabase().storeFilesUpgradeable( new File( workingDirectory, "neostore" ) ) );
     }
@@ -106,9 +108,10 @@ public class UpgradableDatabaseTestIT
 
         int shortFileLength = 5 /* (RelationshipTypeStore.RECORD_SIZE) */ * 3;
         assertTrue( shortFileLength < UTF8.encode( "StringPropertyStore v0.9.9" ).length );
-        truncateToFixedLength( new File( workingDirectory, "neostore.relationshiptypestore.db" ), shortFileLength );
+        truncateToFixedLength( fileSystem, new File( workingDirectory, "neostore.relationshiptypestore.db" ), shortFileLength );
 
         assertFalse( new UpgradableDatabase().storeFilesUpgradeable( new File( workingDirectory, "neostore" ) ) );
     }
 
+    private final FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
 }
