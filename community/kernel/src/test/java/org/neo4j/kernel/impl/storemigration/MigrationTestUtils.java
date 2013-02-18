@@ -20,14 +20,11 @@
 package org.neo4j.kernel.impl.storemigration;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.neo4j.kernel.impl.util.FileUtils.deleteRecursively;
+import static org.junit.Assert.fail;
+import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.readAndFlip;
 
-import java.io.BufferedInputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
@@ -37,6 +34,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
 import org.neo4j.kernel.impl.util.FileUtils;
 
@@ -72,37 +70,41 @@ public class MigrationTestUtils
         return builder.toString();
     }
 
-    static void changeVersionNumber( File storeFile, String versionString ) throws IOException
+    static void changeVersionNumber( FileSystemAbstraction fileSystem, File storeFile, String versionString )
+            throws IOException
     {
         byte[] versionBytes = UTF8.encode( versionString );
-        FileChannel fileChannel = new RandomAccessFile( storeFile, "rw" ).getChannel();
+        FileChannel fileChannel = fileSystem.open( storeFile, "rw" );
         fileChannel.position( storeFile.length() - versionBytes.length );
         fileChannel.write( ByteBuffer.wrap( versionBytes ) );
         fileChannel.close();
     }
 
-    static void truncateFile( File storeFile, String suffixToDetermineTruncationLength ) throws IOException
+    static void truncateFile( FileSystemAbstraction fileSystem, File storeFile,
+            String suffixToDetermineTruncationLength ) throws IOException
     {
         byte[] versionBytes = UTF8.encode( suffixToDetermineTruncationLength );
-        FileChannel fileChannel = new RandomAccessFile( storeFile, "rw" ).getChannel();
+        FileChannel fileChannel = fileSystem.open( storeFile, "rw" );
         fileChannel.truncate( storeFile.length() - versionBytes.length );
         fileChannel.close();
     }
 
-    static void truncateToFixedLength( File storeFile, int newLength ) throws IOException
+    static void truncateToFixedLength( FileSystemAbstraction fileSystem, File storeFile, int newLength )
+            throws IOException
     {
-        FileChannel fileChannel = new RandomAccessFile( storeFile, "rw" ).getChannel();
+        FileChannel fileChannel = fileSystem.open( storeFile, "rw" );
         fileChannel.truncate( newLength );
         fileChannel.close();
     }
 
-    public static void prepareSampleLegacyDatabase( File workingDirectory ) throws IOException
+    public static void prepareSampleLegacyDatabase( FileSystemAbstraction workingFs, File workingDirectory ) throws IOException
     {
         File resourceDirectory = findOldFormatStoreDirectory();
 
-        deleteRecursively( workingDirectory );
-        assertTrue( workingDirectory.mkdirs() );
+        workingFs.deleteRecursively( workingDirectory );
+        workingFs.mkdirs( workingDirectory );
 
+        // TODO only works with DefaultFileSystemAbstraction
         FileUtils.copyRecursively( resourceDirectory, workingDirectory );
     }
 
@@ -112,11 +114,12 @@ public class MigrationTestUtils
         return new File( legacyStoreResource.getFile() ).getParentFile();
     }
 
-    public static boolean allStoreFilesHaveVersion( File workingDirectory, String version ) throws IOException
+    public static boolean allStoreFilesHaveVersion( FileSystemAbstraction fileSystem, File workingDirectory,
+            String version ) throws IOException
     {
         for ( String fileName : StoreFiles.fileNames )
         {
-            FileChannel channel = new RandomAccessFile( new File( workingDirectory, fileName ), "r" ).getChannel();
+            FileChannel channel = fileSystem.open( new File( workingDirectory, fileName ), "r" );
             int length = UTF8.encode( version ).length;
             byte[] bytes = new byte[length];
             ByteBuffer buffer = ByteBuffer.wrap( bytes );
@@ -133,30 +136,42 @@ public class MigrationTestUtils
         return true;
     }
 
-    public static void verifyFilesHaveSameContent( File original, File other ) throws IOException
+    public static void verifyFilesHaveSameContent( FileSystemAbstraction fileSystem, File original,
+            File other ) throws IOException
     {
-        for ( File originalFile : original.listFiles() )
+        for ( File originalFile : fileSystem.listFiles( original ) )
         {
             File otherFile = new File( other, originalFile.getName() );
-            if ( !originalFile.isDirectory() )
+            if ( !fileSystem.isDirectory( originalFile ) )
             {
-                BufferedInputStream originalStream = new BufferedInputStream( new FileInputStream( originalFile ) );
-                BufferedInputStream otherStream = new BufferedInputStream( new FileInputStream( otherFile ) );
-
-                int aByte;
-                while ( (aByte = originalStream.read()) != -1 )
+                FileChannel originalChannel = fileSystem.open( originalFile, "r" );
+                FileChannel otherChannel = fileSystem.open( otherFile, "r" );
+                try
                 {
-                    assertEquals( "Different content in " + originalFile.getName(), aByte, otherStream.read() );
+                    ByteBuffer buffer = ByteBuffer.allocate( 1 );
+                    while( true )
+                    {
+                        if ( !readAndFlip( originalChannel, buffer, 1 ) )
+                            break;
+                        int originalByte = buffer.get();
+                        
+                        if ( !readAndFlip( otherChannel, buffer, 1 ) )
+                            fail( "Files have different sizes" );
+                        assertEquals( "Different content in " + originalFile.getName(), originalByte, buffer.get() );
+                    }
                 }
-
-                originalStream.close();
-                otherStream.close();
+                finally
+                {
+                    originalChannel.close();
+                    otherChannel.close();
+                }
             }
         }
     }
 
     static class AlwaysAllowedUpgradeConfiguration implements UpgradeConfiguration
     {
+        @Override
         public void checkConfigurationAllowsAutomaticUpgrade()
         {
         }

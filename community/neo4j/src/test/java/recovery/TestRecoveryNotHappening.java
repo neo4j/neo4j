@@ -32,6 +32,7 @@ import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
 import org.neo4j.test.LogTestUtils.LogHookAdapter;
@@ -39,7 +40,7 @@ import org.neo4j.test.TargetDirectory;
 
 public class TestRecoveryNotHappening
 {
-    private File storeDirectory = TargetDirectory.forTest( getClass() ).graphDbDir( true );
+    private final File storeDirectory = TargetDirectory.forTest( getClass() ).graphDbDir( true );
     private GraphDatabaseService db;
     
     /* So this test is here to assert that even if we have a scenario where
@@ -84,7 +85,7 @@ public class TestRecoveryNotHappening
     
     private void modifyTransactionMakingItLookPreparedAndUncompleted() throws Exception
     {
-        filterNeostoreLogicalLog( storeDirectory.getAbsolutePath(), new LogHookAdapter<LogEntry>()
+        filterNeostoreLogicalLog( new DefaultFileSystemAbstraction(), storeDirectory.getAbsolutePath(), new LogHookAdapter<LogEntry>()
         {
             @Override
             public boolean accept( LogEntry item )

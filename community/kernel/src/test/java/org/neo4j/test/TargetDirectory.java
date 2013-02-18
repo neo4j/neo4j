@@ -43,7 +43,6 @@ public class TargetDirectory
 
         private TestDirectory( boolean clean )
         {
-
             this.clean = clean;
         }
 

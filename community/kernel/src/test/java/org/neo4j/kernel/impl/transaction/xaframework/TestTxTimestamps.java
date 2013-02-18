@@ -24,7 +24,6 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
@@ -34,25 +33,24 @@ import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.nioneo.xa.Command;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry.Commit;
-import org.neo4j.kernel.impl.util.FileUtils;
+import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
 public class TestTxTimestamps
 {
+    private final EphemeralFileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
     private GraphDatabaseAPI db;
     
     @Before
     public void doBefore() throws Exception
     {
-        File storeDir = new File( "target/test-data/timestamp" );
-        FileUtils.deleteRecursively( storeDir );
-        db = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir.getAbsolutePath()).
+        db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentDatabaseBuilder().
             setConfig( GraphDatabaseSettings.keep_logical_logs, GraphDatabaseSetting.TRUE ).newGraphDatabase();
     }
     
@@ -80,11 +78,10 @@ public class TestTxTimestamps
         db.getXaDataSourceManager().getNeoStoreDataSource().rotateLogicalLog();
         
         ByteBuffer buffer = ByteBuffer.allocate( 1024*500 );
-        RandomAccessFile file = new RandomAccessFile( new File( db.getStoreDir(), NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME + ".v0" ), "r" );
+        FileChannel channel = fileSystem.open( new File( db.getStoreDir(), NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME + ".v0" ), "r" );
         try
         {
             XaCommandFactory commandFactory = new CommandFactory();
-            FileChannel channel = file.getChannel();
             LogIoUtils.readLogHeader( buffer, channel, true );
             LogEntry entry = null;
             int foundTxCount = 0;
@@ -109,7 +106,7 @@ public class TestTxTimestamps
         }
         finally
         {
-            file.close();
+            channel.close();
         }
     }
 

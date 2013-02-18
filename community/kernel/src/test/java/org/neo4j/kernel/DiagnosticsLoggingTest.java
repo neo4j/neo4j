@@ -22,23 +22,20 @@ package org.neo4j.kernel;
 import static org.junit.Assert.assertThat;
 import static org.junit.matchers.JUnitMatchers.containsString;
 
-import java.io.File;
-
 import org.junit.Test;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.kernel.logging.Logging;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.ImpermanentGraphDatabase;
 
 public class DiagnosticsLoggingTest
 {
     @Test
     public void shouldSeeHelloWorld()
     {
-        File temp = TargetDirectory.forTest( getClass() ).directory( "temp", true );
         // We use an EmbeddedDatabase because Impermanent does not create the directory and returns 0 for disk space
-        FakeDatabase db = new FakeDatabase( temp.getAbsolutePath() );
+        FakeDatabase db = new FakeDatabase();
         FakeLogger logger = db.getLogger();
         String messages = logger.getMessages();
         assertThat( messages, containsString( "Network information" ) );
@@ -49,7 +46,7 @@ public class DiagnosticsLoggingTest
 
     private class FakeLogger extends StringLogger implements Logging
     {
-        private StringBuilder messages = new StringBuilder();
+        private final StringBuilder messages = new StringBuilder();
 
         public String getMessages()
         {
@@ -122,13 +119,8 @@ public class DiagnosticsLoggingTest
         }
     }
 
-    private class FakeDatabase extends EmbeddedGraphDatabase
+    private class FakeDatabase extends ImpermanentGraphDatabase
     {
-        public FakeDatabase( String path )
-        {
-            super( path );
-        }
-
         @Override
         protected Logging createLogging()
         {

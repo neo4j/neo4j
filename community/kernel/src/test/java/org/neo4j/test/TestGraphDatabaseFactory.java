@@ -20,9 +20,11 @@
 package org.neo4j.test;
 
 import java.util.Map;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 
 /**
  * Test factory for graph databases
@@ -35,15 +37,42 @@ public class TestGraphDatabaseFactory
         return newImpermanentDatabaseBuilder().newGraphDatabase();
     }
     
+    public GraphDatabaseService newImpermanentDatabase( String storeDir )
+    {
+        return newImpermanentDatabaseBuilder( storeDir ).newGraphDatabase();
+    }
+    
     public GraphDatabaseBuilder newImpermanentDatabaseBuilder()
     {
-        return new GraphDatabaseBuilder(new GraphDatabaseBuilder.DatabaseCreator()
+        return newImpermanentDatabaseBuilder( ImpermanentGraphDatabase.PATH );
+    }
+    
+    public GraphDatabaseBuilder newImpermanentDatabaseBuilder( final String storeDir )
+    {
+        return new TestGraphDatabaseBuilder( new GraphDatabaseBuilder.DatabaseCreator()
         {
-            public GraphDatabaseService newDatabase(Map<String, String> config)
+            @Override
+            public GraphDatabaseService newDatabase( Map<String, String> config )
             {
-                return new ImpermanentGraphDatabase(config, indexProviders, kernelExtensions, cacheProviders,
-                        txInterceptorProviders);
+                return new ImpermanentGraphDatabase( storeDir, config, indexProviders, kernelExtensions,
+                        cacheProviders, txInterceptorProviders )
+                {
+                    @Override
+                    protected FileSystemAbstraction createFileSystemAbstraction()
+                    {
+                        if ( TestGraphDatabaseFactory.this.fileSystem != null )
+                            return TestGraphDatabaseFactory.this.fileSystem;
+                        else
+                            return super.createFileSystemAbstraction();
+                    }
+                };
             }
-        });
+        } );
+    }
+    
+    public TestGraphDatabaseFactory setFileSystem( FileSystemAbstraction fileSystem )
+    {
+        this.fileSystem = fileSystem;
+        return this;
     }
 }

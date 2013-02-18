@@ -21,10 +21,15 @@ package org.neo4j.test.impl;
 
 import static java.lang.Math.max;
 import static java.lang.Math.min;
+import static java.util.Arrays.asList;
 import static org.neo4j.helpers.collection.IteratorUtil.loop;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.Reader;
 import java.lang.ref.Reference;
 import java.lang.ref.SoftReference;
 import java.lang.ref.WeakReference;
@@ -51,8 +56,18 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 public class EphemeralFileSystemAbstraction extends LifecycleAdapter implements FileSystemAbstraction
 {
-    private final Map<File, EphemeralFileData> files = new HashMap<File, EphemeralFileData>();
-
+    private final Map<File, EphemeralFileData> files;
+    
+    public EphemeralFileSystemAbstraction()
+    {
+        files = new HashMap<File, EphemeralFileData>();
+    }
+    
+    private EphemeralFileSystemAbstraction( Map<File, EphemeralFileData> files )
+    {
+        this.files = files;
+    }
+    
     @Override
     public void shutdown()
     {
@@ -100,7 +115,25 @@ public class EphemeralFileSystemAbstraction extends LifecycleAdapter implements 
         EphemeralFileData data = files.get( fileName );
         return data != null ? new EphemeralFileChannel( data, new FileStillOpenException( fileName.getPath() ) ) : create( fileName );
     }
-
+    
+    @Override
+    public OutputStream openAsOutputStream( File fileName, boolean append ) throws IOException
+    {
+        return new ChannelOutputStream( open( fileName, "rw" ), append );
+    }
+    
+    @Override
+    public InputStream openAsInputStream( File fileName ) throws IOException
+    {
+        return new ChannelInputStream( open( fileName, "r" ) );
+    }
+    
+    @Override
+    public Reader openAsReader( File fileName, String encoding ) throws IOException
+    {
+        return new InputStreamReader( openAsInputStream( fileName ), encoding );
+    }
+    
     @Override
     public FileLock tryLock(File fileName, FileChannel channel) throws IOException
     {
@@ -141,12 +174,38 @@ public class EphemeralFileSystemAbstraction extends LifecycleAdapter implements 
     {
         return files.containsKey(fileName);
     }
+    
+    @Override
+    public boolean mkdir( File fileName )
+    {
+        return true;
+    }
+    
+    @Override
+    public boolean mkdirs( File fileName )
+    {
+        return true;
+    }
 
     @Override
     public boolean deleteFile(File fileName)
     {
-        free(files.remove(fileName));
-        return true;
+        EphemeralFileData removed = files.remove( fileName );
+        free( removed );
+        return removed != null;
+    }
+    
+    @Override
+    public void deleteRecursively( File directory ) throws IOException
+    {
+        List<String> directoryPathItems = splitPath( directory );
+        for ( Map.Entry<File, EphemeralFileData> file : files.entrySet() )
+        {
+            File fileName = file.getKey();
+            List<String> fileNamePathItems = splitPath( fileName );
+            if ( directoryMatches( directoryPathItems, fileNamePathItems ) )
+                deleteFile( fileName );
+        }
     }
 
     @Override
@@ -159,19 +218,54 @@ public class EphemeralFileSystemAbstraction extends LifecycleAdapter implements 
     }
 
     @Override
-    public void copyFile( File from, File to ) throws IOException
-    {
-        if ( !files.containsKey( from ) )
-            throw new IOException( "'" + from + "' doesn't exist" );
-        if ( files.containsKey( to ) )
-            throw new IOException( "'" + to + "' already exists" );
-        files.put( to, files.get( from ).clone() );
-    }
-
-    @Override
     public void autoCreatePath( File path )
     {
         // no op, all paths exist
+    }
+    
+    @Override
+    public File[] listFiles( File directory )
+    {
+        if ( files.containsKey( directory ) )
+            // This means that you're trying to list files on a file, not a directory.
+            return null;
+        
+        List<String> directoryPathItems = splitPath( directory );
+        List<File> found = new ArrayList<File>();
+        for ( Map.Entry<File, EphemeralFileData> file : files.entrySet() )
+        {
+            File fileName = file.getKey();
+            List<String> fileNamePathItems = splitPath( fileName );
+            if ( directoryMatches( directoryPathItems, fileNamePathItems ) )
+                found.add( constructPath( fileNamePathItems, directoryPathItems.size()+1 ) );
+        }
+        return found.toArray( new File[found.size()] );
+    }
+    
+    @Override
+    public boolean isDirectory( File file )
+    {
+        // Just a guess though. If it's in the file list then it's a file, otherwise it might be a directory.
+        return !files.containsKey( file );
+    }
+
+    private File constructPath( List<String> pathItems, int count )
+    {
+        File file = null;
+        for ( String pathItem : pathItems.subList( 0, count ) )
+            file = file == null ? new File( pathItem ) : new File( file, pathItem );
+        return file;
+    }
+
+    private boolean directoryMatches( List<String> directoryPathItems, List<String> fileNamePathItems )
+    {
+        return fileNamePathItems.size() > directoryPathItems.size() ?
+                fileNamePathItems.subList( 0, directoryPathItems.size() ).equals( directoryPathItems ) : false;
+    }
+
+    private List<String> splitPath( File path )
+    {
+        return asList( path.getPath().replaceAll( "\\\\", "/" ).split( "/" ) );
     }
 
     private static class EphemeralFileChannel extends FileChannel
@@ -250,9 +344,30 @@ public class EphemeralFileSystemAbstraction extends LifecycleAdapter implements 
         }
 
         @Override
-        public long transferFrom(ReadableByteChannel src, long position, long count)
+        public long transferFrom( ReadableByteChannel src, long position, long count ) throws IOException
         {
-            throw new UnsupportedOperationException();
+            long previousPos = position();
+            position( position );
+            try
+            {
+                long transferred = 0;
+                ByteBuffer intermediary = ByteBuffer.allocateDirect( 8096 );
+                while ( transferred < count )
+                {
+                    intermediary.clear();
+                    intermediary.limit( (int) min( intermediary.capacity(), count-transferred ) );
+                    int read = src.read( intermediary );
+                    if ( read == -1 )
+                        break;
+                    transferred += read;
+                    intermediary.flip();
+                }
+                return transferred;
+            }
+            finally
+            {
+                position( previousPos );
+            }
         }
 
         @Override
@@ -314,11 +429,21 @@ public class EphemeralFileSystemAbstraction extends LifecycleAdapter implements 
 
     private static class EphemeralFileData
     {
-        private final DynamicByteBuffer fileAsBuffer = new DynamicByteBuffer();
+        private final DynamicByteBuffer fileAsBuffer;
         private final byte[] scratchPad = new byte[1024];
         private final Collection<WeakReference<EphemeralFileChannel>> channels = new LinkedList<WeakReference<EphemeralFileChannel>>();
         private int size;
         private int locked;
+        
+        public EphemeralFileData()
+        {
+            this( new DynamicByteBuffer() );
+        }
+        
+        private EphemeralFileData( DynamicByteBuffer data )
+        {
+            this.fileAsBuffer = data;
+        }
 
         int read( EphemeralFileChannel fc, ByteBuffer dst )
         {
@@ -341,7 +466,7 @@ public class EphemeralFileSystemAbstraction extends LifecycleAdapter implements 
         @Override
         public EphemeralFileData clone()
         {
-            EphemeralFileData copy = new EphemeralFileData();
+            EphemeralFileData copy = new EphemeralFileData( fileAsBuffer.clone() );
             copy.size = size;
             return copy;
         }
@@ -386,11 +511,6 @@ public class EphemeralFileSystemAbstraction extends LifecycleAdapter implements 
                     refs.remove();
                 }
             };
-        }
-
-        boolean isOpen()
-        {
-            return getOpenChannels().hasNext();
         }
 
         int write(EphemeralFileChannel fc, ByteBuffer src)
@@ -504,7 +624,7 @@ public class EphemeralFileSystemAbstraction extends LifecycleAdapter implements 
 
         private DynamicByteBuffer( ByteBuffer toClone )
         {
-            int sizeIndex = toClone.capacity() / SIZES[SIZES.length - 1];
+            int sizeIndex = sizeIndexFor( toClone.capacity() );
             buf = allocate( sizeIndex );
             copyByteBufferContents( toClone, buf );
         }
@@ -641,15 +761,7 @@ public class EphemeralFileSystemAbstraction extends LifecycleAdapter implements 
 
             // Double size each time, but after 1M only increase by 1M at a time, until required amount is reached.
             int newSize = buf.capacity();
-            int sizeIndex = newSize / SIZES[SIZES.length - 1];
-            if (sizeIndex == 0) for ( ; sizeIndex < SIZES.length; sizeIndex++ )
-            {
-                if (newSize == SIZES[sizeIndex]) break;
-            }
-            else
-            {
-                sizeIndex += SIZES.length - 1;
-            }
+            int sizeIndex = sizeIndexFor( newSize );
             for ( int required = newSize + amount - buf.remaining();
                   newSize < required;
                   newSize += Math.min( newSize, 1024 * 1024 ), sizeIndex++ );
@@ -660,10 +772,35 @@ public class EphemeralFileSystemAbstraction extends LifecycleAdapter implements 
             this.buf = buf;
             this.buf.position(oldPosition);
         }
+        
+        private static int sizeIndexFor( int capacity )
+        {
+            // Double size each time, but after 1M only increase by 1M at a time, until required amount is reached.
+            int sizeIndex = capacity / SIZES[SIZES.length - 1];
+            if (sizeIndex == 0) for ( ; sizeIndex < SIZES.length; sizeIndex++ )
+            {
+                if (capacity == SIZES[sizeIndex]) break;
+            }
+            else
+            {
+                sizeIndex += SIZES.length - 1;
+            }
+            return sizeIndex;
+        }
 
         public void clear()
         {
             this.buf.clear();
         }
+    }
+    
+    public EphemeralFileSystemAbstraction snapshot()
+    {
+        Map<File, EphemeralFileData> copiedFiles = new HashMap<File, EphemeralFileData>();
+        for ( Map.Entry<File, EphemeralFileData> file : files.entrySet() )
+        {
+            copiedFiles.put( file.getKey(), file.getValue().clone() );
+        }
+        return new EphemeralFileSystemAbstraction( copiedFiles );
     }
 }

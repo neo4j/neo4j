@@ -21,18 +21,17 @@ package org.neo4j.kernel.impl.core;
 
 import static org.junit.Assert.assertEquals;
 
-import java.io.File;
-
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
 /**
  * Tests for handling many property keys (even after restart of database)
@@ -80,11 +79,11 @@ public class ManyPropertyKeysIT
         assertEquals( 1, propertyKeyCount( db ) );
     }
     
-    private final File storeDir = TargetDirectory.forTest( getClass() ).graphDbDir( true );
+    private final FileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
     
     private GraphDatabaseAPI database()
     {
-        return new EmbeddedGraphDatabase( storeDir.getAbsolutePath() );
+        return (GraphDatabaseAPI) new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentDatabase();
     }
 
     private GraphDatabaseAPI databaseWithManyPropertyKeys( int propertyKeyCount )

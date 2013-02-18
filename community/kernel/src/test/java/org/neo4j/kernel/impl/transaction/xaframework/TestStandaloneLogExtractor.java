@@ -20,16 +20,19 @@
 package org.neo4j.kernel.impl.transaction.xaframework;
 
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.test.TargetDirectory.forTest;
+import static org.neo4j.test.BatchTransaction.beginBatchTx;
 
 import java.io.File;
+import java.io.IOException;
 
 import org.junit.Test;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.Node;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.impl.MyRelTypes;
+import org.neo4j.test.BatchTransaction;
 import org.neo4j.test.DbRepresentation;
-import org.neo4j.test.ProcessStreamHandler;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
 public class TestStandaloneLogExtractor
 {
@@ -47,18 +50,18 @@ public class TestStandaloneLogExtractor
     
     private void run( boolean cleanShutdown, int nr ) throws Exception
     {
-        File sourceDir = forTest( getClass() ).directory( "source" + nr, true );
-        Process process = Runtime.getRuntime().exec( new String[]{
-            "java", "-cp", System.getProperty( "java.class.path" ), CreateSomeTransactions.class.getName(),
-            sourceDir.getPath(), "" + cleanShutdown
-        } );
-
-        new ProcessStreamHandler( process, true ).waitForResult();
-
-        GraphDatabaseAPI newDb = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabase(
-                TargetDirectory.forTest( getClass() ).directory( "target" + nr, true ).getAbsolutePath() );
+        EphemeralFileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
+        
+        String storeDir = "dir";
+        GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentDatabase( storeDir );
+        createSomeTransactions( db );
+        EphemeralFileSystemAbstraction snapshot = fileSystem.snapshot();
+        DbRepresentation rep = DbRepresentation.of( db );
+        db.shutdown();
+        
+        GraphDatabaseAPI newDb = (GraphDatabaseAPI) new TestGraphDatabaseFactory().setFileSystem( snapshot ).newImpermanentDatabase( storeDir );
         XaDataSource ds = newDb.getXaDataSourceManager().getNeoStoreDataSource();
-        LogExtractor extractor = LogExtractor.from( sourceDir );
+        LogExtractor extractor = LogExtractor.from( snapshot, new File( storeDir ) );
         long expectedTxId = 2;
         while ( true )
         {
@@ -80,6 +83,24 @@ public class TestStandaloneLogExtractor
         DbRepresentation newRep = DbRepresentation.of( newDb );
         newDb.shutdown();
 
-        assertEquals( DbRepresentation.of( sourceDir ), newRep );
+        assertEquals( rep, newRep );
+    }
+    
+    private void createSomeTransactions( GraphDatabaseAPI db ) throws IOException
+    {
+        BatchTransaction tx = beginBatchTx( db );
+        Node node = db.createNode();
+        node.setProperty( "name", "First" );
+        Node otherNode = db.createNode();
+        node.createRelationshipTo( otherNode, MyRelTypes.TEST );
+        tx.restart();
+        db.getXaDataSourceManager().getNeoStoreDataSource().rotateLogicalLog();
+        
+        for ( int i = 0; i < 5; i++ )
+        {
+            db.createNode().setProperty( "type", i );
+            tx.restart();
+        }
+        tx.finish();
     }
 }

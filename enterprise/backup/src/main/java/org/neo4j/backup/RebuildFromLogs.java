@@ -41,9 +41,11 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.ProgressIndicator;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
+import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConfigParam;
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
 import org.neo4j.kernel.impl.nioneo.xa.Command;
 import org.neo4j.kernel.impl.transaction.xaframework.InMemoryLogBuffer;
@@ -57,6 +59,8 @@ import org.neo4j.kernel.impl.util.StringLogger;
 
 class RebuildFromLogs
 {
+    private static final FileSystemAbstraction FS = new DefaultFileSystemAbstraction();
+    
     /*
      * TODO: This process can be sped up if the target db doesn't have to write tx logs.
      */
@@ -75,7 +79,7 @@ class RebuildFromLogs
         LogExtractor extractor = null;
         try
         {
-            extractor = LogExtractor.from( sourceDir );
+            extractor = LogExtractor.from( FS, sourceDir );
             for ( InMemoryLogBuffer buffer = new InMemoryLogBuffer(); ; buffer.reset() )
             {
                 long txId = extractor.extractNext( buffer );
@@ -273,7 +277,7 @@ class RebuildFromLogs
 
     private static long findMaxLogFileId( File source )
     {
-        return getHighestHistoryLogVersion( source, LOGICAL_LOG_DEFAULT_NAME );
+        return getHighestHistoryLogVersion( FS, source, LOGICAL_LOG_DEFAULT_NAME );
     }
 
     private static class TxDiffLogConfig implements ConfigParam

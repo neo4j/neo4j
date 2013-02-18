@@ -19,9 +19,13 @@
  */
 package org.neo4j.unsafe.batchinsert;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
 /**
  * Provides instances of batch inserters.
@@ -58,6 +62,30 @@ public final class BatchInserters
     }
 
     /**
+     * Get a {@link BatchInserter} given a store directory.
+     * 
+     * @param storeDir the store directory
+     * @return a new {@link BatchInserter}
+     */
+    public static BatchInserter inserter( String storeDir, FileSystemAbstraction fileSystem )
+    {
+        return new BatchInserterImpl( storeDir, fileSystem, new HashMap<String, String>() );
+    }
+
+    /**
+     * Get a {@link BatchInserter} given a store directory.
+     * 
+     * @param storeDir the store directory
+     * @param config configuration settings to use
+     * @return a new {@link BatchInserter}
+     */
+    public static BatchInserter inserter( String storeDir, FileSystemAbstraction fileSystem,
+            Map<String,String> config )
+    {
+        return new BatchInserterImpl( storeDir, fileSystem, config );
+    }
+    
+    /**
      * Get a {@link GraphDatabaseService} that does not support deletions and
      * transactions.
      * 
@@ -83,5 +111,33 @@ public final class BatchInserters
             Map<String, String> config )
     {
         return new BatchGraphDatabaseImpl( storeDir, config );
+    }
+
+    /**
+     * Get a {@link GraphDatabaseService} that does not support deletions and
+     * transactions.
+     * 
+     * @param storeDir the store directory
+     * @return a {@link GraphDatabaseService} that does not support deletions
+     *         and transactions
+     */
+    public static GraphDatabaseService batchDatabase( String storeDir, EphemeralFileSystemAbstraction fileSystem )
+    {
+        return new BatchGraphDatabaseImpl( storeDir, fileSystem, MapUtil.stringMap() );
+    }
+
+    /**
+     * Get a {@link GraphDatabaseService} that does not support deletions and
+     * transactions.
+     * 
+     * @param storeDir the store directory
+     * @param config configuration settings to use
+     * @return a {@link GraphDatabaseService} that does not support deletions
+     *         and transactions
+     */
+    public static GraphDatabaseService batchDatabase( String storeDir,
+            EphemeralFileSystemAbstraction fileSystem, Map<String, String> config )
+    {
+        return new BatchGraphDatabaseImpl( storeDir, fileSystem, config );
     }
 }

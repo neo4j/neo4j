@@ -42,7 +42,9 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -58,28 +60,54 @@ import org.neo4j.index.lucene.ValueContext;
 import org.neo4j.kernel.impl.batchinsert.BatchInserter;
 import org.neo4j.kernel.impl.batchinsert.BatchInserterImpl;
 import org.neo4j.kernel.impl.cache.LruCache;
+import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
+import org.neo4j.unsafe.batchinsert.BatchInserters;
 
 public class TestLuceneBatchInsert
 {
     private static final String PATH = "target/var/batch";
+    private static EphemeralFileSystemAbstraction fs;
+    
+    @BeforeClass
+    public static void startFileSystem()
+    {
+        fs = new EphemeralFileSystemAbstraction();
+    }
+    
+    @AfterClass
+    public static void stopFileSystem()
+    {
+        fs.shutdown();
+    }
 
+    private org.neo4j.unsafe.batchinsert.BatchInserter inserter;
+    private org.neo4j.index.lucene.unsafe.batchinsert.LuceneBatchInserterIndexProvider provider;
+    private String path;
+    
     @Before
     public void cleanDirectory()
     {
         Neo4jTestCase.deleteFileOrDirectory( new File( PATH ) );
     }
+    
+    private void newInserter( int pathId )
+    {
+        path = new File( PATH, "" + pathId ).getAbsolutePath();
+        inserter = BatchInserters.inserter( path, fs );
+//        BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProviderImpl(
+//                inserter );
+        provider = new org.neo4j.index.lucene.unsafe.batchinsert.LuceneBatchInserterIndexProvider( inserter );
+        String indexName = "users";
+//        BatchInserterIndex index = provider.nodeIndex( indexName, EXACT_CONFIG );
+    }
 
     @Test
     public void testSome() throws Exception
     {
-        // Different paths for each tests because there's a bug (on Windows)
-        // causing _0.cfs file to stay open 
-        String path = new File( PATH, "1" ).getAbsolutePath();
-        BatchInserter inserter = new BatchInserterImpl( path );
-        BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProviderImpl(
-                inserter );
+        newInserter( 1 );
         String indexName = "users";
-        BatchInserterIndex index = provider.nodeIndex( indexName, EXACT_CONFIG );
+        org.neo4j.unsafe.batchinsert.BatchInserterIndex index = provider.nodeIndex( indexName, EXACT_CONFIG );
         Map<Integer, Long> ids = new HashMap<Integer, Long>();
         int count = 5;
         for ( int i = 0; i < count; i++ )
@@ -101,7 +129,7 @@ public class TestLuceneBatchInsert
         provider.shutdown();
         inserter.shutdown();
 
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( path );
+        GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fs ).newImpermanentDatabase( path );
         IndexManager indexManager = db.index();
         assertFalse( indexManager.existsForRelationships( indexName ) );
         assertTrue( indexManager.existsForNodes( indexName ) );

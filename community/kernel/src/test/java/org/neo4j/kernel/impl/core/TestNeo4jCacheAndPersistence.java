@@ -19,6 +19,10 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -26,7 +30,9 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+
 import javax.transaction.TransactionManager;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -36,25 +42,23 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.MyRelTypes;
-
-import static org.junit.Assert.*;
+import org.neo4j.test.TestGraphDatabaseFactory;
 
 public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
 {
     private long node1Id = -1;
     private long node2Id = -1;
-    private String key1 = "key1";
-    private String key2 = "key2";
-    private String arrayKey = "arrayKey";
-    private Integer int1 = new Integer( 1 );
-    private Integer int2 = new Integer( 2 );
-    private String string1 = new String( "1" );
-    private String string2 = new String( "2" );
-    private int[] array = new int[] { 1, 2, 3, 4, 5, 6, 7 };
+    private final String key1 = "key1";
+    private final String key2 = "key2";
+    private final String arrayKey = "arrayKey";
+    private final Integer int1 = new Integer( 1 );
+    private final Integer int2 = new Integer( 2 );
+    private final String string1 = new String( "1" );
+    private final String string2 = new String( "2" );
+    private final int[] array = new int[] { 1, 2, 3, 4, 5, 6, 7 };
 
     @Before
     public void createTestingGraph()
@@ -314,7 +318,7 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
         node1.setProperty( "someotherproptest", 2 );
         commit();
         TransactionManager txManager = 
-            getEmbeddedGraphDb().getTxManager();
+            getGraphDbAPI().getTxManager();
         
         txManager.begin();
         node.setProperty( "someotherproptest", "testing2" );
@@ -440,7 +444,7 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
         config.put( "relationship_grab_size", "1" );
         String storePath = getStorePath( "neo2" );
         deleteFileOrDirectory( storePath );
-        GraphDatabaseService graphDb = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storePath ).setConfig( config ).newGraphDatabase();
+        GraphDatabaseService graphDb = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().setConfig( config ).newGraphDatabase();
         Transaction tx = graphDb.beginTx();
         Node node1 = graphDb.createNode();
         Node node2 = graphDb.createNode();
@@ -537,7 +541,7 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
         config.put( "relationship_grab_size", "2" );
         String storePath = getStorePath( "neo2" );
         deleteFileOrDirectory( storePath );
-        GraphDatabaseService graphDb = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storePath ).setConfig( config ).newGraphDatabase();
+        GraphDatabaseService graphDb = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().setConfig( config ).newGraphDatabase();
         Transaction tx = graphDb.beginTx();
         Node node1 = graphDb.createNode();
         Node node2 = graphDb.createNode();

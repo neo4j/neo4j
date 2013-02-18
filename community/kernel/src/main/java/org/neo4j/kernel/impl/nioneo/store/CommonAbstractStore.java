@@ -152,7 +152,7 @@ public abstract class CommonAbstractStore
         if ( !fileSystemAbstraction.fileExists( storageFileName ) )
         {
             throw new IllegalStateException( "No such store[" + storageFileName
-                + "]" );
+                + "] for " + fileSystemAbstraction );
         }
         try
         {
