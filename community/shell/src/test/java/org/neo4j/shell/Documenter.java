@@ -106,7 +106,13 @@ public class Documenter
     public Documenter( final String title, final ShellServer server )
     {
         this.title = title;
-        this.client = new SameJvmClient( new HashMap<String, Serializable>(), server );
+        try
+        {
+            this.client = new SameJvmClient( new HashMap<String, Serializable>(), server );
+        } catch ( ShellException e )
+        {
+            throw new RuntimeException( "Error creating client",e );
+        }
     }
 
     public void add( final String query, final String assertion, final String comment )

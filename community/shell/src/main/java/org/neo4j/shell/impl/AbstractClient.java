@@ -37,6 +37,7 @@ import org.neo4j.shell.Response;
 import org.neo4j.shell.ShellClient;
 import org.neo4j.shell.ShellException;
 import org.neo4j.shell.ShellServer;
+import org.neo4j.shell.Variables;
 import org.neo4j.shell.Welcome;
 
 /**
@@ -44,28 +45,6 @@ import org.neo4j.shell.Welcome;
  */
 public abstract class AbstractClient implements ShellClient
 {
-    /**
-     * The session key for the prompt key, just like in Bash.
-     */
-    public static final String PROMPT_KEY = "PS1";
-
-    /**
-     * The session key for whether or not to print stack traces for exceptions. 
-     */
-    public static final String STACKTRACES_KEY = "STACKTRACES";
-
-    /**
-     * When displaying node ids this variable is also used for getting an
-     * appropriate property value from that node to display as the title.
-     * This variable can contain many property keys (w/ regex) separated by
-     * comma prioritized in order.
-     */
-    public static final String TITLE_KEYS_KEY = "TITLE_KEYS";
-
-    /**
-     * The maximum length of titles to be displayed.
-     */
-    public static final String TITLE_MAX_LENGTH = "TITLE_MAX_LENGTH";
 
     private static final Set<String> EXIT_COMMANDS = new HashSet<String>(
         Arrays.asList( "exit", "quit", null ) );
@@ -190,7 +169,7 @@ public abstract class AbstractClient implements ShellClient
     {
         try
         {
-            String stringValue = (String) getServer().interpretVariable( id, STACKTRACES_KEY );
+            String stringValue = (String) getServer().interpretVariable( id, Variables.STACKTRACES_KEY );
             return Boolean.parseBoolean( stringValue );
         }
         catch ( Exception e )
@@ -222,12 +201,15 @@ public abstract class AbstractClient implements ShellClient
         }
     }
 
-    protected void sayHi( ShellServer server ) throws RemoteException
+    protected void sayHi( ShellServer server ) throws RemoteException, ShellException
     {
         Welcome welcome = server.welcome( initialSession );
         id = welcome.getId();
         prompt = welcome.getPrompt();
-        getOutput().println( welcome.getMessage() );
+        if ( !welcome.getMessage().isEmpty() )
+        {
+            getOutput().println( welcome.getMessage() );
+        }
     }
 
     protected String readLine( String prompt )

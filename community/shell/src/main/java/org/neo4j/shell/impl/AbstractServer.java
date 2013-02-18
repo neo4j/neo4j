@@ -82,8 +82,8 @@ public abstract class AbstractServer implements ShellServer
 	}
 
 	@Override
-	public Welcome welcome( Map<String, Serializable> initialSession ) throws RemoteException
-	{
+	public Welcome welcome( Map<String, Serializable> initialSession ) throws RemoteException, ShellException
+    {
 	    Serializable clientId = newClientId();
 	    if ( clientSessions.containsKey( clientId ) )
 	        throw new IllegalStateException( "Client " + clientId + " already initialized" );
@@ -91,15 +91,30 @@ public abstract class AbstractServer implements ShellServer
         clientSessions.put( clientId, session );
 		try
         {
-            return new Welcome( getWelcomeMessage(), clientId, getPrompt( session ) );
+            String message = noWelcome( initialSession ) ? "" : getWelcomeMessage();
+            return new Welcome( message, clientId, getPrompt( session ) );
         }
         catch ( ShellException e )
         {
             throw new RemoteException( e.getMessage() );
         }
 	}
-	
-	private Session newSession( Serializable id, Map<String, Serializable> initialSession )
+
+    private boolean noWelcome( Map<String, Serializable> initialSession )
+    {
+        final Serializable quiet = initialSession.get( "quiet" );
+        if ( quiet == null )
+        {
+            return false;
+        }
+        if ( quiet instanceof Boolean )
+        {
+            return (Boolean) quiet;
+        }
+        return quiet.toString().equalsIgnoreCase( "true" );
+    }
+
+    private Session newSession( Serializable id, Map<String, Serializable> initialSession ) throws ShellException
     {
 	    Session session = new Session( id );
 	    initialPopulateSession( session );
@@ -108,7 +123,7 @@ public abstract class AbstractServer implements ShellServer
 	    return session;
     }
 
-    protected void initialPopulateSession( Session session )
+    protected void initialPopulateSession( Session session ) throws ShellException
     {
     }
 
@@ -168,8 +183,8 @@ public abstract class AbstractServer implements ShellServer
 	}
 	
 	@Override
-	public void setSessionVariable( Serializable clientID, String key, Object value )
-	{
+	public void setSessionVariable( Serializable clientID, String key, Object value ) throws ShellException
+    {
 	    getClientSession( clientID ).set( key, value );
 	}
 }

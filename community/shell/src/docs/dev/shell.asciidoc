@@ -87,11 +87,27 @@ $ neo4j-shell -readonly -path path/to/neo4j-db
 
 It is possible to tell the shell to just start, execute a command and then exit.
 This opens up for uses of background jobs and also handling of huge output of f.ex. an '''ls''' command where you then could pipe the output to '''less''' or another reader of your choice, or even to a file.
+
+And even to another neo4j-shell, e.g. for importing a '''dump''' of another database or cypher result. When used with command mode the shell will not output a welcome message.
 So some examples of usage:
 [source,plain]
 ----
 $ neo4j-shell -c "cd -a 24 && set name Mattias"
 $ neo4j-shell -c "trav -r KNOWS" | less
+----
+
+=== Execute a file and then exit ===
+
+To execute commands from a file  and then exit just provide a +-file
+filename+. This is faster than piping to the shell which still handles
+the input as if it was user input.
+
+For example reading a dump file directly from the command line and executing
+it against the given database. For example:
+
+[source,plain]
+----
+$ neo4j-shell -file export.cql > result.txt
 ----
 
 [[shell-options]]
@@ -212,7 +228,15 @@ Deletion of nodes and relationships is done with the +rmnode+ and +rmrel+ comman
 [[shell-env-vars]]
 === Environment variables ===
 The shell uses environment variables a-la bash to keep session information, such as the current path and more.
-The commands for this mimics the bash commands +export+ and +env+. For example you can at anytime issue a +export STACKTRACES=true+ command to set the +STACKTRACES+ environment variable to +true+. This will then result in stacktraces being printed if an exception or error should occur. List environment variables using +env+
+The commands for this mimics the bash commands +export+ and +env+. For example you can at anytime issue a +export STACKTRACES=true+ command to set the +STACKTRACES+ environment variable to +true+. This will then result in stacktraces being printed if an exception or error should occur.
+Allowed values are all parseable JSON strings, so maps +\{age:10,name:"Mattias"}+ and arrays +[1,2,3]+ are also supported.
+
+Variables can also be assigned to each other. E.g. +a=b+ will result in +a+ containing the value of +b+.
+
+This becomes especially interesting as all shell variables are automatically passed to cypher statements as parameters. That makes it easy to query for certain start nodes or
+ create nodes and relationships with certain provided properties (as maps).
+
+Values are removed by setting them to +null+ or an empty value. List environment variables using +env+
 
 === Executing groovy/python scripts ===
 The shell has support for executing scripts, such as http://groovy.codehaus.org[Groovy] and http://www.python.org[Python] (via http://www.jython.org[Jython]).
@@ -231,13 +255,18 @@ Which means traverse depth first for relationships with type +KNOWS+ disregardin
 See <<shell-options-enum>> for the traversal order option. Even relationship types/directions are supplied using the same format as filters.
 
 === Query with Cypher ===
-You can use Cypher to query the graph. For that, use the +start+ command.
+You can use Cypher to query the graph. For that, use the +start+ command. You can also use +create+ statements to create nodes and relationships and
+use the +cypher VERSION+ prefix to select a certain cypher parser.
 
 [TIP]
 Cypher queries need to be terminated by a semicolon `;`.
 
-* +start n = node(0) return n;+ will give you a listing of the node with ID 0
+Cypher commands are passed all shell variables as parameters and the special +self+ parameter for the current node or relationship.
 
+* +START n = node(\{self}) MATCH (n)-[:KNOWS]->(friend) RETURN friend;+ will
+return the nodes connected to the current node.
+* +START n=node(\{me}) CREATE friend=\{props}, (me)-[r:KNOWS]->(friend);+ will
+create the friend and the relationship according to the variables available.
 
 === Indexing ===
 It's possible to query and manipulate indexes via the index command.
@@ -261,6 +290,24 @@ all open transactions.
 * +begin transaction+  Starts a transaction.
 * +commit+ Commits a transaction.
 * +rollback+ Rollbacks all open transactions.
+
+=== Dumping the database or a cypher result to Cypher statements ===
+
+As a simple way of exporting a database or a subset of it, the +dump+ command converts the graph of a Cypher result or the whole database into a single Cypher +create+ statement.
+
+[TIP]
+Index export is not yet supported.
+
+Examples:
+* +dump + dumps the whole database as single cypher create statement
+* +dump START n=node(\{self}) MATCH p=(n)-[r:KNOWS*]->(m) RETURN n,r,m;+ dumps the transitive friendship graph of the current node.
+* +neo4j-shell -path db1 -c dump START n=node:node_auto_index(name=\'Mattias\') MATCH p=(n)-[r:KNOWS]->(m) RETURN p; | neo4j-shell -path db2+
+imports the subgraph of the first database (db1) into the second (db2)
+
+==== Example Dump Scripts ====
+include::shell/simple-cypher-result-dump.asciidoc[]
+
+include::shell/database-dump.asciidoc[]
 
 [[shell-extending]]
 == Extending the shell: Adding your own commands ==

@@ -130,8 +130,7 @@ public abstract class AbstractAppServer extends AbstractServer
 	    {
 	        changed = false;
     	    String appName = AppCommandParser.parseOutAppName( line );
-    	    String prefixedKey = Alias.ALIAS_PREFIX + appName;
-    	    String alias = ( String ) session.get( prefixedKey );
+            String alias = session.getAlias( appName );
     	    if ( alias != null && appNames.add( alias ) )
     	    {
     	        changed = true;

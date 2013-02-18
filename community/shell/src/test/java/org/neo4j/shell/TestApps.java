@@ -19,18 +19,6 @@
  */
 package org.neo4j.shell;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.neo4j.graphdb.DynamicRelationshipType.withName;
-
-import java.io.Serializable;
-import java.util.Arrays;
-import java.util.Map;
-import java.util.regex.Pattern;
-
 import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.cypher.NodeStillHasRelationshipsException;
@@ -41,7 +29,21 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.shell.impl.CollectingOutput;
+import org.neo4j.shell.impl.SameJvmClient;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
+
+import java.io.Serializable;
+import java.util.Arrays;
+import java.util.Map;
+import java.util.regex.Pattern;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 
 public class TestApps extends AbstractShellTest
 {
@@ -104,7 +106,7 @@ public class TestApps extends AbstractShellTest
         assertEquals( name, node.getProperty( "name" ) );
         assertEquals( age, node.getProperty( "age" ) );
         long[] value = (long[]) node.getProperty( "some property" );
-        assertTrue( Arrays.equals( new long[] { 1234L, 5678L }, value ) );
+        assertTrue( Arrays.equals( new long[]{1234L, 5678L}, value ) );
 
         executeCommand( "rm age" );
         assertNull( node.getProperty( "age", null ) );
@@ -363,6 +365,53 @@ public class TestApps extends AbstractShellTest
     }
 
     @Test
+    public void canReassignShellVariables() throws Exception
+    {
+        executeCommand( "export a=10" );
+        executeCommand( "export b=a" );
+        executeCommand( "env", "a=10", "b=10" );
+    }
+
+    @Test
+    public void canSetVariableToMap() throws Exception
+    {
+        executeCommand( "export a={a:10}" );
+        executeCommand( "export b={\"b\":\"foo\"}" );
+        executeCommand( "env", "a=\\{a=10\\}", "b=\\{b=foo\\}" );
+    }
+
+    @Test
+    public void canSetVariableToScalars() throws Exception
+    {
+        executeCommand( "export a=true" );
+        executeCommand( "export b=100" );
+        executeCommand( "export c=\"foo\"" );
+        executeCommand( "env", "a=true", "b=100", "c=\"foo\"" );
+    }
+
+    @Test
+    public void canSetVariableToArray() throws Exception
+    {
+        executeCommand( "export a=[1,true,\"foo\"]" );
+        executeCommand( "env", "a=\\[1, true, foo\\]" );
+    }
+
+    @Test
+    public void canRemoveShellVariables() throws Exception
+    {
+        executeCommand( "export a=10" );
+        executeCommand( "export a=null" );
+        executeCommand( "env", "!a=10", "!a=null" );
+    }
+
+    @Test
+    public void canUseAlias() throws Exception
+    {
+        executeCommand( "alias x=pwd" );
+        executeCommand( "x", "Current is \\(0\\)" );
+    }
+
+    @Test
     public void cypherNodeStillHasRelationshipsException() throws Exception
     {
         try
@@ -396,9 +445,64 @@ public class TestApps extends AbstractShellTest
     }
 
     @Test
-    public void canExecuteCypherWithShellVariables() throws Exception {
-        Map<String, Serializable> variables = MapUtil.<String,Serializable>genericMap( "id", 0 );
+    public void canDisableWelcomeMessage() throws Exception
+    {
+        Map<String, Serializable> values = MapUtil.<String, Serializable>genericMap( "quiet", "true" );
+        final CollectingOutput out = new CollectingOutput();
+        ShellClient client = new SameJvmClient( values, shellServer, out );
+        client.shutdown();
+        final String outString = out.asString();
+        assertEquals( "Shows welcome message: " + outString, false, outString.contains( "Welcome to the Neo4j Shell! Enter 'help' for a list of commands" ) );
+    }
+
+    @Test
+    public void doesShowWelcomeMessage() throws Exception
+    {
+        Map<String, Serializable> values = MapUtil.<String, Serializable>genericMap();
+        final CollectingOutput out = new CollectingOutput();
+        ShellClient client = new SameJvmClient( values, shellServer, out );
+        client.shutdown();
+        final String outString = out.asString();
+        assertEquals( "Shows welcome message: " + outString, true, outString.contains( "Welcome to the Neo4j Shell! Enter 'help' for a list of commands" ) );
+    }
+
+    @Test
+    public void canExecuteCypherWithShellVariables() throws Exception
+    {
+        Map<String, Serializable> variables = MapUtil.<String, Serializable>genericMap( "id", 0 );
         ShellClient client = ShellLobby.newClient( shellServer, variables );
         executeCommand( client, "start n=node({id}) return n;", "1 row" );
+    }
+
+    @Test
+    public void canDumpSubgraphWithCypher() throws Exception
+    {
+        final DynamicRelationshipType type = DynamicRelationshipType.withName( "KNOWS" );
+        createRelationshipChain( db.getReferenceNode(), type, 1 );
+        executeCommand( "dump start n=node(0) match n-[r]->m return n,r,m;",
+                "begin",
+                "start _0 = node\\(0\\) with _0 ",
+                "create \\(_1\\)",
+                "_0-\\[:`KNOWS`\\]->_1",
+                "commit" );
+    }
+
+    @Test
+    public void canDumpGraph() throws Exception
+    {
+        final DynamicRelationshipType type = DynamicRelationshipType.withName( "KNOWS" );
+        final Relationship rel = createRelationshipChain( db.getReferenceNode(), type, 1 )[0];
+        db.beginTx();
+        rel.getStartNode().setProperty( "f o o", "bar" );
+        rel.setProperty( "since", 2010 );
+        rel.getEndNode().setProperty( "flags", new Boolean[]{true, false, true} );
+        executeCommand( "dump ",
+                "begin",
+                "start _0 = node\\(0\\) with _0 ",
+                "set _0.`f o o`=\"bar\"",
+                "create \\(_1 \\{`flags`:\\[true,false,true\\]\\}\\)",
+                "_0-\\[:`KNOWS` \\{`since`:2010\\}\\]->_1",
+                "commit"
+        );
     }
 }

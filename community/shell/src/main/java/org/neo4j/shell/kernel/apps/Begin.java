@@ -57,7 +57,7 @@ public class Begin extends ReadOnlyGraphDatabaseApp
 
         getServer().getDb().beginTx();
             
-        Integer txCount = (Integer) session.get( Commit.TX_COUNT );
+        Integer txCount = session.getCommitCount();
 
         int count;
         if ( txCount == null )
@@ -77,7 +77,7 @@ public class Begin extends ReadOnlyGraphDatabaseApp
             out.println( String.format( "Nested transaction started (Tx count: %d)", count + 1 ) );
         }
 
-        session.set( Commit.TX_COUNT, ++count );
+        session.setCommitCount( ++count );
         return Continuation.INPUT_COMPLETE;
     }
 
