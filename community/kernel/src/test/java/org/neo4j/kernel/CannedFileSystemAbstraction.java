@@ -21,6 +21,9 @@ package org.neo4j.kernel;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.Reader;
 import java.nio.channels.FileChannel;
 
 import org.neo4j.kernel.impl.nioneo.store.FileLock;
@@ -56,6 +59,24 @@ public class CannedFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
+    public OutputStream openAsOutputStream( File fileName, boolean append ) throws IOException
+    {
+        throw new UnsupportedOperationException( "TODO" );
+    }
+
+    @Override
+    public InputStream openAsInputStream( File fileName ) throws IOException
+    {
+        throw new UnsupportedOperationException( "TODO" );
+    }
+
+    @Override
+    public Reader openAsReader( File fileName, String encoding ) throws IOException
+    {
+        throw new UnsupportedOperationException( "TODO" );
+    }
+
+    @Override
     public FileLock tryLock( File fileName, FileChannel channel ) throws IOException
     {
         return lockSuccess ? SYMBOLIC_FILE_LOCK : null;
@@ -74,6 +95,18 @@ public class CannedFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
+    public boolean mkdir( File fileName )
+    {
+        return false;
+    }
+
+    @Override
+    public boolean mkdirs( File fileName )
+    {
+        return false;
+    }
+
+    @Override
     public long getFileSize( File fileName )
     {
         throw new UnsupportedOperationException( "TODO" );
@@ -86,15 +119,20 @@ public class CannedFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
+    public void deleteRecursively( File directory ) throws IOException
+    {
+    }
+
+    @Override
     public boolean renameFile( File from, File to ) throws IOException
     {
         throw new UnsupportedOperationException( "TODO" );
     }
 
     @Override
-    public void copyFile( File from, File to ) throws IOException
+    public boolean isDirectory( File file )
     {
-        throw new UnsupportedOperationException( "TODO" );
+        return false;
     }
 
     @Override
@@ -104,6 +142,12 @@ public class CannedFileSystemAbstraction implements FileSystemAbstraction
         {
             throw cannotCreateStoreDir;
         }
+    }
+
+    @Override
+    public File[] listFiles( File directory )
+    {
+        return new File[0];
     }
 
     private static final FileLock SYMBOLIC_FILE_LOCK = new FileLock()
