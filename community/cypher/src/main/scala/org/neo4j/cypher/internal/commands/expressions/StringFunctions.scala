@@ -47,8 +47,8 @@ trait StringHelper {
   protected def props(x: PropertyContainer, q: QueryContext): String = {
 
     val keyValStrings = x match {
-      case n: Node         => q.nodeOps().propertyKeys(n).asScala.map(key => key + ":" + text(q.nodeOps().getProperty(n, key), q))
-      case r: Relationship => q.relationshipOps().propertyKeys(r).asScala.map(key => key + ":" + text(q.relationshipOps().getProperty(r, key), q))
+      case n: Node         => q.nodeOps.propertyKeys(n).map(key => key + ":" + text(q.nodeOps.getProperty(n, key), q))
+      case r: Relationship => q.relationshipOps.propertyKeys(r).map(key => key + ":" + text(q.relationshipOps.getProperty(r, key), q))
     }
 
     keyValStrings.mkString("{", ",", "}")
