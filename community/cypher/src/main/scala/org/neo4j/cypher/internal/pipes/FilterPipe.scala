@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.pipes
 
-import java.lang.String
 import org.neo4j.cypher.internal.commands.Predicate
 import org.neo4j.cypher.internal.symbols.SymbolTable
 
@@ -28,7 +27,7 @@ class FilterPipe(source: Pipe, predicate: Predicate) extends PipeWithSource(sour
 
   def createResults(state: QueryState) = source.createResults(state).filter(ctx => predicate.isMatch(ctx))
 
-  override def executionPlan(): String = source.executionPlan() + "\r\n" + "Filter(" + predicate.toString + ")"
+  override def executionPlanDescription = source.executionPlanDescription.andThen("Filter", "pred" -> predicate)
 
   def throwIfSymbolsMissing(symbols: SymbolTable) {
     predicate.throwIfSymbolsMissing(symbols)

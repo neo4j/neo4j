@@ -100,6 +100,15 @@ public class ExecutionResult implements Iterable<Map<String,Object>>
         return new QueryStatistics( inner.queryStatistics() );
     }
 
+    /**
+     * Returns a string representation of the query plan used to produce this result.
+     * @return a string representation of the query plan used to produce this result.
+     */
+    public String executionPlanDescription()
+    {
+        return inner.executionPlanDescription();
+    }
+
     public void toString( PrintWriter writer )
     {
         inner.dumpToString( writer );

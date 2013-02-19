@@ -29,11 +29,11 @@ import org.neo4j.graphdb.Transaction;
 public class GraphTransactionRule
     extends ExternalResource
 {
-    private EmbeddedDatabaseRule database;
+    private final DatabaseRule database;
 
     private Transaction tx;
 
-    public GraphTransactionRule( EmbeddedDatabaseRule database )
+    public GraphTransactionRule( DatabaseRule database )
     {
         this.database = database;
     }

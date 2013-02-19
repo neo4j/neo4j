@@ -31,13 +31,13 @@ import org.neo4j.kernel.InternalAbstractGraphDatabase
 import org.neo4j.graphdb.GraphDatabaseService
 
 class ExecutionPlanImpl(inputQuery: Query, graph: GraphDatabaseService) extends ExecutionPlan with PatternGraphBuilder {
-  val (executionPlan, executionPlanText) = prepareExecutionPlan()
+  val executionPlan = prepareExecutionPlan()
 
   def execute(params: Map[String, Any]): ExecutionResult = executionPlan(params)
 
   lazy val lockManager = graph.asInstanceOf[InternalAbstractGraphDatabase].getLockManager
 
-  private def prepareExecutionPlan(): ((Map[String, Any]) => ExecutionResult, String) = {
+  private def prepareExecutionPlan(): (Map[String, Any]) => ExecutionResult = {
     var continue = true
     var planInProgress = ExecutionPlanInProgress(PartiallySolvedQuery(inputQuery), new ParameterPipe(), containsTransaction = false)
     checkFirstQueryPattern(planInProgress)
@@ -70,18 +70,14 @@ class ExecutionPlanImpl(inputQuery: Query, graph: GraphDatabaseService) extends 
 
     val columns = getQueryResultColumns(inputQuery, planInProgress.pipe.symbols)
 
-    val (pipe, func) = if (planInProgress.containsTransaction) {
-      val p = planInProgress.pipe
-      (p, getEagerReadWriteQuery(p, columns))
+    val pipe = planInProgress.pipe
+
+    if (planInProgress.containsTransaction) {
+      getEagerReadWriteQuery(pipe, columns)
     } else {
-      (planInProgress.pipe, getLazyReadonlyQuery(planInProgress.pipe, columns))
+      getLazyReadonlyQuery(planInProgress.pipe, columns)
     }
-
-    val executionPlan = pipe.executionPlan()
-
-    (func, executionPlan)
   }
-
 
   private def checkFirstQueryPattern(planInProgress: ExecutionPlanInProgress) {
     val startPoints = getStartPointsFromPlan(planInProgress.query)
@@ -127,14 +123,11 @@ class ExecutionPlanImpl(inputQuery: Query, graph: GraphDatabaseService) extends 
     columns
   }
 
-  private def getLazyReadonlyQuery(pipe: Pipe, columns: List[String]): Map[String, Any] => ExecutionResult = {
-    val func = (params: Map[String, Any]) => {
-      val (state, results) = prepareStateAndResult(params, pipe)
+  private def getLazyReadonlyQuery(pipe: Pipe, columns: List[String]): Map[String, Any] => ExecutionResult =
+    (params: Map[String, Any]) => {
+    val (state, results) = prepareStateAndResult(params, pipe)
 
-      new PipeExecutionResult(results, columns, state)
-    }
-
-    func
+    new PipeExecutionResult(results, columns, state, pipe.executionPlanDescription.toString)
   }
 
   private def prepareStateAndResult(params: Map[String, Any], pipe: Pipe): (QueryState, Iterator[ExecutionContext]) = {
@@ -143,7 +136,6 @@ class ExecutionPlanImpl(inputQuery: Query, graph: GraphDatabaseService) extends 
     try
     {
       val gdsContext = new GDSBackedQueryContext(graph)
-//      val lockingContext = new RepeatableReadQueryContext(gdsContext, new GDSBackedLocker(tx))
       val state = new QueryState(graph, gdsContext, params)
       val results = pipe.createResults(state)
 
@@ -161,7 +153,7 @@ class ExecutionPlanImpl(inputQuery: Query, graph: GraphDatabaseService) extends 
   private def getEagerReadWriteQuery(pipe: Pipe, columns: List[String]): Map[String, Any] => ExecutionResult = {
     val func = (params: Map[String, Any]) => {
       val (state, results) = prepareStateAndResult(params, pipe)
-      new EagerPipeExecutionResult(results, columns, state, graph)
+      new EagerPipeExecutionResult(results, columns, state, graph, pipe.executionPlanDescription.toString)
     }
 
     func
@@ -209,6 +201,4 @@ The Neo4j Team""")
     new TopPipeBuilder,
     new DistinctBuilder
   )
-
-  override def toString = executionPlanText
 }

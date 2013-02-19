@@ -19,113 +19,74 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import static org.junit.Assert.*;
+import static java.nio.ByteBuffer.allocate;
+import static org.junit.Assert.assertThat;
 import static org.neo4j.kernel.impl.nioneo.xa.CommandMatchers.nodeCommandEntry;
+import static org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils.readLogHeader;
+import static org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils.writeLogHeader;
 import static org.neo4j.kernel.impl.transaction.xaframework.LogMatchers.containsExactly;
 import static org.neo4j.kernel.impl.transaction.xaframework.LogMatchers.doneEntry;
 import static org.neo4j.kernel.impl.transaction.xaframework.LogMatchers.logEntries;
 import static org.neo4j.kernel.impl.transaction.xaframework.LogMatchers.onePhaseCommitEntry;
 import static org.neo4j.kernel.impl.transaction.xaframework.LogMatchers.startEntry;
-import static org.neo4j.kernel.impl.util.DumpLogicalLog.CommandFactory;
+import static org.neo4j.test.LogTestUtils.filterNeostoreLogicalLog;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.transaction.xa.Xid;
 
-import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.util.ArrayMap;
+import org.neo4j.kernel.impl.util.DumpLogicalLog.CommandFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.LogTestUtils;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.LogTestUtils.LogHookAdapter;
+import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
 public class TestPartialTransactionCopier
 {
-
-    public static final String NEW_LOG_FILENAME = "new.log";
-    TargetDirectory targetDir = TargetDirectory.forTest( getClass() );
-
-    @Rule
-    public TargetDirectory.TestDirectory testDir = targetDir.cleanTestDirectory();
-
-    public class EverythingButDoneRecordFilter implements LogTestUtils.LogHook<LogEntry>
-    {
-
-        int doneRecordCount = 0;
-        public Integer brokenTxIdentifier = null;
-
-        @Override
-        public boolean accept( LogEntry item )
-        {
-            //System.out.println(item);
-            if( item instanceof LogEntry.Done)
-            {
-                doneRecordCount++;
-
-                // Accept everything except the second done record we find
-                if( doneRecordCount == 2)
-                {
-                    brokenTxIdentifier = item.getIdentifier();
-                    return false;
-                }
-            }
-
-            // Not a done record, not our concern
-            return true;
-        }
-
-        @Override
-        public void file( File file )
-        {
-        }
-
-        @Override
-        public void done( File file )
-        {
-        }
-    };
-
+    private final EphemeralFileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
+    
+    @SuppressWarnings( "unchecked" )
     @Test
-    public void temp() throws Exception
+    public void testIt() throws Exception
     {
         // Given
         int masterId = -1;
         int meId = -1;
-        File newLogFile = new File( testDir.directory(), NEW_LOG_FILENAME );
+        String storeDir = "dir";
 
-        // I have a log that with a transaction in the middle missing a "DONE" record
-        Pair<File, Integer> broken = createBrokenLogFile();
+        // I have a log with a transaction in the middle missing a "DONE" record
+        Pair<File, Integer> broken = createBrokenLogFile( storeDir );
         File brokenLogFile = broken.first();
         Integer brokenTxIdentifier = broken.other();
 
         // And I've read the log header on that broken file
-        FileChannel brokenLog = new RandomAccessFile( brokenLogFile, "rw" ).getChannel();
-        LogIoUtils.readLogHeader( ByteBuffer.allocate( 9 + Xid.MAXGTRIDSIZE
-                + Xid.MAXBQUALSIZE * 10 ), brokenLog, true );
+        FileChannel brokenLog = fileSystem.open( brokenLogFile, "rw" );
+        ByteBuffer buffer = allocate( 9 + Xid.MAXGTRIDSIZE + Xid.MAXBQUALSIZE * 10 );
+        readLogHeader( buffer, brokenLog, true );
 
         // And I have an awesome partial transaction copier
-        PartialTransactionCopier copier = new PartialTransactionCopier( ByteBuffer.allocate( 9 + Xid.MAXGTRIDSIZE
-                + Xid.MAXBQUALSIZE * 10 ),
-                new CommandFactory(),
-                StringLogger.DEV_NULL,
-                new LogExtractor.LogPositionCache(),
-                null,
-                createXidMapWithOneStartEntry( masterId, /*txId=*/brokenTxIdentifier ) );
+        PartialTransactionCopier copier = new PartialTransactionCopier(
+                buffer, new CommandFactory(),
+                StringLogger.DEV_NULL, new LogExtractor.LogPositionCache(),
+                null, createXidMapWithOneStartEntry( masterId, /*txId=*/brokenTxIdentifier ) );
 
         // When
-        copier.copy( brokenLog, createNewLogWithHeader(newLogFile), 1 );
+        File newLogFile = new File( "new.log" );
+        copier.copy( brokenLog, createNewLogWithHeader( newLogFile ), 1 );
 
         // Then
         assertThat(
-                logEntries( newLogFile ),
+                logEntries( fileSystem, newLogFile ),
                 containsExactly(
                         startEntry( brokenTxIdentifier, masterId, meId ),
                         nodeCommandEntry( brokenTxIdentifier, /*nodeId=*/2 ),
@@ -141,7 +102,6 @@ public class TestPartialTransactionCopier
                         onePhaseCommitEntry( 5, /*txid=*/5 ),
                         doneEntry( 5 )
                 ));
-
     }
 
 
@@ -155,43 +115,58 @@ public class TestPartialTransactionCopier
 
     private LogBuffer createNewLogWithHeader( File newLogFile ) throws IOException
     {
-        FileChannel newLog = new RandomAccessFile( new File( testDir.directory(), NEW_LOG_FILENAME ), "rw" ).getChannel();
-        LogBuffer newLogBuffer = new DirectLogBuffer( newLog, ByteBuffer.allocate(  10000 ) );
+        FileChannel newLog = fileSystem.open( newLogFile, "rw" );
+        LogBuffer newLogBuffer = new DirectLogBuffer( newLog, allocate(  10000 ) );
 
-        ByteBuffer buf = ByteBuffer.allocate( 100 );
-        LogIoUtils.writeLogHeader( buf, 1, /* we don't care about this */ 4 );
+        ByteBuffer buf = allocate( 100 );
+        writeLogHeader( buf, 1, /* we don't care about this */ 4 );
         newLogBuffer.getFileChannel().write( buf );
 
         return newLogBuffer;
     }
 
-    private Pair<File, Integer> createBrokenLogFile() throws Exception
+    private Pair<File, Integer> createBrokenLogFile( String storeDir ) throws Exception
     {
-        // Given a database with three committed transactions
-        String storeDir = testDir.directory().getAbsolutePath();
-
-        GraphDatabaseAPI db = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabase( storeDir );
-
-        runSmallWriteTransaction( db );
-        runSmallWriteTransaction( db );
-        runSmallWriteTransaction( db );
-        runSmallWriteTransaction( db );
-
+        GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory()
+                .setFileSystem( fileSystem ).newImpermanentDatabase( storeDir );
+        for ( int i = 0; i < 4; i++ )
+        {
+            Transaction tx = db.beginTx();
+            db.createNode();
+            tx.success();
+            tx.finish();
+        }
         db.shutdown();
 
-        // And the middle transaction is lacking a "done" record
-        EverythingButDoneRecordFilter filter = new EverythingButDoneRecordFilter();
-        File logFile = LogTestUtils.filterNeostoreLogicalLog( new File( storeDir, "nioneo_logical.log.v0"), filter );
+        // Remove the DONE record from the second transaction
+        final AtomicInteger brokenTxIdentifier = new AtomicInteger();
+        LogHookAdapter<LogEntry> filter = new LogTestUtils.LogHookAdapter<LogEntry>()
+        {
+            int doneRecordCount = 0;
 
-        return Pair.of( logFile, filter.brokenTxIdentifier );
+            @Override
+            public boolean accept( LogEntry item )
+            {
+                //System.out.println(item);
+                if( item instanceof LogEntry.Done)
+                {
+                    doneRecordCount++;
+
+                    // Accept everything except the second done record we find
+                    if( doneRecordCount == 2)
+                    {
+                        brokenTxIdentifier.set( item.getIdentifier() );
+                        return false;
+                    }
+                }
+
+                // Not a done record, not our concern
+                return true;
+            }
+        };
+        File brokenLogFile = filterNeostoreLogicalLog( fileSystem,
+                new File( storeDir, "nioneo_logical.log.v0"), filter );
+
+        return Pair.of( brokenLogFile, brokenTxIdentifier.get() );
     }
-
-    private void runSmallWriteTransaction( GraphDatabaseAPI db )
-    {
-        Transaction tx2 = db.beginTx();
-        db.createNode();
-        tx2.success();
-        tx2.finish();
-    }
-
 }

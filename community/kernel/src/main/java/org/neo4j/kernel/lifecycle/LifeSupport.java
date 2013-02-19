@@ -105,6 +105,7 @@ public class LifeSupport
                 }
                 catch ( LifecycleException e )
                 {
+                    e.printStackTrace();
                     // TODO perhaps reconsider chaining of exceptions coming from LifeSupports?
                     status = changedStatus( this, status, LifecycleStatus.STARTED );
                     try
@@ -418,6 +419,9 @@ public class LifeSupport
             return exception;
         }
 
+        exception.printStackTrace();
+        chainedLifecycleException.printStackTrace();
+        
         Throwable current = exception;
         while ( current.getCause() != null )
         {

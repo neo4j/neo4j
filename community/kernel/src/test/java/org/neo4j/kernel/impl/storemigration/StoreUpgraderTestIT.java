@@ -21,8 +21,6 @@ package org.neo4j.kernel.impl.storemigration;
 
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.neo4j.kernel.CommonFactories.defaultFileSystemAbstraction;
-import static org.neo4j.kernel.CommonFactories.defaultIdGeneratorFactory;
 import static org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.ALL_STORES_VERSION;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.allStoreFilesHaveVersion;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.alwaysAllowed;
@@ -38,31 +36,28 @@ import java.io.IOException;
 import java.util.Map;
 
 import org.junit.Test;
+import org.neo4j.kernel.DefaultFileSystemAbstraction;
+import org.neo4j.kernel.DefaultIdGeneratorFactory;
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.storemigration.monitoring.SilentMigrationProgressMonitor;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 public class StoreUpgraderTestIT
 {
-    private StoreUpgrader newUpgrader( UpgradeConfiguration config, StoreMigrator migrator, DatabaseFiles files )
-    {
-        return new StoreUpgrader( defaultConfig(), StringLogger.DEV_NULL, config, new UpgradableDatabase(), migrator,
-                files, defaultIdGeneratorFactory(), defaultFileSystemAbstraction() );        
-    }
-    
     @Test
     public void shouldUpgradeAnOldFormatStore() throws IOException
     {
         File workingDirectory = new File(
                 "target/" + StoreUpgraderTestIT.class.getSimpleName()
                         + "shouldUpgradeAnOldFormatStore" );
-        MigrationTestUtils.prepareSampleLegacyDatabase(workingDirectory);
+        MigrationTestUtils.prepareSampleLegacyDatabase( fileSystem, workingDirectory );
 
-        assertTrue( allStoreFilesHaveVersion( workingDirectory, "v0.9.9" ) );
+        assertTrue( allStoreFilesHaveVersion( fileSystem, workingDirectory, "v0.9.9" ) );
 
         newUpgrader( alwaysAllowed(), new StoreMigrator( new SilentMigrationProgressMonitor() ) , new DatabaseFiles() ).attemptUpgrade( new File( workingDirectory, NeoStore.DEFAULT_NAME ) );
 
-        assertTrue( allStoreFilesHaveVersion( workingDirectory, ALL_STORES_VERSION ) );
+        assertTrue( allStoreFilesHaveVersion( fileSystem, workingDirectory, ALL_STORES_VERSION ) );
     }
 
     @Test
@@ -72,11 +67,11 @@ public class StoreUpgraderTestIT
                 "target/"
                         + StoreUpgraderTestIT.class.getSimpleName()
                         + "shouldLeaveACopyOfOriginalStoreFilesInBackupDirectory" );
-        MigrationTestUtils.prepareSampleLegacyDatabase(workingDirectory);
+        MigrationTestUtils.prepareSampleLegacyDatabase( fileSystem, workingDirectory );
 
         newUpgrader( alwaysAllowed(), new StoreMigrator( new SilentMigrationProgressMonitor() ) , new DatabaseFiles() ).attemptUpgrade( new File( workingDirectory, NeoStore.DEFAULT_NAME ) );
 
-        verifyFilesHaveSameContent( MigrationTestUtils.findOldFormatStoreDirectory(), new File( workingDirectory, "upgrade_backup" ) );
+        verifyFilesHaveSameContent( fileSystem, MigrationTestUtils.findOldFormatStoreDirectory(), new File( workingDirectory, "upgrade_backup" ) );
     }
 
     @Test
@@ -86,10 +81,11 @@ public class StoreUpgraderTestIT
                 "target/"
                         + StoreUpgraderTestIT.class.getSimpleName()
                         + "shouldHaltUpgradeIfUpgradeConfigurationVetoesTheProcess" );
-        MigrationTestUtils.prepareSampleLegacyDatabase(workingDirectory);
+        MigrationTestUtils.prepareSampleLegacyDatabase( fileSystem, workingDirectory );
 
         UpgradeConfiguration vetoingUpgradeConfiguration = new UpgradeConfiguration()
         {
+            @Override
             public void checkConfigurationAllowsAutomaticUpgrade()
             {
                 throw new UpgradeNotAllowedByConfigurationException( "vetoed" );
@@ -117,9 +113,9 @@ public class StoreUpgraderTestIT
                 "target/"
                         + StoreUpgraderTestIT.class.getSimpleName()
                         + "shouldLeaveAllFilesUntouchedIfWrongVersionNumberFound-comparison" );
-        MigrationTestUtils.prepareSampleLegacyDatabase(workingDirectory);
+        MigrationTestUtils.prepareSampleLegacyDatabase( fileSystem, workingDirectory );
 
-        changeVersionNumber( new File( workingDirectory, "neostore.nodestore.db" ), "v0.9.5" );
+        changeVersionNumber( fileSystem, new File( workingDirectory, "neostore.nodestore.db" ), "v0.9.5" );
         deleteRecursively( comparisonDirectory );
         copyRecursively( workingDirectory, comparisonDirectory );
 
@@ -127,12 +123,13 @@ public class StoreUpgraderTestIT
         {
             newUpgrader( alwaysAllowed(), new StoreMigrator( new SilentMigrationProgressMonitor() ), new DatabaseFiles() ).attemptUpgrade( new File( workingDirectory, NeoStore.DEFAULT_NAME ) );
             fail( "Should throw exception" );
-        } catch ( StoreUpgrader.UnableToUpgradeException e )
+        }
+        catch ( StoreUpgrader.UnableToUpgradeException e )
         {
             // expected
         }
 
-        verifyFilesHaveSameContent( comparisonDirectory, workingDirectory );
+        verifyFilesHaveSameContent( fileSystem, comparisonDirectory, workingDirectory );
     }
 
     @Test
@@ -146,9 +143,9 @@ public class StoreUpgraderTestIT
                 "target/"
                         + StoreUpgraderTestIT.class.getSimpleName()
                         + "shouldRefuseToUpgradeIfAnyOfTheStoresWeNotShutDownCleanly-comparison" );
-        MigrationTestUtils.prepareSampleLegacyDatabase(workingDirectory);
+        MigrationTestUtils.prepareSampleLegacyDatabase( fileSystem, workingDirectory );
 
-        truncateFile( new File( workingDirectory,
+        truncateFile( fileSystem, new File( workingDirectory,
                 "neostore.propertystore.db.index.keys" ),
                 "StringPropertyStore v0.9.9" );
         deleteRecursively( comparisonDirectory );
@@ -158,12 +155,13 @@ public class StoreUpgraderTestIT
         {
             newUpgrader( alwaysAllowed(), new StoreMigrator( new SilentMigrationProgressMonitor() ), new DatabaseFiles() ).attemptUpgrade( new File( workingDirectory, NeoStore.DEFAULT_NAME ) );
             fail( "Should throw exception" );
-        } catch ( StoreUpgrader.UnableToUpgradeException e )
+        }
+        catch ( StoreUpgrader.UnableToUpgradeException e )
         {
             // expected
         }
 
-        verifyFilesHaveSameContent( comparisonDirectory, workingDirectory );
+        verifyFilesHaveSameContent( fileSystem, comparisonDirectory, workingDirectory );
     }
 
     @Test
@@ -177,9 +175,9 @@ public class StoreUpgraderTestIT
         File comparisonDirectory = new File(
                 "target/" + StoreUpgraderTestIT.class.getSimpleName()
                         + "shouldRefuseToUpgradeIfAllOfTheStoresWeNotShutDownCleanly-comparison" );
-        MigrationTestUtils.prepareSampleLegacyDatabase(workingDirectory);
+        MigrationTestUtils.prepareSampleLegacyDatabase( fileSystem, workingDirectory );
 
-        truncateAllFiles( workingDirectory );
+        truncateAllFiles( fileSystem, workingDirectory );
         deleteRecursively( comparisonDirectory );
         copyRecursively( workingDirectory, comparisonDirectory );
 
@@ -194,17 +192,24 @@ public class StoreUpgraderTestIT
             // expected
         }
 
-        verifyFilesHaveSameContent( comparisonDirectory, workingDirectory );
+        verifyFilesHaveSameContent( fileSystem, comparisonDirectory, workingDirectory );
     }
 
-    public static void truncateAllFiles( File workingDirectory )
+    public static void truncateAllFiles( FileSystemAbstraction fileSystem, File workingDirectory )
             throws IOException
     {
         for ( Map.Entry<String, String> legacyFile : UpgradableDatabase.fileNamesToExpectedVersions.entrySet() )
         {
-            truncateFile( new File( workingDirectory, legacyFile.getKey()),
+            truncateFile( fileSystem, new File( workingDirectory, legacyFile.getKey()),
                     legacyFile.getValue() );
         }
     }
 
+    private final FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
+    
+    private StoreUpgrader newUpgrader( UpgradeConfiguration config, StoreMigrator migrator, DatabaseFiles files )
+    {
+        return new StoreUpgrader( defaultConfig(), StringLogger.DEV_NULL, config, new UpgradableDatabase(), migrator,
+                files, new DefaultIdGeneratorFactory(), fileSystem );        
+    }
 }

@@ -19,6 +19,11 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
+import static java.lang.Math.max;
+import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME;
+import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.getHighestHistoryLogVersion;
+import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.readAndAssertLogHeader;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -28,18 +33,15 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+
 import javax.transaction.xa.Xid;
+
 import org.neo4j.helpers.Exceptions;
-import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.cache.LruCache;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.xa.Command;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry.Start;
 import org.neo4j.kernel.impl.util.BufferedFileChannel;
-
-import static java.lang.Math.*;
-import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.*;
-import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.*;
 
 public class LogExtractor
 {
@@ -376,6 +378,7 @@ public class LogExtractor
             this.nextExpectedTxId = startTxId;
         }
 
+        @Override
         public int getIdentifier()
         {
             return identifier;
@@ -393,6 +396,7 @@ public class LogExtractor
             return lastStartEntry;
         }
 
+        @Override
         public LogEntry collect( LogEntry entry, LogBuffer target ) throws IOException
         {
             if ( futureQueue.containsKey( nextExpectedTxId ) )
@@ -513,30 +517,30 @@ public class LogExtractor
         }
     }
     
-    public static LogExtractor from( final File storeDir ) throws IOException
+    public static LogExtractor from( FileSystemAbstraction fileSystem, File storeDir ) throws IOException
     {
-        return from( storeDir, NIONEO_COMMAND_FACTORY );
+        return from( fileSystem, storeDir, NIONEO_COMMAND_FACTORY );
     }
     
-    public static LogExtractor from( final File storeDir, long startTxId ) throws IOException
+    public static LogExtractor from( FileSystemAbstraction fileSystem, File storeDir, long startTxId ) throws IOException
     {
-        return from( storeDir, NIONEO_COMMAND_FACTORY, startTxId );
+        return from( fileSystem, storeDir, NIONEO_COMMAND_FACTORY, startTxId );
     }
     
-    public static LogExtractor from( final File storeDir, XaCommandFactory commandFactory ) throws IOException
+    public static LogExtractor from( FileSystemAbstraction fileSystem, File storeDir,
+            XaCommandFactory commandFactory ) throws IOException
     {
         // 2 is a "magic" first tx :)
-        return from( storeDir, commandFactory, 2 );
+        return from( fileSystem, storeDir, commandFactory, 2 );
     }
     
-    public static LogExtractor from( final File storeDir, XaCommandFactory commandFactory,
-            long startTxId ) throws IOException
+    public static LogExtractor from( final FileSystemAbstraction fileSystem, final File storeDir,
+            XaCommandFactory commandFactory, long startTxId ) throws IOException
     {
         LogLoader loader = new LogLoader()
         {
-            private final FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
             private final Map<Long, File> activeLogFiles = getActiveLogs( storeDir );
-            private final long highestLogVersion = max( getHighestHistoryLogVersion( storeDir,
+            private final long highestLogVersion = max( getHighestHistoryLogVersion( fileSystem, storeDir,
                     LOGICAL_LOG_DEFAULT_NAME ), maxKey( activeLogFiles ) );
             
             @Override
@@ -567,7 +571,8 @@ public class LogExtractor
                 for ( String postfix : ACTIVE_POSTFIXES )
                 {
                     File candidateFile = new File( storeDir, LOGICAL_LOG_DEFAULT_NAME + postfix );
-                    if ( !candidateFile.exists() ) continue;
+                    if ( !fileSystem.fileExists( candidateFile ) )
+                        continue;
                     long[] header = LogIoUtils.readLogHeader( fileSystem, candidateFile );
                     result.put( header[0], candidateFile );
                 }

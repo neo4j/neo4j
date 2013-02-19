@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import org.neo4j.cypher.internal.spi.QueryContext
 import org.neo4j.cypher.internal.spi.gdsimpl.GDSBackedQueryContext
 import org.neo4j.cypher.internal.ExecutionContext
+import org.neo4j.cypher.PlanDescription
 
 /**
  * Pipe is a central part of Cypher. Most pipes are decorators - they
@@ -39,7 +40,7 @@ trait Pipe {
 
   def symbols: SymbolTable
 
-  def executionPlan(): String
+  def executionPlanDescription: PlanDescription
 }
 
 class NullPipe extends Pipe {
@@ -47,8 +48,9 @@ class NullPipe extends Pipe {
 
   def symbols: SymbolTable = new SymbolTable()
 
-  def executionPlan(): String = ""
+  def executionPlanDescription = PlanDescription("Null")
 }
+
 
 object MutableMaps {
   def empty = collection.mutable.Map[String, Any]()

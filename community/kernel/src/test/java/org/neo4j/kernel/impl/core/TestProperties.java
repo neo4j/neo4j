@@ -30,9 +30,10 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
 public class TestProperties extends AbstractNeo4jTestCase
 {
@@ -82,9 +83,9 @@ public class TestProperties extends AbstractNeo4jTestCase
          * with a TargetDirectory because we have to restart to test hitting the
          * PropertyIndexStore on disk when reading it back.
          */
-        String path = TargetDirectory.forTest( TestProperties.class ).directory(
-                "empty-string", true ).getCanonicalPath();
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( path );
+        FileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
+        String path = "empty-string";
+        GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentDatabase( path );
         Transaction tx = db.beginTx();
         Node node = db.createNode();
         long nodeId = node.getId();
@@ -93,7 +94,7 @@ public class TestProperties extends AbstractNeo4jTestCase
         tx.finish();
         assertEquals( "bar", db.getNodeById( nodeId ).getProperty( "" ) );
         db.shutdown();
-        db = new GraphDatabaseFactory().newEmbeddedDatabase( path );
+        db = new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentDatabase( path );
         assertEquals( "bar", db.getNodeById( nodeId ).getProperty( "" ) );
     }
 

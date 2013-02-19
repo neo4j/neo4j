@@ -353,10 +353,10 @@ public class Jetty6WebServer implements WebServer
                 return o2.compareTo( o1 );
             }
         } );
-        
-        if(requestLoggingConfiguration != null)
+
+        if( requestLoggingConfiguration != null )
         {
-        	loadRequestLogging();
+            loadRequestLogging();
         }
 
         mountpoints.addAll( staticContent.keySet() );
@@ -544,6 +544,11 @@ public class Jetty6WebServer implements WebServer
         {
             //TODO enable guard and restart EmbeddedGraphdb
             throw new RuntimeException( "unable to use guard, enable guard-insertion in neo4j.properties" );
+        }
+
+        if ( jetty == null )
+        {
+            throw new RuntimeException( "Jetty server not started before usage");
         }
 
         jetty.addLifeCycleListener( new JettyLifeCycleListenerAdapter()

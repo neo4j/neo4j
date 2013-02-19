@@ -25,26 +25,27 @@ import static org.junit.Assert.assertTrue;
 import static org.neo4j.graphdb.index.IndexManager.PROVIDER;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.test.TargetDirectory.forTest;
 
 import java.util.Map;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.index.Index;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
 public class TestIndexImplOnNeo
 {
-    private EmbeddedGraphDatabase db;
-    private String storeDir = forTest( getClass() ).graphDbDir( true ).getAbsolutePath();
+    private final EphemeralFileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
+    private GraphDatabaseService db;
 
     @Before
     public void createDb() throws Exception
     {
-        db = new EmbeddedGraphDatabase( storeDir );
+        db = new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentDatabase( "mydb" );
     }
     
     private void restartDb() throws Exception

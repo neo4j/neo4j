@@ -1542,11 +1542,11 @@ public class XaLogicalLog implements LogLoader
         return Integer.parseInt( name.substring( index + toFind.length() ) );
     }
 
-    public static long getHighestHistoryLogVersion( File storeDir, String baseFileName )
+    public static long getHighestHistoryLogVersion( FileSystemAbstraction fileSystem, File storeDir, String baseFileName )
     {
         Pattern logFilePattern = getHistoryFileNamePattern( baseFileName );
         long highest = -1;
-        for ( File file : storeDir.listFiles() )
+        for ( File file : fileSystem.listFiles( storeDir ) )
         {
             if ( logFilePattern.matcher( file.getName() ).matches() )
             {

@@ -634,6 +634,7 @@ public class XaResourceManager
         // comparator only used here
         Collections.sort( xids, new Comparator<Xid>()
         {
+            @Override
             public int compare( Xid o1, Xid o2 )
             {
 

@@ -33,6 +33,8 @@ import java.io.File;
 import java.io.IOException;
 
 import org.junit.Test;
+import org.neo4j.kernel.DefaultFileSystemAbstraction;
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
 import org.neo4j.kernel.impl.storemigration.monitoring.SilentMigrationProgressMonitor;
@@ -44,11 +46,12 @@ public class StoreUpgraderInterruptionTestIT
     public void shouldSucceedWithUpgradeAfterPreviousAttemptDiedDuringMigration() throws IOException
     {
         File workingDirectory = new File( "target/" + StoreUpgraderInterruptionTestIT.class.getSimpleName() );
-        MigrationTestUtils.prepareSampleLegacyDatabase(workingDirectory);
+        MigrationTestUtils.prepareSampleLegacyDatabase( fileSystem, workingDirectory );
 
         StoreMigrator failingStoreMigrator = new StoreMigrator( new SilentMigrationProgressMonitor() )
         {
 
+            @Override
             public void migrate( LegacyStore legacyStore, NeoStore neoStore ) throws IOException
             {
                 super.migrate( legacyStore, neoStore );
@@ -56,7 +59,7 @@ public class StoreUpgraderInterruptionTestIT
             }
         };
 
-        assertTrue( allStoreFilesHaveVersion( workingDirectory, "v0.9.9" ) );
+        assertTrue( allStoreFilesHaveVersion( fileSystem, workingDirectory, "v0.9.9" ) );
 
         try
         {
@@ -68,11 +71,11 @@ public class StoreUpgraderInterruptionTestIT
             assertEquals( "This upgrade is failing", e.getMessage() );
         }
 
-        assertTrue( allStoreFilesHaveVersion( workingDirectory, "v0.9.9" ) );
+        assertTrue( allStoreFilesHaveVersion( fileSystem, workingDirectory, "v0.9.9" ) );
 
         newUpgrader( new StoreMigrator( new SilentMigrationProgressMonitor() ), new DatabaseFiles() ).attemptUpgrade( new File( workingDirectory, NeoStore.DEFAULT_NAME ) );
 
-        assertTrue( allStoreFilesHaveVersion( workingDirectory, ALL_STORES_VERSION ) );
+        assertTrue( allStoreFilesHaveVersion( fileSystem, workingDirectory, ALL_STORES_VERSION ) );
     }
     
     private StoreUpgrader newUpgrader( StoreMigrator migrator, DatabaseFiles files )
@@ -85,11 +88,12 @@ public class StoreUpgraderInterruptionTestIT
     public void shouldFailOnSecondAttemptIfPreviousAttemptMadeABackupToAvoidDamagingBackup() throws IOException
     {
         File workingDirectory = new File( "target/" + StoreUpgraderInterruptionTestIT.class.getSimpleName() );
-        MigrationTestUtils.prepareSampleLegacyDatabase(workingDirectory);
+        MigrationTestUtils.prepareSampleLegacyDatabase( fileSystem, workingDirectory );
 
         DatabaseFiles failsOnBackup = new DatabaseFiles()
         {
 
+            @Override
             public void moveToBackupDirectory( File workingDirectory, File backupDirectory )
             {
                 backupDirectory.mkdir();
@@ -97,7 +101,7 @@ public class StoreUpgraderInterruptionTestIT
             }
         };
 
-        assertTrue( allStoreFilesHaveVersion( workingDirectory, "v0.9.9" ) );
+        assertTrue( allStoreFilesHaveVersion( fileSystem, workingDirectory, "v0.9.9" ) );
 
         try
         {
@@ -120,4 +124,5 @@ public class StoreUpgraderInterruptionTestIT
         }
     }
 
+    private final FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
 }

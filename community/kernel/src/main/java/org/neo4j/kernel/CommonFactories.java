@@ -28,7 +28,6 @@ import org.neo4j.kernel.impl.transaction.xaframework.RecoveryVerifier;
 @Deprecated
 public class CommonFactories
 {
-
     public static IdGeneratorFactory defaultIdGeneratorFactory()
     {
         return new DefaultIdGeneratorFactory();

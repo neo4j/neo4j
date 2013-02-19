@@ -19,67 +19,23 @@
  */
 package org.neo4j.test;
 
-import java.io.IOException;
-import org.junit.rules.ExternalResource;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.kernel.GraphDatabaseAPI;
 
 /**
  * JUnit @Rule for configuring, creating and managing an ImpermanentGraphDatabase instance.
  */
-public class ImpermanentDatabaseRule
-    extends ExternalResource
+public class ImpermanentDatabaseRule extends DatabaseRule
 {
-    GraphDatabaseAPI database;
-
     @Override
-    protected void before()
-        throws Throwable
+    protected GraphDatabaseFactory newFactory()
     {
-        create();
-    }
-
-    @Override
-    protected void after()
-    {
-        shutdown();
-    }
-
-    public void create()
-        throws IOException
-    {
-        TestGraphDatabaseFactory databaseFactory = new TestGraphDatabaseFactory();
-        configure( databaseFactory );
-        GraphDatabaseBuilder builder = databaseFactory.newImpermanentDatabaseBuilder();
-        configure(builder);
-        database = (GraphDatabaseAPI) builder.newGraphDatabase();
-    }
-
-    protected void configure( GraphDatabaseFactory databaseFactory )
-    {
-        // Override to configure the database factory
-    }
-
-    protected void configure( GraphDatabaseBuilder builder )
-    {
-        // Override to configure the database builder
+        return new TestGraphDatabaseFactory();
     }
     
-    public GraphDatabaseService getGraphDatabaseService()
+    @Override
+    protected GraphDatabaseBuilder newBuilder( GraphDatabaseFactory factory )
     {
-        return database;
-    }
-
-    public GraphDatabaseAPI getGraphDatabaseAPI()
-    {
-        return database;
-    }
-
-    public void shutdown()
-    {
-        if (database != null)
-            database.shutdown();
+        return ((TestGraphDatabaseFactory) factory).newImpermanentDatabaseBuilder();
     }
 }

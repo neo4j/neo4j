@@ -28,7 +28,6 @@ import static org.neo4j.helpers.collection.IteratorUtil.lastOrNull;
 import static org.neo4j.kernel.impl.util.FileUtils.deleteRecursively;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
@@ -39,28 +38,27 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
+import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 public class TestIdGenerator
 {
-    private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
+    private final FileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
 
-    @Before
-    public void deleteIdGeneratorFile()
+//    @Before
+    private void deleteIdGeneratorFile()
     {
-        idGeneratorFile().delete();
+        fs.deleteFile( idGeneratorFile() );
     }
 
     private File path()
@@ -131,7 +129,7 @@ public class TestIdGenerator
             } // good
             closeIdGenerator( idGenerator );
             // verify that id generator is ok
-            FileChannel fileChannel = new FileInputStream( idGeneratorFile() ).getChannel();
+            FileChannel fileChannel = fs.open( idGeneratorFile(), "rw" ); // new FileInputStream( idGeneratorFile() ).getChannel();
             ByteBuffer buffer = ByteBuffer.allocate( 9 );
             assertEquals( 9, fileChannel.read( buffer ) );
             buffer.flip();
@@ -395,9 +393,9 @@ public class TestIdGenerator
         finally
         {
             File file = idGeneratorFile();
-            if ( file.exists() )
+            if ( fs.fileExists( file ) )
             {
-                assertTrue( file.delete() );
+                assertTrue( fs.deleteFile( file ) );
             }
         }
         try
@@ -608,7 +606,7 @@ public class TestIdGenerator
     {
         String storeDir = "target/var/free-id-once";
         deleteRecursively( new File( storeDir ) );
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( storeDir );
+        GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fs ).newImpermanentDatabase( storeDir );
         RelationshipType type = withName( "SOME_TYPE" );
         Node rootNode = db.getReferenceNode();
 
@@ -642,7 +640,7 @@ public class TestIdGenerator
         // After a clean shutdown, create new nodes and relationships and see so
         // that
         // all ids are unique.
-        db = new GraphDatabaseFactory().newEmbeddedDatabase( storeDir );
+        db = new TestGraphDatabaseFactory().setFileSystem( fs ).newImpermanentDatabase( storeDir );
         rootNode = db.getReferenceNode();
         tx = db.beginTx();
         for ( int i = 0; i < 100; i++ )
