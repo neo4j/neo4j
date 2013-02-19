@@ -1,3 +1,22 @@
+/**
+ * Copyright (c) 2002-2013 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package org.neo4j.cypher.internal.profiler
 
 import org.neo4j.cypher.internal.pipes.{QueryState, Pipe, PipeDecorator}
@@ -100,20 +119,16 @@ class ProfilingQueryContext(val inner: QueryContext, val p: Pipe) extends Delega
       inner.setProperty(obj, propertyKey, value)
     }
 
-    override def indexGet(name: String, key: String, value: Any): Iterable[T] = {
-      inner.indexGet(name, key, value).view.map {
-        t =>
-          increment()
-          t
-      }
-    }
+    override def indexGet(name: String, key: String, value: Any): Iterable[T] = countItems(inner.indexGet(name, key, value))
 
-    override def indexQuery(name: String, query: Any): Iterable[T] = {
-      inner.indexQuery(name, query).view.map {
-        t =>
-          increment()
-          t
-      }
+    override def indexQuery(name: String, query: Any): Iterable[T] = countItems(inner.indexQuery(name, query))
+
+    override def all: Iterable[T] = countItems(inner.all)
+
+    private def countItems(in: Iterable[T]): Iterable[T] = in.view.map {
+      t =>
+        increment()
+        t
     }
   }
 

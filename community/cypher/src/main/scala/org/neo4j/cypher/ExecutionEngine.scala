@@ -46,14 +46,13 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
       case v:String => new CypherParser(v)
       case _ => new CypherParser()
     }
-  }
-  else {
+  } else {
     new CypherParser()
   }
 
-
-  def profile(query: String) : ExecutionResult = {
-    prepare(query).profile(Map.empty)
+  def profile(query: String, params: Map[String, Any] = Map.empty): ExecutionResult = {
+    logger.info(query)
+    prepare(query).profile(params)
   }
 
   @throws(classOf[SyntaxException])

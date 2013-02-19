@@ -22,7 +22,9 @@ package org.neo4j.cypher.internal.pipes
 import org.neo4j.cypher.internal.ExecutionContext
 import org.neo4j.cypher.PlanDescription
 
-
+/*
+A PipeDecorator is used to instrument calls between Pipes, and between a Pipe and the graph
+ */
 trait PipeDecorator {
   def decorate(pipe: Pipe, state: QueryState): QueryState
 
