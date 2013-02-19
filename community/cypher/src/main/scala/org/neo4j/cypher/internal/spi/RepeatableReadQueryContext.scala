@@ -33,7 +33,7 @@ class RepeatableReadQueryContext(inner: QueryContext, locker: Locker) extends De
   override def getRelationshipsFor(node: Node, dir: Direction, types: Seq[String]): Iterable[Relationship] = {
     locker.readLock(node)
     val rels = inner.getRelationshipsFor(node, dir, types)
-    rels.map(_)
+
     new Iterable[Relationship] {
       def iterator: Iterator[Relationship] = rels.iterator.map {
         rel =>

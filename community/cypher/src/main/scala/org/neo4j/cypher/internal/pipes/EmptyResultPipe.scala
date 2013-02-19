@@ -34,7 +34,7 @@ class EmptyResultPipe(source: Pipe)
     Iterator()
   }
 
-  override def executionPlanDescription = source.executionPlanDescription.andThen("EmptyResult")
+  override def executionPlanDescription = source.executionPlanDescription.andThen(this, "EmptyResult")
 
   def dependencies = Seq()
 

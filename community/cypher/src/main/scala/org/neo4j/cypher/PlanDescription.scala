@@ -20,6 +20,7 @@
 package org.neo4j.cypher
 
 import internal.helpers.IsCollection
+import internal.pipes.Pipe
 
 /**
  * Abstract description of an execution plan
@@ -28,14 +29,19 @@ import internal.helpers.IsCollection
  * @param optPrev optional predecessor step description
  * @param args optional arguments
  */
-class PlanDescription(name: String, optPrev: Option[PlanDescription], args: Seq[(String, Any)]) {
+class PlanDescription(val pipe:Pipe, name: String, optPrev: Option[PlanDescription], val args: Seq[(String, Any)]) {
+
+  def mapArgs(f: (PlanDescription => Seq[(String, Any)])): PlanDescription = {
+    new PlanDescription(pipe, name, optPrev.map( _.mapArgs(f) ), f(this))
+  }
 
   /**
-   * @param name desciptive name of type of step
+   * @param pipe the pipe on which this PlanDescription is based on
+   * @param name descriptive name of type of step
    * @param args optional arguments
    * @return a new PlanDescription that uses this as optional predecessor step description
    */
-  def andThen(name: String, args: (String, Any)*) = new PlanDescription(name, Some(this), args)
+  def andThen(pipe: Pipe, name: String, args: (String, Any)*) = new PlanDescription(pipe, name, Some(this), args)
 
   /**
    * @return list of this plan description and all its predecessor step descriptions
@@ -121,11 +127,12 @@ class PlanDescription(name: String, optPrev: Option[PlanDescription], args: Seq[
 
 object PlanDescription {
   /**
+   * @param pipe pipe of this description
    * @param name desciptive name of type of step
    * @param args optional arguments
    * @return a new PlanDescription without an optional predecessor step description
    */
-  def apply(name: String, args: (String, Any)*) = new PlanDescription(name, None, args)
+  def apply(pipe: Pipe, name: String, args: (String, Any)*) = new PlanDescription(pipe, name, None, args)
 }
 
 

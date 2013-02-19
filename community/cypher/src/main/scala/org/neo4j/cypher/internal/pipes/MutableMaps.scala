@@ -19,31 +19,20 @@
  */
 package org.neo4j.cypher.internal.pipes
 
-import matching.{Trail, TraversalMatcher}
-import org.neo4j.cypher.internal.symbols.SymbolTable
 import collection.JavaConverters._
 
-class TraversalMatchPipe(source: Pipe, matcher: TraversalMatcher, trail: Trail) extends PipeWithSource(source) {
+object MutableMaps {
+  def empty = collection.mutable.Map[String, Any]()
 
-  protected def internalCreateResults(state: QueryState) = {
-    source.createResults(state).flatMap {
+  def create(size: Int) = new java.util.HashMap[String, Any](size).asScala
 
-      case ctx =>
-        val paths = matcher.findMatchingPaths(state, ctx)
+  def create(input: scala.collection.Map[String, Any]) = new java.util.HashMap[String, Any](input.asJava).asScala
 
-        paths.flatMap {
-
-          case path =>
-            val seq = path.iterator().asScala.toSeq
-            trail.decompose(seq).map(ctx.newWith)
-        }
+  def create(input: (String, Any)*) = {
+    val m: java.util.HashMap[String, Any] = new java.util.HashMap[String, Any]()
+    input.foreach {
+      case (k, v) => m.put(k, v)
     }
-  }
-
-  def symbols = trail.symbols(source.symbols)
-
-  def executionPlanDescription = source.executionPlanDescription.andThen(this, "TraversalMatcher", "trail" -> trail)
-
-  def throwIfSymbolsMissing(symbols: SymbolTable) {
+    m.asScala
   }
 }

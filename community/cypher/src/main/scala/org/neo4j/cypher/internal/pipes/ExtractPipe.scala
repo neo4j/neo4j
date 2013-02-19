@@ -42,7 +42,7 @@ class ExtractPipe(source: Pipe, val expressions: Map[String, Expression]) extend
 
   override def executionPlanDescription =
     source.executionPlanDescription
-      .andThen("Extract", "symKeys" -> source.symbols.keys, "exprKeys" -> expressions.keys)
+      .andThen(this, "Extract", "symKeys" -> source.symbols.keys, "exprKeys" -> expressions.keys)
 
   override def throwIfSymbolsMissing(symbols: SymbolTable) {
     expressions.foreach(_._2.throwIfSymbolsMissing(symbols))

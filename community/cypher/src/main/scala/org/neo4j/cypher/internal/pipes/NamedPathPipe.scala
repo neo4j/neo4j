@@ -34,5 +34,5 @@ class NamedPathPipe(source: Pipe, path: NamedPath) extends Pipe {
   val symbols = source.symbols.add(path.pathName, PathType())
 
   override def executionPlanDescription =
-    source.executionPlanDescription.andThen("ExtractPath", "name" -> path.pathName, "patterns" -> path.pathPattern)
+    source.executionPlanDescription.andThen(this, "ExtractPath", "name" -> path.pathName, "patterns" -> path.pathPattern)
 }

@@ -30,7 +30,7 @@ class TransactionStartPipe(source: Pipe, graph: GraphDatabaseService) extends Pi
     source.createResults(state)
   }
 
-  def executionPlanDescription = source.executionPlanDescription.andThen("StartTransaction")
+  def executionPlanDescription = source.executionPlanDescription.andThen(this, "StartTransaction")
 
   def dependencies = Seq()
 

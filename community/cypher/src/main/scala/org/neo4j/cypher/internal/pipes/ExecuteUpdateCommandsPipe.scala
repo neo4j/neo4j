@@ -88,7 +88,7 @@ class ExecuteUpdateCommandsPipe(source: Pipe, db: GraphDatabaseService, commands
   }
 
   override def executionPlanDescription =
-    source.executionPlanDescription.andThen("UpdateGraph", "commands" -> commands.map(_.toString))
+    source.executionPlanDescription.andThen(this, "UpdateGraph", "commands" -> commands.map(_.toString))
 
   def symbols = source.symbols.add(commands.flatMap(_.identifiers).toMap)
 

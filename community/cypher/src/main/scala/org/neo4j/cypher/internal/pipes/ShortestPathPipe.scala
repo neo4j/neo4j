@@ -52,7 +52,7 @@ class ShortestPathPipe(source: Pipe, ast: ShortestPath) extends PipeWithSource(s
   val symbols = source.symbols.add(pathName, PathType())
 
   override def executionPlanDescription =
-    source.executionPlanDescription.andThen("ShortestPath", "ast" -> ast)
+    source.executionPlanDescription.andThen(this, "ShortestPath", "ast" -> ast)
 
   def throwIfSymbolsMissing(symbols: SymbolTable) {
     ast.throwIfSymbolsMissing(symbols)

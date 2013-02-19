@@ -78,7 +78,7 @@ class TopPipe(source: Pipe, sortDescription: List[SortItem], countExpression: Ex
 
   def executionPlanDescription =
     source.executionPlanDescription
-      .andThen("Top", "orderBy" -> sortDescription.map(_.toString), "limit" -> countExpression)
+      .andThen(this, "Top", "orderBy" -> sortDescription.map(_.toString), "limit" -> countExpression)
 
   def symbols = source.symbols
 

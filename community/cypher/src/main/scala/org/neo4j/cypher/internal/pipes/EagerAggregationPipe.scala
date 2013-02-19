@@ -93,7 +93,7 @@ class EagerAggregationPipe(source: Pipe, val keyExpressions: Map[String, Express
 
   override def executionPlanDescription =
     source.executionPlanDescription
-      .andThen("EagerAggregation", "keys" -> oldKeyExpressions, "aggregates" -> aggregations.mapValues(_.toString()))
+      .andThen(this, "EagerAggregation", "keys" -> oldKeyExpressions, "aggregates" -> aggregations.mapValues(_.toString()))
 
   def throwIfSymbolsMissing(symbols: SymbolTable) {
     keyExpressions.foreach(_._2.throwIfSymbolsMissing(symbols))

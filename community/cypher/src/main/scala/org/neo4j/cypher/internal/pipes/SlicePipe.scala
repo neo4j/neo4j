@@ -58,7 +58,7 @@ class SlicePipe(source:Pipe, skip:Option[Expression], limit:Option[Expression]) 
       case (Some(s), Some(l)) => Seq("skip" -> s, "limit" -> l)
       case (None, None)=>throw new ThisShouldNotHappenError("Andres Taylor", "A slice pipe that doesn't slice should never exist.")
     }
-    source.executionPlanDescription.andThen("Slice", args: _*)
+    source.executionPlanDescription.andThen(this, "Slice", args: _*)
   }
 }
 

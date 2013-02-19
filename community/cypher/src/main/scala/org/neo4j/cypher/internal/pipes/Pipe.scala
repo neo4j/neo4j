@@ -49,73 +49,12 @@ trait Pipe {
   def executionPlanDescription: PlanDescription
 }
 
-trait PipeDecorator {
-  def decorate(pipe: Pipe, state: QueryState): QueryState
+object NullPipe extends Pipe {
+  val emptyResult = Seq(ExecutionContext.empty).toIterator
 
-  def decorate(pipe: Pipe, iter: Iterator[ExecutionContext]): Iterator[ExecutionContext]
-}
+  protected def internalCreateResults(state: QueryState) = emptyResult
 
+  val symbols: SymbolTable = new SymbolTable()
 
-class NullPipe extends Pipe {
-  protected def internalCreateResults(state: QueryState) = Seq(ExecutionContext.empty).toIterator
-
-  def symbols: SymbolTable = new SymbolTable()
-
-  def executionPlanDescription = PlanDescription("Null")
-}
-
-
-object MutableMaps {
-  def empty = collection.mutable.Map[String, Any]()
-
-  def create(size: Int) = new java.util.HashMap[String, Any](size).asScala
-
-  def create(input: scala.collection.Map[String, Any]) = new java.util.HashMap[String, Any](input.asJava).asScala
-
-  def create(input: (String, Any)*) = {
-    val m: java.util.HashMap[String, Any] = new java.util.HashMap[String, Any]()
-    input.foreach {
-      case (k, v) => m.put(k, v)
-    }
-    m.asScala
-  }
-}
-
-object QueryState {
-  def apply() = new QueryState(null, null, Map.empty, NullDecorator)
-  def apply(db: GraphDatabaseService) = new QueryState(db, new GDSBackedQueryContext(db), Map.empty, NullDecorator, None)
-}
-
-object NullDecorator extends PipeDecorator {
-  def decorate(pipe: Pipe, iter: Iterator[ExecutionContext]): Iterator[ExecutionContext] = iter
-
-  def decorate(pipe: Pipe, state: QueryState): QueryState = state
-}
-
-class QueryState(val db: GraphDatabaseService,
-                 val query: QueryContext,
-                 val params: Map[String, Any],
-                 val decorator:PipeDecorator,
-                 var transaction: Option[Transaction] = None) {
-  val createdNodes = new Counter
-  val createdRelationships = new Counter
-  val propertySet = new Counter
-  val deletedNodes = new Counter
-  val deletedRelationships = new Counter
-
-
-  def graphDatabaseAPI: GraphDatabaseAPI = if (db.isInstanceOf[GraphDatabaseAPI])
-    db.asInstanceOf[GraphDatabaseAPI]
-  else
-    throw new IllegalStateException("Graph database does not implement GraphDatabaseAPI")
-}
-
-class Counter {
-  private val counter: AtomicInteger = new AtomicInteger()
-
-  def count: Int = counter.get()
-
-  def increase() {
-    counter.incrementAndGet()
-  }
+  val executionPlanDescription = PlanDescription(this, "Null")
 }

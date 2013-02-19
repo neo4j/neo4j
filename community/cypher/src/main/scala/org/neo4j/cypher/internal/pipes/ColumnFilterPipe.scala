@@ -50,7 +50,7 @@ class ColumnFilterPipe(source: Pipe, val returnItems: Seq[ReturnItem])
 
   override def executionPlanDescription =
     source.executionPlanDescription
-      .andThen("ColumnFilter", "symKeys" -> source.symbols.keys, "returnItemNames" -> returnItemNames)
+      .andThen(this, "ColumnFilter", "symKeys" -> source.symbols.keys, "returnItemNames" -> returnItemNames)
 
   def dependencies = Seq()
 

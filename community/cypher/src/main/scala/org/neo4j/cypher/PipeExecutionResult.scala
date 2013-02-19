@@ -30,11 +30,13 @@ import collection.Map
 
 class PipeExecutionResult(result: Iterator[Map[String, Any]],
                           val columns: List[String], state: QueryState,
-                          val executionPlanDescription: String)
+                          executionPlanBuilder: () => String)
   extends ExecutionResult
   with StringExtras
   with CollectionSupport
   with StringHelper {
+
+  def executionPlanDescription(): String = executionPlanBuilder()
 
   def javaColumns: java.util.List[String] = columns.asJava
 

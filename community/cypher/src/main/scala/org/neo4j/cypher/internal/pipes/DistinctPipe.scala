@@ -56,7 +56,7 @@ class DistinctPipe(source: Pipe, expressions: Map[String, Expression]) extends P
     }
   }
 
-  override def executionPlanDescription = source.executionPlanDescription.andThen("Distinct")
+  override def executionPlanDescription = source.executionPlanDescription.andThen(this, "Distinct")
 
   def symbols: SymbolTable = {
     val identifiers = expressions.mapValues(e => e.evaluateType(AnyType(), source.symbols))

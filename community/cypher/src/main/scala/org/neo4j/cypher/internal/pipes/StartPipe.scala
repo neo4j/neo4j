@@ -42,7 +42,7 @@ abstract class StartPipe[T <: PropertyContainer](inner: Pipe, name: String, crea
 
   def visibleName: String
 
-  override def executionPlanDescription = inner.executionPlanDescription.andThen(visibleName, "name" -> name)
+  override def executionPlanDescription = inner.executionPlanDescription.andThen(this, visibleName, "name" -> name)
 }
 
 class NodeStartPipe(inner: Pipe, name: String, createSource: ExecutionContext => Iterable[Node])
