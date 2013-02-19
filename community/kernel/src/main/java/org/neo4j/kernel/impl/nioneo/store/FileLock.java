@@ -24,7 +24,9 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.channels.FileChannel;
 import java.nio.channels.OverlappingFileLockException;
+
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
+import org.neo4j.kernel.StoreLocker;
 
 public abstract class FileLock
 {
@@ -50,8 +52,13 @@ public abstract class FileLock
     {
         if ( GraphDatabaseSetting.osIsWindows() )
         {
-            // Only grab one lock, say for the "neostore" file
-            if ( fileName.getName().equals( NeoStore.DEFAULT_NAME ) )
+            /*
+             * We need to grab only one lock for the whole store. Even though every store will try to grab one
+             * we will honor only the top level, dedicated store lock. This has the benefit that older versions of
+             * Neo4j that do not have a dedicated locker still lock on the parent file of neostore so this will still
+             * block when new instances are started on top of in use older stores and vice versa.
+             */
+            if ( fileName.getName().equals( StoreLocker.STORE_LOCK_FILENAME ) )
             {
                 return getLockFileBasedFileLock( fileName.getParentFile() );
             }

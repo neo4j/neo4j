@@ -134,7 +134,7 @@ public class DefaultFileSystemAbstraction
 
         throw new IOException( format( UNABLE_TO_CREATE_DIRECTORY_FORMAT, path ) );
     }
-    
+
     @Override
     public File[] listFiles( File directory )
     {

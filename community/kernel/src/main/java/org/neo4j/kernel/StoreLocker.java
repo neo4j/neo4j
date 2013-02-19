@@ -33,7 +33,7 @@ import org.neo4j.kernel.impl.util.StringLogger;
 
 public class StoreLocker
 {
-    private static final String STORE_LOCK_FILENAME = "store_lock";
+    public static final String STORE_LOCK_FILENAME = "store_lock";
 
     private final Config configuration;
     private final StringLogger logger;
