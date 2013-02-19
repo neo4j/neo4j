@@ -94,7 +94,7 @@ public class StoreLockerLifecycleAdapterTest
         }
         catch ( RuntimeException e )
         {
-            assertThat( e.getCause().getCause().getMessage(), is( DATABASE_LOCKED_ERROR_MESSAGE ) );
+            assertThat( e.getMessage(), is( DATABASE_LOCKED_ERROR_MESSAGE ) );
         }
         finally
         {
