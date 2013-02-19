@@ -29,9 +29,9 @@ import collection.JavaConverters._
 
 class GDSBackedQueryContext(graph: GraphDatabaseService) extends QueryContext {
 
-  def close {}
+  def close() {}
 
-  def createNode: Node = graph.createNode
+  def createNode(): Node = graph.createNode
 
   def createRelationship(start: Node, end: Node, relType: String): Relationship =
     start.createRelationshipTo(end, withName(relType))

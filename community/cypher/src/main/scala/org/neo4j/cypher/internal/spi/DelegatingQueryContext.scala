@@ -25,6 +25,7 @@ import org.neo4j.graphdb.{PropertyContainer, Direction, Node}
 class DelegatingQueryContext(inner: QueryContext) extends QueryContext {
 
   def close() {
+    inner.close()
   }
 
   def createNode() = inner.createNode()

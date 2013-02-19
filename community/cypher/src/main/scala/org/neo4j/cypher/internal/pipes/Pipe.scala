@@ -20,12 +20,6 @@
 package org.neo4j.cypher.internal.pipes
 
 import org.neo4j.cypher.internal.symbols.SymbolTable
-import org.neo4j.graphdb.{GraphDatabaseService, Transaction}
-import scala.collection.JavaConverters._
-import org.neo4j.kernel.GraphDatabaseAPI
-import java.util.concurrent.atomic.AtomicInteger
-import org.neo4j.cypher.internal.spi.QueryContext
-import org.neo4j.cypher.internal.spi.gdsimpl.GDSBackedQueryContext
 import org.neo4j.cypher.internal.ExecutionContext
 import org.neo4j.cypher.PlanDescription
 
@@ -50,9 +44,7 @@ trait Pipe {
 }
 
 object NullPipe extends Pipe {
-  val emptyResult = Seq(ExecutionContext.empty).toIterator
-
-  protected def internalCreateResults(state: QueryState) = emptyResult
+  protected def internalCreateResults(state: QueryState) = Iterator(ExecutionContext.empty)
 
   val symbols: SymbolTable = new SymbolTable()
 
