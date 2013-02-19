@@ -35,7 +35,7 @@ class SortPipe(source: Pipe, sortDescription: List[SortItem]) extends PipeWithSo
     }
   }
 
-  def createResults(state:QueryState) =
+  protected def internalCreateResults(state:QueryState) =
     source.createResults(state).toList.
     sortWith((a, b) => compareBy(a, b, sortDescription)).iterator
 

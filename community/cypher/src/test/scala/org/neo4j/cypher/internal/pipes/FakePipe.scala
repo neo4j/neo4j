@@ -30,7 +30,7 @@ class FakePipe(val data: Iterator[Map[String, Any]], identifiers: (String, Cyphe
 
   val symbols: SymbolTable = new SymbolTable(identifiers.toMap)
 
-  def createResults(state: QueryState) = data.map(m => ExecutionContext(collection.mutable.Map(m.toSeq: _*)))
+  protected def internalCreateResults(state: QueryState) = data.map(m => ExecutionContext(collection.mutable.Map(m.toSeq: _*)))
 
   def executionPlanDescription = PlanDescription("Fake")
 }

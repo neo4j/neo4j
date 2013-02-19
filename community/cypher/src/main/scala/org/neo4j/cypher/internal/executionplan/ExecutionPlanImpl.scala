@@ -136,7 +136,7 @@ class ExecutionPlanImpl(inputQuery: Query, graph: GraphDatabaseService) extends 
     try
     {
       val gdsContext = new GDSBackedQueryContext(graph)
-      val state = new QueryState(graph, gdsContext, params)
+      val state = new QueryState(graph, gdsContext, params, NullDecorator)
       val results = pipe.createResults(state)
 
       val closingIterator = new ClosingIterator[ExecutionContext](results, state.query, tx)

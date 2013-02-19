@@ -29,7 +29,7 @@ class DistinctPipe(source: Pipe, expressions: Map[String, Expression]) extends P
 
   val keyNames: Seq[String] = expressions.keys.toSeq
 
-  def createResults(state: QueryState): Iterator[ExecutionContext] = {
+  protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
 
     // Run the return item expressions, and replace the execution context's with their values
     val returnExpressions = source.createResults(state).map(ctx => {

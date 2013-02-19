@@ -34,7 +34,7 @@ class ColumnFilterPipe(source: Pipe, val returnItems: Seq[ReturnItem])
   private lazy val identifiers2: Seq[(String, CypherType)] = returnItems.
     map( ri => ri.name->ri.expression.getType(source.symbols))
 
-  def createResults(state: QueryState) = {
+  protected def internalCreateResults(state: QueryState) = {
     source.createResults(state).map(ctx => {
       val newMap = MutableMaps.create(ctx.size)
 

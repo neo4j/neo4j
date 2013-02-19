@@ -25,7 +25,7 @@ import org.neo4j.cypher.PlanDescription
 class EmptyResultPipe(source: Pipe)
   extends PipeWithSource(source) {
 
-  def createResults(state: QueryState) = {
+  protected def internalCreateResults(state: QueryState) = {
     val iter = source.createResults(state)
     while(iter.hasNext) {
       iter.next()

@@ -31,7 +31,7 @@ abstract class StartPipe[T <: PropertyContainer](inner: Pipe, name: String, crea
 
   val symbols = inner.symbols.add(name, identifierType)
 
-  def createResults(state: QueryState) = {
+  protected def internalCreateResults(state: QueryState) = {
     inner.createResults(state).flatMap(ctx => {
       val source: Iterable[T] = createSource(ctx)
       source.map(x => {

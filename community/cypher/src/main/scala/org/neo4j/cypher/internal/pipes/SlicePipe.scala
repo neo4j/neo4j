@@ -27,8 +27,8 @@ class SlicePipe(source:Pipe, skip:Option[Expression], limit:Option[Expression]) 
 
   val symbols = source.symbols
 
-  def createResults(state: QueryState) : Iterator[ExecutionContext] = {
-    val sourceTraversable = source.createResults(state)
+  protected def internalCreateResults(state: QueryState) : Iterator[ExecutionContext] = {
+    val sourceTraversable: Iterator[ExecutionContext] = source.createResults(state)
 
     if(sourceTraversable.isEmpty)
       return Iterator()

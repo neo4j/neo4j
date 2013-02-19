@@ -35,7 +35,7 @@ class ShortestPathPipe(source: Pipe, ast: ShortestPath) extends PipeWithSource(s
   private def pathName = ast.pathName
   private val expression = ShortestPathExpression(ast)
 
-  def createResults(state: QueryState) = source.createResults(state).flatMap(ctx => {
+  protected def internalCreateResults(state: QueryState) = source.createResults(state).flatMap(ctx => {
     val result: Stream[Path] = expression(ctx)
 
     if (result.isEmpty) {

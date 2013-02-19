@@ -25,7 +25,7 @@ import org.scalatest.Assertions
 import org.junit.{Before, Test}
 import org.neo4j.graphdb.{Node, Direction}
 import org.junit.Assert._
-import org.neo4j.cypher.internal.pipes.{QueryState}
+import org.neo4j.cypher.internal.pipes.{NullDecorator, QueryState}
 import org.neo4j.cypher.internal.spi.gdsimpl.GDSBackedQueryContext
 import org.neo4j.cypher.internal.ExecutionContext
 
@@ -41,7 +41,8 @@ class HasRelationshipTest extends GraphDatabaseTestBase with Assertions {
   def init() {
     a = createNode()
     b = createNode()
-    ctx = ExecutionContext(state=new QueryState(graph, new GDSBackedQueryContext(graph), Map.empty, None )).newWith(Map("a" -> a, "b" -> b))
+    val state = new QueryState(graph, new GDSBackedQueryContext(graph), Map.empty, NullDecorator, None)
+    ctx = ExecutionContext(state=state).newWith(Map("a" -> a, "b" -> b))
   }
 
   def createPredicate(dir: Direction, relType: Seq[String]): HasRelationshipTo = HasRelationshipTo(Identifier("a"), Identifier("b"), dir, relType)

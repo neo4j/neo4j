@@ -32,7 +32,7 @@ import org.neo4j.cypher.internal.ExecutionContext
 
 class MutationTest extends ExecutionEngineHelper with Assertions {
 
-  def createQueryState = new QueryState(graph, new GDSBackedQueryContext(graph), Map.empty)
+  def createQueryState = new QueryState(graph, new GDSBackedQueryContext(graph), Map.empty, NullDecorator)
 
   @Test
   def create_node() {

@@ -36,15 +36,28 @@ import org.neo4j.cypher.PlanDescription
  * the execute the query.
  */
 trait Pipe {
-  def createResults(state: QueryState): Iterator[ExecutionContext]
+  def createResults(state:QueryState) = {
+    val decoratedState = state.decorator.decorate(this, state)
+    val result = internalCreateResults(decoratedState)
+    state.decorator.decorate(this, result)
+  }
+
+  protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext]
 
   def symbols: SymbolTable
 
   def executionPlanDescription: PlanDescription
 }
 
+trait PipeDecorator {
+  def decorate(pipe: Pipe, state: QueryState): QueryState
+
+  def decorate(pipe: Pipe, iter: Iterator[ExecutionContext]): Iterator[ExecutionContext]
+}
+
+
 class NullPipe extends Pipe {
-  def createResults(state: QueryState) = Seq(ExecutionContext.empty).toIterator
+  protected def internalCreateResults(state: QueryState) = Seq(ExecutionContext.empty).toIterator
 
   def symbols: SymbolTable = new SymbolTable()
 
@@ -69,19 +82,27 @@ object MutableMaps {
 }
 
 object QueryState {
-  def apply() = new QueryState(null, null, Map.empty)
-  def apply(db: GraphDatabaseService) = new QueryState(db, new GDSBackedQueryContext(db), Map.empty, None)
+  def apply() = new QueryState(null, null, Map.empty, NullDecorator)
+  def apply(db: GraphDatabaseService) = new QueryState(db, new GDSBackedQueryContext(db), Map.empty, NullDecorator, None)
+}
+
+object NullDecorator extends PipeDecorator {
+  def decorate(pipe: Pipe, iter: Iterator[ExecutionContext]): Iterator[ExecutionContext] = iter
+
+  def decorate(pipe: Pipe, state: QueryState): QueryState = state
 }
 
 class QueryState(val db: GraphDatabaseService,
                  val query: QueryContext,
                  val params: Map[String, Any],
+                 val decorator:PipeDecorator,
                  var transaction: Option[Transaction] = None) {
   val createdNodes = new Counter
   val createdRelationships = new Counter
   val propertySet = new Counter
   val deletedNodes = new Counter
   val deletedRelationships = new Counter
+
 
   def graphDatabaseAPI: GraphDatabaseAPI = if (db.isInstanceOf[GraphDatabaseAPI])
     db.asInstanceOf[GraphDatabaseAPI]

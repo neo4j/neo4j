@@ -46,7 +46,7 @@ class EagerAggregationPipe(source: Pipe, val keyExpressions: Map[String, Express
     new SymbolTable(keyIdentifiers ++ aggrIdentifiers)
   }
 
-  def createResults(state: QueryState) = {
+  protected def internalCreateResults(state: QueryState) = {
     // This is the temporary storage used while the aggregation is going on
     val result = MutableMap[NiceHasher, (ExecutionContext, Seq[AggregationFunction])]()
     val keyNames: Seq[String] = keyExpressions.map(_._1).toSeq

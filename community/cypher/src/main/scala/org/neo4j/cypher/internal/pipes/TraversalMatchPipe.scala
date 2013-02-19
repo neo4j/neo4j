@@ -25,7 +25,7 @@ import collection.JavaConverters._
 
 class TraversalMatchPipe(source: Pipe, matcher: TraversalMatcher, trail: Trail) extends PipeWithSource(source) {
 
-  def createResults(state: QueryState) = {
+  protected def internalCreateResults(state: QueryState) = {
     source.createResults(state).flatMap {
 
       case ctx =>

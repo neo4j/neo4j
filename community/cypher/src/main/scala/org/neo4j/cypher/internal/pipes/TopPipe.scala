@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.ExecutionContext
  * returning the matching top results, we only keep the top results in heap, which allows us to release memory earlier
  */
 class TopPipe(source: Pipe, sortDescription: List[SortItem], countExpression: Expression) extends PipeWithSource(source) with ExecutionContextComparer {
-  def createResults(state: QueryState): Iterator[ExecutionContext] = {
+  protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
 
     var result = new ListBuffer[ExecutionContext]()
     var last: Option[ExecutionContext] = None

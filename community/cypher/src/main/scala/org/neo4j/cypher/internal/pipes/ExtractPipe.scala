@@ -32,7 +32,7 @@ class ExtractPipe(source: Pipe, val expressions: Map[String, Expression]) extend
     source.symbols.add(newIdentifiers)
   }
 
-  def createResults(state: QueryState) = source.createResults(state).map(subgraph => {
+  protected def internalCreateResults(state: QueryState) = source.createResults(state).map(subgraph => {
     expressions.foreach {
       case (name, expression) =>
         subgraph += name -> expression(subgraph)
