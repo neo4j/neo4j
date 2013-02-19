@@ -24,10 +24,12 @@ import org.neo4j.cypher.internal.spi.gdsimpl.GDSBackedQueryContext
 import org.neo4j.cypher.internal.spi.QueryContext
 import org.neo4j.kernel.GraphDatabaseAPI
 import java.util.concurrent.atomic.AtomicInteger
+import org.neo4j.cypher.ParameterNotFoundException
 
 
 object QueryState {
-  def apply() = new QueryState(null, null, Map.empty, NullDecorator)
+  def empty = new QueryState(null, null, Map.empty, NullDecorator)
+  def apply() = empty
 
   def apply(db: GraphDatabaseService) = new QueryState(db, new GDSBackedQueryContext(db), Map.empty, NullDecorator, None)
 }
@@ -44,11 +46,13 @@ case class QueryState(db: GraphDatabaseService,
   val deletedNodes = new Counter
   val deletedRelationships = new Counter
 
-
   def graphDatabaseAPI: GraphDatabaseAPI = if (db.isInstanceOf[GraphDatabaseAPI])
     db.asInstanceOf[GraphDatabaseAPI]
   else
     throw new IllegalStateException("Graph database does not implement GraphDatabaseAPI")
+
+  def getParam(key: String): Any =
+    params.getOrElse(key, throw new ParameterNotFoundException("Expected a parameter named " + key))
 }
 
 class Counter {

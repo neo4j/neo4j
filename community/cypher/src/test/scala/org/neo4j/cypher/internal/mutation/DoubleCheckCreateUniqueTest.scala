@@ -62,11 +62,11 @@ class DoubleCheckCreateUniqueTest extends Assertions {
     assert(a.getRelationships.asScala.size === 1)
   }
 
-  val relateAction = CreateUniqueAction(UniqueLink("a", "b", "r", "X", Direction.OUTGOING))
+  val relateAction:CreateUniqueAction = CreateUniqueAction(UniqueLink("a", "b", "r", "X", Direction.OUTGOING))
 
 
   private def createExecutionContext(a: Node, tx: Transaction): ExecutionContext = {
-    ExecutionContext(state = createQueryState(tx)).newWith(Map("a" -> a))
+    ExecutionContext().newWith(Map("a" -> a))
   }
 
   private def createQueryState(tx: Transaction): QueryState = {

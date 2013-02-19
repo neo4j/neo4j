@@ -17,12 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.pipes
+package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.internal.symbols.SymbolTable
+import org.neo4j.graphdb.PropertyContainer
 
-abstract class PipeWithSource(val source: Pipe) extends Pipe {
-  def throwIfSymbolsMissing(symbols: SymbolTable)
-
-  throwIfSymbolsMissing(source.symbols)
+package object pipes {
+  type EntityProducer[T <: PropertyContainer] = (ExecutionContext, QueryState) => Iterable[T]
 }

@@ -23,15 +23,15 @@ import org.neo4j.cypher._
 import internal.commands.AstNode
 import internal.ExecutionContext
 import internal.helpers.TypeSafeMathSupport
+import internal.pipes.QueryState
 import internal.symbols._
 
-abstract class Expression extends (ExecutionContext => Any)
-with Typed
-with TypeSafe
-with AstNode[Expression] {
+abstract class Expression extends Typed with TypeSafe with AstNode[Expression] {
   def rewrite(f: Expression => Expression): Expression
   def subExpressions = filter( _ != this)
   def containsAggregate = exists(_.isInstanceOf[AggregationExpression])
+
+  def apply(ctx: ExecutionContext)(implicit state: QueryState):Any
 
   /*When calculating the type of an expression, the expression should also
   make sure to check the types of any downstream expressions*/
@@ -56,7 +56,7 @@ with AstNode[Expression] {
 }
 
 case class CachedExpression(key:String, typ:CypherType) extends Expression {
-  def apply(ctx: ExecutionContext) = ctx(key)
+  def apply(ctx: ExecutionContext)(implicit state: QueryState) = ctx(key)
 
   def rewrite(f: (Expression) => Expression) = f(this)
 
@@ -75,7 +75,7 @@ abstract class Arithmetics(left: Expression, right: Expression)
     throw new CypherTypeException("Don't know how to " + this + " `" + bVal + "` with `" + aVal + "`")
   }
 
-  def apply(ctx: ExecutionContext) = {
+  def apply(ctx: ExecutionContext)(implicit state: QueryState) = {
     val aVal = left(ctx)
     val bVal = right(ctx)
 

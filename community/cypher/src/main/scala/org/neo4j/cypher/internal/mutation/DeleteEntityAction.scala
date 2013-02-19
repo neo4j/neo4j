@@ -32,7 +32,7 @@ import org.neo4j.cypher.internal.ExecutionContext
 case class DeleteEntityAction(elementToDelete: Expression)
   extends UpdateAction {
   def exec(context: ExecutionContext, state: QueryState) = {
-    elementToDelete(context) match {
+    elementToDelete(context)(state) match {
       case n: Node => delete(n, state)
       case r: Relationship => delete(r, state)
       case null =>

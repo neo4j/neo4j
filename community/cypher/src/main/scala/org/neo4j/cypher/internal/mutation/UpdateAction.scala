@@ -71,7 +71,7 @@ trait GraphElementPropertyFunctions extends CollectionSupport {
 
 
   private def setAllMapKeyValues(expression: Expression, context: ExecutionContext, pc: PropertyContainer, state: QueryState) {
-    val map = getMapFromExpression(expression(context))
+    val map = getMapFromExpression(expression(context)(state))
 
     pc match {
       case n: Node => map.foreach {
@@ -89,7 +89,7 @@ trait GraphElementPropertyFunctions extends CollectionSupport {
   }
 
   private def setSingleValue(expression: Expression, context: ExecutionContext, pc: PropertyContainer, key: String, state: QueryState) {
-    val value = makeValueNeoSafe(expression(context))
+    val value = makeValueNeoSafe(expression(context)(state))
     pc match {
       case n: Node =>
         state.query.nodeOps.setProperty(n, key, value)

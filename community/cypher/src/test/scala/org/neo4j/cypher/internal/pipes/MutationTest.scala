@@ -131,7 +131,7 @@ class MutationTest extends ExecutionEngineHelper with Assertions {
 }
 
 case class InjectValue(value:Any, typ:CypherType) extends Expression {
-  def apply(v1: ExecutionContext) = value
+  def apply(v1: ExecutionContext)(implicit state: QueryState) = value
 
   def children = Seq()
 

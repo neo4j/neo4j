@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.pipes.matching
 
 import org.junit.Test
 import org.neo4j.cypher.GraphDatabaseTestBase
-import org.neo4j.graphdb.Path
+import org.neo4j.graphdb.{Node, Path}
 import org.neo4j.cypher.internal.pipes.{NullDecorator, MutableMaps, QueryState}
 import org.neo4j.graphdb.DynamicRelationshipType.withName
 import org.neo4j.graphdb.Direction.OUTGOING
@@ -46,20 +46,22 @@ class TraversalMatcherTest extends GraphDatabaseTestBase {
     val r1 = relate(a, b, "A")
     val r2 = relate(b, c, "B")
 
-    val start = (_:ExecutionContext) => Seq(a)
-    val end = (_:ExecutionContext) => Seq(c)
+    val start = produce(a)
+    val end = produce(c)
 
     val matcher = new BidirectionalTraversalMatcher(pr1, start, end)
 
     val queryState = new QueryState(graph, new GDSBackedQueryContext(graph), Map.empty, NullDecorator)
 
-    val result: Seq[Path] = matcher.findMatchingPaths(queryState, ExecutionContext(state=QueryState(graph))).toSeq
+    val result: Seq[Path] = matcher.findMatchingPaths(queryState, ExecutionContext()).toSeq
 
     assert(result.size === 1)
     assert(result.head.startNode() === a)
     assert(result.head.endNode() === c)
     assert(result.head.lastRelationship() === r2)
   }
+
+  private def produce(x: Node*) = (_: ExecutionContext, _: QueryState) => x
 
   @Test def tree() {
     /*Data nodes and rels
@@ -83,8 +85,8 @@ class TraversalMatcherTest extends GraphDatabaseTestBase {
     relate(b, c, "B")
     relate(b3, c, "B")
 
-    val start = (_:ExecutionContext) => Seq(a)
-    val end = (_:ExecutionContext) => Seq(c, c2)
+    val start = produce(a)
+    val end = produce(c, c2)
 
     //Pattern nodes and relationships
 
@@ -92,7 +94,7 @@ class TraversalMatcherTest extends GraphDatabaseTestBase {
 
     val queryState = new QueryState(graph, new GDSBackedQueryContext(graph), Map.empty, NullDecorator)
 
-    val result: Seq[Path] = matcher.findMatchingPaths(queryState, ExecutionContext(state=QueryState(graph))).toSeq
+    val result: Seq[Path] = matcher.findMatchingPaths(queryState, ExecutionContext()).toSeq
 
     assert(result.size === 3)
 

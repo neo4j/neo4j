@@ -44,8 +44,9 @@ class PatternRelationship(key: String,
 
   def getGraphRelationships(node: PatternNode, realNode: Node, ctx:QueryContext): Seq[GraphRelationship] = {
 
+    val apa = ctx.getRelationshipsFor(realNode, getDirection(node), relTypes)
     val result: Iterable[GraphRelationship] =
-      ctx.getRelationshipsFor(realNode, getDirection(node), relTypes).map(new SingleGraphRelationship(_))
+      apa.map(new SingleGraphRelationship(_))
 
     if (startNode == endNode)
       result.filter(r => r.getOtherNode(realNode) == realNode).toSeq

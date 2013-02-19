@@ -26,6 +26,7 @@ import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.Relationship
 import org.neo4j.graphdb.DynamicRelationshipType.withName
 import collection.JavaConverters._
+import java.lang.{Iterable=>JIterable}
 
 class GDSBackedQueryContext(graph: GraphDatabaseService) extends QueryContext {
 
@@ -73,6 +74,12 @@ class GDSBackedQueryContext(graph: GraphDatabaseService) extends QueryContext {
       def getById(id: Long): Node = {
         graph.getNodeById(id)
       }
+
+      def indexGet(name: String, key: String, value: Any): Iterable[Node] =
+        graph.index.forNodes(name).get(key, value).asInstanceOf[JIterable[Node]].asScala
+
+      def indexQuery(name: String, query: Any): Iterable[Node] =
+        graph.index.forNodes(name).query(name, query).asInstanceOf[JIterable[Node]].asScala
     }
   }
 
@@ -101,6 +108,13 @@ class GDSBackedQueryContext(graph: GraphDatabaseService) extends QueryContext {
 
       def getById(id: Long): Relationship =
         graph.getRelationshipById(id)
+
+      def indexGet(name: String, key: String, value: Any): Iterable[Relationship] =
+        graph.index.forRelationships(name).get(key, value).asInstanceOf[JIterable[Relationship]].asScala
+
+      def indexQuery(name: String, query: Any): Iterable[Relationship] =
+        graph.index.forRelationships(name).query(query).asInstanceOf[JIterable[Relationship]].asScala
+
     }
   }
 }

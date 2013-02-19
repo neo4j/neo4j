@@ -48,7 +48,7 @@ trait ExpanderStep {
 
   def size: Option[Int]
 
-  def expand(node: Node, parameters: ExecutionContext): (Iterable[Relationship], Option[ExpanderStep])
+  def expand(node: Node, parameters: ExecutionContext, state:QueryState): (Iterable[Relationship], Option[ExpanderStep])
 
   def shouldInclude(): Boolean
 
@@ -97,14 +97,14 @@ abstract class MiniMapProperty(originalName: String, prop: String) extends Expre
 
   def symbolTableDependencies = fail()
 
-  def apply(ctx: ExecutionContext) = {
+  def apply(ctx: ExecutionContext)(implicit state: QueryState) = {
     ctx match {
       case m: MiniMap => {
         val pc = extract(m)
         try {
           pc match {
-            case n:Node=>ctx.state.query.nodeOps.getProperty(n, prop)
-            case r:Relationship=>ctx.state.query.relationshipOps.getProperty(r, prop)
+            case n: Node         => state.query.nodeOps.getProperty(n, prop)
+            case r: Relationship => state.query.relationshipOps.getProperty(r, prop)
           }
         } catch {
           case x: NotFoundException =>
@@ -130,7 +130,7 @@ abstract class MiniMapIdentifier() extends Expression {
 
   def symbolTableDependencies = fail()
 
-  def apply(ctx: ExecutionContext) = ctx match {
+  def apply(ctx: ExecutionContext)(implicit state: QueryState) = ctx match {
     case m: MiniMap => extract(m)
     case _          => fail()
   }
@@ -150,13 +150,12 @@ case class RelationshipIdentifier() extends MiniMapIdentifier() {
 
 class MiniMap(var relationship: Relationship,
                    var node: Node,
-                   myState: QueryState,
                    myMap: MutableMap[String, Any] = MutableMaps.empty)
-  extends ExecutionContext(state = myState, m = myMap) {
+  extends ExecutionContext(m = myMap) {
 
   override def iterator = throw new RuntimeException
 
   override def -(key: String) = throw new RuntimeException
 
-  override protected def createWithNewMap(newMap: mutable.Map[String, Any]) = new MiniMap(relationship, node, myState, newMap)
+  override protected def createWithNewMap(newMap: mutable.Map[String, Any]) = new MiniMap(relationship, node, newMap)
 }

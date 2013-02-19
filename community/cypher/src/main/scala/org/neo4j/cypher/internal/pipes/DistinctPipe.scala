@@ -33,7 +33,7 @@ class DistinctPipe(source: Pipe, expressions: Map[String, Expression]) extends P
 
     // Run the return item expressions, and replace the execution context's with their values
     val returnExpressions = source.createResults(state).map(ctx => {
-      val newMap = expressions.mapValues(expression => expression(ctx))
+      val newMap = expressions.mapValues(expression => expression(ctx)(state))
       ctx.newFrom(newMap)
     })
 

@@ -47,9 +47,10 @@ class GraphGlobalStartBuilder(graph: GraphDatabaseService) extends PlanBuilder {
     case _ => false
   }
 
-  private def createStartPipe(lastPipe: Pipe, item: StartItem): Pipe = item match {
-    case AllNodes(identifierName) => new NodeStartPipe(lastPipe, identifierName, m => GlobalGraphOperations.at(graph).getAllNodes.asScala)
-    case AllRelationships(identifierName) => new RelationshipStartPipe(lastPipe, identifierName, m => GlobalGraphOperations.at(graph).getAllRelationships.asScala)
+  private def createStartPipe(lastPipe: Pipe, item: StartItem): Pipe =
+    item match {
+    case AllNodes(identifierName) => new NodeStartPipe(lastPipe, identifierName, (ctx,state) => GlobalGraphOperations.at(graph).getAllNodes.asScala)
+    case AllRelationships(identifierName) => new RelationshipStartPipe(lastPipe, identifierName, (ctx, state) => GlobalGraphOperations.at(graph).getAllRelationships.asScala)
   }
 
   def canWorkWith(plan: ExecutionPlanInProgress) = plan.query.start.exists(filter)

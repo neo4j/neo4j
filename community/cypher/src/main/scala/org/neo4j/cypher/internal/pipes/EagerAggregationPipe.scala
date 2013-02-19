@@ -70,7 +70,7 @@ class EagerAggregationPipe(source: Pipe, val keyExpressions: Map[String, Express
 
       aggregationNamesAndFunctions.toMap
         .foreach { case (name, zeroValue) => newMap += name -> zeroValue  }
-      Iterator(ExecutionContext(newMap, state = state))
+      Iterator(ExecutionContext(newMap))
     }
 
 
@@ -79,7 +79,7 @@ class EagerAggregationPipe(source: Pipe, val keyExpressions: Map[String, Express
       val groupValues: NiceHasher = new NiceHasher(keyNames.map(ctx))
       val aggregateFunctions: Seq[AggregationFunction] = aggregations.map(_._2.createAggregationFunction).toSeq
       val (_, functions) = result.getOrElseUpdate(groupValues, (ctx, aggregateFunctions))
-      functions.foreach(func => func(ctx))
+      functions.foreach(func => func(ctx)(state))
     })
 
     if (result.isEmpty && keyNames.isEmpty) {

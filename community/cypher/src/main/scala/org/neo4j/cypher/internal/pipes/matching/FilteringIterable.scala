@@ -22,14 +22,19 @@ package org.neo4j.cypher.internal.pipes.matching
 import org.neo4j.graphdb.{Node, Relationship}
 import org.neo4j.cypher.internal.commands.Predicate
 import org.neo4j.cypher.internal.ExecutionContext
+import org.neo4j.cypher.internal.pipes.QueryState
 
 
-class FilteringIterable(inner: Iterable[Relationship], startNode:Node, predicate: Predicate, ctx:ExecutionContext)
+class FilteringIterable(inner: Iterable[Relationship],
+                        startNode:Node,
+                        predicate: Predicate,
+                        ctx:ExecutionContext,
+                        state:QueryState)
   extends Iterable[Relationship] {
 
   class FilteringIterator(inner: Iterator[Relationship]) extends Iterator[Relationship] {
     private var nextInLine: Option[Relationship] = null
-    private val m:MiniMap = new MiniMap(null, startNode, ctx.state)
+    private val m:MiniMap = new MiniMap(null, startNode)
 
     spoolToNextInLine()
 
@@ -52,7 +57,7 @@ class FilteringIterable(inner: Iterable[Relationship], startNode:Node, predicate
         m.relationship = x
         m.node = x.getOtherNode(startNode)
 
-        if (predicate.isMatch(m)) {
+        if (predicate.isMatch(m)(state)) {
           nextInLine = Some(x)
         }
       }
@@ -64,8 +69,8 @@ class FilteringIterable(inner: Iterable[Relationship], startNode:Node, predicate
   }
 
   private def filter(r: Relationship, n: Node, ctx: ExecutionContext): Boolean = {
-    val m = new MiniMap(r, n, ctx.state)
-    predicate.isMatch(m)
+    val m = new MiniMap(r, n)
+    predicate.isMatch(m)(state)
   }
 
 

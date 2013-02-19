@@ -27,7 +27,9 @@ class MatchPipe(source: Pipe, predicates: Seq[Predicate], patternGraph: PatternG
   val matchingContext = new MatchingContext(source.symbols, predicates, patternGraph)
   val symbols = matchingContext.symbols
 
-  protected def internalCreateResults(state: QueryState) = source.createResults(state).flatMap(matchingContext.getMatches)
+  protected def internalCreateResults(state: QueryState) = source.createResults(state).flatMap {
+     ctx => matchingContext.getMatches(ctx, state)
+  }
 
   override def executionPlanDescription = source.executionPlanDescription.andThen(this, "PatternMatch", "g" -> patternGraph)
 }

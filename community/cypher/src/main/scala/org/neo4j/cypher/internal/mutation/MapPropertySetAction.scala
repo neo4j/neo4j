@@ -33,6 +33,8 @@ case class MapPropertySetAction(element: Expression, mapExpression: Expression)
   extends UpdateAction with GraphElementPropertyFunctions with MapSupport {
 
   def exec(context: ExecutionContext, state: QueryState) = {
+    implicit val s = state
+
     /*Find the property container we'll be working on*/
     val pc = element(context) match {
       case x: PropertyContainer => x

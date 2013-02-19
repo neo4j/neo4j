@@ -24,12 +24,11 @@ import org.neo4j.cypher.internal.commands._
 import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.graphdb
 import graphdb.{Node, GraphDatabaseService}
-import org.neo4j.cypher.internal.pipes.{ParameterPipe, TraversalMatchPipe}
+import org.neo4j.cypher.internal.pipes.{ParameterPipe, TraversalMatchPipe, EntityProducer}
 import org.neo4j.cypher.internal.pipes.matching.{Trail, TraversalMatcher, MonoDirectionalTraversalMatcher, BidirectionalTraversalMatcher}
 import org.neo4j.cypher.internal.executionplan.ExecutionPlanInProgress
 import org.neo4j.cypher.internal.commands.NodeByIndex
 import org.neo4j.cypher.internal.commands.NodeByIndexQuery
-import org.neo4j.cypher.internal.ExecutionContext
 
 class TraversalMatcherBuilder(graph: GraphDatabaseService) extends PlanBuilder {
   def apply(plan: ExecutionPlanInProgress): ExecutionPlanInProgress = extractExpanderStepsFromQuery(plan) match {
@@ -67,7 +66,7 @@ class TraversalMatcherBuilder(graph: GraphDatabaseService) extends PlanBuilder {
 
   private def chooseCorrectMatcher(end:Option[String],
                            longestPath:LongestTrail,
-                           startNodeFn:(ExecutionContext) => Iterable[Node],
+                           startNodeFn:EntityProducer[Node],
                            startToken:QueryToken[StartItem],
                            unsolvedItems: Seq[QueryToken[StartItem]] ): (TraversalMatcher,Seq[QueryToken[StartItem]]) = {
     val (matcher, tokens) = if (end.isEmpty) {
@@ -83,7 +82,7 @@ class TraversalMatcherBuilder(graph: GraphDatabaseService) extends PlanBuilder {
   }
 
   def identifier2nodeFn(graph: GraphDatabaseService, identifier: String, unsolvedItems: Seq[QueryToken[StartItem]]):
-  (QueryToken[StartItem], (ExecutionContext) => Iterable[Node]) = {
+  (QueryToken[StartItem], EntityProducer[Node]) = {
     val token = unsolvedItems.filter { (item) => identifier == item.token.identifierName }.head
     (token, IndexQueryBuilder.getNodeGetter(token.token, graph))
   }

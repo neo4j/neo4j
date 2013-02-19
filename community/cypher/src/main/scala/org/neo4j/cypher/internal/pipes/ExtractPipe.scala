@@ -35,7 +35,7 @@ class ExtractPipe(source: Pipe, val expressions: Map[String, Expression]) extend
   protected def internalCreateResults(state: QueryState) = source.createResults(state).map(subgraph => {
     expressions.foreach {
       case (name, expression) =>
-        subgraph += name -> expression(subgraph)
+        subgraph += name -> expression(subgraph)(state)
     }
     subgraph
   })

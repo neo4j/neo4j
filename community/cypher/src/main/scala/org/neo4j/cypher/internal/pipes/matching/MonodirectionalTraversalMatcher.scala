@@ -25,24 +25,26 @@ import collection.JavaConverters._
 import org.neo4j.kernel.{Uniqueness, Traversal}
 import traversal._
 import org.neo4j.cypher.internal.ExecutionContext
+import org.neo4j.cypher.internal.pipes.EntityProducer
 
-class MonoDirectionalTraversalMatcher(steps: ExpanderStep, start: (ExecutionContext) => Iterable[Node])
+class MonoDirectionalTraversalMatcher(steps: ExpanderStep, start: EntityProducer[Node])
   extends TraversalMatcher {
 
   val initialStartStep = new InitialStateFactory[Option[ExpanderStep]] {
     def initialState(path: Path): Option[ExpanderStep] = Some(steps)
   }
 
-  def baseTraversal(params: ExecutionContext): TraversalDescription = Traversal.
+  def baseTraversal(params: ExecutionContext, state:QueryState): TraversalDescription = Traversal.
     traversal(Uniqueness.RELATIONSHIP_PATH).
     evaluator(new MyEvaluator).
-    expand(new TraversalPathExpander(params), initialStartStep)
+    expand(new TraversalPathExpander(params, state), initialStartStep)
 
 
   def findMatchingPaths(state: QueryState, context: ExecutionContext): Iterator[Path] = {
-    val arr = start(context).toArray
+    // TODO memory waste
+    val arr = start(context, state).toArray
 
-    baseTraversal(context).traverse(arr: _*).iterator().asScala
+    baseTraversal(context, state).traverse(arr: _*).iterator().asScala
   }
 
 

@@ -30,6 +30,8 @@ case class PropertySetAction(prop: Property, e: Expression)
   val Property(mapExpr, propertyKey) = prop
 
   def exec(context: ExecutionContext, state: QueryState) = {
+    implicit val s = state
+
     val value = makeValueNeoSafe(e(context))
     val entity = mapExpr(context).asInstanceOf[PropertyContainer]
 

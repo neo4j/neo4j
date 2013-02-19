@@ -57,7 +57,7 @@ class PlanDescription(val pipe:Pipe, name: String, optPrev: Option[PlanDescripti
    * @param builder StringBuilder to be used
    * @param separator separator to be inserted between predecessor step descriptions
    */
-  def renderAll(builder: StringBuilder, separator: String = " <= ") {
+  def renderAll(builder: StringBuilder, separator: String = "\n") {
     renderThis(builder)
     renderPrev(builder, separator)
   }

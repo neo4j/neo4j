@@ -28,6 +28,8 @@ class SlicePipe(source:Pipe, skip:Option[Expression], limit:Option[Expression]) 
   val symbols = source.symbols
 
   protected def internalCreateResults(state: QueryState) : Iterator[ExecutionContext] = {
+    implicit val s = state
+
     val sourceTraversable: Iterator[ExecutionContext] = source.createResults(state)
 
     if(sourceTraversable.isEmpty)
@@ -35,9 +37,9 @@ class SlicePipe(source:Pipe, skip:Option[Expression], limit:Option[Expression]) 
 
     val first: ExecutionContext = sourceTraversable.next()
 
-    val sourceIter = new HeadAndTail[ExecutionContext](first, sourceTraversable)
+    val sourceIter: Iterator[ExecutionContext] = new HeadAndTail[ExecutionContext](first, sourceTraversable)
 
-    def asInt(v:Expression)=v(first).asInstanceOf[Int]
+    def asInt(v: Expression): Int = v(first)(state).asInstanceOf[Int]
 
     (skip, limit) match {
       case (Some(x), None) => sourceIter.drop(asInt(x))

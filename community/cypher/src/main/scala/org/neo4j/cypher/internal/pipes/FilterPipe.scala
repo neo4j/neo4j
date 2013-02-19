@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.symbols.SymbolTable
 class FilterPipe(source: Pipe, predicate: Predicate) extends PipeWithSource(source) {
   val symbols = source.symbols
 
-  protected def internalCreateResults(state: QueryState) = source.createResults(state).filter(ctx => predicate.isMatch(ctx))
+  protected def internalCreateResults(state: QueryState) = source.createResults(state).filter(ctx => predicate.isMatch(ctx)(state))
 
   override def executionPlanDescription = source.executionPlanDescription.andThen(this, "Filter", "pred" -> predicate)
 

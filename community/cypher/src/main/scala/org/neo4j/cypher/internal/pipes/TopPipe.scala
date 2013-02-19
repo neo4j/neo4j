@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.ExecutionContext
  */
 class TopPipe(source: Pipe, sortDescription: List[SortItem], countExpression: Expression) extends PipeWithSource(source) with ExecutionContextComparer {
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
-
+    implicit val s = state
     var result = new ListBuffer[ExecutionContext]()
     var last: Option[ExecutionContext] = None
     val largerThanLast = (ctx: ExecutionContext) => last.forall(s => compareBy(s, ctx, sortDescription))

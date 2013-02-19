@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.executionplan
 import builders._
 import org.neo4j.cypher.internal.pipes._
 import org.neo4j.cypher._
-import internal.profiler.ProfilerDecorator
+import internal.profiler.Profiler
 import internal.{ExecutionContext, ClosingIterator}
 import internal.commands._
 import internal.mutation.{CreateNode, CreateRelationship}
@@ -146,12 +146,12 @@ class ExecutionPlanImpl(inputQuery: Query, graph: GraphDatabaseService) extends 
   private def prepareStateAndResult(params: Map[String, Any], pipe: Pipe, profile: Boolean): (QueryState, Iterator[ExecutionContext], () => String) = {
     val tx = graph.beginTx()
 
-    val decorator:PipeDecorator = if(profile) {
-      new ProfilerDecorator
-    } else NullDecorator
+    val decorator: PipeDecorator = if (profile)
+      new Profiler()
+    else
+      NullDecorator
 
-    try
-    {
+    try {
       val gdsContext = new GDSBackedQueryContext(graph)
 
       val state = new QueryState(graph, gdsContext, params, decorator)

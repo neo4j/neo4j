@@ -30,7 +30,7 @@ case class DeletePropertyAction(element: Expression, property: String)
   extends UpdateAction {
 
   def exec(context: ExecutionContext, state: QueryState) = {
-    element(context) match {
+    element(context)(state) match {
       case n: Node => if (state.query.nodeOps.hasProperty(n, property)) {
         state.query.nodeOps.removeProperty(n, property)
         state.propertySet.increase()

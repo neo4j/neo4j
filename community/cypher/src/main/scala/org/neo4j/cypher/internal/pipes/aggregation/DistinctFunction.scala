@@ -21,12 +21,13 @@ package org.neo4j.cypher.internal.pipes.aggregation
 
 import org.neo4j.cypher.internal.commands.expressions.Expression
 import org.neo4j.cypher.internal.ExecutionContext
+import org.neo4j.cypher.internal.pipes.QueryState
 
 class DistinctFunction(value: Expression, inner: AggregationFunction) extends AggregationFunction {
   val seen = scala.collection.mutable.Set[Any]()
   var seenNull = false
 
-  def apply(ctx: ExecutionContext) {
+  def apply(ctx: ExecutionContext)(implicit state: QueryState) {
     val data = value(ctx)
 
     if (data == null) {

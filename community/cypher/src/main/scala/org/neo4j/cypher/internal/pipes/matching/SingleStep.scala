@@ -23,6 +23,7 @@ import org.neo4j.graphdb.{Node, Relationship, Direction}
 import org.neo4j.cypher.internal.commands.{And, Predicate}
 import collection.JavaConverters._
 import org.neo4j.cypher.internal.ExecutionContext
+import org.neo4j.cypher.internal.pipes.QueryState
 
 case class SingleStep(id: Int,
                       typ: Seq[String],
@@ -35,15 +36,15 @@ case class SingleStep(id: Int,
     copy(next = next, direction = direction, nodePredicate = nodePredicate)
 
 
-  private def filter(r: Relationship, n: Node, parameters: ExecutionContext): Boolean = {
-    val m = new MiniMap(r, n, parameters.state)
-    relPredicate.isMatch(m) && nodePredicate.isMatch(m)
+  private def filter(r: Relationship, n: Node, parameters: ExecutionContext, state:QueryState): Boolean = {
+    val m = new MiniMap(r, n)
+    relPredicate.isMatch(m)(state) && nodePredicate.isMatch(m)(state)
   }
 
-  def expand(node: Node, parameters: ExecutionContext): (Iterable[Relationship], Option[ExpanderStep]) = {
-    val intermediate = parameters.state.query.getRelationshipsFor(node, direction, typ)
+  def expand(node: Node, parameters: ExecutionContext, state:QueryState): (Iterable[Relationship], Option[ExpanderStep]) = {
+    val intermediate = state.query.getRelationshipsFor(node, direction, typ)
 
-    val rels = new FilteringIterable(intermediate, node, And(relPredicate, nodePredicate), parameters)
+    val rels = new FilteringIterable(intermediate, node, And(relPredicate, nodePredicate), parameters, state)
     (rels, next)
   }
 
