@@ -28,7 +28,7 @@ define(
        
         arbor: [
             {
-                implementation: 'lib/amd/arbor-works',
+                implementation: 'lib/amd/arb-or',
 
                 isAvailable: ->
                     not ($('html').hasClass('ie7') || $('html').hasClass('ie8'))
