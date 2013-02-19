@@ -37,23 +37,23 @@ import org.neo4j.kernel.impl.core.PropertyIndex;
 
 public class IndexCreatorImpl implements IndexCreator
 {
-    private final StatementContext context;
     private final Collection<String> propertyKeys;
     private final Label label;
     private final KeyHolder<PropertyIndex> propertyKeyManager;
+    private final ThreadToStatementContextBridge ctxProvider;
 
-    IndexCreatorImpl( StatementContext context, KeyHolder<PropertyIndex> propertyKeyManager, Label label )
+    IndexCreatorImpl( ThreadToStatementContextBridge ctxProvider, KeyHolder<PropertyIndex> propertyKeyManager, Label label )
     {
-        this.context = context;
+        this.ctxProvider = ctxProvider;
         this.propertyKeyManager = propertyKeyManager;
         this.label = label;
         this.propertyKeys = new ArrayList<String>();
     }
     
-    private IndexCreatorImpl( StatementContext context, KeyHolder<PropertyIndex> propertyKeyManager,
-            Label label, Collection<String> propertyKeys )
+    private IndexCreatorImpl( ThreadToStatementContextBridge ctxProvider,
+            KeyHolder<PropertyIndex> propertyKeyManager, Label label, Collection<String> propertyKeys )
     {
-        this.context = context;
+        this.ctxProvider = ctxProvider;
         this.propertyKeyManager = propertyKeyManager;
         this.label = label;
         this.propertyKeys = propertyKeys;
@@ -64,7 +64,7 @@ public class IndexCreatorImpl implements IndexCreator
     {
         if ( !propertyKeys.isEmpty() )
             throw new UnsupportedOperationException( "Compound indexes are not yet supported, only one property per index is allowed." );
-        return new IndexCreatorImpl( context, propertyKeyManager, label,
+        return new IndexCreatorImpl( ctxProvider, propertyKeyManager, label,
                 addToCollection( asList( propertyKey ), new ArrayList<String>( propertyKeys ) ) );
     }
 
@@ -74,12 +74,13 @@ public class IndexCreatorImpl implements IndexCreator
         if ( propertyKeys.isEmpty() )
             throw new ConstraintViolationException( "An index needs at least one property key to index" );
         
+        StatementContext context = ctxProvider.getCtxForWriting();
         try
         {
             String singlePropertyKey = single( propertyKeys );
             context.addIndexRule( context.getOrCreateLabelId( label.name() ),
                     propertyKeyManager.getOrCreateId( singlePropertyKey ) );
-            return new IndexDefinitionImpl( label, singlePropertyKey );
+            return new IndexDefinitionImpl( ctxProvider, label, singlePropertyKey );
         }
         catch ( ConstraintViolationKernelException e )
         {

@@ -1157,6 +1157,20 @@ public class DatabaseActionsTest
     }
     
     @Test
+    public void shouldDropSchemaIndex() throws Exception
+    {
+        // GIVEN
+        String labelName = "user", propertyKey = "login";
+        IndexDefinition index = graphdbHelper.createSchemaIndex( labelName, propertyKey );
+
+        // WHEN
+        actions.dropSchemaIndex( labelName, propertyKey );
+
+        // THEN
+        assertFalse( "Index should have been dropped", asSet( graphdbHelper.getSchemaIndexes( labelName ) ).contains( index ) );
+    }
+    
+    @Test
     public void shouldGetSchemaIndexes() throws Exception
     {
         // GIVEN

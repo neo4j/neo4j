@@ -39,4 +39,10 @@ public interface IndexDefinition
      * @return the property keys this index was created on.
      */
     Iterable<String> getPropertyKeys();
+    
+    /**
+     * Drops this index. {@link Schema#getIndexes(Label)} will no longer include this index
+     * and if this index is currently and initially getting up to speed, such job will be cancelled.
+     */
+    void drop();
 }

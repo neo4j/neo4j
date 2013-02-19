@@ -432,13 +432,14 @@ public class GraphDbHelper
         return database.getGraph().schema().getIndexes( label( labelName ) );
     }
 
-    public void createSchemaIndex( String labelName, String propertyKey )
+    public IndexDefinition createSchemaIndex( String labelName, String propertyKey )
     {
         Transaction tx = database.getGraph().beginTx();
         try
         {
-            database.getGraph().schema().indexCreator( label( labelName ) ).on( propertyKey ).create();
+            IndexDefinition index = database.getGraph().schema().indexCreator( label( labelName ) ).on( propertyKey ).create();
             tx.success();
+            return index;
         }
         finally
         {

@@ -22,7 +22,9 @@ package org.neo4j.graphdb;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsNot.not;
 import static org.hamcrest.core.IsNull.nullValue;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.single;
@@ -52,21 +54,29 @@ public class SchemaAcceptanceTest
         GraphDatabaseService beansAPI = dbRule.getGraphDatabaseService();
         Schema schema = beansAPI.schema();
         String property = "my_property_key";
+        Labels label = Labels.MY_LABEL;
 
         // When
+        IndexDefinition index = createIndexRule( beansAPI, label, property );
+
+        // Then
+        assertEquals( asSet( property ), asSet( singlePropertyKey( schema.getIndexes( label ) ) ) );
+        assertTrue( asSet( schema.getIndexes( label ) ).contains( index ) );
+    }
+
+    private IndexDefinition createIndexRule( GraphDatabaseService beansAPI, Label label, String property )
+    {
         Transaction tx = beansAPI.beginTx();
         try
         {
-            schema.indexCreator( Labels.MY_LABEL ).on( property ).create();
+            IndexDefinition result = beansAPI.schema().indexCreator( label ).on( property ).create();
             tx.success();
+            return result;
         }
         finally
         {
             tx.finish();
         }
-
-        // Then
-        assertEquals( asSet( property ), asSet( singlePropertyKey( schema.getIndexes( Labels.MY_LABEL ) ) ) );
     }
 
     private Iterable<String> singlePropertyKey( Iterable<IndexDefinition> indexes )
@@ -158,5 +168,30 @@ public class SchemaAcceptanceTest
         {
             tx.finish();
         }
+    }
+    
+    @Test
+    public void droppingExistingIndexRuleShouldSucceed() throws Exception
+    {
+        // GIVEN
+        GraphDatabaseService beansAPI = dbRule.getGraphDatabaseService();
+        String property = "name";
+        Labels label = Labels.MY_LABEL;
+        IndexDefinition index = createIndexRule( beansAPI, label, property );
+
+        // WHEN
+        Transaction tx = beansAPI.beginTx();
+        try
+        {
+            index.drop();
+            tx.success();
+        }
+        finally
+        {
+            tx.finish();
+        }
+
+        // THEN
+        assertFalse( "Index should have been deleted", asSet( beansAPI.schema().getIndexes( label ) ).contains( index ) );
     }
 }
