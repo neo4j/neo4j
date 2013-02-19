@@ -73,15 +73,18 @@ public class UpgradableDatabase
         fileNamesToExpectedVersions = Collections.unmodifiableMap( before );
     }
 
-    public void checkUpgradeable( File neoStoreFile )
+    public boolean storeFilesUpgradeable( File neoStoreFile )
     {
-        if (!storeFilesUpgradeable( neoStoreFile ))
+        try {
+            checkUpgradeable( neoStoreFile );
+            return true;
+        } catch(StoreUpgrader.UnableToUpgradeException e)
         {
-            throw new StoreUpgrader.UnableToUpgradeException( "Not all store files match the version required for successful upgrade" );
+            return false;
         }
     }
 
-    public boolean storeFilesUpgradeable( File neoStoreFile )
+    public void checkUpgradeable( File neoStoreFile )
     {
         File storeDirectory = neoStoreFile.getParentFile();
         for ( String fileName : fileNamesToExpectedVersions.keySet() )
@@ -93,18 +96,24 @@ public class UpgradableDatabase
             {
                 File storeFile = new File( storeDirectory, fileName );
                 if (!storeFile.exists()) {
-                    return false;
+                    throw new StoreUpgrader.UnableToUpgradeException( String.format( "Missing required store file " +
+                            "'%s'.", storeFile.getName() ) );
                 }
                 fileChannel = new RandomAccessFile( storeFile, "r" ).getChannel();
                 if ( fileChannel.size() < expectedVersionBytes.length ) {
-                    return false;
+                    throw new StoreUpgrader.UnableToUpgradeException( String.format( "'%s' does not contain a store " +
+                            "version, please ensure that the original database was shut down in a clean state.",
+                            storeFile.getName() ) );
                 }
                 fileChannel.position( fileChannel.size() - expectedVersionBytes.length );
                 byte[] foundVersionBytes = new byte[expectedVersionBytes.length];
                 fileChannel.read( ByteBuffer.wrap( foundVersionBytes ) );
                 if ( !expectedVersion.equals( UTF8.decode( foundVersionBytes ) ) )
                 {
-                    return false;
+                    throw new StoreUpgrader.UnableToUpgradeException( String.format(
+                            "'%s' has a store version number that we cannot upgrade from. " +
+                            "Expected '%s' but file is version '%s'.",
+                            storeFile.getName(), expectedVersion, UTF8.decode( foundVersionBytes ) ) );
                 }
             } catch ( IOException e )
             {
@@ -123,6 +132,5 @@ public class UpgradableDatabase
                 }
             }
         }
-        return true;
     }
 }
