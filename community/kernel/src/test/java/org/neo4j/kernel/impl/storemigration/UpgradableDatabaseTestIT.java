@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.*;
 import static org.junit.Assume.assumeTrue;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.changeVersionNumber;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.truncateFile;
@@ -114,4 +114,30 @@ public class UpgradableDatabaseTestIT
     }
 
     private final FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
+
+    @Test
+    public void shouldCommunicateWhatCausesInabilityToUpgrade() throws IOException
+    {
+        URL legacyStoreResource = getClass().getResource( "legacystore/exampledb/neostore" );
+        File resourceDirectory = new File( legacyStoreResource.getFile() ).getParentFile();
+        File workingDirectory = new File( "target/" + UpgradableDatabaseTestIT.class.getSimpleName() );
+
+        FileUtils.deleteRecursively( workingDirectory );
+        assertTrue( workingDirectory.mkdirs() );
+
+        copyRecursively( resourceDirectory, workingDirectory );
+
+        changeVersionNumber( fileSystem, new File( workingDirectory, "neostore.nodestore.db" ), "v0.9.5" );
+
+        try
+        {
+            new UpgradableDatabase().checkUpgradeable( new File( workingDirectory, "neostore" ) );
+            fail( "should not have been able to upgrade" );
+        }
+        catch (StoreUpgrader.UnableToUpgradeException e)
+        {
+            assertThat( e.getMessage(), is("'neostore.nodestore.db' has a store version number that we cannot upgrade " +
+                    "from. Expected 'NodeStore v0.9.9' but file is version 'NodeStore v0.9.5'.") );
+        }
+    }
 }
