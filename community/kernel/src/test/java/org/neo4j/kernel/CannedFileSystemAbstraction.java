@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.graphdb.mockfs;
+package org.neo4j.kernel;
 
 import java.io.File;
 import java.io.IOException;
@@ -26,90 +26,92 @@ import java.nio.channels.FileChannel;
 import org.neo4j.kernel.impl.nioneo.store.FileLock;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 
-public class LimitedFilesystemAbstraction implements FileSystemAbstraction
+public class CannedFileSystemAbstraction implements FileSystemAbstraction
 {
-    private FileSystemAbstraction inner;
-    private boolean outOfSpace;
-    private Integer bytesAtATime = null;
+    private final boolean fileExists;
+    private final IOException cannotCreateStoreDir;
+    private final IOException cannotOpenLockFile;
+    private final boolean lockSuccess;
 
-    public LimitedFilesystemAbstraction(FileSystemAbstraction wrapped)
+    public CannedFileSystemAbstraction( boolean fileExists,
+                                        IOException cannotCreateStoreDir,
+                                        IOException cannotOpenLockFile,
+                                        boolean lockSuccess )
     {
-        this.inner = wrapped;
+        this.fileExists = fileExists;
+        this.cannotCreateStoreDir = cannotCreateStoreDir;
+        this.cannotOpenLockFile = cannotOpenLockFile;
+        this.lockSuccess = lockSuccess;
     }
 
     @Override
     public FileChannel open( String fileName, String mode ) throws IOException
     {
-        return new LimitedFileChannel( inner.open( fileName, mode ), this );
+        if ( cannotOpenLockFile != null )
+        {
+            throw cannotOpenLockFile;
+        }
+
+        return null;
     }
 
     @Override
     public FileLock tryLock( String fileName, FileChannel channel ) throws IOException
     {
-        return inner.tryLock( fileName, channel );
+        return lockSuccess ? SYMBOLIC_FILE_LOCK : null;
     }
 
     @Override
     public FileChannel create( String fileName ) throws IOException
     {
-        ensureHasSpace();
-        return new LimitedFileChannel( inner.create( fileName ), this );
+        throw new UnsupportedOperationException( "TODO" );
     }
 
     @Override
     public boolean fileExists( String fileName )
     {
-        return inner.fileExists( fileName );
+        return fileExists;
     }
 
     @Override
     public long getFileSize( String fileName )
     {
-        return inner.getFileSize( fileName );
+        throw new UnsupportedOperationException( "TODO" );
     }
 
     @Override
     public boolean deleteFile( String fileName )
     {
-        return inner.deleteFile( fileName );
+        throw new UnsupportedOperationException( "TODO" );
     }
 
     @Override
     public boolean renameFile( String from, String to ) throws IOException
     {
-        ensureHasSpace();
-        return inner.renameFile( from, to );
+        throw new UnsupportedOperationException( "TODO" );
     }
 
     @Override
     public void copyFile( String from, String to ) throws IOException
     {
-        ensureHasSpace();
-        inner.copyFile( from, to );
+        throw new UnsupportedOperationException( "TODO" );
     }
 
     @Override
     public void autoCreatePath( File path ) throws IOException
     {
-        ensureHasSpace();
-        inner.autoCreatePath( path );
-    }
-
-    public void runOutOfDiskSpace()
-    {
-        outOfSpace = true;
-    }
-
-    public void ensureHasSpace() throws IOException
-    {
-        if( outOfSpace )
+        if ( cannotCreateStoreDir != null )
         {
-            throw new IOException( "No space left on device" );
+            throw cannotCreateStoreDir;
         }
     }
 
-    public void limitWritesTo( int bytesAtATime )
+    private static final FileLock SYMBOLIC_FILE_LOCK = new FileLock()
     {
-        this.bytesAtATime = bytesAtATime;
-    }
+        @Override
+        public void release() throws IOException
+        {
+
+        }
+    };
 }

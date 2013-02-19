@@ -24,11 +24,13 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.util.ArrayList;
+import java.util.UUID;
 
 import org.junit.Test;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.cache.SoftCacheProvider;
+import org.neo4j.test.TestGraphDatabaseFactory;
 
 public class SetCacheProvidersTest
 {
@@ -36,11 +38,11 @@ public class SetCacheProvidersTest
     public void testSetNoCache()
     {
         ArrayList<CacheProvider> cacheList = new ArrayList<CacheProvider>();
-        GraphDatabaseFactory gdbf = new GraphDatabaseFactory();
+        TestGraphDatabaseFactory gdbf = new TestGraphDatabaseFactory();
         gdbf.setCacheProviders( cacheList );
         try
         {
-            gdbf.newEmbeddedDatabase( "target/db" );
+            gdbf.newEmbeddedDatabase( "target/db" + UUID.randomUUID() );
         }
         catch ( IllegalArgumentException iae )
         {
@@ -52,10 +54,10 @@ public class SetCacheProvidersTest
     public void testSetSoftRefCache()
     {
         ArrayList<CacheProvider> cacheList = new ArrayList<CacheProvider>();
-        GraphDatabaseFactory gdbf = new GraphDatabaseFactory();
+        TestGraphDatabaseFactory gdbf = new TestGraphDatabaseFactory();
         cacheList.add( new SoftCacheProvider() );
         gdbf.setCacheProviders( cacheList );
-        EmbeddedGraphDatabase db = (EmbeddedGraphDatabase) gdbf.newEmbeddedDatabase( "target/db" );
+        EmbeddedGraphDatabase db = (EmbeddedGraphDatabase) gdbf.newEmbeddedDatabase( "target/db" + UUID.randomUUID() );
         assertEquals( SoftCacheProvider.NAME,
                 db.getNodeManager().getCacheType().getName() );
     }

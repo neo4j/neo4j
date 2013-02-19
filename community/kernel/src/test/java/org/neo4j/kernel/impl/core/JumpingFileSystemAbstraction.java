@@ -34,11 +34,12 @@ import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NodeStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipStore;
-import org.neo4j.kernel.impl.util.FileUtils;
+import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
 public class JumpingFileSystemAbstraction implements FileSystemAbstraction
 {
     private final int sizePerJump;
+    private final FileSystemAbstraction actualFileSystem = new EphemeralFileSystemAbstraction();
 
     public JumpingFileSystemAbstraction( int sizePerJump )
     {
@@ -48,16 +49,17 @@ public class JumpingFileSystemAbstraction implements FileSystemAbstraction
     @Override
     public FileChannel open( String fileName, String mode ) throws IOException
     {
-        if ( fileName.endsWith( "neostore.nodestore.db" ) ||
-                fileName.endsWith( "neostore.relationshipstore.db" ) ||
-                fileName.endsWith( "neostore.propertystore.db" ) ||
-                fileName.endsWith( "neostore.propertystore.db.strings" ) ||
-                fileName.endsWith( "neostore.propertystore.db.arrays" ) )
-        {        
-            return new JumpingFileChannel( new RandomAccessFile( fileName, mode ).getChannel(),
-                    recordSizeFor( fileName ) );
+        FileChannel channel = actualFileSystem.open( fileName, mode );
+        if (
+                fileName.endsWith( "neostore.nodestore.db" ) ||
+                        fileName.endsWith( "neostore.relationshipstore.db" ) ||
+                        fileName.endsWith( "neostore.propertystore.db" ) ||
+                        fileName.endsWith( "neostore.propertystore.db.strings" ) ||
+                        fileName.endsWith( "neostore.propertystore.db.arrays" ) )
+        {
+            return new JumpingFileChannel( channel, recordSizeFor( fileName ) );
         }
-        return new RandomAccessFile( fileName, mode ).getChannel();
+        return channel;
     }
     
     @Override
@@ -69,37 +71,43 @@ public class JumpingFileSystemAbstraction implements FileSystemAbstraction
     @Override
     public boolean fileExists( String fileName )
     {
-        return new File( fileName ).exists();
+        return actualFileSystem.fileExists( fileName );
     }
     
     @Override
     public long getFileSize( String fileName )
     {
-        return new File( fileName ).length();
+        return actualFileSystem.getFileSize( fileName );
     }
     
     @Override
     public boolean deleteFile( String fileName )
     {
-        return FileUtils.deleteFile( new File( fileName ) );
+        return actualFileSystem.deleteFile( fileName );
     }
     
     @Override
     public boolean renameFile( String from, String to ) throws IOException
     {
-        return FileUtils.renameFile( new File( from ), new File( to ) );
+        return actualFileSystem.renameFile( from, to );
     }
     
     @Override
     public void copyFile( String from, String to ) throws IOException
     {
-        FileUtils.copyRecursively( new File( from ), new File( to ) );
+        actualFileSystem.copyFile( from, to );
     }
-    
+
+    @Override
+    public void autoCreatePath( File path ) throws IOException
+    {
+        actualFileSystem.autoCreatePath( path );
+    }
+
     @Override
     public FileLock tryLock( String fileName, FileChannel channel ) throws IOException
     {
-        return FileLock.getOsSpecificFileLock( fileName, channel );
+        return actualFileSystem.tryLock( fileName, channel );
     }
     
     private int recordSizeFor( String fileName )

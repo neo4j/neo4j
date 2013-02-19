@@ -22,6 +22,7 @@ package org.neo4j.kernel;
 
 import static org.neo4j.helpers.Exceptions.launderedException;
 
+import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -270,6 +271,11 @@ public abstract class InternalAbstractGraphDatabase
         this.msgLog = logging.getLogger( Loggers.NEO4J );
         
         config.setLogger(msgLog);
+
+        StoreLocker storeLocker = new StoreLocker( config, fileSystem, msgLog );
+        StoreLockerLifecycleAdapter storeLockerLifecycleAdapter = new StoreLockerLifecycleAdapter( storeLocker, new File( storeDir ) );
+        storeLockerLifecycleAdapter.preInit();
+        life.add( storeLockerLifecycleAdapter );
 
         new JvmChecker(msgLog, new JvmMetadataRepository() ).checkJvmCompatibilityAndIssueWarning();
 
