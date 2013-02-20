@@ -25,7 +25,7 @@ import collection.JavaConverters._
 
 class TraversalMatchPipe(source: Pipe, matcher: TraversalMatcher, trail: Trail) extends PipeWithSource(source) {
 
-  def createResults(state: QueryState) = {
+  protected def internalCreateResults(state: QueryState) = {
     source.createResults(state).flatMap {
 
       case ctx =>
@@ -42,7 +42,7 @@ class TraversalMatchPipe(source: Pipe, matcher: TraversalMatcher, trail: Trail) 
 
   def symbols = trail.symbols(source.symbols)
 
-  def executionPlanDescription = source.executionPlanDescription.andThen("TraversalMatcher", "trail" -> trail)
+  def executionPlanDescription = source.executionPlanDescription.andThen(this, "TraversalMatcher", "trail" -> trail)
 
   def throwIfSymbolsMissing(symbols: SymbolTable) {
   }

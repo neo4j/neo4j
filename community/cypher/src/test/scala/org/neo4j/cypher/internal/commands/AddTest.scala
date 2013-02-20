@@ -24,38 +24,40 @@ import org.junit.Test
 import org.scalatest.Assertions
 import org.neo4j.cypher.CypherTypeException
 import org.neo4j.cypher.internal.ExecutionContext
+import org.neo4j.cypher.internal.pipes.QueryState
 
 class AddTest extends Assertions {
   
   val m = ExecutionContext.empty
+  val s = QueryState.empty
   
   @Test def numbers() {
     val expr = Add(Literal(1), Literal(1))
-    assert(expr(m) === 2)
+    assert(expr(m)(s) === 2)
   }
 
   @Test def with_null() {
-    assert(Add(Literal(null), Literal(1))(m) === null)
-    assert(Add(Literal(2), Literal(null))(m) === null)
+    assert(Add(Literal(null), Literal(1))(m)(s) === null)
+    assert(Add(Literal(2), Literal(null))(m)(s) === null)
   }
 
   @Test def strings() {
     val expr = Add(Literal("hello"), Literal("world"))
-    assert(expr(m) === "helloworld")
+    assert(expr(m)(s) === "helloworld")
   }
 
   @Test def stringPlusNumber() {
     val expr = Add(Literal("hello"), Literal(1))
-    assert(expr(m) === "hello1")
+    assert(expr(m)(s) === "hello1")
   }
 
   @Test def numberPlusString() {
     val expr = Add(Literal(1), Literal("world"))
-    assert(expr(m) === "1world")
+    assert(expr(m)(s) === "1world")
   }
 
   @Test def numberPlusBool() {
     val expr = Add(Literal("1"), Literal(true))
-    intercept[CypherTypeException](expr(m))
+    intercept[CypherTypeException](expr(m)(s))
   }
 }

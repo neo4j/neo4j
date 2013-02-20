@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.pipes.aggregation
 import org.neo4j.cypher.internal.commands.expressions.Expression
 import org.neo4j.cypher.internal.helpers.TypeSafeMathSupport
 import org.neo4j.cypher.internal.ExecutionContext
+import org.neo4j.cypher.internal.pipes.QueryState
 
 class AvgFunction(val value: Expression)
   extends AggregationFunction
@@ -39,7 +40,7 @@ class AvgFunction(val value: Expression)
     else
       null
 
-  def apply(data: ExecutionContext) {
+  def apply(data: ExecutionContext)(implicit state: QueryState) {
     actOnNumber(value(data), (number) => {
       count += 1
       sofar = plus(sofar, number)

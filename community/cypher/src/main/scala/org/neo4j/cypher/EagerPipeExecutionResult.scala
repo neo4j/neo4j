@@ -27,8 +27,8 @@ class EagerPipeExecutionResult(result: Iterator[Map[String, Any]],
                                columns: List[String],
                                state: QueryState,
                                db: GraphDatabaseService,
-                               executionPlanDescription: String)
-  extends PipeExecutionResult(result, columns, state, executionPlanDescription) {
+                               planDescriptor: () => String)
+  extends PipeExecutionResult(result, columns, state, planDescriptor) {
 
   val (eagerResult,timeTaken) = super.createTimedResults
   lazy val inner = eagerResult.iterator

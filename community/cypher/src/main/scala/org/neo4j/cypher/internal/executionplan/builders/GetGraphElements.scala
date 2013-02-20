@@ -24,21 +24,21 @@ import org.neo4j.cypher.ParameterWrongTypeException
 import collection.JavaConverters._
 
 object GetGraphElements {
-  def getElements[T : Manifest](data: Any, name: String, getElement: Long => T): Seq[T] = {
+  def getElements[T: Manifest](data: Any, name: String, getElement: Long => T): Iterable[T] = {
     def castElement(x: Any): T = x match {
-      case i: Int => getElement(i)
-      case i: Long => getElement(i)
+      case i: Int    => getElement(i)
+      case i: Long   => getElement(i)
       case i: String => getElement(i.toLong)
       case element: T => element
     }
 
     data match {
-      case result: Int => Seq(getElement(result))
-      case result: Long => Seq(getElement(result))
-      case result: java.lang.Iterable[_] => result.asScala.map(castElement).toSeq
-      case result: Seq[_] => result.map(castElement).toSeq
-      case element: PropertyContainer => Seq(element.asInstanceOf[T])
-      case x => throw new ParameterWrongTypeException("Expected a propertycontainer or number here, but got: " + x.toString)
+      case result: Int                   => Iterable(getElement(result))
+      case result: Long                  => Iterable(getElement(result))
+      case result: java.lang.Iterable[_] => result.asScala.view.map(castElement)
+      case result: Seq[_]                => result.view.map(castElement)
+      case element: PropertyContainer    => Iterable(element.asInstanceOf[T])
+      case x                             => throw new ParameterWrongTypeException("Expected a propertycontainer or number here, but got: " + x.toString)
     }
   }
 }

@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.mutation
 import org.scalatest.Assertions
 import org.neo4j.cypher.ExecutionEngineHelper
 import org.junit.Test
-import org.neo4j.cypher.internal.pipes.{MutableMaps, QueryState}
+import org.neo4j.cypher.internal.pipes.{NullDecorator, MutableMaps, QueryState}
 import org.neo4j.cypher.internal.commands.expressions.Literal
 import org.neo4j.cypher.internal.spi.gdsimpl.GDSBackedQueryContext
 import org.neo4j.cypher.internal.ExecutionContext
@@ -33,7 +33,7 @@ class CreateNodeActionTest extends ExecutionEngineHelper with Assertions {
     val action = CreateNode("id", Map("*" -> Literal(Map("name" -> "Andres", "age" -> 37))))
 
     val tx = graph.beginTx()
-    action.exec(ExecutionContext.empty, new QueryState(graph, new GDSBackedQueryContext(graph), Map.empty))
+    action.exec(ExecutionContext.empty, new QueryState(graph, new GDSBackedQueryContext(graph), Map.empty, NullDecorator))
     tx.success()
     tx.finish()
 

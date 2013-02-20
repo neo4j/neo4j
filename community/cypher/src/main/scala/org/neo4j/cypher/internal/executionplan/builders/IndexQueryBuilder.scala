@@ -20,14 +20,10 @@
 package org.neo4j.cypher.internal.executionplan.builders
 
 import org.neo4j.cypher.internal.commands._
-import org.neo4j.cypher.internal.pipes.{RelationshipStartPipe, NodeStartPipe, Pipe}
+import org.neo4j.cypher.internal.pipes.{RelationshipStartPipe, NodeStartPipe, Pipe, EntityProducer}
 import org.neo4j.graphdb.{Relationship, Node, GraphDatabaseService}
-import collection.JavaConverters._
-import java.lang.{Iterable => JIterable}
 import org.neo4j.cypher.MissingIndexException
 import org.neo4j.cypher.internal.executionplan.{ExecutionPlanInProgress, PlanBuilder}
-import GetGraphElements.getElements
-import org.neo4j.cypher.internal.ExecutionContext
 
 class IndexQueryBuilder(graph: GraphDatabaseService) extends PlanBuilder {
   def apply(plan: ExecutionPlanInProgress) = {
@@ -51,7 +47,6 @@ class IndexQueryBuilder(graph: GraphDatabaseService) extends PlanBuilder {
     case _                                           => false
   }
 
-
   private def createStartPipe(lastPipe: Pipe, item: StartItem): Pipe = item match {
     case NodeByIndex(varName, idxName, key, value) =>
       new NodeStartPipe(lastPipe, varName, IndexQueryBuilder.getNodeGetter(item, graph))
@@ -66,54 +61,53 @@ class IndexQueryBuilder(graph: GraphDatabaseService) extends PlanBuilder {
       new RelationshipStartPipe(lastPipe, varName, IndexQueryBuilder.getRelationshipGetter(item, graph))
   }
 
-
   def priority: Int = PlanBuilder.IndexQuery
 }
 
 object IndexQueryBuilder {
-  def getNodeGetter(startItem: StartItem, graph: GraphDatabaseService): ExecutionContext => Iterable[Node] =
+  def getNodeGetter(startItem: StartItem, graph: GraphDatabaseService): EntityProducer[Node] =
     startItem match {
 
       case NodeByIndex(varName, idxName, key, value) =>
         checkNodeIndex(idxName, graph)
-        m => {
-          val keyVal = key(m).toString
-          val valueVal = value(m)
-          val indexHits: JIterable[Node] = graph.index.forNodes(idxName).get(keyVal, valueVal)
-          val r = indexHits.asScala.toList
-          r
+        (m, state) => {
+          val keyVal = key(m)(state).toString
+          val valueVal = value(m)(state)
+          // TODO memory waste
+          state.query.nodeOps.indexGet(idxName,keyVal, valueVal).toList
         }
 
       case NodeByIndexQuery(varName, idxName, query) =>
         checkNodeIndex(idxName, graph)
-        m => {
-          val queryText = query(m)
-          val indexHits: JIterable[Node] = graph.index.forNodes(idxName).query(queryText)
-          val r = indexHits.asScala.toList
-          r
+        (m, state) => {
+          val queryText = query(m)(state)
+          // TODO memory waste
+          state.query.nodeOps.indexQuery(idxName, queryText).toList
         }
 
-      case NodeById(varName, ids) => m => GetGraphElements.getElements[Node](ids(m), varName, graph.getNodeById)
+      case NodeById(varName, ids) =>
+        (m, state) =>
+          GetGraphElements.getElements[Node](ids(m)(state), varName, state.query.nodeOps.getById)
     }
 
-  def getRelationshipGetter(startItem: StartItem, graph: GraphDatabaseService): ExecutionContext => Iterable[Relationship] =
+  def getRelationshipGetter(startItem: StartItem, graph: GraphDatabaseService): EntityProducer[Relationship] =
     startItem match {
 
       case RelationshipByIndex(varName, idxName, key, value) =>
         checkRelIndex(idxName, graph)
-        m => {
-          val keyVal = key(m).toString
-          val valueVal = value(m)
-          val indexHits: JIterable[Relationship] = graph.index.forRelationships(idxName).get(keyVal, valueVal)
-          indexHits.asScala
+        (m, state) => {
+          val keyVal = key(m)(state).toString
+          val valueVal = value(m)(state)
+          // TODO memory waste
+          state.query.relationshipOps.indexGet(idxName, keyVal, valueVal).toList
         }
 
       case RelationshipByIndexQuery(varName, idxName, query) =>
         checkRelIndex(idxName, graph)
-        m => {
-          val queryText = query(m)
-          val indexHits: JIterable[Relationship] = graph.index.forRelationships(idxName).query(queryText)
-          indexHits.asScala
+        (m, state) => {
+          val queryText = query(m)(state)
+          // TODO memory waste
+          state.query.relationshipOps.indexQuery(idxName, queryText).toList
         }
     }
 
@@ -124,5 +118,4 @@ object IndexQueryBuilder {
   private def checkRelIndex(idxName: String, graph: GraphDatabaseService) {
     if (!graph.index.existsForRelationships(idxName)) throw new MissingIndexException(idxName)
   }
-
 }

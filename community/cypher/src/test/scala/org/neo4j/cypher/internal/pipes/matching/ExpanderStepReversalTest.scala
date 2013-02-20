@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.commands.{True, Predicate}
 import org.neo4j.cypher.internal.commands.expressions.Expression
 import org.neo4j.cypher.internal.symbols.SymbolTable
 import org.neo4j.cypher.internal.ExecutionContext
+import org.neo4j.cypher.internal.pipes.QueryState
 
 class ExpanderStepReversalTest extends Assertions {
   val A = "A"
@@ -116,7 +117,7 @@ class ExpanderStepReversalTest extends Assertions {
 }
 
 case class Pred(identifier: String) extends Predicate {
-  def isMatch(m: ExecutionContext) = false
+  def isMatch(m: ExecutionContext)(implicit state: QueryState) = false
 
   def atoms = Seq(this)
 

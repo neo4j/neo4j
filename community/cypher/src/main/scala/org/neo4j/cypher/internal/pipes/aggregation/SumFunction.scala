@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.pipes.aggregation
 import org.neo4j.cypher.internal.commands.expressions.Expression
 import org.neo4j.cypher.internal.helpers.TypeSafeMathSupport
 import org.neo4j.cypher.internal.ExecutionContext
+import org.neo4j.cypher.internal.pipes.QueryState
 
 class SumFunction(val value: Expression)
   extends AggregationFunction
@@ -32,7 +33,7 @@ class SumFunction(val value: Expression)
 
   var result: Any = 0
 
-  def apply(data: ExecutionContext) {
+  def apply(data: ExecutionContext)(implicit state: QueryState) {
     actOnNumber(value(data), (number) => {
       result = plus(result, number)
     })

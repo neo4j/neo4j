@@ -33,7 +33,7 @@ trait BuilderTest extends Assertions {
     new FakePipe(Seq(MutableMaps.empty), (nodeIdentifiers ++ relIdentifiers): _*)
   }
 
-  def plan(q: PartiallySolvedQuery): ExecutionPlanInProgress = plan(new NullPipe, q)
+  def plan(q: PartiallySolvedQuery): ExecutionPlanInProgress = plan(NullPipe, q)
 
   def plan(p: Pipe, q: PartiallySolvedQuery): ExecutionPlanInProgress = ExecutionPlanInProgress(q, p)
 }

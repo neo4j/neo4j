@@ -33,13 +33,9 @@ object ExecutionContext {
 }
 
 case class ExecutionContext(m: MutableMap[String, Any] = MutableMaps.empty,
-                            mutationCommands: Queue[UpdateAction] = Queue.empty,
-                            state: QueryState = QueryState())
+                            mutationCommands: Queue[UpdateAction] = Queue.empty)
   extends MutableMap[String, Any] {
   def get(key: String): Option[Any] = m.get(key)
-
-  def getParam(key: String): Any =
-    state.params.getOrElse(key, throw new ParameterNotFoundException("Expected a parameter named " + key))
 
   def iterator: Iterator[(String, Any)] = m.iterator
 

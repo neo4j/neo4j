@@ -27,17 +27,19 @@ class SlicePipe(source:Pipe, skip:Option[Expression], limit:Option[Expression]) 
 
   val symbols = source.symbols
 
-  def createResults(state: QueryState) : Iterator[ExecutionContext] = {
-    val sourceTraversable = source.createResults(state)
+  protected def internalCreateResults(state: QueryState) : Iterator[ExecutionContext] = {
+    implicit val s = state
+
+    val sourceTraversable: Iterator[ExecutionContext] = source.createResults(state)
 
     if(sourceTraversable.isEmpty)
       return Iterator()
 
     val first: ExecutionContext = sourceTraversable.next()
 
-    val sourceIter = new HeadAndTail[ExecutionContext](first, sourceTraversable)
+    val sourceIter: Iterator[ExecutionContext] = new HeadAndTail[ExecutionContext](first, sourceTraversable)
 
-    def asInt(v:Expression)=v(first).asInstanceOf[Int]
+    def asInt(v: Expression): Int = v(first)(state).asInstanceOf[Int]
 
     (skip, limit) match {
       case (Some(x), None) => sourceIter.drop(asInt(x))
@@ -58,7 +60,7 @@ class SlicePipe(source:Pipe, skip:Option[Expression], limit:Option[Expression]) 
       case (Some(s), Some(l)) => Seq("skip" -> s, "limit" -> l)
       case (None, None)=>throw new ThisShouldNotHappenError("Andres Taylor", "A slice pipe that doesn't slice should never exist.")
     }
-    source.executionPlanDescription.andThen("Slice", args: _*)
+    source.executionPlanDescription.andThen(this, "Slice", args: _*)
   }
 }
 

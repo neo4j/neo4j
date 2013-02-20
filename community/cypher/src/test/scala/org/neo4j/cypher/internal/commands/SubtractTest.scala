@@ -24,6 +24,7 @@ import org.junit.Test
 import org.scalatest.Assertions
 import org.neo4j.cypher.CypherTypeException
 import org.neo4j.cypher.internal.ExecutionContext
+import org.neo4j.cypher.internal.pipes.QueryState
 
 class SubtractTest extends Assertions {
 
@@ -31,26 +32,26 @@ class SubtractTest extends Assertions {
 
   @Test def numbers() {
     val expr = Subtract(Literal(2), Literal(1))
-    assert(expr(m) === 1)
+    assert(expr(m)(QueryState.empty) === 1)
   }
 
   @Test def strings() {
     val expr = Subtract(Literal("hello"), Literal("world"))
-    intercept[CypherTypeException](expr(m))
+    intercept[CypherTypeException](expr(m)(QueryState.empty))
   }
 
   @Test def stringPlusNumber() {
     val expr = Subtract(Literal("hello"), Literal(1))
-    intercept[CypherTypeException](expr(m))
+    intercept[CypherTypeException](expr(m)(QueryState.empty))
   }
 
   @Test def numberPlusString() {
     val expr = Subtract(Literal(1), Literal("world"))
-    intercept[CypherTypeException](expr(m))
+    intercept[CypherTypeException](expr(m)(QueryState.empty))
   }
 
   @Test def numberPlusBool() {
     val expr = Subtract(Literal("1"), Literal(true))
-    intercept[CypherTypeException](expr(m))
+    intercept[CypherTypeException](expr(m)(QueryState.empty))
   }
 }

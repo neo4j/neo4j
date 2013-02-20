@@ -20,12 +20,12 @@
 package org.neo4j.cypher.internal.commands.expressions
 
 import org.neo4j.cypher.CypherTypeException
-import scala.collection.JavaConverters._
 import org.neo4j.cypher.internal.helpers.{IsCollection, CollectionSupport}
 import org.neo4j.graphdb.{PropertyContainer, Relationship, Node}
 import org.neo4j.cypher.internal.symbols._
 import org.neo4j.cypher.internal.{ExecutionContext, StringExtras}
 import org.neo4j.cypher.internal.spi.QueryContext
+import org.neo4j.cypher.internal.pipes.QueryState
 
 abstract class StringFunction(arg: Expression) extends NullInNullOutExpression(arg) with StringHelper with CollectionSupport {
   def innerExpectedType = StringType()
@@ -47,8 +47,8 @@ trait StringHelper {
   protected def props(x: PropertyContainer, q: QueryContext): String = {
 
     val keyValStrings = x match {
-      case n: Node         => q.nodeOps().propertyKeys(n).asScala.map(key => key + ":" + text(q.nodeOps().getProperty(n, key), q))
-      case r: Relationship => q.relationshipOps().propertyKeys(r).asScala.map(key => key + ":" + text(q.relationshipOps().getProperty(r, key), q))
+      case n: Node         => q.nodeOps.propertyKeys(n).map(key => key + ":" + text(q.nodeOps.getProperty(n, key), q))
+      case r: Relationship => q.relationshipOps.propertyKeys(r).map(key => key + ":" + text(q.relationshipOps.getProperty(r, key), q))
     }
 
     keyValStrings.mkString("{", ",", "}")
@@ -66,44 +66,44 @@ trait StringHelper {
 }
 
 case class StrFunction(argument: Expression) extends StringFunction(argument) with StringHelper with StringExtras {
-  def compute(value: Any, m: ExecutionContext): Any = text(argument(m), m.state.query)
+  def compute(value: Any, m: ExecutionContext)(implicit state: QueryState): Any = text(argument(m), state.query)
 
   def rewrite(f: (Expression) => Expression) = f(StrFunction(argument.rewrite(f)))
 }
 
 case class LowerFunction(argument: Expression) extends StringFunction(argument) with StringHelper {
-  def compute(value: Any, m: ExecutionContext): Any = asString(argument(m)).toLowerCase
+  def compute(value: Any, m: ExecutionContext)(implicit state: QueryState): Any = asString(argument(m)).toLowerCase
 
   def rewrite(f: (Expression) => Expression) = f(LowerFunction(argument.rewrite(f)))
 }
 
 case class UpperFunction(argument: Expression) extends StringFunction(argument) with StringHelper {
-  def compute(value: Any, m: ExecutionContext): Any = asString(argument(m)).toUpperCase
+  def compute(value: Any, m: ExecutionContext)(implicit state: QueryState): Any = asString(argument(m)).toUpperCase
 
   def rewrite(f: (Expression) => Expression) = f(UpperFunction(argument.rewrite(f)))
 }
 
 case class LTrimFunction(argument: Expression) extends StringFunction(argument) with StringHelper {
-  def compute(value: Any, m: ExecutionContext): Any = asString(argument(m)).replaceAll("^\\s+", "")
+  def compute(value: Any, m: ExecutionContext)(implicit state: QueryState): Any = asString(argument(m)).replaceAll("^\\s+", "")
 
   def rewrite(f: (Expression) => Expression) = f(LTrimFunction(argument.rewrite(f)))
 }
 
 case class RTrimFunction(argument: Expression) extends StringFunction(argument) with StringHelper {
-  def compute(value: Any, m: ExecutionContext): Any = asString(argument(m)).replaceAll("\\s+$", "")
+  def compute(value: Any, m: ExecutionContext)(implicit state: QueryState): Any = asString(argument(m)).replaceAll("\\s+$", "")
 
   def rewrite(f: (Expression) => Expression) = f(RTrimFunction(argument.rewrite(f)))
 }
 
 case class TrimFunction(argument: Expression) extends StringFunction(argument) with StringHelper {
-  def compute(value: Any, m: ExecutionContext): Any = asString(argument(m)).trim
+  def compute(value: Any, m: ExecutionContext)(implicit state: QueryState): Any = asString(argument(m)).trim
 
   def rewrite(f: (Expression) => Expression) = f(TrimFunction(argument.rewrite(f)))
 }
 
 case class SubstringFunction(orig: Expression, start: Expression, length: Option[Expression])
   extends NullInNullOutExpression(orig) with StringHelper with NumericHelper {
-  def compute(value: Any, m: ExecutionContext): Any = {
+  def compute(value: Any, m: ExecutionContext)(implicit state: QueryState): Any = {
     val origVal = asString(orig(m))
 
     def noMoreThanMax(maxLength: Int, length: Int): Int =
@@ -144,7 +144,7 @@ case class SubstringFunction(orig: Expression, start: Expression, length: Option
 
 case class ReplaceFunction(orig: Expression, search: Expression, replaceWith: Expression)
   extends NullInNullOutExpression(orig) with StringHelper {
-  def compute(value: Any, m: ExecutionContext): Any = {
+  def compute(value: Any, m: ExecutionContext)(implicit state: QueryState): Any = {
     val origVal = asString(value)
     val searchVal = asString(search(m))
     val replaceWithVal = asString(replaceWith(m))
@@ -169,7 +169,7 @@ case class ReplaceFunction(orig: Expression, search: Expression, replaceWith: Ex
 
 case class LeftFunction(orig: Expression, length: Expression)
   extends NullInNullOutExpression(orig) with StringHelper with NumericHelper {
-  def compute(value: Any, m: ExecutionContext): Any = {
+  def compute(value: Any, m: ExecutionContext)(implicit state: QueryState): Any = {
     val origVal = asString(orig(m))
     val startVal = asInt(0)
     // if length goes off the end of the string, let's be nice and handle that.
@@ -190,7 +190,7 @@ case class LeftFunction(orig: Expression, length: Expression)
 
 case class RightFunction(orig: Expression, length: Expression)
   extends NullInNullOutExpression(orig) with StringHelper with NumericHelper {
-  def compute(value: Any, m: ExecutionContext): Any = {
+  def compute(value: Any, m: ExecutionContext)(implicit state: QueryState): Any = {
     val origVal = asString(orig(m))
     // if length goes off the end of the string, let's be nice and handle that.
     val lengthVal = if (origVal.length < asInt(length(m))) origVal.length

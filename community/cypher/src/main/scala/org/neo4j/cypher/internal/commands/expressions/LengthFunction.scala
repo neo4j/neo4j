@@ -23,12 +23,13 @@ import org.neo4j.graphdb.Path
 import org.neo4j.cypher.internal.symbols._
 import org.neo4j.cypher.internal.helpers.CollectionSupport
 import org.neo4j.cypher.internal.ExecutionContext
+import org.neo4j.cypher.internal.pipes.QueryState
 
 case class LengthFunction(inner: Expression)
   extends NullInNullOutExpression(inner)
   with CollectionSupport
 with ExpressionWInnerExpression {
-  def compute(value: Any, m: ExecutionContext) = value match {
+  def compute(value: Any, m: ExecutionContext)(implicit state: QueryState) = value match {
     case path: Path => path.length()
     case s: String  => s.length()
     case x          => makeTraversable(x).toSeq.length

@@ -21,10 +21,9 @@ package org.neo4j.cypher.internal.commands.expressions
 
 import org.neo4j.graphdb.NotFoundException
 import org.neo4j.cypher.internal.symbols._
-import collection.Map
 import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.cypher.internal.ExecutionContext
-
+import org.neo4j.cypher.internal.pipes.QueryState
 
 object Identifier {
   def isNamed(x: String) = !notNamed(x)
@@ -33,7 +32,8 @@ object Identifier {
 }
 
 case class Identifier(entityName: String) extends Expression with Typed {
-  def apply(ctx: ExecutionContext): Any = ctx.getOrElse(entityName, throw new NotFoundException("Unknown identifier `%s`.".format(entityName)))
+  def apply(ctx: ExecutionContext)(implicit state: QueryState): Any =
+    ctx.getOrElse(entityName, throw new NotFoundException("Unknown identifier `%s`.".format(entityName)))
 
   override def toString(): String = entityName
 

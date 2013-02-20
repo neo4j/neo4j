@@ -22,13 +22,14 @@ package org.neo4j.cypher.internal.spi.gdsimpl;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.cypher.internal.spi.Locker;
 import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 
-public class GDSBackedLocker implements RepeatableReadQueryContext.Locker
+public class GDSBackedLocker implements Locker
 {
     private final Transaction transaction;
     private final Map<Long, Lock> nodeLocks = new HashMap<Long, Lock>();
