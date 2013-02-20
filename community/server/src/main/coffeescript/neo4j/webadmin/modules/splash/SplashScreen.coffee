@@ -64,8 +64,15 @@ define(
 
         
       hide : ->
+        console.log("buh-bye")
+        @clearDeck()
         @splash.fadeOut(400, => 
           @cookies.set("splashShown1.6", "0")
         )
+
+      clearDeck : ->
+        $(document).unbind('keydown.deckscale')
+        $(document).unbind('keydown.deck')
+        
         
 )
