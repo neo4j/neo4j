@@ -1,18 +1,19 @@
 
 <!-- Begin slides. Just make elements with a class of slide.-->
 <section class="slide">
-    <h1>Develop</h1>
+    <h1>Develop a Graph</h1>
+    <p class="hint">From whiteboard to world domination, Neo4j work the way you think.</p>
 </section>
 <section class="slide">
-    <h2>Three Levels of API</h2><img src="/webadmin/deck/img/dashboard.png">
+    <h2>There are Three Levels of API</h2><img src="/webadmin/deck/img/dashboard.png">
     <ul>
         <li><em>Discover</em> the graph with REST</li>
-        <li><em>Work</em> with Cypher queries to change or query data</li>
-        <li><em>Customize</em> advanced work with plugins</li>
+        <li><em>Work</em> with the Cypher language to change or query the graph</li>
+        <li><em>Customize</em> the database with plugins for special cases</li>
     </ul>
 </section>
 <section class="slide">
-    <h2>Discover - the REST inferface</h2>
+    <h2>Discover with REST </h2>
     <img src="/webadmin/deck/img/console.png">
     <ul>
         <li>information about the database</li>
@@ -22,7 +23,7 @@
     </ul>
 </section>
 <section class="slide">
-    <h2>Work - with Cypher queries</h2>
+    <h2>Work with Cypher queries</h2>
     <img src="/webadmin/deck/img/console.png">
     <ul>
         <li>create a node for yourself...
@@ -31,6 +32,20 @@
         <li>then find it..
             <pre>start n=node(*) where n.name! = &quot;Andreas&quot; return n;</pre>
         </li>
+    </ul>
+</section>
+<section class="slide">
+    <h2>Customize with Plugins</h2>
+    <img src="/webadmin/deck/img/console.png">
+    <p>
+        Cypher is an expressive and powerful language, intended to cover the
+        vast majority of operations. When you have specialized needs, plugins
+        allow you to "get under the hood."
+    </p>
+    <ul>
+        <li>raw access to the database</li>
+        <li>your choice of JVM language</li>
+        <li>caution: here be dragons</li>
     </ul>
 </section>
 <section class="slide">

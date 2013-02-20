@@ -40,14 +40,18 @@ define(
         $('.close-guide').click( (event) =>
           @hide()
         )
+
         if not @hasBeenShownForThisSession()
-          @show()
+          @show("/webadmin/deck/welcome.html")
+          setTimeout () => @show();, 
+          3000
 
       hasBeenShownForThisSession : ->
         @cookies.get("splashShown1.6") != null
+        false
 
       show : (deckUrl) ->
-        deckUrl = (if (typeof deckUrl is "undefined") then "/webadmin/deck/guide.html" else deckUrl)
+        deckUrl = deckUrl ? "/webadmin/deck/guide.html"
         $('.deck-container').load(deckUrl, (responseTxt,statusTxt,xhr) =>
             Deck('.slide');
             $('.deck-url').click( ( event ) =>

@@ -54,7 +54,8 @@ a.micro-button#guide-close {
   font-size: 1.4375em;
 }
 .deck-container .slide li {
-  clear: both;
+  clear: none;
+  list-style-position: inside;
 }
 .deck-container .slide li img {
   margin: 0;
@@ -158,4 +159,11 @@ a.micro-button#guide-close {
   position: absolute;
   bottom: 1em;
   text-align: center;
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.deck-container > .slide .summary {
+  width: 50%;
 }

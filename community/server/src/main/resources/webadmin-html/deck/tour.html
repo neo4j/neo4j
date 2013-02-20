@@ -1,51 +1,70 @@
 
 <!-- Begin slides. Just make elements with a class of slide.-->
 <section class="slide">
-    <h1>Welcome to Neo4j</h1>
-    <p class="hint">For a brief tour, just tap the right arrow...</p>
+    <h1>Neo4j Tour</h1>
+    <p class="hint">What is this thing? Well, Neo4j is a database...</p>
 </section>
 <section class="slide">
-    <h2>Dashboard - an overview</h2><img src="/webadmin/deck/img/dashboard.png">
+    <h2>Dashboard - overview of the database</h2>
+    <img src="/webadmin/deck/img/dashboard.png">
+    <p class="summary"> 
+        The Dashboard provides at-a-glance monitoring of database 
+        content and activity.
+    </p>
     <ul>
-        <li>convenient head's up summary of Key Performance Indicators</li>
-        <li>estimate of node, relationship and property counts</li>
+        <li>convenient summary of Key Performance Indicators</li>
+        <li>estimate of Node, Relationship and Property counts</li>
         <li>more fields available in Advanced and Enterprise</li>
     </ul>
+    <p class="hint">Use the Dashboard for a quick idea about what's going on with Neo4j.</p>
 </section>
 <section class="slide">
-    <h2>Data browser - visual exploration</h2>
+    <h2>Data browser - inspect and visualize</h2>
     <img src="/webadmin/deck/img/browser.png"/>
+    <p class="summary">
+        Switch between the default "inspection" view that displays tabular data. Or,
+        enable the built-in visualization to explore the patterns of data within
+        your graph.
+    </p>
     <ul>
         <li>"browse" parts of the graph</li>
-        <li>incrementally add more of the graph</li>
-        <li>apply custom styling</li>
+        <li>inspect Node, Relationship and Property values</li>
+        <li>visualize a part of the graph</li>
     </ul>
+    <p class="hint">The exploratory visualization is a great way to explain your data to friends.</p>
 </section>
 <section class="slide">
-    <h2>Console - graph queries</h2>
+    <h2>Console - command (line) central</h2>
     <img src="/webadmin/deck/img/console.png"/>
+    <p class="summary">
+        For full command of Neo4j, use the Console as
+        an interactive shell to run Cypher queries
+        and directly access advanced commands.
+    </p>
     <ul>
         <li>use <a href="http://docs.neo4j.org/chunked/stable/cypher-query-lang.html">Cypher </a>to query and create graph data</li>
-        <li>create a node for yourself...
-            <pre>create (me { name: &quot;Andreas&quot; });</pre>
-        </li>
-        <li>then find it..
-            <pre>start n=node(*) where n.name! = &quot;Andreas&quot; return n;</pre>
-        </li>
+        <li>explore the <a href="http://docs.neo4j.org/chunked/stable/rest-api.html">REST API</a> with the HTTP shell</li>
+        <li>experiment with raw "graph traversals"</li>
     </ul>
+    <p class="hint">REPL, shell, CLI &mdash; whatever you call it, a written language provides great power.</p>
 </section>
 <section class="slide">
-    <h2>Get Started</h2>
+    <h2>Want more?</h2>
     <img src="/webadmin/deck/img/neo4j-org.png">
+    <p>
+        There is of course so much more to learn, and 
+        many ways to continue. Here are some great
+        next steps...
+    </p>
     <ul>
-        <li><a href="http://neo4j.org">neo4j.org</a> connects you to everything about Neo4j</li>
+        <li><a href="http://neo4j.org">start</a> at Neo4j.org to find everything about Neo4j</li>
         <li> <a href="http://watch.neo4j.org">watch</a> videos about Neo4j</li>
         <li> <a href="http://neo4j.meetup.com">attend </a>a meetup near you </li>
         <li> <a href="http://docs.neo4j.org/chunked/stable">read </a>the official Neo4j manual</li>
         <li> <a href="http://www.neo4j.org/develop/drivers">download </a>a driver for your language of choice</li>
     </ul>
 
-    <p class="hint"><a class="deck-url" href="/webadmin/deck/guide.html">guide</a> to more</p>
+    <p class="hint">There's a little <a class="deck-url" href="/webadmin/deck/guide.html">more Help</a> from Neo4j itself.</p>
 </section>
 <!-- End slides.-->
 <!-- Begin extension snippets. Add or remove as needed.-->
