@@ -162,6 +162,7 @@ public abstract class InternalAbstractGraphDatabase
     protected DependencyResolver dependencyResolver;
     protected Logging logging;
     protected StringLogger msgLog;
+    protected StoreLockerLifecycleAdapter storeLocker;
     protected KernelEventHandlers kernelEventHandlers;
     protected TransactionEventHandlers transactionEventHandlers;
     protected RelationshipTypeHolder relationshipTypeHolder;
@@ -328,8 +329,8 @@ public abstract class InternalAbstractGraphDatabase
 
         config.setLogger( msgLog );
 
-        StoreLocker storeLocker = new StoreLocker( config, fileSystem, msgLog );
-        life.add(new StoreLockerLifecycleAdapter( storeLocker, storeDir ));
+        this.storeLocker = life.add(new StoreLockerLifecycleAdapter(
+                new StoreLocker( config, fileSystem, msgLog ), storeDir ));
 
         new JvmChecker(msgLog, new JvmMetadataRepository() ).checkJvmCompatibilityAndIssueWarning();
 
@@ -1307,6 +1308,10 @@ public abstract class InternalAbstractGraphDatabase
             else if ( DiagnosticsManager.class.isAssignableFrom( type ) )
             {
                 return (T) diagnosticsManager;
+            }
+            else if ( StoreLockerLifecycleAdapter.class.isAssignableFrom( type ) )
+            {
+                return (T) storeLocker;
             }
             else if ( DependencyResolver.class.isAssignableFrom( type ) )
             {

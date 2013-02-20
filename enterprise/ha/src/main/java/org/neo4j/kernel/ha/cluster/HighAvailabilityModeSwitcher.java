@@ -40,6 +40,7 @@ import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
+import org.neo4j.kernel.StoreLockerLifecycleAdapter;
 import org.neo4j.kernel.TransactionInterceptorProviders;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.BranchDetectingTxVerifier;
@@ -92,9 +93,10 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
         XaDataSourceManager.class,
         TxManager.class,
         NodeManager.class,
-        IndexStore.class
+        IndexStore.class,
+        StoreLockerLifecycleAdapter.class
     };
-    
+
     public static final String MASTER = "master";
     public static final String SLAVE = "slave";
 
