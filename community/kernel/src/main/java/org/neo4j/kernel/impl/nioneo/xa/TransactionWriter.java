@@ -149,19 +149,19 @@ public class TransactionWriter
     public void create( PropertyRecord property ) throws IOException
     {
         property.setCreated();
-        update( property );
+        update( new PropertyRecord( property.getLongId() ), property );
     }
 
-    public void update( PropertyRecord property ) throws IOException
+    public void update( PropertyRecord before, PropertyRecord property ) throws IOException
     {
         property.setInUse( true );
-        add( property );
+        add( before, property );
     }
 
-    public void delete( PropertyRecord property ) throws IOException
+    public void delete( PropertyRecord before, PropertyRecord property ) throws IOException
     {
         property.setInUse( false );
-        add( property );
+        add( before, property );
     }
 
     // Internals
@@ -176,9 +176,9 @@ public class TransactionWriter
         write( new Command.RelationshipCommand( null, relationship ) );
     }
 
-    public void add( PropertyRecord property ) throws IOException
+    public void add( PropertyRecord before, PropertyRecord property ) throws IOException
     {
-        write( new Command.PropertyCommand( null, property ) );
+        write( new Command.PropertyCommand( null, before, property ) );
     }
 
     public void add( RelationshipTypeRecord record ) throws IOException

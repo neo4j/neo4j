@@ -377,7 +377,7 @@ public abstract class Command extends XaCommand
             }
         }
 
-        public static Command readSpecificCommand( NeoStore neoStore,
+        public static Command readFromFile( NeoStore neoStore,
             ReadableByteChannel byteChannel, ByteBuffer buffer )
             throws IOException
         {
@@ -519,7 +519,7 @@ public abstract class Command extends XaCommand
             }
         }
 
-        public static Command readSpecificCommand( NeoStore neoStore,
+        public static Command readFromFile( NeoStore neoStore,
             ReadableByteChannel byteChannel, ByteBuffer buffer )
             throws IOException
         {
@@ -598,7 +598,7 @@ public abstract class Command extends XaCommand
             buffer.put( NEOSTORE_COMMAND ).putLong( record.getNextProp() );
         }
 
-        public static Command readSpecificCommand( NeoStore neoStore,
+        public static Command readFromFile( NeoStore neoStore,
                 ReadableByteChannel byteChannel, ByteBuffer buffer )
                 throws IOException
         {
@@ -669,7 +669,7 @@ public abstract class Command extends XaCommand
             }
         }
 
-        public static Command readSpecificCommand( NeoStore neoStore, ReadableByteChannel byteChannel,
+        public static Command readFromFile( NeoStore neoStore, ReadableByteChannel byteChannel,
             ByteBuffer buffer ) throws IOException
         {
             // id+in_use(byte)+count(int)+key_blockId(int)
@@ -710,20 +710,24 @@ public abstract class Command extends XaCommand
 
     static class PropertyCommand extends Command
     {
-        private final PropertyRecord record;
         private final PropertyStore store;
+        private final PropertyRecord before;
+        private final PropertyRecord after;
 
-        PropertyCommand( PropertyStore store, PropertyRecord record )
+        // TODO as optimization the deserialized key/values could be passed in here
+        // so that the cost of deserializing them only applies in recovery/HA
+        PropertyCommand( PropertyStore store, PropertyRecord before, PropertyRecord after )
         {
-            super( record );
-            this.record = record;
+            super( after );
             this.store = store;
+            this.before = before;
+            this.after = after;
         }
         
         @Override
         public void accept( CommandRecordVisitor visitor )
         {
-            visitor.visitProperty( record );
+            visitor.visitProperty( after );
         }
 
         @Override
@@ -740,41 +744,63 @@ public abstract class Command extends XaCommand
                 cacheAccess.removeRelationshipFromCache( relId );
             }
         }
+        
+        public PropertyRecord getBefore()
+        {
+            return before;
+        }
+        
+        public PropertyRecord getAfter()
+        {
+            return after;
+        }
 
         @Override
         public void execute()
         {
             if ( isRecovered() )
             {
-                store.updateRecord( record, true );
+                store.updateRecord( after, true );
             }
             else
             {
-                store.updateRecord( record );
+                store.updateRecord( after );
             }
         }
 
         public long getNodeId()
         {
-            return record.getNodeId();
+            return after.getNodeId();
         }
 
         public long getRelId()
         {
-            return record.getRelId();
+            return after.getRelId();
         }
 
         @Override
         public void writeToFile( LogBuffer buffer ) throws IOException
         {
+            // COMMAND + ID
+            buffer.put( PROP_COMMAND );
+            buffer.putLong( getKey() ); // 8
+            
+            // BEFORE
+            writeToFile( buffer, before );
+            
+            // AFTER
+            writeToFile( buffer, after );
+        }
+
+        private void writeToFile( LogBuffer buffer, PropertyRecord record ) throws IOException
+        {
             byte inUse = record.inUse() ? Record.IN_USE.byteValue()
-                : Record.NOT_IN_USE.byteValue();
+                    : Record.NOT_IN_USE.byteValue();
             if ( record.getRelId() != -1 )
             {
+                // Here we add 2, i.e. set the second lsb.
                 inUse += Record.REL_PROPERTY.byteValue();
             }
-            buffer.put( PROP_COMMAND );
-            buffer.putLong( record.getId() ); // 8
             buffer.put( inUse ); // 1
             buffer.putLong( record.getNextProp() ).putLong(
                     record.getPrevProp() ); // 8 + 8
@@ -804,16 +830,37 @@ public abstract class Command extends XaCommand
             writeDynamicRecords( buffer, record.getDeletedRecords() );
         }
 
-        public static Command readSpecificCommand( NeoStore neoStore,
+        public static Command readFromFile( NeoStore neoStore,
             ReadableByteChannel byteChannel, ByteBuffer buffer )
             throws IOException
         {
-            // id+in_use(byte)+type(int)+key_indexId(int)+prop_blockId(long)+
+            // ID
+            if ( !readAndFlip( byteChannel, buffer, 8 ) )
+                return null;
+            long id = buffer.getLong(); // 8
+            
+            // BEFORE
+            PropertyRecord before = readPropertyRecord( id, byteChannel, buffer );
+            if ( before == null )
+                return null;
+            
+            // AFTER
+            PropertyRecord after = readPropertyRecord( id, byteChannel, buffer );
+            if ( after == null )
+                return null;
+            
+            return new PropertyCommand( neoStore == null ? null
+                    : neoStore.getPropertyStore(), before, after );
+        }
+
+        private static PropertyRecord readPropertyRecord( long id, ReadableByteChannel byteChannel, ByteBuffer buffer )
+                throws IOException
+        {
+            // in_use(byte)+type(int)+key_indexId(int)+prop_blockId(long)+
             // prev_prop_id(long)+next_prop_id(long)
-            if ( !readAndFlip( byteChannel, buffer, 8 + 1 + 8 + 8 + 8 ) )
+            if ( !readAndFlip( byteChannel, buffer, 1 + 8 + 8 + 8 ) )
                 return null;
 
-            long id = buffer.getLong(); // 8
             PropertyRecord record = new PropertyRecord( id );
             byte inUseFlag = buffer.get(); // 1
             long nextProp = buffer.getLong(); // 8
@@ -867,8 +914,7 @@ public abstract class Command extends XaCommand
                                                  + " but the record is "
                                                  + record );
             }
-            return new PropertyCommand( neoStore == null ? null
-                    : neoStore.getPropertyStore(), record );
+            return record;
         }
     }
     
@@ -932,7 +978,7 @@ public abstract class Command extends XaCommand
             writeDynamicRecords( buffer, record.getNameRecords() );
         }
 
-        public static Command readSpecificCommand( NeoStore neoStore,
+        public static Command readFromFile( NeoStore neoStore,
             ReadableByteChannel byteChannel, ByteBuffer buffer )
             throws IOException
         {
@@ -1020,7 +1066,7 @@ public abstract class Command extends XaCommand
             return "SchemaRule" + records;
         }
 
-        static Command readSpecificCommand( NeoStore neoStore, ReadableByteChannel byteChannel, ByteBuffer buffer )
+        static Command readFromFile( NeoStore neoStore, ReadableByteChannel byteChannel, ByteBuffer buffer )
                 throws IOException
         {
             Collection<DynamicRecord> records = new ArrayList<DynamicRecord>();
@@ -1050,23 +1096,23 @@ public abstract class Command extends XaCommand
         switch ( commandType )
         {
             case NODE_COMMAND:
-                return NodeCommand.readSpecificCommand( neoStore, byteChannel, buffer );
+                return NodeCommand.readFromFile( neoStore, byteChannel, buffer );
             case PROP_COMMAND:
-                return PropertyCommand.readSpecificCommand( neoStore, byteChannel,
+                return PropertyCommand.readFromFile( neoStore, byteChannel,
                     buffer );
             case PROP_INDEX_COMMAND:
-                return PropertyIndexCommand.readSpecificCommand( neoStore, byteChannel,
+                return PropertyIndexCommand.readFromFile( neoStore, byteChannel,
                     buffer );
             case REL_COMMAND:
-                return RelationshipCommand.readSpecificCommand( neoStore, byteChannel,
+                return RelationshipCommand.readFromFile( neoStore, byteChannel,
                     buffer );
             case REL_TYPE_COMMAND:
-                return RelationshipTypeCommand.readSpecificCommand( neoStore,
+                return RelationshipTypeCommand.readFromFile( neoStore,
                     byteChannel, buffer );
             case NEOSTORE_COMMAND:
-                return NeoStoreCommand.readSpecificCommand( neoStore, byteChannel, buffer );
+                return NeoStoreCommand.readFromFile( neoStore, byteChannel, buffer );
             case SCHEMA_RULE_COMMAND:
-                return SchemaRuleCommand.readSpecificCommand( neoStore, byteChannel, buffer );
+                return SchemaRuleCommand.readFromFile( neoStore, byteChannel, buffer );
             case NONE: return null;
             default:
                 throw new IOException( "Unknown command type[" + commandType

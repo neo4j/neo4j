@@ -22,3 +22,8 @@
     for reporting problems (since build revision will be a little more
     particular than kernel version).
 
+[2012-02-21] Static vs. non-static methods mess in PropertyStore and friends
+	makes reading and writing such code really confusing and error prone.
+	Also there are null checks introduced in at least PropertyType to
+	handle both cases where it has a store reference and when it has not,
+	but knowing that the PropertyBlock contains all data needed to parse it.

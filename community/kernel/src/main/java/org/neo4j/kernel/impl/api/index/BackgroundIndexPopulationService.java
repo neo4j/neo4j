@@ -33,7 +33,7 @@ import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 
 public class BackgroundIndexPopulationService implements IndexPopulationService
 {
-    private final ExecutorService populationExecutor = newFixedThreadPool( 3 );
+    private final ExecutorService populationExecutor = newFixedThreadPool( 3 ); // TODO
     private final IndexPopulatorMapper indexManipulatorMapper;
     private final StatementContext readContext;
     private final NeoStore neoStore;
@@ -66,6 +66,7 @@ public class BackgroundIndexPopulationService implements IndexPopulationService
             throw new ThisShouldNotHappenError( "Mattias", "Property " + propertyKey + " should exist" );
         }
         
+        // TODO task management
         populationExecutor.submit( new IndexPopulationJob( labelId, propertyKeyId,
                 indexManipulatorMapper.getManipulator( index ), neoStore ) );
     }

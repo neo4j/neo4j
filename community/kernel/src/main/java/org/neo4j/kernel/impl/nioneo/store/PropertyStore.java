@@ -313,29 +313,31 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
         }
     }
 
-    /*
+    /**
      * This will add the value records without checking if they are already
      * in the block - so make sure to call this after checking isHeavy() or
      * you will end up with duplicates.
+     * 
+     * @param superHeavy will also make referenced records heavy.
      */
-    public void makeHeavy( PropertyBlock record )
+    public void makeHeavy( PropertyBlock block )
     {
-        if ( record.getType() == PropertyType.STRING )
+        if ( block.getType() == PropertyType.STRING )
         {
-            Collection<DynamicRecord> stringRecords = stringPropertyStore.getLightRecords( record.getSingleValueLong() );
+            Collection<DynamicRecord> stringRecords = stringPropertyStore.getLightRecords( block.getSingleValueLong() );
             for ( DynamicRecord stringRecord : stringRecords )
             {
                 stringRecord.setType( PropertyType.STRING.intValue() );
-                record.addValueRecord( stringRecord );
+                block.addValueRecord( stringRecord );
             }
         }
-        else if ( record.getType() == PropertyType.ARRAY )
+        else if ( block.getType() == PropertyType.ARRAY )
         {
-            Collection<DynamicRecord> arrayRecords = arrayPropertyStore.getLightRecords( record.getSingleValueLong() );
+            Collection<DynamicRecord> arrayRecords = arrayPropertyStore.getLightRecords( block.getSingleValueLong() );
             for ( DynamicRecord arrayRecord : arrayRecords )
             {
                 arrayRecord.setType( PropertyType.ARRAY.intValue() );
-                record.addValueRecord( arrayRecord );
+                block.addValueRecord( arrayRecord );
             }
         }
     }
@@ -465,7 +467,6 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
      */
     private PropertyBlock getPropertyBlock( Buffer buffer )
     {
-
         long header = buffer.getLong();
         PropertyType type = PropertyType.getPropertyType( header, true );
         if ( type == null )
@@ -576,11 +577,6 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
                 block.addValueRecord( valueRecord );
             }
         }
-//        else if ( value instanceof LabelAsProperty )
-//        {
-//            long keyAndType = keyId | (((long) PropertyType.LABEL.intValue()) << 24);
-//            block.setValueBlocks( new long[]{keyAndType, ((LabelAsProperty) value).getNodeId()} );
-//        }
         else
         {
             throw new IllegalArgumentException( "Unknown property type on: "
@@ -599,19 +595,14 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
         return UTF8.encode( string );
     }
 
-    public Object getStringFor( PropertyBlock propertyBlock )
-    {
-        return getStringFor( stringPropertyStore, propertyBlock );
-    }
-
-    public static Object getStringFor( AbstractDynamicStore store, PropertyBlock propertyBlock )
+    public static Object getStringFor( DynamicStringStore store, PropertyBlock propertyBlock )
     {
         return getStringFor( store, propertyBlock.getSingleValueLong(), propertyBlock.getValueRecords() );
     }
 
-    public static Object getStringFor( AbstractDynamicStore store, long startRecord, Collection<DynamicRecord> dynamicRecords )
+    public static Object getStringFor( DynamicStringStore store, long startRecord, Collection<DynamicRecord> dynamicRecords )
     {
-        Pair<byte[], byte[]> source = store.readFullByteArray( dynamicRecords, PropertyType.STRING );
+        Pair<byte[], byte[]> source = AbstractDynamicStore.readFullByteArray( store, dynamicRecords, PropertyType.STRING );
         // A string doesn't have a header in the data array
         return getStringFor( source.other() );
     }
@@ -621,16 +612,16 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
         return UTF8.decode( byteArray );
     }
 
-    public Object getArrayFor( PropertyBlock propertyBlock )
+    public static Object getArrayFor( DynamicArrayStore store, PropertyBlock propertyBlock )
     {
         assert !propertyBlock.isLight();
-        return getArrayFor( propertyBlock.getValueRecords() );
+        return getArrayFor( store, propertyBlock.getValueRecords() );
     }
 
-    public Object getArrayFor( Iterable<DynamicRecord> records )
+    public static Object getArrayFor( DynamicArrayStore store, Iterable<DynamicRecord> records )
     {
-        return arrayPropertyStore.getRightArray(
-                arrayPropertyStore.readFullByteArray( records, PropertyType.ARRAY ) );
+        return store.getRightArray(
+                AbstractDynamicStore.readFullByteArray( store, records, PropertyType.ARRAY ) );
     }
 
     @Override

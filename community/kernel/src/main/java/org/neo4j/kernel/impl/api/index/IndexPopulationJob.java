@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.kernel.impl.api.DiffSets;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
@@ -81,7 +80,7 @@ class IndexPopulationJob implements Runnable
                     {
                         if ( property.getKeyIndexId() == propertyKeyId )
                         {
-                            // Make sure that the value is loaded, even if it's of a "heavy" kind.
+                            // Make sure the value is loaded, even if it's of a "heavy" kind.
                             propertyStore.makeHeavy( property );
                             Object propertyValue = property.getType().getValue( property, propertyStore );
                             indexManipulator.add( count++, node.getId(), propertyValue );
@@ -112,9 +111,8 @@ class IndexPopulationJob implements Runnable
     /**
      * A transaction happened that produced the given diff. Let this job incorporate its data
      * into, feeding it to the {@link IndexPopulator}.
-     * @param diff
      */
-    public void transactionData( DiffSets<Pair<Long, Object>> diff )
+    public void transactionData( DiffSets<NodePropertyUpdate> diff )
     {
         throw new UnsupportedOperationException();
     }

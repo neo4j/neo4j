@@ -150,6 +150,6 @@ public class TestArrayStore
     
     private Pair<byte[], byte[]> loadArray( Collection<DynamicRecord> records )
     {
-        return arrayStore.readFullByteArray( records, PropertyType.ARRAY );
+        return AbstractDynamicStore.readFullByteArray( arrayStore, records, PropertyType.ARRAY );
     }
 }

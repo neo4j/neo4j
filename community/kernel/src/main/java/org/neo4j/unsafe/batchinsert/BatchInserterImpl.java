@@ -230,6 +230,7 @@ public class BatchInserterImpl implements BatchInserter
             {
                 if ( target.isLight() )
                 {
+                    // TODO super heavy here when we support schema indexing?
                     getPropertyStore().makeHeavy( target );
                 }
                 for ( DynamicRecord dynRec : target.getValueRecords() )

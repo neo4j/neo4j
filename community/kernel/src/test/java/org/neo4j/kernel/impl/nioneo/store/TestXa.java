@@ -738,7 +738,7 @@ public class TestXa
         xaRes.prepare( xid );
         xaRes.commit( xid, false );
         copyClearRename( false );
-        truncateLogicalLog( 288 );
+        truncateLogicalLog( 288+37 );
         ds = newNeoStore();
         xaCon = ds.getXaConnection();
         xaRes = xaCon.getXaResource();

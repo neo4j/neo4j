@@ -88,7 +88,8 @@ import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 public class WriteTransaction extends XaTransaction implements NeoStoreTransaction
 {
     private final Map<Long,NodeRecord> nodeRecords = new HashMap<Long,NodeRecord>();
-    private final Map<Long,PropertyRecord> propertyRecords = new HashMap<Long,PropertyRecord>();
+    private final Map<Long,Pair<PropertyRecord/*before*/,PropertyRecord/*after*/>> propertyRecords =
+            new HashMap<Long, Pair<PropertyRecord,PropertyRecord>>();
     private final Map<Long,RelationshipRecord> relRecords = new HashMap<Long,RelationshipRecord>();
     private final Map<Long,Pair<Collection<DynamicRecord>, SchemaRule>> schemaRuleRecords =
             new HashMap<Long, Pair<Collection<DynamicRecord>,SchemaRule>>();
@@ -218,10 +219,10 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
                 commands.add( command );
             }
         }
-        for ( PropertyRecord record : propertyRecords.values() )
+        for ( Pair<PropertyRecord, PropertyRecord> change : propertyRecords.values() )
         {
             Command.PropertyCommand command = new Command.PropertyCommand(
-                    neoStore.getPropertyStore(), record );
+                    neoStore.getPropertyStore(), change.first(), change.other() );
             propCommands.add( command );
             commands.add( command );
         }
@@ -353,8 +354,9 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
                     }
                 }
             }
-            for ( PropertyRecord record : propertyRecords.values() )
+            for ( Pair<PropertyRecord,PropertyRecord> change : propertyRecords.values() )
             {
+                PropertyRecord record = change.other();
                 if ( record.getNodeId() != -1 )
                 {
                     removeNodeFromCache( record.getNodeId() );
@@ -1021,11 +1023,13 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
     @Override
     public Object loadPropertyValue( PropertyData propertyData )
     {
-        PropertyRecord propertyRecord = propertyRecords.get( propertyData.getId() );
-        if ( propertyRecord == null )
+        Pair<PropertyRecord,PropertyRecord> propertyChange = propertyRecords.get( propertyData.getId() );
+        if ( propertyChange == null )
         {
-            propertyRecord = getPropertyStore().getRecord( propertyData.getId() );
+            PropertyRecord before = getPropertyStore().getRecord( propertyData.getId() );
+            propertyChange = Pair.of( before, before.clone() );
         }
+        PropertyRecord propertyRecord = propertyChange.other();
         PropertyBlock block = propertyRecord.getPropertyBlock( propertyData.getIndex() );
         if ( block == null )
         {
@@ -1322,6 +1326,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             if ( propSize + newBlockSizeInBytes <= PropertyType.getPayloadSize() )
             {
                 host = propRecord;
+                addPropertyRecord( host );
                 host.addPropertyBlock( block );
                 host.setChanged( primitive );
             }
@@ -1541,31 +1546,39 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         return relRecords.get( relId );
     }
 
+    /**
+     * The object that gets passed in here should be used as the "after" state.
+     * The "before" state is {@link PropertyRecord#clone() derived} in this method.
+     * @param record
+     */
     void addPropertyRecord( PropertyRecord record )
     {
-        propertyRecords.put( record.getId(), record );
+        propertyRecords.put( record.getId(), Pair.of( record.clone(), record ) );
     }
 
     PropertyRecord getPropertyRecord( long propertyId, boolean light,
             boolean store )
     {
-        PropertyRecord result = propertyRecords.get( propertyId );
-        if ( result == null )
+        Pair<PropertyRecord, PropertyRecord> change = propertyRecords.get( propertyId );
+        PropertyRecord record = null;
+        if ( change == null )
         {
             if ( light )
             {
-                result = getPropertyStore().getLightRecord( propertyId );
+                record = getPropertyStore().getLightRecord( propertyId );
             }
             else
             {
-                result = getPropertyStore().getRecord( propertyId );
+                record = getPropertyStore().getRecord( propertyId );
             }
             if ( store )
             {
-                addPropertyRecord( result );
+                addPropertyRecord( record );
             }
         }
-        return result;
+        else
+            record = change.other();
+        return record;
     }
 
     void addRelationshipTypeRecord( RelationshipTypeRecord record )

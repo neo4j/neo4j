@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.nioneo.store;
 
 import java.lang.reflect.Array;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -29,8 +30,13 @@ public class PropertyBlock
     private static final int MAX_ARRAY_TOSTRING_SIZE = 4;
     private final List<DynamicRecord> valueRecords = new LinkedList<DynamicRecord>();
     private long[] valueBlocks;
-    // private boolean inUse;
     private boolean isCreated;
+    
+    /**
+     * If true then value records are loaded into this block, and also all value records
+     * are themselves heavy.
+     */
+    private boolean superHeavy;
 
     public PropertyType getType()
     {
@@ -126,18 +132,6 @@ public class PropertyBlock
         valueRecords.clear();
     }
 
-    /*
-    public boolean inUse()
-    {
-        return inUse;
-    }
-
-    public void setInUse( boolean inUse )
-    {
-        this.inUse = inUse;
-    }
-    */
-
     public boolean isCreated()
     {
         return isCreated;
@@ -207,5 +201,25 @@ public class PropertyBlock
         }
         result.append( ']' );
         return result.toString();
+    }
+    
+    @Override
+    public PropertyBlock clone()
+    {
+        PropertyBlock result = new PropertyBlock();
+        result.isCreated = isCreated;
+        result.superHeavy = superHeavy;
+        if ( valueBlocks != null )
+            result.valueBlocks = valueBlocks.clone();
+        for ( DynamicRecord valueRecord : valueRecords )
+            result.valueRecords.add( valueRecord.clone() );
+        return result;
+    }
+    
+    public boolean hasSameContentsAs( PropertyBlock other )
+    {
+        // Assumption (which happens to be true) that if a heavy (long string/array) property
+        // changes it will get another id, making the valueBlocks values differ.
+        return Arrays.equals( valueBlocks, other.valueBlocks );
     }
 }

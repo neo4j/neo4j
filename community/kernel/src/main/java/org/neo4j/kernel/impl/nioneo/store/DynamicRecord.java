@@ -158,4 +158,18 @@ public class DynamicRecord extends Abstract64BitRecord
         buf.append( ",next=" ).append( nextBlock ).append( "]" );
         return buf.toString();
     }
+    
+    @Override
+    public DynamicRecord clone()
+    {
+        DynamicRecord result = new DynamicRecord( getLongId() );
+        if ( data != null )
+            result.data = data.clone();
+        result.length = length;
+        result.isLight = isLight;
+        result.nextBlock = nextBlock;
+        result.type = type;
+        result.startRecord = startRecord;
+        return result;
+    }
 }

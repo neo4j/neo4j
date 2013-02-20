@@ -17,26 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api.index;
+package org.neo4j.kernel.impl.api;
 
-import java.util.Collection;
-
-import org.neo4j.helpers.Pair;
-import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
-
-/**
- * TODO temporary name
- *
- * Used when committing for notifying schema indexes about updates made to the graph.
- * Currently in the form of {@link PropertyRecord property records}.
- */
-public class SchemaIndexing
+public enum UpdateMode
 {
-    // To use PropertyRecord here might not be very good.
-    void apply( Collection<Pair<PropertyRecord,PropertyRecord>> propertyRecords )
-    {
-        // TODO look at the schema and feed the properties to the appropriate indexes.
-        //      This gets called when committing a transaction.
-        throw new UnsupportedOperationException();
-    }
+    ADDED,
+    CHANGED,
+    REMOVED;
 }

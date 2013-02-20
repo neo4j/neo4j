@@ -162,7 +162,7 @@ public class StoreFactory
                 fileSystemAbstraction, stringLogger, nameStore );
     }
 
-    private PropertyStore newPropertyStore(File baseFileName)
+    public PropertyStore newPropertyStore(File baseFileName)
     {
         DynamicStringStore stringPropertyStore = newDynamicStringStore(new File( baseFileName.getPath() + STRINGS_PART), IdType.STRING_BLOCK);
         PropertyIndexStore propertyIndexStore = newPropertyIndexStore(new File( baseFileName.getPath() + INDEX_PART));
@@ -282,7 +282,7 @@ public class StoreFactory
      * @throws IOException
      *             If unable to create property store or name null
      */
-    private void createPropertyStore( File fileName )
+    public void createPropertyStore( File fileName )
     {
         createEmptyStore( fileName, buildTypeDescriptorAndVersion( PropertyStore.TYPE_DESCRIPTOR ));
         int stringStoreBlockSize = config.get( Configuration.string_block_size );

@@ -599,8 +599,8 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
         return super.toString() + "[blockSize:" + (getRecordSize()-getRecordHeaderSize()) + "]";
     }
 
-    public Pair<byte[]/*header in the first record*/,byte[]/*all other bytes*/> readFullByteArray(
-            Iterable<DynamicRecord> records, PropertyType propertyType )
+    public static Pair<byte[]/*header in the first record*/,byte[]/*all other bytes*/> readFullByteArray(
+            AbstractDynamicStore store, Iterable<DynamicRecord> records, PropertyType propertyType )
     {
         byte[] header = null;
         List<byte[]> byteList = new LinkedList<byte[]>();
@@ -608,7 +608,10 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
         for ( DynamicRecord record : records )
         {
             if ( record.isLight() )
-                makeHeavy( record );
+            {
+                assert store != null : "Store is needed for light records";
+                store.makeHeavy( record );
+            }
             
             int offset = 0;
             if ( i++ == 0 )

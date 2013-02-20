@@ -249,11 +249,11 @@ public abstract class GraphStoreFixture implements TestRule
             }
         }
 
-        public void update( PropertyRecord property )
+        public void update( PropertyRecord before, PropertyRecord property )
         {
             try
             {
-                writer.update( property );
+                writer.update( before, property );
             }
             catch ( IOException e )
             {
@@ -261,11 +261,11 @@ public abstract class GraphStoreFixture implements TestRule
             }
         }
 
-        public void delete( PropertyRecord property )
+        public void delete( PropertyRecord before, PropertyRecord property )
         {
             try
             {
-                writer.delete( property );
+                writer.delete( before, property );
             }
             catch ( IOException e )
             {

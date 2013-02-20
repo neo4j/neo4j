@@ -34,8 +34,7 @@ public class PropertyRecord extends Abstract64BitRecord
 {
     private long nextProp = Record.NO_NEXT_PROPERTY.intValue();
     private long prevProp = Record.NO_PREVIOUS_PROPERTY.intValue();
-    private final List<PropertyBlock> blockRecords = new ArrayList<PropertyBlock>(
-            4 );
+    private final List<PropertyBlock> blockRecords = new ArrayList<PropertyBlock>( 4 );
     private long entityId = -1;
     private boolean nodeIdSet;
     private boolean isChanged;
@@ -197,5 +196,22 @@ public class PropertyRecord extends Abstract64BitRecord
     public void setPrevProp( long prev )
     {
         prevProp = prev;
+    }
+    
+    @Override
+    public PropertyRecord clone()
+    {
+        PropertyRecord result = new PropertyRecord( getLongId() );
+        result.setInUse( inUse() );
+        result.nextProp = nextProp;
+        result.prevProp = prevProp;
+        result.entityId = entityId;
+        result.nodeIdSet = nodeIdSet;
+        result.isChanged = isChanged;
+        for ( PropertyBlock block : blockRecords )
+            result.blockRecords.add( block.clone() );
+        for ( DynamicRecord deletedRecord : deletedRecords )
+            result.deletedRecords.add( deletedRecord.clone() );
+        return result;
     }
 }
