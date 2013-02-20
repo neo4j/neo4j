@@ -21,7 +21,6 @@ package org.neo4j.cypher
 
 import org.scalatest.Assertions
 import org.junit.Test
-import org.junit.Assert._
 
 class ProfilerAcceptanceTest extends ExecutionEngineHelper with Assertions {
   @Test
@@ -41,7 +40,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineHelper with Assertions {
     materialise(result)
 
     //WHEN THEN
-    assertContains(result, "rows=1")
+    assertRows(1)(result)("ColumnFilter")
   }
 
   @Test
@@ -52,7 +51,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineHelper with Assertions {
     materialise(result)
 
     //WHEN THEN
-    assertContains(result, "dbhits=1")
+    assertDbHits(1)(result)("ColumnFilter", "Extract", "Nodes")
   }
 
   @Test
@@ -62,14 +61,26 @@ class ProfilerAcceptanceTest extends ExecutionEngineHelper with Assertions {
     materialise(result)
 
     //WHEN THEN
-    assertContains(result, "dbhits=1")
+    assertDbHits(1)(result)("ColumnFilter", "Extract", "Nodes")
   }
 
-
-  private def assertContains(result:ExecutionResult, expected:String) {
-    assertTrue(s"Expected ´$expected´, but got: \n${result.executionPlanDescription()}", result.executionPlanDescription().contains(expected))
+  private def assertRows(expectedRows: Int)(result: ExecutionResult)(names: String*) {
+    assert(expectedRows === parentCd(result, names).getProfilerStatistics.getRows)
   }
 
+  private def assertDbHits(expectedHits: Int)(result: ExecutionResult)(names: String*) {
+    assert(expectedHits === parentCd(result, names).getProfilerStatistics.getDbHits)
+  }
+
+  private def parentCd(result: ExecutionResult, names: Seq[String]) = {
+    val descr = result.executionPlanDescription()
+    if (names.isEmpty)
+      descr
+    else {
+      assert(names.head === descr.getName)
+      descr.cd(names.tail:_*)
+    }
+  }
   private def materialise(result: ExecutionResult) {
     result.size
   }

@@ -30,6 +30,7 @@ import internal.spi.gdsimpl.GDSBackedQueryContext
 import internal.symbols.{NodeType, RelationshipType, SymbolTable}
 import org.neo4j.kernel.InternalAbstractGraphDatabase
 import org.neo4j.graphdb.GraphDatabaseService
+import javacompat.{PlanDescription => JPlanDescription}
 
 class ExecutionPlanImpl(inputQuery: Query, graph: GraphDatabaseService) extends ExecutionPlan with PatternGraphBuilder {
   val executionPlan: (Boolean, Map[String, Any]) => ExecutionResult = prepareExecutionPlan()
@@ -143,7 +144,7 @@ class ExecutionPlanImpl(inputQuery: Query, graph: GraphDatabaseService) extends 
     func
   }
 
-  private def prepareStateAndResult(params: Map[String, Any], pipe: Pipe, profile: Boolean): (QueryState, Iterator[ExecutionContext], () => String) = {
+  private def prepareStateAndResult(params: Map[String, Any], pipe: Pipe, profile: Boolean): (QueryState, Iterator[ExecutionContext], () => JPlanDescription) = {
     val tx = graph.beginTx()
 
     val decorator: PipeDecorator = if (profile)
@@ -159,7 +160,7 @@ class ExecutionPlanImpl(inputQuery: Query, graph: GraphDatabaseService) extends 
 
       val closingIterator = new ClosingIterator[ExecutionContext](results, state.query, tx)
 
-      (state, closingIterator, () => decorator.decorate(pipe.executionPlanDescription).toString)
+      (state, closingIterator, () => decorator.decorate(pipe.executionPlanDescription).asJava)
     } catch {
       case e: Throwable =>
         tx.failure()

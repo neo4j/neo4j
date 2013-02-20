@@ -60,10 +60,10 @@ class Profiler extends PipeDecorator {
       if (iteratorStats.nonEmpty)
         throw new ProfilerStatisticsNotReadyException()
 
-      val newArgs = p.args :+ "rows" -> iteratorStats.count
+      val newArgs = p.args :+ "_rows" -> iteratorStats.count
 
       contextStats.get(p.pipe) match {
-        case Some(stats) => newArgs :+ "dbhits" -> stats.count
+        case Some(stats) => newArgs :+ "_db_hits" -> stats.count
         case None        => newArgs
       }
 
@@ -71,9 +71,9 @@ class Profiler extends PipeDecorator {
 }
 
 trait Counter {
-  def count = _count
-
   private var _count = 0
+
+  def count = _count
 
   def increment() {
     _count += 1

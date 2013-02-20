@@ -104,7 +104,7 @@ public class ExecutionResult implements Iterable<Map<String,Object>>
      * Returns a string representation of the query plan used to produce this result.
      * @return a string representation of the query plan used to produce this result.
      */
-    public String executionPlanDescription()
+    public PlanDescription executionPlanDescription()
     {
         return inner.executionPlanDescription();
     }
