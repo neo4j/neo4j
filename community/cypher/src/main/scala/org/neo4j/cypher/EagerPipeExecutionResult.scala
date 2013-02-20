@@ -28,7 +28,7 @@ class EagerPipeExecutionResult(result: Iterator[Map[String, Any]],
                                columns: List[String],
                                state: QueryState,
                                db: GraphDatabaseService,
-                               planDescriptor: () => JPlanDescription)
+                               planDescriptor: () => PlanDescription)
   extends PipeExecutionResult(result, columns, state, planDescriptor) {
 
   val (eagerResult,timeTaken) = super.createTimedResults

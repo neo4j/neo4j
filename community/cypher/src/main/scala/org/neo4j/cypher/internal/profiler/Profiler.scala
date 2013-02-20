@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.spi.{DelegatingOperations, Operations, QueryCon
 import collection.mutable
 import org.neo4j.cypher.{ProfilerStatisticsNotReadyException, PlanDescription}
 import org.neo4j.graphdb.{PropertyContainer, Direction, Relationship, Node}
+import org.neo4j.cypher.internal.data.PrimVal
 
 class Profiler extends PipeDecorator {
 
@@ -60,10 +61,10 @@ class Profiler extends PipeDecorator {
       if (iteratorStats.nonEmpty)
         throw new ProfilerStatisticsNotReadyException()
 
-      val newArgs = p.args :+ "_rows" -> iteratorStats.count
+      val newArgs = p.args :+ "_rows" -> PrimVal(iteratorStats.count)
 
       contextStats.get(p.pipe) match {
-        case Some(stats) => newArgs :+ "_db_hits" -> stats.count
+        case Some(stats) => newArgs :+ "_db_hits" -> PrimVal(stats.count)
         case None        => newArgs
       }
 
@@ -71,12 +72,12 @@ class Profiler extends PipeDecorator {
 }
 
 trait Counter {
-  private var _count = 0
+  private var _count = 0L
 
   def count = _count
 
   def increment() {
-    _count += 1
+    _count += 1L
   }
 }
 

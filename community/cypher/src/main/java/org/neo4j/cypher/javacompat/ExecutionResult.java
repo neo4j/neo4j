@@ -106,7 +106,7 @@ public class ExecutionResult implements Iterable<Map<String,Object>>
      */
     public PlanDescription executionPlanDescription()
     {
-        return inner.executionPlanDescription();
+        return inner.executionPlanDescription().asJava();
     }
 
     public void toString( PrintWriter writer )

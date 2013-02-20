@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.pipes
 import org.neo4j.cypher.internal.symbols.SymbolTable
 import org.neo4j.cypher.internal.ExecutionContext
 import org.neo4j.cypher.PlanDescription
+import org.neo4j.helpers.ThisShouldNotHappenError
 
 /**
  * Pipe is a central part of Cypher. Most pipes are decorators - they
@@ -30,7 +31,7 @@ import org.neo4j.cypher.PlanDescription
  * the execute the query.
  */
 trait Pipe {
-  def createResults(state:QueryState) = {
+  def createResults(state: QueryState) : Iterator[ExecutionContext] = {
     val decoratedState = state.decorator.decorate(this, state)
     val result = internalCreateResults(decoratedState)
     state.decorator.decorate(this, result)
@@ -44,7 +45,7 @@ trait Pipe {
 }
 
 object NullPipe extends Pipe {
-  protected def internalCreateResults(state: QueryState) = Iterator(ExecutionContext.empty)
+  def internalCreateResults(state: QueryState) = Iterator(ExecutionContext.empty)
 
   val symbols: SymbolTable = new SymbolTable()
 
@@ -55,4 +56,17 @@ abstract class PipeWithSource(val source: Pipe) extends Pipe {
   def throwIfSymbolsMissing(symbols: SymbolTable)
 
   throwIfSymbolsMissing(source.symbols)
+
+  override def createResults(state: QueryState): Iterator[ExecutionContext] = {
+    val sourceResult = source.createResults(state)
+
+    val decoratedState = state.decorator.decorate(this, state)
+    val result = internalCreateResults(sourceResult, decoratedState)
+    state.decorator.decorate(this, result)
+  }
+
+  protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] =
+    throw new ThisShouldNotHappenError("Andres", "This method should never be called on PipeWithSource")
+
+  protected def internalCreateResults(input:Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext]
 }

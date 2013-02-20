@@ -1,10 +1,29 @@
+/**
+ * Copyright (c) 2002-2013 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package org.neo4j.cypher.javacompat;
+
+import org.neo4j.cypher.ProfilerStatisticsNotReadyException;
 
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
-
-import org.neo4j.cypher.ProfilerStatisticsNotReadyException;
 
 /**
  * Instances describe single execution steps in a Cypher query execution plan
@@ -20,25 +39,14 @@ public interface PlanDescription
     public String getName();
 
     /**
-     * @return a map containing arbitrary arguments that describe this execution step in more detail
+     * Retrieve argument map for the associated execution step
+     *
+     * Valid arguments are all Java primitive values, Strings, Arrays of those, and Maps from Strings to
+     * valid arguments.  Results are guaranteed to be trees (i.e. there are no cyclic dependencies among values)
+     *
+     * @return a map containing arguments that describe this execution step in more detail
      */
     public Map<String, Object> getArguments();
-
-    /**
-     * @return true if this is a topmost execution step
-     */
-    public boolean isRoot();
-
-    /**
-     * @return topmost PlanDescription below which the associated execution step is taking place
-     */
-    public PlanDescription getRoot();
-
-    /**
-     * @return PlanDescription of which this PlanDescription is a child
-     * @throws java.util.NoSuchElementException if this PlanDescription is a root
-     */
-    public PlanDescription getParent() throws NoSuchElementException;
 
     /**
      * Starting from this PlanDescription, retrieve children by successive calls to getChild() and

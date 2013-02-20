@@ -28,6 +28,7 @@ import org.neo4j.server.rest.repr.OutputFormat;
 
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import java.util.HashMap;
@@ -38,6 +39,8 @@ public class CypherService {
 
     private static final String PARAMS_KEY = "params";
     private static final String QUERY_KEY = "query";
+    private static final String INCLUDE_PLAN_PARAM = "includePlan";
+    private static final String PROFILE_PARAM = "profile";
 
     private CypherExecutor cypherExecutor;
     private OutputFormat output;
@@ -51,7 +54,9 @@ public class CypherService {
 
     @POST
     @SuppressWarnings({ "unchecked" })
-    public Response cypher(String body) throws BadInputException {
+    public Response cypher(String body,
+                           @QueryParam( INCLUDE_PLAN_PARAM ) boolean includePlan,
+                           @QueryParam( PROFILE_PARAM ) boolean profile) throws BadInputException {
         Map<String,Object> command = input.readMap( body );
         
         if( !command.containsKey(QUERY_KEY) ) {
@@ -61,8 +66,14 @@ public class CypherService {
         String query =  (String) command.get(QUERY_KEY);
         Map<String,Object> params = (Map<String, Object>) (command.containsKey(PARAMS_KEY) ? command.get(PARAMS_KEY) : new HashMap<String, Object>());
         try {
-            ExecutionResult result = cypherExecutor.getExecutionEngine().execute( query, params );
-            return output.ok(new CypherResultRepresentation( result ));
+            if (profile) {
+                ExecutionResult result = cypherExecutor.getExecutionEngine().profile( query, params );
+                return output.ok(new CypherResultRepresentation( result, true ));
+            }
+            else {
+                ExecutionResult result = cypherExecutor.getExecutionEngine().execute( query, params );
+                return output.ok(new CypherResultRepresentation( result, includePlan ));
+            }
         } catch(Exception e) {
             return output.badRequest(e);
         }

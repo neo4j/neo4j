@@ -144,7 +144,7 @@ class ExecutionPlanImpl(inputQuery: Query, graph: GraphDatabaseService) extends 
     func
   }
 
-  private def prepareStateAndResult(params: Map[String, Any], pipe: Pipe, profile: Boolean): (QueryState, Iterator[ExecutionContext], () => JPlanDescription) = {
+  private def prepareStateAndResult(params: Map[String, Any], pipe: Pipe, profile: Boolean): (QueryState, Iterator[ExecutionContext], () => PlanDescription) = {
     val tx = graph.beginTx()
 
     val decorator: PipeDecorator = if (profile)
@@ -152,15 +152,17 @@ class ExecutionPlanImpl(inputQuery: Query, graph: GraphDatabaseService) extends 
     else
       NullDecorator
 
+
     try {
       val gdsContext = new GDSBackedQueryContext(graph)
 
       val state = new QueryState(graph, gdsContext, params, decorator)
       val results = pipe.createResults(state)
+      val descriptor = () => decorator.decorate(pipe.executionPlanDescription)
 
       val closingIterator = new ClosingIterator[ExecutionContext](results, state.query, tx)
 
-      (state, closingIterator, () => decorator.decorate(pipe.executionPlanDescription).asJava)
+      (state, closingIterator, descriptor)
     } catch {
       case e: Throwable =>
         tx.failure()

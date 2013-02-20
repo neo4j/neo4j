@@ -204,6 +204,33 @@ public class CypherFunctionalTest extends AbstractRestFunctionalTestBase {
         assertThat( response, anyOf(containsString("\"I\", \"you\""), containsString("\"I\",\"you\"")) );
     }
 
+    /**
+     * By passing in an extra parameter, you can ask the cypher executor to return a profile of the query
+     * as it is executed. This can help in locating bottlenecks.
+     */
+    @Test
+    @Documented
+    @Title( "Profile a query" )
+    @Graph( nodes = {
+            @NODE( name = "I", setNameProperty = true ),
+            @NODE( name = "you", setNameProperty = true ),
+            @NODE( name = "him", setNameProperty = true, properties = {
+                    @PROP( key = "age", value = "25", type = GraphDescription.PropType.INTEGER ) } ) },
+            relationships = {
+                    @REL( start = "I", end = "him", type = "know", properties = { } ),
+                    @REL( start = "I", end = "you", type = "know", properties = { } ) } )
+    public void testProfiling() throws UnsupportedEncodingException {
+        String script = createScript( "start x  = node(%I%) match x -[r]-> n return type(r), n.name?, n.age?" );
+
+        String response = doCypherRestCall( cypherUri() + "?profile=true", script, Status.OK );
+
+        assertThat( response, containsString( "you" ) );
+        assertThat( response, containsString( "him" ) );
+        assertThat( response, containsString( "25" ) );
+        assertThat( response, containsString( "plan" ) );
+        assertThat( response, not( containsString( "\"x\"" ) ) );
+    }
+
     @Test
     @Graph( value = { "I know you" }, autoIndexNodes = false )
     public void array_property() throws Exception {
@@ -247,7 +274,7 @@ public class CypherFunctionalTest extends AbstractRestFunctionalTestBase {
 
     private String cypherRestCall( String script, Status status, Pair<String, String> ...params )
     {
-        return super.doCypherRestCall( cypherUri(), script, status, params );
+        return doCypherRestCall( cypherUri(), script, status, params );
     }
 
     private String cypherUri()

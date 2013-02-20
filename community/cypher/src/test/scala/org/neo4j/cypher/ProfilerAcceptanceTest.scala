@@ -37,7 +37,6 @@ class ProfilerAcceptanceTest extends ExecutionEngineHelper with Assertions {
     //GIVEN
     createNode("foo" -> "bar")
     val result: ExecutionResult = engine.profile("START n=node(1) RETURN n")
-    materialise(result)
 
     //WHEN THEN
     assertRows(1)(result)("ColumnFilter")
@@ -48,7 +47,6 @@ class ProfilerAcceptanceTest extends ExecutionEngineHelper with Assertions {
     //GIVEN
     createNode("foo" -> "bar")
     val result: ExecutionResult = engine.profile("START n=node(1) RETURN n.foo")
-    materialise(result)
 
     //WHEN THEN
     assertDbHits(1)(result)("ColumnFilter", "Extract", "Nodes")
@@ -58,7 +56,6 @@ class ProfilerAcceptanceTest extends ExecutionEngineHelper with Assertions {
   def tracks_graph_global_queries() {
     //GIVEN
     val result: ExecutionResult = engine.profile("START n=node(*) RETURN n")
-    materialise(result)
 
     //WHEN THEN
     assertDbHits(1)(result)("ColumnFilter", "Extract", "Nodes")
@@ -73,15 +70,13 @@ class ProfilerAcceptanceTest extends ExecutionEngineHelper with Assertions {
   }
 
   private def parentCd(result: ExecutionResult, names: Seq[String]) = {
-    val descr = result.executionPlanDescription()
+    result.toList
+    val descr = result.executionPlanDescription().asJava
     if (names.isEmpty)
       descr
     else {
       assert(names.head === descr.getName)
-      descr.cd(names.tail:_*)
+      descr.cd(names.tail: _*)
     }
-  }
-  private def materialise(result: ExecutionResult) {
-    result.size
   }
 }

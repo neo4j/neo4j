@@ -20,7 +20,6 @@
 package org.neo4j.cypher
 
 import java.io.PrintWriter
-import org.neo4j.cypher.javacompat.{PlanDescription => JPlanDescription}
 import java.lang.String
 
 trait ExecutionResult extends Iterator[Map[String, Any]] {
@@ -32,7 +31,7 @@ trait ExecutionResult extends Iterator[Map[String, Any]] {
   def dumpToString(writer: PrintWriter)
   def dumpToString(): String
   def queryStatistics(): QueryStatistics
-  def executionPlanDescription(): JPlanDescription
+  def executionPlanDescription(): PlanDescription
 }
 
 
