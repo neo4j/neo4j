@@ -109,7 +109,7 @@ public final class ConfigurationBean extends Neo4jMBean
         for ( String key : config.keySet() )
         {
             keys.add( new MBeanAttributeInfo( key, String.class.getName(),
-                                              describeConfigParameter( key ), true, true, false ) );
+                                              describeConfigParameter( key ), true, false, false ) );
         }
         return keys.toArray( new MBeanAttributeInfo[keys.size()] );
     }
