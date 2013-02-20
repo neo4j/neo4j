@@ -162,7 +162,7 @@
                     includes="**" />
                 </copy>
 
-                <copy toDir="${project.build.outputDirectory}/coordinator">
+                <copy toDir="${project.build.outputDirectory}/arbiter">
                   <fileset dir="${project.build.outputDirectory}/enterprise"
                     includes="**" />
                 </copy>
@@ -187,12 +187,12 @@
                   <arg line="installer.commands" />
                 </exec>
 
-                <!-- For enterprise, create coordinator installer as well -->
+                <!-- For enterprise, create arbiter installer as well -->
                 <exec executable="${ai.executable}"
-                  dir="${project.build.outputDirectory}/coordinator">
+                  dir="${project.build.outputDirectory}/arbiter">
                   <arg line="/execute" />
-                  <arg line="coordinator-installer.aip" />
-                  <arg line="coordinator-installer.commands" />
+                  <arg line="arbiter-installer.aip" />
+                  <arg line="arbiter-installer.commands" />
                 </exec>
 
                 <!-- Copy resulting installers into /target, and give them 
@@ -207,8 +207,8 @@
                   file="${project.build.outputDirectory}/enterprise/BuildSetupFiles/installer.msi"
                   toFile="target/neo4j-enterprise-setup-${neo4j.version}.msi" />
                 <copy
-                  file="${project.build.outputDirectory}/coordinator/BuildSetupFiles/installer.msi"
-                  toFile="target/neo4j-coordinator-setup-${neo4j.version}.msi" />
+                  file="${project.build.outputDirectory}/arbiter/BuildSetupFiles/installer.msi"
+                  toFile="target/neo4j-arbiter-setup-${neo4j.version}.msi" />
 
               </target>
             </configuration>

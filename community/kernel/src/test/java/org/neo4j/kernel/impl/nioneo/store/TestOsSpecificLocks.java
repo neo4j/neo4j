@@ -38,6 +38,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.Settings;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
+import org.neo4j.kernel.StoreLocker;
 import org.neo4j.test.TargetDirectory;
 
 public class TestOsSpecificLocks
@@ -58,8 +59,8 @@ public class TestOsSpecificLocks
     {
         assumeTrue( Settings.osIsWindows() );
         FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
-        // Must end in neostore to get the lock
-        File fileName = new File( path, "neostore");
+        // Must grab locks only on store_lock file
+        File fileName = new File( path, StoreLocker.STORE_LOCK_FILENAME );
         FileChannel channel = fs.open( fileName, "rw" );
         // Lock this sucker!
         FileLock lock = fs.tryLock( fileName, channel );

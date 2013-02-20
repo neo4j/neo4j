@@ -342,6 +342,9 @@ public abstract class InternalAbstractGraphDatabase
 
         config.setLogger( msgLog );
 
+        StoreLocker storeLocker = new StoreLocker( config, fileSystem, msgLog );
+        life.add(new StoreLockerLifecycleAdapter( storeLocker, storeDir ));
+
         new JvmChecker(msgLog, new JvmMetadataRepository() ).checkJvmCompatibilityAndIssueWarning();
 
         // Instantiate all services - some are overridable by subclasses

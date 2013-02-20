@@ -248,16 +248,13 @@ public class StateMachineProxyFactory
         public synchronized Object get()
                 throws InterruptedException, ExecutionException
         {
-            LoggerFactory.getLogger(StateMachineProxyFactory.class).info( "Current response is:"+response);
-
             if ( response != null )
             {
                 return getResult();
             }
 
-            LoggerFactory.getLogger(StateMachineProxyFactory.class).info( "Waiting for:"+conversationId );
-            this.wait();
-            LoggerFactory.getLogger(StateMachineProxyFactory.class).info( "Wait interrupted:"+conversationId );
+            while (response == null)
+                this.wait();
 
             return getResult();
         }
