@@ -9,3 +9,4 @@ These indexes are automatically managed and kept up to date by the database when
 :leveloffset: 2
 
 include::create-index-on-a-label.asciidoc[]
+include::remove-index-on-a-label.asciidoc[]

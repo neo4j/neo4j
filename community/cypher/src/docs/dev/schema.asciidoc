@@ -7,4 +7,4 @@ Cypher allows you to manipulate that schema using the Cypher data definition lan
 
 The currently supported operations are:
 
-. <<query-create-index, Create schema based indexes>>
+. <<query-schema-index, Schema based indexes>>
