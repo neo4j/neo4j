@@ -20,15 +20,13 @@
 package org.neo4j.cypher.internal.pipes
 
 import org.neo4j.cypher.internal.symbols.SymbolTable
-import org.neo4j.cypher.PlanDescription
+import org.neo4j.cypher.internal.ExecutionContext
 
-class EmptyResultPipe(source: Pipe)
-  extends PipeWithSource(source) {
+class EmptyResultPipe(source: Pipe) extends PipeWithSource(source) {
 
-  protected def internalCreateResults(state: QueryState) = {
-    val iter = source.createResults(state)
-    while(iter.hasNext) {
-      iter.next()
+  protected def internalCreateResults(input:Iterator[ExecutionContext], state: QueryState) = {
+    while(input.hasNext) {
+      input.next()
     }
 
     Iterator()

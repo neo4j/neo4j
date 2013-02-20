@@ -21,13 +21,14 @@ package org.neo4j.cypher.internal.pipes
 
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.cypher.internal.symbols.SymbolTable
+import org.neo4j.cypher.internal.ExecutionContext
 
 class TransactionStartPipe(source: Pipe, graph: GraphDatabaseService) extends PipeWithSource(source) {
-  protected def internalCreateResults(state:QueryState) = {
+  protected def internalCreateResults(input:Iterator[ExecutionContext], state:QueryState) = {
     val tx = graph.beginTx()
     state.transaction = Some(tx)
 
-    source.createResults(state)
+    input
   }
 
   def executionPlanDescription = source.executionPlanDescription.andThen(this, "StartTransaction")
