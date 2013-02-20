@@ -1,7 +1,12 @@
-1.8.2 (2013-02-??)
+1.8.2 (2013-02-25)
 -------------------
+o Relationship types now use all 16 bits of their address space
+o During recovery start entries now are explicitly marked as written, solving
+  many bugs making startup impossible.
 o Cached nodes have their relationship chain information properly updated on relationship deletes, so traversals will
   complete successfully even with concurrent modifications from other transactions.
+o Store locking now is respected from read only instaces too, removing
+  potential avenues for index corruption.
 
 1.8.1
 -----

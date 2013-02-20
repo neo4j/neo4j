@@ -1,10 +1,24 @@
 For Release Notes, see http://neo4j.org/release-notes
 
-1.8.2 (2013-02-??)
+1.8.2 (2013-02-25)
 -------------------
+HA:
+o IndexManager and Indexes now survive internal restarts during role switches
+o Slave only instances no longer try to flush, stopping confusing exceptions
+
+Com:
+o When netty >= 3.5.7.Final is on the classpath, releaseExternalResources()
+  will be called on Server shutdown. That makes clean shutdown possible when
+  using that netty version.
+
 Kernel:
- o Cached nodes have their relationship chain information properly updated on relationship deletes, so traversals will
-   complete successfully even with concurrent modifications from other transactions.
+o Relationship types now use all 16 bits of their address space
+o During recovery start entries now are explicitly marked as written, solving
+  many bugs making startup impossible.
+o Cached nodes have their relationship chain information properly updated on relationship deletes, so traversals will
+  complete successfully even with concurrent modifications from other transactions.
+o Store locking now is respected from read only instances too, removing
+  potential avenues for index corruption.
 
 1.8.1 (2012-12-13)
 --------------------
