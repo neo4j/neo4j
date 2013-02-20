@@ -23,9 +23,10 @@ import org.neo4j.cypher.internal.symbols._
 import org.neo4j.cypher.CypherTypeException
 import org.neo4j.cypher.internal.helpers.{TypeSafeMathSupport, IsCollection}
 import org.neo4j.cypher.internal.ExecutionContext
+import org.neo4j.cypher.internal.pipes.QueryState
 
 case class Add(a: Expression, b: Expression) extends Expression with TypeSafeMathSupport {
-  def apply(ctx: ExecutionContext) = {
+  def apply(ctx: ExecutionContext)(implicit state: QueryState) = {
     val aVal = a(ctx)
     val bVal = b(ctx)
 

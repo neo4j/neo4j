@@ -24,9 +24,10 @@ import org.neo4j.cypher.SyntaxException
 import org.neo4j.cypher.internal.symbols._
 import collection.JavaConverters._
 import org.neo4j.cypher.internal.ExecutionContext
+import org.neo4j.cypher.internal.pipes.QueryState
 
 case class NodesFunction(path: Expression) extends NullInNullOutExpression(path) {
-  def compute(value: Any, m: ExecutionContext) = value match {
+  def compute(value: Any, m: ExecutionContext)(implicit state: QueryState) = value match {
     case p: Path => p.nodes().asScala.toSeq
     case x       => throw new SyntaxException("Expected " + path + " to be a path.")
   }

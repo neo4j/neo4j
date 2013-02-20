@@ -35,7 +35,7 @@ class ExecuteUpdateCommandsPipe(source: Pipe, db: GraphDatabaseService, commands
 
   assertNothingIsCreatedWhenItShouldNot()
 
-  def createResults(state: QueryState) = {
+  protected def internalCreateResults(state: QueryState) = {
     val input = source.createResults(state)
     val result = input.flatMap {
       case ctx => executeMutationCommands(ctx, state, commands.size == 1)
@@ -88,7 +88,7 @@ class ExecuteUpdateCommandsPipe(source: Pipe, db: GraphDatabaseService, commands
   }
 
   override def executionPlanDescription =
-    source.executionPlanDescription.andThen("UpdateGraph", "commands" -> commands.map(_.toString))
+    source.executionPlanDescription.andThen(this, "UpdateGraph", "commands" -> commands.map(_.toString))
 
   def symbols = source.symbols.add(commands.flatMap(_.identifiers).toMap)
 

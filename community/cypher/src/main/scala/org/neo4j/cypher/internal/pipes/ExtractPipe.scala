@@ -32,17 +32,17 @@ class ExtractPipe(source: Pipe, val expressions: Map[String, Expression]) extend
     source.symbols.add(newIdentifiers)
   }
 
-  def createResults(state: QueryState) = source.createResults(state).map(subgraph => {
+  protected def internalCreateResults(state: QueryState) = source.createResults(state).map(subgraph => {
     expressions.foreach {
       case (name, expression) =>
-        subgraph += name -> expression(subgraph)
+        subgraph += name -> expression(subgraph)(state)
     }
     subgraph
   })
 
   override def executionPlanDescription =
     source.executionPlanDescription
-      .andThen("Extract", "symKeys" -> source.symbols.keys, "exprKeys" -> expressions.keys)
+      .andThen(this, "Extract", "symKeys" -> source.symbols.keys, "exprKeys" -> expressions.keys)
 
   override def throwIfSymbolsMissing(symbols: SymbolTable) {
     expressions.foreach(_._2.throwIfSymbolsMissing(symbols))

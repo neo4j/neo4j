@@ -23,9 +23,10 @@ import org.neo4j.graphdb.{Relationship, Node, Direction, PropertyContainer}
 import org.neo4j.cypher.internal.commands.Predicate
 import collection.Map
 import org.neo4j.cypher.internal.ExecutionContext
+import org.neo4j.cypher.internal.pipes.QueryState
 
 class PatterMatchingBuilder(patternGraph: PatternGraph, predicates: Seq[Predicate]) extends MatcherBuilder {
-  def getMatches(sourceRow: ExecutionContext): Traversable[ExecutionContext] = {
+  def getMatches(sourceRow: ExecutionContext, state:QueryState): Traversable[ExecutionContext] = {
     val bindings: Map[String, Any] = sourceRow.filter(_._2.isInstanceOf[PropertyContainer])
     val boundPairs: Map[String, MatchingPair] = extractBoundMatchingPairs(bindings)
 
@@ -36,15 +37,15 @@ class PatterMatchingBuilder(patternGraph: PatternGraph, predicates: Seq[Predicat
       filter(_.dir == Direction.BOTH)
 
     val mandatoryPattern: Traversable[ExecutionContext] = if (undirectedBoundRelationships.isEmpty) {
-      createPatternMatcher(boundPairs, false, sourceRow)
+      createPatternMatcher(boundPairs, false, sourceRow, state)
     } else {
       val boundRels: Seq[Map[String, MatchingPair]] = createListOfBoundRelationshipsWithHangingNodes(undirectedBoundRelationships, bindings)
 
-      boundRels.map(relMap => createPatternMatcher(relMap ++ boundPairs, false, sourceRow)).reduceLeft(_ ++ _)
+      boundRels.map(relMap => createPatternMatcher(relMap ++ boundPairs, false, sourceRow, state)).reduceLeft(_ ++ _)
     }
 
     if (patternGraph.containsOptionalElements)
-      mandatoryPattern.flatMap(innerMatch => createPatternMatcher(extractBoundMatchingPairs(innerMatch), true, sourceRow))
+      mandatoryPattern.flatMap(innerMatch => createPatternMatcher(extractBoundMatchingPairs(innerMatch), true, sourceRow, state))
     else
       mandatoryPattern
   }
@@ -80,11 +81,11 @@ class PatterMatchingBuilder(patternGraph: PatternGraph, predicates: Seq[Predicat
         result.flatMap(r => element.map(e => e :: r))
     ).toSeq
 
-  private def createPatternMatcher(boundPairs: Map[String, MatchingPair], includeOptionals: Boolean, source: ExecutionContext): Traversable[ExecutionContext] = {
+  private def createPatternMatcher(boundPairs: Map[String, MatchingPair], includeOptionals: Boolean, source: ExecutionContext, state:QueryState): Traversable[ExecutionContext] = {
     val patternMatcher = if (patternGraph.hasDoubleOptionals)
-      new DoubleOptionalPatternMatcher(boundPairs, predicates, includeOptionals, source, patternGraph.doubleOptionalPaths)
+      new DoubleOptionalPatternMatcher(boundPairs, predicates, includeOptionals, source, state, patternGraph.doubleOptionalPaths)
     else
-      new PatternMatcher(boundPairs, predicates, includeOptionals, source)
+      new PatternMatcher(boundPairs, predicates, includeOptionals, source, state)
 
     if (includeOptionals)
       patternMatcher.map(matchedGraph => matchedGraph ++ createNullValuesForOptionalElements(matchedGraph))

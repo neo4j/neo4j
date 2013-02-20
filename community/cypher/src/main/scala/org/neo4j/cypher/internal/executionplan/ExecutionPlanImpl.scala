@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.executionplan
 import builders._
 import org.neo4j.cypher.internal.pipes._
 import org.neo4j.cypher._
+import internal.profiler.Profiler
 import internal.{ExecutionContext, ClosingIterator}
 import internal.commands._
 import internal.mutation.{CreateNode, CreateRelationship}
@@ -31,13 +32,15 @@ import org.neo4j.kernel.InternalAbstractGraphDatabase
 import org.neo4j.graphdb.GraphDatabaseService
 
 class ExecutionPlanImpl(inputQuery: Query, graph: GraphDatabaseService) extends ExecutionPlan with PatternGraphBuilder {
-  val executionPlan = prepareExecutionPlan()
+  val executionPlan: (Boolean, Map[String, Any]) => ExecutionResult = prepareExecutionPlan()
 
-  def execute(params: Map[String, Any]): ExecutionResult = executionPlan(params)
+  def execute(params: Map[String, Any]): ExecutionResult = executionPlan(false, params)
+
+  def profile(params: Map[String, Any]): ExecutionResult = executionPlan(true, params)
 
   lazy val lockManager = graph.asInstanceOf[InternalAbstractGraphDatabase].getLockManager
 
-  private def prepareExecutionPlan(): (Map[String, Any]) => ExecutionResult = {
+  private def prepareExecutionPlan(): (Boolean, Map[String, Any]) => ExecutionResult = {
     var continue = true
     var planInProgress = ExecutionPlanInProgress(PartiallySolvedQuery(inputQuery), new ParameterPipe(), containsTransaction = false)
     checkFirstQueryPattern(planInProgress)
@@ -123,25 +126,40 @@ class ExecutionPlanImpl(inputQuery: Query, graph: GraphDatabaseService) extends 
     columns
   }
 
-  private def getLazyReadonlyQuery(pipe: Pipe, columns: List[String]): Map[String, Any] => ExecutionResult =
-    (params: Map[String, Any]) => {
-    val (state, results) = prepareStateAndResult(params, pipe)
+  private def getLazyReadonlyQuery(pipe: Pipe, columns: List[String]): (Boolean, Map[String, Any]) => ExecutionResult =
+    (profile: Boolean, params: Map[String, Any]) => {
+      val (state, results, planDescriptor) = prepareStateAndResult(params, pipe, profile)
 
-    new PipeExecutionResult(results, columns, state, pipe.executionPlanDescription.toString)
+      new PipeExecutionResult(results, columns, state, planDescriptor)
   }
 
-  private def prepareStateAndResult(params: Map[String, Any], pipe: Pipe): (QueryState, Iterator[ExecutionContext]) = {
+  private def getEagerReadWriteQuery(pipe: Pipe, columns: List[String]): (Boolean, Map[String, Any]) => ExecutionResult = {
+    val func = (profile: Boolean, params: Map[String, Any]) => {
+      val (state, results, planDescriptor) = prepareStateAndResult(params, pipe, profile)
+
+      new EagerPipeExecutionResult(results, columns, state, graph, planDescriptor)
+    }
+
+    func
+  }
+
+  private def prepareStateAndResult(params: Map[String, Any], pipe: Pipe, profile: Boolean): (QueryState, Iterator[ExecutionContext], () => String) = {
     val tx = graph.beginTx()
 
-    try
-    {
+    val decorator: PipeDecorator = if (profile)
+      new Profiler()
+    else
+      NullDecorator
+
+    try {
       val gdsContext = new GDSBackedQueryContext(graph)
-      val state = new QueryState(graph, gdsContext, params)
+
+      val state = new QueryState(graph, gdsContext, params, decorator)
       val results = pipe.createResults(state)
 
       val closingIterator = new ClosingIterator[ExecutionContext](results, state.query, tx)
 
-      (state, closingIterator)
+      (state, closingIterator, () => decorator.decorate(pipe.executionPlanDescription).toString)
     } catch {
       case e: Throwable =>
         tx.failure()
@@ -150,14 +168,6 @@ class ExecutionPlanImpl(inputQuery: Query, graph: GraphDatabaseService) extends 
     }
   }
 
-  private def getEagerReadWriteQuery(pipe: Pipe, columns: List[String]): Map[String, Any] => ExecutionResult = {
-    val func = (params: Map[String, Any]) => {
-      val (state, results) = prepareStateAndResult(params, pipe)
-      new EagerPipeExecutionResult(results, columns, state, graph, pipe.executionPlanDescription.toString)
-    }
-
-    func
-  }
 
   private def produceAndThrowException(plan: ExecutionPlanInProgress) {
     val errors = builders.flatMap(builder => builder.missingDependencies(plan).map(builder -> _)).toList.

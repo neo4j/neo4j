@@ -23,6 +23,7 @@ import java.lang.Math
 import org.neo4j.cypher.CypherTypeException
 import org.neo4j.cypher.internal.symbols._
 import org.neo4j.cypher.internal.ExecutionContext
+import org.neo4j.cypher.internal.pipes.QueryState
 
 abstract class MathFunction(arg: Expression) extends Expression with NumericHelper {
   def innerExpectedType = NumberType()
@@ -47,13 +48,13 @@ trait NumericHelper {
 }
 
 case class AbsFunction(argument: Expression) extends MathFunction(argument) {
-  def apply(ctx: ExecutionContext): Any = Math.abs(asDouble(argument(ctx)))
+  def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = Math.abs(asDouble(argument(ctx)))
 
   def rewrite(f: (Expression) => Expression) = f(AbsFunction(argument.rewrite(f)))
 }
 
 case class RangeFunction(start: Expression, end: Expression, step: Expression) extends Expression with NumericHelper {
-  def apply(ctx: ExecutionContext): Any = {
+  def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = {
     val startVal = asInt(start(ctx))
     val endVal = asInt(end(ctx))
     val stepVal = asInt(step(ctx))
@@ -77,19 +78,19 @@ case class RangeFunction(start: Expression, end: Expression, step: Expression) e
 }
 
 case class SignFunction(argument: Expression) extends MathFunction(argument) {
-  def apply(ctx: ExecutionContext): Any = Math.signum(asDouble(argument(ctx)))
+  def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = Math.signum(asDouble(argument(ctx)))
 
   def rewrite(f: (Expression) => Expression) = f(SignFunction(argument.rewrite(f)))
 }
 
 case class RoundFunction(expression: Expression) extends MathFunction(expression) {
-  def apply(ctx: ExecutionContext): Any = math.round(asDouble(expression(ctx)))
+  def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = math.round(asDouble(expression(ctx)))
 
   def rewrite(f: (Expression) => Expression) = f(RoundFunction(expression.rewrite(f)))
 }
 
 case class SqrtFunction(argument: Expression) extends MathFunction(argument) {
-  def apply(ctx: ExecutionContext): Any = Math.sqrt(asDouble(argument(ctx)))
+  def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = Math.sqrt(asDouble(argument(ctx)))
 
   def rewrite(f: (Expression) => Expression) = f(SqrtFunction(argument.rewrite(f)))
 }

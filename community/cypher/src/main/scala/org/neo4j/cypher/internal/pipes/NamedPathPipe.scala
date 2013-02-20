@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.symbols.PathType
 import org.neo4j.cypher.PlanDescription
 
 class NamedPathPipe(source: Pipe, path: NamedPath) extends Pipe {
-  def createResults(state: QueryState) = {
+  protected def internalCreateResults(state: QueryState) = {
     source.createResults(state).map(ctx => {
       ctx.put(path.pathName, path.getPath(ctx))
       ctx
@@ -34,5 +34,5 @@ class NamedPathPipe(source: Pipe, path: NamedPath) extends Pipe {
   val symbols = source.symbols.add(path.pathName, PathType())
 
   override def executionPlanDescription =
-    source.executionPlanDescription.andThen("ExtractPath", "name" -> path.pathName, "patterns" -> path.pathPattern)
+    source.executionPlanDescription.andThen(this, "ExtractPath", "name" -> path.pathName, "patterns" -> path.pathPattern)
 }
