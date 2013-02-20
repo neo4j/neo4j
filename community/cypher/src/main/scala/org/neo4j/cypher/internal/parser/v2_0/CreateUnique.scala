@@ -25,13 +25,12 @@ import org.neo4j.cypher.internal.mutation.UniqueLink
 import org.neo4j.cypher.internal.commands.NamedPath
 import org.neo4j.cypher.internal.mutation.CreateUniqueAction
 import org.neo4j.cypher.internal.mutation.NamedExpectation
-import org.neo4j.cypher.internal.commands.True
 import collection.Map
 
 trait CreateUnique extends Base with ParserPattern {
   case class PathAndRelateLink(path:Option[NamedPath], links:Seq[UniqueLink])
 
-  def relate: Parser[(Seq[StartItem], Seq[NamedPath])] = ignoreCase("create unique") ~> usePattern(createUniqueTranslate) ^^
+  def relate: Parser[(Seq[StartItem], Seq[NamedPath])] = CREATE ~> UNIQUE ~> usePattern(createUniqueTranslate) ^^
     (patterns => {
       val (links, path) = reduce(patterns.map {
         case PathAndRelateLink(p, l) => (l, p.toSeq)

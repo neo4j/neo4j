@@ -28,7 +28,7 @@ trait Updates extends Base with Expressions with StartAndCreateClause {
   def updates: Parser[(Seq[UpdateAction], Seq[NamedPath])] =
     rep(foreach | liftToSeq(labelAction)  | set | delete) ^^ { x => (x.flatten, Seq.empty) }
 
-  private def foreach: Parser[Seq[UpdateAction]] = ignoreCase("foreach") ~> "(" ~> identity ~ ignoreCase("in") ~ expression ~ ":" ~ opt(createStart) ~ opt(updates) <~ ")" ^^ {
+  private def foreach: Parser[Seq[UpdateAction]] = FOREACH ~> parens( identity ~ IN ~ expression ~ ":" ~ opt(createStart) ~ opt(updates) ) ^^ {
     case id ~ in ~ collection ~ ":" ~ creates ~ innerUpdates =>
       val createCmds = creates.toSeq.map(_._1.map(_.asInstanceOf[UpdatingStartItem].updateAction)).flatten
       val reducedItems: (Seq[UpdateAction], Seq[NamedPath]) = reduce(innerUpdates.toSeq)
@@ -43,13 +43,13 @@ trait Updates extends Base with Expressions with StartAndCreateClause {
     case _ if x == "remove" => LabelDel
   }
 
-  private def labelAction: Parser[UpdateAction] = (ignoreCase("add") | ignoreCase("remove")) ~ identity ~ labelLongForm ^^ {
+  private def labelAction: Parser[UpdateAction] = (ADD | REMOVE) ~ identity ~ labelLongForm ^^ {
       case verb ~ entity ~ labels =>
         val action = getActionFromVerb(verb)
         LabelAction(Identifier(entity), action, labels.asExpr)
     }
 
-  private def delete: Parser[Seq[UpdateAction]] = ignoreCase("delete") ~> commaList(expression) ^^ {
+  private def delete: Parser[Seq[UpdateAction]] = DELETE ~> commaList(expression) ^^ {
     case expressions => val updateActions: List[UpdateAction with Product] = expressions.map {
       case Property(entity, property) => DeletePropertyAction(entity, property)
       case x => DeleteEntityAction(x)
@@ -59,7 +59,7 @@ trait Updates extends Base with Expressions with StartAndCreateClause {
   }
 
   private def set: Parser[Seq[UpdateAction]] = {
-    def setToMap : Parser[UpdateAction] = ignoreCase("set") ~> expression ~ "=" ~ expression ^^ {
+    def setToMap : Parser[UpdateAction] = SET ~> expression ~ "=" ~ expression ^^ {
       case element ~ "=" ~ map => MapPropertySetAction(element, map)
     }
 
@@ -68,7 +68,7 @@ trait Updates extends Base with Expressions with StartAndCreateClause {
         case p ~ "=" ~ e => PropertySetAction(p.asInstanceOf[Property], e)
       }
 
-      ignoreCase("set") ~> commaList(propertySet)
+      SET ~> commaList(propertySet)
     }
 
     setSingleProperty | liftToSeq(setToMap)

@@ -36,14 +36,14 @@ trait ReturnClause extends Base with Expressions {
 
   def returns =
     (returnsClause
-      | ignoreCase("return") ~> failure("return column list expected")
+      | RETURN ~> failure("return column list expected")
       | failure("expected return clause"))
 
-  def returnsClause: Parser[(Return, Option[Seq[AggregationExpression]])] = ignoreCase("return") ~> columnList
+  def returnsClause: Parser[(Return, Option[Seq[AggregationExpression]])] = RETURN ~> columnList
 
-  def alias: Parser[Option[String]] = opt(ignoreCase("as") ~> identity)
+  def alias: Parser[Option[String]] = opt(AS ~> identity)
 
-  def columnList:Parser[(Return, Option[Seq[AggregationExpression]])]  = opt(ignoreCase("distinct")) ~ commaList(column) ^^ {
+  def columnList:Parser[(Return, Option[Seq[AggregationExpression]])]  = opt(DISTINCT) ~ commaList(column) ^^ {
     case distinct ~ returnItems => {
       val columnName = returnItems.map(_.name).toList
 
@@ -65,9 +65,9 @@ trait ReturnClause extends Base with Expressions {
     }
   }
 
-  def withSyntax = ignoreCase("with") ~> columnList | "===" ~> rep("=") ~> columnList <~ "===" <~ rep("=")
+  def withSyntax = WITH ~> columnList | "===" ~> rep("=") ~> columnList <~ "===" <~ rep("=")
 
-  def WITH: Parser[(Return, Option[Seq[AggregationExpression]])] = withSyntax ^^ (columns => {
+  def withClause: Parser[(Return, Option[Seq[AggregationExpression]])] = withSyntax ^^ (columns => {
 
     val problemColumns = columns._1.returnItems.flatMap {
       case ReturnItem(_, _, true) => None

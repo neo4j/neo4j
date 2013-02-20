@@ -23,11 +23,8 @@ import org.neo4j.cypher.internal.commands.SortItem
 
 
 trait OrderByClause extends Base with Expressions  {
-  def desc:Parser[String] = ignoreCases("descending", "desc")
 
-  def asc:Parser[String] = ignoreCases("ascending", "asc")
-
-  def ascOrDesc:Parser[Boolean] = opt(asc | desc) ^^ {
+  def ascOrDesc: Parser[Boolean] = opt(ASC | DESC) ^^ {
     case None => true
     case Some(txt) => txt.toLowerCase.startsWith("a")
   }
@@ -35,8 +32,8 @@ trait OrderByClause extends Base with Expressions  {
   def sortItem :Parser[SortItem] = expression ~ ascOrDesc ^^ { case expression ~ reverse => SortItem(expression, reverse)  }
 
   def order: Parser[Seq[SortItem]] =
-    (ignoreCase("order by") ~> commaList(sortItem)
-      | ignoreCase("order") ~> failure("expected by"))
+    (ORDER ~> BY ~> commaList(sortItem)
+      | ORDER ~> failure("expected by"))
 }
 
 

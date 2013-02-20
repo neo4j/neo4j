@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.commands.True
 import values.LabelName
 
 trait MatchClause extends Base with ParserPattern {
-  def matching: Parser[(Seq[Pattern], Seq[NamedPath], Predicate)] = ignoreCase("match") ~> usePattern(labelTranslator) ^^ {
+  def matching: Parser[(Seq[Pattern], Seq[NamedPath], Predicate)] = MATCH ~> usePattern(labelTranslator) ^^ {
     case results: Seq[(Any, Predicate)] =>
       val matches = results.map(_._1)
       val predicates = results.map(_._2)

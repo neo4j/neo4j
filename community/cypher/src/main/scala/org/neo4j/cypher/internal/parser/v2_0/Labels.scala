@@ -32,7 +32,7 @@ trait Labels extends Base {
 
   private def labelExpr: Parser[LabelSet] = expression ^^ (expr => LabelSet(Some(expr)))
 
-  private def labelKeywordForm: Parser[LabelSet] = ignoreCase("label") ~> (labelShortForm | labelExpr)
+  private def labelKeywordForm: Parser[LabelSet] = LABEL ~> (labelShortForm | labelExpr)
 
   private def labelGroupsForm: Parser[LabelSpec] = rep1sep(labelShortForm, "|") ^^ {
     case labelSets => LabelChoice(labelSets: _*).simplify

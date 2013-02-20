@@ -35,6 +35,7 @@ with SkipLimitClause
 with OrderByClause
 with Updates
 with Index
+with Strings
 with ActualParser {
   @throws(classOf[SyntaxException])
   def parse(text: String): AbstractQuery = {
@@ -58,7 +59,7 @@ Thank you, the Neo4j Team.
 
   def mixedUnion = Parser {
     case in =>
-      val parser = query ~> ignoreCase("UNION") ~> opt(ignoreCase("ALL"))
+      val parser = query ~> UNION ~> opt(ALL)
 
       parser.apply(in) match {
         case Success(first, rest) => parser.apply(rest) match {
@@ -71,8 +72,8 @@ Thank you, the Neo4j Team.
   }
 
   def union: Parser[AbstractQuery] = mixedUnion |
-    rep2sep(query, ignoreCase("UNION")) ^^ { queries => Union(queries, distinct = true) } |
-    rep2sep(query, ignoreCase("UNION") ~ ignoreCase("ALL")) ^^ { queries => Union(queries, distinct = false) }
+    rep2sep(query, UNION) ^^ { queries => Union(queries, distinct = true) } |
+    rep2sep(query, UNION ~ ALL) ^^ { queries => Union(queries, distinct = false) }
 
   def query: Parser[Query] = start ~ body ^^ {
     case start ~ body => {
@@ -101,7 +102,7 @@ Thank you, the Neo4j Team.
     }
   }
 
-  def bodyWith: Parser[Body] = opt(matching) ~ opt(where) ~ WITH ~ opt(order) ~ opt(skip) ~ opt(limit) ~ opt(start) ~ updates ~ body ^^ {
+  def bodyWith: Parser[Body] = opt(matching) ~ opt(where) ~ withClause ~ opt(order) ~ opt(skip) ~ opt(limit) ~ opt(start) ~ updates ~ body ^^ {
     case matching ~ where ~ returns ~ order ~ skip ~ limit ~ start ~ updates ~ nextQ => {
       val (pattern, matchPaths, matchPredicate) = extractMatches(matching)
       val startItems = start.toSeq.flatMap(_._1)
