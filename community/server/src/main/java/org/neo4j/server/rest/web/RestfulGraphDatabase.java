@@ -20,6 +20,7 @@
 package org.neo4j.server.rest.web;
 
 import static java.lang.String.format;
+import static org.neo4j.helpers.collection.IteratorUtil.single;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -126,6 +127,7 @@ public class RestfulGraphDatabase
     public static final String PATH_SCHEMA = "schema";
     public static final String PATH_SCHEMA_INDEX = PATH_SCHEMA + "/index";
     public static final String PATH_SCHEMA_INDEX_LABEL = PATH_SCHEMA_INDEX + "/{label}";
+    public static final String PATH_SCHEMA_INDEX_LABEL_PROPERTY = PATH_SCHEMA_INDEX_LABEL + "/{property}";
 
     public static final String NODE_AUTO_INDEX_TYPE = "node";
     public static final String RELATIONSHIP_AUTO_INDEX_TYPE = "relationship";
@@ -165,8 +167,7 @@ public class RestfulGraphDatabase
 
     private static Response nothing()
     {
-        return Response.noContent()
-                .build();
+        return Response.noContent().build();
     }
 
     private Long extractNodeIdOrNull( String uri ) throws BadInputException
@@ -1596,6 +1597,31 @@ public class RestfulGraphDatabase
         catch ( BadInputException e )
         {
             return output.badRequest( e );
+        }
+        catch ( ConstraintViolationException e )
+        {
+            return output.conflict( e );
+        }
+    }
+    
+    @DELETE
+    @Path( PATH_SCHEMA_INDEX_LABEL_PROPERTY )
+    public Response dropSchemaIndex( @PathParam( "label" ) String labelName,
+            @PathParam( "property" ) AmpersandSeparatedCollection properties )
+    {
+        // TODO assumption, only a single property key
+        if ( properties.size() != 1 )
+        {
+            return output.badRequest( new IllegalArgumentException( "Single property key assumed" ) );
+        }
+        
+        String property = single( properties );
+        try
+        {
+            if ( actions.dropSchemaIndex( labelName, property ) )
+                return nothing();
+            else
+                return output.notFound();
         }
         catch ( ConstraintViolationException e )
         {

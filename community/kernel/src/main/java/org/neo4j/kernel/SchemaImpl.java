@@ -46,7 +46,7 @@ public class SchemaImpl implements Schema
     @Override
     public IndexCreator indexCreator( Label label )
     {
-        return new IndexCreatorImpl( ctxProvider.getCtxForWriting(), propertyKeyManager, label );
+        return new IndexCreatorImpl( ctxProvider, propertyKeyManager, label );
     }
 
     @Override
@@ -60,7 +60,7 @@ public class SchemaImpl implements Schema
                 @Override
                 public IndexDefinition apply( Long propertyKey )
                 {
-                    return new IndexDefinitionImpl( label,
+                    return new IndexDefinitionImpl( ctxProvider, label,
                             propertyKeyManager.getKeyByIdOrNull( propertyKey.intValue() ).getKey() );
                 }
             }, context.getIndexRules( context.getLabelId( label.name() ) ) );

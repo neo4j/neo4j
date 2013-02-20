@@ -21,7 +21,11 @@ package org.neo4j.server.rest;
 
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.helpers.collection.Iterables.map;
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.server.rest.domain.JsonHelper.createJsonFrom;
 import static org.neo4j.server.rest.domain.JsonHelper.jsonToList;
@@ -29,9 +33,12 @@ import static org.neo4j.server.rest.domain.JsonHelper.jsonToMap;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.junit.Test;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.helpers.Function;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.rest.web.PropertyValueException;
 import org.neo4j.test.GraphDescription;
@@ -61,7 +68,7 @@ public class SchemaIndexFunctionalTest extends AbstractRestFunctionalTestBase
         assertEquals( labelName, serialized.get( "label" ) );
         assertEquals( asList( propertyKey ), serialized.get( "property-keys" ) );
     }
-
+    
     /**
      * List indexes for a label.
      */
@@ -90,6 +97,28 @@ public class SchemaIndexFunctionalTest extends AbstractRestFunctionalTestBase
     }
 
     /**
+     * Drop schema index
+     */
+    @Documented
+    @Test
+    @GraphDescription.Graph( nodes = {} )
+    public void drop_schema_index() throws Exception
+    {
+        data.get();
+
+        String labelName = "SomeLabel", propertyKey = "name";
+        createSchemaIndex( labelName, propertyKey );
+        assertTrue( asProperties( graphdb().schema().getIndexes( label( labelName ) ) ).contains( asSet( propertyKey ) ) );
+        
+        gen.get()
+            .expectedStatus( 204 )
+            .delete( getSchemaIndexLabelPropertyUri( labelName, propertyKey ) )
+            .entity();
+        
+        assertFalse( asProperties( graphdb().schema().getIndexes( label( labelName ) ) ).contains( asSet( propertyKey ) ) );
+    }
+    
+    /**
      * Create a schema index for a label and property key which already exists.
      */
     @Test
@@ -103,6 +132,18 @@ public class SchemaIndexFunctionalTest extends AbstractRestFunctionalTestBase
             .expectedStatus( 409 )
             .payload( createJsonFrom( definition ) )
             .post( getSchemaIndexLabelUri( labelName ) );
+    }
+    
+    @Test
+    public void drop_non_existent_schema_index() throws Exception
+    {
+        // GIVEN
+        String labelName = "ALabel", propertyKey = "name";
+
+        // WHEN
+        gen.get()
+            .expectedStatus( 404 )
+            .delete( getSchemaIndexLabelPropertyUri( labelName, propertyKey ) );
     }
 
     /**
@@ -131,5 +172,17 @@ public class SchemaIndexFunctionalTest extends AbstractRestFunctionalTestBase
         {
             tx.finish();
         }
+    }
+
+    private Set<Set<String>> asProperties( Iterable<IndexDefinition> indexes )
+    {
+        return asSet( map( new Function<IndexDefinition, Set<String>>()
+        {
+            @Override
+            public Set<String> apply( IndexDefinition from )
+            {
+                return asSet( from.getPropertyKeys() );
+            }
+        }, indexes ) );
     }
 }
