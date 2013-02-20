@@ -63,7 +63,7 @@ trait SortingPreparations {
     val sortExpressionsToExtract: Seq[(String, Expression)] = plan.query.sort.flatMap(x => x.token.expression match {
       case _: CachedExpression => None
       case _: Identifier       => None
-      case e                   => Some("  INTERNAL_SORT" + e.## -> e)
+      case e                   => Some("  UNNAMEDS" + e.## -> e)
     })
 
     try {
