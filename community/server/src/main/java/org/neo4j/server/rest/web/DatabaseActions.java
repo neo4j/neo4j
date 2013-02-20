@@ -21,6 +21,7 @@ package org.neo4j.server.rest.web;
 
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.Iterables.map;
+import static org.neo4j.helpers.collection.IteratorUtil.single;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -1629,5 +1630,30 @@ public class DatabaseActions
             }
         }, definitions );
         return new ListRepresentation( RepresentationType.INDEX_DEFINITION, representations );
+    }
+
+    public boolean dropSchemaIndex( String labelName, String propertyKey )
+    {
+        Transaction tx = graphDb.beginTx();
+        try
+        {
+            boolean found = false;
+            for ( IndexDefinition index : graphDb.schema().getIndexes( label( labelName ) ) )
+            {
+                // TODO Assumption about single property key
+                if ( propertyKey.equals( single( index.getPropertyKeys() ) ) )
+                {
+                    index.drop();
+                    found = true;
+                    break;
+                }
+            }
+            tx.success();
+            return found;
+        }
+        finally
+        {
+            tx.finish();
+        }
     }
 }

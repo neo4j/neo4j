@@ -8,3 +8,5 @@ For more details about schema based indexes and the optional schema in Neo4j, se
 include::create-schema-index.asciidoc[]
 
 include::list-indexes-for-a-label.asciidoc[]
+
+include::drop-schema-index.asciidoc[]
