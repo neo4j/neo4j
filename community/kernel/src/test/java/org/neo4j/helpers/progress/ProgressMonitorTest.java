@@ -19,6 +19,21 @@
  */
 package org.neo4j.helpers.progress;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyInt;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.when;
+
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.io.StringWriter;
@@ -39,23 +54,11 @@ import org.mockito.InOrder;
 import org.mockito.Mockito;
 import org.neo4j.helpers.ProcessFailureException;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.inOrder;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
-import static org.mockito.Mockito.when;
-
 public class ProgressMonitorTest
 {
+
+    public static final String NEW_LINE = System.getProperty( "line.separator" );
+
     @Test
     public void shouldReportProgressInTheSpecifiedIntervals() throws Exception
     {
@@ -301,7 +304,7 @@ public class ProgressMonitorTest
         }
 
         // then
-        assertEquals( testName.getMethodName() + "\n" + EXPECTED_TEXTUAL_OUTPUT,
+        assertEquals( testName.getMethodName() + NEW_LINE + EXPECTED_TEXTUAL_OUTPUT,
                       stream.toString( Charset.defaultCharset().name() ) );
     }
 
@@ -320,7 +323,7 @@ public class ProgressMonitorTest
         }
 
         // then
-        assertEquals( testName.getMethodName() + "\n" + EXPECTED_TEXTUAL_OUTPUT,
+        assertEquals( testName.getMethodName() + NEW_LINE + EXPECTED_TEXTUAL_OUTPUT,
                       writer.toString() );
     }
 
