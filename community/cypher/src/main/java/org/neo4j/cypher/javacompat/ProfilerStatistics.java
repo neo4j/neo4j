@@ -17,22 +17,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.pipes
+package org.neo4j.cypher.javacompat;
 
-import org.neo4j.cypher.internal.commands.Predicate
-import org.neo4j.cypher.internal.symbols.SymbolTable
-import org.neo4j.cypher.internal.data.SimpleVal
-import org.neo4j.cypher.internal.ExecutionContext
+/**
+ * Profiler statistics for a single execution step of a Cypher query execution plan
+ */
+public interface ProfilerStatistics
+{
+    /**
+     * @return PlanDescription for which these ProfilerStatistics have been collected
+     */
+    PlanDescription getPlanDescription();
 
-class FilterPipe(source: Pipe, predicate: Predicate) extends PipeWithSource(source) {
-  val symbols = source.symbols
+    /**
+     * @return number of rows processed by the associated execution step
+     */
+    long getRows();
 
-  protected def internalCreateResults(input: Iterator[ExecutionContext],state: QueryState) = input.filter(ctx => predicate.isMatch(ctx)(state))
-
-  override def executionPlanDescription =
-    source.executionPlanDescription.andThen(this, "Filter", "pred" -> SimpleVal.fromStr(predicate))
-
-  def throwIfSymbolsMissing(symbols: SymbolTable) {
-    predicate.throwIfSymbolsMissing(symbols)
-  }
+    /**
+     * @return number of database hits (potential disk accesses) caused by executing the associated execution step
+     */
+    long getDbHits();
 }

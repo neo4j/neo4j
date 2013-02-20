@@ -43,7 +43,6 @@ import javax.ws.rs.core.Response;
 import org.neo4j.jmx.Kernel;
 import org.neo4j.jmx.impl.JmxKernelExtension;
 import org.neo4j.server.database.Database;
-import org.neo4j.server.database.DatabaseBlockedException;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.repr.InputFormat;
@@ -191,7 +190,7 @@ public class JmxService implements AdvertisableService
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @Path(KERNEL_NAME_PATH)
-    public Response currentKernelInstance( @Context Database database ) throws DatabaseBlockedException
+    public Response currentKernelInstance( @Context Database database )
     {
         Kernel kernelBean = database.getGraph().getDependencyResolver().resolveDependency( JmxKernelExtension.class )
                 .getSingleManagementBean( Kernel.class );

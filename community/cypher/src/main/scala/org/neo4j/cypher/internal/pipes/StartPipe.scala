@@ -24,15 +24,15 @@ import java.lang.String
 import org.neo4j.cypher.internal.symbols._
 import org.neo4j.cypher.internal.ExecutionContext
 
-abstract class StartPipe[T <: PropertyContainer](inner: Pipe, name: String, createSource: EntityProducer[T]) extends Pipe {
+abstract class StartPipe[T <: PropertyContainer](source: Pipe, name: String, createSource: EntityProducer[T]) extends PipeWithSource(source) {
   def this(inner: Pipe, name: String, sourceIterable: Iterable[T]) = this (inner, name, (a,b) => sourceIterable)
 
   def identifierType: CypherType
 
-  val symbols = inner.symbols.add(name, identifierType)
+  val symbols = source.symbols.add(name, identifierType)
 
-  protected def internalCreateResults(state: QueryState) = {
-    inner.createResults(state).flatMap(ctx => {
+  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) = {
+    input.flatMap(ctx => {
       val source: Iterable[T] = createSource(ctx, state)
       source.map(x => {
         ctx.newWith(name -> x)
@@ -42,18 +42,20 @@ abstract class StartPipe[T <: PropertyContainer](inner: Pipe, name: String, crea
 
   def visibleName: String
 
-  override def executionPlanDescription = inner.executionPlanDescription.andThen(this, visibleName, "name" -> name)
+  override def executionPlanDescription = source.executionPlanDescription.andThen(this, visibleName, "name" -> name)
+
+  def throwIfSymbolsMissing(symbols: SymbolTable) {}
 }
 
-class NodeStartPipe(inner: Pipe, name: String, createSource: (ExecutionContext, QueryState) => Iterable[Node])
-  extends StartPipe[Node](inner, name, createSource) {
+class NodeStartPipe(source: Pipe, name: String, createSource: (ExecutionContext, QueryState) => Iterable[Node])
+  extends StartPipe[Node](source, name, createSource) {
   def identifierType = NodeType()
 
   def visibleName = "Nodes"
 }
 
-class RelationshipStartPipe(inner: Pipe, name: String, createSource: (ExecutionContext, QueryState) => Iterable[Relationship])
-  extends StartPipe[Relationship](inner, name, createSource) {
+class RelationshipStartPipe(source: Pipe, name: String, createSource: (ExecutionContext, QueryState) => Iterable[Relationship])
+  extends StartPipe[Relationship](source, name, createSource) {
   def identifierType = RelationshipType()
 
   def visibleName = "Rels"
