@@ -34,7 +34,7 @@ class SchemaIndexTest extends DocumentingTestBase with StatisticsChecker with Gr
     "A KNOWS C"
   )
 
-  def section = "Create Index"
+  def section = "Schema Index"
 
   @Test def create_index_on_a_label() {
     testQuery(
