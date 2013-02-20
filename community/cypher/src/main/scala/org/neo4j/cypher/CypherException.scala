@@ -57,3 +57,5 @@ class NodeStillHasRelationshipsException(val nodeId:Long, cause:Throwable)
 
 class IndexAlreadyDefinedException(labelName:String, property:String, cause:Throwable)
   extends CypherException(s"Property `$property` is already indexed for label `$labelName`.", cause)
+
+class ProfilerStatisticsNotReadyException() extends CypherException("This result has not been materialised yet. Iterate over it to get profiler stats.")

@@ -30,10 +30,11 @@ class ResultValueMapperPipe(source: Pipe) extends PipeWithSource(source) {
 
   def throwIfSymbolsMissing(symbols: SymbolTable) {}
 
-  def createResults(state: QueryState): Iterator[ExecutionContext] = {
+
+  protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     def mapValue(in: Any): Any = in match {
       case p: Path => p
-      case l: LabelValue => l.resolveForName(state.queryContext).name
+      case l: LabelValue => l.resolveForName(state.query).name
       case IsCollection(coll) => coll.map(mapValue)
       case x => x
     }
@@ -49,7 +50,7 @@ class ResultValueMapperPipe(source: Pipe) extends PipeWithSource(source) {
     result
   }
 
-  def executionPlanDescription() = source.executionPlanDescription.andThen("ResultValueMapper")
+  def executionPlanDescription() = source.executionPlanDescription.andThen(this, "ResultValueMapper")
 
   def symbols:SymbolTable = new SymbolTable(source.symbols.identifiers.mapValues { (t: CypherType) =>
     t.rewrite {

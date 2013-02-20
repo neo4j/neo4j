@@ -20,19 +20,18 @@
 package org.neo4j.cypher.internal.pipes.matching
 
 import org.neo4j.graphdb._
-import org.neo4j.cypher.internal.pipes.{QueryState}
+import org.neo4j.cypher.internal.pipes.QueryState
 import traversal._
 import java.lang.{Iterable => JIterable}
 import collection.JavaConverters._
 import org.neo4j.kernel.{StandardBranchCollisionDetector, Uniqueness, Traversal}
 import org.neo4j.kernel.impl.traversal.BranchCollisionPolicy
-import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.cypher.internal.ExecutionContext
-
+import org.neo4j.cypher.internal.pipes.EntityProducer
 
 class BidirectionalTraversalMatcher(steps: ExpanderStep,
-                                    start: ExecutionContext => Iterable[Node],
-                                    end: ExecutionContext => Iterable[Node]) extends TraversalMatcher {
+                                    start: EntityProducer[Node],
+                                    end: EntityProducer[Node]) extends TraversalMatcher {
 
   lazy val reversedSteps = steps.reverse()
 
@@ -47,12 +46,13 @@ class BidirectionalTraversalMatcher(steps: ExpanderStep,
   val collisionDetector = new StepCollisionDetector
 
   def findMatchingPaths(state: QueryState, context: ExecutionContext): Iterator[Path] = {
-    val s = start(context).toList
-    val e = end(context).toList
+    // TODO memory waste
+    val s = start(context, state).toList
+    val e = end(context, state).toList
 
     def produceTraversalDescriptions() = {
-      val startWithoutCutoff = baseTraversal.expand(new TraversalPathExpander(context), initialStartStep)
-      val endWithoutCutOff = baseTraversal.expand(new TraversalPathExpander(context), initialEndStep)
+      val startWithoutCutoff = baseTraversal.expand(new TraversalPathExpander(context, state), initialStartStep)
+      val endWithoutCutOff = baseTraversal.expand(new TraversalPathExpander(context, state), initialEndStep)
 
       steps.size match {
         case None       => (startWithoutCutoff, endWithoutCutOff)

@@ -27,8 +27,8 @@ import org.junit.Assert._
 import org.neo4j.graphdb.{Path, Direction}
 import org.neo4j.cypher.internal.ExecutionContext
 import values.LabelName
-import org.neo4j.cypher.internal.pipes.QueryState
 import org.neo4j.cypher.internal.spi.gdsimpl.TransactionBoundQueryContext
+import org.neo4j.cypher.internal.pipes.{NullDecorator, QueryState}
 
 class PathExpressionTest extends GraphDatabaseTestBase with Assertions {
 
@@ -55,7 +55,7 @@ class PathExpressionTest extends GraphDatabaseTestBase with Assertions {
 
     val m = ExecutionContext.from("a" -> a, "c" -> c)
 
-    val result = expression(m).asInstanceOf[Seq[Path]].head
+    val result = expression(m)(state).asInstanceOf[Seq[Path]].head
 
     assertEquals(result.startNode(), a)
     assertEquals(result.endNode(), c)
@@ -77,16 +77,18 @@ class PathExpressionTest extends GraphDatabaseTestBase with Assertions {
     val m = createExecutionContext(Map("a" -> a))
 
     // WHEN
-    val result: Seq[Path] = expression(m).asInstanceOf[Seq[Path]]
+    val result: Seq[Path] = expression(m)(state).asInstanceOf[Seq[Path]]
 
     // THEN
     assert(result.size === 1)
   }
 
-  private def createExecutionContext(m: Map[String, Any]):ExecutionContext = {
+  private def state = {
     val ctx = new TransactionBoundQueryContext(graph)
-    val state = new QueryState(graph, ctx, Map.empty)
+    new QueryState(graph, ctx, Map.empty, NullDecorator)
+  }
 
-    ExecutionContext(state = state).newFrom(m)
+  private def createExecutionContext(m: Map[String, Any]):ExecutionContext = {
+    ExecutionContext().newFrom(m)
   }
 }

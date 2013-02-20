@@ -17,22 +17,30 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.spi.gdsimpl
+package org.neo4j.cypher.internal.spi
 
-import org.neo4j.cypher.internal.spi.{Operations, DelegatingOperations, DelegatingQueryContext, QueryContext}
 import org.neo4j.graphdb.{PropertyContainer, Relationship, Direction, Node}
-import org.neo4j.kernel.impl.api.LockHolder
 
-class RepeatableReadQueryContext(inner: QueryContext, locker: LockHolder) extends DelegatingQueryContext(inner) {
-  override def getLabelsForNode(node: Long) = {
-    locker.acquireNodeReadLock(node)
-    inner.getLabelsForNode(node)
-  }
 
-  override def getRelationshipsFor(node: Node, dir: Direction, types: Seq[String]) = {
-    locker.acquireNodeReadLock(node.getId)
-    inner.getRelationshipsFor(node, dir, types)
-    ??? // We should lock relationships here, before we return the seq
+trait Locker {
+  def readLock(p: PropertyContainer)
+
+  def releaseAllReadLocks()
+}
+
+class RepeatableReadQueryContext(inner: QueryContext, locker: Locker) extends DelegatingQueryContext(inner) {
+
+  override def getRelationshipsFor(node: Node, dir: Direction, types: Seq[String]): Iterable[Relationship] = {
+    locker.readLock(node)
+    val rels = inner.getRelationshipsFor(node, dir, types)
+
+    new Iterable[Relationship] {
+      def iterator: Iterator[Relationship] = rels.iterator.map {
+        rel =>
+          locker.readLock(rel)
+          rel
+      }
+    }
   }
 
   val nodeOpsValue = new RepeatableReadOperations[Node](inner.nodeOps)
@@ -43,33 +51,28 @@ class RepeatableReadQueryContext(inner: QueryContext, locker: LockHolder) extend
   override def relationshipOps = relationshipOpsValue
 
   override def close(success: Boolean) {
-    locker.releaseLocks()
+    locker.releaseAllReadLocks()
     inner.close(success)
-  }
-
-  private def id(obj: Any): Long = obj match {
-    case n: Node         => n.getId
-    case r: Relationship => r.getId
   }
 
   class RepeatableReadOperations[T <: PropertyContainer](inner: Operations[T]) extends DelegatingOperations[T](inner) {
     override def getProperty(obj: T, propertyKey: String) = {
-      locker.acquireNodeReadLock(id(obj))
+      locker.readLock(obj)
       inner.getProperty(obj, propertyKey)
     }
 
     override def hasProperty(obj: T, propertyKey: String) = {
-      locker.acquireNodeReadLock(id(obj))
+      locker.readLock(obj)
       inner.hasProperty(obj, propertyKey)
     }
 
     override def propertyKeys(obj: T) = {
-      locker.acquireNodeReadLock(id(obj))
+      locker.readLock(obj)
       inner.propertyKeys(obj)
     }
   }
-}
 
+}
 
 
 

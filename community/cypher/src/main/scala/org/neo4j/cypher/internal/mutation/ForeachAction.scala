@@ -31,7 +31,7 @@ case class ForeachAction(collection: Expression, id: String, actions: Seq[Update
   def exec(context: ExecutionContext, state: QueryState) = {
     val before = context.get(id)
 
-    val seq = makeTraversable(collection(context))
+    val seq = makeTraversable(collection(context)(state))
     seq.foreach(element => {
       context.put(id, element)
 

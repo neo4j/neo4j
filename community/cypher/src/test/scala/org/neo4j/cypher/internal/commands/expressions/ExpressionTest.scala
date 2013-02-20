@@ -27,6 +27,7 @@ import org.neo4j.cypher.CypherTypeException
 import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.cypher.internal.commands.ReturnItem
 import org.neo4j.cypher.internal.ExecutionContext
+import org.neo4j.cypher.internal.pipes.QueryState
 
 class ExpressionTest extends Assertions {
   @Test def replacePropWithCache() {
@@ -136,5 +137,5 @@ class TestExpression extends Expression {
 
   def symbolTableDependencies = Set()
 
-  def apply(v1: ExecutionContext) = null
+  def apply(v1: ExecutionContext)(implicit state: QueryState) = null
 }

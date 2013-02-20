@@ -46,7 +46,7 @@ class EagerAggregationPipe(source: Pipe, val keyExpressions: Map[String, Express
     new SymbolTable(keyIdentifiers ++ aggrIdentifiers)
   }
 
-  def createResults(state: QueryState) = {
+  protected def internalCreateResults(state: QueryState) = {
     // This is the temporary storage used while the aggregation is going on
     val result = MutableMap[NiceHasher, (ExecutionContext, Seq[AggregationFunction])]()
     val keyNames: Seq[String] = keyExpressions.map(_._1).toSeq
@@ -70,7 +70,7 @@ class EagerAggregationPipe(source: Pipe, val keyExpressions: Map[String, Express
 
       aggregationNamesAndFunctions.toMap
         .foreach { case (name, zeroValue) => newMap += name -> zeroValue  }
-      Iterator(ExecutionContext(newMap, state = state))
+      Iterator(ExecutionContext(newMap))
     }
 
 
@@ -79,7 +79,7 @@ class EagerAggregationPipe(source: Pipe, val keyExpressions: Map[String, Express
       val groupValues: NiceHasher = new NiceHasher(keyNames.map(ctx))
       val aggregateFunctions: Seq[AggregationFunction] = aggregations.map(_._2.createAggregationFunction).toSeq
       val (_, functions) = result.getOrElseUpdate(groupValues, (ctx, aggregateFunctions))
-      functions.foreach(func => func(ctx))
+      functions.foreach(func => func(ctx)(state))
     })
 
     if (result.isEmpty && keyNames.isEmpty) {
@@ -93,7 +93,7 @@ class EagerAggregationPipe(source: Pipe, val keyExpressions: Map[String, Express
 
   override def executionPlanDescription =
     source.executionPlanDescription
-      .andThen("EagerAggregation", "keys" -> oldKeyExpressions, "aggregates" -> aggregations.mapValues(_.toString()))
+      .andThen(this, "EagerAggregation", "keys" -> oldKeyExpressions, "aggregates" -> aggregations.mapValues(_.toString()))
 
   def throwIfSymbolsMissing(symbols: SymbolTable) {
     keyExpressions.foreach(_._2.throwIfSymbolsMissing(symbols))

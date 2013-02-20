@@ -21,13 +21,14 @@ package org.neo4j.cypher.internal.commands.expressions
 
 import org.neo4j.cypher.internal.symbols._
 import org.neo4j.cypher.internal.ExecutionContext
+import org.neo4j.cypher.internal.pipes.QueryState
 
 object Collection {
   val empty = Literal(Seq())
 }
 
 case class Collection(children: Expression*) extends Expression {
-  def apply(ctx: ExecutionContext): Any = children.map(e => e(ctx))
+  def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = children.map(e => e(ctx))
 
   def rewrite(f: (Expression) => Expression): Expression = f(Collection(children.map(f): _*))
 

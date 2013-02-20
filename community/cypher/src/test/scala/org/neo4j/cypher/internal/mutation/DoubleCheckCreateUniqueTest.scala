@@ -25,7 +25,7 @@ import org.neo4j.test.ImpermanentGraphDatabase
 import java.lang.Iterable
 import org.neo4j.graphdb.Traverser.Order
 import org.neo4j.graphdb._
-import org.neo4j.cypher.internal.pipes.QueryState
+import org.neo4j.cypher.internal.pipes.{NullDecorator, QueryState}
 import collection.JavaConverters._
 import org.neo4j.cypher.internal.spi.gdsimpl.TransactionBoundQueryContext
 import org.neo4j.cypher.internal.ExecutionContext
@@ -59,11 +59,11 @@ class DoubleCheckCreateUniqueTest extends Assertions {
 
 
   private def createExecutionContext(state:QueryState, a: Node): ExecutionContext = {
-    ExecutionContext(state = state).newWith(Map("a" -> a))
+    ExecutionContext().newWith(Map("a" -> a))
   }
 
   private def createQueryState(): QueryState = {
-    new QueryState(db, new TransactionBoundQueryContext(db), Map.empty)
+    new QueryState(db, new TransactionBoundQueryContext(db), Map.empty, NullDecorator)
   }
   private def createNode(): Node = {
     val tx = db.beginTx()

@@ -23,12 +23,13 @@ package org.neo4j.cypher.internal.commands.expressions
 import org.neo4j.cypher.internal.ExecutionContext
 import org.neo4j.cypher.internal.symbols.{AnyType, CypherType, SymbolTable}
 import org.neo4j.cypher.internal.commands.AstNode
+import org.neo4j.cypher.internal.pipes.QueryState
 
 
 case class SimpleCase(expression: Expression, alternatives: Seq[(Expression, Expression)], default: Option[Expression])
   extends NullInNullOutExpression(expression) {
 
-  def compute(value: Any, m: ExecutionContext): Any = {
+  def compute(value: Any, m: ExecutionContext)(implicit state: QueryState): Any = {
     val matchingExpression = alternatives find {
       case (exp, res) => exp(m) == value
     } map (_._2)

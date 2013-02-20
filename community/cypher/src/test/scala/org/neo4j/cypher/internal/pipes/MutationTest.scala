@@ -35,7 +35,7 @@ class MutationTest extends ExecutionEngineHelper with Assertions {
 
   def createQueryState = {
     queryContext = new TransactionBoundQueryContext(graph)
-    new QueryState(graph, queryContext, Map.empty)
+    new QueryState(graph, queryContext, Map.empty, NullDecorator)
   }
 
   var queryContext: QueryContext = null
@@ -43,7 +43,7 @@ class MutationTest extends ExecutionEngineHelper with Assertions {
 
   @Test
   def create_node() {
-    val start = new NullPipe
+    val start = NullPipe
     val createNode = new ExecuteUpdateCommandsPipe(start, graph, Seq(CreateNode("n", Map("name" -> Literal("Andres")), Collection.empty)))
 
     val queryState = createQueryState
@@ -58,7 +58,7 @@ class MutationTest extends ExecutionEngineHelper with Assertions {
   @Test
   def join_existing_transaction_and_rollback() {
     val tx = graph.beginTx()
-    val start = new NullPipe
+    val start = NullPipe
     val createNode = new ExecuteUpdateCommandsPipe(start, graph, Seq(CreateNode("n", Map("name" -> Literal("Andres")), Collection.empty)))
 
     createNode.createResults(createQueryState).toList
@@ -72,7 +72,7 @@ class MutationTest extends ExecutionEngineHelper with Assertions {
   @Test
   def join_existing_transaction_and_commit() {
     val tx = graph.beginTx()
-    val start = new NullPipe
+    val start = NullPipe
     val createNode = new ExecuteUpdateCommandsPipe(start, graph, Seq(CreateNode("n", Map("name" -> Literal("Andres")), Collection.empty)))
 
     createNode.createResults(createQueryState).toList
@@ -95,7 +95,7 @@ class MutationTest extends ExecutionEngineHelper with Assertions {
       RelationshipEndpoint(getNode("a", a), Map(), Collection.empty, true),
       RelationshipEndpoint(getNode("b", b), Map(), Collection.empty, true), "REL", Map("I" -> Literal("was here")))
 
-    val startPipe = new NullPipe
+    val startPipe = NullPipe
     val createNodePipe = new ExecuteUpdateCommandsPipe(startPipe, graph, Seq(createRel))
 
     val state = createQueryState
@@ -121,7 +121,7 @@ class MutationTest extends ExecutionEngineHelper with Assertions {
     val node_id: Long = a.getId
     val deleteCommand = DeleteEntityAction(getNode("a", a))
 
-    val startPipe = new NullPipe
+    val startPipe = NullPipe
     val createNodePipe = new ExecuteUpdateCommandsPipe(startPipe, graph, Seq(deleteCommand))
 
     val state = createQueryState
@@ -133,8 +133,8 @@ class MutationTest extends ExecutionEngineHelper with Assertions {
   }
 }
 
-case class InjectValue(value: Any, typ: CypherType) extends Expression {
-  def apply(v1: ExecutionContext) = value
+case class InjectValue(value:Any, typ:CypherType) extends Expression {
+  def apply(v1: ExecutionContext)(implicit state: QueryState) = value
 
   def children = Seq()
 

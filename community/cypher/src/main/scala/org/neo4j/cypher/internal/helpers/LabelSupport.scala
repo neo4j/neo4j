@@ -24,12 +24,13 @@ import org.neo4j.cypher.internal.commands.values.{LabelName, LabelValue}
 import org.neo4j.cypher.CypherTypeException
 import org.neo4j.cypher.internal.commands.expressions.{Literal, Expression}
 import org.neo4j.cypher.internal.spi.QueryContext
+import org.neo4j.cypher.internal.pipes.QueryState
 
 object LabelSupport extends CollectionSupport {
 
-  def getLabelsAsLongs(context: ExecutionContext, labels: Expression) =
+  def getLabelsAsLongs(context: ExecutionContext, labels: Expression)(implicit state: QueryState) =
     makeTraversable(labels(context)).map {
-      case x: LabelValue => x.resolveForId(context.state.queryContext).id
+      case x: LabelValue => x.resolveForId(state.query).id
       case _             => throw new CypherTypeException("Label expressions must return labels")
     }
 

@@ -59,9 +59,9 @@ extends UpdateAction
     }
 
   def exec(context: ExecutionContext, state: QueryState) = {
-    val f = from.node(context).asInstanceOf[Node]
-    val t = to.node(context).asInstanceOf[Node]
-    val relationship = state.queryContext.createRelationship(f, t, typ)
+    val f = from.node(context)(state).asInstanceOf[Node]
+    val t = to.node(context)(state).asInstanceOf[Node]
+    val relationship = state.query.createRelationship(f, t, typ)
     setProperties(relationship, props, context, state)
     context.put(key, relationship)
     Stream(context)

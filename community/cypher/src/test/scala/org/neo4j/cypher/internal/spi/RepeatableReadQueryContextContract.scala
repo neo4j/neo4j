@@ -19,29 +19,31 @@
  */
 package org.neo4j.cypher.internal.spi
 
-import org.junit.{Ignore, Before, Test}
-import gdsimpl.{RepeatableReadQueryContext, TransactionBoundQueryContext}
-import org.neo4j.graphdb.Direction
-import org.neo4j.graphdb.Node
-import org.neo4j.graphdb.Relationship
-import org.neo4j.graphdb.Transaction
-import org.neo4j.test.ImpermanentGraphDatabase
+import org.junit.Ignore
+import gdsimpl.TransactionBoundQueryContext
 import org.hamcrest.CoreMatchers.is
 import org.junit.Assert.assertThat
 import org.mockito.Mockito.mock
 import org.mockito.Mockito.verify
 import org.neo4j.graphdb.DynamicRelationshipType.withName
 import org.neo4j.kernel.impl.api.LockHolder
+import org.junit.Before
+import org.junit.Test
+import org.neo4j.graphdb.Direction
+import org.neo4j.graphdb.Node
+import org.neo4j.graphdb.Relationship
+import org.neo4j.graphdb.Transaction
+import org.neo4j.test.ImpermanentGraphDatabase
 
 class RepeatableReadQueryContextContract {
   private var database: ImpermanentGraphDatabase = null
   private var innerContext: QueryContext = null
   private var node: Node = null
-  private var locker: LockHolder = null
+  private var locker: Locker = null
 
   @Before def init() {
     database = new ImpermanentGraphDatabase
-    locker = mock(classOf[LockHolder])
+    locker = mock(classOf[Locker])
     innerContext = new TransactionBoundQueryContext(database)
     val tx: Transaction = database.beginTx
     node = database.createNode
@@ -57,7 +59,7 @@ class RepeatableReadQueryContextContract {
     val node: Node = createNode
     val lockingContext = new RepeatableReadQueryContext(innerContext, locker)
     lockingContext.nodeOps.hasProperty(node, "foo")
-    verify(locker).acquireNodeReadLock(node.getId)
+    verify(locker).readLock(node)
   }
 
   @Test def close_releases_locks() {
@@ -65,21 +67,23 @@ class RepeatableReadQueryContextContract {
     val lockingContext = new RepeatableReadQueryContext(innerContext, locker)
     lockingContext.nodeOps.hasProperty(node, "foo")
     lockingContext.close(success = true)
-    verify(locker).acquireNodeReadLock(node.getId)
-    verify(locker).releaseLocks()
+    verify(locker).readLock(node)
+    verify(locker).releaseAllReadLocks()
   }
 
-  @Ignore("LockHolder can't lock relationships. Revisit when it does.")
   @Test def get_relationships_locks_node_and_relationships() {
-    val lockingContext = new RepeatableReadQueryContext(innerContext, locker)
-    val rels: Iterable[Relationship] = lockingContext.getRelationshipsFor(node, Direction.OUTGOING, Seq.empty)
+    val lockingContext: RepeatableReadQueryContext = new RepeatableReadQueryContext(innerContext, locker)
+    val rels = lockingContext.getRelationshipsFor(node, Direction.OUTGOING, Seq())
     val count_the_matching_rows: Int = rels.size
-    lockingContext.close(success = true)
-    verify(locker).acquireNodeWriteLock(node.getId)
-    for ( rel <- rels ) {
-      verify(locker).acquireNodeWriteLock(rel.getId)
+    lockingContext.close(true)
+
+    verify(locker).readLock(node)
+
+    for (rel <- rels) {
+      verify(locker).readLock(rel)
     }
-    verify(locker).releaseLocks()
+    verify(locker).releaseAllReadLocks()
+
     assertThat(count_the_matching_rows, is(2))
   }
 

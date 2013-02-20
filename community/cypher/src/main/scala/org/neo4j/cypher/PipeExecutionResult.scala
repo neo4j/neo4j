@@ -30,11 +30,13 @@ import collection.Map
 
 class PipeExecutionResult(result: Iterator[Map[String, Any]],
                           val columns: List[String], state: QueryState,
-                          val executionPlanDescription: String)
+                          executionPlanBuilder: () => String)
   extends ExecutionResult
   with StringExtras
   with CollectionSupport
   with StringHelper {
+
+  def executionPlanDescription(): String = executionPlanBuilder()
 
   def javaColumns: java.util.List[String] = columns.asJava
 
@@ -61,7 +63,7 @@ class PipeExecutionResult(result: Iterator[Map[String, Any]],
 
     result.foreach((m) => {
       m.foreach((kv) => {
-        val length = text(kv._2, state.queryContext).size
+        val length = text(kv._2, state.query).size
         if (!columnSizes.contains(kv._1) || columnSizes.get(kv._1).get < length) {
           columnSizes.put(kv._1, length)
         }
@@ -132,7 +134,7 @@ class PipeExecutionResult(result: Iterator[Map[String, Any]],
   private def createString(columns: List[String], columnSizes: Map[String, Int], m: Map[String, Any]): String = {
     columns.map(c => {
       val length = columnSizes.get(c).get
-      val txt = text(m.get(c).get, state.queryContext)
+      val txt = text(m.get(c).get, state.query)
       val value = makeSize(txt, length)
       value
     }).mkString("| ", " | ", " |")

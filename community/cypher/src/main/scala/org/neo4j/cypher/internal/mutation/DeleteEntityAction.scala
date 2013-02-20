@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.ExecutionContext
 case class DeleteEntityAction(elementToDelete: Expression)
   extends UpdateAction {
   def exec(context: ExecutionContext, state: QueryState) = {
-    elementToDelete(context) match {
+    elementToDelete(context)(state) match {
       case n: Node => delete(n, state)
       case r: Relationship => delete(r, state)
       case null =>
@@ -47,13 +47,12 @@ case class DeleteEntityAction(elementToDelete: Expression)
 
     x match {
       case n: Node if (!nodeManager.isDeleted(n)) =>
-        state.queryContext.nodeOps.delete(n)
+        state.query.nodeOps.delete(n)
 
       case r: Relationship if (!nodeManager.isDeleted(r))=>
-        state.queryContext.relationshipOps.delete(r)
+        state.query.relationshipOps.delete(r)
 
       case _ => // Entity is already deleted. No need to do anything
-
     }
   }
 

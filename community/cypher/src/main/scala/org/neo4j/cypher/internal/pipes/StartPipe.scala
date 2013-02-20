@@ -24,16 +24,16 @@ import java.lang.String
 import org.neo4j.cypher.internal.symbols._
 import org.neo4j.cypher.internal.ExecutionContext
 
-abstract class StartPipe[T <: PropertyContainer](inner: Pipe, name: String, createSource: ExecutionContext => Iterable[T]) extends Pipe {
-  def this(inner: Pipe, name: String, sourceIterable: Iterable[T]) = this (inner, name, m => sourceIterable)
+abstract class StartPipe[T <: PropertyContainer](inner: Pipe, name: String, createSource: EntityProducer[T]) extends Pipe {
+  def this(inner: Pipe, name: String, sourceIterable: Iterable[T]) = this (inner, name, (a,b) => sourceIterable)
 
   def identifierType: CypherType
 
   val symbols = inner.symbols.add(name, identifierType)
 
-  def createResults(state: QueryState) = {
+  protected def internalCreateResults(state: QueryState) = {
     inner.createResults(state).flatMap(ctx => {
-      val source: Iterable[T] = createSource(ctx)
+      val source: Iterable[T] = createSource(ctx, state)
       source.map(x => {
         ctx.newWith(name -> x)
       })
@@ -42,17 +42,17 @@ abstract class StartPipe[T <: PropertyContainer](inner: Pipe, name: String, crea
 
   def visibleName: String
 
-  override def executionPlanDescription = inner.executionPlanDescription.andThen(visibleName, "name" -> name)
+  override def executionPlanDescription = inner.executionPlanDescription.andThen(this, visibleName, "name" -> name)
 }
 
-class NodeStartPipe(inner: Pipe, name: String, createSource: ExecutionContext => Iterable[Node])
+class NodeStartPipe(inner: Pipe, name: String, createSource: (ExecutionContext, QueryState) => Iterable[Node])
   extends StartPipe[Node](inner, name, createSource) {
   def identifierType = NodeType()
 
   def visibleName = "Nodes"
 }
 
-class RelationshipStartPipe(inner: Pipe, name: String, createSource: ExecutionContext => Iterable[Relationship])
+class RelationshipStartPipe(inner: Pipe, name: String, createSource: (ExecutionContext, QueryState) => Iterable[Relationship])
   extends StartPipe[Relationship](inner, name, createSource) {
   def identifierType = RelationshipType()
 

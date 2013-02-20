@@ -23,11 +23,12 @@ import org.neo4j.cypher.internal.symbols._
 import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.cypher.internal.helpers.IsMap
 import org.neo4j.cypher.internal.ExecutionContext
+import org.neo4j.cypher.internal.pipes.QueryState
 
 case class Property(mapExpr: Expression, property: String) extends Expression {
-  def apply(ctx: ExecutionContext): Any = mapExpr(ctx) match {
+  def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = mapExpr(ctx) match {
     case null           => null
-    case IsMap(mapFunc) => mapFunc(ctx.state.queryContext).apply(property)
+    case IsMap(mapFunc) => mapFunc(state.query).apply(property)
     case _              => throw new ThisShouldNotHappenError("Andres", "Need something with properties")
   }
 

@@ -26,6 +26,7 @@ import collection.JavaConverters._
 import org.neo4j.cypher.internal.commands.{Predicate, True}
 import org.neo4j.cypher.internal.symbols.SymbolTable
 import org.neo4j.cypher.internal.ExecutionContext
+import org.neo4j.cypher.internal.pipes.QueryState
 
 class SimplePatternMatcherBuilder(pattern: PatternGraph, predicates: Seq[Predicate], symbolTable: SymbolTable) extends MatcherBuilder {
   def createPatternNodes: immutable.Map[String, SimplePatternNode] = {
@@ -77,7 +78,7 @@ class SimplePatternMatcherBuilder(pattern: PatternGraph, predicates: Seq[Predica
     (patternNodes, patternRels)
   }
 
-  def getMatches(ctx: ExecutionContext) = {
+  def getMatches(ctx: ExecutionContext, state:QueryState) = {
     val (patternNodes, patternRels) = setAssociations(ctx)
     val validPredicates = predicates.filter(p => p.symbolDependenciesMet(symbolTable))
     val startPoint = patternNodes.values.find(_.getAssociation != null).get
@@ -91,7 +92,7 @@ class SimplePatternMatcherBuilder(pattern: PatternGraph, predicates: Seq[Predica
         case (key, pr) => result += key -> patternMatch.getRelationshipFor(pr)
       }
 
-      Some(result).filter(r => validPredicates.forall(_.isMatch(r)))
+      Some(result).filter(r => validPredicates.forall(_.isMatch(r)(state)))
     })
   }
 }

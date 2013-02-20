@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.executionplan
 import builders._
 import org.neo4j.cypher.internal.pipes._
 import org.neo4j.cypher._
+import internal.profiler.Profiler
 import internal.spi.QueryContext
 import internal.{ExecutionContext, ClosingIterator}
 import internal.commands._
@@ -37,17 +38,15 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService) extends PatternGraphBuil
     val (p, isUpdating) = buildPipes(inputQuery)
 
     val columns = getQueryResultColumns(inputQuery, p.symbols)
-    val (pipe, func) = if (isUpdating) {
-      (p, getEagerReadWriteQuery(p, columns))
+    val func = if (isUpdating) {
+      getEagerReadWriteQuery(p, columns)
     } else {
-      (p, getLazyReadonlyQuery(p, columns))
+      getLazyReadonlyQuery(p, columns)
     }
 
-    val executionPlanDescription = pipe.executionPlanDescription
-
     new ExecutionPlan {
-      def execute(queryContext: QueryContext, params: Map[String, Any]) = func(queryContext, params)
-      def description = executionPlanDescription.toString
+      def execute(queryContext: QueryContext, params: Map[String, Any]) = func(queryContext, params, false)
+      def profile(queryContext: QueryContext, params: Map[String, Any]) = func(queryContext, params, true)
     }
   }
 
@@ -146,38 +145,44 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService) extends PatternGraphBuil
   }
 
 
-  private def getLazyReadonlyQuery(pipe: Pipe, columns: List[String]): (QueryContext, Map[String, Any]) => ExecutionResult = {
-    val func = (queryContext: QueryContext, params: Map[String, Any]) => {
-      val (state, results) = prepareStateAndResult(queryContext, params, pipe)
+  private def getLazyReadonlyQuery(pipe: Pipe, columns: List[String]): (QueryContext, Map[String, Any], Boolean) => ExecutionResult = {
+    val func = (queryContext: QueryContext, params: Map[String, Any], profile: Boolean) => {
+      val (state, results, descriptor) = prepareStateAndResult(queryContext, params, pipe, profile)
 
-      new PipeExecutionResult(results, columns, state, pipe.executionPlanDescription.toString)
+      new PipeExecutionResult(results, columns, state, descriptor)
     }
 
     func
   }
 
-  private def prepareStateAndResult(queryContext: QueryContext, params: Map[String, Any], pipe: Pipe): (QueryState, Iterator[ExecutionContext]) = {
-    val state = new QueryState(graph, queryContext, params)
+  private def getEagerReadWriteQuery(pipe: Pipe, columns: List[String]): (QueryContext, Map[String, Any], Boolean) => ExecutionResult = {
+    val func = (queryContext: QueryContext, params: Map[String, Any], profile: Boolean) => {
+      val (state, results, descriptor) = prepareStateAndResult(queryContext, params, pipe, profile)
+      new EagerPipeExecutionResult(results, columns, state, graph, descriptor)
+    }
+
+    func
+  }
+
+  private def prepareStateAndResult(queryContext: QueryContext, params: Map[String, Any], pipe: Pipe, profile:Boolean): (QueryState, Iterator[ExecutionContext], () => String) = {
+    val decorator = if(profile) {
+      new Profiler()
+    } else {
+      NullDecorator
+    }
+    val state = new QueryState(graph, queryContext, params, decorator)
     val results = pipe.createResults(state)
+    val descriptor = () => decorator.decorate(pipe.executionPlanDescription).toString
 
     try {
       val closingIterator = new ClosingIterator[ExecutionContext](results, queryContext)
-      (state, closingIterator)
+      (state, closingIterator, descriptor)
     }
     catch {
       case (t: Throwable) =>
         queryContext.close(success = false)
         throw t
     }
-  }
-
-  private def getEagerReadWriteQuery(pipe: Pipe, columns: List[String]): (QueryContext, Map[String, Any]) => ExecutionResult = {
-    val func = (queryContext: QueryContext, params: Map[String, Any]) => {
-      val (state, results) = prepareStateAndResult(queryContext, params, pipe)
-      new EagerPipeExecutionResult(results, columns, state, graph, pipe.executionPlanDescription.toString)
-    }
-
-    func
   }
 
   private def produceAndThrowException(plan: ExecutionPlanInProgress) {

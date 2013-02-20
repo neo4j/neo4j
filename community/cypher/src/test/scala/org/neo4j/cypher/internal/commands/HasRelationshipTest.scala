@@ -25,8 +25,8 @@ import org.scalatest.Assertions
 import org.junit.{Before, Test}
 import org.neo4j.graphdb.{Node, Direction}
 import org.junit.Assert._
-import org.neo4j.cypher.internal.pipes.{QueryState}
 import org.neo4j.cypher.internal.spi.gdsimpl.TransactionBoundQueryContext
+import org.neo4j.cypher.internal.pipes.{NullDecorator, QueryState}
 import org.neo4j.cypher.internal.ExecutionContext
 
 
@@ -36,12 +36,14 @@ class HasRelationshipTest extends GraphDatabaseTestBase with Assertions {
   var ctx:ExecutionContext=null
   val aValue = Identifier("a")
   val bValue = Identifier("b")
+  var state: QueryState = null
 
   @Before
   def init() {
     a = createNode()
     b = createNode()
-    ctx = ExecutionContext(state=new QueryState(graph, new TransactionBoundQueryContext(graph), Map.empty )).newWith(Map("a" -> a, "b" -> b))
+    ctx = ExecutionContext().newWith(Map("a" -> a, "b" -> b))
+    state = new QueryState(graph, new TransactionBoundQueryContext(graph), Map.empty, NullDecorator, None)
   }
 
   def createPredicate(dir: Direction, relType: Seq[String]): HasRelationshipTo = HasRelationshipTo(Identifier("a"), Identifier("b"), dir, relType)
@@ -51,7 +53,7 @@ class HasRelationshipTest extends GraphDatabaseTestBase with Assertions {
 
     val predicate = createPredicate(Direction.BOTH, Seq())
 
-    assertTrue("Expected the predicate to return true, but it didn't", predicate.isMatch(ctx))
+    assertTrue("Expected the predicate to return true, but it didn't", predicate.isMatch(ctx)(state))
   }
 
   @Test def checksTheRelationshipType() {
@@ -59,7 +61,7 @@ class HasRelationshipTest extends GraphDatabaseTestBase with Assertions {
 
     val predicate = createPredicate(Direction.BOTH, Seq("FEELS"))
 
-    assertFalse("Expected the predicate to return false, but it didn't", predicate.isMatch(ctx))
+    assertFalse("Expected the predicate to return false, but it didn't", predicate.isMatch(ctx)(state))
   }
 
   @Test def checksTheRelationshipTypeAndDirection() {
@@ -67,6 +69,6 @@ class HasRelationshipTest extends GraphDatabaseTestBase with Assertions {
 
     val predicate = createPredicate(Direction.INCOMING, Seq("KNOWS"))
 
-    assertFalse("Expected the predicate to return false, but it didn't", predicate.isMatch(ctx))
+    assertFalse("Expected the predicate to return false, but it didn't", predicate.isMatch(ctx)(state))
   }
 }

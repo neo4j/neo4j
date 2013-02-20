@@ -75,11 +75,11 @@ class LazyTest extends ExecutionEngineHelper with Assertions with MockitoSugar {
     val monitoredNode = new MonitoredNode(a, limiter.monitor)
 
     val step = SingleStep(0, Seq(), Direction.OUTGOING, None, True(), True())
-    val matcher = new MonoDirectionalTraversalMatcher(step, (ctx) => Seq(monitoredNode))
-    val ctx = internal.ExecutionContext(state=QueryState(graph)).newWith("a" -> monitoredNode)
+    val matcher = new MonoDirectionalTraversalMatcher(step, (ctx, state) => Seq(monitoredNode))
+    val ctx = internal.ExecutionContext().newWith("a" -> monitoredNode)
 
     //When:
-    val iter = matcher.findMatchingPaths(QueryState(), ctx)
+    val iter = matcher.findMatchingPaths(QueryState(graph), ctx)
 
     //Then:
     assert(limiter.count === 0)
@@ -207,7 +207,7 @@ class LazyTest extends ExecutionEngineHelper with Assertions with MockitoSugar {
     val parameterPipe = new ParameterPipe()
 
     val step = trail.toSteps(0).get
-    val matcher = new MonoDirectionalTraversalMatcher(step, (ctx) => Seq(monitoredNode))
+    val matcher = new MonoDirectionalTraversalMatcher(step, (ctx, state) => Seq(monitoredNode))
     new TraversalMatchPipe(parameterPipe, matcher, trail)
   }
 }

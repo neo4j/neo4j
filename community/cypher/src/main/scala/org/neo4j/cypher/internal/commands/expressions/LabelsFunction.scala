@@ -28,10 +28,9 @@ import org.neo4j.cypher.internal.pipes.QueryState
 
 case class LabelsFunction(nodeExpr: Expression) extends Expression {
 
-  override def apply(ctx: ExecutionContext): Any = nodeExpr(ctx) match {
+  override def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = nodeExpr(ctx) match {
     case n: Node =>
-      val state: QueryState = ctx.state
-      state.queryContext.getLabelsForNode(n.getId).map { LabelId(_) }
+      state.query.getLabelsForNode(n.getId).map { LabelId(_) }
     case _ =>
       throw new CypherTypeException("labels() expected a Node but was called with something else")
   }

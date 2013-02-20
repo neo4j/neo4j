@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.commands._
 import expressions.{Expression, Identifier, Literal, Collection}
 import expressions.Identifier._
 import org.neo4j.cypher.internal.symbols.{RelationshipType, NodeType, SymbolTable}
-import org.neo4j.graphdb.{Node, Direction}
+import org.neo4j.graphdb.{Transaction, Node, Direction}
 import org.neo4j.cypher.internal.pipes.QueryState
 import org.neo4j.cypher.{SyntaxException, CypherTypeException, UniquePathNotUniqueException}
 import collection.Map
@@ -40,13 +40,13 @@ case class UniqueLink(start: NamedExpectation, end: NamedExpectation, rel: Named
 
   def exec(context: ExecutionContext, state: QueryState): Option[(UniqueLink, CreateUniqueResult)] = {
 
-    def tx = state.queryContext.getTransaction
+    def tx: Transaction = state.query.getTransaction
 
     def getNode(expect: NamedExpectation): Option[Node] = context.get(expect.name) match {
       case Some(n: Node)                             => Some(n)
       case Some(x)                                   => throw new CypherTypeException("Expected `%s` to a node, but it is a %s".format(expect.name, x))
       case None if expect.e.isInstanceOf[Identifier] => None
-      case None => expect.e(context) match {
+      case None => expect.e(context)(state) match {
         case n: Node  => Some(n)
         case IsMap(_) => None
         case x        => throw new CypherTypeException("Expected `%s` to a node, but it is a %s".format(expect.name, x))
@@ -57,13 +57,13 @@ case class UniqueLink(start: NamedExpectation, end: NamedExpectation, rel: Named
     // If any matching rels are found, they are returned. Otherwise, a new one is
     // created and returned.
     def twoNodes(startNode: Node, endNode: Node): Option[(UniqueLink, CreateUniqueResult)] = {
-      val rels = context.state.queryContext.getRelationshipsFor(startNode, dir, Seq(relType)).
-        filter(r => r.getOtherNode(startNode) == endNode && rel.compareWithExpectations(r, context) ).
+      val rels = state.query.getRelationshipsFor(startNode, dir, Seq(relType)).
+        filter(r => r.getOtherNode(startNode) == endNode && rel.compareWithExpectations(r, context, state) ).
         toList
 
       rels match {
         case List() =>
-          val expectations = rel.getExpectations(context)
+          val expectations = rel.getExpectations(context, state)
           val createRel = CreateRelationship(rel.name,
             RelationshipEndpoint(Literal(startNode), Map(), Collection.empty, bare = true),
             RelationshipEndpoint(Literal(endNode), Map(), Collection.empty, bare = true), relType, expectations.properties)
@@ -84,7 +84,7 @@ case class UniqueLink(start: NamedExpectation, end: NamedExpectation, rel: Named
     def oneNode(startNode: Node, dir: Direction, other: NamedExpectation): Option[(UniqueLink, CreateUniqueResult)] = {
 
       def createUpdateActions(): Seq[UpdateWrapper] = {
-        val relExpectations = rel.getExpectations(context)
+        val relExpectations = rel.getExpectations(context, state)
         val createRel = if (dir == Direction.OUTGOING) {
           CreateRelationship(rel.name,
             RelationshipEndpoint(Literal(startNode), Map(), Collection.empty, bare = true),
@@ -96,14 +96,14 @@ case class UniqueLink(start: NamedExpectation, end: NamedExpectation, rel: Named
         }
 
         val relUpdate = UpdateWrapper(Seq(other.name), createRel, createRel.key)
-        val expectations = other.getExpectations(context)
+        val expectations = other.getExpectations(context, state)
         val nodeCreate = UpdateWrapper(Seq(), CreateNode(other.name, expectations.properties, expectations.labels), other.name)
 
         Seq(nodeCreate, relUpdate)
       }
 
-      val rels = context.state.queryContext.getRelationshipsFor(startNode, dir, Seq(relType)).
-        filter(r => rel.compareWithExpectations(r, context) && other.compareWithExpectations(r.getOtherNode(startNode), context)).toList
+      val rels = state.query.getRelationshipsFor(startNode, dir, Seq(relType)).
+        filter(r => rel.compareWithExpectations(r, context, state) && other.compareWithExpectations(r.getOtherNode(startNode), context, state)).toList
 
       rels match {
         case List() =>

@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.commands.expressions
 import org.scalatest.Assertions
 import org.junit.Test
 import org.neo4j.cypher.internal.ExecutionContext
+import org.neo4j.cypher.internal.pipes.QueryState
 
 class SimpleCaseTest extends Assertions {
   @Test
@@ -32,7 +33,7 @@ class SimpleCaseTest extends Assertions {
     )
 
     //WHEN
-    val result = caseExpr(ExecutionContext.empty)
+    val result = caseExpr(ExecutionContext.empty)(QueryState.empty)
 
     //THEN
     assert(result === "one")
@@ -47,7 +48,7 @@ class SimpleCaseTest extends Assertions {
     )
 
     //WHEN
-    val result = caseExpr(ExecutionContext.empty)
+    val result = caseExpr(ExecutionContext.empty)(QueryState.empty)
 
     //THEN
     assert(result === "two")
@@ -62,7 +63,7 @@ class SimpleCaseTest extends Assertions {
     )
 
     //WHEN
-    val result = caseExpr(ExecutionContext.empty)
+    val result = caseExpr(ExecutionContext.empty)(QueryState.empty)
 
     //THEN
     assert(result === null)
@@ -77,7 +78,7 @@ class SimpleCaseTest extends Assertions {
     ) defaultsTo "default"
 
     //WHEN
-    val result = caseExpr(ExecutionContext.empty)
+    val result = caseExpr(ExecutionContext.empty)(QueryState.empty)
 
     //THEN
     assert(result === "default")

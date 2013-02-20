@@ -17,20 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.commands
+package org.neo4j.cypher.internal
 
-import expressions.{Identifier, Literal}
-import org.junit.Test
-import org.scalatest.Assertions
-import org.neo4j.cypher.internal.ExecutionContext
-import org.neo4j.cypher.internal.pipes.QueryState
+import org.neo4j.graphdb.PropertyContainer
 
-class SeqPredicateTest extends Assertions {
-  @Test def allStringsBeginWithA() {
-    val strings = Seq("Andres", "Andres")
-    val inner = Equals(Literal("Andres"), Identifier("x"))
-    val all = new AllInCollection(Identifier("strings"), "x", inner)
-
-    assert(all.isMatch(ExecutionContext.from("strings" -> strings))(QueryState.empty))
-  }
+package object pipes {
+  type EntityProducer[T <: PropertyContainer] = (ExecutionContext, QueryState) => Iterable[T]
 }
