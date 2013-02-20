@@ -24,9 +24,9 @@ import org.neo4j.cypher.internal.ExecutionContext
 import org.neo4j.cypher.PlanDescription
 
 class UnionPipe(in: Seq[Pipe], columns:List[String]) extends Pipe {
-  def createResults(state: QueryState): Iterator[ExecutionContext] = new UnionIterator(in, state)
+  protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = new UnionIterator(in, state)
 
-  def executionPlanDescription: PlanDescription = PlanDescription("Union", "in" -> in.map(_.executionPlanDescription))
+  def executionPlanDescription: PlanDescription = PlanDescription(this, "Union", "in" -> in.map(_.executionPlanDescription))
 
   def symbols: SymbolTable = new SymbolTable(columns.map(k => k -> AnyType()).toMap)
 }

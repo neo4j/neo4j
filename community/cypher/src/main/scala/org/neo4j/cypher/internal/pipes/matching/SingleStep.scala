@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.pipes.matching
 import org.neo4j.graphdb.{Node, Relationship, Direction}
 import org.neo4j.cypher.internal.commands.{And, Predicate}
 import org.neo4j.cypher.internal.ExecutionContext
+import org.neo4j.cypher.internal.pipes.QueryState
 
 case class SingleStep(id: Int,
                       typ: Seq[String],
@@ -33,11 +34,15 @@ case class SingleStep(id: Int,
   def createCopy(next: Option[ExpanderStep], direction: Direction, nodePredicate: Predicate): ExpanderStep =
     copy(next = next, direction = direction, nodePredicate = nodePredicate)
 
-  def expand(node: Node, parameters: ExecutionContext): (Iterable[Relationship], Option[ExpanderStep]) = {
-    val intermediate = parameters.state.queryContext.getRelationshipsFor(node, direction, typ)
-
-    val rels = new FilteringIterable(intermediate, node, And(relPredicate, nodePredicate), parameters)
+  def expand(node: Node, parameters: ExecutionContext, state: QueryState): (Iterable[Relationship], Option[ExpanderStep]) = {
+    val intermediate = state.query.getRelationshipsFor(node, direction, typ)
+    val rels = new FilteringIterable(intermediate, node, And(relPredicate, nodePredicate), parameters, state)
     (rels, next)
+  }
+
+  private def filter(r: Relationship, n: Node, parameters: ExecutionContext, state:QueryState): Boolean = {
+    val m = new MiniMap(r, n)
+    relPredicate.isMatch(m)(state) && nodePredicate.isMatch(m)(state)
   }
 
   override def toString = {

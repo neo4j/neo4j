@@ -7,8 +7,8 @@ o Added the possibility to add label-based indexes
 o Added UNION
 o Added CASE
 
-1.9.RC
-------
+1.9.M05
+-------
 o Made it possible to run the parser concurrently
 o DISTINCT is now lazy, and keeps the incoming ordering
 o Added execution plan descriptions to execution results

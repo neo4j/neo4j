@@ -28,34 +28,37 @@ import org.junit.Test
 import org.scalatest.Assertions
 import org.neo4j.cypher.CypherTypeException
 import org.neo4j.cypher.internal.ExecutionContext
+import org.neo4j.cypher.internal.pipes.QueryState
 
 class MathFunctionsTest extends Assertions {
   @Test def absTests() {
-    assert(AbsFunction(Literal(-1))(ExecutionContext.empty) === 1)
-    assert(AbsFunction(Literal(1))(ExecutionContext.empty) === 1)
-    intercept[CypherTypeException](AbsFunction(Literal("wut"))(ExecutionContext.empty))
+    assert(calc(AbsFunction(Literal(-1))) === 1)
+    assert(calc(AbsFunction(Literal(1))) === 1)
+    intercept[CypherTypeException](calc(AbsFunction(Literal("wut"))))
   }
 
   @Test def signTests() {
-    assert(SignFunction(Literal(-1))(ExecutionContext.empty) === -1)
-    assert(SignFunction(Literal(1))(ExecutionContext.empty) === 1)
-    intercept[CypherTypeException](SignFunction(Literal("wut"))(ExecutionContext.empty))
+    assert(calc(SignFunction(Literal(-1))) === -1)
+    assert(calc(SignFunction(Literal(1))) === 1)
+    intercept[CypherTypeException](calc(SignFunction(Literal("wut"))))
   }
 
   @Test def roundTests() {
-    assert(RoundFunction(Literal(1.5))(ExecutionContext.empty) === 2)
-    assert(RoundFunction(Literal(12.22))(ExecutionContext.empty) === 12)
-    intercept[CypherTypeException](RoundFunction(Literal("wut"))(ExecutionContext.empty))
+    assert(calc(RoundFunction(Literal(1.5))) === 2)
+    assert(calc(RoundFunction(Literal(12.22))) === 12)
+    intercept[CypherTypeException](calc(RoundFunction(Literal("wut"))))
   }
 
   @Test def powFunction() {
-    assert(Pow(Literal(2), Literal(4))(ExecutionContext.empty) === math.pow (2,4))
-    intercept[CypherTypeException](Pow(Literal("wut"), Literal(2))(ExecutionContext.empty))
-    intercept[CypherTypeException](Pow(Literal(3.1415), Literal("baaaah"))(ExecutionContext.empty))
+    assert(calc(Pow(Literal(2), Literal(4))) === math.pow (2,4))
+    intercept[CypherTypeException](calc(Pow(Literal("wut"), Literal(2))))
+    intercept[CypherTypeException](calc(Pow(Literal(3.1415), Literal("baaaah"))))
   }
 
   @Test def sqrtFunction() {
-    assert(SqrtFunction(Literal(16))(ExecutionContext.empty) === 4)
-    intercept[CypherTypeException](SqrtFunction(Literal("wut"))(ExecutionContext.empty))
+    assert(calc(SqrtFunction(Literal(16))) === 4)
+    intercept[CypherTypeException](calc(SqrtFunction(Literal("wut"))))
   }
+
+  private def calc(e:Expression) = e(ExecutionContext.empty)(QueryState())
 }

@@ -91,4 +91,10 @@ trait Operations[T <: PropertyContainer] {
   def propertyKeys(obj: T): Iterable[String]
 
   def getById(id: Long): T
+
+  def indexGet(name: String, key: String, value: Any): Iterable[T]
+
+  def indexQuery(name: String, query: Any): Iterable[T]
+
+  def all : Iterable[T]
 }

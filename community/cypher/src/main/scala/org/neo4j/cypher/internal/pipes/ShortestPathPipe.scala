@@ -35,8 +35,8 @@ class ShortestPathPipe(source: Pipe, ast: ShortestPath) extends PipeWithSource(s
   private def pathName = ast.pathName
   private val expression = ShortestPathExpression(ast)
 
-  def createResults(state: QueryState) = source.createResults(state).flatMap(ctx => {
-    val result: Stream[Path] = expression(ctx)
+  protected def internalCreateResults(state: QueryState) = source.createResults(state).flatMap(ctx => {
+    val result: Stream[Path] = expression(ctx)(state)
 
     if (result.isEmpty) {
       if (optional)
@@ -52,7 +52,7 @@ class ShortestPathPipe(source: Pipe, ast: ShortestPath) extends PipeWithSource(s
   val symbols = source.symbols.add(pathName, PathType())
 
   override def executionPlanDescription =
-    source.executionPlanDescription.andThen("ShortestPath", "ast" -> ast)
+    source.executionPlanDescription.andThen(this, "ShortestPath", "ast" -> ast)
 
   def throwIfSymbolsMissing(symbols: SymbolTable) {
     ast.throwIfSymbolsMissing(symbols)

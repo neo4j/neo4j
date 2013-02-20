@@ -29,11 +29,11 @@ class DistinctPipe(source: Pipe, expressions: Map[String, Expression]) extends P
 
   val keyNames: Seq[String] = expressions.keys.toSeq
 
-  def createResults(state: QueryState): Iterator[ExecutionContext] = {
+  protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
 
     // Run the return item expressions, and replace the execution context's with their values
     val returnExpressions = source.createResults(state).map(ctx => {
-      val newMap = expressions.mapValues(expression => expression(ctx))
+      val newMap = expressions.mapValues(expression => expression(ctx)(state))
       ctx.newFrom(newMap)
     })
 
@@ -56,7 +56,7 @@ class DistinctPipe(source: Pipe, expressions: Map[String, Expression]) extends P
     }
   }
 
-  override def executionPlanDescription = source.executionPlanDescription.andThen("Distinct")
+  override def executionPlanDescription = source.executionPlanDescription.andThen(this, "Distinct")
 
   def symbols: SymbolTable = {
     val identifiers = expressions.mapValues(e => e.evaluateType(AnyType(), source.symbols))

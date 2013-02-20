@@ -39,11 +39,11 @@ case class CreateNode(key: String, properties: Map[String, Expression], labels: 
     }
 
     def createNodeWithPropertiesAndLabels(props: Map[String, Expression]): ExecutionContext = {
-      val node = state.queryContext.createNode()
+      val node = state.query.createNode()
       setProperties(node, props, context, state)
 
-      val queryCtx = state.queryContext
-      val labelIds: Iterable[Long] = LabelSupport.getLabelsAsLongs(context, labels)
+      val queryCtx = state.query
+      val labelIds: Iterable[Long] = LabelSupport.getLabelsAsLongs(context, labels)(state)
       queryCtx.addLabelsToNode(node.getId, labelIds)
 
       val newContext = context.newWith(key -> node)
@@ -64,7 +64,7 @@ case class CreateNode(key: String, properties: Map[String, Expression], labels: 
     if (isParametersMap(properties)) {
       val singleMapExpression: Expression = properties.head._2
 
-      val maps: Iterable[Any] = makeTraversable(singleMapExpression(context))
+      val maps: Iterable[Any] = makeTraversable(singleMapExpression(context)(state))
 
       maps.map {
         case untyped: Map[_, _] => {

@@ -24,6 +24,7 @@ import expressions.{Closure, Expression}
 import org.neo4j.cypher.internal.symbols._
 import org.neo4j.cypher.internal.helpers.CollectionSupport
 import org.neo4j.cypher.internal.ExecutionContext
+import org.neo4j.cypher.internal.pipes.QueryState
 
 abstract class InCollection(collection: Expression, id: String, predicate: Predicate)
   extends Predicate
@@ -32,7 +33,7 @@ abstract class InCollection(collection: Expression, id: String, predicate: Predi
 
   def seqMethod[U](f: Seq[U]): ((U) => Boolean) => Boolean
 
-  def isMatch(m: ExecutionContext): Boolean = {
+  def isMatch(m: ExecutionContext)(implicit state: QueryState): Boolean = {
     val seq = makeTraversable(collection(m)).toSeq
 
     seqMethod(seq)(item =>predicate.isMatch(m.newWith(id -> item)))

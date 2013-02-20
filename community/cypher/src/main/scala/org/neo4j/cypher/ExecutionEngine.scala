@@ -30,7 +30,9 @@ import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.impl.util.StringLogger
 
+
 class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = StringLogger.DEV_NULL) {
+
   checkScalaVersion()
 
   require(graph != null, "Can't work with a null graph database")
@@ -44,9 +46,13 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
       case v:String => new CypherParser(v)
       case _ => new CypherParser()
     }
-  }
-  else {
+  } else {
     new CypherParser()
+  }
+
+  def profile(query: String, params: Map[String, Any] = Map.empty): ExecutionResult = {
+    logger.info(query)
+    prepare(query).profile(queryContext, params)
   }
 
   @throws(classOf[SyntaxException])
@@ -55,11 +61,10 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
   @throws(classOf[SyntaxException])
   def execute(query: String, params: Map[String, Any]): ExecutionResult = {
     logger.info(query)
-
-    val plan = prepare(query)
-    val ctx = new TransactionBoundQueryContext(graph.asInstanceOf[GraphDatabaseAPI])
-    plan.execute(ctx, params)
+    prepare(query).execute(queryContext, params)
   }
+
+  private def queryContext = new TransactionBoundQueryContext(graph.asInstanceOf[GraphDatabaseAPI])
 
   @throws(classOf[SyntaxException])
   def execute(query: String, params: JavaMap[String, Any]): ExecutionResult = execute(query, params.asScala.toMap)
@@ -107,4 +112,5 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
     100
   }
 }
+
 

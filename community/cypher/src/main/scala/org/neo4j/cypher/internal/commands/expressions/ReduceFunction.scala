@@ -21,10 +21,11 @@ package org.neo4j.cypher.internal.commands.expressions
 import org.neo4j.cypher.internal.symbols._
 import org.neo4j.cypher.internal.helpers.CollectionSupport
 import org.neo4j.cypher.internal.ExecutionContext
+import org.neo4j.cypher.internal.pipes.QueryState
 
 case class ReduceFunction(collection: Expression, id: String, expression: Expression, acc:String, init:Expression )
   extends NullInNullOutExpression(collection) with CollectionSupport {
-  def compute(value: Any, m: ExecutionContext) = {
+  def compute(value: Any, m: ExecutionContext)(implicit state: QueryState) = {
     val initMap = m.newWith(acc -> init(m))
     val computedMap = makeTraversable(value).foldLeft(initMap) { (accMap, k) => {
         val innerMap = accMap.newWith(id -> k)

@@ -23,10 +23,11 @@ import org.neo4j.cypher.PlanDescription
 import org.neo4j.cypher.internal.commands.{DropIndex, CreateIndex, IndexOperation}
 import org.neo4j.cypher.SyntaxException
 import org.neo4j.cypher.internal.symbols.SymbolTable
+import org.neo4j.cypher.internal.ExecutionContext
 
 class IndexOperationPipe(indexOp: IndexOperation) extends Pipe {
-  def createResults(state: QueryState) = {
-    val queryContext = state.queryContext
+  protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
+    val queryContext = state.query
 
     val labelId = queryContext.getOrCreateLabelId(indexOp.label)
 
@@ -53,5 +54,5 @@ class IndexOperationPipe(indexOp: IndexOperation) extends Pipe {
 
   def symbols = new SymbolTable()
 
-  def executionPlanDescription() = PlanDescription(indexOp.toString)
+  def executionPlanDescription() = PlanDescription(this, indexOp.toString)
 }

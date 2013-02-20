@@ -25,14 +25,14 @@ import org.neo4j.cypher.{CypherTypeException, GraphDatabaseTestBase}
 import org.scalatest.Assertions
 import org.neo4j.cypher.internal.spi.QueryContext
 import org.neo4j.graphdb.{Direction, Node}
-import org.neo4j.cypher.internal.pipes.QueryState
+import org.neo4j.cypher.internal.pipes.{NullDecorator, QueryState}
 import org.junit.Test
 import values.{ResolvedLabel, LabelName}
 
 class LabelActionTest extends GraphDatabaseTestBase with Assertions {
   val queryContext = new SnitchingQueryContext
-  val state = new QueryState(graph, queryContext, Map.empty)
-  val ctx = ExecutionContext(state = state)
+  val state = new QueryState(graph, queryContext, Map.empty, NullDecorator)
+  val ctx = ExecutionContext()
 
   @Test
   def set_single_label_on_node() {

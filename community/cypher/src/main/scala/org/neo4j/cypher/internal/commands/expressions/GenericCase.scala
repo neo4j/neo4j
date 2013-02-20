@@ -22,13 +22,14 @@ package org.neo4j.cypher.internal.commands.expressions
 import org.neo4j.cypher.internal.symbols.{AnyType, CypherType, SymbolTable}
 import org.neo4j.cypher.internal.commands.{Predicate, AstNode}
 import org.neo4j.cypher.internal.ExecutionContext
+import org.neo4j.cypher.internal.pipes.QueryState
 
 
 case class GenericCase(alternatives: Seq[(Predicate, Expression)], default: Option[Expression]) extends Expression {
 
   require(alternatives.nonEmpty)
 
-  def apply(ctx: ExecutionContext): Any = {
+  def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = {
     val thisMatch: Option[Expression] = alternatives find {
       case (p, e) => p.isMatch(ctx)
     } map (_._2)

@@ -23,6 +23,7 @@ import org.junit.Test
 import org.junit.Assert._
 import org.neo4j.cypher.internal.commands.expressions.{Expression, Identifier, Literal, NumericHelper}
 import org.neo4j.cypher.internal.ExecutionContext
+import org.neo4j.cypher.internal.pipes.QueryState
 
 abstract class PercentileTest {
   def createAggregator(inner: Expression, percentile: Expression): AggregationFunction
@@ -30,7 +31,7 @@ abstract class PercentileTest {
   def getPercentile(percentile: Double, values: List[Any]): Any = {
     val func = createAggregator(Identifier("x"), Literal(percentile))
     values.foreach(value => {
-      func(ExecutionContext.from("x" -> value))
+      func(ExecutionContext.from("x" -> value))(QueryState())
     })
     func.result
   }

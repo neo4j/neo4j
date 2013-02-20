@@ -23,7 +23,7 @@ import org.scalatest.Assertions
 import org.junit.Test
 import org.neo4j.cypher.internal.commands.values.LabelId
 import org.neo4j.cypher.internal.ExecutionContext
-import org.neo4j.cypher.internal.pipes.QueryState
+import org.neo4j.cypher.internal.pipes.{NullDecorator, QueryState}
 import org.neo4j.graphdb.Node
 import org.scalatest.mock.MockitoSugar
 import org.neo4j.cypher.internal.spi.QueryContext
@@ -38,13 +38,13 @@ class LabelsFunctionTest extends Assertions with MockitoSugar {
     val queryContext = mock[QueryContext]
     val ids = Seq(12L)
     Mockito.when(queryContext.getLabelsForNode(node.getId)).thenReturn(ids)
-    val state = new QueryState(null, queryContext, Map.empty)
-    val ctx = ExecutionContext(state = state) += ("n" -> node)
+    val state = new QueryState(null, queryContext, Map.empty, NullDecorator)
+    val ctx = ExecutionContext() += ("n" -> node)
 
     // WHEN
     val when: Expression = LabelsFunction(Identifier("n"))
 
     // THEN
-    assert(when(ctx) === Seq(LabelId(12L)))
+    assert(when(ctx)(state) === Seq(LabelId(12L)))
   }
 }

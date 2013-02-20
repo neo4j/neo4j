@@ -61,7 +61,6 @@ class ErrorMessagesTest extends ExecutionEngineHelper with Assertions with Strin
       "Can't use aggregate functions in the WHERE clause.")
   }
 
-
   @Test def twoIndexQueriesInSameStart() {
     expectSyntaxError(
       "start a = node:node_auto_index(name=\"sebastian\",name=\"magnus\") return a",

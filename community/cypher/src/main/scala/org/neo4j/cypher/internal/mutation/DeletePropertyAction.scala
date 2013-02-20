@@ -30,13 +30,13 @@ case class DeletePropertyAction(element: Expression, property: String)
   extends UpdateAction {
 
   def exec(context: ExecutionContext, state: QueryState) = {
-    element(context) match {
-      case n: Node => if (state.queryContext.nodeOps.hasProperty(n, property)) {
-        state.queryContext.nodeOps.removeProperty(n, property)
+    element(context)(state) match {
+      case n: Node => if (state.query.nodeOps.hasProperty(n, property)) {
+        state.query.nodeOps.removeProperty(n, property)
       }
 
-      case r: Relationship => if (state.queryContext.relationshipOps.hasProperty(r, property)) {
-        state.queryContext.relationshipOps.removeProperty(r, property)
+      case r: Relationship => if (state.query.relationshipOps.hasProperty(r, property)) {
+        state.query.relationshipOps.removeProperty(r, property)
       }
 
       case _ => throw new ThisShouldNotHappenError("Andres", "This should be a node or a relationship")

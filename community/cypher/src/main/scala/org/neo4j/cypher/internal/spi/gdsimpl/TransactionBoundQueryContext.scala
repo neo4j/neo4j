@@ -26,6 +26,9 @@ import org.neo4j.kernel.api.{ConstraintViolationKernelException, StatementContex
 import collection.JavaConverters._
 import org.neo4j.graphdb.DynamicRelationshipType.withName
 import org.neo4j.cypher.IndexAlreadyDefinedException
+import org.neo4j.tooling.GlobalGraphOperations
+import java.lang.{Iterable=>JIterable}
+import scala.Iterable
 
 class TransactionBoundQueryContext(graph: GraphDatabaseAPI) extends QueryContext {
   val tx: Transaction = graph.beginTx()
@@ -89,6 +92,14 @@ class TransactionBoundQueryContext(graph: GraphDatabaseAPI) extends QueryContext
     }
 
     def getById(id: Long) = graph.getNodeById(id)
+
+    def all: Iterable[Node] = GlobalGraphOperations.at(graph).getAllNodes.asScala
+
+    def indexGet(name: String, key: String, value: Any): Iterable[Node] =
+      graph.index.forNodes(name).get(key, value).asInstanceOf[JIterable[Node]].asScala
+
+    def indexQuery(name: String, query: Any): Iterable[Node] =
+      graph.index.forNodes(name).query(query).asInstanceOf[JIterable[Node]].asScala
   }
 
   class RelationshipOperations extends BaseOperations[Relationship] {
@@ -97,6 +108,14 @@ class TransactionBoundQueryContext(graph: GraphDatabaseAPI) extends QueryContext
     }
 
     def getById(id: Long) = graph.getRelationshipById(id)
+
+    def all: Iterable[Relationship] = GlobalGraphOperations.at(graph).getAllRelationships.asScala
+
+    def indexGet(name: String, key: String, value: Any): Iterable[Relationship] =
+      graph.index.forRelationships(name).get(key, value).asInstanceOf[JIterable[Relationship]].asScala
+
+    def indexQuery(name: String, query: Any): Iterable[Relationship] =
+      graph.index.forRelationships(name).query(query).asInstanceOf[JIterable[Relationship]].asScala
   }
 
   def getOrCreatePropertyKeyId(propertyKey: String) =

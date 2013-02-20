@@ -19,10 +19,24 @@
  */
 package org.neo4j.cypher.internal.pipes
 
-import org.neo4j.cypher.internal.symbols.SymbolTable
+import org.neo4j.cypher.internal.ExecutionContext
+import org.neo4j.cypher.PlanDescription
 
-abstract class PipeWithSource(val source: Pipe) extends Pipe {
-  def throwIfSymbolsMissing(symbols: SymbolTable)
+/*
+A PipeDecorator is used to instrument calls between Pipes, and between a Pipe and the graph
+ */
+trait PipeDecorator {
+  def decorate(pipe: Pipe, state: QueryState): QueryState
 
-  throwIfSymbolsMissing(source.symbols)
+  def decorate(pipe: Pipe, iter: Iterator[ExecutionContext]): Iterator[ExecutionContext]
+
+  def decorate(plan: PlanDescription): PlanDescription
+}
+
+object NullDecorator extends PipeDecorator {
+  def decorate(pipe: Pipe, iter: Iterator[ExecutionContext]): Iterator[ExecutionContext] = iter
+
+  def decorate(plan: PlanDescription): PlanDescription = plan
+
+  def decorate(pipe: Pipe, state: QueryState): QueryState = state
 }

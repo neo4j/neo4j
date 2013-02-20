@@ -24,6 +24,7 @@ import org.neo4j.cypher.{CypherTypeException, SyntaxException}
 import org.scalatest.Assertions
 import org.neo4j.cypher.internal.commands.expressions.{Expression, Add}
 import org.neo4j.cypher.internal.ExecutionContext
+import org.neo4j.cypher.internal.pipes.QueryState
 
 class SymbolTableTest extends Assertions {
   @Test def anytype_is_ok() {
@@ -110,7 +111,7 @@ class SymbolTableTest extends Assertions {
 }
 
 class FakeExpression(typ: CypherType) extends Expression {
-  def apply(v1: ExecutionContext): Any = null
+  def apply(v1: ExecutionContext)(implicit state: QueryState): Any = null
 
   def rewrite(f: (Expression) => Expression): Expression = null
 

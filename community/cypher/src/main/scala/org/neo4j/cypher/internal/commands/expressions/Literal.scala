@@ -21,9 +21,10 @@ package org.neo4j.cypher.internal.commands.expressions
 
 import org.neo4j.cypher.internal.symbols.{SymbolTable, CypherType}
 import org.neo4j.cypher.internal.ExecutionContext
+import org.neo4j.cypher.internal.pipes.QueryState
 
 case class Literal(v: Any) extends Expression {
-  def apply(ctx: ExecutionContext): Any = v
+  def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = v
 
   def rewrite(f: (Expression) => Expression) = f(this)
 

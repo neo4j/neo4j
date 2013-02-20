@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.pipes.matching
 import org.neo4j.graphdb.{Node, Relationship, Direction}
 import org.neo4j.cypher.internal.commands.Predicate
 import org.neo4j.cypher.internal.ExecutionContext
+import org.neo4j.cypher.internal.pipes.QueryState
 
 /*
 Variable length paths are expanded by decreasing min and max, if it's a bounded path. Once
@@ -46,10 +47,10 @@ case class VarLengthStep(id: Int,
   def createCopy(next: Option[ExpanderStep], direction: Direction, nodePredicate: Predicate): ExpanderStep =
     copy(next = next, direction = direction, nodePredicate = nodePredicate)
 
-  def expand(node: Node, parameters: ExecutionContext): (Iterable[Relationship], Option[ExpanderStep]) = {
+  def expand(node: Node, parameters: ExecutionContext, state: QueryState): (Iterable[Relationship], Option[ExpanderStep]) = {
     def filter(r: Relationship, n: Node): Boolean = {
-      val m = new MiniMap(r, n, parameters.state)
-      relPredicate.isMatch(m) && nodePredicate.isMatch(m)
+      val m = new MiniMap(r, n)
+      relPredicate.isMatch(m)(state) && nodePredicate.isMatch(m)(state)
     }
 
     def decrease(v: Option[Int]): Option[Int] = v.map {
@@ -59,12 +60,12 @@ case class VarLengthStep(id: Int,
 
     def forceNextStep() = next match {
       case None       => (Seq(), None)
-      case Some(step) => step.expand(node, parameters)
+      case Some(step) => step.expand(node, parameters, state)
     }
 
     def expandRecursively(rels: Iterable[Relationship]): Iterable[Relationship] = {
       if (min == 0) {
-        rels ++ next.toSeq.map(s => s.expand(node, parameters)._1).flatten
+        rels ++ next.toSeq.map(s => s.expand(node, parameters, state)._1).flatten
       } else {
         rels
       }
@@ -79,7 +80,7 @@ case class VarLengthStep(id: Int,
       }
     }
 
-    val matchingRelationships = parameters.state.queryContext.getRelationshipsFor(node, direction, typ)
+    val matchingRelationships = state.query.getRelationshipsFor(node, direction, typ)
 
 
     val result = if (matchingRelationships.isEmpty && min == 0) {

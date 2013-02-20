@@ -40,9 +40,9 @@ case class LabelAction(entity: Expression, labelOp: LabelOp, labelSet: Expressio
   def rewrite(f: (Expression) => Expression) = LabelAction(entity.rewrite(f), labelOp, labelSet.rewrite(f))
 
   def exec(context: ExecutionContext, state: QueryState) = {
-    val node      = CastSupport.erasureCastOrFail[Node](entity(context))
-    val queryCtx  = state.queryContext
-    val labelIds: Iterable[Long] = LabelSupport.getLabelsAsLongs(context, labelSet)
+    val node      = CastSupport.erasureCastOrFail[Node](entity(context)(state))
+    val queryCtx  = state.query
+    val labelIds: Iterable[Long] = LabelSupport.getLabelsAsLongs(context, labelSet)(state)
 
     labelOp match {
       case LabelAdd => queryCtx.addLabelsToNode(node.getId, labelIds)

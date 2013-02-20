@@ -23,12 +23,14 @@ import org.neo4j.cypher.internal.helpers.CollectionSupport
 import org.neo4j.cypher.internal.commands.Predicate
 import org.neo4j.cypher.internal.symbols._
 import org.neo4j.cypher.internal.ExecutionContext
+import org.neo4j.cypher.internal.pipes.QueryState
 
 case class FilterFunction(collection: Expression, id: String, predicate: Predicate)
   extends NullInNullOutExpression(collection)
   with CollectionSupport
   with Closure {
-  def compute(value: Any, m: ExecutionContext) = makeTraversable(value).filter(element => predicate.isMatch(m.newWith(id -> element)))
+  def compute(value: Any, m: ExecutionContext)(implicit state: QueryState) =
+    makeTraversable(value).filter(element => predicate.isMatch(m.newWith(id -> element)))
 
   def rewrite(f: (Expression) => Expression) = f(FilterFunction(collection.rewrite(f), id, predicate.rewrite(f)))
 

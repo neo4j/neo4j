@@ -24,9 +24,9 @@ import expressions.Identifier._
 import org.neo4j.cypher.internal.symbols._
 import org.neo4j.cypher.internal.pipes.matching.MatchingContext
 import org.neo4j.helpers.ThisShouldNotHappenError
-import org.neo4j.graphdb.Path
 import org.neo4j.cypher.internal.executionplan.builders.PatternGraphBuilder
 import org.neo4j.cypher.internal.ExecutionContext
+import org.neo4j.cypher.internal.pipes.QueryState
 
 case class PathExpression(pathPattern: Seq[Pattern], predicate:Predicate=True())
   extends Expression
@@ -41,7 +41,7 @@ case class PathExpression(pathPattern: Seq[Pattern], predicate:Predicate=True())
     filter(isNamed).
     distinct
 
-  def apply(ctx: ExecutionContext): Any = {
+  def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = {
     // If any of the points we need is null, the whole expression will return null
     val returnNull = interestingPoints.exists(key => ctx.get(key) match {
       case None       => throw new ThisShouldNotHappenError("Andres", "This execution plan should not exist.")
@@ -49,18 +49,11 @@ case class PathExpression(pathPattern: Seq[Pattern], predicate:Predicate=True())
       case Some(x)    => false
     })
 
-
     if (returnNull) {
       null
     } else {
-      getMatches(ctx)
+      matchingContext.getMatches(ctx, state).map(getPath)
     }
-  }
-
-  def getMatches(v1: ExecutionContext): Traversable[Path] = {
-    val matches: Traversable[ExecutionContext] = matchingContext.getMatches(v1)
-    val result: Traversable[Path] = matches.map(getPath)
-    result
   }
 
   def children = pathPattern
