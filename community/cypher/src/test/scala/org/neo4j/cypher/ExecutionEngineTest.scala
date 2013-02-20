@@ -2356,4 +2356,12 @@ RETURN x0.name?
     assert(result.toList === List())
   }
 
+  @Test
+  def sort_columns_do_not_leak() {
+    //GIVEN
+    val result = parseAndExecute("start n=node(*) return * order by id(n)")
+
+    //THEN
+    assert(result.columns === List("n"))
+  }
 }
