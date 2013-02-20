@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
 
@@ -41,4 +42,6 @@ public interface FileSystemAbstraction
     void copyFile( String from, String to ) throws IOException;
     
 //    String[] listFiles( String directory );
+
+    void autoCreatePath( File path ) throws IOException;
 }

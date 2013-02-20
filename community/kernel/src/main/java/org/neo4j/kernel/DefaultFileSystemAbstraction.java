@@ -20,6 +20,8 @@
 
 package org.neo4j.kernel;
 
+import static java.lang.String.format;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -31,9 +33,10 @@ import org.neo4j.kernel.impl.util.FileUtils;
 /**
 * TODO
 */
-public class DefaultFileSystemAbstraction
-    implements FileSystemAbstraction
+public class DefaultFileSystemAbstraction implements FileSystemAbstraction
 {
+    static String UNABLE_TO_CREATE_DIRECTORY_FORMAT = "Unable to create directory path [%s] for Neo4j store.";
+
     @Override
     public FileChannel open( String fileName, String mode ) throws IOException
     {
@@ -81,5 +84,17 @@ public class DefaultFileSystemAbstraction
     public void copyFile( String from, String to ) throws IOException
     {
         FileUtils.copyRecursively( new File( from ), new File( to ) );
+    }
+
+    @Override
+    public void autoCreatePath( File path ) throws IOException
+    {
+        if (path.exists()) return;
+
+        boolean directoriesWereCreated = path.mkdirs();
+
+        if (directoriesWereCreated) return;
+
+        throw new IOException( format( UNABLE_TO_CREATE_DIRECTORY_FORMAT, path ) );
     }
 }

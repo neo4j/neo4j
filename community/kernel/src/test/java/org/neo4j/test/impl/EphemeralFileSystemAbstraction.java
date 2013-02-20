@@ -19,6 +19,7 @@
  */
 package org.neo4j.test.impl;
 
+import java.io.File;
 import java.io.IOException;
 import java.lang.ref.Reference;
 import java.lang.ref.SoftReference;
@@ -185,6 +186,12 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction, Li
         if ( files.containsKey( to ) )
             throw new IOException( "'" + to + "' already exists" );
         files.put( to, files.get( from ).clone() );
+    }
+
+    @Override
+    public void autoCreatePath( File path ) throws IOException
+    {
+        // no-op, all paths exist
     }
 
     private static class EphemeralFileChannel extends FileChannel
