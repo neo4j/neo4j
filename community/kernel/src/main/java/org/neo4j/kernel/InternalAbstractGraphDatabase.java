@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel;
 
+import static org.neo4j.helpers.collection.IteratorUtil.single;
 import static org.slf4j.impl.StaticLoggerBinder.getSingleton;
 
 import java.io.File;
@@ -59,6 +60,7 @@ import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.Settings;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.kernel.api.IndexPopulatorMapperProvider;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConfigurationChange;
@@ -211,6 +213,7 @@ public abstract class InternalAbstractGraphDatabase
     protected ThreadToStatementContextBridge statementContextProvider;
     protected BridgingCacheAccess cacheBridge;
     protected SchemaIndexing schemaIndexing;
+    protected IndexPopulatorMapperProvider indexPopulatorMapper;
 
     protected final LifeSupport life = new LifeSupport();
     private final Map<String,CacheProvider> cacheProviders;
@@ -220,9 +223,12 @@ public abstract class InternalAbstractGraphDatabase
                                              Iterable<IndexProvider> indexProviders,
                                              Iterable<KernelExtensionFactory<?>> kernelExtensions,
                                              Iterable<CacheProvider> cacheProviders,
-                                             Iterable<TransactionInterceptorProvider> transactionInterceptorProviders )
+                                             Iterable<TransactionInterceptorProvider> transactionInterceptorProviders,
+                                             Iterable<IndexPopulatorMapperProvider> indexPopulatorMappers )
     {
         this.params = params;
+        
+        this.indexPopulatorMapper = single( indexPopulatorMappers );
 
         dependencyResolver = new DependencyResolverImpl();
 
@@ -492,7 +498,8 @@ public abstract class InternalAbstractGraphDatabase
         
         cacheBridge = new BridgingCacheAccess( nodeManager, schemaCache );
         
-        schemaIndexing = new SchemaIndexing();
+        schemaIndexing = life.add( new SchemaIndexing( xaDataSourceManager, statementContextProvider,
+                indexPopulatorMapper.newMapper() ) );
 
         createNeoDataSource();
 

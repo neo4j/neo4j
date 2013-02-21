@@ -20,12 +20,17 @@
 package org.neo4j.kernel.impl.api.index;
 
 import static java.util.concurrent.Executors.newFixedThreadPool;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.neo4j.helpers.collection.IteratorUtil.single;
 
+import java.util.Collection;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.ThisShouldNotHappenError;
+import org.neo4j.kernel.ThreadToStatementContextBridge;
+import org.neo4j.kernel.api.IndexPopulatorMapper;
 import org.neo4j.kernel.api.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.PropertyKeyNotFoundException;
 import org.neo4j.kernel.api.StatementContext;
@@ -38,12 +43,18 @@ public class BackgroundIndexPopulationService implements IndexPopulationService
     private final StatementContext readContext;
     private final NeoStore neoStore;
     
-    public BackgroundIndexPopulationService( IndexPopulatorMapper indexManipulatorMapper, NeoStore neoStore,
-            StatementContext readContext )
+    // TODO such synchronization needed?
+    private final Collection<IndexPopulationJob> indexJobs = new CopyOnWriteArrayList<IndexPopulationJob>();
+    private final ThreadToStatementContextBridge ctxProvider;
+
+    public BackgroundIndexPopulationService( IndexPopulatorMapper indexManipulatorMapper,
+                                             NeoStore neoStore,
+                                             ThreadToStatementContextBridge ctxProvider )
     {
         this.indexManipulatorMapper = indexManipulatorMapper;
         this.neoStore = neoStore;
-        this.readContext = readContext;
+        this.ctxProvider = ctxProvider;
+        this.readContext = ctxProvider.getCtxForReading();
     }
     
     @Override
@@ -67,7 +78,34 @@ public class BackgroundIndexPopulationService implements IndexPopulationService
         }
         
         // TODO task management
-        populationExecutor.submit( new IndexPopulationJob( labelId, propertyKeyId,
-                indexManipulatorMapper.getManipulator( index ), neoStore ) );
+        IndexPopulator populator = indexManipulatorMapper.getPopulator( index );
+        IndexPopulationJob job = new IndexPopulationJob( labelId, propertyKeyId, populator, neoStore, ctxProvider );
+        populationExecutor.submit( job );
+        indexJobs.add( job );
+    }
+    
+    @Override
+    public void indexUpdates( Iterable<NodePropertyUpdate> updates )
+    {
+        for ( IndexPopulationJob job : indexJobs )
+            job.indexUpdates( updates );
+    }
+
+    @Override
+    public void shutdown()
+    {
+        for ( IndexPopulationJob job : indexJobs )
+            job.cancel();
+        
+        populationExecutor.shutdown();
+        try
+        {
+            if ( !populationExecutor.awaitTermination( 60, SECONDS ) )
+                throw new IllegalStateException( "Failed to shut down index service" );
+        }
+        catch ( InterruptedException e )
+        {
+            throw new RuntimeException( e );
+        }
     }
 }

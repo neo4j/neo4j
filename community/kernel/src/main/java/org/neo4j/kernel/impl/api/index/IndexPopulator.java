@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import org.neo4j.kernel.api.StatementContext;
+
 public interface IndexPopulator
 {
     /**
@@ -31,5 +33,18 @@ public interface IndexPopulator
      */
     void add( int n, long nodeId, Object propertyValue );
     
-    void done();
+    /**
+     * Called when initially populating an index over existing data. Guaranteed to be
+     * called by the same thread every time.
+     *
+     * @param n the n:th entry indexed in this population.
+     * @param nodeId node id to index.
+     * @param propertyValue property value for the entry to de-index.
+     */
+    void remove( int n, long nodeId, Object propertyValue );
+
+    /**
+     * Called to signal end of background index population
+     */
+    void done(StatementContext ctx);
 }

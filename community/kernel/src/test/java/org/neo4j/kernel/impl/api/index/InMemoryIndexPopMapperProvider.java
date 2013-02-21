@@ -19,17 +19,21 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.helpers.Service;
+import org.neo4j.kernel.api.IndexPopulatorMapper;
+import org.neo4j.kernel.api.IndexPopulatorMapperProvider;
 
-/**
- * Service which is responsible for initially populating new indexes as they get created.
- * It receives notifications about new indexes and will potentially index in the background.
- */
-public interface IndexPopulationService
+@Service.Implementation( IndexPopulatorMapperProvider.class )
+public class InMemoryIndexPopMapperProvider extends IndexPopulatorMapperProvider
 {
-    void indexCreated( IndexDefinition index );
+    public InMemoryIndexPopMapperProvider()
+    {
+        super( "in-memory" );
+    }
 
-    void indexUpdates( Iterable<NodePropertyUpdate> updates );
-    
-    void shutdown();
+    @Override
+    public IndexPopulatorMapper newMapper()
+    {
+        return new InMemoryIndexPopMapper();
+    }
 }

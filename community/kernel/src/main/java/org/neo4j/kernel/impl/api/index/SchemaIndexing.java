@@ -19,10 +19,15 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import java.util.Collection;
-
-import org.neo4j.helpers.Pair;
+import org.neo4j.kernel.ThreadToStatementContextBridge;
+import org.neo4j.kernel.api.IndexPopulatorMapper;
+import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
+import org.neo4j.kernel.impl.transaction.DataSourceRegistrationListener;
+import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
+import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 /**
  * TODO temporary name
@@ -30,13 +35,48 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
  * Used when committing for notifying schema indexes about updates made to the graph.
  * Currently in the form of {@link PropertyRecord property records}.
  */
-public class SchemaIndexing
+public class SchemaIndexing extends LifecycleAdapter
 {
-    // To use PropertyRecord here might not be very good.
-    void apply( Collection<Pair<PropertyRecord,PropertyRecord>> propertyRecords )
+    private final XaDataSourceManager dataSourceManager;
+    private final ThreadToStatementContextBridge ctxProvider;
+    private NeoStore neoStore;
+    private IndexPopulationService populationService;
+    private final IndexPopulatorMapper populatorMapper;
+    
+    public SchemaIndexing( XaDataSourceManager dataSourceManager, ThreadToStatementContextBridge ctxProvider,
+            IndexPopulatorMapper populatorMapper )
     {
-        // TODO look at the schema and feed the properties to the appropriate indexes.
-        //      This gets called when committing a transaction.
-        throw new UnsupportedOperationException();
+        this.dataSourceManager = dataSourceManager;
+        this.ctxProvider = ctxProvider;
+        this.populatorMapper = populatorMapper;
+    }
+    
+    @Override
+    public void start() throws Throwable
+    {
+        dataSourceManager.addDataSourceRegistrationListener( new DataSourceRegistrationListener.Adapter()
+        {
+            @Override
+            public void registeredDataSource( XaDataSource ds )
+            {
+                if ( ds.getName().equals( NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME ) )
+                {
+                    neoStore = ((NeoStoreXaDataSource)ds).getNeoStore();
+                    populationService = new BackgroundIndexPopulationService( populatorMapper, neoStore, ctxProvider );
+                }
+            }
+        } );
+    }
+    
+    @Override
+    public void stop() throws Throwable
+    {
+        populationService.shutdown();
+        populationService = null;
+    }
+    
+    public void indexUpdates( Iterable<NodePropertyUpdate> updates )
+    {
+        populationService.indexUpdates( updates );
     }
 }

@@ -34,6 +34,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.IndexProvider;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.kernel.api.IndexPopulatorMapperProvider;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
@@ -83,19 +84,21 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
     public ImpermanentGraphDatabase( Map<String, String> params, Iterable<IndexProvider> indexProviders,
                                      Iterable<KernelExtensionFactory<?>> kernelExtensions,
                                      Iterable<CacheProvider> cacheProviders,
-                                     Iterable<TransactionInterceptorProvider> transactionInterceptorProviders )
+                                     Iterable<TransactionInterceptorProvider> transactionInterceptorProviders,
+                                     Iterable<IndexPopulatorMapperProvider> indexPopulatorMappers )
     {
         super( PATH, withForcedInMemoryConfiguration( params ), indexProviders, kernelExtensions, cacheProviders,
-                transactionInterceptorProviders );
+                transactionInterceptorProviders, indexPopulatorMappers );
     }
 
     public ImpermanentGraphDatabase( String storeDir, Map<String, String> params, Iterable<IndexProvider> indexProviders,
                                         Iterable<KernelExtensionFactory<?>> kernelExtensions,
                                         Iterable<CacheProvider> cacheProviders,
-                                        Iterable<TransactionInterceptorProvider> transactionInterceptorProviders )
+                                        Iterable<TransactionInterceptorProvider> transactionInterceptorProviders,
+                                        Iterable<IndexPopulatorMapperProvider> indexPopulatorMappers )
     {
         super( storeDir, withForcedInMemoryConfiguration( params ), indexProviders, kernelExtensions, cacheProviders,
-                transactionInterceptorProviders );
+                transactionInterceptorProviders, indexPopulatorMappers );
     }
     
     @Override

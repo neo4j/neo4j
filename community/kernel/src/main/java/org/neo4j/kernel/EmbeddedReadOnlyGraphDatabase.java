@@ -30,6 +30,7 @@ import org.neo4j.graphdb.index.IndexProvider;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.Settings;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.kernel.api.IndexPopulatorMapperProvider;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
@@ -75,18 +76,20 @@ public final class EmbeddedReadOnlyGraphDatabase extends InternalAbstractGraphDa
     {
         this( storeDir, params, Service.load( IndexProvider.class ), Iterables.<KernelExtensionFactory<?>,
                 KernelExtensionFactory>cast( Service.load( KernelExtensionFactory.class ) ),
-                Service.load( CacheProvider.class ), Service.load( TransactionInterceptorProvider.class ) );
+                Service.load( CacheProvider.class ), Service.load( TransactionInterceptorProvider.class ),
+                Service.load( IndexPopulatorMapperProvider.class ) );
     }
 
     public EmbeddedReadOnlyGraphDatabase( String storeDir,
                                           Map<String, String> params, Iterable<IndexProvider> indexProviders,
                                           Iterable<KernelExtensionFactory<?>> kernelExtensions,
                                           Iterable<CacheProvider> cacheProviders,
-                                          Iterable<TransactionInterceptorProvider> transactionInterceptorProviders )
+                                          Iterable<TransactionInterceptorProvider> transactionInterceptorProviders,
+                                          Iterable<IndexPopulatorMapperProvider> indexPopulatorMappers )
     {
         super( storeDir, addReadOnly( params ), Iterables.<Class<?>, Class<?>>iterable( (Class<?>)
                 GraphDatabaseSettings.class ), indexProviders, kernelExtensions, cacheProviders,
-                transactionInterceptorProviders );
+                transactionInterceptorProviders, indexPopulatorMappers );
         run();
     }
 
@@ -96,24 +99,28 @@ public final class EmbeddedReadOnlyGraphDatabase extends InternalAbstractGraphDa
         return params;
     }
 
+    @Override
     public KernelEventHandler registerKernelEventHandler(
             KernelEventHandler handler )
     {
         throw new UnsupportedOperationException();
     }
 
+    @Override
     public <T> TransactionEventHandler<T> registerTransactionEventHandler(
             TransactionEventHandler<T> handler )
     {
         throw new UnsupportedOperationException();
     }
 
+    @Override
     public KernelEventHandler unregisterKernelEventHandler(
             KernelEventHandler handler )
     {
         throw new UnsupportedOperationException();
     }
 
+    @Override
     public <T> TransactionEventHandler<T> unregisterTransactionEventHandler(
             TransactionEventHandler<T> handler )
     {

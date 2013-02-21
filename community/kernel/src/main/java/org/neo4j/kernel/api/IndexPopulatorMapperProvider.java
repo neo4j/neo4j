@@ -17,11 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api.index;
+package org.neo4j.kernel.api;
 
-import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.helpers.Service;
 
-public interface IndexPopulatorMapper
+public abstract class IndexPopulatorMapperProvider extends Service
 {
-    IndexPopulator getManipulator( IndexDefinition index );
+    protected IndexPopulatorMapperProvider( String key )
+    {
+        super( key );
+    }
+    
+    public abstract IndexPopulatorMapper newMapper();
 }

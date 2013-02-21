@@ -29,6 +29,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -44,6 +45,9 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Pair;
+import org.neo4j.helpers.collection.NestingIterable;
+import org.neo4j.kernel.impl.api.index.NodePropertyUpdate;
+import org.neo4j.kernel.impl.api.index.PropertyPhysicalToLogicalConverter;
 import org.neo4j.kernel.impl.api.index.SchemaIndexing;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.core.PropertyIndex;
@@ -71,6 +75,7 @@ import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeStore;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 import org.neo4j.kernel.impl.nioneo.store.SchemaStore;
+import org.neo4j.kernel.impl.nioneo.xa.Command.PropertyCommand;
 import org.neo4j.kernel.impl.nioneo.xa.Command.SchemaRuleCommand;
 import org.neo4j.kernel.impl.persistence.NeoStoreTransaction;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
@@ -526,6 +531,10 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             executeCreated( isRecovered, propCommands, relCommands, nodeCommands );
             executeModified( isRecovered, propCommands, relCommands, nodeCommands );
             executeDeleted( propCommands, relCommands, nodeCommands );
+            
+            // property change set for index updates
+            Iterable<NodePropertyUpdate> updates = convertIntoLogicalPropertyUpdates( propCommands );
+            
             if ( isRecovered )
                 neoStore.setRecoveredStatus( true );
             try
@@ -554,6 +563,19 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         {
             clear();
         }
+    }
+
+    private Iterable<NodePropertyUpdate> convertIntoLogicalPropertyUpdates( Iterable<PropertyCommand> propertyCommands )
+    {
+        return new NestingIterable<NodePropertyUpdate, PropertyCommand>( propertyCommands )
+        {
+            @Override
+            protected Iterator<NodePropertyUpdate> createNestedIterator( PropertyCommand command )
+            {
+                return PropertyPhysicalToLogicalConverter.INSTANCE.apply(
+                        Pair.of( command.getBefore(), command.getAfter() ) ).iterator();
+            }
+        };
     }
 
     @Override

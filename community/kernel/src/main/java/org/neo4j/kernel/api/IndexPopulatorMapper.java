@@ -17,19 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api.index;
+package org.neo4j.kernel.api;
 
 import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.kernel.impl.api.index.IndexPopulator;
 
-/**
- * Service which is responsible for initially populating new indexes as they get created.
- * It receives notifications about new indexes and will potentially index in the background.
- */
-public interface IndexPopulationService
+public interface IndexPopulatorMapper
 {
-    void indexCreated( IndexDefinition index );
-
-    void indexUpdates( Iterable<NodePropertyUpdate> updates );
-    
-    void shutdown();
+    IndexPopulator getPopulator( IndexDefinition index );
 }

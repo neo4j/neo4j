@@ -75,4 +75,27 @@ public class NodePropertyUpdate
     {
         return updateMode;
     }
+
+    public boolean hasLabel( long labelId )
+    {
+        // TODO implement adding label id info
+        return true;
+    }
+
+    public void apply( int n, IndexPopulator indexManipulator )
+    {
+        switch (getUpdateMode())
+        {
+            case ADDED:
+                indexManipulator.add( n, getNodeId(), getValueAfter() );
+                break;
+            case CHANGED:
+                indexManipulator.remove( n, getNodeId(), getValueBefore() );
+                indexManipulator.add( n, getNodeId(), getValueAfter() );
+                break;
+            case REMOVED:
+                indexManipulator.remove( n, getNodeId(), getValueBefore() );
+                break;
+        }
+    }
 }

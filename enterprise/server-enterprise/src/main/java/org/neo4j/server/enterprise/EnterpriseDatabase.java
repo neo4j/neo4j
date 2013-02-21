@@ -29,6 +29,7 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.api.IndexPopulatorMapperProvider;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.cache.CacheProvider;
@@ -39,7 +40,6 @@ import org.neo4j.server.database.GraphDatabaseFactory;
 
 public class EnterpriseDatabase extends CommunityDatabase
 {
-
     enum DatabaseMode implements GraphDatabaseFactory
     {
         SINGLE
@@ -65,8 +65,11 @@ public class EnterpriseDatabase extends CommunityDatabase
                         List<CacheProvider> cacheProviders = Iterables.toList( Service.load( CacheProvider.class ) );
                         List<TransactionInterceptorProvider> txInterceptorProviders =
                                 Iterables.toList( Service.load( TransactionInterceptorProvider.class ) );
+                        List<IndexPopulatorMapperProvider> indexPopulatorMappers =
+                                Iterables.toList( Service.load( IndexPopulatorMapperProvider.class ) );
                         return new HighlyAvailableGraphDatabase( databaseStoreDirectory, databaseProperties,
-                                indexProviders, kernelExtensions, cacheProviders, txInterceptorProviders );
+                                indexProviders, kernelExtensions, cacheProviders, txInterceptorProviders,
+                                indexPopulatorMappers );
                     }
                 };
 

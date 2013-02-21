@@ -109,7 +109,7 @@ public class IndexPopulationJobTest
         return new IndexPopulationJob(
                 context.getLabelId( FIRST.name() ),
                 context.getPropertyKeyId( name ),
-                manipulator, db.getXaDataSourceManager().getNeoStoreDataSource().getNeoStore() );
+                manipulator, db.getXaDataSourceManager().getNeoStoreDataSource().getNeoStore(), ctxProvider );
     }
 
     private long createNode( Map<String, Object> properties, Label... labels )

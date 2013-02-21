@@ -24,6 +24,7 @@ import java.util.Map;
 import org.neo4j.graphdb.index.IndexProvider;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.kernel.api.IndexPopulatorMapperProvider;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.ha.UpdatePuller;
 import org.neo4j.kernel.impl.cache.CacheProvider;
@@ -43,12 +44,16 @@ public class HighlyAvailableGraphDatabase
                 Service.load( IndexProvider.class ),
                 Iterables.<KernelExtensionFactory<?>, KernelExtensionFactory>cast(Service.load( KernelExtensionFactory.class )),
                 Service.load( CacheProvider.class ),
-                Service.load( TransactionInterceptorProvider.class ));
+                Service.load( TransactionInterceptorProvider.class ),
+                Service.load( IndexPopulatorMapperProvider.class ) );
     }
 
-    public HighlyAvailableGraphDatabase( String storeDir, Map<String, String> params, Iterable<IndexProvider> indexProviders, Iterable<KernelExtensionFactory<?>> kernelExtensions, Iterable<CacheProvider> cacheProviders, Iterable<TransactionInterceptorProvider> txInterceptorProviders )
+    public HighlyAvailableGraphDatabase( String storeDir, Map<String, String> params, Iterable<IndexProvider> indexProviders,
+            Iterable<KernelExtensionFactory<?>> kernelExtensions, Iterable<CacheProvider> cacheProviders,
+            Iterable<TransactionInterceptorProvider> txInterceptorProviders,
+            Iterable<IndexPopulatorMapperProvider> indexPopulatorMappers )
     {
-        super( storeDir, params, indexProviders, kernelExtensions, cacheProviders, txInterceptorProviders );
+        super( storeDir, params, indexProviders, kernelExtensions, cacheProviders, txInterceptorProviders, indexPopulatorMappers );
     }
 
     @Deprecated
