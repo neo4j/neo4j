@@ -74,7 +74,6 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
     private volatile TxLog txLog = null;
     private boolean tmOk = false;
     private Throwable tmNotOkCause;
-    private boolean blocked = false;
 
     private final KernelPanicEventGenerator kpe;
 
@@ -257,44 +256,6 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
     }
 
     @Override
-    public void attemptWaitForTxCompletionAndBlockFutureTransactions( long maxWaitTimeMillis )
-    {
-//        log.logMessage( "TxManager is blocking new transactions and waiting for active to fail..." );
-//        blocked = true;
-//        List<Transaction> failedTransactions = new ArrayList<Transaction>();
-//        synchronized ( txThreadMap )
-//        {
-//            for ( Transaction tx : txThreadMap.values() )
-//            {
-//                try
-//                {
-//                    int status = tx.getStatus();
-//                    if ( status != Status.STATUS_COMMITTING && status != Status.STATUS_ROLLING_BACK )
-//                    {   // Set it to rollback only if it's not committing or rolling back
-//                        tx.setRollbackOnly();
-//                    }
-//                }
-//                catch ( IllegalStateException e )
-//                {   // OK
-//                    failedTransactions.add( tx );
-//                }
-//                catch ( SystemException e )
-//                {   // OK
-//                    failedTransactions.add( tx );
-//                }
-//            }
-//        }
-//        log.logMessage( "TxManager blocked transactions" + ((failedTransactions.isEmpty() ? "" :
-//                ", but failed for: " + failedTransactions.toString())) );
-//
-//        long endTime = System.currentTimeMillis() + maxWaitTimeMillis;
-//        while ( txThreadMap.size() > 0 && System.currentTimeMillis() < endTime )
-//        {
-//            Thread.yield();
-//        }
-    }
-
-    @Override
     public void begin() throws NotSupportedException, SystemException
     {
         begin( ForceMode.forced );
@@ -303,12 +264,6 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
     @Override
     public void begin( ForceMode forceMode ) throws NotSupportedException, SystemException
     {
-        if ( blocked )
-        {
-            throw new SystemException( "TxManager is preventing new transactions from starting " +
-                    "because a shutdown is imminent." );
-        }
-
         assertTmOk( "tx begin" );
         TransactionImpl tx = txThreadMap.get();
         if ( tx != null )
@@ -828,17 +783,20 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
             // Assuming here that the last datasource to register is the Neo one
             // Do recovery on start - all Resources should be registered by now
             Iterable<List<TxLog.Record>> knownDanglingRecordList = txLog.getDanglingRecords();
-            if ( knownDanglingRecordList.iterator().hasNext() )
-                log.info( "Unresolved transactions found, " +
-                        "recovery started ... " + txLogDir );
+            boolean danglingRecordsFound = knownDanglingRecordList.iterator().hasNext();
+            if ( danglingRecordsFound )
+            {
+                log.info( "Unresolved transactions found in " + txLog.getName() + ", recovery started... " );
+            }
 
-            log.logMessage( "TM non resolved transactions found in " + txLog.getName(), true );
-
-            // Recover DataSources
+            // Recover DataSources. Always call due to some internal state using it as a trigger.
             xaDataSourceManager.recover( knownDanglingRecordList.iterator() );
 
-            log.logMessage( "Recovery completed, all transactions have been " +
-                    "resolved to a consistent state." );
+            if ( danglingRecordsFound )
+            {
+                log.logMessage( "Recovery completed, all transactions have been " +
+                        "resolved to a consistent state." );
+            }
 
             getTxLog().truncate();
             recovered = true;

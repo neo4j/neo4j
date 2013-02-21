@@ -99,7 +99,15 @@ public class StoreLocker
 
     public void release() throws IOException
     {
-        if (storeLockFileLock != null) storeLockFileLock.release();
-        if (storeLockFileChannel != null) storeLockFileChannel.close();
+        if (storeLockFileLock != null)
+        {
+            storeLockFileLock.release();
+            storeLockFileLock = null;
+        }
+        if (storeLockFileChannel != null)
+        {
+            storeLockFileChannel.close();
+            storeLockFileChannel = null;
+        }
     }
 }
