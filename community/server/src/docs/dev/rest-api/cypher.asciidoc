@@ -17,5 +17,7 @@ include::return-paths.asciidoc[]
 
 include::nested-results.asciidoc[]
 
+include::profile-a-query.asciidoc[]
+
 include::server-errors.asciidoc[]
 

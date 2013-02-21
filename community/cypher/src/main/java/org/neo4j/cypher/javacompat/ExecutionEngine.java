@@ -78,4 +78,17 @@ public class ExecutionEngine
     {
         return new ExecutionResult(inner.execute(query, params));
     }
+
+    /**
+     * Profiles a {@link Query} and returns an iterable that contains the result set
+     * @param query The query to execute
+     * @param params Parameters for the query
+     * @return A ExecutionResult that contains the result set
+     * @throws org.neo4j.cypher.SyntaxException If the Query contains errors,
+     * a SyntaxException exception might be thrown
+     */
+    public ExecutionResult profile( String query, Map<String, Object> params) throws SyntaxException
+    {
+        return new ExecutionResult(inner.profile(query, params));
+    }
 }
