@@ -6,24 +6,30 @@ Kernel:
 o Relationship types now use all 16 bits of their address space
 o During recovery start entries now are explicitly marked as written, solving
   many bugs making startup impossible.
-o Cached nodes have their relationship chain information properly updated on relationship deletes, so traversals will
-  complete successfully even with concurrent modifications from other transactions.
+o Cached nodes have their relationship chain information properly updated on
+  relationship deletes, so traversals will complete successfully even with
+  concurrent modifications from other transactions.
 o Store locking now is respected from read only instances too, removing
   potential avenues for index corruption.
 
 1.8.1 (2012-12-13)
 --------------------
 Java 7 Support:
- o We now compile and test with Java 7 on both Oracle JVM and OpenJDK (however, we still only officially support Sun JDK6).
- o JVM compatibility checking will warn when you use incompatible JVMs or incompatible Java versions.
+ o We now compile and test with Java 7 on both Oracle JVM and OpenJDK (however,
+   we still only officially support Sun JDK6).
+ o JVM compatibility checking will warn when you use incompatible JVMs or
+   incompatible Java versions.
 
 Cypher:
  o Numerous bug fixes:
-   + Fixes #304, bug that stops renaming of identifiers that are used as key expressions when aggregating
+   + Fixes #304, bug that stops renaming of identifiers that are used as key
+     expressions when aggregating
    + Fix for problems when using patterns with multiple unnamed nodes
    + Fixes problems when doing ORDER BY ... LIMIT x
-   + Fixed problem with dependencies inside foreach statements being reported wrongly
-   + Fixes #336 - Patterns that re-use a pattern node can produce non-existing matches
+   + Fixed problem with dependencies inside foreach statements being reported
+     wrongly
+   + Fixes #336 - Patterns that re-use a pattern node can produce non-existing
+     matches
  o Integration with Bidirectional Traverser Framework
  o Improvements to memory consumption
 
@@ -33,42 +39,53 @@ Graph Algorithms:
 1.8.GA (2012-09-24)
 --------------------
 Kernel:
- o Fix for issue where, under some conditions, an incorrect number of relationships were returned.
+ o Fix for issue where, under some conditions, an incorrect number of
+   relationships were returned.
 
 Server:
- o Fixed webadmin bug where clicking save in the visualization profiles did not change the page
+ o Fixed webadmin bug where clicking save in the visualization profiles did not
+   change the page
 
 Cypher:
  o Added synchronization to avoid race conditions in the Cypher parser
- 
+
 1.8.RC1 (2012-09-05)
 --------------------
 Kernel:
- o Removed contention around allocating and moving persistence windows so that a thread won't need to await
-   another thread doing this refresh, instead just continue knowing that the windows will be optimally
-   placed in a very near future.
- o Removed contention around translating a key (as String) into the ID by using copy-on-write map instead
-   of a concurrent hash map. Used in property key as well as relationship type translation.
- o Fix for Node/Relationship#getPropertyValues() sometimes returning null values from the iterator.
+ o Removed contention around allocating and moving persistence windows so that
+   a thread won't need to await another thread doing this refresh, instead just
+   continue knowing that the windows will be optimally placed in a very near
+   future.
+ o Removed contention around translating a key (as String) into the ID by using
+   copy-on-write map instead of a concurrent hash map. Used in property key as
+   well as relationship type translation.
+ o Fix for Node/Relationship#getPropertyValues() sometimes returning null
+   values from the iterator.
 
 Server:
- o Upgraded Jackson JAXRS to version 1.9.7 
- o Keeping the Cypher execution engine between calls makes it possible to re-use execution plans
- o added User-Agent header tracking to udc to determine rest-driver usage
+ o Upgraded Jackson JAXRS to version 1.9.7
+ o Keeping the Cypher execution engine between calls makes it possible to
+   re-use execution plans
+ o Added User-Agent header tracking to udc to determine rest-driver usage
 
 Cypher:
- o Removed the /../ literal for regular expressions. Now a normal string literal is used instead
+ o Removed the /../ literal for regular expressions. Now a normal string
+   literal is used instead.
  o Concatenation handles types better
- o Changed how the graph-matching module is used, to make it safe for concurrent use
+ o Changed how the graph-matching module is used, to make it safe for
+   concurrent use
  o Better type error messages
  o Renamed iterable to collection
  o Fixed #795: so that WITH keeps parameters also for empty aggregation results
- o Fixed #772: Creating nodes/relationships goes before SET, so SET can run on already created elements
+ o Fixed #772: Creating nodes/relationships goes before SET, so SET can run on
+   already created elements
  o Added error when using != instead of <>
  o Fixed #787: Issue when comparing array properties with literal collections
  o Fixed #751: Better error message for some type errors
- o Fixed #818: Problem where properties could only have scalar values (they can be arrays as well)
- o Fixed #834: Gives relevant syntax exception when properties are entered in MATCH
+ o Fixed #818: Problem where properties could only have scalar values (they can
+   be arrays as well)
+ o Fixed #834: Gives relevant syntax exception when properties are entered
+   in MATCH
 
  1.8.M07 (2012-08-08)
 --------------------
@@ -76,7 +93,8 @@ Kernel:
  o Traversal framework backwards compatibility
    + Cleaned up any breaking changes
    + Removed Expander#addFilter
- o Kernel JMX bean instance identifier is now reused and can optionally be set explicitly via forced_kernel_id config setting
+ o Kernel JMX bean instance identifier is now reused and can optionally be set
+   explicitly via forced_kernel_id config setting
 
 Server:
  o Consoles in webadmin can now be disabled.
@@ -87,7 +105,8 @@ Cypher:
 
 UDC:
  o Added edition information (community, advanced, enterprise)
- o Added a cluster-name hash so that stores originating from the same cluster can be aggregated
+ o Added a cluster-name hash so that stores originating from the same cluster
+   can be aggregated
  o Fixed release version and revision
  o Changed precedence of database configuration over internal udc configuration
  o Added distribution information (dpkg, rpm, unknown)
@@ -97,62 +116,74 @@ UDC:
 --------------------
 Kernel:
  o Deprecated AbstractGraphDatabase.transactionRunning()
- o Changed synchronization of applying transactions to prevent a deadlock scenario
+ o Changed synchronization of applying transactions to prevent a deadlock
+   scenario
  o Original cause can be extracted from a transaction RollbackException
 
 Server:
  o Fixed issue that stopped the server from starting without the UDC-jars.
 
 Cypher:
- o Fixes problem when graph elements are deleted multiple times in the same query
+ o Fixes problem when graph elements are deleted multiple times in the same
+   query
  o Fixes #625: Values passed through WITH have the wrong type
  o Fixes #654: Some paths are returned the wrong way
 
 1.8.M05 (2012-06-25)
 --------------------
 Kernel:
- o Configurable amount of logical logs to keep, by for example number of days or size on disk.
-   keep_logical_logs configuration is extended to support values such as: "10 days", "200M size" a.s.o.
-   Regardless of configuration there will always be at least the latest non-empty logical log left.
- o Reduced synchronization while memory mapping files, leading to increased multithreaded performance
+ o Configurable amount of logical logs to keep, by for example number of days or
+   size on disk. keep_logical_logs configuration is extended to support values such as: "10 days", "200M size" a.s.o. (Regardless of configuration there will always be at least the latest non-empty logical log left).
+ o Reduced synchronization while memory mapping files, leading to increased
+   multithreaded performance
 
 Server:
  o Added support for multi line Cypher queries in webadmin browser
 
 Lucene-index:
-o Removed lucene_writers_cache_size and have lucene_searcher_cache_size decide for both, since
-  it's doesn't make sense to have a writer w/o a searcher and isn't possible to have a searcher
-  w/o its writer.
+o Removed lucene_writers_cache_size and have lucene_searcher_cache_size decide
+  for both, since it's doesn't make sense to have a writer w/o a searcher and
+  isn't possible to have a searcher w/o its writer.
 o Loosened contention regarding getting index searchers for querying.
 
 Cypher:
  o CREATE and RELATE can now introduce path identifiers
  o String literals can now contain escape characters
- o Fixes #600: Double optional with no matching relationships returns too many rows
- o Fixes #613: Missing dependencies not reported correctly for queries with RELATE/SET/DELETE
+ o Fixes #600: Double optional with no matching relationships returns too
+   many rows
+ o Fixes #613: Missing dependencies not reported correctly for queries
+   with RELATE/SET/DELETE
  o Fixes around optional paths
 
 1.8.M04 (2012-06-07)
 --------------------
 Kernel:
  o Additions to the traversal framework:
-   + Bidirectional traversals (with BidirectionalTraversalDescription). AllPaths/AllSimplePaths
-     uses this feature and are now faster due to less relationships being traversed.
-   + Multiple start nodes (as well as multiple end nodes for bidirectional traversals).
-   + PathExpander (RelationshipExpander for Paths) which has the full Path passed in instead of
-     just the end node of the path. It can also see and modify a user defined traversal branch state.
-   + Metadata about the traversal, for the time being: number of relationships traversal and
-     number paths returned.
-   + Added Path#reverseNodes() and Path#reverseRelationships which gives all nodes/relationships in
-    a path in reverse order (starting from the end node going back to the start node). More relevant
-  	in many scenarios as well as allowing for a more efficient implementation.
-   + Sorting of traversal results, specify with TraversalDescription#sort(Comparable).
-   + Some measure to reduce memory consumption and garbage generation during traversals.
+   + Bidirectional traversals (with BidirectionalTraversalDescription).
+     AllPaths/AllSimplePaths uses this feature and are now faster due to less
+     relationships being traversed.
+   + Multiple start nodes (as well as multiple end nodes for bidirectional
+     traversals).
+   + PathExpander (RelationshipExpander for Paths) which has the full Path
+     passed in instead of just the end node of the path. It can also see and
+     modify a user defined traversal branch state.
+   + Metadata about the traversal, for the time being: number of relationships
+     traversal and number paths returned.
+   + Added Path#reverseNodes() and Path#reverseRelationships which gives all
+     nodes/relationships in a path in reverse order (starting from the end node
+     going back to the start node). More relevant in many scenarios as well as
+     allowing for a more efficient implementation.
+   + Sorting of traversal results, specify with
+     TraversalDescription#sort(Comparable).
+   + Some measure to reduce memory consumption and garbage generation during
+     traversals.
 
 Graph-algo:
- o AllPaths/AllSimplePaths uses the new bidirectional traversal feature in the traversal framework.
-  Less relationships now needs to be traversed to find the requested paths.
- o Added an implementation of the shortest path algorithm with the bidirectional traversal feature.
+ o AllPaths/AllSimplePaths uses the new bidirectional traversal feature in the
+   traversal framework. Less relationships now needs to be traversed to find
+   the requested paths.
+ o Added an implementation of the shortest path algorithm with the
+   bidirectional traversal feature.
 
 Cypher:
  o CREATE now accepts full paths and not only single nodes and relationships
@@ -166,14 +197,15 @@ Cypher:
 1.8.M03 (2012-05-24)
 --------------------
 Kernel:
- o Changed array map to CHM in property index manager, better multithreaded performance
-Shell:
+ o Changed array map to CHM in property index manager, better multithreaded
+   performance Shell:
  o Added BEGIN TRANSACTION/COMMIT/ROLLBACK
- o Sessions now live on the server side instead of on the client, which means that not just
-  serializable values can be set there. Paves the way for Cypher making use of it.
+ o Sessions now live on the server side instead of on the client, which means
+   that not just serializable values can be set there. Paves the way for Cypher
+   making use of it.
 Server:
  o keep_logical_logs is now respected if set to false - default is still true
-Cypher:
+   Cypher:
  o Added RELATE
  o Changed the CREATE syntax, so it looks more like RELATE
  o Fixes #506: delete head(rels) doesn't work
@@ -202,12 +234,16 @@ Cypher:
 
 1.8.M01 (2012-04-26)
 --------------------
-o Byte array properties are handled in a more optimized way, increasing performance by a couple of times at least.
-o Fix for an issue where update of cache when creating a relationship on a very dense node would take longer and longer time.
-o Fix for an issue where a recovery would sometimes fail with it reporting that a start record already had been injected.
+o Byte array properties are handled in a more optimized way, increasing
+  performance by a couple of times at least.
+o Fix for an issue where update of cache when creating a relationship on a very
+  dense node would take longer and longer time.
+o Fix for an issue where a recovery would sometimes fail with it reporting that
+  a start record already had been injected.
 o Added "create" shell app for Cypher queries only doing creations.
 Server:
-  o Added streaming to REST API. All representation implementations have been adapted to produce their data lazily.
+  o Added streaming to REST API. All representation implementations have been
+    adapted to produce their data lazily.
   o Added HTTP logging.
 Cypher:
   o Added the possibility to return all graph elements using RETURN *
@@ -217,10 +253,12 @@ Cypher:
 1.7 (2012-04-18)
 ----------------
 o Moved BatchInserter to a different package.
-o Fixed 'Record Not In Use' issue with creating and setting Node properties with the BatchInserter.
+o Fixed 'Record Not In Use' issue with creating and setting Node properties with
+  the BatchInserter.
 Cypher:
   o Added the possibility to use multiple relationship types on patterns
-  o Fixed bug when aggregation is used in ORDER BY and not listed in the RETURN clause
+  o Fixed bug when aggregation is used in ORDER BY and not listed in the
+    RETURN clause
 Server:
   o Added scored index results to REST API
   o Improvements to installation docs for the server
@@ -229,10 +267,15 @@ Server:
   o Server now disallows creating indexes with empty names. Closes #311
   o Attempting to delete a non-existing index now returns 404, closes #349
 UDC:
-  o Modified UDC to run one thread per DB, and to shut down background thread on unload. Closes #279
-  o UDC now sends the machines MAC adress to Neo Technology, to separate between instances behind firewalls
-  o UDC now sends database registration ID to Neo Technology, if one is available
-  o UDC now sends "tags" to Neo Technology, these contain information about the type of deployment, such as language, web-container, app-container, spring, ejb
+  o Modified UDC to run one thread per DB, and to shut down background thread
+    on unload. Closes #279
+  o UDC now sends the machines MAC adress to Neo Technology, to separate
+    between instances behind firewalls
+  o UDC now sends database registration ID to Neo Technology, if one is
+    available
+  o UDC now sends "tags" to Neo Technology, these contain information about
+    the type of deployment, such as language, web-container, app-container,
+    spring, ejb
 
 1.7.M03 (2012-04-11)
 --------------------
