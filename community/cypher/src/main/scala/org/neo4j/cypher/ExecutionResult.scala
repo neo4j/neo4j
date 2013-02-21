@@ -30,8 +30,8 @@ trait ExecutionResult extends Iterator[Map[String, Any]] {
   def javaIterator: java.util.Iterator[java.util.Map[String, Any]]
   def dumpToString(writer: PrintWriter)
   def dumpToString(): String
-  def queryStatistics():QueryStatistics
-  def executionPlanDescription():String
+  def queryStatistics(): QueryStatistics
+  def executionPlanDescription(): PlanDescription
 }
 
 

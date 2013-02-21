@@ -17,23 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.database;
+package org.neo4j.cypher.internal.helpers
 
 /**
- * This is never thrown, it will be removed in version 1.10
+ * Subclasses prefer to use StringBuilders to render themselves
  */
-@Deprecated
-public class DatabaseBlockedException extends RuntimeException
-{
+trait StringRenderingSupport {
+  override def toString = {
+    val builder = new StringBuilder
+    render(builder)
+    builder.toString()
+  }
 
-    /**
-     * Serial #
-     */
-    private static final long serialVersionUID = 3214317342541677412L;
-
-    public DatabaseBlockedException( String message )
-    {
-        super( message );
-    }
-
+  def render(builder: StringBuilder) {
+    builder ++= super.toString
+  }
 }
+

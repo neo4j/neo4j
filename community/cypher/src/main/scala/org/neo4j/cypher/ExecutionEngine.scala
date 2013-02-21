@@ -50,10 +50,14 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
     new CypherParser()
   }
 
+  @throws(classOf[SyntaxException])
   def profile(query: String, params: Map[String, Any] = Map.empty): ExecutionResult = {
     logger.info(query)
     prepare(query).profile(params)
   }
+
+  @throws(classOf[SyntaxException])
+  def profile(query: String, params: JavaMap[String, Any]): ExecutionResult = profile(query, params.asScala.toMap)
 
   @throws(classOf[SyntaxException])
   def execute(query: String): ExecutionResult = execute(query, Map[String, Any]())
