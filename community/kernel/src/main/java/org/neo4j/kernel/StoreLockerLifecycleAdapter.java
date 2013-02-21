@@ -21,9 +21,9 @@ package org.neo4j.kernel;
 
 import java.io.File;
 
-import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
-public class StoreLockerLifecycleAdapter implements Lifecycle
+public class StoreLockerLifecycleAdapter extends LifecycleAdapter
 {
     public static final String DATABASE_LOCKED_ERROR_MESSAGE = "Database locked.";
 
@@ -36,31 +36,14 @@ public class StoreLockerLifecycleAdapter implements Lifecycle
         this.storeDir = storeDir;
     }
 
-    public void preInit()
+    @Override
+    public void start() throws Throwable
     {
         if (! storeLocker.lock( storeDir )) throw new IllegalStateException( DATABASE_LOCKED_ERROR_MESSAGE );
     }
 
     @Override
-    public void init() throws Throwable
-    {
-        // do nothing
-    }
-
-    @Override
-    public void start() throws Throwable
-    {
-        // do nothing
-    }
-
-    @Override
     public void stop() throws Throwable
-    {
-        // do nothing
-    }
-
-    @Override
-    public void shutdown() throws Throwable
     {
         storeLocker.release();
     }

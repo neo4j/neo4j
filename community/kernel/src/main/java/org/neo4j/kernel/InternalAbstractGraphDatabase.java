@@ -270,14 +270,42 @@ public abstract class InternalAbstractGraphDatabase
 
         this.msgLog = logging.getLogger( Loggers.NEO4J );
         
-        config.setLogger(msgLog);
+        config.setLogger( msgLog );
 
         StoreLocker storeLocker = new StoreLocker( config, fileSystem, msgLog );
-        StoreLockerLifecycleAdapter storeLockerLifecycleAdapter = new StoreLockerLifecycleAdapter( storeLocker, new File( storeDir ) );
-        storeLockerLifecycleAdapter.preInit();
+        StoreLockerLifecycleAdapter storeLockerLifecycleAdapter =
+                new StoreLockerLifecycleAdapter( storeLocker, new File( storeDir ) );
+
+        /*
+         * What we try to do here is try to lock the store and if successful release immediately. The reason is that
+         * locking here and failing down the line while in create() will not release the lock the JVM grabs. So we may
+         * actually leak locks. So we do the attempt and if it succeeds then when life.start() is called we'll grab it
+         * as part of the normal lifecycle stuff.
+         * This still leaves open the case for races where an instance starts up on the same store after this check. But
+         * safety is not compromised because the lock is still grabbed, it's just the message that may be different.
+         */
+        if ( !storeLocker.lock( new File( storeDir ) ) )
+        {
+            throw new IllegalStateException( StoreLockerLifecycleAdapter.DATABASE_LOCKED_ERROR_MESSAGE );
+        }
+
+        try
+        {
+            // If we fail to release, we are in a bad place. Better bail out.
+            storeLocker.release();
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
+
+        /*
+         * Lock will still be grabbed when we start up life but after the stores themselves lock up, since locks are
+         * grabbed on creation of the store.
+         */
         life.add( storeLockerLifecycleAdapter );
 
-        new JvmChecker(msgLog, new JvmMetadataRepository() ).checkJvmCompatibilityAndIssueWarning();
+        new JvmChecker( msgLog, new JvmMetadataRepository() ).checkJvmCompatibilityAndIssueWarning();
 
         // Instantiate all services - some are overridable by subclasses
         boolean readOnly = config.get( Configuration.read_only );
