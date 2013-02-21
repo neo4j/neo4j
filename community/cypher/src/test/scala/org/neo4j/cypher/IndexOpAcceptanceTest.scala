@@ -41,4 +41,9 @@ class IndexOpAcceptanceTest extends ExecutionEngineHelper with StatisticsChecker
     // THEN
     assert(List.empty[List[String]] === graph.indexPropsForLabel("Person"))
   }
+
+  @Test def drop_index_that_does_not_exist() {
+    // WHEN
+    intercept[CouldNotDropIndexException](parseAndExecute("DROP INDEX ON :Person(name)"))
+  }
 }

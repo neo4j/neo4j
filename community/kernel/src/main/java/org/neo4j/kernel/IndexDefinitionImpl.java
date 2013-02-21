@@ -24,6 +24,7 @@ import static org.neo4j.helpers.collection.IteratorUtil.single;
 
 import java.util.Collection;
 
+import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.ThisShouldNotHappenError;
@@ -67,7 +68,7 @@ class IndexDefinitionImpl implements IndexDefinition
         }
         catch ( ConstraintViolationKernelException e )
         {
-            throw new ThisShouldNotHappenError( "Mattias", "Dropping " + this + " should not violate any constraint" );
+            throw new ConstraintViolationException(String.format("Unable to drop index on label `%s` for property %s.", label.name(), propertyKey), e );
         }
         catch ( LabelNotFoundKernelException e )
         {

@@ -42,7 +42,7 @@ public interface IndexDefinition
     
     /**
      * Drops this index. {@link Schema#getIndexes(Label)} will no longer include this index
-     * and if this index is currently and initially getting up to speed, such job will be cancelled.
+     * and any related background jobs and files will be stopped and removed.
      */
     void drop();
 }

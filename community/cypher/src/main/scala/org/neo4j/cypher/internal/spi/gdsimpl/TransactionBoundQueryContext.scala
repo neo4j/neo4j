@@ -25,7 +25,7 @@ import org.neo4j.kernel.{ThreadToStatementContextBridge, GraphDatabaseAPI}
 import org.neo4j.kernel.api.{ConstraintViolationKernelException, StatementContext}
 import collection.JavaConverters._
 import org.neo4j.graphdb.DynamicRelationshipType.withName
-import org.neo4j.cypher.IndexAlreadyDefinedException
+import org.neo4j.cypher.{CouldNotDropIndexException, IndexAlreadyDefinedException}
 import org.neo4j.tooling.GlobalGraphOperations
 import java.lang.{Iterable=>JIterable}
 import scala.Iterable
@@ -142,7 +142,7 @@ class TransactionBoundQueryContext(graph: GraphDatabaseAPI) extends QueryContext
       case e: ConstraintViolationKernelException =>
         val labelName = getLabelName(labelIds)
         val propName = ctx.getPropertyKeyName(propertyKeyId)
-        throw new RuntimeException(e); // TODO IndexNotFoundException(labelName, propName, e)
+        throw new CouldNotDropIndexException(labelName, propName, e)
     }
   }
 

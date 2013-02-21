@@ -64,33 +64,6 @@ public class SchemaAcceptanceTest
         assertTrue( asSet( schema.getIndexes( label ) ).contains( index ) );
     }
 
-    private IndexDefinition createIndexRule( GraphDatabaseService beansAPI, Label label, String property )
-    {
-        Transaction tx = beansAPI.beginTx();
-        try
-        {
-            IndexDefinition result = beansAPI.schema().indexCreator( label ).on( property ).create();
-            tx.success();
-            return result;
-        }
-        finally
-        {
-            tx.finish();
-        }
-    }
-
-    private Iterable<String> singlePropertyKey( Iterable<IndexDefinition> indexes )
-    {
-        return map( new Function<IndexDefinition, String>()
-        {
-            @Override
-            public String apply( IndexDefinition from )
-            {
-                return single( from.getPropertyKeys() );
-            }
-        }, indexes );
-    }
-
     @Test(expected = ConstraintViolationException.class)
     public void shouldThrowConstraintViolationIfAskedToIndexSamePropertyAndLabelTwiceInSameTx() throws Exception
     {
@@ -180,18 +153,90 @@ public class SchemaAcceptanceTest
         IndexDefinition index = createIndexRule( beansAPI, label, property );
 
         // WHEN
+        dropIndex( beansAPI, index );
+
+        // THEN
+        assertFalse( "Index should have been deleted", asSet( beansAPI.schema().getIndexes( label ) ).contains( index ) );
+    }
+
+    @Test(expected = ConstraintViolationException.class)
+    public void droppingAnUnexistingIndexShouldGiveHelpfulExceptionInSameTransaction() throws Exception
+    {
+        // GIVEN
+        GraphDatabaseService beansAPI = dbRule.getGraphDatabaseService();
+        String property = "name";
+        Labels label = Labels.MY_LABEL;
+        IndexDefinition index = createIndexRule( beansAPI, label, property );
+
+        // WHEN
         Transaction tx = beansAPI.beginTx();
         try
         {
             index.drop();
+            index.drop();
             tx.success();
-        }
-        finally
+        } finally
         {
             tx.finish();
         }
 
         // THEN
         assertFalse( "Index should have been deleted", asSet( beansAPI.schema().getIndexes( label ) ).contains( index ) );
+    }
+
+    @Test(expected = ConstraintViolationException.class)
+    public void droppingAnUnexistingIndexShouldGiveHelpfulExceptionInSeparateTransactions() throws Exception
+    {
+        // GIVEN
+        GraphDatabaseService beansAPI = dbRule.getGraphDatabaseService();
+        String property = "name";
+        Labels label = Labels.MY_LABEL;
+        IndexDefinition index = createIndexRule( beansAPI, label, property );
+        dropIndex( beansAPI, index );
+
+        // WHEN
+        dropIndex( beansAPI, index );
+
+        // THEN
+        assertFalse( "Index should have been deleted", asSet( beansAPI.schema().getIndexes( label ) ).contains( index ) );
+    }
+
+    private IndexDefinition createIndexRule( GraphDatabaseService beansAPI, Label label, String property )
+    {
+        Transaction tx = beansAPI.beginTx();
+        try
+        {
+            IndexDefinition result = beansAPI.schema().indexCreator( label ).on( property ).create();
+            tx.success();
+            return result;
+        } finally
+        {
+            tx.finish();
+        }
+    }
+
+    private void dropIndex( GraphDatabaseService beansAPI, IndexDefinition index )
+    {
+        Transaction tx = beansAPI.beginTx();
+        try
+        {
+            index.drop();
+            tx.success();
+        } finally
+        {
+            tx.finish();
+        }
+    }
+
+    private Iterable<String> singlePropertyKey( Iterable<IndexDefinition> indexes )
+    {
+        return map( new Function<IndexDefinition, String>()
+        {
+            @Override
+            public String apply( IndexDefinition from )
+            {
+                return single( from.getPropertyKeys() );
+            }
+        }, indexes );
     }
 }
