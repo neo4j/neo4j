@@ -105,9 +105,9 @@ final case class MapVal(v: Map[String, SimpleVal]) extends SimpleVal {
 
 final case class SeqVal(v: Seq[SimpleVal]) extends SimpleVal {
   override type Value = Seq[SimpleVal]
-  override type JValue = Array[Any]
+  override type JValue = java.lang.Iterable[Any]
 
-  override def asJava: JValue = v.map(_.asJava.asInstanceOf[Any]).toArray
+  override def asJava: JValue = v.map(_.asJava.asInstanceOf[Any]).toIterable.asJava
 
   override def render(builder: StringBuilder) {
     builder += '['

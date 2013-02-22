@@ -20,13 +20,14 @@
 package org.neo4j.server.rest;
 
 import static org.hamcrest.CoreMatchers.anyOf;
+import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.not;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 import static org.junit.matchers.JUnitMatchers.containsString;
+import static org.neo4j.server.rest.domain.JsonHelper.jsonToMap;
 
 import java.io.UnsupportedEncodingException;
+import java.util.Collection;
 import java.util.Map;
 
 import javax.ws.rs.core.Response.Status;
@@ -38,7 +39,6 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.annotations.Documented;
-import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.test.GraphDescription;
 import org.neo4j.test.GraphDescription.Graph;
 import org.neo4j.test.GraphDescription.NODE;
@@ -105,7 +105,7 @@ public class CypherFunctionalTest extends AbstractRestFunctionalTestBase {
     @Graph( "I know you" )
     public void error_gets_returned_as_json() throws Exception {
         String response = cypherRestCall( "start x = node(%I%) return x.dummy", Status.BAD_REQUEST );
-        Map<String, Object> output = JsonHelper.jsonToMap( response );
+        Map<String, Object> output = jsonToMap( response );
         assertTrue( output.containsKey( "message" ) );
         assertTrue( output.containsKey( "stacktrace" ) );
     }
@@ -123,7 +123,7 @@ public class CypherFunctionalTest extends AbstractRestFunctionalTestBase {
         String script = "start x  = node(%I%) match path = (x--friend) return path, friend.name";
         String response = cypherRestCall( script, Status.OK );
 
-        assertEquals( 2, ( JsonHelper.jsonToMap( response ) ).size() );
+        assertEquals( 2, ( jsonToMap( response ) ).size() );
         assertThat( response, containsString( "data" ) );
         assertThat( response, containsString( "you" ) );
     }
@@ -142,7 +142,7 @@ public class CypherFunctionalTest extends AbstractRestFunctionalTestBase {
         String response = cypherRestCall( script, Status.OK, Pair.of( "startName", "I" ), Pair.of( "name", "you" ) );
 
 
-        assertEquals( 2, ( JsonHelper.jsonToMap( response ) ).size() );
+        assertEquals( 2, ( jsonToMap( response ) ).size() );
         assertTrue( response.contains( "know" ) );
         assertTrue( response.contains( "data" ) );
     }
@@ -180,7 +180,7 @@ public class CypherFunctionalTest extends AbstractRestFunctionalTestBase {
         String response = cypherRestCall( script, Status.BAD_REQUEST, Pair.of( "startName", "I" ), Pair.of( "name", "you" ) );
 
 
-        Map<String, Object> output = JsonHelper.jsonToMap( response );
+        Map<String, Object> output = jsonToMap( response );
         assertTrue( output.containsKey( "message" ) );
         assertTrue( output.containsKey( "stacktrace" ) );
     }
@@ -199,7 +199,7 @@ public class CypherFunctionalTest extends AbstractRestFunctionalTestBase {
         String script = "start n = node(%I%,%you%) return collect(n.name)";
         String response = cypherRestCall(script, Status.OK);
 
-        Map<String, Object> resultMap = JsonHelper.jsonToMap( response );
+        Map<String, Object> resultMap = jsonToMap( response );
         assertEquals( 2, resultMap.size() );
         assertThat( response, anyOf(containsString("\"I\", \"you\""), containsString("\"I\",\"you\"")) );
     }
@@ -219,16 +219,21 @@ public class CypherFunctionalTest extends AbstractRestFunctionalTestBase {
             relationships = {
                     @REL( start = "I", end = "him", type = "know", properties = { } ),
                     @REL( start = "I", end = "you", type = "know", properties = { } ) } )
-    public void testProfiling() throws UnsupportedEncodingException {
+    public void testProfiling() throws Exception {
         String script = createScript( "start x  = node(%I%) match x -[r]-> n return type(r), n.name?, n.age?" );
 
+        // WHEN
         String response = doCypherRestCall( cypherUri() + "?profile=true", script, Status.OK );
 
-        assertThat( response, containsString( "you" ) );
-        assertThat( response, containsString( "him" ) );
-        assertThat( response, containsString( "25" ) );
-        assertThat( response, containsString( "plan" ) );
-        assertThat( response, not( containsString( "\"x\"" ) ) );
+        // THEN
+        Map<String, Object> des = jsonToMap( response );
+        assertThat( des.get( "plan" ), instanceOf( Map.class ));
+
+        Map<String, Object> plan = (Map<String, Object>)des.get( "plan" );
+        assertThat( plan.get( "name" ), instanceOf( String.class ) );
+        assertThat( plan.get( "children" ), instanceOf( Collection.class ));
+        assertThat( plan.get( "rows" ), instanceOf( Number.class ));
+        assertThat( plan.get( "dbHits" ), instanceOf( Number.class ));
     }
 
     @Test
@@ -268,7 +273,7 @@ public class CypherFunctionalTest extends AbstractRestFunctionalTestBase {
                 ".name = {name} return TYPE(r)";
         String response = cypherRestCall( script, Status.BAD_REQUEST, Pair.of( "startName", "I" ), Pair.of( "name", "you" ) );
 
-        assertEquals( 3, ( JsonHelper.jsonToMap( response ) ).size() );
+        assertEquals( 3, ( jsonToMap( response ) ).size() );
         assertThat( response, containsString( "message" ) );
     }
 
