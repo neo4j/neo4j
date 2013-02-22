@@ -90,6 +90,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
 
     private Throwable recoveryError;
     private final TransactionStateFactory stateFactory;
+
     private KernelAPI kernel;
 
     public TxManager( File txLogDir,

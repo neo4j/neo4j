@@ -27,16 +27,17 @@ import scala.collection.JavaConverters._
 import java.io.{StringWriter, PrintWriter}
 import collection.immutable.{Map => ImmutableMap}
 import collection.Map
+import javacompat.{PlanDescription => JPlanDescription}
 
 class PipeExecutionResult(result: Iterator[Map[String, Any]],
                           val columns: List[String], state: QueryState,
-                          executionPlanBuilder: () => String)
+                          executionPlanBuilder: () => PlanDescription)
   extends ExecutionResult
   with StringExtras
   with CollectionSupport
   with StringHelper {
 
-  def executionPlanDescription(): String = executionPlanBuilder()
+  def executionPlanDescription(): PlanDescription = executionPlanBuilder()
 
   def javaColumns: java.util.List[String] = columns.asJava
 
@@ -117,8 +118,6 @@ class PipeExecutionResult(result: Iterator[Map[String, Any]],
         writer.println("+--------------------------------------------+")
       }
     }
-
-
 
     writer.println("%s ms".format(timeTaken))
   }

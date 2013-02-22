@@ -89,7 +89,7 @@ public class TestNewGraphvizWriter
                     StopEvaluator.END_OF_GRAPH, ReturnableEvaluator.ALL, type.KNOWS,
                     Direction.BOTH, type.WORKS_FOR, Direction.BOTH ), type.KNOWS, type.WORKS_FOR ) );
 			tx.success();
-			System.out.println( out.toString() );
+			out.toString();
 		}
 		finally
 		{

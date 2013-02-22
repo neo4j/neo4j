@@ -31,7 +31,7 @@ class ResultValueMapperPipe(source: Pipe) extends PipeWithSource(source) {
   def throwIfSymbolsMissing(symbols: SymbolTable) {}
 
 
-  protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
+  protected def internalCreateResults(input:Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     def mapValue(in: Any): Any = in match {
       case p: Path => p
       case l: LabelValue => l.resolveForName(state.query).name
@@ -39,7 +39,7 @@ class ResultValueMapperPipe(source: Pipe) extends PipeWithSource(source) {
       case x => x
     }
 
-    val result: Iterator[ExecutionContext] = source.createResults(state).map {
+    val result: Iterator[ExecutionContext] = input.map {
       (ctx: ExecutionContext) =>
         val newMap = ctx.transform {
           (_, v: Any) => mapValue(v)

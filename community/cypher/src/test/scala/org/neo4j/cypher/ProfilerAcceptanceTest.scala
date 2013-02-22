@@ -21,7 +21,6 @@ package org.neo4j.cypher
 
 import org.scalatest.Assertions
 import org.junit.Test
-import org.junit.Assert._
 
 class ProfilerAcceptanceTest extends ExecutionEngineHelper with Assertions {
   @Test
@@ -38,10 +37,9 @@ class ProfilerAcceptanceTest extends ExecutionEngineHelper with Assertions {
     //GIVEN
     createNode("foo" -> "bar")
     val result: ExecutionResult = engine.profile("START n=node(1) RETURN n")
-    materialise(result)
 
     //WHEN THEN
-    assertContains(result, "rows=1")
+    assertRows(1)(result)("ResultValueMapper", "ColumnFilter")
   }
 
   @Test
@@ -49,28 +47,45 @@ class ProfilerAcceptanceTest extends ExecutionEngineHelper with Assertions {
     //GIVEN
     createNode("foo" -> "bar")
     val result: ExecutionResult = engine.profile("START n=node(1) RETURN n.foo")
-    materialise(result)
 
     //WHEN THEN
-    assertContains(result, "dbhits=1")
+    assertDbHits(1)(result)("ResultValueMapper", "ColumnFilter", "Extract", "Nodes")
+  }
+
+  @Test
+  def no_problem_measuring_creation() {
+    //GIVEN
+    val result: ExecutionResult = engine.profile("CREATE n")
+
+    //WHEN THEN
+    assertDbHits(0)(result)("ResultValueMapper", "EmptyResult")
   }
 
   @Test
   def tracks_graph_global_queries() {
     //GIVEN
-    val result: ExecutionResult = engine.profile("START n=node(*) RETURN n")
-    materialise(result)
+    val result: ExecutionResult = engine.profile("START n=node(*) RETURN n.foo?")
 
     //WHEN THEN
-    assertContains(result, "dbhits=1")
+    assertDbHits(1)(result)("ResultValueMapper", "ColumnFilter", "Extract", "Nodes")
   }
 
-
-  private def assertContains(result:ExecutionResult, expected:String) {
-    assertTrue(s"Expected ´$expected´, but got: \n${result.executionPlanDescription()}", result.executionPlanDescription().contains(expected))
+  private def assertRows(expectedRows: Int)(result: ExecutionResult)(names: String*) {
+    assert(expectedRows === parentCd(result, names).getProfilerStatistics.getRows)
   }
 
-  private def materialise(result: ExecutionResult) {
-    result.size
+  private def assertDbHits(expectedHits: Int)(result: ExecutionResult)(names: String*) {
+    assert(expectedHits === parentCd(result, names).getProfilerStatistics.getDbHits)
+  }
+
+  private def parentCd(result: ExecutionResult, names: Seq[String]) = {
+    result.toList
+    val descr = result.executionPlanDescription().asJava
+    if (names.isEmpty)
+      descr
+    else {
+      assert(names.head === descr.getName)
+      descr.cd(names.tail: _*)
+    }
   }
 }

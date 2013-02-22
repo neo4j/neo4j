@@ -19,5 +19,7 @@ include::nested-results.asciidoc[]
 
 include::retrieve-query-meta-data.asciidoc[]
 
+include::profile-a-query.asciidoc[]
+
 include::server-errors.asciidoc[]
 

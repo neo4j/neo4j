@@ -19,6 +19,7 @@
  */
 package org.neo4j.server;
 
+import static java.lang.String.format;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -156,7 +157,7 @@ public class WrappingNeoServerBootstrapperTest extends ExclusiveServerTestBase
         try
         {
             gen.get().expectedStatus( Status.OK.getStatusCode() ).get(
-                    "http://127.0.0.1:7474/db/data/" );
+                    format( "http://%s:7474/db/data/", hostAddress ) );
             fail();
         }
         catch ( ClientHandlerException cee )

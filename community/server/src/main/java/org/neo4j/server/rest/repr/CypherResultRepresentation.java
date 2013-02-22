@@ -19,15 +19,20 @@
  */
 package org.neo4j.server.rest.repr;
 
+import static org.neo4j.server.rest.repr.ObjectToRepresentationConverter.getMapRepresentation;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.cypher.javacompat.QueryStatistics;
+import org.neo4j.cypher.javacompat.PlanDescription;
+import org.neo4j.cypher.javacompat.ProfilerStatistics;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.helpers.Function;
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.server.webadmin.rest.representations.JmxAttributeRepresentationDispatcher;
 
@@ -36,14 +41,16 @@ public class CypherResultRepresentation extends MappingRepresentation
     private final ListRepresentation resultRepresentation;
     private final ListRepresentation columns;
     private final MappingRepresentation statsRepresentation;
+    private final MappingRepresentation plan;
 
 
-    public CypherResultRepresentation( ExecutionResult result, boolean includeStats )
+    public CypherResultRepresentation( final ExecutionResult result, boolean includeStats, boolean includePlan )
     {
         super( RepresentationType.STRING );
-        resultRepresentation = createResultRepresentation(result);
+        resultRepresentation = createResultRepresentation( result );
         columns = ListRepresentation.string( result.columns() );
         statsRepresentation = includeStats ? createStatsRepresentation( result.getQueryStatistics() ) : null;
+        plan = includePlan ? createPlanRepresentation( planProvider( result ) ) : null;
     }
 
     private MappingRepresentation createStatsRepresentation( final QueryStatistics stats )
@@ -70,8 +77,11 @@ public class CypherResultRepresentation extends MappingRepresentation
     {
         serializer.putList( "columns", columns );
         serializer.putList( "data", resultRepresentation );
+
         if (statsRepresentation != null)
             serializer.putMapping( "stats", statsRepresentation );
+        if (plan != null)
+            serializer.putMapping( "plan", plan );
     }
 
     private ListRepresentation createResultRepresentation(ExecutionResult executionResult) {
@@ -93,7 +103,55 @@ public class CypherResultRepresentation extends MappingRepresentation
         });
     }
 
-    Representation getRepresentation( Object r )
+    /*
+     * This takes a function that resolves to a {@link PlanDescription}, and it does so for two reasons:
+     *  - The plan description needs to be fetched *after* the result is streamed to the user
+     *  - This method is recursive, so it's not enough to just pass in the executionplan to the root call of it
+     *    subsequent inner calls could not re-use that execution plan (that would just lead to an infinite loop)
+     */
+    private MappingRepresentation createPlanRepresentation( final Function<Object, PlanDescription> getPlan )
+    {
+        return new MappingRepresentation( "plan" ) {
+            @Override
+            protected void serialize( MappingSerializer mappingSerializer )
+            {
+                final PlanDescription planDescription = getPlan.apply( null );
+
+                mappingSerializer.putString( "name", planDescription.getName() );
+                MappingRepresentation argsRepresentation = getMapRepresentation( (Map) planDescription.getArguments() );
+                mappingSerializer.putMapping( "args", argsRepresentation );
+
+                if ( planDescription.hasProfilerStatistics() )
+                {
+                    ProfilerStatistics stats = planDescription.getProfilerStatistics();
+                    mappingSerializer.putNumber( "rows", stats.getRows() );
+                    mappingSerializer.putNumber( "dbHits", stats.getDbHits() );
+                }
+
+                mappingSerializer.putList( "children",
+                        new ListRepresentation( "children",
+                                new IterableWrapper<Representation, PlanDescription>(planDescription.getChildren()) {
+
+                                    @Override
+                                    protected Representation underlyingObjectToObject( final PlanDescription childPlan )
+                                    {
+                                        return createPlanRepresentation( new Function<Object, PlanDescription>(){
+
+                                            @Override
+                                            public PlanDescription apply( Object from )
+                                            {
+                                                return childPlan;
+                                            }
+                                        });
+                                    }
+                                }
+                        )
+                );
+            }
+        };
+    }
+
+    private Representation getRepresentation( Object r )
     {
         if( r == null )
         {
@@ -124,7 +182,7 @@ public class CypherResultRepresentation extends MappingRepresentation
         return representationDispatcher.dispatch( r, "" );
     }
 
-    Representation handleIterable( Iterable data ) {
+    private Representation handleIterable( Iterable data ) {
         final List<Representation> results = new ArrayList<Representation>();
         for ( final Object value : data )
         {
@@ -136,11 +194,22 @@ public class CypherResultRepresentation extends MappingRepresentation
         return new ListRepresentation( representationType, results );
     }
 
-    RepresentationType getType( List<Representation> representations )
+    private RepresentationType getType( List<Representation> representations )
     {
         if ( representations == null || representations.isEmpty() )
             return RepresentationType.STRING;
         return representations.get( 0 ).getRepresentationType();
+    }
+
+    private Function<Object, PlanDescription> planProvider( final ExecutionResult result )
+    {
+        return new Function<Object,PlanDescription>(){
+            @Override
+            public PlanDescription apply( Object from )
+            {
+                return result.executionPlanDescription();
+            }
+        };
     }
 
 }

@@ -30,6 +30,7 @@ import internal.mutation.{CreateNode, CreateRelationship}
 import internal.symbols.{NodeType, RelationshipType, SymbolTable}
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.cypher.ExecutionResult
+import javacompat.{PlanDescription => JPlanDescription}
 
 class ExecutionPlanBuilder(graph: GraphDatabaseService) extends PatternGraphBuilder {
 
@@ -164,7 +165,9 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService) extends PatternGraphBuil
     func
   }
 
-  private def prepareStateAndResult(queryContext: QueryContext, params: Map[String, Any], pipe: Pipe, profile:Boolean): (QueryState, Iterator[ExecutionContext], () => String) = {
+  private def prepareStateAndResult(queryContext: QueryContext, params: Map[String, Any], pipe: Pipe, profile:Boolean):
+    (QueryState, Iterator[ExecutionContext], () => PlanDescription) = {
+
     val decorator = if(profile) {
       new Profiler()
     } else {
@@ -172,7 +175,8 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService) extends PatternGraphBuil
     }
     val state = new QueryState(graph, queryContext, params, decorator)
     val results = pipe.createResults(state)
-    val descriptor = () => decorator.decorate(pipe.executionPlanDescription).toString
+    val descriptor = () => decorator.decorate(pipe.executionPlanDescription)
+
 
     try {
       val closingIterator = new ClosingIterator[ExecutionContext](results, queryContext)

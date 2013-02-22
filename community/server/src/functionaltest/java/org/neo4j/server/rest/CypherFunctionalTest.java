@@ -21,6 +21,7 @@ package org.neo4j.server.rest;
 
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.core.Is.is;
+import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.hamcrest.core.IsNot.not;
 import static org.junit.Assert.*;
 import static org.junit.matchers.JUnitMatchers.containsString;
@@ -28,6 +29,7 @@ import static org.neo4j.server.rest.domain.JsonHelper.jsonToMap;
 import static org.neo4j.test.GraphDescription.LABEL;
 
 import java.io.UnsupportedEncodingException;
+import java.util.Collection;
 import java.util.Map;
 
 import javax.ws.rs.core.Response.Status;
@@ -234,6 +236,38 @@ public class CypherFunctionalTest extends AbstractRestFunctionalTestBase {
         assertThat( response, anyOf(containsString("\"I\", \"you\""), containsString("\"I\",\"you\"")) );
     }
 
+    /**
+     * By passing in an extra parameter, you can ask the cypher executor to return a profile of the query
+     * as it is executed. This can help in locating bottlenecks.
+     */
+    @Test
+    @Documented
+    @Title( "Profile a query" )
+    @Graph( nodes = {
+            @NODE( name = "I", setNameProperty = true ),
+            @NODE( name = "you", setNameProperty = true ),
+            @NODE( name = "him", setNameProperty = true, properties = {
+                    @PROP( key = "age", value = "25", type = GraphDescription.PropType.INTEGER ) } ) },
+            relationships = {
+                    @REL( start = "I", end = "him", type = "know", properties = { } ),
+                    @REL( start = "I", end = "you", type = "know", properties = { } ) } )
+    public void testProfiling() throws Exception {
+        String script = createScript( "start x  = node(%I%) match x -[r]-> n return type(r), n.name?, n.age?" );
+
+        // WHEN
+        String response = doCypherRestCall( cypherUri() + "?profile=true", script, Status.OK );
+
+        // THEN
+        Map<String, Object> des = jsonToMap( response );
+        assertThat( des.get( "plan" ), instanceOf( Map.class ));
+
+        Map<String, Object> plan = (Map<String, Object>)des.get( "plan" );
+        assertThat( plan.get( "name" ), instanceOf( String.class ) );
+        assertThat( plan.get( "children" ), instanceOf( Collection.class ));
+        assertThat( plan.get( "rows" ), instanceOf( Number.class ));
+        assertThat( plan.get( "dbHits" ), instanceOf( Number.class ));
+    }
+
     @Test
     @Graph( value = { "I know you" }, autoIndexNodes = false )
     public void array_property() throws Exception {
@@ -277,7 +311,7 @@ public class CypherFunctionalTest extends AbstractRestFunctionalTestBase {
 
     private String cypherRestCall( String script, Status status, Pair<String, String> ...params )
     {
-        return super.doCypherRestCall( cypherUri(), script, status, params );
+        return doCypherRestCall( cypherUri(), script, status, params );
     }
 
     private String cypherUri()

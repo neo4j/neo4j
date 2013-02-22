@@ -23,16 +23,15 @@ import org.neo4j.cypher.internal.symbols.{AnyType, SymbolTable}
 import org.neo4j.cypher.internal.ExecutionContext
 import collection.mutable
 import org.neo4j.cypher.internal.commands.expressions.Expression
-import org.neo4j.cypher.PlanDescription
 
 class DistinctPipe(source: Pipe, expressions: Map[String, Expression]) extends PipeWithSource(source) {
 
   val keyNames: Seq[String] = expressions.keys.toSeq
 
-  protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
+  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
 
     // Run the return item expressions, and replace the execution context's with their values
-    val returnExpressions = source.createResults(state).map(ctx => {
+    val returnExpressions = input.map(ctx => {
       val newMap = expressions.mapValues(expression => expression(ctx)(state))
       ctx.newFrom(newMap)
     })

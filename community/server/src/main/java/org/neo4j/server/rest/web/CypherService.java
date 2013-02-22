@@ -40,9 +40,10 @@ public class CypherService {
 
     private static final String PARAMS_KEY = "params";
     private static final String QUERY_KEY = "query";
-    private static final String INCLUDE_STATS_PARAM = "includeStats";
 
-    private static final boolean INCLUDE_STATS_DEFAULT = false;
+    private static final String INCLUDE_STATS_PARAM = "includeStats";
+    private static final String INCLUDE_PLAN_PARAM = "includePlan";
+    private static final String PROFILE_PARAM = "profile";
 
     private CypherExecutor cypherExecutor;
     private OutputFormat output;
@@ -56,7 +57,11 @@ public class CypherService {
 
     @POST
     @SuppressWarnings({ "unchecked" })
-    public Response cypher(String body,  @QueryParam( INCLUDE_STATS_PARAM ) boolean includeStats) throws BadInputException {
+    public Response cypher(String body,
+                           @QueryParam( INCLUDE_STATS_PARAM ) boolean includeStats,
+                           @QueryParam( INCLUDE_PLAN_PARAM ) boolean includePlan,
+                           @QueryParam( PROFILE_PARAM ) boolean profile) throws BadInputException {
+
         Map<String,Object> command = input.readMap( body );
         
         if( !command.containsKey(QUERY_KEY) ) {
@@ -67,8 +72,14 @@ public class CypherService {
         Map<String,Object> params = (Map<String, Object>)
                 (command.containsKey(PARAMS_KEY) ? command.get(PARAMS_KEY) : new HashMap<String, Object>());
         try {
-            ExecutionResult result = cypherExecutor.getExecutionEngine().execute( query, params );
-            return output.ok(new CypherResultRepresentation( result, includeStats ));
+            if (profile) {
+                ExecutionResult result = cypherExecutor.getExecutionEngine().profile( query, params );
+                return output.ok(new CypherResultRepresentation( result, /* includeStats=*/includeStats, true ));
+            }
+            else {
+                ExecutionResult result = cypherExecutor.getExecutionEngine().execute( query, params );
+                return output.ok(new CypherResultRepresentation( result, /* includeStats=*/includeStats, includePlan ));
+            }
         } catch(Exception e) {
             return output.badRequest(e);
         }

@@ -21,25 +21,22 @@ package org.neo4j.cypher.internal.pipes
 
 import org.neo4j.cypher.internal.mutation._
 import org.neo4j.graphdb.{GraphDatabaseService, NotInTransactionException}
-import org.neo4j.cypher.{PlanDescription, SyntaxException, ParameterWrongTypeException, InternalException}
+import org.neo4j.cypher.{SyntaxException, ParameterWrongTypeException, InternalException}
 import org.neo4j.cypher.internal.mutation.CreateUniqueAction
 import scala.Some
 import org.neo4j.cypher.internal.mutation.CreateNode
 import org.neo4j.cypher.internal.commands.expressions.{Collection, Identifier}
 import org.neo4j.cypher.internal.symbols.SymbolTable
 import org.neo4j.cypher.internal.ExecutionContext
+import org.neo4j.cypher.internal.data.SimpleVal
 
 class ExecuteUpdateCommandsPipe(source: Pipe, db: GraphDatabaseService, commands: Seq[UpdateAction])
   extends PipeWithSource(source) {
 
   assertNothingIsCreatedWhenItShouldNot()
 
-  protected def internalCreateResults(state: QueryState) = {
-    val input = source.createResults(state)
-    val result = input.flatMap {
-      case ctx => executeMutationCommands(ctx, state, commands.size == 1)
-    }
-    result
+  protected def internalCreateResults(input: Iterator[ExecutionContext],state: QueryState) = input.flatMap {
+    case ctx => executeMutationCommands(ctx, state, commands.size == 1)
   }
 
   private def executeMutationCommands(ctx: ExecutionContext,
@@ -98,7 +95,7 @@ class ExecuteUpdateCommandsPipe(source: Pipe, db: GraphDatabaseService, commands
   }
 
   override def executionPlanDescription =
-    source.executionPlanDescription.andThen(this, "UpdateGraph", "commands" -> commands.map(_.toString))
+    source.executionPlanDescription.andThen(this, "UpdateGraph", "commands" -> SimpleVal.fromIterable(commands))
 
   def symbols = source.symbols.add(commands.flatMap(_.identifiers).toMap)
 

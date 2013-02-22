@@ -22,12 +22,13 @@ package org.neo4j.cypher
 import internal.pipes.QueryState
 import org.neo4j.graphdb.GraphDatabaseService
 import collection.Map
+import javacompat.{PlanDescription => JPlanDescription}
 
 class EagerPipeExecutionResult(result: Iterator[Map[String, Any]],
                                columns: List[String],
                                state: QueryState,
                                db: GraphDatabaseService,
-                               planDescriptor: () => String)
+                               planDescriptor: () => PlanDescription)
   extends PipeExecutionResult(result, columns, state, planDescriptor) {
 
   val (eagerResult,timeTaken) = super.createTimedResults

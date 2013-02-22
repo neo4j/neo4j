@@ -22,22 +22,22 @@ package org.neo4j.cypher.internal.pipes
 import scala.math.signum
 import org.neo4j.cypher.internal.commands.SortItem
 import java.lang.String
-import org.neo4j.cypher.internal.Comparer
+import org.neo4j.cypher.internal.{ExecutionContext, Comparer}
 import collection.mutable.Map
 import org.neo4j.cypher.internal.symbols.SymbolTable
 
 class SortPipe(source: Pipe, sortDescription: List[SortItem]) extends PipeWithSource(source) with ExecutionContextComparer {
   def symbols = source.symbols
 
+  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) =
+    input.toList.
+      sortWith((a, b) => compareBy(a, b, sortDescription)).iterator
+
   def throwIfSymbolsMissing(symbols: SymbolTable) {
     sortDescription.foreach {
       case SortItem(e,_) => e.throwIfSymbolsMissing(source.symbols)
     }
   }
-
-  protected def internalCreateResults(state:QueryState) =
-    source.createResults(state).toList.
-    sortWith((a, b) => compareBy(a, b, sortDescription)).iterator
 
   override def executionPlanDescription = source.executionPlanDescription.andThen(this, "Sort", "descr" -> sortDescription)
 }
