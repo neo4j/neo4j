@@ -19,6 +19,8 @@
  */
 package org.neo4j.graphalgo.impl.path;
 
+import static org.neo4j.kernel.StandardExpander.toPathExpander;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -45,8 +47,6 @@ import org.neo4j.graphdb.traversal.TraversalMetadata;
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.helpers.collection.NestingIterator;
 import org.neo4j.helpers.collection.PrefetchingIterator;
-
-import static org.neo4j.kernel.StandardExpander.toPathExpander;
 
 /**
  * Find (all or one) simple shortest path(s) between two nodes. It starts
@@ -353,15 +353,13 @@ public class ShortestPath implements PathFinder<Path>
                     levelData.addRel( nextRel );
                 }
                 
-                // Was this leveldata created right now, i.e. have we visited this node before?
+                // Was this level data created right now, i.e. have we visited this node before?
                 // In that case don't add it as next node to traverse
-                if ( !createdLevelData )
+                if ( createdLevelData )
                 {
-                    continue;
+                    this.nextNodes.add( result );
+                    return result;
                 }
-                
-                this.nextNodes.add( result );
-                return result;
             }
         }
         
