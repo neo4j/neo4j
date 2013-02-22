@@ -21,13 +21,13 @@ package org.neo4j.kernel.impl.storemigration.legacystore;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.Iterator;
 
 import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.collection.PrefetchingIterator;
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 
@@ -39,9 +39,9 @@ public class LegacyRelationshipStoreReader
     private final FileChannel fileChannel;
     private final long maxId;
 
-    public LegacyRelationshipStoreReader( File fileName ) throws IOException
+    public LegacyRelationshipStoreReader( FileSystemAbstraction fs, File fileName ) throws IOException
     {
-        fileChannel = new RandomAccessFile( fileName, "r" ).getChannel();
+        fileChannel = fs.open( fileName, "r" );
         int endHeaderSize = UTF8.encode( FROM_VERSION ).length;
         maxId = (fileChannel.size() - endHeaderSize) / RECORD_LENGTH;
     }
@@ -74,7 +74,8 @@ public class LegacyRelationshipStoreReader
                             try
                             {
                                 fileChannel.read( buffer );
-                            } catch ( IOException e )
+                            }
+                            catch ( IOException e )
                             {
                                 throw new RuntimeException( e );
                             }

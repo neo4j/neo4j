@@ -60,4 +60,8 @@ public interface FileSystemAbstraction
     File[] listFiles( File directory );
     
     boolean isDirectory( File file );
+    
+    void moveToDirectory( File file, File toDirectory ) throws IOException;
+    
+    void copyFile( File from, File to ) throws IOException;
 }

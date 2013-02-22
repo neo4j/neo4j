@@ -146,4 +146,16 @@ public class DefaultFileSystemAbstraction
     {
         return file.isDirectory();
     }
+    
+    @Override
+    public void moveToDirectory( File file, File toDirectory ) throws IOException
+    {
+        FileUtils.moveFileToDirectory( file, toDirectory );
+    }
+    
+    @Override
+    public void copyFile( File from, File to ) throws IOException
+    {
+        FileUtils.copyFile( from, to );
+    }
 }

@@ -159,4 +159,16 @@ public class LimitedFilesystemAbstraction implements FileSystemAbstraction
     {
         return inner.isDirectory( file );
     }
+    
+    @Override
+    public void moveToDirectory( File file, File toDirectory ) throws IOException
+    {
+        inner.moveToDirectory( file, toDirectory );
+    }
+    
+    @Override
+    public void copyFile( File from, File to ) throws IOException
+    {
+        inner.copyFile( from, to );
+    }
 }

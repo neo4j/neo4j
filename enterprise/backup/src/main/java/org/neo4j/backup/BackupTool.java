@@ -30,7 +30,6 @@ import java.net.URISyntaxException;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
-import ch.qos.logback.classic.LoggerContext;
 import org.neo4j.com.ComException;
 import org.neo4j.consistency.ConsistencyCheckSettings;
 import org.neo4j.graphdb.TransactionFailureException;
@@ -38,7 +37,9 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.storemigration.LogFiles;
 import org.neo4j.kernel.impl.storemigration.StoreFiles;
 import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedByConfigurationException;
@@ -46,6 +47,8 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.LogbackService;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.logging.SystemOutLogging;
+
+import ch.qos.logback.classic.LoggerContext;
 
 public class BackupTool
 {
@@ -72,11 +75,13 @@ public class BackupTool
 
     private final BackupService backupService;
     private final PrintStream systemOut;
+    private final FileSystemAbstraction fs;
 
     BackupTool( BackupService backupService, PrintStream systemOut )
     {
         this.backupService = backupService;
         this.systemOut = systemOut;
+        this.fs = new DefaultFileSystemAbstraction();
     }
 
     void run( String[] args ) throws ToolFailureException
@@ -258,7 +263,7 @@ public class BackupTool
                     "Backing that up in target and performing a full backup from source" );
             try
             {
-                moveExistingDatabase( to );
+                moveExistingDatabase( fs, to );
             }
             catch ( IOException e )
             {
@@ -279,17 +284,17 @@ public class BackupTool
         return port;
     }
 
-    private static void moveExistingDatabase( String to ) throws IOException
+    private static void moveExistingDatabase( FileSystemAbstraction fs, String to ) throws IOException
     {
         File toDir = new File( to );
         File backupDir = new File( toDir, "old-version" );
-        if ( !backupDir.mkdir() )
+        if ( !fs.mkdir( backupDir ) )
         {
             throw new IOException( "Trouble making target backup directory "
                     + backupDir.getAbsolutePath() );
         }
-        StoreFiles.move( toDir, backupDir );
-        LogFiles.move( toDir, backupDir );
+        StoreFiles.move( fs, toDir, backupDir );
+        LogFiles.move( fs, toDir, backupDir );
     }
 
     static class ToolFailureException extends Exception

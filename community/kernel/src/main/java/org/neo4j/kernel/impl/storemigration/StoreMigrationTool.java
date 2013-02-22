@@ -50,7 +50,8 @@ public class StoreMigrationTool
 
     private void run( String legacyStoreDirectory, String targetStoreDirectory, StringLogger log ) throws IOException
     {
-        LegacyStore legacyStore = new LegacyStore( new File( new File( legacyStoreDirectory ), NeoStore.DEFAULT_NAME ), log );
+        LegacyStore legacyStore = new LegacyStore( new DefaultFileSystemAbstraction(),
+                new File( new File( legacyStoreDirectory ), NeoStore.DEFAULT_NAME ), log );
 
         Map<String, String> config = new HashMap<String, String>();
 
