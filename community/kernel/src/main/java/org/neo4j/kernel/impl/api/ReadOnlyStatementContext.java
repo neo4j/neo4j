@@ -91,28 +91,21 @@ public class ReadOnlyStatementContext implements StatementContext
     }
 
     @Override
-    public void addIndexRule( long labelId, long propertyKey ) throws ConstraintViolationKernelException
+    public IndexRule addIndexRule( long labelId, long propertyKey ) throws ConstraintViolationKernelException
     {
         throw readOnlyException();
     }
-
+    
     @Override
-    public void dropIndexRule( long labelId, long propertyKey ) throws ConstraintViolationKernelException
+    public void dropIndexRule( IndexRule indexRule ) throws ConstraintViolationKernelException
     {
         throw readOnlyException();
     }
-
+    
     @Override
-    public Iterable<Long> getIndexedProperties( long labelId )
+    public Iterable<IndexRule> getIndexRules( long labelId )
     {
-        return delegate.getIndexedProperties( labelId );
-    }
-
-    @Override
-    public IndexRule.State getIndexState( long labelId, long propertyKey )
-            throws LabelNotFoundKernelException, PropertyKeyNotFoundException, SchemaRuleNotFoundException
-    {
-        return delegate.getIndexState( labelId, propertyKey );
+        return delegate.getIndexRules( labelId );
     }
 
     @Override
@@ -137,6 +130,12 @@ public class ReadOnlyStatementContext implements StatementContext
     public void close( boolean successful )
     {
         delegate.close( successful );
+    }
+
+    @Override
+    public IndexRule getIndexRule( long labelId, long propertyKey ) throws SchemaRuleNotFoundException
+    {
+        return delegate.getIndexRule( labelId, propertyKey );
     }
 
     private NotInTransactionException readOnlyException()

@@ -914,4 +914,35 @@ public final class Iterables
         }
         return -1;
     }
+    
+    public static <T> Iterable<T> option( final T item )
+    {
+        if ( item == null )
+            return Collections.emptyList();
+        
+        return new Iterable<T>()
+        {
+            @Override
+            public Iterator<T> iterator()
+            {
+                return new PrefetchingIterator<T>()
+                {
+                    private boolean returned;
+                    
+                    @Override
+                    protected T fetchNextOrNull()
+                    {
+                        try
+                        {
+                            return !returned ? item : null;
+                        }
+                        finally
+                        {
+                            returned = true;
+                        }
+                    }
+                };
+            }
+        };
+    }
 }

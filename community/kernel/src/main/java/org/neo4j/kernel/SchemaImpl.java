@@ -61,15 +61,16 @@ public class SchemaImpl implements Schema
         StatementContext context = ctxProvider.getCtxForReading();
         try
         {
-            return map( new Function<Long, IndexDefinition>()
+            Iterable<IndexRule> indexRules = context.getIndexRules( context.getLabelId( label.name() ) );
+            return map( new Function<IndexRule, IndexDefinition>()
             {
                 @Override
-                public IndexDefinition apply( Long propertyKey )
+                public IndexDefinition apply( IndexRule rule )
                 {
                     return new IndexDefinitionImpl( ctxProvider, label,
-                            propertyKeyManager.getKeyByIdOrNull( propertyKey.intValue() ).getKey() );
+                            propertyKeyManager.getKeyByIdOrNull( (int) rule.getPropertyKey() ).getKey() );
                 }
-            }, context.getIndexedProperties( context.getLabelId( label.name() ) ) );
+            }, indexRules );
         }
         catch ( LabelNotFoundKernelException e )
         {
@@ -81,13 +82,12 @@ public class SchemaImpl implements Schema
     public IndexState getIndexState( IndexDefinition index )
     {
         StatementContext context = ctxProvider.getCtxForReading();
-        long labelId = 0, propertyKeyId = 0;
         String propertyKey = single( index.getPropertyKeys() );
         try
         {
-            labelId = context.getLabelId( index.getLabel().name() );
-            propertyKeyId = context.getPropertyKeyId( propertyKey );
-            IndexRule.State indexState = context.getIndexState( labelId, propertyKeyId );
+            long labelId = context.getLabelId( index.getLabel().name() );
+            long propertyKeyId = context.getPropertyKeyId( propertyKey );
+            IndexRule.State indexState = context.getIndexRule( labelId, propertyKeyId ).getState();
             switch ( indexState )
             {
                 case POPULATING:

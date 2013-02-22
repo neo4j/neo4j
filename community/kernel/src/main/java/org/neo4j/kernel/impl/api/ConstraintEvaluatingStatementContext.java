@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api;
 
 import org.neo4j.kernel.api.ConstraintViolationKernelException;
 import org.neo4j.kernel.api.StatementContext;
+import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 
 public class ConstraintEvaluatingStatementContext extends DelegatingStatementContext
 {
@@ -44,16 +45,16 @@ public class ConstraintEvaluatingStatementContext extends DelegatingStatementCon
     }
     
     @Override
-    public void addIndexRule( long labelId, long propertyKey ) throws ConstraintViolationKernelException
+    public IndexRule addIndexRule( long labelId, long propertyKey ) throws ConstraintViolationKernelException
     {
-        for ( long existingRule : getIndexedProperties( labelId ) )
+        for ( IndexRule existingRule : getIndexRules( labelId ) )
         {
-            if ( existingRule == propertyKey )
+            if ( existingRule.getPropertyKey() == propertyKey )
             {
                 throw new ConstraintViolationKernelException("Property " + propertyKey +
                         " is already indexed for label " + labelId + ".");
             }
         }
-        delegate.addIndexRule( labelId, propertyKey );
+        return delegate.addIndexRule( labelId, propertyKey );
     }
 }

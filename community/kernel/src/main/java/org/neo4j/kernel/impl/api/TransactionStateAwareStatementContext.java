@@ -19,16 +19,16 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import static java.util.Collections.emptyList;
 import static org.neo4j.helpers.collection.Iterables.concat;
 import static org.neo4j.helpers.collection.Iterables.filter;
+import static org.neo4j.helpers.collection.Iterables.option;
+import static org.neo4j.helpers.collection.IteratorUtil.singleOrNull;
 
 import java.util.Collection;
 
-import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.kernel.api.ConstraintViolationKernelException;
-import org.neo4j.kernel.api.LabelNotFoundKernelException;
-import org.neo4j.kernel.api.PropertyKeyNotFoundException;
 import org.neo4j.kernel.api.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
@@ -112,30 +112,9 @@ public class TransactionStateAwareStatementContext extends DelegatingStatementCo
     {
         if ( successful )
         {
-            applyLabelAndIndexChangesToTransaction();
             applyNodeChangesToTransaction();
         }
         delegate.close( successful );
-    }
-
-    private void applyLabelAndIndexChangesToTransaction()
-    {
-        try
-        {
-            for ( TxState.LabelState labelState : state.getLabelStates() )
-            {
-                long labelId = labelState.getId();
-                DiffSets<Long> indexRuleDiffSets = labelState.getIndexRuleDiffSets();
-                for ( long propertyKey : indexRuleDiffSets.getAdded() )
-                    delegate.addIndexRule( labelId, propertyKey );
-                for ( long propertyKey : indexRuleDiffSets.getRemoved() )
-                    delegate.dropIndexRule( labelId, propertyKey );
-            }
-        }
-        catch ( ConstraintViolationKernelException e )
-        {
-            throw new TransactionFailureException( "Late unexpected schema exception", e );
-        }
     }
 
     private void applyNodeChangesToTransaction()
@@ -151,62 +130,45 @@ public class TransactionStateAwareStatementContext extends DelegatingStatementCo
     }
     
     @Override
-    public void addIndexRule( long labelId, long propertyKey ) throws ConstraintViolationKernelException
+    public IndexRule addIndexRule( long labelId, long propertyKey ) throws ConstraintViolationKernelException
     {
-        ensureNoMatchingIndexRule( labelId, propertyKey );
-        state.addIndexRule( labelId, propertyKey );
+        IndexRule rule = delegate.addIndexRule( labelId, propertyKey ); 
+        state.addIndexRule( rule );
+        return rule;
     }
 
     @Override
-    public void dropIndexRule( long labelId, long propertyKey ) throws ConstraintViolationKernelException
+    public void dropIndexRule( IndexRule indexRule ) throws ConstraintViolationKernelException
     {
-        ensureSingleMatchingIndexRule( labelId, propertyKey );
-        state.removeIndexRule( labelId, propertyKey );
+        state.removeIndexRule( indexRule );
+        delegate.dropIndexRule( indexRule );
     }
-
-    private void ensureSingleMatchingIndexRule(long labelId, long propertyKey) throws ConstraintViolationKernelException
+    
+    @Override
+    public IndexRule getIndexRule( long labelId, long propertyKey ) throws SchemaRuleNotFoundException
     {
-        int i = countMatchingIndexRules( labelId, propertyKey );
-        if (i == 0)
-            throw new ConstraintViolationKernelException( "No matching index found (expected one)" );
-        if (i > 1)
-            throw new ConstraintViolationKernelException( "Too many matching indexes found (expected one)" );
-    }
-
-    private void ensureNoMatchingIndexRule(long labelId, long propertyKey) throws ConstraintViolationKernelException
-    {
-        int i = countMatchingIndexRules( labelId, propertyKey );
-        if (i > 0)
-            throw new ConstraintViolationKernelException( "Matching indexes found (expected none)" );
-    }
-
-    private int countMatchingIndexRules( long labelId, long propertyKey )
-    {
-        int i = 0;
-        for ( long existingPropertyKey : getIndexedProperties( labelId ) )
+        Iterable<IndexRule> committedRules;
+        try
         {
-            if ( propertyKey == existingPropertyKey )
-                i++;
+            committedRules = option( delegate.getIndexRule( labelId, propertyKey ) );
         }
-        return i;
-    }
-
-    @Override
-    public Iterable<Long> getIndexedProperties( long labelId )
-    {
-        Iterable<Long> committedRules = delegate.getIndexedProperties( labelId );
-        DiffSets<Long> diffSets = state.getIndexRuleDiffSets( labelId );
-        return diffSets.apply( committedRules ); 
-    }
-
-    @Override
-    public IndexRule.State getIndexState( long labelId, long propertyKey ) throws LabelNotFoundKernelException, PropertyKeyNotFoundException, SchemaRuleNotFoundException
-    {
-        if(state.hasAddedIndexRule( labelId, propertyKey ))
+        catch ( SchemaRuleNotFoundException e )
         {
-            return IndexRule.State.POPULATING;
+            committedRules = emptyList();
         }
+        DiffSets<IndexRule> ruleDiffSet = state.getIndexRuleDiffSetsByLabel( labelId );
+        Iterable<IndexRule> rules = ruleDiffSet.apply( committedRules );
+        IndexRule single = singleOrNull( rules );
+        if ( single == null )
+            throw new SchemaRuleNotFoundException( "Index rule for label:" + labelId + " and property:" +
+                    propertyKey + " not found" );
+        return single;
+    }
 
-        return delegate.getIndexState( labelId, propertyKey );
+    @Override
+    public Iterable<IndexRule> getIndexRules( long labelId )
+    {
+        Iterable<IndexRule> committedRules = delegate.getIndexRules( labelId );
+        return state.getIndexRuleDiffSetsByLabel( labelId ).apply( committedRules );
     }
 }

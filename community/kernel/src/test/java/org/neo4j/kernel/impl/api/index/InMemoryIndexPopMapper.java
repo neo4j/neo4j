@@ -27,7 +27,6 @@ import java.util.Set;
 
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.kernel.api.IndexPopulatorMapper;
-import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.impl.util.CopyOnWriteHashMap;
 
 public class InMemoryIndexPopMapper implements IndexPopulatorMapper
@@ -37,7 +36,7 @@ public class InMemoryIndexPopMapper implements IndexPopulatorMapper
     @Override
     public IndexPopulator getPopulator( IndexDefinition index )
     {
-        IndexPopulator populator = new InMemoryIndexPopulator(index);
+        IndexPopulator populator = new InMemoryIndexPopulator();
         populators.put( index, populator );
         return populator;
     }
@@ -45,12 +44,6 @@ public class InMemoryIndexPopMapper implements IndexPopulatorMapper
     private static class InMemoryIndexPopulator implements IndexPopulator
     {
         private final Map<Object, Set<Long>> indexData = new HashMap<Object, Set<Long>>();
-        private final IndexDefinition indexDefinition;
-
-        public InMemoryIndexPopulator( IndexDefinition indexDefinition )
-        {
-            this.indexDefinition = indexDefinition;
-        }
 
         @Override
         public void add( int n, long nodeId, Object propertyValue )
@@ -78,9 +71,8 @@ public class InMemoryIndexPopMapper implements IndexPopulatorMapper
         }
 
         @Override
-        public void done(StatementContext ctx)
+        public void done()
         {
-           // DO IT
         }
     }
 }

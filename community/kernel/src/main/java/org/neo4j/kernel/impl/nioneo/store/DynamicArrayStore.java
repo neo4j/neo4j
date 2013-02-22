@@ -174,7 +174,7 @@ public class DynamicArrayStore extends AbstractDynamicStore
                 int byteLength = dataBuffer.getInt();
                 byte[] stringByteArray = new byte[byteLength];
                 dataBuffer.get( stringByteArray );
-                result[i] = (String) PropertyStore.getStringFor( stringByteArray );
+                result[i] = (String) PropertyStore.decodeString( stringByteArray );
             }
             return result;
         }
@@ -202,6 +202,6 @@ public class DynamicArrayStore extends AbstractDynamicStore
 
     public Object getArrayFor( Iterable<DynamicRecord> records )
     {
-        return getRightArray( AbstractDynamicStore.readFullByteArray( this, records, PropertyType.ARRAY ) );
+        return getRightArray( readFullByteArray( records, PropertyType.ARRAY ) );
     }
 }

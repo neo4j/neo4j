@@ -382,7 +382,7 @@ public abstract class AbstractNameStore<T extends AbstractNameRecord> extends Ab
                 records = nameRecord.getNameRecords().iterator();
             }
         }
-        return (String) PropertyStore.getStringFor( AbstractDynamicStore.readFullByteArray( nameStore,
+        return (String) PropertyStore.decodeString( nameStore.readFullByteArray(
                 relevantRecords, PropertyType.STRING ).other() );
     }
 

@@ -32,9 +32,9 @@ import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 
 public class SchemaCacheTest
 {
-    final IndexRule hans = createIndexRule( 1, 0, 5 );
-    final IndexRule witch = createIndexRule( 2, 3, 6 );
-    final IndexRule gretel = createIndexRule( 3, 0, 7 );
+    final IndexRule hans = newIndexRule( 1, 0, 5 );
+    final IndexRule witch = newIndexRule( 2, 3, 6 );
+    final IndexRule gretel = newIndexRule( 3, 0, 7 );
 
     @Test
     public void should_construct_schema_cache()
@@ -78,8 +78,8 @@ public class SchemaCacheTest
         assertEquals( asSet( hans, gretel ), asSet( cache.getSchemaRules( ) ) );
     }
 
-    private IndexRule createIndexRule( long id, long label, long propertyKey )
+    private IndexRule newIndexRule( long id, long label, long propertyKey )
     {
-        return new IndexRule( id, label, POPULATING, new long[] {propertyKey} );
+        return new IndexRule( id, label, POPULATING, propertyKey );
     }
 }

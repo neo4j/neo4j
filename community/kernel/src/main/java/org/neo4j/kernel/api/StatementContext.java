@@ -131,10 +131,27 @@ public interface StatementContext
      * 
      * @param labelId the label id to attach the rule to.
      * @param propertyKey the property key to index.
+     * @return the created rule.
      * @throws ConstraintViolationKernelException if a similar or conflicting rule already exists.
      */
-    void addIndexRule( long labelId, long propertyKey ) throws ConstraintViolationKernelException;
+    IndexRule addIndexRule( long labelId, long propertyKey ) throws ConstraintViolationKernelException;
+    
+    /**
+     * Returns the index rule ID for the given labelId and propertyKey.
+     * 
+     * @param labelId the label id for the index rule.
+     * @param propertyKey the property key for the index rule.
+     * @return the index rule id.
+     * @throws SchemaRuleNotFoundException if no such index rule exists.
+     */
+    IndexRule getIndexRule( long labelId, long propertyKey ) throws SchemaRuleNotFoundException;
 
+    /**
+     * @param labelId the label to get rules for.
+     * @return all rule for that labelId.
+     */
+    Iterable<IndexRule> getIndexRules( long labelId );
+    
     /**
      * Drops a {@link IndexRule} from the database
      *
@@ -142,23 +159,7 @@ public interface StatementContext
      * @param propertyKey the property key to index.
      * @throws ConstraintViolationKernelException if the index is not found
      */
-    void dropIndexRule( long labelId, long propertyKey ) throws ConstraintViolationKernelException;
-
-    /**
-     * @param labelId the label to get rules for.
-     * @return all indexed properties keys for that labelId.
-     */
-    Iterable<Long> getIndexedProperties( long labelId );
-
-    /**
-     * @param labelId the label id for the rule.
-     * @param propertyKey the property key if for the rule.
-     * @return the index state of the index rule for the given label and property key.
-     * @throws LabelNotFoundKernelException if label doesn't exist.
-     * @throws PropertyKeyNotFoundException if property key doesn't exist.
-     */
-    IndexRule.State getIndexState( long labelId, long propertyKey )
-            throws LabelNotFoundKernelException, PropertyKeyNotFoundException, SchemaRuleNotFoundException;
+    void dropIndexRule( IndexRule indexRule ) throws ConstraintViolationKernelException;
 
     /**
      * Returns a property key id for a property key. If the key doesn't exist prior to

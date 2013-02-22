@@ -47,7 +47,6 @@ public class UseJOTMAsTxManagerIT
 {
     private final TransactionEventHandler<Object> failsBeforeCommitTransactionHandler = new TransactionEventHandler<Object>()
     {
-
         @Override
         public Object beforeCommit( TransactionData data ) throws Exception
         {
@@ -67,7 +66,6 @@ public class UseJOTMAsTxManagerIT
             // TODO Auto-generated method stub
             
         }
-        
     };
 
     // TODO: This is meant to be a documented test case.

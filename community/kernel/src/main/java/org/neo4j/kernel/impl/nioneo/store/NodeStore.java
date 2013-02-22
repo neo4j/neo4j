@@ -320,8 +320,8 @@ public class NodeStore extends AbstractStore implements Store, RecordStore<NodeR
 
     public long[] getDynamicLabelsArray( Iterable<DynamicRecord> records )
     {
-        return (long[]) dynamicLabelStore.getRightArray( AbstractDynamicStore.readFullByteArray(
-                dynamicLabelStore, records, PropertyType.ARRAY ) );
+        return (long[]) dynamicLabelStore.getRightArray( dynamicLabelStore.readFullByteArray(
+                records, PropertyType.ARRAY ) );
     }
     
     public void updateDynamicLabelRecords( Iterable<DynamicRecord> dynamicLabelRecords )

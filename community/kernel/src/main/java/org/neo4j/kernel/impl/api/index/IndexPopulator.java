@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import org.neo4j.kernel.api.StatementContext;
-
 public interface IndexPopulator
 {
     /**
@@ -46,5 +44,5 @@ public interface IndexPopulator
     /**
      * Called to signal end of background index population
      */
-    void done(StatementContext ctx);
+    void done();
 }

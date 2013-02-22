@@ -102,26 +102,30 @@ public class InteractionStoppingStatementContext implements StatementContext
     }
 
     @Override
-    public void addIndexRule( long labelId, long propertyKey ) throws ConstraintViolationKernelException
+    public IndexRule addIndexRule( long labelId, long propertyKey ) throws ConstraintViolationKernelException
     {
         assertOperationsAllowed();
-        delegate.addIndexRule( labelId, propertyKey );
+        return delegate.addIndexRule( labelId, propertyKey );
     }
 
     @Override
-    public void dropIndexRule( long labelId, long propertyKey ) throws ConstraintViolationKernelException
+    public IndexRule getIndexRule( long labelId, long propertyKey ) throws SchemaRuleNotFoundException
     {
-        assertOperationsAllowed();
-        delegate.dropIndexRule( labelId, propertyKey );
+        return delegate.getIndexRule( labelId, propertyKey );
     }
 
     @Override
-    public Iterable<Long> getIndexedProperties( long labelId )
+    public void dropIndexRule( IndexRule indexRule ) throws ConstraintViolationKernelException
     {
-        assertOperationsAllowed();
-        return delegate.getIndexedProperties( labelId );
+        delegate.dropIndexRule( indexRule );
     }
-    
+
+    @Override
+    public Iterable<IndexRule> getIndexRules( long labelId )
+    {
+        return delegate.getIndexRules( labelId );
+    }
+
     @Override
     public long getOrCreatePropertyKeyId( String propertyKey )
     {
@@ -141,14 +145,6 @@ public class InteractionStoppingStatementContext implements StatementContext
     {
         assertOperationsAllowed();
         return delegate.getPropertyKeyName( propertyId );
-    }
-
-    @Override
-    public IndexRule.State getIndexState( long labelId, long propertyKey )
-            throws LabelNotFoundKernelException, PropertyKeyNotFoundException, SchemaRuleNotFoundException
-    {
-        assertOperationsAllowed();
-        return delegate.getIndexState( labelId, propertyKey );
     }
 
     private void assertOperationsAllowed()

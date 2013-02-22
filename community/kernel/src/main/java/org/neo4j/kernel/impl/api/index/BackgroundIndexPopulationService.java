@@ -77,7 +77,7 @@ public class BackgroundIndexPopulationService implements IndexPopulationService
             throw new ThisShouldNotHappenError( "Mattias", "Property " + propertyKey + " should exist" );
         }
         
-        // TODO task management
+        // TODO task management including handling of failures during population.
         IndexPopulator populator = indexManipulatorMapper.getPopulator( index );
         IndexPopulationJob job = new IndexPopulationJob( labelId, propertyKeyId, populator, neoStore, ctxProvider );
         populationExecutor.submit( job );

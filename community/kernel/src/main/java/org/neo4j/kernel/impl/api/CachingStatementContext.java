@@ -41,6 +41,7 @@ package org.neo4j.kernel.impl.api;
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.map;
 
+import java.util.Collection;
 import java.util.Set;
 
 import org.neo4j.helpers.Function;
@@ -52,14 +53,13 @@ import org.neo4j.kernel.impl.nioneo.store.SchemaRule.Kind;
 
 public class CachingStatementContext extends DelegatingStatementContext
 {
-    private static final Function<? super SchemaRule, Long> INDEX_RULE_PROPERTY_KEY =
-            new Function<SchemaRule, Long>()
+    private static final Function<? super SchemaRule, IndexRule> TO_INDEX_RULE =
+            new Function<SchemaRule, IndexRule>()
     {
         @Override
-        public Long apply( SchemaRule from )
+        public IndexRule apply( SchemaRule from )
         {
-            IndexRule rule = (IndexRule) from;
-            return rule.getPropertyKeys()[0];
+            return (IndexRule) from;
         }
     };
     private final PersistenceCache persistenceCache;
@@ -109,17 +109,17 @@ public class CachingStatementContext extends DelegatingStatementContext
     }
 
     @Override
-    public Iterable<Long> getIndexedProperties( long labelId )
+    public Iterable<IndexRule> getIndexRules( long labelId )
     {
-        Iterable<SchemaRule> filtered = filter( new Predicate<SchemaRule>()
+        Collection<SchemaRule> schemaRules = schemaCache.getSchemaRules( labelId );
+        Iterable<SchemaRule> filteredRules = filter( new Predicate<SchemaRule>()
         {
             @Override
             public boolean accept( SchemaRule item )
             {
                 return item.getKind() == Kind.INDEX_RULE;
             }
-        }, schemaCache.getSchemaRules( labelId ) );
-        
-        return map( INDEX_RULE_PROPERTY_KEY, filtered );
+        }, schemaRules );
+        return map( TO_INDEX_RULE, filteredRules );
     }
 }

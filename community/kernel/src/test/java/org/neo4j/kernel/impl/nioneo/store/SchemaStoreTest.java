@@ -57,7 +57,7 @@ public class SchemaStoreTest
         expected.put( POPULATING.toByte() );
         expected.putShort( (short) 1 );
         expected.putLong( propertyKey );
-        SchemaRule indexRule = new IndexRule( store.nextId(), labelId, POPULATING, new long[] {propertyKey} );
+        SchemaRule indexRule = new IndexRule( store.nextId(), labelId, POPULATING, propertyKey );
 
         // WHEN
         Collection<DynamicRecord> records = store.allocateFrom( indexRule );
@@ -82,9 +82,9 @@ public class SchemaStoreTest
     {
         // GIVEN
         Collection<SchemaRule> rules = Arrays.<SchemaRule>asList(
-                new IndexRule( store.nextId(), 0, POPULATING, new long[] {5} ),
-                new IndexRule( store.nextId(), 1, POPULATING, new long[] {6} ),
-                new IndexRule( store.nextId(), 1, POPULATING, new long[] {7} ) );
+                new IndexRule( store.nextId(), 0, POPULATING, 5 ),
+                new IndexRule( store.nextId(), 1, POPULATING, 6 ),
+                new IndexRule( store.nextId(), 1, POPULATING, 7 ) );
         for ( SchemaRule rule : rules )
             storeRule( rule );
 
@@ -94,46 +94,47 @@ public class SchemaStoreTest
         // THEN
         assertEquals( rules, readRules );
     }
-    
-    @Test
-    public void storeAndLoadSingleLongRule() throws Exception
-    {
-        // GIVEN
-
-        Collection<SchemaRule> rules = Arrays.<SchemaRule>asList( createLongIndexRule( 0, 50 ) );
-        for ( SchemaRule rule : rules )
-            storeRule( rule );
-
-        // WHEN
-        Collection<SchemaRule> readRules = asCollection( store.loadAll() );
-
-        // THEN
-        assertEquals( rules, readRules );
-    }
-
-    @Test
-    public void storeAndLoadAllLongRules() throws Exception
-    {
-        // GIVEN
-        Collection<SchemaRule> rules = Arrays.<SchemaRule>asList(
-                createLongIndexRule( 0, 100 ), createLongIndexRule( 1, 6 ), createLongIndexRule( 2, 50 ) );
-        for ( SchemaRule rule : rules )
-            storeRule( rule );
-
-        // WHEN
-        Collection<SchemaRule> readRules = asCollection( store.loadAll() );
-
-        // THEN
-        assertEquals( rules, readRules );
-    }
-
-    private IndexRule createLongIndexRule( long label, int numberOfPropertyKeys )
-    {
-        long[] propertyKeys = new long[numberOfPropertyKeys];
-        for ( int i = 0; i < propertyKeys.length; i++ )
-            propertyKeys[i] = i;
-        return new IndexRule( store.nextId(), label, POPULATING, propertyKeys );
-    }
+  
+//    ENABLE WHEN MULTIPLE PROPERTY KEYS PER INDEX RULE IS SUPPORTED
+//    @Test
+//    public void storeAndLoadSingleLongRule() throws Exception
+//    {
+//        // GIVEN
+//
+//        Collection<SchemaRule> rules = Arrays.<SchemaRule>asList( createLongIndexRule( 0, 50 ) );
+//        for ( SchemaRule rule : rules )
+//            storeRule( rule );
+//
+//        // WHEN
+//        Collection<SchemaRule> readRules = asCollection( store.loadAll() );
+//
+//        // THEN
+//        assertEquals( rules, readRules );
+//    }
+//
+//    @Test
+//    public void storeAndLoadAllLongRules() throws Exception
+//    {
+//        // GIVEN
+//        Collection<SchemaRule> rules = Arrays.<SchemaRule>asList(
+//                createLongIndexRule( 0, 100 ), createLongIndexRule( 1, 6 ), createLongIndexRule( 2, 50 ) );
+//        for ( SchemaRule rule : rules )
+//            storeRule( rule );
+//
+//        // WHEN
+//        Collection<SchemaRule> readRules = asCollection( store.loadAll() );
+//
+//        // THEN
+//        assertEquals( rules, readRules );
+//    }
+//
+//    private IndexRule createLongIndexRule( long label, int numberOfPropertyKeys )
+//    {
+//        long[] propertyKeys = new long[numberOfPropertyKeys];
+//        for ( int i = 0; i < propertyKeys.length; i++ )
+//            propertyKeys[i] = i;
+//        return new IndexRule( store.nextId(), label, POPULATING, propertyKeys );
+//    }
 
     private long storeRule( SchemaRule rule )
     {

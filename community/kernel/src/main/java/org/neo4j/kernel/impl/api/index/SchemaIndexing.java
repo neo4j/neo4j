@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import static org.neo4j.kernel.impl.api.index.IndexPopulationService.NO_POPULATION_SERVICE;
+
 import org.neo4j.kernel.ThreadToStatementContextBridge;
 import org.neo4j.kernel.api.IndexPopulatorMapper;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
@@ -37,10 +39,29 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
  */
 public class SchemaIndexing extends LifecycleAdapter
 {
+    // TODO pull out an interface instead of overriding all methods
+    public static final SchemaIndexing NO_INDEXING = new SchemaIndexing( null, null, null )
+    {
+        @Override
+        public void start() throws Throwable
+        {
+        }
+        
+        @Override
+        public void stop() throws Throwable
+        {
+        }
+        
+        @Override
+        public void indexUpdates( Iterable<NodePropertyUpdate> updates )
+        {
+        }
+    };
+    
     private final XaDataSourceManager dataSourceManager;
     private final ThreadToStatementContextBridge ctxProvider;
     private NeoStore neoStore;
-    private IndexPopulationService populationService;
+    private IndexPopulationService populationService = NO_POPULATION_SERVICE;
     private final IndexPopulatorMapper populatorMapper;
     
     public SchemaIndexing( XaDataSourceManager dataSourceManager, ThreadToStatementContextBridge ctxProvider,
@@ -72,11 +93,14 @@ public class SchemaIndexing extends LifecycleAdapter
     public void stop() throws Throwable
     {
         populationService.shutdown();
-        populationService = null;
+        populationService = NO_POPULATION_SERVICE;
     }
     
     public void indexUpdates( Iterable<NodePropertyUpdate> updates )
     {
+        // If we're not yet started (i.e. most likely in recovery mode) the population service
+        // points to a "no-op" index service. This is fine because we haven't as of yet started
+        // any population job so just ignore those.
         populationService.indexUpdates( updates );
     }
 }

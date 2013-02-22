@@ -40,10 +40,10 @@ public class ConstraintEvaluatingStatementContextTest
     {
         // GIVEN
         long id = 3, label = 0, propertyKey = 7;
-        IndexRule rule = new IndexRule( id, label, POPULATING, new long[] {propertyKey} );
+        IndexRule rule = new IndexRule( id, label, POPULATING, propertyKey );
         StatementContext inner = Mockito.mock(StatementContext.class);
         ConstraintEvaluatingStatementContext ctx = new ConstraintEvaluatingStatementContext( inner );
-        when( inner.getIndexedProperties( rule.getLabel() ) ).thenReturn( asList( propertyKey ) );
+        when( inner.getIndexRules( rule.getLabel() ) ).thenReturn( asList( rule ) );
 
         // WHEN
         try

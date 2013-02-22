@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.nioneo.store;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.kernel.impl.api.index.SchemaIndexing.NO_INDEXING;
 
 import java.io.File;
 import java.io.IOException;
@@ -157,8 +158,8 @@ public class TestNeoStore
                 new XaFactory(config, TxIdGenerator.DEFAULT, new PlaceboTm( lockManager, TxIdGenerator.DEFAULT ),
                         new DefaultLogBufferFactory(), fileSystem, new DevNullLoggingService(), RecoveryVerifier.ALWAYS_VALID,
                         LogPruneStrategies.NO_PRUNING ), TransactionStateFactory.noStateFactory( new DevNullLoggingService() ),
-                        noCacheAccess(),
-                        null, new TransactionInterceptorProviders( Collections.<TransactionInterceptorProvider>emptyList(), new DependencyResolver()
+                        noCacheAccess(), NO_INDEXING,
+                        new TransactionInterceptorProviders( Collections.<TransactionInterceptorProvider>emptyList(), new DependencyResolver()
         {
             @Override
             public <T> T resolveDependency( Class<T> type ) throws IllegalArgumentException

@@ -315,9 +315,9 @@ public class PersistenceManager
         }
     }
 
-    public void dropSchemaRule( SchemaRule rule )
+    public void dropSchemaRule( long ruleId )
     {
-        getResource( true ).dropSchemaRule( rule.getId() );
+        getResource( true ).dropSchemaRule( ruleId );
     }
 
     private class TxCommitHook implements Synchronization

@@ -38,6 +38,7 @@ import org.neo4j.kernel.ThreadToStatementContextBridge;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.TransactionContext;
+import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.test.ImpermanentGraphDatabase;
 
 public class ITKernelAPI
@@ -352,13 +353,14 @@ public class ITKernelAPI
         long labelId = 5, propertyKey = 8;
 
         // WHEN
-        statement.addIndexRule( labelId, propertyKey );
+        IndexRule rule = statement.addIndexRule( labelId, propertyKey );
         tx.success();
         tx.finish();
 
         // THEN
         statement = statementContextProvider.getCtxForReading();
-        assertEquals( asSet( propertyKey ), asSet( statement.getIndexedProperties( labelId ) ) );
+        assertEquals( asSet( rule ), asSet( statement.getIndexRules( labelId ) ) );
+        assertEquals( rule, statement.getIndexRule( labelId, propertyKey ) );
     }
     
     @Test
@@ -368,7 +370,7 @@ public class ITKernelAPI
         long labelId = 5, propertyKey = 8;
         Transaction tx = db.beginTx();
         StatementContext statement = statementContextProvider.getCtxForWriting();
-        statement.addIndexRule( labelId, propertyKey );
+        IndexRule existingRule = statement.addIndexRule( labelId, propertyKey );
         tx.success();
         tx.finish();
 
@@ -376,13 +378,13 @@ public class ITKernelAPI
         tx = db.beginTx();
         statement = statementContextProvider.getCtxForWriting();
         long propertyKey2 = 10;
-        statement.addIndexRule( labelId, propertyKey2 );
-        Set<Long> indexRulesInTx = asSet( statement.getIndexedProperties( labelId ) );
+        IndexRule addedRule = statement.addIndexRule( labelId, propertyKey2 );
+        Set<IndexRule> indexRulesInTx = asSet( statement.getIndexRules( labelId ) );
         tx.success();
         tx.finish();
 
         // THEN
-        assertEquals( asSet( propertyKey, propertyKey2 ), indexRulesInTx );
+        assertEquals( asSet( existingRule, addedRule ), indexRulesInTx );
     }
     
     @Test
@@ -394,12 +396,12 @@ public class ITKernelAPI
         StatementContext statement = statementContextProvider.getCtxForWriting();
 
         // WHEN
-        statement.addIndexRule( labelId, propertyKey );
+        IndexRule rule = statement.addIndexRule( labelId, propertyKey );
         // don't mark as success
         tx.finish();
 
         // THEN
-        assertEquals( asSet(), asSet( statementContextProvider.getCtxForReading().getIndexedProperties( labelId ) ) );
+        assertEquals( asSet(), asSet( statementContextProvider.getCtxForReading().getIndexRules( labelId ) ) );
     }
     
     private GraphDatabaseAPI db;

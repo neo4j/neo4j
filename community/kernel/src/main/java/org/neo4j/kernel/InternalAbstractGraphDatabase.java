@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel;
 
-import static org.neo4j.helpers.collection.IteratorUtil.single;
 import static org.slf4j.impl.StaticLoggerBinder.getSingleton;
 
 import java.io.File;
@@ -60,6 +59,7 @@ import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.Settings;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.IndexPopulatorMapperProvider;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.configuration.Config;
@@ -228,7 +228,8 @@ public abstract class InternalAbstractGraphDatabase
     {
         this.params = params;
         
-        this.indexPopulatorMapper = single( indexPopulatorMappers );
+        // TODO singleOrNull since there's no main implemenation of it
+        this.indexPopulatorMapper = IteratorUtil.singleOrNull( indexPopulatorMappers );
 
         dependencyResolver = new DependencyResolverImpl();
 
@@ -498,8 +499,10 @@ public abstract class InternalAbstractGraphDatabase
         
         cacheBridge = new BridgingCacheAccess( nodeManager, schemaCache );
         
-        schemaIndexing = life.add( new SchemaIndexing( xaDataSourceManager, statementContextProvider,
-                indexPopulatorMapper.newMapper() ) );
+        schemaIndexing = indexPopulatorMapper != null ? 
+                life.add( new SchemaIndexing( xaDataSourceManager, statementContextProvider,
+                        indexPopulatorMapper.newMapper() ) ) :
+                SchemaIndexing.NO_INDEXING;
 
         createNeoDataSource();
 

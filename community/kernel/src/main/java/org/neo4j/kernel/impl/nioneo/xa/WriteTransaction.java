@@ -47,7 +47,6 @@ import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.NestingIterable;
 import org.neo4j.kernel.impl.api.index.NodePropertyUpdate;
-import org.neo4j.kernel.impl.api.index.PropertyPhysicalToLogicalConverter;
 import org.neo4j.kernel.impl.api.index.SchemaIndexing;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.core.PropertyIndex;
@@ -534,6 +533,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             
             // property change set for index updates
             Iterable<NodePropertyUpdate> updates = convertIntoLogicalPropertyUpdates( propCommands );
+            schemaIndexing.indexUpdates( updates );
             
             if ( isRecovered )
                 neoStore.setRecoveredStatus( true );
@@ -567,13 +567,13 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
 
     private Iterable<NodePropertyUpdate> convertIntoLogicalPropertyUpdates( Iterable<PropertyCommand> propertyCommands )
     {
+        final PropertyStore propertyStore = getPropertyStore();
         return new NestingIterable<NodePropertyUpdate, PropertyCommand>( propertyCommands )
         {
             @Override
             protected Iterator<NodePropertyUpdate> createNestedIterator( PropertyCommand command )
             {
-                return PropertyPhysicalToLogicalConverter.INSTANCE.apply(
-                        Pair.of( command.getBefore(), command.getAfter() ) ).iterator();
+                return propertyStore.toLogicalUpdates( command.getBefore(), command.getAfter() ).iterator();
             }
         };
     }

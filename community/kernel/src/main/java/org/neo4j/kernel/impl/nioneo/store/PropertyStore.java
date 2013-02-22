@@ -33,6 +33,8 @@ import org.neo4j.helpers.UTF8;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.api.index.NodePropertyUpdate;
+import org.neo4j.kernel.impl.api.index.PropertyPhysicalToLogicalConverter;
 import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
 
@@ -62,6 +64,7 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
     private DynamicStringStore stringPropertyStore;
     private PropertyIndexStore propertyIndexStore;
     private DynamicArrayStore arrayPropertyStore;
+    private final PropertyPhysicalToLogicalConverter physicalToLogicalConverter;
 
     public PropertyStore(File fileName, Config configuration,
                          IdGeneratorFactory idGeneratorFactory, WindowPoolFactory windowPoolFactory,
@@ -74,7 +77,7 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
         this.stringPropertyStore = stringPropertyStore;
         this.propertyIndexStore = propertyIndexStore;
         this.arrayPropertyStore = arrayPropertyStore;
-
+        this.physicalToLogicalConverter = new PropertyPhysicalToLogicalConverter( this );
     }
 
     @Override
@@ -595,33 +598,33 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
         return UTF8.encode( string );
     }
 
-    public static Object getStringFor( DynamicStringStore store, PropertyBlock propertyBlock )
-    {
-        return getStringFor( store, propertyBlock.getSingleValueLong(), propertyBlock.getValueRecords() );
-    }
-
-    public static Object getStringFor( DynamicStringStore store, long startRecord, Collection<DynamicRecord> dynamicRecords )
-    {
-        Pair<byte[], byte[]> source = AbstractDynamicStore.readFullByteArray( store, dynamicRecords, PropertyType.STRING );
-        // A string doesn't have a header in the data array
-        return getStringFor( source.other() );
-    }
-
-    public static Object getStringFor( byte[] byteArray )
+    public static Object decodeString( byte[] byteArray )
     {
         return UTF8.decode( byteArray );
     }
-
-    public static Object getArrayFor( DynamicArrayStore store, PropertyBlock propertyBlock )
+    
+    public Object getStringFor( PropertyBlock propertyBlock )
     {
-        assert !propertyBlock.isLight();
-        return getArrayFor( store, propertyBlock.getValueRecords() );
+        return getStringFor( propertyBlock.getSingleValueLong(), propertyBlock.getValueRecords() );
     }
 
-    public static Object getArrayFor( DynamicArrayStore store, Iterable<DynamicRecord> records )
+    public Object getStringFor( long startRecord, Collection<DynamicRecord> dynamicRecords )
     {
-        return store.getRightArray(
-                AbstractDynamicStore.readFullByteArray( store, records, PropertyType.ARRAY ) );
+        Pair<byte[], byte[]> source = stringPropertyStore.readFullByteArray( dynamicRecords, PropertyType.STRING );
+        // A string doesn't have a header in the data array
+        return decodeString( source.other() );
+    }
+
+    public Object getArrayFor( PropertyBlock propertyBlock )
+    {
+        assert !propertyBlock.isLight();
+        return getArrayFor( propertyBlock.getValueRecords() );
+    }
+
+    public Object getArrayFor( Iterable<DynamicRecord> records )
+    {
+        return arrayPropertyStore.getRightArray(
+                arrayPropertyStore.readFullByteArray( records, PropertyType.ARRAY ) );
     }
 
     @Override
@@ -701,5 +704,10 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
             nextProp = propRecord.getNextProp();
         }
         return toReturn;
+    }
+    
+    public Iterable<NodePropertyUpdate> toLogicalUpdates( PropertyRecord before, PropertyRecord after )
+    {
+        return physicalToLogicalConverter.apply( Pair.of( before, after ) );
     }
 }

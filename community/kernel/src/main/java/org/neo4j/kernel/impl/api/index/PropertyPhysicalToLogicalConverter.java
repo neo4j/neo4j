@@ -30,13 +30,15 @@ import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.nioneo.store.PropertyBlock;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
+import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
 
 public class PropertyPhysicalToLogicalConverter implements Function<Pair<PropertyRecord,PropertyRecord>, Iterable<NodePropertyUpdate>>
 {
-    public static final PropertyPhysicalToLogicalConverter INSTANCE = new PropertyPhysicalToLogicalConverter();
-    
-    private PropertyPhysicalToLogicalConverter()
+    private final PropertyStore propertyStore;
+
+    public PropertyPhysicalToLogicalConverter( PropertyStore propertyStore )
     {
+        this.propertyStore = propertyStore;
     }
     
     @Override
@@ -90,6 +92,6 @@ public class PropertyPhysicalToLogicalConverter implements Function<Pair<Propert
         if ( block == null )
             return null;
         
-        return block.getType().getValue( block, null );
+        return block.getType().getValue( block, propertyStore );
     }
 }

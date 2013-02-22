@@ -22,25 +22,31 @@ package org.neo4j.kernel.impl.api;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.helpers.Exceptions.launderedException;
+import static org.neo4j.helpers.collection.Iterables.option;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.Map;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.neo4j.kernel.api.ConstraintViolationKernelException;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 import org.neo4j.kernel.api.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
+import org.neo4j.kernel.impl.nioneo.store.IndexRule.State;
 
 public class TransactionStateAwareStatementContextTest
 {
@@ -131,11 +137,11 @@ public class TransactionStateAwareStatementContextTest
         commitNoLabels();
 
         // WHEN
-        txContext.addIndexRule( labelId1, key1 );
+        IndexRule rule = txContext.addIndexRule( labelId1, key1 );
 
         // THEN
-        assertEquals( asSet( key1 ), asSet( txContext.getIndexedProperties( labelId1 ) ) );
-        assertEquals( asSet(), asSet( store.getIndexedProperties( labelId1 ) ) );
+        assertEquals( asSet( rule ), asSet( txContext.getIndexRules( labelId1 ) ) );
+        verify( store ).addIndexRule( labelId1, key1 );
     }
 
     @Test
@@ -145,27 +151,11 @@ public class TransactionStateAwareStatementContextTest
         commitNoLabels();
 
         // WHEN
-        txContext.addIndexRule( labelId1, key1 );
-        txContext.addIndexRule( labelId1, key2 );
+        IndexRule rule1 = txContext.addIndexRule( labelId1, key1 );
+        IndexRule rule2 = txContext.addIndexRule( labelId1, key2 );
 
         // THEN
-        assertEquals( asSet( key1, key2 ), asSet( txContext.getIndexedProperties( labelId1 ) ) );
-        assertEquals( asSet(), asSet( store.getIndexedProperties( labelId1 ) ) );
-    }
-
-    @Test(expected = ConstraintViolationKernelException.class)
-    public void addedExistingRuleShouldFail() throws Exception
-    {
-        // GIVEN
-        commitNoLabels();
-
-        // WHEN
-        txContext.addIndexRule( labelId1, key1 );
-        txContext.addIndexRule( labelId1, key1 );
-
-        // THEN
-        assertEquals( asSet( key1 ), asSet( txContext.getIndexedProperties( labelId1 ) ) );
-        assertEquals( asSet(), asSet( store.getIndexedProperties( labelId1 ) ) );
+        assertEquals( asSet( rule1, rule2 ), asSet( txContext.getIndexRules( labelId1 ) ) );
     }
 
     @Test
@@ -182,21 +172,6 @@ public class TransactionStateAwareStatementContextTest
         verify( store, never() ).addLabelToNode( labelId1, nodeId );
     }
     
-    @Test
-    public void unsuccessfulCloseShouldntDelegateDownRules() throws Exception
-    {
-        // GIVEN
-        commitNoLabels();
-        txContext.addIndexRule( labelId1, key1 );
-
-        // WHEN
-        txContext.close( false );
-
-        // THEN
-        verify( store, never() ).addIndexRule( labelId1, key1 );
-    }
-
-
     @Test
     public void successfulCloseShouldDelegateDownLabels() throws Exception
     {
@@ -314,28 +289,83 @@ public class TransactionStateAwareStatementContextTest
     {
         // GIVEN
         commitLabels( labelId1 );
-        txContext.addIndexRule( labelId1, key1 );
-
-        // WHEN
-        IndexRule.State state = txContext.getIndexState( labelId1, key1 );
+        IndexRule rule = txContext.addIndexRule( labelId1, key1 );
 
         // THEN
-        assertEquals( IndexRule.State.POPULATING, state );
-    }
-
-    @Test(expected = SchemaRuleNotFoundException.class)
-    public void shouldThrowNotFoundWhenAskingForStateOfNonExistentIndex() throws Exception
-    {
-        // GIVEN
-        commitLabels( labelId1 );
-        when(store.getIndexState( labelId1, key1 )).thenThrow( new SchemaRuleNotFoundException( "" ) );
-
-        // WHEN
-        txContext.getIndexState( labelId1, key1 );
+        assertEquals( IndexRule.State.POPULATING, rule.getState() );
     }
     
+    @Test
+    public void shouldReturnNonExistentRuleAddedInTransaction() throws Exception
+    {
+        // GIVEN
+        // -- non-existent rule added in the transaction
+        txContext.addIndexRule( labelId1, key1 );
+        
+        // WHEN
+        IndexRule rule = txContext.getIndexRule( labelId1, key1 );
+        Iterable<IndexRule> labelRules = txContext.getIndexRules( labelId1 );
+        
+        // THEN
+        IndexRule expectedRule = new IndexRule( rule.getId(), labelId1, State.POPULATING, key1 );
+        assertEquals( expectedRule, rule );
+        assertEquals( asSet( expectedRule ), asSet( labelRules ) );
+    }
+    
+    @Test
+    public void shouldNotReturnExistentRuleDroppedInTransaction() throws Exception
+    {
+        // GIVEN
+        // -- a rule that exists in the store
+        IndexRule rule = new IndexRule( ruleId, labelId1, State.POPULATING, key1 );
+        when( store.getIndexRules( labelId1 ) ).thenReturn( option( rule ) );
+        // -- that same rule dropped in the transaction
+        txContext.dropIndexRule( rule );
+        
+        // WHEN
+        assertException( getIndexRule(), SchemaRuleNotFoundException.class );
+        Iterable<IndexRule> rulesByLabel = txContext.getIndexRules( labelId1 );
+
+        // THEN
+        assertEquals( asSet(), asSet( rulesByLabel ) );
+    }
+    
+    private ExceptionExpectingFunction<SchemaRuleNotFoundException> getIndexRule()
+    {
+        return new ExceptionExpectingFunction<SchemaRuleNotFoundException>()
+        {
+            @Override
+            public void call() throws SchemaRuleNotFoundException
+            {
+                txContext.getIndexRule( labelId1, key1 );
+            }
+        };
+    }
+
+    private interface ExceptionExpectingFunction<E extends Exception>
+    {
+        void call() throws E;
+    }
+    
+    private <E extends Exception> void assertException( ExceptionExpectingFunction<E> function, Class<? extends E> exception )
+    {
+        try
+        {
+            function.call();
+            fail( "Should have thrown " + exception.getClass().getName() + " exception" );
+        }
+        catch ( Exception e )
+        {
+            if ( !exception.isAssignableFrom( e.getClass() ) )
+                throw launderedException( e );
+        }
+    }
+    
+    // exists
+    
     private final long labelId1 = 10, labelId2 = 12, nodeId = 20;
-    private final long key1 = 45, key2 = 46;
+    private final long key1 = 45, key2 = 46, ruleId = 9;
+    private int rulesCreated;
 
     private StatementContext store;
     private TxState state;
@@ -345,7 +375,17 @@ public class TransactionStateAwareStatementContextTest
     public void before() throws Exception
     {
         store = mock( StatementContext.class );
-        when( store.getIndexedProperties( labelId1 ) ).thenReturn( new LinkedList<Long>() );
+        when( store.getIndexRules( labelId1 ) ).thenReturn( Collections.<IndexRule>emptyList() );
+//        when( store.addIndexRule( labelId1, key1 ) ).thenReturn( new IndexRule( ruleId, labelId1, State.POPULATING, key1 ) );
+        when( store.addIndexRule( anyLong(), anyLong() ) ).thenAnswer( new Answer<IndexRule>()
+        {
+            @Override
+            public IndexRule answer( InvocationOnMock invocation ) throws Throwable
+            {
+                return new IndexRule( ruleId+rulesCreated++, (Long) invocation.getArguments()[0], State.POPULATING,
+                        (Long) invocation.getArguments()[1] );
+            }
+        } );
         state = new TxState();
         txContext = new TransactionStateAwareStatementContext( store, state );
     }

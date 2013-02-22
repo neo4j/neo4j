@@ -61,15 +61,14 @@ class IndexPopulationJob implements Runnable
         this.ctxProvider = ctxProvider;
     }
     
-    @SuppressWarnings( "unchecked" )
     @Override
     public void run()
     {
         indexAllNodes();
 
-        // TODO atomic switchover (?)
-
         indexManipulator.done();
+        
+        // TODO atomic switchover (?)
     }
 
     @SuppressWarnings("unchecked")
@@ -87,11 +86,14 @@ class IndexPopulationJob implements Runnable
         processor.applyFiltered( nodeStore, predicate );
     }
 
-    private void emptyQueue(long maxIndexedId) {
+    private void populateFromQueueIfAvailable( long maxIndexedId )
+    {
         int n = 0;
-        for(NodePropertyUpdate update = queue.poll(); update != null; update = queue.poll(), n++) {
-            if (update.getNodeId() <= maxIndexedId)
-                update.apply(n, indexManipulator);
+        for ( NodePropertyUpdate update = queue.poll(); update != null; update = queue.poll(), n++ )
+        {
+            boolean hasNotYetBeenIndexed = update.getNodeId() <= maxIndexedId;
+            if ( hasNotYetBeenIndexed )
+                update.apply( n, indexManipulator );
         }
     }
 
@@ -106,7 +108,8 @@ class IndexPopulationJob implements Runnable
      */
     public void indexUpdates( Iterable<NodePropertyUpdate> updates )
     {
-        for (NodePropertyUpdate update : updates)
+        // TODO synchronization with the index job thread
+        for ( NodePropertyUpdate update : updates )
             if ( (update.getPropertyKeyId() == propertyKeyId) && (update.hasLabel( labelId )) )
                 queue.add( update );
     }
@@ -128,7 +131,8 @@ class IndexPopulationJob implements Runnable
             indexNodeRecord( node );
 
             // Process queued updates
-            emptyQueue( node.getId() );
+            // TODO synchronization
+            populateFromQueueIfAvailable( node.getId() );
         }
 
         private void indexNodeRecord( NodeRecord node )

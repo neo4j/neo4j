@@ -22,6 +22,7 @@ package org.neo4j.kernel.api;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.kernel.impl.api.index.IndexPopulator;
 
+// TODO confusing name
 public interface IndexPopulatorMapper
 {
     IndexPopulator getPopulator( IndexDefinition index );

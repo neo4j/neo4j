@@ -134,12 +134,12 @@ class TransactionBoundQueryContext(graph: GraphDatabaseAPI) extends QueryContext
     }
   }
 
-  def dropIndexRule(labelIds: Long, propertyKeyId: Long) {
+  def dropIndexRule(labelId: Long, propertyKeyId: Long) {
     try {
-      ctx.dropIndexRule(labelIds, propertyKeyId)
+      ctx.dropIndexRule(ctx.getIndexRule(labelId, propertyKeyId));
     } catch {
       case e: ConstraintViolationKernelException =>
-        val labelName = getLabelName(labelIds)
+        val labelName = getLabelName(labelId)
         val propName = ctx.getPropertyKeyName(propertyKeyId)
         throw new CouldNotDropIndexException(labelName, propName, e)
     }

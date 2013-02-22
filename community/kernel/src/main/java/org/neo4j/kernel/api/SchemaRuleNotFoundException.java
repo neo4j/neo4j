@@ -25,4 +25,9 @@ public class SchemaRuleNotFoundException extends KernelException
     {
         super( message );
     }
+
+    public SchemaRuleNotFoundException( String message, Throwable cause )
+    {
+        super( message, cause );
+    }
 }

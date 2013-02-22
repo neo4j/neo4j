@@ -41,7 +41,14 @@ public class DiffSets<T>
 {
     @SuppressWarnings(
     { "rawtypes", "unchecked" } )
-    private static final DiffSets EMPTY = new DiffSets( Collections.emptySet(), Collections.emptySet() );
+    private static final DiffSets EMPTY = new DiffSets( Collections.emptySet(), Collections.emptySet() )
+    {
+        @Override
+        public Iterable apply( Iterable source )
+        {
+            return source;
+        }
+    };
 
     @SuppressWarnings( "unchecked" )
     public static <T> DiffSets<T> emptyDiffSets()

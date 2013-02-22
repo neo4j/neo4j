@@ -24,7 +24,10 @@ import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
 import java.util.Set;
 
+import org.junit.Before;
 import org.junit.Test;
+import org.neo4j.kernel.impl.nioneo.store.IndexRule;
+import org.neo4j.kernel.impl.nioneo.store.IndexRule.State;
 
 public class TxStateTest
 {
@@ -32,7 +35,6 @@ public class TxStateTest
     public void shouldGetAddedLabels() throws Exception
     {
         // GIVEN
-        TxState state = new TxState();
         state.addLabelToNode( 1, 0 );
         state.addLabelToNode( 1, 1 );
         state.addLabelToNode( 2, 1 );
@@ -48,7 +50,6 @@ public class TxStateTest
     public void shouldGetRemovedLabels() throws Exception
     {
         // GIVEN
-        TxState state = new TxState();
         state.removeLabelFromNode( 1, 0 );
         state.removeLabelFromNode( 1, 1 );
         state.removeLabelFromNode( 2, 1 );
@@ -64,7 +65,6 @@ public class TxStateTest
     public void removeAddedLabelShouldRemoveFromAdded() throws Exception
     {
         // GIVEN
-        TxState state = new TxState();
         state.addLabelToNode( 1, 0 );
         state.addLabelToNode( 1, 1 );
         state.addLabelToNode( 2, 1 );
@@ -80,7 +80,6 @@ public class TxStateTest
     public void addRemovedLabelShouldRemoveFromRemoved() throws Exception
     {
         // GIVEN
-        TxState state = new TxState();
         state.removeLabelFromNode( 1, 0 );
         state.removeLabelFromNode( 1, 1 );
         state.removeLabelFromNode( 2, 1 );
@@ -96,7 +95,6 @@ public class TxStateTest
     public void shouldMapFromAddedLabelToNodes() throws Exception
     {
         // GIVEN
-        TxState state = new TxState();
         state.addLabelToNode( 1, 0 );
         state.addLabelToNode( 2, 0 );
         state.addLabelToNode( 1, 1 );
@@ -114,7 +112,6 @@ public class TxStateTest
     public void shouldMapFromRemovedLabelToNodes() throws Exception
     {
         // GIVEN
-        TxState state = new TxState();
         state.removeLabelFromNode( 1, 0 );
         state.removeLabelFromNode( 2, 0 );
         state.removeLabelFromNode( 1, 1 );
@@ -126,5 +123,48 @@ public class TxStateTest
 
         // THEN
         assertEquals( asSet( 0L, 2L ), asSet( nodes ) );
+    }
+    
+    @Test
+    public void shouldAddAndGetByLabel() throws Exception
+    {
+        // GIVEN
+        long ruleId = 1, labelId = 2, labelId2 = 5, propertyKey = 3;
+        IndexRule rule = newIndexRule( ruleId, labelId, propertyKey );
+        IndexRule rule2 = newIndexRule( ruleId, labelId2, propertyKey );
+        
+        // WHEN
+        state.addIndexRule( rule );
+        state.addIndexRule( rule2 );
+        
+        // THEN
+        assertEquals( asSet( rule ), state.getIndexRuleDiffSetsByLabel( labelId ).getAdded() );
+    }
+
+    @Test
+    public void shouldAddAndGetByRuleId() throws Exception
+    {
+        // GIVEN
+        long ruleId = 1, labelId = 2, propertyKey = 3;
+        IndexRule rule = newIndexRule( ruleId, labelId, propertyKey );
+        
+        // WHEN
+        state.addIndexRule( rule );
+        
+        // THEN
+        assertEquals( asSet( rule ), state.getIndexRuleDiffSets().getAdded() );
+    }
+    
+    private TxState state;
+    
+    @Before
+    public void before() throws Exception
+    {
+        state = new TxState();
+    }
+
+    private IndexRule newIndexRule( long ruleId, long labelId, long propertyKey )
+    {
+        return new IndexRule( ruleId, labelId, State.POPULATING, propertyKey );
     }
 }

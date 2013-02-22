@@ -73,7 +73,7 @@ public class XaDataSourceManager
             .<DataSourceRegistrationListener>newListeners();
     private LifeSupport life = new LifeSupport();
 
-    private StringLogger msgLog;
+    private final StringLogger msgLog;
 
     public XaDataSourceManager( StringLogger msgLog )
     {

@@ -129,7 +129,7 @@ public class DynamicRecord extends Abstract64BitRecord
             if ( type == PropertyType.STRING && data.length <= MAX_CHARS_IN_TO_STRING )
             {
                 buf.append( '"' );
-                buf.append( PropertyStore.getStringFor( data ) );
+                buf.append( PropertyStore.decodeString( data ) );
                 buf.append( "\"," );
             }
             else

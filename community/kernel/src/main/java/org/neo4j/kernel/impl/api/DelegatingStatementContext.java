@@ -91,28 +91,27 @@ public class DelegatingStatementContext implements StatementContext
     }
 
     @Override
-    public void addIndexRule( long labelId, long propertyKey ) throws ConstraintViolationKernelException
+    public IndexRule addIndexRule( long labelId, long propertyKey ) throws ConstraintViolationKernelException
     {
-        delegate.addIndexRule( labelId, propertyKey );
+        return delegate.addIndexRule( labelId, propertyKey );
     }
 
     @Override
-    public void dropIndexRule( long labelId, long propertyKey ) throws ConstraintViolationKernelException
+    public IndexRule getIndexRule( long labelId, long propertyKey ) throws SchemaRuleNotFoundException
     {
-        delegate.dropIndexRule( labelId, propertyKey );
+        return delegate.getIndexRule( labelId, propertyKey );
     }
 
     @Override
-    public IndexRule.State getIndexState( long labelId, long propertyKey )
-            throws LabelNotFoundKernelException, PropertyKeyNotFoundException, SchemaRuleNotFoundException
+    public void dropIndexRule( IndexRule indexRule ) throws ConstraintViolationKernelException
     {
-        return delegate.getIndexState( labelId, propertyKey );
+        delegate.dropIndexRule( indexRule );
     }
 
     @Override
-    public Iterable<Long> getIndexedProperties( long labelId )
+    public Iterable<IndexRule> getIndexRules( long labelId )
     {
-        return delegate.getIndexedProperties( labelId );
+        return delegate.getIndexRules( labelId );
     }
 
     @Override

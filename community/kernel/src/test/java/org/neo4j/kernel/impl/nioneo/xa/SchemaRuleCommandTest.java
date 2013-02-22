@@ -80,7 +80,7 @@ public class SchemaRuleCommandTest
     private final int labelId = 2;
     private final long propertyKey = 8;
     private final long id = 0;
-    private final IndexRule rule = new IndexRule( id, labelId, POPULATING, new long[] {propertyKey} );
+    private final IndexRule rule = new IndexRule( id, labelId, POPULATING, propertyKey );
 
     private Collection<DynamicRecord> serialize( SchemaRule rule, long id )
     {

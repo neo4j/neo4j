@@ -24,6 +24,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.kernel.impl.nioneo.store.IndexRule;
+
 public class TxState
 {
     // Node ID --> NodeState
@@ -31,6 +33,8 @@ public class TxState
     
     // Label ID --> LabelState
     private final Map<Long, LabelState> labelStates = new HashMap<Long, LabelState>();
+    
+    private final DiffSets<IndexRule> ruleDiffSets = new DiffSets<IndexRule>();
     
     public boolean hasChanges()
     {
@@ -102,16 +106,18 @@ public class TxState
         return state == null ? Collections.<Long>emptySet() : state.getNodeDiffSets().getRemoved();
     }
 
-    public void addIndexRule( long labelId, long propertyKey )
+    public void addIndexRule( IndexRule rule )
     {
-        LabelState labelState = getState( labelStates, labelId, LABEL_STATE_CREATOR );
-        labelState.getIndexRuleDiffSets().add( propertyKey );
+        ruleDiffSets.add( rule );
+        LabelState labelState = getState( labelStates, rule.getLabel(), LABEL_STATE_CREATOR );
+        labelState.getIndexRuleDiffSets().add( rule );
     }
 
-    public void removeIndexRule( long labelId, long propertyKey )
+    public void removeIndexRule( IndexRule rule )
     {
-        LabelState labelState = getState( labelStates, labelId, LABEL_STATE_CREATOR );
-        labelState.getIndexRuleDiffSets().remove( propertyKey );
+        ruleDiffSets.remove( rule );
+        LabelState labelState = getState( labelStates, rule.getLabel(), LABEL_STATE_CREATOR );
+        labelState.getIndexRuleDiffSets().remove( rule );
     }
 
     public Iterable<LabelState> getLabelStates()
@@ -119,37 +125,23 @@ public class TxState
         return labelStates.values();
     }
     
-    public DiffSets<Long> getIndexRuleDiffSets( long labelId ) {
-        LabelState state = getState( labelStates, labelId, null );
-        return state == null ? DiffSets.<Long>emptyDiffSets() : state.getIndexRuleDiffSets();
+    public DiffSets<IndexRule> getIndexRuleDiffSetsByLabel( long labelId )
+    {
+        LabelState labelState = getState( labelStates, labelId, null );
+        return labelState != null ? labelState.getIndexRuleDiffSets() : DiffSets.<IndexRule>emptyDiffSets();
     }
 
+    public DiffSets<IndexRule> getIndexRuleDiffSets()
+    {
+        return ruleDiffSets;
+    }
+    
     public boolean hasAddedIndexRule( long labelId, long propertyKey )
     {
         LabelState state = getState( labelStates, labelId, null );
         return state != null ? state.hasAddedIndexRule( propertyKey ) : false;
     }
-
-    public Map<Long,Object> getAddedNodeProperties( long nodeId )
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    public Map<Long,Boolean> getRemovedNodeProperties( long nodeId )
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    public void setNodeProperty( long nodeId, long propertyKeyId, Object value )
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    public void removeNodeProperty( long nodeId, long propertyKeyId )
-    {
-        throw new UnsupportedOperationException();
-    }
-
+    
     private static interface StateCreator<STATE>
     {
         STATE newState( long id );
@@ -217,20 +209,14 @@ public class TxState
         }
     }
     
-    public static class LabelState
+    public static class LabelState extends EntityState
     {
-        private final long id;
         private final DiffSets<Long> nodeDiffSets = new DiffSets<Long>();
-        private final DiffSets<Long> indexRuleDiffSets = new DiffSets<Long>();
+        private final DiffSets<IndexRule> indexRuleDiffSets = new DiffSets<IndexRule>();
 
         LabelState( long id )
         {
-            this.id = id;
-        }
-        
-        public long getId()
-        {
-            return id;
+            super( id );
         }
         
         public DiffSets<Long> getNodeDiffSets()
@@ -238,21 +224,20 @@ public class TxState
             return nodeDiffSets;
         }
         
-        public DiffSets<Long> getIndexRuleDiffSets()
+        public DiffSets<IndexRule> getIndexRuleDiffSets()
         {
             return indexRuleDiffSets;
         }
 
         public boolean hasAddedIndexRule( long propertyKey )
         {
-            for ( long addedKey : indexRuleDiffSets.getAdded() )
+            for ( IndexRule addedRule : indexRuleDiffSets.getAdded() )
             {
-                if ( addedKey == propertyKey )
+                if ( addedRule.getPropertyKey() == propertyKey )
                 {
                     return true;
                 }
             }
-
             return false;
         }
     }

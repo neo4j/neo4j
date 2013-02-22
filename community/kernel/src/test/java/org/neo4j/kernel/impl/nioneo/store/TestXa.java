@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.nioneo.store;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.kernel.impl.api.index.SchemaIndexing.NO_INDEXING;
 import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME;
 
 import java.io.File;
@@ -350,7 +351,7 @@ public class TestXa
                 new XaFactory( config, TxIdGenerator.DEFAULT, txManager,
                         logBufferFactory, fileSystem, new DevNullLoggingService(), RecoveryVerifier.ALWAYS_VALID,
                         LogPruneStrategies.NO_PRUNING ), TransactionStateFactory.noStateFactory( new DevNullLoggingService() ),
-                        noCacheAccess(), null, new TransactionInterceptorProviders( Collections.<TransactionInterceptorProvider>emptyList(),
+                        noCacheAccess(), NO_INDEXING, new TransactionInterceptorProviders( Collections.<TransactionInterceptorProvider>emptyList(),
                         new DependencyResolver()
 
                         {

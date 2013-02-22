@@ -202,9 +202,9 @@ public enum PropertyType
         @Override
         public Object getValue( PropertyBlock block, PropertyStore store )
         {
-            if ( !block.isSuperHeavy() && store == null )
+            if ( store == null )
                 return null;
-            return PropertyStore.getStringFor( store != null ? store.getStringStore() : null, block );
+            return store.getStringFor( block );
         }
 
         @Override
@@ -226,9 +226,9 @@ public enum PropertyType
         @Override
         public Object getValue( PropertyBlock block, PropertyStore store )
         {
-            if ( !block.isSuperHeavy() && store == null )
+            if ( store == null )
                 return null;
-            return PropertyStore.getArrayFor( store != null ? store.getArrayStore() : null, block );
+            return store.getArrayFor( block );
         }
 
         @Override

@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api;
 
 import org.neo4j.kernel.api.ConstraintViolationKernelException;
 import org.neo4j.kernel.api.StatementContext;
+import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 
 public class LockingStatementContext extends DelegatingStatementContext
 {
@@ -47,23 +48,23 @@ public class LockingStatementContext extends DelegatingStatementContext
     }
     
     @Override
-    public void addIndexRule( long labelId, long propertyKey ) throws ConstraintViolationKernelException
+    public IndexRule addIndexRule( long labelId, long propertyKey ) throws ConstraintViolationKernelException
     {
         lockHolder.acquireSchemaWriteLock();
-        delegate.addIndexRule( labelId, propertyKey );
+        return delegate.addIndexRule( labelId, propertyKey );
     }
 
     @Override
-    public void dropIndexRule( long labelId, long propertyKey ) throws ConstraintViolationKernelException
+    public void dropIndexRule( IndexRule indexRule ) throws ConstraintViolationKernelException
     {
         lockHolder.acquireSchemaWriteLock();
-        delegate.dropIndexRule( labelId, propertyKey );
+        delegate.dropIndexRule( indexRule );
     }
 
     @Override
-    public Iterable<Long> getIndexedProperties( long labelId )
+    public Iterable<IndexRule> getIndexRules( long labelId )
     {
         lockHolder.acquireSchemaReadLock();
-        return delegate.getIndexedProperties( labelId );
+        return delegate.getIndexRules( labelId );
     }
 }
