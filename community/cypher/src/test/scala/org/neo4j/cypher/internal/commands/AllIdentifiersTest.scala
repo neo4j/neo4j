@@ -45,7 +45,6 @@ class AllIdentifiersTest extends Assertions {
     assert(x.expressions(symbols) === Map("p" -> Identifier("p")))
   }
 
-  private def getSymbols(k: (String, CypherType)*): SymbolTable = {
-    new SymbolTable(k.toMap)
-  }
+  private def getSymbols(k: (String, CypherType)*): SymbolTable =
+    SymbolTable(k.toMap)
 }

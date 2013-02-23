@@ -59,7 +59,7 @@ class DistinctPipe(source: Pipe, expressions: Map[String, Expression]) extends P
 
   def symbols: SymbolTable = {
     val identifiers = expressions.mapValues(e => e.evaluateType(AnyType(), source.symbols))
-    new SymbolTable(identifiers)
+    SymbolTable(identifiers)
   }
 
   def throwIfSymbolsMissing(symbols: SymbolTable) {
