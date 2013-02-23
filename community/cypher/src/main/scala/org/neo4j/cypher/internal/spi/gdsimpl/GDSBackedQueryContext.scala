@@ -61,7 +61,7 @@ class GDSBackedQueryContext(graph: GraphDatabaseService) extends QueryContext {
       }
 
       def getProperty(obj: Node, propertyKey: String): Any = {
-        obj.getProperty(propertyKey)
+        obj.getProperty(propertyKey, null)
       }
 
       def hasProperty(obj: Node, propertyKey: String): Boolean = {
@@ -101,7 +101,7 @@ class GDSBackedQueryContext(graph: GraphDatabaseService) extends QueryContext {
       }
 
       def getProperty(obj: Relationship, propertyKey: String): Any =
-        obj.getProperty(propertyKey)
+        obj.getProperty(propertyKey, null)
 
       def hasProperty(obj: Relationship, propertyKey: String): Boolean =
         obj.hasProperty(propertyKey)

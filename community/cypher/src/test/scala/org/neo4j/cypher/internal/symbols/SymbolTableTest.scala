@@ -106,7 +106,7 @@ class SymbolTableTest extends Assertions {
 
 
   def createSymbols(elems: (String, CypherType)*): SymbolTable = {
-    new SymbolTable(elems.toMap)
+    SymbolTable(elems.toMap)
   }
 }
 

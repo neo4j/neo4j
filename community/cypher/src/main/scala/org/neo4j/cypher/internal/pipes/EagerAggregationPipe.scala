@@ -43,7 +43,7 @@ class EagerAggregationPipe(source: Pipe, val keyExpressions: Map[String, Express
     val keyIdentifiers = keyExpressions.map(typeExtractor)
     val aggrIdentifiers = aggregations.map(typeExtractor)
 
-    new SymbolTable(keyIdentifiers ++ aggrIdentifiers)
+    SymbolTable(keyIdentifiers ++ aggrIdentifiers)
   }
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) = {

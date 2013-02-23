@@ -91,7 +91,7 @@ class ProfilerPipe(source: Pipe, name: String, rows: Int, dbAccess: Int) extends
     (0 until rows).map(x => ExecutionContext.empty).toIterator
   }
 
-  def symbols: SymbolTable = new SymbolTable()
+  def symbols: SymbolTable = SymbolTable()
 
   def throwIfSymbolsMissing(symbols: SymbolTable) {}
 }
