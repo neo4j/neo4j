@@ -76,13 +76,14 @@ class GDSBackedQueryContext(graph: GraphDatabaseService) extends QueryContext {
         graph.getNodeById(id)
       }
 
-      def indexGet(name: String, key: String, value: Any): Iterable[Node] =
-        graph.index.forNodes(name).get(key, value).asInstanceOf[JIterable[Node]].asScala
+      def indexGet(name: String, key: String, value: Any): Iterator[Node] =
+        graph.index.forNodes(name).get(key, value).iterator().asScala
 
-      def indexQuery(name: String, query: Any): Iterable[Node] =
-        graph.index.forNodes(name).query(name, query).asInstanceOf[JIterable[Node]].asScala
+      def indexQuery(name: String, query: Any): Iterator[Node] =
+        graph.index.forNodes(name).query(name, query).iterator().asScala
 
-      def all: Iterable[Node] = GlobalGraphOperations.at(graph).getAllNodes.asScala
+      def all: Iterator[Node] =
+        GlobalGraphOperations.at(graph).getAllNodes.iterator().asScala
     }
   }
 
@@ -112,13 +113,14 @@ class GDSBackedQueryContext(graph: GraphDatabaseService) extends QueryContext {
       def getById(id: Long): Relationship =
         graph.getRelationshipById(id)
 
-      def indexGet(name: String, key: String, value: Any): Iterable[Relationship] =
-        graph.index.forRelationships(name).get(key, value).asInstanceOf[JIterable[Relationship]].asScala
+      def indexGet(name: String, key: String, value: Any): Iterator[Relationship] =
+        graph.index.forRelationships(name).get(key, value).iterator().asScala
 
-      def indexQuery(name: String, query: Any): Iterable[Relationship] =
-        graph.index.forRelationships(name).query(query).asInstanceOf[JIterable[Relationship]].asScala
+      def indexQuery(name: String, query: Any): Iterator[Relationship] =
+        graph.index.forRelationships(name).query(query).iterator().asScala
 
-      def all: Iterable[Relationship] = GlobalGraphOperations.at(graph).getAllRelationships.asScala
+      def all: Iterator[Relationship] =
+        GlobalGraphOperations.at(graph).getAllRelationships.iterator().asScala
     }
   }
 }

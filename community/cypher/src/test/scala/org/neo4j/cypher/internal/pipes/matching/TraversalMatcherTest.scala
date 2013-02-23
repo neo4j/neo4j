@@ -61,7 +61,7 @@ class TraversalMatcherTest extends GraphDatabaseTestBase {
     assert(result.head.lastRelationship() === r2)
   }
 
-  private def produce(x: Node*) = (_: ExecutionContext, _: QueryState) => x
+  private def produce(x: Node*) = (_: ExecutionContext, _: QueryState) => x.iterator
 
   @Test def tree() {
     /*Data nodes and rels
