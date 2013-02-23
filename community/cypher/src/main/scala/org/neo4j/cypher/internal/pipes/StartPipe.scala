@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.symbols._
 import org.neo4j.cypher.internal.ExecutionContext
 
 abstract class StartPipe[T <: PropertyContainer](source: Pipe, name: String, createSource: EntityProducer[T]) extends PipeWithSource(source) {
-  def this(inner: Pipe, name: String, sourceIterable: Iterable[T]) = this (inner, name, (a,b) => sourceIterable)
+  def this(inner: Pipe, name: String, sourceIterable: Iterator[T]) = this (inner, name, (a,b) => sourceIterable)
 
   def identifierType: CypherType
 
@@ -33,7 +33,7 @@ abstract class StartPipe[T <: PropertyContainer](source: Pipe, name: String, cre
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) = {
     input.flatMap(ctx => {
-      val source: Iterable[T] = createSource(ctx, state)
+      val source = createSource(ctx, state)
       source.map(x => {
         ctx.newWith(name -> x)
       })
@@ -47,14 +47,14 @@ abstract class StartPipe[T <: PropertyContainer](source: Pipe, name: String, cre
   def throwIfSymbolsMissing(symbols: SymbolTable) {}
 }
 
-class NodeStartPipe(source: Pipe, name: String, createSource: (ExecutionContext, QueryState) => Iterable[Node])
+class NodeStartPipe(source: Pipe, name: String, createSource: (ExecutionContext, QueryState) => Iterator[Node])
   extends StartPipe[Node](source, name, createSource) {
   def identifierType = NodeType()
 
   def visibleName = "Nodes"
 }
 
-class RelationshipStartPipe(source: Pipe, name: String, createSource: (ExecutionContext, QueryState) => Iterable[Relationship])
+class RelationshipStartPipe(source: Pipe, name: String, createSource: (ExecutionContext, QueryState) => Iterator[Relationship])
   extends StartPipe[Relationship](source, name, createSource) {
   def identifierType = RelationshipType()
 
