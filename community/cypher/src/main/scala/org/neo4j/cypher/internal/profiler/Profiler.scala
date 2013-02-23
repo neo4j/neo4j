@@ -120,13 +120,13 @@ class ProfilingQueryContext(val inner: QueryContext, val p: Pipe) extends Delega
       inner.setProperty(obj, propertyKey, value)
     }
 
-    override def indexGet(name: String, key: String, value: Any): Iterable[T] = countItems(inner.indexGet(name, key, value))
+    override def indexGet(name: String, key: String, value: Any): Iterator[T] = countItems(inner.indexGet(name, key, value))
 
-    override def indexQuery(name: String, query: Any): Iterable[T] = countItems(inner.indexQuery(name, query))
+    override def indexQuery(name: String, query: Any): Iterator[T] = countItems(inner.indexQuery(name, query))
 
-    override def all: Iterable[T] = countItems(inner.all)
+    override def all: Iterator[T] = countItems(inner.all)
 
-    private def countItems(in: Iterable[T]): Iterable[T] = in.view.map {
+    private def countItems(in: Iterator[T]): Iterator[T] = in.map {
       t =>
         increment()
         t

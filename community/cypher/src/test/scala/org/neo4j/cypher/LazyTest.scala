@@ -26,6 +26,7 @@ import internal.pipes.matching._
 import internal.symbols.IntegerType
 import matching.SingleStep
 import org.neo4j.graphdb._
+import index.{IndexHits, Index, IndexManager}
 import java.util.{Iterator => JIterator}
 import java.lang.{Iterable => JIterable}
 import org.junit.{Test, Before}
@@ -33,6 +34,10 @@ import org.neo4j.graphdb.Traverser.Order
 import org.scalatest.Assertions
 import org.scalatest.mock.MockitoSugar
 import org.mockito.Mockito._
+import org.neo4j.kernel.GraphDatabaseAPI
+import org.neo4j.helpers.collection.IteratorWrapper
+import org.neo4j.kernel.impl.core.NodeManager
+import collection.JavaConverters._
 
 class LazyTest extends ExecutionEngineHelper with Assertions with MockitoSugar {
 
@@ -75,7 +80,7 @@ class LazyTest extends ExecutionEngineHelper with Assertions with MockitoSugar {
     val monitoredNode = new MonitoredNode(a, limiter.monitor)
 
     val step = SingleStep(0, Seq(), Direction.OUTGOING, None, True(), True())
-    val matcher = new MonoDirectionalTraversalMatcher(step, (ctx, state) => Seq(monitoredNode))
+    val matcher = new MonoDirectionalTraversalMatcher(step, (ctx, state) => Iterator(monitoredNode))
     val ctx = internal.ExecutionContext().newWith("a" -> monitoredNode)
 
     //When:
@@ -142,6 +147,25 @@ class LazyTest extends ExecutionEngineHelper with Assertions with MockitoSugar {
     assert(touched, "Query should have been executed")
   }
 
+  @Test def graph_global_queries_are_lazy() {
+    //Given:
+    val (iter, counter) = countElementsPassedThrough(graph.getAllNodes.iterator())
+
+    val fakeGraph = mock[GraphDatabaseAPI]
+    val tx = mock[Transaction]
+    val nodeMgre = mock[NodeManager]
+    when(fakeGraph.getNodeManager).thenReturn(nodeMgre)
+    when(nodeMgre.getAllNodes).thenReturn(iter)
+    when(fakeGraph.beginTx()).thenReturn(tx)
+    val engine = new ExecutionEngine(fakeGraph)
+
+    //When:
+    engine.execute("start n=node(*) return n.number? limit 5").toList
+
+    //Then:
+    assert(counter.count === 5, "Should not have fetched more than this many nodes.")
+  }
+
 
   @Test def traversalmatcherpipe_is_lazy() {
     //Given:
@@ -174,7 +198,6 @@ class LazyTest extends ExecutionEngineHelper with Assertions with MockitoSugar {
     iter.next() // throws exception if we iterate over more than expected to
   }
 
-
   private def createTraversalMatcherPipe(limiter: Limiter): TraversalMatchPipe = {
     val monitoredNode = new MonitoredNode(a, limiter.monitor)
 
@@ -183,8 +206,29 @@ class LazyTest extends ExecutionEngineHelper with Assertions with MockitoSugar {
     val parameterPipe = new ParameterPipe()
 
     val step = trail.toSteps(0).get
-    val matcher = new MonoDirectionalTraversalMatcher(step, (ctx, state) => Seq(monitoredNode))
+    val matcher = new MonoDirectionalTraversalMatcher(step, (ctx, state) => Iterator(monitoredNode))
     new TraversalMatchPipe(parameterPipe, matcher, trail)
+  }
+
+  trait GetCount {
+    def count: Int
+  }
+
+  private def countElementsPassedThrough(in: JIterator[Node]): (JIterator[Node], GetCount) = {
+    var seenNodes = 0
+
+    val countingIterator = new IteratorWrapper[Node, Node](in) {
+      def underlyingObjectToObject(in: Node): Node = {
+        seenNodes += 1
+        in
+      }
+    }
+
+    val counter = new GetCount {
+      def count: Int = seenNodes
+    }
+
+    (countingIterator, counter)
   }
 }
 
@@ -283,3 +327,4 @@ class AIterator(iter: JIterator[Relationship], monitor: () => Unit) extends JIte
     iter.remove()
   }
 }
+
