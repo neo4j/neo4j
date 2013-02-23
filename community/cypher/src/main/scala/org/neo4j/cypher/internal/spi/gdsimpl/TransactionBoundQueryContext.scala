@@ -27,8 +27,6 @@ import collection.JavaConverters._
 import org.neo4j.graphdb.DynamicRelationshipType.withName
 import org.neo4j.cypher.{CouldNotDropIndexException, IndexAlreadyDefinedException}
 import org.neo4j.tooling.GlobalGraphOperations
-import java.lang.{Iterable=>JIterable}
-import scala.Iterable
 
 class TransactionBoundQueryContext(graph: GraphDatabaseAPI) extends QueryContext {
   val tx: Transaction = graph.beginTx()
@@ -38,11 +36,11 @@ class TransactionBoundQueryContext(graph: GraphDatabaseAPI) extends QueryContext
     .getCtxForWriting
 
   def addLabelsToNode(node: Long, labelIds: Iterable[Long]): Int = labelIds.foldLeft(0) {
-    case (count, labelId) => if ( ctx.addLabelToNode(labelId, node) ) count+1 else count 
+    case (count, labelId) => if (ctx.addLabelToNode(labelId, node)) count + 1 else count
   }
 
   def close(success: Boolean) {
-    if ( success )
+    if (success)
       tx.success()
     else
       tx.failure()
@@ -79,7 +77,7 @@ class TransactionBoundQueryContext(graph: GraphDatabaseAPI) extends QueryContext
   val relationshipOps = new RelationshipOperations
 
   def removeLabelsFromNode(node: Long, labelIds: Iterable[Long]): Int = labelIds.foldLeft(0) {
-    case (count, labelId) => if ( ctx.removeLabelFromNode(labelId, node) ) count+1 else count
+    case (count, labelId) => if (ctx.removeLabelFromNode(labelId, node)) count + 1 else count
   }
 
   def replaceLabelsOfNode(node: Long, labelIds: Iterable[Long]) {
@@ -93,13 +91,13 @@ class TransactionBoundQueryContext(graph: GraphDatabaseAPI) extends QueryContext
 
     def getById(id: Long) = graph.getNodeById(id)
 
-    def all: Iterable[Node] = GlobalGraphOperations.at(graph).getAllNodes.asScala
+    def all: Iterator[Node] = GlobalGraphOperations.at(graph).getAllNodes.iterator().asScala
 
-    def indexGet(name: String, key: String, value: Any): Iterable[Node] =
-      graph.index.forNodes(name).get(key, value).asInstanceOf[JIterable[Node]].asScala
+    def indexGet(name: String, key: String, value: Any): Iterator[Node] =
+      graph.index.forNodes(name).get(key, value).iterator().asScala
 
-    def indexQuery(name: String, query: Any): Iterable[Node] =
-      graph.index.forNodes(name).query(query).asInstanceOf[JIterable[Node]].asScala
+    def indexQuery(name: String, query: Any): Iterator[Node] =
+      graph.index.forNodes(name).query(query).iterator().asScala
   }
 
   class RelationshipOperations extends BaseOperations[Relationship] {
@@ -109,13 +107,14 @@ class TransactionBoundQueryContext(graph: GraphDatabaseAPI) extends QueryContext
 
     def getById(id: Long) = graph.getRelationshipById(id)
 
-    def all: Iterable[Relationship] = GlobalGraphOperations.at(graph).getAllRelationships.asScala
+    def all: Iterator[Relationship] =
+      GlobalGraphOperations.at(graph).getAllRelationships.iterator().asScala
 
-    def indexGet(name: String, key: String, value: Any): Iterable[Relationship] =
-      graph.index.forRelationships(name).get(key, value).asInstanceOf[JIterable[Relationship]].asScala
+    def indexGet(name: String, key: String, value: Any): Iterator[Relationship] =
+      graph.index.forRelationships(name).get(key, value).iterator().asScala
 
-    def indexQuery(name: String, query: Any): Iterable[Relationship] =
-      graph.index.forRelationships(name).query(query).asInstanceOf[JIterable[Relationship]].asScala
+    def indexQuery(name: String, query: Any): Iterator[Relationship] =
+      graph.index.forRelationships(name).query(query).iterator().asScala
   }
 
   def getOrCreatePropertyKeyId(propertyKey: String) =

@@ -25,9 +25,10 @@ import org.scalatest.junit.JUnitSuite
 import collection.Map
 import org.neo4j.graphdb._
 import org.neo4j.test.ImpermanentGraphDatabase
-import org.neo4j.kernel.{ThreadToStatementContextBridge, GraphDatabaseAPI}
+import org.neo4j.kernel.ThreadToStatementContextBridge
 import org.neo4j.kernel.api.StatementContext
 import org.neo4j.graphdb.DynamicLabel._
+import org.neo4j.kernel.GraphDatabaseAPI
 
 class GraphDatabaseTestBase extends JUnitSuite {
 
@@ -84,7 +85,8 @@ class GraphDatabaseTestBase extends JUnitSuite {
     n
   }
 
-  def createLabeledNode(labels: String*): Node = createLabeledNode(Map[String,Any](), labels:_*)
+  def createLabeledNode(labels: String*): Node = createLabeledNode(Map[String, Any](), labels: _*)
+
   def createNode(values: (String, Any)*): Node = createNode(values.toMap)
 
   def inTx[T](f: () => T): T = {
@@ -99,11 +101,11 @@ class GraphDatabaseTestBase extends JUnitSuite {
   }
 
   def execStatement[T](f: (StatementContext => T)): T = {
-    val tx  = graph.beginTx
+    val tx = graph.beginTx
     val ctx = graph
-        .getDependencyResolver
-        .resolveDependency(classOf[ThreadToStatementContextBridge])
-        .getCtxForWriting
+      .getDependencyResolver
+      .resolveDependency(classOf[ThreadToStatementContextBridge])
+      .getCtxForWriting
     val result = f(ctx)
     tx.success()
     tx.finish()
@@ -111,9 +113,12 @@ class GraphDatabaseTestBase extends JUnitSuite {
   }
 
   def nodeIds = nodes.map(_.getId).toArray
+
   val REL = DynamicRelationshipType.withName("REL")
+
   def relate(a: Node, b: Node): Relationship = relate(a, b, "REL")
-  def relate(a: Node, b: Node, pk:(String,Any)*): Relationship = relate(a, b, "REL", pk.toMap)
+
+  def relate(a: Node, b: Node, pk: (String, Any)*): Relationship = relate(a, b, "REL", pk.toMap)
 
   def relate(n1: Node, n2: Node, relType: String, name: String): Relationship = relate(n1, n2, relType, Map("name" -> name))
 
@@ -188,8 +193,10 @@ class GraphDatabaseTestBase extends JUnitSuite {
   }
 }
 
-trait Snitch extends GraphDatabaseService {
+trait Snitch extends GraphDatabaseAPI {
   val createdNodes = collection.mutable.Queue[Node]()
+  val fetchedNodes = collection.mutable.Queue[Long]()
+  var seenNodes = 0
 
   abstract override def createNode(): Node = {
     val n = super.createNode()
