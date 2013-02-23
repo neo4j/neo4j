@@ -76,7 +76,7 @@ case class NamedExpectation(name: String, e: Expression, properties: Map[String,
                                                              state: QueryState): Boolean =
     expectations.forall {
       case ("*", expression) => getMapFromExpression(expression(ctx)(state)).forall {
-        case (k, value) => ops.hasProperty(x, k) && ops.getProperty(x, k) == value
+        case (k, value) => ops.getProperty(x, k) == value
       }
 
       case (k, _) if !ops.hasProperty(x, k) => false

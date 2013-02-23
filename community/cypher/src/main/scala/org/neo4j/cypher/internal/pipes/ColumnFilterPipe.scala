@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.ExecutionContext
 class ColumnFilterPipe(source: Pipe, val returnItems: Seq[ReturnItem])
   extends PipeWithSource(source) {
   val returnItemNames: Seq[String] = returnItems.map(_.name)
-  val symbols = new SymbolTable(identifiers2.toMap)
+  val symbols = SymbolTable(identifiers2.toMap)
 
   private lazy val identifiers2: Seq[(String, CypherType)] = returnItems.
     map( ri => ri.name->ri.expression.getType(source.symbols))

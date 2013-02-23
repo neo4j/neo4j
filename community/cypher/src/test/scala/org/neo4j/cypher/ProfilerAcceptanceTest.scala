@@ -39,7 +39,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineHelper with Assertions {
     val result: ExecutionResult = engine.profile("START n=node(1) RETURN n")
 
     //WHEN THEN
-    assertRows(1)(result)("ColumnFilter")
+    assertRows(1)(result)("Nodes")
   }
 
   @Test

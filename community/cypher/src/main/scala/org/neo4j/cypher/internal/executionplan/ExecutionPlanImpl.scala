@@ -109,7 +109,7 @@ class ExecutionPlanImpl(inputQuery: Query, graph: GraphDatabaseService) extends 
       case CreateNodeStartItem(CreateNode(varName, _)) => varName -> RelationshipType()
     }.toMap
 
-    val symbols = new SymbolTable(startMap)
+    val symbols = SymbolTable(startMap)
     symbols
   }
 

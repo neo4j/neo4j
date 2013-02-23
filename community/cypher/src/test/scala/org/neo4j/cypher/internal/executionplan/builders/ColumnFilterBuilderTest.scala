@@ -41,9 +41,10 @@ package org.neo4j.cypher.internal.executionplan.builders
 
 import org.junit.Test
 import org.junit.Assert._
-import org.neo4j.cypher.internal.executionplan.PartiallySolvedQuery
+import org.neo4j.cypher.internal.executionplan.{ExecutionPlanInProgress, PartiallySolvedQuery}
 import org.neo4j.cypher.internal.commands.{Slice, ReturnItem, SortItem}
-import org.neo4j.cypher.internal.commands.expressions.Literal
+import org.neo4j.cypher.internal.commands.expressions.{Identifier, Literal}
+import org.neo4j.cypher.internal.pipes.ColumnFilterPipe
 
 class ColumnFilterBuilderTest extends BuilderTest {
 
@@ -97,6 +98,22 @@ class ColumnFilterBuilderTest extends BuilderTest {
     val p = createPipe(nodes = Seq("x"))
 
     assertFalse("Builder should not accept this", builder.canWorkWith(plan(p, q)))
+  }
+
+  @Test def should_not_introduce_column_filter_pipe_unless_needed() {
+    val q = PartiallySolvedQuery().copy(
+      extracted = true,
+      returns = Seq(Unsolved(ReturnItem(Identifier("foo"), "foo")))
+    )
+
+    val p = createPipe(nodes = Seq("foo"))
+
+    assertTrue("Builder should accept this", builder.canWorkWith(plan(p, q)))
+
+    val planInProgress = ExecutionPlanInProgress(q, p, false)
+
+    val newPlan = builder(planInProgress)
+    assert(!newPlan.pipe.isInstanceOf[ColumnFilterPipe], "No column filtering is needed")
   }
 
 }

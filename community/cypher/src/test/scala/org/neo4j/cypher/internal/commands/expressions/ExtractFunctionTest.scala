@@ -28,7 +28,7 @@ class ExtractFunctionTest extends Assertions {
     //GIVEN
     val collection = Literal(List(1, 2, 3))
     val func = new ExtractFunction(collection, "x", StrFunction(Identifier("x")))
-    val symbols = new SymbolTable()
+    val symbols = SymbolTable()
 
     //WHEN
     val typ = func.evaluateType(new CollectionType(StringType()), symbols)

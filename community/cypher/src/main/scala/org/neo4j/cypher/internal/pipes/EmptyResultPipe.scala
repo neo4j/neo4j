@@ -38,7 +38,7 @@ class EmptyResultPipe(source: Pipe) extends PipeWithSource(source) {
 
   def deps = Map()
 
-  def symbols = new SymbolTable()
+  def symbols = SymbolTable()
 
   def throwIfSymbolsMissing(symbols: SymbolTable) {}
 }

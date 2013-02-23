@@ -47,7 +47,7 @@ trait Pipe {
 object NullPipe extends Pipe {
   def internalCreateResults(state: QueryState) = Iterator(ExecutionContext.empty)
 
-  val symbols: SymbolTable = new SymbolTable()
+  val symbols: SymbolTable = SymbolTable()
 
   val executionPlanDescription = PlanDescription(this, "Null")
 }
