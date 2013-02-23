@@ -74,7 +74,7 @@ object IndexQueryBuilder {
           val keyVal = key(m)(state).toString
           val valueVal = value(m)(state)
           // TODO memory waste
-          state.query.nodeOps.indexGet(idxName,keyVal, valueVal).toList
+          state.query.nodeOps.indexGet(idxName,keyVal, valueVal).toList.iterator
         }
 
       case NodeByIndexQuery(varName, idxName, query) =>
@@ -82,7 +82,7 @@ object IndexQueryBuilder {
         (m, state) => {
           val queryText = query(m)(state)
           // TODO memory waste
-          state.query.nodeOps.indexQuery(idxName, queryText).toList
+          state.query.nodeOps.indexQuery(idxName, queryText).toList.iterator
         }
 
       case NodeById(varName, ids) =>
@@ -98,16 +98,14 @@ object IndexQueryBuilder {
         (m, state) => {
           val keyVal = key(m)(state).toString
           val valueVal = value(m)(state)
-          // TODO memory waste
-          state.query.relationshipOps.indexGet(idxName, keyVal, valueVal).toList
+          state.query.relationshipOps.indexGet(idxName, keyVal, valueVal)
         }
 
       case RelationshipByIndexQuery(varName, idxName, query) =>
         checkRelIndex(idxName, graph)
         (m, state) => {
           val queryText = query(m)(state)
-          // TODO memory waste
-          state.query.relationshipOps.indexQuery(idxName, queryText).toList
+          state.query.relationshipOps.indexQuery(idxName, queryText)
         }
     }
 

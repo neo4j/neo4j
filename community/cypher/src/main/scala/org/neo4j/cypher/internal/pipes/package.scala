@@ -22,5 +22,5 @@ package org.neo4j.cypher.internal
 import org.neo4j.graphdb.PropertyContainer
 
 package object pipes {
-  type EntityProducer[T <: PropertyContainer] = (ExecutionContext, QueryState) => Iterable[T]
+  type EntityProducer[T <: PropertyContainer] = (ExecutionContext, QueryState) => Iterator[T]
 }

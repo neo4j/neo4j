@@ -60,9 +60,9 @@ class DelegatingOperations[T <: PropertyContainer](protected val inner: Operatio
     inner.removeProperty(obj, propertyKey)
   }
 
-  def indexGet(name: String, key: String, value: Any): Iterable[T] = inner.indexGet(name, key, value)
+  def indexGet(name: String, key: String, value: Any): Iterator[T] = inner.indexGet(name, key, value)
 
-  def indexQuery(name: String, query: Any): Iterable[T] = inner.indexQuery(name, query)
+  def indexQuery(name: String, query: Any): Iterator[T] = inner.indexQuery(name, query)
 
-  def all: Iterable[T] = inner.all
+  def all: Iterator[T] = inner.all
 }
