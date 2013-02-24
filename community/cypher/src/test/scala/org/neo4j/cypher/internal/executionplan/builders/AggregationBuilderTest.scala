@@ -22,15 +22,11 @@ package org.neo4j.cypher.internal.executionplan.builders
 import org.junit.Test
 import org.junit.Assert._
 import org.neo4j.cypher.internal.commands._
-import expressions._
-import expressions.Collect
 import expressions.CountStar
 import expressions.Identifier
-import expressions.HeadFunction
 import org.neo4j.cypher.internal.executionplan.PartiallySolvedQuery
 import org.neo4j.cypher.internal.commands.ReturnItem
 import org.neo4j.cypher.internal.executionplan.ExecutionPlanInProgress
-import org.neo4j.cypher.internal.symbols.NodeType
 
 class AggregationBuilderTest extends BuilderTest {
 
@@ -55,7 +51,7 @@ class AggregationBuilderTest extends BuilderTest {
     val expectedQuery = q.copy(
       aggregation = q.aggregation.map(_.solve),
       aggregateQuery = q.aggregateQuery.solve,
-      returns = Seq(Unsolved(ReturnItem(CachedExpression("n", NodeType()), "n"))),
+      returns = Seq(Solved(ReturnItem(Identifier("n"), "n"))),
       extracted = true
     )
 

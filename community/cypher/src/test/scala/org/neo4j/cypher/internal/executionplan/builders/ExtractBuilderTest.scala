@@ -41,9 +41,10 @@ package org.neo4j.cypher.internal.executionplan.builders
 
 import org.junit.Test
 import org.junit.Assert._
-import org.neo4j.cypher.internal.executionplan.PartiallySolvedQuery
+import org.neo4j.cypher.internal.executionplan.{ExecutionPlanInProgress, PartiallySolvedQuery}
 import org.neo4j.cypher.internal.commands.ReturnItem
-import org.neo4j.cypher.internal.commands.expressions.Literal
+import org.neo4j.cypher.internal.commands.expressions.{Identifier, Literal}
+import org.neo4j.cypher.internal.pipes.ExtractPipe
 
 class ExtractBuilderTest extends BuilderTest {
 
@@ -88,5 +89,23 @@ class ExtractBuilderTest extends BuilderTest {
     val p = createPipe(nodes = Seq("s"))
 
     assertFalse("This query should not be accepted", builder.canWorkWith(plan(p, q)))
+  }
+
+  @Test
+  def does_not_introduce_extract_pipe_unless_necessary() {
+    //GIVEN
+    val q = PartiallySolvedQuery().
+      copy(returns = Seq(Unsolved(ReturnItem(Identifier("foo"), "foo")))
+    )
+
+    val p = createPipe(nodes = Seq("foo"))
+
+    val planInProgress = ExecutionPlanInProgress(q, p, false)
+
+    //WHEN
+    val resultPlan = builder(planInProgress)
+
+    //THEN
+    assert(!resultPlan.pipe.isInstanceOf[ExtractPipe], "No need to extract here")
   }
 }

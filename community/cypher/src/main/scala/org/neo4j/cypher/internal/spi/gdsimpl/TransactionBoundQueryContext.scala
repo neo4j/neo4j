@@ -146,7 +146,7 @@ class TransactionBoundQueryContext(graph: GraphDatabaseAPI) extends QueryContext
   }
 
   abstract class BaseOperations[T <: PropertyContainer] extends Operations[T] {
-    def getProperty(obj: T, propertyKey: String) = obj.getProperty(propertyKey)
+    def getProperty(obj: T, propertyKey: String) = obj.getProperty(propertyKey, null)
 
     def hasProperty(obj: T, propertyKey: String) = obj.hasProperty(propertyKey)
 

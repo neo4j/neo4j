@@ -44,8 +44,9 @@ object ExtractBuilder {
   def extractIfNecessary(plan: ExecutionPlanInProgress, expressionsToExtract: Map[String, Expression]): ExecutionPlanInProgress = {
 
     val expressions = expressionsToExtract.filter {
-      case (k, CachedExpression(_, _)) => false
-      case _                           => true
+      case (k, CachedExpression(_, _))      => false
+      case (k1, Identifier(k2)) if k1 == k2 => false
+      case _                                => true
     }
 
     val query = plan.query

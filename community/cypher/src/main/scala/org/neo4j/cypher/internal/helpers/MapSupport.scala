@@ -54,20 +54,16 @@ trait MapSupport {
 
     def -(key: String) = throw new ThisShouldNotHappenError("Andres", "This map is not a real map")
 
-    def get(key: String) = if(ops.hasProperty(n, key))
-      Some(ops.getProperty(n, key))
-    else
-      None
+    def get(key: String) = {
+      val property = ops.getProperty(n, key)
+      Option(property)
+    }
 
     def iterator: Iterator[(String, Any)] = ops.propertyKeys(n).map(k => k -> ops.getProperty(n, k)).toIterator
 
     override def contains(key: String) = ops.hasProperty(n, key)
 
-    override def apply(key: String) = try {
-      super.apply(key)
-    } catch {
-      case e:NoSuchElementException => throw new EntityNotFoundException("The property '%s' does not exist on %s".format(key, n))
-    }
-
+    override def apply(key: String) =
+      get(key).getOrElse(throw new EntityNotFoundException("The property '%s' does not exist on %s".format(key, n)))
   }
 }

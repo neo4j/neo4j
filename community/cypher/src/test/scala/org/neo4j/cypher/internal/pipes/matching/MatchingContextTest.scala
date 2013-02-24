@@ -510,7 +510,7 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions with Pat
     val relIdentifiers2 = rels.map(_ -> RelationshipType())
 
     val identifiers2 = (nodeIdentifiers2 ++ relIdentifiers2).toMap
-    val symbols2 = new SymbolTable(identifiers2)
+    val symbols2 = SymbolTable(identifiers2)
     matchingContext = new MatchingContext(symbols2, predicates, buildPatternGraph(symbols2, patterns))
   }
 

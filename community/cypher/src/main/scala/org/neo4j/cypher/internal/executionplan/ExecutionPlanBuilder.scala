@@ -124,7 +124,7 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService) extends PatternGraphBuil
       case CreateNodeStartItem(CreateNode(varName, _, _, _)) => varName -> RelationshipType()
     }.toMap
 
-    val symbols = new SymbolTable(startMap)
+    val symbols = SymbolTable(startMap)
     symbols
   }
 

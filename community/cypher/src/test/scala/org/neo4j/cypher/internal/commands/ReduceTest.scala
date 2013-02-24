@@ -55,7 +55,7 @@ class ReduceTest extends Assertions {
     val collection = Literal(Seq(1,2,3))
 
     val reduce = ReduceFunction(collection, "n", expression, "acc", Literal(""))
-    val typ = reduce.calculateType(new SymbolTable())
+    val typ = reduce.calculateType(SymbolTable())
 
     assert(typ === StringType())
   }
@@ -65,7 +65,7 @@ class ReduceTest extends Assertions {
     val collection = Literal(Seq(1,2,3))
 
     val reduce = ReduceFunction(collection, "n", expression, "acc", Literal(0))
-    val typ = reduce.calculateType(new SymbolTable())
+    val typ = reduce.calculateType(SymbolTable())
 
     assert(typ === NumberType())
   }

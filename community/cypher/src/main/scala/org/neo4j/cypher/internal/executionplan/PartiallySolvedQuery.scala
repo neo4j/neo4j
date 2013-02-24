@@ -164,7 +164,7 @@ case class PartiallySolvedQuery(returns: Seq[QueryToken[ReturnColumn]],
   }
 
   def children = {
-    val returnExpressions = returns.flatMap(_.token.expressions(new SymbolTable()).map(_._2))
+    val returnExpressions = returns.flatMap(_.token.expressions(SymbolTable()).map(_._2))
     val wherePredicates = where.map(_.token)
     val aggregateExpressions = aggregation.map(_.token)
     val sortExpressions = sort.map(_.token.expression)

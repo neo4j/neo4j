@@ -117,9 +117,9 @@ class LazyTest extends ExecutionEngineHelper with Assertions with MockitoSugar {
     val c = mock[Node]
 
     when(a.hasProperty("name")).thenReturn(true)
-    when(a.getProperty("name")).thenReturn("Andres", Array())
+    when(a.getProperty("name", null)).thenReturn("Andres", Array())
     when(b.hasProperty("name")).thenReturn(true)
-    when(b.getProperty("name")).thenReturn("Jake", Array())
+    when(b.getProperty("name", null)).thenReturn("Jake", Array())
 
     // Because we use a prefetching iterator, it will cache one more result than we have pulled
     when(c.hasProperty("name")).thenThrow(new RuntimeException("Distinct was not lazy!"))
@@ -140,9 +140,9 @@ class LazyTest extends ExecutionEngineHelper with Assertions with MockitoSugar {
     val c = mock[Node]
 
     when(a.hasProperty("name")).thenReturn(true)
-    when(a.getProperty("name")).thenReturn("Andres", Array())
+    when(a.getProperty("name", null)).thenReturn("Andres", Array())
     when(b.hasProperty("name")).thenReturn(true)
-    when(b.getProperty("name")).thenReturn("Jake", Array())
+    when(b.getProperty("name", null)).thenReturn("Jake", Array())
 
     // Because we use a pre-fetching iterator, it will cache one more result than we have pulled
     when(c.hasProperty("name")).thenThrow(new RuntimeException("Union was not lazy!"))

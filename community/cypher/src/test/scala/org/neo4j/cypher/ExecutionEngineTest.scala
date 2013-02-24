@@ -1951,8 +1951,6 @@ RETURN x0.name?
     match me-[r1:ATE]->food<-[r2:ATE]-you
 
     return me,you,sum((1-ABS(r1.times/H1-r2.times/H2))*(r1.times+r2.times)/(H1+H2))""").dumpToString()
-
-    println(result)
   }
 
   @Test def zero_matching_subgraphs_yield_correct_count_star() {
@@ -2033,7 +2031,6 @@ RETURN x0.name?
     relate(a,c)
 
     val result = parseAndExecute("START a=node(1) foreach(n in extract(p in a-->() : last(p)) : set n.touched = true) return a-->()").dumpToString()
-    println(result)
   }
 
   @Test
