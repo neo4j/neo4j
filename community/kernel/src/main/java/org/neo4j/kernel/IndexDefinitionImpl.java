@@ -83,7 +83,7 @@ class IndexDefinitionImpl implements IndexDefinition
         }
         catch ( SchemaRuleNotFoundException e )
         {
-            throw new ThisShouldNotHappenError( "Mattias", "Schema rule " + propertyKey + " should exist here" );
+            throw new ConstraintViolationException(String.format("Unable to drop index on label `%s` for property %s.", label.name(), propertyKey), e );
         }
     }
     

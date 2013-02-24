@@ -185,7 +185,8 @@ public class SchemaAcceptanceTest
             index.drop();
             index.drop();
             tx.success();
-        } finally
+        }
+        finally
         {
             tx.finish();
         }
@@ -194,7 +195,7 @@ public class SchemaAcceptanceTest
         assertFalse( "Index should have been deleted", asSet( beansAPI.schema().getIndexes( label ) ).contains( index ) );
     }
 
-    @Test(expected = ConstraintViolationException.class)
+    @Test( expected = ConstraintViolationException.class )
     public void droppingAnUnexistingIndexShouldGiveHelpfulExceptionInSeparateTransactions() throws Exception
     {
         // GIVEN

@@ -27,6 +27,7 @@ import collection.JavaConverters._
 import org.neo4j.graphdb.DynamicRelationshipType.withName
 import org.neo4j.cypher.{CouldNotDropIndexException, IndexAlreadyDefinedException}
 import org.neo4j.tooling.GlobalGraphOperations
+import org.neo4j.kernel.api.SchemaRuleNotFoundException
 
 class TransactionBoundQueryContext(graph: GraphDatabaseAPI) extends QueryContext {
   val tx: Transaction = graph.beginTx()
@@ -139,6 +140,10 @@ class TransactionBoundQueryContext(graph: GraphDatabaseAPI) extends QueryContext
       ctx.dropIndexRule(ctx.getIndexRule(labelId, propertyKeyId));
     } catch {
       case e: ConstraintViolationKernelException =>
+        val labelName = getLabelName(labelId)
+        val propName = ctx.getPropertyKeyName(propertyKeyId)
+        throw new CouldNotDropIndexException(labelName, propName, e)
+      case e: SchemaRuleNotFoundException =>
         val labelName = getLabelName(labelId)
         val propName = ctx.getPropertyKeyName(propertyKeyId)
         throw new CouldNotDropIndexException(labelName, propName, e)
