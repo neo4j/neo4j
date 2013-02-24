@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Reader;
+import java.io.Writer;
 import java.nio.channels.FileChannel;
 
 public interface FileSystemAbstraction
@@ -35,6 +36,8 @@ public interface FileSystemAbstraction
     InputStream openAsInputStream( File fileName ) throws IOException;
     
     Reader openAsReader( File fileName, String encoding ) throws IOException;
+    
+    Writer openAsWriter( File fileName, String encoding, boolean append ) throws IOException;
     
     FileLock tryLock( File fileName, FileChannel channel ) throws IOException;
     

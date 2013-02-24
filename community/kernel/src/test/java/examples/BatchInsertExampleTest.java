@@ -22,8 +22,8 @@ package examples;
 import static org.junit.Assert.assertEquals;
 
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
+import java.io.Writer;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -34,8 +34,9 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
-import org.neo4j.kernel.impl.util.FileUtils;
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 import org.neo4j.unsafe.batchinsert.BatchInserter;
 import org.neo4j.unsafe.batchinsert.BatchInserters;
 
@@ -44,10 +45,8 @@ public class BatchInsertExampleTest
     @Test
     public void insert() throws IOException
     {
-        FileUtils.deleteRecursively( new File( "target/batchinserter-example" ) );
-        
         // START SNIPPET: insert
-        BatchInserter inserter = BatchInserters.inserter( "target/batchinserter-example" );
+        BatchInserter inserter = BatchInserters.inserter( "target/batchinserter-example", fileSystem );
         Map<String, Object> properties = new HashMap<String, Object>();
         properties.put( "name", "Mattias" );
         long mattiasNode = inserter.createNode( properties );
@@ -61,7 +60,7 @@ public class BatchInsertExampleTest
         // END SNIPPET: insert
 
         // try it out from a normal db
-        GraphDatabaseService db = new EmbeddedGraphDatabase(
+        GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentDatabase(
                 "target/batchinserter-example" );
         Node mNode = db.getNodeById( mattiasNode );
         Node cNode = mNode.getSingleRelationship( knows, Direction.OUTGOING )
@@ -73,13 +72,11 @@ public class BatchInsertExampleTest
     @Test
     public void insertWithConfig() throws IOException
     {
-        FileUtils.deleteRecursively( new File( "target/batchinserter-example-config" ) );
-        
         // START SNIPPET: configuredInsert
         Map<String, String> config = new HashMap<String, String>();
         config.put( "neostore.nodestore.db.mapped_memory", "90M" );
         BatchInserter inserter = BatchInserters.inserter(
-                "target/batchinserter-example-config", config );
+                "target/batchinserter-example-config", fileSystem, config );
         // Insert data here ... and then shut down:
         inserter.shutdown();
         // END SNIPPET: configuredInsert
@@ -88,9 +85,8 @@ public class BatchInsertExampleTest
     @Test
     public void insertWithConfigFile() throws IOException
     {
-        FileUtils.deleteRecursively( new File( "target/batchinserter-example-config" ) );
+        Writer fw = fileSystem.openAsWriter( new File( "target/batchinsert-config" ), "utf-8", false );
         
-        FileWriter fw = new FileWriter( "target/batchinsert-config" );
         fw.append( "neostore.nodestore.db.mapped_memory=90M\n"
                    + "neostore.relationshipstore.db.mapped_memory=3G\n"
                    + "neostore.propertystore.db.mapped_memory=50M\n"
@@ -102,7 +98,7 @@ public class BatchInsertExampleTest
         Map<String, String> config = MapUtil.load( new File(
                 "target/batchinsert-config" ) );
         BatchInserter inserter = BatchInserters.inserter(
-                "target/batchinserter-example-config", config );
+                "target/batchinserter-example-config", fileSystem, config );
         // Insert data here ... and then shut down:
         inserter.shutdown();
         // END SNIPPET: configFileInsert
@@ -111,11 +107,9 @@ public class BatchInsertExampleTest
     @Test
     public void batchDb() throws IOException
     {
-        FileUtils.deleteRecursively( new File( "target/batchdb-example" ) );
-        
         // START SNIPPET: batchDb
         GraphDatabaseService batchDb =
-                BatchInserters.batchDatabase( "target/batchdb-example" );
+                BatchInserters.batchDatabase( "target/batchdb-example", fileSystem );
         Node mattiasNode = batchDb.createNode();
         mattiasNode.setProperty( "name", "Mattias" );
         Node chrisNode = batchDb.createNode();
@@ -129,7 +123,7 @@ public class BatchInsertExampleTest
         // END SNIPPET: batchDb
 
         // try it out from a normal db
-        GraphDatabaseService db = new EmbeddedGraphDatabase(
+        GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentDatabase(
                 "target/batchdb-example" );
         Node mNode = db.getNodeById( mattiasNodeId );
         Node cNode = mNode.getSingleRelationship( knows, Direction.OUTGOING )
@@ -141,15 +135,15 @@ public class BatchInsertExampleTest
     @Test
     public void batchDbWithConfig() throws IOException
     {
-        FileUtils.deleteRecursively( new File( "target/batchdb-example-config" ) );
-        
         // START SNIPPET: configuredBatchDb
         Map<String, String> config = new HashMap<String, String>();
         config.put( "neostore.nodestore.db.mapped_memory", "90M" );
         GraphDatabaseService batchDb =
-                BatchInserters.batchDatabase( "target/batchdb-example-config", config );
+                BatchInserters.batchDatabase( "target/batchdb-example-config", fileSystem, config );
         // Insert data here ... and then shut down:
         batchDb.shutdown();
         // END SNIPPET: configuredBatchDb
     }
+
+    private final FileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
 }

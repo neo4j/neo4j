@@ -24,7 +24,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.io.Reader;
+import java.io.Writer;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
@@ -84,6 +86,12 @@ public class JumpingFileSystemAbstraction implements FileSystemAbstraction
     public Reader openAsReader( File fileName, String encoding ) throws IOException
     {
         return new InputStreamReader( openAsInputStream( fileName ), encoding );
+    }
+    
+    @Override
+    public Writer openAsWriter( File fileName, String encoding, boolean append ) throws IOException
+    {
+        return new OutputStreamWriter( openAsOutputStream( fileName, append ), encoding );
     }
 
     @Override

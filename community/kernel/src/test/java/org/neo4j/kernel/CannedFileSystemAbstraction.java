@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Reader;
+import java.io.Writer;
 import java.nio.channels.FileChannel;
 
 import org.neo4j.kernel.impl.nioneo.store.FileLock;
@@ -72,6 +73,12 @@ public class CannedFileSystemAbstraction implements FileSystemAbstraction
 
     @Override
     public Reader openAsReader( File fileName, String encoding ) throws IOException
+    {
+        throw new UnsupportedOperationException( "TODO" );
+    }
+    
+    @Override
+    public Writer openAsWriter( File fileName, String encoding, boolean append ) throws IOException
     {
         throw new UnsupportedOperationException( "TODO" );
     }
