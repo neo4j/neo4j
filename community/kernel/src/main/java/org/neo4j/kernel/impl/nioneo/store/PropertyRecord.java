@@ -36,7 +36,7 @@ public class PropertyRecord extends Abstract64BitRecord
     private long prevProp = Record.NO_PREVIOUS_PROPERTY.intValue();
     private final List<PropertyBlock> blockRecords = new ArrayList<PropertyBlock>( 4 );
     private long entityId = -1;
-    private boolean nodeIdSet;
+    private Boolean nodeIdSet;
     private boolean isChanged;
     private final List<DynamicRecord> deletedRecords = new LinkedList<DynamicRecord>();
 
@@ -63,10 +63,20 @@ public class PropertyRecord extends Abstract64BitRecord
         nodeIdSet = false;
         entityId = relId;
     }
+    
+    public boolean isNodeSet()
+    {
+        return Boolean.TRUE.equals( nodeIdSet );
+    }
 
+    public boolean isRelSet()
+    {
+        return Boolean.FALSE.equals( nodeIdSet );
+    }
+    
     public long getNodeId()
     {
-        if ( nodeIdSet )
+        if ( isNodeSet() )
         {
             return entityId;
         }
@@ -75,7 +85,7 @@ public class PropertyRecord extends Abstract64BitRecord
 
     public long getRelId()
     {
-        if ( !nodeIdSet )
+        if ( isRelSet() )
         {
             return entityId;
         }

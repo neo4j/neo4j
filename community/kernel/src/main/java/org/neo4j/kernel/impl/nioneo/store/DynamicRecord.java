@@ -165,6 +165,7 @@ public class DynamicRecord extends Abstract64BitRecord
         DynamicRecord result = new DynamicRecord( getLongId() );
         if ( data != null )
             result.data = data.clone();
+        result.setInUse( inUse() );
         result.length = length;
         result.isLight = isLight;
         result.nextBlock = nextBlock;

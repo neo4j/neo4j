@@ -19,20 +19,18 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import static org.neo4j.helpers.collection.Iterables.filter;
+import static org.neo4j.kernel.impl.api.index.IndexingService.singleContext;
+
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
+import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Predicate;
-import org.neo4j.kernel.ThreadToStatementContextBridge;
-import org.neo4j.kernel.impl.nioneo.store.NeoStore;
-import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
-import org.neo4j.kernel.impl.nioneo.store.NodeStore;
-import org.neo4j.kernel.impl.nioneo.store.PropertyBlock;
-import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
-import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
-import org.neo4j.kernel.impl.nioneo.store.Record;
-import org.neo4j.kernel.impl.nioneo.store.RecordStore;
-import org.neo4j.kernel.impl.nioneo.store.RecordStore.Processor;
+import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.kernel.impl.nioneo.store.IndexRule;
+import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.logging.Logging;
 
 /**
  * Represents one job of initially populating an index over existing data in the database.
@@ -40,60 +38,98 @@ import org.neo4j.kernel.impl.nioneo.store.RecordStore.Processor;
  * 
  * @author Mattias Persson
  */
-class IndexPopulationJob implements Runnable
+public class IndexPopulationJob implements Runnable
 {
     private final long labelId;
     private final long propertyKeyId;
-    private final IndexPopulator indexManipulator;
-    private final NeoStore neoStore;
+    private final IndexingService.IndexStoreView storeView;
 
     // NOTE: unbounded queue expected here
     private final Queue<NodePropertyUpdate> queue = new ConcurrentLinkedQueue<NodePropertyUpdate>();
-    private final ThreadToStatementContextBridge ctxProvider;
+    private final IndexPopulator writer;
+    private final FlippableIndexContext flipper;
+    private final StringLogger log;
 
-    public IndexPopulationJob( long labelId, long propertyKeyId, IndexPopulator indexManipulator, NeoStore neoStore,
-                               ThreadToStatementContextBridge ctxProvider )
+    public IndexPopulationJob( IndexRule indexRule, IndexPopulator writer, FlippableIndexContext flipper,
+                               IndexingService.IndexStoreView storeView, Logging logging )
     {
-        this.labelId = labelId;
-        this.propertyKeyId = propertyKeyId;
-        this.indexManipulator = indexManipulator;
-        this.neoStore = neoStore;
-        this.ctxProvider = ctxProvider;
+        this.writer = writer;
+        this.flipper = flipper;
+        this.labelId = indexRule.getLabel();
+        this.propertyKeyId = indexRule.getPropertyKey();
+        this.storeView = storeView;
+        this.log = logging.getLogger( getClass() );
     }
     
     @Override
     public void run()
     {
-        indexAllNodes();
+        try
+        {
+            writer.createIndex();
 
-        indexManipulator.done();
-        
-        // TODO atomic switchover (?)
+            indexAllNodes();
+
+            flipper.flip( new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    populateFromQueueIfAvailable( Long.MAX_VALUE );
+                    writer.populationCompleted();
+                }
+            }, new FailedIndexContext( writer ));
+        }
+        catch ( RuntimeException e )
+        {
+            log.error( "Failed to create index.", e );
+            flipper.setFlipTarget( singleContext( new FailedIndexContext( writer, e ) ) );
+            flipper.flip();
+        }
+        catch ( FlippableIndexContext.FlipFailedKernelException e )
+        {
+            log.error( "Failed to create index.", e );
+            // The flipper will have already flipped to a failed index context here, but
+            // it will not include the cause of failure, so we do another flip to a failed
+            // context that does.
+
+            // The reason for having the flipper transition to the failed index context in the first
+            // place is that we would otherwise introduce a race condition where updates could come
+            // in to the old context, if something failed in the job we send to the flipper.
+            flipper.setFlipTarget( singleContext( new FailedIndexContext( writer, e ) ) );
+            flipper.flip();
+        }
     }
 
     @SuppressWarnings("unchecked")
     private void indexAllNodes()
     {
-        // Create a processor that for each accepted node (containing the desired label) looks through its properties,
-        // getting the desired one (if any) and feeds to the index manipulator.
-        final PropertyStore propertyStore = neoStore.getPropertyStore();
-        Processor processor = new NodeIndexingProcessor( propertyStore );
+        storeView.visitNodesWithPropertyAndLabel( labelId, propertyKeyId, new Visitor<Pair<Long, Object>>(){
+            @Override
+            public boolean visit( Pair<Long, Object> element )
+            {
+                writer.add( element.first(), element.other() );
+                populateFromQueueIfAvailable( element.first() );
 
-        // Run the processor for the nodes containing the given label.
-        // TODO When we've got a decent way of getting nodes with a label, use that instead.
-        final NodeStore nodeStore = neoStore.getNodeStore();
-        final Predicate<NodeRecord> predicate = new NodeLabelFilterPredicate( nodeStore );
-        processor.applyFiltered( nodeStore, predicate );
+                return false;
+            }
+        });
     }
 
-    private void populateFromQueueIfAvailable( long maxIndexedId )
+    private void populateFromQueueIfAvailable( final long highestIndexedNodeId )
     {
-        int n = 0;
-        for ( NodePropertyUpdate update = queue.poll(); update != null; update = queue.poll(), n++ )
+        if ( !queue.isEmpty() )
         {
-            boolean hasNotYetBeenIndexed = update.getNodeId() <= maxIndexedId;
-            if ( hasNotYetBeenIndexed )
-                update.apply( n, indexManipulator );
+            Predicate<NodePropertyUpdate> hasBeenIndexed = new Predicate<NodePropertyUpdate>()
+            {
+                @Override
+                public boolean accept( NodePropertyUpdate item )
+                {
+                    return item.getNodeId() <= highestIndexedNodeId;
+                }
+            };
+
+            writer.update( filter( hasBeenIndexed, queue ) );
         }
     }
 
@@ -105,81 +141,11 @@ class IndexPopulationJob implements Runnable
     /**
      * A transaction happened that produced the given updates. Let this job incorporate its data
      * into, feeding it to the {@link IndexPopulator}.
+     * @param updates
      */
-    public void indexUpdates( Iterable<NodePropertyUpdate> updates )
+    public void update( Iterable<NodePropertyUpdate> updates )
     {
-        // TODO synchronization with the index job thread
         for ( NodePropertyUpdate update : updates )
-            if ( (update.getPropertyKeyId() == propertyKeyId) && (update.hasLabel( labelId )) )
-                queue.add( update );
-    }
-
-    private class NodeIndexingProcessor extends Processor
-    {
-        private final PropertyStore propertyStore;
-        private int count;
-
-        public NodeIndexingProcessor( PropertyStore propertyStore )
-        {
-            this.propertyStore = propertyStore;
-        }
-
-        @Override
-        public void processNode( RecordStore<NodeRecord> nodeStore, NodeRecord node )
-        {
-            // Actually index node record
-            indexNodeRecord( node );
-
-            // Process queued updates
-            // TODO synchronization
-            populateFromQueueIfAvailable( node.getId() );
-        }
-
-        private void indexNodeRecord( NodeRecord node )
-        {
-            // TODO check cache if that property is in cache and use it, instead of loading it from the store.
-
-            long firstPropertyId = node.getCommittedNextProp();
-            if ( firstPropertyId == Record.NO_NEXT_PROPERTY.intValue() )
-                return;
-
-            // TODO optimize so that we don't have to load all property records, but instead stop
-            // when we first find the property we're looking for.
-            for ( PropertyRecord propertyRecord : propertyStore.getPropertyRecordChain( firstPropertyId ) )
-            {
-                for ( PropertyBlock property : propertyRecord.getPropertyBlocks() )
-                {
-                    if ( property.getKeyIndexId() == propertyKeyId )
-                    {
-                        if ( property.getKeyIndexId() == propertyKeyId )
-                        {
-                            // Make sure the value is loaded, even if it's of a "heavy" kind.
-                            propertyStore.makeHeavy( property );
-                            Object propertyValue = property.getType().getValue( property, propertyStore );
-                            indexManipulator.add( count++, node.getId(), propertyValue );
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    private class NodeLabelFilterPredicate implements Predicate<NodeRecord>
-    {
-        private final NodeStore nodeStore;
-
-        public NodeLabelFilterPredicate( NodeStore nodeStore )
-        {
-            this.nodeStore = nodeStore;
-        }
-
-        @Override
-        public boolean accept( NodeRecord node )
-        {
-            for ( long nodeLabelId : nodeStore.getLabelsForNode( node ) )
-                if ( nodeLabelId == labelId )
-                    return true;
-            return false;
-        }
+            queue.add( update );
     }
 }

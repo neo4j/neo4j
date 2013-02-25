@@ -29,6 +29,8 @@ import java.util.Collection;
 
 import org.neo4j.helpers.Predicate;
 import org.neo4j.kernel.api.ConstraintViolationKernelException;
+import org.neo4j.kernel.api.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.InternalIndexState;
 import org.neo4j.kernel.api.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
@@ -165,10 +167,37 @@ public class TransactionStateAwareStatementContext extends DelegatingStatementCo
         return single;
     }
 
+
+    @Override
+    public InternalIndexState getIndexState( IndexRule indexRule ) throws IndexNotFoundKernelException
+    {
+        // If index is in our state, then return populating
+        DiffSets<IndexRule> diffSet = state.getIndexRuleDiffSetsByLabel( indexRule.getLabel() );
+        if( diffSet.isAdded( indexRule) )
+        {
+            return InternalIndexState.POPULATING;
+        }
+
+        if( diffSet.isRemoved( indexRule ))
+        {
+            throw new IndexNotFoundKernelException( String.format( "Index for label id %d on property id %d has been " +
+                    "dropped in this transaction.", indexRule.getLabel(), indexRule.getPropertyKey() ) );
+        }
+
+        return delegate.getIndexState( indexRule );
+    }
+
     @Override
     public Iterable<IndexRule> getIndexRules( long labelId )
     {
         Iterable<IndexRule> committedRules = delegate.getIndexRules( labelId );
         return state.getIndexRuleDiffSetsByLabel( labelId ).apply( committedRules );
+    }
+
+    @Override
+    public Iterable<IndexRule> getIndexRules()
+    {
+        Iterable<IndexRule> committedRules = delegate.getIndexRules();
+        return state.getIndexRuleDiffSets().apply( committedRules );
     }
 }

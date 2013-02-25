@@ -30,7 +30,7 @@ import org.neo4j.graphdb.index.IndexProvider;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.Settings;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.api.IndexPopulatorMapperProvider;
+import org.neo4j.kernel.api.SchemaIndexProvider;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
@@ -77,7 +77,7 @@ public final class EmbeddedReadOnlyGraphDatabase extends InternalAbstractGraphDa
         this( storeDir, params, Service.load( IndexProvider.class ), Iterables.<KernelExtensionFactory<?>,
                 KernelExtensionFactory>cast( Service.load( KernelExtensionFactory.class ) ),
                 Service.load( CacheProvider.class ), Service.load( TransactionInterceptorProvider.class ),
-                Service.load( IndexPopulatorMapperProvider.class ) );
+                Service.load( SchemaIndexProvider.class ) );
     }
 
     public EmbeddedReadOnlyGraphDatabase( String storeDir,
@@ -85,11 +85,11 @@ public final class EmbeddedReadOnlyGraphDatabase extends InternalAbstractGraphDa
                                           Iterable<KernelExtensionFactory<?>> kernelExtensions,
                                           Iterable<CacheProvider> cacheProviders,
                                           Iterable<TransactionInterceptorProvider> transactionInterceptorProviders,
-                                          Iterable<IndexPopulatorMapperProvider> indexPopulatorMappers )
+                                          Iterable<SchemaIndexProvider> schemaIndexProviders )
     {
         super( storeDir, addReadOnly( params ), Iterables.<Class<?>, Class<?>>iterable( (Class<?>)
                 GraphDatabaseSettings.class ), indexProviders, kernelExtensions, cacheProviders,
-                transactionInterceptorProviders, indexPopulatorMappers );
+                transactionInterceptorProviders, schemaIndexProviders );
         run();
     }
 

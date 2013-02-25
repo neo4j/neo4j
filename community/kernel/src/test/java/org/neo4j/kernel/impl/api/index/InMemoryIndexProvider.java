@@ -19,37 +19,71 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.kernel.api.IndexPopulatorMapper;
+import org.neo4j.helpers.Service;
+import org.neo4j.kernel.api.InternalIndexState;
+import org.neo4j.kernel.api.SchemaIndexProvider;
 import org.neo4j.kernel.impl.util.CopyOnWriteHashMap;
 
-public class InMemoryIndexPopMapper implements IndexPopulatorMapper
+@Service.Implementation( InMemoryIndexProvider.class )
+public class InMemoryIndexProvider extends SchemaIndexProvider
 {
-    private final Map<IndexDefinition, IndexPopulator> populators = new CopyOnWriteHashMap<IndexDefinition, IndexPopulator>();
-    
-    @Override
-    public IndexPopulator getPopulator( IndexDefinition index )
+    private final Map<Long, IndexPopulator> writers = new CopyOnWriteHashMap<Long, IndexPopulator>();
+
+    public InMemoryIndexProvider()
     {
-        IndexPopulator populator = new InMemoryIndexPopulator();
-        populators.put( index, populator );
+        super( "in-memory", 0 );
+    }
+
+    @Override
+    public IndexWriter getWriter( long indexId )
+    {
+        InMemoryIndexWriter populator = new InMemoryIndexWriter();
+        writers.put( indexId, populator );
+        return populator;
+    }
+
+    @Override
+    public InternalIndexState getInitialState( long indexId )
+    {
+        return null;
+    }
+
+    @Override
+    public IndexPopulator getPopulator( long indexId )
+    {
+        InMemoryIndexWriter populator = new InMemoryIndexWriter();
+        writers.put( indexId, populator );
         return populator;
     }
     
-    private static class InMemoryIndexPopulator implements IndexPopulator
+    private static class InMemoryIndexWriter implements IndexPopulator, IndexWriter
     {
         private final Map<Object, Set<Long>> indexData = new HashMap<Object, Set<Long>>();
 
         @Override
-        public void add( int n, long nodeId, Object propertyValue )
+        public void add( long nodeId, Object propertyValue )
         {
             Set<Long> nodes = getLongs( propertyValue );
             nodes.add( nodeId );
+        }
+
+        @Override
+        public void update( Iterable<NodePropertyUpdate> updates )
+        {
+            for ( NodePropertyUpdate update : updates )
+            {
+
+            }
+        }
+
+        @Override
+        public void force()
+        {
         }
 
         private Set<Long> getLongs( Object propertyValue )
@@ -64,14 +98,18 @@ public class InMemoryIndexPopMapper implements IndexPopulatorMapper
         }
 
         @Override
-        public void remove( int n, long nodeId, Object propertyValue )
+        public void createIndex()
         {
-            Collection<Long> nodes = indexData.get( propertyValue );
-            nodes.remove( nodeId );
+            indexData.clear();
         }
 
         @Override
-        public void done()
+        public void dropIndex()
+        {
+        }
+
+        @Override
+        public void populationCompleted()
         {
         }
     }

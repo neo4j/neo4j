@@ -53,7 +53,7 @@ public abstract class AbstractNameStore<T extends AbstractNameRecord> extends Ab
         this.nameStore = nameStore;
     }
 
-    DynamicStringStore getNameStore()
+    public DynamicStringStore getNameStore()
     {
         return nameStore;
     }
@@ -248,21 +248,6 @@ public abstract class AbstractNameStore<T extends AbstractNameRecord> extends Ab
         }
     }
 
-    public void updateRecord( T record, boolean recovered )
-    {
-        assert recovered;
-        setRecovered();
-        try
-        {
-            updateRecord( record );
-            registerIdFromUpdateRecord( record.getId() );
-        }
-        finally
-        {
-            unsetRecovered();
-        }
-    }
-
     @Override
     public void updateRecord( T record )
     {
@@ -335,6 +320,7 @@ public abstract class AbstractNameStore<T extends AbstractNameRecord> extends Ab
     protected void updateRecord( T record, PersistenceWindow window )
     {
         int id = record.getId();
+        registerIdFromUpdateRecord( id );
         Buffer buffer = window.getOffsettedBuffer( id );
         if ( record.inUse() )
         {

@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
+import static org.neo4j.helpers.collection.Iterables.filter;
+import static org.neo4j.helpers.collection.Iterables.map;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -30,26 +33,30 @@ import java.util.List;
 import java.util.Properties;
 import java.util.regex.Pattern;
 
-import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Exceptions;
+import org.neo4j.helpers.Function;
+import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.collection.ClosableIterable;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.TransactionInterceptorProviders;
+import org.neo4j.kernel.api.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.api.index.SchemaIndexing;
+import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.core.PropertyIndex;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.index.IndexStore;
+import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
+import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 import org.neo4j.kernel.impl.nioneo.store.Store;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
@@ -68,10 +75,13 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaResource;
 import org.neo4j.kernel.impl.transaction.xaframework.XaTransaction;
 import org.neo4j.kernel.impl.transaction.xaframework.XaTransactionFactory;
 import org.neo4j.kernel.impl.util.ArrayMap;
+import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.info.DiagnosticsExtractor;
 import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.kernel.info.DiagnosticsPhase;
+import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.kernel.logging.Logging;
 
 /**
  * A <CODE>NeoStoreXaDataSource</CODE> is a factory for
@@ -100,10 +110,14 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
 
     private final StoreFactory storeFactory;
     private final XaFactory xaFactory;
+    private final SchemaIndexProvider indexProvider;
+    private final JobScheduler scheduler;
 
     private final Config config;
+    private final LifeSupport life = new LifeSupport();
+
     private NeoStore neoStore;
-    private final SchemaIndexing schemaIndexing;
+    private IndexingService indexingService;
     private XaContainer xaContainer;
     private ArrayMap<Class<?>,Store> idGenerators;
 
@@ -118,6 +132,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
     private final StringLogger msgLog;
     private final TransactionStateFactory stateFactory;
     private final CacheAccessBackDoor cacheAccess;
+    private final Logging logging;
 
     private enum Diagnostics implements DiagnosticsExtractor<NeoStoreXaDataSource>
     {
@@ -203,27 +218,31 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
      */
     public NeoStoreXaDataSource( Config config, StoreFactory sf, LockManager lockManager,
                                  StringLogger stringLogger, XaFactory xaFactory, TransactionStateFactory stateFactory,
-                                 CacheAccessBackDoor cacheAccess, SchemaIndexing schemaIndexing,
-                                 TransactionInterceptorProviders providers, DependencyResolver dependencyResolver )
+                                 CacheAccessBackDoor cacheAccess, SchemaIndexProvider indexProvider,
+                                 TransactionInterceptorProviders providers, JobScheduler scheduler, Logging logging )
             throws IOException
     {
         super( BRANCH_ID, Config.DEFAULT_DATA_SOURCE_NAME );
         this.config = config;
         this.stateFactory = stateFactory;
         this.cacheAccess = cacheAccess;
-        this.schemaIndexing = schemaIndexing;
+        this.indexProvider = indexProvider;
         this.providers = providers;
+        this.scheduler = scheduler;
+        this.logging = logging;
 
         readOnly = config.get( Configuration.read_only );
         this.lockManager = lockManager;
         msgLog = stringLogger;
         this.storeFactory = sf;
         this.xaFactory = xaFactory;
+
     }
 
     @Override
     public void init()
     {
+        life.init();
     }
 
     @Override
@@ -246,7 +265,11 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
         }
         neoStore = storeFactory.newNeoStore( store );
 
-        xaContainer = xaFactory.newXaContainer(this, config.get( Configuration.logical_log ), new CommandFactory( neoStore ), tf, stateFactory, providers  );
+        indexingService = life.add( new IndexingService( scheduler, indexProvider,
+                new NeoStoreIndexStoreView( neoStore ), logging ) );
+        
+        xaContainer = xaFactory.newXaContainer(this, config.get( Configuration.logical_log ),
+                new CommandFactory( neoStore, indexingService ), tf, stateFactory, providers  );
 
         try
         {
@@ -255,6 +278,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
                 neoStore.setRecoveredStatus( true );
                 try
                 {
+                    indexingService.initIndexes( loadIndexRules() );
                     xaContainer.openLogicalLog();
                 }
                 finally
@@ -282,6 +306,8 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
             this.idGenerators.put( PropertyIndex.class,
                                    neoStore.getPropertyStore().getIndexStore() );
             setLogicalLogAtCreationTime( xaContainer.getLogicalLog() );
+
+            life.start();
         }
         catch ( Throwable e )
         {   // Something unexpected happened during startup
@@ -302,12 +328,19 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
         return neoStore;
     }
 
+    public IndexingService getIndexService()
+    {
+        return indexingService;
+    }
+
     @Override
     public void stop()
     {
         super.stop();
+        life.stop();
         if ( !readOnly )
         {
+            indexingService.flushAll();
             neoStore.flushAll();
         }
         xaContainer.close();
@@ -322,7 +355,9 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
 
     @Override
     public void shutdown()
-    {}
+    {
+        life.shutdown();
+    }
 
     public StoreId getStoreId()
     {
@@ -338,24 +373,20 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
 
     private static class CommandFactory extends XaCommandFactory
     {
-        private NeoStore neoStore = null;
+        private final NeoStore neoStore;
+        private final IndexingService indexingService;
 
-        CommandFactory( NeoStore neoStore )
+        CommandFactory( NeoStore neoStore, IndexingService indexingService )
         {
             this.neoStore = neoStore;
+            this.indexingService = indexingService;
         }
 
         @Override
         public XaCommand readCommand( ReadableByteChannel byteChannel,
             ByteBuffer buffer ) throws IOException
         {
-            Command command = Command.readCommand( neoStore, byteChannel,
-                buffer );
-            if ( command != null )
-            {
-                command.setRecovered();
-            }
-            return command;
+            return Command.readCommand( neoStore, indexingService, byteChannel, buffer );
         }
     }
 
@@ -366,7 +397,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
         {
             TransactionInterceptor first = providers.resolveChain( NeoStoreXaDataSource.this );
             return new InterceptingWriteTransaction( identifier, getLogicalLog(), neoStore, state, cacheAccess,
-                    schemaIndexing, lockManager, first );
+                    indexingService, lockManager, first );
         }
     }
 
@@ -376,7 +407,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
         public XaTransaction create( int identifier, TransactionState state )
         {
             return new WriteTransaction( identifier, getLogicalLog(), state,
-                neoStore, cacheAccess, schemaIndexing );
+                neoStore, cacheAccess, indexingService );
         }
 
         @Override
@@ -395,19 +426,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
         @Override
         public long getCurrentVersion()
         {
-            if ( getLogicalLog().scanIsComplete() )
-            {
-                return neoStore.getVersion();
-            }
-//            neoStore.setRecoveredStatus( true );
-//            try
-//            {
-                return neoStore.getVersion();
-//            }
-//            finally
-//            {
-//                neoStore.setRecoveredStatus( false );
-//            }
+            return neoStore.getVersion();
         }
 
         @Override
@@ -426,6 +445,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
         public void flushAll()
         {
             neoStore.flushAll();
+            indexingService.flushAll();
         }
 
         @Override
@@ -609,7 +629,26 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
     }
 
     public void registerDiagnosticsWith( DiagnosticsManager manager )
-     {
-         manager.registerAll( Diagnostics.class, this );
-     }
+    {
+        manager.registerAll( Diagnostics.class, this );
+    }
+
+    private Iterable<IndexRule> loadIndexRules()
+    {
+        return map( new Function<SchemaRule, IndexRule>()
+        {
+            @Override
+            public IndexRule apply( SchemaRule schemaRule )
+            {
+                return (IndexRule) schemaRule;
+            }
+        }, filter( new Predicate<SchemaRule>()
+        {
+            @Override
+            public boolean accept( SchemaRule item )
+            {
+                return item.getKind() == SchemaRule.Kind.INDEX_RULE;
+            }
+        }, neoStore.getSchemaStore().loadAll() ) );
+    }
 }

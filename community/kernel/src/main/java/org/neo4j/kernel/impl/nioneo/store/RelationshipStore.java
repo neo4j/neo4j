@@ -84,6 +84,7 @@ public class RelationshipStore extends AbstractStore implements Store, RecordSto
         super.close();
     }
 
+    @Override
     public RelationshipRecord getRecord( long id )
     {
         PersistenceWindow window = acquireWindow( id, OperationType.READ );
@@ -155,21 +156,7 @@ public class RelationshipStore extends AbstractStore implements Store, RecordSto
         }
     }
 
-    public void updateRecord( RelationshipRecord record, boolean recovered )
-    {
-        assert recovered;
-        setRecovered();
-        try
-        {
-            updateRecord( record );
-            registerIdFromUpdateRecord( record.getId() );
-        }
-        finally
-        {
-            unsetRecovered();
-        }
-    }
-
+    @Override
     public void updateRecord( RelationshipRecord record )
     {
         PersistenceWindow window = acquireWindow( record.getId(),
@@ -203,6 +190,7 @@ public class RelationshipStore extends AbstractStore implements Store, RecordSto
         PersistenceWindow window, boolean force )
     {
         long id = record.getId();
+        registerIdFromUpdateRecord( id );
         Buffer buffer = window.getOffsettedBuffer( id );
         if ( record.inUse() || force )
         {

@@ -46,5 +46,5 @@ public abstract class PrimitiveRecord extends Abstract64BitRecord
         return isCreated() ? Record.NO_NEXT_PROPERTY.intValue() : committedNextProp;
     }
 
-    abstract void setIdTo( PropertyRecord property );
+    public abstract void setIdTo( PropertyRecord property );
 }

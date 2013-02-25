@@ -19,9 +19,34 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import static java.util.Arrays.binarySearch;
+
 public enum UpdateMode
 {
-    ADDED,
-    CHANGED,
-    REMOVED;
+    ADDED
+    {
+        @Override
+        public boolean forLabel( long[] before, long[] after, long label )
+        {
+            return binarySearch( after, label ) >= 0;
+        }
+    },
+    CHANGED
+    {
+        @Override
+        public boolean forLabel( long[] before, long[] after, long label )
+        {
+            return ADDED.forLabel( before, after, label ) && REMOVED.forLabel( before, after, label );
+        }
+    },
+    REMOVED
+    {
+        @Override
+        public boolean forLabel( long[] before, long[] after, long label )
+        {
+            return binarySearch( before, label ) >= 0;
+        }
+    };
+    
+    public abstract boolean forLabel( long[] before, long[] after, long label );
 }

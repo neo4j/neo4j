@@ -119,14 +119,7 @@ public abstract class IteratorUtil
      */
     public static <T> T singleOrNull( Iterator<T> iterator )
     {
-        T result = iterator.hasNext() ? iterator.next() : null;
-        if ( iterator.hasNext() )
-        {
-            throw new NoSuchElementException( "More than one element in " +
-                iterator + ". First element is '" + result +
-                "' and the second element is '" + iterator.next() + "'" );
-        }
-        return result;
+        return single( iterator, null );
     }
     
     /**
@@ -306,6 +299,47 @@ public abstract class IteratorUtil
     public static <T> T single( Iterable<T> iterable )
     {
         return single( iterable.iterator() );
+    }
+    
+    /**
+     * Returns the given iterable's single element or {@code null} if no
+     * element found. If there is more than one element in the iterable a
+     * {@link NoSuchElementException} will be thrown.
+     * 
+     * @param <T> the type of elements in {@code iterable}.
+     * @param iterable the {@link Iterable} to get elements from.
+     * @return the single element in {@code iterable}, or {@code null} if no
+     * element found.
+     * @throws {@link NoSuchElementException} if more than one element was
+     * found.
+     */
+    public static <T> T single( Iterable<T> iterable, T itemIfNone )
+    {
+        return single( iterable.iterator(), itemIfNone );
+    }
+    
+    /**
+     * Returns the given iterator's single element or {@code itemIfNone} if no
+     * element found. If there is more than one element in the iterator a
+     * {@link NoSuchElementException} will be thrown.
+     * 
+     * @param <T> the type of elements in {@code iterator}.
+     * @param iterator the {@link Iterator} to get elements from.
+     * @return the single element in {@code iterator}, or {@code itemIfNone} if no
+     * element found.
+     * @throws {@link NoSuchElementException} if more than one element was
+     * found.
+     */
+    public static <T> T single( Iterator<T> iterator, T itemIfNone )
+    {
+        T result = iterator.hasNext() ? iterator.next() : itemIfNone;
+        if ( iterator.hasNext() )
+        {
+            throw new NoSuchElementException( "More than one element in " +
+                iterator + ". First element is '" + result +
+                "' and the second element is '" + iterator.next() + "'" );
+        }
+        return result;
     }
     
     /**
@@ -624,5 +658,54 @@ public abstract class IteratorUtil
                 };
             }
         };
+    }
+
+    public static <T> Iterator<T> asIterator( final T... array )
+    {
+        return new PrefetchingIterator<T>()
+        {
+            private int index;
+            
+            @Override
+            protected T fetchNextOrNull()
+            {
+                try
+                {
+                    return index < array.length ? array[index] : null;
+                }
+                finally
+                {
+                    index++;
+                }
+            }
+        };
+    }
+    
+    @SuppressWarnings( "rawtypes" )
+    private static final Iterator EMPTY_ITERATOR = new Iterator()
+    {
+        @Override
+        public boolean hasNext()
+        {
+            return false;
+        }
+
+        @Override
+        public Object next()
+        {
+            throw new NoSuchElementException();
+        }
+
+        @Override
+        public void remove()
+        {
+            throw new UnsupportedOperationException();
+        }
+    };
+    
+    @SuppressWarnings( "unchecked" )
+    public static <T> Iterator<T> emptyIterator()
+    {
+        return EMPTY_ITERATOR;
     }
 }

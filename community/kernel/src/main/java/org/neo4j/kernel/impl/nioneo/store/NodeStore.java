@@ -83,6 +83,17 @@ public class NodeStore extends AbstractStore implements Store, RecordStore<NodeR
         return getRecordSize();
     }
     
+    public void makeHeavy( NodeRecord node )
+    {
+        long labels = node.getLabelField();
+        byte header = NodeLabelRecordLogic.getHeader( labels );
+        if ( NodeLabelRecordLogic.highHeaderBitSet( header ) )
+        {
+            long firstDynamicRecord = NodeLabelRecordLogic.parseLabelsBody( labels );
+            makeHeavy( node, firstDynamicRecord );
+        }
+    }
+    
     public void makeHeavy( NodeRecord node, long firstDynamicLabelRecord )
     {
         if ( !node.isLight() )
@@ -141,20 +152,20 @@ public class NodeStore extends AbstractStore implements Store, RecordStore<NodeR
         return forceGetRecord( id );
     }
 
-    public void updateRecord( NodeRecord record, boolean recovered )
-    {
-        assert recovered;
-        setRecovered();
-        try
-        {
-            updateRecord( record );
-            registerIdFromUpdateRecord( record.getId() );
-        }
-        finally
-        {
-            unsetRecovered();
-        }
-    }
+//    public void updateRecord( NodeRecord record, boolean recovered )
+//    {
+//        assert recovered;
+//        setRecovered();
+//        try
+//        {
+//            updateRecord( record );
+//            registerIdFromUpdateRecord( record.getId() );
+//        }
+//        finally
+//        {
+//            unsetRecovered();
+//        }
+//    }
 
     @Override
     public void forceUpdateRecord( NodeRecord record )
@@ -253,6 +264,7 @@ public class NodeStore extends AbstractStore implements Store, RecordStore<NodeR
     private void updateRecord( NodeRecord record, PersistenceWindow window, boolean force )
     {
         long id = record.getId();
+        registerIdFromUpdateRecord( id );
         Buffer buffer = window.getOffsettedBuffer( id );
         if ( record.inUse() || force )
         {

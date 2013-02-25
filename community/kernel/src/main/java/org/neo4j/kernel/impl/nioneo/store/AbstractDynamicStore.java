@@ -152,10 +152,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
     public void updateRecord( DynamicRecord record )
     {
         long blockId = record.getId();
-        if ( isInRecoveryMode() )
-        {
-            registerIdFromUpdateRecord( blockId );
-        }
+        registerIdFromUpdateRecord( blockId );
         PersistenceWindow window = acquireWindow( blockId, OperationType.WRITE );
         try
         {

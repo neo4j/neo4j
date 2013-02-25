@@ -31,12 +31,7 @@ public class PropertyBlock
     private final List<DynamicRecord> valueRecords = new LinkedList<DynamicRecord>();
     private long[] valueBlocks;
     private boolean isCreated;
-    
-    /**
-     * If true then value records are loaded into this block, and also all value records
-     * are themselves heavy.
-     */
-    private boolean superHeavy;
+    private boolean isChanged;
 
     public PropertyType getType()
     {
@@ -208,7 +203,6 @@ public class PropertyBlock
     {
         PropertyBlock result = new PropertyBlock();
         result.isCreated = isCreated;
-        result.superHeavy = superHeavy;
         if ( valueBlocks != null )
             result.valueBlocks = valueBlocks.clone();
         for ( DynamicRecord valueRecord : valueRecords )
@@ -221,5 +215,15 @@ public class PropertyBlock
         // Assumption (which happens to be true) that if a heavy (long string/array) property
         // changes it will get another id, making the valueBlocks values differ.
         return Arrays.equals( valueBlocks, other.valueBlocks );
+    }
+    
+    public void setChanged( boolean isChanged )
+    {
+        this.isChanged = isChanged;
+    }
+    
+    public boolean isChanged()
+    {
+        return isChanged;
     }
 }

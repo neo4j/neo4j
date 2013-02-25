@@ -200,7 +200,7 @@ class ReadTransaction implements NeoStoreTransaction
         Collection<PropertyRecord> chain = propertyStore.getPropertyRecordChain( nextProp );
         if ( chain == null )
         {
-            return null;
+            return ArrayMap.empty();
         }
         return propertyChainToMap( chain );
     }

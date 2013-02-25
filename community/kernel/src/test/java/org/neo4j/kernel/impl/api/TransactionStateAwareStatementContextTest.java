@@ -43,10 +43,10 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
+import org.neo4j.kernel.api.InternalIndexState;
 import org.neo4j.kernel.api.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
-import org.neo4j.kernel.impl.nioneo.store.IndexRule.State;
 
 public class TransactionStateAwareStatementContextTest
 {
@@ -141,9 +141,27 @@ public class TransactionStateAwareStatementContextTest
 
         // THEN
         assertEquals( asSet( rule ), asSet( txContext.getIndexRules( labelId1 ) ) );
+        assertEquals( asSet( rule ), asSet( txContext.getIndexRules() ) );
         verify( store ).addIndexRule( labelId1, key1 );
     }
 
+    @Test
+    public void addedRulesShouldBeVisibleInTx() throws Exception
+    {
+        // GIVEN
+        commitNoLabels();
+
+        // WHEN
+        IndexRule rule1 = txContext.addIndexRule( labelId1, key1 );
+        IndexRule rule2 = txContext.addIndexRule( labelId2, key2 );
+
+        // THEN
+        assertEquals( asSet( rule1 ), asSet( txContext.getIndexRules( labelId1 ) ) );
+        assertEquals( asSet( rule2 ), asSet( txContext.getIndexRules( labelId2 ) ) );
+        assertEquals( asSet( rule1, rule2 ), asSet( txContext.getIndexRules() ) );
+        verify( store ).addIndexRule( labelId1, key1 );
+    }
+    
     @Test
     public void addedAdditionalRuleShouldBeVisibleInTx() throws Exception
     {
@@ -292,9 +310,9 @@ public class TransactionStateAwareStatementContextTest
         IndexRule rule = txContext.addIndexRule( labelId1, key1 );
 
         // THEN
-        assertEquals( IndexRule.State.POPULATING, rule.getState() );
+        assertEquals( InternalIndexState.POPULATING, txContext.getIndexState( rule ) );
     }
-    
+
     @Test
     public void shouldReturnNonExistentRuleAddedInTransaction() throws Exception
     {
@@ -307,7 +325,7 @@ public class TransactionStateAwareStatementContextTest
         Iterable<IndexRule> labelRules = txContext.getIndexRules( labelId1 );
         
         // THEN
-        IndexRule expectedRule = new IndexRule( rule.getId(), labelId1, State.POPULATING, key1 );
+        IndexRule expectedRule = new IndexRule( rule.getId(), labelId1, key1 );
         assertEquals( expectedRule, rule );
         assertEquals( asSet( expectedRule ), asSet( labelRules ) );
     }
@@ -317,7 +335,7 @@ public class TransactionStateAwareStatementContextTest
     {
         // GIVEN
         // -- a rule that exists in the store
-        IndexRule rule = new IndexRule( ruleId, labelId1, State.POPULATING, key1 );
+        IndexRule rule = new IndexRule( ruleId, labelId1, key1 );
         when( store.getIndexRules( labelId1 ) ).thenReturn( option( rule ) );
         // -- that same rule dropped in the transaction
         txContext.dropIndexRule( rule );
@@ -376,13 +394,14 @@ public class TransactionStateAwareStatementContextTest
     {
         store = mock( StatementContext.class );
         when( store.getIndexRules( labelId1 ) ).thenReturn( Collections.<IndexRule>emptyList() );
-//        when( store.addIndexRule( labelId1, key1 ) ).thenReturn( new IndexRule( ruleId, labelId1, State.POPULATING, key1 ) );
+        when( store.getIndexRules( labelId2 ) ).thenReturn( Collections.<IndexRule>emptyList() );
+        when( store.getIndexRules() ).thenReturn( Collections.<IndexRule>emptyList() );
         when( store.addIndexRule( anyLong(), anyLong() ) ).thenAnswer( new Answer<IndexRule>()
         {
             @Override
             public IndexRule answer( InvocationOnMock invocation ) throws Throwable
             {
-                return new IndexRule( ruleId+rulesCreated++, (Long) invocation.getArguments()[0], State.POPULATING,
+                return new IndexRule( ruleId+rulesCreated++, (Long) invocation.getArguments()[0],
                         (Long) invocation.getArguments()[1] );
             }
         } );

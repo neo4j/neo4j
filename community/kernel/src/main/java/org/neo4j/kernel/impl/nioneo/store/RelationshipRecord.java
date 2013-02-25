@@ -21,9 +21,9 @@ package org.neo4j.kernel.impl.nioneo.store;
 
 public class RelationshipRecord extends PrimitiveRecord
 {
-    private final long firstNode;
-    private final long secondNode;
-    private final int type;
+    private long firstNode;
+    private long secondNode;
+    private int type;
     private long firstPrevRel = Record.NO_PREV_RELATIONSHIP.intValue();
     private long firstNextRel = Record.NO_NEXT_RELATIONSHIP.intValue();
     private long secondPrevRel = Record.NO_PREV_RELATIONSHIP.intValue();
@@ -32,12 +32,24 @@ public class RelationshipRecord extends PrimitiveRecord
     public RelationshipRecord( long id, long firstNode, long secondNode, int type )
     {
         // TODO take firstProp in here
-        super( id, Record.NO_NEXT_PROPERTY.intValue() );
+        this( id );
         this.firstNode = firstNode;
         this.secondNode = secondNode;
         this.type = type;
     }
 
+    public RelationshipRecord( long id )
+    {
+        super( id, Record.NO_NEXT_PROPERTY.intValue() );
+    }
+    
+    public void setLinks( long firstNode, long secondNode, int type )
+    {
+        this.firstNode = firstNode;
+        this.secondNode = secondNode;
+        this.type = type;
+    }
+    
     public long getFirstNode()
     {
         return firstNode;
@@ -104,7 +116,7 @@ public class RelationshipRecord extends PrimitiveRecord
     }
 
     @Override
-    void setIdTo( PropertyRecord property )
+    public void setIdTo( PropertyRecord property )
     {
         property.setRelId( getId() );
     }

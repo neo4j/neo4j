@@ -19,6 +19,12 @@
  */
 package recovery;
 
+import static java.nio.ByteBuffer.allocate;
+import static org.junit.Assert.assertEquals;
+import static org.neo4j.helpers.Exceptions.launderedException;
+import static org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils.readEntry;
+import static org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils.readLogHeader;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -27,7 +33,9 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 import java.util.concurrent.CountDownLatch;
+
 import javax.transaction.xa.Xid;
+
 import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
@@ -46,19 +54,14 @@ import org.neo4j.test.subprocess.DebugInterface;
 import org.neo4j.test.subprocess.DebuggedThread;
 import org.neo4j.test.subprocess.KillSubProcess;
 
-import static java.nio.ByteBuffer.*;
-import static org.junit.Assert.*;
-import static org.neo4j.helpers.Exceptions.*;
-import static org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils.*;
-
 @Ignore( "Doesn't work yet" )
 public class TestOrderlyWritten2PCOnRecovery extends AbstractSubProcessTestBase
 {
     private static final int TX_COUNT = 10;
     
     private DebuggedThread committer;
-    private CountDownLatch commitLatch = new CountDownLatch( 1 );
-    private CountDownLatch latch = new CountDownLatch( TX_COUNT );
+    private final CountDownLatch commitLatch = new CountDownLatch( 1 );
+    private final CountDownLatch latch = new CountDownLatch( TX_COUNT );
     
     private final BreakPoint commit = new BreakPoint( XaResourceManager.class, "commit", Xid.class, Boolean.TYPE )
     {
@@ -95,6 +98,7 @@ public class TestOrderlyWritten2PCOnRecovery extends AbstractSubProcessTestBase
     {   // Triggers breakpoint
     }
     
+    @Override
     protected BreakPoint[] breakpoints( int id )
     {
         return new BreakPoint[] { commit.enable(), continueCommitting.enable() };
@@ -125,7 +129,7 @@ public class TestOrderlyWritten2PCOnRecovery extends AbstractSubProcessTestBase
         public XaCommand readCommand( ReadableByteChannel byteChannel,
                 ByteBuffer buffer ) throws IOException
         {
-            return Command.readCommand( null, byteChannel, buffer );
+            return Command.readCommand( null, null, byteChannel, buffer );
         }
     }
     

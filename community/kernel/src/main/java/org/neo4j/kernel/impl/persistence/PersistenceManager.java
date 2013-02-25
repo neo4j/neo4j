@@ -227,22 +227,10 @@ public class PersistenceManager
     private NeoStoreTransaction getReadOnlyResourceIfPossible()
     {
         Transaction tx = this.getCurrentTransaction();
-//        if ( tx == null )
-//        {
-//            return ((NioNeoDbPersistenceSource)
-//                    persistenceSource ).createReadOnlyResourceConnection();
-//        }
 
         NeoStoreTransaction con = txConnectionMap.get( tx );
         if ( con == null )
         {
-            // con is put in map on write operation, see getResoure()
-            // createReadOnlyResourceConnection just return a single final
-            // resource and does not create a new object
-            /*
-             * return ((NioNeoDbPersistenceSource)
-                persistenceSource ).createReadOnlyResourceConnection();
-             */
             return getReadOnlyResource();
         }
         return con;

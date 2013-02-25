@@ -37,8 +37,7 @@ public class NeoStoreRecord extends PrimitiveRecord
     }
 
     @Override
-    void setIdTo( PropertyRecord property )
+    public void setIdTo( PropertyRecord property )
     {
-        property.setNodeId( -1 );
     }
 }

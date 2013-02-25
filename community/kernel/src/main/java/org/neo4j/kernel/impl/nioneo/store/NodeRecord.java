@@ -21,7 +21,9 @@ package org.neo4j.kernel.impl.nioneo.store;
 
 import static java.util.Collections.emptyList;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 public class NodeRecord extends PrimitiveRecord
 {
@@ -36,7 +38,7 @@ public class NodeRecord extends PrimitiveRecord
         super( id, nextProp );
         this.committedNextRel = this.nextRel = nextRel;
     }
-
+    
     public long getNextRel()
     {
         return nextRel;
@@ -108,8 +110,27 @@ public class NodeRecord extends PrimitiveRecord
     }
 
     @Override
-    void setIdTo( PropertyRecord property )
+    public void setIdTo( PropertyRecord property )
     {
         property.setNodeId( getId() );
+    }
+    
+    @Override
+    public NodeRecord clone()
+    {
+        NodeRecord clone = new NodeRecord( getId(), getCommittedNextRel(), getCommittedNextProp() );
+        clone.setNextProp( getNextProp() );
+        clone.nextRel = nextRel;
+        clone.labels = labels;
+        clone.isLight = isLight;
+
+        if( dynamicLabelRecords.size() > 0 )
+        {
+            List<DynamicRecord> clonedLabelRecords = new ArrayList<DynamicRecord>(dynamicLabelRecords.size());
+            for ( DynamicRecord labelRecord : dynamicLabelRecords )
+                clonedLabelRecords.add( labelRecord.clone() );
+            clone.dynamicLabelRecords = clonedLabelRecords;
+        }
+        return clone;
     }
 }

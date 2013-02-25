@@ -27,7 +27,6 @@ import java.util.Set;
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
-import org.neo4j.kernel.impl.nioneo.store.IndexRule.State;
 
 public class TxStateTest
 {
@@ -165,6 +164,6 @@ public class TxStateTest
 
     private IndexRule newIndexRule( long ruleId, long labelId, long propertyKey )
     {
-        return new IndexRule( ruleId, labelId, State.POPULATING, propertyKey );
+        return new IndexRule( ruleId, labelId, propertyKey );
     }
 }

@@ -69,7 +69,7 @@ public class DynamicArrayStore extends AbstractDynamicStore
     {
         return TYPE_DESCRIPTOR;
     }
-
+    
     private Collection<DynamicRecord> allocateFromNumbers( Object array, Iterator<DynamicRecord> recordsToUseFirst )
     {
         Class<?> componentType = array.getClass().getComponentType();

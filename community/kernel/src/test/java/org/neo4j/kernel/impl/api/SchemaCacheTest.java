@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.api;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-import static org.neo4j.kernel.impl.nioneo.store.IndexRule.State.POPULATING;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -80,6 +79,6 @@ public class SchemaCacheTest
 
     private IndexRule newIndexRule( long id, long label, long propertyKey )
     {
-        return new IndexRule( id, label, POPULATING, propertyKey );
+        return new IndexRule( id, label, propertyKey );
     }
 }
