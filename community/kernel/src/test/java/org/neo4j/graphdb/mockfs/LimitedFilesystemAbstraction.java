@@ -179,4 +179,10 @@ public class LimitedFilesystemAbstraction implements FileSystemAbstraction
     {
         inner.copyFile( from, to );
     }
+    
+    @Override
+    public void copyRecursively( File fromDirectory, File toDirectory ) throws IOException
+    {
+        inner.copyRecursively( fromDirectory, toDirectory );
+    }
 }

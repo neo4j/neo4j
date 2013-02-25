@@ -23,6 +23,7 @@ import static org.junit.Assert.assertEquals;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.Writer;
 import java.util.HashMap;
 import java.util.Map;
@@ -95,13 +96,15 @@ public class BatchInsertExampleTest
         fw.close();
 
         // START SNIPPET: configFileInsert
-        Map<String, String> config = MapUtil.load( new File(
-                "target/batchinsert-config" ) );
+        InputStream input = fileSystem.openAsInputStream(
+                new File( "target/batchinsert-config" ) );
+        Map<String, String> config = MapUtil.load( input );
         BatchInserter inserter = BatchInserters.inserter(
                 "target/batchinserter-example-config", fileSystem, config );
         // Insert data here ... and then shut down:
         inserter.shutdown();
         // END SNIPPET: configFileInsert
+        input.close();
     }
 
     @Test

@@ -166,4 +166,10 @@ public class DefaultFileSystemAbstraction
     {
         FileUtils.copyFile( from, to );
     }
+    
+    @Override
+    public void copyRecursively( File fromDirectory, File toDirectory ) throws IOException
+    {
+        FileUtils.copyRecursively( fromDirectory, toDirectory );
+    }
 }

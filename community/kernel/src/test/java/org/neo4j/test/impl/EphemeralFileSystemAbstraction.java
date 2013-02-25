@@ -55,9 +55,9 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.impl.nioneo.store.FileLock;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
-import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
-public class EphemeralFileSystemAbstraction implements FileSystemAbstraction, Lifecycle
+public class EphemeralFileSystemAbstraction extends LifecycleAdapter implements FileSystemAbstraction
 {
     private final Map<File, EphemeralFileData> files;
     
@@ -70,26 +70,12 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction, Li
     {
         this.files = files;
     }
-    
-    @Override
-    public void init()
-    {
-    }
-
-    @Override
-    public void start()
-    {
-    }
-
-    @Override
-    public void stop()
-    {
-    }
 
     @Override
     public void shutdown()
     {
-        for (EphemeralFileData file : files.values()) free(file);
+        for ( EphemeralFileData file : files.values() )
+            free( file );
         files.clear();
     }
 
@@ -308,6 +294,12 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction, Li
         if ( data == null )
             throw new FileNotFoundException( "File " + from + " not found" );
         copyFile( from, this, to, newCopyBuffer() );
+    }
+    
+    @Override
+    public void copyRecursively( File fromDirectory, File toDirectory ) throws IOException
+    {
+        copyRecursivelyFromOtherFs( fromDirectory, this, toDirectory, newCopyBuffer() );
     }
 
     private static class EphemeralFileChannel extends FileChannel

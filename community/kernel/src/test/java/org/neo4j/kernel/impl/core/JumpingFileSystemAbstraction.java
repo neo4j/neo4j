@@ -178,6 +178,12 @@ public class JumpingFileSystemAbstraction implements FileSystemAbstraction
         actualFileSystem.copyFile( from, to );
     }
     
+    @Override
+    public void copyRecursively( File fromDirectory, File toDirectory ) throws IOException
+    {
+        actualFileSystem.copyRecursively( fromDirectory, toDirectory );
+    }
+    
     private int recordSizeFor( File fileName )
     {
         if ( fileName.getName().endsWith( "nodestore.db" ) )

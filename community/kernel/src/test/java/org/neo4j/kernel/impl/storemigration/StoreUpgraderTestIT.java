@@ -29,8 +29,6 @@ import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.defaultCon
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.prepareSampleLegacyDatabase;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.truncateFile;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.verifyFilesHaveSameContent;
-import static org.neo4j.kernel.impl.util.FileUtils.copyRecursively;
-import static org.neo4j.kernel.impl.util.FileUtils.deleteRecursively;
 
 import java.io.File;
 import java.io.IOException;
@@ -99,8 +97,8 @@ public class StoreUpgraderTestIT
                 + "shouldLeaveAllFilesUntouchedIfWrongVersionNumberFound-comparison" );
 
         changeVersionNumber( fileSystem, new File( workingDirectory, "neostore.nodestore.db" ), "v0.9.5" );
-        deleteRecursively( comparisonDirectory );
-        copyRecursively( workingDirectory, comparisonDirectory );
+        fileSystem.deleteRecursively( comparisonDirectory );
+        fileSystem.copyRecursively( workingDirectory, comparisonDirectory );
 
         try
         {
@@ -124,8 +122,8 @@ public class StoreUpgraderTestIT
 
         truncateFile( fileSystem, new File( workingDirectory, "neostore.propertystore.db.index.keys" ),
                 "StringPropertyStore v0.9.9" );
-        deleteRecursively( comparisonDirectory );
-        copyRecursively( workingDirectory, comparisonDirectory );
+        fileSystem.deleteRecursively( comparisonDirectory );
+        fileSystem.copyRecursively( workingDirectory, comparisonDirectory );
 
         try
         {
@@ -148,8 +146,8 @@ public class StoreUpgraderTestIT
                 + "shouldRefuseToUpgradeIfAllOfTheStoresWeNotShutDownCleanly-comparison" );
 
         truncateAllFiles( fileSystem, workingDirectory );
-        deleteRecursively( comparisonDirectory );
-        copyRecursively( workingDirectory, comparisonDirectory );
+        fileSystem.deleteRecursively( comparisonDirectory );
+        fileSystem.copyRecursively( workingDirectory, comparisonDirectory );
 
         try
         {

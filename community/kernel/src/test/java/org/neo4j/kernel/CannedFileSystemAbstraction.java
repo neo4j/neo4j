@@ -169,6 +169,12 @@ public class CannedFileSystemAbstraction implements FileSystemAbstraction
         throw new UnsupportedOperationException( "TODO" );
     }
     
+    @Override
+    public void copyRecursively( File fromDirectory, File toDirectory ) throws IOException
+    {
+        throw new UnsupportedOperationException( "TODO" );
+    }
+    
     private static final FileLock SYMBOLIC_FILE_LOCK = new FileLock()
     {
         @Override
