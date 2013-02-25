@@ -64,7 +64,7 @@ class ExecuteUpdateCommandsPipe(source: Pipe, db: GraphDatabaseService, commands
     case CreateNode(key, props, labels, bare) =>
       Seq(NamedExpectation(key, props, labels, bare))
     case CreateRelationship(key, from, to, _, props) =>
-      Seq(NamedExpectation(key, props, Collection.empty, true)) ++ extractIfEntity(from) ++ extractIfEntity(to)
+      Seq(NamedExpectation(key, props, Seq.empty, bare = true)) ++ extractIfEntity(from) ++ extractIfEntity(to)
     case CreateUniqueAction(links@_*) =>
       links.flatMap(l => Seq(l.start, l.end, l.rel))
     case _ =>

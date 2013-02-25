@@ -25,8 +25,9 @@ import org.neo4j.cypher.internal.pipes.QueryState
 import org.neo4j.cypher.internal.symbols.{SymbolTable, NodeType}
 import collection.Map
 import org.neo4j.cypher.internal.ExecutionContext
+import org.neo4j.cypher.internal.commands.values.LabelValue
 
-case class CreateNode(key: String, properties: Map[String, Expression], labels: Expression, bare: Boolean = true)
+case class CreateNode(key: String, properties: Map[String, Expression], labels: Seq[LabelValue], bare: Boolean = true)
   extends UpdateAction
   with GraphElementPropertyFunctions
   with CollectionSupport {
@@ -43,8 +44,8 @@ case class CreateNode(key: String, properties: Map[String, Expression], labels: 
       setProperties(node, props, context, state)
 
       val queryCtx = state.query
-      val labelIds: Iterable[Long] = LabelSupport.getLabelsAsLongs(context, labels)(state)
-      queryCtx.addLabelsToNode(node.getId, labelIds)
+      val labelIds = labels.map(_.id(state))
+      queryCtx.setLabelsOnNode(node.getId, labelIds)
 
       val newContext = context.newWith(key -> node)
       newContext
@@ -82,16 +83,17 @@ case class CreateNode(key: String, properties: Map[String, Expression], labels: 
 
   def identifiers = Seq(key -> NodeType())
 
-  override def children = properties.map(_._2).toSeq :+ labels
+  override def children = properties.map(_._2).toSeq ++ labels.flatMap(_.children)
 
   override def rewrite(f: (Expression) => Expression): CreateNode =
-    CreateNode(key, properties.rewrite(f), labels.rewrite(f), bare)
+    CreateNode(key, properties.rewrite(f), labels.map(_.typedRewrite[LabelValue](f)), bare)
 
   override def throwIfSymbolsMissing(symbols: SymbolTable) {
     properties throwIfSymbolsMissing symbols
-    labels throwIfSymbolsMissing symbols
+    for (label <- labels)
+      label throwIfSymbolsMissing symbols
   }
 
   override def symbolTableDependencies: Set[String] =
-    properties.symboltableDependencies ++ labels.symbolTableDependencies
+    properties.symboltableDependencies ++ labels.flatMap(_.symbolTableDependencies)
 }

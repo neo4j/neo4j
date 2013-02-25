@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.commands.expressions.{Identifier, Literal, Coll
 import org.neo4j.cypher.SyntaxException
 import org.neo4j.cypher.internal.commands.HasLabel
 import org.neo4j.cypher.internal.helpers.IsCollection
+import org.neo4j.cypher.internal.commands.values.LabelValue
 
 /**
  * LabelSpec represent parsed label sets before they are turned into either expressions or predicates
@@ -55,20 +56,11 @@ sealed abstract class LabelSpec {
 
   /**
    * @throws SyntaxException if this is a LabelChoice
-   * @return this as an expression
+   * @return this as a predicate or none if the contained expression is an empty collection
    */
-  def asExpr: Expression
-
-  /**
-     * @throws SyntaxException if this is a LabelChoice
-     * @return this as a predicate or none if the contained expression is an empty collection
-     */
-  def asOptPredicate(entity: Expression): Option[HasLabel] = {
-    asExpr match {
-       case IsCollection(coll) if coll.isEmpty => None
-       case Literal(IsCollection(coll)) if coll.isEmpty => None
-       case expr => Some(HasLabel(entity, expr))
-    }
+  def asOptPredicate(ident: Identifier): Option[HasLabel] = {
+    val labelVals = asLabelSet.labelVals
+    if (labelVals.isEmpty) None else Some(HasLabel(ident, labelVals))
   }
 
   /**
@@ -80,21 +72,19 @@ sealed abstract class LabelSpec {
 }
 
 object LabelSet {
-  val empty = LabelSet(None)
+  val empty = LabelSet(Seq.empty)
 }
 
-final case class LabelSet(optExpr: Option[Expression]) extends LabelSpec {
-  val bare = optExpr.isEmpty
+final case class LabelSet(labelVals: Seq[LabelValue]) extends LabelSpec {
+  val bare = labelVals.isEmpty
   def allSets = if (bare) Seq.empty else Seq(this)
   def asLabelSet = this
-  def asExpr = optExpr.getOrElse(Collection.empty)
 }
 
 final case class LabelChoice(override val allSets: LabelSet*) extends LabelSpec {
   def bare = allSets.isEmpty
 
   def asLabelSet: LabelSet = throw new SyntaxException("Required single label set or none but found too many")
-  def asExpr: Expression = throw new SyntaxException("Required single label set or none but found too many")
 
   override def simplify: LabelSpec =
     if (allSets.isEmpty)

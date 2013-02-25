@@ -17,17 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.helpers
+package org.neo4j.cypher.internal.executionplan
 
-import org.neo4j.cypher.internal.commands.values.{ResolvedLabel, LabelValue, LabelName}
-import org.neo4j.cypher.internal.spi.QueryContext
+import org.neo4j.cypher.internal.commands.expressions.Expression
+import org.neo4j.cypher.internal.commands.values.{LabelName, ResolvedLabel}
 
-object LabelSupport extends CollectionSupport {
-  def labelCollection(elems: String*): Seq[LabelValue] = Seq(elems.map(LabelName(_)): _*)
+case class LabelResolution(labelMapper: String => Option[ResolvedLabel]) extends (Expression => Expression) {
 
-//  def getOrCreateLabelIds(labels: Seq[LabelValue])(implicit ctx: QueryContext): Seq[Long] =
-//    labels.map {
-//      case (r: ResolvedLabel) => r.id
-//      case (l: LabelValue)    => ctx.getOrCreateLabelId(l.name)
-//    }
+  def apply(expr: Expression) = expr match {
+    case label: LabelName => labelMapper(label.name).getOrElse(label)
+    case _                => expr
+  }
 }

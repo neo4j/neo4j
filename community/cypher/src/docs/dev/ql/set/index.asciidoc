@@ -1,8 +1,11 @@
 [[query-set]]
 Set
 ===
-Updating properties on nodes and relationships is done with the +SET+ clause.
-+SET+ can also be used with maps from parameters.
+Updating properties and labels on nodes and relationships is done with the +SET+ clause.
++SET+ properties can also be used with maps from parameters.
+
+NOTE: Setting labels on a node is an idempotent operations - if you try to set a label on a node that already has that label on it, nothing happens. The
+query statistics will tell you if something needed to be done or not.
 
 The examples use this graph as a starting point:
 
@@ -13,3 +16,6 @@ include::includes/cypher-set-graph.asciidoc[]
 include::set-a-property.asciidoc[]
 include::remove-a-property.asciidoc[]
 include::copying-properties-between-nodes-and-relationships.asciidoc[]
+include::add-a-label-to-a-node.asciidoc[]
+include::add-multiple-labels-to-a-node.asciidoc[]
+

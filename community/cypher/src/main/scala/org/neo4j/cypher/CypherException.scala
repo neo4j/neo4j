@@ -62,3 +62,5 @@ class CouldNotDropIndexException(labelName:String, property:String, cause:Throwa
   extends CypherException(String.format(s"Unable to drop index on label `$labelName` for property `$property`."), cause)
 
 class ProfilerStatisticsNotReadyException() extends CypherException("This result has not been materialised yet. Iterate over it to get profiler stats.")
+
+class UnknownLabelException(labelName: String) extends CypherException(s"The provided label :`${labelName}` does not exist in the store")

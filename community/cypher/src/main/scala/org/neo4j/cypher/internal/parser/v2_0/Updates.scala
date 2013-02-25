@@ -21,12 +21,12 @@ package org.neo4j.cypher.internal.parser.v2_0
 
 import org.neo4j.cypher.internal.mutation._
 import org.neo4j.cypher.internal.commands._
-import expressions.{Collection, Property, Identifier}
+import expressions.{Expression, Collection, Property, Identifier}
 import org.neo4j.cypher.SyntaxException
 
 trait Updates extends Base with Expressions with StartAndCreateClause {
   def updates: Parser[(Seq[UpdateAction], Seq[NamedPath])] =
-    rep(foreach | liftToSeq(labelAction)  | set | delete) ^^ { x => (x.flatten, Seq.empty) }
+    rep(foreach | set | remove | delete) ^^ { x => (x.flatten, Seq.empty) }
 
   private def foreach: Parser[Seq[UpdateAction]] = FOREACH ~> parens( identity ~ IN ~ expression ~ ":" ~ opt(createStart) ~ opt(updates) ) ^^ {
     case id ~ in ~ collection ~ ":" ~ creates ~ innerUpdates =>
@@ -38,39 +38,44 @@ trait Updates extends Base with Expressions with StartAndCreateClause {
       Seq(ForeachAction(collection, id, createCmds ++ updateCmds))
   }
 
-  private def getActionFromVerb(x:String): LabelOp = x match {
-    case _ if x == "add" => LabelAdd
-    case _ if x == "remove" => LabelDel
-  }
-
-  private def labelAction: Parser[UpdateAction] = (ADD | REMOVE) ~ identity ~ labelLongForm ^^ {
-      case verb ~ entity ~ labels =>
-        val action = getActionFromVerb(verb)
-        LabelAction(Identifier(entity), action, labels.asExpr)
-    }
-
-  private def delete: Parser[Seq[UpdateAction]] = DELETE ~> commaList(expression) ^^ {
-    case expressions => val updateActions: List[UpdateAction with Product] = expressions.map {
-      case Property(entity, property) => DeletePropertyAction(entity, property)
-      case x => DeleteEntityAction(x)
-    }
-
-    updateActions
-  }
-
   private def set: Parser[Seq[UpdateAction]] = {
-    def setToMap : Parser[UpdateAction] = SET ~> expression ~ "=" ~ expression ^^ {
+    def mapSetter : Parser[UpdateAction] = SET ~> expression ~ "=" ~ expression ^^ {
       case element ~ "=" ~ map => MapPropertySetAction(element, map)
     }
 
-    def setSingleProperty: Parser[Seq[UpdateAction]] = {
-      def propertySet = property ~ "=" ~ exprOrPred ^^ {
+    def singleSetter: Parser[Seq[UpdateAction]] = {
+      def labelSet: Parser[UpdateAction] = labelAction(LabelSetOp)
+
+      def propertySet: Parser[UpdateAction] = property ~ "=" ~ exprOrPred ^^ {
         case p ~ "=" ~ e => PropertySetAction(p.asInstanceOf[Property], e)
       }
 
-      SET ~> commaList(propertySet)
+      SET ~> commaList(propertySet|labelSet)
     }
 
-    setSingleProperty | liftToSeq(setToMap)
+    singleSetter | liftToSeq(mapSetter)
   }
+
+  private def remove: Parser[Seq[UpdateAction]] =
+    // order is important as n:foo doesn't parse as expression nicely
+    REMOVE ~> commaList(labelAction(LabelRemoveOp)|mapExpression(propertyRemover)|failure("node labelling or property expected"))
+
+  private def delete: Parser[Seq[UpdateAction]] =
+    DELETE ~> commaList(mapExpression(entityRemover))
+
+
+  private def mapExpression(pf: PartialFunction[Expression, UpdateAction]): Parser[UpdateAction] = expression ^^ pf
+
+  private def propertyRemover: PartialFunction[Expression, UpdateAction] = {
+    case Property(entity, property) => DeletePropertyAction(entity, property)
+  }
+
+  private def entityRemover: PartialFunction[Expression, UpdateAction] = {
+    case x => DeleteEntityAction(x)
+  }
+
+  private def labelAction(verb: LabelOp): Parser[UpdateAction] = identity ~ labelShortForm ^^ {
+      case entity ~ labels =>
+        LabelAction(Identifier(entity), verb, labels.labelVals)
+    }
 }

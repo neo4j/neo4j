@@ -26,6 +26,7 @@ import org.neo4j.cypher.CypherTypeException
 import org.neo4j.cypher.internal.helpers.{LabelSupport, CastSupport, IsCollection, CollectionSupport}
 import org.neo4j.cypher.internal.ExecutionContext
 import org.neo4j.cypher.internal.pipes.QueryState
+import values.LabelValue
 
 abstract class Predicate extends Expression {
   def apply(ctx: ExecutionContext)(implicit state: QueryState) = isMatch(ctx)
@@ -297,30 +298,33 @@ case class NonEmpty(collection:Expression) extends Predicate with CollectionSupp
   def symbolTableDependencies = collection.symbolTableDependencies
 }
 
-case class HasLabel(entity: Expression, labels: Expression) extends Predicate with CollectionSupport {
+case class HasLabel(entity: Expression, labels: Seq[LabelValue]) extends Predicate with CollectionSupport {
   def isMatch(m: ExecutionContext)(implicit state: QueryState): Boolean = {
     val node           = CastSupport.erasureCastOrFail[Node](entity(m))
     val nodeId         = node.getId
     val queryCtx       = state.query
-    val expectedLabels = LabelSupport.getLabelsAsLongs(m, labels)
 
+    val expectedLabels = try {
+      labels.map(_.id(state))
+    } catch {
+      // If we are running in a query were we can't write changes,
+      // just return false for this predicate.
+      case _: NotInTransactionException => return false
+    }
     expectedLabels.forall(queryCtx.isLabelSetOnNode(_, nodeId))
   }
 
-  override def toString = s"hasLabel(${entity}, ${labels})"
+  override def toString = s"hasLabel(${entity}, [${labels.map(_.name).mkString(", ")}])"
 
+  def rewrite(f: (Expression) => Expression) = HasLabel(entity.rewrite(f), labels.map(_.typedRewrite[LabelValue](f)))
 
-  def rewrite(f: (Expression) => Expression) =
-    HasLabel(entity.rewrite(f), labels.rewrite(f))
+  def children = labels :+ entity
 
-  def children = Seq(entity, labels)
-
-  def symbolTableDependencies = entity.symbolTableDependencies ++ labels.symbolTableDependencies
+  def symbolTableDependencies = entity.symbolTableDependencies ++ labels.flatMap(_.symbolTableDependencies)
 
   def assertInnerTypes(symbols: SymbolTable) {
     entity.throwIfSymbolsMissing(symbols)
-    labels.throwIfSymbolsMissing(symbols)
-
+    labels.foreach(_.throwIfSymbolsMissing(symbols))
     entity.evaluateType(NodeType(), symbols)
   }
 

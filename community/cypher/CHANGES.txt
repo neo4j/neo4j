@@ -1,9 +1,9 @@
 2.0
 ---
-o Added the possibility to add/remove labels to nodes
+o Added the possibility to set labels on and remove labels from nodes
 o Now uses the labels specified in MATCH while matching
 o Supports label matching with or ("|") syntax in MATCH
-o Added the possibility to add label-based indexes
+o Added label-based indexes
 o Added UNION
 o Added CASE
 

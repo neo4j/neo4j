@@ -48,9 +48,8 @@ trait Predicates extends Base with ParserPattern with StringLiteral with Labels 
       | aggregateFunctionNames ~> parens(expression) ~> failure("aggregate functions can not be used in the WHERE clause")
     )
 
-  def hasLabel: Parser[Predicate] = entity ~ rep1sep(labelShortForm, "|") ^^ {
-    case identifier ~ (labels: List[LabelSet]) =>
-      labels.map({ (l) => HasLabel(identifier, l.asExpr) }).reduce(Or)
+  def hasLabel: Parser[Predicate] = entity ~ labelShortForm ^^ {
+    case identifier ~ (labels: LabelSet) => HasLabel(identifier, labels.asLabelSet.labelVals)
   }
 
   def hasProperty = HAS ~> parens(property) ^^ {

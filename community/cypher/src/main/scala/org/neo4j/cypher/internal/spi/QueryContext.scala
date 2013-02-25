@@ -53,7 +53,7 @@ trait QueryContext {
 
   def isLabelSetOnNode(label: Long, node: Long): Boolean = getLabelsForNode(node).toIterator.contains(label)
 
-  def addLabelsToNode(node: Long, labelIds: Iterable[Long]): Int
+  def setLabelsOnNode(node: Long, labelIds: Iterable[Long]): Int
 
   def replaceLabelsOfNode(node: Long, labelIds: Iterable[Long])
 

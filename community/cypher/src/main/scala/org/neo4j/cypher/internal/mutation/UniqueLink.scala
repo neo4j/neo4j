@@ -29,6 +29,7 @@ import org.neo4j.cypher.{SyntaxException, CypherTypeException, UniquePathNotUniq
 import collection.Map
 import org.neo4j.cypher.internal.helpers.{IsMap, MapSupport}
 import org.neo4j.cypher.internal.ExecutionContext
+import values.LabelValue
 
 object UniqueLink {
   def apply(start: String, end: String, relName: String, relType: String, dir: Direction): UniqueLink =
@@ -65,8 +66,8 @@ case class UniqueLink(start: NamedExpectation, end: NamedExpectation, rel: Named
         case List() =>
           val expectations = rel.getExpectations(context, state)
           val createRel = CreateRelationship(rel.name,
-            RelationshipEndpoint(Literal(startNode), Map(), Collection.empty, bare = true),
-            RelationshipEndpoint(Literal(endNode), Map(), Collection.empty, bare = true), relType, expectations.properties)
+            RelationshipEndpoint(Literal(startNode), Map(), Seq.empty, bare = true),
+            RelationshipEndpoint(Literal(endNode), Map(), Seq.empty, bare = true), relType, expectations.properties)
           Some(this->Update(Seq(UpdateWrapper(Seq(), createRel, rel.name)), () => {
             // TODO: This should not be done here. The QueryContext should take the necessary locks while reading the
             // graph. For now, let's rip out the inside of objects and get to the transaction.
@@ -87,12 +88,12 @@ case class UniqueLink(start: NamedExpectation, end: NamedExpectation, rel: Named
         val relExpectations = rel.getExpectations(context, state)
         val createRel = if (dir == Direction.OUTGOING) {
           CreateRelationship(rel.name,
-            RelationshipEndpoint(Literal(startNode), Map(), Collection.empty, bare = true),
-            RelationshipEndpoint(Identifier(other.name), Map(), Collection.empty, bare = true), relType, relExpectations.properties)
+            RelationshipEndpoint(Literal(startNode), Map(), Seq.empty, bare = true),
+            RelationshipEndpoint(Identifier(other.name), Map(), Seq.empty, bare = true), relType, relExpectations.properties)
         } else {
           CreateRelationship(rel.name,
-            RelationshipEndpoint(Identifier(other.name), Map(), Collection.empty, bare = true),
-            RelationshipEndpoint(Literal(startNode), Map(), Collection.empty, bare = true), relType, relExpectations.properties)
+            RelationshipEndpoint(Identifier(other.name), Map(), Seq.empty, bare = true),
+            RelationshipEndpoint(Literal(startNode), Map(), Seq.empty, bare = true), relType, relExpectations.properties)
         }
 
         val relUpdate = UpdateWrapper(Seq(other.name), createRel, createRel.key)
@@ -147,9 +148,9 @@ case class UniqueLink(start: NamedExpectation, end: NamedExpectation, rel: Named
     rel.properties.symboltableDependencies
 
   def rewrite(f: (Expression) => Expression): UniqueLink = {
-    val s = NamedExpectation(start.name, start.properties.rewrite(f), start.labels.rewrite(f), start.bare)
-    val e = NamedExpectation(end.name, end.properties.rewrite(f), end.labels.rewrite(f), end.bare)
-    val r = NamedExpectation(rel.name, rel.properties.rewrite(f), rel.labels.rewrite(f), rel.bare)
+    val s = NamedExpectation(start.name, start.properties.rewrite(f), start.labels.map(_.typedRewrite[LabelValue](f)), start.bare)
+    val e = NamedExpectation(end.name, end.properties.rewrite(f), end.labels.map(_.typedRewrite[LabelValue](f)), end.bare)
+    val r = NamedExpectation(rel.name, rel.properties.rewrite(f), rel.labels.map(_.typedRewrite[LabelValue](f)), rel.bare)
     UniqueLink(s, e, r, relType, dir)
   }
 

@@ -28,9 +28,13 @@ import internal.{ExecutionContext, ClosingIterator}
 import internal.commands._
 import internal.mutation.{CreateNode, CreateRelationship}
 import internal.symbols.{NodeType, RelationshipType, SymbolTable}
-import org.neo4j.graphdb.GraphDatabaseService
+import org.neo4j.graphdb.{Transaction, GraphDatabaseService}
 import org.neo4j.cypher.ExecutionResult
 import javacompat.{PlanDescription => JPlanDescription}
+import org.neo4j.kernel.api.{LabelNotFoundKernelException, StatementContext}
+import org.neo4j.kernel.{GraphDatabaseAPI, ThreadToStatementContextBridge}
+import util.Try
+import values.ResolvedLabel
 
 class ExecutionPlanBuilder(graph: GraphDatabaseService) extends PatternGraphBuilder {
 
@@ -64,8 +68,10 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService) extends PatternGraphBuil
   def buildIndexQuery(op: IndexOperation): (Pipe, Boolean) = (new IndexOperationPipe(op), true)
 
   def buildQuery(inputQuery: Query): (Pipe, Boolean) = {
+    val initialPSQ = PartiallySolvedQuery(inputQuery).rewrite(LabelResolution(resolveLabel))
+
     var continue = true
-    var planInProgress = ExecutionPlanInProgress(PartiallySolvedQuery(inputQuery), new ParameterPipe(), isUpdating = false)
+    var planInProgress = ExecutionPlanInProgress(initialPSQ, new ParameterPipe(), isUpdating = false)
     checkFirstQueryPattern(planInProgress)
 
     while (continue) {
@@ -94,8 +100,15 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService) extends PatternGraphBuil
       }
     }
 
-    // TODO Get back to this when we touch the type system
-    (new ResultValueMapperPipe(planInProgress.pipe), planInProgress.isUpdating)
+    (planInProgress.pipe, planInProgress.isUpdating)
+  }
+
+
+  private def resolveLabel(name: String) = {
+    val ctx = graph.asInstanceOf[GraphDatabaseAPI]
+         .getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge])
+         .getCtxForReading
+    Try { ResolvedLabel(name, ctx.getLabelId(name)) }.toOption
   }
 
   private def checkFirstQueryPattern(planInProgress: ExecutionPlanInProgress) {

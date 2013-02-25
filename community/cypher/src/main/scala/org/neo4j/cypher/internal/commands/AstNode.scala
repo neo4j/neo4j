@@ -20,12 +20,18 @@
 package org.neo4j.cypher.internal.commands
 
 import expressions.Expression
+import org.neo4j.cypher.CypherTypeException
 
 
 trait AstNode[T] {
   def children: Seq[AstNode[_]]
 
   def rewrite(f: Expression => Expression): T
+
+  def typedRewrite[R <: T](f: Expression => Expression)(implicit mf: Manifest[R]): R = rewrite(f) match {
+    case (value: R) => value
+    case _          => throw new CypherTypeException("Invalid rewrite")
+  }
 
   def exists(f: Expression => Boolean) = filter(f).nonEmpty
 
@@ -59,3 +65,4 @@ trait AstNode[T] {
     }
   }
 }
+

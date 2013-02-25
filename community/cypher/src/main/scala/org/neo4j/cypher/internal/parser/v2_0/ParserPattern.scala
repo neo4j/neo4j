@@ -114,7 +114,7 @@ trait ParserPattern extends Base with Labels {
           Success(ParsedEntity(name, Identifier(name), Map[String, Expression](), LabelSet.empty, true), rest)
 
         case Success(name ~ Literal(n: LabelName), rest) =>
-          Success(ParsedEntity(name, Identifier(name), Map[String, Expression](), LabelSet(Some(Literal(Seq(n)))), true), rest)
+          Success(ParsedEntity(name, Identifier(name), Map[String, Expression](), LabelSet(Seq(n)), true), rest)
 
         case Success(name ~ exp, rest) =>
           Success(ParsedEntity(name, exp, Map[String, Expression](), LabelSet.empty, true), rest)

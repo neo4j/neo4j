@@ -78,11 +78,11 @@ include::ql/union/index.asciidoc[]
 
 :leveloffset: 2
 
-include::ql/label/index.asciidoc[]
+include::ql/set/index.asciidoc[]
 
 :leveloffset: 2
 
-include::ql/set/index.asciidoc[]
+include::ql/remove/index.asciidoc[]
 
 :leveloffset: 2
 

@@ -142,8 +142,5 @@ class StringFunctionsTest extends Assertions {
     assert(str(1234) === "1234")
     assert(str(List(1, 2, 3, 4)) === "[1,2,3,4]")
     assert(str(null) === null)
-
-    assert(str(LabelName("foo")) === "foo")
-    assert(str(ResolvedLabel(12, "bar")) === "bar")
   }
 }

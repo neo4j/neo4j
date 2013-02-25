@@ -47,7 +47,7 @@ import org.junit.{Ignore, Test}
 import org.neo4j.index.lucene.ValueContext
 import org.neo4j.test.ImpermanentGraphDatabase
 import util.Random
-import org.neo4j.kernel.TopLevelTransaction
+import org.neo4j.kernel.{EmbeddedGraphDatabase, EmbeddedReadOnlyGraphDatabase, TopLevelTransaction}
 import org.neo4j.kernel.api.ConstraintViolationKernelException
 
 
@@ -1650,7 +1650,7 @@ RETURN x0.name?
 
     val result = parseAndExecute("start a=node(1,2,3) return distinct a.color, count(*)").toList
     result.foreach(x => {
-      val c = x("a.color").asInstanceOf[Iterable[_]]
+      val c = x("a.color").asInstanceOf[Array[_]]
       if (c.toList == List("red"))
         assertEquals(2L, x("count(*)"))
       else if (c.toList == List("blue"))
@@ -2391,42 +2391,30 @@ RETURN x0.name?
     assert(isTopLevelTx)
   }
 
-  @Test def should_return_literal_label_as_string() {
-    val result = parseAndExecute("""START a=node(0) return :foo""")
-
-    assert(result.toList === List(Map((":foo" -> "foo"))))
-  }
-
-  @Test def should_return_label_collection_as_string_collection() {
-    val result = parseAndExecute("""START a=node(0) return [:foo, :bar] as r""")
-
-    assert(result.toList === List(Map(("r" -> List("foo", "bar")))))
-  }
-
   @Test def should_add_label_to_node() {
     val a = createNode()
-    val result = parseAndExecute("""START a=node(1) ADD a LABEL :foo RETURN a""")
+    val result = parseAndExecute("""START a=node(1) SET a :foo RETURN a""")
 
     assert(result.toList === List(Map("a" -> a)))
   }
 
   @Test def should_add_multiple_labels_to_node() {
     val a = createNode()
-    val result = parseAndExecute("""START a=node(1) ADD a LABEL :foo:bar RETURN a""")
+    val result = parseAndExecute("""START a=node(1) SET a :foo:bar RETURN a""")
 
     assert(result.toList === List(Map("a" -> a)))
   }
 
   @Test def should_set_label_on_node() {
     val a = createNode()
-    val result = parseAndExecute("""START a=node(1) ADD a LABEL :foo RETURN a""")
+    val result = parseAndExecute("""START a=node(1) SET a:foo RETURN a""")
 
     assert(result.toList === List(Map("a" -> a)))
   }
 
   @Test def should_set_multiple_labels_on_node() {
     val a = createNode()
-    val result = parseAndExecute("""START a=node(1) ADD a LABEL :foo:bar RETURN a""")
+    val result = parseAndExecute("""START a=node(1) SET a:foo:bar RETURN a""")
 
     assert(result.toList === List(Map("a" -> a)))
   }
@@ -2469,20 +2457,6 @@ RETURN x0.name?
     // THEN
     assert(result.toList === List(Map("n" -> b)))
   }
-
-  @Test def should_filter_nodes_by_multiple_labels_with_or() {
-    // GIVEN
-    val a = createLabeledNode("foo")
-    val b = createLabeledNode("foo", "bar")
-    val c = createNode()
-
-    // WHEN
-    val result = parseAndExecute("""START n=node(1, 2, 3) WHERE n:foo|:bar RETURN n""")
-
-    // THEN
-    assert(result.toList === List(Map("n" -> a), Map("n" -> b)))
-  }
-
 
   @Test def should_filter_nodes_by_label_given_in_match() {
     // GIVEN
@@ -2648,5 +2622,25 @@ RETURN x0.name?
 
     //THEN
     assert(result.columns === List("n"))
+  }
+
+  @Test
+  def read_only_database_can_process_has_label_predicates() {
+    //GIVEN
+    val engine = getReadOnlyEngine()
+
+    //WHEN
+    val result = engine.execute("START n=node(0) WHERE n:NonExistingLabel RETURN n")
+
+    //THEN
+    assert(result.toList === List())
+  }
+
+  private def getReadOnlyEngine(): ExecutionEngine = {
+    val old = new EmbeddedGraphDatabase("target/readonly")
+    old.shutdown()
+    val db = new EmbeddedReadOnlyGraphDatabase("target/readonly")
+    new ExecutionEngine(db)
+
   }
 }

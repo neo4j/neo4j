@@ -1,0 +1,19 @@
+[[query-remove]]
+Remove
+======
+Removing properties and labels from graph elements is done using +REMOVE+.
+
+NOTE: Removing labels from a node is an idempotent operation - if you try to remove a label from a node that does not have that label on it, nothing happens. The
+query statistics will tell you if something needed to be done or not.
+
+The examples start out with the following database:
+
+include::includes/cypher-remove-graph.asciidoc[]
+
+:leveloffset: 2
+
+include::remove-a-property.asciidoc[]
+
+include::remove-a-label-from-a-node.asciidoc[]
+
+include::removing-multiple-labels.asciidoc[]

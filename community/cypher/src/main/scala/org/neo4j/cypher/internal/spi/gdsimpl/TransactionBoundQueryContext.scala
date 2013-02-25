@@ -36,7 +36,7 @@ class TransactionBoundQueryContext(graph: GraphDatabaseAPI) extends QueryContext
     .resolveDependency(classOf[ThreadToStatementContextBridge])
     .getCtxForWriting
 
-  def addLabelsToNode(node: Long, labelIds: Iterable[Long]): Int = labelIds.foldLeft(0) {
+  def setLabelsOnNode(node: Long, labelIds: Iterable[Long]): Int = labelIds.foldLeft(0) {
     case (count, labelId) => if (ctx.addLabelToNode(labelId, node)) count + 1 else count
   }
 

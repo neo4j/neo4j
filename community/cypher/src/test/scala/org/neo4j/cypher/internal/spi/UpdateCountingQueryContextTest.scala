@@ -81,7 +81,7 @@ class UpdateCountingQueryContextTest extends MockitoSugar with Assertions {
 
   @Test def add_label() {
 //    when( inner.addLabelsToNode(Matchers.anyLong(), Matchers.any()) ).thenAnswer(answer)
-    context.addLabelsToNode(0, Seq(1,2,3))
+    context.setLabelsOnNode(0, Seq(1,2,3))
     
     assert(context.getStatistics === QueryStatistics(addedLabels = 3))
   }
@@ -106,7 +106,7 @@ class UpdateCountingQueryContextTest extends MockitoSugar with Assertions {
   @Before
   def init() {
     // We need to have the inner mock return the right counts for added/removed labels.
-    when( inner.addLabelsToNode(Matchers.anyLong(), Matchers.any()) ).thenAnswer( new Answer[Int]() {
+    when( inner.setLabelsOnNode(Matchers.anyLong(), Matchers.any()) ).thenAnswer( new Answer[Int]() {
       def answer(invocation:InvocationOnMock):Int = {
         invocation.getArguments()(1).asInstanceOf[Iterable[String]].size
       }

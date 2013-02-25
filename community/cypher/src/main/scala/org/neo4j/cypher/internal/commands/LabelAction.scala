@@ -26,27 +26,30 @@ import org.neo4j.cypher.internal.ExecutionContext
 import org.neo4j.cypher.internal.pipes.QueryState
 import org.neo4j.graphdb.Node
 import org.neo4j.cypher.internal.helpers.{LabelSupport, CastSupport, CollectionSupport}
+import values.LabelValue
 
 
 sealed abstract class LabelOp
 
-case object LabelAdd extends LabelOp
-case object LabelDel extends LabelOp
+case object LabelSetOp extends LabelOp
+case object LabelRemoveOp extends LabelOp
 
-case class LabelAction(entity: Expression, labelOp: LabelOp, labelSet: Expression)
+case class LabelAction(entity: Expression, labelOp: LabelOp, labels: Seq[LabelValue])
   extends UpdateAction with GraphElementPropertyFunctions with CollectionSupport {
 
-  def children = labelSet.children :+ entity
-  def rewrite(f: (Expression) => Expression) = LabelAction(entity.rewrite(f), labelOp, labelSet.rewrite(f))
+  def children = labels.flatMap(_.children) :+ entity
+
+  def rewrite(f: (Expression) => Expression) =
+    LabelAction(entity.rewrite(f), labelOp, labels.map(_.typedRewrite[LabelValue](f)))
 
   def exec(context: ExecutionContext, state: QueryState) = {
     val node      = CastSupport.erasureCastOrFail[Node](entity(context)(state))
     val queryCtx  = state.query
-    val labelIds: Iterable[Long] = LabelSupport.getLabelsAsLongs(context, labelSet)(state)
+    val labelIds  = labels.map(_.id(state))
 
     labelOp match {
-      case LabelAdd => queryCtx.addLabelsToNode(node.getId, labelIds)
-      case LabelDel => queryCtx.removeLabelsFromNode(node.getId, labelIds)
+      case LabelSetOp => queryCtx.setLabelsOnNode(node.getId, labelIds)
+      case LabelRemoveOp => queryCtx.removeLabelsFromNode(node.getId, labelIds)
     }
 
     Stream(context)
@@ -56,8 +59,8 @@ case class LabelAction(entity: Expression, labelOp: LabelOp, labelSet: Expressio
 
   def throwIfSymbolsMissing(symbols: SymbolTable) {
     entity.throwIfSymbolsMissing(symbols)
-    labelSet.throwIfSymbolsMissing(symbols)
+    labels.foreach(_.throwIfSymbolsMissing(symbols))
   }
 
-  def symbolTableDependencies = entity.symbolTableDependencies ++ labelSet.symbolTableDependencies
+  def symbolTableDependencies = entity.symbolTableDependencies ++ labels.flatMap(_.symbolTableDependencies)
 }

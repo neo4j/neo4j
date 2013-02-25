@@ -25,19 +25,20 @@ import org.neo4j.cypher.internal.pipes.{QueryState}
 import org.neo4j.graphdb.Node
 import org.neo4j.cypher.internal.symbols.{SymbolTable, RelationshipType}
 import org.neo4j.cypher.internal.ExecutionContext
+import org.neo4j.cypher.internal.commands.values.LabelValue
 
-case class RelationshipEndpoint(node: Expression, props: Map[String, Expression], labels: Expression, bare: Boolean)
+case class RelationshipEndpoint(node: Expression, props: Map[String, Expression], labels: Seq[LabelValue], bare: Boolean)
   extends GraphElementPropertyFunctions {
   def rewrite(f: (Expression) => Expression): RelationshipEndpoint =
-    RelationshipEndpoint(node.rewrite(f), props.mapValues(_.rewrite(f)), labels.rewrite(f), bare)
+    RelationshipEndpoint(node.rewrite(f), props.mapValues(_.rewrite(f)), labels.map(_.typedRewrite[LabelValue](f)), bare)
 
   def throwIfSymbolsMissing(symbols: SymbolTable) {
     props.throwIfSymbolsMissing(symbols)
-    labels.throwIfSymbolsMissing(symbols)
+    labels.foreach(_.throwIfSymbolsMissing(symbols))
   }
 
   def symbolTableDependencies: Set[String] =
-    props.symboltableDependencies ++ labels.symbolTableDependencies
+    props.symboltableDependencies ++ labels.flatMap(_.symbolTableDependencies)
 }
 
 case class CreateRelationship(key: String,
@@ -48,7 +49,8 @@ extends UpdateAction
   with GraphElementPropertyFunctions {
 
   override def children =
-    props.map(_._2).toSeq ++ Seq(from.node, to.node) ++ from.props.map(_._2) ++ to.props.map(_._2) :+ to.labels :+ from.labels
+    props.map(_._2).toSeq ++ Seq(from.node, to.node) ++
+      from.props.map(_._2) ++ to.props.map(_._2) ++ to.labels.flatMap(_.children) ++ from.labels.flatMap(_.children)
 
   override def rewrite(f: (Expression) => Expression) = {
       val newFrom = from.rewrite(f)

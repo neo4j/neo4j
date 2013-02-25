@@ -41,7 +41,7 @@ class CreateNodesAndRelationshipsBuilderTest extends BuilderTest {
   @Test
   def does_offer_to_solve_queries_without_start_items() {
     val q = PartiallySolvedQuery().
-      copy(start = Seq(Unsolved(CreateNodeStartItem(CreateNode("r", Map(), Collection.empty)))))
+      copy(start = Seq(Unsolved(CreateNodeStartItem(CreateNode("r", Map(), Seq.empty)))))
 
     assertTrue("Should be able to build on this", builder.canWorkWith(plan(q)))
   }
@@ -50,11 +50,11 @@ class CreateNodesAndRelationshipsBuilderTest extends BuilderTest {
   def full_path() {
     val q = PartiallySolvedQuery().copy(start = Seq(
       Unsolved(CreateRelationshipStartItem(CreateRelationship("r1",
-        RelationshipEndpoint(Identifier("a"), Map(), Collection.empty, true),
-        RelationshipEndpoint(Identifier("  UNNAMED1"), Map(), Collection.empty, true), "KNOWS", Map()))),
+        RelationshipEndpoint(Identifier("a"), Map(), Seq.empty, true),
+        RelationshipEndpoint(Identifier("  UNNAMED1"), Map(), Seq.empty, true), "KNOWS", Map()))),
       Unsolved(CreateRelationshipStartItem(CreateRelationship("r2",
-        RelationshipEndpoint(Identifier("b"), Map(), Collection.empty, true),
-        RelationshipEndpoint(Identifier("  UNNAMED1"), Map(), Collection.empty, true), "LOVES", Map())))))
+        RelationshipEndpoint(Identifier("b"), Map(),  Seq.empty, true),
+        RelationshipEndpoint(Identifier("  UNNAMED1"), Map(), Seq.empty, true), "LOVES", Map())))))
 
 
     val startPipe = createPipe(Seq("a", "b"))
@@ -66,8 +66,8 @@ class CreateNodesAndRelationshipsBuilderTest extends BuilderTest {
   def single_relationship_missing_nodes() {
     val q = PartiallySolvedQuery().copy(start = Seq(
       Unsolved(CreateRelationshipStartItem(CreateRelationship("r",
-        RelationshipEndpoint(Identifier("a"), Map(), Collection.empty, true),
-        RelationshipEndpoint(Identifier("b"), Map(), Collection.empty, true), "LOVES", Map())))))
+        RelationshipEndpoint(Identifier("a"), Map(), Seq.empty, true),
+        RelationshipEndpoint(Identifier("b"), Map(), Seq.empty, true), "LOVES", Map())))))
 
     assertTrue("Should be able to build on this", builder.canWorkWith(plan(q)))
   }
@@ -76,8 +76,8 @@ class CreateNodesAndRelationshipsBuilderTest extends BuilderTest {
   def single_relationship_missing_nodes_with_expression() {
     val q = PartiallySolvedQuery().copy(updates = Seq(
       Unsolved(CreateRelationship("r",
-        RelationshipEndpoint(HeadFunction(Identifier("p")), Map(), Collection.empty, true),
-        RelationshipEndpoint(Identifier("b"), Map(), Collection.empty, true), "LOVES", Map()))))
+        RelationshipEndpoint(HeadFunction(Identifier("p")), Map(), Seq.empty, true),
+        RelationshipEndpoint(Identifier("b"), Map(), Seq.empty, true), "LOVES", Map()))))
 
     assertFalse("Should not be able to build on this", builder.canWorkWith(plan(q)))
   }

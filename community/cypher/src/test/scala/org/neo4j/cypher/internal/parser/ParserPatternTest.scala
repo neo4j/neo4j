@@ -29,15 +29,13 @@ import org.neo4j.cypher.internal.helpers.LabelSupport
 class ParserPatternTest extends ParserPattern with ParserTest with Expressions {
 
   @Test def label_literal_list_parsing() {
-    implicit val parserToTest = labelLongForm
+    implicit val parserToTest = labelShortForm
 
-    parsing(":FOO") or
-    parsing("label :FOO") shouldGive
-      LabelSet(Some(LabelSupport.labelCollection("FOO")))
+    parsing(":FOO") shouldGive
+      LabelSet(LabelSupport.labelCollection("FOO"))
 
-    parsing(":FOO:BAR") or
-    parsing("label :FOO:BAR") shouldGive
-      LabelSet(Some(LabelSupport.labelCollection("FOO", "BAR")))
+    parsing(":FOO:BAR") shouldGive
+      LabelSet(LabelSupport.labelCollection("FOO", "BAR"))
 
     assertFails("[:foo, :bar]")
   }
@@ -46,13 +44,13 @@ class ParserPatternTest extends ParserPattern with ParserTest with Expressions {
     implicit val parserToTest = labelChoiceForm
 
     parsing(":FOO") shouldGive
-      LabelSet(Some(LabelSupport.labelCollection("FOO")))
+      LabelSet(LabelSupport.labelCollection("FOO"))
 
     parsing(":FOO|:BAZ") shouldGive
-      LabelChoice(LabelSet(Some(LabelSupport.labelCollection("FOO"))), LabelSet(Some(LabelSupport.labelCollection("BAZ"))))
+      LabelChoice(LabelSet(LabelSupport.labelCollection("FOO")), LabelSet(LabelSupport.labelCollection("BAZ")))
 
     parsing(":Sun:Day|:Night:Moon") shouldGive
-      LabelChoice(LabelSet(Some(LabelSupport.labelCollection("Sun", "Day"))), LabelSet(Some(LabelSupport.labelCollection("Night", "Moon"))))
+      LabelChoice(LabelSet(LabelSupport.labelCollection("Sun", "Day")), LabelSet(LabelSupport.labelCollection("Night", "Moon")))
 
     assertFails("[:foo, :bar]")
   }
@@ -71,9 +69,6 @@ class ParserPatternTest extends ParserPattern with ParserTest with Expressions {
 
     parsing("n VALUES {name:'Andres'}") shouldGive
       ParsedEntity("n", Identifier("n"), Map("name"->Literal("Andres")), LabelSet.empty, false)
-
-    parsing("n LABEL :FOO") shouldGive
-      ParsedEntity("n", Identifier("n"), Map.empty, LabelSet(Some(LabelSupport.labelCollection("FOO"))), false)
   }
 
   def matchTranslator(abstractPattern: AbstractPattern) = ???

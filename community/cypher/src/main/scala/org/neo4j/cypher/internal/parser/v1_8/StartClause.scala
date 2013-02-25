@@ -95,15 +95,15 @@ trait StartClause extends Base with Expressions with CreateUnique {
 
       Yes(Seq(CreateRelationshipStartItem(
         CreateRelationship(name,
-          RelationshipEndpoint(from, startProps, Collection.empty, true),
-          RelationshipEndpoint(to, endProps, Collection.empty, true), relType.head, props))))
+          RelationshipEndpoint(from, startProps, Seq.empty, bare = true),
+          RelationshipEndpoint(to, endProps, Seq.empty, bare = true), relType.head, props))))
 
 
     case ParsedEntity(_, Identifier(name), props, True()) =>
-      Yes(Seq(CreateNodeStartItem(CreateNode(name, props, Collection.empty))))
+      Yes(Seq(CreateNodeStartItem(CreateNode(name, props, Seq.empty))))
 
     case ParsedEntity(_, p: ParameterExpression, _, True()) =>
-      Yes(Seq(CreateNodeStartItem(CreateNode(namer.name(None), Map[String, Expression]("*" -> p), Collection.empty))))
+      Yes(Seq(CreateNodeStartItem(CreateNode(namer.name(None), Map[String, Expression]("*" -> p), Seq.empty))))
 
     case _ => No(Seq(""))
   }

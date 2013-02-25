@@ -65,7 +65,6 @@ trait Expressions extends Base with ParserPattern with Predicates with StringLit
       | nullableProperty
       | property
       | stringLit
-      | labelLit
       | numberLiteral
       | collectionLiteral
       | parameter

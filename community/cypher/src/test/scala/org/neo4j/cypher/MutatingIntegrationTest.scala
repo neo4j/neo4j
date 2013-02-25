@@ -368,14 +368,14 @@ return distinct center""")
 
   @Test
   def concatenate_to_a_collection() {
-    val result = executeScalar[Iterable[Long]]("create a={foo:[1,2,3]} set a.foo = a.foo + [4,5] return a.foo")
+    val result = executeScalar[Array[Long]]("create a={foo:[1,2,3]} set a.foo = a.foo + [4,5] return a.foo")
 
     assert(result.toList === List(1,2,3,4,5))
   }
 
   @Test
   def concatenate_to_a_collection_in_reverse() {
-    val result = executeScalar[Iterable[Long]]("create a={foo:[3,4,5]} set a.foo = [1,2] + a.foo return a.foo")
+    val result = executeScalar[Array[Long]]("create a={foo:[3,4,5]} set a.foo = [1,2] + a.foo return a.foo")
 
     assert(result.toList === List(1,2,3,4,5))
   }
@@ -390,7 +390,7 @@ return distinct center""")
     map.put("arrayProp", list)
 
     val q = "create a={param} return a.arrayProp"
-    val result =  executeScalar[Iterable[String]](q, "param" -> map)
+    val result =  executeScalar[Array[String]](q, "param" -> map)
 
     assertStats(parseAndExecute(q, "param"->map), nodesCreated = 1, propertiesSet = 1)
     assert(result.toList === List("foo","bar"))
@@ -533,7 +533,7 @@ return distinct center""")
   
   @Test
   def should_be_able_to_add_label_to_node() {
-    val result = parseAndExecute("start n=node(0) add n:FOO return n")
+    val result = parseAndExecute("start n=node(0) set n:FOO return n")
     val createdNode = result.columnAs[Node]("n").next()
 
     assert(createdNode.getLabels.asScala.map(_.name()) === List("FOO"))

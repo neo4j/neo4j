@@ -28,7 +28,9 @@ import internal.symbols._
 
 abstract class Expression extends Typed with TypeSafe with AstNode[Expression] {
   def rewrite(f: Expression => Expression): Expression
+
   def subExpressions = filter( _ != this)
+
   def containsAggregate = exists(_.isInstanceOf[AggregationExpression])
 
   def apply(ctx: ExecutionContext)(implicit state: QueryState):Any

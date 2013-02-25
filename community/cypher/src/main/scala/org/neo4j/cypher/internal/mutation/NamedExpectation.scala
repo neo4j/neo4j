@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.mutation
 
-import org.neo4j.cypher.internal.commands.expressions.{Collection, Literal, Identifier, Expression}
+import org.neo4j.cypher.internal.commands.expressions.{Literal, Identifier, Expression}
 import org.neo4j.cypher.internal.symbols.{SymbolTable, TypeSafe}
 import org.neo4j.graphdb.{Relationship, Node, PropertyContainer}
 import collection.Map
@@ -28,27 +28,28 @@ import org.neo4j.cypher.internal.helpers.{IsCollection, IsMap, CollectionSupport
 import org.neo4j.cypher.internal.spi.Operations
 import org.neo4j.cypher.internal.ExecutionContext
 import org.neo4j.cypher.internal.pipes.QueryState
+import org.neo4j.cypher.internal.commands.values.LabelValue
 
 object NamedExpectation {
   def apply(name: String, bare: Boolean): NamedExpectation = NamedExpectation(name, Map.empty, bare)
 
   def apply(name: String, properties: Map[String, Expression], bare: Boolean): NamedExpectation =
-    NamedExpectation(name, properties, Collection.empty, bare)
+    NamedExpectation(name, properties, Seq.empty, bare)
 
   def apply(name: String, e: Expression, properties: Map[String, Expression], bare: Boolean): NamedExpectation =
-    new NamedExpectation(name, e, properties, Collection.empty, bare)
+    new NamedExpectation(name, e, properties, Seq.empty, bare)
 
-  def apply(name: String, properties: Map[String, Expression], labels: Expression, bare: Boolean): NamedExpectation =
+  def apply(name: String, properties: Map[String, Expression], labels: Seq[LabelValue], bare: Boolean): NamedExpectation =
     new NamedExpectation(name, Identifier(name), properties, labels, bare)
 }
 
 case class NamedExpectation(name: String, e: Expression, properties: Map[String, Expression],
-                            labels: Expression, bare: Boolean)
+                            labels: Seq[LabelValue], bare: Boolean)
   extends GraphElementPropertyFunctions
   with CollectionSupport
   with TypeSafe {
 
-  case class DataExpectation(properties: Map[String, Expression], labels: Expression)
+  case class DataExpectation(properties: Map[String, Expression], labels: Seq[LabelValue])
 
   /*
   The expectation expression for a node can either be an expression that returns a node,
@@ -107,9 +108,9 @@ case class NamedExpectation(name: String, e: Expression, properties: Map[String,
 
     val labelsOk = x match {
       case node: Node =>
-        val qtx = state.query
+        val qtx      = state.query
         val nodeId   = node.getId
-        val labelIds = LabelSupport.getLabelsAsLongs(ctx, expectations.labels)(state)
+        val labelIds = labels.map(_.id(state))
         labelIds.forall( qtx.isLabelSetOnNode(_, nodeId) )
       case _ =>
         true

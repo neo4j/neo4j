@@ -19,32 +19,32 @@
  */
 package org.neo4j.cypher.internal.commands.values
 
-import org.neo4j.cypher.internal.spi.QueryContext
+import org.neo4j.cypher.internal.commands.expressions.Expression
+import org.neo4j.cypher.internal.symbols.{StringType, SymbolTable}
+import org.neo4j.cypher.internal.ExecutionContext
+import org.neo4j.cypher.internal.pipes.QueryState
 
-sealed abstract class LabelValue {
-  def resolveForName(ctx: QueryContext): LabelValue with LabelWithName
-  def resolveForId(ctx: QueryContext): LabelValue with LabelWithId
-}
-
-trait LabelWithId {
-  def id: Long
-}
-
-trait LabelWithName {
+sealed abstract class LabelValue extends Expression {
   def name: String
+
+  def id(state: QueryState): Long
+
+  def children = Seq.empty
+
+  def rewrite(f: (Expression) => Expression) = f(this)
+
+  def symbolTableDependencies = Set.empty
+
+  def apply(ctx: ExecutionContext)(implicit state: QueryState) = ???
+
+  protected def calculateType(symbols: SymbolTable) = StringType()
 }
 
-case class LabelName(name: String) extends LabelValue with LabelWithName {
-  def resolveForName(ctx: QueryContext) = this
-  def resolveForId(ctx: QueryContext) = ResolvedLabel(ctx.getOrCreateLabelId(name), name)
+
+case class LabelName(name: String) extends LabelValue {
+  def id(state: QueryState): Long = state.query.getOrCreateLabelId(name)
 }
 
-case class LabelId(id: Long) extends LabelValue with LabelWithId {
-  def resolveForId(ctx: QueryContext) = this
-  def resolveForName(ctx: QueryContext) = ResolvedLabel(id, ctx.getLabelName(id.asInstanceOf[java.lang.Long]))
-}
-
-case class ResolvedLabel(id: Long, name: String) extends LabelValue with LabelWithName with LabelWithId {
-  def resolveForName(ctx: QueryContext) = this
-  def resolveForId(ctx: QueryContext) = this
+case class ResolvedLabel(name: String, labelId: Long) extends LabelValue {
+  def id(state: QueryState): Long = labelId
 }

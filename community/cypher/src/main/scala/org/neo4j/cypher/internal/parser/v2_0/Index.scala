@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.parser.v2_0
 
 import org.neo4j.cypher.internal.commands.expressions.Literal
-import org.neo4j.cypher.internal.commands.values.LabelName
+import org.neo4j.cypher.internal.commands.values.{LabelValue, LabelName}
 import org.neo4j.cypher.internal.commands.{DropIndex, CreateIndex}
 
 
@@ -33,7 +33,7 @@ trait Index extends Base with Labels {
     case (label, properties) => DropIndex(label, properties)
   }
 
-  private def indexOps: Parser[(String, List[String])] = INDEX ~> ON ~> labelLit ~ parens(identity) ^^ {
-    case Literal(LabelName(label)) ~ property => (label, List(property))
+  private def indexOps: Parser[(String, List[String])] = INDEX ~> ON ~> labelName ~ parens(identity) ^^ {
+    case LabelName(labelName) ~ property => (labelName, List(property))
   }
 }

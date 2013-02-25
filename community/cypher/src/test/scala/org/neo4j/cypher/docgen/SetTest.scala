@@ -23,7 +23,11 @@ import org.junit.Test
 import org.junit.Assert._
 
 class SetTest extends DocumentingTestBase {
-  def graphDescription = List("Andres KNOWS Peter")
+  def graphDescription = List(
+    "Andres:Swedish KNOWS Peter",
+    "Stefan KNOWS Andres",
+    "Emil KNOWS Peter"
+  )
 
   override val properties = Map(
     "Andres" -> Map("age" -> 36l, "awesome" -> true),
@@ -67,4 +71,25 @@ will remove all other properties on the receiving graph element.""".stripMargin,
       }
     )
   }
+
+  @Test def set_single_label_on_a_node() {
+    testQuery(
+      title = "Set a label on a node",
+      text = "To set a label on a node, use +SET+.",
+      queryText = "start n = node(%Stefan%) set n :German return n",
+      returns = "The newly labeled node is returned by the query.",
+      assertions = (p) => assert(getLabelsFromNode(p) === List("German"))
+    )
+  }
+
+  @Test def set_multiple_labels_on_a_node() {
+    testQuery(
+      title = "Set multiple labels on a node",
+      text = "To set multiple labels on a node, use +SET+ and separate the different labels using +:+.",
+      queryText = "start n = node(%Emil%) set n :Swedish:Bossman return n",
+      returns = "The newly labeled node is returned by the query.",
+      assertions = (p) => assert(getLabelsFromNode(p) === List("Swedish", "Bossman"))
+    )
+  }
+
 }

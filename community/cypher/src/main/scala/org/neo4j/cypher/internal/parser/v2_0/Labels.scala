@@ -23,30 +23,21 @@ import org.neo4j.cypher.internal.commands.expressions.{Expression, Literal}
 import org.neo4j.cypher.internal.commands.values.LabelName
 
 trait Labels extends Base {
-  def labelLit: Parser[Literal] = ":" ~> escapableString ^^ { x => Literal(LabelName(x)) }
+  def labelName: Parser[LabelName] = ":" ~> escapableString ^^ { x => LabelName(x) }
 
-  def labelShortForm: Parser[LabelSet] = rep1(labelLit) ^^ {
-    case litList =>
-      LabelSet(Some(Literal(litList.map(_.v))))
+  def labelShortForm: Parser[LabelSet] = rep1(labelName) ^^ {
+    case litList => LabelSet(litList)
   }
 
-  private def labelExpr: Parser[LabelSet] = expression ^^ (expr => LabelSet(Some(expr)))
-
-  private def labelKeywordForm: Parser[LabelSet] = LABEL ~> (labelShortForm | labelExpr)
-
-  private def labelGroupsForm: Parser[LabelSpec] = rep1sep(labelShortForm, "|") ^^ {
-    case labelSets => LabelChoice(labelSets: _*).simplify
-  }
-
-  def labelChoiceForm: Parser[LabelSpec] = labelGroupsForm | labelKeywordForm
-
-  def optLabelChoiceForm: Parser[LabelSpec] = opt(labelChoiceForm) ^^ {
+  def optLabelShortForm: Parser[LabelSet] = opt(labelShortForm) ^^ {
     case optSpec => optSpec.getOrElse(LabelSet.empty)
   }
 
-  def labelLongForm: Parser[LabelSet] = labelShortForm | labelKeywordForm
+  def labelChoiceForm: Parser[LabelSpec] = rep1sep(labelShortForm, "|") ^^ {
+    case labelSets => LabelChoice(labelSets: _*).simplify
+  }
 
-  def optLabelLongForm: Parser[LabelSet] = opt(labelLongForm) ^^ {
+  def optLabelChoiceForm: Parser[LabelSpec] = opt(labelChoiceForm) ^^ {
     case optSpec => optSpec.getOrElse(LabelSet.empty)
   }
 

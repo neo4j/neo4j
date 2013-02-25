@@ -135,8 +135,8 @@ case class PartiallySolvedQuery(returns: Seq[QueryToken[ReturnColumn]],
       namedPaths = namedPaths.map {
         case Unsolved(namedPath) => Unsolved(namedPath.rewrite(f))
         case x => x
-      }
-    )
+      },
+      start = start.map { (qt: QueryToken[StartItem]) => qt.map( _.rewrite(f) ) } )
   }
 
   def unsolvedExpressions = {

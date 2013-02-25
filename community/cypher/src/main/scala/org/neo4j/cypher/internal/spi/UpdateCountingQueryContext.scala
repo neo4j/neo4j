@@ -52,8 +52,8 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
 
   override def relationshipOps: Operations[Relationship] = new CountingOps[Relationship](inner.relationshipOps, deletedRelationships)
 
-  override def addLabelsToNode(node: Long, labelIds: Iterable[Long]): Int = {
-    val added = inner.addLabelsToNode(node, labelIds)
+  override def setLabelsOnNode(node: Long, labelIds: Iterable[Long]): Int = {
+    val added = inner.setLabelsOnNode(node, labelIds)
     addedLabels.increase(added)
     added
   }

@@ -62,7 +62,7 @@ class CreateTest extends DocumentingTestBase with StatisticsChecker {
     testQuery(
       title = "Create node and add labels and properties",
       text = "When creating a new node with labels, you can add properties using +VALUES+ at the same time",
-      queryText = "create n label :Person values {name : 'Andres', title : 'Developer'}",
+      queryText = "create n :Person values {name : 'Andres', title : 'Developer'}",
       returns = "Nothing is returned from this query.",
       assertions = (p) => assertStats(p, nodesCreated = 1, propertiesSet = 2, addedLabels = 1))
   }
