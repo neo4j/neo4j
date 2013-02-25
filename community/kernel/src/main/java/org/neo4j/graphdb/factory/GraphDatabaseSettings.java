@@ -271,6 +271,7 @@ public abstract class GraphDatabaseSettings
             new IntegerSetting( setting("relationship_grab_size", INTEGER, "100", min( 1 )));
 
     @Description("Whether to grab locks on files or not.")
+    @Deprecated
     public static final BooleanSetting grab_file_lock = new BooleanSetting( setting("grab_file_lock", BOOLEAN, TRUE ));
 
     @Description("Specifies the block size for storing strings. This parameter is only honored when the store is " +

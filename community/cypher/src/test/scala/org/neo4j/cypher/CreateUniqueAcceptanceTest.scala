@@ -447,6 +447,25 @@ RETURN x""")
     assertStats(result, nodesCreated = 2, relationshipsCreated = 4, propertiesSet = 2)
   }
 
+  @Test def should_work_well_inside_foreach() {
+    createNode()
+    createNode()
+    createNode()
+
+    val result = parseAndExecute("""
+START a = node(*)
+WITH collect(a) as nodes
+FOREACH( x in nodes :
+      FOREACH( y in nodes :
+          CREATE UNIQUE x-[:FOO]->y
+      )
+)""")
+
+    // Nodes: Reference plus 3 created nodes.
+    // One outgoing node to all nodes (including to self) = 4 x 4 relationships created
+    assertStats(result, relationshipsCreated = 16)
+  }
+
 
   @Test
   def two_outgoing_parts() {

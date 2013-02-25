@@ -15,6 +15,7 @@ o Added execution plan descriptions to execution results
 o Fixes #464 - getDeletedRelationships does not work for javacompat.ExecutionResult
 o Fixes #535 - 'INTERNAL_SORT' columns show when doing RETURN * ORDER BY
 o Added experimental profiled query support
+o Fixes #489 - CREATE UNIQUE does not work as expected inside FOREACH
 
 1.9.M04 (2013-01-17)
 --------------------
