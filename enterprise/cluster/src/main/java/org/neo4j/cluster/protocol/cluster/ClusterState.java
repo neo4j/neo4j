@@ -187,8 +187,6 @@ public enum ClusterState
                                         timeout( ClusterMessage.configurationTimeout, message,
                                                 new ClusterMessage.ConfigurationTimeoutState(
                                                         state.getRemainingPings()-1 ) ) );
-
-
                             }
                             else
                             {
@@ -204,7 +202,7 @@ public enum ClusterState
                                      * If the one picked up is configured to not init a cluster then the timeout
                                      * set in else{} will take care of that.
                                      */
-                                    if ( discoveredInstances.get( 0 ).compareTo( context.getMe() ) > 0 )
+                                    if ( discoveredInstances.get( 0 ).compareTo( context.getMe() ) >= 0 )
                                     {
                                         discoveredInstances.clear();
 
