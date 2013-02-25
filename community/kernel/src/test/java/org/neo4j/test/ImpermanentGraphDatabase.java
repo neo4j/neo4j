@@ -34,8 +34,8 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.IndexProvider;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
-import org.neo4j.kernel.api.IndexPopulatorMapperProvider;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.impl.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
@@ -85,20 +85,20 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
                                      Iterable<KernelExtensionFactory<?>> kernelExtensions,
                                      Iterable<CacheProvider> cacheProviders,
                                      Iterable<TransactionInterceptorProvider> transactionInterceptorProviders,
-                                     Iterable<IndexPopulatorMapperProvider> indexPopulatorMappers )
+                                     Iterable<SchemaIndexProvider> schemaIndexProviders )
     {
         super( PATH, withForcedInMemoryConfiguration( params ), indexProviders, kernelExtensions, cacheProviders,
-                transactionInterceptorProviders, indexPopulatorMappers );
+                transactionInterceptorProviders, schemaIndexProviders );
     }
 
     public ImpermanentGraphDatabase( String storeDir, Map<String, String> params, Iterable<IndexProvider> indexProviders,
                                         Iterable<KernelExtensionFactory<?>> kernelExtensions,
                                         Iterable<CacheProvider> cacheProviders,
                                         Iterable<TransactionInterceptorProvider> transactionInterceptorProviders,
-                                        Iterable<IndexPopulatorMapperProvider> indexPopulatorMappers )
+                                        Iterable<SchemaIndexProvider> schemaIndexProviders )
     {
         super( storeDir, withForcedInMemoryConfiguration( params ), indexProviders, kernelExtensions, cacheProviders,
-                transactionInterceptorProviders, indexPopulatorMappers );
+                transactionInterceptorProviders, schemaIndexProviders );
     }
     
     @Override

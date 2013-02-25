@@ -29,7 +29,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
-import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
 import org.neo4j.kernel.impl.nioneo.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
@@ -59,27 +58,48 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
 public abstract class Command extends XaCommand
 {
     private final int keyHash;
-    private final AbstractBaseRecord record;
+    private final long key;
+    private final Mode mode;
 
-    Command( AbstractBaseRecord record )
+    /*
+     * TODO: This is techdebt
+     * This is used to control the order of how commands are applied, which is done because
+     * we don't take read locks, and so the order or how we change things lowers the risk
+     * of reading invalid state. This should be removed once eg. MVCC or read locks has been
+     * implemented.
+     */
+    public enum Mode
     {
-        this.record = record;
-        long key = getKey();
+        CREATE,
+        UPDATE,
+        DELETE;
+
+        protected static Mode fromRecordState(boolean created, boolean inUse)
+        {
+            if(!inUse)
+                return DELETE;
+            if(created)
+                return CREATE;
+            if(!created && !inUse)
+                return UPDATE;
+            throw new IllegalStateException("A record can't be both created and deleted at the same time.");
+        }
+    }
+
+
+    Command( long key, Mode mode )
+    {
+        this.mode = mode;
         this.keyHash = (int) (( key >>> 32 ) ^ key );
+        this.key = key;
     }
     
     public abstract void accept( CommandRecordVisitor visitor );
-    
+
     @Override
-    // Makes this method publically visible
     public void setRecovered()
     {
         super.setRecovered();
-    }
-
-    long getKey()
-    {
-        return record.getLongId();
     }
 
     @Override
@@ -87,22 +107,30 @@ public abstract class Command extends XaCommand
     {
         return keyHash;
     }
-    
+
+    // Force implementors to implement toString
     @Override
-    public String toString()
+    public abstract String toString();
+
+    long getKey()
     {
-        return record.toString();
+        return key;
     }
 
-    boolean isCreated()
+    Mode getMode()
     {
-        return record.isCreated();
+        return mode;
     }
 
-    boolean isDeleted()
-    {
-        return !record.inUse();
-    }
+//    boolean isCreated()
+//    {
+//        return record.isCreated();
+//    }
+//
+//    boolean isDeleted()
+//    {
+//        return !record.inUse();
+//    }
     
     @Override
     public boolean equals( Object o )
@@ -245,7 +273,7 @@ public abstract class Command extends XaCommand
         }
         return true;
     }
-    
+
     private interface DynamicRecordAdder<T>
     {
         void add( T target, DynamicRecord record );
@@ -316,6 +344,7 @@ public abstract class Command extends XaCommand
     private static final byte PROP_INDEX_COMMAND = (byte) 5;
     private static final byte NEOSTORE_COMMAND = (byte) 6;
     private static final byte SCHEMA_RULE_COMMAND = (byte) 7;
+    private static final byte INDEX_SNAPSHOT_COMMAND = (byte) 8;
 
     abstract void removeFromCache( CacheAccessBackDoor cacheAccess );
 
@@ -326,7 +355,7 @@ public abstract class Command extends XaCommand
 
         NodeCommand( NodeStore store, NodeRecord record )
         {
-            super( record );
+            super( record.getId(), Mode.fromRecordState( record.isCreated(), !record.inUse() ) );
             this.record = record;
             this.store = store;
         }
@@ -335,6 +364,12 @@ public abstract class Command extends XaCommand
         public void accept( CommandRecordVisitor visitor )
         {
             visitor.visitNode( record );
+        }
+
+        @Override
+        public String toString()
+        {
+            return record.toString();
         }
 
         @Override
@@ -424,7 +459,7 @@ public abstract class Command extends XaCommand
 
         RelationshipCommand( RelationshipStore store, RelationshipRecord record )
         {
-            super( record );
+            super( record.getId(), Mode.fromRecordState( record.isCreated(), !record.inUse() ) );
             this.record = record;
             // the default (common) case is that the record to be written is complete and not from recovery or HA
             this.beforeUpdate = record;
@@ -435,6 +470,12 @@ public abstract class Command extends XaCommand
         public void accept( CommandRecordVisitor visitor )
         {
             visitor.visitRelationship( record );
+        }
+
+        @Override
+        public String toString()
+        {
+            return record.toString();
         }
 
         @Override
@@ -460,18 +501,6 @@ public abstract class Command extends XaCommand
                 cacheAccess.removeNodeFromCache( record.getFirstNode() );
                 cacheAccess.removeNodeFromCache( record.getSecondNode() );
             }
-        }
-
-        @Override
-        boolean isCreated()
-        {
-            return record.isCreated();
-        }
-
-        @Override
-        boolean isDeleted()
-        {
-            return !record.inUse();
         }
 
         @Override
@@ -569,7 +598,7 @@ public abstract class Command extends XaCommand
 
         NeoStoreCommand( NeoStore neoStore, NeoStoreRecord record )
         {
-            super( record );
+            super( record.getId(), Mode.fromRecordState( record.isCreated(), !record.inUse() ) );
             this.neoStore = neoStore;
             this.record = record;
         }
@@ -584,6 +613,12 @@ public abstract class Command extends XaCommand
         public void accept( CommandRecordVisitor visitor )
         {
             visitor.visitNeoStore( record );
+        }
+
+        @Override
+        public String toString()
+        {
+            return record.toString();
         }
 
         @Override
@@ -619,7 +654,7 @@ public abstract class Command extends XaCommand
         PropertyIndexCommand( PropertyIndexStore store,
             PropertyIndexRecord record )
         {
-            super( record );
+            super( record.getId(), Mode.fromRecordState( record.isCreated(), !record.inUse() ) );
             this.record = record;
             this.store = store;
         }
@@ -628,6 +663,12 @@ public abstract class Command extends XaCommand
         public void accept( CommandRecordVisitor visitor )
         {
             visitor.visitPropertyIndex( record );
+        }
+
+        @Override
+        public String toString()
+        {
+            return record.toString();
         }
 
         @Override
@@ -718,7 +759,7 @@ public abstract class Command extends XaCommand
         // so that the cost of deserializing them only applies in recovery/HA
         PropertyCommand( PropertyStore store, PropertyRecord before, PropertyRecord after )
         {
-            super( after );
+            super( after.getId(), Mode.fromRecordState( after.isCreated(), !after.inUse() ) );
             this.store = store;
             this.before = before;
             this.after = after;
@@ -728,6 +769,12 @@ public abstract class Command extends XaCommand
         public void accept( CommandRecordVisitor visitor )
         {
             visitor.visitProperty( after );
+        }
+
+        @Override
+        public String toString()
+        {
+            return after.toString();
         }
 
         @Override
@@ -937,7 +984,7 @@ public abstract class Command extends XaCommand
         RelationshipTypeCommand( RelationshipTypeStore store,
             RelationshipTypeRecord record )
         {
-            super( record );
+            super( record.getId(), Mode.fromRecordState( record.isCreated(), !record.inUse() ) );
             this.record = record;
             this.store = store;
         }
@@ -946,6 +993,12 @@ public abstract class Command extends XaCommand
         public void accept( CommandRecordVisitor visitor )
         {
             visitor.visitRelationshipType( record );
+        }
+
+        @Override
+        public String toString()
+        {
+            return record.toString();
         }
 
         @Override
@@ -1023,7 +1076,7 @@ public abstract class Command extends XaCommand
 
         SchemaRuleCommand( SchemaStore store, Collection<DynamicRecord> records, SchemaRule schemaRule )
         {
-            super( first( records ) );
+            super( schemaRule.getId(), Mode.fromRecordState( first( records ).isCreated(), !first( records ).inUse() ) );
             this.store = store;
             this.records = records;
             this.schemaRule = schemaRule;
@@ -1033,6 +1086,12 @@ public abstract class Command extends XaCommand
         public void accept( CommandRecordVisitor visitor )
         {
             throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public String toString()
+        {
+            return "SchemaRule" + records;
         }
 
         @Override
@@ -1058,12 +1117,6 @@ public abstract class Command extends XaCommand
         public SchemaRule getSchemaRule()
         {
             return schemaRule;
-        }
-        
-        @Override
-        public String toString()
-        {
-            return "SchemaRule" + records;
         }
 
         static Command readFromFile( NeoStore neoStore, ReadableByteChannel byteChannel, ByteBuffer buffer )

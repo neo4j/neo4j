@@ -61,7 +61,7 @@ import org.neo4j.kernel.ha.com.master.Slave;
 import org.neo4j.kernel.ha.com.slave.SlaveImpl;
 import org.neo4j.kernel.ha.com.slave.SlaveServer;
 import org.neo4j.kernel.ha.id.HaIdGeneratorFactory;
-import org.neo4j.kernel.impl.api.index.SchemaIndexing;
+import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.index.IndexStore;
@@ -442,7 +442,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                         resolver.resolveDependency( XaFactory.class ),
                         resolver.resolveDependency( TransactionStateFactory.class ),
                         resolver.resolveDependency( CacheAccessBackDoor.class ),
-                        resolver.resolveDependency( SchemaIndexing.class ),
+                        resolver.resolveDependency( IndexingService.class ),
                         resolver.resolveDependency( TransactionInterceptorProviders.class ),
                         resolver );
                 xaDataSourceManager.registerDataSource( nioneoDataSource );

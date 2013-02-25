@@ -31,10 +31,12 @@ import javax.transaction.xa.XAResource;
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.Pair;
+import org.neo4j.kernel.impl.api.index.IndexPopulationCompleter.IndexSnapshot;
 import org.neo4j.kernel.impl.core.PropertyIndex;
 import org.neo4j.kernel.impl.core.TransactionEventsSyncHook;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.core.TxEventSyncHookFactory;
+import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.NameData;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
@@ -227,22 +229,10 @@ public class PersistenceManager
     private NeoStoreTransaction getReadOnlyResourceIfPossible()
     {
         Transaction tx = this.getCurrentTransaction();
-//        if ( tx == null )
-//        {
-//            return ((NioNeoDbPersistenceSource)
-//                    persistenceSource ).createReadOnlyResourceConnection();
-//        }
 
         NeoStoreTransaction con = txConnectionMap.get( tx );
         if ( con == null )
         {
-            // con is put in map on write operation, see getResoure()
-            // createReadOnlyResourceConnection just return a single final
-            // resource and does not create a new object
-            /*
-             * return ((NioNeoDbPersistenceSource)
-                persistenceSource ).createReadOnlyResourceConnection();
-             */
             return getReadOnlyResource();
         }
         return con;
@@ -425,5 +415,10 @@ public class PersistenceManager
     public Iterable<Long> getLabelsForNode( long nodeId )
     {
         return getReadOnlyResourceIfPossible().getLabelsForNode( nodeId );
+    }
+
+    public void completeIndexCreation( IndexRule index, IndexSnapshot snapshot )
+    {
+        getResource( true ).markIndexAsOnline( index, snapshot );
     }
 }

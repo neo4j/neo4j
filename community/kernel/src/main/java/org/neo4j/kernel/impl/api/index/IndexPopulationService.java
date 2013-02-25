@@ -30,24 +30,17 @@ public interface IndexPopulationService
     public static final IndexPopulationService NO_POPULATION_SERVICE = new IndexPopulationService()
     {
         @Override
-        public void shutdown()
-        {
-        }
-        
-        @Override
         public void indexUpdates( Iterable<NodePropertyUpdate> updates )
         {
         }
         
         @Override
-        public void indexCreated( IndexDefinition index )
+        public void indexCreated( IndexDefinition index, IndexPopulationCompleter completor )
         {
         }
     };
     
-    void indexCreated( IndexDefinition index );
+    void indexCreated( IndexDefinition index, IndexPopulationCompleter completor );
 
     void indexUpdates( Iterable<NodePropertyUpdate> updates );
-    
-    void shutdown();
 }

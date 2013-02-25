@@ -22,25 +22,22 @@ package org.neo4j.kernel.impl.api.index;
 import static org.neo4j.kernel.impl.api.index.IndexPopulationService.NO_POPULATION_SERVICE;
 
 import org.neo4j.kernel.ThreadToStatementContextBridge;
-import org.neo4j.kernel.api.IndexPopulatorMapper;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
-import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.DataSourceRegistrationListener;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.kernel.lifecycle.Lifecycle;
 
 /**
- * TODO temporary name
- *
- * Used when committing for notifying schema indexes about updates made to the graph.
- * Currently in the form of {@link PropertyRecord property records}.
+ * This is the entry point for managing "schema indexes" in the database, including creating,
+ * removing and querying such indexes.
  */
-public class SchemaIndexing extends LifecycleAdapter
+public class IndexingService implements Lifecycle
 {
     // TODO pull out an interface instead of overriding all methods
-    public static final SchemaIndexing NO_INDEXING = new SchemaIndexing( null, null, null )
+    public static final IndexingService NO_INDEXING = new IndexingService( null, null, null )
     {
         @Override
         public void start() throws Throwable
@@ -62,14 +59,21 @@ public class SchemaIndexing extends LifecycleAdapter
     private final ThreadToStatementContextBridge ctxProvider;
     private NeoStore neoStore;
     private IndexPopulationService populationService = NO_POPULATION_SERVICE;
-    private final IndexPopulatorMapper populatorMapper;
+    private final SchemaIndexProvider provider;
+    private final LifeSupport life = new LifeSupport();
     
-    public SchemaIndexing( XaDataSourceManager dataSourceManager, ThreadToStatementContextBridge ctxProvider,
-            IndexPopulatorMapper populatorMapper )
+    public IndexingService( XaDataSourceManager dataSourceManager, ThreadToStatementContextBridge ctxProvider,
+                            SchemaIndexProvider provider )
     {
         this.dataSourceManager = dataSourceManager;
         this.ctxProvider = ctxProvider;
-        this.populatorMapper = populatorMapper;
+        this.provider = provider;
+    }
+    
+    @Override
+    public void init() throws Throwable
+    {
+        life.init();
     }
     
     @Override
@@ -83,17 +87,25 @@ public class SchemaIndexing extends LifecycleAdapter
                 if ( ds.getName().equals( NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME ) )
                 {
                     neoStore = ((NeoStoreXaDataSource)ds).getNeoStore();
-                    populationService = new BackgroundIndexPopulationService( populatorMapper, neoStore, ctxProvider );
+                    populationService = life.add(
+                            new BackgroundIndexPopulationService( provider, neoStore, ctxProvider ) );
                 }
             }
         } );
+        life.start();
     }
     
     @Override
     public void stop() throws Throwable
     {
-        populationService.shutdown();
+        life.stop();
         populationService = NO_POPULATION_SERVICE;
+    }
+    
+    @Override
+    public void shutdown() throws Throwable
+    {
+        life.shutdown();
     }
     
     public void indexUpdates( Iterable<NodePropertyUpdate> updates )

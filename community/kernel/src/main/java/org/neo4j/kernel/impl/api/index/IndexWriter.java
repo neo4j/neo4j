@@ -19,8 +19,17 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-public interface IndexPopulator
+/**
+ * Used for initial population of an index.
+ */
+public interface IndexWriter
 {
+
+    /**
+     * Remove all data in the index.
+     */
+    void clear();
+    
     /**
      * Called when initially populating an index over existing data. Guaranteed to be
      * called by the same thread every time.
@@ -40,9 +49,22 @@ public interface IndexPopulator
      * @param propertyValue property value for the entry to de-index.
      */
     void remove( int n, long nodeId, Object propertyValue );
+    
+    public static class Adapter implements IndexWriter
+    {
+        @Override
+        public void add( int n, long nodeId, Object propertyValue )
+        {
+        }
 
-    /**
-     * Called to signal end of background index population
-     */
-    void done();
+        @Override
+        public void remove( int n, long nodeId, Object propertyValue )
+        {
+        }
+
+        @Override
+        public void clear()
+        {
+        }
+    }
 }

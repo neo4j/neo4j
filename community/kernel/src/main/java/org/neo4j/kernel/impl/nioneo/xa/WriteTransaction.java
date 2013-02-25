@@ -22,6 +22,9 @@ package org.neo4j.kernel.impl.nioneo.xa;
 import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
 import static org.neo4j.helpers.collection.IteratorUtil.first;
 import static org.neo4j.kernel.impl.nioneo.store.PropertyStore.encodeString;
+import static org.neo4j.kernel.impl.nioneo.xa.Command.Mode.CREATE;
+import static org.neo4j.kernel.impl.nioneo.xa.Command.Mode.DELETE;
+import static org.neo4j.kernel.impl.nioneo.xa.Command.Mode.UPDATE;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -46,13 +49,15 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.NestingIterable;
+import org.neo4j.kernel.impl.api.index.IndexPopulationCompleter;
 import org.neo4j.kernel.impl.api.index.NodePropertyUpdate;
-import org.neo4j.kernel.impl.api.index.SchemaIndexing;
+import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.core.PropertyIndex;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.nioneo.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
+import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
 import org.neo4j.kernel.impl.nioneo.store.NameData;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
@@ -116,16 +121,16 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
     private final TransactionState state;
     private XaConnection xaConnection;
     private final CacheAccessBackDoor cacheAccess;
-    private final SchemaIndexing schemaIndexing;
+    private final IndexingService indexingService;
 
     WriteTransaction( int identifier, XaLogicalLog log, TransactionState state, NeoStore neoStore,
-            CacheAccessBackDoor cacheAccess, SchemaIndexing schemaIndexing )
+            CacheAccessBackDoor cacheAccess, IndexingService indexingService )
     {
         super( identifier, log, state );
         this.neoStore = neoStore;
         this.state = state;
         this.cacheAccess = cacheAccess;
-        this.schemaIndexing = schemaIndexing;
+        this.indexingService = indexingService;
     }
 
     @Override
@@ -450,7 +455,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         NameData type = isRecovered() ?
                 neoStore.getRelationshipTypeStore().getName( id, true ) :
                 neoStore.getRelationshipTypeStore().getName( id );
-                cacheAccess.addRelationshipType( type );
+        cacheAccess.addRelationshipType( type );
     }
 
     private void addPropertyIndexCommand( int id )
@@ -458,7 +463,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         NameData index = isRecovered() ?
                 neoStore.getPropertyStore().getIndexStore().getName( id, true ) :
                 neoStore.getPropertyStore().getIndexStore().getName( id );
-                cacheAccess.addPropertyIndex( index );
+        cacheAccess.addPropertyIndex( index );
     }
 
     @Override
@@ -517,10 +522,14 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             for ( SchemaRuleCommand command : schemaRuleCommands )
             {
                 command.execute();
-                if ( command.isDeleted() )
-                    cacheAccess.removeSchemaRuleFromCache( command.getKey() );
-                else
-                    cacheAccess.addSchemaRule( command.getSchemaRule() );
+                switch ( command.getMode() )
+                {
+                    case DELETE:
+                        cacheAccess.removeSchemaRuleFromCache( command.getKey() );
+                        break;
+                    default:
+                        cacheAccess.addSchemaRule( command.getSchemaRule() );
+                }
             }
 
             // primitives
@@ -533,7 +542,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             
             // property change set for index updates
             Iterable<NodePropertyUpdate> updates = convertIntoLogicalPropertyUpdates( propCommands );
-            schemaIndexing.indexUpdates( updates );
+            indexingService.indexUpdates( updates );
             
             if ( isRecovered )
                 neoStore.setRecoveredStatus( true );
@@ -595,7 +604,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
     {
         for ( List<? extends Command> c : commands ) for ( Command command : c )
         {
-            if ( command.isCreated() && !command.isDeleted() )
+            if ( command.getMode() == CREATE )
             {
                 command.execute();
                 if ( removeFromCache )
@@ -610,7 +619,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
     {
         for ( List<? extends Command> c : commands ) for ( Command command : c )
         {
-            if ( !command.isCreated() && !command.isDeleted() )
+            if ( command.getMode() == UPDATE)
             {
                 command.execute();
                 if ( removeFromCache )
@@ -625,7 +634,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
     {
         for ( List<? extends Command> c : commands ) for ( Command command : c )
         {
-            if ( command.isDeleted() )
+            if ( command.getMode() == DELETE )
             {
                 /*
                  * We always update the disk image and then always invalidate the cache. In the case of relationships
@@ -1922,7 +1931,14 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         for ( DynamicRecord record : pair.first() )
             record.setInUse( false );
     }
-    
+
+    @Override
+    public void markIndexAsOnline( IndexRule index, IndexPopulationCompleter.IndexSnapshot snapshot )
+    {
+        IndexRule updatedRule = new IndexRule(index.getId(), index.getLabel(), IndexRule.State.ONLINE, index.getPropertyKey());
+        createSchemaRule( updatedRule );
+    }
+
     private SchemaRule deserializeSchemaRule( long ruleId, Collection<DynamicRecord> records )
     {
         return SchemaRule.Kind.deserialize( ruleId, AbstractDynamicStore.concatData( records, new byte[100] ) );

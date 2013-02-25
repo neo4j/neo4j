@@ -35,6 +35,7 @@ import javax.transaction.NotSupportedException;
 import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
 
+import ch.qos.logback.classic.LoggerContext;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -60,7 +61,6 @@ import org.neo4j.helpers.Service;
 import org.neo4j.helpers.Settings;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.kernel.api.IndexPopulatorMapperProvider;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConfigurationChange;
@@ -70,7 +70,8 @@ import org.neo4j.kernel.extension.KernelExtensions;
 import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.impl.api.Kernel;
 import org.neo4j.kernel.impl.api.SchemaCache;
-import org.neo4j.kernel.impl.api.index.SchemaIndexing;
+import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.cache.Cache;
 import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.cache.MonitorGc;
@@ -134,8 +135,6 @@ import org.neo4j.kernel.logging.ClassicLoggingService;
 import org.neo4j.kernel.logging.LogbackService;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.tooling.GlobalGraphOperations;
-
-import ch.qos.logback.classic.LoggerContext;
 
 /**
  * Base implementation of GraphDatabaseService. Responsible for creating services, handling dependencies between them,
@@ -212,8 +211,8 @@ public abstract class InternalAbstractGraphDatabase
     protected KernelAPI kernelAPI;
     protected ThreadToStatementContextBridge statementContextProvider;
     protected BridgingCacheAccess cacheBridge;
-    protected SchemaIndexing schemaIndexing;
-    protected IndexPopulatorMapperProvider indexPopulatorMapper;
+    protected IndexingService indexingService;
+    protected SchemaIndexProvider schemaIndexProvider;
 
     protected final LifeSupport life = new LifeSupport();
     private final Map<String,CacheProvider> cacheProviders;
@@ -224,12 +223,12 @@ public abstract class InternalAbstractGraphDatabase
                                              Iterable<KernelExtensionFactory<?>> kernelExtensions,
                                              Iterable<CacheProvider> cacheProviders,
                                              Iterable<TransactionInterceptorProvider> transactionInterceptorProviders,
-                                             Iterable<IndexPopulatorMapperProvider> indexPopulatorMappers )
+                                             Iterable<SchemaIndexProvider> schemaIndexProvider )
     {
         this.params = params;
         
         // TODO singleOrNull since there's no main implemenation of it
-        this.indexPopulatorMapper = IteratorUtil.singleOrNull( indexPopulatorMappers );
+        this.schemaIndexProvider = IteratorUtil.singleOrNull( schemaIndexProvider );
 
         dependencyResolver = new DependencyResolverImpl();
 
@@ -499,10 +498,7 @@ public abstract class InternalAbstractGraphDatabase
         
         cacheBridge = new BridgingCacheAccess( nodeManager, schemaCache );
         
-        schemaIndexing = indexPopulatorMapper != null ? 
-                life.add( new SchemaIndexing( xaDataSourceManager, statementContextProvider,
-                        indexPopulatorMapper.newMapper() ) ) :
-                SchemaIndexing.NO_INDEXING;
+        indexingService = createSchemaIndexing();
 
         createNeoDataSource();
 
@@ -516,6 +512,14 @@ public abstract class InternalAbstractGraphDatabase
 
         // TODO This is probably too coarse-grained and we should have some strategy per user of config instead
         life.add( new ConfigurationChangedRestarter() );
+    }
+
+    protected IndexingService createSchemaIndexing()
+    {
+        return schemaIndexProvider != null ?
+                life.add( new IndexingService( xaDataSourceManager, statementContextProvider,
+                        schemaIndexProvider ) ) :
+                IndexingService.NO_INDEXING;
     }
 
     protected TransactionStateFactory createTransactionStateFactory()
@@ -821,7 +825,7 @@ public abstract class InternalAbstractGraphDatabase
             // TODO IO stuff should be done in lifecycle. Refactor!
             neoDataSource = new NeoStoreXaDataSource( config,
                     storeFactory, lockManager, logging.getLogger( NeoStoreXaDataSource.class ),
-                    xaFactory, stateFactory, cacheBridge, schemaIndexing, transactionInterceptorProviders,
+                    xaFactory, stateFactory, cacheBridge, indexingService, transactionInterceptorProviders,
                     dependencyResolver );
             xaDataSourceManager.registerDataSource( neoDataSource );
 
@@ -1401,9 +1405,9 @@ public abstract class InternalAbstractGraphDatabase
             {
                 return (T) DependencyResolverImpl.this;
             }
-            else if ( SchemaIndexing.class.isAssignableFrom( type ) )
+            else if ( IndexingService.class.isAssignableFrom( type ) )
             {
-                return (T) schemaIndexing;
+                return (T) indexingService;
             }
             else
             {

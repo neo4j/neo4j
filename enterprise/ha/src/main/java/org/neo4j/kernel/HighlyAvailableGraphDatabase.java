@@ -24,7 +24,6 @@ import java.util.Map;
 import org.neo4j.graphdb.index.IndexProvider;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.api.IndexPopulatorMapperProvider;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.ha.UpdatePuller;
 import org.neo4j.kernel.impl.cache.CacheProvider;

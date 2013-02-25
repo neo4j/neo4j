@@ -82,7 +82,7 @@ public class NodePropertyUpdate
         return true;
     }
 
-    public void apply( int n, IndexPopulator indexManipulator )
+    public void apply( int n, IndexWriter indexManipulator )
     {
         switch (getUpdateMode())
         {
@@ -97,5 +97,12 @@ public class NodePropertyUpdate
                 indexManipulator.remove( n, getNodeId(), getValueBefore() );
                 break;
         }
+    }
+    
+    @Override
+    public String toString()
+    {
+        return getClass().getSimpleName() + "[" + nodeId + ", prop:" + propertyKeyId + ", before:" + valueBefore +
+                ", after:" + valueAfter + "]";
     }
 }

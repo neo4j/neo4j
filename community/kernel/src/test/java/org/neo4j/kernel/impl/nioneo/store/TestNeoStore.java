@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.nioneo.store;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.kernel.impl.api.index.SchemaIndexing.NO_INDEXING;
+import static org.neo4j.kernel.impl.api.index.IndexingService.NO_INDEXING;
 
 import java.io.File;
 import java.io.IOException;

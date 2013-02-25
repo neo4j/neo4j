@@ -44,31 +44,41 @@ class IndexPopulationJob implements Runnable
 {
     private final long labelId;
     private final long propertyKeyId;
-    private final IndexPopulator indexManipulator;
+    private final IndexWriter populator;
     private final NeoStore neoStore;
+    private int count;
 
     // NOTE: unbounded queue expected here
     private final Queue<NodePropertyUpdate> queue = new ConcurrentLinkedQueue<NodePropertyUpdate>();
     private final ThreadToStatementContextBridge ctxProvider;
+    private final IndexPopulationCompleter completor;
 
-    public IndexPopulationJob( long labelId, long propertyKeyId, IndexPopulator indexManipulator, NeoStore neoStore,
-                               ThreadToStatementContextBridge ctxProvider )
+    public IndexPopulationJob( long labelId, long propertyKeyId, IndexWriter populator, NeoStore neoStore,
+                               ThreadToStatementContextBridge ctxProvider, IndexPopulationCompleter completor )
     {
         this.labelId = labelId;
         this.propertyKeyId = propertyKeyId;
-        this.indexManipulator = indexManipulator;
+        this.populator = populator;
         this.neoStore = neoStore;
         this.ctxProvider = ctxProvider;
+        this.completor = completor;
     }
     
     @Override
     public void run()
     {
-        indexAllNodes();
-
-        indexManipulator.done();
+        populator.clear();
         
-        // TODO atomic switchover (?)
+        indexAllNodes();
+        
+        completor.complete( new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                populateFromQueueIfAvailable( Long.MAX_VALUE, count );
+            }
+        } );
     }
 
     @SuppressWarnings("unchecked")
@@ -86,15 +96,15 @@ class IndexPopulationJob implements Runnable
         processor.applyFiltered( nodeStore, predicate );
     }
 
-    private void populateFromQueueIfAvailable( long maxIndexedId )
+    private int populateFromQueueIfAvailable( long highestIndexedNodeId, int n )
     {
-        int n = 0;
         for ( NodePropertyUpdate update = queue.poll(); update != null; update = queue.poll(), n++ )
         {
-            boolean hasNotYetBeenIndexed = update.getNodeId() <= maxIndexedId;
-            if ( hasNotYetBeenIndexed )
-                update.apply( n, indexManipulator );
+            boolean hasBeenIndexed = update.getNodeId() <= highestIndexedNodeId;
+            if ( hasBeenIndexed )
+                update.apply( n++, populator );
         }
+        return n;
     }
 
     public void cancel()
@@ -104,7 +114,7 @@ class IndexPopulationJob implements Runnable
 
     /**
      * A transaction happened that produced the given updates. Let this job incorporate its data
-     * into, feeding it to the {@link IndexPopulator}.
+     * into, feeding it to the {@link IndexWriter}.
      */
     public void indexUpdates( Iterable<NodePropertyUpdate> updates )
     {
@@ -117,7 +127,6 @@ class IndexPopulationJob implements Runnable
     private class NodeIndexingProcessor extends Processor
     {
         private final PropertyStore propertyStore;
-        private int count;
 
         public NodeIndexingProcessor( PropertyStore propertyStore )
         {
@@ -132,7 +141,7 @@ class IndexPopulationJob implements Runnable
 
             // Process queued updates
             // TODO synchronization
-            populateFromQueueIfAvailable( node.getId() );
+            count = populateFromQueueIfAvailable( node.getId(), count );
         }
 
         private void indexNodeRecord( NodeRecord node )
@@ -156,7 +165,7 @@ class IndexPopulationJob implements Runnable
                             // Make sure the value is loaded, even if it's of a "heavy" kind.
                             propertyStore.makeHeavy( property );
                             Object propertyValue = property.getType().getValue( property, propertyStore );
-                            indexManipulator.add( count++, node.getId(), propertyValue );
+                            populator.add( count++, node.getId(), propertyValue );
                         }
                     }
                 }

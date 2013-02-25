@@ -17,16 +17,31 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api;
+package org.neo4j.kernel.impl.api.index;
 
+import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.Service;
 
-public abstract class IndexPopulatorMapperProvider extends Service
+/**
+ * Provides implementations for some given indexing scheme.
+ */
+public abstract class SchemaIndexProvider extends Service
 {
-    protected IndexPopulatorMapperProvider( String key )
+    /**
+     * Create a new instance of a service implementation identified with the
+     * specified key(s).
+     *
+     * @param key     the main key for identifying this service implementation
+     */
+    protected SchemaIndexProvider( String key )
     {
         super( key );
     }
-    
-    public abstract IndexPopulatorMapper newMapper();
+
+    abstract IndexWriter getWriter( IndexDefinition index );
+
+    // Design idea: we add methods here like:
+    //    getReader( IndexDefinition index )
+    //    populationCompleted()
+    //    getState() -> POPULATING, ONLINE
 }
