@@ -39,13 +39,19 @@ public class InMemoryIndexProvider extends SchemaIndexProvider
     }
 
     @Override
-    public IndexWriter getPopulator( long indexId )
+    public IndexWriter getOnlineWriter( long indexId )
     {
         IndexWriter populator = new InMemoryIndexWriter();
         writers.put( indexId, populator );
         return populator;
     }
-    
+
+    @Override
+    public IndexWriter getPopulatingWriter( long indexId )
+    {
+        return getOnlineWriter( indexId );
+    }
+
     private static class InMemoryIndexWriter implements IndexWriter
     {
         private final Map<Object, Set<Long>> indexData = new HashMap<Object, Set<Long>>();
@@ -55,6 +61,13 @@ public class InMemoryIndexProvider extends SchemaIndexProvider
         {
             Set<Long> nodes = getLongs( propertyValue );
             nodes.add( nodeId );
+        }
+
+        @Override
+        public void remove( long nodeId, Object propertyValue )
+        {
+            Collection<Long> nodes = indexData.get( propertyValue );
+            nodes.remove( nodeId );
         }
 
         private Set<Long> getLongs( Object propertyValue )
@@ -69,16 +82,15 @@ public class InMemoryIndexProvider extends SchemaIndexProvider
         }
 
         @Override
-        public void remove( long nodeId, Object propertyValue )
+        public void createIndex()
         {
-            Collection<Long> nodes = indexData.get( propertyValue );
-            nodes.remove( nodeId );
+            indexData.clear();
         }
 
         @Override
-        public void clear()
+        public void dropIndex()
         {
-            indexData.clear();
+            throw new UnsupportedOperationException(  );
         }
 
         @Override

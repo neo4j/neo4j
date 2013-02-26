@@ -43,7 +43,7 @@ import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.TransactionInterceptorProviders;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.api.index.IntegratedIndexing;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.core.PropertyIndex;
 import org.neo4j.kernel.impl.core.TransactionState;
@@ -103,7 +103,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
 
     private final Config config;
     private NeoStore neoStore;
-    private final IndexingService indexingService;
+    private final IntegratedIndexing integratedIndexing;
     private XaContainer xaContainer;
     private ArrayMap<Class<?>,Store> idGenerators;
 
@@ -203,7 +203,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
      */
     public NeoStoreXaDataSource( Config config, StoreFactory sf, LockManager lockManager,
                                  StringLogger stringLogger, XaFactory xaFactory, TransactionStateFactory stateFactory,
-                                 CacheAccessBackDoor cacheAccess, IndexingService indexingService,
+                                 CacheAccessBackDoor cacheAccess, IntegratedIndexing integratedIndexing,
                                  TransactionInterceptorProviders providers, DependencyResolver dependencyResolver )
             throws IOException
     {
@@ -211,7 +211,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
         this.config = config;
         this.stateFactory = stateFactory;
         this.cacheAccess = cacheAccess;
-        this.indexingService = indexingService;
+        this.integratedIndexing = integratedIndexing;
         this.providers = providers;
 
         readOnly = config.get( Configuration.read_only );
@@ -366,7 +366,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
         {
             TransactionInterceptor first = providers.resolveChain( NeoStoreXaDataSource.this );
             return new InterceptingWriteTransaction( identifier, getLogicalLog(), neoStore, state, cacheAccess,
-                    indexingService, lockManager, first );
+                    integratedIndexing, lockManager, first );
         }
     }
 
@@ -376,7 +376,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
         public XaTransaction create( int identifier, TransactionState state )
         {
             return new WriteTransaction( identifier, getLogicalLog(), state,
-                neoStore, cacheAccess, indexingService );
+                neoStore, cacheAccess, integratedIndexing );
         }
 
         @Override

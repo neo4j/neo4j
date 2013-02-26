@@ -29,6 +29,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import javax.transaction.NotSupportedException;
@@ -70,7 +71,7 @@ import org.neo4j.kernel.extension.KernelExtensions;
 import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.impl.api.Kernel;
 import org.neo4j.kernel.impl.api.SchemaCache;
-import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.api.index.IntegratedIndexing;
 import org.neo4j.kernel.impl.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.cache.Cache;
 import org.neo4j.kernel.impl.cache.CacheProvider;
@@ -211,7 +212,7 @@ public abstract class InternalAbstractGraphDatabase
     protected KernelAPI kernelAPI;
     protected ThreadToStatementContextBridge statementContextProvider;
     protected BridgingCacheAccess cacheBridge;
-    protected IndexingService indexingService;
+    protected IntegratedIndexing integratedIndexing;
     protected SchemaIndexProvider schemaIndexProvider;
 
     protected final LifeSupport life = new LifeSupport();
@@ -498,7 +499,7 @@ public abstract class InternalAbstractGraphDatabase
         
         cacheBridge = new BridgingCacheAccess( nodeManager, schemaCache );
         
-        indexingService = createSchemaIndexing();
+        integratedIndexing = createIntegratedIndexing();
 
         createNeoDataSource();
 
@@ -514,12 +515,13 @@ public abstract class InternalAbstractGraphDatabase
         life.add( new ConfigurationChangedRestarter() );
     }
 
-    protected IndexingService createSchemaIndexing()
+    protected IntegratedIndexing createIntegratedIndexing()
     {
-        return schemaIndexProvider != null ?
-                life.add( new IndexingService( xaDataSourceManager, statementContextProvider,
-                        schemaIndexProvider ) ) :
-                IndexingService.NO_INDEXING;
+        // TODO share / make configurable in size
+        ExecutorService executor = Executors.newCachedThreadPool();
+        // null safe, indexing.getService() returns IntegratedIndexing.Adapter.NO_INDEXING by default
+        IntegratedIndexing indexing = new IntegratedIndexing( executor, xaDataSourceManager, schemaIndexProvider );
+        return life.add( indexing );
     }
 
     protected TransactionStateFactory createTransactionStateFactory()
@@ -825,7 +827,7 @@ public abstract class InternalAbstractGraphDatabase
             // TODO IO stuff should be done in lifecycle. Refactor!
             neoDataSource = new NeoStoreXaDataSource( config,
                     storeFactory, lockManager, logging.getLogger( NeoStoreXaDataSource.class ),
-                    xaFactory, stateFactory, cacheBridge, indexingService, transactionInterceptorProviders,
+                    xaFactory, stateFactory, cacheBridge, integratedIndexing, transactionInterceptorProviders,
                     dependencyResolver );
             xaDataSourceManager.registerDataSource( neoDataSource );
 
@@ -1405,9 +1407,9 @@ public abstract class InternalAbstractGraphDatabase
             {
                 return (T) DependencyResolverImpl.this;
             }
-            else if ( IndexingService.class.isAssignableFrom( type ) )
+            else if ( IntegratedIndexing.class.isAssignableFrom( type ) )
             {
-                return (T) indexingService;
+                return (T) integratedIndexing;
             }
             else
             {

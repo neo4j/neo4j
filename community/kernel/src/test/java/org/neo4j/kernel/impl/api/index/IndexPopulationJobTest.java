@@ -64,7 +64,7 @@ public class IndexPopulationJobTest
         job.run();
 
         // THEN
-        verify( populator ).clear();
+        verify( populator ).createIndex();
         verify( populator ).add( nodeId, value );
 
         verifyNoMoreInteractions( populator );
@@ -85,7 +85,7 @@ public class IndexPopulationJobTest
         job.run();
 
         // THEN
-        verify( populator ).clear();
+        verify( populator ).createIndex();
         verify( populator ).add( node1, value );
         verify( populator ).add( node4, value );
 
@@ -219,8 +219,7 @@ public class IndexPopulationJobTest
     private ThreadToStatementContextBridge ctxProvider;
     private StatementContext context;
     private IndexWriter populator;
-    private StateFlipOver flip;
-    
+
     @Before
     public void before() throws Exception
     {
@@ -228,7 +227,6 @@ public class IndexPopulationJobTest
         ctxProvider = db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
         context = ctxProvider.getCtxForReading();
         populator = mock( IndexWriter.class );
-        flip = mock( StateFlipOver.class );
     }
 
     @After
@@ -240,10 +238,11 @@ public class IndexPopulationJobTest
     private IndexPopulationJob newIndexPopulationJob( Label label, String propertyKey, IndexWriter populator )
             throws LabelNotFoundKernelException, PropertyKeyNotFoundException
     {
-        return new IndexPopulationJob(
-                new IndexRule( 0, context.getLabelId( FIRST.name() ), State.POPULATING, context.getPropertyKeyId( name ) ),
-                populator, db.getXaDataSourceManager().getNeoStoreDataSource().getNeoStore(), ctxProvider, flip,
-                Collections.<IndexPopulationJob>emptySet() );
+        throw new UnsupportedOperationException(  );
+//        return new IndexPopulationJob(
+//                new IndexRule( 0, context.getLabelId( FIRST.name() ), State.POPULATING, context.getPropertyKeyId( name ) ),
+//                populator, db.getXaDataSourceManager().getNeoStoreDataSource().getNeoStore(), ctxProvider,
+//                Collections.<IndexPopulationJob>emptySet() );
     }
 
     private long createNode( Map<String, Object> properties, Label... labels )

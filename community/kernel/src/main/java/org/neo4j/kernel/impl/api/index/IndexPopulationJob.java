@@ -19,13 +19,13 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import java.util.Collection;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.neo4j.helpers.Predicate;
-import org.neo4j.kernel.ThreadToStatementContextBridge;
-import org.neo4j.kernel.impl.api.index.StateFlipOver.StateFlip;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
@@ -43,51 +43,42 @@ import org.neo4j.kernel.impl.nioneo.store.RecordStore.Processor;
  * 
  * @author Mattias Persson
  */
-class IndexPopulationJob implements Runnable
+public class IndexPopulationJob implements Runnable
 {
     private final long labelId;
     private final long propertyKeyId;
-    private final IndexWriter populator;
     private final NeoStore neoStore;
 
     // NOTE: unbounded queue expected here
     private final Queue<NodePropertyUpdate> queue = new ConcurrentLinkedQueue<NodePropertyUpdate>();
-    private final ThreadToStatementContextBridge ctxProvider;
-    private final StateFlipOver flip;
     private final IndexRule indexRule;
-    private final Collection<IndexPopulationJob> indexJobs;
+    private final IndexContext context;
+    private final Flipper flipper;
 
-    public IndexPopulationJob( IndexRule indexRule, IndexWriter populator, NeoStore neoStore,
-                               ThreadToStatementContextBridge ctxProvider, StateFlipOver flip,
-                               Collection<IndexPopulationJob> indexJobs )
+    public IndexPopulationJob( IndexRule indexRule, IndexContext context, NeoStore neoStore, Flipper flipper )
     {
         this.indexRule = indexRule;
-        this.flip = flip;
-        this.indexJobs = indexJobs;
+        this.context = context;
+        this.flipper = flipper;
         this.labelId = indexRule.getLabel();
         this.propertyKeyId = indexRule.getPropertyKey();
-        this.populator = populator;
         this.neoStore = neoStore;
-        this.ctxProvider = ctxProvider;
     }
     
     @Override
     public void run()
     {
-        populator.clear();
-        
         indexAllNodes();
         
-        StateFlip stateFlip = flip.flip( indexRule );
-        try
+        flipper.flip( new Runnable()
         {
-            populateFromQueueIfAvailable( Long.MAX_VALUE );
-        }
-        finally
-        {
-            indexJobs.remove( this );
-            stateFlip.flop();
-        }
+            
+            @Override
+            public void run()
+            {
+                populateFromQueueIfAvailable( Long.MAX_VALUE );
+            }
+        } );
     }
 
     @SuppressWarnings("unchecked")
@@ -105,14 +96,20 @@ class IndexPopulationJob implements Runnable
         processor.applyFiltered( nodeStore, predicate );
     }
 
-    private void populateFromQueueIfAvailable( long highestIndexedNodeId )
+    private void populateFromQueueIfAvailable( final long highestIndexedNodeId )
     {
-        for ( NodePropertyUpdate update = queue.poll(); update != null; update = queue.poll() )
+        if ( queue.isEmpty() )
+            return;
+        
+        context.update( Iterables.filter( new Predicate<NodePropertyUpdate>()
         {
-            boolean hasBeenIndexed = update.getNodeId() <= highestIndexedNodeId;
-            if ( hasBeenIndexed )
-                update.apply( populator );
-        }
+            @Override
+            public boolean accept( NodePropertyUpdate item )
+            {
+                boolean hasBeenIndexed = item.getNodeId() <= highestIndexedNodeId;
+                return hasBeenIndexed;
+            }
+        }, queue ) );
     }
 
     public void cancel()
@@ -135,6 +132,7 @@ class IndexPopulationJob implements Runnable
     private class NodeIndexingProcessor extends Processor
     {
         private final PropertyStore propertyStore;
+        private final List<NodePropertyUpdate> updates = new ArrayList<NodePropertyUpdate>();
 
         public NodeIndexingProcessor( PropertyStore propertyStore )
         {
@@ -162,22 +160,22 @@ class IndexPopulationJob implements Runnable
 
             // TODO optimize so that we don't have to load all property records, but instead stop
             // when we first find the property we're looking for.
+            updates.clear();
             for ( PropertyRecord propertyRecord : propertyStore.getPropertyRecordChain( firstPropertyId ) )
             {
                 for ( PropertyBlock property : propertyRecord.getPropertyBlocks() )
                 {
                     if ( property.getKeyIndexId() == propertyKeyId )
                     {
-                        if ( property.getKeyIndexId() == propertyKeyId )
-                        {
-                            // Make sure the value is loaded, even if it's of a "heavy" kind.
-                            propertyStore.makeHeavy( property );
-                            Object propertyValue = property.getType().getValue( property, propertyStore );
-                            populator.add( node.getId(), propertyValue );
-                        }
+                        // Make sure the value is loaded, even if it's of a "heavy" kind.
+                        propertyStore.makeHeavy( property );
+                        Object propertyValue = property.getType().getValue( property, propertyStore );
+                        // TODO optimize
+                        updates.add( new NodePropertyUpdate( node.getId(), firstPropertyId, null, propertyValue ) );
                     }
                 }
             }
+            context.update( updates );
         }
     }
 

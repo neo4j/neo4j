@@ -25,9 +25,11 @@ package org.neo4j.kernel.impl.api.index;
 public interface IndexWriter
 {
     /**
-     * Remove all data in the index.
+     * Remove all data in the index and paves the way for populating an index.
      */
-    void clear();
+    void createIndex();
+    
+    void dropIndex();
     
     /**
      * Called when initially populating an index over existing data. Guaranteed to be
@@ -55,7 +57,12 @@ public interface IndexWriter
     public static class Adapter implements IndexWriter
     {
         @Override
-        public void clear()
+        public void createIndex()
+        {
+        }
+        
+        @Override
+        public void dropIndex()
         {
         }
         

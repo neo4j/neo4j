@@ -37,9 +37,9 @@ public abstract class SchemaIndexProvider extends Service
         super( key );
     }
 
-    abstract IndexWriter getPopulator( long indexId );
+    public abstract IndexWriter getPopulatingWriter( long indexId );
     
-    abstract IndexWriter getWriter( long indexId );
+    public abstract IndexWriter getOnlineWriter( long indexId );
     
     // Design idea: we add methods here like:
     //    getReader( IndexDefinition index )

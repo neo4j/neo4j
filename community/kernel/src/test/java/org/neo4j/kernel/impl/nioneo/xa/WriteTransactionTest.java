@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.nioneo.xa;
 import static org.mockito.Mockito.*;
 import static org.neo4j.helpers.collection.IteratorUtil.first;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.impl.api.index.IndexingService.NO_INDEXING;
 import static org.neo4j.kernel.impl.nioneo.store.IndexRule.State.POPULATING;
 import static org.neo4j.kernel.impl.util.StringLogger.SYSTEM;
 
@@ -36,7 +35,7 @@ import org.mockito.ArgumentMatcher;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.DefaultTxHook;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.api.index.IntegratedIndexing;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.nioneo.store.DefaultWindowPoolFactory;
@@ -55,7 +54,7 @@ public class WriteTransactionTest
     {
         // GIVEN
         WriteTransaction writeTransaction = new WriteTransaction( 0, log, transactionState, neoStore,
-                cacheAccessBackDoor, NO_INDEXING );
+                cacheAccessBackDoor, IntegratedIndexing.NO_INDEXING );
         writeTransaction.setCommitTxId( 1 );
 
         // WHEN
@@ -80,7 +79,7 @@ public class WriteTransactionTest
             schemaStore.updateRecord( record );
         long ruleId = first( records ).getId();
         WriteTransaction writeTransaction = new WriteTransaction( 0, log, transactionState, neoStore,
-                cacheAccessBackDoor, IndexingService.NO_INDEXING );
+                cacheAccessBackDoor, IntegratedIndexing.NO_INDEXING );
         writeTransaction.setCommitTxId( 1 );
 
         // WHEN
@@ -97,7 +96,7 @@ public class WriteTransactionTest
     {
         // GIVEN
         WriteTransaction writeTransaction = new WriteTransaction( 0, log, transactionState, neoStore,
-                cacheAccessBackDoor, NO_INDEXING );
+                cacheAccessBackDoor, IntegratedIndexing.NO_INDEXING );
         writeTransaction.setCommitTxId( 1 );
 
         // WHEN

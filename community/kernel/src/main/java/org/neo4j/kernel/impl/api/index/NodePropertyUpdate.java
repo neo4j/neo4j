@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.api.index;
 
 import org.neo4j.kernel.impl.api.UpdateMode;
+import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 
 public class NodePropertyUpdate
 {

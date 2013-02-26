@@ -19,24 +19,26 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+
 import org.junit.Test;
 
-public class IndexingFlipOverTest
+public class AtomicDelegatingIndexContextTest
 {
     @Test
-    public void shouldFlipWhenNoUpdatesHappening() throws Exception
+    public void shouldBeAbleToSwitchDelegate() throws Exception
     {
-        /* GIVEN
-         * A background service populating an index.
-         * When the index is fully populated any new index updates should go to the online service.
-         * No updates can be lost in between.
-         */
-        IndexPopulationJob job;
-        OnlineIndexService onlineService;
-        StateFlipOver flip;
+        // GIVEN
+        IndexContext actual = mock( IndexContext.class );
+        IndexContext other = mock( IndexContext.class );
+        AtomicDelegatingIndexContext delegate = new AtomicDelegatingIndexContext( actual );
 
         // WHEN
+        delegate.setDelegate( other );
+        delegate.drop();
 
         // THEN
+        verify( other ).drop();
     }
 }
