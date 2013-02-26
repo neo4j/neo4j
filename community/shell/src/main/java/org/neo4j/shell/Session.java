@@ -22,6 +22,7 @@ package org.neo4j.shell;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * A session (or environment) for a shell client.
@@ -30,6 +31,7 @@ public class Session
 {
     private final Serializable id;
     private final Map<String, Object> properties = new HashMap<String, Object>();
+    private final Map<String, String> aliases = new HashMap<String, String>();
     
     public Session( Serializable id )
     {
@@ -87,4 +89,24 @@ public class Session
 	{
 	    return properties;
 	}
+
+    public void removeAlias( String key )
+    {
+        aliases.remove( key );
+    }
+
+    public void setAlias( String key, String value )
+    {
+        aliases.put( key, value );
+    }
+
+    public Set<String> getAliasKeys()
+    {
+        return aliases.keySet();
+    }
+
+    public String getAlias( String key )
+    {
+        return aliases.get( key );
+    }
 }

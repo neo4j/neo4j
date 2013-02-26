@@ -91,15 +91,30 @@ public abstract class AbstractServer implements ShellServer
         clientSessions.put( clientId, session );
 		try
         {
-            return new Welcome( getWelcomeMessage(), clientId, getPrompt( session ) );
+            String message = noWelcome( initialSession ) ? "" : getWelcomeMessage();
+            return new Welcome( message, clientId, getPrompt( session ) );
         }
         catch ( ShellException e )
         {
             throw new RemoteException( e.getMessage() );
         }
 	}
-	
-	private Session newSession( Serializable id, Map<String, Serializable> initialSession )
+
+    private boolean noWelcome( Map<String, Serializable> initialSession )
+    {
+        final Serializable quiet = initialSession.get( "quiet" );
+        if ( quiet == null )
+        {
+            return false;
+        }
+        if ( quiet instanceof Boolean )
+        {
+            ( (Boolean) quiet ).booleanValue();
+        }
+        return quiet.toString().equalsIgnoreCase( "true" );
+    }
+
+    private Session newSession( Serializable id, Map<String, Serializable> initialSession )
     {
 	    Session session = new Session( id );
 	    initialPopulateSession( session );

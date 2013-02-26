@@ -17,25 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.shell.kernel.apps;
+package org.neo4j.shell.kernel.apps.cypher;
 
 import org.neo4j.helpers.Service;
 import org.neo4j.shell.App;
 
 @Service.Implementation( App.class )
-public class Cypher extends Start
+public class Create extends Start
 {
-    public Cypher()
-    {
-        super();
-    }
-
-    @Override
-    public String getDescription()
-    {
-        return "Executes a Cypher query with an older parser. " +
-                "Usage: cypher <version> start <rest of query>\n" +
-                "Example: CYPHER 1.5 START me = node({self}) MATCH me-[:KNOWS]->you RETURN you.name\n" +
-                "where {self} will be replaced with the current location in the graph";
-    }
 }
