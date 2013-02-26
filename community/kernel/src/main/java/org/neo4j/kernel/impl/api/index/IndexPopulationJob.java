@@ -19,11 +19,14 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import java.util.Collection;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.neo4j.helpers.Predicate;
 import org.neo4j.kernel.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.api.index.StateFlipOver.StateFlip;
+import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeStore;
@@ -46,22 +49,26 @@ class IndexPopulationJob implements Runnable
     private final long propertyKeyId;
     private final IndexWriter populator;
     private final NeoStore neoStore;
-    private int count;
 
     // NOTE: unbounded queue expected here
     private final Queue<NodePropertyUpdate> queue = new ConcurrentLinkedQueue<NodePropertyUpdate>();
     private final ThreadToStatementContextBridge ctxProvider;
-    private final IndexPopulationCompleter completor;
+    private final StateFlipOver flip;
+    private final IndexRule indexRule;
+    private final Collection<IndexPopulationJob> indexJobs;
 
-    public IndexPopulationJob( long labelId, long propertyKeyId, IndexWriter populator, NeoStore neoStore,
-                               ThreadToStatementContextBridge ctxProvider, IndexPopulationCompleter completor )
+    public IndexPopulationJob( IndexRule indexRule, IndexWriter populator, NeoStore neoStore,
+                               ThreadToStatementContextBridge ctxProvider, StateFlipOver flip,
+                               Collection<IndexPopulationJob> indexJobs )
     {
-        this.labelId = labelId;
-        this.propertyKeyId = propertyKeyId;
+        this.indexRule = indexRule;
+        this.flip = flip;
+        this.indexJobs = indexJobs;
+        this.labelId = indexRule.getLabel();
+        this.propertyKeyId = indexRule.getPropertyKey();
         this.populator = populator;
         this.neoStore = neoStore;
         this.ctxProvider = ctxProvider;
-        this.completor = completor;
     }
     
     @Override
@@ -71,14 +78,16 @@ class IndexPopulationJob implements Runnable
         
         indexAllNodes();
         
-        completor.complete( new Runnable()
+        StateFlip stateFlip = flip.flip( indexRule );
+        try
         {
-            @Override
-            public void run()
-            {
-                populateFromQueueIfAvailable( Long.MAX_VALUE, count );
-            }
-        } );
+            populateFromQueueIfAvailable( Long.MAX_VALUE );
+        }
+        finally
+        {
+            indexJobs.remove( this );
+            stateFlip.flop();
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -96,15 +105,14 @@ class IndexPopulationJob implements Runnable
         processor.applyFiltered( nodeStore, predicate );
     }
 
-    private int populateFromQueueIfAvailable( long highestIndexedNodeId, int n )
+    private void populateFromQueueIfAvailable( long highestIndexedNodeId )
     {
-        for ( NodePropertyUpdate update = queue.poll(); update != null; update = queue.poll(), n++ )
+        for ( NodePropertyUpdate update = queue.poll(); update != null; update = queue.poll() )
         {
             boolean hasBeenIndexed = update.getNodeId() <= highestIndexedNodeId;
             if ( hasBeenIndexed )
-                update.apply( n++, populator );
+                update.apply( populator );
         }
-        return n;
     }
 
     public void cancel()
@@ -141,7 +149,7 @@ class IndexPopulationJob implements Runnable
 
             // Process queued updates
             // TODO synchronization
-            count = populateFromQueueIfAvailable( node.getId(), count );
+            populateFromQueueIfAvailable( node.getId() );
         }
 
         private void indexNodeRecord( NodeRecord node )
@@ -165,7 +173,7 @@ class IndexPopulationJob implements Runnable
                             // Make sure the value is loaded, even if it's of a "heavy" kind.
                             propertyStore.makeHeavy( property );
                             Object propertyValue = property.getType().getValue( property, propertyStore );
-                            populator.add( count++, node.getId(), propertyValue );
+                            populator.add( node.getId(), propertyValue );
                         }
                     }
                 }

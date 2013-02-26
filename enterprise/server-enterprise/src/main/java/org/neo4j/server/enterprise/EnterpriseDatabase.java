@@ -31,6 +31,7 @@ import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
+import org.neo4j.kernel.impl.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
 import org.neo4j.server.configuration.Configurator;
@@ -64,11 +65,11 @@ public class EnterpriseDatabase extends CommunityDatabase
                         List<CacheProvider> cacheProviders = Iterables.toList( Service.load( CacheProvider.class ) );
                         List<TransactionInterceptorProvider> txInterceptorProviders =
                                 Iterables.toList( Service.load( TransactionInterceptorProvider.class ) );
-                        List<IndexPopulatorMapperProvider> indexPopulatorMappers =
-                                Iterables.toList( Service.load( IndexPopulatorMapperProvider.class ) );
+                        List<SchemaIndexProvider> schemaIndexProviders =
+                                Iterables.toList( Service.load( SchemaIndexProvider.class ) );
                         return new HighlyAvailableGraphDatabase( databaseStoreDirectory, databaseProperties,
                                 indexProviders, kernelExtensions, cacheProviders, txInterceptorProviders,
-                                indexPopulatorMappers );
+                                schemaIndexProviders );
                     }
                 };
 

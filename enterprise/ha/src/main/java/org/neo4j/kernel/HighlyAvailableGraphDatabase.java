@@ -26,6 +26,7 @@ import org.neo4j.helpers.Service;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.ha.UpdatePuller;
+import org.neo4j.kernel.impl.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
 
@@ -44,15 +45,15 @@ public class HighlyAvailableGraphDatabase
                 Iterables.<KernelExtensionFactory<?>, KernelExtensionFactory>cast(Service.load( KernelExtensionFactory.class )),
                 Service.load( CacheProvider.class ),
                 Service.load( TransactionInterceptorProvider.class ),
-                Service.load( IndexPopulatorMapperProvider.class ) );
+                Service.load( SchemaIndexProvider.class ) );
     }
 
     public HighlyAvailableGraphDatabase( String storeDir, Map<String, String> params, Iterable<IndexProvider> indexProviders,
             Iterable<KernelExtensionFactory<?>> kernelExtensions, Iterable<CacheProvider> cacheProviders,
             Iterable<TransactionInterceptorProvider> txInterceptorProviders,
-            Iterable<IndexPopulatorMapperProvider> indexPopulatorMappers )
+            Iterable<SchemaIndexProvider> schemaIndexProviders )
     {
-        super( storeDir, params, indexProviders, kernelExtensions, cacheProviders, txInterceptorProviders, indexPopulatorMappers );
+        super( storeDir, params, indexProviders, kernelExtensions, cacheProviders, txInterceptorProviders, schemaIndexProviders );
     }
 
     @Deprecated

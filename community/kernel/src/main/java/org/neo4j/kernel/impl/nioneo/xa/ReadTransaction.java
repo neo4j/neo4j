@@ -31,9 +31,7 @@ import javax.transaction.SystemException;
 import javax.transaction.Transaction;
 
 import org.neo4j.helpers.Pair;
-import org.neo4j.kernel.impl.api.index.IndexPopulationCompleter;
 import org.neo4j.kernel.impl.core.PropertyIndex;
-import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
 import org.neo4j.kernel.impl.nioneo.store.NameData;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
@@ -439,12 +437,6 @@ class ReadTransaction implements NeoStoreTransaction
     
     @Override
     public void dropSchemaRule( long id )
-    {
-        throw readOnlyException();
-    }
-
-    @Override
-    public void markIndexAsOnline( IndexRule index, IndexPopulationCompleter.IndexSnapshot snapshot )
     {
         throw readOnlyException();
     }

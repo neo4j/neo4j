@@ -21,66 +21,45 @@ package org.neo4j.kernel.impl.api.index;
 
 import static java.util.concurrent.Executors.newFixedThreadPool;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.neo4j.helpers.collection.IteratorUtil.single;
 
 import java.util.Collection;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 
-import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.ThreadToStatementContextBridge;
-import org.neo4j.kernel.api.LabelNotFoundKernelException;
-import org.neo4j.kernel.api.PropertyKeyNotFoundException;
-import org.neo4j.kernel.api.StatementContext;
+import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 public class BackgroundIndexPopulationService extends LifecycleAdapter implements IndexPopulationService
 {
     private final ExecutorService populationExecutor = newFixedThreadPool( 3 ); // TODO
-    private final SchemaIndexProvider indexManipulatorMapper;
-    private final StatementContext readContext;
+    private final SchemaIndexProvider indexProvider;
     private final NeoStore neoStore;
     
     // TODO such synchronization needed?
     private final Collection<IndexPopulationJob> indexJobs = new CopyOnWriteArrayList<IndexPopulationJob>();
     private final ThreadToStatementContextBridge ctxProvider;
+    private final StateFlipOver flip;
 
-    public BackgroundIndexPopulationService( SchemaIndexProvider indexManipulatorMapper,
+    public BackgroundIndexPopulationService( SchemaIndexProvider indexProvider,
                                              NeoStore neoStore,
-                                             ThreadToStatementContextBridge ctxProvider )
+                                             ThreadToStatementContextBridge ctxProvider,
+                                             StateFlipOver flip )
     {
-        this.indexManipulatorMapper = indexManipulatorMapper;
+        this.indexProvider = indexProvider;
         this.neoStore = neoStore;
         this.ctxProvider = ctxProvider;
-        this.readContext = ctxProvider.getCtxForReading();
+        this.flip = flip;
     }
     
     @Override
-    public void indexCreated( IndexDefinition index, IndexPopulationCompleter completor )
+    public void indexCreated( IndexRule index )
     {
-        String propertyKey = single( index.getPropertyKeys() );
-        long labelId;
-        long propertyKeyId;
-        try
-        {
-            labelId = readContext.getLabelId( index.getLabel().name() );
-            propertyKeyId = readContext.getPropertyKeyId( propertyKey );
-        }
-        catch ( LabelNotFoundKernelException e )
-        {
-            throw new ThisShouldNotHappenError( "Mattias", "Label " + index.getLabel() + " should exist" );
-        }
-        catch ( PropertyKeyNotFoundException e )
-        {
-            throw new ThisShouldNotHappenError( "Mattias", "Property " + propertyKey + " should exist" );
-        }
-        
         // TODO task management including handling of failures during population.
-        IndexWriter populator = indexManipulatorMapper.getWriter( index );
-        IndexPopulationJob job = new IndexPopulationJob( labelId, propertyKeyId, populator,
-                neoStore, ctxProvider, completor );
+        IndexWriter populator = indexProvider.getPopulator( index.getId() );
+        IndexPopulationJob job = new IndexPopulationJob( index, populator,
+                neoStore, ctxProvider, flip, indexJobs );
         populationExecutor.submit( job );
         indexJobs.add( job );
     }

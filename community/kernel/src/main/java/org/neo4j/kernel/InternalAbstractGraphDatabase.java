@@ -223,12 +223,12 @@ public abstract class InternalAbstractGraphDatabase
                                              Iterable<KernelExtensionFactory<?>> kernelExtensions,
                                              Iterable<CacheProvider> cacheProviders,
                                              Iterable<TransactionInterceptorProvider> transactionInterceptorProviders,
-                                             Iterable<SchemaIndexProvider> schemaIndexProvider )
+                                             Iterable<SchemaIndexProvider> schemaIndexProviders )
     {
         this.params = params;
         
         // TODO singleOrNull since there's no main implemenation of it
-        this.schemaIndexProvider = IteratorUtil.singleOrNull( schemaIndexProvider );
+        this.schemaIndexProvider = IteratorUtil.singleOrNull( schemaIndexProviders );
 
         dependencyResolver = new DependencyResolverImpl();
 

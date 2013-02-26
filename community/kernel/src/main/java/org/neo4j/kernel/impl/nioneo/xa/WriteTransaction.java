@@ -49,15 +49,13 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.NestingIterable;
-import org.neo4j.kernel.impl.api.index.IndexPopulationCompleter;
-import org.neo4j.kernel.impl.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.core.PropertyIndex;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.nioneo.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
-import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
 import org.neo4j.kernel.impl.nioneo.store.NameData;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
@@ -1930,13 +1928,6 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         
         for ( DynamicRecord record : pair.first() )
             record.setInUse( false );
-    }
-
-    @Override
-    public void markIndexAsOnline( IndexRule index, IndexPopulationCompleter.IndexSnapshot snapshot )
-    {
-        IndexRule updatedRule = new IndexRule(index.getId(), index.getLabel(), IndexRule.State.ONLINE, index.getPropertyKey());
-        createSchemaRule( updatedRule );
     }
 
     private SchemaRule deserializeSchemaRule( long ruleId, Collection<DynamicRecord> records )

@@ -24,7 +24,6 @@ package org.neo4j.kernel.impl.api.index;
  */
 public interface IndexWriter
 {
-
     /**
      * Remove all data in the index.
      */
@@ -34,36 +33,44 @@ public interface IndexWriter
      * Called when initially populating an index over existing data. Guaranteed to be
      * called by the same thread every time.
      * 
-     * @param n the n:th entry indexed in this population.
      * @param nodeId node id to index.
      * @param propertyValue property value for the entry to index.
      */
-    void add( int n, long nodeId, Object propertyValue );
+    void add( long nodeId, Object propertyValue );
     
     /**
      * Called when initially populating an index over existing data. Guaranteed to be
      * called by the same thread every time.
      *
-     * @param n the n:th entry indexed in this population.
      * @param nodeId node id to index.
      * @param propertyValue property value for the entry to de-index.
      */
-    void remove( int n, long nodeId, Object propertyValue );
+    void remove( long nodeId, Object propertyValue );
+    
+    /**
+     * Forces this index to disk.
+     */
+    void force();
     
     public static class Adapter implements IndexWriter
     {
         @Override
-        public void add( int n, long nodeId, Object propertyValue )
-        {
-        }
-
-        @Override
-        public void remove( int n, long nodeId, Object propertyValue )
-        {
-        }
-
-        @Override
         public void clear()
+        {
+        }
+        
+        @Override
+        public void add( long nodeId, Object propertyValue )
+        {
+        }
+
+        @Override
+        public void remove( long nodeId, Object propertyValue )
+        {
+        }
+
+        @Override
+        public void force()
         {
         }
     }

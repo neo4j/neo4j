@@ -25,14 +25,13 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.impl.util.CopyOnWriteHashMap;
 
 @Service.Implementation( InMemoryIndexProvider.class )
 public class InMemoryIndexProvider extends SchemaIndexProvider
 {
-    private final Map<IndexDefinition, IndexWriter> writers = new CopyOnWriteHashMap<IndexDefinition, IndexWriter>();
+    private final Map<Long, IndexWriter> writers = new CopyOnWriteHashMap<Long, IndexWriter>();
 
     public InMemoryIndexProvider()
     {
@@ -40,10 +39,10 @@ public class InMemoryIndexProvider extends SchemaIndexProvider
     }
 
     @Override
-    public IndexWriter getWriter( IndexDefinition index )
+    public IndexWriter getPopulator( long indexId )
     {
         IndexWriter populator = new InMemoryIndexWriter();
-        writers.put( index, populator );
+        writers.put( indexId, populator );
         return populator;
     }
     
@@ -52,7 +51,7 @@ public class InMemoryIndexProvider extends SchemaIndexProvider
         private final Map<Object, Set<Long>> indexData = new HashMap<Object, Set<Long>>();
 
         @Override
-        public void add( int n, long nodeId, Object propertyValue )
+        public void add( long nodeId, Object propertyValue )
         {
             Set<Long> nodes = getLongs( propertyValue );
             nodes.add( nodeId );
@@ -70,7 +69,7 @@ public class InMemoryIndexProvider extends SchemaIndexProvider
         }
 
         @Override
-        public void remove( int n, long nodeId, Object propertyValue )
+        public void remove( long nodeId, Object propertyValue )
         {
             Collection<Long> nodes = indexData.get( propertyValue );
             nodes.remove( nodeId );
@@ -80,6 +79,11 @@ public class InMemoryIndexProvider extends SchemaIndexProvider
         public void clear()
         {
             indexData.clear();
+        }
+
+        @Override
+        public void force()
+        {
         }
     }
 }

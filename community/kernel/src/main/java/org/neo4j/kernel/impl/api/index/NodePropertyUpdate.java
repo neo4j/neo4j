@@ -82,19 +82,19 @@ public class NodePropertyUpdate
         return true;
     }
 
-    public void apply( int n, IndexWriter indexManipulator )
+    public void apply( IndexWriter indexManipulator )
     {
         switch (getUpdateMode())
         {
             case ADDED:
-                indexManipulator.add( n, getNodeId(), getValueAfter() );
+                indexManipulator.add( getNodeId(), getValueAfter() );
                 break;
             case CHANGED:
-                indexManipulator.remove( n, getNodeId(), getValueBefore() );
-                indexManipulator.add( n, getNodeId(), getValueAfter() );
+                indexManipulator.remove( getNodeId(), getValueBefore() );
+                indexManipulator.add( getNodeId(), getValueAfter() );
                 break;
             case REMOVED:
-                indexManipulator.remove( n, getNodeId(), getValueBefore() );
+                indexManipulator.remove( getNodeId(), getValueBefore() );
                 break;
         }
     }

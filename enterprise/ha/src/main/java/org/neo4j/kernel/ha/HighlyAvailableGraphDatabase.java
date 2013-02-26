@@ -75,6 +75,7 @@ import org.neo4j.kernel.ha.switchover.Switchover;
 import org.neo4j.kernel.ha.transaction.OnDiskLastTxIdGetter;
 import org.neo4j.kernel.ha.transaction.TxHookModeSwitcher;
 import org.neo4j.kernel.ha.transaction.TxIdGeneratorModeSwitcher;
+import org.neo4j.kernel.impl.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.core.Caches;
 import org.neo4j.kernel.impl.core.KeyCreator;
@@ -143,11 +144,11 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                                          Iterable<KernelExtensionFactory<?>> kernelExtensions,
                                          Iterable<CacheProvider> cacheProviders,
                                          Iterable<TransactionInterceptorProvider> txInterceptorProviders,
-                                         Iterable<IndexPopulatorMapperProvider> indexPopulatorMappers )
+                                         Iterable<SchemaIndexProvider> schemaIndexProvider )
     {
         super( storeDir, params, Iterables.<Class<?>,Class<?>>iterable( GraphDatabaseSettings.class, HaSettings.class,
                 NetworkInstance.Configuration.class, ClusterSettings.class ), indexProviders, kernelExtensions,
-                cacheProviders, txInterceptorProviders, indexPopulatorMappers );
+                cacheProviders, txInterceptorProviders, schemaIndexProvider );
         run();
     }
 

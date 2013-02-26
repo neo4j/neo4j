@@ -19,28 +19,32 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import java.util.Set;
+
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 
-/**
- * Service which is responsible for initially populating new indexes as they get created.
- * It receives notifications about new indexes and will potentially index in the background.
- */
-public interface IndexPopulationService
+public class IndexingServiceFlipOver implements StateFlipOver
 {
-    public static final IndexPopulationService NO_POPULATION_SERVICE = new IndexPopulationService()
+    private final Set<Long> populatingIndexes;
+    private final IndexPopulationService onlineService;
+
+    public IndexingServiceFlipOver( Set<Long> populatingIndexes, IndexPopulationService onlineService )
     {
-        @Override
-        public void indexUpdates( Iterable<NodePropertyUpdate> updates )
+        this.populatingIndexes = populatingIndexes;
+        this.onlineService = onlineService;
+    }
+
+    @Override
+    public StateFlip flip( final IndexRule index )
+    {
+        populatingIndexes.remove( index.getId() );
+        return new StateFlip()
         {
-        }
-        
-        @Override
-        public void indexCreated( IndexRule index )
-        {
-        }
-    };
-    
-    void indexCreated( IndexRule index );
-    
-    void indexUpdates( Iterable<NodePropertyUpdate> updates );
+            @Override
+            public void flop()
+            {
+                onlineService.indexCreated( index );
+            }
+        };
+    }
 }

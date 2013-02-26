@@ -19,9 +19,13 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import static org.neo4j.kernel.impl.api.index.IndexPopulationService.NO_POPULATION_SERVICE;
+import static java.util.Collections.newSetFromMap;
+
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.neo4j.kernel.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.DataSourceRegistrationListener;
@@ -34,7 +38,7 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
  * This is the entry point for managing "schema indexes" in the database, including creating,
  * removing and querying such indexes.
  */
-public class IndexingService implements Lifecycle
+public class IndexingService implements Lifecycle, IndexPopulationService
 {
     // TODO pull out an interface instead of overriding all methods
     public static final IndexingService NO_INDEXING = new IndexingService( null, null, null )
@@ -59,8 +63,11 @@ public class IndexingService implements Lifecycle
     private final ThreadToStatementContextBridge ctxProvider;
     private NeoStore neoStore;
     private IndexPopulationService populationService = NO_POPULATION_SERVICE;
+    private IndexPopulationService onlineService = NO_POPULATION_SERVICE;
     private final SchemaIndexProvider provider;
     private final LifeSupport life = new LifeSupport();
+    private final Set<Long> populatingIndexes = newSetFromMap( new ConcurrentHashMap<Long, Boolean>() );
+    private final StateFlipOver flip = new IndexingServiceFlipOver( populatingIndexes, onlineService );
     
     public IndexingService( XaDataSourceManager dataSourceManager, ThreadToStatementContextBridge ctxProvider,
                             SchemaIndexProvider provider )
@@ -88,7 +95,8 @@ public class IndexingService implements Lifecycle
                 {
                     neoStore = ((NeoStoreXaDataSource)ds).getNeoStore();
                     populationService = life.add(
-                            new BackgroundIndexPopulationService( provider, neoStore, ctxProvider ) );
+                            new BackgroundIndexPopulationService( provider, neoStore, ctxProvider, flip ) );
+                    onlineService = life.add( new OnlineIndexService( provider ) );
                 }
             }
         } );
@@ -108,11 +116,21 @@ public class IndexingService implements Lifecycle
         life.shutdown();
     }
     
+    @Override
+    public void indexCreated( IndexRule index )
+    {
+        populatingIndexes.add( index.getId() );
+        populationService.indexCreated( index );
+    }
+    
+    @Override
     public void indexUpdates( Iterable<NodePropertyUpdate> updates )
     {
         // If we're not yet started (i.e. most likely in recovery mode) the population service
         // points to a "no-op" index service. This is fine because we haven't as of yet started
         // any population job so just ignore those.
         populationService.indexUpdates( updates );
+        
+        onlineService.indexUpdates( updates );
     }
 }
