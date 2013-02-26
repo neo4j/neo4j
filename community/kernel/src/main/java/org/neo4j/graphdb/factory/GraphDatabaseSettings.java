@@ -164,7 +164,6 @@ public abstract class GraphDatabaseSettings
     public static IntegerSetting lucene_searcher_cache_size = new IntegerSetting( "lucene_searcher_cache_size", "Must be a number", 1, null );
 
     @Description( "NOTE: This no longer has any effect. Integer value that sets the maximum number of open lucene index writers." )
-    @Default(Integer.MAX_VALUE+"")
     public static IntegerSetting lucene_writer_cache_size = new IntegerSetting( "lucene_writer_cache_size", "Must be a number", 1,null );
 
     // NeoStore settings
