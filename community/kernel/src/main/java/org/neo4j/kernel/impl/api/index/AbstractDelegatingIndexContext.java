@@ -1,10 +1,8 @@
 package org.neo4j.kernel.impl.api.index;
 
-import org.neo4j.kernel.impl.nioneo.store.IndexRule;
-
-public abstract class AbstractDelegatingIndexContext implements IndexContext
+public abstract class AbstractDelegatingIndexContext<D extends IndexContext> implements IndexContext
 {
-    protected abstract IndexContext getDelegate();
+    protected abstract D getDelegate();
 
     @Override
     public void create()
@@ -12,12 +10,6 @@ public abstract class AbstractDelegatingIndexContext implements IndexContext
         getDelegate().create();
     }
     
-    @Override
-    public void ready()
-    {
-        getDelegate().ready();
-    }
-
     @Override
     public void update( Iterable<NodePropertyUpdate> updates )
     {
@@ -28,11 +20,5 @@ public abstract class AbstractDelegatingIndexContext implements IndexContext
     public void drop()
     {
         getDelegate().drop();
-    }
-    
-    @Override
-    public IndexRule getIndexRule()
-    {
-        return getDelegate().getIndexRule();
     }
 }

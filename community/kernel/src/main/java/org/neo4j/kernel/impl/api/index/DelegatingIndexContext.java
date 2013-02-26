@@ -1,16 +1,16 @@
 package org.neo4j.kernel.impl.api.index;
 
-public class DelegatingIndexContext extends AbstractDelegatingIndexContext
+public class DelegatingIndexContext<D extends IndexContext> extends AbstractDelegatingIndexContext<D>
 {
-    private final IndexContext delegate;
+    private final D delegate;
 
-    public DelegatingIndexContext( IndexContext delegate )
+    public DelegatingIndexContext( D delegate )
     {
         this.delegate = delegate;
     }
 
     @Override
-    protected IndexContext getDelegate()
+    protected D getDelegate()
     {
         return delegate;
     }

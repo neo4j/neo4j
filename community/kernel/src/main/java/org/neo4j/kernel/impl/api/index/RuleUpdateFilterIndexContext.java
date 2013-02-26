@@ -4,7 +4,7 @@ import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.FilteringIterable;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 
-public class RuleUpdateFilterIndexContext extends DelegatingIndexContext
+public class RuleUpdateFilterIndexContext extends DelegatingIndexContext<IndexContext>
 {
     private final IndexRule rule;
 

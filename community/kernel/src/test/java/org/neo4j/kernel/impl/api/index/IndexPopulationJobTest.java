@@ -27,7 +27,6 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.MapUtil.map;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -47,7 +46,7 @@ import org.neo4j.kernel.api.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.PropertyKeyNotFoundException;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
-import org.neo4j.kernel.impl.nioneo.store.IndexRule.State;
+import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.test.ImpermanentGraphDatabase;
 
 public class IndexPopulationJobTest
@@ -164,7 +163,7 @@ public class IndexPopulationJobTest
         {
             if ( nodeId == 2 )
             {
-                job.indexUpdates( asList( new NodePropertyUpdate( changedNode, propertyKeyId, previousValue, newValue ) ) );
+                job.update( asList( new NodePropertyUpdate( changedNode, propertyKeyId, previousValue, newValue ) ) );
             }
             added.add( Pair.of( nodeId, propertyValue ) );
         }
@@ -201,7 +200,7 @@ public class IndexPopulationJobTest
         {
             if ( nodeId == 3 )
             {
-                job.indexUpdates( asList( new NodePropertyUpdate( nodeToDelete, propertyKeyId, valueToDelete, null ) ) );
+                job.update( asList( new NodePropertyUpdate( nodeToDelete, propertyKeyId, valueToDelete, null ) ) );
             }
             added.put( nodeId, propertyValue );
         }
@@ -238,11 +237,10 @@ public class IndexPopulationJobTest
     private IndexPopulationJob newIndexPopulationJob( Label label, String propertyKey, IndexWriter populator )
             throws LabelNotFoundKernelException, PropertyKeyNotFoundException
     {
-        throw new UnsupportedOperationException(  );
-//        return new IndexPopulationJob(
-//                new IndexRule( 0, context.getLabelId( FIRST.name() ), State.POPULATING, context.getPropertyKeyId( name ) ),
-//                populator, db.getXaDataSourceManager().getNeoStoreDataSource().getNeoStore(), ctxProvider,
-//                Collections.<IndexPopulationJob>emptySet() );
+        IndexRule indexRule = new IndexRule( 0, context.getLabelId( FIRST.name() ), IndexRule.State.POPULATING, context.getPropertyKeyId( name ) );
+        FlippableIndexContext flipper = new FlippableIndexContext(  );
+        NeoStore neoStore = db.getXaDataSourceManager().getNeoStoreDataSource().getNeoStore();
+        return new IndexPopulationJob( indexRule, populator, flipper, neoStore );
     }
 
     private long createNode( Map<String, Object> properties, Label... labels )

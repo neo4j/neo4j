@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import static org.neo4j.helpers.collection.Iterables.filter;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
@@ -51,14 +53,12 @@ public class IndexPopulationJob implements Runnable
 
     // NOTE: unbounded queue expected here
     private final Queue<NodePropertyUpdate> queue = new ConcurrentLinkedQueue<NodePropertyUpdate>();
-    private final IndexRule indexRule;
-    private final IndexContext context;
-    private final Flipper flipper;
+    private final IndexWriter writer;
+    private final FlippableIndexContext flipper;
 
-    public IndexPopulationJob( IndexRule indexRule, IndexContext context, NeoStore neoStore, Flipper flipper )
+    public IndexPopulationJob( IndexRule indexRule, IndexWriter writer, FlippableIndexContext flipper, NeoStore neoStore)
     {
-        this.indexRule = indexRule;
-        this.context = context;
+        this.writer = writer;
         this.flipper = flipper;
         this.labelId = indexRule.getLabel();
         this.propertyKeyId = indexRule.getPropertyKey();
@@ -68,6 +68,8 @@ public class IndexPopulationJob implements Runnable
     @Override
     public void run()
     {
+        writer.createIndex();
+
         indexAllNodes();
         
         flipper.flip( new Runnable()
@@ -100,16 +102,20 @@ public class IndexPopulationJob implements Runnable
     {
         if ( queue.isEmpty() )
             return;
-        
-        context.update( Iterables.filter( new Predicate<NodePropertyUpdate>()
+
+        Predicate<NodePropertyUpdate> hasBeenIndexed = new Predicate<NodePropertyUpdate>()
         {
             @Override
             public boolean accept( NodePropertyUpdate item )
             {
-                boolean hasBeenIndexed = item.getNodeId() <= highestIndexedNodeId;
-                return hasBeenIndexed;
+                return item.getNodeId() <= highestIndexedNodeId;
             }
-        }, queue ) );
+        };
+
+        for ( NodePropertyUpdate update : filter( hasBeenIndexed, queue ) )
+        {
+            update.apply( writer );
+        }
     }
 
     public void cancel()
@@ -121,7 +127,7 @@ public class IndexPopulationJob implements Runnable
      * A transaction happened that produced the given updates. Let this job incorporate its data
      * into, feeding it to the {@link IndexWriter}.
      */
-    public void indexUpdates( Iterable<NodePropertyUpdate> updates )
+    public void update( Iterable<NodePropertyUpdate> updates )
     {
         // TODO synchronization with the index job thread
         for ( NodePropertyUpdate update : updates )
@@ -175,7 +181,11 @@ public class IndexPopulationJob implements Runnable
                     }
                 }
             }
-            context.update( updates );
+
+            for ( NodePropertyUpdate update : updates )
+            {
+                update.apply( writer );
+            }
         }
     }
 

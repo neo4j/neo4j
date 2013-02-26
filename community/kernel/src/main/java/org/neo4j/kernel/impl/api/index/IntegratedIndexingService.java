@@ -51,28 +51,38 @@ public class IntegratedIndexingService extends LifecycleAdapter implements Index
     private IndexContext createContextForRule( IndexRule rule )
     {
         long ruleId = rule.getId();
-        IndexContext populatingWriter = new WritingIndexContext( provider.getPopulatingWriter( ruleId ), rule );
-        PopulatingIndexContext populatingContext = new PopulatingIndexContext( populatingWriter, executor, store );
-        IndexContext onlineWriter = new WritingIndexContext( provider.getOnlineWriter( ruleId ), rule );
-        AtomicDelegatingIndexContext atomicContext = new AtomicDelegatingIndexContext( populatingContext );
-        Flipper flipper = new Flipper( atomicContext, onlineWriter );
-        populatingContext.setFlipper( flipper );
-        IndexContext filteringContext = new RuleUpdateFilterIndexContext( atomicContext, rule );
-        IndexContext autoRemovingContext = new AutoRemovingIndexContext( filteringContext );
-        return autoRemovingContext;
+        FlippableIndexContext flippableContext = new FlippableIndexContext( );
+
+        // TODO: This is here because there is a circular dependency from PopulatingIndexContext to FlippableContext
+        flippableContext.setFlipTarget(
+                new PopulatingIndexContext( executor,
+                                            rule, provider.getPopulatingWriter( ruleId ), flippableContext, store )
+        );
+        flippableContext.flip();
+
+        // Prepare for flipping to online mode
+        flippableContext.setFlipTarget( new OnlineIndexContext( provider.getOnlineWriter( ruleId ) ) );
+
+        IndexContext result = new RuleUpdateFilterIndexContext( flippableContext, rule );
+        result = new AutoRemovingIndexContext( rule, result );
+        return result;
     }
 
     class AutoRemovingIndexContext extends DelegatingIndexContext {
-        AutoRemovingIndexContext( IndexContext delegate )
+
+        private final long ruleId;
+
+        AutoRemovingIndexContext( IndexRule rule, IndexContext delegate )
         {
             super( delegate );
+            this.ruleId = rule.getId();
         }
 
         @Override
         public void drop()
         {
             super.drop();
-            contexts.remove( getIndexRule().getId(), this );
+            contexts.remove( ruleId, this );
         }
     }
 }

@@ -2,32 +2,36 @@ package org.neo4j.kernel.impl.api.index;
 
 import java.util.concurrent.ExecutorService;
 
+import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 
-public class PopulatingIndexContext extends DelegatingIndexContext implements FlipAwareIndexContext
+public class PopulatingIndexContext implements IndexContext
 {
-    private Flipper flipper;
     private final ExecutorService executor;
-    private final NeoStore neoStore;
+    private final IndexPopulationJob job;
 
-    public PopulatingIndexContext( IndexContext delegate, ExecutorService executor, NeoStore neoStore )
+    public PopulatingIndexContext( ExecutorService executor, IndexRule rule, IndexWriter writer,
+                                   FlippableIndexContext flipper, NeoStore neoStore )
     {
-        super( delegate );
         this.executor = executor;
-        this.neoStore = neoStore;
+        this.job      = new IndexPopulationJob( rule, writer, flipper, neoStore );
     }
 
-    @Override
-    public void setFlipper( Flipper flipper )
-    {
-        this.flipper = flipper;
-    }
-    
     @Override
     public void create()
     {
-        super.create();
-        IndexPopulationJob job = new IndexPopulationJob( getIndexRule(), getDelegate(), neoStore, flipper );
         executor.submit( job );
+    }
+
+    @Override
+    public void update( Iterable<NodePropertyUpdate> updates )
+    {
+        job.update( updates );
+    }
+
+    @Override
+    public void drop()
+    {
+        job.cancel();
     }
 }
