@@ -23,44 +23,12 @@ import v2_0.{MatchClause, Expressions}
 import org.neo4j.cypher.internal.commands._
 import expressions._
 import org.neo4j.graphdb.Direction
-import org.neo4j.cypher.internal.commands.PathExpression
+import org.neo4j.cypher.internal.commands.PatternPredicate
 import values.LabelName
 import org.neo4j.cypher.internal.commands.HasLabel
 import org.junit.Test
 
 class ExpressionsTest extends Expressions with MatchClause with ParserTest {
-
-  @Test def pattern_expressions() {
-    implicit val parserToTest = pathExpression
-
-    parsing("a-->(:Foo)") shouldGive
-      PathExpression(Seq(RelatedTo("a", "  UNNAMED5", "  UNNAMED2", Seq.empty, Direction.OUTGOING, false)), HasLabel(Identifier("  UNNAMED5"), Seq(LabelName("Foo"))))
-
-    parsing("a-->(n:Foo)") shouldGive
-      PathExpression(Seq(RelatedTo("a", "n", "  UNNAMED2", Seq.empty, Direction.OUTGOING, false)), HasLabel(Identifier("n"), Seq(LabelName("Foo"))))
-
-    parsing("a-->(:Bar:Foo)") shouldGive
-      PathExpression(Seq(RelatedTo("a", "  UNNAMED5", "  UNNAMED2", Seq.empty, Direction.OUTGOING, false)), HasLabel(Identifier("  UNNAMED5"), Seq(LabelName("Bar"), LabelName("Foo"))))
-
-    val patterns = Seq(
-      RelatedTo("a", "  UNNAMED5", "  UNNAMED2", Seq.empty, Direction.OUTGOING, false),
-      RelatedTo("  UNNAMED5", "  UNNAMED16", "  UNNAMED13", Seq.empty, Direction.OUTGOING, false))
-
-    val predicate = And(
-      HasLabel(Identifier("  UNNAMED5"), Seq(LabelName("First"))),
-      HasLabel(Identifier("  UNNAMED16"), Seq(LabelName("Second"))))
-
-    parsing("a-->(:First)-->(:Second)") shouldGive
-      PathExpression(patterns, predicate)
-
-    val orPred = Or(
-      HasLabel(Identifier("  UNNAMED5"), Seq(LabelName("Bar"))),
-      HasLabel(Identifier("  UNNAMED5"), Seq(LabelName("Foo")))
-    )
-
-    parsing("a-->(:Bar|:Foo)") shouldGive
-      PathExpression(Seq(RelatedTo("a", "  UNNAMED5", "  UNNAMED2", Seq.empty, Direction.OUTGOING, false)), orPred)
-  }
 
   @Test def simple_cases() {
     implicit val parserToTest = simpleCase

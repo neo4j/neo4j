@@ -20,8 +20,31 @@
 package org.neo4j.cypher.internal.parser.v2_0
 
 import org.neo4j.cypher.internal.commands._
-import expressions.{Property, Identifier, Nullable, Expression}
-
+import expressions._
+import expressions.Nullable
+import expressions.Property
+import org.neo4j.cypher.internal.commands.RegularExpression
+import org.neo4j.cypher.internal.commands.NullablePredicate
+import org.neo4j.cypher.internal.commands.GreaterThan
+import org.neo4j.cypher.internal.commands.GreaterThanOrEqual
+import org.neo4j.cypher.internal.commands.SingleInCollection
+import org.neo4j.cypher.internal.commands.NonEmpty
+import org.neo4j.cypher.internal.commands.PatternPredicate
+import org.neo4j.cypher.internal.commands.LessThanOrEqual
+import org.neo4j.cypher.internal.commands.LiteralRegularExpression
+import org.neo4j.cypher.internal.commands.Equals
+import org.neo4j.cypher.internal.commands.AllInCollection
+import org.neo4j.cypher.internal.commands.IsNull
+import org.neo4j.cypher.internal.commands.ShortestPath
+import org.neo4j.cypher.internal.commands.True
+import org.neo4j.cypher.internal.commands.Or
+import org.neo4j.cypher.internal.commands.NamedPath
+import org.neo4j.cypher.internal.commands.NoneInCollection
+import org.neo4j.cypher.internal.commands.Not
+import org.neo4j.cypher.internal.commands.AnyInCollection
+import org.neo4j.cypher.internal.commands.HasLabel
+import org.neo4j.cypher.internal.commands.Has
+import org.neo4j.cypher.internal.commands.LessThan
 
 trait Predicates extends Base with ParserPattern with StringLiteral with Labels {
   def predicate: Parser[Predicate] = predicateLvl1 ~ rep( OR ~> predicateLvl1 ) ^^ {
@@ -91,7 +114,33 @@ trait Predicates extends Base with ParserPattern with StringLiteral with Labels 
     NullablePredicate(pred, map)
   }
 
-  def patternPredicate = pathExpression ^^ (NonEmpty(_))
+  def patternPredicate: Parser[Predicate] = {
+    def translate(abstractPattern: AbstractPattern): Maybe[(Pattern, Predicate)] = matchTranslator(abstractPattern) match {
+      case Yes(Seq(np)) if np.isInstanceOf[NamedPath] => No(Seq("Can't assign to an identifier in a pattern expression"))
+      case n: No                                      => n
+      case Yes(p@Seq(pattern: Pattern))               =>
+        val patterns = p.asInstanceOf[Seq[Pattern]]
+
+        if (patterns.exists(_.optional))
+          No(Seq("Optional patterns cannot be used as predicates"))
+        else {
+          val predicates = abstractPattern.parsedLabelPredicates
+          val pred = True().andWith(predicates: _*)
+
+
+          Yes(patterns.map( (_, pred) ))
+        }
+    }
+
+    usePath(translate) ^^ {
+      case combo:Seq[(Pattern,Predicate)] =>
+
+        val patterns: Seq[Pattern] = combo.map(_._1)
+        val predicates: Seq[Predicate] = combo.flatMap(_._2.atoms).distinct
+
+        PatternPredicate(patterns, True().andWith(predicates: _*))
+    }
+  }
 
   def expressionOrEntity = expression | entity
 
@@ -99,5 +148,6 @@ trait Predicates extends Base with ParserPattern with StringLiteral with Labels 
   def aggregateFunctionNames:Parser[String]
   def property: Parser[Expression]
   def entity: Parser[Identifier]
-  def pathExpression: Parser[Expression]
+
+  def matchTranslator(abstractPattern: AbstractPattern): Maybe[Any]
 }

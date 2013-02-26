@@ -1958,7 +1958,7 @@ RETURN x0.name?
     assert(List(Map("count(*)" -> 0)) === result)
   }
 
-  @Test def should_return_paths() {
+  @Test def should_return_paths_in_1_9() {
     val a = createNode()
     val b = createNode()
     val c = createNode()
@@ -1967,7 +1967,7 @@ RETURN x0.name?
     relate(a, c, "X")
     relate(a, d, "X")
 
-    val result = parseAndExecute("start n=node(1) return n-->()").columnAs[List[Path]]("n-->()").toList.flatMap(p => p.map(_.endNode()))
+    val result = parseAndExecute("cypher 1.9 start n=node(1) return n-->()").columnAs[List[Path]]("n-->()").toList.flatMap(p => p.map(_.endNode()))
 
     assert(result === List(b, c, d))
   }
@@ -1999,12 +1999,12 @@ RETURN x0.name?
   }
 
   @Test
-  def var_length_expression() {
+  def var_length_expression_on_1_9() {
     val a = createNode()
     val b = createNode()
     val r = relate(a, b)
 
-    val resultPath = parseAndExecute("START a=node(1), b=node(2) RETURN a-[*]->b as path")
+    val resultPath = parseAndExecute("CYPHER 1.9 START a=node(1), b=node(2) RETURN a-[*]->b as path")
       .toList.head("path").asInstanceOf[List[Path]].head
 
     assert(resultPath.startNode() === a)
@@ -2013,24 +2013,36 @@ RETURN x0.name?
   }
 
   @Test
-  def optional_expression() {
+  def var_length_predicate() {
+    val a = createNode()
+    val b = createNode()
+    val r = relate(a, b)
+
+    val resultPath = parseAndExecute("START a=node(1), b=node(2) RETURN a-[*]->b as path")
+      .toList.head("path")
+
+    assert(resultPath === true)
+  }
+
+  @Test
+  def optional_expression_used_to_be_supported() {
     val a = createNode()
     val b = createNode()
     val r = relate(a,b)
 
-    val result = parseAndExecute("START a=node(1) match a-->b RETURN a-[?]->b").toList
+    val result = parseAndExecute("CYPHER 1.9 START a=node(1) match a-->b RETURN a-[?]->b").toList
     assert(result === List(Map("a-[?]->b" -> List(PathImpl(a, r, b)))))
   }
 
   @Test
-  def pattern_expression_deep_in_function_call() {
+  def pattern_expression_deep_in_function_call_in_1_9() {
     val a = createNode()
     val b = createNode()
     val c = createNode()
     relate(a,b)
     relate(a,c)
 
-    val result = parseAndExecute("START a=node(1) foreach(n in extract(p in a-->() : last(p)) : set n.touched = true) return a-->()").dumpToString()
+    val result = parseAndExecute("CYPHER 1.9 START a=node(1) foreach(n in extract(p in a-->() : last(p)) : set n.touched = true) return a-->()").dumpToString()
   }
 
   @Test
@@ -2533,7 +2545,7 @@ RETURN x0.name?
     assert(result === Set(Map("b" -> d), Map("b" -> e)))
   }
 
-  @Test def should_handle_path_expressions_with_labels() {
+  @Test def should_handle_path_predicates_with_labels() {
     // GIVEN
     val a = createNode()
 
@@ -2548,12 +2560,12 @@ RETURN x0.name?
     // WHEN
     val result = parseAndExecute("START n=node(1) RETURN n-->(:A)")
 
-    val x = result.toList.head("n-->(:A)").asInstanceOf[Seq[Path]]
+    val x = result.toList.head("n-->(:A)")
 
-    assert(x.size === 1)
+    assert(x === true)
   }
 
-  @Test def should_handle_path_expressions_with_OR_labels() {
+  @Test def should_handle_path_predicates_with_OR_labels() {
     // GIVEN
     val a = createNode()
 
@@ -2569,8 +2581,8 @@ RETURN x0.name?
     val result = parseAndExecute("START n=node(1) RETURN n-->(:A|:C)")
 
     //THEN
-    val x = result.toList.head("n-->(:A|:C)").asInstanceOf[Seq[Path]]
-    assert(x.size === 2)
+    val x = result.toList.head("n-->(:A|:C)")
+    assert(x === true)
   }
 
   @Test def should_create_index() {

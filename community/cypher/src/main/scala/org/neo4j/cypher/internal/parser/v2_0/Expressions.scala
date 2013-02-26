@@ -52,7 +52,6 @@ trait Expressions extends Base with ParserPattern with Predicates with StringLit
   (     NULL ^^^ Literal(null)
       | TRUE ^^^ True()
       | FALSE ^^^ Not(True())
-      | pathExpression
       | simpleCase
       | genericCase
       | extract
@@ -72,7 +71,7 @@ trait Expressions extends Base with ParserPattern with Predicates with StringLit
       | parens(expression)
       | failure("illegal value"))
 
-  def exprOrPred: Parser[Expression] = pathExpression | predicate | expression
+  def exprOrPred: Parser[Expression] = predicate | expression
 
   def numberLiteral: Parser[Expression] = number ^^ (x => {
     val value: Any = if (x.contains("."))
@@ -210,21 +209,6 @@ trait Expressions extends Base with ParserPattern with Predicates with StringLit
 
   def countStar: Parser[Expression] = COUNT ~> parens("*") ^^^ CountStar()
 
-  // TODO Clean up
-  def pathExpression: Parser[Expression] = usePath(translate) ^^ {
-    case Seq((x: ShortestPath, pred:Predicate)) => ShortestPathExpression(x)
-
-    case combo:Seq[(Pattern,Predicate)] =>
-
-      val patterns: Seq[Pattern] = combo.map(_._1)
-      val predicates: Seq[Predicate] = combo.map(_._2)
-
-      val atoms = True().andWith(predicates: _*).atoms.distinct
-      val pred = True().andWith(atoms: _*)
-
-      PathExpression(patterns, pred)
-  }
-
   private def caseDefault: Parser[Expression] = ELSE ~> expression
 
   def simpleCase:Parser[Expression] = {
@@ -246,19 +230,6 @@ trait Expressions extends Base with ParserPattern with Predicates with StringLit
       case c ~ alternatives ~ default ~ end => GenericCase(alternatives, default)
     }
   }
-
-  private def translate(abstractPattern: AbstractPattern): Maybe[(Pattern, Predicate)] = matchTranslator(abstractPattern) match {
-    case Yes(Seq(np)) if np.isInstanceOf[NamedPath] => No(Seq("Can't assign to an identifier in a pattern expression"))
-    case n: No                                      => n
-    case Yes(p@Seq(pattern: Pattern))               =>
-      val patterns = p.asInstanceOf[Seq[Pattern]]
-      val predicates = abstractPattern.parsedLabelPredicates
-      val pred = True().andWith(predicates: _*)
-
-      Yes(patterns.map( (_, pred) ))
-  }
-
-  def matchTranslator(abstractPattern: AbstractPattern): Maybe[Any]
 }
 
 trait DefaultTrue

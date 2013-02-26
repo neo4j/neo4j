@@ -82,7 +82,7 @@ class TraversalMatcherBuilderTest extends GraphDatabaseTestBase with Assertions 
 
   def assertQueryHasNotSolvedPathExpressions(newPlan: ExecutionPlanInProgress) {
     newPlan.query.where.foreach {
-      case Solved(pred) if pred.exists(_.isInstanceOf[PathExpression]) => fail("Didn't expect the predicate to be solved")
+      case Solved(pred) if pred.exists(_.isInstanceOf[PatternPredicate]) => fail("Didn't expect the predicate to be solved")
       case _                                                           =>
     }
   }

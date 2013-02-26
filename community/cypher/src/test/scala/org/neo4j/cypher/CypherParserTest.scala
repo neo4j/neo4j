@@ -1020,8 +1020,9 @@ class CypherParserTest extends JUnitSuite with Assertions {
         returns (ReturnItem(Distinct(Count(Identifier("a")), Identifier("a")), "count(distinct a)")))
   }
 
-  @Test def supportsHasRelationshipInTheWhereClause() {
-    testAll(
+
+  @Test def supportedHasRelationshipInTheWhereClause() {
+    testPre_2_0(
       """start a=node(0), b=node(1) where a-->b return a""",
       Query.
         start(NodeById("a", 0), NodeById("b", 1)).
@@ -1029,12 +1030,30 @@ class CypherParserTest extends JUnitSuite with Assertions {
         returns (ReturnItem(Identifier("a"), "a")))
   }
 
-  @Test def supportsNotHasRelationshipInTheWhereClause() {
-    testAll(
+  @Test def supportsHasRelationshipInTheWhereClause() {
+    testFrom_2_0(
+      """start a=node(0), b=node(1) where a-->b return a""",
+      Query.
+        start(NodeById("a", 0), NodeById("b", 1)).
+        where(PatternPredicate(Seq(RelatedTo("a", "b", "  UNNAMED35", Seq(), Direction.OUTGOING, optional = false)))).
+        returns (ReturnItem(Identifier("a"), "a")))
+  }
+
+  @Test def supportedNotHasRelationshipInTheWhereClause() {
+    testPre_2_0(
       """start a=node(0), b=node(1) where not(a-->()) return a""",
       Query.
         start(NodeById("a", 0), NodeById("b", 1)).
         where(Not(NonEmpty(PathExpression(Seq(RelatedTo("a", "  UNNAMED143", "  UNNAMED144", Seq(), Direction.OUTGOING, optional = false)))))).
+        returns (ReturnItem(Identifier("a"), "a")))
+  }
+
+  @Test def supportsNotHasRelationshipInTheWhereClause() {
+    testFrom_2_0(
+      """start a=node(0), b=node(1) where not(a-->()) return a""",
+      Query.
+        start(NodeById("a", 0), NodeById("b", 1)).
+        where(Not(PatternPredicate(Seq(RelatedTo("a", "  UNNAMED42", "  UNNAMED39", Seq(), Direction.OUTGOING, optional = false))))).
         returns (ReturnItem(Identifier("a"), "a")))
   }
 
@@ -1186,7 +1205,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
     )
   }
 
-  @Test def mutliple_relationship_type_in_shortest_path() {
+  @Test def multiple_relationship_type_in_shortest_path() {
     testAll("start x = NODE(1) match x-[:REL1|REL2|REL3]->z return x",
       Query.
         start(NodeById("x", 1)).
@@ -1195,12 +1214,21 @@ class CypherParserTest extends JUnitSuite with Assertions {
     )
   }
 
-  @Test def multiple_relationship_type_in_relationship_predicate() {
-    testAll(
+  @Test def multiple_relationship_type_in_relationship_predicate_back_in_the_day() {
+    testPre_2_0(
       """start a=node(0), b=node(1) where a-[:KNOWS|BLOCKS]-b return a""",
       Query.
         start(NodeById("a", 0), NodeById("b", 1)).
         where(NonEmpty(PathExpression(Seq(RelatedTo("a", "b", "  UNNAMED39", Seq("KNOWS","BLOCKS"), Direction.BOTH, optional = false)))))
+        returns (ReturnItem(Identifier("a"), "a")))
+  }
+
+  @Test def multiple_relationship_type_in_relationship_predicate() {
+    testFrom_2_0(
+      """start a=node(0), b=node(1) where a-[:KNOWS|BLOCKS]-b return a""",
+      Query.
+        start(NodeById("a", 0), NodeById("b", 1)).
+        where(PatternPredicate(Seq(RelatedTo("a", "b", "  UNNAMED36", Seq("KNOWS","BLOCKS"), Direction.BOTH, optional = false))))
         returns (ReturnItem(Identifier("a"), "a")))
   }
 
@@ -1759,11 +1787,19 @@ create a-[r:REL]->b
     )
   }
 
-  @Test def return_paths() {
-    testAll("start a  = node(1) return a-->()",
+  @Test def return_paths_back_in_the_day() {
+    testPre_2_0("start a  = node(1) return a-->()",
       Query.
         start(NodeById("a", 1)).
         returns(ReturnItem(PathExpression(Seq(RelatedTo("a", "  UNNAMED1", "  UNNAMED2", Seq(), Direction.OUTGOING, optional = false))), "a-->()"))
+    )
+  }
+
+  @Test def return_paths() {
+    testFrom_2_0("start a  = node(1) return a-->()",
+      Query.
+        start(NodeById("a", 1)).
+        returns(ReturnItem(PatternPredicate(Seq(RelatedTo("a", "  UNNAMED31", "  UNNAMED28", Seq(), Direction.OUTGOING, optional = false))), "a-->()"))
     )
   }
 

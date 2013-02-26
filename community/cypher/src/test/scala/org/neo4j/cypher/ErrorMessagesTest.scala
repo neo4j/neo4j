@@ -267,6 +267,12 @@ class ErrorMessagesTest extends ExecutionEngineHelper with Assertions with Strin
       "can't mix UNION and UNION ALL")
   }
 
+  @Test def can_not_use_optional_pattern_as_predicate() {
+    expectError(
+      "START a=node(1) RETURN a-[?]->()",
+      "Optional patterns cannot be used as predicates")
+  }
+
   @Test def creating_an_index_twice_should_return_sensible_error() {
     createIndex("LabelName", "Prop")
 

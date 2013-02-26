@@ -100,15 +100,15 @@ like this:""",
   @Test def other_expressions() {
     testQuery(
       title = "Other expressions",
-      text = "Any expression can be used as a return iterm - literals, predicates, properties, functions, and everything else.",
-      queryText = """start a=node(%A%) return a.age > 30, "I'm a literal", length(a-->())""",
+      text = "Any expression can be used as a return item - literals, predicates, properties, functions, and everything else.",
+      queryText = """start a=node(%A%) return a.age > 30, "I'm a literal", a-->()""",
       returns = "Returns a predicate, a literal and function call with a pattern expression parameter.",
       assertions = (p) => {
         val row: Map[String, Any] = p.toList.head
 
         assertEquals("I'm a literal", row("\"I'm a literal\""))
         assertEquals(true, row("a.age > 30"))
-        assertEquals(2, row("length(a-->())"))
+        assertEquals(true, row("a-->()"))
       })
   }
 

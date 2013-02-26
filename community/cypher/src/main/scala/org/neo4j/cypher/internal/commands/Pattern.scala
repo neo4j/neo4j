@@ -30,7 +30,7 @@ trait Pattern extends TypeSafe with AstNode[Pattern] {
   def possibleStartPoints: Seq[(String,CypherType)]
   def relTypes:Seq[String]
 
-  protected def node(name: String) = if (notNamed(name)) "()" else name
+  protected def node(name: String) = if (notNamed(name)) s"(${name.drop(9)})" else name
   protected def leftArrow(dir: Direction) = if (dir == Direction.INCOMING) "<-" else "-"
   protected def rightArrow(dir: Direction) = if (dir == Direction.OUTGOING) "->" else "-"
 

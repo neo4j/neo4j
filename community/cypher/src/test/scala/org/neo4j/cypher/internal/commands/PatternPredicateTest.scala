@@ -30,7 +30,7 @@ import values.LabelName
 import org.neo4j.cypher.internal.spi.gdsimpl.TransactionBoundQueryContext
 import org.neo4j.cypher.internal.pipes.{NullDecorator, QueryState}
 
-class PathExpressionTest extends GraphDatabaseTestBase with Assertions {
+class PatternPredicateTest extends GraphDatabaseTestBase with Assertions {
 
   @Test def shouldAcceptShortestPathExpressions() {
     val a = createNode()
@@ -73,14 +73,14 @@ class PathExpressionTest extends GraphDatabaseTestBase with Assertions {
 
     val pattern = RelatedTo("a", "  UNNAMED1", "  UNNAMED2", Seq.empty, Direction.OUTGOING, false)
     val pred = HasLabel(Identifier("  UNNAMED1"), Seq(LabelName("Tror_Inte_Det")))
-    val expression = PathExpression(Seq(pattern), pred)
+    val expression = PatternPredicate(Seq(pattern), pred)
     val m = createExecutionContext(Map("a" -> a))
 
     // WHEN
-    val result: Seq[Path] = expression(m)(state).asInstanceOf[Seq[Path]]
+    val result = expression(m)(state)
 
     // THEN
-    assert(result.size === 1)
+    assert(result === true)
   }
 
   private def state = {
