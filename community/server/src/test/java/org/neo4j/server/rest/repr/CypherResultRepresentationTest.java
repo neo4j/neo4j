@@ -20,6 +20,7 @@
 package org.neo4j.server.rest.repr;
 
 import static java.util.Arrays.asList;
+import static org.apache.commons.collections.IteratorUtils.emptyIterator;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertFalse;
@@ -34,7 +35,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.collections.IteratorUtils;
 import org.junit.Test;
 import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.cypher.javacompat.PlanDescription;
@@ -47,6 +47,7 @@ public class CypherResultRepresentationTest
 {
 
     @Test
+    @SuppressWarnings("unchecked")
     public void shouldSerializeProfilingResult() throws Exception
     {
         // Given
@@ -64,7 +65,7 @@ public class CypherResultRepresentationTest
         when( plan.getProfilerStatistics() ).thenReturn( stats );
 
         ExecutionResult result = mock(ExecutionResult.class);
-        when(result.iterator()).thenReturn(IteratorUtils.emptyIterator());
+        when(result.iterator()).thenReturn( emptyIterator());
         when(result.columns()).thenReturn(new ArrayList<String>());
         when( result.executionPlanDescription() ).thenReturn( plan );
 
@@ -85,11 +86,12 @@ public class CypherResultRepresentationTest
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     public void shouldNotIncludePlanUnlessAskedFor() throws Exception
     {
         // Given
         ExecutionResult result = mock(ExecutionResult.class);
-        when(result.iterator()).thenReturn(IteratorUtils.emptyIterator());
+        when(result.iterator()).thenReturn( emptyIterator());
         when(result.columns()).thenReturn(new ArrayList<String>());
 
         // When
@@ -110,7 +112,7 @@ public class CypherResultRepresentationTest
     private Map<String, Object> serialize( CypherResultRepresentation repr ) throws URISyntaxException, JsonParseException
     {
         OutputFormat format = new OutputFormat( new JsonFormat(), new URI( "http://localhost/" ), null );
-        return jsonToMap( format.format( repr ) );
+        return jsonToMap( format.assemble( repr ) );
     }
 
 }

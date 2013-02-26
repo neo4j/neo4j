@@ -157,7 +157,7 @@ public class RestfulGraphDatabase
     private Long extractNodeIdOrNull( String uri ) throws BadInputException
     {
         if ( uri == null ) return null;
-        return Long.valueOf( extractNodeId( uri ) );
+        return extractNodeId( uri );
     }
 
     private long extractNodeId( String uri ) throws BadInputException
@@ -790,13 +790,13 @@ public class RestfulGraphDatabase
 	        		entityBody = input.readMap( postBody, "key", "value" );
 	                result = actions( force ).getOrCreateIndexedNode( indexName, String.valueOf( entityBody.get( "key" ) ),
 	                       String.valueOf( entityBody.get( "value" ) ), extractNodeIdOrNull( getStringOrNull( entityBody, "uri" ) ), getMapOrNull( entityBody, "properties" ) );
-	                return result.other().booleanValue() ? output.created( result.first() ) : output.okIncludeLocation( result.first() );
+	                return result.other() ? output.created( result.first() ) : output.okIncludeLocation( result.first() );
 	
 	        	case CreateOrFail:
 	        		entityBody = input.readMap( postBody, "key", "value" );
 	                result = actions( force ).getOrCreateIndexedNode( indexName, String.valueOf( entityBody.get( "key" ) ),
 	                       String.valueOf( entityBody.get( "value" ) ), extractNodeIdOrNull( getStringOrNull( entityBody, "uri" ) ), getMapOrNull( entityBody, "properties" ) );
-	                return result.other().booleanValue() ? output.created( result.first() ) : output.conflict( result.first() );
+	                return result.other() ? output.created( result.first() ) : output.conflict( result.first() );
 	
 	            default:
 	            	entityBody = input.readMap( postBody, "key", "value", "uri" );
@@ -845,7 +845,7 @@ public class RestfulGraphDatabase
 	                       String.valueOf( entityBody.get( "value" ) ), extractRelationshipIdOrNull( getStringOrNull( entityBody, "uri" ) ),
 	                       extractNodeIdOrNull( getStringOrNull( entityBody, "start" ) ), getStringOrNull( entityBody, "type" ), extractNodeIdOrNull( getStringOrNull( entityBody, "end" ) ),
 	                       getMapOrNull( entityBody, "properties" ) );
-	                return result.other().booleanValue() ? output.created( result.first() ) : output.ok( result.first() );
+	                return result.other() ? output.created( result.first() ) : output.ok( result.first() );
 	
 	        	case CreateOrFail:
 	                entityBody = input.readMap( postBody, "key", "value" );
@@ -853,7 +853,7 @@ public class RestfulGraphDatabase
 	                       String.valueOf( entityBody.get( "value" ) ), extractRelationshipIdOrNull( getStringOrNull( entityBody, "uri" ) ),
 	                       extractNodeIdOrNull( getStringOrNull( entityBody, "start" ) ), getStringOrNull( entityBody, "type" ), extractNodeIdOrNull( getStringOrNull( entityBody, "end" ) ),
 	                       getMapOrNull( entityBody, "properties" ) );
-	                return result.other().booleanValue() ? output.created( result.first() ) : output.conflict( result.first() );
+	                return result.other() ? output.created( result.first() ) : output.conflict( result.first() );
 
                 default:
                     entityBody = input.readMap( postBody, "key", "value", "uri" );
@@ -885,7 +885,7 @@ public class RestfulGraphDatabase
     	UniqueIndexType unique = UniqueIndexType.None;
         if ( uniquenessParam == null || uniquenessParam.equals("") ){
         	// Backward compatibility check
-        	if(unique != null && ("".equals( uniqueParam ) || Boolean.parseBoolean( uniqueParam ))){
+        	if( "".equals( uniqueParam ) || Boolean.parseBoolean( uniqueParam ) ){
         		unique = UniqueIndexType.GetOrCreate;
         	}
         	
@@ -911,6 +911,7 @@ public class RestfulGraphDatabase
         throw new BadInputException( "\"" + key + "\" should be a string" );
     }
 
+    @SuppressWarnings("unchecked")
     private static Map<String, Object> getMapOrNull( Map<String, Object> data, String key ) throws BadInputException
     {
         Object object = data.get( key );
@@ -1312,7 +1313,7 @@ public class RestfulGraphDatabase
             ListRepresentation result = actions.pagedTraverse( traverserId, returnType );
 
             return Response.ok(uriInfo.getRequestUri())
-                    .entity( output.format( result ) )
+                    .entity( output.assemble( result ) )
                     .build();
         }
         catch ( EvaluationException e)
@@ -1340,7 +1341,7 @@ public class RestfulGraphDatabase
             String traverserId = actions.createPagedTraverser( startNode, input.readMap( body ), pageSize,
                     leaseTimeInSeconds );
 
-            String responseBody = output.format( actions.pagedTraverse( traverserId, returnType ) );
+            String responseBody = output.assemble( actions.pagedTraverse( traverserId, returnType ) );
 
             URI uri = new URI( uriInfo.getBaseUri()
                     .toString() + "node/" + startNode + "/paged/traverse/" + returnType + "/" + traverserId );

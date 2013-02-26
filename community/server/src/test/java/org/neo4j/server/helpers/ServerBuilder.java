@@ -93,13 +93,13 @@ public class ServerBuilder
             this.dbDir = createTempDir().getAbsolutePath();
         }
         File configFile = createPropertiesFiles();
-        
+
         if ( preflightTasks == null )
         {
             preflightTasks = new PreFlightTasks()
             {
                 @Override
-				public boolean run()
+                public boolean run()
                 {
                     return true;
                 }
@@ -108,21 +108,21 @@ public class ServerBuilder
 
         return new CommunityNeoServer( new PropertyFileConfigurator( new Validator(
                 new DatabaseLocationMustBeSpecifiedRule() ), configFile ) )
-	    {
-        	@Override
-        	protected PreFlightTasks createPreflightTasks()
+        {
+            @Override
+            protected PreFlightTasks createPreflightTasks()
             {
-        		return preflightTasks;
-        	}
+                return preflightTasks;
+            }
 
-        	@Override
-        	protected Database createDatabase()
+            @Override
+            protected Database createDatabase()
             {
-        		return persistent ? 
-        				new CommunityDatabase(configurator.configuration()) :
-    					new EphemeralDatabase(configurator.configuration());
-        		
-        	}
+                return persistent ?
+                        new CommunityDatabase( configurator.configuration() ) :
+                        new EphemeralDatabase( configurator.configuration() );
+
+            }
 
             @Override
             protected DatabaseActions createDatabaseActions()
@@ -131,13 +131,13 @@ public class ServerBuilder
 
                 return new DatabaseActions(
                         database,
-                        new LeaseManager(clockToUse),
+                        new LeaseManager( clockToUse ),
                         ForceMode.forced,
                         configurator.configuration().getBoolean(
                                 Configurator.SCRIPT_SANDBOXING_ENABLED_KEY,
                                 Configurator.DEFAULT_SCRIPT_SANDBOXING_ENABLED ) );
             }
-	    };
+        };
     }
 
     public File createPropertiesFiles() throws IOException
@@ -159,9 +159,9 @@ public class ServerBuilder
     private void createPropertiesFile( File temporaryConfigFile )
     {
         Map<String, String> properties = MapUtil.stringMap(
-            Configurator.DATABASE_LOCATION_PROPERTY_KEY, dbDir,
-            Configurator.MANAGEMENT_PATH_PROPERTY_KEY, webAdminUri,
-            Configurator.REST_API_PATH_PROPERTY_KEY, webAdminDataUri );
+                Configurator.DATABASE_LOCATION_PROPERTY_KEY, dbDir,
+                Configurator.MANAGEMENT_PATH_PROPERTY_KEY, webAdminUri,
+                Configurator.REST_API_PATH_PROPERTY_KEY, webAdminDataUri );
         if ( portNo != null )
         {
             properties.put( Configurator.WEBSERVER_PORT_PROPERTY_KEY, portNo );
@@ -226,25 +226,25 @@ public class ServerBuilder
         {
             File databaseTuningPropertyFile = createTempPropertyFile();
             Map<String, String> properties = MapUtil.stringMap(
-                "neostore.nodestore.db.mapped_memory", "25M",
-                "neostore.relationshipstore.db.mapped_memory", "50M",
-                "neostore.propertystore.db.mapped_memory", "90M",
-                "neostore.propertystore.db.strings.mapped_memory", "130M",
-                "neostore.propertystore.db.arrays.mapped_memory", "130M" );
+                    "neostore.nodestore.db.mapped_memory", "25M",
+                    "neostore.relationshipstore.db.mapped_memory", "50M",
+                    "neostore.propertystore.db.mapped_memory", "90M",
+                    "neostore.propertystore.db.strings.mapped_memory", "130M",
+                    "neostore.propertystore.db.arrays.mapped_memory", "130M" );
             writePropertiesToFile( properties, databaseTuningPropertyFile );
             writePropertyToFile( Configurator.DB_TUNING_PROPERTY_FILE_KEY,
-                databaseTuningPropertyFile.getAbsolutePath(), temporaryConfigFile );
+                    databaseTuningPropertyFile.getAbsolutePath(), temporaryConfigFile );
         }
         else if ( action == WhatToDo.CREATE_DANGLING_TUNING_FILE_PROPERTY )
         {
             writePropertyToFile( Configurator.DB_TUNING_PROPERTY_FILE_KEY, createTempPropertyFile().getAbsolutePath(),
-                temporaryConfigFile );
+                    temporaryConfigFile );
         }
         else if ( action == WhatToDo.CREATE_CORRUPT_TUNING_FILE )
         {
             File corruptTuningFile = trashFile();
             writePropertyToFile( Configurator.DB_TUNING_PROPERTY_FILE_KEY, corruptTuningFile.getAbsolutePath(),
-                temporaryConfigFile );
+                    temporaryConfigFile );
         }
     }
 
@@ -345,25 +345,25 @@ public class ServerBuilder
         preflightTasks = new PreFlightTasks()
         {
             @Override
-			public boolean run()
+            public boolean run()
             {
                 return false;
             }
 
             @Override
-			public PreflightTask failedTask()
+            public PreflightTask failedTask()
             {
                 return new PreflightTask()
                 {
 
                     @Override
-					public String getFailureMessage()
+                    public String getFailureMessage()
                     {
                         return "mockFailure";
                     }
 
                     @Override
-					public boolean run()
+                    public boolean run()
                     {
                         return false;
                     }
