@@ -55,7 +55,7 @@ class PatternPredicateTest extends GraphDatabaseTestBase with Assertions {
 
     val m = ExecutionContext.from("a" -> a, "c" -> c)
 
-    val result = expression(m)(state).asInstanceOf[Seq[Path]].head
+    val result = expression(m)(state).asInstanceOf[Path]
 
     assertEquals(result.startNode(), a)
     assertEquals(result.endNode(), c)

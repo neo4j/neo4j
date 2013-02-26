@@ -48,8 +48,16 @@ abstract class Base extends Strings  {
     in => {
       inner.apply(in) match {
         case Success(result,input) => Success((result, input.source.subSequence(in.offset, input.offset).toString.trim), input  )
-        case Failure(msg,input) => Failure(msg,input)
-        case Error(msg,input) => Error(msg,input)
+        case ns:NoSuccess          => ns
+      }
+    }
+  }
+      
+  def dontConsume[T](inner:Parser[T]): Parser[T] = Parser {
+    in => {
+      inner.apply(in) match {
+        case Success(result,_) => Success(result,in)
+        case ns:NoSuccess      => ns
       }
     }
   }

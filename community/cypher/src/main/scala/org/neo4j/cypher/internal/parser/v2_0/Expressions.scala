@@ -61,6 +61,7 @@ trait Expressions extends Base with ParserPattern with Predicates with StringLit
       | percentileFunction
       | coalesceFunc
       | filterFunc
+      | shortestPathFunc
       | nullableProperty
       | property
       | stringLit
@@ -115,6 +116,20 @@ trait Expressions extends Base with ParserPattern with Predicates with StringLit
     case symbol ~ in ~ collection ~ where ~ pred => FilterFunction(collection, symbol, pred)
   }
 
+  def shortestPathFunc: Parser[Expression] = {
+    def translate(abstractPattern: AbstractPattern): Maybe[ShortestPath] =
+
+      matchTranslator(abstractPattern) match {
+      case Yes(p@Seq(pattern: ShortestPath)) => Yes(p.asInstanceOf[Seq[ShortestPath]])
+      case _                                 => No(Seq("This should not be here, how do I make this only match on shortest path?"))
+    }
+
+    // We don't want to try parsing anything but shortest path patterns here
+    // Added the dontConsume so we see the pattern error messages here
+    dontConsume(SHORTESTPATH|ALLSHORTESTPATHS) ~> usePath(translate) ^^ {
+      case patterns:Seq[ShortestPath] => ShortestPathExpression(patterns.head)
+    }
+  }
   def function: Parser[Expression] = Parser {
     case in => {
       val inner = identity ~ parens(commaList(expression | entity))

@@ -1972,14 +1972,27 @@ RETURN x0.name?
     assert(result === List(b, c, d))
   }
 
-  @Test def should_return_shortest_paths() {
+  @Test def should_return_shortest_paths_if_using_a_ridiculously_unhip_cypher() {
     val a = createNode()
     val b = createNode()
     val c = createNode()
     relate(a, b)
     relate(b, c)
 
-    val result = parseAndExecute("start a=node(1), c=node(3) return shortestPath(a-[*]->c)").columnAs[List[Path]]("shortestPath(a-[*]->c)").toList.head.head
+    val result = parseAndExecute("cypher 1.9 start a=node(1), c=node(3) return shortestPath(a-[*]->c)").columnAs[List[Path]]("shortestPath(a-[*]->c)").toList.head.head
+    assertEquals(result.endNode(), c)
+    assertEquals(result.startNode(), a)
+    assertEquals(result.length(), 2)
+  }
+
+  @Test def should_return_shortest_path() {
+    val a = createNode()
+    val b = createNode()
+    val c = createNode()
+    relate(a, b)
+    relate(b, c)
+
+    val result = parseAndExecute("start a=node(1), c=node(3) return shortestPath(a-[*]->c)").columnAs[Path]("shortestPath(a-[*]->c)").toList.head
     assertEquals(result.endNode(), c)
     assertEquals(result.startNode(), a)
     assertEquals(result.length(), 2)

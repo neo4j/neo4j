@@ -34,7 +34,7 @@ import org.neo4j.cypher.internal.pipes.QueryState
 case class ShortestPathExpression(ast: ShortestPath) extends Expression with PathExtractor {
   val pathPattern:Seq[Pattern] = Seq(ast)
 
-  def apply(ctx: ExecutionContext)(implicit state: QueryState): Stream[Path] = {
+  def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = {
     if (anyStartpointsContainNull(ctx)) {
       null
     } else {
@@ -42,10 +42,10 @@ case class ShortestPathExpression(ast: ShortestPath) extends Expression with Pat
     }
   }
 
-  private def getMatches(m: Map[String, Any]): Stream[Path] = {
+  private def getMatches(m: Map[String, Any]): Any = {
     val start = getEndPoint(m, ast.start)
     val end = getEndPoint(m, ast.end)
-    foo.findResult(start, end)
+    shortestPathStrategy.findResult(start, end)
   }
 
   def getEndPoint(m: Map[String, Any], start: String): Node = m.getOrElse(start, throw new SyntaxException("To find a shortest path, both ends of the path need to be provided. Couldn't find `" + start + "`")).asInstanceOf[Node]
@@ -69,35 +69,38 @@ case class ShortestPathExpression(ast: ShortestPath) extends Expression with Pat
     }
   }
 
-  val foo = if (ast.single)
-    new SingleShortestPathFOO(expander, ast.maxDepth.getOrElse(15))
+  val shortestPathStrategy = if (ast.single)
+    new SingleShortestPathStrategy(expander, ast.maxDepth.getOrElse(15))
   else
-    new AllShortestPathsFOO(expander, ast.maxDepth.getOrElse(15))
+    new AllShortestPathsStrategy(expander, ast.maxDepth.getOrElse(15))
 
   def calculateType(symbols: SymbolTable) = {
     ast.throwIfSymbolsMissing(symbols)
-    PathType()
+    shortestPathStrategy.typ
   }
 
   def symbolTableDependencies = ast.symbolTableDependencies
 }
 
-trait FOO {
-  def findResult(start: Node, end: Node): Stream[Path]
+trait ShortestPathStrategy {
+  def findResult(start: Node, end: Node): Any
+  def typ: CypherType
 }
 
-class SingleShortestPathFOO(expander: Expander, depth: Int) extends FOO {
+class SingleShortestPathStrategy(expander: Expander, depth: Int) extends ShortestPathStrategy {
   private val finder = GraphAlgoFactory.shortestPath(expander, depth)
 
-  def findResult(start: Node, end: Node): Stream[Path] = {
-    Option(finder.findSinglePath(start, end)).toStream
-  }
+  def findResult(start: Node, end: Node): Path = finder.findSinglePath(start, end)
+
+  def typ = PathType()
 }
 
-class AllShortestPathsFOO(expander: Expander, depth: Int) extends FOO {
+class AllShortestPathsStrategy(expander: Expander, depth: Int) extends ShortestPathStrategy {
   private val finder = GraphAlgoFactory.shortestPath(expander, depth)
 
   def findResult(start: Node, end: Node): Stream[Path] = {
     finder.findAllPaths(start, end).asScala.toStream
   }
+
+  def typ = new CollectionType(PathType())
 }

@@ -116,9 +116,10 @@ trait Predicates extends Base with ParserPattern with StringLiteral with Labels 
 
   def patternPredicate: Parser[Predicate] = {
     def translate(abstractPattern: AbstractPattern): Maybe[(Pattern, Predicate)] = matchTranslator(abstractPattern) match {
-      case Yes(Seq(np)) if np.isInstanceOf[NamedPath] => No(Seq("Can't assign to an identifier in a pattern expression"))
-      case n: No                                      => n
-      case Yes(p@Seq(pattern: Pattern))               =>
+      case Yes(Seq(np)) if np.isInstanceOf[ShortestPath] => No(Seq("Shortest path is not a predicate"))
+      case Yes(Seq(np)) if np.isInstanceOf[NamedPath]    => No(Seq("Can't assign to an identifier in a pattern predicate"))
+      case n: No                                         => n
+      case Yes(p@Seq(pattern: Pattern))                  =>
         val patterns = p.asInstanceOf[Seq[Pattern]]
 
         if (patterns.exists(_.optional))
@@ -126,7 +127,6 @@ trait Predicates extends Base with ParserPattern with StringLiteral with Labels 
         else {
           val predicates = abstractPattern.parsedLabelPredicates
           val pred = True().andWith(predicates: _*)
-
 
           Yes(patterns.map( (_, pred) ))
         }

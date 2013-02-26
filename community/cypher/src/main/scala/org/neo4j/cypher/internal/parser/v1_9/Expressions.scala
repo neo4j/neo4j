@@ -208,7 +208,7 @@ trait Expressions extends Base with ParserPattern with Predicates with StringLit
   def countStar: Parser[Expression] = ignoreCase("count") ~> parens("*") ^^^ CountStar()
 
   def pathExpression: Parser[Expression] = usePath(translate) ^^ {
-    case Seq(x:ShortestPath) => ShortestPathExpression(x)
+    case Seq(x:ShortestPath) => Collection(ShortestPathExpression(x))
     case patterns => PathExpression(patterns)
   }
 
