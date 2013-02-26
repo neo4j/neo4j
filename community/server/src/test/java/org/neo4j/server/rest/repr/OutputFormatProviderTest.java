@@ -236,4 +236,30 @@ public class OutputFormatProviderTest
                 eq( new URI( "https://foobar.com:9999" ) ),
                 any( ExtensionInjector.class ) );
     }
+
+    @Test
+    public void shouldUseDefaultPortIfNoPortNumberSpecifiedOnXForwardedHostHeader() throws Exception
+    {
+        // given
+        OutputFormatProvider provider = new OutputFormatProvider( new RepresentationFormatRepository(
+                mock( AbstractNeoServer.class ) ) );
+
+        HttpRequestContext httpRequestContext = mock( HttpRequestContext.class );
+        HttpContext httpContext = mock( HttpContext.class );
+        when( httpContext.getRequest() ).thenReturn( httpRequestContext );
+        when( httpRequestContext.getBaseUri() ).thenReturn( new URI( "http://localhost" ) );
+        when( httpRequestContext.getHeaderValue( "X-Forwarded-Host" ) ).thenReturn( "foobar.com" );
+
+
+        Representation representation = mock( Representation.class );
+        OutputFormat outputFormat = provider.getValue( httpContext );
+
+        // when
+        outputFormat.assemble( representation );
+
+        // then
+        verify( representation ).serialize( any( RepresentationFormat.class ),
+                eq( new URI( "http://foobar.com" ) ),
+                any( ExtensionInjector.class ) );
+    }
 }

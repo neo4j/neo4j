@@ -73,9 +73,14 @@ public final class OutputFormatProvider extends AbstractInjectableProvider<Outpu
                 context.getRequest().getHeaderValue( "X-Forwarded-Proto" ) );
 
 
-        if ( forwardedHost.isValid() )
+        if ( forwardedHost.isValid )
         {
-            builder.host( forwardedHost.getHost() ).port( forwardedHost.getPort() );
+            builder.host( forwardedHost.getHost() );
+
+            if ( forwardedHost.hasExplicitlySpecifiedPort() )
+            {
+                builder.port( forwardedHost.getPort() );
+            }
         }
 
         if ( xForwardedProto.isValid() )
@@ -89,7 +94,7 @@ public final class OutputFormatProvider extends AbstractInjectableProvider<Outpu
     private class ForwardedHost
     {
         private String host;
-        private int port;
+        private int port = -1;
         private boolean isValid = false;
 
         public ForwardedHost( String headerValue )
@@ -100,11 +105,11 @@ public final class OutputFormatProvider extends AbstractInjectableProvider<Outpu
                 return;
             }
 
-            String firstAddress = headerValue.split( "," )[0].trim();
+            String firstHostInXForwardedHostHeader = headerValue.split( "," )[0].trim();
 
             try
             {
-                UriBuilder.fromUri( firstAddress ).build();
+                UriBuilder.fromUri( firstHostInXForwardedHostHeader ).build();
             }
             catch ( IllegalArgumentException ex )
             {
@@ -112,7 +117,7 @@ public final class OutputFormatProvider extends AbstractInjectableProvider<Outpu
                 return;
             }
 
-            String[] strings = firstAddress.split( ":" );
+            String[] strings = firstHostInXForwardedHostHeader.split( ":" );
             if ( strings.length > 0 )
             {
                 this.host = strings[0];
@@ -125,13 +130,13 @@ public final class OutputFormatProvider extends AbstractInjectableProvider<Outpu
             }
             if ( strings.length > 2 )
             {
-                this.isValid = true;
+                this.isValid = false;
             }
         }
 
-        public boolean isValid()
+        public boolean hasExplicitlySpecifiedPort()
         {
-            return isValid && port >= 0;
+            return port >= 0;
         }
 
         public String getHost()
