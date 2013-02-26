@@ -55,21 +55,21 @@ public class StreamingJsonFormatTest
     public void canFormatNode() throws Exception
     {
         final Node refNode = new ImpermanentGraphDatabase().getReferenceNode();
-        json.format(new NodeRepresentation(refNode));
+        json.assemble( new NodeRepresentation( refNode ) );
         assertTrue(stream.toString().contains("\"self\" : \"http://localhost/node/0\","));
     }
 
     @Test
     public void canFormatString() throws Exception
     {
-        json.format( ValueRepresentation.string( "expected value" ) );
+        json.assemble( ValueRepresentation.string( "expected value" ) );
         assertEquals( stream.toString(), "\"expected value\"" );
     }
 
     @Test
     public void canFormatListOfStrings() throws Exception
     {
-        json.format( ListRepresentation.strings( "hello", "world" ) );
+        json.assemble( ListRepresentation.strings( "hello", "world" ) );
         String expectedString = JsonHelper.createJsonFrom( Arrays.asList( "hello", "world" ) );
         assertEquals( expectedString, stream.toString() );
     }
@@ -77,14 +77,14 @@ public class StreamingJsonFormatTest
     @Test
     public void canFormatInteger() throws Exception
     {
-        json.format( ValueRepresentation.number( 10 ) );
+        json.assemble( ValueRepresentation.number( 10 ) );
         assertEquals( "10", stream.toString() );
     }
 
     @Test
     public void canFormatEmptyObject() throws Exception
     {
-        json.format( new MappingRepresentation( "empty" )
+        json.assemble( new MappingRepresentation( "empty" )
         {
             @Override
             protected void serialize( MappingSerializer serializer )
@@ -97,7 +97,7 @@ public class StreamingJsonFormatTest
     @Test
     public void canFormatObjectWithStringField() throws Exception
     {
-        json.format( new MappingRepresentation( "string" )
+        json.assemble( new MappingRepresentation( "string" )
         {
             @Override
             protected void serialize( MappingSerializer serializer )
@@ -111,7 +111,7 @@ public class StreamingJsonFormatTest
     @Test
     public void canFormatObjectWithUriField() throws Exception
     {
-        json.format( new MappingRepresentation( "uri" )
+        json.assemble( new MappingRepresentation( "uri" )
         {
             @Override
             protected void serialize( MappingSerializer serializer )
@@ -127,7 +127,7 @@ public class StreamingJsonFormatTest
     @Test
     public void canFormatObjectWithNestedObject() throws Exception
     {
-        json.format( new MappingRepresentation( "nesting" )
+        json.assemble( new MappingRepresentation( "nesting" )
         {
             @Override
             protected void serialize( MappingSerializer serializer )

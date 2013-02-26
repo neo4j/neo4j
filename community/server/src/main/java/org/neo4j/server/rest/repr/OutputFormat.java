@@ -24,7 +24,6 @@ import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 
-import javax.management.relation.RelationNotFoundException;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
@@ -32,8 +31,6 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.ResponseBuilder;
 import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.StreamingOutput;
-
-import org.neo4j.server.rest.web.NodeNotFoundException;
 
 public class OutputFormat
 {
@@ -51,14 +48,20 @@ public class OutputFormat
 
     public final Response ok( Representation representation )
     {
-        if ( representation.isEmpty() ) return noContent();
+        if ( representation.isEmpty() )
+        {
+            return noContent();
+        }
         return response( Response.ok(), representation );
     }
 
     public final <REPR extends Representation & EntityRepresentation> Response okIncludeLocation( REPR representation ) throws BadInputException
     {
-        if ( representation.isEmpty() ) return noContent();
-        return response( Response.ok().header(HttpHeaders.LOCATION, uri(representation)), representation );
+        if ( representation.isEmpty() )
+        {
+            return noContent();
+        }
+        return response( Response.ok().header( HttpHeaders.LOCATION, uri( representation ) ), representation );
     }
 
     public final <REPR extends Representation & EntityRepresentation> Response created( REPR representation )
@@ -75,11 +78,6 @@ public class OutputFormat
     public Response badRequest( Throwable exception )
     {
         return response( Response.status( Status.BAD_REQUEST ), new ExceptionRepresentation( exception ) );
-    }
-
-    public Response forbidden( Throwable exception )
-    {
-        return response( Response.status( Status.FORBIDDEN ), new ExceptionRepresentation( exception ) );
     }
 
     public Response notFound( Throwable exception )
@@ -99,11 +97,11 @@ public class OutputFormat
     }
 
     public final <REPR extends Representation & EntityRepresentation> Response conflict( REPR representation )
-    		throws BadInputException
+            throws BadInputException
     {
-    	return response( Response.status( Status.CONFLICT ), representation );
+        return response( Response.status( Status.CONFLICT ), representation );
     }
-    
+
     public Response serverError( Throwable exception )
     {
         return response( Response.status( Status.INTERNAL_SERVER_ERROR ), new ExceptionRepresentation( exception ) );
@@ -111,55 +109,54 @@ public class OutputFormat
 
     private URI uri( EntityRepresentation representation ) throws BadInputException
     {
-        return URI.create( format( representation.selfUri() ) );
+        return URI.create( assemble( representation.selfUri() ) );
     }
 
     protected Response response( ResponseBuilder response, Representation representation )
     {
-        return formatRepresentation(response, representation)
-                .header(HttpHeaders.CONTENT_ENCODING, UTF8)
+        return formatRepresentation( response, representation )
+                .header( HttpHeaders.CONTENT_ENCODING, UTF8 )
                 .type( getMediaType() )
                 .build();
     }
 
-    private ResponseBuilder formatRepresentation(ResponseBuilder response, final Representation representation)
+    private ResponseBuilder formatRepresentation( ResponseBuilder response, final Representation representation )
     {
-        if (format instanceof StreamingFormat)
+        if ( format instanceof StreamingFormat )
         {
-            return response.entity(stream(representation,(StreamingFormat)format));
-        } else
+            return response.entity( stream( representation, (StreamingFormat) format ) );
+        }
+        else
         {
-            return response.entity(toBytes(format( representation )));
+            return response.entity( toBytes( assemble( representation ) ) );
         }
     }
 
-    private Object stream(final Representation representation, final StreamingFormat streamingFormat)
+    private Object stream( final Representation representation, final StreamingFormat streamingFormat )
     {
         return new StreamingOutput()
         {
-                    public void write(OutputStream output) throws IOException, WebApplicationException
+            public void write( OutputStream output ) throws IOException, WebApplicationException
+            {
+                RepresentationFormat outputStreamFormat = streamingFormat.writeTo( output );
+                try
+                {
+                    representation.serialize( outputStreamFormat, baseUri, extensions );
+                }
+                catch ( Exception e )
+                {
+                    if ( e instanceof BadInputException )
                     {
-                        RepresentationFormat outputStreamFormat = streamingFormat.writeTo(output);
-                        try
-                        {
-                            representation.serialize(outputStreamFormat, baseUri, extensions);
-                        } catch(Exception e)
-                        {
-                            if (e instanceof NodeNotFoundException || e instanceof RelationNotFoundException)
-                            {
-                                new WebApplicationException(notFound(e));
-                            }
-                            if (e instanceof BadInputException)
-                            {
-                                throw new WebApplicationException(badRequest(e));
-                            }
-                            throw new WebApplicationException(serverError(e));
-                        }
+                        throw new WebApplicationException( badRequest( e ) );
                     }
-                };
+                    throw new WebApplicationException( serverError( e ) );
+                }
+            }
+        };
     }
 
-    private byte[] toBytes(String entity) {
+    private byte[] toBytes( String entity )
+    {
         byte[] entityAsBytes;
         try
         {
@@ -177,7 +174,7 @@ public class OutputFormat
         return format.mediaType;
     }
 
-    public String format( Representation representation )
+    public String assemble( Representation representation )
     {
         return representation.serialize( format, baseUri, extensions );
     }
@@ -188,7 +185,8 @@ public class OutputFormat
                 .build();
     }
 
-    public Response methodNotAllowed(UnsupportedOperationException e) {
-        return response( Response.status(405), new ExceptionRepresentation( e ) );
+    public Response methodNotAllowed( UnsupportedOperationException e )
+    {
+        return response( Response.status( 405 ), new ExceptionRepresentation( e ) );
     }
 }

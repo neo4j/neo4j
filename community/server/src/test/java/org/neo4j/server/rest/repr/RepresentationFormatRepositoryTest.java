@@ -20,7 +20,10 @@
 package org.neo4j.server.rest.repr;
 
 import static java.util.Arrays.asList;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.fail;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.isA;
 import static org.mockito.Mockito.mock;
@@ -28,16 +31,20 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.MapUtil.map;
 
-import javax.ws.rs.core.*;
+import java.io.ByteArrayOutputStream;
+import java.net.URI;
+import java.util.concurrent.atomic.AtomicReference;
+
+import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.MultivaluedMap;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.StreamingOutput;
 
 import org.junit.Test;
 import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
-
-import java.io.ByteArrayOutputStream;
-import java.net.URI;
-import java.util.concurrent.atomic.AtomicReference;
 
 public class RepresentationFormatRepositoryTest
 {
@@ -68,7 +75,7 @@ public class RepresentationFormatRepositoryTest
     {
         OutputFormat format = repository.outputFormat(asList(MediaType.APPLICATION_JSON_TYPE), null, null);
         assertNotNull(format);
-        assertEquals("\"test\"", format.format(ValueRepresentation.string("test")));
+        assertEquals("\"test\"", format.assemble( ValueRepresentation.string( "test" ) ));
     }
 
     @Test

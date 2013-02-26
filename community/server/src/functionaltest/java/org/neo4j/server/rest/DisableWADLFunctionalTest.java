@@ -19,7 +19,7 @@
  */
 package org.neo4j.server.rest;
 
-import static junit.framework.Assert.assertEquals;
+import static org.junit.Assert.assertEquals;
 
 import java.io.IOException;
 import java.net.URI;
@@ -36,8 +36,6 @@ import org.neo4j.server.rest.domain.GraphDbHelper;
 
 public class DisableWADLFunctionalTest extends AbstractRestFunctionalTestBase
 {
-
-
     private static FunctionalTestHelper functionalTestHelper;
     private static GraphDbHelper helper;
 
@@ -58,7 +56,7 @@ public class DisableWADLFunctionalTest extends AbstractRestFunctionalTestBase
     public void should404OnAnyUriEndinginWADL() throws Exception
     {
         URI nodeUri = new URI( "http://localhost:7474/db/data/application.wadl" );
-        
+
         HttpClient httpclient = new DefaultHttpClient();
         try
         {
@@ -66,13 +64,13 @@ public class DisableWADLFunctionalTest extends AbstractRestFunctionalTestBase
 
             httpget.setHeader( "Accept", "*/*" );
             HttpResponse response = httpclient.execute( httpget );
-            
-            assertEquals(404, response.getStatusLine().getStatusCode());
 
-        } finally
+            assertEquals( 404, response.getStatusLine().getStatusCode() );
+
+        }
+        finally
         {
             httpclient.getConnectionManager().shutdown();
         }
     }
-
 }
