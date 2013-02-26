@@ -113,23 +113,3 @@ BalancerMember http://192.168.1.51:80
 </Proxy>
 ProxyPass /test balancer://mycluster
 --------------
-
-== Rewriting URLs with a Proxy installation ==
-
-When installing Neo4j Server behind proxies, you need to enable rewriting of the JSON calls, 
-otherwise they will point back to the servers own base URL (normally http://localhost:7474).
-
-To do this, you can use http://httpd.apache.org/docs/2.2/mod/mod_substitute.html[Apache mod_substitute]
-
-[source]
-----
-ProxyPass / http://localhost:7474/
-ProxyPassReverse / http://localhost:7474/
-<Location />
-    AddOutputFilterByType SUBSTITUTE application/json
-    AddOutputFilterByType SUBSTITUTE text/html
-    Substitute s/localhost:7474/myproxy.example.com/n
-    Substitute s/http/https/n
-</Location>
-----
-

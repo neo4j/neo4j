@@ -19,15 +19,19 @@
  */
 package org.neo4j.server.rest.repr;
 
+import java.net.URI;
+import java.net.URISyntaxException;
+
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
-
-import com.sun.jersey.api.core.HttpRequestContext;
-import org.neo4j.server.database.AbstractInjectableProvider;
+import javax.ws.rs.core.UriBuilder;
+import javax.ws.rs.ext.Provider;
 
 import com.sun.jersey.api.core.HttpContext;
+import org.neo4j.server.database.AbstractInjectableProvider;
 
+@Provider
 public final class OutputFormatProvider extends AbstractInjectableProvider<OutputFormat>
 {
     private final RepresentationFormatRepository repository;
@@ -43,15 +47,128 @@ public final class OutputFormatProvider extends AbstractInjectableProvider<Outpu
     {
         try
         {
-            HttpRequestContext request = context.getRequest();
-            return repository.outputFormat( request
-                    .getAcceptableMediaTypes(), request.getBaseUri(), request.getRequestHeaders() );
+            return repository.outputFormat( context.getRequest()
+                    .getAcceptableMediaTypes(), getBaseUri( context ), context.getRequest().getRequestHeaders() );
         }
         catch ( MediaTypeNotSupportedException e )
         {
             throw new WebApplicationException( Response.status( Status.NOT_ACCEPTABLE )
                     .entity( e.getMessage() )
                     .build() );
+        }
+        catch ( URISyntaxException e )
+        {
+            throw new WebApplicationException( Response.status( Status.INTERNAL_SERVER_ERROR )
+                    .entity( e.getMessage() )
+                    .build() );
+        }
+    }
+
+    private URI getBaseUri( HttpContext context ) throws URISyntaxException
+    {
+        UriBuilder builder = UriBuilder.fromUri( context.getRequest().getBaseUri() );
+
+        ForwardedHost forwardedHost = new ForwardedHost( context.getRequest().getHeaderValue( "X-Forwarded-Host" ) );
+        ForwardedProto xForwardedProto = new ForwardedProto(
+                context.getRequest().getHeaderValue( "X-Forwarded-Proto" ) );
+
+
+        if ( forwardedHost.isValid() )
+        {
+            builder.host( forwardedHost.getHost() ).port( forwardedHost.getPort() );
+        }
+
+        if ( xForwardedProto.isValid() )
+        {
+            builder.scheme( xForwardedProto.getScheme() );
+        }
+
+        return builder.build();
+    }
+
+    private class ForwardedHost
+    {
+        private String host;
+        private int port;
+        private boolean isValid = false;
+
+        public ForwardedHost( String headerValue )
+        {
+            if ( headerValue == null )
+            {
+                this.isValid = false;
+                return;
+            }
+
+            String firstAddress = headerValue.split( "," )[0].trim();
+
+            try
+            {
+                UriBuilder.fromUri( firstAddress ).build();
+            }
+            catch ( IllegalArgumentException ex )
+            {
+                this.isValid = false;
+                return;
+            }
+
+            String[] strings = firstAddress.split( ":" );
+            if ( strings.length > 0 )
+            {
+                this.host = strings[0];
+                isValid = true;
+            }
+            if ( strings.length > 1 )
+            {
+                this.port = Integer.valueOf( strings[1] );
+                isValid = true;
+            }
+            if ( strings.length > 2 )
+            {
+                this.isValid = true;
+            }
+        }
+
+        public boolean isValid()
+        {
+            return isValid && port >= 0;
+        }
+
+        public String getHost()
+        {
+            return host;
+        }
+
+        public int getPort()
+        {
+            return port;
+        }
+    }
+
+    private class ForwardedProto
+    {
+        private final String headerValue;
+
+        public ForwardedProto( String headerValue )
+        {
+            if ( headerValue != null )
+            {
+                this.headerValue = headerValue;
+            }
+            else
+            {
+                this.headerValue = "";
+            }
+        }
+
+        public boolean isValid()
+        {
+            return headerValue.toLowerCase().equals( "http" ) || headerValue.toLowerCase().equals( "https" );
+        }
+
+        public String getScheme()
+        {
+            return headerValue;
         }
     }
 }

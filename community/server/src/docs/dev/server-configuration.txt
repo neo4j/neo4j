@@ -136,7 +136,7 @@ By default the HTTP logger uses +http://en.wikipedia.org/wiki/Common_Log_Format[
 meaning that most Web server tooling can automtically consume such logs. In general users should only enable HTTP logging,
 select an output directory, and if necessary alter the rollover and retention policies.
 
-To enable HTTP logging, edit the 'conf/neo4j-server.properties' file resemble the following:
+To enable HTTP logging, edit the 'conf/neo4j-server.properties' file to resemble the following:
 
 [source]
 ----
@@ -153,6 +153,21 @@ rotation and +http://en.wikipedia.org/wiki/Common_Log_Format[Common Log Format]+
 If logging is set up to use log files then the server will check that the log file directory exists and is writable. If
 this check fails, then the server will not startup and wil report the failure another available channel like standard out.
 
+== Using X-Forwarded-Proto and X-Forwarded-Host to parameterize the base URI for REST responses ==
+
+There are occasions, for example when you want to host Neo4j server behind a proxy (e.g. one that handles HTTPS traffic),
+and still have Neo4j respect the base URI of that externally visible proxy.
+
+Ordinarily Neo4j uses the `HOST` header of the HTTP request to construct URIs in its responses. Where a proxy is involved
+however, this is often undesirable. Instead Neo4j, uses the
+`X-Forwarded-Host` and `X-Forwarded-Proto` headers provided by proxies to parameterize the URIs in the responses from
+the databases's REST API. From the outside it looks as if the proxy generated that payload. If an `X-Forwarded-Host`
+header value contains more than one address (`X-Forwarded-Host` allows comma-and-space separated lists of addresses),
+Neo4j picks the first, which represents the client request.
+
+In order to take advantage of this functionality, your proxy server must be configured to transmit these headers to the
+Neo4j server. Failure to transmit both `X-Forwarded-Host` and `X-Forwarded-Proto` headers will result in the original
+base URI being used.
 
 == Other configuration options ==
 
