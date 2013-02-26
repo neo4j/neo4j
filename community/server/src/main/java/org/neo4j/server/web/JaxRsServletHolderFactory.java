@@ -23,17 +23,16 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import org.mortbay.jetty.servlet.ServletHolder;
+import com.sun.jersey.api.core.ClassNamesResourceConfig;
+import com.sun.jersey.api.core.PackagesResourceConfig;
+import com.sun.jersey.api.core.ResourceConfig;
+import com.sun.jersey.spi.container.servlet.ServletContainer;
+import org.eclipse.jetty.servlet.ServletHolder;
 import org.neo4j.server.database.InjectableProvider;
 import org.neo4j.server.modules.ServerModule;
 import org.neo4j.server.plugins.Injectable;
 import org.neo4j.server.rest.web.AllowAjaxFilter;
 import org.neo4j.server.rest.web.CollectUserAgentFilter;
-
-import com.sun.jersey.api.core.ClassNamesResourceConfig;
-import com.sun.jersey.api.core.PackagesResourceConfig;
-import com.sun.jersey.api.core.ResourceConfig;
-import com.sun.jersey.spi.container.servlet.ServletContainer;
 
 /**
  * Different {@link ServerModule}s can register services at the same mount point.

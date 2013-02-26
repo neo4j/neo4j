@@ -27,7 +27,7 @@ import org.junit.Test;
 
 import org.neo4j.server.helpers.CommunityServerBuilder;
 import org.neo4j.server.logging.InMemoryAppender;
-import org.neo4j.server.web.Jetty6WebServer;
+import org.neo4j.server.web.Jetty9WebServer;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 
 import static org.hamcrest.Matchers.containsString;
@@ -40,13 +40,12 @@ public class NeoServerPortConflictDocIT extends ExclusiveServerTestBase
     public void shouldComplainIfServerPortIsAlreadyTaken() throws IOException
     {
         int contestedPort = 9999;
-        ServerSocket socket = new ServerSocket( contestedPort, 0, InetAddress.getByName( Jetty6WebServer
-                .DEFAULT_ADDRESS ) );
+        ServerSocket socket = new ServerSocket( contestedPort, 0, InetAddress.getByName(Jetty9WebServer.DEFAULT_ADDRESS) );
         InMemoryAppender appender = new InMemoryAppender( CommunityNeoServer.log );
         CommunityNeoServer server = CommunityServerBuilder.server()
                 .onPort( contestedPort )
-                .onHost( Jetty6WebServer.DEFAULT_ADDRESS )
                 .usingDatabaseDir( folder.getRoot().getAbsolutePath() )
+                .onHost( Jetty9WebServer.DEFAULT_ADDRESS )
                 .build();
         server.start();
 

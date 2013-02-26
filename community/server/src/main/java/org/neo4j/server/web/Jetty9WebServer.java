@@ -27,6 +27,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -34,75 +35,76 @@ import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
+import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.mortbay.component.LifeCycle;
-import org.mortbay.jetty.Connector;
-import org.mortbay.jetty.Handler;
-import org.mortbay.jetty.Server;
-import org.mortbay.jetty.SessionManager;
-import org.mortbay.jetty.handler.MovedContextHandler;
-import org.mortbay.jetty.handler.RequestLogHandler;
-import org.mortbay.jetty.nio.SelectChannelConnector;
-import org.mortbay.jetty.servlet.Context;
-import org.mortbay.jetty.servlet.FilterHolder;
-import org.mortbay.jetty.servlet.HashSessionManager;
-import org.mortbay.jetty.servlet.SessionHandler;
-import org.mortbay.jetty.webapp.WebAppContext;
-import org.mortbay.thread.QueuedThreadPool;
-
+import ch.qos.logback.access.jetty.RequestLogImpl;
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.SessionManager;
+import org.eclipse.jetty.server.handler.HandlerCollection;
+import org.eclipse.jetty.server.handler.HandlerList;
+import org.eclipse.jetty.server.handler.MovedContextHandler;
+import org.eclipse.jetty.server.handler.RequestLogHandler;
+import org.eclipse.jetty.server.session.HashSessionManager;
+import org.eclipse.jetty.server.session.SessionHandler;
+import org.eclipse.jetty.servlet.FilterHolder;
+import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.util.component.LifeCycle;
+import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.webapp.WebAppContext;
 import org.neo4j.kernel.guard.Guard;
 import org.neo4j.server.database.InjectableProvider;
 import org.neo4j.server.guard.GuardingRequestFilter;
-import org.neo4j.server.logging.JettyLoggerAdapter;
 import org.neo4j.server.logging.Logger;
 import org.neo4j.server.plugins.Injectable;
 import org.neo4j.server.security.KeyStoreInformation;
 import org.neo4j.server.security.SslSocketConnectorFactory;
 
-import ch.qos.logback.access.jetty.RequestLogImpl;
-
 import static java.lang.String.format;
 
-public class Jetty6WebServer implements WebServer
+public class Jetty9WebServer implements WebServer
 {
     private boolean wadlEnabled;
     private Collection<InjectableProvider<?>> defaultInjectables;
 
     private static class FilterDefinition
-    {
-        private final Filter filter;
-        private final String pathSpec;
+	{
+		private final Filter filter;
+		private final String pathSpec;
 
-        public FilterDefinition(Filter filter, String pathSpec)
-        {
-            this.filter = filter;
-            this.pathSpec = pathSpec;
-        }
+		public FilterDefinition(Filter filter, String pathSpec)
+		{
+			this.filter = filter;
+			this.pathSpec = pathSpec;
+		}
 
-        public boolean matches(Filter filter, String pathSpec)
-        {
-            return filter == this.filter && pathSpec.equals(this.pathSpec);
-        }
+		public boolean matches(Filter filter, String pathSpec)
+		{
+			return filter == this.filter && pathSpec.equals(this.pathSpec);
+		}
 
-        public Filter getFilter() {
-            return filter;
-        }
+		public Filter getFilter() {
+			return filter;
+		}
 
-        public String getPathSpec() {
-            return pathSpec;
-        }
-    }
-
+		public String getPathSpec() {
+			return pathSpec;
+		}
+	}
     private static final int DEFAULT_HTTPS_PORT = 7473;
-    public static final Logger log = Logger.getLogger( Jetty6WebServer.class );
+    public static final Logger log = Logger.getLogger( Jetty9WebServer.class );
     public static final int DEFAULT_PORT = 80;
     public static final String DEFAULT_ADDRESS = "0.0.0.0";
 
     private Server jetty;
+    private HandlerCollection handlers;
     private int jettyHttpPort = DEFAULT_PORT;
     private int jettyHttpsPort = DEFAULT_HTTPS_PORT;
     private String jettyAddr = DEFAULT_ADDRESS;
@@ -130,9 +132,9 @@ public class Jetty6WebServer implements WebServer
     {
         if ( jetty == null )
         {
-            System.setProperty("org.mortbay.log.class", JettyLoggerAdapter.class.getName());
-            jetty = new Server();
-            Connector connector = new SelectChannelConnector();
+            jetty = new Server( new QueuedThreadPool( jettyMaxThreads ) );
+
+            ServerConnector connector = new ServerConnector(jetty);
 
             connector.setPort( jettyHttpPort );
             connector.setHost( jettyAddr );
@@ -144,7 +146,7 @@ public class Jetty6WebServer implements WebServer
                 if ( httpsCertificateInformation != null )
                 {
                     jetty.addConnector(
-                        sslSocketFactory.createConnector( httpsCertificateInformation, jettyAddr, jettyHttpsPort ) );
+                        sslSocketFactory.createConnector( jetty, httpsCertificateInformation, jettyAddr, jettyHttpsPort ) );
                 }
                 else
                 {
@@ -152,16 +154,20 @@ public class Jetty6WebServer implements WebServer
                 }
             }
 
-            jetty.setThreadPool( new QueuedThreadPool( jettyMaxThreads ) );
         }
+
+        handlers = new HandlerList();
+
+        jetty.setHandler( handlers );
 
         MovedContextHandler redirector = new MovedContextHandler();
 
-        jetty.addHandler( redirector );
+        handlers.addHandler( redirector );
 
         loadAllMounts();
 
         startJetty();
+
     }
 
     @Override
@@ -294,14 +300,14 @@ public class Jetty6WebServer implements WebServer
     @Override
     public void removeStaticContent( String contentLocation, String serverMountPoint )
     {
-        staticContent.remove(serverMountPoint);
+        staticContent.remove( serverMountPoint );
     }
 
     @Override
     public void invokeDirectly( String targetPath, HttpServletRequest request, HttpServletResponse response )
         throws IOException, ServletException
     {
-        jetty.handle( targetPath, request, response, Handler.REQUEST );
+        jetty.handle( targetPath, (Request) request, request, response );
     }
 
     @Override
@@ -423,9 +429,8 @@ public class Jetty6WebServer implements WebServer
 
         final RequestLogHandler requestLogHandler = new RequestLogHandler();
         requestLogHandler.setRequestLog( requestLog );
-
-        jetty.addHandler( requestLogHandler );
-    }
+        handlers.addHandler( requestLogHandler );
+	}
 
     private String trimTrailingSlashToKeepJettyHappy( String mountPoint )
     {
@@ -469,23 +474,26 @@ public class Jetty6WebServer implements WebServer
         log.info( "Mounting static content at [%s] from [%s]", mountPoint, contentLocation );
         try
         {
-            URL resourceLoc = getClass().getClassLoader().getResource( contentLocation );
+        	SessionHandler sessionHandler = new SessionHandler( sm );
+        	sessionHandler.setServer( getJetty() );
+            final WebAppContext staticContext = new WebAppContext();
+            staticContext.setServer( getJetty() );
+            staticContext.setContextPath( mountPoint );
+			staticContext.setSessionHandler( sessionHandler );
+            URL resourceLoc = getClass().getClassLoader()
+                .getResource( contentLocation );
             if ( resourceLoc != null )
             {
                 log.debug( "Found [%s]", resourceLoc );
-                String location = resourceLoc.toExternalForm();
-                if ( !location.endsWith( "/" ) )
-                {
-                    location += "/"; // We want the *content* of the directory, not the directory itself.
-                }
-                System.out.println( "resourceLoc: " + location );
-                WebAppContext staticContext = new WebAppContext( jetty, location, mountPoint );
-                staticContext.setSessionHandler( new SessionHandler( sm ) );
-                log.debug( "Mounting static content from [%s] at [%s]", resourceLoc, mountPoint );
+                URL url = resourceLoc.toURI()
+                    .toURL();
+                final Resource resource = Resource.newResource( url );
+                staticContext.setBaseResource( resource );
+                log.debug( "Mounting static content from [%s] at [%s]", url, mountPoint );
 
-                addFiltersTo( staticContext );
+                addFiltersTo(staticContext);
 
-                jetty.addHandler( staticContext );
+                handlers.addHandler( staticContext );
             }
             else
             {
@@ -515,22 +523,27 @@ public class Jetty6WebServer implements WebServer
     private void loadJAXRSResource( SessionManager sm, String mountPoint,
             JaxRsServletHolderFactory jaxRsServletHolderFactory )
     {
+        SessionHandler sessionHandler = new SessionHandler( sm );
+        sessionHandler.setServer( getJetty() );
         log.debug( "Mounting servlet at [%s]", mountPoint );
-        Context jerseyContext = new Context( jetty, mountPoint );
-        SessionHandler sh = new SessionHandler( sm );
+        ServletContextHandler jerseyContext = new ServletContextHandler();
+        jerseyContext.setServer( getJetty() );
+        jerseyContext.setErrorHandler( new NeoJettyErrorHandler() );
+        jerseyContext.setContextPath( mountPoint );
+        jerseyContext.setSessionHandler( sessionHandler );
         jerseyContext.addServlet( jaxRsServletHolderFactory.create( defaultInjectables, wadlEnabled ), "/*" );
-        jerseyContext.setSessionHandler( sh );
         addFiltersTo(jerseyContext);
+        handlers.addHandler(jerseyContext);
     }
 
-    private void addFiltersTo(Context context) {
-        for(FilterDefinition filterDef : filters)
-        {
+    private void addFiltersTo(ServletContextHandler context) {
+    	for(FilterDefinition filterDef : filters)
+    	{
             context.addFilter( new FilterHolder(
-                    filterDef.getFilter() ),
-                    filterDef.getPathSpec(), Handler.ALL );
-        }
-    }
+            		filterDef.getFilter() ),
+            		filterDef.getPathSpec(), EnumSet.allOf(DispatcherType.class) );
+    	}
+	}
 
     @Override
     public void addExecutionLimitFilter( final int timeout, final Guard guard )
@@ -551,14 +564,14 @@ public class Jetty6WebServer implements WebServer
             @Override
             public void lifeCycleStarted( LifeCycle arg0 )
             {
-                for ( Handler handler : jetty.getHandlers() )
+                for ( Handler handler : handlers.getHandlers() )
                 {
-                    if ( handler instanceof Context )
+                    if ( handler instanceof ServletContextHandler )
                     {
-                        final Context context = (Context) handler;
+                        final ServletContextHandler context = (ServletContextHandler) handler;
                         final Filter jettyFilter = new GuardingRequestFilter( guard, timeout );
                         final FilterHolder holder = new FilterHolder( jettyFilter );
-                        context.addFilter( holder, "/*", Handler.ALL );
+                        context.addFilter( holder, "/*", EnumSet.allOf(DispatcherType.class) );
                     }
                 }
             }
