@@ -28,8 +28,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import junit.framework.Assert;
-
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.server.rest.domain.JsonHelper;
@@ -55,14 +53,14 @@ public class JsonFormatTest
     @Test
     public void canFormatString() throws Exception
     {
-        String entity = json.format( ValueRepresentation.string( "expected value" ) );
+        String entity = json.assemble( ValueRepresentation.string( "expected value" ) );
         assertEquals( entity, "\"expected value\"" );
     }
 
     @Test
     public void canFormatListOfStrings() throws Exception
     {
-        String entity = json.format( ListRepresentation.strings( "hello", "world" ) );
+        String entity = json.assemble( ListRepresentation.strings( "hello", "world" ) );
         String expectedString = JsonHelper.createJsonFrom( Arrays.asList( "hello", "world" ) );
         assertEquals( expectedString, entity );
     }
@@ -70,14 +68,14 @@ public class JsonFormatTest
     @Test
     public void canFormatInteger() throws Exception
     {
-        String entity = json.format( ValueRepresentation.number( 10 ) );
+        String entity = json.assemble( ValueRepresentation.number( 10 ) );
         assertEquals( "10", entity );
     }
 
     @Test
     public void canFormatEmptyObject() throws Exception
     {
-        String entity = json.format( new MappingRepresentation( "empty" )
+        String entity = json.assemble( new MappingRepresentation( "empty" )
         {
             @Override
             protected void serialize( MappingSerializer serializer )
@@ -90,7 +88,7 @@ public class JsonFormatTest
     @Test
     public void canFormatObjectWithStringField() throws Exception
     {
-        String entity = json.format( new MappingRepresentation( "string" )
+        String entity = json.assemble( new MappingRepresentation( "string" )
         {
             @Override
             protected void serialize( MappingSerializer serializer )
@@ -104,7 +102,7 @@ public class JsonFormatTest
     @Test
     public void canFormatObjectWithUriField() throws Exception
     {
-        String entity = json.format( new MappingRepresentation( "uri" )
+        String entity = json.assemble( new MappingRepresentation( "uri" )
         {
             @Override
             protected void serialize( MappingSerializer serializer )
@@ -120,7 +118,7 @@ public class JsonFormatTest
     @Test
     public void canFormatObjectWithNestedObject() throws Exception
     {
-        String entity = json.format( new MappingRepresentation( "nesting" )
+        String entity = json.assemble( new MappingRepresentation( "nesting" )
         {
             @Override
             protected void serialize( MappingSerializer serializer )
@@ -143,24 +141,26 @@ public class JsonFormatTest
     @Test
     public void canFormatNestedMapsAndLists() throws Exception
     {
-        String entity = json.format( new MappingRepresentation( "test" )
+        String entity = json.assemble( new MappingRepresentation( "test" )
         {
             @Override
             protected void serialize( MappingSerializer serializer )
             {
                 ArrayList<Representation> maps = new ArrayList<Representation>();
-                maps.add(new MappingRepresentation("map") {
-					
-					@Override
-					protected void serialize(MappingSerializer serializer) {
-						serializer.putString( "foo", "bar" );
-						
-					}
-				});
-				serializer.putList("foo", new ServerListRepresentation(RepresentationType.MAP, maps ));
+                maps.add( new MappingRepresentation( "map" )
+                {
+
+                    @Override
+                    protected void serialize( MappingSerializer serializer )
+                    {
+                        serializer.putString( "foo", "bar" );
+
+                    }
+                } );
+                serializer.putList( "foo", new ServerListRepresentation( RepresentationType.MAP, maps ) );
             }
         } );
 
-        Assert.assertEquals( "bar",((Map)((List)((Map)JsonHelper.jsonToMap(entity)).get("foo")).get(0)).get("foo") );
+        assertEquals( "bar",((Map)((List)((Map)JsonHelper.jsonToMap(entity)).get("foo")).get(0)).get("foo") );
     }
 }

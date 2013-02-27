@@ -24,31 +24,34 @@ import org.scalatest.Assertions
 import org.junit.{Assert, Test}
 import org.neo4j.cypher.internal.symbols.{SymbolTable, CypherType, AnyType}
 import org.neo4j.cypher.internal.ExecutionContext
+import org.neo4j.cypher.internal.pipes.QueryState
 
 class CoalesceTest extends Assertions {
   @Test def givenANonNullValueThenReturnsTheValue() {
     val func = new CoalesceFunction(Literal("a"))
-    assert(func(ExecutionContext.empty) === "a" )
+    assert(calc(func) === "a")
   }
 
   @Test def givenANullValueThenReturnsNull() {
     val func = new CoalesceFunction(Null())
-    assert( func(ExecutionContext.empty) === null )
+    assert(calc(func) === null)
   }
 
   @Test def givenOneNullAndOneValueThenReturnsTheValue() {
     val func = new CoalesceFunction(Null(), Literal("Alistair"))
-    assert( func(ExecutionContext.empty) === "Alistair" )
+    assert(calc(func) === "Alistair")
   }
 
   @Test def coalesce_should_be_lazy() {
     val func = new CoalesceFunction(Literal("Hunger"), BreakingExpression())
-    assert( func(ExecutionContext.empty) === "Hunger" )
+    assert(calc(func) === "Hunger")
   }
+
+  private def calc(e: Expression): Any = e(ExecutionContext.empty)(QueryState.empty)
 }
 
 case class BreakingExpression() extends Expression {
-  def apply(v1: ExecutionContext) {
+  def apply(v1: ExecutionContext)(implicit state: QueryState) {
     Assert.fail("Coalesce is not lazy")
   }
 

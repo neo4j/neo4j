@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import java.io.File;
+import java.util.UUID;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -32,7 +32,6 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 
 import static org.junit.Assert.*;
 import static org.neo4j.graphdb.factory.GraphDatabaseSetting.*;
@@ -54,12 +53,17 @@ public class TestExceptionTypeOnInvalidIds
     @BeforeClass
     public static void createDatabase()
     {
-        String storeDir = "target/var/id_test";
-        AbstractNeo4jTestCase.deleteFileOrDirectory( new File( storeDir ) );
-        graphdb = new GraphDatabaseFactory().newEmbeddedDatabase( storeDir );
+        graphdb = new GraphDatabaseFactory().newEmbeddedDatabase( getRandomStoreDir() );
+        String storeDir = getRandomStoreDir();
+        new GraphDatabaseFactory().newEmbeddedDatabase( storeDir ).shutdown();
         graphDbReadOnly = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir ).
             setConfig( GraphDatabaseSettings.read_only, TRUE ).
             newGraphDatabase();
+    }
+
+    private static String getRandomStoreDir()
+    {
+        return "target/var/id_test/" + UUID.randomUUID();
     }
 
     @AfterClass

@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.symbols._
 import org.neo4j.graphdb.Path
 import org.neo4j.cypher.internal.commands.expressions.ShortestPathExpression
 import org.neo4j.cypher.internal.commands.ShortestPath
+import org.neo4j.cypher.internal.ExecutionContext
 
 /**
  * Shortest pipe inserts a single shortest path between two already found nodes
@@ -35,8 +36,8 @@ class ShortestPathPipe(source: Pipe, ast: ShortestPath) extends PipeWithSource(s
   private def pathName = ast.pathName
   private val expression = ShortestPathExpression(ast)
 
-  def createResults(state: QueryState) = source.createResults(state).flatMap(ctx => {
-    val result: Stream[Path] = expression(ctx)
+  protected def internalCreateResults(input:Iterator[ExecutionContext], state: QueryState) = input.flatMap(ctx => {
+    val result: Stream[Path] = expression(ctx)(state)
 
     if (result.isEmpty) {
       if (optional)
@@ -52,7 +53,7 @@ class ShortestPathPipe(source: Pipe, ast: ShortestPath) extends PipeWithSource(s
   val symbols = source.symbols.add(pathName, PathType())
 
   override def executionPlanDescription =
-    source.executionPlanDescription.andThen("ShortestPath", "ast" -> ast)
+    source.executionPlanDescription.andThen(this, "ShortestPath", "ast" -> ast)
 
   def throwIfSymbolsMissing(symbols: SymbolTable) {
     ast.throwIfSymbolsMissing(symbols)

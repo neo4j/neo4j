@@ -22,22 +22,24 @@ package org.neo4j.cypher.internal.pipes
 import org.neo4j.cypher.internal.commands.expressions.Expression
 import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.cypher.internal.ExecutionContext
+import org.neo4j.cypher.internal.data.SimpleVal
+import org.neo4j.cypher.internal.symbols.SymbolTable
 
-class SlicePipe(source:Pipe, skip:Option[Expression], limit:Option[Expression]) extends Pipe {
+class SlicePipe(source:Pipe, skip:Option[Expression], limit:Option[Expression]) extends PipeWithSource(source) {
 
   val symbols = source.symbols
 
-  def createResults(state: QueryState) : Iterator[ExecutionContext] = {
-    val sourceTraversable = source.createResults(state)
+  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) : Iterator[ExecutionContext] = {
+    implicit val s = state
 
-    if(sourceTraversable.isEmpty)
+    if(input.isEmpty)
       return Iterator()
 
-    val first: ExecutionContext = sourceTraversable.next()
+    val first: ExecutionContext = input.next()
 
-    val sourceIter = new HeadAndTail[ExecutionContext](first, sourceTraversable)
+    val sourceIter: Iterator[ExecutionContext] = new HeadAndTail[ExecutionContext](first, input)
 
-    def asInt(v:Expression)=v(first).asInstanceOf[Int]
+    def asInt(v: Expression): Int = v(first)(state).asInstanceOf[Int]
 
     (skip, limit) match {
       case (Some(x), None) => sourceIter.drop(asInt(x))
@@ -52,13 +54,17 @@ class SlicePipe(source:Pipe, skip:Option[Expression], limit:Option[Expression]) 
 
   override def executionPlanDescription = {
 
-    val args = (skip, limit) match {
+    val args: Seq[(String, Expression)] = (skip, limit) match {
       case (None, Some(l)) => Seq("limit" -> l)
       case (Some(s), None) => Seq("skip" -> s)
       case (Some(s), Some(l)) => Seq("skip" -> s, "limit" -> l)
       case (None, None)=>throw new ThisShouldNotHappenError("Andres Taylor", "A slice pipe that doesn't slice should never exist.")
     }
-    source.executionPlanDescription.andThen("Slice", args: _*)
+    source.executionPlanDescription.andThen(this, "Slice", args.toMap.mapValues(SimpleVal.fromStr).toSeq: _*)
+  }
+
+  def throwIfSymbolsMissing(symbols: SymbolTable) {
+    // TODO do it
   }
 }
 

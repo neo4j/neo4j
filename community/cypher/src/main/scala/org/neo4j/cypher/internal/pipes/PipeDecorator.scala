@@ -17,23 +17,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.database;
+package org.neo4j.cypher.internal.pipes
 
-/**
- * This is never thrown, it will be removed in version 1.10
+import org.neo4j.cypher.internal.ExecutionContext
+import org.neo4j.cypher.PlanDescription
+
+/*
+A PipeDecorator is used to instrument calls between Pipes, and between a Pipe and the graph
  */
-@Deprecated
-public class DatabaseBlockedException extends RuntimeException
-{
+trait PipeDecorator {
+  def decorate(pipe: Pipe, state: QueryState): QueryState
 
-    /**
-     * Serial #
-     */
-    private static final long serialVersionUID = 3214317342541677412L;
+  def decorate(pipe: Pipe, iter: Iterator[ExecutionContext]): Iterator[ExecutionContext]
 
-    public DatabaseBlockedException( String message )
-    {
-        super( message );
-    }
+  def decorate(plan: PlanDescription): PlanDescription
+}
 
+object NullDecorator extends PipeDecorator {
+  def decorate(pipe: Pipe, iter: Iterator[ExecutionContext]): Iterator[ExecutionContext] = iter
+
+  def decorate(plan: PlanDescription): PlanDescription = plan
+
+  def decorate(pipe: Pipe, state: QueryState): QueryState = state
 }

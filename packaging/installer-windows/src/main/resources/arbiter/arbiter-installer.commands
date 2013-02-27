@@ -1,9 +1,9 @@
 ;aic
 SetVersion ${neo4j.version.windows_compliant}
 AddFolder APPDIR .\bin
+AddFolder APPDIR .\conf
 AddFolder APPDIR .\data
 AddFolder APPDIR .\lib
-AddFolder APPDIR .\conf
 AddFolder APPDIR .\system
 AddFile APPDIR .\CHANGES.txt
 AddFile APPDIR .\LICENSE.txt

@@ -21,9 +21,10 @@ package org.neo4j.cypher.internal.commands.expressions
 
 import org.neo4j.cypher.internal.symbols.{SymbolTable, AnyType}
 import org.neo4j.cypher.internal.ExecutionContext
+import org.neo4j.cypher.internal.pipes.QueryState
 
 case class ParameterExpression(parameterName: String) extends Expression {
-  def apply(ctx: ExecutionContext) = ctx.getParam(parameterName)
+  def apply(ctx: ExecutionContext)(implicit state: QueryState) = state.getParam(parameterName)
 
   override def toString(): String = "{" + parameterName + "}"
 

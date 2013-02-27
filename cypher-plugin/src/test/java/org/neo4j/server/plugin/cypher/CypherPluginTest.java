@@ -19,6 +19,11 @@
  */
 package org.neo4j.server.plugin.cypher;
 
+import static org.junit.Assert.assertTrue;
+
+import java.net.URI;
+import java.util.Map;
+
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -35,11 +40,6 @@ import org.neo4j.test.GraphDescription.PROP;
 import org.neo4j.test.GraphHolder;
 import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.TestData;
-
-import java.net.URI;
-import java.util.Map;
-
-import static org.junit.Assert.assertTrue;
 
 public class CypherPluginTest implements GraphHolder
 {
@@ -67,7 +67,7 @@ public class CypherPluginTest implements GraphHolder
         Node i = data.get().get( "I" );
         Representation result = testQuery( "start n=node(" + i.getId()
                                            + ") return n" );
-        assertTrue( json.format( result ).contains( "I" ) );
+        assertTrue( json.assemble( result ).contains( "I" ) );
     }
 
     @Test
@@ -82,7 +82,7 @@ public class CypherPluginTest implements GraphHolder
         Representation result = testQuery( "start x =node("
                                            + i.getId()
                                            + ") match (x) -- (n) return n, n.name?, n.bool?, n.int?" );
-        String formatted = json.format( result );
+        String formatted = json.assemble( result );
         System.out.println( formatted );
         assertTrue( formatted.contains( "columns" ) );
         assertTrue( formatted.contains( "name" ) );

@@ -44,7 +44,6 @@ import org.neo4j.server.modules.RESTApiModule;
 import org.neo4j.server.modules.ServerModule;
 import org.neo4j.server.plugins.PluginInvocatorProvider;
 import org.neo4j.server.plugins.PluginManager;
-import org.neo4j.server.plugins.TypedInjectable;
 import org.neo4j.server.preflight.PreFlightTasks;
 import org.neo4j.server.preflight.PreflightFailedException;
 import org.neo4j.server.rest.paging.LeaseManager;
@@ -58,7 +57,6 @@ import org.neo4j.server.security.KeyStoreFactory;
 import org.neo4j.server.security.KeyStoreInformation;
 import org.neo4j.server.security.SslCertificateFactory;
 import org.neo4j.server.statistic.StatisticCollector;
-import org.neo4j.server.web.InjectableWrapper;
 import org.neo4j.server.web.SimpleUriBuilder;
 import org.neo4j.server.web.WebServer;
 import org.neo4j.server.web.WebServerProvider;
@@ -307,8 +305,8 @@ public abstract class AbstractNeoServer implements NeoServer
         webServer.setEnableHttps( sslEnabled );
         webServer.setHttpsPort( sslPort );
 
-        webServer.setWadlEnabled( Boolean.valueOf( String.valueOf( getConfiguration().getProperty( Configurator
-                .WADL_ENABLED ) ) ) );
+        webServer.setWadlEnabled(
+                Boolean.valueOf( String.valueOf( getConfiguration().getProperty( Configurator.WADL_ENABLED ) ) ) );
         webServer.setDefaultInjectables( createDefaultInjectables() );
 
         if ( sslEnabled )
@@ -373,12 +371,7 @@ public abstract class AbstractNeoServer implements NeoServer
     private boolean configLocated()
     {
         final Object property = getConfiguration().getProperty( Configurator.HTTP_LOG_CONFIG_LOCATION );
-        if ( property == null )
-        {
-            return false;
-        }
-
-        return new File( String.valueOf( property ) ).exists();
+        return property != null && new File( String.valueOf( property ) ).exists();
     }
 
     private boolean loggingEnabled()
@@ -574,11 +567,6 @@ public abstract class AbstractNeoServer implements NeoServer
         singletons.add( new OutputFormatProvider( repository ) );
         singletons.add( new CypherExecutorProvider( cypherExecutor ) );
         return singletons;
-    }
-
-    private InjectableWrapper toInjectableProvider( Object service )
-    {
-        return new InjectableWrapper( TypedInjectable.injectable( service ) );
     }
 
     private boolean hasModule( Class<? extends ServerModule> clazz )

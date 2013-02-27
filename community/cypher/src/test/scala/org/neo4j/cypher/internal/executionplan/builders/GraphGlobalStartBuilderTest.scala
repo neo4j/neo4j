@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.commands.{NodeById, RelationshipById, AllNodes}
 class GraphGlobalStartBuilderTest extends Assertions {
 
   val builder = new GraphGlobalStartBuilder(null)
-  private def build(q:PartiallySolvedQuery)=ExecutionPlanInProgress(q, new NullPipe())
+  private def build(q:PartiallySolvedQuery)=ExecutionPlanInProgress(q, NullPipe)
 
   @Test
   def says_yes_to_node_by_id_queries() {

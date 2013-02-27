@@ -76,6 +76,12 @@ public class DijkstraPriorityQueueFibonacciImpl<CostType> implements
             else if ( !node.equals( other.node ) ) return false;
             return true;
         }
+
+        @Override
+        public int hashCode()
+        {
+            return node == null ? 23 : 14 ^ node.hashCode();
+        }
     }
 
     Map<Node,FibonacciHeap<HeapObject>.FibonacciHeapNode> heapNodes = new HashMap<Node,FibonacciHeap<HeapObject>.FibonacciHeapNode>();

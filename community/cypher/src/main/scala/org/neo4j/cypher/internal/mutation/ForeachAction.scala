@@ -29,23 +29,16 @@ case class ForeachAction(collection: Expression, id: String, actions: Seq[Update
   extends UpdateAction
   with CollectionSupport {
   def exec(context: ExecutionContext, state: QueryState) = {
-    val before = context.get(id)
-
-    val seq = makeTraversable(collection(context))
+    val seq = makeTraversable(collection(context)(state))
     seq.foreach(element => {
-      context.put(id, element)
+      val inner = context.newWith(id, element)
 
       // We do a fold left here to allow updates to introduce
       // symbols in each others context.
-      actions.foldLeft(Seq(context))((contexts, action) => {
+      actions.foldLeft(Seq(inner))((contexts, action) => {
         contexts.flatMap(c => action.exec(c, state))
       })
     })
-
-    before match {
-      case None      => context.remove(id)
-      case Some(old) => context.put(id, old)
-    }
 
     Stream(context)
   }

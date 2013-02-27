@@ -156,7 +156,6 @@ public class TestLogPruneStrategy
             if ( log.addTransaction( 15, lastTimestamp ) )
             {
                 assertLogRangeByTimestampExists( log, millisToKeep, lastTimestamp );
-                System.out.println( "assert" );
                 if ( System.currentTimeMillis() > end )
                     break;
             }

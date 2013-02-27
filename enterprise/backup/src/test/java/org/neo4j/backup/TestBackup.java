@@ -19,10 +19,12 @@
  */
 package org.neo4j.backup;
 
+import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+import static org.neo4j.kernel.StoreLockerLifecycleAdapter.DATABASE_LOCKED_ERROR_MESSAGE;
 
 import java.io.File;
 import java.io.FilenameFilter;
@@ -505,7 +507,7 @@ public class TestBackup
         }
         catch ( RuntimeException ex )
         {
-            assertTrue( IllegalStateException.class.isAssignableFrom( ex.getCause().getCause().getCause().getClass() ) );
+            assertThat( ex.getCause().getCause().getMessage(), is( DATABASE_LOCKED_ERROR_MESSAGE) );
         }
         StartupChecker proc = new LockProcess().start( path );
         try
@@ -550,7 +552,7 @@ public class TestBackup
             }
             catch ( RuntimeException ex )
             {
-                if ( IllegalStateException.class.isAssignableFrom( ex.getCause().getCause().getCause().getClass() ) )
+                if (DATABASE_LOCKED_ERROR_MESSAGE.equals( ex.getCause().getCause().getMessage() ) )
                 {
                     state = ex;
                     return;

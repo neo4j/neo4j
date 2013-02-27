@@ -26,6 +26,7 @@ import collection.Map
 import org.neo4j.graphdb._
 import org.neo4j.test.ImpermanentGraphDatabase
 import org.neo4j.kernel.GraphDatabaseAPI
+import org.neo4j.kernel.impl.core.NodeManager
 
 class GraphDatabaseTestBase extends JUnitSuite {
   var graph: GraphDatabaseAPI with Snitch = null
@@ -142,8 +143,10 @@ class GraphDatabaseTestBase extends JUnitSuite {
   }
 }
 
-trait Snitch extends GraphDatabaseService {
+trait Snitch extends GraphDatabaseAPI {
   val createdNodes = collection.mutable.Queue[Node]()
+  val fetchedNodes = collection.mutable.Queue[Long]()
+  var seenNodes = 0
 
   abstract override def createNode(): Node = {
     val n = super.createNode()

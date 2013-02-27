@@ -24,6 +24,7 @@ import collection.immutable.Set
 import collection.Seq
 import collection.Map
 import org.neo4j.cypher.internal.ExecutionContext
+import org.neo4j.cypher.internal.pipes.QueryState
 
 /*
 Normally, when we encounter an optional relationship, we can try with null and see if that's enough. But for
@@ -36,8 +37,9 @@ class DoubleOptionalPatternMatcher(bindings: Map[String, MatchingPair],
                                    predicates: Seq[Predicate],
                                    includeOptionals: Boolean,
                                    source: ExecutionContext,
+                                   state: QueryState,
                                    doubleOptionalPaths: Seq[DoubleOptionalPath])
-  extends PatternMatcher(bindings, predicates, includeOptionals, source) {
+  extends PatternMatcher(bindings, predicates, includeOptionals, source, state) {
 
   override protected def traverseNextSpecificNode[U](remaining: Set[MatchingPair],
                                                      history: History,

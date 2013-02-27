@@ -51,7 +51,6 @@ public abstract class CommonAbstractStore
         public static final Setting<File> store_dir = InternalAbstractGraphDatabase.Configuration.store_dir;
         public static final Setting<File> neo_store = InternalAbstractGraphDatabase.Configuration.neo_store;
         
-        public static final GraphDatabaseSetting.BooleanSetting grab_file_lock = GraphDatabaseSettings.grab_file_lock;
         public static final GraphDatabaseSetting.BooleanSetting read_only = GraphDatabaseSettings.read_only;
         public static final GraphDatabaseSetting.BooleanSetting backup_slave = GraphDatabaseSettings.backup_slave;
         public static final GraphDatabaseSetting.BooleanSetting use_memory_mapped_buffers = GraphDatabaseSettings.use_memory_mapped_buffers;
@@ -74,7 +73,6 @@ public abstract class CommonAbstractStore
     private boolean storeOk = true;
     private Throwable causeOfStoreNotOk;
     private FileLock fileLock;
-    private boolean grabFileLock = true;
 
     private boolean readOnly = false;
     private boolean backupSlave = false;
@@ -108,7 +106,6 @@ public abstract class CommonAbstractStore
         this.fileSystemAbstraction = fileSystemAbstraction;
         this.idType = idType;
         this.stringLogger = stringLogger;
-        grabFileLock = configuration.get( Configuration.grab_file_lock );
 
         try
         {
@@ -165,7 +162,7 @@ public abstract class CommonAbstractStore
         }
         try
         {
-            if ( (!readOnly || backupSlave) && grabFileLock )
+            if ( (!readOnly || backupSlave) )
             {
                 this.fileLock = fileSystemAbstraction.tryLock( storageFileName, fileChannel );
                 if ( fileLock == null )

@@ -28,9 +28,9 @@ class FakePipe(val data: Iterator[Map[String, Any]], identifiers: (String, Cyphe
 
   def this(data: Traversable[Map[String, Any]], identifiers: (String, CypherType)*) = this(data.toIterator, identifiers:_*)
 
-  val symbols: SymbolTable = new SymbolTable(identifiers.toMap)
+  val symbols: SymbolTable = SymbolTable(identifiers.toMap)
 
-  def createResults(state: QueryState) = data.map(m => ExecutionContext(collection.mutable.Map(m.toSeq: _*)))
+  def internalCreateResults(state: QueryState) = data.map(m => ExecutionContext(collection.mutable.Map(m.toSeq: _*)))
 
-  def executionPlanDescription = PlanDescription("Fake")
+  def executionPlanDescription = PlanDescription(this, "Fake")
 }

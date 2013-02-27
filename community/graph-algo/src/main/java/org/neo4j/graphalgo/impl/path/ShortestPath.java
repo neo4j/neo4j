@@ -19,6 +19,8 @@
  */
 package org.neo4j.graphalgo.impl.path;
 
+import static org.neo4j.kernel.StandardExpander.toPathExpander;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -32,21 +34,12 @@ import java.util.Map;
 import org.neo4j.graphalgo.PathFinder;
 import org.neo4j.graphalgo.impl.util.PathImpl;
 import org.neo4j.graphalgo.impl.util.PathImpl.Builder;
-import org.neo4j.graphdb.Direction;
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Path;
-import org.neo4j.graphdb.PathExpander;
-import org.neo4j.graphdb.PropertyContainer;
-import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.RelationshipExpander;
+import org.neo4j.graphdb.*;
 import org.neo4j.graphdb.traversal.BranchState;
 import org.neo4j.graphdb.traversal.TraversalMetadata;
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.helpers.collection.NestingIterator;
 import org.neo4j.helpers.collection.PrefetchingIterator;
-
-import static org.neo4j.kernel.StandardExpander.toPathExpander;
 
 /**
  * Find (all or one) simple shortest path(s) between two nodes. It starts
@@ -66,7 +59,7 @@ public class ShortestPath implements PathFinder<Path>
     private final PathExpander expander;
     private final HitDecider hitDecider;
     private Metadata lastMetadata;
-    
+
     /**
      * Constructs a new shortest path algorithm.
      * @param maxDepth the maximum depth for the traversal. Returned paths
@@ -165,9 +158,9 @@ public class ShortestPath implements PathFinder<Path>
             goOneStep( startData, endData, hits, startData, stopAsap );
             goOneStep( endData, startData, hits, startData, stopAsap );
         }
-        
+
         Collection<Hit> least = hits.least();
-        return least != null ? hitsToPaths( least, start, end ) : Collections.<Path>emptyList();
+        return least != null ? hitsToPaths( least, start, end, stopAsap ) : Collections.<Path>emptyList();
     }
     
     @Override
@@ -353,15 +346,13 @@ public class ShortestPath implements PathFinder<Path>
                     levelData.addRel( nextRel );
                 }
                 
-                // Was this leveldata created right now, i.e. have we visited this node before?
+                // Was this level data created right now, i.e. have we visited this node before?
                 // In that case don't add it as next node to traverse
-                if ( !createdLevelData )
+                if ( createdLevelData )
                 {
-                    continue;
+                    this.nextNodes.add( result );
+                    return result;
                 }
-                
-                this.nextNodes.add( result );
-                return result;
             }
         }
         
@@ -555,13 +546,13 @@ public class ShortestPath implements PathFinder<Path>
         }
     }
     
-    private static Iterable<Path> hitsToPaths( Collection<Hit> depthHits, Node start, Node end )
+    private static Iterable<Path> hitsToPaths(Collection<Hit> depthHits, Node start, Node end, boolean stopAsap)
     {
         Collection<Path> paths = new ArrayList<Path>();
         for ( Hit hit : depthHits )
         {
-            Iterable<LinkedList<Relationship>> startPaths = getPaths( hit, hit.start );
-            Iterable<LinkedList<Relationship>> endPaths = getPaths( hit, hit.end );
+            Iterable<LinkedList<Relationship>> startPaths = getPaths(hit.connectingNode, hit.start, stopAsap);
+            Iterable<LinkedList<Relationship>> endPaths = getPaths(hit.connectingNode, hit.end, stopAsap);
             for ( LinkedList<Relationship> startPath : startPaths )
             {
                 PathImpl.Builder startBuilder = toBuilder( start, startPath );
@@ -576,9 +567,9 @@ public class ShortestPath implements PathFinder<Path>
         return paths;
     }
     
-    private static Iterable<LinkedList<Relationship>> getPaths( Hit hit, DirectionData data )
+    private static Iterable<LinkedList<Relationship>> getPaths(Node connectingNode, DirectionData data, boolean stopAsap)
     {
-        LevelData levelData = data.visitedNodes.get( hit.connectingNode );
+        LevelData levelData = data.visitedNodes.get(connectingNode);
         if ( levelData.depth == 0 )
         {
             Collection<LinkedList<Relationship>> result = new ArrayList<LinkedList<Relationship>>();
@@ -590,8 +581,9 @@ public class ShortestPath implements PathFinder<Path>
         GraphDatabaseService graphDb = data.startNode.getGraphDatabase();
         for ( long rel : levelData.relsToHere )
         {
-            set.add( new PathData( hit.connectingNode, new LinkedList<Relationship>(
+            set.add( new PathData(connectingNode, new LinkedList<Relationship>(
                     Arrays.asList( graphDb.getRelationshipById( rel ) ) ) ) );
+            if (stopAsap) break;
         }
         for ( int i = 0; i < levelData.depth - 1; i++ )
         {
@@ -612,6 +604,7 @@ public class ShortestPath implements PathFinder<Path>
                             entry.rels : new LinkedList<Relationship>( entry.rels );
                     rels.addFirst( graphDb.getRelationshipById( rel ) );
                     nextSet.add( new PathData( otherNode, rels ) );
+                    if (stopAsap) break;
                 }
             }
             set = nextSet;

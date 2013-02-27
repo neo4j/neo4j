@@ -176,16 +176,14 @@ public enum LearnerState
                                     .State.delivered ) )
                             {
                                 outgoing.offer( Message.respond( LearnerMessage.learn, message,
-                                        new LearnerMessage.LearnState( instance.value_2 ) ).setHeader( InstanceId
-                                        .INSTANCE,
-                                        instanceId.toString() ) );
+                                        new LearnerMessage.LearnState( instance.value_2 ) ).
+                                        setHeader( InstanceId.INSTANCE, instanceId.toString() ).
+                                        setHeader( Message.CONVERSATION_ID, instance.conversationIdHeader ) );
                             }
                             else
                             {
                                 context.clusterContext.getLogger( LearnerState.class ).debug( "Did not have learned " +
-                                        "value for" +
-                                        " " +
-                                        "instance " + instanceId );
+                                        "value for instance " + instanceId );
                                 outgoing.offer( message.copyHeadersTo( Message.respond( LearnerMessage.learnFailed,
                                         message,
                                         new LearnerMessage.LearnFailedState() ), InstanceId.INSTANCE ) );

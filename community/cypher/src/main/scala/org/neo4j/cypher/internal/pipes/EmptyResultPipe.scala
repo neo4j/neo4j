@@ -20,27 +20,25 @@
 package org.neo4j.cypher.internal.pipes
 
 import org.neo4j.cypher.internal.symbols.SymbolTable
-import org.neo4j.cypher.PlanDescription
+import org.neo4j.cypher.internal.ExecutionContext
 
-class EmptyResultPipe(source: Pipe)
-  extends PipeWithSource(source) {
+class EmptyResultPipe(source: Pipe) extends PipeWithSource(source) {
 
-  def createResults(state: QueryState) = {
-    val iter = source.createResults(state)
-    while(iter.hasNext) {
-      iter.next()
+  protected def internalCreateResults(input:Iterator[ExecutionContext], state: QueryState) = {
+    while(input.hasNext) {
+      input.next()
     }
 
     Iterator()
   }
 
-  override def executionPlanDescription = source.executionPlanDescription.andThen("EmptyResult")
+  override def executionPlanDescription = source.executionPlanDescription.andThen(this, "EmptyResult")
 
   def dependencies = Seq()
 
   def deps = Map()
 
-  def symbols = new SymbolTable()
+  def symbols = SymbolTable()
 
   def throwIfSymbolsMissing(symbols: SymbolTable) {}
 }

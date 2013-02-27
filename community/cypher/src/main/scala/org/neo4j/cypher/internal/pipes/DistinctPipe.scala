@@ -23,17 +23,16 @@ import org.neo4j.cypher.internal.symbols.{AnyType, SymbolTable}
 import org.neo4j.cypher.internal.ExecutionContext
 import collection.mutable
 import org.neo4j.cypher.internal.commands.expressions.Expression
-import org.neo4j.cypher.PlanDescription
 
 class DistinctPipe(source: Pipe, expressions: Map[String, Expression]) extends PipeWithSource(source) {
 
   val keyNames: Seq[String] = expressions.keys.toSeq
 
-  def createResults(state: QueryState): Iterator[ExecutionContext] = {
+  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
 
     // Run the return item expressions, and replace the execution context's with their values
-    val returnExpressions = source.createResults(state).map(ctx => {
-      val newMap = expressions.mapValues(expression => expression(ctx))
+    val returnExpressions = input.map(ctx => {
+      val newMap = expressions.mapValues(expression => expression(ctx)(state))
       ctx.newFrom(newMap)
     })
 
@@ -56,11 +55,11 @@ class DistinctPipe(source: Pipe, expressions: Map[String, Expression]) extends P
     }
   }
 
-  override def executionPlanDescription = source.executionPlanDescription.andThen("Distinct")
+  override def executionPlanDescription = source.executionPlanDescription.andThen(this, "Distinct")
 
   def symbols: SymbolTable = {
     val identifiers = expressions.mapValues(e => e.evaluateType(AnyType(), source.symbols))
-    new SymbolTable(identifiers)
+    SymbolTable(identifiers)
   }
 
   def throwIfSymbolsMissing(symbols: SymbolTable) {

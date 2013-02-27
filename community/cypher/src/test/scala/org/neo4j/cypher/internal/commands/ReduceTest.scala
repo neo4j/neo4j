@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.symbols.{SymbolTable, StringType, NumberType, A
 import org.scalatest.Assertions
 import org.junit.Test
 import org.neo4j.cypher.internal.ExecutionContext
+import org.neo4j.cypher.internal.pipes.QueryState
 
 class ReduceTest extends Assertions {
   @Test def canReturnSomethingFromAnIterable() {
@@ -31,20 +32,22 @@ class ReduceTest extends Assertions {
     val expression = Add(Identifier("acc"), LengthFunction(Identifier("n")))
     val collection = Identifier("l")
     val m = ExecutionContext.from("l" -> l)
+    val s = QueryState()
 
     val reduce = ReduceFunction(collection, "n", expression, "acc", Literal(0))
 
-    assert(reduce.apply(m) === 6)
+    assert(reduce.apply(m)(s) === 6)
   }
 
   @Test def returns_null_from_null_collection() {
     val expression = Add(Identifier("acc"), LengthFunction(Identifier("n")))
     val collection = Literal(null)
     val m = ExecutionContext.empty
+    val s = QueryState()
 
     val reduce = ReduceFunction(collection, "n", expression, "acc", Literal(0))
 
-    assert(reduce(m) === null)
+    assert(reduce(m)(s) === null)
   }
 
   @Test def reduce_has_the_expected_type_string() {
@@ -52,7 +55,7 @@ class ReduceTest extends Assertions {
     val collection = Literal(Seq(1,2,3))
 
     val reduce = ReduceFunction(collection, "n", expression, "acc", Literal(""))
-    val typ = reduce.calculateType(new SymbolTable())
+    val typ = reduce.calculateType(SymbolTable())
 
     assert(typ === StringType())
   }
@@ -62,7 +65,7 @@ class ReduceTest extends Assertions {
     val collection = Literal(Seq(1,2,3))
 
     val reduce = ReduceFunction(collection, "n", expression, "acc", Literal(0))
-    val typ = reduce.calculateType(new SymbolTable())
+    val typ = reduce.calculateType(SymbolTable())
 
     assert(typ === NumberType())
   }

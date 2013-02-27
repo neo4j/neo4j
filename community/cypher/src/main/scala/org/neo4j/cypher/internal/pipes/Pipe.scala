@@ -20,14 +20,9 @@
 package org.neo4j.cypher.internal.pipes
 
 import org.neo4j.cypher.internal.symbols.SymbolTable
-import org.neo4j.graphdb.{GraphDatabaseService, Transaction}
-import scala.collection.JavaConverters._
-import org.neo4j.kernel.GraphDatabaseAPI
-import java.util.concurrent.atomic.AtomicInteger
-import org.neo4j.cypher.internal.spi.QueryContext
-import org.neo4j.cypher.internal.spi.gdsimpl.GDSBackedQueryContext
 import org.neo4j.cypher.internal.ExecutionContext
 import org.neo4j.cypher.PlanDescription
+import org.neo4j.helpers.ThisShouldNotHappenError
 
 /**
  * Pipe is a central part of Cypher. Most pipes are decorators - they
@@ -36,65 +31,42 @@ import org.neo4j.cypher.PlanDescription
  * the execute the query.
  */
 trait Pipe {
-  def createResults(state: QueryState): Iterator[ExecutionContext]
+  def createResults(state: QueryState) : Iterator[ExecutionContext] = {
+    val decoratedState = state.decorator.decorate(this, state)
+    val result = internalCreateResults(decoratedState)
+    state.decorator.decorate(this, result)
+  }
+
+  protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext]
 
   def symbols: SymbolTable
 
   def executionPlanDescription: PlanDescription
 }
 
-class NullPipe extends Pipe {
-  def createResults(state: QueryState) = Seq(ExecutionContext.empty).toIterator
+object NullPipe extends Pipe {
+  def internalCreateResults(state: QueryState) = Iterator(ExecutionContext.empty)
 
-  def symbols: SymbolTable = new SymbolTable()
+  val symbols: SymbolTable = SymbolTable()
 
-  def executionPlanDescription = PlanDescription("Null")
+  val executionPlanDescription = PlanDescription(this, "Null")
 }
 
+abstract class PipeWithSource(val source: Pipe) extends Pipe {
+  def throwIfSymbolsMissing(symbols: SymbolTable)
 
-object MutableMaps {
-  def empty = collection.mutable.Map[String, Any]()
+  throwIfSymbolsMissing(source.symbols)
 
-  def create(size: Int) = new java.util.HashMap[String, Any](size).asScala
+  override def createResults(state: QueryState): Iterator[ExecutionContext] = {
+    val sourceResult = source.createResults(state)
 
-  def create(input: scala.collection.Map[String, Any]) = new java.util.HashMap[String, Any](input.asJava).asScala
-
-  def create(input: (String, Any)*) = {
-    val m: java.util.HashMap[String, Any] = new java.util.HashMap[String, Any]()
-    input.foreach {
-      case (k, v) => m.put(k, v)
-    }
-    m.asScala
+    val decoratedState = state.decorator.decorate(this, state)
+    val result = internalCreateResults(sourceResult, decoratedState)
+    state.decorator.decorate(this, result)
   }
-}
 
-object QueryState {
-  def apply() = new QueryState(null, null, Map.empty)
-  def apply(db: GraphDatabaseService) = new QueryState(db, new GDSBackedQueryContext(db), Map.empty, None)
-}
+  protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] =
+    throw new ThisShouldNotHappenError("Andres", "This method should never be called on PipeWithSource")
 
-class QueryState(val db: GraphDatabaseService,
-                 val query: QueryContext,
-                 val params: Map[String, Any],
-                 var transaction: Option[Transaction] = None) {
-  val createdNodes = new Counter
-  val createdRelationships = new Counter
-  val propertySet = new Counter
-  val deletedNodes = new Counter
-  val deletedRelationships = new Counter
-
-  def graphDatabaseAPI: GraphDatabaseAPI = if (db.isInstanceOf[GraphDatabaseAPI])
-    db.asInstanceOf[GraphDatabaseAPI]
-  else
-    throw new IllegalStateException("Graph database does not implement GraphDatabaseAPI")
-}
-
-class Counter {
-  private val counter: AtomicInteger = new AtomicInteger()
-
-  def count: Int = counter.get()
-
-  def increase() {
-    counter.incrementAndGet()
-  }
+  protected def internalCreateResults(input:Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext]
 }

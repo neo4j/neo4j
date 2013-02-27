@@ -21,13 +21,16 @@ package org.neo4j.cypher.internal.pipes
 
 import org.neo4j.cypher.internal.commands.Predicate
 import org.neo4j.cypher.internal.symbols.SymbolTable
+import org.neo4j.cypher.internal.data.SimpleVal
+import org.neo4j.cypher.internal.ExecutionContext
 
 class FilterPipe(source: Pipe, predicate: Predicate) extends PipeWithSource(source) {
   val symbols = source.symbols
 
-  def createResults(state: QueryState) = source.createResults(state).filter(ctx => predicate.isMatch(ctx))
+  protected def internalCreateResults(input: Iterator[ExecutionContext],state: QueryState) = input.filter(ctx => predicate.isMatch(ctx)(state))
 
-  override def executionPlanDescription = source.executionPlanDescription.andThen("Filter", "pred" -> predicate)
+  override def executionPlanDescription =
+    source.executionPlanDescription.andThen(this, "Filter", "pred" -> SimpleVal.fromStr(predicate))
 
   def throwIfSymbolsMissing(symbols: SymbolTable) {
     predicate.throwIfSymbolsMissing(symbols)
