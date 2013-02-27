@@ -105,7 +105,7 @@ import org.neo4j.kernel.logging.Logging;
 public class LuceneDataSource extends LogBackedXaDataSource
 {
     private final Config config;
-    private FileSystemAbstraction fileSystemAbstraction;
+    private final FileSystemAbstraction fileSystemAbstraction;
 
     public static abstract class Configuration
             extends LogBackedXaDataSource.Configuration
@@ -120,29 +120,32 @@ public class LuceneDataSource extends LogBackedXaDataSource
         public static final Setting<File> store_dir = NeoStoreXaDataSource.Configuration.store_dir;
     }
 
-    public static final Version LUCENE_VERSION = Version.LUCENE_35;
+    public static final Version LUCENE_VERSION = Version.LUCENE_36;
     public static final String DEFAULT_NAME = "lucene-index";
     public static final byte[] DEFAULT_BRANCH_ID = UTF8.encode( "162374" );
+    
+    // The reason this is still 3.5 even though the lucene version is 3.6 the format is compatible
+    // (both forwards and backwards) with lucene 3.5 and changing this would require an explicit
+    // store upgrade which feels unnecessary.
     public static final long INDEX_VERSION = versionStringToLong( "3.5" );
 
     /**
      * Default {@link Analyzer} for fulltext parsing.
      */
-    public static final Analyzer LOWER_CASE_WHITESPACE_ANALYZER =
-            new Analyzer()
-            {
-                @Override
-                public TokenStream tokenStream( String fieldName, Reader reader )
-                {
-                    return new LowerCaseFilter( LUCENE_VERSION, new WhitespaceTokenizer( LUCENE_VERSION, reader ) );
-                }
+    public static final Analyzer LOWER_CASE_WHITESPACE_ANALYZER = new Analyzer()
+    {
+        @Override
+        public TokenStream tokenStream( String fieldName, Reader reader )
+        {
+            return new LowerCaseFilter( LUCENE_VERSION, new WhitespaceTokenizer( LUCENE_VERSION, reader ) );
+        }
 
-                @Override
-                public String toString()
-                {
-                    return "LOWER_CASE_WHITESPACE_ANALYZER";
-                }
-            };
+        @Override
+        public String toString()
+        {
+            return "LOWER_CASE_WHITESPACE_ANALYZER";
+        }
+    };
 
     public static final Analyzer WHITESPACE_ANALYZER = new Analyzer()
     {
@@ -164,7 +167,7 @@ public class LuceneDataSource extends LogBackedXaDataSource
     private IndexClockCache indexSearchers;
     private XaContainer xaContainer;
     private File baseStorePath;
-    private ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
+    private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
     final IndexStore indexStore;
     private final XaFactory xaFactory;
     IndexProviderStore providerStore;
@@ -222,11 +225,13 @@ public class LuceneDataSource extends LogBackedXaDataSource
 
         nodeEntityType = new EntityType()
         {
+            @Override
             public Document newDocument( Object entityId )
             {
                 return IndexType.newBaseDocument( (Long) entityId );
             }
 
+            @Override
             public Class<? extends PropertyContainer> getType()
             {
                 return Node.class;
@@ -234,6 +239,7 @@ public class LuceneDataSource extends LogBackedXaDataSource
         };
         relationshipEntityType = new EntityType()
         {
+            @Override
             public Document newDocument( Object entityId )
             {
                 RelationshipId relId = (RelationshipId) entityId;
@@ -245,6 +251,7 @@ public class LuceneDataSource extends LogBackedXaDataSource
                 return doc;
             }
 
+            @Override
             public Class<? extends PropertyContainer> getType()
             {
                 return Relationship.class;
@@ -884,11 +891,13 @@ public class LuceneDataSource extends LogBackedXaDataSource
         files.add( providerStore.getFile() );
         return new ClosableIterable<File>()
         {
+            @Override
             public Iterator<File> iterator()
             {
                 return files.iterator();
             }
 
+            @Override
             public void close()
             {
                 for ( SnapshotDeletionPolicy deletionPolicy : snapshots )
