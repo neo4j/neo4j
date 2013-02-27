@@ -19,7 +19,7 @@
   <groupId>org.neo4j</groupId>
   <artifactId>neo4j-cypher</artifactId>
   <packaging>jar</packaging>
-  <version>1.8.2</version>
+  <version>1.8.3-SNAPSHOT</version>
   <name>Neo4j - Cypher</name>
   <description>Neo4j query language</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
