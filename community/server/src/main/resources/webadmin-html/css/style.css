@@ -9,7 +9,6 @@
 @import url(../lib/colorpicker/css/colorpicker.css);
 @import url(../js/lib/codemirror2/codemirror.css);
 @import url(../lib/deck/css/deck-neo4j.css);
-@import url(../lib/bootstrap/css/bootstrap.css);
 
 body { 
   width:100%; 

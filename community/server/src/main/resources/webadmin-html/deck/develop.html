@@ -2,35 +2,82 @@
 <!-- Begin slides. Just make elements with a class of slide.-->
 <section class="slide">
     <h1>Develop a Graph</h1>
-    <p class="hint">From whiteboard to world domination, Neo4j work the way you think.</p>
+    <p class="hint">From whiteboard to world stage, Neo4j works the way you think.</p>
 </section>
 <section class="slide">
-    <h2>There are Three Levels of API</h2><img src="/webadmin/deck/img/dashboard.png">
+    <h2>There are Three APIs...</h2><img src="/webadmin/deck/img/console.png">
+    <p class="summary">
+        Neo4j has a trio of programmatic interfaces, focused on different levels of interaction. 
+    </p>
     <ul>
         <li><em>Discover</em> the graph with REST</li>
-        <li><em>Work</em> with the Cypher language to change or query the graph</li>
+        <li><em>Work</em> with the Cypher language to work with the graph</li>
         <li><em>Customize</em> the database with plugins for special cases</li>
     </ul>
+    <p class="hint">As always, pick the right tool for the job.</p>
 </section>
 <section class="slide">
-    <h2>Discover with REST </h2>
+    <h2>Discover with REST</h2>
     <img src="/webadmin/deck/img/console.png">
+    <p class="summary">
+        The REST interface is very RESTful, focused on discovery through hypermedia. 
+    </p>
     <ul>
         <li>information about the database</li>
-        <li>incremental graph traversal</li>
+        <li>incremental graph discovery</li>
         <li>basic monitoring</li>
-        <li>not recommended for production-level interaction</li>
+        <li>not recommended for high-load access</li>
+    </ul>
+    <p class="hint">The REST API is fully capable but chatty.</p>
+</section>
+<section class="slide">
+    <h2>Work with the Cypher language</h2>
+    <p>
+        Neo4j's Cypher language is purpose built for working with graph data. Inspired
+        by SQL syntax, embracing pattern matching for describing paths. 
+    </p>
+    <p>
+        For example, create a node for yourself...
+    </p>
+    <ul>
+        <li>
+            <pre>create (me { name: &quot;Andreas&quot; });</pre>
+            <ul>
+                <li><code>create</code> clause to create data</li>
+                <code>()</code> parenthesis to indicate a Node</li>
+                <li><code>{}</code> brackets to introduce Properties on the Node</li>
+            </ul>
+        </li>
     </ul>
 </section>
 <section class="slide">
-    <h2>Work with Cypher queries</h2>
-    <img src="/webadmin/deck/img/console.png">
+    <h2>Cypher, continued</h2>
+    <p>
+        Now find that Node...
+    </p>
     <ul>
-        <li>create a node for yourself...
-            <pre>create (me { name: &quot;Andreas&quot; });</pre>
+        <li>
+            <pre>start andreas=node(*) where n.name! = &quot;Andreas&quot; return n;</pre>
+            <ul>
+                <li><code>start</code> clause to begin a query</li>
+                <li><code>andreas=node(*)</code> to search through all Nodes</li>
+                <li><code>where</code> clause to constrain the results</li>
+            </ul>
         </li>
-        <li>then find it..
-            <pre>start n=node(*) where n.name! = &quot;Andreas&quot; return n;</pre>
+    </ul>
+</section>
+<section class="slide">
+    <h2>Cypher, continued</h2>
+    <p class="summary">
+        Pattern matching is the real fun of using Cypher. Now that you can find yourself,
+        you would find your friends like this...
+    </p>
+    <ul>
+        <li>
+            <pre>start andreas=node(*) match (andreas)-[:KNOWS]->(friends) where n.name! = &quot;Andreas&quot; return friends;</pre>
+            <ul>
+                <li><code>match</code> clause to describe the pattern from known Nodes to found Nodes</li>
+            </ul>
         </li>
     </ul>
 </section>
@@ -45,17 +92,22 @@
     <ul>
         <li>raw access to the database</li>
         <li>your choice of JVM language</li>
-        <li>caution: here be dragons</li>
+        <li>warning: for advanced users with special needs</li>
     </ul>
+    <p class="hint">With great power comes great responsibility.</p>
 </section>
 <section class="slide">
     <h2>Learn More</h2>
     <img src="/webadmin/deck/img/console.png">
     <ul>
-        <li> <a href="http://docs.neo4j.org/chunked/stable">Read </a>the official Neo4j manual</li>
+        <li> <a class="external" href="http://www.neo4j.org/develop/drivers" target="_blank">download </a>a driver for your language of choice</li>
+        <li><a class="external" href="http://docs.neo4j.org/chunked/stable" target="_blank">Read </a>the official Neo4j manual</li>
+        <li><a class="external" href="http://neo4j.meetup.com" target="_blank">Attend</a> a Cypher focused meetup</li>
+        <li><a class="external" href="http://neotechnology.com" target="_blank">Sign up</a> for an in-depth workshop</li>
+        <li> <a class="external" href="http://docs.neo4j.org/chunked/stable" target="_blank">read </a>the official Neo4j manual</li>
     </ul>
 
-    <p class="hint"><a class="deck-url" href="/webadmin/deck/tour.html">Guide</a> to other information.</p>
+    <p class="hint"><a class="deck-url" href="/webadmin/deck/tour.html">Back up</a> to other paths.</p>
 </section>
 <!-- End slides.-->
 <!-- Begin extension snippets. Add or remove as needed.-->

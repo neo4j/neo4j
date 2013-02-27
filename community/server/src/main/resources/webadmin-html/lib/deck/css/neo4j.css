@@ -1,3 +1,6 @@
+/* @override 
+	http://localhost:7474/webadmin/lib/deck/css/neo4j.css */
+
 
 
 a.micro-button#guide-close {
@@ -13,7 +16,6 @@ a.micro-button#guide-close {
   background-color: rgb(235, 235, 235);
 
   font: 1.75em "Gill Sans", "Gill Sans MT", Calibri, sans-serif;
-  margin-top: 1em;
   min-height: 90%;
   width: 80%;
 }
@@ -29,6 +31,7 @@ a.micro-button#guide-close {
 }
 .deck-container .slide img {
   float: right;
+  margin-left: 1em;
 }
 .deck-container .slide h1 {
   color: #0af;
@@ -49,6 +52,9 @@ a.micro-button#guide-close {
 .deck-container .slide p {
   font-weight: normal;
   font-weight: 100;
+}
+.deck-container ul, .deck-container ol {
+  margin-left: 1em;
 }
 .deck-container .slide ul.big {
   font-size: 1.4375em;

@@ -41,6 +41,10 @@ define(
           @hide()
         )
 
+        $('.start-guide').click( (event) =>
+          @show()
+        )
+
         if not @hasBeenShownForThisSession()
           @show("/webadmin/deck/welcome.html")
           setTimeout () => @show();, 
