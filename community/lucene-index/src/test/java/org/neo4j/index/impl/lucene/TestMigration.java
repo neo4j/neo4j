@@ -19,6 +19,13 @@
  */
 package org.neo4j.index.impl.lucene;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.index.lucene.QueryContext.numericRange;
+
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -29,6 +36,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
+
 import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -42,8 +50,7 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.index.Neo4jTestCase;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.index.IndexStore;
-
-import static org.junit.Assert.*;
+import org.neo4j.kernel.impl.util.FileUtils;
 
 public class TestMigration
 {
@@ -79,10 +86,74 @@ public class TestMigration
         assertNotNull( node );
         db.shutdown();
     }
+    
+    @Test
+    public void threeSixIsCompatibleWithThreeFive() throws Exception
+    {
+        GraphDatabaseService db = unpackDbFrom( "db-with-v3.5.zip" );
+        assertTrue( db.index().existsForNodes( "test" ) );
+        assertTrue( db.index().existsForRelationships( "test" ) );
+        
+        Index<Node> nodeIndex = db.index().forNodes( "test" );
+        Node node1 = nodeIndex.get( "name", "Me" ).getSingle();
+        assertNotNull( node1 );
+        Node node2 = nodeIndex.get( "name", "You" ).getSingle();
+        assertNotNull( node2 );
+        assertNull( nodeIndex.get( "name", "Something else" ).getSingle() );
+        assertEquals( asSet( node1, node2 ), asSet( nodeIndex.query( numericRange( "age", 25, 40 ) ) ) );
+        
+        Index<Relationship> relationshipIndex = db.index().forRelationships( "test" );
+        Relationship relationship1 = relationshipIndex.query( numericRange( "since", 123456789L, 123456789L ) ).getSingle();
+        assertNotNull( relationship1 );
+        Relationship relationship2 = relationshipIndex.query( numericRange( "since", 987654321L, 987654321L ) ).getSingle();
+        assertNotNull( relationship2 );
+        
+        assertEquals( asSet( relationship1, relationship2 ), asSet( relationshipIndex.query( "text:words" ) ) );
+        
+        // Code that created the 3.5 db. Here for reference.
+//        String storeDir = "target/db-with-v3.5";
+//        FileUtils.deleteRecursively( new File( storeDir ) );
+//        GraphDatabaseService db = new EmbeddedGraphDatabase( storeDir );
+//        Index<Node> nodeIndex = db.index().forNodes( "test" );
+//        Index<Relationship> relationshipIndex = db.index().forRelationships( "test", FULLTEXT_CONFIG );
+//        
+//        Transaction tx = db.beginTx();
+//        try
+//        {
+//            Node node1 = db.createNode();
+//            index( node1, nodeIndex, map( "name", "Me", "age", 30 ) );
+//            Node node2 = db.createNode();
+//            index( node2, nodeIndex, map( "name", "You", "age", 35 ) );
+//            Node node3 = db.createNode();
+//            index( node3, nodeIndex, map( "name", "Another guy", "age", 21 ) );
+//            Relationship relationship1 = node1.createRelationshipTo( node2, withName( "KNOWS" ) );
+//            index( relationship1, relationshipIndex, map( "since", 123456789L, "text", "Some words out of the blue" ) );
+//            Relationship relationship2 = node2.createRelationshipTo( node3, withName( "KNOWS" ) );
+//            index( relationship2, relationshipIndex, map( "since", 987654321L, "text", "Other words out of thin air" ) );
+//            tx.success();
+//        }
+//        finally
+//        {
+//            tx.finish();
+//        }
+    }
+
+//    private <T extends PropertyContainer> void index( T entity, Index<T> index, Map<String, Object> properties )
+//    {
+//        for ( Map.Entry<String, Object> entry : properties.entrySet() )
+//        {
+//            Object value = entry.getValue();
+//            if ( value instanceof Number )
+//                value = numeric( (Number) value );
+//            index.add( entity, entry.getKey(), value );
+//        }
+//    }
 
     private GraphDatabaseService unpackDbFrom( String file ) throws IOException
     {
         File path = new File( "target/var/zipup" );
+        FileUtils.deleteRecursively( path );
+        path.mkdirs();
         ZipInputStream zip = new ZipInputStream( getClass().getClassLoader().getResourceAsStream( file ) );
         ZipEntry entry = null;
         byte[] buffer = new byte[2048];
