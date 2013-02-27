@@ -10,7 +10,7 @@
 
   <groupId>org.neo4j</groupId>
   <artifactId>neo4j-management</artifactId>
-  <version>1.8.2-SNAPSHOT</version>
+  <version>1.8.2</version>
   <name>Neo4j - Graph Database Monitoring and Management tools</name>
   <description>Management support using JMX.</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
@@ -18,7 +18,7 @@
   <properties>
     <bundle.namespace>org.neo4j.management</bundle.namespace>
     <short-name>management</short-name>
-    <neo4j.version>1.8.2-SNAPSHOT</neo4j.version>
+    <neo4j.version>1.8.2</neo4j.version>
     <docs.url>http://docs.neo4j.org/chunked/${project.version}/operations-monitoring.html</docs.url>
   </properties>
 

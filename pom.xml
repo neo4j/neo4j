@@ -6,7 +6,7 @@
 
     <groupId>org.neo4j</groupId>
     <artifactId>parent</artifactId>
-    <version>1.8.2-SNAPSHOT</version>
+    <version>1.8.2</version>
     <packaging>pom</packaging>
     <name>Neo4j</name>
     <description>Neo4j Graph Database</description>
