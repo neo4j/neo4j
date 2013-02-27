@@ -22,15 +22,11 @@ package org.neo4j.graphdb;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsNot.not;
 import static org.hamcrest.core.IsNull.nullValue;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.single;
 
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.graphdb.schema.IndexDefinition;
@@ -49,7 +45,6 @@ public class SchemaAcceptanceTest
         MY_OTHER_LABEL
     }
 
-    @Ignore( "Ignored until it's implemented" )
     @Test
     public void addingAnIndexingRuleShouldSucceed() throws Exception
     {

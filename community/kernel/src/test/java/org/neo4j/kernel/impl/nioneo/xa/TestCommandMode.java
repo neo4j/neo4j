@@ -17,20 +17,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api.index;
+package org.neo4j.kernel.impl.nioneo.xa;
 
-public class DelegatingIndexContext extends AbstractDelegatingIndexContext
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.IsEqual.equalTo;
+import static org.neo4j.kernel.impl.nioneo.xa.Command.Mode.fromRecordState;
+
+import org.junit.Test;
+
+public class TestCommandMode
 {
-    private final IndexContext delegate;
 
-    public DelegatingIndexContext( IndexContext delegate )
+    @Test
+    public void shouldInferCorrectModes() throws Exception
     {
-        this.delegate = delegate;
+        assertThat( fromRecordState( /* create */true, /* inUse */true ), equalTo(Command.Mode.CREATE));
+        assertThat( fromRecordState( /* create */false, /* inUse */true ), equalTo(Command.Mode.UPDATE));
+
+        assertThat( fromRecordState( /* create */false, /* inUse */false ), equalTo(Command.Mode.DELETE));
+        assertThat( fromRecordState( /* create */true, /* inUse */false ), equalTo(Command.Mode.DELETE));
     }
 
-    @Override
-    protected IndexContext getDelegate()
-    {
-        return delegate;
-    }
 }

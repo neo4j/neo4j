@@ -17,20 +17,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api.index;
+package org.neo4j.kernel.api;
 
-public class DelegatingIndexContext extends AbstractDelegatingIndexContext
+public class IndexNotFoundKernelException extends KernelException
 {
-    private final IndexContext delegate;
 
-    public DelegatingIndexContext( IndexContext delegate )
+    public IndexNotFoundKernelException( String message, Throwable cause )
     {
-        this.delegate = delegate;
+        super( message, cause );
     }
 
-    @Override
-    protected IndexContext getDelegate()
+    public IndexNotFoundKernelException( String msg )
     {
-        return delegate;
+        super( msg );
     }
 }

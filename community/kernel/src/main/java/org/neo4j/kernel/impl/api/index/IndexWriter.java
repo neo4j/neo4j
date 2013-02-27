@@ -28,7 +28,10 @@ public interface IndexWriter
      * Remove all data in the index and paves the way for populating an index.
      */
     void createIndex();
-    
+
+    /**
+     * Delete this index
+     */
     void dropIndex();
     
     /**

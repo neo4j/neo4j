@@ -43,7 +43,7 @@ import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.TransactionInterceptorProviders;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.api.index.IntegratedIndexing;
+import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.core.PropertyIndex;
 import org.neo4j.kernel.impl.core.TransactionState;
@@ -103,7 +103,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
 
     private final Config config;
     private NeoStore neoStore;
-    private final IntegratedIndexing integratedIndexing;
+    private final IndexingService indexingService;
     private XaContainer xaContainer;
     private ArrayMap<Class<?>,Store> idGenerators;
 
@@ -203,7 +203,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
      */
     public NeoStoreXaDataSource( Config config, StoreFactory sf, LockManager lockManager,
                                  StringLogger stringLogger, XaFactory xaFactory, TransactionStateFactory stateFactory,
-                                 CacheAccessBackDoor cacheAccess, IntegratedIndexing integratedIndexing,
+                                 CacheAccessBackDoor cacheAccess, IndexingService indexingService,
                                  TransactionInterceptorProviders providers, DependencyResolver dependencyResolver )
             throws IOException
     {
@@ -211,7 +211,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
         this.config = config;
         this.stateFactory = stateFactory;
         this.cacheAccess = cacheAccess;
-        this.integratedIndexing = integratedIndexing;
+        this.indexingService = indexingService;
         this.providers = providers;
 
         readOnly = config.get( Configuration.read_only );
@@ -246,7 +246,8 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
         }
         neoStore = storeFactory.newNeoStore( store );
 
-        xaContainer = xaFactory.newXaContainer(this, config.get( Configuration.logical_log ), new CommandFactory( neoStore ), tf, stateFactory, providers  );
+        xaContainer = xaFactory.newXaContainer(this, config.get( Configuration.logical_log ),
+                new CommandFactory( neoStore, indexingService ), tf, stateFactory, providers  );
 
         try
         {
@@ -338,18 +339,20 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
 
     private static class CommandFactory extends XaCommandFactory
     {
-        private NeoStore neoStore = null;
+        private final NeoStore neoStore;
+        private final IndexingService indexingService;
 
-        CommandFactory( NeoStore neoStore )
+        CommandFactory( NeoStore neoStore, IndexingService indexingService )
         {
             this.neoStore = neoStore;
+            this.indexingService = indexingService;
         }
 
         @Override
         public XaCommand readCommand( ReadableByteChannel byteChannel,
             ByteBuffer buffer ) throws IOException
         {
-            Command command = Command.readCommand( neoStore, byteChannel,
+            Command command = Command.readCommand( neoStore, indexingService, byteChannel,
                 buffer );
             if ( command != null )
             {
@@ -366,7 +369,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
         {
             TransactionInterceptor first = providers.resolveChain( NeoStoreXaDataSource.this );
             return new InterceptingWriteTransaction( identifier, getLogicalLog(), neoStore, state, cacheAccess,
-                    integratedIndexing, lockManager, first );
+                    indexingService, lockManager, first );
         }
     }
 
@@ -376,7 +379,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
         public XaTransaction create( int identifier, TransactionState state )
         {
             return new WriteTransaction( identifier, getLogicalLog(), state,
-                neoStore, cacheAccess, integratedIndexing );
+                neoStore, cacheAccess, indexingService );
         }
 
         @Override

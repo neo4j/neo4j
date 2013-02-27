@@ -49,7 +49,7 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.NestingIterable;
-import org.neo4j.kernel.impl.api.index.IntegratedIndexing;
+import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.core.PropertyIndex;
@@ -119,16 +119,16 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
     private final TransactionState state;
     private XaConnection xaConnection;
     private final CacheAccessBackDoor cacheAccess;
-    private final IntegratedIndexing integratedIndexing;
+    private final IndexingService indexes;
 
     WriteTransaction( int identifier, XaLogicalLog log, TransactionState state, NeoStore neoStore,
-            CacheAccessBackDoor cacheAccess, IntegratedIndexing indexingService )
+            CacheAccessBackDoor cacheAccess, IndexingService indexingService )
     {
         super( identifier, log, state );
         this.neoStore = neoStore;
         this.state = state;
         this.cacheAccess = cacheAccess;
-        this.integratedIndexing = indexingService;
+        this.indexes = indexingService;
     }
 
     @Override
@@ -235,8 +235,8 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         }
         for ( Pair<Collection<DynamicRecord>, SchemaRule> records : schemaRuleRecords.values() )
         {
-            Command.SchemaRuleCommand command = new Command.SchemaRuleCommand( neoStore.getSchemaStore(),
-                    records.first(), records.other() );
+            Command.SchemaRuleCommand command = new Command.SchemaRuleCommand( neoStore, neoStore.getSchemaStore(),
+                    indexes, records.first(), records.other() );
             schemaRuleCommands.add( command );
             commands.add( command );
         }
@@ -537,10 +537,10 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             executeCreated( isRecovered, propCommands, relCommands, nodeCommands );
             executeModified( isRecovered, propCommands, relCommands, nodeCommands );
             executeDeleted( propCommands, relCommands, nodeCommands );
-            
+
             // property change set for index updates
             Iterable<NodePropertyUpdate> updates = convertIntoLogicalPropertyUpdates( propCommands );
-            integratedIndexing.getService().update( updates );
+            indexes.update( updates );
             
             if ( isRecovered )
                 neoStore.setRecoveredStatus( true );

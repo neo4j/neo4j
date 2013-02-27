@@ -71,7 +71,7 @@ import org.neo4j.kernel.extension.KernelExtensions;
 import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.impl.api.Kernel;
 import org.neo4j.kernel.impl.api.SchemaCache;
-import org.neo4j.kernel.impl.api.index.IntegratedIndexing;
+import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.cache.Cache;
 import org.neo4j.kernel.impl.cache.CacheProvider;
@@ -145,6 +145,7 @@ public abstract class InternalAbstractGraphDatabase
         extends AbstractGraphDatabase implements GraphDatabaseService, GraphDatabaseAPI
 {
 
+
     public static class Configuration
     {
         public static final Setting<Boolean> read_only = GraphDatabaseSettings.read_only;
@@ -212,8 +213,8 @@ public abstract class InternalAbstractGraphDatabase
     protected KernelAPI kernelAPI;
     protected ThreadToStatementContextBridge statementContextProvider;
     protected BridgingCacheAccess cacheBridge;
-    protected IntegratedIndexing integratedIndexing;
     protected SchemaIndexProvider schemaIndexProvider;
+    protected IndexingService indexingService;
 
     protected final LifeSupport life = new LifeSupport();
     private final Map<String,CacheProvider> cacheProviders;
@@ -440,8 +441,10 @@ public abstract class InternalAbstractGraphDatabase
         
         SchemaCache schemaCache = new SchemaCache( Collections.<SchemaRule>emptyList() );
 
+        indexingService = createIntegratedIndexing( schemaIndexProvider );
+
         kernelAPI = life.add( new Kernel( txManager, propertyIndexManager, persistenceManager,
-                xaDataSourceManager, lockManager, schemaCache ) );
+                xaDataSourceManager, lockManager, schemaCache, indexingService ) );
         // XXX: Circular dependency, temporary during transition to KernelAPI
         txManager.setKernel(kernelAPI);
 
@@ -498,10 +501,8 @@ public abstract class InternalAbstractGraphDatabase
                 fileSystem, keepLogicalLogsConfig ) );
         
         cacheBridge = new BridgingCacheAccess( nodeManager, schemaCache );
-        
-        integratedIndexing = createIntegratedIndexing();
 
-        createNeoDataSource();
+        createNeoDataSource(indexingService);
 
         life.add( new MonitorGc( config, msgLog ) );
 
@@ -515,13 +516,10 @@ public abstract class InternalAbstractGraphDatabase
         life.add( new ConfigurationChangedRestarter() );
     }
 
-    protected IntegratedIndexing createIntegratedIndexing()
+    protected IndexingService createIntegratedIndexing(SchemaIndexProvider indexProvider)
     {
-        // TODO share / make configurable in size
         ExecutorService executor = Executors.newCachedThreadPool();
-        // null safe, indexing.getService() returns IntegratedIndexing.Adapter.NO_INDEXING by default
-        IntegratedIndexing indexing = new IntegratedIndexing( executor, xaDataSourceManager, schemaIndexProvider );
-        return life.add( indexing );
+        return life.add( new IndexingService( executor, indexProvider ) );
     }
 
     protected TransactionStateFactory createTransactionStateFactory()
@@ -819,7 +817,7 @@ public abstract class InternalAbstractGraphDatabase
         return life.add( logging );
     }
 
-    protected void createNeoDataSource()
+    protected void createNeoDataSource(IndexingService indexService)
     {
         // Create DataSource
         try
@@ -827,7 +825,7 @@ public abstract class InternalAbstractGraphDatabase
             // TODO IO stuff should be done in lifecycle. Refactor!
             neoDataSource = new NeoStoreXaDataSource( config,
                     storeFactory, lockManager, logging.getLogger( NeoStoreXaDataSource.class ),
-                    xaFactory, stateFactory, cacheBridge, integratedIndexing, transactionInterceptorProviders,
+                    xaFactory, stateFactory, cacheBridge, indexService, transactionInterceptorProviders,
                     dependencyResolver );
             xaDataSourceManager.registerDataSource( neoDataSource );
 
@@ -1191,85 +1189,6 @@ public abstract class InternalAbstractGraphDatabase
         }
     }
 
-/*
-    public class DefaultKernelExtensionLoader implements Lifecycle
-    {
-        private final KernelData extensions;
-
-        private Collection<KernelExtension<?>> loaded;
-
-        public DefaultKernelExtensionLoader( KernelData extensions )
-        {
-            this.extensions = extensions;
-        }
-
-        @Override
-        public void init()
-                throws Throwable
-        {
-            loaded = extensions.loadExtensionConfigurations( logging.getLogger( Loggers.EXTENSION ), kernelExtensions );
-            loadIndexImplementations( indexManager, logging.getLogger( Loggers.INDEX ) );
-        }
-
-        @Override
-        public void start()
-                throws Throwable
-        {
-            extensions.loadExtensions( loaded, logging.getLogger( Loggers.EXTENSION ) );
-        }
-
-        @Override
-        public void stop()
-                throws Throwable
-        {
-            extensions.
-        }
-
-        @Override
-        public void shutdown()
-                throws Throwable
-        {
-        }
-
-        void loadIndexImplementations( IndexManagerImpl indexes, StringLogger msgLog )
-        {
-            for ( IndexProvider index : indexProviders )
-            {
-                try
-                {
-                    indexes.addProvider( index.identifier(), index.load( dependencyResolver ) );
-                }
-                catch ( Throwable cause )
-                {
-                    msgLog.logMessage( "Failed to load index provider " + index.identifier(), cause );
-                    if ( isAnUpgradeProblem( cause ) )
-                    {
-                        throw launderedException( cause );
-                    }
-                    else
-                    {
-                        cause.printStackTrace();
-                    }
-                }
-            }
-        }
-
-        private boolean isAnUpgradeProblem( Throwable cause )
-        {
-            while ( cause != null )
-            {
-                if ( cause instanceof Throwable )
-                {
-                    return true;
-                }
-                cause = cause.getCause();
-            }
-            return false;
-        }
-
-    }
-*/
-
     private class DefaultTxEventSyncHookFactory implements TxEventSyncHookFactory
     {
         @Override
@@ -1403,13 +1322,13 @@ public abstract class InternalAbstractGraphDatabase
             {
                 return (T) storeLocker;
             }
+            else if ( IndexingService.class.isAssignableFrom( type ) )
+            {
+                return (T) indexingService;
+            }
             else if ( DependencyResolver.class.isAssignableFrom( type ) )
             {
                 return (T) DependencyResolverImpl.this;
-            }
-            else if ( IntegratedIndexing.class.isAssignableFrom( type ) )
-            {
-                return (T) integratedIndexing;
             }
             else
             {

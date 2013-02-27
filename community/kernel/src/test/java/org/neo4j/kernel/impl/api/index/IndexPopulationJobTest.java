@@ -237,7 +237,7 @@ public class IndexPopulationJobTest
     private IndexPopulationJob newIndexPopulationJob( Label label, String propertyKey, IndexWriter populator )
             throws LabelNotFoundKernelException, PropertyKeyNotFoundException
     {
-        IndexRule indexRule = new IndexRule( 0, context.getLabelId( FIRST.name() ), IndexRule.State.POPULATING, context.getPropertyKeyId( name ) );
+        IndexRule indexRule = new IndexRule( 0, context.getLabelId( FIRST.name() ), context.getPropertyKeyId( name ) );
         FlippableIndexContext flipper = new FlippableIndexContext(  );
         NeoStore neoStore = db.getXaDataSourceManager().getNeoStoreDataSource().getNeoStore();
         return new IndexPopulationJob( indexRule, populator, flipper, neoStore );

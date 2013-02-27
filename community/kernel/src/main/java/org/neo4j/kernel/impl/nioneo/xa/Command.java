@@ -28,9 +28,11 @@ import java.nio.channels.ReadableByteChannel;
 import java.util.ArrayList;
 import java.util.Collection;
 
+import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.nioneo.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
+import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
@@ -74,13 +76,13 @@ public abstract class Command extends XaCommand
         UPDATE,
         DELETE;
 
-        protected static Mode fromRecordState(boolean created, boolean inUse)
+        public static Mode fromRecordState(boolean created, boolean inUse)
         {
             if(!inUse)
                 return DELETE;
-            if(created)
+            if(created && inUse)
                 return CREATE;
-            if(!created && !inUse)
+            if(!created && inUse)
                 return UPDATE;
             throw new IllegalStateException("A record can't be both created and deleted at the same time.");
         }
@@ -344,7 +346,6 @@ public abstract class Command extends XaCommand
     private static final byte PROP_INDEX_COMMAND = (byte) 5;
     private static final byte NEOSTORE_COMMAND = (byte) 6;
     private static final byte SCHEMA_RULE_COMMAND = (byte) 7;
-    private static final byte INDEX_SNAPSHOT_COMMAND = (byte) 8;
 
     abstract void removeFromCache( CacheAccessBackDoor cacheAccess );
 
@@ -355,7 +356,7 @@ public abstract class Command extends XaCommand
 
         NodeCommand( NodeStore store, NodeRecord record )
         {
-            super( record.getId(), Mode.fromRecordState( record.isCreated(), !record.inUse() ) );
+            super( record.getId(), Mode.fromRecordState( record.isCreated(), record.inUse() ) );
             this.record = record;
             this.store = store;
         }
@@ -459,7 +460,7 @@ public abstract class Command extends XaCommand
 
         RelationshipCommand( RelationshipStore store, RelationshipRecord record )
         {
-            super( record.getId(), Mode.fromRecordState( record.isCreated(), !record.inUse() ) );
+            super( record.getId(), Mode.fromRecordState( record.isCreated(), record.inUse() ) );
             this.record = record;
             // the default (common) case is that the record to be written is complete and not from recovery or HA
             this.beforeUpdate = record;
@@ -598,7 +599,7 @@ public abstract class Command extends XaCommand
 
         NeoStoreCommand( NeoStore neoStore, NeoStoreRecord record )
         {
-            super( record.getId(), Mode.fromRecordState( record.isCreated(), !record.inUse() ) );
+            super( record.getId(), Mode.fromRecordState( record.isCreated(), record.inUse() ) );
             this.neoStore = neoStore;
             this.record = record;
         }
@@ -654,7 +655,7 @@ public abstract class Command extends XaCommand
         PropertyIndexCommand( PropertyIndexStore store,
             PropertyIndexRecord record )
         {
-            super( record.getId(), Mode.fromRecordState( record.isCreated(), !record.inUse() ) );
+            super( record.getId(), Mode.fromRecordState( record.isCreated(), record.inUse() ) );
             this.record = record;
             this.store = store;
         }
@@ -759,7 +760,7 @@ public abstract class Command extends XaCommand
         // so that the cost of deserializing them only applies in recovery/HA
         PropertyCommand( PropertyStore store, PropertyRecord before, PropertyRecord after )
         {
-            super( after.getId(), Mode.fromRecordState( after.isCreated(), !after.inUse() ) );
+            super( after.getId(), Mode.fromRecordState( after.isCreated(), after.inUse() ) );
             this.store = store;
             this.before = before;
             this.after = after;
@@ -984,7 +985,7 @@ public abstract class Command extends XaCommand
         RelationshipTypeCommand( RelationshipTypeStore store,
             RelationshipTypeRecord record )
         {
-            super( record.getId(), Mode.fromRecordState( record.isCreated(), !record.inUse() ) );
+            super( record.getId(), Mode.fromRecordState( record.isCreated(), record.inUse() ) );
             this.record = record;
             this.store = store;
         }
@@ -1070,13 +1071,17 @@ public abstract class Command extends XaCommand
     
     static class SchemaRuleCommand extends Command
     {
+        private final NeoStore neoStore;
+        private final IndexingService indexes;
         private final SchemaStore store;
         private final Collection<DynamicRecord> records;
         private final SchemaRule schemaRule;
 
-        SchemaRuleCommand( SchemaStore store, Collection<DynamicRecord> records, SchemaRule schemaRule )
+        SchemaRuleCommand( NeoStore neoStore, SchemaStore store, IndexingService indexes, Collection<DynamicRecord> records, SchemaRule schemaRule )
         {
-            super( schemaRule.getId(), Mode.fromRecordState( first( records ).isCreated(), !first( records ).inUse() ) );
+            super( schemaRule.getId(), Mode.fromRecordState( first( records ).isCreated(), first( records ).inUse() ) );
+            this.neoStore = neoStore;
+            this.indexes = indexes;
             this.store = store;
             this.records = records;
             this.schemaRule = schemaRule;
@@ -1105,6 +1110,16 @@ public abstract class Command extends XaCommand
         {
             for ( DynamicRecord record : records )
                 store.updateRecord( record );
+
+            if( schemaRule instanceof IndexRule )
+            {
+                switch(getMode())
+                {
+                    case CREATE:
+                        indexes.createIndex((IndexRule)schemaRule, neoStore);
+                        break;
+                }
+            }
         }
 
         @Override
@@ -1119,13 +1134,13 @@ public abstract class Command extends XaCommand
             return schemaRule;
         }
 
-        static Command readFromFile( NeoStore neoStore, ReadableByteChannel byteChannel, ByteBuffer buffer )
+        static Command readFromFile( NeoStore neoStore, IndexingService indexes, ReadableByteChannel byteChannel, ByteBuffer buffer )
                 throws IOException
         {
             Collection<DynamicRecord> records = new ArrayList<DynamicRecord>();
             readDynamicRecords( byteChannel, buffer, records, COLLECTION_DYNAMIC_RECORD_ADDER );
             ByteBuffer deserialized = AbstractDynamicStore.concatData( records, new byte[100] );
-            return new SchemaRuleCommand( neoStore.getSchemaStore(), records,
+            return new SchemaRuleCommand( neoStore, neoStore.getSchemaStore(), indexes, records,
                     SchemaRule.Kind.deserialize( first( records ).getId(), deserialized ) );
         }
     }
@@ -1140,7 +1155,7 @@ public abstract class Command extends XaCommand
         }
     };
 
-    public static Command readCommand( NeoStore neoStore, ReadableByteChannel byteChannel,
+    public static Command readCommand( NeoStore neoStore, IndexingService indexes, ReadableByteChannel byteChannel,
         ByteBuffer buffer ) throws IOException
     {
         if ( !readAndFlip( byteChannel, buffer, 1 ) )
@@ -1165,7 +1180,7 @@ public abstract class Command extends XaCommand
             case NEOSTORE_COMMAND:
                 return NeoStoreCommand.readFromFile( neoStore, byteChannel, buffer );
             case SCHEMA_RULE_COMMAND:
-                return SchemaRuleCommand.readFromFile( neoStore, byteChannel, buffer );
+                return SchemaRuleCommand.readFromFile( neoStore, indexes, byteChannel, buffer );
             case NONE: return null;
             default:
                 throw new IOException( "Unknown command type[" + commandType

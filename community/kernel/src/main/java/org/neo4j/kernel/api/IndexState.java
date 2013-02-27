@@ -17,20 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api.index;
+package org.neo4j.kernel.api;
 
-public class DelegatingIndexContext extends AbstractDelegatingIndexContext
+/**
+ * Defines the state of a given index.
+ */
+public enum IndexState
 {
-    private final IndexContext delegate;
 
-    public DelegatingIndexContext( IndexContext delegate )
-    {
-        this.delegate = delegate;
-    }
+    POPULATING,
+    ONLINE;
 
-    @Override
-    protected IndexContext getDelegate()
-    {
-        return delegate;
-    }
 }

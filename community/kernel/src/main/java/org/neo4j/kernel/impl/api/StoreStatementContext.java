@@ -30,11 +30,14 @@ import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.api.ConstraintViolationKernelException;
+import org.neo4j.kernel.api.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.IndexState;
 import org.neo4j.kernel.api.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.PropertyKeyIdNotFoundException;
 import org.neo4j.kernel.api.PropertyKeyNotFoundException;
 import org.neo4j.kernel.api.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.StatementContext;
+import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.KeyNotFoundException;
 import org.neo4j.kernel.impl.core.PropertyIndexManager;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
@@ -53,10 +56,12 @@ public class StoreStatementContext implements StatementContext
     private final PropertyIndexManager propertyIndexManager;
     private final PersistenceManager persistenceManager;
     private final NeoStore neoStore;
+    private final IndexingService indexService;
 
     public StoreStatementContext( PropertyIndexManager propertyIndexManager,
-            PersistenceManager persistenceManager, NeoStore neoStore )
+            PersistenceManager persistenceManager, NeoStore neoStore, IndexingService indexService )
     {
+        this.indexService = indexService;
         assert neoStore != null : "No neoStore provided";
         this.propertyIndexManager = propertyIndexManager;
         this.persistenceManager = persistenceManager;
@@ -206,8 +211,8 @@ public class StoreStatementContext implements StatementContext
     {
         SchemaStore schemaStore = neoStore.getSchemaStore();
         long id = schemaStore.nextId();
-        IndexRule rule = new IndexRule( id, labelId, IndexRule.State.POPULATING, propertyKey );
-        persistenceManager.createSchemaRule( rule);
+        IndexRule rule = new IndexRule( id, labelId, propertyKey );
+        persistenceManager.createSchemaRule( rule );
         return rule;
     }
 
@@ -264,6 +269,12 @@ public class StoreStatementContext implements StatementContext
                 return (IndexRule) from;
             }
         }, filtered );
+    }
+
+    @Override
+    public IndexState getIndexState( IndexRule indexRule ) throws IndexNotFoundKernelException
+    {
+        return indexService.getContextForRule( indexRule.getId() ).getState();
     }
 
     @Override

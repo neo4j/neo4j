@@ -189,7 +189,7 @@ public class DumpLogicalLog
         public XaCommand readCommand( ReadableByteChannel byteChannel,
                 ByteBuffer buffer ) throws IOException
         {
-            return Command.readCommand( null, byteChannel, buffer );
+            return Command.readCommand( null, null, byteChannel, buffer );
         }
     }
 }

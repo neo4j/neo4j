@@ -19,9 +19,7 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
@@ -38,10 +36,9 @@ import org.neo4j.kernel.ThreadToStatementContextBridge;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.TransactionContext;
-import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.test.ImpermanentGraphDatabase;
 
-public class ITKernelAPI
+public class KernelIT
 {
     /**
      * While we transition ownership from the Beans API to the Kernel API for core database
@@ -343,67 +340,7 @@ public class ITKernelAPI
         assertFalse( "Label should not be set on node here", labelIsSet );
         assertEquals( asSet(), nodes );
     }
-    
-    @Test
-    public void addIndexRuleInATransaction() throws Exception
-    {
-        // GIVEN
-        Transaction tx = db.beginTx();
-        StatementContext statement = statementContextProvider.getCtxForWriting();
-        long labelId = 5, propertyKey = 8;
 
-        // WHEN
-        IndexRule rule = statement.addIndexRule( labelId, propertyKey );
-        tx.success();
-        tx.finish();
-
-        // THEN
-        statement = statementContextProvider.getCtxForReading();
-        assertEquals( asSet( rule ), asSet( statement.getIndexRules( labelId ) ) );
-        assertEquals( rule, statement.getIndexRule( labelId, propertyKey ) );
-    }
-    
-    @Test
-    public void committedAndTransactionalIndexRulesShouldBeMerged() throws Exception
-    {
-        // GIVEN
-        long labelId = 5, propertyKey = 8;
-        Transaction tx = db.beginTx();
-        StatementContext statement = statementContextProvider.getCtxForWriting();
-        IndexRule existingRule = statement.addIndexRule( labelId, propertyKey );
-        tx.success();
-        tx.finish();
-
-        // WHEN
-        tx = db.beginTx();
-        statement = statementContextProvider.getCtxForWriting();
-        long propertyKey2 = 10;
-        IndexRule addedRule = statement.addIndexRule( labelId, propertyKey2 );
-        Set<IndexRule> indexRulesInTx = asSet( statement.getIndexRules( labelId ) );
-        tx.success();
-        tx.finish();
-
-        // THEN
-        assertEquals( asSet( existingRule, addedRule ), indexRulesInTx );
-    }
-    
-    @Test
-    public void rollBackIndexRuleShouldNotBeCommitted() throws Exception
-    {
-        // GIVEN
-        long labelId = 5, propertyKey = 11;
-        Transaction tx = db.beginTx();
-        StatementContext statement = statementContextProvider.getCtxForWriting();
-
-        // WHEN
-        IndexRule rule = statement.addIndexRule( labelId, propertyKey );
-        // don't mark as success
-        tx.finish();
-
-        // THEN
-        assertEquals( asSet(), asSet( statementContextProvider.getCtxForReading().getIndexRules( labelId ) ) );
-    }
-    
     private GraphDatabaseAPI db;
     private ThreadToStatementContextBridge statementContextProvider;
     

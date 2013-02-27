@@ -43,6 +43,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.PropertyKeyNotFoundException;
 import org.neo4j.kernel.api.StatementContext;
+import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.PropertyIndexManager;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
@@ -331,7 +332,8 @@ public class StoreStatementContextTest
                 db.getDependencyResolver().resolveDependency( PersistenceManager.class ),
                 // Ooh, jucky
                 db.getDependencyResolver().resolveDependency( XaDataSourceManager.class )
-                        .getNeoStoreDataSource().getNeoStore() );
+                        .getNeoStoreDataSource().getNeoStore(),
+                db.getDependencyResolver().resolveDependency( IndexingService.class ));
     }
 
     @After
