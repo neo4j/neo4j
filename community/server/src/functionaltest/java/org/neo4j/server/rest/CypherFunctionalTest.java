@@ -23,7 +23,9 @@ import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.hamcrest.core.IsNot.not;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.junit.matchers.JUnitMatchers.containsString;
 import static org.neo4j.server.rest.domain.JsonHelper.jsonToMap;
 import static org.neo4j.test.GraphDescription.LABEL;
@@ -88,7 +90,7 @@ public class CypherFunctionalTest extends AbstractRestFunctionalTestBase {
     public void testQueryStatistics() throws JsonParseException
     {
         // Given
-        String script = createScript( "start n = node(%I%) add n :foo remove n :bar return labels(n)" );
+        String script = createScript( "start n = node(%I%) set n:foo remove n:bar return labels(n)" );
 
         // When
         Map<String, Object> output = jsonToMap(doCypherRestCall( cypherUri() + "?includeStats=true", script, Status.OK ));
@@ -178,7 +180,7 @@ public class CypherFunctionalTest extends AbstractRestFunctionalTestBase {
         assertTrue( response.contains( "know" ) );
         assertTrue( response.contains( "data" ) );
     }
-    
+
     @Test
     @Graph( nodes = {
             @NODE( name = "I", properties = {
@@ -196,7 +198,7 @@ public class CypherFunctionalTest extends AbstractRestFunctionalTestBase {
         assertThat( response, containsString( "Hello" ) );
         assertThat( response, containsString( "World" ) );
     }
-    
+
     /**
      * Sending a query with syntax errors will give a bad request (HTTP 400)
      * response together with an error message.
@@ -216,7 +218,7 @@ public class CypherFunctionalTest extends AbstractRestFunctionalTestBase {
         assertTrue( output.containsKey( "message" ) );
         assertTrue( output.containsKey( "stacktrace" ) );
     }
-    
+
     /**
      * When sending queries that
      * return nested results like list and maps,
