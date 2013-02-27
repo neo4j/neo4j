@@ -47,7 +47,7 @@ case class UniqueLink(start: NamedExpectation, end: NamedExpectation, rel: Named
       case Some(n: Node)                             => Some(n)
       case Some(x)                                   => throw new CypherTypeException("Expected `%s` to a node, but it is a %s".format(expect.name, x))
       case None if expect.e.isInstanceOf[Identifier] => None
-      case None => expect.e(context) match {
+      case None => expect.e(context)(state) match {
         case n: Node  => Some(n)
         case IsMap(_) => None
         case x        => throw new CypherTypeException("Expected `%s` to a node, but it is a %s".format(expect.name, x))
@@ -58,15 +58,15 @@ case class UniqueLink(start: NamedExpectation, end: NamedExpectation, rel: Named
     // If any matching rels are found, they are returned. Otherwise, a new one is
     // created and returned.
     def twoNodes(startNode: Node, endNode: Node): Option[(UniqueLink, CreateUniqueResult)] = {
-      val rels = context.state.query.getRelationshipsFor(startNode, dir, relType).asScala.
-        filter(r => r.getOtherNode(startNode) == endNode && rel.compareWithExpectations(r, context) ).
+      val rels = state.query.getRelationshipsFor(startNode, dir, Seq(relType)).
+        filter(r => r.getOtherNode(startNode) == endNode && rel.compareWithExpectations(r, context, state) ).
         toList
 
       rels match {
         case List() =>
           val tx = state.transaction.getOrElse(throw new RuntimeException("I need a transaction!"))
 
-          val expectations = rel.getExpectations(context)
+          val expectations = rel.getExpectations(context, state)
           val createRel = CreateRelationship(rel.name, (Literal(startNode), Map()), (Literal(endNode), Map()), relType, expectations)
           Some(this->Update(Seq(UpdateWrapper(Seq(), createRel, rel.name)), () => {
             Seq(tx.acquireWriteLock(startNode), tx.acquireWriteLock(endNode))
@@ -82,7 +82,7 @@ case class UniqueLink(start: NamedExpectation, end: NamedExpectation, rel: Named
     def oneNode(startNode: Node, dir: Direction, other: NamedExpectation): Option[(UniqueLink, CreateUniqueResult)] = {
 
       def createUpdateActions(): Seq[UpdateWrapper] = {
-        val relExpectations = rel.getExpectations(context)
+        val relExpectations = rel.getExpectations(context, state)
         val createRel = if (dir == Direction.OUTGOING) {
           CreateRelationship(rel.name, (Literal(startNode), Map()), (Identifier(other.name), Map()), relType, relExpectations)
         } else {
@@ -90,13 +90,17 @@ case class UniqueLink(start: NamedExpectation, end: NamedExpectation, rel: Named
         }
 
         val relUpdate = UpdateWrapper(Seq(other.name), createRel, createRel.key)
-        val nodeCreate = UpdateWrapper(Seq(), CreateNode(other.name, other.getExpectations(context)), other.name)
+        val nodeCreate = UpdateWrapper(Seq(), CreateNode(other.name, other.getExpectations(context, state)), other.name)
 
         Seq(nodeCreate, relUpdate)
       }
 
-      val rels = context.state.query.getRelationshipsFor(startNode, dir, relType).asScala.
-        filter(r => rel.compareWithExpectations(r, context) && other.compareWithExpectations(r.getOtherNode(startNode), context)).toList
+      val rels = state.query.getRelationshipsFor(startNode, dir, Seq(relType)).
+        filter(r => {
+        val a = rel.compareWithExpectations(r, context, state)
+        val b = other.compareWithExpectations(r.getOtherNode(startNode), context, state)
+        a && b
+      }).toList
 
       rels match {
         case List() =>

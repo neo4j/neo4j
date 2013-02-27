@@ -31,7 +31,9 @@ import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.impl.util.StringLogger
 
+
 class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = StringLogger.DEV_NULL) {
+
   checkScalaVersion()
 
   require(graph != null, "Can't work with a null graph database")
@@ -44,10 +46,21 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
       case v:String => new CypherParser(v)
       case _ => new CypherParser()
     }
-  }
-  else {
+  } else {
     new CypherParser()
   }
+
+  @throws(classOf[SyntaxException])
+  def profile(query: String, params: Map[String, Any]): ExecutionResult = {
+    logger.info(query)
+    prepare(query).profile(params)
+  }
+
+  @throws(classOf[SyntaxException])
+  def profile(query: String, params: JavaMap[String, Any]): ExecutionResult = profile(query, params.asScala.toMap)
+
+  @throws(classOf[SyntaxException])
+  def profile(query: String): ExecutionResult = profile(query, Map[String, Any]())
 
 
   @throws(classOf[SyntaxException])
@@ -100,4 +113,5 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
     100
   }
 }
+
 

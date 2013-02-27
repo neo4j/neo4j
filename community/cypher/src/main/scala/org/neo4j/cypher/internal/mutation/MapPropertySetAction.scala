@@ -33,6 +33,8 @@ case class MapPropertySetAction(element: Expression, mapExpression: Expression)
   extends UpdateAction with GraphElementPropertyFunctions with MapSupport {
 
   def exec(context: ExecutionContext, state: QueryState) = {
+    implicit val s = state
+
     /*Find the property container we'll be working on*/
     val pc = element(context) match {
       case x: PropertyContainer => x
@@ -48,27 +50,27 @@ case class MapPropertySetAction(element: Expression, mapExpression: Expression)
         kv match {
           case (k, v) =>
             (v, pc) match {
-              case (null, r: Relationship) => state.query.relationshipOps().removeProperty(r, k)
-              case (null, n: Node)         => state.query.nodeOps().removeProperty(n, k)
-              case (_, n: Node)            => state.query.nodeOps().setProperty(n, k, makeValueNeoSafe(v))
-              case (_, r: Relationship)    => state.query.relationshipOps().setProperty(r, k, makeValueNeoSafe(v))
+              case (null, r: Relationship) => state.query.relationshipOps.removeProperty(r, k)
+              case (null, n: Node)         => state.query.nodeOps.removeProperty(n, k)
+              case (_, n: Node)            => state.query.nodeOps.setProperty(n, k, makeValueNeoSafe(v))
+              case (_, r: Relationship)    => state.query.relationshipOps.setProperty(r, k, makeValueNeoSafe(v))
             }
         }
       })
 
       /*Remove all other properties from the property container*/
       pc match {
-        case n:Node=> state.query.nodeOps().propertyKeys(n).asScala.foreach {
+        case n:Node=> state.query.nodeOps.propertyKeys(n).foreach {
           case k if map.contains(k) => //Do nothing
           case k                    =>
-            state.query.nodeOps().removeProperty(n, k)
+            state.query.nodeOps.removeProperty(n, k)
             state.propertySet.increase()
         }
 
-        case r:Relationship=> state.query.relationshipOps().propertyKeys(r).asScala.foreach {
+        case r:Relationship=> state.query.relationshipOps.propertyKeys(r).foreach {
           case k if map.contains(k) => //Do nothing
           case k                    =>
-            state.query.relationshipOps().removeProperty(r, k)
+            state.query.relationshipOps.removeProperty(r, k)
             state.propertySet.increase()
         }
       }

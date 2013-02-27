@@ -25,7 +25,7 @@ import org.neo4j.test.ImpermanentGraphDatabase
 import java.lang.Iterable
 import org.neo4j.graphdb.Traverser.Order
 import org.neo4j.graphdb._
-import org.neo4j.cypher.internal.pipes.{QueryState}
+import org.neo4j.cypher.internal.pipes.{NullDecorator, QueryState}
 import collection.JavaConverters._
 import org.neo4j.cypher.internal.spi.gdsimpl.GDSBackedQueryContext
 import org.neo4j.cypher.internal.ExecutionContext
@@ -62,15 +62,15 @@ class DoubleCheckCreateUniqueTest extends Assertions {
     assert(a.getRelationships.asScala.size === 1)
   }
 
-  val relateAction = CreateUniqueAction(UniqueLink("a", "b", "r", "X", Direction.OUTGOING))
+  val relateAction:CreateUniqueAction = CreateUniqueAction(UniqueLink("a", "b", "r", "X", Direction.OUTGOING))
 
 
   private def createExecutionContext(a: Node, tx: Transaction): ExecutionContext = {
-    ExecutionContext(state = createQueryState(tx)).newWith(Map("a" -> a))
+    ExecutionContext().newWith(Map("a" -> a))
   }
 
   private def createQueryState(tx: Transaction): QueryState = {
-    new QueryState(db, new GDSBackedQueryContext(db), Map.empty, Some(tx))
+    new QueryState(db, new GDSBackedQueryContext(db), Map.empty, NullDecorator, Some(tx))
   }
 
   private def createRel(node:Node) {

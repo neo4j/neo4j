@@ -22,24 +22,23 @@ package org.neo4j.cypher.internal.symbols
 import org.neo4j.cypher.{CypherException, CypherTypeException, SyntaxException}
 import collection.Map
 
-class SymbolTable(val identifiers: Map[String, CypherType]) {
+case class SymbolTable(identifiers: Map[String, CypherType] = Map.empty) {
   def hasIdentifierNamed(name: String): Boolean = identifiers.contains(name)
   def size: Int = identifiers.size
-  def this() = this(Map())
 
   def add(key: String, typ: CypherType): SymbolTable = identifiers.get(key) match {
     case Some(existingType) if typ.isAssignableFrom(existingType) =>
-      new SymbolTable(identifiers + (key -> typ.mergeWith(existingType)))
+      SymbolTable(identifiers + (key -> typ.mergeWith(existingType)))
     case Some(existingType)                                       =>
       throw new CypherTypeException("An identifier is used with different types. The identifier `%s` is used both as %s and as %s".format(key, typ, existingType))
     case None                                                     =>
-      new SymbolTable(identifiers + (key -> typ))
+      SymbolTable(identifiers + (key -> typ))
   }
 
   def add(value: Map[String, CypherType]): SymbolTable = {
     checkNoOverlapsExist(value)
 
-    new SymbolTable(identifiers ++ value)
+    SymbolTable(identifiers ++ value)
   }
 
 
@@ -49,7 +48,7 @@ class SymbolTable(val identifiers: Map[String, CypherType]) {
     }
   }
 
-  def filter(f: String => Boolean): SymbolTable = new SymbolTable(identifiers.filterKeys(f))
+  def filter(f: String => Boolean): SymbolTable = SymbolTable(identifiers.filterKeys(f))
   def keys: Seq[String] = identifiers.map(_._1).toSeq
   def missingSymbolTableDependencies(x: TypeSafe) = x.symbolTableDependencies.filterNot( dep => identifiers.exists(_._1 == dep))
 

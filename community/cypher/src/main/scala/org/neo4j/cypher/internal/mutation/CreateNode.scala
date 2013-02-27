@@ -32,7 +32,8 @@ case class CreateNode(key: String, props: Map[String, Expression])
   with CollectionSupport {
   def exec(context: ExecutionContext, state: QueryState) = {
     if (props.size == 1 && props.head._1 == "*") {
-      makeTraversable(props.head._2(context)).map(x => {
+      val expression = props.head._2
+      makeTraversable(expression(context)(state)).map(x => {
         val m: Map[String, Expression] = x.asInstanceOf[Map[String, Any]].map {
           case (k, v) => (k -> Literal(v))
         }

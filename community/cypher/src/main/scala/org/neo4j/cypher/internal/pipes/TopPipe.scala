@@ -24,21 +24,20 @@ import org.neo4j.cypher.internal.symbols.{NumberType, SymbolTable}
 import collection.mutable.ListBuffer
 import org.neo4j.cypher.internal.commands.expressions.Expression
 import org.neo4j.cypher.internal.ExecutionContext
+import org.neo4j.cypher.internal.data.SimpleVal
 
 /*
  * TopPipe is used when a query does a ORDER BY ... LIMIT query. Instead of ordering the whole result set and then
  * returning the matching top results, we only keep the top results in heap, which allows us to release memory earlier
  */
 class TopPipe(source: Pipe, sortDescription: List[SortItem], countExpression: Expression) extends PipeWithSource(source) with ExecutionContextComparer {
-  def createResults(state: QueryState): Iterator[ExecutionContext] = {
-
+  protected def internalCreateResults(input:Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
+    implicit val s = state
     var result = new ListBuffer[ExecutionContext]()
     var last: Option[ExecutionContext] = None
     val largerThanLast = (ctx: ExecutionContext) => last.forall(s => compareBy(s, ctx, sortDescription))
     var size = 0
     var sorted = false
-
-    val input = source.createResults(state)
 
     if (input.isEmpty)
       Iterator()
@@ -78,7 +77,9 @@ class TopPipe(source: Pipe, sortDescription: List[SortItem], countExpression: Ex
 
   def executionPlanDescription =
     source.executionPlanDescription
-      .andThen("Top", "orderBy" -> sortDescription.map(_.toString), "limit" -> countExpression)
+      .andThen(this, "Top",
+        "orderBy" -> SimpleVal.fromIterable(sortDescription),
+        "limit" -> SimpleVal.fromStr(countExpression))
 
   def symbols = source.symbols
 

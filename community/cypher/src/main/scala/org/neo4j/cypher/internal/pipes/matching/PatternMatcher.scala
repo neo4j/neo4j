@@ -24,8 +24,13 @@ import org.neo4j.cypher.internal.commands.{True, Predicate}
 import collection.Map
 import org.neo4j.cypher.EntityNotFoundException
 import org.neo4j.cypher.internal.ExecutionContext
+import org.neo4j.cypher.internal.pipes.QueryState
 
-class PatternMatcher(bindings: Map[String, MatchingPair], predicates: Seq[Predicate], includeOptionals: Boolean, source:ExecutionContext)
+class PatternMatcher(bindings: Map[String, MatchingPair],
+                     predicates: Seq[Predicate],
+                     includeOptionals: Boolean,
+                     source:ExecutionContext,
+                     state:QueryState)
   extends Traversable[ExecutionContext] {
   val boundNodes = bindings.filter(_._2.patternElement.isInstanceOf[PatternNode])
   val boundRels = bindings.filter(_._2.patternElement.isInstanceOf[PatternRelationship])
@@ -92,7 +97,7 @@ class PatternMatcher(bindings: Map[String, MatchingPair], predicates: Seq[Predic
 
       currentRel.predicate match {
         case True() =>
-        case p => if(!p.isMatch(newHistory.toMap)) return false
+        case p => if(!p.isMatch(newHistory.toMap)(state)) return false
       }
 
       if (isMatchSoFar(newHistory)) {
@@ -136,7 +141,7 @@ class PatternMatcher(bindings: Map[String, MatchingPair], predicates: Seq[Predic
 
     val (pNode, gNode) = currentNode.getPatternAndGraphPoint
 
-    val relationships = currentNode.getGraphRelationships(currentRel, source.state.query)
+    val relationships = currentNode.getGraphRelationships(currentRel, state.query)
     val step1 = history.filter(relationships)
     val notVisitedRelationships: Seq[GraphRelationship] = step1.
       filter(x => alreadyPinned(currentRel, x))
@@ -165,7 +170,7 @@ class PatternMatcher(bindings: Map[String, MatchingPair], predicates: Seq[Predic
   private def isMatchSoFar(history: History): Boolean = {
     val m = history.toMap
     val predicate = predicates.filter(predicate=> !predicate.containsIsNull && predicate.symbolTableDependencies.forall(m contains))
-    predicate.forall(_.isMatch(m))
+    predicate.forall(_.isMatch(m)(state))
   }
 
   private def traverseNextNodeOrYield[U](remaining: Set[MatchingPair], history: History, yielder: ExecutionContext => U): Boolean = {

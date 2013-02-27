@@ -25,6 +25,7 @@ import internal.commands.expressions.Literal
 import internal.commands.expressions.Multiply
 import internal.commands.expressions.Subtract
 import internal.ExecutionContext
+import internal.pipes.QueryState
 import org.junit.Test
 import org.hamcrest.CoreMatchers._
 import org.hamcrest.Matcher
@@ -34,7 +35,7 @@ class TypeTest extends ExecutionEngineHelper {
   def plus_int_int() {
     val op = Add(Literal(1), Literal(2))
 
-    val result = op(ExecutionContext.empty)
+    val result = calc(op)
 
     assertThat(result, instanceOf(classOf[java.lang.Integer]))
   }
@@ -43,7 +44,7 @@ class TypeTest extends ExecutionEngineHelper {
   def plus_double_int() {
     val op = Add(Literal(1.2), Literal(2))
 
-    val result = op(ExecutionContext.empty)
+    val result = calc(op)
 
     assertThat(result, instanceOf(classOf[java.lang.Double]))
   }
@@ -52,7 +53,7 @@ class TypeTest extends ExecutionEngineHelper {
   def minus_int_int() {
     val op = Subtract(Literal(1), Literal(2))
 
-    val result = op(ExecutionContext.empty)
+    val result = calc(op)
 
     assertThat(result, instanceOf(classOf[java.lang.Integer]))
   }
@@ -61,7 +62,7 @@ class TypeTest extends ExecutionEngineHelper {
   def minus_double_int() {
     val op = Subtract(Literal(1.2), Literal(2))
 
-    val result = op(ExecutionContext.empty)
+    val result = calc(op)
 
     assertThat(result, instanceOf(classOf[java.lang.Double]))
   }
@@ -70,7 +71,7 @@ class TypeTest extends ExecutionEngineHelper {
   def multiply_int_int() {
     val op = Multiply(Literal(1), Literal(2))
 
-    val result = op(ExecutionContext.empty)
+    val result = calc(op)
 
     assertThat(result, instanceOf(classOf[java.lang.Integer]))
   }
@@ -79,7 +80,7 @@ class TypeTest extends ExecutionEngineHelper {
   def multiply_double_int() {
     val op = Multiply(Literal(1.2), Literal(2))
 
-    val result = op(ExecutionContext.empty)
+    val result = calc(op)
 
     assertThat(result, instanceOf(classOf[java.lang.Double]))
   }
@@ -88,7 +89,7 @@ class TypeTest extends ExecutionEngineHelper {
   def divide_int_int() {
     val op = Divide(Literal(1), Literal(2))
 
-    val result = op(ExecutionContext.empty)
+    val result = calc(op)
 
     assertThat(result, instanceOf(classOf[java.lang.Integer]))
   }
@@ -97,12 +98,16 @@ class TypeTest extends ExecutionEngineHelper {
   def divide_double_int() {
     val op = Divide(Literal(1.2), Literal(2))
 
-    val result = op(ExecutionContext.empty)
+    val result = calc(op)
 
     assertThat(result, instanceOf(classOf[java.lang.Double]))
   }
 
   private def assertThat(x:Any, matcher:Matcher[AnyRef]) {
     org.junit.Assert.assertThat("\nGot a: " + x.getClass, x.asInstanceOf[Object], matcher)
+  }
+
+  private def calc(e:Expression) = {
+    e(ExecutionContext.empty)(QueryState())
   }
 }

@@ -182,6 +182,31 @@ public abstract class IteratorUtil
         return trail.size() == n + 1 ? trail.getLast() : null;
     }
 
+    /**
+     * Iterates over the full iterators, and checks equality for each item in them. Note that this
+     * will consume the iterators.
+     *
+     * @param first
+     * @param other
+     * @return
+     */
+    public static boolean iteratorsEqual(Iterator<?> first, Iterator<?> other)
+    {
+        while(true)
+        {
+            if(first.hasNext() && other.hasNext())
+            {
+                if(!first.next().equals( other.next() ))
+                {
+                    return false;
+                }
+            } else
+            {
+                return first.hasNext() == other.hasNext();
+            }
+        }
+    }
+
     private static <T> T assertNotNull( Iterator<T> iterator, T result )
     {
         if ( result == null )

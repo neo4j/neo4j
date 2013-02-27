@@ -17,12 +17,34 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.pipes
+package org.neo4j.kernel;
 
-import org.neo4j.cypher.internal.symbols.SymbolTable
+import java.io.File;
 
-abstract class PipeWithSource(val source: Pipe) extends Pipe {
-  def throwIfSymbolsMissing(symbols: SymbolTable)
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
-  throwIfSymbolsMissing(source.symbols)
+public class StoreLockerLifecycleAdapter extends LifecycleAdapter
+{
+    public static final String DATABASE_LOCKED_ERROR_MESSAGE = "Database locked.";
+
+    private final StoreLocker storeLocker;
+    private final File storeDir;
+
+    public StoreLockerLifecycleAdapter( StoreLocker storeLocker, File storeDir )
+    {
+        this.storeLocker = storeLocker;
+        this.storeDir = storeDir;
+    }
+
+    @Override
+    public void start() throws Throwable
+    {
+        if (! storeLocker.lock( storeDir )) throw new IllegalStateException( DATABASE_LOCKED_ERROR_MESSAGE );
+    }
+
+    @Override
+    public void stop() throws Throwable
+    {
+        storeLocker.release();
+    }
 }

@@ -22,9 +22,10 @@ package org.neo4j.cypher.internal.executionplan.builders
 import collection.Seq
 import org.neo4j.cypher.internal.commands.{StartItem, NodeById}
 import org.neo4j.graphdb.{Node, GraphDatabaseService}
-import org.neo4j.cypher.internal.pipes.{NodeStartPipe, Pipe}
+import org.neo4j.cypher.internal.pipes.{QueryState, NodeStartPipe}
 import GetGraphElements.getElements
 import org.neo4j.cypher.internal.executionplan._
+import org.neo4j.cypher.internal.ExecutionContext
 
 class NodeByIdBuilder(graph: GraphDatabaseService) extends PlanBuilder {
   def priority: Int = PlanBuilder.NodeById
@@ -36,7 +37,10 @@ class NodeByIdBuilder(graph: GraphDatabaseService) extends PlanBuilder {
     val startItemToken = interestingStartItems(q).head
     val Unsolved(NodeById(key, expression)) = startItemToken
 
-    val resultP = new NodeStartPipe(p, key, m => getElements[Node](expression(m), key, graph.getNodeById))
+    def f(ctx: ExecutionContext, state: QueryState) =
+      getElements[Node](expression(ctx)(state), key, state.query.nodeOps.getById)
+
+    val resultP = new NodeStartPipe(p, key, f)
 
     val remainingQ: Seq[QueryToken[StartItem]] = q.start.filterNot(_ == startItemToken) :+ startItemToken.solve
 

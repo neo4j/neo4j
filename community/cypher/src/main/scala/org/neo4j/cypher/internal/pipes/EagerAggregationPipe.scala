@@ -24,14 +24,14 @@ import org.neo4j.cypher.internal.symbols._
 import org.neo4j.cypher.internal.commands.expressions.{Expression, AggregationExpression}
 import collection.mutable.{Map => MutableMap}
 import org.neo4j.cypher.internal.ExecutionContext
-import org.neo4j.cypher.PlanDescription
+import org.neo4j.cypher.internal.data.SimpleVal
 
 // Eager aggregation means that this pipe will eagerly load the whole resulting sub graphs before starting
 // to emit aggregated results.
 // Cypher is lazy until it can't - this pipe will eagerly load the full match
 class EagerAggregationPipe(source: Pipe, val keyExpressions: Map[String, Expression], aggregations: Map[String, AggregationExpression])
   extends PipeWithSource(source) {
-  def oldKeyExpressions = keyExpressions.values.toSeq
+  def oldKeyExpressions: Seq[Expression] = keyExpressions.values.toSeq
 
   val symbols: SymbolTable = createSymbols()
 
@@ -43,10 +43,10 @@ class EagerAggregationPipe(source: Pipe, val keyExpressions: Map[String, Express
     val keyIdentifiers = keyExpressions.map(typeExtractor)
     val aggrIdentifiers = aggregations.map(typeExtractor)
 
-    new SymbolTable(keyIdentifiers ++ aggrIdentifiers)
+    SymbolTable(keyIdentifiers ++ aggrIdentifiers)
   }
 
-  def createResults(state: QueryState) = {
+  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) = {
     // This is the temporary storage used while the aggregation is going on
     val result = MutableMap[NiceHasher, (ExecutionContext, Seq[AggregationFunction])]()
     val keyNames: Seq[String] = keyExpressions.map(_._1).toSeq
@@ -70,16 +70,14 @@ class EagerAggregationPipe(source: Pipe, val keyExpressions: Map[String, Express
 
       aggregationNamesAndFunctions.toMap
         .foreach { case (name, zeroValue) => newMap += name -> zeroValue  }
-      Iterator(ExecutionContext(newMap, state = state))
+      Iterator(ExecutionContext(newMap))
     }
 
-
-
-    source.createResults(state).foreach(ctx => {
+    input.foreach(ctx => {
       val groupValues: NiceHasher = new NiceHasher(keyNames.map(ctx))
       val aggregateFunctions: Seq[AggregationFunction] = aggregations.map(_._2.createAggregationFunction).toSeq
       val (_, functions) = result.getOrElseUpdate(groupValues, (ctx, aggregateFunctions))
-      functions.foreach(func => func(ctx))
+      functions.foreach(func => func(ctx)(state))
     })
 
     if (result.isEmpty && keyNames.isEmpty) {
@@ -93,7 +91,9 @@ class EagerAggregationPipe(source: Pipe, val keyExpressions: Map[String, Express
 
   override def executionPlanDescription =
     source.executionPlanDescription
-      .andThen("EagerAggregation", "keys" -> oldKeyExpressions, "aggregates" -> aggregations.mapValues(_.toString()))
+      .andThen(this, "EagerAggregation",
+        "keys" -> SimpleVal.fromIterable(oldKeyExpressions),
+        "aggregates" -> SimpleVal.fromIterable(aggregations))
 
   def throwIfSymbolsMissing(symbols: SymbolTable) {
     keyExpressions.foreach(_._2.throwIfSymbolsMissing(symbols))

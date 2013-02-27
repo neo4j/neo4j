@@ -24,7 +24,7 @@ import java.util.{Map => JavaMap}
 import collection.JavaConverters._
 import org.neo4j.graphdb.{Relationship, Node, PropertyContainer}
 import org.neo4j.helpers.ThisShouldNotHappenError
-import org.neo4j.cypher.internal.spi.QueryContext
+import org.neo4j.cypher.internal.spi.{Operations, QueryContext}
 import org.neo4j.cypher.EntityNotFoundException
 
 object IsMap extends MapSupport {
@@ -44,30 +44,23 @@ trait MapSupport {
     case x: Any if x.isInstanceOf[JavaMap[_, _]] =>
       (_: QueryContext) => x.asInstanceOf[JavaMap[String, Any]].asScala
     case x: Node  =>
-      (ctx: QueryContext) => new PropertyContainerMap(x, ctx.nodeOps())
+      (ctx: QueryContext) => new PropertyContainerMap(x, ctx.nodeOps)
     case x: Relationship =>
-      (ctx: QueryContext) => new PropertyContainerMap(x, ctx.relationshipOps())
+      (ctx: QueryContext) => new PropertyContainerMap(x, ctx.relationshipOps)
   }
 
-  class PropertyContainerMap[T <: PropertyContainer](n: T, ops: QueryContext.Operations[T]) extends Map[String, Any] {
+  class PropertyContainerMap[T <: PropertyContainer](n: T, ops: Operations[T]) extends Map[String, Any] {
     def +[B1 >: Any](kv: (String, B1)) = throw new ThisShouldNotHappenError("Andres", "This map is not a real map")
 
     def -(key: String) = throw new ThisShouldNotHappenError("Andres", "This map is not a real map")
 
-    def get(key: String) = if(ops.hasProperty(n, key))
-      Some(ops.getProperty(n, key))
-    else
-      None
+    def get(key: String) = Option(ops.getProperty(n, key))
 
-    def iterator: Iterator[(String, Any)] = ops.propertyKeys(n).asScala.map(k => k -> ops.getProperty(n, k)).toIterator
+    def iterator: Iterator[(String, Any)] = ops.propertyKeys(n).map(k => k -> ops.getProperty(n, k)).toIterator
 
     override def contains(key: String) = ops.hasProperty(n, key)
 
-    override def apply(key: String) = try {
-      super.apply(key)
-    } catch {
-      case e:NoSuchElementException => throw new EntityNotFoundException("The property '%s' does not exist on %s".format(key, n))
-    }
-
+    override def apply(key: String) =
+      get(key).getOrElse(throw new EntityNotFoundException("The property '%s' does not exist on %s".format(key, n)))
   }
 }

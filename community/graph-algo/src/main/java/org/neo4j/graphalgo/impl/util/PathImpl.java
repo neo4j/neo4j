@@ -19,6 +19,8 @@
  */
 package org.neo4j.graphalgo.impl.util;
 
+import static org.neo4j.helpers.collection.IteratorUtil.iteratorsEqual;
+
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
@@ -313,19 +315,7 @@ public final class PathImpl implements Path
                 return false;
             }
 
-            Iterator<Relationship> thisPathIterator =
-                    this.relationships().iterator();
-            Iterator<Relationship> thatPathIterator =
-                    other.relationships().iterator();
-            while ( thisPathIterator.hasNext() && thatPathIterator.hasNext() )
-            {
-                if ( thisPathIterator.hasNext() != thatPathIterator.hasNext() )
-                {
-                    return false;
-                }
-                return thisPathIterator.next().equals( thatPathIterator.next() );
-            }
-            return true;
+            return iteratorsEqual( this.relationships().iterator(), other.relationships().iterator() );
         }
         else
         {

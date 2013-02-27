@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.commands._
 import org.neo4j.cypher.internal.symbols._
 import collection.immutable
 import org.neo4j.cypher.internal.ExecutionContext
+import org.neo4j.cypher.internal.pipes.QueryState
 
 /**
  * This class is responsible for deciding how to get the parts of the pattern that are not already bound
@@ -48,8 +49,8 @@ class MatchingContext(boundIdentifiers: SymbolTable,
     boundIdentifiers.add(ids)
   }
 
-  def getMatches(sourceRow: ExecutionContext): Traversable[ExecutionContext] = {
-    builder.getMatches(sourceRow)
+  def getMatches(sourceRow: ExecutionContext, state: QueryState): Traversable[ExecutionContext] = {
+    builder.getMatches(sourceRow, state)
   }
 
   private def decideWhichMatcherToUse(): MatcherBuilder = {
@@ -62,6 +63,6 @@ class MatchingContext(boundIdentifiers: SymbolTable,
 }
 
 trait MatcherBuilder {
-  def getMatches(sourceRow: ExecutionContext): Traversable[ExecutionContext]
+  def getMatches(sourceRow: ExecutionContext, state: QueryState): Traversable[ExecutionContext]
 }
 

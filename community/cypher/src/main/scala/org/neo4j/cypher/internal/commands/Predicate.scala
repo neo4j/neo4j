@@ -20,17 +20,17 @@
 package org.neo4j.cypher.internal.commands
 
 import expressions.{Literal, Expression}
-import scala.collection.JavaConverters._
 import org.neo4j.graphdb._
 import org.neo4j.cypher.internal.symbols._
 import org.neo4j.cypher.CypherTypeException
 import org.neo4j.cypher.internal.helpers.{IsCollection, CollectionSupport}
 import org.neo4j.cypher.internal.ExecutionContext
+import org.neo4j.cypher.internal.pipes.QueryState
 
 abstract class Predicate extends Expression {
-  def apply(ctx: ExecutionContext) = isMatch(ctx)
+  def apply(ctx: ExecutionContext)(implicit state: QueryState) = isMatch(ctx)
   def ++(other: Predicate): Predicate = And(this, other)
-  def isMatch(m: ExecutionContext): Boolean
+  def isMatch(m: ExecutionContext)(implicit state: QueryState): Boolean
 
   // This is the un-dividable list of predicates. They can all be ANDed
   // together
@@ -45,7 +45,7 @@ abstract class Predicate extends Expression {
 }
 
 case class NullablePredicate(inner: Predicate, exp: Seq[(Expression, Boolean)]) extends Predicate {
-  def isMatch(m: ExecutionContext) = {
+  def isMatch(m: ExecutionContext)(implicit state: QueryState) = {
     val nullValue = exp.find {
       case (e, res) => e(m) == null
     }
@@ -75,7 +75,7 @@ case class NullablePredicate(inner: Predicate, exp: Seq[(Expression, Boolean)]) 
 
 
 case class And(a: Predicate, b: Predicate) extends Predicate {
-  def isMatch(m: ExecutionContext): Boolean = a.isMatch(m) && b.isMatch(m)
+  def isMatch(m: ExecutionContext)(implicit state: QueryState): Boolean = a.isMatch(m) && b.isMatch(m)
   def atoms: Seq[Predicate] = a.atoms ++ b.atoms
   override def toString(): String = "(" + a + " AND " + b + ")"
   def containsIsNull = a.containsIsNull||b.containsIsNull
@@ -92,7 +92,7 @@ case class And(a: Predicate, b: Predicate) extends Predicate {
 }
 
 case class Or(a: Predicate, b: Predicate) extends Predicate {
-  def isMatch(m: ExecutionContext): Boolean = a.isMatch(m) || b.isMatch(m)
+  def isMatch(m: ExecutionContext)(implicit state: QueryState): Boolean = a.isMatch(m) || b.isMatch(m)
   def atoms: Seq[Predicate] = Seq(this)
   override def toString(): String = "(" + a + " OR " + b + ")"
   def containsIsNull = a.containsIsNull||b.containsIsNull
@@ -109,7 +109,7 @@ case class Or(a: Predicate, b: Predicate) extends Predicate {
 }
 
 case class Not(a: Predicate) extends Predicate {
-  def isMatch(m: ExecutionContext): Boolean = !a.isMatch(m)
+  def isMatch(m: ExecutionContext)(implicit state: QueryState): Boolean = !a.isMatch(m)
   def atoms: Seq[Predicate] = a.atoms.map(Not(_))
   override def toString(): String = "NOT(" + a + ")"
   def containsIsNull = a.containsIsNull
@@ -123,7 +123,7 @@ case class Not(a: Predicate) extends Predicate {
 }
 
 case class HasRelationshipTo(from: Expression, to: Expression, dir: Direction, relType: Seq[String]) extends Predicate {
-  def isMatch(m: ExecutionContext): Boolean = {
+  def isMatch(m: ExecutionContext)(implicit state: QueryState): Boolean = {
     val fromNode = from(m).asInstanceOf[Node]
     val toNode = to(m).asInstanceOf[Node]
 
@@ -131,7 +131,7 @@ case class HasRelationshipTo(from: Expression, to: Expression, dir: Direction, r
       return false
     }
 
-    m.state.query.getRelationshipsFor(fromNode, dir, relType:_*).asScala.
+    state.query.getRelationshipsFor(fromNode, dir, relType).
       exists(rel => rel.getOtherNode(fromNode) == toNode)
   }
 
@@ -147,16 +147,16 @@ case class HasRelationshipTo(from: Expression, to: Expression, dir: Direction, r
 }
 
 case class HasRelationship(from: Expression, dir: Direction, relType: Seq[String]) extends Predicate {
-  def isMatch(m: ExecutionContext): Boolean = {
+  def isMatch(m: ExecutionContext)(implicit state: QueryState): Boolean = {
     val fromNode = from(m).asInstanceOf[Node]
 
     if (fromNode == null) {
       return false
     }
 
-    val matchingRelationships = m.state.query.getRelationshipsFor(fromNode, dir, relType: _*)
+    val matchingRelationships = state.query.getRelationshipsFor(fromNode, dir, relType)
 
-    matchingRelationships.iterator().hasNext
+    matchingRelationships.iterator.hasNext
   }
 
   def atoms: Seq[Predicate] = Seq(this)
@@ -171,7 +171,7 @@ case class HasRelationship(from: Expression, dir: Direction, relType: Seq[String
 }
 
 case class IsNull(expression: Expression) extends Predicate {
-  def isMatch(m: ExecutionContext): Boolean = expression(m) == null
+  def isMatch(m: ExecutionContext)(implicit state: QueryState): Boolean = expression(m) == null
   def atoms: Seq[Predicate] = Seq(this)
   override def toString(): String = expression + " IS NULL"
   def containsIsNull = true
@@ -184,7 +184,7 @@ case class IsNull(expression: Expression) extends Predicate {
 }
 
 case class True() extends Predicate {
-  def isMatch(m: ExecutionContext): Boolean = true
+  def isMatch(m: ExecutionContext)(implicit state: QueryState): Boolean = true
   def atoms: Seq[Predicate] = Seq(this)
   override def toString(): String = "true"
   def containsIsNull = false
@@ -195,9 +195,9 @@ case class True() extends Predicate {
 }
 
 case class Has(identifier: Expression, propertyName: String) extends Predicate {
-  def isMatch(m: ExecutionContext): Boolean = identifier(m) match {
-    case pc: Node         => m.state.query.nodeOps().hasProperty(pc, propertyName)
-    case pc: Relationship => m.state.query.relationshipOps().hasProperty(pc, propertyName)
+  def isMatch(m: ExecutionContext)(implicit state: QueryState): Boolean = identifier(m) match {
+    case pc: Node         => state.query.nodeOps.hasProperty(pc, propertyName)
+    case pc: Relationship => state.query.relationshipOps.hasProperty(pc, propertyName)
     case null             => false
     case _                => throw new CypherTypeException("Expected " + identifier + " to be a property container.")
   }
@@ -220,9 +220,11 @@ case class Has(identifier: Expression, propertyName: String) extends Predicate {
 }
 
 case class LiteralRegularExpression(a: Expression, regex: Literal) extends Predicate {
-  lazy val pattern = regex(ExecutionContext.empty).asInstanceOf[String].r.pattern
+  lazy val pattern = regex.v.asInstanceOf[String].r.pattern
   
-  def isMatch(m: ExecutionContext) = pattern.matcher(a(m).asInstanceOf[String]).matches()
+  def isMatch(m: ExecutionContext)(implicit state: QueryState) =
+    pattern.matcher(a(m).asInstanceOf[String]).matches()
+
   def atoms = Seq(this)
   def containsIsNull = false
   def rewrite(f: (Expression) => Expression) = regex.rewrite(f) match {
@@ -241,7 +243,7 @@ case class LiteralRegularExpression(a: Expression, regex: Literal) extends Predi
 }
 
 case class RegularExpression(a: Expression, regex: Expression) extends Predicate {
-  def isMatch(m: ExecutionContext): Boolean = {
+  def isMatch(m: ExecutionContext)(implicit state: QueryState): Boolean = {
     val value = a(m).asInstanceOf[String]
     val regularExp = regex(m).asInstanceOf[String]
 
@@ -266,7 +268,7 @@ case class RegularExpression(a: Expression, regex: Expression) extends Predicate
 }
 
 case class NonEmpty(collection:Expression) extends Predicate with CollectionSupport {
-  def isMatch(m: ExecutionContext): Boolean = {
+  def isMatch(m: ExecutionContext)(implicit state: QueryState): Boolean = {
     collection(m) match {
       case IsCollection(x) => this.makeTraversable(collection(m)).nonEmpty
       case null          => false

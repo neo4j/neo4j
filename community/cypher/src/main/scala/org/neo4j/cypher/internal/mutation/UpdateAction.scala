@@ -71,31 +71,31 @@ trait GraphElementPropertyFunctions extends CollectionSupport {
 
 
   private def setAllMapKeyValues(expression: Expression, context: ExecutionContext, pc: PropertyContainer, state: QueryState) {
-    val map = getMapFromExpression(expression(context))
+    val map = getMapFromExpression(expression(context)(state))
 
     pc match {
       case n: Node => map.foreach {
         case (key, value) =>
-          state.query.nodeOps().setProperty(n, key, value)
+          state.query.nodeOps.setProperty(n, key, value)
           state.propertySet.increase()
       }
 
       case r: Relationship => map.foreach {
         case (key, value) =>
-          state.query.relationshipOps().setProperty(r, key, value)
+          state.query.relationshipOps.setProperty(r, key, value)
           state.propertySet.increase()
       }
     }
   }
 
   private def setSingleValue(expression: Expression, context: ExecutionContext, pc: PropertyContainer, key: String, state: QueryState) {
-    val value = makeValueNeoSafe(expression(context))
+    val value = makeValueNeoSafe(expression(context)(state))
     pc match {
       case n: Node =>
-        state.query.nodeOps().setProperty(n, key, value)
+        state.query.nodeOps.setProperty(n, key, value)
 
       case r: Relationship =>
-        state.query.relationshipOps().setProperty(r, key, value)
+        state.query.relationshipOps.setProperty(r, key, value)
     }
 
     state.propertySet.increase()

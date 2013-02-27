@@ -19,14 +19,14 @@
  */
 package org.neo4j.cypher.javacompat;
 
+import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
+
+import java.util.Map;
+
 import org.neo4j.cypher.SyntaxException;
 import org.neo4j.cypher.internal.commands.Query;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.impl.util.StringLogger;
-
-import java.util.Map;
-
-import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
 
 /**
  * To run a {@link Query}, use this class.
@@ -67,7 +67,7 @@ public class ExecutionEngine
     }
 
     /**
-     * Executes a {@link Query} and returns an iterable that contains the result set
+     * Executes a query and returns an iterable that contains the result set
      * @param query The query to execute
      * @param params Parameters for the query
      * @return A ExecutionResult that contains the result set
@@ -77,5 +77,38 @@ public class ExecutionEngine
     public ExecutionResult execute( String query, Map<String, Object> params) throws SyntaxException
     {
         return new ExecutionResult(inner.execute(query, params));
+    }
+
+    /**
+     * Profiles a query and returns an iterable that contains the result set.
+     * Note that in order to gather profiling information, this actually executes
+     * the query as well. You can wrap a call to this in a transaction that you
+     * roll back if you don't want the query to have an actual effect on the data.
+     *
+     * @param query The query to profile
+     * @return A ExecutionResult that contains the result set
+     * @throws org.neo4j.cypher.SyntaxException If the Query contains errors,
+     * a SyntaxException exception might be thrown
+     */
+    public ExecutionResult profile( String query ) throws SyntaxException
+    {
+        return new ExecutionResult(inner.profile(query));
+    }
+
+    /**
+     * Profiles a query and returns an iterable that contains the result set.
+     * Note that in order to gather profiling information, this actually executes
+     * the query as well. You can wrap a call to this in a transaction that you
+     * roll back if you don't want the query to have an actual effect on the data.
+     *
+     * @param query The query to profile
+     * @param params Parameters for the query
+     * @return A ExecutionResult that contains the result set
+     * @throws org.neo4j.cypher.SyntaxException If the Query contains errors,
+     * a SyntaxException exception might be thrown
+     */
+    public ExecutionResult profile( String query, Map<String, Object> params) throws SyntaxException
+    {
+        return new ExecutionResult(inner.profile(query, params));
     }
 }
