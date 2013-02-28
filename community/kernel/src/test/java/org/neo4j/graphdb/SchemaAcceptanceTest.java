@@ -22,7 +22,10 @@ package org.neo4j.graphdb;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsNot.not;
 import static org.hamcrest.core.IsNull.nullValue;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.single;
@@ -246,6 +249,7 @@ public class SchemaAcceptanceTest
                 fail( "Expected index to come online within a reasonable time." );
             }
         }
+        System.out.println( schema.getIndexState( index ) );
     }
 
     private Iterable<String> singlePropertyKey( Iterable<IndexDefinition> indexes )

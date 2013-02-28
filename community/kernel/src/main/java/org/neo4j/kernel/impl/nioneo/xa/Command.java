@@ -1079,7 +1079,7 @@ public abstract class Command extends XaCommand
 
         SchemaRuleCommand( NeoStore neoStore, SchemaStore store, IndexingService indexes, Collection<DynamicRecord> records, SchemaRule schemaRule )
         {
-            super( schemaRule.getId(), Mode.fromRecordState( first( records ).isCreated(), first( records ).inUse() ) );
+            super( schemaRule.getId(), first( records ).inUse() ? Mode.CREATE : Mode.DELETE );
             this.neoStore = neoStore;
             this.indexes = indexes;
             this.store = store;
@@ -1108,17 +1108,26 @@ public abstract class Command extends XaCommand
         @Override
         public void execute()
         {
-            for ( DynamicRecord record : records )
-                store.updateRecord( record );
-
-            if( schemaRule instanceof IndexRule )
+            if ( isRecovered() )
+                store.setRecovered();
+            try
             {
-                switch(getMode())
+                for ( DynamicRecord record : records )
+                    store.updateRecord( record );
+    
+                if ( schemaRule instanceof IndexRule )
                 {
-                    case CREATE:
-                        indexes.createIndex((IndexRule)schemaRule, neoStore);
-                        break;
+                    switch ( getMode() )
+                    {
+                        case CREATE:
+                            indexes.createIndex((IndexRule)schemaRule, neoStore);
+                            break;
+                    }
                 }
+            }
+            finally
+            {
+                store.unsetRecovered();
             }
         }
 

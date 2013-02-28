@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.api.index;
 
 import org.neo4j.kernel.impl.api.UpdateMode;
-import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 
 public class NodePropertyUpdate
 {
@@ -82,28 +81,57 @@ public class NodePropertyUpdate
         // TODO implement adding label id info
         return true;
     }
-
-    public void apply( IndexWriter indexManipulator )
-    {
-        switch (getUpdateMode())
-        {
-            case ADDED:
-                indexManipulator.add( getNodeId(), getValueAfter() );
-                break;
-            case CHANGED:
-                indexManipulator.remove( getNodeId(), getValueBefore() );
-                indexManipulator.add( getNodeId(), getValueAfter() );
-                break;
-            case REMOVED:
-                indexManipulator.remove( getNodeId(), getValueBefore() );
-                break;
-        }
-    }
     
     @Override
     public String toString()
     {
         return getClass().getSimpleName() + "[" + nodeId + ", prop:" + propertyKeyId + ", before:" + valueBefore +
                 ", after:" + valueAfter + "]";
+    }
+
+    @Override
+    public int hashCode()
+    {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + (int) (nodeId ^ (nodeId >>> 32));
+        result = prime * result + (int) (propertyKeyId ^ (propertyKeyId >>> 32));
+        result = prime * result + ((updateMode == null) ? 0 : updateMode.hashCode());
+        result = prime * result + ((valueAfter == null) ? 0 : valueAfter.hashCode());
+        result = prime * result + ((valueBefore == null) ? 0 : valueBefore.hashCode());
+        return result;
+    }
+
+    @Override
+    public boolean equals( Object obj )
+    {
+        if ( this == obj )
+            return true;
+        if ( obj == null )
+            return false;
+        if ( getClass() != obj.getClass() )
+            return false;
+        NodePropertyUpdate other = (NodePropertyUpdate) obj;
+        if ( nodeId != other.nodeId )
+            return false;
+        if ( propertyKeyId != other.propertyKeyId )
+            return false;
+        if ( updateMode != other.updateMode )
+            return false;
+        if ( valueAfter == null )
+        {
+            if ( other.valueAfter != null )
+                return false;
+        }
+        else if ( !valueAfter.equals( other.valueAfter ) )
+            return false;
+        if ( valueBefore == null )
+        {
+            if ( other.valueBefore != null )
+                return false;
+        }
+        else if ( !valueBefore.equals( other.valueBefore ) )
+            return false;
+        return true;
     }
 }

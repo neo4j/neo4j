@@ -772,7 +772,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             {
                 // Being here means a new value could be on disk. Re-read and replace
                 propRecord = getPropertyStore().getRecord( propRecord.getId() );
-                addPropertyRecord( propRecord );
+                addPropertyRecord( propRecord.clone(), propRecord );
             }
             for ( PropertyBlock block : propRecord.getPropertyBlocks() )
             {
@@ -1339,7 +1339,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
          * which is the most likely to be the less full one. Currently we opt for the second
          * to perform better.
          */
-        PropertyRecord host = null;
+        PropertyRecord host = null, hostBefore = null;
         long firstProp = primitive.getNextProp();
         if ( firstProp != Record.NO_NEXT_PROPERTY.intValue() )
         {
@@ -1355,7 +1355,8 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             if ( propSize + newBlockSizeInBytes <= PropertyType.getPayloadSize() )
             {
                 host = propRecord;
-                addPropertyRecord( host );
+                hostBefore = propRecord.clone();
+                addPropertyRecord( hostBefore, host );
                 host.addPropertyBlock( block );
                 host.setChanged( primitive );
             }
@@ -1364,6 +1365,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         {
             // First record in chain didn't fit, make new one
             host = new PropertyRecord( getPropertyStore().nextId(), primitive );
+            hostBefore = host.clone();
             if ( primitive.getNextProp() != Record.NO_NEXT_PROPERTY.intValue() )
             {
                 PropertyRecord prevProp = getPropertyRecord(
@@ -1379,7 +1381,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             host.setInUse( true );
         }
         // Ok, here host does for the job. Use it
-        addPropertyRecord( host );
+        addPropertyRecord( hostBefore, host );
         assert assertPropertyChain( primitive );
         return host;
     }
@@ -1579,10 +1581,11 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
      * The object that gets passed in here should be used as the "after" state.
      * The "before" state is {@link PropertyRecord#clone() derived} in this method.
      * @param record
+     * @param host 
      */
-    void addPropertyRecord( PropertyRecord record )
+    void addPropertyRecord( PropertyRecord before, PropertyRecord record )
     {
-        propertyRecords.put( record.getId(), Pair.of( record.clone(), record ) );
+        propertyRecords.put( before.getId(), Pair.of( before, record ) );
     }
 
     PropertyRecord getPropertyRecord( long propertyId, boolean light,
@@ -1602,7 +1605,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             }
             if ( store )
             {
-                addPropertyRecord( record );
+                addPropertyRecord( record.clone(), record );
             }
         }
         else

@@ -141,7 +141,7 @@ public class IndexPopulationJobTest
         assertEquals( expectedRemoved, populator.removed ); 
     }
     
-    private class NodeChangingWriter extends IndexWriter.Adapter
+    private class NodeChangingWriter extends IndexPopulator.Adapter
     {
         private final Set<Pair<Long, Object>> added = new HashSet<Pair<Long,Object>>();
         private IndexPopulationJob job;
@@ -168,13 +168,28 @@ public class IndexPopulationJobTest
             added.add( Pair.of( nodeId, propertyValue ) );
         }
 
+        @Override
+        public void update(Iterable<NodePropertyUpdate> updates)
+        {
+            for ( NodePropertyUpdate update : updates )
+            {
+                switch ( update.getUpdateMode() )
+                {
+                    case ADDED:
+                    case CHANGED:
+                        added.add( Pair.of( update.getNodeId(), update.getValueAfter()) );
+                }
+            }
+
+        }
+
         public void setJob( IndexPopulationJob job )
         {
             this.job = job;
         }
     }
     
-    private class NodeDeletingWriter extends IndexWriter.Adapter
+    private class NodeDeletingWriter extends IndexPopulator.Adapter
     {
         private final Map<Long, Object> added = new HashMap<Long, Object>();
         private final Map<Long, Object> removed = new HashMap<Long, Object>();
@@ -206,9 +221,20 @@ public class IndexPopulationJobTest
         }
 
         @Override
-        public void remove( long nodeId, Object propertyValue )
+        public void update(Iterable<NodePropertyUpdate> updates)
         {
-            removed.put( nodeId, propertyValue );
+            for ( NodePropertyUpdate update : updates )
+            {
+                switch ( update.getUpdateMode() )
+                {
+                    case ADDED:
+                    case CHANGED:
+                        added.put( update.getNodeId(), update.getValueAfter() );
+                    case REMOVED:
+                        removed.put( update.getNodeId(), update.getValueBefore() );
+                }
+            }
+
         }
     }
     
@@ -217,7 +243,7 @@ public class IndexPopulationJobTest
     private final String name = "name", age = "age";
     private ThreadToStatementContextBridge ctxProvider;
     private StatementContext context;
-    private IndexWriter populator;
+    private IndexPopulator populator;
 
     @Before
     public void before() throws Exception
@@ -225,7 +251,7 @@ public class IndexPopulationJobTest
         db = new ImpermanentGraphDatabase();
         ctxProvider = db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
         context = ctxProvider.getCtxForReading();
-        populator = mock( IndexWriter.class );
+        populator = mock( IndexPopulator.class );
     }
 
     @After
@@ -234,7 +260,7 @@ public class IndexPopulationJobTest
         db.shutdown();
     }
 
-    private IndexPopulationJob newIndexPopulationJob( Label label, String propertyKey, IndexWriter populator )
+    private IndexPopulationJob newIndexPopulationJob( Label label, String propertyKey, IndexPopulator populator )
             throws LabelNotFoundKernelException, PropertyKeyNotFoundException
     {
         IndexRule indexRule = new IndexRule( 0, context.getLabelId( FIRST.name() ), context.getPropertyKeyId( name ) );

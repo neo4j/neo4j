@@ -78,8 +78,6 @@ public class IndexIT
         assertEquals( expectedRule , statement.getIndexRule( labelId, propertyKey ) );
     }
 
-
-
     @Test
     public void committedAndTransactionalIndexRulesShouldBeMerged() throws Exception
     {

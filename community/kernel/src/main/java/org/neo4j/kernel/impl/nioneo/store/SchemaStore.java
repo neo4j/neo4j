@@ -110,4 +110,16 @@ public class SchemaStore extends AbstractDynamicStore
         ByteBuffer scratchBuffer = concatData( records, buffer );
         return deserialize( id, scratchBuffer );
     }
+    
+    @Override
+    public void setRecovered()
+    {
+        super.setRecovered();
+    }
+    
+    @Override
+    public void unsetRecovered()
+    {
+        super.unsetRecovered();
+    }
 }

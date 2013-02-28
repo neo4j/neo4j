@@ -29,7 +29,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import javax.transaction.NotSupportedException;
@@ -122,6 +121,8 @@ import org.neo4j.kernel.impl.transaction.xaframework.RecoveryVerifier;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.impl.transaction.xaframework.XaFactory;
+import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.kernel.info.JvmChecker;
@@ -214,7 +215,7 @@ public abstract class InternalAbstractGraphDatabase
     protected ThreadToStatementContextBridge statementContextProvider;
     protected BridgingCacheAccess cacheBridge;
     protected SchemaIndexProvider schemaIndexProvider;
-    protected IndexingService indexingService;
+    protected JobScheduler jobScheduler;
 
     protected final LifeSupport life = new LifeSupport();
     private final Map<String,CacheProvider> cacheProviders;
@@ -368,6 +369,8 @@ public abstract class InternalAbstractGraphDatabase
             throw new IllegalArgumentException( "No cache type '" + cacheTypeName + "'" );
         }
 
+        jobScheduler = life.add( new Neo4jJobScheduler());
+
         kernelEventHandlers = new KernelEventHandlers();
 
         caches = createCaches();
@@ -441,10 +444,8 @@ public abstract class InternalAbstractGraphDatabase
         
         SchemaCache schemaCache = new SchemaCache( Collections.<SchemaRule>emptyList() );
 
-        indexingService = createIntegratedIndexing( schemaIndexProvider );
-
         kernelAPI = life.add( new Kernel( txManager, propertyIndexManager, persistenceManager,
-                xaDataSourceManager, lockManager, schemaCache, indexingService ) );
+                xaDataSourceManager, lockManager, schemaCache ) );
         // XXX: Circular dependency, temporary during transition to KernelAPI
         txManager.setKernel(kernelAPI);
 
@@ -477,7 +478,6 @@ public abstract class InternalAbstractGraphDatabase
 
         if ( config.get( Configuration.load_kernel_extensions ) )
         {
-//            kernelExtensionLoader = new DefaultKernelExtensionLoader( extensions );
             life.add( kernelExtensions );
         }
 
@@ -502,7 +502,7 @@ public abstract class InternalAbstractGraphDatabase
         
         cacheBridge = new BridgingCacheAccess( nodeManager, schemaCache );
 
-        createNeoDataSource(indexingService);
+        createNeoDataSource();
 
         life.add( new MonitorGc( config, msgLog ) );
 
@@ -514,12 +514,6 @@ public abstract class InternalAbstractGraphDatabase
 
         // TODO This is probably too coarse-grained and we should have some strategy per user of config instead
         life.add( new ConfigurationChangedRestarter() );
-    }
-
-    protected IndexingService createIntegratedIndexing(SchemaIndexProvider indexProvider)
-    {
-        ExecutorService executor = Executors.newCachedThreadPool();
-        return life.add( new IndexingService( executor, indexProvider ) );
     }
 
     protected TransactionStateFactory createTransactionStateFactory()
@@ -817,7 +811,7 @@ public abstract class InternalAbstractGraphDatabase
         return life.add( logging );
     }
 
-    protected void createNeoDataSource(IndexingService indexService)
+    protected void createNeoDataSource()
     {
         // Create DataSource
         try
@@ -825,8 +819,8 @@ public abstract class InternalAbstractGraphDatabase
             // TODO IO stuff should be done in lifecycle. Refactor!
             neoDataSource = new NeoStoreXaDataSource( config,
                     storeFactory, lockManager, logging.getLogger( NeoStoreXaDataSource.class ),
-                    xaFactory, stateFactory, cacheBridge, indexService, transactionInterceptorProviders,
-                    dependencyResolver );
+                    xaFactory, stateFactory, cacheBridge, schemaIndexProvider, transactionInterceptorProviders,
+                    jobScheduler );
             xaDataSourceManager.registerDataSource( neoDataSource );
 
         }
@@ -1324,7 +1318,11 @@ public abstract class InternalAbstractGraphDatabase
             }
             else if ( IndexingService.class.isAssignableFrom( type ) )
             {
-                return (T) indexingService;
+                return (T) neoDataSource.getIndexService();
+            }
+            else if ( JobScheduler.class.isAssignableFrom( type ) )
+            {
+                return (T) jobScheduler;
             }
             else if ( DependencyResolver.class.isAssignableFrom( type ) )
             {

@@ -96,8 +96,11 @@ public class SchemaImpl implements Schema
                     return IndexState.POPULATING;
                 case ONLINE:
                     return IndexState.ONLINE;
+                case NON_EXISTENT:
+                    throw new NotFoundException( format( "No index for label %s on property %s",
+                            index.getLabel().name(), propertyKey ) );
                 default:
-                    throw new IllegalArgumentException( String.format( "Illegal value %s", indexState ) );
+                    throw new IllegalArgumentException( String.format( "Illegal index state %s", indexState ) );
             }
         }
         catch ( LabelNotFoundKernelException e )
@@ -116,7 +119,7 @@ public class SchemaImpl implements Schema
         catch ( IndexNotFoundKernelException e )
         {
             throw new NotFoundException( format( "No index for label %s on property %s",
-                    index.getLabel().name(), propertyKey ) );
+                    index.getLabel().name(), propertyKey ), e );
         }
     }
 }

@@ -63,12 +63,12 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     private final LockManager lockManager;
     private final PersistenceCache persistenceCache;
     private final SchemaCache schemaCache;
-    private final IndexingService indexService;
+    private IndexingService indexService;
     private NeoStore neoStore;
 
     public Kernel( AbstractTransactionManager transactionManager, PropertyIndexManager propertyIndexManager,
             PersistenceManager persistenceManager, XaDataSourceManager dataSourceManager, LockManager lockManager,
-            SchemaCache schemaCache, IndexingService indexingService )
+            SchemaCache schemaCache )
     {
         this.transactionManager = transactionManager;
         this.propertyIndexManager = propertyIndexManager;
@@ -77,7 +77,6 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
         this.lockManager = lockManager;
         this.persistenceCache = new PersistenceCache( new NodeCacheLoader( persistenceManager ) );
         this.schemaCache = schemaCache;
-        this.indexService = indexingService;
     }
     
     @Override
@@ -91,6 +90,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
                 if ( isNeoDataSource( ds ) )
                 {
                     neoStore = ((NeoStoreXaDataSource) ds).getNeoStore();
+                    indexService = ((NeoStoreXaDataSource) ds).getIndexService();
                     for ( SchemaRule schemaRule : neoStore.getSchemaStore().loadAll() )
                         schemaCache.addSchemaRule( schemaRule );
                 }

@@ -53,7 +53,7 @@ import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.TransactionInterceptorProviders;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.core.PropertyIndex;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaConnection;
@@ -352,7 +352,7 @@ public class TestXa
                 new XaFactory( config, TxIdGenerator.DEFAULT, txManager,
                         logBufferFactory, fileSystem, new DevNullLoggingService(), RecoveryVerifier.ALWAYS_VALID,
                         LogPruneStrategies.NO_PRUNING ), TransactionStateFactory.noStateFactory( new DevNullLoggingService() ),
-                        noCacheAccess(), mock( IndexingService.class), new TransactionInterceptorProviders( Collections.<TransactionInterceptorProvider>emptyList(),
+                        noCacheAccess(), mock( SchemaIndexProvider.class), new TransactionInterceptorProviders( Collections.<TransactionInterceptorProvider>emptyList(),
                         new DependencyResolver()
 
                         {
@@ -362,6 +362,7 @@ public class TestXa
                                 return (T) config;
                             }
                         } ), null );
+        neoStoreXaDataSource.init();
         neoStoreXaDataSource.start();
         return neoStoreXaDataSource;
     }
@@ -740,7 +741,7 @@ public class TestXa
         xaRes.prepare( xid );
         xaRes.commit( xid, false );
         copyClearRename( false );
-        truncateLogicalLog( 288+37 );
+        truncateLogicalLog( 318 );
         ds = newNeoStore();
         xaCon = ds.getXaConnection();
         xaRes = xaCon.getXaResource();

@@ -20,26 +20,41 @@
 package org.neo4j.kernel.impl.api.index;
 
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
 
 import org.neo4j.kernel.api.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.IndexState;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
+import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
+/**
+ * Manages the "schema indexes" that were introduced in 2.0. These indexes depend on the normal neo4j logical log
+ * for transactionality. Each index has an {@link IndexRule}, which it uses to filter changes that come into the
+ * database. Changes that apply to the the rule are indexed. This way, "normal" changes to the database can be
+ * replayed to perform recovery after a crash.
+ *
+ * <h3>Recovery procedure</h3>
+ *
+ * Each index has a state, as defined in {@link org.neo4j.kernel.api.IndexState}, which is used during recovery. If
+ * an index is anything but {@link org.neo4j.kernel.api.IndexState#ONLINE}, it will simply be destroyed and re-created.
+ *
+ * If, however, it is {@link org.neo4j.kernel.api.IndexState#ONLINE}, the index provider is required to also guarantee
+ * that the index had been flushed to disk.
+ */
 public class IndexingService extends LifecycleAdapter
 {
+    // TODO create hierarchy of filters for smarter update processing
 
-    // TODO create hierachy of filters for smarter update processing
-
-    private final ExecutorService executor;
+    private final JobScheduler scheduler;
     private final SchemaIndexProvider provider;
 
-    private final ConcurrentHashMap<Long, IndexContext> contexts = new ConcurrentHashMap<Long, IndexContext>();
+    private final ConcurrentHashMap<Long, IndexContext> indexes = new ConcurrentHashMap<Long, IndexContext>();
+    private boolean online = false;
 
-    public IndexingService( ExecutorService executor, SchemaIndexProvider provider )
+    public IndexingService( JobScheduler scheduler, SchemaIndexProvider provider )
     {
-        this.executor = executor;
+        this.scheduler = scheduler;
         this.provider = provider;
 
         if(provider == null)
@@ -50,25 +65,66 @@ public class IndexingService extends LifecycleAdapter
         }
     }
 
+    // Recovery semantics: This is to be called after initIndexes, and after the database has run recovery.
     @Override
-    public void init()
+    public void start()
     {
-        // During initialization, this service should somehow load all indexes and set up an index cake for each index
+        // Find all indexes that are not already online, and create them
+        for ( IndexContext indexContext : indexes.values() )
+        {
+            if ( indexContext.getState() != IndexState.ONLINE )
+            {
+                indexContext.create();
+            }
+        }
+
+        online = true;
+    }
+
+    @Override
+    public void stop()
+    {
+        online = false;
     }
 
     public void update( Iterable<NodePropertyUpdate> updates ) {
-        for (IndexContext context : contexts.values())
+        for (IndexContext context : indexes.values())
             context.update( updates );
     }
 
     public IndexContext getContextForRule( long indexId ) throws IndexNotFoundKernelException
     {
-        IndexContext indexContext = contexts.get( indexId );
+        IndexContext indexContext = indexes.get( indexId );
         if(indexContext == null)
         {
             throw new IndexNotFoundKernelException( "No index with id " + indexId + " exists." );
         }
         return indexContext;
+    }
+
+    /**
+     * Called while the database starts up, before recovery.
+     *
+     * @param indexRules Known index rules before recovery.
+     */
+    public void initIndexes( Iterable<IndexRule> indexRules, NeoStore neoStore )
+    {
+        for ( IndexRule indexRule : indexRules )
+        {
+            long id = indexRule.getId();
+            switch ( provider.getState( id ) )
+            {
+                case ONLINE:
+                    indexes.put( id, createOnlineIndexContext( indexRule ) );
+                    break;
+                case POPULATING:
+                case NON_EXISTENT:
+                    // The database was shut down during population, or a crash has occurred, or some other
+                    // sad thing.
+                    indexes.put( id, createPopulatingIndexContext( indexRule, neoStore ) );
+                    break;
+            }
+        }
     }
 
     /*
@@ -80,35 +136,58 @@ public class IndexingService extends LifecycleAdapter
      */
     public void createIndex( IndexRule rule, NeoStore neoStore )
     {
+        IndexContext index = indexes.get( rule.getId() );
+        if ( online )
+        {
+            assert index == null : "Index " + rule + " already exists";
+            index = createPopulatingIndexContext( rule, neoStore );
+
+            // Trigger the creation, only if the service is online. Otherwise,
+            // creation will be triggered on start().
+            index.create();
+        }
+        else if ( index == null )
+        {
+            index = createPopulatingIndexContext( rule, neoStore );
+        }
+        
+        indexes.put( rule.getId(), index );
+    }
+
+    private IndexContext createOnlineIndexContext( IndexRule rule )
+    {
+        IndexContext result = new OnlineIndexContext( provider.getWriter( rule.getId() ) );
+        result = new RuleUpdateFilterIndexContext( result, rule );
+        result = new ServiceStateUpdatingIndexContext( rule, result );
+
+        return result;
+    }
+
+    private IndexContext createPopulatingIndexContext( IndexRule rule, NeoStore neoStore )
+    {
         long ruleId = rule.getId();
         FlippableIndexContext flippableContext = new FlippableIndexContext( );
 
         // TODO: This is here because there is a circular dependency from PopulatingIndexContext to FlippableContext
         flippableContext.setFlipTarget(
-                new PopulatingIndexContext( executor,
-                        rule, provider.getPopulatingWriter( ruleId ), flippableContext, neoStore )
+                new PopulatingIndexContext( scheduler, rule, provider.getPopulator( ruleId ), flippableContext, neoStore)
         );
         flippableContext.flip();
 
         // Prepare for flipping to online mode
-        flippableContext.setFlipTarget( new OnlineIndexContext( provider.getOnlineWriter( ruleId ) ) );
+        flippableContext.setFlipTarget( new OnlineIndexContext( provider.getWriter( ruleId ) ) );
 
         // TODO: Merge auto removing and rule updating?
         IndexContext result = new RuleUpdateFilterIndexContext( flippableContext, rule );
-        result = new AutoRemovingIndexContext( rule, result );
-
-        IndexContext preExisting = contexts.put( rule.getId(), result );
-        assert preExisting == null;
-
-        // Trigger the creation
-        result.create();
+        result = new ServiceStateUpdatingIndexContext( rule, result );
+        return result;
     }
 
-    class AutoRemovingIndexContext extends DelegatingIndexContext {
+    class ServiceStateUpdatingIndexContext extends DelegatingIndexContext {
 
         private final long ruleId;
 
-        AutoRemovingIndexContext( IndexRule rule, IndexContext delegate )
+        ServiceStateUpdatingIndexContext( IndexRule rule, IndexContext delegate )
         {
             super( delegate );
             this.ruleId = rule.getId();
@@ -118,7 +197,46 @@ public class IndexingService extends LifecycleAdapter
         public void drop()
         {
             super.drop();
-            contexts.remove( ruleId, this );
+            indexes.remove( ruleId, this );
         }
+    }
+
+    class BrokenIndexContext implements IndexContext {
+
+        private final IndexRule rule;
+
+        public BrokenIndexContext( IndexRule rule )
+        {
+            this.rule = rule;
+        }
+
+        @Override
+        public void create()
+        {
+            throw new UnsupportedOperationException(  );
+        }
+
+        @Override
+        public void update( Iterable<NodePropertyUpdate> updates )
+        {
+            throw new UnsupportedOperationException(  );
+        }
+
+        @Override
+        public void drop()
+        {
+            throw new UnsupportedOperationException(  );
+        }
+
+        @Override
+        public IndexState getState()
+        {
+            return IndexState.NON_EXISTENT;
+        }
+    }
+
+    public void flushAll()
+    {
+        provider.flushAll();
     }
 }

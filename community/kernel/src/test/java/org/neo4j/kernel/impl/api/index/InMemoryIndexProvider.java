@@ -19,19 +19,19 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
 import org.neo4j.helpers.Service;
+import org.neo4j.kernel.api.IndexState;
 import org.neo4j.kernel.impl.util.CopyOnWriteHashMap;
 
 @Service.Implementation( InMemoryIndexProvider.class )
 public class InMemoryIndexProvider extends SchemaIndexProvider
 {
-    private final Map<Long, IndexWriter> writers = new CopyOnWriteHashMap<Long, IndexWriter>();
+    private final Map<Long, IndexPopulator> writers = new CopyOnWriteHashMap<Long, IndexPopulator>();
 
     public InMemoryIndexProvider()
     {
@@ -39,20 +39,33 @@ public class InMemoryIndexProvider extends SchemaIndexProvider
     }
 
     @Override
-    public IndexWriter getOnlineWriter( long indexId )
+    public IndexWriter getWriter( long indexId )
     {
-        IndexWriter populator = new InMemoryIndexWriter();
+        InMemoryIndexWriter populator = new InMemoryIndexWriter();
         writers.put( indexId, populator );
         return populator;
     }
 
     @Override
-    public IndexWriter getPopulatingWriter( long indexId )
+    public IndexState getState( long indexId )
     {
-        return getOnlineWriter( indexId );
+        return null;
     }
 
-    private static class InMemoryIndexWriter implements IndexWriter
+    @Override
+    public IndexPopulator getPopulator( long indexId )
+    {
+        InMemoryIndexWriter populator = new InMemoryIndexWriter();
+        writers.put( indexId, populator );
+        return populator;
+    }
+
+    @Override
+    public void flushAll()
+    {
+    }
+    
+    private static class InMemoryIndexWriter implements IndexPopulator, IndexWriter
     {
         private final Map<Object, Set<Long>> indexData = new HashMap<Object, Set<Long>>();
 
@@ -64,10 +77,17 @@ public class InMemoryIndexProvider extends SchemaIndexProvider
         }
 
         @Override
-        public void remove( long nodeId, Object propertyValue )
+        public void update( Iterable<NodePropertyUpdate> updates )
         {
-            Collection<Long> nodes = indexData.get( propertyValue );
-            nodes.remove( nodeId );
+            for ( NodePropertyUpdate update : updates )
+            {
+
+            }
+        }
+
+        @Override
+        public void force()
+        {
         }
 
         private Set<Long> getLongs( Object propertyValue )
@@ -94,7 +114,7 @@ public class InMemoryIndexProvider extends SchemaIndexProvider
         }
 
         @Override
-        public void force()
+        public void populationCompleted()
         {
         }
     }

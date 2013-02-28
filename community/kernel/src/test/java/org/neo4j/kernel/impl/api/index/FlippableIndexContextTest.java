@@ -30,7 +30,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
-import org.neo4j.test.OtherThreadExecutor;
 
 public class FlippableIndexContextTest
 {

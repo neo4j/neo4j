@@ -19,28 +19,27 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import java.util.concurrent.ExecutorService;
-
 import org.neo4j.kernel.api.IndexState;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
+import org.neo4j.kernel.impl.util.JobScheduler;
 
 public class PopulatingIndexContext implements IndexContext
 {
-    private final ExecutorService executor;
+    private final JobScheduler scheduler;
     private final IndexPopulationJob job;
 
-    public PopulatingIndexContext( ExecutorService executor, IndexRule rule, IndexWriter writer,
+    public PopulatingIndexContext( JobScheduler scheduler, IndexRule rule, IndexPopulator writer,
                                    FlippableIndexContext flipper, NeoStore neoStore )
     {
-        this.executor = executor;
-        this.job      = new IndexPopulationJob( rule, writer, flipper, neoStore );
+        this.scheduler = scheduler;
+        this.job       = new IndexPopulationJob( rule, writer, flipper, neoStore );
     }
 
     @Override
     public void create()
     {
-        executor.submit( job );
+        scheduler.submit( job );
     }
 
     @Override

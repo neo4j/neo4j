@@ -61,7 +61,7 @@ import org.neo4j.kernel.ha.com.master.Slave;
 import org.neo4j.kernel.ha.com.slave.SlaveImpl;
 import org.neo4j.kernel.ha.com.slave.SlaveServer;
 import org.neo4j.kernel.ha.id.HaIdGeneratorFactory;
-import org.neo4j.kernel.impl.api.index.old.OldIndexingService;
+import org.neo4j.kernel.impl.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.index.IndexStore;
@@ -77,6 +77,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.MissingLogDataException;
 import org.neo4j.kernel.impl.transaction.xaframework.NoSuchLogVersionException;
 import org.neo4j.kernel.impl.transaction.xaframework.XaFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
+import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -442,9 +443,9 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                         resolver.resolveDependency( XaFactory.class ),
                         resolver.resolveDependency( TransactionStateFactory.class ),
                         resolver.resolveDependency( CacheAccessBackDoor.class ),
-                        resolver.resolveDependency( OldIndexingService.class ),
+                        resolver.resolveDependency( SchemaIndexProvider.class ),
                         resolver.resolveDependency( TransactionInterceptorProviders.class ),
-                        resolver );
+                        resolver.resolveDependency( JobScheduler.class ) );
                 xaDataSourceManager.registerDataSource( nioneoDataSource );
             }
             catch ( IOException e )

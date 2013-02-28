@@ -657,7 +657,15 @@ public abstract class CommonAbstractStore
      */
     public long getHighestPossibleIdInUse()
     {
-        return idGenerator.getHighId() - 1;
+        if ( idGenerator != null )
+        {
+            return idGenerator.getHighId() - 1;
+        }
+        else
+        {   // If we ask for this before we've recovered we can only make a best-effort guess
+            // about the highest possible id in use.
+            return figureOutHighestIdInUse();
+        }
     }
 
     /**

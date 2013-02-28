@@ -21,8 +21,6 @@ package org.neo4j.kernel.impl.api.index;
 
 import static org.neo4j.helpers.collection.Iterables.filter;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -52,10 +50,10 @@ public class IndexPopulationJob implements Runnable
 
     // NOTE: unbounded queue expected here
     private final Queue<NodePropertyUpdate> queue = new ConcurrentLinkedQueue<NodePropertyUpdate>();
-    private final IndexWriter writer;
+    private final IndexPopulator writer;
     private final FlippableIndexContext flipper;
 
-    public IndexPopulationJob( IndexRule indexRule, IndexWriter writer, FlippableIndexContext flipper, NeoStore neoStore)
+    public IndexPopulationJob( IndexRule indexRule, IndexPopulator writer, FlippableIndexContext flipper, NeoStore neoStore)
     {
         this.writer = writer;
         this.flipper = flipper;
@@ -99,21 +97,18 @@ public class IndexPopulationJob implements Runnable
 
     private void populateFromQueueIfAvailable( final long highestIndexedNodeId )
     {
-        if ( queue.isEmpty() )
-            return;
-
-        Predicate<NodePropertyUpdate> hasBeenIndexed = new Predicate<NodePropertyUpdate>()
+        if ( !queue.isEmpty() )
         {
-            @Override
-            public boolean accept( NodePropertyUpdate item )
+            Predicate<NodePropertyUpdate> hasBeenIndexed = new Predicate<NodePropertyUpdate>()
             {
-                return item.getNodeId() <= highestIndexedNodeId;
-            }
-        };
+                @Override
+                public boolean accept( NodePropertyUpdate item )
+                {
+                    return item.getNodeId() <= highestIndexedNodeId;
+                }
+            };
 
-        for ( NodePropertyUpdate update : filter( hasBeenIndexed, queue ) )
-        {
-            update.apply( writer );
+            writer.update( filter( hasBeenIndexed, queue ) );
         }
     }
 
@@ -124,7 +119,7 @@ public class IndexPopulationJob implements Runnable
 
     /**
      * A transaction happened that produced the given updates. Let this job incorporate its data
-     * into, feeding it to the {@link IndexWriter}.
+     * into, feeding it to the {@link IndexPopulator}.
      */
     public void update( Iterable<NodePropertyUpdate> updates )
     {
@@ -137,7 +132,6 @@ public class IndexPopulationJob implements Runnable
     private class NodeIndexingProcessor extends Processor
     {
         private final PropertyStore propertyStore;
-        private final List<NodePropertyUpdate> updates = new ArrayList<NodePropertyUpdate>();
 
         public NodeIndexingProcessor( PropertyStore propertyStore )
         {
@@ -165,7 +159,6 @@ public class IndexPopulationJob implements Runnable
 
             // TODO optimize so that we don't have to load all property records, but instead stop
             // when we first find the property we're looking for.
-            updates.clear();
             for ( PropertyRecord propertyRecord : propertyStore.getPropertyRecordChain( firstPropertyId ) )
             {
                 for ( PropertyBlock property : propertyRecord.getPropertyBlocks() )
@@ -175,16 +168,11 @@ public class IndexPopulationJob implements Runnable
                         // Make sure the value is loaded, even if it's of a "heavy" kind.
                         propertyStore.makeHeavy( property );
                         Object propertyValue = property.getType().getValue( property, propertyStore );
-                        // TODO optimize
-                        updates.add( new NodePropertyUpdate( node.getId(), firstPropertyId, null, propertyValue ) );
+                        writer.add( node.getId(), propertyValue );
                     }
                 }
             }
 
-            for ( NodePropertyUpdate update : updates )
-            {
-                update.apply( writer );
-            }
         }
     }
 

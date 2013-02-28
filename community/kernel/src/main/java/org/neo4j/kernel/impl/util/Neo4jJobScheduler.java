@@ -17,40 +17,34 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api.index;
+package org.neo4j.kernel.impl.util;
 
-import org.neo4j.kernel.api.IndexState;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
-public class OnlineIndexContext implements IndexContext
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+
+public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
 {
-    private final IndexWriter writer;
 
-    public OnlineIndexContext( IndexWriter writer )
-    {
-        this.writer = writer;
-    }
-    
+    private ExecutorService executor;
+
     @Override
-    public void create()
+    public void start()
     {
-        throw new UnsupportedOperationException(  );
+        this.executor = Executors.newCachedThreadPool();
     }
 
     @Override
-    public void update( Iterable<NodePropertyUpdate> updates )
+    public void stop()
     {
-        writer.update( updates );
+        this.executor.shutdown();
+        this.executor = null;
     }
 
     @Override
-    public void drop()
+    public void submit( Runnable job )
     {
-        writer.dropIndex();
-    }
-
-    @Override
-    public IndexState getState()
-    {
-        return IndexState.ONLINE;
+        this.executor.submit( job );
     }
 }

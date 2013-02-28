@@ -26,6 +26,7 @@ public enum IndexState
 {
 
     POPULATING,
-    ONLINE;
+    ONLINE,
+    NON_EXISTENT;
 
 }
