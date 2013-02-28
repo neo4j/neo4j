@@ -52,19 +52,12 @@ public class Logger
 
     public void log( Level level, String message, Object... parameters )
     {
+        // guard the call to string.format
+        if ( logger.isLoggable( level ) )
+        {
+            final String logMessage = String.format( message, parameters );
 
-        final String logMessage = String.format( message, parameters );
-        if ( logger != null )
-        {
-            if ( logger.isLoggable( level ) )
-            {
-                logger.log( level, logMessage );
-            }
-        }
-        else
-        {
-            System.out.println(
-                String.format( "Logger not configured, logging to std out instead: [%s] %s", level.getName(), logMessage ) );
+            logger.log( level, logMessage );
         }
     }
 
