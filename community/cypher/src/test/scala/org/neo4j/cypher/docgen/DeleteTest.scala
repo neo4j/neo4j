@@ -43,7 +43,7 @@ class DeleteTest extends DocumentingTestBase {
 
     testQuery(
       title = "Delete single node",
-      text = "To remove a node from the graph, you can delete it with the +DELETE+ clause.",
+      text = "To delete a node, use the +DELETE+ clause.",
       queryText = "start n = node(" + id + ") delete n",
       returns = "Nothing is returned from this query, except the count of affected nodes.",
       assertions = (p) => assertIsDeleted(db.getNodeById(id)))
@@ -51,8 +51,8 @@ class DeleteTest extends DocumentingTestBase {
 
   @Test def delete_single_node_with_all_relationships() {
     testQuery(
-      title = "Remove a node and connected relationships",
-      text = "If you are trying to remove a node with relationships on it, you have to remove these as well.",
+      title = "Delete a node and connected relationships",
+      text = "If you are trying to delete a node with relationships on it, you have to delete these as well.",
       queryText = "start n = node(%Andres%) match n-[r]-() delete n, r",
       returns = "Nothing is returned from this query, except the count of affected nodes.",
       assertions = (p) => assertIsDeleted(node("Andres")))
