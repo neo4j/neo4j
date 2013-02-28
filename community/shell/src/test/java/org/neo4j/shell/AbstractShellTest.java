@@ -19,6 +19,7 @@
  */
 package org.neo4j.shell;
 
+import static java.lang.Integer.parseInt;
 import static java.util.regex.Pattern.compile;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -44,6 +45,7 @@ import org.neo4j.shell.impl.AbstractServer;
 import org.neo4j.shell.impl.CollectingOutput;
 import org.neo4j.shell.impl.RmiLocation;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
+import org.neo4j.shell.kernel.apps.GraphDatabaseApp;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
@@ -316,5 +318,11 @@ public abstract class AbstractShellTest
         node.setProperty( key, value );
         tx.success();
         tx.finish();
+    }
+    
+    protected Node getCurrentNode() throws RemoteException, ShellException
+    {
+        Serializable current = shellServer.interpretVariable( shellClient.getId(), GraphDatabaseApp.CURRENT_KEY );
+        return this.db.getNodeById( parseInt( current.toString().substring( 1 ) ) );
     }
 }

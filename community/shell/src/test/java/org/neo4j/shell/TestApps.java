@@ -24,6 +24,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 
 import java.io.Serializable;
@@ -326,6 +327,22 @@ public class TestApps extends AbstractShellTest
         executeCommand( "ls", "name", "test", "!-" /*no relationship*/ );
         executeCommand( "mkrel -t KNOWS 0" );
         executeCommand( "ls", "name", "test", "-", "KNOWS" );
+    }
+    
+    @Test
+    public void createNodeWithArrayProperty() throws Exception
+    {
+        executeCommand( "mknode --np \"{'values':[1,2,3,4]}\" --cd" );
+        assertTrue( Arrays.equals( new int[] {1,2,3,4}, (int[]) getCurrentNode().getProperty( "values" ) ) );
+    }
+    
+    @Test
+    public void createRelationshipWithArrayProperty() throws Exception
+    {
+        String type = "ARRAY";
+        executeCommand( "mkrel -ct " + type + " --rp \"{'values':[1,2,3,4]}\"" );
+        assertTrue( Arrays.equals( new int[] {1,2,3,4},
+                (int[]) getCurrentNode().getSingleRelationship( withName( type ), OUTGOING ).getProperty( "values" ) ) );
     }
     
     @Test
