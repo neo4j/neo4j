@@ -19,8 +19,10 @@
  */
 package org.neo4j.shell;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Serializable;
@@ -85,6 +87,12 @@ public class StartClient
      * to execute when the shell client has been connected.
      */
     public static final String ARG_COMMAND = "c";
+
+    /**
+     * File a file with shell commands to execute when the shell client has
+     * been connected.
+     */
+    public static final String ARG_FILE = "file";
 
     /**
      * Configuration file to load and use if a local {@link GraphDatabaseService}
@@ -293,7 +301,8 @@ public class StartClient
 
     private static boolean isCommandLine( Args args )
     {
-        return args.get( ARG_COMMAND, null ) != null;
+        return args.get( ARG_COMMAND, null ) != null ||
+               args.get( ARG_FILE, null ) != null;
     }
 
     private static void grabPromptOrJustExecuteCommand( ShellClient client, Args args ) throws Exception
@@ -303,11 +312,34 @@ public class StartClient
         {
             client.evaluate( command );
             client.shutdown();
+            return;
         }
-        else
+        String fileName = args.get( ARG_FILE, null );
+        if ( fileName != null )
         {
-            client.grabPrompt();
+            File file = new File( fileName );
+            if ( !file.exists() )
+            {
+                throw new ShellException( "File to execute " +
+                        "does not exist " + fileName );
+            }
+            executeFile( client, file );
+            return;
         }
+
+        client.grabPrompt();
+    }
+
+    private static void executeFile( ShellClient client, File file ) throws IOException, ShellException
+    {
+        BufferedReader reader = new BufferedReader( new FileReader( file ) );
+        String line;
+        while ( ( line = reader.readLine() ) != null )
+        {
+            client.evaluate( line );
+        }
+        client.shutdown();
+        reader.close();
     }
 
     static Map<String, Serializable> getSessionVariablesFromArgs( Args args ) throws RemoteException, ShellException
@@ -327,6 +359,10 @@ public class StartClient
                 key = key.substring( 1 );
                 session.put( key, entry.getValue() );
             }
+        }
+        if ( isCommandLine( args ) )
+        {
+            session.put( "quiet", true );
         }
         return session;
     }
@@ -397,7 +433,9 @@ public class StartClient
     {
         int port = AbstractServer.DEFAULT_PORT;
         String name = AbstractServer.DEFAULT_NAME;
-        int longestArgLength = longestString( ARG_COMMAND, ARG_CONFIG, ARG_HOST, ARG_NAME,
+        int longestArgLength = longestString( ARG_FILE, ARG_COMMAND,
+                ARG_CONFIG,
+                ARG_HOST, ARG_NAME,
                 ARG_PATH, ARG_PID, ARG_PORT, ARG_READONLY );
         System.out.println(
                 padArg( ARG_HOST, longestArgLength ) + "Domain name or IP of host to connect to (default: localhost)" +
@@ -408,6 +446,8 @@ public class StartClient
                         + AbstractServer.DEFAULT_NAME + ")\n" +
                         padArg( ARG_PID, longestArgLength ) + "Process ID to connect to\n" +
                         padArg( ARG_COMMAND, longestArgLength ) + "Command line to execute. After executing it the " +
+                        "shell exits\n" +
+                        padArg( ARG_FILE, longestArgLength ) + "File containing commands to execute. After executing it the " +
                         "shell exits\n" +
                         padArg( ARG_READONLY, longestArgLength ) + "Connect in readonly mode\n" +
                         padArg( ARG_PATH, longestArgLength ) + "Points to a neo4j db path so that a local server can " +
