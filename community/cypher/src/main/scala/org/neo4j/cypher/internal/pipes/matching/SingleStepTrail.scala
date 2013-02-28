@@ -80,7 +80,7 @@ final case class SingleStepTrail(next: Trail,
       case x      => typ.mkString(":", "|", "")
     }
 
-    "(%s)%s-[%s%s]-%s%s".format(start, left, relName, t, right, next.toString)
+    s"($start)$left-[$relName$t WHERE $nodePred AND $relPred]-$right${next.toString}"
   }
 
 

@@ -23,6 +23,13 @@ import org.neo4j.graphdb.PropertyContainer
 import org.neo4j.cypher.internal.symbols.SymbolTable
 import org.neo4j.cypher.internal.commands.{Pattern, Predicate}
 
+/**
+ * A Trail is a intermediate data structure used by TraversalMatcher to produce the ExpanderSteps -> toSteps(..)
+ *
+ * It's also used to go from the matched paths to execution contexts.
+ *
+ * TODO: This is a blatant breaking of SRP. Uncle Bob would be disappointed.
+ */
 abstract class Trail {
   def pathDescription: Seq[String]
 

@@ -44,6 +44,10 @@ abstract class Predicate extends Expression {
   }
 }
 
+object Predicate {
+  def fromSeq(in: Seq[Predicate]) = in.reduceOption(_ ++ _).getOrElse(True())
+}
+
 case class NullablePredicate(inner: Predicate, exp: Seq[(Expression, Boolean)]) extends Predicate {
   def isMatch(m: ExecutionContext)(implicit state: QueryState) = {
     val nullValue = exp.find {

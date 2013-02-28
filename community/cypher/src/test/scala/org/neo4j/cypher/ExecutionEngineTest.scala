@@ -2361,4 +2361,35 @@ RETURN x0.name?
     //THEN
     assert(result.columns === List("n"))
   }
+
+  @Test
+  def should_use_predicates_in_the_correct_place() {
+    //GIVEN
+    val m = parseAndExecute( """create
+                        advertiser = {name:"advertiser1"},
+                        thing      = {name:"Color"},
+                        red        = {name:"red"},
+                        p1         = {name:"product1"},
+                        p2         = {name:"product4"},
+                        (advertiser)-[:adv_has_product]->(p1),
+                        (advertiser)-[:adv_has_product]->(p2),
+                        (thing)-[:aa_has_value]->(red),
+                        (p1)   -[:ap_has_value]->(red),
+                        (p2)   -[:ap_has_value]->(red)
+                        return advertiser, thing""").toList.head
+
+    val advertiser = m("advertiser").asInstanceOf[Node]
+    val thing = m("thing").asInstanceOf[Node]
+
+
+    //WHEN
+    val result = parseAndExecute(
+      """START advertiser = node({1}), a = node({2})
+       MATCH (advertiser) -[:adv_has_product] ->(out) -[:ap_has_value] -> red <-[:aa_has_value]- (a)
+       WHERE red.name = 'red' and out.name = 'product1'
+       RETURN out.name""", "1" -> advertiser, "2" -> thing)
+
+    //THEN
+    assert(result.toList === List(Map("out.name" -> "product1")))
+  }
 }
