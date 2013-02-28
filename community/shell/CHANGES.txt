@@ -1,3 +1,8 @@
+1.9.M05
+-------
+o Add PROFILE command for cypher queries
+
+
 1.8.RC1 (2012-09-05)
 --------------------
 o Remove read only fallback when DB is locked.

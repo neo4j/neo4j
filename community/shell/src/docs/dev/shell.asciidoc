@@ -237,6 +237,8 @@ You can use Cypher to query the graph. For that, use the +start+ command.
 Cypher queries need to be terminated by a semicolon `;`.
 
 * +start n = node(0) return n;+ will give you a listing of the node with ID 0
+* +cypher 1.8 start n = node(0) return n;+ will execute the query with the Cypher parser version 1.8
+* +profile start n = node(0) return n;+ will execute the cypher query and display profiling information
 
 
 === Indexing ===
