@@ -76,5 +76,6 @@ As an Open Source Project, the Neo4j User community extends its warmest thanks t
 |Alexander Yastrebov |https://github.com/AlexanderYastrebov[AlexanderYastrebov]
 |Mike Bryant|https://github.com/mikesname[mikesname]
 |Klaus Grossmann|https://github.com/iKlaus[iKlaus]
+|Pablo Lalloni|https://github.com/plalloni[plalloni]
 |=======
 
