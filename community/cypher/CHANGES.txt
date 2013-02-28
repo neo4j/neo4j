@@ -7,6 +7,10 @@ o Added label-based indexes
 o Added UNION
 o Added CASE
 
+1.9.RC
+------
+o Fixes #450 - Predicates in WHERE are not evaluated correctly for certain patterns
+
 1.9.M05
 -------
 o Made it possible to run the parser concurrently

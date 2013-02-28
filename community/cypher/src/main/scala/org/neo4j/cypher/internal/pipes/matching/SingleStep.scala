@@ -59,7 +59,7 @@ case class SingleStep(id: Int,
         ">"
 
     val relInfo = typ.toList match {
-      case List() => ""
+      case List() => "[{%s,%s}]".format(relPredicate, nodePredicate)
       case _      => "[:%s {%s,%s}]".format(typ.mkString("|"), relPredicate, nodePredicate)
     }
 

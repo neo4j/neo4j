@@ -31,19 +31,10 @@ public class SharedServerTestBase
 	private static boolean useExternal = Boolean.valueOf(System.getProperty("neo-server.external","false"));
 	private static String externalURL = System.getProperty("neo-server.external.url","http://localhost:7474");
 
-    protected static final NeoServer server()
+    protected static NeoServer server()
     {
         return server;
     }
-
-    /*
-    protected static final void restartServer() throws IOException
-    {
-        releaseServer();
-        ServerHolder.ensureNotRunning();
-        allocateServer();
-    }
-    */
 
     protected final void cleanDatabase()
     {
@@ -78,7 +69,7 @@ public class SharedServerTestBase
     }
 
     @AfterClass
-    public static final void releaseServer()
+    public static void releaseServer()
     {
     	if(!useExternal) 
     	{

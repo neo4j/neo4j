@@ -125,6 +125,30 @@ class TrailToStepTest extends GraphDatabaseTestBase with Assertions with Builder
     assert(first.toSteps(0).get === forward1)
   }
 
+  @Test def longer_pattern_with_predicates() {
+    // GIVEN
+    // MATCH (a)-[r1]->(b)-[r2]->(c)<-[r3]-(d)
+    // WHERE c.name = 'c ' and b.name = 'b '
+
+    val predForB = Equals(Property(NodeIdentifier(), "name"), Literal("b"))
+    val predForC = Equals(Property(NodeIdentifier(), "name"), Literal("c"))
+
+    val forward3 = step(2, Seq(), Direction.INCOMING, None)
+    val forward2 = step(1, Seq(), Direction.OUTGOING, Some(forward3), nodePredicate = predForC)
+    val forward1 = step(0, Seq(), Direction.OUTGOING, Some(forward2), nodePredicate = predForB)
+
+    val fourth = EndPoint("d")
+    val third = SingleStepTrail(fourth, Direction.INCOMING, "r3", Seq(), "c", True(), True(), null, Seq())
+    val second = SingleStepTrail(third, Direction.OUTGOING, "r2", Seq(), "b", True(), predForC, null, Seq())
+    val first = SingleStepTrail(second, Direction.OUTGOING, "r1", Seq(), "a", True(), predForB, null, Seq())
+
+    // WHEN
+    val steps = first.toSteps(0).get
+
+    //THEN
+    assert(steps === forward1)
+  }
+
   @Test def three_steps() {
     val pr3 = step(2, Seq(A), OUTGOING, None)
     val pr2 = step(1, Seq(B), OUTGOING, Some(pr3))

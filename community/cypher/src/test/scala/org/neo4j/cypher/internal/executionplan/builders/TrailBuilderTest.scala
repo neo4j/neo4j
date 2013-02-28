@@ -278,7 +278,7 @@ class TrailBuilderTest extends GraphDatabaseTestBase with Assertions with Builde
 
 
     val result = TrailBuilder.findLongestTrail(Seq(AtoB, BtoC, AtoX, XtoC), Seq("a", "c"), Seq.empty)
-    println(result)
+
     val expected = Some(LongestTrail("a", Some("c"), trail))
 
     assert(result === expected)
@@ -301,7 +301,34 @@ class TrailBuilderTest extends GraphDatabaseTestBase with Assertions with Builde
     val first  = SingleStepTrail(second, Direction.INCOMING, "  UNNAMED15", Seq(), "a", True(), True(), s1, Seq())
 
     val result = TrailBuilder.findLongestTrail(Seq(s1, s2, s3, s4), Seq("a"), Seq.empty)
-    println(result)
+
+    val expected = Some(LongestTrail("a", None, first))
+
+    assert(result === expected)
+  }
+
+  @Test def should_handle_predicates_in_the_middle() {
+    // GIVEN
+    // MATCH (a)-[r1]->(b)-[r2]->(c)<-[r3]-(d)
+    // WHERE c.name = 'c ' and b.name = 'b '
+
+    val predForB = Equals(Property(Identifier("b"), "name"), Literal("b"))
+    val predForC = Equals(Property(Identifier("c"), "name"), Literal("c"))
+
+    val expectedForB = Equals(Property(NodeIdentifier(), "name"), Literal("b"))
+    val expectedForC = Equals(Property(NodeIdentifier(), "name"), Literal("c"))
+
+    val s1 = RelatedTo("a", "b", "r1", Seq(), Direction.OUTGOING, optional = false)
+    val s2 = RelatedTo("b", "c", "r2", Seq(), Direction.OUTGOING, optional = false)
+    val s3 = RelatedTo("c", "d", "r3", Seq(), Direction.INCOMING, optional = false)
+
+    val fourth = EndPoint("d")
+    val third = SingleStepTrail(fourth, Direction.INCOMING, "r3", Seq(), "c", True(), True(), s3, Seq())
+    val second = SingleStepTrail(third, Direction.OUTGOING, "r2", Seq(), "b", True(), expectedForC, s2, Seq(predForC))
+    val first = SingleStepTrail(second, Direction.OUTGOING, "r1", Seq(), "a", True(), expectedForB, s1, Seq(predForB))
+
+    val result = TrailBuilder.findLongestTrail(Seq(s1, s2, s3), Seq("a"), Seq(predForB, predForC))
+
     val expected = Some(LongestTrail("a", None, first))
 
     assert(result === expected)

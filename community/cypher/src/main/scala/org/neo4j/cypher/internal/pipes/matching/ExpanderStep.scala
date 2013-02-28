@@ -56,22 +56,24 @@ trait ExpanderStep {
   The way we reverse the steps is by first creating a Seq out of the steps. In this Seq, the first element points to
   Some(second), the second to Some(third), und so weiter, until the last element points to None.
 
-  By doing a fold left and creating copies along the way, we reverse the directions - we push in None as what the first
-  element will end up pointing to, and pass the steps to the next step. The result is that the first element points to
+  By doing a fold left and creating copies along the way, we reverse the directions - we push in None and True as the
+  first tuple, as what the first reversed step will end use as node predicate and next step. We then pass the reversed
+  step, and it's original predicate on to the next step. The result is that the first element points to
   None, the second to Some(first), und so weiter, until we pop out the last step as our reversed expander
    */
   def reverse(): ExpanderStep = {
-    val allSteps = this.asSeq()
+    val allSteps: Seq[ExpanderStep] = this.asSeq()
 
-    val reversed = allSteps.foldLeft[Option[ExpanderStep]]((None)) {
-      case (last, step) =>
-        val p = step.next.map(_.nodePredicate).getOrElse(True())
-        Some(step.createCopy(next = last, direction = step.direction.reverse(), nodePredicate = p))
+    val reversed = allSteps.foldLeft[(Option[ExpanderStep], Predicate)]((None, True())) {
+      case ((lastStep: Option[ExpanderStep], lastPred: Predicate), step: ExpanderStep) =>
+        val newStep = Some(step.createCopy(next = lastStep, direction = step.direction.reverse(), nodePredicate = lastPred))
+        (newStep, step.nodePredicate)
     }
 
-    assert(reversed.nonEmpty, "The reverse of an expander should never be empty")
-
-    reversed.get
+    reversed match {
+      case (Some(result), _) => result
+      case _                 => throw new ThisShouldNotHappenError("Andres", "Reverse should always succeed")
+    }
   }
 
   private def asSeq(): Seq[ExpanderStep] = {

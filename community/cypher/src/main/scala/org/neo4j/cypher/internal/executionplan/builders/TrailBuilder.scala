@@ -50,24 +50,26 @@ final class TrailBuilder(patterns: Seq[Pattern], boundPoints: Seq[String], predi
 
     def transformToTrail(p: Pattern, done: Trail, patternsToDo: Seq[Pattern]): (Trail, Seq[Pattern]) = {
 
-      def rewriteTo(originalName: String, newExpr: Expression)(pred: Predicate) = pred.rewrite {
+      def rewriteTo(originalName: String, newExpr: Expression)(e: Expression) = e match {
         case Identifier(name) if name == originalName => newExpr
-        case e                                        => e
+        case _                                        => e
       }
 
-      def findRelPredicates(k: String): Seq[Predicate] = predicates.filter(createFinder(k))
-      def findNodePredicates(k: String): Seq[Predicate] = predicates.filter(createFinder(k))
+      def findPredicates(k: String): Seq[Predicate] = predicates.filter(createFinder(k))
 
       def singleStep(rel: RelatedTo, end: String, dir: Direction) = {
-        val relPreds = findNodePredicates(rel.relName)
-        val nodePreds = findRelPredicates(end)
+        val orgRelPred: Seq[Predicate] = findPredicates(rel.relName)
+        val orgNodePred: Seq[Predicate] = findPredicates(end)
 
-        def reduceOrTrue(predicates: Seq[Predicate]): Predicate = predicates.reduceOption(_ ++ _).getOrElse(True())
+        val relPred: Predicate = Predicate.
+          fromSeq(orgRelPred).
+          rewrite(rewriteTo(rel.relName, RelationshipIdentifier()))
 
-        val rewrittenRelPredicate: Predicate = reduceOrTrue(relPreds.map(rewriteTo(rel.relName, RelationshipIdentifier())))
-        val rewrittenNodePredicate: Predicate = reduceOrTrue(nodePreds.map(rewriteTo(end, NodeIdentifier())))
+        val nodePred: Predicate = Predicate.
+          fromSeq(orgNodePred).
+          rewrite(rewriteTo(end, NodeIdentifier()))
 
-        done.add(start => SingleStepTrail(EndPoint(end), dir, rel.relName, rel.relTypes, start, rewrittenRelPredicate, rewrittenNodePredicate, rel, relPreds ++ nodePreds))
+        done.add(start => SingleStepTrail(EndPoint(end), dir, rel.relName, rel.relTypes, start, relPred, nodePred, rel, orgNodePred ++ orgRelPred))
       }
 
       def multiStep(rel: VarLengthRelatedTo, end: String, dir: Direction) =

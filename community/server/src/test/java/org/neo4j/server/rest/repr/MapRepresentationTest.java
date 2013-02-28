@@ -37,7 +37,7 @@ public class MapRepresentationTest
         Map map = MapUtil.map( "name","John","age",23 );
         MapRepresentation rep = new MapRepresentation( map  );
         OutputFormat format = new OutputFormat( new JsonFormat(), new URI( "http://localhost/" ), null );
-        assertTrue(format.format( rep ).contains( "\"age\" : 23" ));
+        assertTrue(format.assemble( rep ).contains( "\"age\" : 23" ));
     }
 
 

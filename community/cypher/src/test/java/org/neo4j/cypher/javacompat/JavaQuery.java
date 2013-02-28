@@ -33,6 +33,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.kernel.impl.util.FileUtils;
 
 public class JavaQuery
 {
@@ -51,7 +52,7 @@ public class JavaQuery
     void run()
     {
         clearDbPath();
-        
+
         // START SNIPPET: execute
         GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( DB_PATH );
         // add some data first, keep id of node so we can refer to it

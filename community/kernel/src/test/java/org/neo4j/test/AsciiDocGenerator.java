@@ -44,7 +44,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 public abstract class AsciiDocGenerator
 {
     private static final String DOCUMENTATION_END = "\n...\n";
-    private Logger log = Logger.getLogger( AsciiDocGenerator.class.getName() );
+    private final Logger log = Logger.getLogger( AsciiDocGenerator.class.getName() );
     protected final String title;
     protected String section;
     protected String description = null;
@@ -75,7 +75,6 @@ public abstract class AsciiDocGenerator
         this.section = section;
         return this;
     }
-
 
     /**
      * Add a description to the test (in asciidoc format). Adding multiple
