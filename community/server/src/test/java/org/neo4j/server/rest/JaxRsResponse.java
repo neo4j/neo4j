@@ -119,7 +119,5 @@ public class JaxRsResponse extends Response
         return type;
     }
 
-    public String getEntity(Class<String> type) {
-        return getEntity();
-    }
+
 }

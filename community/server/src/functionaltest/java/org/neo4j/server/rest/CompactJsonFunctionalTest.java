@@ -95,7 +95,7 @@ public class CompactJsonFunctionalTest extends AbstractRestFunctionalTestBase
     public void shouldGetThomasAndersonDirectly() {
         JaxRsResponse response = RestRequest.req().get(functionalTestHelper.nodeUri(thomasAnderson), CompactJsonFormat.MEDIA_TYPE);
         assertEquals(Status.OK.getStatusCode(), response.getStatus());
-        String entity = response.getEntity(String.class);
+        String entity = response.getEntity();
         assertTrue(entity.contains("Thomas Anderson"));
         assertValidJson(entity);
         response.close();

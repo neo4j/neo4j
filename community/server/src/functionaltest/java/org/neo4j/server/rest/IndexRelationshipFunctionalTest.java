@@ -235,7 +235,7 @@ public class IndexRelationshipFunctionalTest extends AbstractRestFunctionalTestB
         JaxRsResponse response = RestRequest.req()
                 .get( functionalTestHelper.indexRelationshipUri( indexName, key, value ) );
         assertEquals( 200, response.getStatus() );
-        Collection<?> items = (Collection<?>) JsonHelper.jsonToSingleValue( response.getEntity( String.class ) );
+        Collection<?> items = (Collection<?>) JsonHelper.jsonToSingleValue( response.getEntity() );
         int counter = 0;
         for ( Object item : items )
         {

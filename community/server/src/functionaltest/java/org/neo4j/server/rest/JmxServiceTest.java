@@ -50,7 +50,7 @@ public class JmxServiceTest extends AbstractRestFunctionalTestBase
     public void shouldRespondWithTheWebAdminClientSettings() throws Exception {
         String url = functionalTestHelper.managementUri() + "/server/jmx";
         JaxRsResponse resp = RestRequest.req().get(url);
-        String json = resp.getEntity(String.class);
+        String json = resp.getEntity();
 
         assertEquals(json, 200, resp.getStatus());
         assertThat(json, containsString("resources"));

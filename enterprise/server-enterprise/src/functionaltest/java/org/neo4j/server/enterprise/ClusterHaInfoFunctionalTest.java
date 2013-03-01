@@ -19,21 +19,22 @@
  */
 package org.neo4j.server.enterprise;
 
+import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assume.assumeFalse;
 
 import java.io.File;
 import java.net.URI;
 import java.util.Map;
 
-import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.MediaType;
 
 import org.junit.After;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
-import org.mortbay.jetty.Response;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Settings;
 import org.neo4j.helpers.Triplet;
@@ -50,15 +51,11 @@ public class ClusterHaInfoFunctionalTest
     private static final Pair<Integer/*ha port*/, Integer/*web port*/>[] SERVER_PORTS = new Pair[] {
             Pair.of( 6001, 7474 ), Pair.of( 6002, 7475 ), Pair.of( 6003, 7476 ) };
     private static final TargetDirectory dir = TargetDirectory.forTest( ClusterHaInfoFunctionalTest.class );
-    public @Rule
-    TestName testName = new TestName()
-    {
-        @Override
-        public String getMethodName()
-        {
-            return ClusterHaInfoFunctionalTest.class.getSimpleName() + "." + super.getMethodName();
-        }
-    };
+    private static final String MANAGEMENT_BASE_PATH = "db/manage";
+    private static final String MASTER_INFO_BASE_PATH = MANAGEMENT_BASE_PATH + MasterInfoService.BASE_PATH;
+
+    @Rule
+    public TestName testName = new TestName();
 
     private ServerCluster cluster;
 
@@ -69,69 +66,65 @@ public class ClusterHaInfoFunctionalTest
         cluster = null;
     }
 
-    @Test
-    public void allInstancesInClusterReportAvailabilityOfHaEndpoint() throws Exception
+    @Before
+    public void before() throws Exception
     {
-        if ( Settings.osIsWindows() ) return;
+        assumeFalse( Settings.osIsWindows() );
 
         cluster = new ServerCluster( testName.getMethodName(), dir, SERVER_PORTS );
+    }
 
+    @Test
+    public void shouldAdvertiseManagementEndpoints() throws Exception
+    {
         for ( Triplet<ServerCluster.ServerManager, URI, File> baseServerURI : cluster.getServers() )
         {
-            URI managementUri = URI.create( baseServerURI.second().toString() + "db/manage" );
+            URI managementUri = URI.create( baseServerURI.second() + MASTER_INFO_BASE_PATH );
             JaxRsResponse response = RestRequest.req().get( managementUri.toString() );
-            Map<String, Object> map = JsonHelper.jsonToMap( response.getEntity( String.class ) );
-            assertEquals( 4, ((Map) map.get( "services" ) ).size());
+            Map<String, Object> services = JsonHelper.jsonToMap( response.getEntity() );
+            assertEquals( 2, services.size() );
+            assertEquals( managementUri + "/master", services.get( "isMaster" ) );
+            assertEquals( managementUri + "/slave", services.get( "isSlave" ) );
         }
     }
 
     @Test
-    public void allInstancesInClusterReturnProperIsMasterResponse() throws Exception
+    public void shouldFindOneMaster() throws Exception
     {
-        if ( Settings.osIsWindows() ) return;
+        int masterCount = 0;
 
-        cluster = new ServerCluster( testName.getMethodName(), dir, SERVER_PORTS );
-
-        String theMaster = null;
-        for ( Triplet<ServerCluster.ServerManager, URI, File> baseServerURI : cluster.getServers() )
+        for ( Triplet<ServerCluster.ServerManager, URI, File> serverTriplet : cluster.getServers() )
         {
-            URI managementUri = URI.create( baseServerURI.second().toString() + "db/manage" );
-            System.out.println("Requesting :::: "+managementUri + MasterInfoService.BASE_PATH +
-                    MasterInfoService.ISMASTER_PATH);
-            JaxRsResponse response = RestRequest.req().get( managementUri + MasterInfoService.BASE_PATH +
-                    MasterInfoService.ISMASTER_PATH );
-            if ( Response.SC_OK == response.getStatus() )
-            {
-                assertEquals( "200 means it is the master", Boolean.toString( Boolean.TRUE ), response.getEntity() );
-                if ( theMaster == null )
-                {
-                    theMaster = baseServerURI.first().getHaURI();
-                }
-                else
-                {
-                    assertEquals( "all should report the same master", theMaster, baseServerURI );
-                }
-            }
-            else if ( Response.SC_SEE_OTHER == response.getStatus() )
-            {
-                String reportedMaster = response.getHeaders().get( HttpHeaders.LOCATION ).get( 0 );
-                assertNotNull( reportedMaster );
+            URI managementUri = URI.create( serverTriplet.second() + MASTER_INFO_BASE_PATH);
+            JaxRsResponse response = RestRequest.req().get( managementUri + MasterInfoService.IS_MASTER_PATH );
 
-                if ( theMaster == null )
-                {
-                    theMaster = reportedMaster;
-                }
-                else
-                {
-                    assertEquals( "all should report the same master", theMaster, reportedMaster);
-                }
-            }
-            else
-            {
-                fail( response.getStatus() + " is not an expected return code from " + baseServerURI.second() );
+            if (response.getStatus() == 200) {
+                assertThat( response.getType(), is( MediaType.TEXT_PLAIN_TYPE ) );
+                assertThat( response.getEntity(), is( "true" ) );
+                masterCount++;
             }
         }
-        // someone must be reported as the master
-        assertNotNull( theMaster );
+
+        assertEquals( 1, masterCount );
+    }
+
+    @Test
+    public void shouldFindTwoSlaves() throws Exception
+    {
+        int slaveCount = 0;
+
+        for ( Triplet<ServerCluster.ServerManager, URI, File> serverTriplet : cluster.getServers() )
+        {
+            URI managementUri = URI.create( serverTriplet.second() + MASTER_INFO_BASE_PATH );
+            JaxRsResponse response = RestRequest.req().get( managementUri + MasterInfoService.IS_SLAVE_PATH );
+
+            if (response.getStatus() == 200) {
+                assertEquals( MediaType.TEXT_PLAIN_TYPE, response.getType() );
+                assertEquals( "true", response.getEntity() );
+                slaveCount++;
+            }
+        }
+
+        assertEquals( 2, slaveCount);
     }
 }

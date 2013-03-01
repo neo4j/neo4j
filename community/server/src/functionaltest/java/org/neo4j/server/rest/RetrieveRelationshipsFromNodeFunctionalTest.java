@@ -227,7 +227,7 @@ public class RetrieveRelationshipsFromNodeFunctionalTest extends AbstractRestFun
         JaxRsResponse response = sendRetrieveRequestToServer( nodeWithRelationships, "/in/LIKES" );
         assertEquals( 200, response.getStatus() );
         assertEquals( MediaType.APPLICATION_JSON_TYPE, response.getType() );
-        verifyRelReps( 1, response.getEntity( String.class ) );
+        verifyRelReps( 1, response.getEntity() );
         response.close();
     }
 
@@ -238,7 +238,7 @@ public class RetrieveRelationshipsFromNodeFunctionalTest extends AbstractRestFun
         JaxRsResponse response = sendRetrieveRequestToServer( nodeWithRelationships, "/out/HATES" );
         assertEquals( 200, response.getStatus() );
         assertEquals( MediaType.APPLICATION_JSON_TYPE, response.getType() );
-        verifyRelReps( 1, response.getEntity( String.class ) );
+        verifyRelReps( 1, response.getEntity() );
         response.close();
     }
 
@@ -264,7 +264,7 @@ public class RetrieveRelationshipsFromNodeFunctionalTest extends AbstractRestFun
         JaxRsResponse response = sendRetrieveRequestToServer( nodeWithoutRelationships, "/in" );
         assertEquals( 200, response.getStatus() );
         assertEquals( MediaType.APPLICATION_JSON_TYPE, response.getType() );
-        verifyRelReps( 0, response.getEntity( String.class ) );
+        verifyRelReps( 0, response.getEntity() );
         response.close();
     }
 
@@ -275,7 +275,7 @@ public class RetrieveRelationshipsFromNodeFunctionalTest extends AbstractRestFun
         JaxRsResponse response = sendRetrieveRequestToServer( nodeWithoutRelationships, "/out" );
         assertEquals( 200, response.getStatus() );
         assertEquals( MediaType.APPLICATION_JSON_TYPE, response.getType() );
-        verifyRelReps( 0, response.getEntity( String.class ) );
+        verifyRelReps( 0, response.getEntity() );
         response.close();
     }
 
@@ -329,7 +329,7 @@ public class RetrieveRelationshipsFromNodeFunctionalTest extends AbstractRestFun
 
         JaxRsResponse response = RestRequest.req().get( functionalTestHelper.relationshipUri( relationshipId ) );
 
-        String entity = response.getEntity( String.class );
+        String entity = response.getEntity();
         assertNotNull( entity );
         isLegalJson( entity );
         response.close();
