@@ -56,12 +56,12 @@ trait Predicates extends Base with ParserPattern with StringLiteral with Labels 
   }
 
   def predicateLvl2: Parser[Predicate] = (
-        TRUE ^^^ True()
+        operators
+      | TRUE ^^^ True()
       | FALSE ^^^ Not(True())
       | hasLabel
       | expressionOrEntity <~ IS <~ NULL ^^ (x => IsNull(x))
       | expressionOrEntity <~ IS <~ NOT <~ NULL ^^ (x => Not(IsNull(x)))
-      | operators
       | NOT ~> parens(predicate) ^^ ( inner => Not(inner) )
       | NOT ~> predicate ^^ ( inner => Not(inner) )
       | hasProperty
