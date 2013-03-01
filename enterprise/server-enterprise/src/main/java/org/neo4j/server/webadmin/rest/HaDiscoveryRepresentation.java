@@ -24,24 +24,26 @@ import org.neo4j.server.rest.repr.MappingSerializer;
 
 public class HaDiscoveryRepresentation extends MappingRepresentation
 {
-    private static final String DATA_URI_KEY = "isMaster";
-    private static final String MANAGEMENT_URI_KEY = "getMaster";
+    private static final String IS_MASTER_KEY = "isMaster";
+    private static final String IS_SLAVE_KEY = "isSlave";
     private static final String DISCOVERY_REPRESENTATION_TYPE = "discovery";
-    private final String isMasterUri;
-    private final String getMasterUri;
 
-    public HaDiscoveryRepresentation( String isMasterUri, String getMasterUri )
+    private final String basePath;
+    private final String isMasterUri;
+    private final String isSlaveUri;
+
+    public HaDiscoveryRepresentation( String basePath, String isMasterUri, String isSlaveUri )
     {
         super( DISCOVERY_REPRESENTATION_TYPE );
+        this.basePath = basePath;
         this.isMasterUri = isMasterUri;
-        this.getMasterUri = getMasterUri;
+        this.isSlaveUri = isSlaveUri;
     }
 
     @Override
     protected void serialize( MappingSerializer serializer )
     {
-        serializer.putUri( MANAGEMENT_URI_KEY, isMasterUri );
-        serializer.putUri( DATA_URI_KEY, getMasterUri );
+        serializer.putUri( IS_MASTER_KEY, basePath + isMasterUri );
+        serializer.putUri( IS_SLAVE_KEY, basePath + isSlaveUri );
     }
-
 }

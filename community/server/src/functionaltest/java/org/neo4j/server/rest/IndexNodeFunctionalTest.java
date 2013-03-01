@@ -206,7 +206,7 @@ public class IndexNodeFunctionalTest extends AbstractRestFunctionalTestBase
         JaxRsResponse response = RestRequest.req().get(
                 functionalTestHelper.indexNodeUri( indexName, key,
                         URIHelper.encode( value ) ) );
-        String entity = response.getEntity( String.class );
+        String entity = response.getEntity();
         Collection<?> hits = (Collection<?>) JsonHelper.jsonToSingleValue( entity );
         assertEquals( 1, hits.size() );
     }
@@ -448,7 +448,7 @@ public class IndexNodeFunctionalTest extends AbstractRestFunctionalTestBase
                 .get( indexUri );
         assertEquals( 200, response.getStatus() );
 
-        String entity = response.getEntity( String.class );
+        String entity = response.getEntity();
 
         Map<String, Object> map = JsonHelper.jsonToMap( entity );
         assertNotNull( map.get( "self" ) );
@@ -515,7 +515,7 @@ public class IndexNodeFunctionalTest extends AbstractRestFunctionalTestBase
         JaxRsResponse response = RestRequest.req()
                 .get( functionalTestHelper.indexNodeUri( indexName, key, value ) );
         assertEquals( 200, response.getStatus() );
-        Collection<?> items = (Collection<?>) JsonHelper.jsonToSingleValue( response.getEntity( String.class ) );
+        Collection<?> items = (Collection<?>) JsonHelper.jsonToSingleValue( response.getEntity() );
         int counter = 0;
         for ( Object item : items )
         {
@@ -675,14 +675,14 @@ public class IndexNodeFunctionalTest extends AbstractRestFunctionalTestBase
         response.close();
         response = request.get( functionalTestHelper.indexNodeUri( indexName, key, URIHelper.encode( value ) ) );
         assertEquals( Status.OK.getStatusCode(), response.getStatus() );
-        Collection<?> hits = (Collection<?>) JsonHelper.jsonToSingleValue( response.getEntity( String.class ) );
+        Collection<?> hits = (Collection<?>) JsonHelper.jsonToSingleValue( response.getEntity() );
         assertEquals( 1, hits.size() );
         response.close();
 
         CLIENT.resource( location )
                 .delete();
         response = request.get( functionalTestHelper.indexNodeUri( indexName, key, URIHelper.encode( value ) ) );
-        hits = (Collection<?>) JsonHelper.jsonToSingleValue( response.getEntity( String.class ) );
+        hits = (Collection<?>) JsonHelper.jsonToSingleValue( response.getEntity() );
         assertEquals( 0, hits.size() );
     }
 
