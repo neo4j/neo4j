@@ -47,9 +47,9 @@ public class PerformUpgradeIfNecessary implements PreflightTask
 
     private final Logger logger = Logger.getLogger( PerformUpgradeIfNecessary.class );
     private String failureMessage = "Unable to upgrade database";
-    private Configuration config;
-    private PrintStream out;
-    private Map<String, String> dbConfig;
+    private final Configuration config;
+    private final PrintStream out;
+    private final Map<String, String> dbConfig;
 
     public PerformUpgradeIfNecessary( Configuration serverConfig, Map<String, String> dbConfig, PrintStream out )
     {
@@ -75,17 +75,18 @@ public class PerformUpgradeIfNecessary implements PreflightTask
             dbConfig.put( "store_dir", dbLocation );
             dbConfig.put( "neo_store", store.getPath() );
 
-            if ( !new UpgradableDatabase().storeFilesUpgradeable( store ) )
+            FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
+            UpgradableDatabase upgradableDatabase = new UpgradableDatabase( fileSystem );
+            if ( !upgradableDatabase.storeFilesUpgradeable( store ) )
             {
                 return true;
             }
 
-            FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
             Config conf = new Config( dbConfig, GraphDatabaseSettings.class );
             StoreUpgrader storeUpgrader = new StoreUpgrader( conf, StringLogger.SYSTEM,
                     new ConfigMapUpgradeConfiguration( conf ),
-                    new UpgradableDatabase(), new StoreMigrator( new VisibleMigrationProgressMonitor( StringLogger.SYSTEM, out ) ),
-                    new DatabaseFiles(), new DefaultIdGeneratorFactory(), fileSystem );
+                    upgradableDatabase, new StoreMigrator( new VisibleMigrationProgressMonitor( StringLogger.SYSTEM, out ) ),
+                    new DatabaseFiles( fileSystem ), new DefaultIdGeneratorFactory(), fileSystem );
 
             try
             {

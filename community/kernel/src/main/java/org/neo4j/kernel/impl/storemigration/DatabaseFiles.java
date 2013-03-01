@@ -22,18 +22,27 @@ package org.neo4j.kernel.impl.storemigration;
 import java.io.File;
 import java.io.IOException;
 
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+
 public class DatabaseFiles
 {
+    private final FileSystemAbstraction fs;
+
+    public DatabaseFiles( FileSystemAbstraction fs )
+    {
+        this.fs = fs;
+    }
+    
     public void moveToBackupDirectory( File workingDirectory, File backupDirectory )
     {
-        if (backupDirectory.exists())
+        if ( fs.fileExists( backupDirectory ) )
         {
             throw new StoreUpgrader.UnableToUpgradeException( String.format( "Cannot proceed with upgrade " +
                     "because there is an existing upgrade backup in the way at %s. If you do not need this " +
                     "backup please delete it or move it out of the way before re-attempting upgrade.",
                     backupDirectory.getAbsolutePath() ) );
         }
-        backupDirectory.mkdir();
+        fs.mkdir( backupDirectory );
         move( workingDirectory, backupDirectory );
     }
 
@@ -46,8 +55,8 @@ public class DatabaseFiles
     {
         try
         {
-            StoreFiles.move( fromDirectory, toDirectory );
-            LogFiles.move( fromDirectory, toDirectory );
+            StoreFiles.move( fs, fromDirectory, toDirectory );
+            LogFiles.move( fs, fromDirectory, toDirectory );
         }
         catch ( IOException e )
         {

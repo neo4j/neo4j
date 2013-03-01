@@ -23,6 +23,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+
+import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.DefaultWindowPoolFactory;
@@ -35,19 +37,19 @@ import org.neo4j.kernel.impl.util.StringLogger;
 
 public class StoreUpgrader
 {
-    private Config originalConfig;
-    private UpgradeConfiguration upgradeConfiguration;
-    private UpgradableDatabase upgradableDatabase;
-    private StoreMigrator storeMigrator;
-    private DatabaseFiles databaseFiles;
-    private StringLogger msgLog;
-    private IdGeneratorFactory idGeneratorFactory;
-    private FileSystemAbstraction fileSystemAbstraction;
+    private final Config originalConfig;
+    private final UpgradeConfiguration upgradeConfiguration;
+    private final UpgradableDatabase upgradableDatabase;
+    private final StoreMigrator storeMigrator;
+    private final DatabaseFiles databaseFiles;
+    private final StringLogger msgLog;
+    private final IdGeneratorFactory idGeneratorFactory;
+    private final FileSystemAbstraction fileSystemAbstraction;
 
     public StoreUpgrader( Config originalConfig, StringLogger msgLog, UpgradeConfiguration upgradeConfiguration,
                           UpgradableDatabase upgradableDatabase, StoreMigrator storeMigrator,
                           DatabaseFiles databaseFiles, IdGeneratorFactory idGeneratorFactory,
-                          FileSystemAbstraction fileSystemAbstraction)
+                          FileSystemAbstraction fileSystemAbstraction )
     {
         this.msgLog = msgLog;
         this.idGeneratorFactory = idGeneratorFactory;
@@ -79,7 +81,7 @@ public class StoreUpgrader
     {
         try
         {
-            FileUtils.copyFile( new File( workingDirectory, "messages.log" ),
+            fileSystemAbstraction.copyFile( new File( workingDirectory, "messages.log" ),
                     new File( backupDirectory, "messages.log" ) );
         }
         catch ( IOException e )
@@ -110,14 +112,21 @@ public class StoreUpgrader
         Config upgradeConfiguration = new Config( upgradeConfig );
         
         NeoStore neoStore = new StoreFactory( upgradeConfiguration, idGeneratorFactory, new DefaultWindowPoolFactory(),
-                fileSystemAbstraction, StringLogger.DEV_NULL, null ).createNeoStore(upgradeFileName);
+                fileSystemAbstraction, StringLogger.DEV_NULL, null ).createNeoStore( upgradeFileName );
         try
         {
-            storeMigrator.migrate( new LegacyStore( storageFileName, StringLogger.DEV_NULL ), neoStore );
+            storeMigrator.migrate( new LegacyStore( fileSystemAbstraction, storageFileName, StringLogger.DEV_NULL ),
+                    neoStore );
         }
         catch ( IOException e )
         {
+            e.printStackTrace();
             throw new UnableToUpgradeException( e );
+        }
+        catch ( Exception e )
+        {
+            e.printStackTrace();
+            throw Exceptions.launderedException( e );
         }
         finally
         {

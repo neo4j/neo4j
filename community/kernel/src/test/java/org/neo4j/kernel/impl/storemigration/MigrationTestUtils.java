@@ -33,10 +33,12 @@ import java.util.Map;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
 import org.neo4j.kernel.impl.util.FileUtils;
+import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
 public class MigrationTestUtils
 {
@@ -75,7 +77,7 @@ public class MigrationTestUtils
     {
         byte[] versionBytes = UTF8.encode( versionString );
         FileChannel fileChannel = fileSystem.open( storeFile, "rw" );
-        fileChannel.position( storeFile.length() - versionBytes.length );
+        fileChannel.position( fileSystem.getFileSize( storeFile ) - versionBytes.length );
         fileChannel.write( ByteBuffer.wrap( versionBytes ) );
         fileChannel.close();
     }
@@ -85,7 +87,7 @@ public class MigrationTestUtils
     {
         byte[] versionBytes = UTF8.encode( suffixToDetermineTruncationLength );
         FileChannel fileChannel = fileSystem.open( storeFile, "rw" );
-        fileChannel.truncate( storeFile.length() - versionBytes.length );
+        fileChannel.truncate( fileSystem.getFileSize( storeFile ) - versionBytes.length );
         fileChannel.close();
     }
 
@@ -97,6 +99,13 @@ public class MigrationTestUtils
         fileChannel.close();
     }
 
+    public static void prepareSampleLegacyDatabase( EphemeralFileSystemAbstraction workingFs,
+            File workingDirectory ) throws IOException
+    {
+        File resourceDirectory = findOldFormatStoreDirectory();
+        workingFs.copyRecursivelyFromOtherFs( resourceDirectory, new DefaultFileSystemAbstraction(), workingDirectory );
+    }
+    
     public static void prepareSampleLegacyDatabase( FileSystemAbstraction workingFs, File workingDirectory ) throws IOException
     {
         File resourceDirectory = findOldFormatStoreDirectory();

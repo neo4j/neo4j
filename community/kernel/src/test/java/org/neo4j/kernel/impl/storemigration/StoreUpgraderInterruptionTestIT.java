@@ -63,7 +63,8 @@ public class StoreUpgraderInterruptionTestIT
 
         try
         {
-            newUpgrader( failingStoreMigrator, new DatabaseFiles() ).attemptUpgrade( new File( workingDirectory, NeoStore.DEFAULT_NAME ) );
+            newUpgrader( failingStoreMigrator, new DatabaseFiles( fileSystem ) ).attemptUpgrade(
+                    new File( workingDirectory, NeoStore.DEFAULT_NAME ) );
             fail( "Should throw exception" );
         }
         catch ( RuntimeException e )
@@ -73,14 +74,15 @@ public class StoreUpgraderInterruptionTestIT
 
         assertTrue( allStoreFilesHaveVersion( fileSystem, workingDirectory, "v0.9.9" ) );
 
-        newUpgrader( new StoreMigrator( new SilentMigrationProgressMonitor() ), new DatabaseFiles() ).attemptUpgrade( new File( workingDirectory, NeoStore.DEFAULT_NAME ) );
+        newUpgrader( new StoreMigrator( new SilentMigrationProgressMonitor() ), new DatabaseFiles(fileSystem) )
+            .attemptUpgrade( new File( workingDirectory, NeoStore.DEFAULT_NAME ) );
 
         assertTrue( allStoreFilesHaveVersion( fileSystem, workingDirectory, ALL_STORES_VERSION ) );
     }
     
     private StoreUpgrader newUpgrader( StoreMigrator migrator, DatabaseFiles files )
     {
-        return new StoreUpgrader( defaultConfig(), StringLogger.DEV_NULL, alwaysAllowed(), new UpgradableDatabase(), migrator,
+        return new StoreUpgrader( defaultConfig(), StringLogger.DEV_NULL, alwaysAllowed(), new UpgradableDatabase(fileSystem), migrator,
                 files, defaultIdGeneratorFactory(), defaultFileSystemAbstraction() );        
     }
 
@@ -90,13 +92,12 @@ public class StoreUpgraderInterruptionTestIT
         File workingDirectory = new File( "target/" + StoreUpgraderInterruptionTestIT.class.getSimpleName() );
         MigrationTestUtils.prepareSampleLegacyDatabase( fileSystem, workingDirectory );
 
-        DatabaseFiles failsOnBackup = new DatabaseFiles()
+        DatabaseFiles failsOnBackup = new DatabaseFiles( fileSystem )
         {
-
             @Override
             public void moveToBackupDirectory( File workingDirectory, File backupDirectory )
             {
-                backupDirectory.mkdir();
+                fileSystem.mkdir( backupDirectory );
                 throw new RuntimeException( "Failing to backup working directory" );
             }
         };
@@ -115,7 +116,8 @@ public class StoreUpgraderInterruptionTestIT
 
         try
         {
-            newUpgrader( new StoreMigrator( new SilentMigrationProgressMonitor() ) , new DatabaseFiles() ).attemptUpgrade( new File( workingDirectory, NeoStore.DEFAULT_NAME ) );
+            newUpgrader( new StoreMigrator( new SilentMigrationProgressMonitor() ) , new DatabaseFiles( fileSystem ) )
+                    .attemptUpgrade( new File( workingDirectory, NeoStore.DEFAULT_NAME ) );
             fail( "Should throw exception" );
         }
         catch ( Exception e )
