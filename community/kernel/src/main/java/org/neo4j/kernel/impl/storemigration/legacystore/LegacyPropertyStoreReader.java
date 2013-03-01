@@ -20,13 +20,12 @@
 package org.neo4j.kernel.impl.storemigration.legacystore;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.nio.channels.FileChannel;
 import java.text.MessageFormat;
 
 import org.neo4j.kernel.impl.nioneo.store.Buffer;
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.OperationType;
 import org.neo4j.kernel.impl.nioneo.store.PersistenceWindow;
 import org.neo4j.kernel.impl.nioneo.store.PersistenceWindowPool;
@@ -37,17 +36,18 @@ public class LegacyPropertyStoreReader
 {
     public static final String FROM_VERSION = "PropertyStore v0.9.9";
     public static final int RECORD_LENGTH = 25;
-    private PersistenceWindowPool windowPool;
+    private final PersistenceWindowPool windowPool;
     private final FileChannel fileChannel;
 
-    public LegacyPropertyStoreReader( File fileNamed ) throws FileNotFoundException
+    public LegacyPropertyStoreReader( FileSystemAbstraction fs, File fileName ) throws IOException
     {
-        this(fileNamed, StringLogger.DEV_NULL);
+        this( fs, fileName, StringLogger.DEV_NULL );
     }
 
-    public LegacyPropertyStoreReader( File fileName, StringLogger log ) throws FileNotFoundException
+    public LegacyPropertyStoreReader( FileSystemAbstraction fs, File fileName, StringLogger log )
+            throws IOException
     {
-        fileChannel = new RandomAccessFile( fileName, "r" ).getChannel();
+        fileChannel = fs.open( fileName, "r" );
         windowPool = new PersistenceWindowPool( fileName,
                 RECORD_LENGTH, fileChannel, 0,
                 true, true, log );

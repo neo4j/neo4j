@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.storemigration.legacystore;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.LinkedList;
@@ -29,6 +28,7 @@ import java.util.List;
 
 import org.neo4j.helpers.UTF8;
 import org.neo4j.kernel.impl.nioneo.store.Buffer;
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
 import org.neo4j.kernel.impl.nioneo.store.OperationType;
 import org.neo4j.kernel.impl.nioneo.store.PersistenceWindow;
@@ -41,16 +41,17 @@ public class LegacyDynamicStoreReader
     public static final String FROM_VERSION_ARRAY = "ArrayPropertyStore v0.9.9";
     public static final String FROM_VERSION_STRING = "StringPropertyStore v0.9.9";
 
-    private PersistenceWindowPool windowPool;
-    private int blockSize;
+    private final PersistenceWindowPool windowPool;
+    private final int blockSize;
 
     // in_use(byte)+prev_block(int)+nr_of_bytes(int)+next_block(int)
     protected static final int BLOCK_HEADER_SIZE = 1 + 4 + 4 + 4;
     private final FileChannel fileChannel;
 
-    public LegacyDynamicStoreReader( File fileName, String fromVersionArray, StringLogger log ) throws IOException
+    public LegacyDynamicStoreReader( FileSystemAbstraction fs, File fileName, String fromVersionArray,
+            StringLogger log ) throws IOException
     {
-        fileChannel = new RandomAccessFile( fileName, "r" ).getChannel();
+        fileChannel = fs.open( fileName, "r" );
         long fileSize = fileChannel.size();
         String expectedVersion = fromVersionArray;
         byte version[] = new byte[UTF8.encode( expectedVersion ).length];
@@ -81,7 +82,8 @@ public class LegacyDynamicStoreReader
                 LegacyDynamicRecord record = getRecord( blockId, window );
                 recordList.add( record );
                 blockId = record.getNextBlock();
-            } finally
+            }
+            finally
             {
                 windowPool.release( window );
             }

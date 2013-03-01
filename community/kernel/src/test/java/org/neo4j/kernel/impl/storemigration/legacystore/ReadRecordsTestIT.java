@@ -21,16 +21,17 @@ package org.neo4j.kernel.impl.storemigration.legacystore;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.neo4j.helpers.collection.IteratorUtil.count;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 
 import org.junit.Test;
+import org.neo4j.kernel.DefaultFileSystemAbstraction;
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
-import org.neo4j.kernel.impl.nioneo.store.PropertyIndexRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeRecord;
 import org.neo4j.kernel.impl.storemigration.MigrationTestUtils;
 
 public class ReadRecordsTestIT
@@ -40,13 +41,14 @@ public class ReadRecordsTestIT
     {
         URL nodeStoreFile = getClass().getResource( "exampledb/neostore.nodestore.db" );
 
-        LegacyNodeStoreReader nodeStoreReader = new LegacyNodeStoreReader( new File( nodeStoreFile.getFile()) );
+        LegacyNodeStoreReader nodeStoreReader = new LegacyNodeStoreReader( fs, new File( nodeStoreFile.getFile() ) );
         assertEquals( 1001, nodeStoreReader.getMaxId() );
         Iterable<NodeRecord> records = nodeStoreReader.readNodeStore();
         int nodeCount = 0;
         for ( NodeRecord record : records )
         {
-            if ( record.inUse() ) nodeCount++;
+            if ( record.inUse() )
+                nodeCount++;
         }
         assertEquals( 501, nodeCount );
         nodeStoreReader.close();
@@ -57,13 +59,15 @@ public class ReadRecordsTestIT
     {
         URL nodeStoreFile = getClass().getResource( "exampledb/neostore.relationshipstore.db" );
 
-        LegacyRelationshipStoreReader relationshipStoreReader = new LegacyRelationshipStoreReader( new File( nodeStoreFile.getFile() ));
+        LegacyRelationshipStoreReader relationshipStoreReader = new LegacyRelationshipStoreReader( fs,
+                new File( nodeStoreFile.getFile() ) );
         assertEquals( 1500, relationshipStoreReader.getMaxId() );
         Iterable<RelationshipRecord> records = relationshipStoreReader.readRelationshipStore();
         int relationshipCount = 0;
         for ( RelationshipRecord record : records )
         {
-            if ( record.inUse() ) relationshipCount++;
+            if ( record.inUse() )
+                relationshipCount++;
         }
         assertEquals( 500, relationshipCount );
         relationshipStoreReader.close();
@@ -74,7 +78,8 @@ public class ReadRecordsTestIT
     {
         URL propertyStoreFile = getClass().getResource( "exampledb/neostore.propertystore.db" );
 
-        LegacyPropertyRecord propertyRecord = new LegacyPropertyStoreReader( new File( propertyStoreFile.getFile()) ).readPropertyRecord( 24 );
+        LegacyPropertyRecord propertyRecord = new LegacyPropertyStoreReader( fs,
+                new File( propertyStoreFile.getFile() ) ).readPropertyRecord( 24 );
 
         int keyIndexId = propertyRecord.getKeyIndexId();
         assertEquals( 2, keyIndexId );
@@ -89,11 +94,13 @@ public class ReadRecordsTestIT
         URL stringStoreFile = getClass().getResource( "exampledb/neostore.propertystore.db.strings" );
         URL arrayStoreFile = getClass().getResource( "exampledb/neostore.propertystore.db.arrays" );
 
-        LegacyPropertyRecord propertyRecord = new LegacyPropertyStoreReader( new File( propertyStoreFile.getFile()) ).readPropertyRecord( 25 );
+        LegacyPropertyRecord propertyRecord = new LegacyPropertyStoreReader( fs,
+                new File( propertyStoreFile.getFile() ) ).readPropertyRecord( 25 );
 
         int keyIndexId = propertyRecord.getKeyIndexId();
         assertEquals( 3, keyIndexId );
-        Object value = propertyRecord.getType().getValue( propertyRecord, new LegacyDynamicRecordFetcher( new File( stringStoreFile.getFile()), new File( arrayStoreFile.getFile() ) ));
+        Object value = propertyRecord.getType().getValue( propertyRecord, new LegacyDynamicRecordFetcher( fs,
+                new File( stringStoreFile.getFile() ), new File( arrayStoreFile.getFile() ) ) );
         assertEquals( 1000, ((String) value).length() );
     }
 
@@ -104,11 +111,13 @@ public class ReadRecordsTestIT
         URL stringStoreFile = getClass().getResource( "exampledb/neostore.propertystore.db.strings" );
         URL arrayStoreFile = getClass().getResource( "exampledb/neostore.propertystore.db.arrays" );
 
-        LegacyPropertyRecord propertyRecord2 = new LegacyPropertyStoreReader( new File( propertyStoreFile.getFile()) ).readPropertyRecord( 32 );
+        LegacyPropertyRecord propertyRecord2 = new LegacyPropertyStoreReader( fs,
+                new File( propertyStoreFile.getFile() ) ).readPropertyRecord( 32 );
 
         int keyIndexId = propertyRecord2.getKeyIndexId();
         assertEquals( 10, keyIndexId );
-        Object value = propertyRecord2.getType().getValue( propertyRecord2, new LegacyDynamicRecordFetcher( new File( stringStoreFile.getFile()), new File( arrayStoreFile.getFile() ) ));
+        Object value = propertyRecord2.getType().getValue( propertyRecord2, new LegacyDynamicRecordFetcher( fs,
+                new File( stringStoreFile.getFile() ), new File( arrayStoreFile.getFile() ) ) );
         assertArrayEquals( MigrationTestUtils.makeLongArray(), (int[]) value );
     }
 
@@ -116,29 +125,21 @@ public class ReadRecordsTestIT
     public void shouldReadPropertyIndexRecords() throws IOException
     {
         URL legacyStoreResource = getClass().getResource( "exampledb/neostore" );
-        LegacyStore legacyStore = new LegacyStore( new File( legacyStoreResource.getFile() ));
+        LegacyStore legacyStore = new LegacyStore( fs, new File( legacyStoreResource.getFile() ) );
 
         LegacyPropertyIndexStoreReader propertyIndexStoreReader = legacyStore.getPropertyIndexStoreReader();
-        int recordCount = 0;
-        for ( PropertyIndexRecord record : propertyIndexStoreReader.readPropertyIndexStore() )
-        {
-            recordCount++;
-        }
-        assertEquals( 12, recordCount );
+        assertEquals( 12, count( propertyIndexStoreReader.readPropertyIndexStore() ) );
     }
 
     @Test
     public void shouldReadRelationshipTypeRecords() throws IOException
     {
         URL legacyStoreResource = getClass().getResource( "exampledb/neostore" );
-        LegacyStore legacyStore = new LegacyStore( new File( legacyStoreResource.getFile() ));
+        LegacyStore legacyStore = new LegacyStore( fs, new File( legacyStoreResource.getFile() ) );
 
         LegacyRelationshipTypeStoreReader relationshipTypeStoreReader = legacyStore.getRelationshipTypeStoreReader();
-        int recordCount = 0;
-        for ( RelationshipTypeRecord record : relationshipTypeStoreReader.readRelationshipTypes() )
-        {
-            recordCount++;
-        }
-        assertEquals( 1000, recordCount );
+        assertEquals( 1000, count( relationshipTypeStoreReader.readRelationshipTypes() ) );
     }
+    
+    private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
 }

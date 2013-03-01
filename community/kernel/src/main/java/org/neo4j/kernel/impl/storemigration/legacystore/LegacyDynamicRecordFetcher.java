@@ -27,6 +27,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
 import org.neo4j.kernel.impl.nioneo.store.PropertyType;
 import org.neo4j.kernel.impl.nioneo.store.Record;
@@ -34,18 +35,22 @@ import org.neo4j.kernel.impl.util.StringLogger;
 
 public class LegacyDynamicRecordFetcher
 {
-    private LegacyDynamicStoreReader stringPropertyStore;
-    private LegacyDynamicStoreReader arrayPropertyStore;
+    private final LegacyDynamicStoreReader stringPropertyStore;
+    private final LegacyDynamicStoreReader arrayPropertyStore;
 
-    public LegacyDynamicRecordFetcher(File stringStoreFileName, File arrayStoreFileName) throws IOException
+    public LegacyDynamicRecordFetcher( FileSystemAbstraction fs, File stringStoreFileName, File arrayStoreFileName )
+            throws IOException
     {
-        this(stringStoreFileName, arrayStoreFileName, StringLogger.DEV_NULL);
+        this( fs, stringStoreFileName, arrayStoreFileName, StringLogger.DEV_NULL );
     }
 
-    public LegacyDynamicRecordFetcher( File stringStoreFileName, File arrayStoreFileName, StringLogger log ) throws IOException
+    public LegacyDynamicRecordFetcher( FileSystemAbstraction fs, File stringStoreFileName, File arrayStoreFileName,
+            StringLogger log ) throws IOException
     {
-        stringPropertyStore = new LegacyDynamicStoreReader( stringStoreFileName, LegacyDynamicStoreReader.FROM_VERSION_STRING, log );
-        arrayPropertyStore = new LegacyDynamicStoreReader( arrayStoreFileName, LegacyDynamicStoreReader.FROM_VERSION_ARRAY, log );
+        stringPropertyStore = new LegacyDynamicStoreReader( fs, stringStoreFileName,
+                LegacyDynamicStoreReader.FROM_VERSION_STRING, log );
+        arrayPropertyStore = new LegacyDynamicStoreReader( fs, arrayStoreFileName,
+                LegacyDynamicStoreReader.FROM_VERSION_ARRAY, log );
     }
 
     public List<LegacyDynamicRecord> readDynamicRecords( LegacyPropertyRecord record )
@@ -60,7 +65,8 @@ public class LegacyDynamicRecordFetcher
                 stringRecord.setType( PropertyType.STRING.intValue() );
             }
             return stringRecords;
-        } else if ( record.getType() == LegacyPropertyType.ARRAY )
+        }
+        else if ( record.getType() == LegacyPropertyType.ARRAY )
         {
             List<LegacyDynamicRecord> arrayRecords =
                     arrayPropertyStore.getPropertyChain(
