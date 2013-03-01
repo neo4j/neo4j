@@ -25,6 +25,7 @@ import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.graphalgo.GraphAlgoFactory.shortestPath;
 import static org.neo4j.graphdb.Direction.BOTH;
@@ -32,7 +33,6 @@ import static org.neo4j.graphdb.Direction.INCOMING;
 import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
 import static org.neo4j.kernel.Traversal.expanderForAllTypes;
-import static org.neo4j.kernel.Traversal.expanderForTypes;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -51,9 +51,14 @@ import org.neo4j.graphalgo.impl.path.TraversalShortestPath;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
+import org.neo4j.graphdb.PathExpander;
+import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipExpander;
+import org.neo4j.graphdb.traversal.BranchState;
 import org.neo4j.helpers.Predicate;
+import org.neo4j.kernel.StandardExpander;
 import org.neo4j.kernel.Traversal;
+import static org.neo4j.kernel.Traversal.expanderForTypes;
 
 public class TestShortestPath extends Neo4jAlgoTestCase
 {
@@ -543,7 +548,7 @@ public class TestShortestPath extends Neo4jAlgoTestCase
         assertThat( new ShortestPath( 2, expanderForAllTypes(), 42 ).findSinglePath( start, end ).length(), is( 2 ) );
         assertThat( new ShortestPath( 3, expanderForAllTypes(), 42 ).findSinglePath( start, end ).length(), is( 2 ) );
     }
-
+    
     private void testShortestPathFinder( PathFinderTester tester, RelationshipExpander expander, int maxDepth )
     {
         testShortestPathFinder( tester, expander, maxDepth, null );
@@ -552,19 +557,51 @@ public class TestShortestPath extends Neo4jAlgoTestCase
     private void testShortestPathFinder( PathFinderTester tester, RelationshipExpander expander, int maxDepth,
                                          Integer maxResultCount )
     {
+        LengthCheckingExpanderWrapper lengthChecker = new LengthCheckingExpanderWrapper( StandardExpander.toPathExpander( expander ) );
+        
         List<PathFinder<Path>> finders = new ArrayList<PathFinder<Path>>();
-        finders.add( maxResultCount != null ? shortestPath( expander, maxDepth, maxResultCount ) : shortestPath(
-                expander, maxDepth ) );
-        finders.add( maxResultCount != null ? new TraversalShortestPath( expander, maxDepth,
-                maxResultCount ) : new TraversalShortestPath( expander, maxDepth ) );
+        finders.add( maxResultCount != null ? shortestPath( lengthChecker, maxDepth, maxResultCount ) : shortestPath(
+                lengthChecker, maxDepth ) );
+        finders.add( maxResultCount != null ? new TraversalShortestPath( lengthChecker, maxDepth,
+                maxResultCount ) : new TraversalShortestPath( lengthChecker, maxDepth ) );
         for ( PathFinder<Path> finder : finders )
         {
             tester.test( finder );
         }
     }
-
+    
     private interface PathFinderTester
     {
         void test( PathFinder<Path> finder );
+    }
+   
+    private static class LengthCheckingExpanderWrapper implements PathExpander<Object> {
+
+        private PathExpander expander;
+        
+        LengthCheckingExpanderWrapper( PathExpander expander )
+        {
+            this.expander = expander;
+        }
+        
+        @Override
+        public Iterable<Relationship> expand( Path path, BranchState<Object> state ) 
+        {           
+            if ( path.startNode().equals(path.endNode()) ) 
+            {
+                assertTrue( "Path length must be zero", path.length() == 0 );
+            } 
+            else 
+            {
+                assertTrue( "Path length must be positive", path.length() > 0 );
+            }
+            return expander.expand( path, state );
+        }
+
+        @Override
+        public PathExpander<Object> reverse() 
+        {
+            return new LengthCheckingExpanderWrapper( expander.reverse() );
+        }
     }
 }

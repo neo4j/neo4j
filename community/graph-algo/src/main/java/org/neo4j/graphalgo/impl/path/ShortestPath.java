@@ -257,7 +257,7 @@ public class ShortestPath implements PathFinder<Path>
     }
     
     // Two long-lived instances
-    protected class DirectionData extends PrefetchingIterator<Node> implements Path
+    private class DirectionData extends PrefetchingIterator<Node>
     {
         private final Node startNode;
         private int currentDepth;
@@ -265,7 +265,7 @@ public class ShortestPath implements PathFinder<Path>
         private final Collection<Node> nextNodes = new ArrayList<Node>();
         private Map<Node, LevelData> visitedNodes = new HashMap<Node, LevelData>();
         private final Collection<Long> sharedVisitedRels;
-        private Node lastParentTraverserNode;
+        private final DirectionDataPath lastPath;
         private final MutableInteger sharedFrozenDepth;
         private final MutableBoolean sharedStop;
         private final MutableInteger sharedCurrentDepth;
@@ -285,6 +285,7 @@ public class ShortestPath implements PathFinder<Path>
             this.sharedCurrentDepth = sharedCurrentDepth;
             this.expander = expander;
             this.sharedVisitedRels = sharedVisitedRels;
+            this.lastPath = new DirectionDataPath( startNode );
             
             if ( sharedCurrentDepth.value < maxDepth )
             {
@@ -301,18 +302,19 @@ public class ShortestPath implements PathFinder<Path>
             Collection<Node> nodesToIterate = new ArrayList<Node>(
                     filterNextLevelNodes( this.nextNodes ) );
             this.nextNodes.clear();
+            this.lastPath.setLength( currentDepth );
             this.nextRelationships = new NestingIterator<Relationship, Node>(
                     nodesToIterate.iterator() )
             {
                 @Override
                 protected Iterator<Relationship> createNestedIterator( Node node )
                 {
-                    lastParentTraverserNode = node;
-                    return expander.expand( DirectionData.this, BranchState.NO_STATE ).iterator();
+                    lastPath.setEndNode( node );
+                    return expander.expand( lastPath, BranchState.NO_STATE ).iterator();
                 }
             };
             this.currentDepth++;
-            this.sharedCurrentDepth.value = this.sharedCurrentDepth.value + 1;
+            this.sharedCurrentDepth.value++;
         }
         
         @Override
@@ -331,7 +333,7 @@ public class ShortestPath implements PathFinder<Path>
                     continue;
                 }
                 
-                Node result = nextRel.getOtherNode( this.lastParentTraverserNode );
+                Node result = nextRel.getOtherNode( this.lastPath.endNode() );
                 LevelData levelData = this.visitedNodes.get( result );
                 boolean createdLevelData = false;
                 if ( levelData == null )
@@ -385,7 +387,32 @@ public class ShortestPath implements PathFinder<Path>
             }
             return this.nextRelationships.hasNext() ? this.nextRelationships.next() : null;
         }
+    }
+    
+    // Two long-lived instances
+    private static class DirectionDataPath implements Path
+    {    
+        private final Node startNode;
+        private Node endNode;
+        private int length;
+        
+        DirectionDataPath( Node startNode )
+        {
+            this.startNode = startNode;
+            this.endNode = startNode;
+            this.length = 0;
+        }
 
+        void setEndNode( Node endNode ) 
+        {
+            this.endNode = endNode;
+        }
+
+        void setLength( int length ) 
+        {
+            this.length = length;
+        }
+        
         @Override
         public Node startNode()
         {
@@ -395,7 +422,7 @@ public class ShortestPath implements PathFinder<Path>
         @Override
         public Node endNode()
         {
-            return lastParentTraverserNode;
+            return endNode;
         }
 
         @Override
@@ -431,7 +458,7 @@ public class ShortestPath implements PathFinder<Path>
         @Override
         public int length()
         {
-            return currentDepth;
+            return length;
         }
 
         @Override
