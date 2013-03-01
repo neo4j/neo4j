@@ -66,7 +66,7 @@ public class PluginFunctionalTestHelper
 
     protected static String getResponseText( final JaxRsResponse response )
     {
-        String body = response.getEntity( String.class );
+        String body = response.getEntity();
 
         assertEquals( body, 200, response.getStatus() );
         return body;

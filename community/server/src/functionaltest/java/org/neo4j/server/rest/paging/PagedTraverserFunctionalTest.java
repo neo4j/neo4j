@@ -103,7 +103,7 @@ public class PagedTraverserFunctionalTest extends ExclusiveServerTestBase
 
         JaxRsResponse response = RestRequest.req().get(functionalTestHelper.nodeUri(theStartNode.getId()));
 
-        Map<String, Object> jsonMap = JsonHelper.jsonToMap(response.getEntity(String.class));
+        Map<String, Object> jsonMap = JsonHelper.jsonToMap( response.getEntity() );
 
         assertNotNull(jsonMap.containsKey(PAGED_TRAVERSE_LINK_REL));
         assertThat(String.valueOf(jsonMap.get(PAGED_TRAVERSE_LINK_REL)),

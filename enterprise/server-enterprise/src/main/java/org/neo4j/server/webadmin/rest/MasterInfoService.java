@@ -19,26 +19,28 @@
  */
 package org.neo4j.server.webadmin.rest;
 
+import static javax.ws.rs.core.MediaType.TEXT_PLAIN_TYPE;
+import static javax.ws.rs.core.Response.Status.FORBIDDEN;
+import static javax.ws.rs.core.Response.Status.NOT_FOUND;
+import static javax.ws.rs.core.Response.Status.OK;
+import static javax.ws.rs.core.Response.status;
+
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.core.Context;
-import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
-import org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher;
-import org.neo4j.kernel.ha.cluster.member.ClusterMember;
-import org.neo4j.kernel.ha.cluster.member.ClusterMembers;
 import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.repr.OutputFormat;
 
-@Path( MasterInfoService.BASE_PATH )
+@Path(MasterInfoService.BASE_PATH)
 public class MasterInfoService implements AdvertisableService
 {
     public static final String BASE_PATH = "/server/ha";
-    public static final String ISMASTER_PATH = "/isMaster";
-    public static final String GETMASTER_PATH = "/getMaster";
+    public static final String IS_MASTER_PATH = "/master";
+    public static final String IS_SLAVE_PATH = "/slave";
 
     private final OutputFormat output;
     private final HighlyAvailableGraphDatabase haDb;
@@ -61,58 +63,63 @@ public class MasterInfoService implements AdvertisableService
     {
         if ( haDb == null )
         {
-            return Response.status( Response.Status.FORBIDDEN ).build();
+            return status( FORBIDDEN ).build();
         }
-        String isMasterUri = "isMaster";
-        String getMasterUri = "getMaster";
 
-        HaDiscoveryRepresentation dr = new HaDiscoveryRepresentation( isMasterUri, getMasterUri );
+        String isMasterUri = IS_MASTER_PATH;
+        String isSlaveUri = IS_SLAVE_PATH;
+
+        HaDiscoveryRepresentation dr = new HaDiscoveryRepresentation( BASE_PATH, isMasterUri, isSlaveUri );
         return output.ok( dr );
     }
 
     @GET
-    @Path( ISMASTER_PATH )
+    @Path(IS_MASTER_PATH)
     public Response isMaster() throws BadInputException
     {
         if ( haDb == null )
         {
-            return Response.status( Response.Status.FORBIDDEN ).build();
+            return status( FORBIDDEN ).build();
         }
+
         if ( haDb.isMaster() )
         {
-            return Response.status( Response.Status.OK ).entity( Boolean.toString( true ).getBytes()).build();
+            return positiveResponse();
         }
-        else
-        {
-            return Response.status( Response.Status.SEE_OTHER ).entity( Boolean.toString( false ).getBytes() ).header(
-                    HttpHeaders.LOCATION, getMasterUriAsString() ).build();
-        }
+
+        return negativeResponse();
     }
 
     @GET
-    @Path( GETMASTER_PATH )
-    public Response getMaster() throws BadInputException
+    @Path(IS_SLAVE_PATH)
+    public Response isSlave() throws BadInputException
     {
         if ( haDb == null )
         {
-            return Response.status( Response.Status.FORBIDDEN ).build();
+            return status( FORBIDDEN ).build();
         }
-        String masterURI = getMasterUriAsString();
-        return Response.status( Response.Status.SEE_OTHER ).entity( Boolean.toString( false ).getBytes() ).header(
-                HttpHeaders.LOCATION, masterURI ).build();
+
+        if ( haDb.isMaster() )
+        {
+            return negativeResponse();
+        }
+
+        return positiveResponse();
     }
 
-    private String getMasterUriAsString()
+    private Response negativeResponse()
     {
-        String masterURI = "not found";
-        for (ClusterMember member : haDb.getDependencyResolver().resolveDependency( ClusterMembers.class ).getMembers() )
-        {
-            if ( HighAvailabilityModeSwitcher.MASTER.equals( member.getHARole() ) )
-            {
-                masterURI = member.getHAUri().getHost() + ":" + member.getHAUri().getPort();
-            }
-        }
-        return masterURI;
+        return plainTextResponse( NOT_FOUND, "false" );
+    }
+
+    private Response positiveResponse()
+    {
+        return plainTextResponse( OK, "true" );
+    }
+
+    private Response plainTextResponse( Response.Status status, String entityBody )
+    {
+        return status( status ).type( TEXT_PLAIN_TYPE ).entity( entityBody ).build();
     }
 
     @Override
