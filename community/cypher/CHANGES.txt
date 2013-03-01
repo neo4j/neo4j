@@ -1,3 +1,7 @@
+1.8.3
+-----
+o Fixes #395 - ThisShouldNotHappenError for certain patterns
+
 1.8.2
 -----
 o Clearer error message for when aggregations are used in ORDER BY and not in RETURN

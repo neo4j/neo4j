@@ -98,7 +98,7 @@ class BidirectionalTraversalMatcher(steps: ExpanderStep,
           val result = endPath.length() == 0
           (result, true)
 
-        case _ => throw new ThisShouldNotHappenError("Andres", "Unexpected traversal state encountered")
+        case _ => (false, false)
       }
 
       if (prune) {
