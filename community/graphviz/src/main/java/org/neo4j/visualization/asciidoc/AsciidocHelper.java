@@ -172,7 +172,7 @@ public class AsciidocHelper
     {
         String[] keywordsToBreakOn = new String[] {"start", "create unique", "set", "delete", "foreach",
         "match", "where", "with", "return", "skip", "limit", "order by", "asc", "ascending",
-        "desc", "descending", "create", "add", "remove"};
+        "desc", "descending", "create", "remove", "drop"};
 
         String[] unbreakableKeywords = new String[] {"label", "values", "on", "index"};
         return createLanguageSnippet( query, "cypher", keywordsToBreakOn, unbreakableKeywords );

@@ -62,7 +62,7 @@ perry-[:WORKSAT {weight: 2, activity: 3}]->cnn""")
 or know a person that the origin knows, also, the origin should not already know the target. This recommendation is 
 weighted for the weight of the relationship `r2`, and boosted with a factor of 2, if there is an `activity`-property on that relationship""",
       queryText = """START origin=node:node_auto_index(name = "Clark Kent")
-MATCH origin-[r1:KNOWS|WORKSAT]-(c)-[r2:KNOWS|WORKSAT]-candidate
+MATCH origin-[r1:KNOWS|:WORKSAT]-(c)-[r2:KNOWS|:WORKSAT]-candidate
 WHERE type(r1)=type(r2) AND (NOT (origin-[:KNOWS]-candidate)) 
 RETURN origin.name as origin, candidate.name as candidate, 
     SUM(ROUND(r2.weight + (COALESCE(r2.activity?, 0) * 2))) as boost 

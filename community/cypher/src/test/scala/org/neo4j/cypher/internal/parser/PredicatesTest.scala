@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.parser
 import org.junit.Test
 import org.neo4j.cypher.internal.commands._
 import org.neo4j.graphdb.Direction
-import org.neo4j.cypher.internal.commands.expressions.Identifier
+import expressions.{Property, Identifier}
 import v2_0.{Predicates, MatchClause, Expressions}
 import values.LabelName
 import org.neo4j.cypher.internal.commands.PatternPredicate
@@ -62,5 +62,22 @@ class PredicatesTest extends Predicates with MatchClause with ParserTest with Ex
       PatternPredicate(Seq(RelatedTo("a", "  UNNAMED5", "  UNNAMED2", Seq.empty, Direction.OUTGOING, false)), orPred)
   }
 
-  def createProperty(entity: String, propName: String) = ???
+  @Test
+  def test_predicates_with_true_false() {
+    implicit val parserToTest = predicate
+
+    parsing("true") shouldGive
+      True()
+
+    parsing("node.prop = true") shouldGive
+      Equals(Property(Identifier("node"), "prop"), True())
+
+    parsing("true = node.prop") shouldGive
+      Equals(True(), Property(Identifier("node"), "prop"))
+
+    parsing("true = true") shouldGive
+      Equals(True(), True())
+  }
+
+  def createProperty(entity: String, propName: String) = Property(Identifier(entity), propName)
 }

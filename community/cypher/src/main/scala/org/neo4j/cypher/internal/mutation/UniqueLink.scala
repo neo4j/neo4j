@@ -156,7 +156,7 @@ case class UniqueLink(start: NamedExpectation, end: NamedExpectation, rel: Named
 
   override def toString = {
     val relInfo = {
-      val relName = if (notNamed(rel.name)) "" else "`" + rel.name + "`"
+      val relName = if (notNamed(rel.name)) rel.name.drop(9) else "`" + rel.name + "`"
       "[%s:`%s`]".format(relName, relType)
     }
 
