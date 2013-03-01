@@ -1730,7 +1730,7 @@ RETURN x0.name?
     relate(a, x, "A")
     relate(b, x, "B")
 
-    val result = parseAndExecute("start a=node(1,2) where a-[:A|B]->() return a").toList
+    val result = parseAndExecute("start a=node(1,2) where a-[:A|:B]->() return a").toList
 
     assert(List(Map("a" -> a), Map("a" -> b)) === result)
   }
@@ -1788,7 +1788,7 @@ RETURN x0.name?
     val b = createNode()
     relate(a, b, "REL")
 
-    val result = parseAndExecute("start a=node(1) match a-[:REL|REL]-b return b").toList
+    val result = parseAndExecute("start a=node(1) match a-[:REL|:REL]-b return b").toList
 
     assert(List(Map("b" -> b)) === result)
   }

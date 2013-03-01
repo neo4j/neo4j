@@ -1321,50 +1321,67 @@ class CypherParserTest extends JUnitSuite with Assertions {
     )
   }
 
-  @Test def multiple_relationship_type_in_match() {
-    val string = "start x = NODE(1) match x-[:REL1|REL2|REL3]->z return x"
-
-    def query(DIFFERENCE: String): Query = {
+  @Test def multiple_relationship_type_in_matchOld() {
+    val query = {
       Query.
         start(NodeById("x", 1)).
-        matches(RelatedTo("x", "z", DIFFERENCE, Seq("REL1", "REL2", "REL3"), Direction.OUTGOING, false)).
+        matches(RelatedTo("x", "z", "  UNNAMED3", Seq("REL1", "REL2", "REL3"), Direction.OUTGOING, false)).
         returns(ReturnItem(Identifier("x"), "x"))
     }
 
-    tests(string, query,
-      "  UNNAMED3" -> testPre2_0,
-      "  UNNAMED27" -> testFrom_2_0
-    )
+    testPre2_0("start x = NODE(1) match x-[:REL1|REL2|REL3]->z return x", query)
+  }
+
+  @Test def multiple_relationship_type_in_match() {
+    val query = {
+      Query.
+        start(NodeById("x", 1)).
+        matches(RelatedTo("x", "z", "  UNNAMED27", Seq("REL1", "REL2", "REL3"), Direction.OUTGOING, false)).
+        returns(ReturnItem(Identifier("x"), "x"))
+    }
+
+    testFrom_2_0("start x = NODE(1) match x-[:REL1|:REL2|:REL3]->z return x", query)
+  }
+
+
+  @Test def multiple_relationship_type_in_varlength_relOld() {
+    val q=
+      Query.
+        start(NodeById("x", 1)).
+        matches(RelatedTo("x", "z", "  UNNAMED3", Seq("REL1", "REL2", "REL3"), Direction.OUTGOING, false)).
+        returns(ReturnItem(Identifier("x"), "x"))
+
+    testPre2_0("start x = NODE(1) match x-[:REL1|REL2|REL3]->z return x", q)
   }
 
   @Test def multiple_relationship_type_in_varlength_rel() {
-    val string = "start x = NODE(1) match x-[:REL1|REL2|REL3]->z return x"
-    def query(DIFFERENCE: String): Query = {
+    val q=
       Query.
         start(NodeById("x", 1)).
-        matches(RelatedTo("x", "z", DIFFERENCE, Seq("REL1", "REL2", "REL3"), Direction.OUTGOING, false)).
+        matches(RelatedTo("x", "z", "  UNNAMED27", Seq("REL1", "REL2", "REL3"), Direction.OUTGOING, false)).
         returns(ReturnItem(Identifier("x"), "x"))
-    }
 
-    tests(string, query,
-      "  UNNAMED3" -> testPre2_0,
-      "  UNNAMED27" -> testFrom_2_0
-    )
+    testFrom_2_0("start x = NODE(1) match x-[:REL1|:REL2|:REL3]->z return x", q)
+  }
+
+  @Test def multiple_relationship_type_in_shortest_pathOld() {
+    def q =
+      Query.
+        start(NodeById("x", 1)).
+        matches(RelatedTo("x", "z", "  UNNAMED3", Seq("REL1", "REL2", "REL3"), Direction.OUTGOING, false)).
+        returns(ReturnItem(Identifier("x"), "x"))
+
+    testPre2_0("start x = NODE(1) match x-[:REL1|REL2|REL3]->z return x", q)
   }
 
   @Test def multiple_relationship_type_in_shortest_path() {
-    val string = "start x = NODE(1) match x-[:REL1|REL2|REL3]->z return x"
-
-    def query(DIFFERENCE: String): Query =
+    def q =
       Query.
         start(NodeById("x", 1)).
-        matches(RelatedTo("x", "z", DIFFERENCE, Seq("REL1", "REL2", "REL3"), Direction.OUTGOING, false)).
+        matches(RelatedTo("x", "z", "  UNNAMED27", Seq("REL1", "REL2", "REL3"), Direction.OUTGOING, false)).
         returns(ReturnItem(Identifier("x"), "x"))
 
-    tests(string, query,
-      "  UNNAMED3" -> testPre2_0,
-      "  UNNAMED27" -> testFrom_2_0
-    )
+    testFrom_2_0("start x = NODE(1) match x-[:REL1|:REL2|:REL3]->z return x", q)
   }
 
   @Test def multiple_relationship_type_in_relationship_predicate_back_in_the_day() {
@@ -1378,7 +1395,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
 
   @Test def multiple_relationship_type_in_relationship_predicate() {
     testFrom_2_0(
-      """start a=node(0), b=node(1) where a-[:KNOWS|BLOCKS]-b return a""",
+      """start a=node(0), b=node(1) where a-[:KNOWS|:BLOCKS]-b return a""",
       Query.
         start(NodeById("a", 0), NodeById("b", 1)).
         where(PatternPredicate(Seq(RelatedTo("a", "b", "  UNNAMED36", Seq("KNOWS","BLOCKS"), Direction.BOTH, optional = false))))
