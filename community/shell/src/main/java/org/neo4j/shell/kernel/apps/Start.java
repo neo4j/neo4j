@@ -80,14 +80,14 @@ public class Start extends ReadOnlyGraphDatabaseApp
         }
     }
 
-    private StringLogger getCypherLogger()
+    protected StringLogger getCypherLogger()
     {
         DependencyResolver dependencyResolver = getServer().getDb().getDependencyResolver();
         Logging logging = dependencyResolver.resolveDependency( Logging.class );
         return logging.getLogger( ExecutionEngine.class );
     }
 
-    private Map<String, Object> getParameters( Session session ) throws ShellException
+    protected Map<String, Object> getParameters(Session session) throws ShellException
     {
         Map<String, Object> params = new HashMap<String, Object>();
         try
@@ -100,7 +100,7 @@ public class Start extends ReadOnlyGraphDatabaseApp
         return params;
     }
 
-    private boolean isComplete( String query )
+    protected boolean isComplete(String query)
     {
         return query.trim().endsWith( ";" );
     }
