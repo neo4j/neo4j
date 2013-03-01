@@ -40,7 +40,7 @@ public class FlippableIndexContextTest
         IndexContext actual = mock( IndexContext.class );
         IndexContext other = mock( IndexContext.class );
         FlippableIndexContext delegate = new FlippableIndexContext(actual);
-        delegate.setFlipTarget( other );
+        delegate.setFlipTarget( eager( other ) );
 
         // WHEN
         delegate.flip();
@@ -60,7 +60,7 @@ public class FlippableIndexContextTest
         final IndexContext actual = mock( IndexContext.class );
         final IndexContext other = mock( IndexContext.class );
         final FlippableIndexContext flippable = new FlippableIndexContext( actual );
-        flippable.setFlipTarget( other );
+        flippable.setFlipTarget( eager( other ) );
         final AtomicReference<IndexContext> result = new AtomicReference<IndexContext>();
 
         final CountDownLatch actualLatch = new CountDownLatch( 1 );
@@ -120,5 +120,17 @@ public class FlippableIndexContextTest
         while (result.get() == null) {}
 
         assertEquals( actual, result.get() );
+    }
+    
+    private static IndexContextFactory eager( final IndexContext context )
+    {
+        return new IndexContextFactory()
+        {
+            @Override
+            public IndexContext create()
+            {
+                return context;
+            }
+        };
     }
 }

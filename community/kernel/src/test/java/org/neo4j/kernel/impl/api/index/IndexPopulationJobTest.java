@@ -65,6 +65,7 @@ public class IndexPopulationJobTest
         // THEN
         verify( populator ).createIndex();
         verify( populator ).add( nodeId, value );
+        verify( populator ).populationCompleted();
 
         verifyNoMoreInteractions( populator );
     }
@@ -87,6 +88,7 @@ public class IndexPopulationJobTest
         verify( populator ).createIndex();
         verify( populator ).add( node1, value );
         verify( populator ).add( node4, value );
+        verify( populator ).populationCompleted();
 
         verifyNoMoreInteractions( populator );
     }
@@ -264,7 +266,8 @@ public class IndexPopulationJobTest
             throws LabelNotFoundKernelException, PropertyKeyNotFoundException
     {
         IndexRule indexRule = new IndexRule( 0, context.getLabelId( FIRST.name() ), context.getPropertyKeyId( name ) );
-        FlippableIndexContext flipper = new FlippableIndexContext(  );
+        FlippableIndexContext flipper = new FlippableIndexContext();
+        flipper.setFlipTarget( mock( IndexContextFactory.class ) );
         NeoStore neoStore = db.getXaDataSourceManager().getNeoStoreDataSource().getNeoStore();
         return new IndexPopulationJob( indexRule, populator, flipper, neoStore );
     }

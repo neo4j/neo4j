@@ -48,4 +48,10 @@ public abstract class AbstractDelegatingIndexContext implements IndexContext
     {
         return getDelegate().getState();
     }
+    
+    @Override
+    public void force()
+    {
+        getDelegate().force();
+    }
 }

@@ -42,6 +42,7 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.IndexState;
+import org.neo4j.kernel.api.SchemaIndexProvider;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
@@ -66,7 +67,7 @@ public class IndexRestartIt
 
         // And Given
         stopDb();
-        when( mockedIndexProvider.getState( anyLong() )).thenReturn( IndexState.ONLINE );
+        when( mockedIndexProvider.getInitialState( anyLong() )).thenReturn( IndexState.ONLINE );
 
         // When
         startDb();
@@ -79,7 +80,7 @@ public class IndexRestartIt
         IndexDefinition index = single( indexes );
         assertThat( db.schema().getIndexState( index), equalTo( Schema.IndexState.ONLINE ) );
         verify( mockedIndexProvider, times( 1 ) ).getPopulator( anyLong() );
-        verify( mockedIndexProvider, times( 2 ) ).getWriter( anyLong() );
+        verify( mockedIndexProvider, times( 1 ) ).getWriter( anyLong() );
     }
 
     @Test
@@ -96,7 +97,7 @@ public class IndexRestartIt
 
         // And Given
         stopDb();
-        when( mockedIndexProvider.getState( anyLong() )).thenReturn( IndexState.POPULATING );
+        when( mockedIndexProvider.getInitialState( anyLong() )).thenReturn( IndexState.POPULATING );
 
         // When
         startDb();
@@ -125,7 +126,7 @@ public class IndexRestartIt
 
         // And Given
         stopDb();
-        when( mockedIndexProvider.getState( anyLong() )).thenReturn( IndexState.NON_EXISTENT );
+        when( mockedIndexProvider.getInitialState( anyLong() )).thenReturn( IndexState.NON_EXISTENT );
 
         // When
         startDb();

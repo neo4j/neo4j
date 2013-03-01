@@ -17,50 +17,34 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api.index;
+package org.neo4j.kernel.api.impl.index;
 
-import org.neo4j.kernel.api.IndexState;
+import java.io.File;
+import java.io.IOException;
 
-public interface IndexContext
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.store.RAMDirectory;
+
+public interface DirectoryFactory
 {
-    void create();
+    Directory open( File dir ) throws IOException;
     
-    void update( Iterable<NodePropertyUpdate> updates );
-    
-    void drop();
-
-    IndexState getState();
-
-    void force();
-    
-    public static class Adapter implements IndexContext
+    public static final DirectoryFactory PERSISTENT = new DirectoryFactory()
     {
-        public static final Adapter EMPTY = new Adapter();
-
         @Override
-        public void create()
+        public Directory open( File dir ) throws IOException
         {
+            return FSDirectory.open( dir );
         }
-
+    };
+    
+    public static final DirectoryFactory IN_MEMORY = new DirectoryFactory()
+    {
         @Override
-        public void update( Iterable<NodePropertyUpdate> updates )
+        public Directory open( File dir ) throws IOException
         {
+            return new RAMDirectory();
         }
-
-        @Override
-        public void drop()
-        {
-        }
-
-        @Override
-        public IndexState getState()
-        {
-            throw new UnsupportedOperationException(  );
-        }
-
-        @Override
-        public void force()
-        {
-        }
-    }
+    };
 }

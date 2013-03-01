@@ -35,6 +35,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
 
 import org.junit.After;
 import org.junit.Test;
@@ -47,6 +48,7 @@ import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.ThreadToStatementContextBridge;
 import org.neo4j.kernel.api.IndexState;
 import org.neo4j.kernel.api.PropertyKeyNotFoundException;
+import org.neo4j.kernel.api.SchemaIndexProvider;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
@@ -60,13 +62,18 @@ public class IndexRecoveryIT
         startDb();
         Label myLabel = label( "MyLabel" );
 
+        CountDownLatch latch = new CountDownLatch( 1 );
+        when( mockedIndexProvider.getPopulator( anyLong() ) ).thenReturn( indexPopulatorWithControlledCompletionTiming( latch ) );
         createIndex( myLabel );
 
         // And Given
         killDb();
-        when( mockedIndexProvider.getState( anyLong() ) ).thenReturn( IndexState.POPULATING );
+        latch.countDown();
 
         // When
+        when( mockedIndexProvider.getInitialState( anyLong() ) ).thenReturn( IndexState.POPULATING );
+        latch = new CountDownLatch( 1 );
+        when( mockedIndexProvider.getPopulator( anyLong() ) ).thenReturn( indexPopulatorWithControlledCompletionTiming( latch ) );
         startDb();
 
         // Then
@@ -77,7 +84,8 @@ public class IndexRecoveryIT
         IndexDefinition index = single( indexes );
         assertThat( db.schema().getIndexState( index), equalTo( Schema.IndexState.POPULATING ) );
         verify( mockedIndexProvider, times( 2 ) ).getPopulator( anyLong() );
-        verify( mockedIndexProvider, times( 2 ) ).getWriter( anyLong() );
+        verify( mockedIndexProvider, times( 0 ) ).getWriter( anyLong() );
+        latch.countDown();
     }
 
     @Test
@@ -87,12 +95,17 @@ public class IndexRecoveryIT
         startDb();
         Label myLabel = label( "MyLabel" );
 
+        CountDownLatch latch = new CountDownLatch( 1 );
+        when( mockedIndexProvider.getPopulator( anyLong() ) ).thenReturn( indexPopulatorWithControlledCompletionTiming( latch ) );
         createIndex( myLabel );
         rotateLogs();
 
         // And Given
         killDb();
-        when( mockedIndexProvider.getState( anyLong() ) ).thenReturn( IndexState.POPULATING );
+        latch.countDown();
+        latch = new CountDownLatch( 1 );
+        when( mockedIndexProvider.getPopulator( anyLong() ) ).thenReturn( indexPopulatorWithControlledCompletionTiming( latch ) );
+        when( mockedIndexProvider.getInitialState( anyLong() ) ).thenReturn( IndexState.POPULATING );
 
         // When
         startDb();
@@ -105,7 +118,8 @@ public class IndexRecoveryIT
         IndexDefinition index = single( indexes );
         assertThat( db.schema().getIndexState( index), equalTo( Schema.IndexState.POPULATING ) );
         verify( mockedIndexProvider, times( 2 ) ).getPopulator( anyLong() );
-        verify( mockedIndexProvider, times( 2 ) ).getWriter( anyLong() );
+        verify( mockedIndexProvider, times( 0 ) ).getWriter( anyLong() );
+        latch.countDown();
     }
     
     @Test
@@ -120,7 +134,7 @@ public class IndexRecoveryIT
 
         // And Given
         killDb();
-        when( mockedIndexProvider.getState( anyLong() ) ).thenReturn( IndexState.ONLINE );
+        when( mockedIndexProvider.getInitialState( anyLong() ) ).thenReturn( IndexState.ONLINE );
         GatheringIndexWriter writer = new GatheringIndexWriter();
         when( mockedIndexProvider.getWriter( anyLong() ) ).thenReturn( writer );
 
@@ -135,7 +149,7 @@ public class IndexRecoveryIT
         IndexDefinition index = single( indexes );
         assertThat( db.schema().getIndexState( index), equalTo( Schema.IndexState.ONLINE ) );
         verify( mockedIndexProvider, times( 1 ) ).getPopulator( anyLong() );
-        verify( mockedIndexProvider, times( 2 ) ).getWriter( anyLong() );
+        verify( mockedIndexProvider, times( 1 ) ).getWriter( anyLong() );
         assertEquals( expectedUpdates, writer.updates ); 
     }
 
@@ -215,5 +229,23 @@ public class IndexRecoveryIT
         {
             this.updates.addAll( asCollection( updates ) );
         }
+    }
+
+    private IndexPopulator indexPopulatorWithControlledCompletionTiming( final CountDownLatch latch )
+    {
+        return new IndexPopulator.Adapter()
+        {
+            @Override
+            public void createIndex()
+            {
+                try
+                {
+                    latch.await();
+                }
+                catch ( InterruptedException e )
+                {
+                }
+            }
+        };
     }
 }

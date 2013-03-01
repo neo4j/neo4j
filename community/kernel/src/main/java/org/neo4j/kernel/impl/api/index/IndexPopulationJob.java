@@ -76,6 +76,7 @@ public class IndexPopulationJob implements Runnable
             public void run()
             {
                 populateFromQueueIfAvailable( Long.MAX_VALUE );
+                writer.populationCompleted();
             }
         } );
     }

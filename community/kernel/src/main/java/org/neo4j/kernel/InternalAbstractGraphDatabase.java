@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel;
 
+import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
 import static org.slf4j.impl.StaticLoggerBinder.getSingleton;
 
 import java.io.File;
@@ -35,7 +36,6 @@ import javax.transaction.NotSupportedException;
 import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
 
-import ch.qos.logback.classic.LoggerContext;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -60,8 +60,8 @@ import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.Settings;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.KernelAPI;
+import org.neo4j.kernel.api.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConfigurationChange;
 import org.neo4j.kernel.configuration.ConfigurationChangeListener;
@@ -71,7 +71,6 @@ import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.impl.api.Kernel;
 import org.neo4j.kernel.impl.api.SchemaCache;
 import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.cache.Cache;
 import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.cache.MonitorGc;
@@ -137,6 +136,8 @@ import org.neo4j.kernel.logging.ClassicLoggingService;
 import org.neo4j.kernel.logging.LogbackService;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.tooling.GlobalGraphOperations;
+
+import ch.qos.logback.classic.LoggerContext;
 
 /**
  * Base implementation of GraphDatabaseService. Responsible for creating services, handling dependencies between them,
@@ -230,8 +231,8 @@ public abstract class InternalAbstractGraphDatabase
     {
         this.params = params;
         
-        // TODO singleOrNull since there's no main implemenation of it
-        this.schemaIndexProvider = IteratorUtil.singleOrNull( schemaIndexProviders );
+        this.schemaIndexProvider = selectHighestPrioritized( schemaIndexProviders );
+        this.schemaIndexProvider.setRootDirectory( fileSystem, new File( storeDir ) );
 
         dependencyResolver = new DependencyResolverImpl();
 
@@ -260,6 +261,16 @@ public abstract class InternalAbstractGraphDatabase
                 dependencyResolver );
 
         this.storeDir = config.get( Configuration.store_dir );
+    }
+
+    private SchemaIndexProvider selectHighestPrioritized( Iterable<SchemaIndexProvider> schemaIndexProviders )
+    {
+        List<SchemaIndexProvider> list = addToCollection( schemaIndexProviders, new ArrayList<SchemaIndexProvider>() );
+        if ( list.isEmpty() )
+            return SchemaIndexProvider.NO_INDEX_PROVIDER;
+        
+        Collections.sort( list );
+        return list.get( list.size()-1 );
     }
 
     private Map<String, CacheProvider> mapCacheProviders( Iterable<CacheProvider> cacheProviders )

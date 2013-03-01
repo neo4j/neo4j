@@ -23,6 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.neo4j.kernel.api.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.IndexState;
+import org.neo4j.kernel.api.SchemaIndexProvider;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.util.JobScheduler;
@@ -112,7 +113,9 @@ public class IndexingService extends LifecycleAdapter
         for ( IndexRule indexRule : indexRules )
         {
             long id = indexRule.getId();
-            switch ( provider.getState( id ) )
+            IndexState initialState = provider.getInitialState( id );
+            System.out.println( "init " + indexRule + " => " + initialState );
+            switch ( initialState )
             {
                 case ONLINE:
                     indexes.put( id, createOnlineIndexContext( indexRule ) );
@@ -165,17 +168,23 @@ public class IndexingService extends LifecycleAdapter
 
     private IndexContext createPopulatingIndexContext( IndexRule rule, NeoStore neoStore )
     {
-        long ruleId = rule.getId();
+        final long ruleId = rule.getId();
         FlippableIndexContext flippableContext = new FlippableIndexContext( );
 
         // TODO: This is here because there is a circular dependency from PopulatingIndexContext to FlippableContext
-        flippableContext.setFlipTarget(
-                new PopulatingIndexContext( scheduler, rule, provider.getPopulator( ruleId ), flippableContext, neoStore)
-        );
+        flippableContext.setFlipTarget( eager( new PopulatingIndexContext( scheduler, rule,
+                provider.getPopulator( ruleId ), flippableContext, neoStore ) ) );
         flippableContext.flip();
 
         // Prepare for flipping to online mode
-        flippableContext.setFlipTarget( new OnlineIndexContext( provider.getWriter( ruleId ) ) );
+        flippableContext.setFlipTarget( new IndexContextFactory()
+        {
+            @Override
+            public IndexContext create()
+            {
+                return new OnlineIndexContext( provider.getWriter( ruleId ) );
+            }
+        } );
 
         // TODO: Merge auto removing and rule updating?
         IndexContext result = new RuleUpdateFilterIndexContext( flippableContext, rule );
@@ -201,42 +210,23 @@ public class IndexingService extends LifecycleAdapter
         }
     }
 
-    class BrokenIndexContext implements IndexContext {
-
-        private final IndexRule rule;
-
-        public BrokenIndexContext( IndexRule rule )
+    public void flushAll()
+    {
+        for ( IndexContext context : indexes.values() )
         {
-            this.rule = rule;
-        }
-
-        @Override
-        public void create()
-        {
-            throw new UnsupportedOperationException(  );
-        }
-
-        @Override
-        public void update( Iterable<NodePropertyUpdate> updates )
-        {
-            throw new UnsupportedOperationException(  );
-        }
-
-        @Override
-        public void drop()
-        {
-            throw new UnsupportedOperationException(  );
-        }
-
-        @Override
-        public IndexState getState()
-        {
-            return IndexState.NON_EXISTENT;
+            context.force();
         }
     }
 
-    public void flushAll()
+    private static IndexContextFactory eager( final IndexContext context )
     {
-        provider.flushAll();
+        return new IndexContextFactory()
+        {
+            @Override
+            public IndexContext create()
+            {
+                return context;
+            }
+        };
     }
 }

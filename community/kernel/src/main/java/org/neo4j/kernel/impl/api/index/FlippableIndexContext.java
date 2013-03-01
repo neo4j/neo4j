@@ -29,7 +29,7 @@ public class FlippableIndexContext extends AbstractLockingIndexContext
         }
     };
 
-    private IndexContext flipTarget = null;
+    private IndexContextFactory flipTarget;
     private IndexContext delegate;
 
     public FlippableIndexContext()
@@ -42,25 +42,29 @@ public class FlippableIndexContext extends AbstractLockingIndexContext
         this.delegate = originalDelegate;
     }
 
+    @Override
     public IndexContext getDelegate()
     {
         getLock().readLock().lock();
-        try {
+        try
+        {
             return delegate;
         }
-        finally {
-             getLock().readLock().unlock();
+        finally
+        {
+            getLock().readLock().unlock();
         }
     }
 
-
-    public void setFlipTarget( IndexContext flipTarget )
+    public void setFlipTarget( IndexContextFactory flipTarget )
     {
         getLock().writeLock().lock();
-        try {
+        try
+        {
             this.flipTarget = flipTarget;
         }
-        finally {
+        finally
+        {
             getLock().writeLock().unlock();
         }
     }
@@ -73,11 +77,13 @@ public class FlippableIndexContext extends AbstractLockingIndexContext
     public void flip( Runnable actionDuringFlip )
     {
         getLock().writeLock().lock();
-        try {
+        try
+        {
             actionDuringFlip.run();
-            this.delegate = flipTarget;
+            this.delegate = flipTarget.create();
         }
-        finally {
+        finally
+        {
             getLock().writeLock().unlock();
         }
     }

@@ -26,6 +26,7 @@ import java.util.Set;
 
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.api.IndexState;
+import org.neo4j.kernel.api.SchemaIndexProvider;
 import org.neo4j.kernel.impl.util.CopyOnWriteHashMap;
 
 @Service.Implementation( InMemoryIndexProvider.class )
@@ -35,7 +36,7 @@ public class InMemoryIndexProvider extends SchemaIndexProvider
 
     public InMemoryIndexProvider()
     {
-        super("in-memory");
+        super( "in-memory", 0 );
     }
 
     @Override
@@ -47,7 +48,7 @@ public class InMemoryIndexProvider extends SchemaIndexProvider
     }
 
     @Override
-    public IndexState getState( long indexId )
+    public IndexState getInitialState( long indexId )
     {
         return null;
     }
@@ -58,11 +59,6 @@ public class InMemoryIndexProvider extends SchemaIndexProvider
         InMemoryIndexWriter populator = new InMemoryIndexWriter();
         writers.put( indexId, populator );
         return populator;
-    }
-
-    @Override
-    public void flushAll()
-    {
     }
     
     private static class InMemoryIndexWriter implements IndexPopulator, IndexWriter

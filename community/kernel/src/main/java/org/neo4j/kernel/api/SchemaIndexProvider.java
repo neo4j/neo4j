@@ -17,10 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api.index;
+package org.neo4j.kernel.api;
+
+import java.io.File;
 
 import org.neo4j.helpers.Service;
-import org.neo4j.kernel.api.IndexState;
+import org.neo4j.kernel.impl.api.index.IndexPopulator;
+import org.neo4j.kernel.impl.api.index.IndexWriter;
+import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 
 /**
  * Contract for implementing an index in Neo4j.
@@ -78,17 +83,52 @@ import org.neo4j.kernel.api.IndexState;
  * Once the index is online, the database will move to using the {@link #getWriter(long) index writer} to write to the
  * index.
  */
-public abstract class SchemaIndexProvider extends Service
+public abstract class SchemaIndexProvider extends Service implements Comparable<SchemaIndexProvider>
 {
+    public static final SchemaIndexProvider NO_INDEX_PROVIDER = new SchemaIndexProvider( "none", -1 )
+    {
+        private final IndexWriter singleWriter = new IndexWriter.Adapter();
+        private final IndexPopulator singlePopulator = new IndexPopulator.Adapter();
+        
+        @Override
+        public IndexWriter getWriter( long indexId )
+        {
+            return singleWriter;
+        }
+        
+        @Override
+        public IndexPopulator getPopulator( long indexId )
+        {
+            return singlePopulator;
+        }
+        
+        @Override
+        public IndexState getInitialState( long indexId )
+        {
+            return IndexState.NON_EXISTENT;
+        }
+    };
+    
+    protected FileSystemAbstraction fileSystem;
+    protected File rootDirectory;
+    private final int priority;
+
     /**
      * Create a new instance of a service implementation identified with the
      * specified key(s).
      *
      * @param key the main key for identifying this service implementation
      */
-    protected SchemaIndexProvider( String key )
+    protected SchemaIndexProvider( String key, int priority )
     {
         super( key );
+        this.priority = priority;
+    }
+    
+    public void setRootDirectory( FileSystemAbstraction fileSystem, File rootDirectory )
+    {
+        this.fileSystem = fileSystem;
+        this.rootDirectory = rootDirectory;
     }
 
     public abstract IndexPopulator getPopulator( long indexId );
@@ -98,11 +138,16 @@ public abstract class SchemaIndexProvider extends Service
     // Design idea: we add methods here like:
     //    getReader( IndexDefinition index )
 
-    public abstract IndexState getState( long indexId );
-
     /**
-     * For persistent indexes make sure all data in the indexes are forced to disk.
-     * This method isn't allowed to return until all I/O has completed.
+     * Called during startup to find out which state an index is in.
+     * @param indexId the index id to get the state for.
+     * @return
      */
-    public abstract void flushAll();
+    public abstract IndexState getInitialState( long indexId );
+    
+    @Override
+    public int compareTo( SchemaIndexProvider o )
+    {
+        return priority - o.priority;
+    }
 }

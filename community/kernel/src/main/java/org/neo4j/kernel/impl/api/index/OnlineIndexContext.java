@@ -53,4 +53,10 @@ public class OnlineIndexContext implements IndexContext
     {
         return IndexState.ONLINE;
     }
+    
+    @Override
+    public void force()
+    {
+        writer.force();
+    }
 }

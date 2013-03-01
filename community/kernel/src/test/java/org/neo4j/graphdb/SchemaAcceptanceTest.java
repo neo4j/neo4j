@@ -249,7 +249,6 @@ public class SchemaAcceptanceTest
                 fail( "Expected index to come online within a reasonable time." );
             }
         }
-        System.out.println( schema.getIndexState( index ) );
     }
 
     private Iterable<String> singlePropertyKey( Iterable<IndexDefinition> indexes )

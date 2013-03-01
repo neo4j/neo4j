@@ -19,48 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import org.neo4j.kernel.api.IndexState;
-
-public interface IndexContext
+public interface IndexContextFactory
 {
-    void create();
-    
-    void update( Iterable<NodePropertyUpdate> updates );
-    
-    void drop();
-
-    IndexState getState();
-
-    void force();
-    
-    public static class Adapter implements IndexContext
-    {
-        public static final Adapter EMPTY = new Adapter();
-
-        @Override
-        public void create()
-        {
-        }
-
-        @Override
-        public void update( Iterable<NodePropertyUpdate> updates )
-        {
-        }
-
-        @Override
-        public void drop()
-        {
-        }
-
-        @Override
-        public IndexState getState()
-        {
-            throw new UnsupportedOperationException(  );
-        }
-
-        @Override
-        public void force()
-        {
-        }
-    }
+    IndexContext create();
 }

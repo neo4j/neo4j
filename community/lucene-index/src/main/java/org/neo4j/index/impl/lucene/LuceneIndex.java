@@ -112,6 +112,7 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
         this.abandonedIds.clear();
     }
 
+    @Override
     public String getName()
     {
         return this.identifier.indexName;
@@ -133,6 +134,7 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
      * @param value the value in the key/value pair to associate with the
      * entity.
      */
+    @Override
     public void add( T entity, String key, Object value )
     {
         LuceneXaConnection connection = getConnection();
@@ -174,6 +176,7 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
      * @param value the value in the key/value pair to dissociate from the
      * entity.
      */
+    @Override
     public void remove( T entity, String key, Object value )
     {
         LuceneXaConnection connection = getConnection();
@@ -184,6 +187,7 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
         }
     }
 
+    @Override
     public void remove( T entity, String key )
     {
         LuceneXaConnection connection = getConnection();
@@ -191,17 +195,20 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
         connection.remove( this, entity, key );
     }
 
+    @Override
     public void remove( T entity )
     {
         LuceneXaConnection connection = getConnection();
         connection.remove( this, entity );
     }
 
+    @Override
     public void delete()
     {
         getConnection().deleteIndex( this );
     }
 
+    @Override
     public IndexHits<T> get( String key, Object value )
     {
         return query( type.get( key, value ), key, value, null );
@@ -220,6 +227,7 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
      * in the result is disabled by default, but can be enabled using
      * {@link QueryContext#tradeCorrectnessForSpeed()}.
      */
+    @Override
     public IndexHits<T> query( String key, Object queryOrQueryObject )
     {
         QueryContext context = queryOrQueryObject instanceof QueryContext ?
@@ -233,6 +241,7 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
      *
      * @see #query(String, Object)
      */
+    @Override
     public IndexHits<T> query( Object queryOrQueryObject )
     {
         return query( null, queryOrQueryObject );
@@ -429,7 +438,7 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
 
     static class NodeIndex extends LuceneIndex<Node>
     {
-        private GraphDatabaseService gdb;
+        private final GraphDatabaseService gdb;
 
         NodeIndex( LuceneIndexImplementation service,
                    GraphDatabaseService gdb,
@@ -465,6 +474,7 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
                     ((Node) entity).getId(), key, value );
         }
 
+        @Override
         public Class<Node> getEntityType()
         {
             return Node.class;
@@ -474,7 +484,7 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
     static class RelationshipIndex extends LuceneIndex<Relationship>
             implements org.neo4j.graphdb.index.RelationshipIndex
     {
-        private GraphDatabaseService gdb;
+        private final GraphDatabaseService gdb;
 
         RelationshipIndex( LuceneIndexImplementation service,
                            GraphDatabaseService gdb,
@@ -496,6 +506,7 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
             return entity.getId();
         }
 
+        @Override
         public IndexHits<Relationship> get( String key, Object valueOrNull, Node startNodeOrNull,
                 Node endNodeOrNull )
         {
@@ -509,6 +520,7 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
             return query( query, (String) null, null, null );
         }
 
+        @Override
         public IndexHits<Relationship> query( String key, Object queryOrQueryObjectOrNull,
                 Node startNodeOrNull, Node endNodeOrNull )
         {
@@ -537,6 +549,7 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
             }
         }
 
+        @Override
         public IndexHits<Relationship> query( Object queryOrQueryObjectOrNull,
                 Node startNodeOrNull, Node endNodeOrNull )
         {
@@ -559,6 +572,7 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
                     RelationshipId.of( rel ), key, value );
         }
 
+        @Override
         public Class<Relationship> getEntityType()
         {
             return Relationship.class;

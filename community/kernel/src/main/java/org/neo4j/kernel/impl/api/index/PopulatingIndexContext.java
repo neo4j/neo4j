@@ -59,4 +59,10 @@ public class PopulatingIndexContext implements IndexContext
     {
         return IndexState.POPULATING;
     }
+    
+    @Override
+    public void force()
+    {
+        // Ignored... I think
+    }
 }
