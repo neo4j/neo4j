@@ -28,7 +28,6 @@ import java.io.File;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.DefaultTxHook;
 import org.neo4j.kernel.configuration.Config;
@@ -53,7 +52,7 @@ public class PropertyPhysicalToLogicalConverterTest
         PropertyRecord after = propertyRecord( property( key, value ) );
 
         // WHEN
-        NodePropertyUpdate update = single( converter.apply( Pair.of( before, after ) ) );
+        NodePropertyUpdate update = single( converter.apply( before, none, after, none ) );
 
         // THEN
         assertEquals( UpdateMode.ADDED, update.getUpdateMode() );
@@ -69,7 +68,7 @@ public class PropertyPhysicalToLogicalConverterTest
         PropertyRecord after = propertyRecord( property( key, valueAfter ) );
 
         // WHEN
-        NodePropertyUpdate update = single( converter.apply( Pair.of( before, after ) ) );
+        NodePropertyUpdate update = single( converter.apply( before, none, after, none ) );
 
         // THEN
         assertEquals( UpdateMode.CHANGED, update.getUpdateMode() );
@@ -85,7 +84,7 @@ public class PropertyPhysicalToLogicalConverterTest
         PropertyRecord after = propertyRecord( property( key, value ) );
 
         // WHEN
-        assertEquals( 0, count( converter.apply( Pair.of( before, after ) ) ) );
+        assertEquals( 0, count( converter.apply( before, none, after, none ) ) );
     }
     
     @Test
@@ -98,7 +97,7 @@ public class PropertyPhysicalToLogicalConverterTest
         PropertyRecord after = propertyRecord();
 
         // WHEN
-        NodePropertyUpdate update = single( converter.apply( Pair.of( before, after ) ) );
+        NodePropertyUpdate update = single( converter.apply( before, none, after, none ) );
 
         // THEN
         assertEquals( UpdateMode.REMOVED, update.getUpdateMode() );
@@ -113,7 +112,7 @@ public class PropertyPhysicalToLogicalConverterTest
         PropertyRecord after = propertyRecord( property( key, longString ) );
 
         // WHEN
-        NodePropertyUpdate update = single( converter.apply( Pair.of( before, after ) ) );
+        NodePropertyUpdate update = single( converter.apply( before, none, after, none ) );
 
         // THEN
         assertEquals( UpdateMode.ADDED, update.getUpdateMode() );
@@ -128,7 +127,7 @@ public class PropertyPhysicalToLogicalConverterTest
         PropertyRecord after = propertyRecord( property( key, longerString ) );
 
         // WHEN
-        NodePropertyUpdate update = single( converter.apply( Pair.of( before, after ) ) );
+        NodePropertyUpdate update = single( converter.apply( before, none, after, none ) );
 
         // THEN
         assertEquals( UpdateMode.CHANGED, update.getUpdateMode() );
@@ -143,7 +142,7 @@ public class PropertyPhysicalToLogicalConverterTest
         PropertyRecord after = propertyRecord();
 
         // WHEN
-        NodePropertyUpdate update = single( converter.apply( Pair.of( before, after ) ) );
+        NodePropertyUpdate update = single( converter.apply( before, none, after, none ) );
 
         // THEN
         assertEquals( UpdateMode.REMOVED, update.getUpdateMode() );
@@ -173,6 +172,7 @@ public class PropertyPhysicalToLogicalConverterTest
     private final String longString = "my super looooooooooooooooooooooooooooooooooooooong striiiiiiiiiiiiiiiiiiiiiiing";
     private final String longerString = "my super looooooooooooooooooooooooooooooooooooooong striiiiiiiiiiiiiiiiiiiiiiingdd";
     private PropertyPhysicalToLogicalConverter converter;
+    private final long[] none = new long[0];
     
     @Before
     public void before() throws Exception

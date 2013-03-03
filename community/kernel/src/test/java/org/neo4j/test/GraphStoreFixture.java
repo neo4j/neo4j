@@ -177,11 +177,11 @@ public abstract class GraphStoreFixture implements TestRule
             }
         }
 
-        public void update( NodeRecord node )
+        public void update( NodeRecord before, NodeRecord node )
         {
             try
             {
-                writer.update( node );
+                writer.update( before, node );
             }
             catch ( IOException e )
             {

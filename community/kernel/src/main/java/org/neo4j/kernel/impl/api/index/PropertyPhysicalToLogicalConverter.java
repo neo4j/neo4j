@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import static org.neo4j.kernel.impl.api.index.NodePropertyUpdate.EMPTY_LONG_ARRAY;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -26,13 +28,11 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import org.neo4j.helpers.Function;
-import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.nioneo.store.PropertyBlock;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
 
-public class PropertyPhysicalToLogicalConverter implements Function<Pair<PropertyRecord,PropertyRecord>, Iterable<NodePropertyUpdate>>
+public class PropertyPhysicalToLogicalConverter
 {
     private final PropertyStore propertyStore;
 
@@ -41,13 +41,15 @@ public class PropertyPhysicalToLogicalConverter implements Function<Pair<Propert
         this.propertyStore = propertyStore;
     }
     
-    @Override
-    public Iterable<NodePropertyUpdate> apply( Pair<PropertyRecord, PropertyRecord> from )
+    public Iterable<NodePropertyUpdate> apply(
+            PropertyRecord before, long[] nodeLabelsBefore,
+            PropertyRecord after, long[] nodeLabelsAfter )
     {
-        assert from.first().getNodeId() == from.other().getNodeId();
-        long nodeId = from.first().getNodeId();
-        Map<Integer, PropertyBlock> beforeMap = mapBlocks( from.first() );
-        Map<Integer, PropertyBlock> afterMap = mapBlocks( from.other() );
+        assert before.getNodeId() == after.getNodeId() :
+            "Node ids differ between before(" + before.getNodeId() + ") and after(" + after.getNodeId() + ")";
+        long nodeId = before.getNodeId();
+        Map<Integer, PropertyBlock> beforeMap = mapBlocks( before );
+        Map<Integer, PropertyBlock> afterMap = mapBlocks( after );
         
         @SuppressWarnings( "unchecked" )
         Set<Integer> allKeys = union( beforeMap.keySet(), afterMap.keySet() );
@@ -60,12 +62,17 @@ public class PropertyPhysicalToLogicalConverter implements Function<Pair<Propert
             
             if ( beforeBlock != null && afterBlock != null )
             {
+                // CHANGE
                 if ( !beforeBlock.hasSameContentsAs( afterBlock ) )
-                    result.add( new NodePropertyUpdate( nodeId, key, valueOf( beforeBlock ), valueOf( beforeBlock ) ) );
+                    result.add( new NodePropertyUpdate( nodeId, key, valueOf( beforeBlock ), nodeLabelsBefore,
+                            valueOf( afterBlock ), nodeLabelsAfter  ) );
             }
             else
             {
-                result.add( new NodePropertyUpdate( nodeId, key, valueOf( beforeBlock ), valueOf( afterBlock ) ) );
+                // ADD/REMOVE
+                result.add( new NodePropertyUpdate( nodeId, key,
+                        valueOf( beforeBlock ), beforeBlock != null ? nodeLabelsBefore : EMPTY_LONG_ARRAY,
+                        valueOf( afterBlock ), afterBlock != null ? nodeLabelsAfter : EMPTY_LONG_ARRAY ) );
             }
         }
         return result;

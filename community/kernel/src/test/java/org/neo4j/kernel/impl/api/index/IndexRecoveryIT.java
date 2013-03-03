@@ -47,6 +47,7 @@ import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.ThreadToStatementContextBridge;
 import org.neo4j.kernel.api.IndexState;
+import org.neo4j.kernel.api.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.PropertyKeyNotFoundException;
 import org.neo4j.kernel.api.SchemaIndexProvider;
 import org.neo4j.kernel.api.StatementContext;
@@ -130,7 +131,7 @@ public class IndexRecoveryIT
         Label myLabel = label( "MyLabel" );
 
         createIndex( myLabel );
-        Set<NodePropertyUpdate> expectedUpdates = createSomeBananas();
+        Set<NodePropertyUpdate> expectedUpdates = createSomeBananas( myLabel );
 
         // And Given
         killDb();
@@ -189,27 +190,29 @@ public class IndexRecoveryIT
         db.getXaDataSourceManager().rotateLogicalLogs();
     }
 
-    private void createIndex( Label myLabel )
+    private void createIndex( Label label )
     {
         Transaction tx = db.beginTx();
-        db.schema().indexCreator( myLabel ).on( key ).create();
+        db.schema().indexCreator( label ).on( key ).create();
         tx.success();
         tx.finish();
     }
 
-    private Set<NodePropertyUpdate> createSomeBananas() throws PropertyKeyNotFoundException
+    private Set<NodePropertyUpdate> createSomeBananas( Label label )
+            throws PropertyKeyNotFoundException, LabelNotFoundKernelException
     {
-        StatementContext context = db.getDependencyResolver().resolveDependency(
-                ThreadToStatementContextBridge.class ).getCtxForReading();
         Set<NodePropertyUpdate> updates = new HashSet<NodePropertyUpdate>();
         Transaction tx = db.beginTx();
         try
         {
+            StatementContext context = db.getDependencyResolver().resolveDependency(
+                    ThreadToStatementContextBridge.class ).getCtxForWriting();
             for ( int number : new int[] {4, 10} )
             {
-                Node node = db.createNode();
+                Node node = db.createNode( label );
                 node.setProperty( key, number );
-                updates.add( new NodePropertyUpdate( node.getId(), context.getPropertyKeyId( key ), null, number ) );
+                updates.add( NodePropertyUpdate.add( node.getId(), context.getPropertyKeyId( key ), number,
+                        new long[] {context.getLabelId( label.name() )} ) );
             }
             tx.success();
             return updates;

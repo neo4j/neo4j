@@ -113,9 +113,7 @@ public class IndexingService extends LifecycleAdapter
         for ( IndexRule indexRule : indexRules )
         {
             long id = indexRule.getId();
-            IndexState initialState = provider.getInitialState( id );
-            System.out.println( "init " + indexRule + " => " + initialState );
-            switch ( initialState )
+            switch ( provider.getInitialState( id ) )
             {
                 case ONLINE:
                     indexes.put( id, createOnlineIndexContext( indexRule ) );

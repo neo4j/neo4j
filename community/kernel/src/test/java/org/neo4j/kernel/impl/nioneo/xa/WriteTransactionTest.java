@@ -25,12 +25,17 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.single;
+import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.first;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.api.SchemaIndexProvider.NO_INDEX_PROVIDER;
+import static org.neo4j.kernel.impl.api.index.NodePropertyUpdate.add;
+import static org.neo4j.kernel.impl.api.index.NodePropertyUpdate.change;
+import static org.neo4j.kernel.impl.api.index.NodePropertyUpdate.remove;
 import static org.neo4j.kernel.impl.util.StringLogger.SYSTEM;
 
 import java.io.File;
@@ -38,6 +43,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.junit.After;
 import org.junit.Before;
@@ -48,6 +55,7 @@ import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.DefaultTxHook;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.core.PropertyIndex;
 import org.neo4j.kernel.impl.core.TransactionState;
@@ -56,8 +64,8 @@ import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
+import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
-import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
 import org.neo4j.kernel.impl.nioneo.store.SchemaStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.nioneo.xa.Command.PropertyCommand;
@@ -74,12 +82,10 @@ public class WriteTransactionTest
     public void shouldAddSchemaRuleToCacheWhenApplyingTransactionThatCreatesOne() throws Exception
     {
         // GIVEN
-        WriteTransaction writeTransaction = new WriteTransaction( 0, log, transactionState, neoStore,
-                cacheAccessBackDoor, NO_INDEXING );
-        writeTransaction.setCommitTxId( 1 );
+        WriteTransaction writeTransaction = newWriteTransaction( NO_INDEXING );
 
         // WHEN
-        final long ruleId = schemaStore.nextId();
+        final long ruleId = neoStore.getSchemaStore().nextId();
         IndexRule schemaRule = new IndexRule( ruleId, 10, 8 );
         writeTransaction.createSchemaRule( schemaRule );
         writeTransaction.prepare();
@@ -93,15 +99,14 @@ public class WriteTransactionTest
     public void shouldRemoveSchemaRuleFromCacheWhenApplyingTransactionThatDeletesOne() throws Exception
     {
         // GIVEN
+        SchemaStore schemaStore = neoStore.getSchemaStore();
         long labelId = 10, propertyKey = 10;
         IndexRule rule = new IndexRule( schemaStore.nextId(), labelId, propertyKey );
         Collection<DynamicRecord> records = schemaStore.allocateFrom( rule );
         for ( DynamicRecord record : records )
             schemaStore.updateRecord( record );
         long ruleId = first( records ).getId();
-        WriteTransaction writeTransaction = new WriteTransaction( 0, log, transactionState, neoStore,
-                cacheAccessBackDoor, NO_INDEXING );
-        writeTransaction.setCommitTxId( 1 );
+        WriteTransaction writeTransaction = newWriteTransaction( NO_INDEXING );
 
         // WHEN
         writeTransaction.dropSchemaRule( ruleId );
@@ -116,12 +121,10 @@ public class WriteTransactionTest
     public void shouldRemoveSchemaRuleWhenRollingBackTransaction() throws Exception
     {
         // GIVEN
-        WriteTransaction writeTransaction = new WriteTransaction( 0, log, transactionState, neoStore,
-                cacheAccessBackDoor, NO_INDEXING );
-        writeTransaction.setCommitTxId( 1 );
+        WriteTransaction writeTransaction = newWriteTransaction( NO_INDEXING );
 
         // WHEN
-        final long ruleId = schemaStore.nextId();
+        final long ruleId = neoStore.getSchemaStore().nextId();
         writeTransaction.createSchemaRule( new IndexRule( ruleId, 10, 7 ) );
         writeTransaction.prepare();
         writeTransaction.rollback();
@@ -134,8 +137,7 @@ public class WriteTransactionTest
     public void shouldWriteProperBeforeAndAfterPropertyRecordsWhenAddingProperty() throws Exception
     {
         // GIVEN
-        WriteTransaction writeTransaction = new WriteTransaction( 0, log, transactionState, neoStore,
-                cacheAccessBackDoor, NO_INDEXING );
+        WriteTransaction writeTransaction = newWriteTransaction( NO_INDEXING );
         int nodeId = 1;
         writeTransaction.setCommitTxId( nodeId );
         writeTransaction.nodeCreate( nodeId );
@@ -166,6 +168,216 @@ public class WriteTransactionTest
     
     // TODO change property record
     // TODO remove property record
+    
+    @Test
+    public void shouldConvertAddedPropertyToNodePropertyUpdates() throws Exception
+    {
+        // GIVEN
+        long nodeId = 1;
+        CapturingIndexingService indexingService = new CapturingIndexingService();
+        WriteTransaction writeTransaction = newWriteTransaction( indexingService );
+        PropertyIndex propertyIndex1 = new PropertyIndex( "key", 1 ), propertyIndex2 = new PropertyIndex( "key2", 2 );
+        Object value1 = "first", value2 = 4;
+        
+        // WHEN
+        writeTransaction.nodeCreate( nodeId );
+        writeTransaction.nodeAddProperty( nodeId, propertyIndex1, value1 );
+        writeTransaction.nodeAddProperty( nodeId, propertyIndex2, value2 );
+        writeTransaction.doPrepare();
+        writeTransaction.doCommit();
+
+        // THEN
+        assertEquals( asSet(
+                add( nodeId, propertyIndex1.getKeyId(), value1, none ),
+                add( nodeId, propertyIndex2.getKeyId(), value2, none ) ),
+                
+                indexingService.updates );
+    }
+    
+    @Test
+    public void shouldConvertChangedPropertyToNodePropertyUpdates() throws Exception
+    {
+        // GIVEN
+        int nodeId = 1;
+        WriteTransaction writeTransaction = newWriteTransaction( NO_INDEXING );
+        PropertyIndex propertyIndex1 = new PropertyIndex( "key", 1 ), propertyIndex2 = new PropertyIndex( "key2", 2 );
+        Object value1 = "first", value2 = 4;
+        writeTransaction.nodeCreate( nodeId );
+        PropertyData property1 = writeTransaction.nodeAddProperty( nodeId, propertyIndex1, value1 );
+        PropertyData property2 = writeTransaction.nodeAddProperty( nodeId, propertyIndex2, value2 );
+        writeTransaction.doPrepare();
+        writeTransaction.doCommit();
+        
+        // WHEN
+        CapturingIndexingService indexingService = new CapturingIndexingService();
+        Object newValue1 = "new", newValue2 = "new 2";
+        writeTransaction = newWriteTransaction( indexingService );
+        writeTransaction.nodeChangeProperty( nodeId, property1, newValue1 );
+        writeTransaction.nodeChangeProperty( nodeId, property2, newValue2 );
+        writeTransaction.doPrepare();
+        writeTransaction.doCommit();
+
+        // THEN
+        assertEquals( asSet(
+                change( nodeId, propertyIndex1.getKeyId(), value1, none, newValue1, none ),
+                change( nodeId, propertyIndex2.getKeyId(), value2, none, newValue2, none ) ),
+                
+                indexingService.updates );
+    }
+    
+    @Test
+    public void shouldConvertRemovedPropertyToNodePropertyUpdates() throws Exception
+    {
+        // GIVEN
+        int nodeId = 1;
+        WriteTransaction writeTransaction = newWriteTransaction( NO_INDEXING );
+        PropertyIndex propertyIndex1 = new PropertyIndex( "key", 1 ), propertyIndex2 = new PropertyIndex( "key2", 2 );
+        Object value1 = "first", value2 = 4;
+        writeTransaction.nodeCreate( nodeId );
+        PropertyData property1 = writeTransaction.nodeAddProperty( nodeId, propertyIndex1, value1 );
+        PropertyData property2 = writeTransaction.nodeAddProperty( nodeId, propertyIndex2, value2 );
+        writeTransaction.doPrepare();
+        writeTransaction.doCommit();
+        
+        // WHEN
+        CapturingIndexingService indexingService = new CapturingIndexingService();
+        writeTransaction = newWriteTransaction( indexingService );
+        writeTransaction.nodeRemoveProperty( nodeId, property1 );
+        writeTransaction.nodeRemoveProperty( nodeId, property2 );
+        writeTransaction.doPrepare();
+        writeTransaction.doCommit();
+
+        // THEN
+        assertEquals( asSet(
+                remove( nodeId, propertyIndex1.getKeyId(), value1, none ),
+                remove( nodeId, propertyIndex2.getKeyId(), value2, none ) ),
+                
+                indexingService.updates );
+    }
+
+    @Test
+    public void shouldConvertLabelAdditionToNodePropertyUpdates() throws Exception
+    {
+        // GIVEN
+        long nodeId = 1, labelId = 3;
+        long[] labelIds = new long[] {labelId};
+        WriteTransaction writeTransaction = newWriteTransaction( NO_INDEXING );
+        PropertyIndex propertyIndex1 = new PropertyIndex( "key", 1 ), propertyIndex2 = new PropertyIndex( "key2", 2 );
+        Object value1 = "first", value2 = 4;
+        writeTransaction.nodeCreate( nodeId );
+        writeTransaction.nodeAddProperty( nodeId, propertyIndex1, value1 );
+        writeTransaction.nodeAddProperty( nodeId, propertyIndex2, value2 );
+        writeTransaction.doPrepare();
+        writeTransaction.doCommit();
+        
+        // WHEN
+        CapturingIndexingService indexingService = new CapturingIndexingService();
+        writeTransaction = newWriteTransaction( indexingService );
+        writeTransaction.addLabelToNode( labelId, nodeId );
+        writeTransaction.doPrepare();
+        writeTransaction.doCommit();
+
+        // THEN
+        assertEquals( asSet(
+                add( nodeId, propertyIndex1.getKeyId(), value1, labelIds ),
+                add( nodeId, propertyIndex2.getKeyId(), value2, labelIds ) ),
+                
+                indexingService.updates );
+    }
+
+    @Test
+    public void shouldConvertMixedLabelAdditionAndSetPropertyToNodePropertyUpdates() throws Exception
+    {
+        // GIVEN
+        long nodeId = 1, labelId1 = 3, labelId2 = 4;
+        WriteTransaction writeTransaction = newWriteTransaction( NO_INDEXING );
+        PropertyIndex propertyIndex1 = new PropertyIndex( "key", 1 ), propertyIndex2 = new PropertyIndex( "key2", 2 );
+        Object value1 = "first", value2 = 4;
+        writeTransaction.nodeCreate( nodeId );
+        writeTransaction.nodeAddProperty( nodeId, propertyIndex1, value1 );
+        writeTransaction.addLabelToNode( labelId1, nodeId );
+        writeTransaction.doPrepare();
+        writeTransaction.doCommit();
+        
+        // WHEN
+        CapturingIndexingService indexingService = new CapturingIndexingService();
+        writeTransaction = newWriteTransaction( indexingService );
+        writeTransaction.nodeAddProperty( nodeId, propertyIndex2, value2 );
+        writeTransaction.addLabelToNode( labelId2, nodeId );
+        writeTransaction.doPrepare();
+        writeTransaction.doCommit();
+
+        // THEN
+        assertEquals( asSet(
+                add( nodeId, propertyIndex1.getKeyId(), value1, new long[] {labelId2} ),
+                add( nodeId, propertyIndex2.getKeyId(), value2, new long[] {labelId2} ),
+                add( nodeId, propertyIndex2.getKeyId(), value2, new long[] {labelId1, labelId2} ) ),
+                
+                indexingService.updates );
+    }
+    
+    @Test
+    public void shouldConvertLabelRemovalToNodePropertyUpdates() throws Exception
+    {
+        // GIVEN
+        long nodeId = 1, labelId = 3;
+        long[] labelIds = new long[] {labelId};
+        WriteTransaction writeTransaction = newWriteTransaction( NO_INDEXING );
+        PropertyIndex propertyIndex1 = new PropertyIndex( "key", 1 ), propertyIndex2 = new PropertyIndex( "key2", 2 );
+        Object value1 = "first", value2 = 4;
+        writeTransaction.nodeCreate( nodeId );
+        writeTransaction.nodeAddProperty( nodeId, propertyIndex1, value1 );
+        writeTransaction.nodeAddProperty( nodeId, propertyIndex2, value2 );
+        writeTransaction.addLabelToNode( labelId, nodeId );
+        writeTransaction.doPrepare();
+        writeTransaction.doCommit();
+        
+        // WHEN
+        CapturingIndexingService indexingService = new CapturingIndexingService();
+        writeTransaction = newWriteTransaction( indexingService );
+        writeTransaction.removeLabelFromNode( labelId, nodeId );
+        writeTransaction.doPrepare();
+        writeTransaction.doCommit();
+
+        // THEN
+        assertEquals( asSet(
+                remove( nodeId, propertyIndex1.getKeyId(), value1, labelIds ),
+                remove( nodeId, propertyIndex2.getKeyId(), value2, labelIds ) ),
+                
+                indexingService.updates );
+    }
+    
+    @Test
+    public void shouldConvertMixedLabelRemovalAndRemovePropertyToNodePropertyUpdates() throws Exception
+    {
+        // GIVEN
+        long nodeId = 1, labelId1 = 3, labelId2 = 4;
+        WriteTransaction writeTransaction = newWriteTransaction( NO_INDEXING );
+        PropertyIndex propertyIndex1 = new PropertyIndex( "key", 1 ), propertyIndex2 = new PropertyIndex( "key2", 2 );
+        Object value1 = "first", value2 = 4;
+        writeTransaction.nodeCreate( nodeId );
+        PropertyData property1 = writeTransaction.nodeAddProperty( nodeId, propertyIndex1, value1 );
+        writeTransaction.nodeAddProperty( nodeId, propertyIndex2, value2 );
+        writeTransaction.addLabelToNode( labelId1, nodeId );
+        writeTransaction.addLabelToNode( labelId2, nodeId );
+        writeTransaction.doPrepare();
+        writeTransaction.doCommit();
+        
+        // WHEN
+        CapturingIndexingService indexingService = new CapturingIndexingService();
+        writeTransaction = newWriteTransaction( indexingService );
+        writeTransaction.nodeRemoveProperty( nodeId, property1 );
+        writeTransaction.removeLabelFromNode( labelId2, nodeId );
+        writeTransaction.doPrepare();
+        writeTransaction.doCommit();
+
+        // THEN
+        assertEquals( asSet(
+                remove( nodeId, propertyIndex1.getKeyId(), value1, new long[] {labelId1, labelId2} ),
+                remove( nodeId, propertyIndex2.getKeyId(), value2, new long[] {labelId2} ) ),
+                
+                indexingService.updates );
+    }
 
     private EphemeralFileSystemAbstraction fileSystemAbstraction;
     private CapturingXaLogicalLog log;
@@ -176,8 +388,6 @@ public class WriteTransactionTest
     private StoreFactory storeFactory;
     private NeoStore neoStore;
     private CacheAccessBackDoor cacheAccessBackDoor;
-    private SchemaStore schemaStore;
-    private PropertyStore propertyStore;
     
     @Before
     public void before() throws Exception
@@ -185,20 +395,9 @@ public class WriteTransactionTest
         fileSystemAbstraction = new EphemeralFileSystemAbstraction();
         log = new CapturingXaLogicalLog( fileSystemAbstraction );
         transactionState = TransactionState.NO_STATE;
-        neoStore = mock( NeoStore.class );
         storeFactory = new StoreFactory( config, idGeneratorFactory, windowPoolFactory,
                 fileSystemAbstraction, SYSTEM, new DefaultTxHook() );
-        
-        File schemaStoreFile = new File( "schema-store" );
-        storeFactory.createSchemaStore( schemaStoreFile );
-        schemaStore = storeFactory.newSchemaStore( schemaStoreFile );
-        when( neoStore.getSchemaStore() ).thenReturn( schemaStore );
-        
-        File propertyStoreFile = new File( "property-store" );
-        storeFactory.createPropertyStore( propertyStoreFile );
-        propertyStore = storeFactory.newPropertyStore( propertyStoreFile );
-        when( neoStore.getPropertyStore() ).thenReturn( propertyStore );
-        
+        neoStore = storeFactory.createNeoStore( new File( "neostore" ) );
         cacheAccessBackDoor = mock( CacheAccessBackDoor.class );
     }
     
@@ -216,7 +415,6 @@ public class WriteTransactionTest
         public synchronized void writeCommand( XaCommand command, int identifier ) throws IOException
         {
             commands.add( command );
-//            super.writeCommand( command, identifier );
         }
     }
     
@@ -226,18 +424,6 @@ public class WriteTransactionTest
         fileSystemAbstraction.shutdown();
     }
     
-    private SchemaStore ephemeralSchemaStore()
-    {
-        Config config = new Config( stringMap() );
-        DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory();
-        DefaultWindowPoolFactory windowPoolFactory = new DefaultWindowPoolFactory();
-        StoreFactory storeFactory = new StoreFactory( config, idGeneratorFactory, windowPoolFactory, fileSystemAbstraction, SYSTEM,
-                new DefaultTxHook() );
-        File file = new File( "schema-store" );
-        storeFactory.createSchemaStore( file );
-        return storeFactory.newSchemaStore( file );
-    }
-
     private ArgumentMatcher<Collection<DynamicRecord>> firstRecordIdMatching( final int ruleId )
     {
         return new ArgumentMatcher<Collection<DynamicRecord>>()
@@ -251,5 +437,31 @@ public class WriteTransactionTest
         };
     }
 
-    static IndexingService NO_INDEXING = mock(IndexingService.class);
+    static IndexingService NO_INDEXING = mock( IndexingService.class );
+
+    private WriteTransaction newWriteTransaction( IndexingService indexing )
+    {
+        WriteTransaction result = new WriteTransaction( 0, log, transactionState, neoStore,
+                cacheAccessBackDoor, indexing );
+        result.setCommitTxId( neoStore.getLastCommittedTx()+1 );
+        return result;
+    }
+    
+    private static class CapturingIndexingService extends IndexingService
+    {
+        private final Set<NodePropertyUpdate> updates = new HashSet<NodePropertyUpdate>();
+        
+        public CapturingIndexingService()
+        {
+            super( null, NO_INDEX_PROVIDER );
+        }
+        
+        @Override
+        public void update( Iterable<NodePropertyUpdate> updates )
+        {
+            this.updates.addAll( asCollection( updates ) );
+        }
+    }
+    
+    private static final long[] none = new long[0];
 }

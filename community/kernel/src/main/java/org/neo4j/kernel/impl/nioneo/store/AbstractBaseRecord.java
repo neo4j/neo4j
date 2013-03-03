@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-public abstract class AbstractBaseRecord
+public abstract class AbstractBaseRecord implements Cloneable
 {
     private boolean inUse;
     private boolean created = false;
@@ -52,7 +52,6 @@ public abstract class AbstractBaseRecord
         return created;
     }
 
-
     @Override
     public int hashCode()
     {
@@ -76,5 +75,11 @@ public abstract class AbstractBaseRecord
         if ( getLongId() != other.getLongId() )
             return false;
         return true;
+    }
+    
+    @Override
+    public AbstractBaseRecord clone()
+    {
+        throw new UnsupportedOperationException();
     }
 }

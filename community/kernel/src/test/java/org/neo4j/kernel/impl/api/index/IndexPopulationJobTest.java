@@ -104,7 +104,8 @@ public class IndexPopulationJobTest
         long node3 = createNode( map( name, value3 ), FIRST );
         long changeNode = node1;
         long propertyKeyId = context.getPropertyKeyId( name );
-        NodeChangingWriter populator = new NodeChangingWriter( changeNode, propertyKeyId, value1, changedValue );
+        NodeChangingWriter populator = new NodeChangingWriter( changeNode, propertyKeyId, value1, changedValue,
+                firstLabelId );
         IndexPopulationJob job = newIndexPopulationJob( FIRST, name, populator );
         populator.setJob( job );
 
@@ -129,7 +130,7 @@ public class IndexPopulationJobTest
         long node2 = createNode( map( name, value2 ), FIRST );
         long node3 = createNode( map( name, value3 ), FIRST );
         long propertyKeyId = context.getPropertyKeyId( name );
-        NodeDeletingWriter populator = new NodeDeletingWriter( node2, propertyKeyId, value2 );
+        NodeDeletingWriter populator = new NodeDeletingWriter( node2, propertyKeyId, value2, firstLabelId );
         IndexPopulationJob job = newIndexPopulationJob( FIRST, name, populator );
         populator.setJob( job );
 
@@ -151,13 +152,16 @@ public class IndexPopulationJobTest
         private final Object newValue;
         private final Object previousValue;
         private final long propertyKeyId;
+        private final long label;
         
-        public NodeChangingWriter( long changedNode, long propertyKeyId, Object previousValue, Object newValue )
+        public NodeChangingWriter( long changedNode, long propertyKeyId, Object previousValue, Object newValue,
+                long label )
         {
             this.changedNode = changedNode;
             this.propertyKeyId = propertyKeyId;
             this.previousValue = previousValue;
             this.newValue = newValue;
+            this.label = label;
         }
 
         @Override
@@ -165,7 +169,9 @@ public class IndexPopulationJobTest
         {
             if ( nodeId == 2 )
             {
-                job.update( asList( new NodePropertyUpdate( changedNode, propertyKeyId, previousValue, newValue ) ) );
+                long[] labels = new long[] {label};
+                job.update( asList( NodePropertyUpdate.change( changedNode, propertyKeyId, previousValue, labels,
+                        newValue, labels ) ) );
             }
             added.add( Pair.of( nodeId, propertyValue ) );
         }
@@ -199,12 +205,14 @@ public class IndexPopulationJobTest
         private IndexPopulationJob job;
         private final long propertyKeyId;
         private final Object valueToDelete;
+        private final long label;
 
-        public NodeDeletingWriter( long nodeToDelete, long propertyKeyId, Object valueToDelete )
+        public NodeDeletingWriter( long nodeToDelete, long propertyKeyId, Object valueToDelete, long label )
         {
             this.nodeToDelete = nodeToDelete;
             this.propertyKeyId = propertyKeyId;
             this.valueToDelete = valueToDelete;
+            this.label = label;
         }
         
         public void setJob( IndexPopulationJob job )
@@ -217,7 +225,7 @@ public class IndexPopulationJobTest
         {
             if ( nodeId == 3 )
             {
-                job.update( asList( new NodePropertyUpdate( nodeToDelete, propertyKeyId, valueToDelete, null ) ) );
+                job.update( asList( NodePropertyUpdate.remove( nodeToDelete, propertyKeyId, valueToDelete, new long[] {label} ) ) );
             }
             added.put( nodeId, propertyValue );
         }
@@ -246,6 +254,7 @@ public class IndexPopulationJobTest
     private ThreadToStatementContextBridge ctxProvider;
     private StatementContext context;
     private IndexPopulator populator;
+    private long firstLabelId, secondLabelId;
 
     @Before
     public void before() throws Exception
@@ -254,6 +263,12 @@ public class IndexPopulationJobTest
         ctxProvider = db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
         context = ctxProvider.getCtxForReading();
         populator = mock( IndexPopulator.class );
+        
+        Transaction tx = db.beginTx();
+        firstLabelId = ctxProvider.getCtxForWriting().getOrCreateLabelId( FIRST.name() );
+        secondLabelId = ctxProvider.getCtxForWriting().getOrCreateLabelId( SECOND.name() );
+        tx.success();
+        tx.finish();
     }
 
     @After

@@ -270,9 +270,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
         {
             if ( !readOnly )
             {
-                // TODO should neoStore.setRecoveredStatus delegate to all individual stores instead?
                 neoStore.setRecoveredStatus( true );
-                neoStore.getSchemaStore().setRecovered();
                 try
                 {
                     indexingService.initIndexes(loadIndexRules(), neoStore);
@@ -280,7 +278,6 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
                 }
                 finally
                 {
-                    neoStore.getSchemaStore().unsetRecovered();
                     neoStore.setRecoveredStatus( false );
                 }
             }
@@ -383,13 +380,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
         public XaCommand readCommand( ReadableByteChannel byteChannel,
             ByteBuffer buffer ) throws IOException
         {
-            Command command = Command.readCommand( neoStore, indexingService, byteChannel,
-                buffer );
-            if ( command != null )
-            {
-                command.setRecovered();
-            }
-            return command;
+            return Command.readCommand( neoStore, indexingService, byteChannel, buffer );
         }
     }
 

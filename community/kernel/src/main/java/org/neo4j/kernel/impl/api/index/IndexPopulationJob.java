@@ -126,7 +126,7 @@ public class IndexPopulationJob implements Runnable
     {
         // TODO synchronization with the index job thread
         for ( NodePropertyUpdate update : updates )
-            if ( (update.getPropertyKeyId() == propertyKeyId) && (update.hasLabel( labelId )) )
+            if ( (update.getPropertyKeyId() == propertyKeyId) && (update.forLabel( labelId )) )
                 queue.add( update );
     }
 

@@ -32,7 +32,7 @@ public class RuleUpdateFilterIndexContext extends DelegatingIndexContext
         @Override
         public boolean accept( NodePropertyUpdate item )
         {
-            return item.getPropertyKeyId() == rule.getPropertyKey() && item.hasLabel( rule.getLabel() );
+            return item.getPropertyKeyId() == rule.getPropertyKey() && item.forLabel( rule.getLabel() );
         }
     };
 

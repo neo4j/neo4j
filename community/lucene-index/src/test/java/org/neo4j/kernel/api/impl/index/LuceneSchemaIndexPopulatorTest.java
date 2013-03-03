@@ -206,17 +206,17 @@ public class LuceneSchemaIndexPopulatorTest
 
     private NodePropertyUpdate add( long nodeId, Object value )
     {
-        return new NodePropertyUpdate( nodeId, 0, null, value );
+        return NodePropertyUpdate.add( nodeId, 0, value, new long[0] );
     }
     
     private NodePropertyUpdate change( long nodeId, Object valueBefore, Object valueAfter )
     {
-        return new NodePropertyUpdate( nodeId, 0, valueBefore, valueAfter );
+        return NodePropertyUpdate.change( nodeId, 0, valueBefore, new long[0], valueAfter, new long[0] );
     }
 
     private NodePropertyUpdate remove( long nodeId, Object removedValue )
     {
-        return new NodePropertyUpdate( nodeId, 0, removedValue, null );
+        return NodePropertyUpdate.remove( nodeId, 0, removedValue, new long[0] );
     }
     
     private LuceneSchemaIndexProvider provider;

@@ -20,6 +20,8 @@
 package org.neo4j.kernel.impl.nioneo.xa;
 
 import static org.neo4j.kernel.impl.nioneo.store.AbstractNameStore.NAME_STORE_BLOCK_SIZE;
+import static org.neo4j.kernel.impl.nioneo.store.Record.NO_NEXT_PROPERTY;
+import static org.neo4j.kernel.impl.nioneo.store.Record.NO_PREV_RELATIONSHIP;
 
 import java.io.IOException;
 
@@ -113,19 +115,19 @@ public class TransactionWriter
     public void create( NodeRecord node ) throws IOException
     {
         node.setCreated();
-        update( node );
+        update( new NodeRecord( node.getId(), NO_PREV_RELATIONSHIP.intValue(), NO_NEXT_PROPERTY.intValue() ), node );
     }
 
-    public void update( NodeRecord node ) throws IOException
+    public void update( NodeRecord before, NodeRecord node ) throws IOException
     {
         node.setInUse( true );
-        add( node );
+        add( before, node );
     }
 
     public void delete( NodeRecord node ) throws IOException
     {
         node.setInUse( false );
-        add( node );
+        add( node, new NodeRecord( node.getId(), NO_PREV_RELATIONSHIP.intValue(), NO_NEXT_PROPERTY.intValue() ) );
     }
 
     public void create( RelationshipRecord relationship ) throws IOException
@@ -166,9 +168,9 @@ public class TransactionWriter
 
     // Internals
 
-    public void add( NodeRecord node ) throws IOException
+    public void add( NodeRecord before, NodeRecord after ) throws IOException
     {
-        write( new Command.NodeCommand( null, node ) );
+        write( new Command.NodeCommand( null, before, after ) );
     }
 
     public void add( RelationshipRecord relationship ) throws IOException

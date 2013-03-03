@@ -88,7 +88,6 @@ public abstract class Command extends XaCommand
         }
     }
 
-
     Command( long key, Mode mode )
     {
         this.mode = mode;
@@ -97,12 +96,6 @@ public abstract class Command extends XaCommand
     }
     
     public abstract void accept( CommandRecordVisitor visitor );
-
-    @Override
-    public void setRecovered()
-    {
-        super.setRecovered();
-    }
 
     @Override
     public int hashCode()
@@ -124,16 +117,6 @@ public abstract class Command extends XaCommand
         return mode;
     }
 
-//    boolean isCreated()
-//    {
-//        return record.isCreated();
-//    }
-//
-//    boolean isDeleted()
-//    {
-//        return !record.inUse();
-//    }
-    
     @Override
     public boolean equals( Object o )
     {
@@ -351,26 +334,28 @@ public abstract class Command extends XaCommand
 
     static class NodeCommand extends Command
     {
-        private final NodeRecord record;
         private final NodeStore store;
+        private final NodeRecord before;
+        private final NodeRecord after;
 
-        NodeCommand( NodeStore store, NodeRecord record )
+        NodeCommand( NodeStore store, NodeRecord before, NodeRecord after )
         {
-            super( record.getId(), Mode.fromRecordState( record.isCreated(), record.inUse() ) );
-            this.record = record;
+            super( after.getId(), Mode.fromRecordState( after.isCreated(), after.inUse() ) );
             this.store = store;
+            this.before = before;
+            this.after = after;
         }
         
         @Override
         public void accept( CommandRecordVisitor visitor )
         {
-            visitor.visitNode( record );
+            visitor.visitNode( after );
         }
 
         @Override
         public String toString()
         {
-            return record.toString();
+            return after.toString();
         }
 
         @Override
@@ -382,26 +367,26 @@ public abstract class Command extends XaCommand
         @Override
         public void execute()
         {
-            if ( isRecovered() )
-            {
-                store.updateRecord( record, true );
-            }
-            else
-            {
-                store.updateRecord( record );
-            }
+            store.updateRecord( after );
             
             // Dynamic labels
-            store.updateDynamicLabelRecords( record.getDynamicLabelRecords() );
+            store.updateDynamicLabelRecords( after.getDynamicLabelRecords() );
         }
 
         @Override
         public void writeToFile( LogBuffer buffer ) throws IOException
         {
-            byte inUse = record.inUse() ? Record.IN_USE.byteValue()
-                : Record.NOT_IN_USE.byteValue();
             buffer.put( NODE_COMMAND );
-            buffer.putLong( record.getId() );
+            buffer.putLong( after.getId() );
+            
+            writeToFile( buffer, before );
+            writeToFile( buffer, after );
+        }
+        
+        private void writeToFile( LogBuffer buffer, NodeRecord record ) throws IOException
+        {
+            byte inUse = record.inUse() ? Record.IN_USE.byteValue()
+                    : Record.NOT_IN_USE.byteValue();
             buffer.put( inUse );
             if ( record.inUse() )
             {
@@ -413,13 +398,23 @@ public abstract class Command extends XaCommand
             }
         }
 
-        public static Command readFromFile( NeoStore neoStore,
-            ReadableByteChannel byteChannel, ByteBuffer buffer )
+        public static Command readFromFile( NeoStore neoStore, ReadableByteChannel byteChannel, ByteBuffer buffer )
             throws IOException
         {
-            if ( !readAndFlip( byteChannel, buffer, 9 ) )
+            if ( !readAndFlip( byteChannel, buffer, 8 ) )
                 return null;
             long id = buffer.getLong();
+            
+            NodeRecord before = readNodeRecord( id, byteChannel, buffer );
+            NodeRecord after = readNodeRecord( id, byteChannel, buffer );
+            return new NodeCommand( neoStore == null ? null : neoStore.getNodeStore(), before, after );
+        }
+
+        private static NodeRecord readNodeRecord( long id, ReadableByteChannel byteChannel, ByteBuffer buffer )
+            throws IOException
+        {
+            if ( !readAndFlip( byteChannel, buffer, 1 ) )
+                return null;
             byte inUseFlag = buffer.get();
             boolean inUse = false;
             if ( inUseFlag == Record.IN_USE.byteValue() )
@@ -447,7 +442,17 @@ public abstract class Command extends XaCommand
                 record = new NodeRecord( id, Record.NO_NEXT_RELATIONSHIP.intValue(),
                         Record.NO_NEXT_PROPERTY.intValue() );
             record.setInUse( inUse );
-            return new NodeCommand( neoStore == null ? null : neoStore.getNodeStore(), record );
+            return record;
+        }
+
+        public NodeRecord getBefore()
+        {
+            return before;
+        }
+        
+        public NodeRecord getAfter()
+        {
+            return after;
         }
     }
 
@@ -517,14 +522,7 @@ public abstract class Command extends XaCommand
                  */
                 beforeUpdate = store.forceGetRaw( record.getId() );
             }
-            if ( isRecovered() )
-            {
-                store.updateRecord( record, true );
-            }
-            else
-            {
-                store.updateRecord( record );
-            }
+            store.updateRecord( record );
         }
 
         @Override
@@ -681,14 +679,7 @@ public abstract class Command extends XaCommand
         @Override
         public void execute()
         {
-            if ( isRecovered() )
-            {
-                store.updateRecord( record, true );
-            }
-            else
-            {
-                store.updateRecord( record );
-            }
+            store.updateRecord( record );
         }
 
         @Override
@@ -806,14 +797,7 @@ public abstract class Command extends XaCommand
         @Override
         public void execute()
         {
-            if ( isRecovered() )
-            {
-                store.updateRecord( after, true );
-            }
-            else
-            {
-                store.updateRecord( after );
-            }
+            store.updateRecord( after );
         }
 
         public long getNodeId()
@@ -1011,14 +995,7 @@ public abstract class Command extends XaCommand
         @Override
         public void execute()
         {
-            if ( isRecovered() )
-            {
-                store.updateRecord( record, true );
-            }
-            else
-            {
-                store.updateRecord( record );
-            }
+            store.updateRecord( record );
         }
 
         @Override
@@ -1108,26 +1085,17 @@ public abstract class Command extends XaCommand
         @Override
         public void execute()
         {
-            if ( isRecovered() )
-                store.setRecovered();
-            try
+            for ( DynamicRecord record : records )
+                store.updateRecord( record );
+
+            if ( schemaRule instanceof IndexRule )
             {
-                for ( DynamicRecord record : records )
-                    store.updateRecord( record );
-    
-                if ( schemaRule instanceof IndexRule )
+                switch ( getMode() )
                 {
-                    switch ( getMode() )
-                    {
-                        case CREATE:
-                            indexes.createIndex((IndexRule)schemaRule, neoStore);
-                            break;
-                    }
+                    case CREATE:
+                        indexes.createIndex((IndexRule)schemaRule, neoStore);
+                        break;
                 }
-            }
-            finally
-            {
-                store.unsetRecovered();
             }
         }
 
