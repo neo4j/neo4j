@@ -108,7 +108,7 @@ public enum LearnerState
                                                 description );
                             }
                             // If this is the next instance to be learned, then do so and check if we have anything
-                            // pending to be learnt
+                            // pending to be learned
                             if ( instanceId.getId() == context.learnerContext.getLastDeliveredInstanceId() + 1 )
                             {
                                 instance.delivered();

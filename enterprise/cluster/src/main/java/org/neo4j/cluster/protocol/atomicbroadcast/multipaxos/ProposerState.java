@@ -82,11 +82,11 @@ public enum ProposerState
                                     acceptors.remove( state.getLeave() );
                                 }
 
-                                propose( context, message, outgoing, payload, acceptors );
+                                propose( context, message, outgoing, acceptors );
                             }
                             else
                             {
-                                propose( context, message, outgoing, payload, context.getAcceptors() );
+                                propose( context, message, outgoing, context.getAcceptors() );
                             }
 
                             break;
@@ -138,8 +138,11 @@ public enum ProposerState
                                     context.clusterContext.getLogger( ProposerState.class ).warn( "Propose failed due to phase 1 timeout" );
 
                                     // Fail this propose
-                                    outgoing.offer( Message.internal( AtomicBroadcastMessage.failed,
-                                            context.proposerContext.bookedInstances.get( instance.id ) ) );
+                                    Message originalMessage = context.proposerContext.bookedInstances.get( instance.id );
+                                    // Also make sure that all headers are copied over
+                                    outgoing.offer( originalMessage.copyHeadersTo(
+                                            Message.internal( AtomicBroadcastMessage.failed,
+                                                    originalMessage.getPayload() ) ) );
                                 }
                                 else
                                 {
@@ -182,7 +185,7 @@ public enum ProposerState
                                     {
                                         // R0
                                         instance.ready( instance.value_2 == null ? context.proposerContext
-                                                .bookedInstances.get( instance.id ) : instance.value_2, true );
+                                                .bookedInstances.get( instance.id ).getPayload() : instance.value_2, true );
                                     }
                                     else
                                     {
@@ -197,7 +200,7 @@ public enum ProposerState
                                             instance.ready( instance.value_1, false );
                                         }
                                         else if ( instance.value_1.equals( instance.value_2 == null ? context
-                                                .proposerContext.bookedInstances.get( instance.id ) : instance
+                                                .proposerContext.bookedInstances.get( instance.id ).getPayload() : instance
                                                 .value_2 ) )
                                         {
                                             instance.ready( instance.value_2, instance.clientValue );
@@ -264,8 +267,7 @@ public enum ProposerState
 
                                     if ( instance.clientValue )
                                     {
-                                        propose( context, message, outgoing, instance.value_2,
-                                                instance.getAcceptors() );
+                                        propose( context, message, outgoing, instance.getAcceptors() );
                                     }
                                 }
                             }
@@ -394,12 +396,12 @@ public enum ProposerState
     public final int MAX_CONCURRENT_INSTANCES = 10;
 
     private static void propose( MultiPaxosContext context, Message message, MessageHolder outgoing,
-                                 Object payload, List<URI> acceptors )
+                                 List<URI> acceptors )
     {
         InstanceId instanceId = context.proposerContext.newInstanceId( context.learnerContext
                 .getLastKnownLearnedInstanceInCluster() );
 
-        context.proposerContext.bookedInstances.put( instanceId, payload );
+        context.proposerContext.bookedInstances.put( instanceId, message );
 
         long ballot = 1000 + context.getServerId(); // First server will have first ballot id be 1001
 
@@ -421,7 +423,7 @@ public enum ProposerState
         else
         {
             // Wait with this value - we have our hands full right now
-            context.proposerContext.pendingValues.offerFirst( payload );
+            context.proposerContext.pendingValues.offerFirst( message );
         }
     }
 }
