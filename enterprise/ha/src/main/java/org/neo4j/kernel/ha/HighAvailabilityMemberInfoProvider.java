@@ -17,28 +17,14 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cluster.protocol.election;
+package org.neo4j.kernel.ha;
 
-import org.neo4j.kernel.impl.core.LastTxIdGetter;
+import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState;
 
 /**
- * ElectionCredentialsProvider that provides the server URI and latest tx id as credentials for elections
+ * Interface that decouples information about a database instance from the instance itself.
  */
-public class DefaultElectionCredentialsProvider
-    implements ElectionCredentialsProvider
+public interface HighAvailabilityMemberInfoProvider
 {
-    private final int serverId;
-    private final LastTxIdGetter lastTxIdGetter;
-
-    public DefaultElectionCredentialsProvider( int serverId, LastTxIdGetter lastTxIdGetter )
-    {
-        this.serverId = serverId;
-        this.lastTxIdGetter = lastTxIdGetter;
-    }
-
-    @Override
-    public DefaultElectionCredentials getCredentials( String role )
-    {
-        return new DefaultElectionCredentials( serverId, lastTxIdGetter.getLastTxId() );
-    }
+    HighAvailabilityMemberState getHighAvailabilityMemberState();
 }
