@@ -18,15 +18,11 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
-### This is silly, but this file is named arb-or, because arbor.js does not
-work if a file named arbor.js has been loaded before the actual arbor.js file.
-###
-define(
-  ['order!lib/amd/jQuery'
-   'order!lib/arbor'
-   'order!lib/arbor-graphics'
-   'order!lib/arbor-tween'], 
-  () ->
-    arbor.works = true
-    arbor
-)
+define ['order!lib/amd/jQuery', 
+    'order!lib/deck/js/modernizr-2.6.2-respond-1.1.0.min.js'
+    'order!lib/deck/js/deck.core.js'
+    'order!lib/deck/js/deck.navigation.js'
+    'order!lib/deck/js/deck.scale.js'
+], () ->
+  
+  jQuery.deck

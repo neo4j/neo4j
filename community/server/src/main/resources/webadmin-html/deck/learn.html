@@ -1,0 +1,92 @@
+
+<!-- Begin slides. Just make elements with a class of slide.-->
+<section class="slide">
+    <h1>Neo4j is a <em>Graph</em> <strong>Database</strong></h1>
+    <p class="hint">Store anything in it, focusing on how stuff is related.</p>
+</section>
+<section class="slide">
+    <h2>A <em>Graph</em> Database</h2><img src="/webadmin/deck/img/metamodel.png">
+    <p class="summary">
+        Neo4j stores data in a Property Graph.
+    </p>
+    <ul>
+        <li>A Graph records data in Nodes</li>
+        <li>Both Nodes and Relationships store values in Properties</li>
+    </ul>
+    <p class="hint"></p>
+</section>
+<section class="slide">
+    <h2>You know relational...</h2>
+    <img src="/webadmin/deck/img/foo_bar.png">
+    <p class="summary">
+        An RDBMS uses foreign keys to indicate a relation
+        between records. Consider the classic join-table...
+    </p>
+    <ul>
+        <li>relate a Foo to some Bars using Foo_Bar</li>
+        <li>add columns to the join-table</li>
+        <li>2 joins to follow paths from Foo to Bar</li>
+    </ul>
+    <p class="hint">Singing: add some data, extend the path, slow the query down.</p>
+</section>
+<section class="slide">
+    <h2>Now consider Relationships</h2>
+    <img src="/webadmin/deck/img/foo_bar-graph.png">
+    <p class="summary">
+        Knowing Relational, you can imagine transforming into a Graph. 
+    </p>
+    <ul>
+        <li>each Foo and Bar becomes a Node</li>
+        <li>the Foo_Bar records become Relationships</li>
+        <li>follow Relationships instead of computing joins</li>
+        <li>"path" queries become 1000x faster</li>
+    </ul>
+    <p class="hint">Query time is not a function of total data set size, just local data.</p>
+</section>
+<section class="slide">
+    <h2>This is a Property Graph</h2>
+    <img src="/webadmin/deck/img/property-graph.png">
+    <p class="summary">
+        A Property Graph is a general purpose data model for storing any domain.
+    </p>
+    <ul>
+        <li>Nodes for each entity in the domain</li>
+        <li>Relationships to describe how the Nodes relate</li>
+        <li>Properties on both to store data</li>
+    </ul>
+    <p class="hint">In a Property Graph, Relationships are First Class Citizens.</p>
+</section>
+<section class="slide">
+    <h2>A Graph <strong>Database</strong></h2><img src="/webadmin/deck/img/dashboard.png">
+    <p class="summary">
+        Neo4j is a proper database, carefully crafted over a dozen
+        years with a dedication to treating data with great care.
+    </p>
+    <ul>
+        <li>create, retrieve, update, delete</li>
+        <li>responsible ACID transactions</li>
+        <li>a domain specific query language, named <a href="">Cypher</a></li>
+        <li><a href="">High Availability</a> clustering (only in Enterprise)</li>
+    </ul>
+    <p class="hint">Neo4j is a NOSQL hipster with serious business credentials.</p>
+</section>
+<section class="slide">
+    <h2>Add to your library</h2>
+    <img src="/webadmin/deck/img/neo4j-org.png">
+    <p class="summary">
+        Neo4j has a growing collection of books, blogs
+        and papers to supplement its thorough documentation. 
+    </p>
+    <ul>
+        <li> <a href="http://docs.neo4j.org/chunked/stable">Neo4j Manual</a> - the official reference</li>
+        <li> <a href="http://www.manning.com/partner/">Neo4j in Action </a> - a practical approach</li>
+        <li> <a href="http://docs.neo4j.org/chunked/stable">Spring Data Neo4j </a> - for an excellent Java expereience</li>
+    </ul>
+    <p class="hint">Humble <a class="deck-url" href="/webadmin/deck/guide.html">Help</a> from Neo4j itself.</p>
+</section>
+<!-- End slides.-->
+<!-- Begin extension snippets. Add or remove as needed.-->
+<!-- deck.navigation snippet-->
+<a href="#" title="Previous" class="deck-prev-link">←</a>
+<a href="#" title="Next" class="deck-next-link">→</a>
+<!-- End extension snippets.-->
