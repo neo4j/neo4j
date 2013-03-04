@@ -33,7 +33,7 @@ import org.neo4j.helpers.Service;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.EmbeddedReadOnlyGraphDatabase;
-import org.neo4j.kernel.api.IndexPopulatorMapperProvider;
+import org.neo4j.kernel.api.SchemaIndexProvider;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
@@ -48,7 +48,7 @@ public class GraphDatabaseFactory
     protected List<KernelExtensionFactory<?>> kernelExtensions;
     protected List<CacheProvider> cacheProviders;
     protected List<TransactionInterceptorProvider> txInterceptorProviders;
-    protected List<IndexPopulatorMapperProvider> indexPopulatorMappers;
+    protected List<SchemaIndexProvider> schemaIndexProviders;
     protected FileSystemAbstraction fileSystem;
 
     public GraphDatabaseFactory()
@@ -61,7 +61,7 @@ public class GraphDatabaseFactory
         }
         cacheProviders = Iterables.toList( Service.load( CacheProvider.class ) );
         txInterceptorProviders = Iterables.toList( Service.load( TransactionInterceptorProvider.class ) );
-        indexPopulatorMappers = Iterables.toList( Service.load( IndexPopulatorMapperProvider.class ) );
+        schemaIndexProviders = Iterables.toList( Service.load( SchemaIndexProvider.class ) );
     }
 
     public GraphDatabaseService newEmbeddedDatabase( String path )
@@ -81,12 +81,12 @@ public class GraphDatabaseFactory
                 if ( TRUE.equalsIgnoreCase( config.get( read_only.name() ) ) )
                 {
                     return new EmbeddedReadOnlyGraphDatabase( path, config, indexProviders, kernelExtensions,
-                            cacheProviders, txInterceptorProviders, indexPopulatorMappers );
+                            cacheProviders, txInterceptorProviders, schemaIndexProviders );
                 }
                 else
                 {
                     return new EmbeddedGraphDatabase( path, config, indexProviders, kernelExtensions, cacheProviders,
-                            txInterceptorProviders, indexPopulatorMappers );
+                            txInterceptorProviders, schemaIndexProviders );
                 }
             }
         } );
@@ -147,10 +147,10 @@ public class GraphDatabaseFactory
         }
     }
     
-    public void setIndexPopulatorMappers( List<IndexPopulatorMapperProvider> indexPopulatorMappers )
+    public void setSchemaIndexProviders( List<SchemaIndexProvider> schemaIndexProviders )
     {
-        this.indexPopulatorMappers.clear();
-        for ( IndexPopulatorMapperProvider mapper : indexPopulatorMappers )
-            this.indexPopulatorMappers.add( mapper );
+        this.schemaIndexProviders.clear();
+        for ( SchemaIndexProvider provider : schemaIndexProviders )
+            this.schemaIndexProviders.add( provider );
     }
 }

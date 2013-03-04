@@ -17,13 +17,41 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api;
+package org.neo4j.kernel.impl.api.index;
 
-import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.kernel.impl.api.index.IndexPopulator;
+import org.neo4j.kernel.api.InternalIndexState;
 
-// TODO confusing name
-public interface IndexPopulatorMapper
+public abstract class AbstractDelegatingIndexContext implements IndexContext
 {
-    IndexPopulator getPopulator( IndexDefinition index );
+    protected abstract IndexContext getDelegate();
+
+    @Override
+    public void create()
+    {
+        getDelegate().create();
+    }
+    
+    @Override
+    public void update( Iterable<NodePropertyUpdate> updates )
+    {
+        getDelegate().update( updates );
+    }
+
+    @Override
+    public void drop()
+    {
+        getDelegate().drop();
+    }
+
+    @Override
+    public InternalIndexState getState()
+    {
+        return getDelegate().getState();
+    }
+    
+    @Override
+    public void force()
+    {
+        getDelegate().force();
+    }
 }

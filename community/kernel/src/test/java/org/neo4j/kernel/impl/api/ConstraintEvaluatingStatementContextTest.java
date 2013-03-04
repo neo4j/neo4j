@@ -25,7 +25,6 @@ import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.kernel.impl.nioneo.store.IndexRule.State.POPULATING;
 
 import org.junit.Test;
 import org.mockito.Mockito;
@@ -40,7 +39,7 @@ public class ConstraintEvaluatingStatementContextTest
     {
         // GIVEN
         long id = 3, label = 0, propertyKey = 7;
-        IndexRule rule = new IndexRule( id, label, POPULATING, propertyKey );
+        IndexRule rule = new IndexRule( id, label, propertyKey );
         StatementContext inner = Mockito.mock(StatementContext.class);
         ConstraintEvaluatingStatementContext ctx = new ConstraintEvaluatingStatementContext( inner );
         when( inner.getIndexRules( rule.getLabel() ) ).thenReturn( asList( rule ) );

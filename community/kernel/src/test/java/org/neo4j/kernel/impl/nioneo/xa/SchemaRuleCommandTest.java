@@ -21,18 +21,16 @@ package org.neo4j.kernel.impl.nioneo.xa;
 
 import static java.nio.ByteBuffer.allocate;
 import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
 import static org.neo4j.helpers.collection.IteratorUtil.first;
-import static org.neo4j.kernel.impl.nioneo.store.IndexRule.State.POPULATING;
 import static org.neo4j.kernel.impl.nioneo.xa.Command.readCommand;
 
 import java.util.Arrays;
 import java.util.Collection;
 
 import org.junit.Test;
+import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
@@ -49,13 +47,14 @@ public class SchemaRuleCommandTest
     {
         // GIVEN
         Collection<DynamicRecord> records = serialize( rule, id );
-        SchemaRuleCommand command = new SchemaRuleCommand( store, records, rule );
+        SchemaRuleCommand command = new SchemaRuleCommand( neoStore, store, indexes, records, rule );
 
         // WHEN
         command.execute();
 
         // THEN
         verify( store ).updateRecord( first( records ) );
+        verify( indexes ).createIndex( rule, neoStore );
     }
 
     @Test
@@ -63,24 +62,26 @@ public class SchemaRuleCommandTest
     {
         // GIVEN
         Collection<DynamicRecord> records = serialize( rule, id );
-        SchemaRuleCommand command = new SchemaRuleCommand( store, records, rule );
+        SchemaRuleCommand command = new SchemaRuleCommand( neoStore, store, indexes, records, rule );
         InMemoryLogBuffer buffer = new InMemoryLogBuffer();
         NeoStore neoStore = mock( NeoStore.class );
         when( neoStore.getSchemaStore() ).thenReturn( store );
 
         // WHEN
         command.writeToFile( buffer );
-        Command readCommand = readCommand( neoStore, buffer, allocate( 1000 ) );
+        Command readCommand = readCommand( neoStore, indexes, buffer, allocate( 1000 ) );
 
         // THEN
         assertThat( readCommand, instanceOf( SchemaRuleCommand.class ) );
     }
-    
+
+    private final NeoStore neoStore = mock( NeoStore.class );
     private final SchemaStore store = mock( SchemaStore.class );
+    private final IndexingService indexes = mock( IndexingService.class );
     private final int labelId = 2;
     private final long propertyKey = 8;
     private final long id = 0;
-    private final IndexRule rule = new IndexRule( id, labelId, POPULATING, propertyKey );
+    private final IndexRule rule = new IndexRule( id, labelId, propertyKey );
 
     private Collection<DynamicRecord> serialize( SchemaRule rule, long id )
     {

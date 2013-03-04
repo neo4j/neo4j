@@ -19,6 +19,7 @@
  */
 package org.neo4j.test;
 
+import static java.util.Arrays.asList;
 import static org.neo4j.graphdb.factory.GraphDatabaseSetting.FALSE;
 import static org.neo4j.graphdb.factory.GraphDatabaseSetting.TRUE;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.use_memory_mapped_buffers;
@@ -33,9 +34,12 @@ import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.IndexProvider;
+import org.neo4j.helpers.Service;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
-import org.neo4j.kernel.api.IndexPopulatorMapperProvider;
+import org.neo4j.kernel.api.SchemaIndexProvider;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.impl.api.index.InMemoryIndexProvider;
 import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
@@ -68,37 +72,43 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
      */
     public ImpermanentGraphDatabase( String storeDir )
     {
-        super( storeDir, withForcedInMemoryConfiguration( new HashMap<String, String>() ) );
+        this( storeDir, withForcedInMemoryConfiguration( new HashMap<String, String>() ) );
     }
 
     public ImpermanentGraphDatabase( Map<String, String> params )
     {
-        super( PATH, withForcedInMemoryConfiguration( params ) );
+        this( PATH, withForcedInMemoryConfiguration( params ) );
     }
 
     public ImpermanentGraphDatabase( String storeDir, Map<String, String> params )
     {
-        super( storeDir, withForcedInMemoryConfiguration( params ) );
+        this( storeDir, withForcedInMemoryConfiguration( params ),
+                Service.load( IndexProvider.class ),
+                Iterables.<KernelExtensionFactory<?>, KernelExtensionFactory>cast( Service.load(
+                        KernelExtensionFactory.class ) ),
+                Service.load( CacheProvider.class ),
+                Service.load( TransactionInterceptorProvider.class ),
+                asList( (SchemaIndexProvider) new InMemoryIndexProvider() ));
     }
     
     public ImpermanentGraphDatabase( Map<String, String> params, Iterable<IndexProvider> indexProviders,
                                      Iterable<KernelExtensionFactory<?>> kernelExtensions,
                                      Iterable<CacheProvider> cacheProviders,
                                      Iterable<TransactionInterceptorProvider> transactionInterceptorProviders,
-                                     Iterable<IndexPopulatorMapperProvider> indexPopulatorMappers )
+                                     Iterable<SchemaIndexProvider> schemaIndexProviders )
     {
         super( PATH, withForcedInMemoryConfiguration( params ), indexProviders, kernelExtensions, cacheProviders,
-                transactionInterceptorProviders, indexPopulatorMappers );
+                transactionInterceptorProviders, schemaIndexProviders );
     }
 
     public ImpermanentGraphDatabase( String storeDir, Map<String, String> params, Iterable<IndexProvider> indexProviders,
                                         Iterable<KernelExtensionFactory<?>> kernelExtensions,
                                         Iterable<CacheProvider> cacheProviders,
                                         Iterable<TransactionInterceptorProvider> transactionInterceptorProviders,
-                                        Iterable<IndexPopulatorMapperProvider> indexPopulatorMappers )
+                                        Iterable<SchemaIndexProvider> schemaIndexProviders )
     {
         super( storeDir, withForcedInMemoryConfiguration( params ), indexProviders, kernelExtensions, cacheProviders,
-                transactionInterceptorProviders, indexPopulatorMappers );
+                transactionInterceptorProviders, schemaIndexProviders );
     }
     
     @Override

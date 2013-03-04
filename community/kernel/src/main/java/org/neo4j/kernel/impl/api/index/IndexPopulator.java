@@ -19,30 +19,67 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+/**
+ * Used for initial population of an index.
+ */
 public interface IndexPopulator
 {
     /**
-     * Called when initially populating an index over existing data. Guaranteed to be
-     * called by the same thread every time.
-     * 
-     * @param n the n:th entry indexed in this population.
-     * @param nodeId node id to index.
-     * @param propertyValue property value for the entry to index.
+     * Remove all data in the index and paves the way for populating an index.
      */
-    void add( int n, long nodeId, Object propertyValue );
+    void createIndex();
+
+    /**
+     * Delete this index
+     */
+    void dropIndex();
     
     /**
      * Called when initially populating an index over existing data. Guaranteed to be
-     * called by the same thread every time.
-     *
-     * @param n the n:th entry indexed in this population.
+     * called by the same thread every time. All data coming in here is guaranteed to not
+     * have been added to this index previously, by any method.
+     * 
      * @param nodeId node id to index.
-     * @param propertyValue property value for the entry to de-index.
+     * @param propertyValue property value for the entry to index.
      */
-    void remove( int n, long nodeId, Object propertyValue );
+    void add( long nodeId, Object propertyValue );
 
     /**
-     * Called to signal end of background index population
+     * Apply a set of changes to this index, generally this will be a set of changes from a transaction.
+     * @param updates
      */
-    void done();
+    void update( Iterable<NodePropertyUpdate> updates );
+    
+    /**
+     * Complete the creation of this index. If this is a persisted index, implementors of this
+     */
+    void populationCompleted();
+    
+    public static class Adapter implements IndexPopulator
+    {
+        @Override
+        public void createIndex()
+        {
+        }
+        
+        @Override
+        public void dropIndex()
+        {
+        }
+        
+        @Override
+        public void add( long nodeId, Object propertyValue )
+        {
+        }
+
+        @Override
+        public void update( Iterable<NodePropertyUpdate> updates )
+        {
+        }
+
+        @Override
+        public void populationCompleted()
+        {
+        }
+    }
 }

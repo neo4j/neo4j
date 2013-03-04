@@ -403,10 +403,20 @@ public class NeoStore extends AbstractStore
         if ( status )
         {
             setRecovered();
+            nodeStore.setRecovered();
+            propStore.setRecovered();
+            relStore.setRecovered();
+            relTypeStore.setRecovered();
+            schemaStore.setRecovered();
         }
         else
         {
             unsetRecovered();
+            nodeStore.unsetRecovered();
+            propStore.unsetRecovered();
+            relStore.unsetRecovered();
+            relTypeStore.unsetRecovered();
+            schemaStore.unsetRecovered();
         }
     }
 

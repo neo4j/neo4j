@@ -22,7 +22,8 @@ package org.neo4j.kernel.impl.nioneo.store;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.kernel.impl.api.index.SchemaIndexing.NO_INDEXING;
+import static org.mockito.Mockito.mock;
+import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
 
 import java.io.File;
 import java.io.IOException;
@@ -54,6 +55,7 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.TransactionInterceptorProviders;
+import org.neo4j.kernel.api.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.core.PropertyIndex;
@@ -75,6 +77,7 @@ import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.DevNullLoggingService;
+import org.neo4j.kernel.logging.SingleLoggingService;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
@@ -158,7 +161,7 @@ public class TestNeoStore
                 new XaFactory(config, TxIdGenerator.DEFAULT, new PlaceboTm( lockManager, TxIdGenerator.DEFAULT ),
                         new DefaultLogBufferFactory(), fileSystem, new DevNullLoggingService(), RecoveryVerifier.ALWAYS_VALID,
                         LogPruneStrategies.NO_PRUNING ), TransactionStateFactory.noStateFactory( new DevNullLoggingService() ),
-                        noCacheAccess(), NO_INDEXING,
+                        noCacheAccess(), mock(SchemaIndexProvider.class),
                         new TransactionInterceptorProviders( Collections.<TransactionInterceptorProvider>emptyList(), new DependencyResolver()
         {
             @Override
@@ -166,7 +169,8 @@ public class TestNeoStore
             {
                 return (T) config;
             }
-        } ), null );
+        } ), null, new SingleLoggingService( DEV_NULL ) );
+        ds.init();
         ds.start();
 
         xaCon = ds.getXaConnection();

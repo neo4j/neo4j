@@ -42,6 +42,7 @@ import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.StoreLockerLifecycleAdapter;
 import org.neo4j.kernel.TransactionInterceptorProviders;
+import org.neo4j.kernel.api.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.BranchDetectingTxVerifier;
 import org.neo4j.kernel.ha.BranchedDataException;
@@ -61,7 +62,6 @@ import org.neo4j.kernel.ha.com.master.Slave;
 import org.neo4j.kernel.ha.com.slave.SlaveImpl;
 import org.neo4j.kernel.ha.com.slave.SlaveServer;
 import org.neo4j.kernel.ha.id.HaIdGeneratorFactory;
-import org.neo4j.kernel.impl.api.index.SchemaIndexing;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.index.IndexStore;
@@ -77,6 +77,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.MissingLogDataException;
 import org.neo4j.kernel.impl.transaction.xaframework.NoSuchLogVersionException;
 import org.neo4j.kernel.impl.transaction.xaframework.XaFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
+import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -442,9 +443,9 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                         resolver.resolveDependency( XaFactory.class ),
                         resolver.resolveDependency( TransactionStateFactory.class ),
                         resolver.resolveDependency( CacheAccessBackDoor.class ),
-                        resolver.resolveDependency( SchemaIndexing.class ),
+                        resolver.resolveDependency( SchemaIndexProvider.class ),
                         resolver.resolveDependency( TransactionInterceptorProviders.class ),
-                        resolver );
+                        resolver.resolveDependency( JobScheduler.class ), logging );
                 xaDataSourceManager.registerDataSource( nioneoDataSource );
             }
             catch ( IOException e )

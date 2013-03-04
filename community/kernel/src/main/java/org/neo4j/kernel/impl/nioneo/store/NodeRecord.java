@@ -112,4 +112,17 @@ public class NodeRecord extends PrimitiveRecord
     {
         property.setNodeId( getId() );
     }
+    
+    @Override
+    public NodeRecord clone()
+    {
+        NodeRecord clone = new NodeRecord( getId(), getCommittedNextRel(), getCommittedNextProp() );
+        clone.setNextProp( getNextProp() );
+        clone.nextRel = nextRel;
+        clone.labels = labels;
+        for ( DynamicRecord labelRecord : dynamicLabelRecords )
+            clone.dynamicLabelRecords.add( labelRecord.clone() );
+        clone.isLight = isLight;
+        return clone;
+    }
 }

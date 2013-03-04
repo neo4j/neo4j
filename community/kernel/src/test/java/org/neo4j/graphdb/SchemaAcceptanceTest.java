@@ -30,7 +30,6 @@ import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.single;
 
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.graphdb.schema.IndexDefinition;
@@ -49,7 +48,6 @@ public class SchemaAcceptanceTest
         MY_OTHER_LABEL
     }
 
-    @Ignore( "Ignored until it's implemented" )
     @Test
     public void addingAnIndexingRuleShouldSucceed() throws Exception
     {

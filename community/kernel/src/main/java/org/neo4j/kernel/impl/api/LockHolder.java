@@ -45,7 +45,7 @@ public class LockHolder
 
     public LockHolder( LockManager lockManager, Transaction tx )
     {
-        if(tx == null)
+        if ( tx == null )
         {
             throw new RuntimeException( "Cannot initialize lock holder without a transaction, got null." );
         }

@@ -29,47 +29,16 @@ import org.neo4j.graphdb.Label;
 public class IndexRule extends AbstractSchemaRule
 {
     private final long propertyKey;
-    private final State state;
-
-    public static enum State
-    {
-        POPULATING( (byte)0 ),
-        ONLINE    ( (byte)1 );
-
-        private final byte byteRepresentation;
-
-        private State(byte byteRepresentation)
-        {
-            this.byteRepresentation = byteRepresentation;
-        }
-
-        public byte toByte()
-        {
-            return byteRepresentation;
-        }
-
-        public static State fromByte( byte value )
-        {
-            switch ( value )
-            {
-                case 0: return POPULATING;
-                case 1: return ONLINE;
-                default:
-                    throw new IllegalArgumentException( "Invalid state value " + value );
-            }
-        }
-    }
 
     public IndexRule( long id, long label, ByteBuffer serialized )
     {
-        this( id, label, readState(serialized), readPropertyKey( serialized ) );
+        this( id, label, readPropertyKey( serialized ) );
     }
 
-    public IndexRule( long id, long label, State state, long propertyKey )
+    public IndexRule( long id, long label, long propertyKey )
     {
         super( id, label, SchemaRule.Kind.INDEX_RULE );
         this.propertyKey = propertyKey;
-        this.state = state;
     }
 
     private static long readPropertyKey( ByteBuffer serialized )
@@ -80,32 +49,21 @@ public class IndexRule extends AbstractSchemaRule
         return serialized.getLong();
     }
 
-    private static State readState( ByteBuffer serialized )
-    {
-        return State.fromByte( serialized.get() );
-    }
-
     public long getPropertyKey()
     {
         return propertyKey;
     }
 
-    public State getState()
-    {
-        return state;
-    }
-
     @Override
     public int length()
     {
-        return super.length() + 1 /* state metadata */ + 2 /*number of property keys*/ + /*propertyKey.length*/1*8 /*the property keys*/;
+        return super.length() + 2 /*number of property keys*/ + /*propertyKey.length*/1*8 /*the property keys*/;
     }
 
     @Override
     public void serialize( ByteBuffer target )
     {
         super.serialize( target );
-        target.put( state.toByte() );
         target.putShort( (short) 1/*propertyKeys.length*/ );
         target.putLong( propertyKey );
     }

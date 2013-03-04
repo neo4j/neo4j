@@ -30,6 +30,34 @@ import java.util.Set;
 
 public class ArrayMap<K,V>
 {
+    @SuppressWarnings( "rawtypes" )
+    private static ArrayMap EMPTY = new ArrayMap()
+    {
+        @Override
+        public void put( Object key, Object value )
+        {
+            throw new IllegalStateException( "Immutable" );
+        }
+
+        @Override
+        public Object remove( Object key )
+        {
+            throw new IllegalStateException( "Immutable" );
+        }
+
+        @Override
+        public void clear()
+        {
+            throw new IllegalStateException( "Immutable" );
+        }
+    };
+    
+    @SuppressWarnings( "unchecked" )
+    public static <K,V> ArrayMap<K,V> empty()
+    {
+        return EMPTY;
+    }
+    
     private Object data;
     private volatile byte arrayCount;
     private byte toMapThreshold = 5;
@@ -45,7 +73,7 @@ public class ArrayMap<K,V>
 
     public ArrayMap( byte mapThreshold, boolean threadSafe, boolean shrinkToArray )
     {
-        this.toMapThreshold = (byte)mapThreshold;
+        this.toMapThreshold = mapThreshold;
         this.useThreadSafeMap = threadSafe;
         this.switchBackToArray = shrinkToArray;
         data = new ArrayEntry[toMapThreshold];
@@ -211,7 +239,7 @@ public class ArrayMap<K,V>
             {
                 V removedProperty = (V) ((ArrayEntry[])data)[i].getValue();
                 arrayCount--;
-                System.arraycopy( ((ArrayEntry[])data), i + 1, ((ArrayEntry[])data), i,
+                System.arraycopy( (data), i + 1, (data), i,
                     arrayCount - i );
                 ((ArrayEntry[])data)[arrayCount] = null;
                 return removedProperty;
@@ -249,7 +277,7 @@ public class ArrayMap<K,V>
             {
                 V removedProperty = (V) ((ArrayEntry[])data)[i].getValue();
                 arrayCount--;
-                System.arraycopy( ((ArrayEntry[])data), i + 1, ((ArrayEntry[])data), i,
+                System.arraycopy( (data), i + 1, (data), i,
                     arrayCount - i );
                 ((ArrayEntry[])data)[arrayCount] = null;
                 return removedProperty;
@@ -286,11 +314,13 @@ public class ArrayMap<K,V>
             this.value = value;
         }
 
+        @Override
         public K getKey()
         {
             return key;
         }
 
+        @Override
         public V getValue()
         {
             return value;
@@ -301,6 +331,7 @@ public class ArrayMap<K,V>
             this.value = value;
         }
 
+        @Override
         public V setValue( V value )
         {
             V oldValue = value;

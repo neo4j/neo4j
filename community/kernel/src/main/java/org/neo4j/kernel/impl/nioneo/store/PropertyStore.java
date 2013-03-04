@@ -186,21 +186,6 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
         return propertyIndexStore;
     }
 
-    public void updateRecord( PropertyRecord record, boolean recovered )
-    {
-        assert recovered;
-        setRecovered();
-        try
-        {
-            updateRecord( record );
-            registerIdFromUpdateRecord( record.getId() );
-        }
-        finally
-        {
-            unsetRecovered();
-        }
-    }
-
     @Override
     public void updateRecord( PropertyRecord record )
     {
@@ -706,8 +691,10 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
         return toReturn;
     }
     
-    public Iterable<NodePropertyUpdate> toLogicalUpdates( PropertyRecord before, PropertyRecord after )
+    public Iterable<NodePropertyUpdate> toLogicalUpdates(
+            PropertyRecord before, long[] nodeLabelsBefore,
+            PropertyRecord after, long[] nodeLabelsAfter )
     {
-        return physicalToLogicalConverter.apply( Pair.of( before, after ) );
+        return physicalToLogicalConverter.apply( before, nodeLabelsBefore, after, nodeLabelsAfter );
     }
 }

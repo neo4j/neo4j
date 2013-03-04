@@ -30,7 +30,6 @@ import java.util.Iterator;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
-import org.neo4j.kernel.api.SchemaRuleNotFoundException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -104,32 +103,23 @@ public class SchemaStore extends AbstractDynamicStore
     {
         return new byte[getRecordSize()*4];
     }
-    
-    public SchemaRule getSchemaRule( long id, SchemaRule.Kind kind )
-            throws SchemaRuleNotFoundException
-    {
-        SchemaRule rule;
-        try
-        {
-            rule = getSchemaRule( id, newRecordBuffer() );
-            if ( rule.getKind() != kind )
-            {
-                throw new SchemaRuleNotFoundException( "Schema rule " + id + " found, although expected it to be of kind " +
-                        kind + ", but was " + rule.getKind() );
-            }
-            return rule;
-        }
-        catch ( InvalidRecordException e )
-        {
-            throw new SchemaRuleNotFoundException( "Schema rule " + id + " not found", e );
-        }
-    }
-    
+
     private SchemaRule getSchemaRule( long id, byte[] buffer )
     {
         Collection<DynamicRecord> records = getRecords( id );
         ByteBuffer scratchBuffer = concatData( records, buffer );
-        buffer = scratchBuffer.array();
         return deserialize( id, scratchBuffer );
+    }
+    
+    @Override
+    public void setRecovered()
+    {
+        super.setRecovered();
+    }
+    
+    @Override
+    public void unsetRecovered()
+    {
+        super.unsetRecovered();
     }
 }
