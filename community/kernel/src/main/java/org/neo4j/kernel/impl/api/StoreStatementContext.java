@@ -252,14 +252,32 @@ public class StoreStatementContext implements StatementContext
     @Override
     public Iterable<IndexRule> getIndexRules( final long labelId )
     {
-        Iterable<SchemaRule> filtered = filter( new Predicate<SchemaRule>()
+        return toIndexRules( new Predicate<SchemaRule>()
         {
             @Override
             public boolean accept( SchemaRule rule )
             {
                 return rule.getLabel() == labelId && rule.getKind() == Kind.INDEX_RULE;
             }
-        }, neoStore.getSchemaStore().loadAll() );
+        } );
+    }
+    
+    @Override
+    public Iterable<IndexRule> getIndexRules()
+    {
+        return toIndexRules( new Predicate<SchemaRule>()
+        {
+            @Override
+            public boolean accept( SchemaRule rule )
+            {
+                return rule.getKind() == Kind.INDEX_RULE;
+            }
+        } );
+    }
+    
+    private Iterable<IndexRule> toIndexRules( Predicate<SchemaRule> filter )
+    {
+        Iterable<SchemaRule> filtered = filter( filter, neoStore.getSchemaStore().loadAll() );
         
         return map( new Function<SchemaRule, IndexRule>()
         {
@@ -270,7 +288,7 @@ public class StoreStatementContext implements StatementContext
             }
         }, filtered );
     }
-
+    
     @Override
     public InternalIndexState getIndexState( IndexRule indexRule ) throws IndexNotFoundKernelException
     {

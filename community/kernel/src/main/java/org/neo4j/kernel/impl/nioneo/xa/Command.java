@@ -1099,7 +1099,10 @@ public abstract class Command extends XaCommand
                 switch ( getMode() )
                 {
                     case CREATE:
-                        indexes.createIndex((IndexRule)schemaRule, neoStore);
+                        indexes.createIndex( (IndexRule)schemaRule );
+                        break;
+                    case DELETE:
+                        indexes.dropIndex( (IndexRule)schemaRule );
                         break;
                 }
             }

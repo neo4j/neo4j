@@ -117,6 +117,12 @@ public class DelegatingStatementContext implements StatementContext
     }
 
     @Override
+    public Iterable<IndexRule> getIndexRules()
+    {
+        return delegate.getIndexRules();
+    }
+
+    @Override
     public InternalIndexState getIndexState( IndexRule indexRule ) throws IndexNotFoundKernelException
     {
         return delegate.getIndexState( indexRule );

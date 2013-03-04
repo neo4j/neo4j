@@ -193,4 +193,11 @@ public class TransactionStateAwareStatementContext extends DelegatingStatementCo
         Iterable<IndexRule> committedRules = delegate.getIndexRules( labelId );
         return state.getIndexRuleDiffSetsByLabel( labelId ).apply( committedRules );
     }
+
+    @Override
+    public Iterable<IndexRule> getIndexRules()
+    {
+        Iterable<IndexRule> committedRules = delegate.getIndexRules();
+        return state.getIndexRuleDiffSets().apply( committedRules );
+    }
 }

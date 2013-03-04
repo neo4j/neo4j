@@ -59,6 +59,11 @@ public interface Schema
      * @return all {@link IndexDefinition indexes} attached to the given {@link Label label}.
      */
     Iterable<IndexDefinition> getIndexes( Label label );
+    
+    /**
+     * @return all {@link IndexDefinition indexes} in this database.
+     */
+    Iterable<IndexDefinition> getIndexes();
 
     /**
      * Poll the database for the state of a given index. This can be used to track

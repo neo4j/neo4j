@@ -106,7 +106,6 @@ public class InMemoryIndexProvider extends SchemaIndexProvider
         @Override
         public void dropIndex()
         {
-            throw new UnsupportedOperationException(  );
         }
 
         @Override

@@ -1044,6 +1044,12 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
         }
 
         @Override
+        public Iterable<IndexDefinition> getIndexes()
+        {
+            return actual.getIndexes();
+        }
+
+        @Override
         public IndexState getIndexState( IndexDefinition index )
         {
             return actual.getIndexState( index );

@@ -20,7 +20,8 @@
 package org.neo4j.kernel;
 
 import static java.lang.String.format;
-import static java.util.Collections.emptyList;
+import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.helpers.collection.Iterables.empty;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.helpers.collection.IteratorUtil.single;
 
@@ -62,23 +63,42 @@ public class SchemaImpl implements Schema
         StatementContext context = ctxProvider.getCtxForReading();
         try
         {
-            Iterable<IndexRule> indexRules = context.getIndexRules( context.getLabelId( label.name() ) );
-            return map( new Function<IndexRule, IndexDefinition>()
-            {
-                @Override
-                public IndexDefinition apply( IndexRule rule )
-                {
-                    return new IndexDefinitionImpl( ctxProvider, label,
-                            propertyKeyManager.getKeyByIdOrNull( (int) rule.getPropertyKey() ).getKey() );
-                }
-            }, indexRules );
+            return getIndexDefinitions( context, context.getIndexRules( context.getLabelId( label.name() ) ) );
         }
         catch ( LabelNotFoundKernelException e )
         {
-            return emptyList();
+            return empty();
         }
     }
 
+    @Override
+    public Iterable<IndexDefinition> getIndexes()
+    {
+        StatementContext context = ctxProvider.getCtxForReading();
+        return getIndexDefinitions( context, context.getIndexRules() );
+    }
+    
+    private Iterable<IndexDefinition> getIndexDefinitions( final StatementContext context,
+            Iterable<IndexRule> indexRules )
+    {
+        return map( new Function<IndexRule, IndexDefinition>()
+        {
+            @Override
+            public IndexDefinition apply( IndexRule rule )
+            {
+                try
+                {
+                    return new IndexDefinitionImpl( ctxProvider, label( context.getLabelName( rule.getLabel() ) ),
+                            propertyKeyManager.getKeyByIdOrNull( (int) rule.getPropertyKey() ).getKey() );
+                }
+                catch ( LabelNotFoundKernelException e )
+                {
+                    throw new RuntimeException( e );
+                }
+            }
+        }, indexRules );
+    }
+    
     @Override
     public IndexState getIndexState( IndexDefinition index )
     {

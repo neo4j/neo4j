@@ -130,6 +130,13 @@ public class InteractionStoppingStatementContext implements StatementContext
         assertOperationsAllowed();
         return delegate.getIndexRules( labelId );
     }
+    
+    @Override
+    public Iterable<IndexRule> getIndexRules()
+    {
+        assertOperationsAllowed();
+        return delegate.getIndexRules();
+    }
 
     @Override
     public InternalIndexState getIndexState( IndexRule indexRule ) throws IndexNotFoundKernelException

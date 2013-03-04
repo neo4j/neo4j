@@ -148,9 +148,14 @@ public interface StatementContext
 
     /**
      * @param labelId the label to get rules for.
-     * @return all rule for that labelId.
+     * @return all index rules for that labelId.
      */
     Iterable<IndexRule> getIndexRules( long labelId );
+    
+    /**
+     * @return all index rules.
+     */
+    Iterable<IndexRule> getIndexRules();
 
     /**
      * Retrieve the state of an index.

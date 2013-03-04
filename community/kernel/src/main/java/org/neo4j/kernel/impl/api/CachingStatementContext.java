@@ -41,7 +41,6 @@ package org.neo4j.kernel.impl.api;
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.map;
 
-import java.util.Collection;
 import java.util.Set;
 
 import org.neo4j.helpers.Function;
@@ -111,7 +110,17 @@ public class CachingStatementContext extends DelegatingStatementContext
     @Override
     public Iterable<IndexRule> getIndexRules( long labelId )
     {
-        Collection<SchemaRule> schemaRules = schemaCache.getSchemaRules( labelId );
+        return toIndexRules( schemaCache.getSchemaRules( labelId ) );
+    }
+
+    @Override
+    public Iterable<IndexRule> getIndexRules()
+    {
+        return toIndexRules( schemaCache.getSchemaRules() );
+    }
+
+    private Iterable<IndexRule> toIndexRules( Iterable<SchemaRule> schemaRules )
+    {
         Iterable<SchemaRule> filteredRules = filter( new Predicate<SchemaRule>()
         {
             @Override

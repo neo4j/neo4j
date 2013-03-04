@@ -19,9 +19,15 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Matchers.anyLong;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.collection.Iterables.option;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
@@ -135,9 +141,27 @@ public class TransactionStateAwareStatementContextTest
 
         // THEN
         assertEquals( asSet( rule ), asSet( txContext.getIndexRules( labelId1 ) ) );
+        assertEquals( asSet( rule ), asSet( txContext.getIndexRules() ) );
         verify( store ).addIndexRule( labelId1, key1 );
     }
 
+    @Test
+    public void addedRulesShouldBeVisibleInTx() throws Exception
+    {
+        // GIVEN
+        commitNoLabels();
+
+        // WHEN
+        IndexRule rule1 = txContext.addIndexRule( labelId1, key1 );
+        IndexRule rule2 = txContext.addIndexRule( labelId2, key2 );
+
+        // THEN
+        assertEquals( asSet( rule1 ), asSet( txContext.getIndexRules( labelId1 ) ) );
+        assertEquals( asSet( rule2 ), asSet( txContext.getIndexRules( labelId2 ) ) );
+        assertEquals( asSet( rule1, rule2 ), asSet( txContext.getIndexRules() ) );
+        verify( store ).addIndexRule( labelId1, key1 );
+    }
+    
     @Test
     public void addedAdditionalRuleShouldBeVisibleInTx() throws Exception
     {
@@ -370,6 +394,8 @@ public class TransactionStateAwareStatementContextTest
     {
         store = mock( StatementContext.class );
         when( store.getIndexRules( labelId1 ) ).thenReturn( Collections.<IndexRule>emptyList() );
+        when( store.getIndexRules( labelId2 ) ).thenReturn( Collections.<IndexRule>emptyList() );
+        when( store.getIndexRules() ).thenReturn( Collections.<IndexRule>emptyList() );
         when( store.addIndexRule( anyLong(), anyLong() ) ).thenAnswer( new Answer<IndexRule>()
         {
             @Override

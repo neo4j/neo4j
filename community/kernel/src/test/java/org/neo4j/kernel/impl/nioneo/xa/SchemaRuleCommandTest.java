@@ -21,8 +21,10 @@ package org.neo4j.kernel.impl.nioneo.xa;
 
 import static java.nio.ByteBuffer.allocate;
 import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
+import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.IteratorUtil.first;
 import static org.neo4j.kernel.impl.nioneo.xa.Command.readCommand;
 
@@ -46,7 +48,7 @@ public class SchemaRuleCommandTest
     public void shouldWriteCreatedSchemaRuleToStore() throws Exception
     {
         // GIVEN
-        Collection<DynamicRecord> records = serialize( rule, id );
+        Collection<DynamicRecord> records = serialize( rule, id, true );
         SchemaRuleCommand command = new SchemaRuleCommand( neoStore, store, indexes, records, rule );
 
         // WHEN
@@ -54,14 +56,29 @@ public class SchemaRuleCommandTest
 
         // THEN
         verify( store ).updateRecord( first( records ) );
-        verify( indexes ).createIndex( rule, neoStore );
+        verify( indexes ).createIndex( rule );
     }
 
+    @Test
+    public void shouldDropSchemaRuleFromStore() throws Exception
+    {
+        // GIVEN
+        Collection<DynamicRecord> records = serialize( rule, id, false );
+        SchemaRuleCommand command = new SchemaRuleCommand( neoStore, store, indexes, records, rule );
+
+        // WHEN
+        command.execute();
+
+        // THEN
+        verify( store ).updateRecord( first( records ) );
+        verify( indexes ).dropIndex( rule );
+    }
+    
     @Test
     public void shouldWriteSchemaRuleToLog() throws Exception
     {
         // GIVEN
-        Collection<DynamicRecord> records = serialize( rule, id );
+        Collection<DynamicRecord> records = serialize( rule, id, true );
         SchemaRuleCommand command = new SchemaRuleCommand( neoStore, store, indexes, records, rule );
         InMemoryLogBuffer buffer = new InMemoryLogBuffer();
         NeoStore neoStore = mock( NeoStore.class );
@@ -83,14 +100,17 @@ public class SchemaRuleCommandTest
     private final long id = 0;
     private final IndexRule rule = new IndexRule( id, labelId, propertyKey );
 
-    private Collection<DynamicRecord> serialize( SchemaRule rule, long id )
+    private Collection<DynamicRecord> serialize( SchemaRule rule, long id, boolean inUse )
     {
         RecordSerializer serializer = new RecordSerializer();
         serializer = serializer.append( rule );
         DynamicRecord record = new DynamicRecord( id );
         record.setData( serializer.serialize() );
-        record.setCreated();
-        record.setInUse( true );
+        if ( inUse )
+        {
+            record.setCreated();
+            record.setInUse( true );
+        }
         return Arrays.asList( record );
     }
 }

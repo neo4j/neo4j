@@ -27,7 +27,6 @@ import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.SchemaIndexProvider;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
-import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.Logging;
@@ -156,7 +155,7 @@ public class IndexingService extends LifecycleAdapter
      * it is *vital* that it is stable, and handles errors very well. Failing here means that the entire db
      * will shut down.
      */
-    public void createIndex( IndexRule rule, NeoStore neoStore )
+    public void createIndex( IndexRule rule )
     {
         IndexContext index = indexes.get( rule.getId() );
         if ( serviceRunning )
@@ -176,6 +175,16 @@ public class IndexingService extends LifecycleAdapter
         indexes.put( rule.getId(), index );
     }
 
+    public void dropIndex( IndexRule rule )
+    {
+        IndexContext index = indexes.remove( rule.getId() );
+        if ( serviceRunning )
+        {
+            assert index != null : "Index " + rule + " doesn't exists";
+            index.drop();
+        }
+    }
+    
     private IndexContext createOnlineIndexContext( IndexRule rule )
     {
         IndexContext result = new OnlineIndexContext( provider.getWriter( rule.getId() ) );
@@ -211,8 +220,8 @@ public class IndexingService extends LifecycleAdapter
         return result;
     }
 
-    class ServiceStateUpdatingIndexContext extends DelegatingIndexContext {
-
+    class ServiceStateUpdatingIndexContext extends DelegatingIndexContext
+    {
         private final long ruleId;
 
         ServiceStateUpdatingIndexContext( IndexRule rule, IndexContext delegate )
