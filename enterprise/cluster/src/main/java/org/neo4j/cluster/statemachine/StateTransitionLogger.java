@@ -21,6 +21,7 @@ package org.neo4j.cluster.statemachine;
 
 import static org.neo4j.cluster.com.message.Message.CONVERSATION_ID;
 import static org.neo4j.cluster.com.message.Message.FROM;
+import static org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId.INSTANCE;
 
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatState;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -59,6 +60,11 @@ public class StateTransitionLogger
             if ( transition.getMessage().hasHeader( FROM ) )
             {
                 line.append( " from:" + transition.getMessage().getHeader( FROM ) );
+            }
+
+            if ( transition.getMessage().hasHeader( INSTANCE ) )
+            {
+                line.append( " instance:" + transition.getMessage().getHeader( INSTANCE ) );
             }
 
             if ( transition.getMessage().hasHeader( CONVERSATION_ID ) )
