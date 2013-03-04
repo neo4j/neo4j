@@ -40,7 +40,7 @@ import org.neo4j.cluster.member.paxos.PaxosClusterMemberAvailability;
 import org.neo4j.cluster.member.paxos.PaxosClusterMemberEvents;
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.protocol.cluster.ClusterListener;
-import org.neo4j.cluster.protocol.election.DefaultElectionCredentialsProvider;
+import org.neo4j.kernel.ha.cluster.DefaultElectionCredentialsProvider;
 import org.neo4j.cluster.protocol.election.ElectionCredentialsProvider;
 import org.neo4j.cluster.protocol.election.NotElectableElectionCredentialsProvider;
 import org.neo4j.graphdb.DependencyResolver;
@@ -261,7 +261,15 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
          */
         ElectionCredentialsProvider electionCredentialsProvider = config.get( HaSettings.slave_only ) ?
                 new NotElectableElectionCredentialsProvider() :
-                new DefaultElectionCredentialsProvider(config.get( HaSettings.server_id ), new OnDiskLastTxIdGetter( new File( getStoreDir() ) ) );
+                new DefaultElectionCredentialsProvider( config.get( HaSettings.server_id ),
+                        new OnDiskLastTxIdGetter( new File( getStoreDir() ) ), new HighAvailabilityMemberInfoProvider()
+                {
+                    @Override
+                    public HighAvailabilityMemberState getHighAvailabilityMemberState()
+                    {
+                        return memberStateMachine.getCurrentState();
+                    }
+                } );
 
         clusterClient = new ClusterClient( ClusterClient.adapt( config ), logging, electionCredentialsProvider );
         PaxosClusterMemberEvents localClusterEvents = new PaxosClusterMemberEvents( clusterClient, clusterClient,
@@ -300,7 +308,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
             @Override
             public void elected( String role, URI electedMember )
             {
-                if (role.equals( ClusterConfiguration.COORDINATOR ))
+                if ( role.equals( ClusterConfiguration.COORDINATOR ) )
                 {
                     clusterClient.refreshSnapshot();
                     clusterClient.removeClusterListener( this );
