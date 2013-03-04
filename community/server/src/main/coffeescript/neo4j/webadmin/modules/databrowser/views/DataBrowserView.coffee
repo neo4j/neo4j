@@ -156,7 +156,7 @@ define(
         if @viewType == "visualized"
           $(ev.target).removeClass("tabular") if ev?
           @switchToTabularView()
-        else if @canVisualize
+        else if @canVisualize()
           $(ev.target).addClass("tabular") if ev? 
           @switchToVisualizedView()
         else 
