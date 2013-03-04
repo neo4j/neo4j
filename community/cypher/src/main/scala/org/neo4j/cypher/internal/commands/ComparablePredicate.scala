@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.commands
 
-import expressions.Expression
+import expressions.{Identifier, Literal, Expression}
 import org.neo4j.cypher.internal.{ExecutionContext, Comparer}
 import org.neo4j.cypher.internal.symbols._
 import org.neo4j.cypher.internal.helpers.IsCollection
@@ -66,7 +66,12 @@ case class Equals(a: Expression, b: Expression) extends Predicate with Comparer 
 
   def atoms = Seq(this)
   override def toString() = a.toString() + " == " + b.toString()
-  def containsIsNull = false
+
+  def containsIsNull = (a, b) match {
+    case (Identifier(_), Literal(null)) => true
+    case _                              => false
+  }
+
   def rewrite(f: (Expression) => Expression) = Equals(a.rewrite(f), b.rewrite(f))
 
   def children = Seq(a, b)

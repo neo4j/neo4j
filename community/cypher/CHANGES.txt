@@ -1,6 +1,7 @@
 1.9.RC
 ------
 o Fixes #450 - Predicates in WHERE are not evaluated correctly for certain patterns
+o Fixes problem with null comparisons and optional relationships
 
 1.9.M05
 -------
