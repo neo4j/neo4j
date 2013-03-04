@@ -24,7 +24,10 @@ import java.util.List;
 
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageHolder;
+import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastSerializer;
+import org.neo4j.cluster.protocol.atomicbroadcast.Payload;
 import org.neo4j.cluster.statemachine.State;
+import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
  * State machine for Paxos Learner
@@ -81,6 +84,29 @@ public enum LearnerState
 
                             instance.closed( learnState.getValue(), message.getHeader( Message.CONVERSATION_ID ) );
 
+                            StringLogger logger = context.clusterContext.getLogger( getClass() );
+                            /*
+                             * The conditional below is simply so that no expensive deserialization will happen if we
+                             * are not to print anything anyway if debug is not enabled.
+                             */
+                            if ( logger.isDebugEnabled() )
+                            {
+                                String description;
+                                if ( instance.value_2 instanceof Payload )
+                                {
+                                    description = new AtomicBroadcastSerializer().receive( (Payload) instance.value_2 ).toString();
+                                }
+                                else
+                                {
+                                    description = instance.value_2.toString();
+                                }
+                                logger.debug(
+                                        "Learned and closed instance "+instance.id +
+                                                " from conversation " +
+                                                instance.conversationIdHeader +
+                                                " and the content was " +
+                                                description );
+                            }
                             // If this is the next instance to be learned, then do so and check if we have anything
                             // pending to be learnt
                             if ( instanceId.getId() == context.learnerContext.getLastDeliveredInstanceId() + 1 )
