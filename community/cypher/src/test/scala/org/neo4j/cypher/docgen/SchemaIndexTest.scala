@@ -47,10 +47,10 @@ class SchemaIndexTest extends DocumentingTestBase with StatisticsChecker with Gr
   }
 
 
-  @Test def remove_index_on_a_label() {
+  @Test def drop_index_on_a_label() {
     prepareAndTestQuery(
-      title = "Remove index on a label",
-      text = "To remove an index, use the +DROP+ +INDEX+ clause",
+      title = "Drop index on a label",
+      text = "To drop an index on all nodes that have a label, use the +DROP+ +INDEX+ clause",
       prepare = { () =>
         executeQuery("create index on :Person(name)")
       },
