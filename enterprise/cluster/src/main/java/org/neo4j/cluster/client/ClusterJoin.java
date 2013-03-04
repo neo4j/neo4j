@@ -380,30 +380,21 @@ public class ClusterJoin
 
             while( true )
             {
-
-                for ( HostnamePort host : hosts )
+                logger.debug( "Attempting to join " + hosts.toString() );
+                Future<ClusterConfiguration> clusterConfig =
+                        cluster.join( this.config.getClusterName(), memberURIs );
+                try
                 {
-                    if ( serverId.toString().endsWith( host.toString() ) )
-                    {
-                        continue; // Don't try to join myself
-                    }
-
-                    logger.debug( "Attempting to join " + hosts.toString() );
-                    Future<ClusterConfiguration> clusterConfig =
-                            cluster.join( this.config.getClusterName(), memberURIs );
-                    try
-                    {
-                        logger.debug( "Joined cluster:" + clusterConfig.get() );
-                        return;
-                    }
-                    catch ( InterruptedException e )
-                    {
-                        e.printStackTrace();
-                    }
-                    catch ( ExecutionException e )
-                    {
-                        logger.debug( "Could not join cluster " + this.config.getClusterName() );
-                    }
+                    logger.debug( "Joined cluster:" + clusterConfig.get() );
+                    return;
+                }
+                catch ( InterruptedException e )
+                {
+                    e.printStackTrace();
+                }
+                catch ( ExecutionException e )
+                {
+                    logger.debug( "Could not join cluster " + this.config.getClusterName() );
                 }
 
                 if ( config.isAllowedToCreateCluster() )
@@ -412,7 +403,6 @@ public class ClusterJoin
                     cluster.create( config.getClusterName() );
                     break;
                 }
-                // else retry the list from the top
             }
         }
     }
