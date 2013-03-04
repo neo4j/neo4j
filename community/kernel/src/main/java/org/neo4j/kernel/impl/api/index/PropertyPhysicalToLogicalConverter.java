@@ -42,8 +42,8 @@ public class PropertyPhysicalToLogicalConverter
     }
     
     public Iterable<NodePropertyUpdate> apply(
-            PropertyRecord before, long[] nodeLabelsBefore,
-            PropertyRecord after, long[] nodeLabelsAfter )
+            PropertyRecord before, long[] labelsBefore,
+            PropertyRecord after, long[] labelsAfter )
     {
         assert before.getNodeId() == after.getNodeId() :
             "Node ids differ between before(" + before.getNodeId() + ") and after(" + after.getNodeId() + ")";
@@ -59,21 +59,36 @@ public class PropertyPhysicalToLogicalConverter
         {
             PropertyBlock beforeBlock = beforeMap.get( key );
             PropertyBlock afterBlock = afterMap.get( key );
-            
+            NodePropertyUpdate update = null;
+
             if ( beforeBlock != null && afterBlock != null )
             {
                 // CHANGE
                 if ( !beforeBlock.hasSameContentsAs( afterBlock ) )
-                    result.add( new NodePropertyUpdate( nodeId, key, valueOf( beforeBlock ), nodeLabelsBefore,
-                            valueOf( afterBlock ), nodeLabelsAfter  ) );
+                {
+                    Object beforeVal = valueOf( beforeBlock );
+                    Object afterVal = valueOf( afterBlock );
+                    update = new NodePropertyUpdate( nodeId, key, beforeVal, labelsBefore, afterVal, labelsAfter );
+                }
             }
             else
             {
                 // ADD/REMOVE
-                result.add( new NodePropertyUpdate( nodeId, key,
-                        valueOf( beforeBlock ), beforeBlock != null ? nodeLabelsBefore : EMPTY_LONG_ARRAY,
-                        valueOf( afterBlock ), afterBlock != null ? nodeLabelsAfter : EMPTY_LONG_ARRAY ) );
+                try {
+                    long[] beforeLabelIds = beforeBlock == null ? EMPTY_LONG_ARRAY : labelsBefore;
+                    long[] afterLabelIds = afterBlock == null ? EMPTY_LONG_ARRAY : labelsAfter;
+                    Object beforeVal = valueOf( beforeBlock );
+                    Object afterVal = valueOf( afterBlock );
+                    update = new NodePropertyUpdate( nodeId, key, beforeVal, beforeLabelIds, afterVal, afterLabelIds );
+                }
+                catch (RuntimeException e)
+                {
+                    // MP: break hear to see the issue: There is a broken next pointer chain in the before block
+                    throw e;
+                }
             }
+            if (update != null)
+                result.add( update );
         }
         return result;
     }
