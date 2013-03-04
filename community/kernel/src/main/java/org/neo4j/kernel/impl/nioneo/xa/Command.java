@@ -76,15 +76,15 @@ public abstract class Command extends XaCommand
         UPDATE,
         DELETE;
 
-        public static Mode fromRecordState(boolean created, boolean inUse)
+        public static Mode fromRecordState( boolean created, boolean inUse )
         {
-            if(!inUse)
+            if ( !inUse )
                 return DELETE;
-            if(created && inUse)
+            if ( created && inUse )
                 return CREATE;
-            if(!created && inUse)
+            if ( !created && inUse )
                 return UPDATE;
-            throw new IllegalStateException("A record can't be both created and deleted at the same time.");
+            throw new IllegalStateException( "A record can't be both created and deleted at the same time." );
         }
     }
 
@@ -407,6 +407,12 @@ public abstract class Command extends XaCommand
             
             NodeRecord before = readNodeRecord( id, byteChannel, buffer );
             NodeRecord after = readNodeRecord( id, byteChannel, buffer );
+            
+            if ( !before.inUse() && after.inUse() )
+            {
+                after.setCreated();
+            }
+            
             return new NodeCommand( neoStore == null ? null : neoStore.getNodeStore(), before, after );
         }
 

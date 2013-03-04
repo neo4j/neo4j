@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import org.neo4j.kernel.api.IndexState;
+import org.neo4j.kernel.api.InternalIndexState;
 
 public class OnlineIndexContext implements IndexContext
 {
@@ -49,9 +49,9 @@ public class OnlineIndexContext implements IndexContext
     }
 
     @Override
-    public IndexState getState()
+    public InternalIndexState getState()
     {
-        return IndexState.ONLINE;
+        return InternalIndexState.ONLINE;
     }
     
     @Override

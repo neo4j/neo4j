@@ -26,7 +26,7 @@ import java.util.Map;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.store.Directory;
 import org.neo4j.helpers.Service;
-import org.neo4j.kernel.api.IndexState;
+import org.neo4j.kernel.api.InternalIndexState;
 import org.neo4j.kernel.api.SchemaIndexProvider;
 import org.neo4j.kernel.impl.api.index.IndexPopulator;
 import org.neo4j.kernel.impl.api.index.IndexWriter;
@@ -69,15 +69,15 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
     }
 
     @Override
-    public IndexState getInitialState( long indexId )
+    public InternalIndexState getInitialState( long indexId )
     {
         try
         {
             Directory directory = directoryFactory.open( dir( rootDirectory, indexId ) );
             if ( !IndexReader.indexExists( directory ) )
-                return IndexState.NON_EXISTENT;
+                return InternalIndexState.NON_EXISTENT;
             Map<String, String> commitData = IndexReader.getCommitUserData( directory );
-            return ONLINE.equals( commitData.get( KEY_STATUS ) ) ? IndexState.ONLINE : IndexState.POPULATING;
+            return ONLINE.equals( commitData.get( KEY_STATUS ) ) ? InternalIndexState.ONLINE : InternalIndexState.POPULATING;
         }
         catch ( IOException e )
         {

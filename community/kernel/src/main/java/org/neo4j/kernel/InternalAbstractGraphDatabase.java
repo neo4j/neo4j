@@ -831,7 +831,7 @@ public abstract class InternalAbstractGraphDatabase
             neoDataSource = new NeoStoreXaDataSource( config,
                     storeFactory, lockManager, logging.getLogger( NeoStoreXaDataSource.class ),
                     xaFactory, stateFactory, cacheBridge, schemaIndexProvider, transactionInterceptorProviders,
-                    jobScheduler );
+                    jobScheduler, logging );
             xaDataSourceManager.registerDataSource( neoDataSource );
 
         }

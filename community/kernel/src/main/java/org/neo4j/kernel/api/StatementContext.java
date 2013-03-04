@@ -156,7 +156,7 @@ public interface StatementContext
      * Retrieve the state of an index.
      * @return
      */
-    IndexState getIndexState( IndexRule indexRule ) throws IndexNotFoundKernelException;
+    InternalIndexState getIndexState( IndexRule indexRule ) throws IndexNotFoundKernelException;
     
     /**
      * Drops a {@link IndexRule} from the database

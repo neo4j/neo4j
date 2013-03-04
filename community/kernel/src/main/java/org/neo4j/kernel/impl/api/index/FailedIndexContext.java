@@ -21,37 +21,48 @@ package org.neo4j.kernel.impl.api.index;
 
 import org.neo4j.kernel.api.InternalIndexState;
 
-public abstract class AbstractDelegatingIndexContext implements IndexContext
+public class FailedIndexContext implements IndexContext
 {
-    protected abstract IndexContext getDelegate();
+    private final IndexPopulator populator;
+    private final Throwable cause;
+
+    public FailedIndexContext( IndexPopulator populator )
+    {
+        this( populator, null );
+    }
+
+    public FailedIndexContext( IndexPopulator populator, Throwable cause )
+    {
+        this.populator = populator;
+        this.cause = cause;
+    }
 
     @Override
     public void create()
     {
-        getDelegate().create();
+        throw new UnsupportedOperationException( "Unable to create index, it is in a failed state.", cause );
     }
-    
+
     @Override
     public void update( Iterable<NodePropertyUpdate> updates )
     {
-        getDelegate().update( updates );
+        // intentionally swallow updates, we're failed and nothing but repopulation or dropIndex will solve this
     }
 
     @Override
     public void drop()
     {
-        getDelegate().drop();
+        populator.dropIndex();
     }
 
     @Override
     public InternalIndexState getState()
     {
-        return getDelegate().getState();
+        return InternalIndexState.FAILED;
     }
-    
+
     @Override
     public void force()
     {
-        getDelegate().force();
     }
 }

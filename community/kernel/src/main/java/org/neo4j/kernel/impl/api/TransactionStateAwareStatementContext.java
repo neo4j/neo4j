@@ -30,7 +30,7 @@ import java.util.Collection;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.kernel.api.ConstraintViolationKernelException;
 import org.neo4j.kernel.api.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.IndexState;
+import org.neo4j.kernel.api.InternalIndexState;
 import org.neo4j.kernel.api.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
@@ -169,13 +169,13 @@ public class TransactionStateAwareStatementContext extends DelegatingStatementCo
 
 
     @Override
-    public IndexState getIndexState( IndexRule indexRule ) throws IndexNotFoundKernelException
+    public InternalIndexState getIndexState( IndexRule indexRule ) throws IndexNotFoundKernelException
     {
         // If index is in our state, then return populating
         DiffSets<IndexRule> diffSet = state.getIndexRuleDiffSetsByLabel( indexRule.getLabel() );
         if( diffSet.isAdded( indexRule) )
         {
-            return IndexState.POPULATING;
+            return InternalIndexState.POPULATING;
         }
 
         if( diffSet.isRemoved( indexRule ))

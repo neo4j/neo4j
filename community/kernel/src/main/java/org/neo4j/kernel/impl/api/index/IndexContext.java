@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import org.neo4j.kernel.api.IndexState;
+import org.neo4j.kernel.api.InternalIndexState;
 
 public interface IndexContext
 {
@@ -29,7 +29,7 @@ public interface IndexContext
     
     void drop();
 
-    IndexState getState();
+    InternalIndexState getState();
 
     void force();
     
@@ -53,7 +53,7 @@ public interface IndexContext
         }
 
         @Override
-        public IndexState getState()
+        public InternalIndexState getState()
         {
             throw new UnsupportedOperationException(  );
         }

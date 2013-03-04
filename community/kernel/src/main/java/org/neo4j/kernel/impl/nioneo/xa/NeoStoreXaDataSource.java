@@ -81,6 +81,7 @@ import org.neo4j.kernel.info.DiagnosticsExtractor;
 import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.kernel.info.DiagnosticsPhase;
 import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.kernel.logging.Logging;
 
 /**
  * A <CODE>NeoStoreXaDataSource</CODE> is a factory for
@@ -131,6 +132,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
     private final StringLogger msgLog;
     private final TransactionStateFactory stateFactory;
     private final CacheAccessBackDoor cacheAccess;
+    private final Logging logging;
 
     private enum Diagnostics implements DiagnosticsExtractor<NeoStoreXaDataSource>
     {
@@ -217,7 +219,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
     public NeoStoreXaDataSource( Config config, StoreFactory sf, LockManager lockManager,
                                  StringLogger stringLogger, XaFactory xaFactory, TransactionStateFactory stateFactory,
                                  CacheAccessBackDoor cacheAccess, SchemaIndexProvider indexProvider,
-                                 TransactionInterceptorProviders providers, JobScheduler scheduler )
+                                 TransactionInterceptorProviders providers, JobScheduler scheduler, Logging logging )
             throws IOException
     {
         super( BRANCH_ID, Config.DEFAULT_DATA_SOURCE_NAME );
@@ -227,6 +229,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
         this.indexProvider = indexProvider;
         this.providers = providers;
         this.scheduler = scheduler;
+        this.logging = logging;
 
         readOnly = config.get( Configuration.read_only );
         this.lockManager = lockManager;
@@ -239,7 +242,6 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
     @Override
     public void init()
     {
-        indexingService = life.add( new IndexingService( scheduler, indexProvider ) );
         life.init();
     }
 
@@ -263,6 +265,9 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
         }
         neoStore = storeFactory.newNeoStore( store );
 
+        indexingService = life.add( new IndexingService( scheduler, indexProvider,
+                new NeoStoreIndexStoreView( neoStore ), logging ) );
+        
         xaContainer = xaFactory.newXaContainer(this, config.get( Configuration.logical_log ),
                 new CommandFactory( neoStore, indexingService ), tf, stateFactory, providers  );
 
@@ -273,7 +278,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
                 neoStore.setRecoveredStatus( true );
                 try
                 {
-                    indexingService.initIndexes(loadIndexRules(), neoStore);
+                    indexingService.initIndexes( loadIndexRules() );
                     xaContainer.openLogicalLog();
                 }
                 finally

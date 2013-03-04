@@ -45,7 +45,7 @@ import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
  * These are the rules you must adhere to here:
  *
  * <ul>
- * <li>You CANNOT say that the state of the index is {@link org.neo4j.kernel.api.IndexState#ONLINE}</li>
+ * <li>You CANNOT say that the state of the index is {@link org.neo4j.kernel.api.InternalIndexState#ONLINE}</li>
  * <li>You MUST store all updates given to you</li>
  * <li>You MAY persistently store the updates</li>
  * </ul>
@@ -57,7 +57,7 @@ import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
  *
  * The index will be notified, through the {@link org.neo4j.kernel.impl.api.index.IndexPopulator#populationCompleted()}
  * method, that population is done, and that the index should turn it's state to {@link org.neo4j.kernel.api
- * .IndexState#ONLINE}.
+ * .InternalIndexState#ONLINE}.
  *
  * If the index is persisted to disk, this is a <i>vital</i> part of the index lifecycle.
  * For a persisted index, the index MUST NOT store the state as online unless it first guarantees that the entire index
@@ -66,16 +66,16 @@ import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
  * when it in fact was not yet fully populated. This would break the database recovery process.
  *
  * If you are implementing this interface, you can choose to not store index state. In that case,
- * you should report index state as {@link org.neo4j.kernel.api.IndexState#NON_EXISTENT} upon startup.
+ * you should report index state as {@link org.neo4j.kernel.api.InternalIndexState#NON_EXISTENT} upon startup.
  * This will cause the database to re-create the index from scratch again.
  *
  * These are the rules you must adhere to here:
  *
  * <ul>
  * <li>You MUST have flushed the index to durable storage if you are to persist index state as {@link org.neo4j
- * .kernel.api.IndexState#ONLINE}</li>
+ * .kernel.api.InternalIndexState#ONLINE}</li>
  * <li>You MAY decide not to store index state</li>
- * <li>If you don't store index state, you MUST default to {@link org.neo4j.kernel.api.IndexState#NON_EXISTENT}</li>
+ * <li>If you don't store index state, you MUST default to {@link org.neo4j.kernel.api.InternalIndexState#NON_EXISTENT}</li>
  * </ul>
  *
  * <h3>Online operation</h3>
@@ -103,9 +103,9 @@ public abstract class SchemaIndexProvider extends Service implements Comparable<
         }
         
         @Override
-        public IndexState getInitialState( long indexId )
+        public InternalIndexState getInitialState( long indexId )
         {
-            return IndexState.NON_EXISTENT;
+            return InternalIndexState.NON_EXISTENT;
         }
     };
     
@@ -131,8 +131,18 @@ public abstract class SchemaIndexProvider extends Service implements Comparable<
         this.rootDirectory = rootDirectory;
     }
 
+    /**
+     * Used for initially populating a created index, using batch insertion.
+     * @param indexId the index id to get a populator for.
+     * @return an {@link IndexPopulator} used for initially populating a created index.
+     */
     public abstract IndexPopulator getPopulator( long indexId );
 
+    /**
+     * Used for updating an index once initial population has completed.
+     * @param indexId the index id to get a writer for.
+     * @return an {@link IndexWriter} used for updating an online index at runtime.
+     */
     public abstract IndexWriter getWriter( long indexId );
 
     // Design idea: we add methods here like:
@@ -143,7 +153,7 @@ public abstract class SchemaIndexProvider extends Service implements Comparable<
      * @param indexId the index id to get the state for.
      * @return
      */
-    public abstract IndexState getInitialState( long indexId );
+    public abstract InternalIndexState getInitialState( long indexId );
     
     @Override
     public int compareTo( SchemaIndexProvider o )

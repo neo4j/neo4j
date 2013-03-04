@@ -35,7 +35,8 @@ public interface Schema
     public static enum IndexState
     {
         ONLINE,
-        POPULATING;
+        POPULATING,
+        FAILED;
     }
 
     /**

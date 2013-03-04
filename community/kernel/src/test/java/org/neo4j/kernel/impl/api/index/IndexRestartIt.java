@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.anyLong;
@@ -41,7 +42,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.api.IndexState;
+import org.neo4j.kernel.api.InternalIndexState;
 import org.neo4j.kernel.api.SchemaIndexProvider;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
@@ -57,6 +58,7 @@ public class IndexRestartIt
     public void shouldHandleRestartOfPopulatedIndex() throws Exception
     {
         // Given
+        when( mockedIndexProvider.getPopulator( anyLong() )).thenReturn( mock( IndexPopulator.class ) );
         startDb();
         Label myLabel = label( "MyLabel" );
 
@@ -67,7 +69,7 @@ public class IndexRestartIt
 
         // And Given
         stopDb();
-        when( mockedIndexProvider.getInitialState( anyLong() )).thenReturn( IndexState.ONLINE );
+        when( mockedIndexProvider.getInitialState( anyLong() )).thenReturn( InternalIndexState.ONLINE );
 
         // When
         startDb();
@@ -80,13 +82,14 @@ public class IndexRestartIt
         IndexDefinition index = single( indexes );
         assertThat( db.schema().getIndexState( index), equalTo( Schema.IndexState.ONLINE ) );
         verify( mockedIndexProvider, times( 1 ) ).getPopulator( anyLong() );
-        verify( mockedIndexProvider, times( 1 ) ).getWriter( anyLong() );
+        verify( mockedIndexProvider, times( 2 ) ).getWriter( anyLong() );
     }
 
     @Test
     public void shouldHandleRestartOfPopulatingIndex() throws Exception
     {
         // Given
+        when( mockedIndexProvider.getPopulator( anyLong() ) ).thenReturn( mock( IndexPopulator.class ) );
         startDb();
         Label myLabel = label( "MyLabel" );
 
@@ -97,7 +100,7 @@ public class IndexRestartIt
 
         // And Given
         stopDb();
-        when( mockedIndexProvider.getInitialState( anyLong() )).thenReturn( IndexState.POPULATING );
+        when( mockedIndexProvider.getInitialState( anyLong() ) ).thenReturn( InternalIndexState.POPULATING );
 
         // When
         startDb();
@@ -105,10 +108,10 @@ public class IndexRestartIt
         // Then
         Collection<IndexDefinition> indexes = asCollection( db.schema().getIndexes( myLabel ) );
 
-        assertThat( indexes.size(), equalTo(1));
+        assertThat( indexes.size(), equalTo( 1 ) );
 
         IndexDefinition index = single( indexes );
-        assertThat( db.schema().getIndexState( index), equalTo( Schema.IndexState.POPULATING ) );
+        assertThat( db.schema().getIndexState( index), not( equalTo( Schema.IndexState.FAILED ) ) );
         verify( mockedIndexProvider, times( 2 ) ).getPopulator( anyLong() );
     }
 
@@ -116,6 +119,7 @@ public class IndexRestartIt
     public void shouldHandleRestartWhereIndexWasNotPersisted() throws Exception
     {
         // Given
+        when( mockedIndexProvider.getPopulator( anyLong() )).thenReturn( mock( IndexPopulator.class ) );
         startDb();
         Label myLabel = label( "MyLabel" );
 
@@ -126,7 +130,7 @@ public class IndexRestartIt
 
         // And Given
         stopDb();
-        when( mockedIndexProvider.getInitialState( anyLong() )).thenReturn( IndexState.NON_EXISTENT );
+        when( mockedIndexProvider.getInitialState( anyLong() )).thenReturn( InternalIndexState.NON_EXISTENT );
 
         // When
         startDb();
@@ -137,7 +141,7 @@ public class IndexRestartIt
         assertThat( indexes.size(), equalTo(1));
 
         IndexDefinition index = single( indexes );
-        assertThat( db.schema().getIndexState( index), equalTo( Schema.IndexState.POPULATING ) );
+        assertThat( db.schema().getIndexState( index), not( equalTo( Schema.IndexState.FAILED ) ) );
         verify( mockedIndexProvider, times( 2 ) ).getPopulator( anyLong() );
     }
 

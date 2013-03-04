@@ -659,4 +659,53 @@ public abstract class IteratorUtil
             }
         };
     }
+
+    public static <T> Iterator<T> asIterator( final T... array )
+    {
+        return new PrefetchingIterator<T>()
+        {
+            private int index;
+            
+            @Override
+            protected T fetchNextOrNull()
+            {
+                try
+                {
+                    return index < array.length ? array[index] : null;
+                }
+                finally
+                {
+                    index++;
+                }
+            }
+        };
+    }
+    
+    @SuppressWarnings( "rawtypes" )
+    private static final Iterator EMPTY_ITERATOR = new Iterator()
+    {
+        @Override
+        public boolean hasNext()
+        {
+            return false;
+        }
+
+        @Override
+        public Object next()
+        {
+            throw new NoSuchElementException();
+        }
+
+        @Override
+        public void remove()
+        {
+            throw new UnsupportedOperationException();
+        }
+    };
+    
+    @SuppressWarnings( "unchecked" )
+    public static <T> Iterator<T> emptyIterator()
+    {
+        return EMPTY_ITERATOR;
+    }
 }

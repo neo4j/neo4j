@@ -19,8 +19,11 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
 
 import java.io.File;
 import java.io.IOException;
@@ -74,6 +77,7 @@ import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.DevNullLoggingService;
+import org.neo4j.kernel.logging.SingleLoggingService;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
@@ -165,7 +169,7 @@ public class TestNeoStore
             {
                 return (T) config;
             }
-        } ), null );
+        } ), null, new SingleLoggingService( DEV_NULL ) );
         ds.init();
         ds.start();
 

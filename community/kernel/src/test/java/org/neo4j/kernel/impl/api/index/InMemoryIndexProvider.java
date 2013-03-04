@@ -25,7 +25,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.neo4j.helpers.Service;
-import org.neo4j.kernel.api.IndexState;
+import org.neo4j.kernel.api.InternalIndexState;
 import org.neo4j.kernel.api.SchemaIndexProvider;
 import org.neo4j.kernel.impl.util.CopyOnWriteHashMap;
 
@@ -48,7 +48,7 @@ public class InMemoryIndexProvider extends SchemaIndexProvider
     }
 
     @Override
-    public IndexState getInitialState( long indexId )
+    public InternalIndexState getInitialState( long indexId )
     {
         return null;
     }

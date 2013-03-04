@@ -19,8 +19,22 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-public class FlippableIndexContext extends AbstractLockingIndexContext
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+
+import org.neo4j.kernel.api.InternalIndexState;
+import org.neo4j.kernel.api.KernelException;
+
+public class FlippableIndexContext implements IndexContext
 {
+    public static final class FlipFailedKernelException extends KernelException
+    {
+        public FlipFailedKernelException( String message, Throwable cause )
+        {
+            super( message, cause );
+        }
+    }
+    
     private static final Runnable NO_OP = new Runnable()
     {
         @Override
@@ -29,6 +43,7 @@ public class FlippableIndexContext extends AbstractLockingIndexContext
         }
     };
 
+    private final ReadWriteLock lock = new ReentrantReadWriteLock();
     private IndexContextFactory flipTarget;
     private IndexContext delegate;
 
@@ -41,31 +56,92 @@ public class FlippableIndexContext extends AbstractLockingIndexContext
     {
         this.delegate = originalDelegate;
     }
-
+    
     @Override
-    public IndexContext getDelegate()
+    public void create()
     {
-        getLock().readLock().lock();
+        lock.readLock().lock();
         try
         {
-            return delegate;
+            delegate.create();
         }
         finally
         {
-            getLock().readLock().unlock();
+            lock.readLock().unlock();
         }
+    }
+    
+    @Override
+    public void update( Iterable<NodePropertyUpdate> updates )
+    {
+        lock.readLock().lock();
+        try
+        {
+            delegate.update( updates );
+        }
+        finally
+        {
+            lock.readLock().unlock();
+        }
+    }
+    
+    @Override
+    public void drop()
+    {
+        lock.readLock().lock();
+        try
+        {
+            delegate.drop();
+        }
+        finally
+        {
+            lock.readLock().unlock();
+        }
+    }
+    
+    @Override
+    public void force()
+    {
+        lock.readLock().lock();
+        try
+        {
+            delegate.force();
+        }
+        finally
+        {
+            lock.readLock().unlock();
+        }
+    }
+    
+    @Override
+    public InternalIndexState getState()
+    {
+        lock.readLock().lock();
+        try
+        {
+            return delegate.getState();
+        }
+        finally
+        {
+            lock.readLock().unlock();
+        }
+    }
+    
+    public IndexContext getDelegate()
+    {
+        return delegate;
     }
 
     public void setFlipTarget( IndexContextFactory flipTarget )
     {
-        getLock().writeLock().lock();
+        lock.writeLock().lock();
         try
         {
             this.flipTarget = flipTarget;
         }
         finally
         {
-            getLock().writeLock().unlock();
+            lock.writeLock().unlock();
         }
     }
 
@@ -76,7 +152,7 @@ public class FlippableIndexContext extends AbstractLockingIndexContext
 
     public void flip( Runnable actionDuringFlip )
     {
-        getLock().writeLock().lock();
+        lock.writeLock().lock();
         try
         {
             actionDuringFlip.run();
@@ -84,7 +160,26 @@ public class FlippableIndexContext extends AbstractLockingIndexContext
         }
         finally
         {
-            getLock().writeLock().unlock();
+            lock.writeLock().unlock();
+        }
+    }
+    
+    public void flip( Runnable actionDuringFlip, IndexContext failureFlipTarget ) throws FlipFailedKernelException
+    {
+        lock.writeLock().lock();
+        try
+        {
+            actionDuringFlip.run();
+            this.delegate = flipTarget.create();
+        }
+        catch( Exception e )
+        {
+            this.delegate = failureFlipTarget;
+            throw new FlipFailedKernelException( "Failed to transition index to new context, see nested exception.", e );
+        }
+        finally
+        {
+            lock.writeLock().unlock();
         }
     }
 }

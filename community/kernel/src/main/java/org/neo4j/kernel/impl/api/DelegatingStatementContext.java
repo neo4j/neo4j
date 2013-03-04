@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.api;
 
 import org.neo4j.kernel.api.ConstraintViolationKernelException;
 import org.neo4j.kernel.api.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.IndexState;
+import org.neo4j.kernel.api.InternalIndexState;
 import org.neo4j.kernel.api.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.PropertyKeyIdNotFoundException;
 import org.neo4j.kernel.api.PropertyKeyNotFoundException;
@@ -117,7 +117,7 @@ public class DelegatingStatementContext implements StatementContext
     }
 
     @Override
-    public IndexState getIndexState( IndexRule indexRule ) throws IndexNotFoundKernelException
+    public InternalIndexState getIndexState( IndexRule indexRule ) throws IndexNotFoundKernelException
     {
         return delegate.getIndexState( indexRule );
     }

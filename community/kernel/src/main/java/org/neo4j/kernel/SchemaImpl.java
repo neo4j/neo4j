@@ -88,7 +88,7 @@ public class SchemaImpl implements Schema
         {
             long labelId = context.getLabelId( index.getLabel().name() );
             long propertyKeyId = context.getPropertyKeyId( propertyKey );
-            org.neo4j.kernel.api.IndexState indexState =
+            org.neo4j.kernel.api.InternalIndexState indexState =
                     context.getIndexState( context.getIndexRule( labelId, propertyKeyId ) );
             switch ( indexState )
             {
@@ -99,6 +99,8 @@ public class SchemaImpl implements Schema
                 case NON_EXISTENT:
                     throw new NotFoundException( format( "No index for label %s on property %s",
                             index.getLabel().name(), propertyKey ) );
+                case FAILED:
+                    return IndexState.FAILED;
                 default:
                     throw new IllegalArgumentException( String.format( "Illegal index state %s", indexState ) );
             }

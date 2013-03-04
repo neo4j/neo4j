@@ -19,10 +19,11 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import org.neo4j.kernel.api.IndexState;
+import org.neo4j.kernel.api.InternalIndexState;
+import org.neo4j.kernel.impl.api.index.IndexingService.IndexStoreView;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
-import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.kernel.logging.Logging;
 
 public class PopulatingIndexContext implements IndexContext
 {
@@ -30,10 +31,10 @@ public class PopulatingIndexContext implements IndexContext
     private final IndexPopulationJob job;
 
     public PopulatingIndexContext( JobScheduler scheduler, IndexRule rule, IndexPopulator writer,
-                                   FlippableIndexContext flipper, NeoStore neoStore )
+                                   FlippableIndexContext flipper, IndexStoreView storeView, Logging logging )
     {
         this.scheduler = scheduler;
-        this.job       = new IndexPopulationJob( rule, writer, flipper, neoStore );
+        this.job       = new IndexPopulationJob( rule, writer, flipper, storeView, logging );
     }
 
     @Override
@@ -55,9 +56,9 @@ public class PopulatingIndexContext implements IndexContext
     }
 
     @Override
-    public IndexState getState()
+    public InternalIndexState getState()
     {
-        return IndexState.POPULATING;
+        return InternalIndexState.POPULATING;
     }
     
     @Override

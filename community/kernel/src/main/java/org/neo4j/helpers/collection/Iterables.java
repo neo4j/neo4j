@@ -227,6 +227,11 @@ public final class Iterables
         return new FilterIterable<X>( i, specification );
     }
 
+    public static <X> Iterator<X> filter( Predicate<? super X> specification, Iterator<X> i )
+    {
+        return new FilterIterable.FilterIterator<X>( i, specification );
+    }
+    
     public static <X> X first( Iterable<? extends X> i )
     {
         Iterator<? extends X> iter = i.iterator();
@@ -420,6 +425,16 @@ public final class Iterables
     public static <FROM, TO> Iterable<TO> map( Function<? super FROM, ? extends TO> function, Iterable<FROM> from )
     {
         return new MapIterable<FROM, TO>( from, function );
+    }
+
+    public static <FROM, TO> Iterator<TO> map( Function<? super FROM, ? extends TO> function, Iterator<FROM> from )
+    {
+        return new MapIterable.MapIterator<FROM, TO>( from, function );
+    }
+
+    public static <FROM, TO> Iterator<TO> flatMap( Function<? super FROM, ? extends Iterator<TO>> function, Iterator<FROM> from )
+    {
+        return new CombiningIterator<TO>( map(function, from) );
     }
 
     public static <T> Iterable<T> iterableEnumeration( Enumeration<T> enumeration )

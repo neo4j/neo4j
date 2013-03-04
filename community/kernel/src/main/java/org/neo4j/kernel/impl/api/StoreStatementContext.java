@@ -31,7 +31,7 @@ import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.api.ConstraintViolationKernelException;
 import org.neo4j.kernel.api.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.IndexState;
+import org.neo4j.kernel.api.InternalIndexState;
 import org.neo4j.kernel.api.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.PropertyKeyIdNotFoundException;
 import org.neo4j.kernel.api.PropertyKeyNotFoundException;
@@ -272,7 +272,7 @@ public class StoreStatementContext implements StatementContext
     }
 
     @Override
-    public IndexState getIndexState( IndexRule indexRule ) throws IndexNotFoundKernelException
+    public InternalIndexState getIndexState( IndexRule indexRule ) throws IndexNotFoundKernelException
     {
         return indexService.getContextForRule( indexRule.getId() ).getState();
     }

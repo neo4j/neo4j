@@ -46,7 +46,7 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.ThreadToStatementContextBridge;
-import org.neo4j.kernel.api.IndexState;
+import org.neo4j.kernel.api.InternalIndexState;
 import org.neo4j.kernel.api.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.PropertyKeyNotFoundException;
 import org.neo4j.kernel.api.SchemaIndexProvider;
@@ -72,7 +72,7 @@ public class IndexRecoveryIT
         latch.countDown();
 
         // When
-        when( mockedIndexProvider.getInitialState( anyLong() ) ).thenReturn( IndexState.POPULATING );
+        when( mockedIndexProvider.getInitialState( anyLong() ) ).thenReturn( InternalIndexState.POPULATING );
         latch = new CountDownLatch( 1 );
         when( mockedIndexProvider.getPopulator( anyLong() ) ).thenReturn( indexPopulatorWithControlledCompletionTiming( latch ) );
         startDb();
@@ -106,7 +106,7 @@ public class IndexRecoveryIT
         latch.countDown();
         latch = new CountDownLatch( 1 );
         when( mockedIndexProvider.getPopulator( anyLong() ) ).thenReturn( indexPopulatorWithControlledCompletionTiming( latch ) );
-        when( mockedIndexProvider.getInitialState( anyLong() ) ).thenReturn( IndexState.POPULATING );
+        when( mockedIndexProvider.getInitialState( anyLong() ) ).thenReturn( InternalIndexState.POPULATING );
 
         // When
         startDb();
@@ -135,7 +135,7 @@ public class IndexRecoveryIT
 
         // And Given
         killDb();
-        when( mockedIndexProvider.getInitialState( anyLong() ) ).thenReturn( IndexState.ONLINE );
+        when( mockedIndexProvider.getInitialState( anyLong() ) ).thenReturn( InternalIndexState.ONLINE );
         GatheringIndexWriter writer = new GatheringIndexWriter();
         when( mockedIndexProvider.getWriter( anyLong() ) ).thenReturn( writer );
 
@@ -153,7 +153,33 @@ public class IndexRecoveryIT
         verify( mockedIndexProvider, times( 1 ) ).getWriter( anyLong() );
         assertEquals( expectedUpdates, writer.updates ); 
     }
+    
+    @Test
+    public void shouldKeepFailedIndexesAsFailedAfterRestart() throws Exception
+    {
+        // Given
+        startDb();
+        Label myLabel = label( "MyLabel" );
+        createIndex( myLabel );
 
+        // And Given
+        killDb();
+        when( mockedIndexProvider.getInitialState( anyLong() ) ).thenReturn( InternalIndexState.FAILED );
+        when( mockedIndexProvider.getPopulator( anyLong() ) ).thenReturn( mock(IndexPopulator.class) );
+
+        // When
+        startDb();
+
+        // Then
+        Collection<IndexDefinition> indexes = asCollection( db.schema().getIndexes( myLabel ) );
+
+        assertThat( indexes.size(), equalTo( 1 ) );
+
+        IndexDefinition index = single( indexes );
+        assertThat( db.schema().getIndexState( index ), equalTo( Schema.IndexState.FAILED ) );
+        verify( mockedIndexProvider, times( 2 ) ).getPopulator( anyLong() );
+    }
+    
     private GraphDatabaseAPI db;
     private EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
     private final SchemaIndexProvider mockedIndexProvider = mock( SchemaIndexProvider.class);
@@ -248,6 +274,7 @@ public class IndexRecoveryIT
                 catch ( InterruptedException e )
                 {
                 }
+                throw new RuntimeException();
             }
         };
     }

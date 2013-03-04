@@ -379,6 +379,38 @@ public class WriteTransactionTest
                 indexingService.updates );
     }
 
+    @Test
+    public void shouldConvertMixedLabelRemovalAndAddPropertyToNodePropertyUpdates() throws Exception
+    {
+        // GIVEN
+        long nodeId = 1, labelId1 = 3, labelId2 = 4;
+        WriteTransaction writeTransaction = newWriteTransaction( NO_INDEXING );
+        PropertyIndex propertyIndex1 = new PropertyIndex( "key", 1 ), propertyIndex2 = new PropertyIndex( "key2", 2 );
+        Object value1 = "first", value2 = 4;
+        writeTransaction.nodeCreate( nodeId );
+        PropertyData property1 = writeTransaction.nodeAddProperty( nodeId, propertyIndex1, value1 );
+        writeTransaction.addLabelToNode( labelId1, nodeId );
+        writeTransaction.addLabelToNode( labelId2, nodeId );
+        writeTransaction.doPrepare();
+        writeTransaction.doCommit();
+
+        // WHEN
+        CapturingIndexingService indexingService = new CapturingIndexingService();
+        writeTransaction = newWriteTransaction( indexingService );
+        writeTransaction.nodeAddProperty( nodeId, propertyIndex2, value2 );
+        writeTransaction.removeLabelFromNode( labelId2, nodeId );
+        writeTransaction.doPrepare();
+        writeTransaction.doCommit();
+
+        // THEN
+        assertEquals( asSet(
+                add( nodeId, propertyIndex2.getKeyId(), value2, new long[] {labelId1} ),
+                remove( nodeId, propertyIndex1.getKeyId(), value1, new long[] {labelId2} ),
+                remove( nodeId, propertyIndex2.getKeyId(), value2, new long[] {labelId2} ) ),
+
+                indexingService.updates );
+    }
+
     private EphemeralFileSystemAbstraction fileSystemAbstraction;
     private CapturingXaLogicalLog log;
     private TransactionState transactionState;
@@ -447,13 +479,13 @@ public class WriteTransactionTest
         return result;
     }
     
-    private static class CapturingIndexingService extends IndexingService
+    private class CapturingIndexingService extends IndexingService
     {
         private final Set<NodePropertyUpdate> updates = new HashSet<NodePropertyUpdate>();
         
         public CapturingIndexingService()
         {
-            super( null, NO_INDEX_PROVIDER );
+            super( null, NO_INDEX_PROVIDER, new NeoStoreIndexStoreView( neoStore ), new SingleLoggingService( SYSTEM ) );
         }
         
         @Override
