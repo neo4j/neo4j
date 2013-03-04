@@ -1,6 +1,6 @@
 For Release Notes, see http://neo4j.org/release-notes#neo4j-${project.version}
 
-1.9.M05 (2013-02-12)
+1.9.M05 (2013-03-05)
 --------------------
 
 Now compiles and runs under JDK 7
@@ -25,25 +25,37 @@ o Cluster server will now by default bind to all interfaces (0.0.0.0)
 Com:
 o Shutting down Server now takes proper care of executors and works with multiple versions of netty
 
+Enterprise Server:
+o HA info REST endpoints now are called /db/manage/server/ha/{ismaster,isslave}, with getMaster no longer existing.
+
 Kernel:
 o Concurrent modifications to relationship chains now do now lead to RecordNotInUse exceptions or
   cache poisoning
 o Proper tx management will now make negative transaction counts impossible
 o IndexProvider is now deprecated, replaced by KernelExtensionFactory
+o Store locks are respected from read only instances too
+o grab_file_lock configuration setting is now deprecated
 
 Lucene Index:
 o LuceneIndexProvider is now replaced by LuceneKernelExtension
+
+Server:
+o Added support for X-Forwarded-Host and X-Forwarded-Proto headers to allow parameterising of
+  links in data for hosting behind proxy servers.
 
 JMX:
 o JMX will now provide info on all configuration values, including the defaults not explicitly set
 
 Cypher:
-o The parser now runs concurrently
+o Fixes #450 - Predicates in WHERE are not evaluated correctly for certain patterns
+o Fixes problem with null comparisons and optional relationships
+o Made it possible to run the parser concurrently
 o DISTINCT is now lazy, and keeps the incoming ordering
 o Added execution plan descriptions to execution results
 o Fixes #464 - getDeletedRelationships does not work for javacompat.ExecutionResult
-o Fixes #535 - "INTERNAL_SORT" columns show when doing RETURN * ORDER BY
-
+o Fixes #535 - 'INTERNAL_SORT' columns show when doing RETURN * ORDER BY
+o Added experimental profiled query support
+o Fixes #489 - CREATE UNIQUE does not work as expected inside FOREACH
 
 1.9.M04 (2013-01-17)
 --------------------
