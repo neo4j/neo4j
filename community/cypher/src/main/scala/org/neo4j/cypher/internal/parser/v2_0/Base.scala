@@ -36,7 +36,7 @@ abstract class Base extends Strings  {
 
   def reduce[A,B](in:Seq[(Seq[A], Seq[B])]):(Seq[A], Seq[B]) = if (in.isEmpty) (Seq(),Seq()) else in.reduce((a, b) => (a._1 ++ b._1, a._2 ++ b._2))
 
-  def escapableString = ident|escapedIdentity
+  def escapableString: Parser[String] = ident|escapedIdentity
 
   def commaList[T](inner: Parser[T]): Parser[List[T]] =
     rep1sep(inner, ",") |
@@ -124,5 +124,42 @@ abstract class Base extends Strings  {
    */
   def generatedName : Parser[String] = Parser {
     in => Success("  UNNAMED" + in.offset, in)
+  }
+
+  override def handleWhiteSpace(source: CharSequence, offset: Int): Int = {
+    if (offset >= source.length())
+      return offset
+
+    val a = source.charAt(offset)
+
+    if ((a == ' ') || (a == '\r') || (a == '\t') || (a == '\n'))
+      handleWhiteSpace(source, offset + 1)
+    else if ((offset + 1) >= source.length())
+      offset
+    else {
+      val b = source.charAt(offset + 1)
+
+      if ((a == '/') && (b == '/')) {
+
+        var loop = 0
+        while ((offset + loop) < source.length() && !(source.charAt(offset + loop) == '\n')) {
+          loop = loop + 1
+        }
+
+        handleWhiteSpace(source, loop + offset)
+      } else {
+        offset
+      }
+    }
+  }
+
+  def longestOf[T](description: String, parsers: Parser[T]*):Parser[T] = Parser {
+    in =>
+      // assumption: sortBy is stable
+      val results = parsers.map(_(in)).filter(p => p.successful && p.next.offset > in.offset).sortBy(- _.next.offset)
+      if (results.isEmpty)
+        failure(description, in)
+      else
+        results.head
   }
 }

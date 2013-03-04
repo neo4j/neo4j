@@ -52,6 +52,18 @@ import org.neo4j.kernel.api.ConstraintViolationKernelException
 
 class ExecutionEngineTest extends ExecutionEngineHelper {
 
+  @Ignore
+  @Test def assignToPathInsideForeachShouldWork() {
+    val result = parseAndExecute(
+"""start n=node(0)
+foreach(x in [1,2,3] :
+  create p = ({foo:x})-[:X]->()
+  foreach( i in p :
+    set i.touched = true))""")
+    println(result.dumpToString())
+  }
+
+
   @Test def shouldGetReferenceNode() {
     val query = Query.
       start(NodeById("n", Literal(0))).

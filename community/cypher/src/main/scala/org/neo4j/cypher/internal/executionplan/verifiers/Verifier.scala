@@ -17,22 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.parser.v2_0
+package org.neo4j.cypher.internal.executionplan.verifiers
 
-import org.neo4j.cypher.internal.commands.values.LabelName
-import org.neo4j.cypher.internal.commands.{DropIndex, CreateIndex}
+import org.neo4j.cypher.internal.commands.AbstractQuery
 
+abstract class Verifier {
+  def verifyFunction: PartialFunction[AbstractQuery, Unit]
 
-trait Index extends Base with Labels {
-  def createIndex = CREATE ~> indexOps ^^ {
-    case (label, properties) => CreateIndex(label, properties)
-  }
-
-  def dropIndex = DROP ~> indexOps ^^ {
-    case (label, properties) => DropIndex(label, properties)
-  }
-
-  private def indexOps: Parser[(String, List[String])] = INDEX ~> ON ~> labelName ~ parens(identity) ^^ {
-    case LabelName(labelName) ~ property => (labelName, List(property))
+  def verify(q: AbstractQuery) {
+   if (verifyFunction.isDefinedAt(q))
+     verifyFunction.apply(q)
   }
 }
+

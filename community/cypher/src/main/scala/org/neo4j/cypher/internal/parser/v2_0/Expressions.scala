@@ -87,7 +87,7 @@ trait Expressions extends Base with ParserPattern with Predicates with StringLit
 
   def collectionLiteral: Parser[Expression] = "[" ~> repsep(expression, ",") <~ "]" ^^ (seq => Collection(seq: _*))
 
-  def property: Parser[Expression] = identity ~ "." ~ identity ^^ {
+  def property: Parser[Expression] = identity ~ "." ~ escapableString ^^ {
     case v ~ "." ~ p => createProperty(v, p)
   }
 

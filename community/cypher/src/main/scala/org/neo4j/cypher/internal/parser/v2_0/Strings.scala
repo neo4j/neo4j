@@ -25,7 +25,8 @@ import util.parsing.combinator.JavaTokenParsers
 trait Strings extends JavaTokenParsers {
   def KEYWORDS =
     START | CREATE | SET | DELETE | FOREACH | MATCH | WHERE | VALUES | WITH |
-    RETURN | SKIP | LIMIT | ORDER | BY | ASC | DESC | ON | WHEN | CASE | THEN | ELSE | DROP
+    RETURN | SKIP | LIMIT | ORDER | BY | ASC | DESC | ON | WHEN | CASE | THEN |
+    ELSE | DROP | USING
 
   // KEYWORDS
   def START = ignoreCase("start")
@@ -50,6 +51,7 @@ trait Strings extends JavaTokenParsers {
   def THEN = ignoreCase("then")
   def ELSE = ignoreCase("else")
   def DROP = ignoreCase("drop")
+  def USING = ignoreCase("using")
 
   // SHOULD THESE ALSO BE KEYWORDS?
   def UNIQUE = ignoreCase("unique")

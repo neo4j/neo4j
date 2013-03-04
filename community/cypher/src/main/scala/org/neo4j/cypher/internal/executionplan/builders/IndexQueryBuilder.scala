@@ -20,98 +20,43 @@
 package org.neo4j.cypher.internal.executionplan.builders
 
 import org.neo4j.cypher.internal.commands._
-import org.neo4j.cypher.internal.pipes.{RelationshipStartPipe, NodeStartPipe, Pipe, EntityProducer}
-import org.neo4j.graphdb.{Relationship, Node, GraphDatabaseService}
-import org.neo4j.cypher.MissingIndexException
-import org.neo4j.cypher.internal.executionplan.{ExecutionPlanInProgress, PlanBuilder}
+import org.neo4j.cypher.internal.pipes._
+import org.neo4j.graphdb.{Relationship, Node}
+import org.neo4j.cypher.internal.executionplan.PlanBuilder
+import org.neo4j.cypher.internal.executionplan.ExecutionPlanInProgress
 
-class IndexQueryBuilder(graph: GraphDatabaseService) extends PlanBuilder {
+class IndexQueryBuilder(entityFactory: EntityProducerFactory) extends PlanBuilder {
   def apply(plan: ExecutionPlanInProgress) = {
     val q = plan.query
     val p = plan.pipe
 
-    val item = q.start.filter(filter).head
+    val item = q.start.filter(mapQueryToken.isDefinedAt).head
 
-    val newPipe = createStartPipe(p, item.token)
+    val newPipe = mapQueryToken(item)(p)
 
     plan.copy(pipe = newPipe, query = q.copy(start = q.start.filterNot(_ == item) :+ item.solve))
   }
 
-  def canWorkWith(plan: ExecutionPlanInProgress) = plan.query.start.exists(filter)
+  def canWorkWith(plan: ExecutionPlanInProgress) = plan.query.start.exists(mapQueryToken.isDefinedAt)
 
-  private def filter(q: QueryToken[_]): Boolean = q match {
-    case Unsolved(NodeByIndexQuery(_, _, _))         => true
-    case Unsolved(NodeByIndex(_, _, _, _))           => true
-    case Unsolved(RelationshipByIndexQuery(_, _, _)) => true
-    case Unsolved(RelationshipByIndex(_, _, _, _))   => true
-    case _                                           => false
-  }
+  private val mapNodeStartCreator: PartialFunction[StartItem, EntityProducer[Node]] =
+    entityFactory.nodeByIndex orElse
+    entityFactory.nodeByIndexQuery orElse
+    entityFactory.nodeByIndexHint
 
-  private def createStartPipe(lastPipe: Pipe, item: StartItem): Pipe = item match {
-    case NodeByIndex(varName, idxName, key, value) =>
-      new NodeStartPipe(lastPipe, varName, IndexQueryBuilder.getNodeGetter(item, graph))
+  private val mapRelationshipStartCreator: PartialFunction[StartItem, EntityProducer[Relationship]] =
+    entityFactory.relationshipByIndex orElse
+    entityFactory.relationshipByIndexQuery
 
-    case RelationshipByIndex(varName, idxName, key, value) =>
-      new RelationshipStartPipe(lastPipe, varName, IndexQueryBuilder.getRelationshipGetter(item, graph))
+  private val mapQueryToken: PartialFunction[QueryToken[StartItem], (Pipe => Pipe)] = {
+    case Unsolved(item) if mapNodeStartCreator.isDefinedAt(item) =>
+     (p: Pipe) => new NodeStartPipe(p, item.identifierName, mapNodeStartCreator.apply(item))
 
-    case NodeByIndexQuery(varName, idxName, query) =>
-      new NodeStartPipe(lastPipe, varName, IndexQueryBuilder.getNodeGetter(item, graph))
-
-    case RelationshipByIndexQuery(varName, idxName, query) =>
-      new RelationshipStartPipe(lastPipe, varName, IndexQueryBuilder.getRelationshipGetter(item, graph))
+    case Unsolved(item) if mapRelationshipStartCreator.isDefinedAt(item) =>
+     (p: Pipe) => new RelationshipStartPipe(p, item.identifierName, mapRelationshipStartCreator.apply(item))
   }
 
   def priority: Int = PlanBuilder.IndexQuery
 }
 
-object IndexQueryBuilder {
-  def getNodeGetter(startItem: StartItem, graph: GraphDatabaseService): EntityProducer[Node] =
-    startItem match {
 
-      case NodeByIndex(varName, idxName, key, value) =>
-        checkNodeIndex(idxName, graph)
-        (m, state) => {
-          val keyVal = key(m)(state).toString
-          val valueVal = value(m)(state)
-          state.query.nodeOps.indexGet(idxName,keyVal, valueVal)
-        }
-
-      case NodeByIndexQuery(varName, idxName, query) =>
-        checkNodeIndex(idxName, graph)
-        (m, state) => {
-          val queryText = query(m)(state)
-          state.query.nodeOps.indexQuery(idxName, queryText)
-        }
-
-      case NodeById(varName, ids) =>
-        (m, state) =>
-          GetGraphElements.getElements[Node](ids(m)(state), varName, state.query.nodeOps.getById)
-    }
-
-  def getRelationshipGetter(startItem: StartItem, graph: GraphDatabaseService): EntityProducer[Relationship] =
-    startItem match {
-
-      case RelationshipByIndex(varName, idxName, key, value) =>
-        checkRelIndex(idxName, graph)
-        (m, state) => {
-          val keyVal = key(m)(state).toString
-          val valueVal = value(m)(state)
-          state.query.relationshipOps.indexGet(idxName, keyVal, valueVal)
-        }
-
-      case RelationshipByIndexQuery(varName, idxName, query) =>
-        checkRelIndex(idxName, graph)
-        (m, state) => {
-          val queryText = query(m)(state)
-          state.query.relationshipOps.indexQuery(idxName, queryText)
-        }
-    }
-
-  private def checkNodeIndex(idxName: String, graph: GraphDatabaseService) {
-    if (!graph.index.existsForNodes(idxName)) throw new MissingIndexException(idxName)
-  }
-
-  private def checkRelIndex(idxName: String, graph: GraphDatabaseService) {
-    if (!graph.index.existsForRelationships(idxName)) throw new MissingIndexException(idxName)
-  }
-}

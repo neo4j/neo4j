@@ -57,6 +57,9 @@ case class NodeByIndex(varName: String, idxName: String, key: Expression, expres
 case class NodeByIndexQuery(varName: String, idxName: String, query: Expression)
   extends StartItem(varName) with ReadOnlyStartItem
 
+case class IndexHint(identifier: String, label: String, property: String)
+  extends StartItem(identifier) with ReadOnlyStartItem
+
 case class NodeById(varName: String, expression: Expression)
   extends StartItem(varName) with ReadOnlyStartItem
 

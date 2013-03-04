@@ -35,9 +35,11 @@ object PartiallySolvedQuery {
   def apply(q: Query): PartiallySolvedQuery = {
     val patterns = q.matching.map(Unsolved(_))
 
+    val items: Seq[StartItem] = q.start ++ q.hints
+
     new PartiallySolvedQuery(
       returns = q.returns.returnItems.map(Unsolved(_)),
-      start = q.start.map(Unsolved(_)),
+      start = items.map(Unsolved(_)),
       updates = q.updatedCommands.map(Unsolved(_)),
       patterns = patterns,
       where = q.where.atoms.map(Unsolved(_)),
@@ -174,7 +176,6 @@ case class PartiallySolvedQuery(returns: Seq[QueryToken[ReturnColumn]],
 
     returnExpressions ++ wherePredicates ++ aggregateExpressions ++ sortExpressions ++ tailNodes ++ startItems ++ patternsX
   }
-
 }
 
 case class  ExecutionPlanInProgress(query: PartiallySolvedQuery, pipe: Pipe, isUpdating: Boolean=false)

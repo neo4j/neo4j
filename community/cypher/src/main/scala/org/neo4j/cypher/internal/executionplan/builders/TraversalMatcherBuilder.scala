@@ -86,9 +86,17 @@ class TraversalMatcherBuilder(graph: GraphDatabaseService) extends PlanBuilder {
 
   def identifier2nodeFn(graph: GraphDatabaseService, identifier: String, unsolvedItems: Seq[QueryToken[StartItem]]):
   (QueryToken[StartItem], EntityProducer[Node]) = {
-    val token = unsolvedItems.filter { (item) => identifier == item.token.identifierName }.head
-    (token, IndexQueryBuilder.getNodeGetter(token.token, graph))
+    val startItemQueryToken = unsolvedItems.filter { (item) => identifier == item.token.identifierName }.head
+    (startItemQueryToken, mapNodeStartCreator(startItemQueryToken.token))
   }
+
+  private val entityFactory = new EntityProducerFactory(graph)
+
+  private val mapNodeStartCreator: PartialFunction[StartItem, EntityProducer[Node]] =
+    entityFactory.nodeById orElse
+    entityFactory.nodeByIndex orElse
+    entityFactory.nodeByIndexQuery orElse
+    entityFactory.nodeByIndexHint
 
   def canWorkWith(plan: ExecutionPlanInProgress) = {
     val steps = extractExpanderStepsFromQuery(plan)

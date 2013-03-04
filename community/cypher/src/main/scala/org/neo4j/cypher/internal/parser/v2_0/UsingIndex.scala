@@ -19,20 +19,13 @@
  */
 package org.neo4j.cypher.internal.parser.v2_0
 
-import org.neo4j.cypher.internal.commands.values.LabelName
-import org.neo4j.cypher.internal.commands.{DropIndex, CreateIndex}
+import org.neo4j.cypher.internal.commands.IndexHint
 
 
-trait Index extends Base with Labels {
-  def createIndex = CREATE ~> indexOps ^^ {
-    case (label, properties) => CreateIndex(label, properties)
-  }
+trait UsingIndex extends Expressions {
+  def indexHints: Parser[Seq[IndexHint]] = rep(indexHint)
 
-  def dropIndex = DROP ~> indexOps ^^ {
-    case (label, properties) => DropIndex(label, properties)
-  }
-
-  private def indexOps: Parser[(String, List[String])] = INDEX ~> ON ~> labelName ~ parens(identity) ^^ {
-    case LabelName(labelName) ~ property => (labelName, List(property))
+  def indexHint: Parser[IndexHint] = USING ~> INDEX ~> identity ~ ":" ~ escapableString ~ parens(escapableString) ^^ {
+    case id ~ ":" ~ label ~ prop => IndexHint(id, label, prop)
   }
 }

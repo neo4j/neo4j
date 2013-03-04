@@ -19,13 +19,17 @@
  */
 package org.neo4j.cypher.internal.executionplan
 
+import org.neo4j.cypher.internal.spi.PlanContext
+
 /*
 PlanBuilders take a unsolved query, and solves another piece of it.
 */
 trait PlanBuilder {
   def apply(plan: ExecutionPlanInProgress): ExecutionPlanInProgress
+  def apply(plan: ExecutionPlanInProgress, ctx: PlanContext): ExecutionPlanInProgress = apply(plan)
 
   def canWorkWith(plan: ExecutionPlanInProgress): Boolean
+  def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext): Boolean = canWorkWith(plan)
 
   def missingDependencies(plan: ExecutionPlanInProgress):Seq[String] = Seq()
 

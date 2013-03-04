@@ -17,22 +17,28 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.parser.v2_0
+package org.neo4j.cypher.internal.parser
 
-import org.neo4j.cypher.internal.commands.values.LabelName
-import org.neo4j.cypher.internal.commands.{DropIndex, CreateIndex}
+import v2_0.{AbstractPattern, UsingIndex}
+import org.junit.Test
+import org.neo4j.cypher.internal.commands.IndexHint
 
 
-trait Index extends Base with Labels {
-  def createIndex = CREATE ~> indexOps ^^ {
-    case (label, properties) => CreateIndex(label, properties)
+class UsingIndexTest extends UsingIndex with ParserTest {
+  @Test def simple_cases() {
+    implicit val parserToTest = indexHints
+
+    parsing("USING INDEX n:User(name)") shouldGive
+      Seq(IndexHint("n", "User", "name"))
+
+    parsing("USING INDEX ` 1`:` 2`(` 3`)") shouldGive
+      Seq(IndexHint(" 1", " 2", " 3"))
+
+    assertFails("USING INDEX n.user(name)")
+    assertFails("USING INDEX n.user(name, age)")
   }
 
-  def dropIndex = DROP ~> indexOps ^^ {
-    case (label, properties) => DropIndex(label, properties)
-  }
+  def createProperty(entity: String, propName: String) = ???
 
-  private def indexOps: Parser[(String, List[String])] = INDEX ~> ON ~> labelName ~ parens(identity) ^^ {
-    case LabelName(labelName) ~ property => (labelName, List(property))
-  }
+  def matchTranslator(abstractPattern: AbstractPattern) = ???
 }

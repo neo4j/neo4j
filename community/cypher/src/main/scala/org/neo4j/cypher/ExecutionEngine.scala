@@ -21,6 +21,7 @@ package org.neo4j.cypher
 
 import internal.commands._
 import internal.executionplan.ExecutionPlanBuilder
+import internal.executionplan.verifiers.{IndexHintVerifier, Verifier}
 import internal.LRUCache
 import internal.spi.gdsimpl.TransactionBoundQueryContext
 import scala.collection.JavaConverters._
@@ -79,8 +80,14 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
 
   @throws(classOf[SyntaxException])
   def prepare(query: String): ExecutionPlan =  {
-    val parsedQuery = parser.parse(query)
+    val parsedQuery: AbstractQuery = parser.parse(query)
+    verify(parsedQuery)
     executionPlanCache.getOrElseUpdate(query, planBuilder.build(parsedQuery))
+  }
+
+  def verify(query: AbstractQuery) {
+    for (verifier <- verifiers)
+      verifier.verify(query)
   }
 
   def isPrepared(query : String) : Boolean =
@@ -119,6 +126,8 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
   } else {
     100
   }
+
+  val verifiers:Seq[Verifier] = Seq(IndexHintVerifier)
 }
 
 

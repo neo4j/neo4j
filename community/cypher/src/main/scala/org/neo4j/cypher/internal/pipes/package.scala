@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal
 
+import commands.StartItem
 import org.neo4j.graphdb.PropertyContainer
 
 package object pipes {

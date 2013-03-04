@@ -24,8 +24,8 @@ import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.test.ImpermanentGraphDatabase;
 
-import static junit.framework.Assert.assertEquals;
-import static junit.framework.Assert.assertFalse;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.neo4j.helpers.collection.MapUtil.map;
 
 public class CypherUpdateMapTest

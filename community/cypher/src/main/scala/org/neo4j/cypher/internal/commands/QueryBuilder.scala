@@ -31,6 +31,7 @@ class QueryBuilder(startItems: Seq[StartItem]) {
   var skip: Option[Expression] = None
   var limit: Option[Expression] = None
   var namedPaths: Seq[NamedPath] = Seq()
+  var indexHints: Seq[IndexHint] = Seq()
   var tail: Option[Query] = None
   var columns: Seq[ReturnColumn] => List[String] = (returnItems) => returnItems.map(_.name).toList
 
@@ -40,6 +41,10 @@ class QueryBuilder(startItems: Seq[StartItem]) {
 
   def updates(cmds: UpdateAction*): QueryBuilder = store {
     updates = cmds
+  }
+
+  def usingIndex(indexHints:IndexHint*) = store {
+    this.indexHints = indexHints.toSeq
   }
 
   def where(predicate: Predicate): QueryBuilder = store {
@@ -93,5 +98,5 @@ class QueryBuilder(startItems: Seq[StartItem]) {
   }
 
   def returns(returnItems: ReturnColumn*): Query =
-    Query(Return(columns(returnItems), returnItems: _*), startItems, updates, matching, where, aggregation, orderBy, slice, namedPaths, tail)
+    Query(Return(columns(returnItems), returnItems: _*), startItems, updates, matching, indexHints, where, aggregation, orderBy, slice, namedPaths, tail)
 }

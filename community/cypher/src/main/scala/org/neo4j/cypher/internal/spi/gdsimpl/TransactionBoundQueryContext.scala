@@ -30,6 +30,7 @@ import org.neo4j.tooling.GlobalGraphOperations
 import org.neo4j.kernel.api.SchemaRuleNotFoundException
 
 class TransactionBoundQueryContext(graph: GraphDatabaseAPI) extends QueryContext {
+
   val tx: Transaction = graph.beginTx()
   private val ctx: StatementContext = graph
     .getDependencyResolver
@@ -69,7 +70,7 @@ class TransactionBoundQueryContext(graph: GraphDatabaseAPI) extends QueryContext
 
   def getRelationshipsFor(node: Node, dir: Direction, types: Seq[String]) = types match {
     case Seq() => node.getRelationships(dir).asScala
-    case _     => node.getRelationships(dir, types.map(withName): _*).asScala
+    case _ => node.getRelationships(dir, types.map(withName): _*).asScala
   }
 
 

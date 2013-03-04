@@ -37,10 +37,9 @@ trait ParserTest extends Base with Assertions {
     }
   }
 
-  def parsing[T](s: String)(implicit p: Parser[T]): ResultCheck[T] = parsePhrase(p, s) match {
-    case Success(t, _)     => new ResultCheck[T](Seq(t), s)
-    case NoSuccess(msg, _) => throw new IllegalArgumentException(s"Could not parse '$s': $msg")
-  }
+  def parsing[T](s: String)(implicit p: Parser[T]): ResultCheck[T] = convertResult(parsePhrase(p, s), s)
+
+  def partiallyParsing[T](s: String)(implicit p: Parser[T]): ResultCheck[T] = convertResult(parse(p, s), s)
 
   def assertFails[T](s: String)(implicit p: Parser[T]) {
     parsePhrase(p, s) match {
@@ -55,5 +54,10 @@ trait ParserTest extends Base with Assertions {
     //we need to wrap the string in a reader so our parser can digest it
     val input = new CharSequenceReader(text)
     phraseParser(input)
+  }
+
+  private def convertResult[T](r: ParseResult[T], s: String) = r match {
+    case Success(t, _)     => new ResultCheck[T](Seq(t), s)
+    case NoSuccess(msg, _) => fail(s"Could not parse '$s': $msg")
   }
 }

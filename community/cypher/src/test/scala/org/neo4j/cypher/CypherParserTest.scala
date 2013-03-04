@@ -2022,17 +2022,12 @@ create a-[r:REL]->b
   }
 
   @Test def foreach_with_literal_collection() {
-
-    val q2 = Query.updates(
-      ForeachAction(Collection(Literal(1.0), Literal(2.0), Literal(3.0)), "x", Seq(CreateNode("a", Map("number" -> Identifier("x")), Seq.empty, false)))
-    ).returns()
-
     testFrom2_0(
       "create root foreach(x in [1,2,3] : create (a {number:x}))",
       Query.
         start(CreateNodeStartItem(CreateNode("root", Map.empty, Seq.empty))).
-        tail(q2).
-        returns(AllIdentifiers())
+        updates(ForeachAction(Collection(Literal(1.0), Literal(2.0), Literal(3.0)), "x", Seq(CreateNode("a", Map("number" -> Identifier("x")), Seq.empty, false)))).
+        returns()
     )
   }
 
@@ -2179,21 +2174,6 @@ create a-[r:REL]->b
     tests(string, query,
     "  UNNAMED1"->testPre2_0,
     "  UNNAMED48"->testFrom2_0)
-  }
-
-  @Test(expected = classOf[SyntaxException]) def assign_to_path_inside_foreach_should_work() {
-    testAll(
-"""start n=node(0)
-foreach(x in [1,2,3] :
-  create p = ({foo:x})-[:X]->()
-  foreach( i in p :
-    set i.touched = true))""",
-      Query.
-      start(CreateRelationshipStartItem(CreateRelationship("r",
-        RelationshipEndpoint(Identifier("a"), Map(), Seq.empty, true),
-        RelationshipEndpoint(Identifier("  UNNAMED1"), Map(), Seq.empty, true), "KNOWS", Map()))).
-      namedPaths(NamedPath("p", RelatedTo("a", "  UNNAMED1", "r", "KNOWS", Direction.OUTGOING, optional = false))).
-      returns(ReturnItem(Identifier("p"), "p")))
   }
 
   @Test def use_predicate_as_expression() {
@@ -2565,6 +2545,14 @@ foreach(x in [1,2,3] :
   @Test def remove_index_on_single_property() {
     testFrom2_0("drop index on :MyLabel(prop1)",
       DropIndex("MyLabel", Seq("prop1")))
+  }
+
+  @Test def simple_query_with_index_hint() {
+    testFrom_2_0("match n:Person-->() using index n:Person(name) where n.name = 'Andres' return n",
+      Query.matches(RelatedTo("n", "  UNNAMED18", "  UNNAMED15", Seq(), Direction.OUTGOING, optional = false)).
+        where(And(Equals(Property(Identifier("n"), "name"), Literal("Andres")), HasLabel(Identifier("n"), Seq(LabelName("Person"))))).
+        usingIndex(IndexHint("n", "Person", "name")).
+        returns(ReturnItem(Identifier("n"), "n", renamed = false)))
   }
 
   private def run(f: () => Unit) =

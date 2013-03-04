@@ -21,17 +21,18 @@ package org.neo4j.cypher
 
 import org.scalatest.junit.JUnitSuite
 import org.junit.Assert._
-import org.junit.{Test}
+import org.junit.Test
 
 class SyntaxExceptionTest extends JUnitSuite {
   def expectError(query: String, expectedError: String) {
     val parser = new CypherParser()
     try {
-      parser.parse(query)
+      val result = parser.parse(query)
       fail("Should have produced the error: " + expectedError)
     } catch {
       case x: SyntaxException => {
-        assertTrue(x.getMessage, x.getMessage.startsWith(expectedError))
+        val msg = x.getMessage
+        assertTrue(msg, msg.startsWith(expectedError))
       }
     }
   }
@@ -69,13 +70,13 @@ class SyntaxExceptionTest extends JUnitSuite {
   @Test def shouldRaiseErrorWhenMissingReturn() {
     expectError(
       "start s = node(0)",
-      "Non-mutating queries must return data")
+      "expected return clause")
   }
 
   @Test def shouldWarnAboutMissingStart() {
     expectError(
       "where s.name = Name and s.age = 10 return s",
-      "expected START or CREATE")
+      "invalid start of query")
   }
 
   @Test def shouldComplainAboutWholeNumbers() {
@@ -170,7 +171,7 @@ class SyntaxExceptionTest extends JUnitSuite {
       "unknown function")
   }
 
-  @Test def handlesMultilineQueries() {
+  @Test def handlesMultiLineQueries() {
     expectError("""start
     a=node(0),
     b=node(0),

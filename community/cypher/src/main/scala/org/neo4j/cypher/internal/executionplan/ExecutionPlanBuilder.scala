@@ -23,15 +23,15 @@ import builders._
 import org.neo4j.cypher.internal.pipes._
 import org.neo4j.cypher._
 import internal.profiler.Profiler
-import internal.spi.QueryContext
+import internal.spi.gdsimpl.TransactionBoundPlanContext
+import internal.spi.{PlanContext, QueryContext}
 import internal.{ExecutionContext, ClosingIterator}
 import internal.commands._
 import internal.mutation.{CreateNode, CreateRelationship}
 import internal.symbols.{NodeType, RelationshipType, SymbolTable}
-import org.neo4j.graphdb.{Transaction, GraphDatabaseService}
+import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.cypher.ExecutionResult
 import javacompat.{PlanDescription => JPlanDescription}
-import org.neo4j.kernel.api.{LabelNotFoundKernelException, StatementContext}
 import org.neo4j.kernel.{GraphDatabaseAPI, ThreadToStatementContextBridge}
 import util.Try
 import values.ResolvedLabel
@@ -55,19 +55,31 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService) extends PatternGraphBuil
     }
   }
 
-  def buildPipes(in: AbstractQuery): (Pipe, Boolean) = in match {
-    case q: Query          => buildQuery(q)
-    case q: IndexOperation => buildIndexQuery(q)
-    case q: Union          => buildUnionQuery(q)
+  def buildPipes(in: AbstractQuery): (Pipe, Boolean) = {
+    val planContext = new TransactionBoundPlanContext(graph.asInstanceOf[GraphDatabaseAPI])
+    try {
+      val result: (Pipe, Boolean) = in match {
+        case q: Query => buildQuery(q, planContext)
+        case q: IndexOperation => buildIndexQuery(q)
+        case q: Union => buildUnionQuery(q, planContext)
+      }
+      planContext.close(success = true)
+      result
+    } catch {
+      case e:Throwable =>
+        planContext.close(success = false)
+        throw e
+    }
+
   }
 
   val unionBuilder = new UnionBuilder(this)
 
-  def buildUnionQuery(union: Union): (Pipe, Boolean) = unionBuilder.buildUnionQuery(union)
+  def buildUnionQuery(union: Union, context:PlanContext): (Pipe, Boolean) = unionBuilder.buildUnionQuery(union, context)
 
   def buildIndexQuery(op: IndexOperation): (Pipe, Boolean) = (new IndexOperationPipe(op), true)
 
-  def buildQuery(inputQuery: Query): (Pipe, Boolean) = {
+  def buildQuery(inputQuery: Query, context: PlanContext): (Pipe, Boolean) = {
     val initialPSQ = PartiallySolvedQuery(inputQuery).rewrite(LabelResolution(resolveLabel))
 
     var continue = true
@@ -75,11 +87,11 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService) extends PatternGraphBuil
     checkFirstQueryPattern(planInProgress)
 
     while (continue) {
-      while (builders.exists(_.canWorkWith(planInProgress))) {
-        val matchingBuilders = builders.filter(_.canWorkWith(planInProgress))
+      while (builders.exists(_.canWorkWith(planInProgress, context))) {
+        val matchingBuilders = builders.filter(_.canWorkWith(planInProgress, context))
 
         val builder = matchingBuilders.sortBy(_.priority).head
-        val newPlan = builder(planInProgress)
+        val newPlan = builder(planInProgress, context)
 
         if (planInProgress == newPlan)
           throw new InternalException("Something went wrong trying to build your query. The offending builder was: "
@@ -222,9 +234,11 @@ The Neo4j Team""")
     throw new SyntaxException(errorMessage)
   }
 
+  lazy val entityFactory = new EntityProducerFactory(graph)
+
   lazy val builders = Seq(
     new NodeByIdBuilder(graph),
-    new IndexQueryBuilder(graph),
+    new IndexQueryBuilder(entityFactory),
     new GraphGlobalStartBuilder(graph),
     new FilterBuilder,
     new NamedPathBuilder,

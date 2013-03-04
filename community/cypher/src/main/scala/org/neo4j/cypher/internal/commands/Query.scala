@@ -24,8 +24,22 @@ import expressions.{Expression, AggregationExpression}
 
 object Query {
   def start(startItems: StartItem*) = new QueryBuilder(startItems)
+  def matches(patterns:Pattern*) = new QueryBuilder(Seq.empty).matches(patterns:_*)
   def updates(cmds:UpdateAction*) = new QueryBuilder(Seq()).updates(cmds:_*)
   def unique(cmds:UniqueLink*) = new QueryBuilder(Seq(CreateUniqueStartItem(CreateUniqueAction(cmds:_*))))
+
+  def empty = Query(
+    start = Seq.empty,
+    updatedCommands = Seq.empty,
+    matching = Seq.empty,
+    hints = Seq.empty,
+    sort = Seq.empty,
+    namedPaths = Seq.empty,
+    where = True(),
+    slice = None,
+    aggregation = None,
+    returns = Return(columns = List.empty)
+  )
 }
 
 trait AbstractQuery {
@@ -38,6 +52,7 @@ case class Query(returns: Return,
                  start: Seq[StartItem],
                  updatedCommands:Seq[UpdateAction],
                  matching: Seq[Pattern],
+                 hints:Seq[IndexHint],
                  where: Predicate,
                  aggregation: Option[Seq[AggregationExpression]],
                  sort: Seq[SortItem],
@@ -47,22 +62,24 @@ case class Query(returns: Return,
                  queryString: QueryString = QueryString.empty) extends AbstractQuery {
 
   override def toString: String =
-"""
+    """
 start  : %s
 updates: %s
 match  : %s
 paths  : %s
+hints  : %s
 where  : %s
 aggreg : %s
 return : %s
 order  : %s
 slice  : %s
 next   : %s
-""".format(
+    """.format(
   start.mkString(","),
   updatedCommands.mkString(","),
   matching,
   namedPaths,
+  hints,
   where,
   aggregation,
   returns.returnItems.mkString(","),

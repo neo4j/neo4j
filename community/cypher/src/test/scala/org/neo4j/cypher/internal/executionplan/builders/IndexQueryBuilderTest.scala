@@ -39,29 +39,28 @@ package org.neo4j.cypher.internal.executionplan.builders
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import org.scalatest.Assertions
 import org.junit.Assert._
-import org.neo4j.cypher.internal.pipes.NullPipe
-import org.neo4j.cypher.internal.executionplan.{PartiallySolvedQuery}
+import org.neo4j.cypher.internal.executionplan.PartiallySolvedQuery
 import org.junit.Test
 import org.neo4j.cypher.internal.commands._
-import expressions.Literal
+import expressions.{Identifier, Property, Literal}
 import org.neo4j.graphdb.event.{KernelEventHandler, TransactionEventHandler}
 import java.lang.Iterable
 import org.neo4j.graphdb._
 import index._
 import java.util.Map
+import org.neo4j.cypher.internal.pipes.NodeStartPipe
 
 class IndexQueryBuilderTest extends BuilderTest {
 
-  val builder = new IndexQueryBuilder(new Fake_Database_That_Has_All_Indexes)
+  val builder = new IndexQueryBuilder(new EntityProducerFactory(new Fake_Database_That_Has_All_Indexes))
 
   @Test
   def says_yes_to_node_by_id_queries() {
     val q = PartiallySolvedQuery().
       copy(start = Seq(Unsolved(NodeByIndexQuery("s", "idx", Literal("foo")))))
 
-    assertTrue("Should be able to build on this", builder.canWorkWith(plan(q)))
+    assertAccepts(q)
   }
 
   @Test
@@ -71,7 +70,7 @@ class IndexQueryBuilderTest extends BuilderTest {
         Unsolved(NodeByIndexQuery("s", "idx", Literal("foo"))),
         Unsolved(NodeByIndexQuery("x", "idx", Literal("foo")))))
 
-    val remaining = builder(plan(q)).query
+    val remaining = assertAccepts(q).query
 
     assertEquals("No more than 1 startitem should be solved", 1, remaining.start.filter(_.solved).length)
     assertEquals("Stuff should remain", 1, remaining.start.filterNot(_.solved).length)
@@ -83,7 +82,7 @@ class IndexQueryBuilderTest extends BuilderTest {
       copy(start = Seq(Unsolved(NodeByIndexQuery("s", "idx", Literal("foo"))), Unsolved(RelationshipById("x", 1))))
 
 
-    val result = builder(plan(q)).query
+    val result = assertAccepts(q).query
 
     val expected = Set(Solved(NodeByIndexQuery("s", "idx", Literal("foo"))), Unsolved(RelationshipById("x", 1)))
 
@@ -95,7 +94,7 @@ class IndexQueryBuilderTest extends BuilderTest {
     val q = PartiallySolvedQuery().
       copy(start = Seq(Solved(NodeByIndexQuery("s", "idx", Literal("foo")))))
 
-    assertFalse("Should not build on this", builder.canWorkWith(plan(q)))
+    assertRejects(q)
   }
 
   @Test
@@ -103,10 +102,58 @@ class IndexQueryBuilderTest extends BuilderTest {
     val q = PartiallySolvedQuery().
       copy(start = Seq(Unsolved(NodeByIndexQuery("s", "idx", Literal("foo")))))
 
-    val remainingQ = builder(plan(q)).query
+    val remainingQ = assertAccepts(q).query
 
     assert(remainingQ.start === Seq(Solved(NodeByIndexQuery("s", "idx", Literal("foo")))))
   }
+
+  @Test
+  def does_not_offer_to_solve_empty_queries() {
+    //GIVEN WHEN THEN
+    assertRejects(PartiallySolvedQuery())
+  }
+
+
+  @Test
+  def offers_to_solve_query_with_index_hints() {
+    //GIVEN
+    val q = PartiallySolvedQuery().copy(
+      where = Seq(Unsolved(Equals(Property(Identifier("n"), "name"), Literal("Stefan")))),
+      start = Seq(Unsolved(IndexHint("n", "Person", "name"))))
+
+    //THEN
+    val producedPlan = assertAccepts(q)
+
+    assert(producedPlan.pipe.isInstanceOf[NodeStartPipe])
+  }
+
+  /*
+
+
+
+  @Test
+  def throws_when_finding_hints_without_matching_predicate() {
+    //GIVEN
+    val q = PartiallySolvedQuery().copy(
+      hints = Seq(Unsolved(IndexHint("n", "Person", "name"))))
+
+    //THEN
+    intercept[IndexHintException](assertAccepts(q))
+  }
+
+  @Test
+  def throws_when_the_predicate_is_not_usable_for_index_seek() {
+    //GIVEN
+    val q = PartiallySolvedQuery().copy(
+      where = Seq(Unsolved(Or(
+        Equals(Property(Identifier("n"), "name"), Literal("Stefan")),
+        Equals(Property(Identifier("n"), "age"), Literal(35))))),
+      hints = Seq(Unsolved(IndexHint("n", "Person", "name"))))
+
+    //THEN
+    intercept[IndexHintException](assertAccepts(q))
+  }
+   */
 }
 
 class Fake_Database_That_Has_All_Indexes extends GraphDatabaseService with IndexManager {

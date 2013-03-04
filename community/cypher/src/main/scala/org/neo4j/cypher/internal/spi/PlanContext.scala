@@ -17,22 +17,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.parser.v2_0
-
-import org.neo4j.cypher.internal.commands.values.LabelName
-import org.neo4j.cypher.internal.commands.{DropIndex, CreateIndex}
+package org.neo4j.cypher.internal.spi
 
 
-trait Index extends Base with Labels {
-  def createIndex = CREATE ~> indexOps ^^ {
-    case (label, properties) => CreateIndex(label, properties)
-  }
+/**
+ * PlanContext is an internal access layer to the graph that is solely used during plan building
+ *
+ * As such it is similar to QueryContext.  The reason for separating both interfaces is that we
+ * want to control what operations can be executed at runtime.  For example, we do not give access
+ * to index rule lookup in QueryContext as that should happen at query compile time.
+ */
+trait PlanContext {
+  def getIndexRuleId(labelName: String, propertyKey: String): Long
 
-  def dropIndex = DROP ~> indexOps ^^ {
-    case (label, properties) => DropIndex(label, properties)
-  }
+  def checkNodeIndex(idxName: String)
 
-  private def indexOps: Parser[(String, List[String])] = INDEX ~> ON ~> labelName ~ parens(identity) ^^ {
-    case LabelName(labelName) ~ property => (labelName, List(property))
-  }
+  def checkRelIndex(idxName: String)
+
+  def close(success: Boolean)
 }
+

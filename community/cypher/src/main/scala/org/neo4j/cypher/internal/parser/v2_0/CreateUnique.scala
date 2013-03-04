@@ -30,7 +30,7 @@ import collection.Map
 trait CreateUnique extends Base with ParserPattern {
   case class PathAndRelateLink(path:Option[NamedPath], links:Seq[UniqueLink])
 
-  def relate: Parser[(Seq[StartItem], Seq[NamedPath])] = CREATE ~> UNIQUE ~> usePattern(createUniqueTranslate) ^^
+  def createUnique: Parser[(Seq[StartItem], Seq[NamedPath])] = CREATE ~> UNIQUE ~> usePattern(createUniqueTranslate) ^^
     (patterns => {
       val (links, path) = reduce(patterns.map {
         case PathAndRelateLink(p, l) => (l, p.toSeq)
