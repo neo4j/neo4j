@@ -5,13 +5,13 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent</artifactId>
-    <version>1.9-SNAPSHOT</version>
+    <version>1.9.M05</version>
     <relativePath>../..</relativePath>
   </parent>
 
   <groupId>org.neo4j</groupId>
   <artifactId>neo4j-management</artifactId>
-  <version>1.9-SNAPSHOT</version>
+  <version>1.9.M05</version>
   <name>Neo4j - Graph DB Monitoring and Management tools</name>
   <description>Management support using JMX.</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
