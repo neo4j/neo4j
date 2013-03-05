@@ -48,7 +48,7 @@ public class NodeManagerTest
         // GIVEN
         Node node = createNodeWith( "wut", "foo" );
 
-        NodeManager nodeManager = db.getDependencyResolver().resolveDependency( NodeManager.class );
+        NodeManager nodeManager = db.getNodeManager();
         NodeLoggingTracker tracker = new NodeLoggingTracker();
         nodeManager.addNodePropertyTracker( tracker );
 
@@ -65,7 +65,7 @@ public class NodeManagerTest
         // GIVEN node with one property
         Node node = createNodeWith( "wut", "foo" );
 
-        NodeManager nodeManager = db.getDependencyResolver().resolveDependency( NodeManager.class );
+        NodeManager nodeManager = db.getNodeManager();
         NodeLoggingTracker tracker = new NodeLoggingTracker();
         nodeManager.addNodePropertyTracker( tracker );
 
@@ -86,7 +86,7 @@ public class NodeManagerTest
         // GIVEN relationship with one property
         Relationship relationship = createRelationshipWith( "wut", "foo" );
 
-        NodeManager nodeManager = db.getDependencyResolver().resolveDependency( NodeManager.class );
+        NodeManager nodeManager = db.getNodeManager();
         RelationshipLoggingTracker tracker = new RelationshipLoggingTracker();
         nodeManager.addRelationshipPropertyTracker( tracker );
 
