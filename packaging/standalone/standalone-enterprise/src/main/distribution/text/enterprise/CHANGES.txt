@@ -29,7 +29,7 @@ Enterprise Server:
 o HA info REST endpoints now are called /db/manage/server/ha/{ismaster,isslave}, with getMaster no longer existing.
 
 Kernel:
-o Concurrent modifications to relationship chains now do now lead to RecordNotInUse exceptions or
+o Concurrent modifications to relationship chains now do not lead to RecordNotInUse exceptions or
   cache poisoning
 o Proper tx management will now make negative transaction counts impossible
 o IndexProvider is now deprecated, replaced by KernelExtensionFactory
