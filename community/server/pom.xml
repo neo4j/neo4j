@@ -67,6 +67,8 @@
         
         <!-- Don't write new code using this, use neo-server.external instead -->
         <webdriver.override.neo-server.baseuri />
+
+        <jetty.version>9.0.0.RC2</jetty.version>
     </properties>
 
     <scm>
@@ -137,9 +139,15 @@
         </dependency>
 
         <dependency>
-            <groupId>org.mortbay.jetty</groupId>
-            <artifactId>jetty</artifactId>
-            <version>6.1.25</version>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-server</artifactId>
+            <version>${jetty.version}</version>
+        </dependency>
+        
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-webapp</artifactId>
+            <version>${jetty.version}</version>
         </dependency>
 
         <dependency>

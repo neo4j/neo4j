@@ -29,8 +29,10 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+
 import org.apache.commons.configuration.Configuration;
-import org.mortbay.log.Log;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.rest.repr.DiscoveryRepresentation;
 import org.neo4j.server.rest.repr.OutputFormat;
@@ -43,6 +45,7 @@ import org.neo4j.server.rest.repr.OutputFormat;
 public class DiscoveryService
 {
 
+    private static final Logger LOGGER = Log.getLogger(DiscoveryService.class);
     private final Configuration configuration;
     private final OutputFormat outputFormat;
 
@@ -76,7 +79,7 @@ public class DiscoveryService
         }
         catch ( URISyntaxException e )
         {
-            Log.warn( e.getMessage() );
+            LOGGER.warn( e.getMessage() );
             return Response.serverError()
                     .build();
         }

@@ -33,14 +33,14 @@ import org.neo4j.server.helpers.ServerHelper;
 import org.neo4j.server.logging.InMemoryAppender;
 import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RestRequest;
-import org.neo4j.server.web.Jetty6WebServer;
+import org.neo4j.server.web.Jetty9WebServer;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 
 import com.sun.jersey.api.client.Client;
 
 public class NeoServerStartupLoggingFunctionalTest extends ExclusiveServerTestBase
 {
-    private static InMemoryAppender appender = new InMemoryAppender( Jetty6WebServer.log );
+    private static InMemoryAppender appender = new InMemoryAppender( Jetty9WebServer.log );
 
     private static NeoServer server;
 

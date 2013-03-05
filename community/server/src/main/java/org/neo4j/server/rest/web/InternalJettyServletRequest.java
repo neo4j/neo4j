@@ -29,12 +29,14 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
 
+import javax.servlet.DispatcherType;
 import javax.servlet.ServletInputStream;
 import javax.servlet.http.Cookie;
 import javax.ws.rs.core.MediaType;
 
-import org.mortbay.jetty.HttpURI;
-import org.mortbay.jetty.Request;
+import org.eclipse.jetty.http.HttpURI;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 
 public class InternalJettyServletRequest extends Request
 {
@@ -74,21 +76,25 @@ public class InternalJettyServletRequest extends Request
     private final BufferedReader inputReader;
     private String contentType;
     private final String method;
+    private final InternalJettyServletResponse response;
 
-    public InternalJettyServletRequest( String method, String uri, String body ) throws UnsupportedEncodingException
+    public InternalJettyServletRequest( String method, String uri, String body, InternalJettyServletResponse res ) throws UnsupportedEncodingException
     {
-        this( method, new HttpURI( uri ), body, new Cookie[] {}, MediaType.APPLICATION_JSON, "UTF-8" );
+        this( method, new HttpURI( uri ), body, new Cookie[] {}, MediaType.APPLICATION_JSON, "UTF-8", res );
     }
 
-    public InternalJettyServletRequest( String method, HttpURI uri, String body, Cookie[] cookies, String contentType, String encoding )
+    public InternalJettyServletRequest( String method, HttpURI uri, String body, Cookie[] cookies, String contentType, String encoding, InternalJettyServletResponse res )
             throws UnsupportedEncodingException
     {
+        super( null, null );
+
         this.input = new Input( body );
         this.inputReader = new BufferedReader( new StringReader( body ) );
 
         this.contentType = contentType;
         this.cookies = cookies;
         this.method = method;
+        this.response = res;
 
         this.headers = new HashMap<String, Object>();
 
@@ -96,6 +102,7 @@ public class InternalJettyServletRequest extends Request
         setCharacterEncoding( encoding );
         setRequestURI( null );
         setQueryString( null );
+        setDispatcherType( DispatcherType.REQUEST );
     }
 
     @Override
@@ -233,25 +240,25 @@ public class InternalJettyServletRequest extends Request
     }
 
     @Override
-    public Enumeration<?> getHeaders( String name )
+    public Enumeration<String> getHeaders( String name )
     {
         if ( headers.containsKey( name ) )
         {
             Object value = headers.get( name );
             if ( value instanceof Collection )
             {
-                return Collections.enumeration( (Collection<?>) value );
+                return Collections.enumeration( (Collection<String>) value );
             }
             else
             {
-                return Collections.enumeration( Collections.singleton( value ) );
+                return Collections.enumeration( Collections.singleton( (String) value ) );
             }
         }
         return null;
     }
 
     @Override
-    public Enumeration<?> getHeaderNames()
+    public Enumeration<String> getHeaderNames()
     {
         return Collections.enumeration( headers.keySet() );
     }
@@ -273,8 +280,16 @@ public class InternalJettyServletRequest extends Request
     }
 
     @Override
+	public Response getResponse()
+    {
+		return response;
+	}
+
+	@Override
     public String toString()
     {
-        return String.format( "%s %s %s\n%s", getMethod(), getUri(), getProtocol(), getConnection() != null ? getConnection().getRequestFields() : "no HttpConnection" );
+        return String.format( "%s %s %s\n%s", getMethod(), getUri(), getProtocol(), getHttpFields() );
     }
+
+
 }

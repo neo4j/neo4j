@@ -43,7 +43,7 @@ import org.neo4j.server.logging.InMemoryAppender;
 import org.neo4j.test.ImpermanentGraphDatabase;
 
 @Path("/")
-public class TestJetty6WebServer {
+public class TestJetty7WebServer {
 
 	@GET
 	public Response index()

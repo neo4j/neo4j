@@ -31,7 +31,7 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.ServletResponseWrapper;
 
-import org.mortbay.jetty.Response;
+import org.eclipse.jetty.server.Response;
 
 /**
  * @author tbaum

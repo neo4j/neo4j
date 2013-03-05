@@ -405,7 +405,7 @@ public abstract class AbstractNeoServer implements NeoServer
                         Configurator.DEFAULT_WEBSERVER_ADDRESS );
     }
 
-    // TODO: This is jetty-specific, move to Jetty6WebServer
+    // TODO: This is jetty-specific, move to Jetty7WebServer
 
     /**
      * Jetty wants certificates stored in a key store, which is nice, but

@@ -43,7 +43,7 @@ public class SetNodePropertiesFunctionalTest extends
 
     /**
      * Update node properties.
-     * 
+     *
      * This will replace all existing properties on the node with the new set
      * of attributes.
      */
@@ -60,7 +60,7 @@ public class SetNodePropertiesFunctionalTest extends
                 204 ).put( getPropertiesUri( jim ) );
         assertTrue( jim.hasProperty( "age" ) );
     }
-    
+
     @Graph( "jim knows joe" )
     @Test
     public void set_node_properties_in_Unicode()
@@ -103,7 +103,7 @@ public class SetNodePropertiesFunctionalTest extends
     {
         gen.get().payload(
                 JsonHelper.createJsonFrom( MapUtil.map( "key", "val" ) ) ).expectedStatus(
-                404 ).put( getDataUri() + "/node/12345/poperties" );
+                404 ).put( getDataUri() + "node/12345/properties" );
     }
 
     private URI getPropertyUri( Node node, String key ) throws Exception
@@ -113,7 +113,7 @@ public class SetNodePropertiesFunctionalTest extends
 
     /**
      * Set property on node.
-     * 
+     *
      * Setting different properties will retain the existing ones for this node.
      * Note that a single value are submitted not as a map but just as a value
      * (which is valid JSON) like in the example
@@ -133,7 +133,7 @@ public class SetNodePropertiesFunctionalTest extends
 
     /**
      * Property values can not be nested.
-     * 
+     *
      * Nesting properties is not supported. You could for example store the
      * nested JSON as a string instead.
      */
@@ -167,7 +167,7 @@ public class SetNodePropertiesFunctionalTest extends
             throws Exception
     {
         JaxRsResponse response = RestRequest.req().put(
-                getDataUri() + "/node/1234/foo",
+                getDataUri() + "node/1234/foo",
                 JsonHelper.createJsonFrom( "bar" ) );
         assertEquals( 404, response.getStatus() );
         response.close();

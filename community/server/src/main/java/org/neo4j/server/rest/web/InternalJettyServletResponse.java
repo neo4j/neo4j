@@ -32,8 +32,8 @@ import java.util.Map;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.Cookie;
 
-import org.mortbay.jetty.HttpFields;
-import org.mortbay.jetty.Response;
+import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.server.Response;
 
 public class InternalJettyServletResponse extends Response
 {
@@ -71,7 +71,7 @@ public class InternalJettyServletResponse extends Response
 
     public InternalJettyServletResponse()
     {
-        super( null );
+        super( null, null );
     }
 
     public void addCookie( Cookie cookie )
@@ -170,21 +170,26 @@ public class InternalJettyServletResponse extends Response
     }
 
     @Override
-    public Enumeration<?> getHeaders( String name )
+    public Collection<String> getHeaders( String name )
     {
         if ( headers.containsKey( name ) )
         {
             Object value = headers.get( name );
             if ( value instanceof Collection )
             {
-                return Collections.enumeration( (Collection<?>) value );
+                return (Collection<String>) value;
             }
             else
             {
-                return Collections.enumeration( Collections.singleton( value ) );
+                return Collections.singleton( (String) value );
             }
         }
         return null;
+    }
+
+    public void setStatus( int sc )
+    {
+        status = sc;
     }
 
     public void setStatus( int sc, String sm )
