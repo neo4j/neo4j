@@ -299,7 +299,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def booleanLiterals() {
-    testFrom_2_0(
+    testFrom2_0(
       "start a = node(1) where true = false return a",
       Query.
         start(NodeById("a", 1)).
@@ -360,7 +360,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
 
     tests(string, query,
       "  UNNAMED3" -> testPre2_0,
-      "  UNNAMED28" -> testFrom_2_0
+      "  UNNAMED28" -> testFrom2_0
     )
   }
 
@@ -375,7 +375,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
 
     tests(string, query,
       "  UNNAMED3" -> testPre2_0,
-      "  UNNAMED27" -> testFrom_2_0)
+      "  UNNAMED27" -> testFrom2_0)
   }
 
   @Test def relatedToWithoutRelTypeButWithRelVariable() {
@@ -398,7 +398,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
 
     tests(string, query,
       "  UNNAMED3" -> testPre2_0,
-      "  UNNAMED29" -> testFrom_2_0)
+      "  UNNAMED29" -> testFrom2_0)
   }
 
   @Test def shouldOutputVariables() {
@@ -441,7 +441,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
 
     tests(string, query,
       "  UNNAMED3" -> testPre2_0,
-      "  UNNAMED42" -> testFrom_2_0)
+      "  UNNAMED42" -> testFrom2_0)
   }
 
   @Test def relatedInTwoSteps() {
@@ -457,7 +457,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
 
     tests(string, query,
       ("  UNNAMED5", "  UNNAMED6") -> testPre2_0,
-      ("  UNNAMED28", "  UNNAMED42") -> testFrom_2_0
+      ("  UNNAMED28", "  UNNAMED42") -> testFrom2_0
     )
   }
 
@@ -482,7 +482,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def countTheNumberOfHits() {
-    testFrom_2_0(
+    testFrom2_0(
       "start a = NODE(1) match a --> b return a, b, count(*)",
       Query.
         start(NodeById("a", 1)).
@@ -536,7 +536,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def avgTheAgesOfPeople() {
-    testFrom_2_0(
+    testFrom2_0(
       "start a = NODE(1) match a --> b return a, b, avg(a.age)",
       Query.
         start(NodeById("a", 1)).
@@ -559,7 +559,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
 
     tests(string, query,
       "  UNNAMED3" -> testPre2_0,
-      "  UNNAMED29"-> testFrom_2_0
+      "  UNNAMED29"-> testFrom2_0
     )
   }
 
@@ -574,7 +574,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
   @Test def maxTheAgesOfPeople() {
     val query = "start a = NODE(1) match a --> b return a, b, max(a.age)"
 
-    testFrom_2_0(
+    testFrom2_0(
       query,
       Query.
         start(NodeById("a", 1)).
@@ -823,7 +823,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
 
     tests(string, query,
       "  UNNAMED3" -> testPre2_0,
-      "  UNNAMED30" -> testFrom_2_0)
+      "  UNNAMED30" -> testFrom2_0)
   }
 
   @Test def threeStepsPath() {
@@ -861,7 +861,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
 
     tests(string, query,
       "  UNNAMED3" -> testPre2_0,
-      "  UNNAMED23" -> testFrom_2_0)
+      "  UNNAMED23" -> testFrom2_0)
   }
 
   @Test def variableLengthPathWithRelsIterable() {
@@ -875,7 +875,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
 
     tests(string, query,
     "  UNNAMED3" -> testPre2_0,
-    "  UNNAMED23" -> testFrom_2_0)
+    "  UNNAMED23" -> testFrom2_0)
   }
 
   @Test def fixedVarLengthPath() {
@@ -890,7 +890,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
 
     testPre2_0(string, queryWith("  UNNAMED3"))
 
-    testFrom_2_0(string, queryWith("  UNNAMED23"))
+    testFrom2_0(string, queryWith("  UNNAMED23"))
   }
 
   @Test def variableLengthPathWithoutMinDepth() {
@@ -902,7 +902,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
         returns(ReturnItem(Identifier("x"), "x"))
     tests(string, query,
       "  UNNAMED3" -> testPre2_0,
-      "  UNNAMED23" -> testFrom_2_0)
+      "  UNNAMED23" -> testFrom2_0)
   }
 
   @Test def variableLengthPathWithRelationshipIdentifier() {
@@ -914,7 +914,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
         returns(ReturnItem(Identifier("x"), "x"))
     tests(string, query,
       "  UNNAMED3" -> testPre2_0,
-      "  UNNAMED23" -> testFrom_2_0)
+      "  UNNAMED23" -> testFrom2_0)
   }
 
   @Test def variableLengthPathWithoutMaxDepth() {
@@ -927,7 +927,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
 
     tests(string, query,
       "  UNNAMED3" -> testPre2_0,
-      "  UNNAMED23" -> testFrom_2_0)
+      "  UNNAMED23" -> testFrom2_0)
   }
 
   @Test def unboundVariableLengthPath_Old() {
@@ -940,7 +940,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def unboundVariableLengthPath() {
-    testFrom_2_0("start a=node(0) match a -[:knows*]-> x return x",
+    testFrom2_0("start a=node(0) match a -[:knows*]-> x return x",
       Query.
         start(NodeById("a", 0)).
         matches(VarLengthRelatedTo("  UNNAMED23", "a", "x", None, None, "knows", Direction.OUTGOING)).
@@ -959,7 +959,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
 
     tests(string, query,
       "  UNNAMED3" -> testPre2_0,
-      "  UNNAMED28" -> testFrom_2_0)
+      "  UNNAMED28" -> testFrom2_0)
   }
 
   @Test def questionMarkOperator() {
@@ -991,7 +991,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
 
     tests(string, query,
       "  UNNAMED3" -> testPre2_0,
-      "  UNNAMED28" -> testFrom_2_0)
+      "  UNNAMED28" -> testFrom2_0)
   }
 
   @Test def optionalTypedAndNamedRelationship() {
@@ -1165,7 +1165,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def supportsHasRelationshipInTheWhereClause() {
-    testFrom_2_0(
+    testFrom2_0(
       """start a=node(0), b=node(1) where a-->b return a""",
       Query.
         start(NodeById("a", 0), NodeById("b", 1)).
@@ -1183,7 +1183,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def supportsNotHasRelationshipInTheWhereClause() {
-    testFrom_2_0(
+    testFrom2_0(
       """start a=node(0), b=node(1) where not(a-->()) return a""",
       Query.
         start(NodeById("a", 0), NodeById("b", 1)).
@@ -1340,7 +1340,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
         returns(ReturnItem(Identifier("x"), "x"))
     }
 
-    testFrom_2_0("start x = NODE(1) match x-[:REL1|:REL2|:REL3]->z return x", query)
+    testFrom2_0("start x = NODE(1) match x-[:REL1|:REL2|:REL3]->z return x", query)
   }
 
 
@@ -1361,7 +1361,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
         matches(RelatedTo("x", "z", "  UNNAMED27", Seq("REL1", "REL2", "REL3"), Direction.OUTGOING, false)).
         returns(ReturnItem(Identifier("x"), "x"))
 
-    testFrom_2_0("start x = NODE(1) match x-[:REL1|:REL2|:REL3]->z return x", q)
+    testFrom2_0("start x = NODE(1) match x-[:REL1|:REL2|:REL3]->z return x", q)
   }
 
   @Test def multiple_relationship_type_in_shortest_pathOld() {
@@ -1381,7 +1381,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
         matches(RelatedTo("x", "z", "  UNNAMED27", Seq("REL1", "REL2", "REL3"), Direction.OUTGOING, false)).
         returns(ReturnItem(Identifier("x"), "x"))
 
-    testFrom_2_0("start x = NODE(1) match x-[:REL1|:REL2|:REL3]->z return x", q)
+    testFrom2_0("start x = NODE(1) match x-[:REL1|:REL2|:REL3]->z return x", q)
   }
 
   @Test def multiple_relationship_type_in_relationship_predicate_back_in_the_day() {
@@ -1394,7 +1394,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def multiple_relationship_type_in_relationship_predicate() {
-    testFrom_2_0(
+    testFrom2_0(
       """start a=node(0), b=node(1) where a-[:KNOWS|:BLOCKS]-b return a""",
       Query.
         start(NodeById("a", 0), NodeById("b", 1)).
@@ -1434,7 +1434,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
 
     tests(string, query,
       true->testPre2_0,
-      false->testFrom_2_0)
+      false->testFrom2_0)
   }
 
   @Test def variable_length_path_with_collection_for_relationships() {
@@ -1447,7 +1447,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
 
     tests(string, query,
       "  UNNAMED3" -> testPre2_0,
-      "  UNNAMED23" -> testFrom_2_0)
+      "  UNNAMED23" -> testFrom2_0)
   }
 
   @Test def binary_precedence() {
@@ -1475,7 +1475,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def create_node_from_param() {
-    testFrom_2_0("create ({param})",
+    testFrom2_0("create ({param})",
       Query.
         start(CreateNodeStartItem(CreateNode("  UNNAMED8", Map("*" -> ParameterExpression("param")), Seq.empty))).
         returns()
@@ -1491,7 +1491,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
 
     tests(string, query,
       true -> testPre2_0,
-      false -> testFrom_2_0)
+      false -> testFrom2_0)
   }
 
   @Test def create_node_with_a_property2O() {
@@ -1502,11 +1502,11 @@ class CypherParserTest extends JUnitSuite with Assertions {
         returns()
     tests(string, query,
       true -> testPre2_0,
-      false -> testFrom_2_0)
+      false -> testFrom2_0)
   }
 
   @Test def create_node_using_the_VALUES_keyword() {
-    testFrom_2_0("create a VALUES {name : 'Andres'}",
+    testFrom2_0("create a VALUES {name : 'Andres'}",
       Query.
         start(CreateNodeStartItem(CreateNode("a", Map("name" -> Literal("Andres")), Seq.empty, false))).
         returns()
@@ -1514,7 +1514,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def create_node_using_LABEL_keyword_and_EQ() {
-    testFrom_2_0("create a:fii = {name : 'Andres'}",
+    testFrom2_0("create a:fii = {name : 'Andres'}",
       Query.
         start(CreateNodeStartItem(CreateNode("a", Map("name" -> Literal("Andres")), LabelSupport.labelCollection("fii"), false))).
         returns()
@@ -1522,7 +1522,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def create_node_using_LABEL_and_VALUES_keyword() {
-    testFrom_2_0("create a :fii VALUES {name : 'Andres'}",
+    testFrom2_0("create a :fii VALUES {name : 'Andres'}",
       Query.
         start(CreateNodeStartItem(CreateNode("a", Map("name" -> Literal("Andres")), LabelSupport.labelCollection("fii"), false))).
         returns()
@@ -1530,7 +1530,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def create_node_using_LABEL_and_VALUES_keyword2() {
-    testFrom_2_0("create a:fii VALUES {name : 'Andres'}",
+    testFrom2_0("create a:fii VALUES {name : 'Andres'}",
       Query.
         start(CreateNodeStartItem(CreateNode("a", Map("name" -> Literal("Andres")), LabelSupport.labelCollection("fii"), false))).
         returns()
@@ -1546,7 +1546,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
 
     tests(string, query,
       true -> testPre2_0,
-      false -> testFrom_2_0)
+      false -> testFrom2_0)
   }
 
   @Test def create_node_from_map_expressionOld() {
@@ -1558,7 +1558,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def create_node_from_map_expression() {
-    testFrom_2_0("create (a {param})",
+    testFrom2_0("create (a {param})",
       Query.
         start(CreateNodeStartItem(CreateNode("a", Map("*" -> ParameterExpression("param")), Seq.empty, false))).
         returns()
@@ -1566,7 +1566,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def create_node_with_a_label() {
-    testFrom_2_0("create a:FOO",
+    testFrom2_0("create a:FOO",
       Query.
         start(CreateNodeStartItem(CreateNode("a", Map(), LabelSupport.labelCollection("FOO"), false))).
         returns()
@@ -1574,7 +1574,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def create_node_with_multiple_labels() {
-    testFrom_2_0("create a:FOO:BAR",
+    testFrom2_0("create a:FOO:BAR",
       Query.
         start(CreateNodeStartItem(CreateNode("a", Map(), LabelSupport.labelCollection("FOO", "BAR"), false))).
         returns()
@@ -1582,7 +1582,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def create_node_with_multiple_labels_with_spaces() {
-    testFrom_2_0("create a :FOO :BAR",
+    testFrom2_0("create a :FOO :BAR",
       Query.
         start(CreateNodeStartItem(CreateNode("a", Map(), LabelSupport.labelCollection("FOO", "BAR"), false))).
         returns()
@@ -1590,7 +1590,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def create_nodes_with_labels_and_a_rel() {
-    testFrom_2_0("CREATE (n:Person:Husband)-[:FOO]->x:Person",
+    testFrom2_0("CREATE (n:Person:Husband)-[:FOO]->x:Person",
       Query.
         start(CreateRelationshipStartItem(CreateRelationship("  UNNAMED27",
         RelationshipEndpoint(Identifier("n"),Map(), LabelSupport.labelCollection("Person", "Husband"), false),
@@ -1661,7 +1661,7 @@ create a-[r:REL]->b
   }
 
   @Test def create_relationship_without_identifier() {
-    testFrom_2_0("create ({a})-[:REL]->({a})",
+    testFrom2_0("create ({a})-[:REL]->({a})",
       Query.
         start(CreateRelationshipStartItem(CreateRelationship("  UNNAMED14",
         RelationshipEndpoint(ParameterExpression("a"), Map(), Seq.empty, true),
@@ -1680,7 +1680,7 @@ create a-[r:REL]->b
   }
 
   @Test def create_relationship_with_properties_from_map() {
-    testFrom_2_0("create ({a})-[:REL {param}]->({a})",
+    testFrom2_0("create ({a})-[:REL {param}]->({a})",
       Query.
         start(CreateRelationshipStartItem(CreateRelationship("  UNNAMED14",
         RelationshipEndpoint(ParameterExpression("a"), Map(), Seq.empty, true),
@@ -1699,7 +1699,7 @@ create a-[r:REL]->b
   }
 
   @Test def create_relationship_without_identifier2() {
-    testFrom_2_0("create ({a})-[:REL]->({a})",
+    testFrom2_0("create ({a})-[:REL]->({a})",
       Query.
         start(CreateRelationshipStartItem(CreateRelationship("  UNNAMED14",
         RelationshipEndpoint(ParameterExpression("a"), Map(), Seq.empty, true),
@@ -1773,7 +1773,7 @@ create a-[r:REL]->b
       tail(secondQ).
       returns(ReturnItem(Identifier("p"), "p"))
 
-    testFrom_2_0("start a=node(0) match p = a-[r:REL]->b with p foreach(n in nodes(p) : set n.touched = true ) ", q)
+    testFrom2_0("start a=node(0) match p = a-[r:REL]->b with p foreach(n in nodes(p) : set n.touched = true ) ", q)
   }
 
   @Test def simple_read_first_and_update_next() {
@@ -1790,7 +1790,7 @@ create a-[r:REL]->b
     }
     tests(string, query,
       true -> testPre2_0,
-      false -> testFrom_2_0)
+      false -> testFrom2_0)
   }
 
   @Test def simple_start_with_two_nodes_and_create_relationship() {
@@ -1884,7 +1884,7 @@ create a-[r:REL]->b
 
     tests(string, query,
       Literal(true) -> testPre2_0,
-      True() -> testFrom_2_0)
+      True() -> testFrom2_0)
   }
 
   @Test def returnAll() {
@@ -1909,7 +1909,7 @@ create a-[r:REL]->b
 
     tests(string, query,
       "  UNNAMED1" -> testPre2_0,
-      "  UNNAMED46" -> testFrom_2_0)
+      "  UNNAMED46" -> testFrom2_0)
   }
 
   @Test def single_create_unique_with_rel() {
@@ -1940,7 +1940,7 @@ create a-[r:REL]->b
 
     tests(string, query,
       ("  UNNAMED1", "  UNNAMED2")->testPre2_0,
-      ("  UNNAMED58", "  UNNAMED46")->testFrom_2_0)
+      ("  UNNAMED58", "  UNNAMED46")->testFrom2_0)
   }
 
   @Test def two_relates() {
@@ -1960,7 +1960,7 @@ create a-[r:REL]->b
 
     tests(string, query,
       ("  UNNAMED1", "  UNNAMED2") -> testPre2_0,
-      ("  UNNAMED35", "  UNNAMED44") -> testFrom_2_0)
+      ("  UNNAMED35", "  UNNAMED44") -> testFrom2_0)
   }
 
   @Test def relate_with_initial_values_for_node() {
@@ -1982,7 +1982,7 @@ create a-[r:REL]->b
 
     tests(string, query,
       ("  UNNAMED1", true) -> testPre2_0,
-      ("  UNNAMED35", false) -> testFrom_2_0)
+      ("  UNNAMED35", false) -> testFrom2_0)
   }
 
   @Test def relate_with_initial_values_for_rel() {
@@ -2003,7 +2003,7 @@ create a-[r:REL]->b
     }
     tests(string, query,
       "  UNNAMED1" -> testPre2_0,
-      "  UNNAMED35" -> testFrom_2_0)
+      "  UNNAMED35" -> testFrom2_0)
   }
 
   @Test def foreach_with_literal_collectionOld() {
@@ -2027,7 +2027,7 @@ create a-[r:REL]->b
       ForeachAction(Collection(Literal(1.0), Literal(2.0), Literal(3.0)), "x", Seq(CreateNode("a", Map("number" -> Identifier("x")), Seq.empty, false)))
     ).returns()
 
-    testFrom_2_0(
+    testFrom2_0(
       "create root foreach(x in [1,2,3] : create (a {number:x}))",
       Query.
         start(CreateNodeStartItem(CreateNode("root", Map.empty, Seq.empty))).
@@ -2047,7 +2047,7 @@ create a-[r:REL]->b
     }
     tests(string, query,
       true -> testPre2_0,
-      false -> testFrom_2_0)
+      false -> testFrom2_0)
   }
 
   @Test def relate_with_two_rels_to_same_node() {
@@ -2086,7 +2086,7 @@ create a-[r:REL]->b
   }
 
   @Test def return_paths() {
-    testFrom_2_0("start a  = node(1) return a-->()",
+    testFrom2_0("start a  = node(1) return a-->()",
       Query.
         start(NodeById("a", 1)).
         returns(ReturnItem(PatternPredicate(Seq(RelatedTo("a", "  UNNAMED31", "  UNNAMED28", Seq(), Direction.OUTGOING, optional = false))), "a-->()"))
@@ -2122,7 +2122,7 @@ create a-[r:REL]->b
 
     val string = "start a=node(1), b=node(2) create a-[r1:KNOWS]->()<-[r2:LOVES]->b"
 
-    testFrom_2_0(string, query("  UNNAMED49"))
+    testFrom2_0(string, query("  UNNAMED49"))
     testPre2_0(string, query("  UNNAMED1"))
   }
 
@@ -2139,7 +2139,7 @@ create a-[r:REL]->b
   }
 
   @Test def create_and_assign_to_path_identifier() {
-    testFrom_2_0(
+    testFrom2_0(
       "create p = a-[r:KNOWS]->() return p",
       Query.
         start(CreateRelationshipStartItem(CreateRelationship("r",
@@ -2159,7 +2159,7 @@ create a-[r:REL]->b
 
     tests(string, query,
       ("  UNNAMED1", true) -> testPre2_0,
-      ("  UNNAMED23", false) -> testFrom_2_0)
+      ("  UNNAMED23", false) -> testFrom2_0)
   }
 
   @Test def relate_and_assign_to_path_identifier() {
@@ -2178,7 +2178,7 @@ create a-[r:REL]->b
 
     tests(string, query,
     "  UNNAMED1"->testPre2_0,
-    "  UNNAMED48"->testFrom_2_0)
+    "  UNNAMED48"->testFrom2_0)
   }
 
   @Test(expected = classOf[SyntaxException]) def assign_to_path_inside_foreach_should_work() {
@@ -2197,7 +2197,7 @@ foreach(x in [1,2,3] :
   }
 
   @Test def use_predicate_as_expression() {
-    testFrom_1_9("start n=node(0) return id(n) = 0, n is null",
+    testFrom1_9("start n=node(0) return id(n) = 0, n is null",
       Query.
         start(NodeById("n", 0)).
         returns(
@@ -2215,7 +2215,7 @@ foreach(x in [1,2,3] :
                   unique(UniqueLink(start, end, rel, "foo", Direction.OUTGOING)).
                   returns(AllIdentifiers())
 
-    testFrom_2_0("START n=node(0) CREATE UNIQUE n-[:foo]->({param}) RETURN *",
+    testFrom2_0("START n=node(0) CREATE UNIQUE n-[:foo]->({param}) RETURN *",
                  Query.
                  start(NodeById("n", 0)).
                  tail(secondQ).
@@ -2231,7 +2231,7 @@ foreach(x in [1,2,3] :
       unique(UniqueLink(start, end, rel, "foo", Direction.OUTGOING)).
       returns(AllIdentifiers())
 
-    test_1_9("START n=node(0) CREATE UNIQUE n-[:foo]->({param}) RETURN *",
+    test1_9("START n=node(0) CREATE UNIQUE n-[:foo]->({param}) RETURN *",
       Query.
         start(NodeById("n", 0)).
         tail(secondQ).
@@ -2240,7 +2240,7 @@ foreach(x in [1,2,3] :
 
 
   @Test def with_limit() {
-    testFrom_1_9("start n=node(0,1,2) with n limit 2 where ID(n) = 1 return n",
+    testFrom1_9("start n=node(0,1,2) with n limit 2 where ID(n) = 1 return n",
       Query.
         start(NodeById("n", 0, 1, 2)).
         limit(2).
@@ -2255,7 +2255,7 @@ foreach(x in [1,2,3] :
   }
 
   @Test def with_sort_limit() {
-    testFrom_1_9("start n=node(0,1,2) with n order by ID(n) desc limit 2 where ID(n) = 1 return n",
+    testFrom1_9("start n=node(0,1,2) with n order by ID(n) desc limit 2 where ID(n) = 1 return n",
       Query.
         start(NodeById("n", 0, 1, 2)).
         orderBy(SortItem(IdFunction(Identifier("n")), false)).
@@ -2276,7 +2276,7 @@ foreach(x in [1,2,3] :
       updates(MapPropertySetAction(Identifier("n"), ParameterExpression("prop"))).
       returns()
 
-    testFrom_1_9("start n=node(0) set n = {prop}",
+    testFrom1_9("start n=node(0) set n = {prop}",
       Query.
         start(NodeById("n", 0)).
         tail(q2).
@@ -2289,7 +2289,7 @@ foreach(x in [1,2,3] :
       updates(LabelAction(Identifier("n"), LabelSetOp, List(LabelName("LabelName")))).
       returns()
 
-    testFrom_2_0("START n=node(0) set n:LabelName",
+    testFrom2_0("START n=node(0) set n:LabelName",
       Query.
         start(NodeById("n", 0)).
         tail(q2).
@@ -2303,7 +2303,7 @@ foreach(x in [1,2,3] :
       updates(LabelAction(Identifier("n"), LabelSetOp, List(LabelName("LabelName")))).
       returns()
 
-    testFrom_2_0("START n=node(0) SET n:LabelName",
+    testFrom2_0("START n=node(0) SET n:LabelName",
       Query.
         start(NodeById("n", 0)).
         tail(q2).
@@ -2318,7 +2318,7 @@ foreach(x in [1,2,3] :
       updates(LabelAction(Identifier("n"), LabelSetOp, coll)).
       returns()
 
-    testFrom_2_0("START n=node(0) set n :LabelName2 :LabelName3",
+    testFrom2_0("START n=node(0) set n :LabelName2 :LabelName3",
       Query.
         start(NodeById("n", 0)).
         tail(q2).
@@ -2333,7 +2333,7 @@ foreach(x in [1,2,3] :
       updates(LabelAction(Identifier("n"), LabelSetOp, coll)).
       returns()
 
-    testFrom_2_0("START n=node(0) set n:LabelName2:LabelName3",
+    testFrom2_0("START n=node(0) set n:LabelName2:LabelName3",
       Query.
         start(NodeById("n", 0)).
         tail(q2).
@@ -2348,7 +2348,7 @@ foreach(x in [1,2,3] :
       updates(LabelAction(Identifier("n"), LabelSetOp, coll)).
       returns()
 
-    testFrom_2_0("START n=node(0) SET n :LabelName2 :LabelName3",
+    testFrom2_0("START n=node(0) SET n :LabelName2 :LabelName3",
       Query.
         start(NodeById("n", 0)).
         tail(q2).
@@ -2362,7 +2362,7 @@ foreach(x in [1,2,3] :
       updates(LabelAction(Identifier("n"), LabelRemoveOp, LabelSupport.labelCollection("LabelName"))).
       returns()
 
-    testFrom_2_0("START n=node(0) REMOVE n:LabelName",
+    testFrom2_0("START n=node(0) REMOVE n:LabelName",
       Query.
         start(NodeById("n", 0)).
         tail(q2).
@@ -2377,7 +2377,7 @@ foreach(x in [1,2,3] :
       updates(LabelAction(Identifier("n"), LabelRemoveOp, coll)).
       returns()
 
-    testFrom_2_0("START n=node(0) REMOVE n:LabelName2:LabelName3",
+    testFrom2_0("START n=node(0) REMOVE n:LabelName2:LabelName3",
       Query.
         start(NodeById("n", 0)).
         tail(q2).
@@ -2386,7 +2386,7 @@ foreach(x in [1,2,3] :
   }
 
   @Test def filter_by_label_in_where() {
-    testFrom_2_0("START n=node(0) WHERE n:Foo RETURN n",
+    testFrom2_0("START n=node(0) WHERE n:Foo RETURN n",
       Query.
         start(NodeById("n", 0)).
         where(HasLabel(Identifier("n"), Seq(LabelName("Foo")))).
@@ -2395,7 +2395,7 @@ foreach(x in [1,2,3] :
   }
 
   @Test def filter_by_labels_in_where() {
-    testFrom_2_0("START n=node(0) WHERE n:Foo:Bar RETURN n",
+    testFrom2_0("START n=node(0) WHERE n:Foo:Bar RETURN n",
       Query.
         start(NodeById("n", 0)).
         where(HasLabel(Identifier("n"), Seq(LabelName("Foo"), LabelName("Bar")))).
@@ -2404,17 +2404,17 @@ foreach(x in [1,2,3] :
   }
 
   @Test(expected = classOf[SyntaxException]) def create_no_index_without_properties() {
-    testFrom_2_0("create index on :MyLabel",
+    testFrom2_0("create index on :MyLabel",
       CreateIndex("MyLabel", Seq()))
   }
 
   @Test def create_index_on_single_property() {
-    testFrom_2_0("create index on :MyLabel(prop1)",
+    testFrom2_0("create index on :MyLabel(prop1)",
       CreateIndex("MyLabel", Seq("prop1")))
   }
 
   @Test(expected = classOf[SyntaxException]) def create_index_on_multiple_properties() {
-    testFrom_2_0("create index on :MyLabel(prop1, prop2)",
+    testFrom2_0("create index on :MyLabel(prop1, prop2)",
       CreateIndex("MyLabel", Seq("prop1", "prop2")))
   }
 
@@ -2428,7 +2428,7 @@ foreach(x in [1,2,3] :
         where(pred).
         returns(ReturnItem(Identifier("a"), "a"))
 
-    testFrom_2_0(query, expected)
+    testFrom2_0(query, expected)
   }
 
   @Test def match_left_with_multiple_labels() {
@@ -2441,7 +2441,7 @@ foreach(x in [1,2,3] :
         where(pred).
         returns(ReturnItem(Identifier("a"), "a"))
 
-    testFrom_2_0(query, expected)
+    testFrom2_0(query, expected)
   }
 
   @Test def match_right_with_multiple_labels() {
@@ -2454,7 +2454,7 @@ foreach(x in [1,2,3] :
         where(pred).
         returns(ReturnItem(Identifier("a"), "a"))
 
-    testFrom_2_0(query, expected)
+    testFrom2_0(query, expected)
   }
 
   @Test def match_both_with_labels() {
@@ -2468,7 +2468,7 @@ foreach(x in [1,2,3] :
         where(pred).
         returns(ReturnItem(Identifier("a"), "a"))
 
-    testFrom_2_0(query, expected)
+    testFrom2_0(query, expected)
   }
 
   @Test def match_left_with_label_choice() {
@@ -2483,7 +2483,7 @@ foreach(x in [1,2,3] :
         where(pred).
         returns(ReturnItem(Identifier("a"), "a"))
 
-    testFrom_2_0(query, expected)
+    testFrom2_0(query, expected)
   }
 
   @Test def match_right_with_label_choice() {
@@ -2498,7 +2498,7 @@ foreach(x in [1,2,3] :
         where(pred).
         returns(ReturnItem(Identifier("a"), "a"))
 
-    testFrom_2_0(query, expected)
+    testFrom2_0(query, expected)
   }
 
   @Test def match_both_with_label_choice() {
@@ -2516,7 +2516,7 @@ foreach(x in [1,2,3] :
         where(pred).
         returns(ReturnItem(Identifier("a"), "a"))
 
-    testFrom_2_0(query, expected)
+    testFrom2_0(query, expected)
   }
 
   @Ignore("slow test") @Test def multi_thread_parsing() {
@@ -2539,7 +2539,7 @@ foreach(x in [1,2,3] :
       start(NodeById("s", 1)).
       returns(ReturnItem(Identifier("s"), "s"))
 
-    testFrom_2_0("start s = NODE(1) return s UNION all start s = NODE(1) return s",
+    testFrom2_0("start s = NODE(1) return s UNION all start s = NODE(1) return s",
       Union(Seq(q, q), QueryString.empty, distinct = false))
   }
 
@@ -2548,12 +2548,12 @@ foreach(x in [1,2,3] :
       start(NodeById("s", 1)).
       returns(ReturnItem(Identifier("s"), "s"))
 
-    testFrom_2_0("start s = NODE(1) return s UNION start s = NODE(1) return s",
+    testFrom2_0("start s = NODE(1) return s UNION start s = NODE(1) return s",
       Union(Seq(q, q), QueryString.empty, distinct = true))
   }
 
   @Test def keywords_in_reltype_and_label() {
-    testFrom_2_0("START n=node(0) MATCH n:On-[:WHERE]->() RETURN n",
+    testFrom2_0("START n=node(0) MATCH n:On-[:WHERE]->() RETURN n",
       Query.
         start(NodeById("n", 0)).
         matches(RelatedTo("n", "  UNNAMED38", "  UNNAMED28", Seq("WHERE"), Direction.OUTGOING, false)).
@@ -2563,7 +2563,7 @@ foreach(x in [1,2,3] :
   }
 
   @Test def remove_index_on_single_property() {
-    testFrom_2_0("drop index on :MyLabel(prop1)",
+    testFrom2_0("drop index on :MyLabel(prop1)",
       DropIndex("MyLabel", Seq("prop1")))
   }
 
@@ -2585,37 +2585,37 @@ foreach(x in [1,2,3] :
     }
 
 
-  def test_1_9(query: String, expectedQuery: AbstractQuery) {
+  def test1_9(query: String, expectedQuery: AbstractQuery) {
     testQuery(Some("1.9"), query, expectedQuery)
   }
 
-  def test_1_8(query: String, expectedQuery: AbstractQuery) {
+  def test1_8(query: String, expectedQuery: AbstractQuery) {
     testQuery(Some("1.8"), query, expectedQuery)
   }
 
-  def testFrom_1_9(query: String, expectedQuery: AbstractQuery) {
-    test_1_9(query, expectedQuery)
-    test_2_0(query, expectedQuery)
+  def testFrom1_9(query: String, expectedQuery: AbstractQuery) {
+    test1_9(query, expectedQuery)
+    test2_0(query, expectedQuery)
   }
 
-  def testFrom_2_0(query: String, expectedQuery: AbstractQuery) {
-    test_2_0(query, expectedQuery)
+  def testFrom2_0(query: String, expectedQuery: AbstractQuery) {
+    test2_0(query, expectedQuery)
   }
 
-  def test_2_0(query: String, expectedQuery: AbstractQuery) {
+  def test2_0(query: String, expectedQuery: AbstractQuery) {
     testQuery(None, query, expectedQuery)
     testQuery(None, query + ";", expectedQuery)
   }
 
   def testAll(query: String, expectedQuery: AbstractQuery) {
-    test_2_0(query, expectedQuery)
-    test_1_9(query, expectedQuery)
-    test_1_8(query, expectedQuery)
+    test2_0(query, expectedQuery)
+    test1_9(query, expectedQuery)
+    test1_8(query, expectedQuery)
   }
 
   def testPre2_0(query: String, expectedQuery: AbstractQuery) {
-    test_1_8(query, expectedQuery)
-    test_1_9(query, expectedQuery)
+    test1_8(query, expectedQuery)
+    test1_9(query, expectedQuery)
   }
 
   def testQuery(version: Option[String], query: String, expectedQuery: AbstractQuery) {
