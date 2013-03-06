@@ -1379,10 +1379,10 @@ public class XaLogicalLog implements LogLoader
 //        System.out.println( " ---- Performing rotate on " + currentLogFile + " -----" );
 //        DumpLogicalLog.main( new String[] { currentLogFile } );
 //        System.out.println( " ----- end ----" );
+        long endPosition = writeBuffer.getFileChannelPosition();
         msgLog.logMessage( "Rotating [" + currentLogFile + "] @ version=" +
                 currentVersion + " to " + newLogFile + " from position " +
-                writeBuffer.getFileChannelPosition(), true );
-        long endPosition = writeBuffer.getFileChannelPosition();
+                endPosition, true );
         writeBuffer.force();
         FileChannel newLog = fileSystem.open( newLogFile, "rw" );
         long lastTx = xaTf.getLastCommittedTx();
@@ -1392,10 +1392,9 @@ public class XaLogicalLog implements LogLoader
         {
             throw new IOException( "Unable to write log version to new" );
         }
-        long pos = fileChannel.position();
         fileChannel.position( 0 );
         readAndAssertLogHeader( sharedBuffer, fileChannel, currentVersion );
-        fileChannel.position( pos );
+        fileChannel.position( endPosition );
         if ( xidIdentMap.size() > 0 )
         {
             long firstEntryPosition = getFirstStartEntry( endPosition );
