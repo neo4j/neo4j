@@ -19,6 +19,15 @@
  */
 package org.neo4j.shell.cypher;
 
+import static java.util.Arrays.asList;
+import static java.util.Collections.singletonMap;
+import static org.junit.Assert.*;
+import static org.neo4j.helpers.collection.MapUtil.map;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.graphalgo.impl.util.PathImpl;
@@ -30,15 +39,6 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.shell.impl.CollectingOutput;
 import org.neo4j.shell.kernel.apps.cypher.ResultPrinter;
 import org.neo4j.test.ImpermanentGraphDatabase;
-
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-
-import static java.util.Arrays.asList;
-import static java.util.Collections.singletonMap;
-import static junit.framework.Assert.assertEquals;
-import static org.neo4j.helpers.collection.MapUtil.map;
 
 public class ResultPrinterTest
 {
