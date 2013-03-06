@@ -71,7 +71,7 @@ public class DiscoveryServiceFunctionalTest extends AbstractRestFunctionalTestBa
     {
         JaxRsResponse response = getDiscoveryDocument();
 
-        Map<String, Object> map = JsonHelper.jsonToMap( response.getEntity( String.class ) );
+        Map<String, Object> map = JsonHelper.jsonToMap( response.getEntity() );
 
         String managementKey = "management";
         assertTrue( map.containsKey( managementKey ) );

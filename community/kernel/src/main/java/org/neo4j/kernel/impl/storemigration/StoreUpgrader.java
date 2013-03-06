@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.DefaultWindowPoolFactory;
@@ -56,7 +57,7 @@ public class StoreUpgrader
     public StoreUpgrader( Config originalConfig, StringLogger msgLog, UpgradeConfiguration upgradeConfiguration,
                           UpgradableDatabase upgradableDatabase, StoreMigrator storeMigrator,
                           DatabaseFiles databaseFiles, IdGeneratorFactory idGeneratorFactory,
-                          FileSystemAbstraction fileSystemAbstraction)
+                          FileSystemAbstraction fileSystemAbstraction )
     {
         this.msgLog = msgLog;
         this.idGeneratorFactory = idGeneratorFactory;
@@ -88,7 +89,7 @@ public class StoreUpgrader
     {
         try
         {
-            FileUtils.copyFile( new File( workingDirectory, StringLogger.DEFAULT_NAME ),
+            fileSystemAbstraction.copyFile( new File( workingDirectory, StringLogger.DEFAULT_NAME ),
                     new File( backupDirectory, StringLogger.DEFAULT_NAME ) );
         }
         catch ( IOException e )
@@ -119,14 +120,21 @@ public class StoreUpgrader
         Config upgradeConfiguration = new Config( upgradeConfig );
         
         NeoStore neoStore = new StoreFactory( upgradeConfiguration, idGeneratorFactory, new DefaultWindowPoolFactory(),
-                fileSystemAbstraction, StringLogger.DEV_NULL, null ).createNeoStore(upgradeFileName);
+                fileSystemAbstraction, StringLogger.DEV_NULL, null ).createNeoStore( upgradeFileName );
         try
         {
-            storeMigrator.migrate( new LegacyStore( storageFileName, StringLogger.DEV_NULL ), neoStore );
+            storeMigrator.migrate( new LegacyStore( fileSystemAbstraction, storageFileName, StringLogger.DEV_NULL ),
+                    neoStore );
         }
         catch ( IOException e )
         {
+            e.printStackTrace();
             throw new UnableToUpgradeException( e );
+        }
+        catch ( Exception e )
+        {
+            e.printStackTrace();
+            throw Exceptions.launderedException( e );
         }
         finally
         {

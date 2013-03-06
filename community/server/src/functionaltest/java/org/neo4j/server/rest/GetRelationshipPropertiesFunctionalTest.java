@@ -126,7 +126,7 @@ public class GetRelationshipPropertiesFunctionalTest extends AbstractRestFunctio
     {
         JaxRsResponse response = RestRequest.req().get(getPropertyUri("foo"));
         assertEquals( MediaType.APPLICATION_JSON_TYPE, response.getType() );
-        assertNotNull( JsonHelper.createJsonFrom( response.getEntity( String.class ) ) );
+        assertNotNull( JsonHelper.createJsonFrom( response.getEntity() ) );
         response.close();
     }
 }

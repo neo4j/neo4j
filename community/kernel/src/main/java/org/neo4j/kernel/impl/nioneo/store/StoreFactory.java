@@ -132,8 +132,10 @@ public class StoreFactory
     private void tryToUpgradeStores( File fileName )
     {
         new StoreUpgrader(config, stringLogger, new ConfigMapUpgradeConfiguration(config),
-                new UpgradableDatabase(), new StoreMigrator( new VisibleMigrationProgressMonitor( stringLogger, System.out ) ),
-                new DatabaseFiles(), idGeneratorFactory, fileSystemAbstraction ).attemptUpgrade( fileName );
+                new UpgradableDatabase( fileSystemAbstraction ),
+                new StoreMigrator( new VisibleMigrationProgressMonitor( stringLogger, System.out ) ),
+                new DatabaseFiles( fileSystemAbstraction ),
+                idGeneratorFactory, fileSystemAbstraction ).attemptUpgrade( fileName );
     }
 
     public SchemaStore newSchemaStore( File file )

@@ -44,7 +44,6 @@ import org.neo4j.kernel.impl.nioneo.xa.NioNeoDbPersistenceSource;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.transaction.xaframework.XaConnection;
 import org.neo4j.kernel.impl.util.ArrayMap;
-import org.neo4j.kernel.impl.util.RelIdArray;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 import org.neo4j.kernel.impl.util.StringLogger;
 
@@ -383,11 +382,6 @@ public class PersistenceManager
         {
             con.destroy();
         }
-    }
-
-    public RelIdArray getCreatedNodes()
-    {
-        return getResource( true ).getCreatedNodes();
     }
 
     public int getKeyIdForProperty( PropertyData property )

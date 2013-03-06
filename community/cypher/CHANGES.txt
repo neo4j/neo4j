@@ -9,10 +9,12 @@ o Added CASE
 
 1.9.RC
 ------
-o Fixes #450 - Predicates in WHERE are not evaluated correctly for certain patterns
+o Fixes #550 - problem when using START after WITH
 
-1.9.M05
--------
+1.9.M05 (2013-03-05)
+--------------------
+o Fixes #450 - Predicates in WHERE are not evaluated correctly for certain patterns
+o Fixes problem with null comparisons and optional relationships
 o Made it possible to run the parser concurrently
 o DISTINCT is now lazy, and keeps the incoming ordering
 o Added execution plan descriptions to execution results

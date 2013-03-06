@@ -22,11 +22,24 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 work if a file named arbor.js has been loaded before the actual arbor.js file.
 ###
 define(
-  ['order!lib/amd/jQuery'
-   'order!lib/arbor'
-   'order!lib/arbor-graphics'
-   'order!lib/arbor-tween'], 
-  () ->
-    arbor.works = true
-    arbor
+  ['lib/amd/jQuery'], 
+  ($) ->
+    {
+       
+        arbor: [
+            {
+                implementation: 'lib/amd/arb-or',
+
+                isAvailable: ->
+                    not ($('html').hasClass('ie7') || $('html').hasClass('ie8'))
+            },
+            {
+                implementation: 'lib/amd/arbor-ie',
+
+                isAvailable: ->
+                    true
+            }
+        ]
+
+    }
 )

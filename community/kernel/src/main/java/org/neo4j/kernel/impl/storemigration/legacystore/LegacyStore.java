@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.IdGeneratorImpl;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -52,13 +53,16 @@ public class LegacyStore
     private LegacyDynamicStoreReader relationshipTypeNameStoreReader;
     private final StringLogger log;
 
-    public LegacyStore( File storageFileName ) throws IOException
+    private final FileSystemAbstraction fs;
+
+    public LegacyStore( FileSystemAbstraction fs, File storageFileName ) throws IOException
     {
-        this( storageFileName, StringLogger.DEV_NULL );
+        this( fs, storageFileName, StringLogger.DEV_NULL );
     }
 
-    public LegacyStore( File storageFileName, StringLogger log ) throws IOException
+    public LegacyStore( FileSystemAbstraction fs, File storageFileName, StringLogger log ) throws IOException
     {
+        this.fs = fs;
         this.storageFileName = storageFileName;
         this.log = log;
         initStorage();
@@ -66,18 +70,18 @@ public class LegacyStore
 
     protected void initStorage() throws IOException
     {
-        neoStoreReader = new LegacyNeoStoreReader( getStorageFileName(), log );
-        propertyStoreReader = new LegacyPropertyStoreReader( new File( getStorageFileName().getPath() + StoreFactory.PROPERTY_STORE_NAME ), log );
-        dynamicRecordFetcher = new LegacyDynamicRecordFetcher( new File( getStorageFileName().getPath() + StoreFactory.PROPERTY_STRINGS_STORE_NAME ),
+        neoStoreReader = new LegacyNeoStoreReader( fs, getStorageFileName(), log );
+        propertyStoreReader = new LegacyPropertyStoreReader( fs, new File( getStorageFileName().getPath() + StoreFactory.PROPERTY_STORE_NAME ), log );
+        dynamicRecordFetcher = new LegacyDynamicRecordFetcher( fs, new File( getStorageFileName().getPath() + StoreFactory.PROPERTY_STRINGS_STORE_NAME ),
                 new File( getStorageFileName().getPath() + StoreFactory.PROPERTY_ARRAYS_STORE_NAME ), log );
-        nodeStoreReader = new LegacyNodeStoreReader( new File( getStorageFileName().getPath() + StoreFactory.NODE_STORE_NAME ));
-        relationshipStoreReader = new LegacyRelationshipStoreReader( new File( getStorageFileName().getPath() + StoreFactory.RELATIONSHIP_STORE_NAME ));
-        relationshipTypeStoreReader = new LegacyRelationshipTypeStoreReader( new File( getStorageFileName().getPath() + StoreFactory.RELATIONSHIP_TYPE_STORE_NAME ));
-        relationshipTypeNameStoreReader = new LegacyDynamicStoreReader( new File( getStorageFileName().getPath() + StoreFactory.RELATIONSHIP_TYPE_NAMES_STORE_NAME ), LegacyDynamicStoreReader.FROM_VERSION_STRING, log );
-        propertyIndexStoreReader = new LegacyPropertyIndexStoreReader( new File( getStorageFileName().getPath() + StoreFactory.PROPERTY_INDEX_STORE_NAME ));
-        propertyIndexKeyStoreReader = new LegacyDynamicStoreReader( new File( getStorageFileName().getPath() + StoreFactory.PROPERTY_INDEX_KEYS_STORE_NAME ), LegacyDynamicStoreReader.FROM_VERSION_STRING, log );
+        nodeStoreReader = new LegacyNodeStoreReader( fs, new File( getStorageFileName().getPath() + StoreFactory.NODE_STORE_NAME ));
+        relationshipStoreReader = new LegacyRelationshipStoreReader( fs, new File( getStorageFileName().getPath() + StoreFactory.RELATIONSHIP_STORE_NAME ));
+        relationshipTypeStoreReader = new LegacyRelationshipTypeStoreReader( fs, new File( getStorageFileName().getPath() + StoreFactory.RELATIONSHIP_TYPE_STORE_NAME ));
+        relationshipTypeNameStoreReader = new LegacyDynamicStoreReader( fs, new File( getStorageFileName().getPath() + StoreFactory.RELATIONSHIP_TYPE_NAMES_STORE_NAME ), LegacyDynamicStoreReader.FROM_VERSION_STRING, log );
+        propertyIndexStoreReader = new LegacyPropertyIndexStoreReader( fs, new File( getStorageFileName().getPath() + StoreFactory.PROPERTY_INDEX_STORE_NAME ));
+        propertyIndexKeyStoreReader = new LegacyDynamicStoreReader( fs, new File( getStorageFileName().getPath() + StoreFactory.PROPERTY_INDEX_KEYS_STORE_NAME ), LegacyDynamicStoreReader.FROM_VERSION_STRING, log );
     }
-    
+
     public File getStorageFileName()
     {
         return storageFileName;

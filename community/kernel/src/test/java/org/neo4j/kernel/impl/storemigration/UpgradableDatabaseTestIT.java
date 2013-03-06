@@ -20,7 +20,10 @@
 package org.neo4j.kernel.impl.storemigration;
 
 import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.changeVersionNumber;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.truncateFile;
@@ -57,7 +60,7 @@ public class UpgradableDatabaseTestIT
 
         copyRecursively( resourceDirectory, workingDirectory );
 
-        assertTrue( new UpgradableDatabase().storeFilesUpgradeable( new File( workingDirectory, "neostore" ) ) );
+        assertTrue( new UpgradableDatabase(fileSystem).storeFilesUpgradeable( new File( workingDirectory, "neostore" ) ) );
     }
 
     @Test
@@ -74,7 +77,7 @@ public class UpgradableDatabaseTestIT
 
         changeVersionNumber( fileSystem, new File( workingDirectory, "neostore.nodestore.db" ), "v0.9.5" );
 
-        assertFalse( new UpgradableDatabase().storeFilesUpgradeable( new File( workingDirectory, "neostore" ) ) );
+        assertFalse( new UpgradableDatabase(fileSystem).storeFilesUpgradeable( new File( workingDirectory, "neostore" ) ) );
     }
 
     @Test
@@ -91,7 +94,7 @@ public class UpgradableDatabaseTestIT
 
         truncateFile( fileSystem, new File( workingDirectory, "neostore.nodestore.db" ), "StringPropertyStore v0.9.9" );
 
-        assertFalse( new UpgradableDatabase().storeFilesUpgradeable( new File( workingDirectory, "neostore" ) ) );
+        assertFalse( new UpgradableDatabase(fileSystem).storeFilesUpgradeable( new File( workingDirectory, "neostore" ) ) );
     }
 
     @Test
@@ -110,7 +113,7 @@ public class UpgradableDatabaseTestIT
         assertTrue( shortFileLength < UTF8.encode( "StringPropertyStore v0.9.9" ).length );
         truncateToFixedLength( fileSystem, new File( workingDirectory, "neostore.relationshiptypestore.db" ), shortFileLength );
 
-        assertFalse( new UpgradableDatabase().storeFilesUpgradeable( new File( workingDirectory, "neostore" ) ) );
+        assertFalse( new UpgradableDatabase(fileSystem).storeFilesUpgradeable( new File( workingDirectory, "neostore" ) ) );
     }
 
     private final FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
@@ -131,7 +134,7 @@ public class UpgradableDatabaseTestIT
 
         try
         {
-            new UpgradableDatabase().checkUpgradeable( new File( workingDirectory, "neostore" ) );
+            new UpgradableDatabase( fileSystem ).checkUpgradeable( new File( workingDirectory, "neostore" ) );
             fail( "should not have been able to upgrade" );
         }
         catch (StoreUpgrader.UnableToUpgradeException e)

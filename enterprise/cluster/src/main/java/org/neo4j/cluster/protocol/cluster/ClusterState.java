@@ -276,7 +276,7 @@ public enum ClusterState
                                 context.timeouts.cancelTimeout( "join" );
 
                                 context.joined();
-                                outgoing.offer( internal( ClusterMessage.joinResponse, context.getConfiguration() ) );
+                                outgoing.offer( message.copyHeadersTo( internal( ClusterMessage.joinResponse, context.getConfiguration() ) ) );
                                 return entered;
                             }
                             else
@@ -339,12 +339,12 @@ public enum ClusterState
 
                         case configurationRequest:
                         {
-                            outgoing.offer( respond( ClusterMessage.configurationResponse, message,
+                            outgoing.offer( message.copyHeadersTo( respond( ClusterMessage.configurationResponse, message,
                                     new ClusterMessage.ConfigurationResponseState( context.getConfiguration()
                                             .getRoles(),
                                             context.getConfiguration().getMembers(),
                                             new InstanceId( context.learnerContext.getLastDeliveredInstanceId() ),
-                                            context.getConfiguration().getName() ) ) );
+                                            context.getConfiguration().getName() ) ) ) );
                             break;
                         }
 

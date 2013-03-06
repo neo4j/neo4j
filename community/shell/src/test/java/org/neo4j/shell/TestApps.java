@@ -19,6 +19,19 @@
  */
 package org.neo4j.shell;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.neo4j.graphdb.Direction.OUTGOING;
+import static org.neo4j.graphdb.DynamicRelationshipType.withName;
+
+import java.io.Serializable;
+import java.util.Arrays;
+import java.util.Map;
+import java.util.regex.Pattern;
+
 import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.cypher.NodeStillHasRelationshipsException;
@@ -32,18 +45,6 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.shell.impl.CollectingOutput;
 import org.neo4j.shell.impl.SameJvmClient;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
-
-import java.io.Serializable;
-import java.util.Arrays;
-import java.util.Map;
-import java.util.regex.Pattern;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 
 public class TestApps extends AbstractShellTest
 {
@@ -328,6 +329,22 @@ public class TestApps extends AbstractShellTest
         executeCommand( "ls", "name", "test", "!-" /*no relationship*/ );
         executeCommand( "mkrel -t KNOWS 0" );
         executeCommand( "ls", "name", "test", "-", "KNOWS" );
+    }
+    
+    @Test
+    public void createNodeWithArrayProperty() throws Exception
+    {
+        executeCommand( "mknode --np \"{'values':[1,2,3,4]}\" --cd" );
+        assertTrue( Arrays.equals( new int[] {1,2,3,4}, (int[]) getCurrentNode().getProperty( "values" ) ) );
+    }
+    
+    @Test
+    public void createRelationshipWithArrayProperty() throws Exception
+    {
+        String type = "ARRAY";
+        executeCommand( "mkrel -ct " + type + " --rp \"{'values':[1,2,3,4]}\"" );
+        assertTrue( Arrays.equals( new int[] {1,2,3,4},
+                (int[]) getCurrentNode().getSingleRelationship( withName( type ), OUTGOING ).getProperty( "values" ) ) );
     }
     
     @Test

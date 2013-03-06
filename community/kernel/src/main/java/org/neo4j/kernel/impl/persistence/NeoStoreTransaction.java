@@ -33,7 +33,6 @@ import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 import org.neo4j.kernel.impl.transaction.xaframework.XaConnection;
 import org.neo4j.kernel.impl.util.ArrayMap;
-import org.neo4j.kernel.impl.util.RelIdArray;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 
 /**
@@ -297,15 +296,7 @@ public interface NeoStoreTransaction
      */
     Pair<Map<DirectionWrapper, Iterable<RelationshipRecord>>, Long> getMoreRelationships(
             long nodeId, long position );
-
-    /**
-     * Returns an array view of the ids of the nodes that have been created in
-     * this transaction.
-     *
-     * @return An array of the ids of the nodes created in this transaction.
-     */
-    RelIdArray getCreatedNodes();
-
+    
     /**
      * Check if the node with the given id was created in this transaction.
      *

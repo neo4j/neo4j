@@ -24,9 +24,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
-import static org.neo4j.kernel.CommonFactories.defaultFileSystemAbstraction;
-import static org.neo4j.kernel.CommonFactories.defaultIdGeneratorFactory;
-import static org.neo4j.kernel.CommonFactories.defaultTxHook;
 
 import java.io.File;
 import java.io.IOException;
@@ -42,9 +39,13 @@ import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.DefaultFileSystemAbstraction;
+import org.neo4j.kernel.DefaultIdGeneratorFactory;
+import org.neo4j.kernel.DefaultTxHook;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.DefaultWindowPoolFactory;
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyType;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
@@ -61,7 +62,8 @@ public class StoreMigratorTestIT
     {
         URL legacyStoreResource = getClass().getResource( "legacystore/exampledb/neostore" );
 
-        LegacyStore legacyStore = new LegacyStore( new File(legacyStoreResource.getFile()), StringLogger.DEV_NULL );
+        LegacyStore legacyStore = new LegacyStore( fs, new File( legacyStoreResource.getFile() ),
+                StringLogger.DEV_NULL );
 
         Config config = MigrationTestUtils.defaultConfig();
         File outputDir = new File( "target/outputDatabase" );
@@ -69,8 +71,8 @@ public class StoreMigratorTestIT
         assertTrue( outputDir.mkdirs() );
 
         String storeFileName = "target/outputDatabase/neostore";
-        StoreFactory factory = new StoreFactory( config, defaultIdGeneratorFactory(),
-                new DefaultWindowPoolFactory(), defaultFileSystemAbstraction(), StringLogger.DEV_NULL, defaultTxHook() );
+        StoreFactory factory = new StoreFactory( config, new DefaultIdGeneratorFactory(),
+                new DefaultWindowPoolFactory(), fs, StringLogger.DEV_NULL, new DefaultTxHook() );
         NeoStore neoStore = factory.createNeoStore( new File( storeFileName ));
 
         ListAccumulatorMigrationProgressMonitor monitor = new ListAccumulatorMigrationProgressMonitor();
@@ -95,6 +97,8 @@ public class StoreMigratorTestIT
 
         database.shutdown();
     }
+    
+    private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
 
     private void verifyNeoStore( NeoStore neoStore )
     {
@@ -106,9 +110,9 @@ public class StoreMigratorTestIT
 
     private static class DatabaseContentVerifier
     {
-        private String longString = MigrationTestUtils.makeLongString();
-        private int[] longArray = MigrationTestUtils.makeLongArray();
-        private GraphDatabaseService database;
+        private final String longString = MigrationTestUtils.makeLongString();
+        private final int[] longArray = MigrationTestUtils.makeLongArray();
+        private final GraphDatabaseService database;
 
         public DatabaseContentVerifier( GraphDatabaseService database )
         {
@@ -164,7 +168,8 @@ public class StoreMigratorTestIT
             {
                 database.getNodeById( 1 );
                 fail( "Node 2 should not exist" );
-            } catch ( NotFoundException e )
+            }
+            catch ( NotFoundException e )
             {
                 //expected
             }
@@ -174,7 +179,8 @@ public class StoreMigratorTestIT
                 Node newNode = database.createNode();
                 assertEquals( 1, newNode.getId() );
                 transaction.success();
-            } finally
+            }
+            finally
             {
                 transaction.finish();
             }
@@ -190,30 +196,33 @@ public class StoreMigratorTestIT
                 Relationship relationship1 = node1.createRelationshipTo( node2, withName( "REUSE" ) );
                 assertEquals( 0, relationship1.getId() );
                 transaction.success();
-            } finally
+            }
+            finally
             {
                 transaction.finish();
             }
         }
-
     }
 
     private class ListAccumulatorMigrationProgressMonitor implements MigrationProgressMonitor
     {
-        private List<Integer> events = new ArrayList<Integer>();
+        private final List<Integer> events = new ArrayList<Integer>();
         private boolean started = false;
         private boolean finished = false;
 
+        @Override
         public void started()
         {
             started = true;
         }
 
+        @Override
         public void percentComplete( int percent )
         {
             events.add( percent );
         }
 
+        @Override
         public void finished()
         {
             finished = true;

@@ -19,18 +19,16 @@
  */
 package org.neo4j.shell.kernel.apps.cypher;
 
+import java.rmi.RemoteException;
+
 import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.helpers.Service;
 import org.neo4j.shell.App;
 import org.neo4j.shell.AppCommandParser;
 import org.neo4j.shell.Continuation;
-import org.neo4j.shell.OptionDefinition;
-import org.neo4j.shell.OptionValueType;
 import org.neo4j.shell.Output;
 import org.neo4j.shell.Session;
 import org.neo4j.shell.ShellException;
-
-import java.rmi.RemoteException;
 
 @Service.Implementation(App.class)
 public class Dump extends Start

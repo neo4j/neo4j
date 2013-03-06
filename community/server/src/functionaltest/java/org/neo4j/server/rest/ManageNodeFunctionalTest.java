@@ -213,7 +213,7 @@ public class ManageNodeFunctionalTest extends AbstractRestFunctionalTestBase
     public void shouldGetValidNodeRepresentationWhenCreatingNode() throws Exception
     {
         JaxRsResponse response = sendCreateRequestToServer();
-        String entity = response.getEntity( String.class );
+        String entity = response.getEntity();
 
         Map<String, Object> map = JsonHelper.jsonToMap( entity );
 
@@ -240,7 +240,7 @@ public class ManageNodeFunctionalTest extends AbstractRestFunctionalTestBase
         JaxRsResponse response = sendDeleteRequestToServer(NON_EXISTENT_NODE_ID);
         assertEquals( 404, response.getStatus() );
 
-        Map<String, Object> jsonMap = JsonHelper.jsonToMap( response.getEntity( String.class ) );
+        Map<String, Object> jsonMap = JsonHelper.jsonToMap( response.getEntity() );
         assertThat( jsonMap, hasKey( "message" ) );
         assertNotNull( jsonMap.get( "message" ) );
     }
@@ -259,7 +259,7 @@ public class ManageNodeFunctionalTest extends AbstractRestFunctionalTestBase
         helper.createRelationship( "LOVES", id, helper.createNode() );
         JaxRsResponse response = sendDeleteRequestToServer(id);
         assertEquals( 409, response.getStatus() );
-        Map<String, Object> jsonMap = JsonHelper.jsonToMap( response.getEntity( String.class ) );
+        Map<String, Object> jsonMap = JsonHelper.jsonToMap( response.getEntity() );
         assertThat( jsonMap, hasKey( "message" ) );
         assertNotNull( jsonMap.get( "message" ) );
 
@@ -276,7 +276,7 @@ public class ManageNodeFunctionalTest extends AbstractRestFunctionalTestBase
         assertEquals( 400, response.getStatus() );
         assertEquals( "text/plain", response.getType()
                 .toString() );
-        assertThat( response.getEntity( String.class ), containsString( mangledJsonArray ) );
+        assertThat( response.getEntity(), containsString( mangledJsonArray ) );
     }
 
     @Test
@@ -288,7 +288,7 @@ public class ManageNodeFunctionalTest extends AbstractRestFunctionalTestBase
         assertEquals(400, response.getStatus());
         assertEquals("text/plain", response.getType()
                 .toString());
-        assertThat(response.getEntity(String.class), containsString(mangledJsonArray));
+        assertThat( response.getEntity(), containsString(mangledJsonArray));
         response.close();
     }
 
@@ -301,7 +301,7 @@ public class ManageNodeFunctionalTest extends AbstractRestFunctionalTestBase
         assertEquals(400, response.getStatus());
         assertEquals("text/plain", response.getType()
                 .toString());
-        assertThat(response.getEntity(String.class), containsString(mangledJsonProperties));
+        assertThat( response.getEntity(), containsString(mangledJsonProperties));
         response.close();
     }
 

@@ -40,7 +40,6 @@ import org.neo4j.shell.Session;
 import org.neo4j.shell.ShellException;
 import org.neo4j.shell.TabCompletion;
 import org.neo4j.shell.TextUtil;
-import org.neo4j.shell.apps.Alias;
 
 /**
  * A common implementation of an {@link AppShellServer}. The server can be given
@@ -80,6 +79,7 @@ public abstract class AbstractAppServer extends AbstractServer
         }
     }
 
+    @Override
     public App findApp( String command )
 	{
         return apps.get( command );

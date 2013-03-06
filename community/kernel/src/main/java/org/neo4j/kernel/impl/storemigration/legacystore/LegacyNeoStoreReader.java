@@ -20,12 +20,11 @@
 package org.neo4j.kernel.impl.storemigration.legacystore;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.nio.channels.FileChannel;
 
 import org.neo4j.kernel.impl.nioneo.store.Buffer;
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.OperationType;
 import org.neo4j.kernel.impl.nioneo.store.PersistenceWindow;
 import org.neo4j.kernel.impl.nioneo.store.PersistenceWindowPool;
@@ -35,12 +34,12 @@ public class LegacyNeoStoreReader
 {
     private static final int RECORD_LENGTH = 9;
 
-    private FileChannel fileChannel;
-    private PersistenceWindowPool windowPool;
+    private final FileChannel fileChannel;
+    private final PersistenceWindowPool windowPool;
 
-    public LegacyNeoStoreReader( File fileName, StringLogger log ) throws FileNotFoundException
+    public LegacyNeoStoreReader( FileSystemAbstraction fs, File fileName, StringLogger log ) throws IOException
     {
-        fileChannel = new RandomAccessFile( fileName, "r" ).getChannel();
+        fileChannel = fs.open( fileName, "r" );
         windowPool = new PersistenceWindowPool( fileName,
                 RECORD_LENGTH, fileChannel, 0,
                 true, true, log );

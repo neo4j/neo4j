@@ -18,15 +18,13 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
-### This is silly, but this file is named arb-or, because arbor.js does not
-work if a file named arbor.js has been loaded before the actual arbor.js file.
+###
+A non-working module for arbor, for IE
 ###
 define(
-  ['order!lib/amd/jQuery'
-   'order!lib/arbor'
-   'order!lib/arbor-graphics'
-   'order!lib/arbor-tween'], 
-  () ->
-    arbor.works = true
-    arbor
+  ['order!lib/amd/jQuery'], 
+  ($) ->
+    {
+        works: false
+    }
 )

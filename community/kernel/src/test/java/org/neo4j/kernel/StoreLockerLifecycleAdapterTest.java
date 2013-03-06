@@ -24,48 +24,58 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.neo4j.kernel.StoreLockerLifecycleAdapter.DATABASE_LOCKED_ERROR_MESSAGE;
 
+import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestName;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.test.TargetDirectory;
 
 public class StoreLockerLifecycleAdapterTest
 {
-    private static final String DATABASE_NAME_1 = "target/StoreLockerLifecycleAdapterTest/foo";
-    private static final String DATABASE_NAME_2 = "target/StoreLockerLifecycleAdapterTest/bar";
-    private static final String DATABASE_NAME_3 = "target/StoreLockerLifecycleAdapterTest/baz";
+    @Rule public TestName testName = new TestName();
+    private String storeDir;
+    
+    @Before
+    public void before()
+    {
+        storeDir = TargetDirectory.forTest( getClass() ).directory( testName.getMethodName(), true ).getAbsolutePath();
+    }
 
     @Test
     public void shouldAllowDatabasesToUseFilesetsSequentially() throws Exception
     {
-        EmbeddedGraphDatabase embeddedGraphDatabase = null;
+        GraphDatabaseService db = null;
 
         try
         {
-            embeddedGraphDatabase = new EmbeddedGraphDatabase( DATABASE_NAME_1 );
+            db = new EmbeddedGraphDatabase( storeDir );
         }
         finally
         {
-            embeddedGraphDatabase.shutdown();
+            db.shutdown();
         }
 
         try
         {
-            embeddedGraphDatabase = new EmbeddedGraphDatabase( DATABASE_NAME_1 );
+            db = new EmbeddedGraphDatabase( storeDir );
         }
         finally
         {
-            embeddedGraphDatabase.shutdown();
+            db.shutdown();
         }
     }
 
     @Test
     public void shouldNotAllowDatabasesToUseFilesetsConcurrently() throws Exception
     {
-        EmbeddedGraphDatabase embeddedGraphDatabase = null;
+        GraphDatabaseService db = null;
 
         try
         {
-            embeddedGraphDatabase = new EmbeddedGraphDatabase( DATABASE_NAME_2 );
+            db = new EmbeddedGraphDatabase( storeDir );
 
-            new EmbeddedGraphDatabase( DATABASE_NAME_2 );
+            new EmbeddedGraphDatabase( storeDir );
 
             fail();
         }
@@ -75,20 +85,20 @@ public class StoreLockerLifecycleAdapterTest
         }
         finally
         {
-            embeddedGraphDatabase.shutdown();
+            db.shutdown();
         }
     }
 
     @Test
     public void shouldNotAllowDatabasesToUseFilesetsConcurrentlyEvenIfTheyAreInReadOnlyMode() throws Exception
     {
-        EmbeddedGraphDatabase embeddedGraphDatabase = null;
+        GraphDatabaseService db = null;
 
         try
         {
-            embeddedGraphDatabase = new EmbeddedGraphDatabase( DATABASE_NAME_3 );
+            db = new EmbeddedGraphDatabase( storeDir );
 
-            new EmbeddedReadOnlyGraphDatabase( DATABASE_NAME_3 );
+            new EmbeddedReadOnlyGraphDatabase( storeDir );
 
             fail();
         }
@@ -98,7 +108,7 @@ public class StoreLockerLifecycleAdapterTest
         }
         finally
         {
-            embeddedGraphDatabase.shutdown();
+            db.shutdown();
         }
     }
 }

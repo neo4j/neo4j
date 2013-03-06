@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.core;
 
 import java.util.Collection;
+import java.util.Set;
 
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
@@ -96,6 +97,10 @@ public interface TransactionState
     public TxHook getTxHook();
     
     public TxIdGenerator getTxIdGenerator();
+    
+    Set<Long> getCreatedNodes();
+    
+    Set<Long> getCreatedRelationships();
     
     public static final TransactionState NO_STATE = new NoTransactionState();
 }

@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.storemigration;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.Collections;
@@ -29,6 +28,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.helpers.UTF8;
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyDynamicStoreReader;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyNodeStoreReader;
@@ -48,6 +48,7 @@ public class UpgradableDatabase
      * Initialized by the static block below.
      */
     public static final Map<String, String> fileNamesToExpectedVersions;
+    private final FileSystemAbstraction fs;
 
     static
     {
@@ -72,13 +73,20 @@ public class UpgradableDatabase
                 LegacyDynamicStoreReader.FROM_VERSION_STRING );
         fileNamesToExpectedVersions = Collections.unmodifiableMap( before );
     }
+    
+    public UpgradableDatabase( FileSystemAbstraction fs )
+    {
+        this.fs = fs;
+    }
 
     public boolean storeFilesUpgradeable( File neoStoreFile )
     {
-        try {
+        try
+		{
             checkUpgradeable( neoStoreFile );
             return true;
-        } catch(StoreUpgrader.UnableToUpgradeException e)
+        }
+		catch ( StoreUpgrader.UnableToUpgradeException e )
         {
             return false;
         }
@@ -95,12 +103,14 @@ public class UpgradableDatabase
             try
             {
                 File storeFile = new File( storeDirectory, fileName );
-                if (!storeFile.exists()) {
+                if ( !fs.fileExists( storeFile ) )
+                {
                     throw new StoreUpgrader.UnableToUpgradeException( String.format( "Missing required store file " +
                             "'%s'.", storeFile.getName() ) );
                 }
-                fileChannel = new RandomAccessFile( storeFile, "r" ).getChannel();
-                if ( fileChannel.size() < expectedVersionBytes.length ) {
+                fileChannel = fs.open( storeFile, "r" );
+                if ( fileChannel.size() < expectedVersionBytes.length )
+                {
                     throw new StoreUpgrader.UnableToUpgradeException( String.format( "'%s' does not contain a store " +
                             "version, please ensure that the original database was shut down in a clean state.",
                             storeFile.getName() ) );
@@ -115,17 +125,20 @@ public class UpgradableDatabase
                             "Expected '%s' but file is version '%s'.",
                             storeFile.getName(), expectedVersion, UTF8.decode( foundVersionBytes ) ) );
                 }
-            } catch ( IOException e )
+            }
+            catch ( IOException e )
             {
                 throw new RuntimeException( e );
-            } finally
+            }
+            finally
             {
                 if ( fileChannel != null )
                 {
                     try
                     {
                         fileChannel.close();
-                    } catch ( IOException e )
+                    }
+                    catch ( IOException e )
                     {
                         // Ignore exception on close
                     }

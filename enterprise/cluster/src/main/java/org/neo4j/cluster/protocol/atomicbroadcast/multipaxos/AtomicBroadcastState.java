@@ -96,8 +96,8 @@ public enum AtomicBroadcastState
                         {
                             if ( message.getPayload() instanceof ClusterMessage.ConfigurationChangeState )
                             {
-                                outgoing.offer( internal( ClusterMessage.configurationChanged,
-                                        message.getPayload() ) );
+                                outgoing.offer( message.copyHeadersTo( internal( ClusterMessage.configurationChanged,
+                                        message.getPayload() ) ) );
                             }
 
                             break;
@@ -158,8 +158,8 @@ public enum AtomicBroadcastState
 
                             if ( message.getPayload() instanceof ClusterMessage.ConfigurationChangeState )
                             {
-                                outgoing.offer( internal( ClusterMessage.configurationChanged,
-                                        message.getPayload() ) );
+                                outgoing.offer( message.copyHeadersTo( internal( ClusterMessage.configurationChanged,
+                                        message.getPayload() ) ) );
                             }
                             else
                             {

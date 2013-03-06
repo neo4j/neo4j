@@ -39,7 +39,6 @@ import internal.commands.ShortestPath
 import internal.commands.SortItem
 import internal.commands.True
 import org.junit.Assert._
-import java.lang.String
 import scala.collection.JavaConverters._
 import org.junit.matchers.JUnitMatchers._
 import org.neo4j.graphdb._
@@ -2686,7 +2685,6 @@ RETURN x0.name?
     val advertiser = m("advertiser").asInstanceOf[Node]
     val thing = m("thing").asInstanceOf[Node]
 
-
     //WHEN
     val result = parseAndExecute(
       """START advertiser = node({1}), a = node({2})
@@ -2696,5 +2694,39 @@ RETURN x0.name?
 
     //THEN
     assert(result.toList === List(Map("out.name" -> "product1")))
+  }
+
+  @Test
+  def should_not_create_when_match_exists() {
+    //GIVEN
+    val a = createNode()
+    val b = createNode()
+    relate(a,b,"FOO")
+
+    //WHEN
+    val result = parseAndExecute(
+      """START a=node(1), b=node(2)
+         MATCH a-[old?:FOO]->b
+         WHERE old = null
+         CREATE a-[new:FOO]->b
+         RETURN new""")
+
+    //THEN
+    assert(result.size === 0)
+    assert(result.queryStatistics().relationshipsCreated === 0)
+  }
+
+  @Test
+  def test550() {
+    //WHEN
+    val result = parseAndExecute(
+      """START p=node(0)
+        WITH p
+        START a=node(0)
+        MATCH a-->b
+        RETURN *""")
+
+    //THEN DOESN'T THROW EXCEPTION
+    assert(result.toList === List())
   }
 }

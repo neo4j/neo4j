@@ -28,8 +28,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.io.RandomAccessFile;
 import java.io.Reader;
+import java.io.Writer;
 import java.nio.channels.FileChannel;
 
 import org.neo4j.kernel.impl.nioneo.store.FileLock;
@@ -67,6 +69,12 @@ public class DefaultFileSystemAbstraction
     public Reader openAsReader( File fileName, String encoding ) throws IOException
     {
         return new InputStreamReader( new FileInputStream( fileName ), encoding );
+    }
+    
+    @Override
+    public Writer openAsWriter( File fileName, String encoding, boolean append ) throws IOException
+    {
+        return new OutputStreamWriter( new FileOutputStream( fileName, append ), encoding );
     }
 
     @Override
@@ -145,5 +153,23 @@ public class DefaultFileSystemAbstraction
     public boolean isDirectory( File file )
     {
         return file.isDirectory();
+    }
+    
+    @Override
+    public void moveToDirectory( File file, File toDirectory ) throws IOException
+    {
+        FileUtils.moveFileToDirectory( file, toDirectory );
+    }
+    
+    @Override
+    public void copyFile( File from, File to ) throws IOException
+    {
+        FileUtils.copyFile( from, to );
+    }
+    
+    @Override
+    public void copyRecursively( File fromDirectory, File toDirectory ) throws IOException
+    {
+        FileUtils.copyRecursively( fromDirectory, toDirectory );
     }
 }

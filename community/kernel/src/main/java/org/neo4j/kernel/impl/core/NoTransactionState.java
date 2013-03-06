@@ -20,6 +20,8 @@
 package org.neo4j.kernel.impl.core;
 
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Set;
 
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.event.TransactionData;
@@ -187,5 +189,17 @@ public class NoTransactionState implements TransactionState
     public TxIdGenerator getTxIdGenerator()
     {
         return null;
+    }
+
+    @Override
+    public Set<Long> getCreatedNodes()
+    {
+        return Collections.emptySet();
+    }
+
+    @Override
+    public Set<Long> getCreatedRelationships()
+    {
+        return Collections.emptySet();
     }
 }
