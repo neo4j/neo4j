@@ -23,14 +23,14 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent</artifactId>
-    <version>1.9.M05</version>
+    <version>1.9-SNAPSHOT</version>
     <relativePath>../..</relativePath>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.neo4j</groupId>
   <artifactId>neo4j-kernel</artifactId>
-  <version>1.9.M05</version>
+  <version>1.9-SNAPSHOT</version>
   <name>Neo4j - Graph Database Kernel</name>
   <description>
  Neo4j kernel is a lightweight, embedded Java database designed to

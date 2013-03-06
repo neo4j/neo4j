@@ -4,12 +4,12 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent</artifactId>
-    <version>1.9.M05</version>
+    <version>1.9-SNAPSHOT</version>
     <relativePath>../..</relativePath>
   </parent>
   <groupId>org.neo4j</groupId>
   <artifactId>neo4j-cluster</artifactId>
-  <version>1.9.M05</version>
+  <version>1.9-SNAPSHOT</version>
   <name>Neo4j - Clustering Infrastructure</name>
   <description>Library implementing Paxos and Heartbeat components required for High Availability Neo4j</description>
   <packaging>jar</packaging>
