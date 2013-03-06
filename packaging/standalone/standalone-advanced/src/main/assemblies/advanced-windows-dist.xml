@@ -91,53 +91,33 @@
       <outputDirectory>/lib</outputDirectory>
       <unpack>false</unpack>
       <useProjectArtifact>false</useProjectArtifact>
+      <useStrictFiltering>true</useStrictFiltering>
       <includes>
         <include>org.neo4j:*</include>
         <include>org.apache.geronimo.specs:geronimo-jta_1.1_spec</include>
         <include>org.apache.servicemix.bundles:org.apache.servicemix.bundles.jline</include>
-        <include>org.apache.servicemix.bundles:org.apache.servicemix.bundles.lucene</include>
         <include>org.apache.lucene:lucene-core</include>
         <include>org.scala-lang:scala-library</include>
         <include>com.googlecode.concurrentlinkedhashmap:concurrentlinkedhashmap-lru</include>
       </includes>
       <excludes>
         <exclude>*:javadoc:*</exclude>
-        <exclude>*:manpages:*</exclude>
-        <exclude>*:manpagesenterprise:*</exclude>
-        <exclude>*:docs:*</exclude>
         <exclude>*:pom:*</exclude>
-        <exclude>org.neo4j:neo4j:jar</exclude>
         <exclude>org.neo4j:neo4j-advanced:jar</exclude>
-        <exclude>org.neo4j:neo4j-udc:jar:neo4j</exclude>
-        <exclude>org.neo4j:windows-service-wrapper:*</exclude>
-
-        <exclude>org.neo4j:neo4j-backup</exclude>
-        <exclude>org.neo4j:neo4j-com</exclude>
         <exclude>org.neo4j:neo4j-community</exclude>
-        <exclude>org.neo4j:neo4j-enterprise</exclude>
-        <exclude>org.neo4j:neo4j-ha</exclude>
-        <exclude>org.apache.zookeeper:zookeeper</exclude>
       </excludes>
     </dependencySet>
     <dependencySet>
       <outputDirectory>system/lib</outputDirectory>
       <unpack>false</unpack>
       <useProjectArtifact>false</useProjectArtifact>
+      <useStrictFiltering>true</useStrictFiltering>
       <excludes>
-        <exclude>*:site:*</exclude>
-        <exclude>*:docs:*</exclude>
         <exclude>org.neo4j:*</exclude>
-        <exclude>org.neo4j.examples:*</exclude>
         <exclude>org.neo4j.doc:*</exclude>
         <exclude>org.apache.geronimo.specs:geronimo-jta_1.1_spec</exclude>
         <exclude>org.apache.servicemix.bundles:org.apache.servicemix.bundles.jline</exclude>
-        <exclude>org.apache.servicemix.bundles:org.apache.servicemix.bundles.lucene</exclude>
-        <exclude>org.apache.servicemix.bundles:org.apache.servicemix.bundles.netty</exclude>
         <exclude>org.apache.lucene:lucene-core</exclude>
-        <exclude>org.apache.zookeeper:zookeeper</exclude>
-        <exclude>log4j:log4j</exclude>
-        <exclude>org.neo4j:neo4j-enterprise</exclude>
-        <exclude>*:neo4j-server-enterprise</exclude>
         <exclude>org.scala-lang:scala-library</exclude>
         <exclude>org.neo4j.app:windows-service-wrapper:*</exclude>
         <exclude>com.googlecode.concurrentlinkedhashmap:concurrentlinkedhashmap-lru</exclude>
