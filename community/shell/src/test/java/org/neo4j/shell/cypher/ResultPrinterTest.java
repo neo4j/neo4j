@@ -46,6 +46,8 @@ public class ResultPrinterTest
     private final ResultPrinter resultPrinter = new ResultPrinter();
     private static GraphDatabaseService db = new ImpermanentGraphDatabase();
 
+    private static final String LN = System.getProperty( "line.separator" );
+
     @Before
     public void setUp() throws Exception
     {
@@ -60,12 +62,12 @@ public class ResultPrinterTest
         final CollectingOutput output = new CollectingOutput();
         resultPrinter.outputResults( asList( "foo" ), rows, 0, null, output );
         assertEquals(
-                "+-----+\n" +
-                        "| foo |\n" +
-                        "+-----+\n" +
-                        "+-----+\n" +
-                        "0 rows\n" +
-                        "0 ms\n",
+                "+-----+"+LN+
+                        "| foo |"+LN+
+                        "+-----+"+LN+
+                        "+-----+"+LN+
+                        "0 rows"+LN+
+                        "0 ms"+LN+"",
                 output.asString() );
     }
 
@@ -78,13 +80,13 @@ public class ResultPrinterTest
         final CollectingOutput output = new CollectingOutput();
         resultPrinter.outputResults( asList( "foo" ), rows, 1, null, output );
         assertEquals(
-                "+-----------+\n" +
-                        "| foo       |\n" +
-                        "+-----------+\n" +
-                        "| Node[" + n.getId() + "]{} |\n" +
-                        "+-----------+\n" +
-                        "1 row\n" +
-                        "1 ms\n",
+                "+-----------+"+LN+
+                        "| foo       |"+LN+
+                        "+-----------+"+LN+
+                        "| Node[" + n.getId() + "]{} |"+LN+
+                        "+-----------+"+LN+
+                        "1 row"+LN+
+                        "1 ms"+LN+"",
                 output.asString() );
     }
 
@@ -101,14 +103,14 @@ public class ResultPrinterTest
         final CollectingOutput output = new CollectingOutput();
         resultPrinter.outputResults( asList( "n" ), rows, 100, null, output );
         assertEquals(
-                "+-------------------------------------------------+\n" +
-                        "| n                                               |\n" +
-                        "+-------------------------------------------------+\n" +
-                        "| Node[" + n.getId() + "]{last_checked:1360610542463,foo:[1,2,3]} |\n" +
-                        "| Node[" + n.getId() + "]{last_checked:1360610542463,foo:[1,2,3]} |\n" +
-                        "+-------------------------------------------------+\n" +
-                        "2 rows\n" +
-                        "100 ms\n"
+                "+-------------------------------------------------+"+LN+
+                        "| n                                               |"+LN+
+                        "+-------------------------------------------------+"+LN+
+                        "| Node[" + n.getId() + "]{last_checked:1360610542463,foo:[1,2,3]} |"+LN+
+                        "| Node[" + n.getId() + "]{last_checked:1360610542463,foo:[1,2,3]} |"+LN+
+                        "+-------------------------------------------------+"+LN+
+                        "2 rows"+LN+
+                        "100 ms"+LN+""
                 ,
                 output.asString() );
     }
@@ -131,13 +133,13 @@ public class ResultPrinterTest
         final String text = output.asString();
         System.out.println( text );
         assertEquals(
-                "+-------------------------------------------------------------------------------------+\n" +
-                        "| n         | m         | r                 | p                                       |\n" +
-                        "+-------------------------------------------------------------------------------------+\n" +
-                        "| Node[" + n0.getId() + "]{} | Node[" + n1.getId() + "]{} | :RELATED_TO[" + r.getId() + "] {} | [Node[" + n0.getId() + "]{},:RELATED_TO[" + r.getId() + "] {},Node[" + n1.getId() + "]{}] |\n" +
-                        "+-------------------------------------------------------------------------------------+\n" +
-                        "1 row\n" +
-                        "1 ms\n"
+                "+-------------------------------------------------------------------------------------+"+LN+
+                        "| n         | m         | r                 | p                                       |"+LN+
+                        "+-------------------------------------------------------------------------------------+"+LN+
+                        "| Node[" + n0.getId() + "]{} | Node[" + n1.getId() + "]{} | :RELATED_TO[" + r.getId() + "] {} | [Node[" + n0.getId() + "]{},:RELATED_TO[" + r.getId() + "] {},Node[" + n1.getId() + "]{}] |"+LN+
+                        "+-------------------------------------------------------------------------------------+"+LN+
+                        "1 row"+LN+
+                        "1 ms"+LN+""
                 ,
                 text );
     }
