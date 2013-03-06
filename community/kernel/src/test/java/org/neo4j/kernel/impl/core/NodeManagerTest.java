@@ -20,7 +20,13 @@
 package org.neo4j.kernel.impl.core;
 
 import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+
+import java.util.HashSet;
+import java.util.Set;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -48,7 +54,7 @@ public class NodeManagerTest
         // GIVEN
         Node node = createNodeWith( "wut", "foo" );
 
-        NodeManager nodeManager = db.getDependencyResolver().resolveDependency( NodeManager.class );
+        NodeManager nodeManager = getNodeManager();
         NodeLoggingTracker tracker = new NodeLoggingTracker();
         nodeManager.addNodePropertyTracker( tracker );
 
@@ -65,7 +71,7 @@ public class NodeManagerTest
         // GIVEN node with one property
         Node node = createNodeWith( "wut", "foo" );
 
-        NodeManager nodeManager = db.getDependencyResolver().resolveDependency( NodeManager.class );
+        NodeManager nodeManager = getNodeManager();
         NodeLoggingTracker tracker = new NodeLoggingTracker();
         nodeManager.addNodePropertyTracker( tracker );
 
@@ -86,7 +92,7 @@ public class NodeManagerTest
         // GIVEN relationship with one property
         Relationship relationship = createRelationshipWith( "wut", "foo" );
 
-        NodeManager nodeManager = db.getDependencyResolver().resolveDependency( NodeManager.class );
+        NodeManager nodeManager = getNodeManager();
         RelationshipLoggingTracker tracker = new RelationshipLoggingTracker();
         nodeManager.addRelationshipPropertyTracker( tracker );
 
@@ -96,7 +102,54 @@ public class NodeManagerTest
         //THEN prop is removed from tracker
         assertThat( tracker.removed, is( "0:wut" ) );
     }
+    
+    @Test
+    public void getAllNodesShouldConsiderTxState() throws Exception
+    {
+        // GIVEN
+        Node referenceNode = db.getReferenceNode();
+        Transaction tx = db.beginTx();
+        Node firstCommittedNode = db.createNode();
+        Node secondCommittedNode = db.createNode();
+        tx.success();
+        tx.finish();
+        
+        // WHEN
+        tx = db.beginTx();
+        Node firstAdditionalNode = db.createNode();
+        Node secondAdditionalNode = db.createNode();
+        secondCommittedNode.delete();
+        Set<Node> allNodesSet = addToCollection( getNodeManager().getAllNodes(), new HashSet<Node>() );
+        tx.finish();
 
+        // THEN
+        assertEquals( asSet( referenceNode, firstCommittedNode, firstAdditionalNode, secondAdditionalNode ), allNodesSet );
+    }
+    
+    @Test
+    public void getAllRelationshipsShouldConsiderTxState() throws Exception
+    {
+        // GIVEN
+        Transaction tx = db.beginTx();
+        Relationship firstCommittedRelationship = createRelationshipAssumingTxWith( "key", 1 );
+        Relationship secondCommittedRelationship = createRelationshipAssumingTxWith( "key", 2 );
+        tx.success();
+        tx.finish();
+        
+        // WHEN
+        tx = db.beginTx();
+        Relationship firstAdditionalRelationship = createRelationshipAssumingTxWith( "key", 3 );
+        Relationship secondAdditionalRelationship = createRelationshipAssumingTxWith( "key", 4 );
+        secondCommittedRelationship.delete();
+        Set<Relationship> allRelationshipsSet = addToCollection( getNodeManager().getAllRelationships(),
+                new HashSet<Relationship>() );
+        tx.finish();
+
+        // THEN
+        assertEquals( asSet( firstCommittedRelationship, firstAdditionalRelationship, secondAdditionalRelationship ),
+                allRelationshipsSet );
+    }
+    
     private void delete( Relationship relationship )
     {
         Transaction tx = db.beginTx();
@@ -119,12 +172,18 @@ public class NodeManagerTest
     private Relationship createRelationshipWith( String key, Object value )
     {
         Transaction tx = db.beginTx();
+        Relationship relationship = createRelationshipAssumingTxWith( key, value );
+        tx.success();
+        tx.finish();
+        return relationship;
+    }
+
+    private Relationship createRelationshipAssumingTxWith( String key, Object value )
+    {
         Node a = db.createNode();
         Node b = db.createNode();
         Relationship relationship = a.createRelationshipTo( b, DynamicRelationshipType.withName( "FOO" ) );
         relationship.setProperty( key, value );
-        tx.success();
-        tx.finish();
         return relationship;
     }
 
@@ -176,5 +235,10 @@ public class NodeManagerTest
         public void propertyChanged( Relationship primitive, String propertyName, Object oldValue, Object newValue )
         {
         }
+    }
+
+    private NodeManager getNodeManager()
+    {
+        return db.getDependencyResolver().resolveDependency( NodeManager.class );
     }
 }
