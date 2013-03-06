@@ -19,17 +19,14 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.mockito.Mockito.*;
 
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.Future;
 
 import org.junit.Test;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
+import org.neo4j.test.OtherThreadExecutor;
 
 public class FlippableIndexContextTest
 {
@@ -40,7 +37,7 @@ public class FlippableIndexContextTest
         IndexContext actual = mock( IndexContext.class );
         IndexContext other = mock( IndexContext.class );
         FlippableIndexContext delegate = new FlippableIndexContext(actual);
-        delegate.setFlipTarget( eager( other ) );
+        delegate.setFlipTarget( IndexingService.singleContext( other ) );
 
         // WHEN
         delegate.flip();
@@ -50,87 +47,93 @@ public class FlippableIndexContextTest
         verify( other ).drop();
     }
 
+
     @Test
-    public void shouldOnlySwitchDelegatesBetweenUses() throws InterruptedException
+    public void shouldBlockAccessDuringFlipAndThenDelegateToCorrectContext() throws Exception
     {
-        // This test ensures that is not possible to use FlippableIndexContext while a flip is in progress
-        // in order to avoid nasty races (an update call still using the populator)
-
         // GIVEN
-        final IndexContext actual = mock( IndexContext.class );
-        final IndexContext other = mock( IndexContext.class );
-        final FlippableIndexContext flippable = new FlippableIndexContext( actual );
-        flippable.setFlipTarget( eager( other ) );
-        final AtomicReference<IndexContext> result = new AtomicReference<IndexContext>();
+        final IndexContext contextBeforeFlip = mock( IndexContext.class );
+        final IndexContext contextAfterFlip = mock( IndexContext.class );
+        final FlippableIndexContext flippable = new FlippableIndexContext( contextBeforeFlip );
+        flippable.setFlipTarget( IndexingService.singleContext( contextAfterFlip ) );
 
-        final CountDownLatch actualLatch = new CountDownLatch( 1 );
+        // And given complicated thread race condition tools
+        final CountDownLatch triggerFinishFlip = new CountDownLatch( 1 );
+        final CountDownLatch triggerExternalAccess = new CountDownLatch( 1 );
 
-        doAnswer( new Answer()
+        OtherThreadExecutor<Void> flippingThread = new OtherThreadExecutor<Void>( "Flipping thread", null );
+        OtherThreadExecutor<Void> dropIndexThread = new OtherThreadExecutor<Void>( "Drop index thread", null );
+
+
+        // WHEN one thread starts flipping to another context
+        Future<Void> flipContextFuture = flippingThread.executeDontWait( startFlipAndWaitForLatchBeforeFinishing(
+                flippable,
+                triggerFinishFlip, triggerExternalAccess ) );
+
+        // And I wait until the flipping thread is in the middle of "the flip"
+        triggerExternalAccess.await( 10, SECONDS );
+
+        // And another thread comes along and drops the index
+        Future<Void> dropIndexFuture = dropIndexThread.executeDontWait( dropTheIndex( flippable ) );
+        dropIndexThread.waitUntilWaiting();
+
+        // And the flipping thread finishes the flip
+        triggerFinishFlip.countDown();
+
+        // And both threads get to finish up and return
+        dropIndexFuture.get( 10, SECONDS );
+        flipContextFuture.get( 10, SECONDS );
+
+
+        // THEN the thread wanting to drop the index should not have interacted with the original context
+        // eg. it should have waited for the flip to finish
+        verifyNoMoreInteractions( contextBeforeFlip );
+
+        // But it should have gotten to drop the new index context, after the flip happened.
+        verify( contextAfterFlip ).drop();
+    }
+
+    private OtherThreadExecutor.WorkerCommand<Void, Void> dropTheIndex( final FlippableIndexContext flippable )
+    {
+        return new OtherThreadExecutor.WorkerCommand<Void, Void>()
         {
             @Override
-            public Object answer( InvocationOnMock invocation ) throws Throwable
-            {
-                actualLatch.await();
-                result.set( flippable.getDelegate() );
-                return null;
-            }
-        } ).when( actual ).drop();
-
-        Runnable triggerActual = new Runnable() {
-            @Override
-            public void run()
+            public Void doWork( Void state )
             {
                 flippable.drop();
+                return null;
             }
         };
-
-        final CountDownLatch delegateChangeLatch = new CountDownLatch( 1 );
-
-        Runnable triggerDelegateChange = new Runnable() {
-            @Override
-            public void run()
-            {
-                try
-                {
-                    delegateChangeLatch.await( );
-                }
-                catch ( InterruptedException e )
-                {
-                    throw new RuntimeException( e );
-                }
-                flippable.flip( );
-            }
-        };
-
-        // WHEN
-
-        // trigger blocking call
-        new Thread(triggerActual).start();
-
-        // trigger changing delegate
-        new Thread(triggerDelegateChange).start();
-
-        delegateChangeLatch.countDown();
-
-        // signal blocking call to finish
-        actualLatch.countDown();
-
-
-        // THEN
-        while (result.get() == null) {}
-
-        assertEquals( actual, result.get() );
     }
-    
-    private static IndexContextFactory eager( final IndexContext context )
+
+    private OtherThreadExecutor.WorkerCommand<Void, Void> startFlipAndWaitForLatchBeforeFinishing(
+            final FlippableIndexContext flippable, final CountDownLatch triggerFinishFlip,
+            final CountDownLatch triggerExternalAccess )
     {
-        return new IndexContextFactory()
+        return new OtherThreadExecutor.WorkerCommand<Void, Void>()
         {
             @Override
-            public IndexContext create()
+            public Void doWork( Void state )
             {
-                return context;
+                flippable.flip( new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        triggerExternalAccess.countDown();
+                        try
+                        {
+                            triggerFinishFlip.await( 10, SECONDS );
+                        }
+                        catch ( InterruptedException e )
+                        {
+                            throw new RuntimeException( e );
+                        }
+                    }
+                } );
+                return null;
             }
         };
     }
+
 }
