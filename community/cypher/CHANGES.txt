@@ -1,6 +1,7 @@
 1.8.3
 -----
 o Fixes #395 - ThisShouldNotHappenError for certain patterns
+o Fixes #550 - problem when using START after WITH
 
 1.8.2
 -----

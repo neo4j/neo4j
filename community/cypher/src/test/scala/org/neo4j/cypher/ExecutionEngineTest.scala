@@ -2316,4 +2316,98 @@ RETURN x0.name?
 
     assert(result.toList === List(Map("me.name"->"Neo")))
   }
+
+  @Test
+  def unexpected_traversal_state_should_never_be_hit() {
+    val a = createNode()
+    val b = createNode()
+    val c = createNode()
+
+    relate(a, b)
+    relate(b, c)
+
+    val result = parseAndExecute("START n=node({a}), m=node({b}) MATCH n-[r]->m RETURN *", "a"->a, "b"->c)
+
+    assert(result.toList === List())
+  }
+
+  @Test def path_expressions_should_work_with_on_the_fly_predicates() {
+    relate(refNode, createNode("name" -> "Neo"))
+    val result = parseAndExecute("START a=node({self}) MATCH a-->b WHERE b-->() RETURN b", "self"->refNode)
+
+    assert(result.toList === List())
+  }
+
+  @Test
+  def sort_columns_do_not_leak() {
+    //GIVEN
+    val result = parseAndExecute("start n=node(*) return * order by id(n)")
+
+    //THEN
+    assert(result.columns === List("n"))
+  }
+
+  @Test
+  def should_use_predicates_in_the_correct_place() {
+    //GIVEN
+    val m = parseAndExecute( """create
+                        advertiser = {name:"advertiser1"},
+                        thing      = {name:"Color"},
+                        red        = {name:"red"},
+                        p1         = {name:"product1"},
+                        p2         = {name:"product4"},
+                        (advertiser)-[:adv_has_product]->(p1),
+                        (advertiser)-[:adv_has_product]->(p2),
+                        (thing)-[:aa_has_value]->(red),
+                        (p1)   -[:ap_has_value]->(red),
+                        (p2)   -[:ap_has_value]->(red)
+                        return advertiser, thing""").toList.head
+
+    val advertiser = m("advertiser").asInstanceOf[Node]
+    val thing = m("thing").asInstanceOf[Node]
+
+    //WHEN
+    val result = parseAndExecute(
+      """START advertiser = node({1}), a = node({2})
+       MATCH (advertiser) -[:adv_has_product] ->(out) -[:ap_has_value] -> red <-[:aa_has_value]- (a)
+       WHERE red.name = 'red' and out.name = 'product1'
+       RETURN out.name""", "1" -> advertiser, "2" -> thing)
+
+    //THEN
+    assert(result.toList === List(Map("out.name" -> "product1")))
+  }
+
+  @Test
+  def should_not_create_when_match_exists() {
+    //GIVEN
+    val a = createNode()
+    val b = createNode()
+    relate(a,b,"FOO")
+
+    //WHEN
+    val result = parseAndExecute(
+      """START a=node(1), b=node(2)
+         MATCH a-[old?:FOO]->b
+         WHERE old = null
+         CREATE a-[new:FOO]->b
+         RETURN new""")
+
+    //THEN
+    assert(result.size === 0)
+    assert(result.queryStatistics().relationshipsCreated === 0)
+  }
+
+  @Test
+  def test550() {
+    //WHEN
+    val result = parseAndExecute(
+      """START p=node(0)
+        WITH p
+        START a=node(0)
+        MATCH a-->b
+        RETURN *""")
+
+    //THEN DOESN'T THROW EXCEPTION
+    assert(result.toList === List())
+  }
 }
