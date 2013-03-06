@@ -87,12 +87,11 @@
       <outputDirectory>/lib</outputDirectory>
       <unpack>false</unpack>
       <useProjectArtifact>false</useProjectArtifact>
+      <useStrictFiltering>true</useStrictFiltering>
       <includes>
         <include>org.neo4j:*</include>
         <include>org.apache.geronimo.specs:geronimo-jta_1.1_spec</include>
         <include>org.apache.servicemix.bundles:org.apache.servicemix.bundles.jline</include>
-        <include>org.apache.servicemix.bundles:org.apache.servicemix.bundles.lucene</include>
-        <include>org.apache.servicemix.bundles:org.apache.servicemix.bundles.netty</include>
         <include>org.apache.lucene:lucene-core</include>
         <include>io.netty:netty</include>
         <include>org.slf4j:slf4j-api</include>
@@ -101,14 +100,8 @@
       </includes>
       <excludes>
         <exclude>*:javadoc:*</exclude>
-        <exclude>*:manpages:*</exclude>
-        <exclude>*:manpagesenterprise:*</exclude>
-        <exclude>*:docs:*</exclude>
         <exclude>*:pom:*</exclude>
-        <exclude>org.neo4j:neo4j:jar</exclude>
         <exclude>org.neo4j:neo4j-enterprise:jar</exclude>
-        <exclude>org.neo4j:neo4j-udc:jar:neo4j</exclude>
-        <exclude>org.neo4j.app:windows-service-wrapper:*</exclude>
         <exclude>org.neo4j:neo4j-advanced</exclude>
         <exclude>org.neo4j:neo4j-community</exclude>
       </excludes>
@@ -117,21 +110,15 @@
       <outputDirectory>system/lib</outputDirectory>
       <unpack>false</unpack>
       <useProjectArtifact>false</useProjectArtifact>
+      <useStrictFiltering>true</useStrictFiltering>
       <excludes>
-        <exclude>*:site:*</exclude>
-        <exclude>*:docs:*</exclude>
-        <exclude>*:tests:*</exclude>
         <exclude>org.neo4j:*</exclude>
-        <exclude>org.neo4j.examples:*</exclude>
         <exclude>org.neo4j.doc:*</exclude>
         <exclude>org.apache.geronimo.specs:geronimo-jta_1.1_spec</exclude>
         <exclude>org.apache.servicemix.bundles:org.apache.servicemix.bundles.jline</exclude>
-        <exclude>org.apache.servicemix.bundles:org.apache.servicemix.bundles.lucene</exclude>
-        <exclude>org.apache.servicemix.bundles:org.apache.servicemix.bundles.netty</exclude>
         <exclude>org.apache.lucene:lucene-core</exclude>
         <exclude>io.netty:netty</exclude>
         <exclude>org.slf4j:slf4j-api</exclude>
-        <exclude>org.slf4j:log4j-over-slf4j</exclude>
         <exclude>org.scala-lang:scala-library</exclude>
         <exclude>org.neo4j.app:windows-service-wrapper:*</exclude>
         <exclude>com.googlecode.concurrentlinkedhashmap:concurrentlinkedhashmap-lru</exclude>
