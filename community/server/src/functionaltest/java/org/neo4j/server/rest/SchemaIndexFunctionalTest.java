@@ -47,6 +47,10 @@ public class SchemaIndexFunctionalTest extends AbstractRestFunctionalTestBase
 {
     /**
      * Create schema index.
+     *
+     * This will start a background job in the database that will create and populate the new index.
+     * You can check the status of your index by listing all the indexes for the relevant label.
+     * The new index will show up, but have a state of "POPULATING" until the index is ready.
      */
     @Documented
     @Test
