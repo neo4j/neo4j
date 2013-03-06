@@ -308,6 +308,14 @@ public interface NeoStoreTransaction
     public RelIdArray getCreatedNodes();
 
     /**
+     * Returns an array view of the ids of the nodes that have been created in
+     * this transaction.
+     *
+     * @return An array of the ids of the nodes created in this transaction.
+     */
+    public RelIdArray getCreatedRelationships();
+    
+    /**
      * Check if the node with the given id was created in this transaction.
      *
      * @param nodeId The node id to check.

@@ -75,6 +75,7 @@ public class NodeStore extends AbstractStore implements Store, RecordStore<NodeR
         return getRecordSize();
     }
 
+    @Override
     public NodeRecord getRecord( long id )
     {
         PersistenceWindow window = acquireWindow( id, OperationType.READ );
@@ -153,6 +154,7 @@ public class NodeStore extends AbstractStore implements Store, RecordStore<NodeR
             }
     }
 
+    @Override
     public void updateRecord( NodeRecord record )
     {
         PersistenceWindow window = acquireWindow( record.getId(),
