@@ -2407,8 +2407,21 @@ RETURN x0.name?
          RETURN new""")
 
     //THEN
-    println(result.executionPlanDescription())
     assert(result.size === 0)
     assert(result.queryStatistics().relationshipsCreated === 0)
+  }
+
+  @Test
+  def test550() {
+    //WHEN
+    val result = parseAndExecute(
+      """START p=node(0)
+        WITH p
+        START a=node(0)
+        MATCH a-->b
+        RETURN *""")
+
+    //THEN DOESN'T THROW EXCEPTION
+    assert(result.toList === List())
   }
 }

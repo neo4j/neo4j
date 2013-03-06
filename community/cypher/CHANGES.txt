@@ -1,3 +1,7 @@
+1.9.RC
+------
+o Fixes #550 - problem when using START after WITH
+
 1.9.M05 (2013-03-05)
 --------------------
 o Fixes #450 - Predicates in WHERE are not evaluated correctly for certain patterns
