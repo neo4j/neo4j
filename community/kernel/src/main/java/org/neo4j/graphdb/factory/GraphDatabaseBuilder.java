@@ -40,6 +40,7 @@ import org.neo4j.graphdb.config.Setting;
  */
 public class GraphDatabaseBuilder
 {
+
     public interface DatabaseCreator
     {
         GraphDatabaseService newDatabase( Map<String, String> config );

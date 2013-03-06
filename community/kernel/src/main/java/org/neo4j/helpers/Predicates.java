@@ -20,6 +20,7 @@
 package org.neo4j.helpers;
 
 import java.util.Arrays;
+import java.util.Collection;
 
 import org.neo4j.helpers.collection.Iterables;
 
@@ -92,6 +93,18 @@ public class Predicates
                     }
                 }
                 return false;
+            }
+        };
+    }
+    
+    public static <T> Predicate<T> in( final Collection<T> allowed )
+    {
+        return new Predicate<T>()
+        {
+            @Override
+            public boolean accept( T item )
+            {
+                return allowed.contains( item );
             }
         };
     }

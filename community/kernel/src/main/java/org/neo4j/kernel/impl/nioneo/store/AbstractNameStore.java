@@ -248,21 +248,6 @@ public abstract class AbstractNameStore<T extends AbstractNameRecord> extends Ab
         }
     }
 
-    public void updateRecord( T record, boolean recovered )
-    {
-        assert recovered;
-        setRecovered();
-        try
-        {
-            updateRecord( record );
-            registerIdFromUpdateRecord( record.getId() );
-        }
-        finally
-        {
-            unsetRecovered();
-        }
-    }
-
     @Override
     public void updateRecord( T record )
     {

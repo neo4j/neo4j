@@ -53,7 +53,7 @@ public abstract class AbstractStore extends CommonAbstractStore
         public static final GraphDatabaseSetting.BooleanSetting rebuild_idgenerators_fast = GraphDatabaseSettings.rebuild_idgenerators_fast;
     }
 
-    private Config conf;
+    private final Config conf;
 
     /**
      * Returns the fixed size of each record in this store.
@@ -186,7 +186,7 @@ public abstract class AbstractStore extends CommonAbstractStore
             long fileSize = fileChannel.size();
             int recordSize = getRecordSize();
             boolean fullRebuild = true;
-            if ( (boolean) conf.get( Configuration.rebuild_idgenerators_fast ) )
+            if ( conf.get( Configuration.rebuild_idgenerators_fast ) )
             {
                 fullRebuild = false;
                 highId = findHighIdBackwards();

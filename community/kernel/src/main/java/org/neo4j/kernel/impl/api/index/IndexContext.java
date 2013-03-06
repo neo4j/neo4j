@@ -19,35 +19,48 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.kernel.api.InternalIndexState;
 
-/**
- * Service which is responsible for initially populating new indexes as they get created.
- * It receives notifications about new indexes and will potentially index in the background.
- */
-public interface IndexPopulationService
+public interface IndexContext
 {
-    public static final IndexPopulationService NO_POPULATION_SERVICE = new IndexPopulationService()
-    {
-        @Override
-        public void shutdown()
-        {
-        }
-        
-        @Override
-        public void indexUpdates( Iterable<NodePropertyUpdate> updates )
-        {
-        }
-        
-        @Override
-        public void indexCreated( IndexDefinition index )
-        {
-        }
-    };
+    void create();
     
-    void indexCreated( IndexDefinition index );
+    void update( Iterable<NodePropertyUpdate> updates );
+    
+    void drop();
 
-    void indexUpdates( Iterable<NodePropertyUpdate> updates );
+    InternalIndexState getState();
+
+    void force();
     
-    void shutdown();
+    public static class Adapter implements IndexContext
+    {
+        public static final Adapter EMPTY = new Adapter();
+
+        @Override
+        public void create()
+        {
+        }
+
+        @Override
+        public void update( Iterable<NodePropertyUpdate> updates )
+        {
+        }
+
+        @Override
+        public void drop()
+        {
+        }
+
+        @Override
+        public InternalIndexState getState()
+        {
+            throw new UnsupportedOperationException(  );
+        }
+
+        @Override
+        public void force()
+        {
+        }
+    }
 }

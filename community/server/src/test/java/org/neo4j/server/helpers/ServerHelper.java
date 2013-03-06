@@ -27,6 +27,7 @@ import org.apache.commons.lang.StringUtils;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.index.IndexManager;
+import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.server.NeoServer;
 import org.neo4j.tooling.GlobalGraphOperations;
 
@@ -47,6 +48,15 @@ public class ServerHelper
             {
                 deleteAllNodesAndRelationships( server );
                 deleteAllIndexes( server );
+                deleteAllIndexRules( server );
+            }
+
+            private void deleteAllIndexRules( NeoServer server )
+            {
+                for ( IndexDefinition index : server.getDatabase().getGraph().schema().getIndexes() )
+                {
+                    index.drop();
+                }
             }
 
             private void deleteAllNodesAndRelationships( final NeoServer server )

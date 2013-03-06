@@ -20,7 +20,8 @@
 package org.neo4j.kernel;
 
 import static java.lang.String.format;
-import static java.util.Collections.emptyList;
+import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.helpers.collection.Iterables.empty;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.helpers.collection.IteratorUtil.single;
 
@@ -30,6 +31,7 @@ import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.helpers.Function;
+import org.neo4j.kernel.api.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.PropertyKeyNotFoundException;
 import org.neo4j.kernel.api.SchemaRuleNotFoundException;
@@ -61,23 +63,42 @@ public class SchemaImpl implements Schema
         StatementContext context = ctxProvider.getCtxForReading();
         try
         {
-            Iterable<IndexRule> indexRules = context.getIndexRules( context.getLabelId( label.name() ) );
-            return map( new Function<IndexRule, IndexDefinition>()
-            {
-                @Override
-                public IndexDefinition apply( IndexRule rule )
-                {
-                    return new IndexDefinitionImpl( ctxProvider, label,
-                            propertyKeyManager.getKeyByIdOrNull( (int) rule.getPropertyKey() ).getKey() );
-                }
-            }, indexRules );
+            return getIndexDefinitions( context, context.getIndexRules( context.getLabelId( label.name() ) ) );
         }
         catch ( LabelNotFoundKernelException e )
         {
-            return emptyList();
+            return empty();
         }
     }
 
+    @Override
+    public Iterable<IndexDefinition> getIndexes()
+    {
+        StatementContext context = ctxProvider.getCtxForReading();
+        return getIndexDefinitions( context, context.getIndexRules() );
+    }
+    
+    private Iterable<IndexDefinition> getIndexDefinitions( final StatementContext context,
+            Iterable<IndexRule> indexRules )
+    {
+        return map( new Function<IndexRule, IndexDefinition>()
+        {
+            @Override
+            public IndexDefinition apply( IndexRule rule )
+            {
+                try
+                {
+                    return new IndexDefinitionImpl( ctxProvider, label( context.getLabelName( rule.getLabel() ) ),
+                            propertyKeyManager.getKeyByIdOrNull( (int) rule.getPropertyKey() ).getKey() );
+                }
+                catch ( LabelNotFoundKernelException e )
+                {
+                    throw new RuntimeException( e );
+                }
+            }
+        }, indexRules );
+    }
+    
     @Override
     public IndexState getIndexState( IndexDefinition index )
     {
@@ -87,15 +108,21 @@ public class SchemaImpl implements Schema
         {
             long labelId = context.getLabelId( index.getLabel().name() );
             long propertyKeyId = context.getPropertyKeyId( propertyKey );
-            IndexRule.State indexState = context.getIndexRule( labelId, propertyKeyId ).getState();
+            org.neo4j.kernel.api.InternalIndexState indexState =
+                    context.getIndexState( context.getIndexRule( labelId, propertyKeyId ) );
             switch ( indexState )
             {
                 case POPULATING:
                     return IndexState.POPULATING;
                 case ONLINE:
                     return IndexState.ONLINE;
+                case NON_EXISTENT:
+                    throw new NotFoundException( format( "No index for label %s on property %s",
+                            index.getLabel().name(), propertyKey ) );
+                case FAILED:
+                    return IndexState.FAILED;
                 default:
-                    throw new IllegalArgumentException( String.format( "Illegal value %s", indexState ) );
+                    throw new IllegalArgumentException( String.format( "Illegal index state %s", indexState ) );
             }
         }
         catch ( LabelNotFoundKernelException e )
@@ -110,6 +137,11 @@ public class SchemaImpl implements Schema
         {
             throw new NotFoundException( format( "No index for label %s on property %s",
                     index.getLabel().name(), propertyKey ) );
+        }
+        catch ( IndexNotFoundKernelException e )
+        {
+            throw new NotFoundException( format( "No index for label %s on property %s",
+                    index.getLabel().name(), propertyKey ), e );
         }
     }
 }

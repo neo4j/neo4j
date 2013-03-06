@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import java.util.Arrays;
+
+import org.neo4j.graphdb.Node;
 import org.neo4j.kernel.impl.api.UpdateMode;
 
 public class NodePropertyUpdate
@@ -28,13 +31,21 @@ public class NodePropertyUpdate
     private final Object valueBefore;
     private final Object valueAfter;
     private final UpdateMode updateMode;
+    private final long[] labelsBefore;
+    private final long[] labelsAfter;
 
-    public NodePropertyUpdate( long nodeId, long propertyKeyId, Object valueBefore, Object valueAfter )
+    /**
+     * @param labels a sorted array of labels this property update is for.
+     */
+    public NodePropertyUpdate( long nodeId, long propertyKeyId, Object valueBefore, long[] labelsBefore,
+            Object valueAfter, long[] labelsAfter )
     {
         this.nodeId = nodeId;
         this.propertyKeyId = propertyKeyId;
         this.valueBefore = valueBefore;
+        this.labelsBefore = labelsBefore;
         this.valueAfter = valueAfter;
+        this.labelsAfter = labelsAfter;
         this.updateMode = figureOutUpdateMode( valueBefore, valueAfter );
     }
 
@@ -76,26 +87,105 @@ public class NodePropertyUpdate
         return updateMode;
     }
 
-    public boolean hasLabel( long labelId )
+    /**
+     * Whether or not this property update is for the given {@code labelId}.
+     * 
+     * If this property update comes from setting/changing/removing a property it will
+     * affect all labels on that {@link Node}.
+     * 
+     * If this property update comes from adding or removing labels to/from a {@link Node}
+     * it will affect only those labels.
+     * 
+     * @param labelId the label id the check.
+     */
+    public boolean forLabel( long labelId )
     {
-        // TODO implement adding label id info
-        return true;
+        return updateMode.forLabel( labelsBefore, labelsAfter, labelId );
+    }
+    
+    @Override
+    public String toString()
+    {
+        StringBuilder result = new StringBuilder( getClass().getSimpleName() + "[" + nodeId + ", prop:" + propertyKeyId + " " );
+        switch ( updateMode )
+        {
+        case ADDED: result.append( "add:" + valueAfter ); break;
+        case CHANGED: result.append( "change:" + valueBefore + " => " + valueAfter ); break;
+        case REMOVED: result.append( "remove:" + valueBefore ); break;
+        default: throw new IllegalArgumentException( updateMode.toString() );
+        }
+        result.append( ", labelsBefore:" + Arrays.toString( labelsBefore ) );
+        result.append( ", labelsAfter:" + Arrays.toString( labelsAfter ) );
+        return result.append( "]" ).toString();
     }
 
-    public void apply( int n, IndexPopulator indexManipulator )
+    @Override
+    public int hashCode()
     {
-        switch (getUpdateMode())
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + Arrays.hashCode( labelsBefore );
+        result = prime * result + Arrays.hashCode( labelsAfter );
+        result = prime * result + (int) (nodeId ^ (nodeId >>> 32));
+        result = prime * result + (int) (propertyKeyId ^ (propertyKeyId >>> 32));
+        result = prime * result + updateMode.hashCode();
+        result = prime * result + ((valueAfter == null) ? 0 : valueAfter.hashCode());
+        result = prime * result + ((valueBefore == null) ? 0 : valueBefore.hashCode());
+        return result;
+    }
+
+    @Override
+    public boolean equals( Object obj )
+    {
+        if ( this == obj )
+            return true;
+        if ( obj == null )
+            return false;
+        if ( getClass() != obj.getClass() )
+            return false;
+        NodePropertyUpdate other = (NodePropertyUpdate) obj;
+        if ( !Arrays.equals( labelsBefore, other.labelsBefore ) )
+            return false;
+        if ( !Arrays.equals( labelsAfter, other.labelsAfter ) )
+            return false;
+        if ( nodeId != other.nodeId )
+            return false;
+        if ( propertyKeyId != other.propertyKeyId )
+            return false;
+        if ( updateMode != other.updateMode )
+            return false;
+        if ( valueAfter == null )
         {
-            case ADDED:
-                indexManipulator.add( n, getNodeId(), getValueAfter() );
-                break;
-            case CHANGED:
-                indexManipulator.remove( n, getNodeId(), getValueBefore() );
-                indexManipulator.add( n, getNodeId(), getValueAfter() );
-                break;
-            case REMOVED:
-                indexManipulator.remove( n, getNodeId(), getValueBefore() );
-                break;
+            if ( other.valueAfter != null )
+                return false;
         }
+        else if ( !valueAfter.equals( other.valueAfter ) )
+            return false;
+        if ( valueBefore == null )
+        {
+            if ( other.valueBefore != null )
+                return false;
+        }
+        else if ( !valueBefore.equals( other.valueBefore ) )
+            return false;
+        return true;
+    }
+    
+    public static final long[] EMPTY_LONG_ARRAY = new long[0];
+
+    public static NodePropertyUpdate add( long nodeId, long propertyKeyId, Object value, long[] labels )
+    {
+        return new NodePropertyUpdate( nodeId, propertyKeyId, null, EMPTY_LONG_ARRAY, value, labels );
+    }
+    
+    public static NodePropertyUpdate change( long nodeId, long propertyKeyId, Object valueBefore, long[] labelsBefore,
+            Object valueAfter, long[] labelsAfter )
+    {
+        return new NodePropertyUpdate( nodeId, propertyKeyId, valueBefore, labelsBefore, valueAfter, labelsAfter );
+    }
+    
+    public static NodePropertyUpdate remove( long nodeId, long propertyKeyId, Object value, long[] labels )
+    {
+        return new NodePropertyUpdate( nodeId, propertyKeyId, value, labels, null, EMPTY_LONG_ARRAY );
     }
 }

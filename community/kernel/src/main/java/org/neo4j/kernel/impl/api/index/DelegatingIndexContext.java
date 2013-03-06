@@ -17,16 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api;
+package org.neo4j.kernel.impl.api.index;
 
-import org.neo4j.helpers.Service;
-
-public abstract class IndexPopulatorMapperProvider extends Service
+public class DelegatingIndexContext extends AbstractDelegatingIndexContext
 {
-    protected IndexPopulatorMapperProvider( String key )
+    private final IndexContext delegate;
+
+    public DelegatingIndexContext( IndexContext delegate )
     {
-        super( key );
+        this.delegate = delegate;
     }
     
-    public abstract IndexPopulatorMapper newMapper();
+    @Override
+    protected IndexContext getDelegate()
+    {
+        return delegate;
+    }
 }
