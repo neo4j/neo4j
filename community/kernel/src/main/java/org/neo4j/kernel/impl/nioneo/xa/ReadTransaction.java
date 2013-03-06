@@ -411,6 +411,12 @@ class ReadTransaction implements NeoStoreTransaction
     }
 
     @Override
+    public RelIdArray getCreatedRelationships()
+    {
+        return RelIdArray.EMPTY;
+    }
+    
+    @Override
     public boolean isNodeCreated( long nodeId )
     {
         return false;

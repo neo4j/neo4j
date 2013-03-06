@@ -50,7 +50,7 @@ import org.neo4j.kernel.impl.util.StringLogger;
 public class PersistenceManager
 {
     private final PersistenceSource persistenceSource;
-    private StringLogger msgLog;
+    private final StringLogger msgLog;
     private final AbstractTransactionManager transactionManager;
 
     private final ArrayMap<Transaction,NeoStoreTransaction> txConnectionMap =
@@ -396,6 +396,11 @@ public class PersistenceManager
         return getResource( true ).getCreatedNodes();
     }
 
+    public RelIdArray getCreatedRelationships()
+    {
+        return getResource( true ).getCreatedRelationships();
+    }
+    
     public boolean isNodeCreated( long nodeId )
     {
         return getResource( true ).isNodeCreated( nodeId );
