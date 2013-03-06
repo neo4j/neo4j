@@ -39,7 +39,9 @@ class SchemaIndexTest extends DocumentingTestBase with StatisticsChecker with Gr
   @Test def create_index_on_a_label() {
     testQuery(
       title = "Create index on a label",
-      text = "To create an index on all nodes that have a label, use +CREATE+ +INDEX+ +ON+.",
+      text = "To create an index on a property for all nodes that have a label, use +CREATE+ +INDEX+ +ON+. " +
+        "Note that the index is not immediately available, but will be created in the background. " +
+        "See the <<graphdb-neo4j-schema-indexes, indexes>> section for details.",
       queryText = "create index on :Person(name)",
       returns = "Nothing",
       assertions = (p) => assertIndexesOnLabels("Person", List(List("name")))
