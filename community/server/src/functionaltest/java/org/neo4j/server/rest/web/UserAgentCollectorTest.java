@@ -25,7 +25,6 @@ import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
 import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RestRequest;
-import org.neo4j.server.rest.web.CollectUserAgentFilter;
 
 import java.io.IOException;
 
@@ -70,7 +69,7 @@ public class UserAgentCollectorTest extends AbstractRestFunctionalTestBase
         for (int i=0;i<CollectUserAgentFilter.SAMPLE_FREQ;i++) {
             String url = functionalTestHelper.baseUri().toString();
             JaxRsResponse resp = RestRequest.req().header("User-Agent", userAgent).get(url);
-            String json = resp.getEntity(String.class);
+            String json = resp.getEntity();
             resp.close();
             assertEquals(json, 200, resp.getStatus());
         }

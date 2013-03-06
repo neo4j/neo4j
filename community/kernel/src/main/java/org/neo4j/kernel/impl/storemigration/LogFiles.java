@@ -23,6 +23,8 @@ import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
 
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+
 public class LogFiles
 {
     private static final class LogicalLogFilenameFilter implements
@@ -51,21 +53,24 @@ public class LogFiles
      * Moves all logical logs of a database from one directory
      * to another. Since it just renames files (the standard way of moving with
      * JDK6) from and to must be on the same disk partition.
+     * @param fs 
      *
      * @param filename The base filename for the logical logs
      * @param fromDirectory The directory that hosts the database and its logs
      * @param toDirectory The directory to move the log files to
      * @throws IOException If any of the move operations fail for any reason.
      */
-    public static void move( File fromDirectory,
+    public static void move( FileSystemAbstraction fs, File fromDirectory,
             File toDirectory ) throws IOException
     {
-        assert fromDirectory.isDirectory();
-        assert toDirectory.isDirectory();
+        assert fs.isDirectory( fromDirectory );
+        assert fs.isDirectory( toDirectory );
 
-        for ( String logFile : fromDirectory.list( new LogicalLogFilenameFilter() ) )
+        FilenameFilter filter = new LogicalLogFilenameFilter();
+        for ( File logFile : fs.listFiles( fromDirectory ) )
         {
-            StoreFiles.moveFile( logFile, fromDirectory, toDirectory );
+            if ( filter.accept( fromDirectory, logFile.getName() ) )
+                StoreFiles.moveFile( fs, logFile.getName(), fromDirectory, toDirectory );
         }
     }
 }

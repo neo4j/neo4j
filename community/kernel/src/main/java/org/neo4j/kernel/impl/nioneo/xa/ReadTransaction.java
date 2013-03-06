@@ -50,7 +50,6 @@ import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 import org.neo4j.kernel.impl.persistence.NeoStoreTransaction;
 import org.neo4j.kernel.impl.transaction.xaframework.XaConnection;
 import org.neo4j.kernel.impl.util.ArrayMap;
-import org.neo4j.kernel.impl.util.RelIdArray;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 
 class ReadTransaction implements NeoStoreTransaction
@@ -378,13 +377,7 @@ class ReadTransaction implements NeoStoreTransaction
     {
         throw readOnlyException();
     }
-
-    @Override
-    public RelIdArray getCreatedNodes()
-    {
-        return RelIdArray.EMPTY;
-    }
-
+    
     @Override
     public boolean isNodeCreated( long nodeId )
     {

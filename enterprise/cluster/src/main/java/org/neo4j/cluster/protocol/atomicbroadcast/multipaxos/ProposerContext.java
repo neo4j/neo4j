@@ -24,14 +24,16 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
 
+import org.neo4j.cluster.com.message.Message;
+
 /**
  * Context used by {@link ProposerState} state machine.
  */
 public class ProposerContext
 {
     // Proposer/coordinator state
-    Deque<Object> pendingValues = new LinkedList<Object>();
-    Map<InstanceId, Object> bookedInstances = new HashMap<InstanceId, Object>();
+    Deque<Message> pendingValues = new LinkedList<Message>();
+    Map<InstanceId, Message> bookedInstances = new HashMap<InstanceId, Message>();
 
     public long nextInstanceId = 0;
 

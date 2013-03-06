@@ -19,6 +19,8 @@
  */
 package org.neo4j.shell.kernel.apps;
 
+import static org.neo4j.shell.ShellException.stackTraceAsString;
+
 import java.lang.reflect.Array;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
@@ -57,6 +59,7 @@ import org.neo4j.shell.ShellException;
 import org.neo4j.shell.TextUtil;
 import org.neo4j.shell.impl.AbstractApp;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
+import org.neo4j.shell.util.json.JSONArray;
 import org.neo4j.shell.util.json.JSONException;
 import org.neo4j.tooling.GlobalGraphOperations;
 
@@ -167,7 +170,7 @@ public abstract class GraphDatabaseApp extends AbstractApp
     protected static Direction getDirection( String direction,
         Direction defaultDirection ) throws ShellException
     {
-        return ( Direction ) parseEnum( Direction.class, direction, defaultDirection );
+        return parseEnum( Direction.class, direction, defaultDirection );
     }
 
     protected static NodeOrRelationship getThingById(
@@ -214,6 +217,7 @@ public abstract class GraphDatabaseApp extends AbstractApp
         return this.getServer().getDb().getNodeById( id );
     }
     
+    @Override
     public Continuation execute( AppCommandParser parser, Session session,
         Output out ) throws Exception
     {
@@ -273,12 +277,35 @@ public abstract class GraphDatabaseApp extends AbstractApp
             Map<String, Object> properties = parseJSONMap( propertyJson );
             for ( Map.Entry<String, Object> entry : properties.entrySet() )
             {
-                entity.setProperty( entry.getKey(), entry.getValue() );
+                entity.setProperty( entry.getKey(), jsonToNeo4jPropertyValue( entry.getValue() ) );
             }
         }
         catch ( JSONException e )
         {
             throw ShellException.wrapCause( e );
+        }
+    }
+
+    private Object jsonToNeo4jPropertyValue( Object value ) throws ShellException
+    {
+        try
+        {
+            if ( value instanceof JSONArray )
+            {
+                JSONArray array = (JSONArray) value;
+                Object firstItem = array.get( 0 );
+                Object resultArray = Array.newInstance( firstItem.getClass(), array.length() );
+                for ( int i = 0; i < array.length(); i++ )
+                {
+                    Array.set( resultArray, i, array.get( i ) );
+                }
+                return resultArray;
+            }
+            return value;
+        }
+        catch ( JSONException e )
+        {
+            throw new ShellException( stackTraceAsString( e ) );
         }
     }
 

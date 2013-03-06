@@ -152,6 +152,7 @@ public class ElectionContext
 
     public void startElectionProcess( String role )
     {
+        clusterContext.getLogger( getClass() ).info( "Doing elections for role " + role );
         elections.put( role, new Election( new WinnerStrategy()
         {
             @Override
@@ -163,7 +164,7 @@ public class ElectionContext
                     @Override
                     public boolean accept( Vote item )
                     {
-                        return !( item.getCredentials() instanceof NotElectableElectionCredentials);
+                        return !( item.getCredentials() instanceof NotElectableElectionCredentials );
                     }
                 }, voteList ) );
 
@@ -171,6 +172,8 @@ public class ElectionContext
                 // The most suited candidate should come out on top
                 Collections.sort( filteredVoteList );
                 Collections.reverse( filteredVoteList );
+
+                clusterContext.getLogger( getClass() ).debug( "Elections ended up with list " + filteredVoteList );
 
                 for ( Vote vote : filteredVoteList )
                 {

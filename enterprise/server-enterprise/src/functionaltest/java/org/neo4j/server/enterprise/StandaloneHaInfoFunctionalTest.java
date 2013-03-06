@@ -49,17 +49,17 @@ public class StandaloneHaInfoFunctionalTest extends AbstractEnterpriseRestFuncti
         FunctionalTestHelper helper = new FunctionalTestHelper( server() );
 
         JaxRsResponse response = RestRequest.req().get(helper.managementUri() +
-                MasterInfoService.BASE_PATH + MasterInfoService.ISMASTER_PATH);
+                MasterInfoService.BASE_PATH + MasterInfoService.IS_MASTER_PATH);
         assertEquals( Response.SC_FORBIDDEN, response.getStatus() );
     }
 
     @Test
-    public void testGetMasterOnStandaloneReturns403() throws Exception
+    public void testIsSlaveOnStandaloneReturns403() throws Exception
     {
         FunctionalTestHelper helper = new FunctionalTestHelper( server() );
 
         JaxRsResponse response = RestRequest.req().get(helper.managementUri() +
-                MasterInfoService.BASE_PATH + MasterInfoService.GETMASTER_PATH );
+                MasterInfoService.BASE_PATH + MasterInfoService.IS_SLAVE_PATH );
         assertEquals( Response.SC_FORBIDDEN, response.getStatus() );
     }
 
@@ -70,7 +70,7 @@ public class StandaloneHaInfoFunctionalTest extends AbstractEnterpriseRestFuncti
 
         JaxRsResponse response = RestRequest.req().get( helper.managementUri() );
 
-        Map<String, Object> map = JsonHelper.jsonToMap( response.getEntity( String.class ) );
+        Map<String, Object> map = JsonHelper.jsonToMap( response.getEntity() );
 
         assertEquals( 3, ((Map) map.get( "services" )).size());
     }

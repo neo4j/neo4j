@@ -22,9 +22,9 @@ package org.neo4j.kernel.impl.storemigration;
 import java.io.File;
 import java.io.IOException;
 
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
-import org.neo4j.kernel.impl.util.FileUtils;
 
 public class StoreFiles
 {
@@ -50,14 +50,14 @@ public class StoreFiles
      * @param toDirectory The directory to move the database files to.
      * @throws IOException If any of the move operations fail for any reason.
      */
-    public static void move( File fromDirectory, File toDirectory )
+    public static void move( FileSystemAbstraction fs, File fromDirectory, File toDirectory )
             throws IOException
     {
         // TODO: change the order that files are moved to handle failure conditions properly
         for ( String fileName : fileNames )
         {
-            moveFile( fileName, fromDirectory, toDirectory );
-            moveFile( fileName + ".id", fromDirectory, toDirectory );
+            moveFile( fs, fileName, fromDirectory, toDirectory );
+            moveFile( fs, fileName + ".id", fromDirectory, toDirectory );
         }
     }
 
@@ -68,6 +68,7 @@ public class StoreFiles
 
     /**
      * Moves a file from one directory to another, by a rename op.
+     * @param fs 
      *
      * @param fileName The base filename of the file to move, not the complete
      *            path
@@ -76,16 +77,9 @@ public class StoreFiles
      *            disk partition as filename
      * @throws IOException
      */
-    static void moveFile( String fileName, File fromDirectory,
+    static void moveFile( FileSystemAbstraction fs, String fileName, File fromDirectory,
             File toDirectory ) throws IOException
     {
-        if ( FileUtils.moveFileToDirectory( new File( fromDirectory, fileName ),
-                toDirectory ) == null )
-        {
-            throw new IOException( "Move of file " + fileName + " from "
-                                   + fromDirectory.getAbsolutePath()
-                                   + " to directory "
-                                   + toDirectory.getAbsolutePath() + " failed" );
-        }
+        fs.moveToDirectory( new File( fromDirectory, fileName ), toDirectory );
     }
 }

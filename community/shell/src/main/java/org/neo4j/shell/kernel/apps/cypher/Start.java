@@ -19,6 +19,10 @@
  */
 package org.neo4j.shell.kernel.apps.cypher;
 
+import java.rmi.RemoteException;
+import java.util.Collection;
+import java.util.Map;
+
 import org.neo4j.cypher.CypherException;
 import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.cypher.javacompat.ExecutionResult;
@@ -36,16 +40,9 @@ import org.neo4j.shell.ShellException;
 import org.neo4j.shell.kernel.apps.NodeOrRelationship;
 import org.neo4j.shell.kernel.apps.ReadOnlyGraphDatabaseApp;
 
-import java.rmi.RemoteException;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.regex.Pattern;
-
 @Service.Implementation(App.class)
 public class Start extends ReadOnlyGraphDatabaseApp
 {
-
     private ExecutionEngine engine;
 
     protected ExecutionEngine getEngine()
@@ -117,14 +114,14 @@ public class Start extends ReadOnlyGraphDatabaseApp
         resultPrinter.outputResults( result.columns(), rows, time, result.getQueryStatistics(), out );
     }
 
-    private StringLogger getCypherLogger()
+    protected StringLogger getCypherLogger()
     {
         DependencyResolver dependencyResolver = getServer().getDb().getDependencyResolver();
         Logging logging = dependencyResolver.resolveDependency( Logging.class );
         return logging.getLogger( ExecutionEngine.class );
     }
 
-    private Map<String, Object> getParameters( Session session ) throws ShellException
+    protected Map<String, Object> getParameters(Session session) throws ShellException
     {
         try
         {

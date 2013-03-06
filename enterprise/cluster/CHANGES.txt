@@ -1,4 +1,4 @@
-1.9.M05 (2013-02-12)
+1.9.M05 (2013-03-05)
 --------------------
 o Election happens for all roles when an instance comes online
 o Snapshots are no longer received automatically on cluster join

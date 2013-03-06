@@ -167,7 +167,7 @@ public class RetrieveNodeFunctionalTest extends AbstractRestFunctionalTestBase
     {
         JaxRsResponse response = retrieveNodeFromService( nodeUri.toString() );
 
-        Map<String, Object> map = JsonHelper.jsonToMap( response.getEntity( String.class ) );
+        Map<String, Object> map = JsonHelper.jsonToMap( response.getEntity() );
         assertTrue( map.containsKey( "self" ) );
         response.close();
     }

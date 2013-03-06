@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 1.9.M05 (2013-02-xx)
 --------------------
 o no welcome message with command mode (-c), also configurable with -Dquiet=true
@@ -7,6 +8,12 @@ o dump command for exporting a db or the subgraph of a cypher statement
 o can reassign shell variables, export a=10 && export b=a -> b=10
 o shell can execute a contents file directly with -f file which is faster
   than piping via stdout
+=======
+1.9.M05
+-------
+o Add PROFILE command for cypher queries
+
+>>>>>>> master
 
 1.8.RC1 (2012-09-05)
 --------------------

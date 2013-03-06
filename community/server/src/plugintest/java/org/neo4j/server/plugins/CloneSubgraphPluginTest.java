@@ -167,7 +167,7 @@ public class CloneSubgraphPluginTest extends ExclusiveServerTestBase
         // Find the start node URI from the server
         JaxRsResponse response = new RestRequest().get(functionalTestHelper.dataUri() + "node/1");
 
-        String entity = response.getEntity( String.class );
+        String entity = response.getEntity();
 
         Map<String, Object> map = JsonHelper.jsonToMap( entity );
 

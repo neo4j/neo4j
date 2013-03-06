@@ -25,6 +25,7 @@ import static org.junit.Assert.*;
 import static org.neo4j.server.helpers.ServerBuilder.server;
 
 import java.io.IOException;
+import java.lang.String;
 
 import javax.ws.rs.core.MediaType;
 
@@ -91,7 +92,7 @@ public class ServerConfigTest extends ExclusiveServerTestBase
 
         assertEquals(200, response.getStatus());
         assertEquals("application/vnd.sun.wadl+xml", response.getHeaders().get("Content-Type").iterator().next());
-        assertThat( response.getEntity( String.class ), containsString( "<application xmlns=\"http://wadl.dev.java" +
+        assertThat( response.getEntity(), containsString( "<application xmlns=\"http://wadl.dev.java" +
                 ".net/2009/02\">" ) );
     }
 

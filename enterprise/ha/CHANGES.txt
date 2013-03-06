@@ -1,4 +1,4 @@
-1.9.M05 (2013-02-12)
+1.9.M05 (2013-03-05)
 --------------------
 o Slave only mode is now available
 o HA server will now bind by default to all interfaces (0.0.0.0)

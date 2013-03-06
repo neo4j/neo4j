@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.core;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map.Entry;
@@ -716,9 +717,16 @@ public class WritableTransactionState implements TransactionState
         }
     }
     
-    private Set<Long> getCreatedNodes()
+    @Override
+    public Set<Long> getCreatedNodes()
     {
-        return primitiveElement.createdNodes;
+        return primitiveElement != null ? primitiveElement.createdNodes : Collections.<Long>emptySet();
+    }
+    
+    @Override
+    public Set<Long> getCreatedRelationships()
+    {
+        return primitiveElement != null ? primitiveElement.createdRelationships : Collections.<Long>emptySet();
     }
 
     @Override

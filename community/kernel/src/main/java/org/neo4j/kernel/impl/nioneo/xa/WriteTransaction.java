@@ -87,7 +87,6 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaConnection;
 import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
 import org.neo4j.kernel.impl.transaction.xaframework.XaTransaction;
 import org.neo4j.kernel.impl.util.ArrayMap;
-import org.neo4j.kernel.impl.util.RelIdArray;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 
 /**
@@ -1708,22 +1707,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             return "Lockable relationship #" + this.getId();
         }
     }
-
-    @Override
-    public RelIdArray getCreatedNodes()
-    {
-        RelIdArray createdNodes = new RelIdArray( 0 );
-        for ( RecordChange<Long,NodeRecord,Void> node : nodeRecords.changes() )
-        {
-            if ( node.isCreated() )
-            {
-                // TODO Direction doesn't matter... misuse of RelIdArray?
-                createdNodes.add( node.getKey(), DirectionWrapper.OUTGOING );
-            }
-        }
-        return createdNodes;
-    }
-
+    
     @Override
     public boolean isNodeCreated( long nodeId )
     {

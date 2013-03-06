@@ -27,7 +27,6 @@ import org.neo4j.shell.Continuation;
 import org.neo4j.shell.Output;
 import org.neo4j.shell.Session;
 import org.neo4j.shell.ShellException;
-import org.neo4j.shell.Variables;
 import org.neo4j.shell.impl.AbstractApp;
 import org.neo4j.shell.util.json.JSONParser;
 
@@ -60,6 +59,7 @@ public class Export extends AbstractApp
         return Pair.of( key, value );
     }
 
+    @Override
     public Continuation execute( AppCommandParser parser, Session session,
                                  Output out ) throws ShellException
     {

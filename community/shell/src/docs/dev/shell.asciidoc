@@ -261,7 +261,11 @@ use the +cypher VERSION+ prefix to select a certain cypher parser.
 [TIP]
 Cypher queries need to be terminated by a semicolon `;`.
 
-Cypher commands are passed all shell variables as parameters and the special +self+ parameter for the current node or relationship.
+Cypher commands are given all shell variables as parameters and the special +self+ parameter for the current node or relationship.
+
+* +start n = node(0) return n;+ will give you a listing of the node with ID 0
+* +cypher 1.8 start n = node(0) return n;+ will execute the query with the Cypher parser version 1.8
+* +profile start n = node(0) return n;+ will execute the cypher query and display profiling information
 
 * +START n = node(\{self}) MATCH (n)-[:KNOWS]->(friend) RETURN friend;+ will
 return the nodes connected to the current node.

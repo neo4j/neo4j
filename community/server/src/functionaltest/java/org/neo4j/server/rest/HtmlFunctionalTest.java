@@ -94,7 +94,7 @@ public class HtmlFunctionalTest extends AbstractRestFunctionalTestBase
     public void shouldGetRoot() {
         JaxRsResponse response = RestRequest.req().get(functionalTestHelper.dataUri(), MediaType.TEXT_HTML_TYPE);
         assertEquals(Status.OK.getStatusCode(), response.getStatus());
-        assertValidHtml(response.getEntity(String.class));
+        assertValidHtml( response.getEntity() );
         response.close();
     }
 
@@ -102,7 +102,7 @@ public class HtmlFunctionalTest extends AbstractRestFunctionalTestBase
     public void shouldGetNodeIndexRoot() {
         JaxRsResponse response = RestRequest.req().get(functionalTestHelper.nodeIndexUri(), MediaType.TEXT_HTML_TYPE);
         assertEquals(Status.OK.getStatusCode(), response.getStatus());
-        assertValidHtml(response.getEntity(String.class));
+        assertValidHtml( response.getEntity() );
         response.close();
     }
 
@@ -110,7 +110,7 @@ public class HtmlFunctionalTest extends AbstractRestFunctionalTestBase
     public void shouldGetRelationshipIndexRoot() {
         JaxRsResponse response = RestRequest.req().get(functionalTestHelper.relationshipIndexUri(), MediaType.TEXT_HTML_TYPE);
         assertEquals(Status.OK.getStatusCode(), response.getStatus());
-        assertValidHtml(response.getEntity(String.class));
+        assertValidHtml( response.getEntity() );
         response.close();
     }
 
@@ -118,7 +118,7 @@ public class HtmlFunctionalTest extends AbstractRestFunctionalTestBase
     public void shouldGetTrinityWhenSearchingForHer() {
         JaxRsResponse response = RestRequest.req().get(functionalTestHelper.indexNodeUri("node", "name", "Trinity"), MediaType.TEXT_HTML_TYPE);
         assertEquals(Status.OK.getStatusCode(), response.getStatus());
-        String entity = response.getEntity(String.class);
+        String entity = response.getEntity();
         assertTrue(entity.contains("Trinity"));
         assertValidHtml(entity);
         response.close();
@@ -128,7 +128,7 @@ public class HtmlFunctionalTest extends AbstractRestFunctionalTestBase
     public void shouldGetThomasAndersonDirectly() {
         JaxRsResponse response = RestRequest.req().get(functionalTestHelper.nodeUri(thomasAnderson), MediaType.TEXT_HTML_TYPE);
         assertEquals(Status.OK.getStatusCode(), response.getStatus());
-        String entity = response.getEntity(String.class);
+        String entity = response.getEntity();
         assertTrue(entity.contains("Thomas Anderson"));
         assertValidHtml(entity);
         response.close();
@@ -139,7 +139,7 @@ public class HtmlFunctionalTest extends AbstractRestFunctionalTestBase
         final RestRequest request = RestRequest.req();
         JaxRsResponse response = request.get(functionalTestHelper.relationshipsUri(thomasAnderson, RelationshipDirection.all.name(), "KNOWS"), MediaType.TEXT_HTML_TYPE);
         assertEquals(Status.OK.getStatusCode(), response.getStatus());
-        String entity = response.getEntity(String.class);
+        String entity = response.getEntity();
         assertTrue(entity.contains("KNOWS"));
         assertFalse(entity.contains("LOVES"));
         assertValidHtml(entity);
@@ -148,7 +148,7 @@ public class HtmlFunctionalTest extends AbstractRestFunctionalTestBase
         response = request.get(functionalTestHelper.relationshipsUri(thomasAnderson, RelationshipDirection.all.name(), "LOVES"),
                 MediaType.TEXT_HTML_TYPE);
 
-        entity = response.getEntity(String.class);
+        entity = response.getEntity();
         assertFalse(entity.contains("KNOWS"));
         assertTrue(entity.contains("LOVES"));
         assertValidHtml(entity);
@@ -157,7 +157,7 @@ public class HtmlFunctionalTest extends AbstractRestFunctionalTestBase
         response = request.get(
                 functionalTestHelper.relationshipsUri(thomasAnderson, RelationshipDirection.all.name(), "LOVES",
                         "KNOWS"),MediaType.TEXT_HTML_TYPE);
-        entity = response.getEntity(String.class);
+        entity = response.getEntity();
         assertTrue(entity.contains("KNOWS"));
         assertTrue(entity.contains("LOVES"));
         assertValidHtml(entity);
@@ -168,7 +168,7 @@ public class HtmlFunctionalTest extends AbstractRestFunctionalTestBase
     public void shouldGetThomasAndersonLovesTrinityRelationship() {
         JaxRsResponse response = RestRequest.req().get(functionalTestHelper.relationshipUri(thomasAndersonLovesTrinity), MediaType.TEXT_HTML_TYPE);
         assertEquals(Status.OK.getStatusCode(), response.getStatus());
-        String entity = response.getEntity(String.class);
+        String entity = response.getEntity();
         assertTrue(entity.contains("strength"));
         assertTrue(entity.contains("100"));
         assertTrue(entity.contains("LOVES"));

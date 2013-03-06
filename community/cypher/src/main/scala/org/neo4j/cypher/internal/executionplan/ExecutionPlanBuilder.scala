@@ -96,7 +96,6 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService) extends PatternGraphBuil
         case None => continue = false
         case Some(q) =>
           planInProgress = planInProgress.copy(query = q)
-          validatePattern(planInProgress.pipe.symbols, planInProgress.query.patterns.map(_.token))
       }
     }
 

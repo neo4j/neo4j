@@ -23,7 +23,7 @@ define(
    './RelationshipStyler'
    './VisualDataModel'
    './views/NodeFilterDialog'
-   'lib/amd/arb-or'],
+   'feature!arbor'],
   (Renderer, RelationshipStyler, VisualDataModel, NodeFilterDialog, arbor) ->
 
     class VisualGraph
@@ -37,25 +37,28 @@ define(
 
         @dataModel = new VisualDataModel()
 
-        @sys = arbor.ParticleSystem()
-        @sys.parameters({
-          repulsion:10,
-          stiffness:100,
-          friction:0.5,
-          gravity:true,
-          fps:30,
-          dt:0.015,
-          precision:0.5
-        })
+        if arbor.works
+          @sys = arbor.ParticleSystem()
+          @sys.parameters({
+            repulsion:10,
+            stiffness:100,
+            friction:0.5,
+            gravity:true,
+            fps:30,
+            dt:0.015,
+            precision:0.5
+          })
 
-        @stop()
+          @stop()
 
-        @sys.renderer = new Renderer(@el, @relationshipStyler)
-        @sys.renderer.bind "node:click", @nodeClicked
-        @sys.renderer.bind "node:dropped", @nodeDropped
-        @sys.screenPadding(20)
+          @sys.renderer = new Renderer(@el, @relationshipStyler)
+          @sys.renderer.bind "node:click", @nodeClicked
+          @sys.renderer.bind "node:dropped", @nodeDropped
+          @sys.screenPadding(20)
 
-        @steadStateWorker = setInterval(@steadyStateCheck, 1000)
+          @steadStateWorker = setInterval(@steadyStateCheck, 1000)
+        else
+          @el = $("<div class='missing' style='height:#{height}px'><div class='alert alert-error'><p><strong>Darn</strong>. I can see you have a beautiful graph. Sadly, I can't render that vision in this browser.</p></div></div>")
 
       steadyStateCheck : () =>
         energy = @sys.energy()
@@ -135,18 +138,20 @@ define(
         node.fixed = false
 
       stop : () =>
-        if @sys.renderer?
-          @sys.renderer.stop()
-        @sys.parameters({gravity:false})
-        @sys.stop()
+        if arbor.works
+          if @sys.renderer?
+            @sys.renderer.stop()
+          @sys.parameters({gravity:false})
+          @sys.stop()
 
       start : () =>
-        if @sys.renderer?
-          @sys.renderer.start()
-        @sys.start(true)
+        if arbor.works
+          if @sys.renderer?
+            @sys.renderer.start()
+          @sys.start(true)
 
-        # Force a redraw
-        @sys.renderer.redraw()
+          # Force a redraw
+          @sys.renderer.redraw()
 
       attach : (parent) =>
         @detach()

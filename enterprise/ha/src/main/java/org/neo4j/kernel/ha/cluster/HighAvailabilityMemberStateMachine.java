@@ -118,8 +118,8 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
                         } );
                 context.setAvailableHaMasterId( null );
                 accessGuard.setState( state );
-                logger.debug( "Got masterIsElected(" + masterUri + "), moved to " + state + " from " +
-                        oldState + ". Previous elected master is " + previousElected );
+                logger.debug( "Got masterIsElected(" + masterUri + "), changed " + oldState + " -> " +
+                        state + ". Previous elected master is " + previousElected );
             }
             catch ( Throwable t )
             {

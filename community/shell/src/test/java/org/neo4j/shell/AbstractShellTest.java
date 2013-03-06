@@ -19,6 +19,7 @@
  */
 package org.neo4j.shell;
 
+import static java.lang.Integer.parseInt;
 import static java.util.regex.Pattern.compile;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -317,5 +318,11 @@ public abstract class AbstractShellTest
         node.setProperty( key, value );
         tx.success();
         tx.finish();
+    }
+    
+    protected Node getCurrentNode() throws RemoteException, ShellException
+    {
+        Serializable current = shellServer.interpretVariable( shellClient.getId(), Variables.CURRENT_KEY );
+        return this.db.getNodeById( parseInt( current.toString().substring( 1 ) ) );
     }
 }

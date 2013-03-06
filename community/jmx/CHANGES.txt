@@ -1,4 +1,4 @@
-1.9.M05 (2013-02-12)
+1.9.M05 (2013-03-05)
 --------------------
 o JMX will now provide info on all configuration values, including the defaults not explicitly set
 

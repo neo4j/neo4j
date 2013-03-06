@@ -3,12 +3,14 @@
 o Adds support for adding, listing, removing, and testing of labels
   (Complete for kernel, beans API)
 
-1.9.M05 (2013-02-12)]
+1.9.M05 (2013-03-05)
 --------------------
 o Concurrent modifications to relationship chains now do now lead to RecordNotInUse exceptions or
   cache poisoning
 o Proper tx management will now make negative transaction counts impossible
 o IndexProvider is now deprecated, replaced by KernelExtensionFactory
+o Store locks are respected from read only instances too
+o grab_file_lock configuration setting is now deprecated
 
 1.9.M04 (2013-01-17)
 --------------------
