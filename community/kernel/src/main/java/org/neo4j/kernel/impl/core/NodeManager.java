@@ -19,13 +19,17 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import static java.util.Arrays.asList;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -36,7 +40,11 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.helpers.Pair;
+import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.Triplet;
+import org.neo4j.helpers.collection.CombiningIterator;
+import org.neo4j.helpers.collection.FilteringIterator;
+import org.neo4j.helpers.collection.IteratorWrapper;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.PropertyTracker;
 import org.neo4j.kernel.configuration.Config;
@@ -58,6 +66,7 @@ import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.RelIdArray;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 import org.neo4j.kernel.impl.util.RelIdArrayWithLoops;
+import org.neo4j.kernel.impl.util.RelIdIterator;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
@@ -66,7 +75,7 @@ public class NodeManager
 {
     private long referenceNodeId = 0;
 
-    private StringLogger logger;
+    private final StringLogger logger;
     private final GraphDatabaseService graphDbService;
     private final Cache<NodeImpl> nodeCache;
     private final Cache<RelationshipImpl> relCache;
@@ -325,11 +334,11 @@ public class NodeManager
         return new RelationshipProxy( id, relationshipLookups );
     }
 
-
+    @SuppressWarnings( "unchecked" )
     public Iterator<Node> getAllNodes()
     {
         final long highId = getHighestPossibleIdInUse( Node.class );
-        return new PrefetchingIterator<Node>()
+        Iterator<Node> committedNodes = new PrefetchingIterator<Node>()
         {
             private long currentId;
 
@@ -354,6 +363,49 @@ public class NodeManager
                 return null;
             }
         };
+        
+        final TransactionState txState = getTransactionState();
+        if ( !txState.hasChanges() )
+            return committedNodes;
+            
+        /* Created nodes are put in the cache right away, even before the transaction is committed.
+         * We want this iterator to include nodes that have been created, but not yes committed in
+         * this transaction. The thing with the cache is that stuff can be evicted at any point in time
+         * so we can't rely on created nodes to be there during the whole life time of this iterator.
+         * That's why we filter them out from the "committed/cache" iterator and add them at the end instead.*/
+        final Set<Long> createdNodes = asSet( getCreatedNodes().iterator( DirectionWrapper.OUTGOING ) );
+        if ( !createdNodes.isEmpty() )
+        {
+            committedNodes = new FilteringIterator<Node>( committedNodes, new Predicate<Node>()
+            {
+                @Override
+                public boolean accept( Node node )
+                {
+                    return !createdNodes.contains( node.getId() );
+                }
+            } );
+        }
+        
+        // Filter out nodes deleted in this transaction
+        Iterator<Node> filteredRemovedNodes = new FilteringIterator<Node>( committedNodes, new Predicate<Node>()
+        {
+            @Override
+            public boolean accept( Node node )
+            {
+                return !txState.isDeleted( node );
+            }
+        } );
+        
+        // Append nodes created in this transaction
+        return new CombiningIterator<Node>( asList( filteredRemovedNodes,
+                new IteratorWrapper<Node,Long>( createdNodes.iterator() )
+        {
+            @Override
+            protected Node underlyingObjectToObject( Long id )
+            {
+                return getNodeById( id );
+            }
+        } ) );
     }
 
     NodeImpl getLightNode( long nodeId )
@@ -465,10 +517,11 @@ public class NodeManager
         return relationship;
     }
 
+    @SuppressWarnings( "unchecked" )
     public Iterator<Relationship> getAllRelationships()
     {
         final long highId = getHighestPossibleIdInUse( Relationship.class );
-        return new PrefetchingIterator<Relationship>()
+        Iterator<Relationship> committedRelationships = new PrefetchingIterator<Relationship>()
         {
             private long currentId;
 
@@ -493,6 +546,59 @@ public class NodeManager
                 return null;
             }
         };
+
+        final TransactionState txState = getTransactionState();
+        if ( !txState.hasChanges() )
+            return committedRelationships;
+        
+        /* Created relationships are put in the cache right away, even before the transaction is committed.
+         * We want this iterator to include relationships that have been created, but not yes committed in
+         * this transaction. The thing with the cache is that stuff can be evicted at any point in time
+         * so we can't rely on created relationships to be there during the whole life time of this iterator.
+         * That's why we filter them out from the "committed/cache" iterator and add them at the end instead.*/
+        final Set<Long> createdRelationships = asSet( getCreatedRelationships().iterator( DirectionWrapper.OUTGOING ) );
+        if ( !createdRelationships.isEmpty() )
+        {
+            committedRelationships = new FilteringIterator<Relationship>( committedRelationships,
+                    new Predicate<Relationship>()
+            {
+                @Override
+                public boolean accept( Relationship relationship )
+                {
+                    return !createdRelationships.contains( relationship.getId() );
+                }
+            } );
+        }
+            
+        // Filter out relationships deleted in this transaction
+        Iterator<Relationship> filteredRemovedRelationships =
+                new FilteringIterator<Relationship>( committedRelationships, new Predicate<Relationship>()
+        {
+            @Override
+            public boolean accept( Relationship relationship )
+            {
+                return !txState.isDeleted( relationship );
+            }
+        } );
+        
+        // Append relationships created in this transaction
+        return new CombiningIterator<Relationship>( asList( filteredRemovedRelationships,
+                new IteratorWrapper<Relationship, Long>( createdRelationships.iterator() )
+        {
+            @Override
+            protected Relationship underlyingObjectToObject( Long id )
+            {
+                return getRelationshipById( id );
+            }
+        } ) );
+    }
+
+    private Set<Long> asSet( RelIdIterator ids )
+    {
+        Set<Long> set = new HashSet<Long>();
+        while ( ids.hasNext() )
+            set.add( ids.next() );
+        return set;
     }
 
     RelationshipType getRelationshipTypeById( int id )
@@ -1038,6 +1144,11 @@ public class NodeManager
         return persistenceManager.getCreatedNodes();
     }
 
+    RelIdArray getCreatedRelationships()
+    {
+        return persistenceManager.getCreatedRelationships();
+    }
+    
     boolean nodeCreated( long nodeId )
     {
         return persistenceManager.isNodeCreated( nodeId );
