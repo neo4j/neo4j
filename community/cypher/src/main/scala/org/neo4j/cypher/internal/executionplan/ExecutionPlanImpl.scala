@@ -68,7 +68,6 @@ class ExecutionPlanImpl(inputQuery: Query, graph: GraphDatabaseService) extends 
         case None    => continue = false
         case Some(q) =>
           planInProgress = planInProgress.copy(query = q)
-          validatePattern(planInProgress.pipe.symbols, planInProgress.query.patterns.map(_.token))
       }
     }
 
