@@ -15,6 +15,7 @@ org.neo4j.shell.kernel.apps.Mkrel
 org.neo4j.shell.kernel.apps.Mv
 org.neo4j.shell.kernel.apps.Pwd
 org.neo4j.shell.kernel.apps.cypher.Start
+org.neo4j.shell.kernel.apps.cypher.Profile
 org.neo4j.shell.kernel.apps.Rm
 org.neo4j.shell.kernel.apps.Rmrel
 org.neo4j.shell.kernel.apps.Rmnode
