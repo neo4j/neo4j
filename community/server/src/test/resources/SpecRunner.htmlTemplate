@@ -29,6 +29,8 @@
                 
                 // Files without namespaces
                 "order"   : "target/classes/webadmin-html/js/order",
+                "feature"   : "target/classes/webadmin-html/js/feature",
+                "implementations": "target/classes/webadmin-html/js/lib/amd/impl-map"
             },
         });
         
