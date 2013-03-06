@@ -79,15 +79,15 @@ public class ResultPrinterTest
 
         final CollectingOutput output = new CollectingOutput();
         resultPrinter.outputResults( asList( "foo" ), rows, 1, null, output );
+        String out = output.asString();
         assertEquals(
-                "+-----------+"+LN+
-                        "| foo       |"+LN+
-                        "+-----------+"+LN+
-                        "| Node[" + n.getId() + "]{} |"+LN+
-                        "+-----------+"+LN+
-                        "1 row"+LN+
-                        "1 ms"+LN+"",
-                output.asString() );
+            "+-----------+"+LN+
+            "| foo       |"+LN+
+            "+-----------+"+LN+
+            "| Node[" + n.getId() + "]{} |"+LN+
+            "+-----------+"+LN+
+            "1 row"+LN+
+            "1 ms"+LN+"".toCharArray(), out.toCharArray() );
     }
 
     @Test
@@ -131,7 +131,7 @@ public class ResultPrinterTest
         final CollectingOutput output = new CollectingOutput();
         resultPrinter.outputResults( asList( "n", "m", "r", "p" ), rows, 1, null, output );
         final String text = output.asString();
-        System.out.println( text );
+
         assertEquals(
                 "+-------------------------------------------------------------------------------------+"+LN+
                         "| n         | m         | r                 | p                                       |"+LN+
