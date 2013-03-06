@@ -19,8 +19,8 @@
  */
 package org.neo4j.shell.kernel.apps.cypher;
 
+import java.io.PrintWriter;
 import java.rmi.RemoteException;
-import java.util.Collection;
 import java.util.Map;
 
 import org.neo4j.cypher.CypherException;
@@ -28,13 +28,13 @@ import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.Service;
-import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.shell.App;
 import org.neo4j.shell.AppCommandParser;
 import org.neo4j.shell.Continuation;
 import org.neo4j.shell.Output;
+import org.neo4j.shell.OutputAsWriter;
 import org.neo4j.shell.Session;
 import org.neo4j.shell.ShellException;
 import org.neo4j.shell.kernel.apps.NodeOrRelationship;
@@ -49,7 +49,7 @@ public class Start extends ReadOnlyGraphDatabaseApp
     {
         if ( this.engine == null )
         {
-            synchronized (this)
+            synchronized ( this )
             {
                 if ( this.engine == null )
                 {
@@ -84,7 +84,8 @@ public class Start extends ReadOnlyGraphDatabaseApp
                 final long startTime = System.currentTimeMillis();
                 ExecutionResult result = getEngine().execute( trimQuery( query ), getParameters( session ) );
                 handleResult( out, result, startTime, session, parser );
-            } catch ( CypherException e )
+            }
+            catch ( CypherException e )
             {
                 throw ShellException.wrapCause( e );
             }
@@ -101,17 +102,15 @@ public class Start extends ReadOnlyGraphDatabaseApp
         return query.substring( 0, query.lastIndexOf( ";" ) );
     }
 
-    protected void handleResult( Output out, ExecutionResult result, long startTime, Session session, AppCommandParser parser ) throws RemoteException, ShellException
+    protected void handleResult( Output out, ExecutionResult result, long startTime, Session session,
+            AppCommandParser parser ) throws RemoteException, ShellException
     {
-        final Collection<Map<String, Object>> rows = IteratorUtil.asCollection( result );
-        final long time = System.currentTimeMillis() - startTime;
-        printResult( out, result, rows, time );
+        printResult( out, result/*, rows, time*/ );
     }
 
-    private void printResult( Output out, ExecutionResult result, Collection<Map<String, Object>> rows, long time ) throws RemoteException
+    private void printResult( Output out, ExecutionResult result ) throws RemoteException
     {
-        final ResultPrinter resultPrinter = new ResultPrinter();
-        resultPrinter.outputResults( result.columns(), rows, time, result.getQueryStatistics(), out );
+        result.toString( new PrintWriter( new OutputAsWriter( out ) ) );
     }
 
     protected StringLogger getCypherLogger()
@@ -126,9 +125,9 @@ public class Start extends ReadOnlyGraphDatabaseApp
         try
         {
             NodeOrRelationship self = getCurrent( session );
-            session.set( "self", self.isNode() ? self.asNode() : self
-                    .asRelationship() );
-        } catch ( ShellException e )
+            session.set( "self", self.isNode() ? self.asNode() : self.asRelationship() );
+        }
+        catch ( ShellException e )
         { // OK, current didn't exist
         }
         return session.asMap();

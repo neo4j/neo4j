@@ -38,6 +38,7 @@ public class CollectingOutput extends UnicastRemoteObject implements Output, Ser
     private String ongoingLine = "";
     private StringWriter stringWriter = new StringWriter();
     private PrintWriter allLinesAsOne = new PrintWriter( stringWriter );
+    private final String lineSeparator = System.getProperty( "line.separator" );
 
     public CollectingOutput() throws RemoteException
     {
@@ -84,7 +85,23 @@ public class CollectingOutput extends UnicastRemoteObject implements Output, Ser
     @Override
     public void print( Serializable object ) throws RemoteException
     {
-        ongoingLine += object.toString();
+        String string = object.toString();
+        int index = 0;
+        while ( true )
+        {
+            index = string.indexOf( lineSeparator, index );
+            if ( index < 0 )
+            {
+                ongoingLine += string;
+                break;
+            }
+            
+            String part = string.substring( 0, index );
+            ongoingLine += part;
+            println();
+            
+            string = string.substring( index + lineSeparator.length(), string.length() );
+        }
     }
     
     @Override

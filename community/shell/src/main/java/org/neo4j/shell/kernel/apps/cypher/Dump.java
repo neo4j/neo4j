@@ -19,6 +19,8 @@
  */
 package org.neo4j.shell.kernel.apps.cypher;
 
+import static org.neo4j.helpers.Exceptions.launderedException;
+
 import java.rmi.RemoteException;
 
 import org.neo4j.cypher.javacompat.ExecutionResult;
@@ -30,10 +32,9 @@ import org.neo4j.shell.Output;
 import org.neo4j.shell.Session;
 import org.neo4j.shell.ShellException;
 
-@Service.Implementation(App.class)
+@Service.Implementation( App.class )
 public class Dump extends Start
 {
-
     @Override
     public String getDescription()
     {
@@ -50,7 +51,7 @@ public class Dump extends Start
     {
         if ( parser.arguments().isEmpty() )
         {
-            final SubGraph graph = DatabaseSubGraph.from(getServer().getDb());
+            final SubGraph graph = DatabaseSubGraph.from( getServer().getDb() );
             export( graph, out);
             return Continuation.INPUT_COMPLETE;
         }
@@ -72,22 +73,22 @@ public class Dump extends Start
         try
         {
             return new AppCommandParser( getServer(), line );
-        } catch ( Exception e )
+        }
+        catch ( Exception e )
         {
-            throw new ShellException( "Error parsing input " + line );
+            throw launderedException( ShellException.class, "Error parsing input " + line, e );
         }
     }
 
     private void export(SubGraph subGraph, Output out) throws RemoteException, ShellException
     {
-        final SubGraphExporter exporter = new SubGraphExporter( subGraph );
-        exporter.export( out );
+        new SubGraphExporter( subGraph ).export( out );
     }
 
     @Override
     protected void handleResult( Output out, ExecutionResult result, long startTime, Session session, AppCommandParser parser ) throws RemoteException, ShellException
     {
-        final SubGraph subGraph = CypherResultSubGraph.from(result, false);
+        final SubGraph subGraph = CypherResultSubGraph.from( result, false );
         export( subGraph, out);
     }
 }
