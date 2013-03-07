@@ -32,7 +32,7 @@ import org.neo4j.cypher.internal.commands.Equals
 import org.neo4j.cypher.internal.pipes.matching.SingleStepTrail
 import org.neo4j.cypher.internal.commands.True
 
-class TrailBuilderTest extends GraphDatabaseTestBase with Assertions with BuilderTest {
+class TrailBuilderTest extends GraphDatabaseTestBase with Assertions {
   val A = withName("A")
   val B = withName("B")
   val C = withName("C")

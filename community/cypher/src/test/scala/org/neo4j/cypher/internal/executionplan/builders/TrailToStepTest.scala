@@ -46,7 +46,7 @@ import org.neo4j.cypher.internal.commands.Equals
 import org.neo4j.cypher.internal.pipes.matching.SingleStepTrail
 import org.neo4j.cypher.internal.commands.True
 
-class TrailToStepTest extends GraphDatabaseTestBase with Assertions with BuilderTest {
+class TrailToStepTest extends GraphDatabaseTestBase with Assertions {
   val A = "A"
   val B = "B"
   val C = "C"

@@ -26,7 +26,7 @@ import org.neo4j.cypher.{PathImpl, GraphDatabaseTestBase}
 import org.neo4j.cypher.internal.pipes.matching.{VariableLengthStepTrail, SingleStepTrail, EndPoint}
 import org.neo4j.cypher.internal.commands.True
 
-class TrailDecomposeTest extends GraphDatabaseTestBase with Assertions with BuilderTest {
+class TrailDecomposeTest extends GraphDatabaseTestBase with Assertions  {
   @Test def decompose_simple_path() {
     val nodeA = createNode("A")
     val nodeB = createNode("B")

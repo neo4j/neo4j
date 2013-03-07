@@ -2548,7 +2548,7 @@ create a-[r:REL]->b
   }
 
   @Test def simple_query_with_index_hint() {
-    testFrom_2_0("match n:Person-->() using index n:Person(name) where n.name = 'Andres' return n",
+    testFrom2_0("match n:Person-->() using index n:Person(name) where n.name = 'Andres' return n",
       Query.matches(RelatedTo("n", "  UNNAMED18", "  UNNAMED15", Seq(), Direction.OUTGOING, optional = false)).
         where(And(Equals(Property(Identifier("n"), "name"), Literal("Andres")), HasLabel(Identifier("n"), Seq(LabelName("Person"))))).
         usingIndex(IndexHint("n", "Person", "name")).
