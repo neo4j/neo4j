@@ -260,10 +260,18 @@ You can also use <<cypher-query-lang, The Cypher Query Language>> as a powerful 
 
 Neo4j is a schema-optional graph database. You can use Neo4j without any schema.  Optionally you can introduce it in order to gain performance or modeling benefits. This allows a way of working where the schema does not get in your way until you are at a stage where you want to reap the benefits of having one.
 
+[[graphdb-neo4j-schema-indexes]]
 === Indexes ===
 
 NOTE: This feature was introduced in Neo4j 2.0, and is not the same as the <<indexing, legacy indexes>>.
 
-Performance is gained by introducing indexes, which improve the speed of looking up nodes in the database.
+Performance is gained by creating indexes, which improve the speed of looking up nodes in the database.
 Once you’ve specified which properties to index, Neo4j will make sure your indexes are kept up to date as your graph evolves.
 Any operation that looks up nodes by the newly indexed properties will see a significant performance boost.
+
+Indexes in Neo4j are +eventually+ +available+. That means that when you first create an index, the operation returns immediately.
+The index is not immediately available for querying, however. The new index will be created in the background, and eventually come online.
+
+You can track the status of your index by asking for the index state through the API you are using.
+Note, however, that this is not yet possible through cypher.
+
