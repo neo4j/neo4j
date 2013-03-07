@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.executionplan.builders
 
-import org.neo4j.graphdb.{Relationship, Node, GraphDatabaseService}
+import org.neo4j.graphdb.{DynamicLabel, Relationship, Node}
 import org.neo4j.cypher.internal.commands._
 import org.neo4j.cypher.internal.pipes._
 import org.neo4j.cypher.internal.ExecutionContext
@@ -27,33 +27,28 @@ import org.neo4j.cypher.internal.commands.RelationshipByIndex
 import org.neo4j.cypher.internal.commands.IndexHint
 import org.neo4j.cypher.internal.commands.NodeByIndex
 import org.neo4j.cypher.internal.commands.NodeByIndexQuery
-import org.neo4j.cypher.MissingIndexException
+import org.neo4j.cypher.internal.spi.PlanContext
+import org.neo4j.cypher.{InternalException, IndexHintException}
 
-/*
- * Copyright (C) 2012 Neo Technology
- * All rights reserved
- */
-
-class EntityProducerFactory(graph: GraphDatabaseService) {
+class EntityProducerFactory(planContext: PlanContext) {
 
   val nodeByIndex: PartialFunction[StartItem, EntityProducer[Node]] = {
     case NodeByIndex(varName, idxName, key, value) =>
-      checkNodeIndex(idxName, graph)
+      planContext.checkNodeIndex(idxName)
       (m: ExecutionContext, state: QueryState) => {
         val keyVal = key(m)(state).toString
         val valueVal = value(m)(state)
-        state.query.nodeOps.indexGet(idxName,keyVal, valueVal)
+        state.query.nodeOps.indexGet(idxName, keyVal, valueVal)
       }
   }
 
   val nodeByIndexQuery: PartialFunction[StartItem, EntityProducer[Node]] = {
     case NodeByIndexQuery(varName, idxName, query) =>
-      checkNodeIndex(idxName, graph)
+      planContext.checkNodeIndex(idxName)
       (m: ExecutionContext, state: QueryState) => {
         val queryText = query(m)(state)
         state.query.nodeOps.indexQuery(idxName, queryText)
       }
-
   }
 
   val nodeById: PartialFunction[StartItem, EntityProducer[Node]] = {
@@ -63,14 +58,29 @@ class EntityProducerFactory(graph: GraphDatabaseService) {
   }
 
   val nodeByIndexHint: PartialFunction[StartItem, EntityProducer[Node]] = {
-    case IndexHint(varName, labelName, propertyName) =>
-      (m: ExecutionContext, state: QueryState) =>
-        Iterator.empty
+    case IndexHint(identifier, labelName, propertyName, valueExp) =>
+      val indexIdGetter = planContext.getIndexRuleId(labelName, propertyName)
+
+      val indexId = indexIdGetter getOrElse
+        (throw new IndexHintException(identifier, labelName, propertyName, "No such index found."))
+
+      val expression = valueExp getOrElse
+        (throw new InternalException("Something went wrong trying to build your query."))
+
+      val label = DynamicLabel.label(labelName)
+
+      (m: ExecutionContext, state: QueryState) => {
+        val value = expression(m)(state)
+        state.query.exactIndexSearch(indexId, value) // This is the real call. The next is not the call you are looking for
+        state.query.nodeOps.all.filter {
+          case node:Node => node.hasLabel(label) && node.getProperty(propertyName, null) == value
+        }
+      }
   }
 
   val relationshipByIndex: PartialFunction[StartItem, EntityProducer[Relationship]] = {
     case RelationshipByIndex(varName, idxName, key, value) =>
-      checkRelIndex(idxName, graph)
+      planContext.checkRelIndex(idxName)
       (m: ExecutionContext, state: QueryState) => {
         val keyVal = key(m)(state).toString
         val valueVal = value(m)(state)
@@ -80,18 +90,10 @@ class EntityProducerFactory(graph: GraphDatabaseService) {
 
   val relationshipByIndexQuery: PartialFunction[StartItem, EntityProducer[Relationship]] = {
     case RelationshipByIndexQuery(varName, idxName, query) =>
-      checkRelIndex(idxName, graph)
+      planContext.checkRelIndex(idxName)
       (m: ExecutionContext, state: QueryState) => {
         val queryText = query(m)(state)
         state.query.relationshipOps.indexQuery(idxName, queryText)
       }
-  }
-
-  private def checkNodeIndex(idxName: String, graph: GraphDatabaseService) {
-    if (!graph.index.existsForNodes(idxName)) throw new MissingIndexException(idxName)
-  }
-
-  private def checkRelIndex(idxName: String, graph: GraphDatabaseService) {
-    if (!graph.index.existsForRelationships(idxName)) throw new MissingIndexException(idxName)
   }
 }

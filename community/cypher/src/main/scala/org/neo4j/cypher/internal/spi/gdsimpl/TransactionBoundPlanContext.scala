@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.spi.PlanContext
 import org.neo4j.cypher.MissingIndexException
 import org.neo4j.kernel.{ThreadToStatementContextBridge, GraphDatabaseAPI}
 import org.neo4j.graphdb.Transaction
-import org.neo4j.kernel.api.StatementContext
+import org.neo4j.kernel.api.{KernelException, StatementContext}
 
 class TransactionBoundPlanContext(graph: GraphDatabaseAPI) extends PlanContext {
 
@@ -44,7 +44,16 @@ class TransactionBoundPlanContext(graph: GraphDatabaseAPI) extends PlanContext {
   def getIndexRuleId(labelName: String, propertyKey: String) = {
     val labelId = ctx.getLabelId(labelName)
     val propertyKeyId = ctx.getPropertyKeyId(propertyKey)
-    ctx.getIndexRule(labelId, propertyKeyId).getId
+
+    try {
+      Some(ctx.getIndexRule(labelId, propertyKeyId).getId)
+    } catch {
+      // TODO: This should be a more specific exception class
+      case e: KernelException =>
+        e.printStackTrace()
+        None
+    }
+
   }
 
   def checkNodeIndex(idxName: String) {

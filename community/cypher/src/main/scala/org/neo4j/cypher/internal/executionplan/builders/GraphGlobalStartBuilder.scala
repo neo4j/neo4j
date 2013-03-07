@@ -22,11 +22,9 @@ package org.neo4j.cypher.internal.executionplan.builders
 import org.neo4j.cypher.internal.commands._
 import org.neo4j.cypher.internal.pipes.{RelationshipStartPipe, NodeStartPipe, Pipe}
 import org.neo4j.graphdb.GraphDatabaseService
-import collection.JavaConverters._
-import org.neo4j.tooling.GlobalGraphOperations
-import org.neo4j.cypher.internal.executionplan.{ExecutionPlanInProgress, PartiallySolvedQuery, PlanBuilder}
+import org.neo4j.cypher.internal.executionplan.{PlanBuilder, ExecutionPlanInProgress, PartiallySolvedQuery, LegacyPlanBuilder}
 
-class GraphGlobalStartBuilder(graph: GraphDatabaseService) extends PlanBuilder {
+class GraphGlobalStartBuilder(graph: GraphDatabaseService) extends LegacyPlanBuilder {
   def apply(plan: ExecutionPlanInProgress) = {
     val q = plan.query
     val p = plan.pipe

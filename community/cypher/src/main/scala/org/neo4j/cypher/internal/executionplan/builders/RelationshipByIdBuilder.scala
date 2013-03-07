@@ -23,11 +23,11 @@ import collection.Seq
 import GetGraphElements.getElements
 import org.neo4j.cypher.internal.executionplan._
 import org.neo4j.cypher.internal.commands.{RelationshipById, StartItem}
-import org.neo4j.graphdb.{Node, Relationship, GraphDatabaseService}
+import org.neo4j.graphdb.{Relationship, GraphDatabaseService}
 import org.neo4j.cypher.internal.pipes.{QueryState, RelationshipStartPipe}
 import org.neo4j.cypher.internal.ExecutionContext
 
-class RelationshipByIdBuilder(graph: GraphDatabaseService) extends PlanBuilder {
+class RelationshipByIdBuilder(graph: GraphDatabaseService) extends LegacyPlanBuilder {
   def priority = PlanBuilder.RelationshipById
 
   def apply(plan: ExecutionPlanInProgress) = {

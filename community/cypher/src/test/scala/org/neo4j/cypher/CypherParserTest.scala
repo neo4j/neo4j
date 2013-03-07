@@ -2551,7 +2551,7 @@ create a-[r:REL]->b
     testFrom2_0("match n:Person-->() using index n:Person(name) where n.name = 'Andres' return n",
       Query.matches(RelatedTo("n", "  UNNAMED18", "  UNNAMED15", Seq(), Direction.OUTGOING, optional = false)).
         where(And(Equals(Property(Identifier("n"), "name"), Literal("Andres")), HasLabel(Identifier("n"), Seq(LabelName("Person"))))).
-        usingIndex(IndexHint("n", "Person", "name")).
+        usingIndex(IndexHint("n", "Person", "name", None)).
         returns(ReturnItem(Identifier("n"), "n", renamed = false)))
   }
 

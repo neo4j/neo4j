@@ -73,6 +73,9 @@ class TransactionBoundQueryContext(graph: GraphDatabaseAPI) extends QueryContext
     case _ => node.getRelationships(dir, types.map(withName): _*).asScala
   }
 
+  def getTransaction = tx
+
+  def exactIndexSearch(id: Long, value: Any): Iterator[Node] = ???
 
   val nodeOps = new NodeOperations
 
@@ -166,6 +169,4 @@ class TransactionBoundQueryContext(graph: GraphDatabaseAPI) extends QueryContext
       obj.setProperty(propertyKey, value)
     }
   }
-
-  def getTransaction = tx
 }

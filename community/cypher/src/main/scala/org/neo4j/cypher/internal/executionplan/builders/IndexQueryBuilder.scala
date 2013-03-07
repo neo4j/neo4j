@@ -22,41 +22,49 @@ package org.neo4j.cypher.internal.executionplan.builders
 import org.neo4j.cypher.internal.commands._
 import org.neo4j.cypher.internal.pipes._
 import org.neo4j.graphdb.{Relationship, Node}
-import org.neo4j.cypher.internal.executionplan.PlanBuilder
-import org.neo4j.cypher.internal.executionplan.ExecutionPlanInProgress
+import org.neo4j.cypher.internal.executionplan.{PlanBuilder, ExecutionPlanInProgress}
+import org.neo4j.cypher.internal.spi.PlanContext
 
-class IndexQueryBuilder(entityFactory: EntityProducerFactory) extends PlanBuilder {
-  def apply(plan: ExecutionPlanInProgress) = {
+class IndexQueryBuilder extends PlanBuilder {
+  def apply(plan: ExecutionPlanInProgress, context: PlanContext) = {
     val q = plan.query
     val p = plan.pipe
 
-    val item = q.start.filter(mapQueryToken.isDefinedAt).head
+    val item = q.start.filter(mapQueryToken(context).isDefinedAt).head
 
-    val newPipe = mapQueryToken(item)(p)
+    val newPipe = mapQueryToken(context)(item)(p)
 
     plan.copy(pipe = newPipe, query = q.copy(start = q.start.filterNot(_ == item) :+ item.solve))
   }
 
-  def canWorkWith(plan: ExecutionPlanInProgress) = plan.query.start.exists(mapQueryToken.isDefinedAt)
+  override def missingDependencies(plan: ExecutionPlanInProgress): Seq[String] = super.missingDependencies(plan)
 
-  private val mapNodeStartCreator: PartialFunction[StartItem, EntityProducer[Node]] =
+  def canWorkWith(plan: ExecutionPlanInProgress, context: PlanContext) =
+    plan.query.start.exists(mapQueryToken(context).isDefinedAt)
+
+  private def genNodeStart(entityFactory: EntityProducerFactory): PartialFunction[StartItem, EntityProducer[Node]] =
     entityFactory.nodeByIndex orElse
-    entityFactory.nodeByIndexQuery orElse
-    entityFactory.nodeByIndexHint
+      entityFactory.nodeByIndexQuery orElse
+      entityFactory.nodeByIndexHint
 
-  private val mapRelationshipStartCreator: PartialFunction[StartItem, EntityProducer[Relationship]] =
+  private def genRelationshipStart(entityFactory: EntityProducerFactory): PartialFunction[StartItem, EntityProducer[Relationship]] =
     entityFactory.relationshipByIndex orElse
-    entityFactory.relationshipByIndexQuery
+      entityFactory.relationshipByIndexQuery
 
-  private val mapQueryToken: PartialFunction[QueryToken[StartItem], (Pipe => Pipe)] = {
-    case Unsolved(item) if mapNodeStartCreator.isDefinedAt(item) =>
-     (p: Pipe) => new NodeStartPipe(p, item.identifierName, mapNodeStartCreator.apply(item))
+  private def mapQueryToken(planContext: PlanContext): PartialFunction[QueryToken[StartItem], (Pipe => Pipe)] = {
+    lazy val entityFactory = new EntityProducerFactory(planContext)
+    lazy val nodeStart: PartialFunction[StartItem, EntityProducer[Node]] = genNodeStart(entityFactory)
+    lazy val relationshipStart: PartialFunction[StartItem, EntityProducer[Relationship]] = genRelationshipStart(entityFactory)
+    val result: PartialFunction[QueryToken[StartItem], (Pipe => Pipe)] = {
+      case Unsolved(item) if nodeStart.isDefinedAt(item) =>
+        (p: Pipe) => new NodeStartPipe(p, item.identifierName, nodeStart.apply(item))
 
-    case Unsolved(item) if mapRelationshipStartCreator.isDefinedAt(item) =>
-     (p: Pipe) => new RelationshipStartPipe(p, item.identifierName, mapRelationshipStartCreator.apply(item))
+      case Unsolved(item) if relationshipStart.isDefinedAt(item) =>
+        (p: Pipe) => new RelationshipStartPipe(p, item.identifierName, relationshipStart.apply(item))
+    }
+    result
   }
+
 
   def priority: Int = PlanBuilder.IndexQuery
 }
-
-

@@ -28,7 +28,7 @@ import internal.spi.{PlanContext, QueryContext}
 import internal.{ExecutionContext, ClosingIterator}
 import internal.commands._
 import internal.mutation.{CreateNode, CreateRelationship}
-import internal.symbols.{NodeType, RelationshipType, SymbolTable}
+import internal.symbols.{CypherType, NodeType, RelationshipType, SymbolTable}
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.cypher.ExecutionResult
 import javacompat.{PlanDescription => JPlanDescription}
@@ -70,7 +70,6 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService) extends PatternGraphBuil
         planContext.close(success = false)
         throw e
     }
-
   }
 
   val unionBuilder = new UnionBuilder(this)
@@ -134,19 +133,8 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService) extends PatternGraphBuil
   }
 
   private def getStartPointsFromPlan(query: PartiallySolvedQuery): SymbolTable = {
-    val startMap = query.start.map(_.token).map {
-      case RelationshipById(varName, _)                                         => varName -> RelationshipType()
-      case RelationshipByIndex(varName, _, _, _)                                => varName -> RelationshipType()
-      case RelationshipByIndexQuery(varName, _, _)                              => varName -> RelationshipType()
-      case AllRelationships(varName: String)                                    => varName -> RelationshipType()
-      case CreateRelationshipStartItem(CreateRelationship(varName, _, _, _, _)) => varName -> RelationshipType()
-
-      case NodeByIndex(varName: String, _, _, _)             => varName -> NodeType()
-      case NodeByIndexQuery(varName: String, _, _)           => varName -> NodeType()
-      case NodeById(varName: String, _)                      => varName -> NodeType()
-      case AllNodes(varName: String)                         => varName -> NodeType()
-      case CreateNodeStartItem(CreateNode(varName, _, _, _)) => varName -> RelationshipType()
-    }.toMap
+    val startMap: Map[String, CypherType] = query.start.map(_.token).
+      map(x => x.identifierName -> x.typ).toMap
 
     val symbols = SymbolTable(startMap)
     symbols
@@ -234,11 +222,9 @@ The Neo4j Team""")
     throw new SyntaxException(errorMessage)
   }
 
-  lazy val entityFactory = new EntityProducerFactory(graph)
-
   lazy val builders = Seq(
     new NodeByIdBuilder(graph),
-    new IndexQueryBuilder(entityFactory),
+    new IndexQueryBuilder,
     new GraphGlobalStartBuilder(graph),
     new FilterBuilder,
     new NamedPathBuilder,
@@ -255,6 +241,7 @@ The Neo4j Team""")
     new EmptyResultBuilder,
     new TraversalMatcherBuilder(graph),
     new TopPipeBuilder,
-    new DistinctBuilder
+    new DistinctBuilder,
+    new IndexLookupBuilder
   )
 }

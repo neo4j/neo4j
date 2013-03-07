@@ -52,6 +52,11 @@ abstract sealed class ComparablePredicate(left: Expression, right: Expression) e
 }
 
 case class Equals(a: Expression, b: Expression) extends Predicate with Comparer {
+  def other(x:Expression):Option[Expression] = {
+    if      (x == a) Some(b)
+    else if (x == b) Some(a)
+    else             None
+  }
 
   def isMatch(m: ExecutionContext)(implicit state: QueryState): Boolean = {
     val a1 = a(m)

@@ -29,10 +29,10 @@ class UsingIndexTest extends UsingIndex with ParserTest {
     implicit val parserToTest = indexHints
 
     parsing("USING INDEX n:User(name)") shouldGive
-      Seq(IndexHint("n", "User", "name"))
+      Seq(IndexHint("n", "User", "name", None))
 
     parsing("USING INDEX ` 1`:` 2`(` 3`)") shouldGive
-      Seq(IndexHint(" 1", " 2", " 3"))
+      Seq(IndexHint(" 1", " 2", " 3", None))
 
     assertFails("USING INDEX n.user(name)")
     assertFails("USING INDEX n.user(name, age)")

@@ -28,7 +28,7 @@ package org.neo4j.cypher.internal.spi
  * to index rule lookup in QueryContext as that should happen at query compile time.
  */
 trait PlanContext {
-  def getIndexRuleId(labelName: String, propertyKey: String): Long
+  def getIndexRuleId(labelName: String, propertyKey: String): Option[Long]
 
   def checkNodeIndex(idxName: String)
 

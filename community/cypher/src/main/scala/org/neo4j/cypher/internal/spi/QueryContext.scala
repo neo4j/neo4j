@@ -69,6 +69,8 @@ trait QueryContext {
 
   def close(success: Boolean)
 
+  def exactIndexSearch(id: Long, value: Any): Iterator[Node]
+
   /**
    * This should not exist. It's a transient stated before locking is done somewhere else
    * @return

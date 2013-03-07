@@ -29,10 +29,10 @@ abstract class StartItem(val identifierName: String) extends TypeSafe with AstNo
   def mutating : Boolean
 
   override def addsToRow() = Seq(identifierName)
+  def typ:CypherType
 }
 
 trait ReadOnlyStartItem extends StartItem {
-
   def mutating = false
   def children:Seq[AstNode[_]] = Seq.empty
 
@@ -42,32 +42,39 @@ trait ReadOnlyStartItem extends StartItem {
   def rewrite(f: (Expression) => Expression) = this
 }
 
+trait Nodes extends StartItem {
+  def typ = NodeType()
+}
+trait Rels extends StartItem {
+  def typ = RelationshipType()
+}
+
 case class RelationshipById(varName: String, expression: Expression)
-  extends StartItem(varName) with ReadOnlyStartItem
+  extends StartItem(varName) with ReadOnlyStartItem with Rels
 
 case class RelationshipByIndex(varName: String, idxName: String, key: Expression, expression: Expression)
-  extends StartItem(varName) with ReadOnlyStartItem
+  extends StartItem(varName) with ReadOnlyStartItem with Rels
 
 case class RelationshipByIndexQuery(varName: String, idxName: String, query: Expression)
-  extends StartItem(varName) with ReadOnlyStartItem
+  extends StartItem(varName) with ReadOnlyStartItem with Rels
 
 case class NodeByIndex(varName: String, idxName: String, key: Expression, expression: Expression)
-  extends StartItem(varName) with ReadOnlyStartItem
+  extends StartItem(varName) with ReadOnlyStartItem with Nodes
 
 case class NodeByIndexQuery(varName: String, idxName: String, query: Expression)
-  extends StartItem(varName) with ReadOnlyStartItem
+  extends StartItem(varName) with ReadOnlyStartItem with Nodes
 
-case class IndexHint(identifier: String, label: String, property: String)
-  extends StartItem(identifier) with ReadOnlyStartItem
+case class IndexHint(identifier: String, label: String, property: String, query: Option[Expression])
+  extends StartItem(identifier) with ReadOnlyStartItem with Nodes
 
 case class NodeById(varName: String, expression: Expression)
-  extends StartItem(varName) with ReadOnlyStartItem
+  extends StartItem(varName) with ReadOnlyStartItem with Nodes
 
 case class AllNodes(columnName: String)
-  extends StartItem(columnName) with ReadOnlyStartItem
+  extends StartItem(columnName) with ReadOnlyStartItem with Nodes
 
 case class AllRelationships(columnName: String)
-  extends StartItem(columnName) with ReadOnlyStartItem
+  extends StartItem(columnName) with ReadOnlyStartItem with Rels
 
 //We need to wrap the inner classes to be able to have two different rewrite methods
 abstract class UpdatingStartItem(val updateAction:UpdateAction, name:String) extends StartItem(name) {
@@ -80,16 +87,18 @@ abstract class UpdatingStartItem(val updateAction:UpdateAction, name:String) ext
   override def symbolTableDependencies = updateAction.symbolTableDependencies
 }
 
-case class CreateNodeStartItem(inner: CreateNode) extends UpdatingStartItem(inner, inner.key) {
+case class CreateNodeStartItem(inner: CreateNode) extends UpdatingStartItem(inner, inner.key) with Nodes {
   override def rewrite(f: (Expression) => Expression) = CreateNodeStartItem(inner.rewrite(f))
 }
 
-case class CreateRelationshipStartItem(inner: CreateRelationship) extends UpdatingStartItem(inner, inner.key) {
+case class CreateRelationshipStartItem(inner: CreateRelationship) extends UpdatingStartItem(inner, inner.key) with Rels{
   override def rewrite(f: (Expression) => Expression) = CreateRelationshipStartItem(inner.rewrite(f))
 }
 
 case class CreateUniqueStartItem(inner: CreateUniqueAction) extends UpdatingStartItem(inner, "oh noes")  {
   override def rewrite(f: (Expression) => Expression) = CreateUniqueStartItem(inner.rewrite(f))
+
+  def typ: CypherType = ???
 }
 
 object NodeById {

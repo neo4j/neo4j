@@ -38,7 +38,7 @@ class IndexHintVerifierTest extends Assertions {
       where = Or(
         Equals(Property(Identifier("n"), "name"), Literal("Stefan")),
         Equals(Property(Identifier("n"), "age"), Literal(35))),
-      hints = Seq(IndexHint("n", "Person", "name")))
+      hints = Seq(IndexHint("n", "Person", "name", None)))
 
     //THEN
     intercept[IndexHintException](verifier.verify(q))

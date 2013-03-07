@@ -20,6 +20,7 @@
 package org.neo4j.cypher
 
 import internal.commands.expressions.Expression
+import internal.commands.IndexHint
 
 abstract class CypherException(message: String, cause: Throwable) extends RuntimeException(message, cause) {
   def this(message:String) = this(message, null)
@@ -65,4 +66,9 @@ class ProfilerStatisticsNotReadyException() extends CypherException("This result
 
 class UnknownLabelException(labelName: String) extends CypherException(s"The provided label :`${labelName}` does not exist in the store")
 
-class IndexHintException(identifier:String, label:String, property:String, message:String) extends CypherException(message)
+class IndexHintException(identifier: String, label: String, property: String, message: String)
+  extends CypherException(s"$message\nLabel: `$label`\nProperty name: `$property`") {
+  def this(hint:IndexHint, message:String) = this(hint.identifier, hint.label, hint.property, message)
+}
+
+class UnableToPickIndexException(message: String) extends CypherException(message)

@@ -29,7 +29,7 @@ object IndexHintVerifier extends Verifier {
       val predicateAtoms = query.where.atoms
 
       query.hints.foreach {
-        case IndexHint(id, label, prop) =>
+        case IndexHint(id, label, prop, _) =>
 
           val valid = predicateAtoms.exists(_ match {
             case Equals(Property(Identifier(identifier), property), _) => id == identifier && property == prop

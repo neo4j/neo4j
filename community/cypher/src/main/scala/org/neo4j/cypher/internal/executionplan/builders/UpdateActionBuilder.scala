@@ -19,13 +19,13 @@
  */
 package org.neo4j.cypher.internal.executionplan.builders
 
-import org.neo4j.cypher.internal.executionplan.{ExecutionPlanInProgress, PlanBuilder}
+import org.neo4j.cypher.internal.executionplan.{PlanBuilder, ExecutionPlanInProgress, LegacyPlanBuilder}
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.cypher.internal.pipes.{Pipe, ExecuteUpdateCommandsPipe}
 import org.neo4j.cypher.internal.mutation.UpdateAction
 import org.neo4j.cypher.internal.commands.{UpdatingStartItem, StartItem}
 
-class UpdateActionBuilder(db: GraphDatabaseService) extends PlanBuilder with UpdateCommandExpander {
+class UpdateActionBuilder(db: GraphDatabaseService) extends LegacyPlanBuilder with UpdateCommandExpander {
   def apply(plan: ExecutionPlanInProgress) = {
     val updateCmds: Seq[QueryToken[UpdateAction]] = extractValidUpdateActions(plan, plan.pipe)
     val startItems: Seq[QueryToken[StartItem]] = extractValidStartItems(plan, plan.pipe)

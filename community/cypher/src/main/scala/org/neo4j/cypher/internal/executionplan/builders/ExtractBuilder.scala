@@ -20,10 +20,10 @@
 package org.neo4j.cypher.internal.executionplan.builders
 
 import org.neo4j.cypher.internal.pipes.ExtractPipe
-import org.neo4j.cypher.internal.executionplan.{ExecutionPlanInProgress, PlanBuilder}
+import org.neo4j.cypher.internal.executionplan.{PlanBuilder, ExecutionPlanInProgress, LegacyPlanBuilder}
 import org.neo4j.cypher.internal.commands.expressions.{Identifier, CachedExpression, Expression}
 
-class ExtractBuilder extends PlanBuilder {
+class ExtractBuilder extends LegacyPlanBuilder {
   def apply(plan: ExecutionPlanInProgress) = {
 
     val expressions: Map[String, Expression] =

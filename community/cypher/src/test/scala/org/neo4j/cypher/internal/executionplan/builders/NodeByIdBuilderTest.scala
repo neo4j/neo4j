@@ -22,12 +22,12 @@ package org.neo4j.cypher.internal.executionplan.builders
 import org.junit.Assert._
 import org.junit.{Ignore, Test}
 import org.neo4j.cypher.internal.commands.{RelationshipById, NodeById}
-import org.neo4j.cypher.internal.executionplan.{PlanBuilder, PartiallySolvedQuery}
+import org.neo4j.cypher.internal.executionplan.{LegacyPlanBuilder, PartiallySolvedQuery}
 import org.neo4j.cypher.internal.commands.expressions.ParameterExpression
 
 class NodeByIdBuilderTest extends BuilderTest {
 
-  val builder: PlanBuilder = new NodeByIdBuilder(null)
+  val builder: LegacyPlanBuilder = new NodeByIdBuilder(null)
 
   @Test
   def says_yes_to_node_by_id_queries() {

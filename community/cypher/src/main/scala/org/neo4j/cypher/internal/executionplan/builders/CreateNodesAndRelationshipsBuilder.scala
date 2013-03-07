@@ -19,24 +19,22 @@
  */
 package org.neo4j.cypher.internal.executionplan.builders
 
-import org.neo4j.cypher.internal.executionplan.PlanBuilder
+import org.neo4j.cypher.internal.executionplan.{PlanBuilder, LegacyPlanBuilder, ExecutionPlanInProgress}
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.cypher.internal.pipes.{Pipe, ExecuteUpdateCommandsPipe}
 import org.neo4j.cypher.internal.mutation._
 import org.neo4j.cypher.internal.symbols.{AnyCollectionType, NodeType, SymbolTable}
 import org.neo4j.cypher.internal.commands._
-import collection.Map
 import collection.mutable
-import expressions.{Literal, Identifier, Expression}
+import expressions.Identifier
 import org.neo4j.cypher.SyntaxException
 import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.cypher.internal.commands.CreateNodeStartItem
 import org.neo4j.cypher.internal.commands.CreateRelationshipStartItem
-import org.neo4j.cypher.internal.executionplan.ExecutionPlanInProgress
 import org.neo4j.cypher.internal.mutation.CreateNode
 import org.neo4j.cypher.internal.mutation.ForeachAction
 
-class CreateNodesAndRelationshipsBuilder(db: GraphDatabaseService) extends PlanBuilder with UpdateCommandExpander with GraphElementPropertyFunctions {
+class CreateNodesAndRelationshipsBuilder(db: GraphDatabaseService) extends LegacyPlanBuilder with UpdateCommandExpander with GraphElementPropertyFunctions {
   def apply(plan: ExecutionPlanInProgress) = {
     val q = plan.query
     val mutatingQueryTokens = q.start.filter(applicableTo(plan.pipe))

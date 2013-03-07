@@ -21,14 +21,13 @@ package org.neo4j.cypher.internal.executionplan.builders
 
 import org.neo4j.cypher.internal.pipes.{MatchPipe, Pipe}
 import org.neo4j.cypher.internal.commands._
-import org.neo4j.cypher.internal.executionplan.PlanBuilder
+import org.neo4j.cypher.internal.executionplan.{PlanBuilder, LegacyPlanBuilder, ExecutionPlanInProgress}
 import org.neo4j.cypher.internal.symbols.{SymbolTable, NodeType}
 import org.neo4j.cypher.internal.pipes.matching.{PatternRelationship, PatternNode, PatternGraph}
 import org.neo4j.cypher.SyntaxException
-import org.neo4j.cypher.internal.executionplan.ExecutionPlanInProgress
 import org.neo4j.cypher.internal.commands.ShortestPath
 
-class MatchBuilder extends PlanBuilder with PatternGraphBuilder {
+class MatchBuilder extends LegacyPlanBuilder with PatternGraphBuilder {
   def apply(plan: ExecutionPlanInProgress) = {
     val q = plan.query
     val p = plan.pipe

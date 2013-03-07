@@ -84,8 +84,6 @@ class SnitchingQueryContext extends QueryContext {
 
   def getLabelsForNode(node: Node) = Seq(12L)
 
-
-
   def close(success: Boolean) {???}
 
   def createNode() = ???
@@ -115,4 +113,6 @@ class SnitchingQueryContext extends QueryContext {
   def addIndexRule(labelIds: Long, propertyKeyId: Long) = ???
 
   def dropIndexRule(labelIds: Long, propertyKeyId: Long) = ???
+
+  def exactIndexSearch(id: Long, value: Any): Iterator[Node] = ???
 }

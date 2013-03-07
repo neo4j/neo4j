@@ -19,26 +19,6 @@
  */
 package org.neo4j.cypher.internal.executionplan.builders
 
-/**
- * Copyright (c) 2002-2013 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
- *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
-
 import org.junit.Assert._
 import org.neo4j.cypher.internal.executionplan.PartiallySolvedQuery
 import org.junit.Test
@@ -50,10 +30,16 @@ import org.neo4j.graphdb._
 import index._
 import java.util.Map
 import org.neo4j.cypher.internal.pipes.NodeStartPipe
+import org.scalatest.mock.MockitoSugar
+import org.mockito.Matchers._
+import org.mockito.Mockito._
+import org.neo4j.cypher.internal.spi.PlanContext
+import org.neo4j.cypher.IndexHintException
 
-class IndexQueryBuilderTest extends BuilderTest {
+class IndexQueryBuilderTest extends BuilderTest with MockitoSugar {
 
-  val builder = new IndexQueryBuilder(new EntityProducerFactory(new Fake_Database_That_Has_All_Indexes))
+  override val context = mock[PlanContext]
+  val builder = new IndexQueryBuilder()
 
   @Test
   def says_yes_to_node_by_id_queries() {
@@ -113,18 +99,34 @@ class IndexQueryBuilderTest extends BuilderTest {
     assertRejects(PartiallySolvedQuery())
   }
 
-
   @Test
   def offers_to_solve_query_with_index_hints() {
+    val propertyKey: String = "name"
+    val labelName: String = "Person"
     //GIVEN
     val q = PartiallySolvedQuery().copy(
-      where = Seq(Unsolved(Equals(Property(Identifier("n"), "name"), Literal("Stefan")))),
-      start = Seq(Unsolved(IndexHint("n", "Person", "name"))))
+      where = Seq(Unsolved(Equals(Property(Identifier("n"), propertyKey), Literal("Stefan")))),
+      start = Seq(Unsolved(IndexHint("n", labelName, propertyKey, Some(Literal("a"))))))
+
+    when(context.getIndexRuleId(labelName, propertyKey)).thenReturn(Some(1L))
 
     //THEN
     val producedPlan = assertAccepts(q)
 
     assert(producedPlan.pipe.isInstanceOf[NodeStartPipe])
+  }
+
+  @Test
+  def throws_exception_if_no_index_is_found() {
+    //GIVEN
+    val q = PartiallySolvedQuery().copy(
+      where = Seq(Unsolved(Equals(Property(Identifier("n"), "name"), Literal("Stefan")))),
+      start = Seq(Unsolved(IndexHint("n", "Person", "name", None))))
+
+    when(context.getIndexRuleId(any(), any())).thenReturn(None)
+
+    //THEN
+    intercept[IndexHintException](assertAccepts(q))
   }
 
   /*

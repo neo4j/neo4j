@@ -20,9 +20,9 @@
 package org.neo4j.cypher.internal.executionplan.builders
 
 import org.neo4j.cypher.internal.pipes.{SlicePipe, Pipe}
-import org.neo4j.cypher.internal.executionplan.{ExecutionPlanInProgress, PartiallySolvedQuery, PlanBuilder}
+import org.neo4j.cypher.internal.executionplan.{PlanBuilder, ExecutionPlanInProgress, PartiallySolvedQuery, LegacyPlanBuilder}
 
-class SliceBuilder extends PlanBuilder {
+class SliceBuilder extends LegacyPlanBuilder {
   def apply(plan: ExecutionPlanInProgress) = {
     val slice = plan.query.slice.map(_.token).head
     val pipe = new SlicePipe(plan.pipe, slice.from, slice.limit)

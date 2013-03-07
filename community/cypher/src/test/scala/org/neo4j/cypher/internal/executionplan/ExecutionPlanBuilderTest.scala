@@ -50,7 +50,7 @@ class FakeExecPlanBuilder(gds: GraphDatabaseService) extends ExecutionPlanBuilde
 
 // This is a builder that accepts everything, but changes nothing
 // It's a never ending loop waiting to happen
-class BadBuilder extends PlanBuilder {
+class BadBuilder extends LegacyPlanBuilder {
   def apply(plan: ExecutionPlanInProgress) = plan
 
   def canWorkWith(plan: ExecutionPlanInProgress) = true

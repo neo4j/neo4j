@@ -21,9 +21,9 @@ package org.neo4j.cypher.internal.executionplan.builders
 
 import org.neo4j.cypher.internal.commands.NamedPath
 import org.neo4j.cypher.internal.pipes.{NamedPathPipe, Pipe}
-import org.neo4j.cypher.internal.executionplan.{ExecutionPlanInProgress, PlanBuilder}
+import org.neo4j.cypher.internal.executionplan.{PlanBuilder, ExecutionPlanInProgress, LegacyPlanBuilder}
 
-class NamedPathBuilder extends PlanBuilder {
+class NamedPathBuilder extends LegacyPlanBuilder {
   def apply(plan: ExecutionPlanInProgress) = {
     val p = plan.pipe
 

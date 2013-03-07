@@ -26,6 +26,6 @@ trait UsingIndex extends Expressions {
   def indexHints: Parser[Seq[IndexHint]] = rep(indexHint)
 
   def indexHint: Parser[IndexHint] = USING ~> INDEX ~> identity ~ ":" ~ escapableString ~ parens(escapableString) ^^ {
-    case id ~ ":" ~ label ~ prop => IndexHint(id, label, prop)
+    case id ~ ":" ~ label ~ prop => IndexHint(id, label, prop, None)
   }
 }

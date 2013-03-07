@@ -21,23 +21,7 @@ package org.neo4j.cypher
 
 import internal.commands._
 import expressions._
-import expressions.CountStar
-import expressions.Literal
-import expressions.Nullable
-import expressions.ParameterExpression
-import expressions.Property
-import expressions.RelationshipTypeFunction
-import internal.commands.And
-import internal.commands.Equals
-import internal.commands.LessThan
-import internal.commands.NodeByIndex
-import internal.commands.NodeByIndexQuery
-import internal.commands.Or
-import internal.commands.RegularExpression
-import internal.commands.ReturnItem
-import internal.commands.ShortestPath
-import internal.commands.SortItem
-import internal.commands.True
+import internal.commands._
 import org.junit.Assert._
 import scala.collection.JavaConverters._
 import org.junit.matchers.JUnitMatchers._
@@ -45,9 +29,10 @@ import org.neo4j.graphdb._
 import org.junit.{Ignore, Test}
 import org.neo4j.index.lucene.ValueContext
 import org.neo4j.test.ImpermanentGraphDatabase
+import schema.Schema.IndexState
 import util.Random
 import org.neo4j.kernel.{EmbeddedGraphDatabase, EmbeddedReadOnlyGraphDatabase, TopLevelTransaction}
-import org.neo4j.kernel.api.ConstraintViolationKernelException
+import org.neo4j.graphdb.DynamicLabel.label
 
 
 class ExecutionEngineTest extends ExecutionEngineHelper {
@@ -2740,5 +2725,30 @@ RETURN x0.name?
 
     //THEN DOESN'T THROW EXCEPTION
     assert(result.toList === List())
+  }
+
+  @Ignore("Waiting for Kernel API implementation")
+  @Test
+  def should_be_able_to_use_index_hints() {
+    //GIVEN
+    val andres = createLabeledNode(Map("name" -> "Andres"), "Person")
+    val jake = createLabeledNode(Map("name" -> "Jacob"), "Person")
+    relate(andres, createNode())
+    relate(jake, createNode())
+
+    val tx = graph.beginTx()
+    val index = graph.schema().indexCreator(label("Person")).on("name").create()
+    tx.success()
+    tx.finish()
+
+    while(graph.schema().getIndexState(index) == IndexState.POPULATING) {
+      Thread.sleep(10)
+    }
+
+    //WHEN
+    val result = parseAndExecute("MATCH n:Person-->() USING INDEX n:Person(name) WHERE n.name = 'Jacob' RETURN n")
+
+    //THEN
+    assert(result.toList === List(Map("n"->jake)))
   }
 }

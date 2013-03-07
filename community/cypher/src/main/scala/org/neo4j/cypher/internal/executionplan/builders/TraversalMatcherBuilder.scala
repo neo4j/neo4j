@@ -19,18 +19,19 @@
  */
 package org.neo4j.cypher.internal.executionplan.builders
 
-import org.neo4j.cypher.internal.executionplan.PlanBuilder
+import org.neo4j.cypher.internal.executionplan.{PlanBuilder, LegacyPlanBuilder, ExecutionPlanInProgress}
 import org.neo4j.cypher.internal.commands._
 import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.graphdb
 import graphdb.{Node, GraphDatabaseService}
 import org.neo4j.cypher.internal.pipes.{ParameterPipe, TraversalMatchPipe, EntityProducer}
 import org.neo4j.cypher.internal.pipes.matching.{Trail, TraversalMatcher, MonoDirectionalTraversalMatcher, BidirectionalTraversalMatcher}
-import org.neo4j.cypher.internal.executionplan.ExecutionPlanInProgress
 import org.neo4j.cypher.internal.commands.NodeByIndex
 import org.neo4j.cypher.internal.commands.NodeByIndexQuery
+import org.neo4j.cypher.internal.spi.gdsimpl.TransactionBoundPlanContext
+import org.neo4j.kernel.GraphDatabaseAPI
 
-class TraversalMatcherBuilder(graph: GraphDatabaseService) extends PlanBuilder {
+class TraversalMatcherBuilder(graph: GraphDatabaseService) extends LegacyPlanBuilder {
   def apply(plan: ExecutionPlanInProgress): ExecutionPlanInProgress = extractExpanderStepsFromQuery(plan) match {
     case None              => throw new ThisShouldNotHappenError("Andres", "This plan should not have been accepted")
     case Some(longestPath) =>
@@ -90,7 +91,9 @@ class TraversalMatcherBuilder(graph: GraphDatabaseService) extends PlanBuilder {
     (startItemQueryToken, mapNodeStartCreator(startItemQueryToken.token))
   }
 
-  private val entityFactory = new EntityProducerFactory(graph)
+  //TODO: DON'T DO THIS!!!
+  private val planContext = new TransactionBoundPlanContext(graph.asInstanceOf[GraphDatabaseAPI])
+  private val entityFactory = new EntityProducerFactory(planContext)
 
   private val mapNodeStartCreator: PartialFunction[StartItem, EntityProducer[Node]] =
     entityFactory.nodeById orElse
