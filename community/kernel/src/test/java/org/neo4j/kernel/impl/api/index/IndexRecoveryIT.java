@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import static java.util.concurrent.Executors.newSingleThreadExecutor;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
@@ -35,10 +36,14 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 
 import org.junit.After;
 import org.junit.Test;
+import org.mockito.Matchers;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -50,6 +55,7 @@ import org.neo4j.kernel.api.InternalIndexState;
 import org.neo4j.kernel.api.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.PropertyKeyNotFoundException;
 import org.neo4j.kernel.api.SchemaIndexProvider;
+import org.neo4j.kernel.api.SchemaIndexProvider.Dependencies;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
@@ -64,17 +70,17 @@ public class IndexRecoveryIT
         Label myLabel = label( "MyLabel" );
 
         CountDownLatch latch = new CountDownLatch( 1 );
-        when( mockedIndexProvider.getPopulator( anyLong() ) ).thenReturn( indexPopulatorWithControlledCompletionTiming( latch ) );
+        when( mockedIndexProvider.getPopulator( anyLong(), Matchers.<Dependencies>any() ) ).thenReturn( indexPopulatorWithControlledCompletionTiming( latch ) );
         createIndex( myLabel );
 
         // And Given
-        killDb();
+        killDbInSeparateThread();
         latch.countDown();
 
         // When
-        when( mockedIndexProvider.getInitialState( anyLong() ) ).thenReturn( InternalIndexState.POPULATING );
+        when( mockedIndexProvider.getInitialState( anyLong(), Matchers.<Dependencies>any() ) ).thenReturn( InternalIndexState.POPULATING );
         latch = new CountDownLatch( 1 );
-        when( mockedIndexProvider.getPopulator( anyLong() ) ).thenReturn( indexPopulatorWithControlledCompletionTiming( latch ) );
+        when( mockedIndexProvider.getPopulator( anyLong(), Matchers.<Dependencies>any() ) ).thenReturn( indexPopulatorWithControlledCompletionTiming( latch ) );
         startDb();
 
         // Then
@@ -84,8 +90,8 @@ public class IndexRecoveryIT
 
         IndexDefinition index = single( indexes );
         assertThat( db.schema().getIndexState( index), equalTo( Schema.IndexState.POPULATING ) );
-        verify( mockedIndexProvider, times( 2 ) ).getPopulator( anyLong() );
-        verify( mockedIndexProvider, times( 0 ) ).getWriter( anyLong() );
+        verify( mockedIndexProvider, times( 2 ) ).getPopulator( anyLong(), Matchers.<Dependencies>any() );
+        verify( mockedIndexProvider, times( 0 ) ).getWriter( anyLong(), Matchers.<Dependencies>any() );
         latch.countDown();
     }
 
@@ -97,16 +103,16 @@ public class IndexRecoveryIT
         Label myLabel = label( "MyLabel" );
 
         CountDownLatch latch = new CountDownLatch( 1 );
-        when( mockedIndexProvider.getPopulator( anyLong() ) ).thenReturn( indexPopulatorWithControlledCompletionTiming( latch ) );
+        when( mockedIndexProvider.getPopulator( anyLong(), Matchers.<Dependencies>any() ) ).thenReturn( indexPopulatorWithControlledCompletionTiming( latch ) );
         createIndex( myLabel );
         rotateLogs();
 
         // And Given
-        killDb();
+        killDbInSeparateThread();
         latch.countDown();
         latch = new CountDownLatch( 1 );
-        when( mockedIndexProvider.getPopulator( anyLong() ) ).thenReturn( indexPopulatorWithControlledCompletionTiming( latch ) );
-        when( mockedIndexProvider.getInitialState( anyLong() ) ).thenReturn( InternalIndexState.POPULATING );
+        when( mockedIndexProvider.getPopulator( anyLong(), Matchers.<Dependencies>any() ) ).thenReturn( indexPopulatorWithControlledCompletionTiming( latch ) );
+        when( mockedIndexProvider.getInitialState( anyLong(), Matchers.<Dependencies>any() ) ).thenReturn( InternalIndexState.POPULATING );
 
         // When
         startDb();
@@ -118,8 +124,8 @@ public class IndexRecoveryIT
 
         IndexDefinition index = single( indexes );
         assertThat( db.schema().getIndexState( index), equalTo( Schema.IndexState.POPULATING ) );
-        verify( mockedIndexProvider, times( 2 ) ).getPopulator( anyLong() );
-        verify( mockedIndexProvider, times( 0 ) ).getWriter( anyLong() );
+        verify( mockedIndexProvider, times( 2 ) ).getPopulator( anyLong(), Matchers.<Dependencies>any() );
+        verify( mockedIndexProvider, times( 0 ) ).getWriter( anyLong(), Matchers.<Dependencies>any() );
         latch.countDown();
     }
     
@@ -135,9 +141,9 @@ public class IndexRecoveryIT
 
         // And Given
         killDb();
-        when( mockedIndexProvider.getInitialState( anyLong() ) ).thenReturn( InternalIndexState.ONLINE );
+        when( mockedIndexProvider.getInitialState( anyLong(), Matchers.<Dependencies>any() ) ).thenReturn( InternalIndexState.ONLINE );
         GatheringIndexWriter writer = new GatheringIndexWriter();
-        when( mockedIndexProvider.getWriter( anyLong() ) ).thenReturn( writer );
+        when( mockedIndexProvider.getWriter( anyLong(), Matchers.<Dependencies>any() ) ).thenReturn( writer );
 
         // When
         startDb();
@@ -149,8 +155,8 @@ public class IndexRecoveryIT
 
         IndexDefinition index = single( indexes );
         assertThat( db.schema().getIndexState( index), equalTo( Schema.IndexState.ONLINE ) );
-        verify( mockedIndexProvider, times( 1 ) ).getPopulator( anyLong() );
-        verify( mockedIndexProvider, times( 1 ) ).getWriter( anyLong() );
+        verify( mockedIndexProvider, times( 1 ) ).getPopulator( anyLong(), Matchers.<Dependencies>any() );
+        verify( mockedIndexProvider, times( 1 ) ).getWriter( anyLong(), Matchers.<Dependencies>any() );
         assertEquals( expectedUpdates, writer.updates ); 
     }
     
@@ -164,8 +170,8 @@ public class IndexRecoveryIT
 
         // And Given
         killDb();
-        when( mockedIndexProvider.getInitialState( anyLong() ) ).thenReturn( InternalIndexState.FAILED );
-        when( mockedIndexProvider.getPopulator( anyLong() ) ).thenReturn( mock(IndexPopulator.class) );
+        when( mockedIndexProvider.getInitialState( anyLong(), Matchers.<Dependencies>any() ) ).thenReturn( InternalIndexState.FAILED );
+        when( mockedIndexProvider.getPopulator( anyLong(), Matchers.<Dependencies>any() ) ).thenReturn( mock(IndexPopulator.class) );
 
         // When
         startDb();
@@ -177,7 +183,7 @@ public class IndexRecoveryIT
 
         IndexDefinition index = single( indexes );
         assertThat( db.schema().getIndexState( index ), equalTo( Schema.IndexState.FAILED ) );
-        verify( mockedIndexProvider, times( 2 ) ).getPopulator( anyLong() );
+        verify( mockedIndexProvider, times( 2 ) ).getPopulator( anyLong(), Matchers.<Dependencies>any() );
     }
     
     private GraphDatabaseAPI db;
@@ -193,9 +199,10 @@ public class IndexRecoveryIT
         TestGraphDatabaseFactory factory = new TestGraphDatabaseFactory();
         factory.setFileSystem( fs );
         factory.setSchemaIndexProviders( Arrays.asList( mockedIndexProvider ) );
+        when( mockedIndexProvider.getKey() ).thenReturn( "my-index" );
         db = (GraphDatabaseAPI) factory.newImpermanentDatabase();
     }
-
+    
     private void killDb()
     {
         EphemeralFileSystemAbstraction snapshot = fs.snapshot();
@@ -205,9 +212,27 @@ public class IndexRecoveryIT
         fs = snapshot;
     }
     
+    private Future<Void> killDbInSeparateThread()
+    {
+        ExecutorService executor = newSingleThreadExecutor();
+        Future<Void> result = executor.submit( new Callable<Void>()
+        {
+            @Override
+            public Void call() throws Exception
+            {
+                killDb();
+                return null;
+            }
+        } );
+        executor.shutdown();
+        return result;
+    }
+    
     @After
     public void after()
     {
+        if ( db != null )
+            db.shutdown();
         fs.shutdown();
     }
 

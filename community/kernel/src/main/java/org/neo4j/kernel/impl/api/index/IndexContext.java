@@ -19,15 +19,34 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import static org.neo4j.helpers.FutureAdapter.VOID;
+
+import java.util.concurrent.Future;
+
 import org.neo4j.kernel.api.InternalIndexState;
 
+/**
+ * Controls access to {@link IndexPopulator}, {@link IndexWriter} during different stages
+ * of a lifecycle of a schema index. It's designed to be decorated with multiple stacked instances.
+ */
 public interface IndexContext
 {
     void create();
     
     void update( Iterable<NodePropertyUpdate> updates );
     
-    void drop();
+    /**
+     * Initiates dropping this index context. The returned {@link Future} can be used to await
+     * its completion.
+     * Must close the context as well.
+     */
+    Future<Void> drop();
+
+    /**
+     * Initiates a closing of this index context. The returned {@link Future} can be used to await
+     * its completion.
+     */
+    Future<Void> close();
 
     InternalIndexState getState();
 
@@ -48,8 +67,9 @@ public interface IndexContext
         }
 
         @Override
-        public void drop()
+        public Future<Void> drop()
         {
+            return VOID;
         }
 
         @Override
@@ -61,6 +81,12 @@ public interface IndexContext
         @Override
         public void force()
         {
+        }
+
+        @Override
+        public Future<Void> close()
+        {
+            return VOID;
         }
     }
 }

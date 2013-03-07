@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import org.neo4j.kernel.api.InternalIndexState;
+import org.neo4j.kernel.api.SchemaIndexProvider;
+
 /**
  * Used for initial population of an index.
  */
@@ -30,7 +33,7 @@ public interface IndexPopulator
     void createIndex();
 
     /**
-     * Delete this index
+     * Closes and deletes this index.
      */
     void dropIndex();
     
@@ -51,9 +54,12 @@ public interface IndexPopulator
     void update( Iterable<NodePropertyUpdate> updates );
     
     /**
-     * Complete the creation of this index. If this is a persisted index, implementors of this
+     * Close this populator and releases any resources related to it.
+     * If {@code populationCompletedSuccessfully} is {@code true} then it must mark this index
+     * as {@link InternalIndexState#ONLINE} so that future invocations of its parent
+     * {@link SchemaIndexProvider#getInitialState(long)} also returns {@link InternalIndexState#ONLINE}.
      */
-    void populationCompleted();
+    void close( boolean populationCompletedSuccessfully );
     
     public static class Adapter implements IndexPopulator
     {
@@ -78,7 +84,7 @@ public interface IndexPopulator
         }
 
         @Override
-        public void populationCompleted()
+        public void close( boolean populationCompletedSuccessfully )
         {
         }
     }

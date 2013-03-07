@@ -78,6 +78,7 @@ public class ManyPropertyKeysIT
 
         // THEN
         assertEquals( 1, propertyKeyCount( db ) );
+        db.shutdown();
     }
     
     private final File storeDir = TargetDirectory.forTest( getClass() ).graphDbDir( true );

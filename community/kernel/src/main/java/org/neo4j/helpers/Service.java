@@ -301,6 +301,7 @@ public abstract class Service
     {
         return new Iterable<T>()
         {
+            @Override
             public Iterator<T> iterator()
             {
                 return new PrefetchingIterator<T>()
@@ -395,6 +396,7 @@ public abstract class Service
         }
         return filterExceptions( new Iterable<T>()
         {
+            @Override
             public Iterator<T> iterator()
             {
                 try

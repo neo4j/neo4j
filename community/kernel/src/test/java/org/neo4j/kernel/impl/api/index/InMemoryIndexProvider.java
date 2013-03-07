@@ -40,7 +40,7 @@ public class InMemoryIndexProvider extends SchemaIndexProvider
     }
 
     @Override
-    public IndexWriter getWriter( long indexId )
+    public IndexWriter getWriter( long indexId, Dependencies dependencies )
     {
         InMemoryIndexWriter populator = new InMemoryIndexWriter();
         writers.put( indexId, populator );
@@ -48,13 +48,13 @@ public class InMemoryIndexProvider extends SchemaIndexProvider
     }
 
     @Override
-    public InternalIndexState getInitialState( long indexId )
+    public InternalIndexState getInitialState( long indexId, Dependencies dependencies )
     {
         return null;
     }
 
     @Override
-    public IndexPopulator getPopulator( long indexId )
+    public IndexPopulator getPopulator( long indexId, Dependencies dependencies )
     {
         InMemoryIndexWriter populator = new InMemoryIndexWriter();
         writers.put( indexId, populator );
@@ -107,9 +107,14 @@ public class InMemoryIndexProvider extends SchemaIndexProvider
         public void dropIndex()
         {
         }
+        
+        @Override
+        public void close( boolean populationCompletedSuccessfully )
+        {
+        }
 
         @Override
-        public void populationCompleted()
+        public void close()
         {
         }
     }

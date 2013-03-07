@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import java.util.concurrent.Future;
+
 import org.neo4j.kernel.api.InternalIndexState;
 
 public abstract class AbstractDelegatingIndexContext implements IndexContext
@@ -38,9 +40,9 @@ public abstract class AbstractDelegatingIndexContext implements IndexContext
     }
 
     @Override
-    public void drop()
+    public Future<Void> drop()
     {
-        getDelegate().drop();
+        return getDelegate().drop();
     }
 
     @Override
@@ -53,5 +55,11 @@ public abstract class AbstractDelegatingIndexContext implements IndexContext
     public void force()
     {
         getDelegate().force();
+    }
+    
+    @Override
+    public Future<Void> close()
+    {
+        return getDelegate().close();
     }
 }

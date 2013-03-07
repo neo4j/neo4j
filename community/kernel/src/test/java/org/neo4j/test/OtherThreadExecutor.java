@@ -168,8 +168,11 @@ public class OtherThreadExecutor<T> implements ThreadFactory, Visitor<LineLogger
         Set<Thread.State> stateSet = new HashSet<Thread.State>( asList( possibleStates ) );
         long end = System.currentTimeMillis() + timeout;
         Thread thread = getThread();
-        while ( !stateSet.contains( thread.getState() ) || executionState == ExecutionState.REQUESTED_EXECUTION )
+        Set<Thread.State> seenStates = new HashSet<Thread.State>();
+        Thread.State state = null;
+        while ( !stateSet.contains( (state = thread.getState()) ) || executionState == ExecutionState.REQUESTED_EXECUTION )
         {
+            seenStates.add( state );
             try
             {
                 Thread.sleep( 1 );
@@ -183,7 +186,7 @@ public class OtherThreadExecutor<T> implements ThreadFactory, Visitor<LineLogger
             {
                 throw new TimeoutException( "The executor didn't enter any of states " +
                         Arrays.toString( possibleStates ) + " inside an executing command for " +
-                        timeout + " ms" );
+                        timeout + " ms. Seen states: " + seenStates );
             }
         }
     }

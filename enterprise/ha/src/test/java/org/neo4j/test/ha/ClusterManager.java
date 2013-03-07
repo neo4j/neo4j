@@ -37,7 +37,6 @@ import java.util.concurrent.TimeUnit;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
-import ch.qos.logback.classic.LoggerContext;
 import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.client.ClusterClient;
@@ -57,8 +56,8 @@ import org.neo4j.jmx.impl.JmxKernelExtension;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
-import org.neo4j.kernel.ha.com.master.Slaves;
 import org.neo4j.kernel.ha.UpdatePuller;
+import org.neo4j.kernel.ha.com.master.Slaves;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.LogbackService;
@@ -68,6 +67,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.impl.StaticLoggerBinder;
 import org.w3c.dom.Document;
+
+import ch.qos.logback.classic.LoggerContext;
 
 public class ClusterManager
         extends LifecycleAdapter
@@ -182,19 +183,29 @@ public class ClusterManager
     private final Map<Integer, Map<String, String>> instanceConfig;
     private final Map<String, ManagedCluster> clusterMap = new HashMap<String, ManagedCluster>();
     private final Provider clustersProvider;
+    private final HighlyAvailableGraphDatabaseFactory dbFactory;
 
     public ClusterManager( Provider clustersProvider, File root, Map<String, String> commonConfig,
-                           Map<Integer, Map<String, String>> instanceConfig )
+                           Map<Integer, Map<String, String>> instanceConfig,
+                           HighlyAvailableGraphDatabaseFactory dbFactory )
     {
         this.clustersProvider = clustersProvider;
         this.root = root;
         this.commonConfig = commonConfig;
         this.instanceConfig = instanceConfig;
+        this.dbFactory = dbFactory;
     }
 
+    public ClusterManager( Provider clustersProvider, File root, Map<String, String> commonConfig,
+            Map<Integer, Map<String, String>> instanceConfig )
+    {
+        this( clustersProvider, root, commonConfig, instanceConfig, new HighlyAvailableGraphDatabaseFactory() );
+    }
+    
     public ClusterManager( Provider clustersProvider, File root, Map<String, String> commonConfig )
     {
-        this( clustersProvider, root, commonConfig, Collections.<Integer, Map<String, String>>emptyMap() );
+        this( clustersProvider, root, commonConfig, Collections.<Integer, Map<String, String>>emptyMap(),
+                new HighlyAvailableGraphDatabaseFactory() );
     }
 
     @Override
@@ -383,7 +394,7 @@ public class ClusterManager
             if ( member.isFullHaMember() )
             {
                 int haPort = new URI( "cluster://" + member.getHost() ).getPort() + 3000;
-                GraphDatabaseBuilder graphDatabaseBuilder = new HighlyAvailableGraphDatabaseFactory()
+                GraphDatabaseBuilder graphDatabaseBuilder = dbFactory
                         .newHighlyAvailableDatabaseBuilder( new File( new File( root, name ),
                                 "server" + serverId ).getAbsolutePath() ).
                                 setConfig( ClusterSettings.cluster_name, name ).
@@ -675,8 +686,8 @@ public class ClusterManager
 
     private class StartDatabaseAgainKit implements RepairKit
     {
-        private int serverId;
-        private ManagedCluster cluster;
+        private final int serverId;
+        private final ManagedCluster cluster;
 
         public StartDatabaseAgainKit( ManagedCluster cluster, int serverId )
         {

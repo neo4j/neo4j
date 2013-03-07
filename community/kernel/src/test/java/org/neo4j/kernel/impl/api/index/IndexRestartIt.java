@@ -21,18 +21,21 @@ package org.neo4j.kernel.impl.api.index;
 
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.core.IsEqual.equalTo;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
-import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.single;
+import static org.neo4j.kernel.api.InternalIndexState.NON_EXISTENT;
+import static org.neo4j.kernel.api.InternalIndexState.ONLINE;
+import static org.neo4j.kernel.api.InternalIndexState.POPULATING;
+import static org.neo4j.test.DoubleLatch.awaitLatch;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.After;
 import org.junit.Before;
@@ -49,102 +52,72 @@ import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
 public class IndexRestartIt
 {
-    private GraphDatabaseAPI db;
-    private final EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
-    private TestGraphDatabaseFactory factory;
-    private final SchemaIndexProvider mockedIndexProvider = mock(SchemaIndexProvider.class);
-
     @Test
-    public void shouldHandleRestartOfPopulatedIndex() throws Exception
+    public void shouldHandleRestartOfOnlineIndex() throws Exception
     {
         // Given
-        when( mockedIndexProvider.getPopulator( anyLong() )).thenReturn( mock( IndexPopulator.class ) );
         startDb();
-        Label myLabel = label( "MyLabel" );
-
-        Transaction tx = db.beginTx();
-        db.schema().indexCreator( myLabel ).on( "number_of_bananas_owned" ).create();
-        tx.success();
-        tx.finish();
+        createIndex();
+        provider.awaitFullyPopulated();
 
         // And Given
         stopDb();
-        when( mockedIndexProvider.getInitialState( anyLong() )).thenReturn( InternalIndexState.ONLINE );
+        provider.setInitialIndexState( ONLINE );
 
         // When
         startDb();
 
         // Then
-        Collection<IndexDefinition> indexes = asCollection( db.schema().getIndexes( myLabel ) );
-
-        assertThat( indexes.size(), equalTo(1));
-
-        IndexDefinition index = single( indexes );
+        IndexDefinition index = getSingleIndex();
         assertThat( db.schema().getIndexState( index), equalTo( Schema.IndexState.ONLINE ) );
-        verify( mockedIndexProvider, times( 1 ) ).getPopulator( anyLong() );
-        verify( mockedIndexProvider, times( 2 ) ).getWriter( anyLong() );
+        assertEquals( 1, provider.populatorCallCount.get() );
+        assertEquals( 2, provider.writerCallCount.get() );
     }
 
     @Test
     public void shouldHandleRestartOfPopulatingIndex() throws Exception
     {
         // Given
-        when( mockedIndexProvider.getPopulator( anyLong() ) ).thenReturn( mock( IndexPopulator.class ) );
         startDb();
-        Label myLabel = label( "MyLabel" );
-
-        Transaction tx = db.beginTx();
-        db.schema().indexCreator( myLabel ).on( "number_of_bananas_owned" ).create();
-        tx.success();
-        tx.finish();
+        createIndex();
 
         // And Given
         stopDb();
-        when( mockedIndexProvider.getInitialState( anyLong() ) ).thenReturn( InternalIndexState.POPULATING );
+        provider.setInitialIndexState( POPULATING );
 
         // When
         startDb();
 
-        // Then
-        Collection<IndexDefinition> indexes = asCollection( db.schema().getIndexes( myLabel ) );
-
-        assertThat( indexes.size(), equalTo( 1 ) );
-
-        IndexDefinition index = single( indexes );
+        IndexDefinition index = getSingleIndex();
         assertThat( db.schema().getIndexState( index), not( equalTo( Schema.IndexState.FAILED ) ) );
-        verify( mockedIndexProvider, times( 2 ) ).getPopulator( anyLong() );
+        assertEquals( 2, provider.populatorCallCount.get() );
     }
 
     @Test
     public void shouldHandleRestartWhereIndexWasNotPersisted() throws Exception
     {
         // Given
-        when( mockedIndexProvider.getPopulator( anyLong() )).thenReturn( mock( IndexPopulator.class ) );
         startDb();
-        Label myLabel = label( "MyLabel" );
-
-        Transaction tx = db.beginTx();
-        db.schema().indexCreator( myLabel ).on( "number_of_bananas_owned" ).create();
-        tx.success();
-        tx.finish();
+        createIndex();
 
         // And Given
         stopDb();
-        when( mockedIndexProvider.getInitialState( anyLong() )).thenReturn( InternalIndexState.NON_EXISTENT );
+        provider.setInitialIndexState( NON_EXISTENT );
 
         // When
         startDb();
 
-        // Then
-        Collection<IndexDefinition> indexes = asCollection( db.schema().getIndexes( myLabel ) );
-
-        assertThat( indexes.size(), equalTo(1));
-
-        IndexDefinition index = single( indexes );
+        IndexDefinition index = getSingleIndex();
         assertThat( db.schema().getIndexState( index), not( equalTo( Schema.IndexState.FAILED ) ) );
-        verify( mockedIndexProvider, times( 2 ) ).getPopulator( anyLong() );
+        assertEquals( 2, provider.populatorCallCount.get() );
     }
 
+    private GraphDatabaseAPI db;
+    private final EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
+    private TestGraphDatabaseFactory factory;
+    private final ControlledSchemaIndexProvider provider = new ControlledSchemaIndexProvider();
+    private final Label myLabel = label( "MyLabel" );
+    
     private void startDb()
     {
         if(db != null)
@@ -164,12 +137,74 @@ public class IndexRestartIt
     {
         factory = new TestGraphDatabaseFactory();
         factory.setFileSystem( fs );
-        factory.setSchemaIndexProviders( Arrays.asList( mockedIndexProvider ) );
+        factory.setSchemaIndexProviders( Arrays.<SchemaIndexProvider>asList( provider ) );
     }
 
     @After
     public void after() throws Exception
     {
         db.shutdown();
+    }
+
+    private void createIndex()
+    {
+        Transaction tx = db.beginTx();
+        db.schema().indexCreator( myLabel ).on( "number_of_bananas_owned" ).create();
+        tx.success();
+        tx.finish();
+    }
+
+    private IndexDefinition getSingleIndex()
+    {
+        Collection<IndexDefinition> indexes = asCollection( db.schema().getIndexes( myLabel ) );
+        assertThat( indexes.size(), equalTo(1));
+        return single( indexes );
+    }
+    
+    private class ControlledSchemaIndexProvider extends SchemaIndexProvider
+    {
+        private final IndexPopulator mockedPopulator = mock( IndexPopulator.class );
+        private final IndexWriter mockedWriter = mock( IndexWriter.class );
+        private final CountDownLatch writerLatch = new CountDownLatch( 1 );
+        private InternalIndexState initialIndexState = NON_EXISTENT;
+        private final AtomicInteger populatorCallCount = new AtomicInteger();
+        private final AtomicInteger writerCallCount = new AtomicInteger();
+        
+        public ControlledSchemaIndexProvider()
+        {
+            super( "test", 10 );
+            setInitialIndexState( initialIndexState );
+        }
+        
+        public void awaitFullyPopulated()
+        {
+            awaitLatch( writerLatch );
+        }
+
+        void setInitialIndexState( InternalIndexState initialIndexState )
+        {
+            this.initialIndexState = initialIndexState;
+        }
+
+        @Override
+        public IndexPopulator getPopulator( long indexId, Dependencies dependencies )
+        {
+            populatorCallCount.incrementAndGet();
+            return mockedPopulator;
+        }
+
+        @Override
+        public IndexWriter getWriter( long indexId, Dependencies dependencies )
+        {
+            writerCallCount.incrementAndGet();
+            writerLatch.countDown();
+            return mockedWriter;
+        }
+
+        @Override
+        public InternalIndexState getInitialState( long indexId, Dependencies dependencies )
+        {
+            return initialIndexState;
+        }
     }
 }

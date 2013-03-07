@@ -22,6 +22,7 @@ package org.neo4j.kernel.api;
 import java.io.File;
 
 import org.neo4j.helpers.Service;
+import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.api.index.IndexPopulator;
 import org.neo4j.kernel.impl.api.index.IndexWriter;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -91,27 +92,28 @@ public abstract class SchemaIndexProvider extends Service implements Comparable<
         private final IndexPopulator singlePopulator = new IndexPopulator.Adapter();
         
         @Override
-        public IndexWriter getWriter( long indexId )
+        public IndexWriter getWriter( long indexId, Dependencies dependencies )
         {
             return singleWriter;
         }
         
         @Override
-        public IndexPopulator getPopulator( long indexId )
+        public IndexPopulator getPopulator( long indexId, Dependencies dependencies )
         {
             return singlePopulator;
         }
         
         @Override
-        public InternalIndexState getInitialState( long indexId )
+        public InternalIndexState getInitialState( long indexId, Dependencies dependencies )
         {
             return InternalIndexState.NON_EXISTENT;
         }
     };
     
-    protected FileSystemAbstraction fileSystem;
-    protected File rootDirectory;
+    public static final Dependencies NO_DEPENDENCIES = new Dependencies( new DefaultFileSystemAbstraction(), null );
+    
     private final int priority;
+    private final String key;
 
     /**
      * Create a new instance of a service implementation identified with the
@@ -122,13 +124,13 @@ public abstract class SchemaIndexProvider extends Service implements Comparable<
     protected SchemaIndexProvider( String key, int priority )
     {
         super( key );
+        this.key = key;
         this.priority = priority;
     }
     
-    public void setRootDirectory( FileSystemAbstraction fileSystem, File rootDirectory )
+    public String getKey()
     {
-        this.fileSystem = fileSystem;
-        this.rootDirectory = rootDirectory;
+        return key;
     }
 
     /**
@@ -136,14 +138,14 @@ public abstract class SchemaIndexProvider extends Service implements Comparable<
      * @param indexId the index id to get a populator for.
      * @return an {@link IndexPopulator} used for initially populating a created index.
      */
-    public abstract IndexPopulator getPopulator( long indexId );
+    public abstract IndexPopulator getPopulator( long indexId, Dependencies dependencies );
 
     /**
      * Used for updating an index once initial population has completed.
      * @param indexId the index id to get a writer for.
      * @return an {@link IndexWriter} used for updating an online index at runtime.
      */
-    public abstract IndexWriter getWriter( long indexId );
+    public abstract IndexWriter getWriter( long indexId, Dependencies dependencies );
 
     // Design idea: we add methods here like:
     //    getReader( IndexDefinition index )
@@ -153,11 +155,33 @@ public abstract class SchemaIndexProvider extends Service implements Comparable<
      * @param indexId the index id to get the state for.
      * @return
      */
-    public abstract InternalIndexState getInitialState( long indexId );
+    public abstract InternalIndexState getInitialState( long indexId, Dependencies dependencies );
     
     @Override
     public int compareTo( SchemaIndexProvider o )
     {
         return priority - o.priority;
+    }
+    
+    public static class Dependencies
+    {
+        private final FileSystemAbstraction fileSystem;
+        private final File rootDirectory;
+
+        public Dependencies( FileSystemAbstraction fileSystem, File rootDirectory )
+        {
+            this.fileSystem = fileSystem;
+            this.rootDirectory = rootDirectory;
+        }
+        
+        public FileSystemAbstraction getFileSystem()
+        {
+            return fileSystem;
+        }
+        
+        public File getRootDirectory()
+        {
+            return rootDirectory;
+        }
     }
 }

@@ -19,6 +19,10 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import static org.neo4j.helpers.FutureAdapter.VOID;
+
+import java.util.concurrent.Future;
+
 import org.neo4j.kernel.api.InternalIndexState;
 
 public class FailedIndexContext implements IndexContext
@@ -50,9 +54,10 @@ public class FailedIndexContext implements IndexContext
     }
 
     @Override
-    public void drop()
+    public Future<Void> drop()
     {
         populator.dropIndex();
+        return VOID;
     }
 
     @Override
@@ -64,5 +69,11 @@ public class FailedIndexContext implements IndexContext
     @Override
     public void force()
     {
+    }
+    
+    @Override
+    public Future<Void> close()
+    {
+        return VOID;
     }
 }

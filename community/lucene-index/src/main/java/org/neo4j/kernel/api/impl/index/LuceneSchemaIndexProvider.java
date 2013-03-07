@@ -55,13 +55,13 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
     }
 
     @Override
-    public IndexPopulator getPopulator( long indexId )
+    public IndexPopulator getPopulator( long indexId, Dependencies dependencies )
     {
-        return new LuceneIndexPopulator( dir( rootDirectory, indexId ), directoryFactory, 10000 );
+        return new LuceneIndexPopulator( dir( dependencies.getRootDirectory(), indexId ), directoryFactory, 10000 );
     }
 
     @Override
-    public IndexWriter getWriter( long indexId )
+    public IndexWriter getWriter( long indexId, Dependencies dependencies )
     {
         return new IndexWriter.Adapter()
         {
@@ -69,11 +69,11 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
     }
 
     @Override
-    public InternalIndexState getInitialState( long indexId )
+    public InternalIndexState getInitialState( long indexId, Dependencies dependencies )
     {
         try
         {
-            Directory directory = directoryFactory.open( dir( rootDirectory, indexId ) );
+            Directory directory = directoryFactory.open( dir( dependencies.getRootDirectory(), indexId ) );
             if ( !IndexReader.indexExists( directory ) )
                 return InternalIndexState.NON_EXISTENT;
             Map<String, String> commitData = IndexReader.getCommitUserData( directory );

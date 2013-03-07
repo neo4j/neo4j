@@ -47,6 +47,7 @@ import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.TransactionInterceptorProviders;
 import org.neo4j.kernel.api.SchemaIndexProvider;
+import org.neo4j.kernel.api.SchemaIndexProvider.Dependencies;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
@@ -133,6 +134,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
     private final TransactionStateFactory stateFactory;
     private final CacheAccessBackDoor cacheAccess;
     private final Logging logging;
+    private final Dependencies indexProviderDependencies;
 
     private enum Diagnostics implements DiagnosticsExtractor<NeoStoreXaDataSource>
     {
@@ -219,6 +221,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
     public NeoStoreXaDataSource( Config config, StoreFactory sf, LockManager lockManager,
                                  StringLogger stringLogger, XaFactory xaFactory, TransactionStateFactory stateFactory,
                                  CacheAccessBackDoor cacheAccess, SchemaIndexProvider indexProvider,
+                                 SchemaIndexProvider.Dependencies indexProviderDependencies,
                                  TransactionInterceptorProviders providers, JobScheduler scheduler, Logging logging )
             throws IOException
     {
@@ -227,6 +230,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
         this.stateFactory = stateFactory;
         this.cacheAccess = cacheAccess;
         this.indexProvider = indexProvider;
+        this.indexProviderDependencies = indexProviderDependencies;
         this.providers = providers;
         this.scheduler = scheduler;
         this.logging = logging;
@@ -266,7 +270,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
         neoStore = storeFactory.newNeoStore( store );
 
         indexingService = life.add( new IndexingService( scheduler, indexProvider,
-                new NeoStoreIndexStoreView( neoStore ), logging ) );
+                indexProviderDependencies, new NeoStoreIndexStoreView( neoStore ), logging ) );
         
         xaContainer = xaFactory.newXaContainer(this, config.get( Configuration.logical_log ),
                 new CommandFactory( neoStore, indexingService ), tf, stateFactory, providers  );

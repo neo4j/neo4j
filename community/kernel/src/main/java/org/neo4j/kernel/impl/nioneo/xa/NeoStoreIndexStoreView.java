@@ -34,6 +34,7 @@ import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.api.index.IndexingService.StoreScan;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeStore;
@@ -76,28 +77,33 @@ public class NeoStoreIndexStoreView implements IndexingService.IndexStoreView
         }, propertyStore.getPropertyRecordChain( firstPropertyId ).iterator());
     }
 
-//    @Override
-//    public boolean nodeHasLabel( long nodeId, long label )
-//    {
-//        for ( long nodeLabelId : nodeStore.getLabelsForNode( nodeId ) )
-//            if ( nodeLabelId == label )
-//                return true;
-//        return false;
-//    }
-
+    @SuppressWarnings( "unchecked" )
     @Override
-    public void visitNodesWithPropertyAndLabel( long labelId, long propertyKeyId, Visitor<Pair<Long, Object>> visitor )
+    public StoreScan visitNodesWithPropertyAndLabel( long labelId, long propertyKeyId, Visitor<Pair<Long, Object>> visitor )
     {
         // Create a processor that for each accepted node (containing the desired label) looks through its properties,
         // getting the desired one (if any) and feeds to the index manipulator.
-        RecordStore.Processor processor = new NodeIndexingProcessor( propertyStore, propertyKeyId, visitor );
+        final RecordStore.Processor processor = new NodeIndexingProcessor( propertyStore, propertyKeyId, visitor );
 
         // Run the processor for the nodes containing the given label.
         // TODO When we've got a decent way of getting nodes with a label, use that instead.
         final Predicate<NodeRecord> predicate = new NodeLabelFilterPredicate( nodeStore, labelId );
 
         // Run the processor
-        processor.applyFiltered( nodeStore, predicate );
+        return new StoreScan()
+        {
+            @Override
+            public void run()
+            {
+                processor.applyFiltered( nodeStore, predicate );
+            }
+            
+            @Override
+            public void stop()
+            {
+                processor.stopScanning();
+            }
+        };
     }
 
     private class NodeIndexingProcessor extends RecordStore.Processor

@@ -104,6 +104,7 @@ public class TestGraphProperties
         assertEquals( true, properties( db ).getProperty( "rollback" ) );
         tx.finish();
         assertNull( properties( db ).getProperty( "rollback", null ) );
+        db.shutdown();
     }
 
     @Test
@@ -131,6 +132,7 @@ public class TestGraphProperties
         {
             assertPropertyEquals( values[i % values.length], properties( db ).getProperty( "key" + i ) );
         }
+        db.shutdown();
     }
 
     private void assertPropertyEquals( Object expected, Object readValue )
@@ -163,6 +165,7 @@ public class TestGraphProperties
         assertPropertyEquals( array, properties( db ).getProperty( key ) );
         db.getNodeManager().clearCache();
         assertPropertyEquals( array, properties( db ).getProperty( key ) );
+        db.shutdown();
     }
 
     private PropertyContainer properties( GraphDatabaseAPI db )
@@ -244,6 +247,8 @@ public class TestGraphProperties
 
         worker1.shutdown();
         worker2.shutdown();
+        
+        db.shutdown();
     }
 
     @Test

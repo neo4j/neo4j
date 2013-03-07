@@ -444,6 +444,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                         resolver.resolveDependency( TransactionStateFactory.class ),
                         resolver.resolveDependency( CacheAccessBackDoor.class ),
                         resolver.resolveDependency( SchemaIndexProvider.class ),
+                        resolver.resolveDependency( SchemaIndexProvider.Dependencies.class ),
                         resolver.resolveDependency( TransactionInterceptorProviders.class ),
                         resolver.resolveDependency( JobScheduler.class ), logging );
                 xaDataSourceManager.registerDataSource( nioneoDataSource );

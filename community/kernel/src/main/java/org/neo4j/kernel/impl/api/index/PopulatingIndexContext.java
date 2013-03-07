@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import java.util.concurrent.Future;
+
 import org.neo4j.kernel.api.InternalIndexState;
 import org.neo4j.kernel.impl.api.index.IndexingService.IndexStoreView;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
@@ -50,9 +52,9 @@ public class PopulatingIndexContext implements IndexContext
     }
 
     @Override
-    public void drop()
+    public Future<Void> drop()
     {
-        job.cancel();
+        return job.cancel();
     }
 
     @Override
@@ -65,5 +67,11 @@ public class PopulatingIndexContext implements IndexContext
     public void force()
     {
         // Ignored... I think
+    }
+
+    @Override
+    public Future<Void> close()
+    {
+        return job.cancel();
     }
 }

@@ -46,6 +46,7 @@ import org.junit.Test;
 import org.neo4j.index.impl.lucene.LuceneUtil;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.api.InternalIndexState;
+import org.neo4j.kernel.api.SchemaIndexProvider;
 import org.neo4j.kernel.impl.api.index.IndexPopulator;
 import org.neo4j.kernel.impl.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
@@ -220,6 +221,7 @@ public class LuceneSchemaIndexPopulatorTest
     }
     
     private LuceneSchemaIndexProvider provider;
+    private SchemaIndexProvider.Dependencies providerDependencies;
     private Directory directory;
     private IndexPopulator index;
     private IndexReader reader;
@@ -234,8 +236,8 @@ public class LuceneSchemaIndexPopulatorTest
         directory = new RAMDirectory();
         directoryFactory = new EphemeralDirectoryFactory();
         provider = new LuceneSchemaIndexProvider( directoryFactory );
-        provider.setRootDirectory( fs, new File( "ignored" ) );
-        index = provider.getPopulator( indexId );
+        providerDependencies = new SchemaIndexProvider.Dependencies( fs, new File( "ignored" ) );
+        index = provider.getPopulator( indexId, providerDependencies );
         index.createIndex();
     }
 
@@ -280,8 +282,8 @@ public class LuceneSchemaIndexPopulatorTest
 
     private void switchToVerification() throws CorruptIndexException, IOException
     {
-        index.populationCompleted();
-        assertEquals( InternalIndexState.ONLINE, provider.getInitialState( indexId ) );
+        index.close( true );
+        assertEquals( InternalIndexState.ONLINE, provider.getInitialState( indexId, providerDependencies ) );
         reader = IndexReader.open( directory );
         searcher = new IndexSearcher( reader );
     }

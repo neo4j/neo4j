@@ -37,6 +37,7 @@ import java.util.Set;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.Matchers;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -45,18 +46,12 @@ import org.neo4j.kernel.ThreadToStatementContextBridge;
 import org.neo4j.kernel.api.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.PropertyKeyNotFoundException;
 import org.neo4j.kernel.api.SchemaIndexProvider;
+import org.neo4j.kernel.api.SchemaIndexProvider.Dependencies;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
 public class IndexCRUDIT
 {
-    private GraphDatabaseAPI db;
-    private TestGraphDatabaseFactory factory;
-    private final EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
-    private final SchemaIndexProvider mockedIndexProvider = mock(SchemaIndexProvider.class);
-    private ThreadToStatementContextBridge ctxProvider;
-    private final Label myLabel = label( "MYLABEL" );
-
     @Test
     public void addingANodeWithPropertyShouldGetIndexed() throws Exception
     {
@@ -112,6 +107,13 @@ public class IndexCRUDIT
                 NodePropertyUpdate.add( node.getId(), propertyKey1, value, labels ) ) ) );
     }
 
+    private GraphDatabaseAPI db;
+    private TestGraphDatabaseFactory factory;
+    private final EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
+    private final SchemaIndexProvider mockedIndexProvider = mock( SchemaIndexProvider.class );
+    private ThreadToStatementContextBridge ctxProvider;
+    private final Label myLabel = label( "MYLABEL" );
+    
     private Node createNode( Map<String, Object> properties, Label ... labels )
     {
         Transaction tx = db.beginTx();
@@ -136,6 +138,7 @@ public class IndexCRUDIT
     @Before
     public void before() throws Exception
     {
+        when( mockedIndexProvider.getKey() ).thenReturn( "none" );
         factory = new TestGraphDatabaseFactory();
         factory.setFileSystem( fs );
         factory.setSchemaIndexProviders( Arrays.asList( mockedIndexProvider ) );
@@ -146,8 +149,8 @@ public class IndexCRUDIT
     private GatheringIndexWriter newWriter( String propertyKey )
     {
         GatheringIndexWriter writer = new GatheringIndexWriter( propertyKey );
-        when(mockedIndexProvider.getPopulator( anyLong() )).thenReturn( writer );
-        when(mockedIndexProvider.getWriter( anyLong() )).thenReturn( writer );
+        when(mockedIndexProvider.getPopulator( anyLong(), Matchers.<Dependencies>any() )).thenReturn( writer );
+        when(mockedIndexProvider.getWriter( anyLong(), Matchers.<Dependencies>any() )).thenReturn( writer );
         return writer;
     }
 
@@ -198,7 +201,7 @@ public class IndexCRUDIT
         }
 
         @Override
-        public void populationCompleted()
+        public void close( boolean populationCompletedSuccessfully )
         {
         }
     }

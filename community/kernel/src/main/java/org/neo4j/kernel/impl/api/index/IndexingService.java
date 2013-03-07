@@ -19,13 +19,21 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
+
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeoutException;
 
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.SchemaIndexProvider;
+import org.neo4j.kernel.api.SchemaIndexProvider.Dependencies;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -56,12 +64,14 @@ public class IndexingService extends LifecycleAdapter
     private boolean serviceRunning = false;
     private final IndexStoreView storeView;
     private final Logging logging;
+    private final Dependencies providerDependencies;
 
-    public IndexingService( JobScheduler scheduler, SchemaIndexProvider provider, IndexStoreView storeView,
-            Logging logging )
+    public IndexingService( JobScheduler scheduler, SchemaIndexProvider provider,
+            SchemaIndexProvider.Dependencies providerDependencies, IndexStoreView storeView, Logging logging )
     {
         this.scheduler = scheduler;
         this.provider = provider;
+        this.providerDependencies = providerDependencies;
         this.storeView = storeView;
         this.logging = logging;
 
@@ -103,17 +113,26 @@ public class IndexingService extends LifecycleAdapter
     public void stop()
     {
         serviceRunning = false;
+        Collection<IndexContext> indexesToStop = new ArrayList<IndexContext>( indexes.values() );
+        indexes.clear();
+        Collection<Future<Void>> indexStopFutures = new ArrayList<Future<Void>>();
+        for ( IndexContext index : indexesToStop )
+            indexStopFutures.add( index.close() );
+        
+        for ( Future<Void> future : indexStopFutures )
+            awaitIndexFuture( future );
     }
 
-    public void update( Iterable<NodePropertyUpdate> updates ) {
-        for (IndexContext context : indexes.values())
+    public void update( Iterable<NodePropertyUpdate> updates )
+    {
+        for ( IndexContext context : indexes.values() )
             context.update( updates );
     }
 
     public IndexContext getContextForRule( long indexId ) throws IndexNotFoundKernelException
     {
         IndexContext indexContext = indexes.get( indexId );
-        if(indexContext == null)
+        if ( indexContext == null )
         {
             throw new IndexNotFoundKernelException( "No index with id " + indexId + " exists." );
         }
@@ -130,7 +149,7 @@ public class IndexingService extends LifecycleAdapter
         for ( IndexRule indexRule : indexRules )
         {
             long id = indexRule.getId();
-            switch ( provider.getInitialState( id ) )
+            switch ( provider.getInitialState( id, providerDependencies ) )
             {
                 case ONLINE:
                     indexes.put( id, createOnlineIndexContext( indexRule ) );
@@ -142,7 +161,8 @@ public class IndexingService extends LifecycleAdapter
                     indexes.put( id, createPopulatingIndexContext( indexRule ) );
                     break;
                 case FAILED:
-                    indexes.put( id, new FailedIndexContext( provider.getPopulator( indexRule.getId() )));
+                    indexes.put( id, new FailedIndexContext(
+                            provider.getPopulator( indexRule.getId(), providerDependencies )));
                     break;
             }
         }
@@ -181,14 +201,37 @@ public class IndexingService extends LifecycleAdapter
         if ( serviceRunning )
         {
             assert index != null : "Index " + rule + " doesn't exists";
-            index.drop();
+            awaitIndexFuture( index.drop() );
         }
     }
     
+    private void awaitIndexFuture( Future<Void> future )
+    {
+        try
+        {
+            future.get( 1, MINUTES );
+        }
+        // TODO Overhaul of what to throw
+        catch ( InterruptedException e )
+        {
+            Thread.interrupted();
+            throw new RuntimeException( e );
+        }
+        catch ( ExecutionException e )
+        {
+            throw new RuntimeException( e );
+        }
+        catch ( TimeoutException e )
+        {
+            throw new RuntimeException( e );
+        }
+    }
+
     private IndexContext createOnlineIndexContext( IndexRule rule )
     {
-        IndexContext result = new OnlineIndexContext( provider.getWriter( rule.getId() ) );
+        IndexContext result = new OnlineIndexContext( provider.getWriter( rule.getId(), providerDependencies ) );
         result = new RuleUpdateFilterIndexContext( result, rule );
+        result = new ContractCheckingIndexContext( result );
         result = new ServiceStateUpdatingIndexContext( rule, result );
 
         return result;
@@ -201,7 +244,7 @@ public class IndexingService extends LifecycleAdapter
 
         // TODO: This is here because there is a circular dependency from PopulatingIndexContext to FlippableContext
         flippableContext.setFlipTarget( singleContext( new PopulatingIndexContext( scheduler, rule,
-                provider.getPopulator( ruleId ), flippableContext, storeView, logging ) ) );
+                provider.getPopulator( ruleId, providerDependencies ), flippableContext, storeView, logging ) ) );
         flippableContext.flip();
 
         // Prepare for flipping to online mode
@@ -210,12 +253,13 @@ public class IndexingService extends LifecycleAdapter
             @Override
             public IndexContext create()
             {
-                return new OnlineIndexContext( provider.getWriter( ruleId ) );
+                return new OnlineIndexContext( provider.getWriter( ruleId, providerDependencies ) );
             }
         } );
 
         // TODO: Merge auto removing and rule updating?
         IndexContext result = new RuleUpdateFilterIndexContext( flippableContext, rule );
+        result = new ContractCheckingIndexContext( result );
         result = new ServiceStateUpdatingIndexContext( rule, result );
         return result;
     }
@@ -231,10 +275,10 @@ public class IndexingService extends LifecycleAdapter
         }
 
         @Override
-        public void drop()
+        public Future<Void> drop()
         {
-            super.drop();
             indexes.remove( ruleId, this );
+            return super.drop();
         }
     }
 
@@ -257,14 +301,19 @@ public class IndexingService extends LifecycleAdapter
             }
         };
     }
-
+    
+    public interface StoreScan
+    {
+        void run();
+        
+        void stop();
+    }
+    
     /**
      * The indexing services view of the universe.
      */
     public interface IndexStoreView
     {
-//        boolean nodeHasLabel( long nodeId, long label );
-
         /**
          * Get properties of a node, if those properties exist.
          * @param nodeId
@@ -278,8 +327,8 @@ public class IndexingService extends LifecycleAdapter
          *
          * @param labelId
          * @param propertyKeyId
-         * @return
+         * @return a {@link StoreScan} to start and to stop the scan.
          */
-        void visitNodesWithPropertyAndLabel( long labelId, long propertyKeyId, Visitor<Pair<Long, Object>> visitor );
+        StoreScan visitNodesWithPropertyAndLabel( long labelId, long propertyKeyId, Visitor<Pair<Long, Object>> visitor );
     }
 }

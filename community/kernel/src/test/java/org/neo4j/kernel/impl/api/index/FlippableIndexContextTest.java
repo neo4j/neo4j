@@ -20,7 +20,11 @@
 package org.neo4j.kernel.impl.api.index;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.awaitFuture;
+import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.awaitLatch;
+import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.mockIndexContext;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
@@ -34,26 +38,25 @@ public class FlippableIndexContextTest
     public void shouldBeAbleToSwitchDelegate() throws Exception
     {
         // GIVEN
-        IndexContext actual = mock( IndexContext.class );
-        IndexContext other = mock( IndexContext.class );
+        IndexContext actual = mockIndexContext();
+        IndexContext other = mockIndexContext();
         FlippableIndexContext delegate = new FlippableIndexContext(actual);
         delegate.setFlipTarget( IndexingService.singleContext( other ) );
 
         // WHEN
         delegate.flip();
-        delegate.drop();
+        delegate.drop().get();
 
         // THEN
         verify( other ).drop();
     }
 
-
     @Test
     public void shouldBlockAccessDuringFlipAndThenDelegateToCorrectContext() throws Exception
     {
         // GIVEN
-        final IndexContext contextBeforeFlip = mock( IndexContext.class );
-        final IndexContext contextAfterFlip = mock( IndexContext.class );
+        final IndexContext contextBeforeFlip = mockIndexContext();
+        final IndexContext contextAfterFlip = mockIndexContext();
         final FlippableIndexContext flippable = new FlippableIndexContext( contextBeforeFlip );
         flippable.setFlipTarget( IndexingService.singleContext( contextAfterFlip ) );
 
@@ -100,7 +103,7 @@ public class FlippableIndexContextTest
             @Override
             public Void doWork( Void state )
             {
-                flippable.drop();
+                awaitFuture( flippable.drop() );
                 return null;
             }
         };
@@ -121,14 +124,7 @@ public class FlippableIndexContextTest
                     public void run()
                     {
                         triggerExternalAccess.countDown();
-                        try
-                        {
-                            triggerFinishFlip.await( 10, SECONDS );
-                        }
-                        catch ( InterruptedException e )
-                        {
-                            throw new RuntimeException( e );
-                        }
+                        awaitLatch( triggerFinishFlip );
                     }
                 } );
                 return null;

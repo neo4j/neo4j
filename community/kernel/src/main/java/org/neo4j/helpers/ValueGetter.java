@@ -17,54 +17,27 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api.index;
+package org.neo4j.helpers;
 
-/**
- * Used for online operation of an index.
- */
-public interface IndexWriter
+public interface ValueGetter<T>
 {
-    /**
-     * Delete this index
-     */
-    void dropIndex();
-
-    /**
-     * Apply a set of changes to this index. This method will only ever be called by one thread at a time.
-     * @param updates
-     */
-    void update(Iterable<NodePropertyUpdate> updates);
-
-    /**
-     * Forces this index to disk.
-     */
-    void force();
+    T get();
     
-    /**
-     * Closes this index writer. There will not be any interactions after this call.
-     */
-    void close();
-
-    public static class Adapter implements IndexWriter
+    public static class FromValue<T> implements ValueGetter<T>
     {
-        @Override
-        public void dropIndex()
-        {
-        }
+        private final T value;
 
-        @Override
-        public void update(Iterable<NodePropertyUpdate> updates)
+        public FromValue( T value )
         {
+            this.value = value;
         }
-
+        
         @Override
-        public void force()
+        public T get()
         {
-        }
-
-        @Override
-        public void close()
-        {
+            return value;
         }
     }
+    
+    public static ValueGetter<Void> NO_VALUE = new FromValue<Void>( null );
 }

@@ -32,6 +32,7 @@ import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.first;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.api.SchemaIndexProvider.NO_DEPENDENCIES;
 import static org.neo4j.kernel.api.SchemaIndexProvider.NO_INDEX_PROVIDER;
 import static org.neo4j.kernel.impl.api.index.NodePropertyUpdate.add;
 import static org.neo4j.kernel.impl.api.index.NodePropertyUpdate.change;
@@ -523,7 +524,8 @@ public class WriteTransactionTest
         
         public CapturingIndexingService()
         {
-            super( null, NO_INDEX_PROVIDER, new NeoStoreIndexStoreView( neoStore ), new SingleLoggingService( SYSTEM ) );
+            super( null, NO_INDEX_PROVIDER, NO_DEPENDENCIES, new NeoStoreIndexStoreView( neoStore ),
+                    new SingleLoggingService( SYSTEM ) );
         }
         
         @Override

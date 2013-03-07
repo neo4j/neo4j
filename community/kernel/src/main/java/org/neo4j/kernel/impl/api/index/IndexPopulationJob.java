@@ -19,15 +19,20 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import static org.neo4j.helpers.FutureAdapter.latchGuardedValue;
+import static org.neo4j.helpers.ValueGetter.NO_VALUE;
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.kernel.impl.api.index.IndexingService.singleContext;
 
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Future;
 
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.kernel.impl.api.index.IndexingService.StoreScan;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
@@ -49,6 +54,10 @@ public class IndexPopulationJob implements Runnable
     private final IndexPopulator writer;
     private final FlippableIndexContext flipper;
     private final StringLogger log;
+    private final CountDownLatch doneSignal = new CountDownLatch( 1 );
+
+    private volatile StoreScan storeScan;
+    private volatile boolean cancelled;
 
     public IndexPopulationJob( IndexRule indexRule, IndexPopulator writer, FlippableIndexContext flipper,
                                IndexingService.IndexStoreView storeView, Logging logging )
@@ -64,21 +73,26 @@ public class IndexPopulationJob implements Runnable
     @Override
     public void run()
     {
+        boolean success = false;
         try
         {
             writer.createIndex();
 
             indexAllNodes();
-
+            if ( cancelled )
+                // We remain in POPULATING state
+                return;
+                
             flipper.flip( new Runnable()
             {
                 @Override
                 public void run()
                 {
                     populateFromQueueIfAvailable( Long.MAX_VALUE );
-                    writer.populationCompleted();
+                    writer.close( true );
                 }
             }, new FailedIndexContext( writer ));
+            success = true;
         }
         catch ( RuntimeException e )
         {
@@ -99,12 +113,24 @@ public class IndexPopulationJob implements Runnable
             flipper.setFlipTarget( singleContext( new FailedIndexContext( writer, e ) ) );
             flipper.flip();
         }
+        finally
+        {
+            try
+            {
+                if ( !success )
+                    writer.close( false );
+            }
+            finally
+            {
+                doneSignal.countDown();
+            }
+        }
     }
 
-    @SuppressWarnings("unchecked")
     private void indexAllNodes()
     {
-        storeView.visitNodesWithPropertyAndLabel( labelId, propertyKeyId, new Visitor<Pair<Long, Object>>(){
+        storeScan = storeView.visitNodesWithPropertyAndLabel( labelId, propertyKeyId, new Visitor<Pair<Long, Object>>()
+        {
             @Override
             public boolean visit( Pair<Long, Object> element )
             {
@@ -114,6 +140,7 @@ public class IndexPopulationJob implements Runnable
                 return false;
             }
         });
+        storeScan.run();
     }
 
     private void populateFromQueueIfAvailable( final long highestIndexedNodeId )
@@ -133,9 +160,16 @@ public class IndexPopulationJob implements Runnable
         }
     }
 
-    public void cancel()
+    public Future<Void> cancel()
     {
-        // TODO
+        // Stop the population
+        if ( storeScan != null )
+        {
+            cancelled = true;
+            storeScan.stop();
+        }
+        
+        return latchGuardedValue( NO_VALUE, doneSignal );
     }
 
     /**

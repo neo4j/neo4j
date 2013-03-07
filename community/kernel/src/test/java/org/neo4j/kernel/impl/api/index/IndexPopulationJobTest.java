@@ -27,8 +27,10 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.kernel.impl.util.StringLogger.SYSTEM;
@@ -37,26 +39,34 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Future;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.Matchers;
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.ThreadToStatementContextBridge;
 import org.neo4j.kernel.api.InternalIndexState;
 import org.neo4j.kernel.api.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.PropertyKeyNotFoundException;
 import org.neo4j.kernel.api.StatementContext;
+import org.neo4j.kernel.impl.api.index.IndexingService.IndexStoreView;
+import org.neo4j.kernel.impl.api.index.IndexingService.StoreScan;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreIndexStoreView;
 import org.neo4j.kernel.logging.SingleLoggingService;
+import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.ImpermanentGraphDatabase;
+import org.neo4j.test.OtherThreadExecutor;
+import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 
 public class IndexPopulationJobTest
 {
@@ -74,7 +84,7 @@ public class IndexPopulationJobTest
         // THEN
         verify( populator ).createIndex();
         verify( populator ).add( nodeId, value );
-        verify( populator ).populationCompleted();
+        verify( populator ).close( true );
 
         verifyNoMoreInteractions( populator );
     }
@@ -97,7 +107,7 @@ public class IndexPopulationJobTest
         verify( populator ).createIndex();
         verify( populator ).add( node1, value );
         verify( populator ).add( node4, value );
-        verify( populator ).populationCompleted();
+        verify( populator ).close( true );
 
         verifyNoMoreInteractions( populator );
     }
@@ -170,7 +180,63 @@ public class IndexPopulationJobTest
 
         // THEN
         assertThat( index.getState(), equalTo( InternalIndexState.FAILED) );
-    }    
+    }
+    
+    @Test
+    public void shouldBeAbleToCancelPopulationJob() throws Exception
+    {
+        // GIVEN
+        createNode( map( name, "Mattias" ), FIRST );
+        IndexPopulator populator = mock( IndexPopulator.class );
+        FlippableIndexContext index = mock( FlippableIndexContext.class );
+        IndexStoreView storeView = mock( IndexStoreView.class );
+        ControlledStoreScan storeScan = new ControlledStoreScan();
+        when( storeView.visitNodesWithPropertyAndLabel( anyLong(), anyLong(),
+                Matchers.<Visitor<Pair<Long,Object>>>any() ) ).thenReturn( storeScan );
+        final IndexPopulationJob job = newIndexPopulationJob( FIRST, name, populator, index, storeView );
+        
+        OtherThreadExecutor<Void> populationJobRunner = new OtherThreadExecutor<Void>(
+                "Population job test runner", null );
+        Future<Void> runFuture = populationJobRunner.executeDontWait( new WorkerCommand<Void, Void>()
+        {
+            @Override
+            public Void doWork( Void state )
+            {
+                job.run();
+                return null;
+            }
+        } );
+        
+        storeScan.latch.awaitStart();
+        job.cancel().get();
+        storeScan.latch.awaitFinish();
+
+        // WHEN
+        runFuture.get();
+
+        // THEN
+        verify( populator, times( 1 ) ).close( false );
+        verify( index, times( 0 ) ).flip();
+        verify( index, times( 0 ) ).flip( Matchers.<Runnable>any() );
+        verify( index, times( 0 ) ).flip( Matchers.<Runnable>any(), Matchers.<IndexContext>any() );
+    }
+    
+    private static class ControlledStoreScan implements StoreScan
+    {
+        private final DoubleLatch latch = new DoubleLatch();
+        
+        @Override
+        public void run()
+        {
+            latch.startAndAwaitFinish();
+        }
+
+        @Override
+        public void stop()
+        {
+            latch.finish();
+        }
+    }
     
     private class NodeChangingWriter extends IndexPopulator.Adapter
     {
@@ -309,12 +375,17 @@ public class IndexPopulationJobTest
             FlippableIndexContext flipper )
             throws LabelNotFoundKernelException, PropertyKeyNotFoundException
     {
-        IndexRule indexRule = new IndexRule( 0, context.getLabelId( FIRST.name() ), context.getPropertyKeyId( name ) );
-//        FlippableIndexContext flipper = new FlippableIndexContext();
-        flipper.setFlipTarget( mock( IndexContextFactory.class ) );
         NeoStore neoStore = db.getXaDataSourceManager().getNeoStoreDataSource().getNeoStore();
-        return new IndexPopulationJob( indexRule, populator, flipper, new NeoStoreIndexStoreView( neoStore ),
-                new SingleLoggingService( SYSTEM ) );
+        return newIndexPopulationJob( label, propertyKey, populator, flipper, new NeoStoreIndexStoreView( neoStore ) );
+    }
+    
+    private IndexPopulationJob newIndexPopulationJob( Label label, String propertyKey, IndexPopulator populator,
+            FlippableIndexContext flipper, IndexStoreView storeView )
+            throws LabelNotFoundKernelException, PropertyKeyNotFoundException
+    {
+        IndexRule indexRule = new IndexRule( 0, context.getLabelId( FIRST.name() ), context.getPropertyKeyId( name ) );
+        flipper.setFlipTarget( mock( IndexContextFactory.class ) );
+        return new IndexPopulationJob( indexRule, populator, flipper, storeView, new SingleLoggingService( SYSTEM ) );
     }
 
     private long createNode( Map<String, Object> properties, Label... labels )

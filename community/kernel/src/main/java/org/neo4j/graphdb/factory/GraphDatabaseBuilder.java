@@ -40,7 +40,6 @@ import org.neo4j.graphdb.config.Setting;
  */
 public class GraphDatabaseBuilder
 {
-
     public interface DatabaseCreator
     {
         GraphDatabaseService newDatabase( Map<String, String> config );
@@ -204,5 +203,57 @@ public class GraphDatabaseBuilder
     public GraphDatabaseService newGraphDatabase()
     {
         return creator.newDatabase( config );
+    }
+    
+    public static class Delegator extends GraphDatabaseBuilder
+    {
+        private final GraphDatabaseBuilder actual;
+
+        public Delegator( GraphDatabaseBuilder actual )
+        {
+            super( null );
+            this.actual = actual;
+        }
+
+        @Override
+        public GraphDatabaseBuilder setConfig( Setting<?> setting, String value )
+        {
+            actual.setConfig( setting, value );
+            return this;
+        }
+
+        @Override
+        public GraphDatabaseBuilder setConfig( String name, String value )
+        {
+            actual.setConfig( name, value );
+            return this;
+        }
+
+        @Override
+        public GraphDatabaseBuilder setConfig( Map<String, String> config )
+        {
+            actual.setConfig( config );
+            return this;
+        }
+
+        @Override
+        public GraphDatabaseBuilder loadPropertiesFromFile( String fileName ) throws IllegalArgumentException
+        {
+            actual.loadPropertiesFromFile( fileName );
+            return this;
+        }
+
+        @Override
+        public GraphDatabaseBuilder loadPropertiesFromURL( URL url ) throws IllegalArgumentException
+        {
+            actual.loadPropertiesFromURL( url );
+            return this;
+        }
+
+        @Override
+        public GraphDatabaseService newGraphDatabase()
+        {
+            return actual.newGraphDatabase();
+        }
     }
 }

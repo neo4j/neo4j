@@ -60,7 +60,7 @@ public class TestTxEntries
         EphemeralFileSystemAbstraction snapshot = fileSystem.snapshot();
         db.shutdown();
         
-        new TestGraphDatabaseFactory().setFileSystem( snapshot ).newImpermanentDatabase( storeDir );
+        new TestGraphDatabaseFactory().setFileSystem( snapshot ).newImpermanentDatabase( storeDir ).shutdown();
     }
     
     @Test

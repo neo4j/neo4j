@@ -216,6 +216,7 @@ public abstract class InternalAbstractGraphDatabase
     protected ThreadToStatementContextBridge statementContextProvider;
     protected BridgingCacheAccess cacheBridge;
     protected SchemaIndexProvider schemaIndexProvider;
+    protected SchemaIndexProvider.Dependencies schemaIndexProviderDependencies;
     protected JobScheduler jobScheduler;
 
     protected final LifeSupport life = new LifeSupport();
@@ -230,9 +231,7 @@ public abstract class InternalAbstractGraphDatabase
                                              Iterable<SchemaIndexProvider> schemaIndexProviders )
     {
         this.params = params;
-        
         this.schemaIndexProvider = selectHighestPrioritized( schemaIndexProviders );
-        this.schemaIndexProvider.setRootDirectory( fileSystem, new File( storeDir ) );
 
         dependencyResolver = new DependencyResolverImpl();
 
@@ -337,6 +336,9 @@ public abstract class InternalAbstractGraphDatabase
     protected void create()
     {
         fileSystem = createFileSystemAbstraction();
+        schemaIndexProviderDependencies = new SchemaIndexProvider.Dependencies( fileSystem,
+                new File( new File( new File( storeDir, "schema" ), "index" ), this.schemaIndexProvider.getKey() ) );
+
 
         // Create logger
         this.logging = createLogging();
@@ -830,8 +832,8 @@ public abstract class InternalAbstractGraphDatabase
             // TODO IO stuff should be done in lifecycle. Refactor!
             neoDataSource = new NeoStoreXaDataSource( config,
                     storeFactory, lockManager, logging.getLogger( NeoStoreXaDataSource.class ),
-                    xaFactory, stateFactory, cacheBridge, schemaIndexProvider, transactionInterceptorProviders,
-                    jobScheduler, logging );
+                    xaFactory, stateFactory, cacheBridge, schemaIndexProvider, schemaIndexProviderDependencies,
+                    transactionInterceptorProviders, jobScheduler, logging );
             xaDataSourceManager.registerDataSource( neoDataSource );
 
         }
@@ -1334,6 +1336,10 @@ public abstract class InternalAbstractGraphDatabase
             else if ( SchemaIndexProvider.class.isAssignableFrom( type ) )
             {
                 return (T) schemaIndexProvider;
+            }
+            else if ( SchemaIndexProvider.Dependencies.class.isAssignableFrom( type ) )
+            {
+                return (T) schemaIndexProviderDependencies;
             }
             else if ( JobScheduler.class.isAssignableFrom( type ) )
             {

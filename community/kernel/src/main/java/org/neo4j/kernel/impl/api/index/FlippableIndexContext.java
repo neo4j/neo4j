@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import java.util.concurrent.Future;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -43,7 +44,7 @@ public class FlippableIndexContext implements IndexContext
         }
     };
 
-    private final ReadWriteLock lock = new ReentrantReadWriteLock();
+    private final ReadWriteLock lock = new ReentrantReadWriteLock(true);
     private IndexContextFactory flipTarget;
     private IndexContext delegate;
 
@@ -86,12 +87,12 @@ public class FlippableIndexContext implements IndexContext
     }
     
     @Override
-    public void drop()
+    public Future<Void> drop()
     {
         lock.readLock().lock();
         try
         {
-            delegate.drop();
+            return delegate.drop();
         }
         finally
         {
@@ -120,6 +121,20 @@ public class FlippableIndexContext implements IndexContext
         try
         {
             return delegate.getState();
+        }
+        finally
+        {
+            lock.readLock().unlock();
+        }
+    }
+    
+    @Override
+    public Future<Void> close()
+    {
+        lock.readLock().lock();
+        try
+        {
+            return delegate.close();
         }
         finally
         {

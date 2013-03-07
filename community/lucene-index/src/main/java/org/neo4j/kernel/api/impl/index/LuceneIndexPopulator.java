@@ -64,6 +64,7 @@ class LuceneIndexPopulator implements IndexPopulator
     @Override
     public void createIndex()
     {
+        new Exception( "CREATE INDEX " + dir ).printStackTrace();
         deleteDirectory();
         
         IndexWriterConfig writerConfig = new IndexWriterConfig( Version.LUCENE_35, LuceneDataSource.KEYWORD_ANALYZER );
@@ -199,17 +200,32 @@ class LuceneIndexPopulator implements IndexPopulator
     }
 
     @Override
-    public void populationCompleted()
+    public void close( boolean populationCompletedSuccessfully )
     {
+        System.err.println( "CLOSING " + dir + ", " + populationCompletedSuccessfully );
         try
         {
-            applyQueuedUpdates();
-            writer.commit( stringMap( KEY_STATUS, ONLINE ) );
-            writer.close( true );
+            if ( populationCompletedSuccessfully )
+            {
+                applyQueuedUpdates();
+                writer.commit( stringMap( KEY_STATUS, ONLINE ) );
+            }
         }
         catch ( IOException e )
         {
+            populationCompletedSuccessfully = false;
             throw new RuntimeException( e );
+        }
+        finally
+        {
+            try
+            {
+                writer.close( true );
+            }
+            catch ( IOException e )
+            {
+                throw new RuntimeException( e );
+            }
         }
     }
 
