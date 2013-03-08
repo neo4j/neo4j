@@ -78,8 +78,9 @@ public class IndexRecoveryIT
         createIndex( myLabel );
 
         // And Given
-        killDbInSeparateThread();
+        Future<Void> killFuture = killDbInSeparateThread();
         latch.countDown();
+        killFuture.get();
 
         // When
         when( mockedIndexProvider.getInitialState( anyLong(), Matchers.<Dependencies>any() ) ).thenReturn( InternalIndexState.POPULATING );
@@ -112,8 +113,9 @@ public class IndexRecoveryIT
         rotateLogs();
 
         // And Given
-        killDbInSeparateThread();
+        Future<Void> killFuture = killDbInSeparateThread();
         latch.countDown();
+        killFuture.get();
         latch = new CountDownLatch( 1 );
         when( mockedIndexProvider.getPopulator( anyLong(), Matchers.<Dependencies>any() ) ).thenReturn( indexPopulatorWithControlledCompletionTiming( latch ) );
         when( mockedIndexProvider.getInitialState( anyLong(), Matchers.<Dependencies>any() ) ).thenReturn( InternalIndexState.POPULATING );
