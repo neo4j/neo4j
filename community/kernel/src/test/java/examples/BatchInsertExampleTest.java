@@ -28,6 +28,8 @@ import java.io.Writer;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
@@ -35,7 +37,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 import org.neo4j.unsafe.batchinsert.BatchInserter;
@@ -148,5 +150,13 @@ public class BatchInsertExampleTest
         // END SNIPPET: configuredBatchDb
     }
 
-    private final FileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
+    @Rule
+    public EphemeralFileSystemRule fileSystemRule = new EphemeralFileSystemRule();
+    private EphemeralFileSystemAbstraction fileSystem;
+    
+    @Before
+    public void before() throws Exception
+    {
+        fileSystem = fileSystemRule.get();
+    }
 }

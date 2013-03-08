@@ -27,6 +27,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -37,6 +38,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.MyRelTypes;
+import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 import org.neo4j.tooling.GlobalGraphOperations;
@@ -50,17 +52,22 @@ public class TestCrashWithRebuildSlow
     @Test
     public void crashAndRebuildSlowWithDynamicStringDeletions() throws Exception
     {
-        EphemeralFileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
         String storeDir = "dir";
-        GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory()
-                .setFileSystem( fileSystem ).newImpermanentDatabase( storeDir );
+        final GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory()
+                .setFileSystem( fs.get() ).newImpermanentDatabase( storeDir );
         produceNonCleanDefraggedStringStore( db );
-        EphemeralFileSystemAbstraction snapshot = fileSystem.snapshot();
-        db.shutdown();
+        EphemeralFileSystemAbstraction snapshot = fs.snapshot( new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                db.shutdown();
+            }
+        } );
         
         // Recover with rebuild_idgenerators_fast=false
         assertNumberOfFreeIdsEquals( storeDir, snapshot, 0 );
-        db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().setFileSystem( snapshot )
+        GraphDatabaseAPI newDb = (GraphDatabaseAPI) new TestGraphDatabaseFactory().setFileSystem( snapshot )
                 .newImpermanentDatabaseBuilder( storeDir )
                 .setConfig( GraphDatabaseSettings.rebuild_idgenerators_fast, GraphDatabaseSetting.FALSE )
                 .newGraphDatabase();
@@ -70,9 +77,9 @@ public class TestCrashWithRebuildSlow
         {
             int nameCount = 0;
             int relCount = 0;
-            for ( Node node : GlobalGraphOperations.at( db ).getAllNodes() )
+            for ( Node node : GlobalGraphOperations.at( newDb ).getAllNodes() )
             {
-                if ( node.equals( db.getReferenceNode() ) )
+                if ( node.equals( newDb.getReferenceNode() ) )
                     continue;
                 nameCount++;
                 assertNotNull( node.getProperty( "name" ) );
@@ -84,7 +91,7 @@ public class TestCrashWithRebuildSlow
         }
         finally
         {
-            db.shutdown();
+            newDb.shutdown();
         }
     }
 
@@ -140,4 +147,6 @@ public class TestCrashWithRebuildSlow
             rel.delete();
         node.delete();
     }
+    
+    @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
 }

@@ -30,7 +30,6 @@ import org.junit.Test;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.core.JumpingFileSystemAbstraction.JumpingFileChannel;
-import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.IdGenerator;
 
 public class TestJumpingIdGenerator
@@ -72,7 +71,7 @@ public class TestJumpingIdGenerator
     {
         File fileName = new File("target/var/neostore.nodestore.db");
         deleteFileOrDirectory( fileName );
-        FileSystemAbstraction offsettedFileSystem = new JumpingFileSystemAbstraction( 10 );
+        JumpingFileSystemAbstraction offsettedFileSystem = new JumpingFileSystemAbstraction( 10 );
         IdGenerator idGenerator = new JumpingIdGeneratorFactory( 10 ).get( IdType.NODE );
         JumpingFileChannel channel = (JumpingFileChannel) offsettedFileSystem.open( fileName, "rw" );
         
@@ -91,6 +90,7 @@ public class TestJumpingIdGenerator
         }
         
         channel.close();
+        offsettedFileSystem.shutdown();
     }
 
     private byte readSomethingLikeNodeRecord( JumpingFileChannel channel, long id ) throws IOException

@@ -82,6 +82,7 @@ public class TestStandaloneLogExtractor
         newDb.shutdown();
 
         assertEquals( rep, newRep );
+        fileSystem.shutdown();
     }
     
     private void createSomeTransactions( GraphDatabaseAPI db ) throws IOException

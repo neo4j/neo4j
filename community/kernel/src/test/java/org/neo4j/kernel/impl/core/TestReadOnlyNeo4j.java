@@ -23,6 +23,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 
+import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
@@ -35,19 +36,19 @@ import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.test.DbRepresentation;
+import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
 public class TestReadOnlyNeo4j
 {
     private static final String PATH = "read-only";
-    private final EphemeralFileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
+    @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     
     @Test
     public void testSimple()
     {
         DbRepresentation someData = createSomeData();
-        GraphDatabaseService readGraphDb = new TestGraphDatabaseFactory().setFileSystem( fileSystem )
+        GraphDatabaseService readGraphDb = new TestGraphDatabaseFactory().setFileSystem( fs.get() )
                 .newImpermanentDatabaseBuilder( PATH )
                 .setConfig( GraphDatabaseSettings.read_only, GraphDatabaseSetting.TRUE )
                 .newGraphDatabase();
@@ -69,7 +70,7 @@ public class TestReadOnlyNeo4j
     private DbRepresentation createSomeData()
     {
         DynamicRelationshipType type = withName( "KNOWS" );
-        GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentDatabase( PATH );
+        GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fs.get() ).newImpermanentDatabase( PATH );
         Transaction tx = db.beginTx();
         Node prevNode = db.getReferenceNode();
         for ( int i = 0; i < 100; i++ )
@@ -89,7 +90,7 @@ public class TestReadOnlyNeo4j
     @Test
     public void testReadOnlyOperationsAndNoTransaction()
     {
-        GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentDatabase( PATH );
+        GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fs.get() ).newImpermanentDatabase( PATH );
 
         Transaction tx = db.beginTx();
         Node node1 = db.createNode();
