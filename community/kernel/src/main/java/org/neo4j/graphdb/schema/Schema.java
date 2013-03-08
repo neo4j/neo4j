@@ -36,7 +36,7 @@ public interface Schema
     {
         ONLINE,
         POPULATING,
-        FAILED;
+        FAILED
     }
 
     /**

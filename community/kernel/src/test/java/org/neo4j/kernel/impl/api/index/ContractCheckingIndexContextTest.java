@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.api.index;
 import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.mockIndexContext;
 
 import org.junit.Test;
+import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.test.DoubleLatch;
 
 public class ContractCheckingIndexContextTest
@@ -84,6 +85,8 @@ public class ContractCheckingIndexContextTest
 
         // WHEN
         outer.create();
+
+        // PASS
         outer.drop();
     }
 
@@ -97,7 +100,58 @@ public class ContractCheckingIndexContextTest
 
         // WHEN
         outer.create();
+
+        // PASS
         outer.close();
+    }
+
+
+    @Test(expected = IllegalStateException.class)
+    public void shouldNotUpdateBeforeCreate()
+    {
+        // GIVEN
+        IndexContext inner = mockIndexContext();
+        IndexContext outer = new ContractCheckingIndexContext( inner );
+
+        // WHEN
+        outer.update( null );
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void shouldNotUpdateAfterClose()
+    {
+        // GIVEN
+        IndexContext inner = mockIndexContext();
+        IndexContext outer = new ContractCheckingIndexContext( inner );
+
+        // WHEN
+        outer.create();
+        outer.close();
+        outer.update( null );
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void shouldNotForceBeforeCreate()
+    {
+        // GIVEN
+        IndexContext inner = mockIndexContext();
+        IndexContext outer = new ContractCheckingIndexContext( inner );
+
+        // WHEN
+        outer.force();
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void shouldNotForceAfterClose()
+    {
+        // GIVEN
+        IndexContext inner = mockIndexContext();
+        IndexContext outer = new ContractCheckingIndexContext( inner );
+
+        // WHEN
+        outer.create();
+        outer.close();
+        outer.force();
     }
 
     @Test( expected = /* THEN */ IllegalStateException.class )
@@ -166,6 +220,81 @@ public class ContractCheckingIndexContextTest
         {
             latch.awaitStart();
             outer.drop();
+        }
+        finally
+        {
+            latch.finish();
+        }
+    }
+
+
+    @Test( expected = /* THEN */ IllegalStateException.class )
+    public void shouldNotCloseWhileUpdating()
+    {
+        // GIVEN
+        final DoubleLatch latch = new DoubleLatch();
+        final IndexContext inner = new IndexContext.Adapter()
+        {
+            @Override
+            public void update(Iterable<NodePropertyUpdate> updates)
+            {
+                latch.startAndAwaitFinish();
+            }
+        };
+        final IndexContext outer = new ContractCheckingIndexContext( inner );
+        outer.create();
+
+        // WHEN
+        new Thread( new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                outer.update( null );
+            }
+        } ).start();
+
+        try
+        {
+            latch.awaitStart();
+            outer.close();
+        }
+        finally
+        {
+            latch.finish();
+        }
+    }
+
+    @Test( expected = /* THEN */ IllegalStateException.class )
+    public void shouldNotCloseWhileForcing()
+    {
+        // GIVEN
+        final DoubleLatch latch = new DoubleLatch();
+        final IndexContext inner = new IndexContext.Adapter()
+        {
+            @Override
+            public void force()
+            {
+                latch.startAndAwaitFinish();
+            }
+        };
+        final IndexContext outer = new ContractCheckingIndexContext( inner );
+        outer.create();
+
+        // WHEN
+        new Thread( new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                outer.force();
+            }
+        } ).start();
+
+        try
+        {
+            latch.awaitStart();
+            outer.close();
         }
         finally
         {

@@ -36,11 +36,6 @@ public enum InternalIndexState
     ONLINE,
     
     /**
-     * Given when asked about an index that, in fact, does not exist.
-     */
-    NON_EXISTENT,
-    
-    /**
      * Denotes that the index, for one reason or another, is broken. Information about the
      * failure is expected to have been logged.
      *

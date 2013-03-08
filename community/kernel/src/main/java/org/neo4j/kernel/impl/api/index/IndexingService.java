@@ -23,7 +23,11 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -31,7 +35,9 @@ import java.util.concurrent.TimeoutException;
 
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.index.SchemaIndexProvider.Dependencies;
@@ -88,23 +94,41 @@ public class IndexingService extends LifecycleAdapter
     @Override
     public void start()
     {
-        // Find all indexes that are not already online, and create them
-        for ( IndexContext indexContext : indexes.values() )
+        Set<IndexContext> rebuildingIndexes = new HashSet<IndexContext>();
+        Map<Long, IndexDescriptor> rebuildingIndexDescriptors = new HashMap<Long, IndexDescriptor>();
+
+        // Find all indexes that are not already online, do not require rebuilding, and create them
+        for ( Map.Entry<Long, IndexContext> entry : indexes.entrySet() )
         {
+            long ruleId = entry.getKey();
+            IndexContext indexContext = entry.getValue();
             switch ( indexContext.getState() )
             {
             case ONLINE:
                 // Don't do anything, index is ok.
                 break;
             case POPULATING:
-            case NON_EXISTENT:
-                // Re-create the index
-                indexContext.create();
+                // Remember for rebuilding
+                rebuildingIndexes.add( indexContext );
+                rebuildingIndexDescriptors.put( ruleId, indexContext.getDescriptor() );
                 break;
             case FAILED:
                 // Don't do anything, the user needs to drop the index and re-create
                 break;
             }
+        }
+
+        // Drop placeholder contexts for indexes that need to be rebuilt
+        dropAllContexts( rebuildingIndexes );
+
+        // Rebuild indexes by recreating and repopulating them
+        for ( Map.Entry<Long, IndexDescriptor> entry : rebuildingIndexDescriptors.entrySet() )
+        {
+            long ruleId = entry.getKey();
+            IndexDescriptor descriptor = entry.getValue();
+            IndexContext indexContext = createPopulatingIndexContext( ruleId, descriptor );
+            indexContext.create();
+            indexes.put( ruleId, indexContext );
         }
 
         serviceRunning = true;
@@ -122,12 +146,6 @@ public class IndexingService extends LifecycleAdapter
         
         for ( Future<Void> future : indexStopFutures )
             awaitIndexFuture( future );
-    }
-
-    public void update( Iterable<NodePropertyUpdate> updates )
-    {
-        for ( IndexContext context : indexes.values() )
-            context.update( updates );
     }
 
     public IndexContext getContextForRule( long indexId ) throws IndexNotFoundKernelException
@@ -149,23 +167,24 @@ public class IndexingService extends LifecycleAdapter
     {
         for ( IndexRule indexRule : indexRules )
         {
-            long id = indexRule.getId();
-            switch ( provider.getInitialState( id, providerDependencies ) )
+            long ruleId = indexRule.getId();
+            IndexDescriptor descriptor = createDescriptor( indexRule );
+            IndexContext indexContext = null;
+            switch ( provider.getInitialState( ruleId, providerDependencies ) )
             {
                 case ONLINE:
-                    indexes.put( id, createOnlineIndexContext( indexRule ) );
+                    indexContext = createOnlineIndexContext( ruleId, descriptor );
                     break;
                 case POPULATING:
-                case NON_EXISTENT:
                     // The database was shut down during population, or a crash has occurred, or some other
                     // sad thing.
-                    indexes.put( id, createPopulatingIndexContext( indexRule ) );
+                    indexContext = createRecoveringIndexContext( ruleId, descriptor );
                     break;
                 case FAILED:
-                    indexes.put( id, new FailedIndexContext(
-                            provider.getPopulator( indexRule.getId(), providerDependencies )));
+                    indexContext = createFailedIndexContext( ruleId, descriptor );
                     break;
             }
+            indexes.put( ruleId, indexContext );
         }
     }
 
@@ -179,10 +198,12 @@ public class IndexingService extends LifecycleAdapter
     public void createIndex( IndexRule rule )
     {
         IndexContext index = indexes.get( rule.getId() );
+        long ruleId = rule.getId();
+        IndexDescriptor descriptor = createDescriptor( rule );
         if ( serviceRunning )
         {
             assert index == null : "Index " + rule + " already exists";
-            index = createPopulatingIndexContext( rule );
+            index = createPopulatingIndexContext( ruleId, descriptor );
 
             // Trigger the creation, only if the service is online. Otherwise,
             // creation will be triggered on start().
@@ -190,10 +211,16 @@ public class IndexingService extends LifecycleAdapter
         }
         else if ( index == null )
         {
-            index = createPopulatingIndexContext( rule );
+            index = createPopulatingIndexContext( ruleId, descriptor );
         }
         
         indexes.put( rule.getId(), index );
+    }
+
+    public void updateIndexes( Iterable<NodePropertyUpdate> updates )
+    {
+        for ( IndexContext context : indexes.values() )
+            context.update( updates );
     }
 
     public void dropIndex( IndexRule rule )
@@ -205,7 +232,84 @@ public class IndexingService extends LifecycleAdapter
             awaitIndexFuture( index.drop() );
         }
     }
-    
+
+    private IndexContext createPopulatingIndexContext( final long ruleId, final IndexDescriptor descriptor )
+    {
+        FlippableIndexContext flippableContext = new FlippableIndexContext( );
+
+        // TODO: This is here because there is a circular dependency from PopulatingIndexContext to FlippableContext
+        IndexPopulator populator = getPopulator( ruleId );
+        PopulatingIndexContext populatingContext =
+                new PopulatingIndexContext( scheduler, descriptor, populator, flippableContext, storeView, logging );
+        flippableContext.setFlipTarget( singleContext( populatingContext ) );
+        flippableContext.flip();
+
+        // Prepare for flipping to online mode
+        flippableContext.setFlipTarget( new IndexContextFactory()
+        {
+            @Override
+            public IndexContext create()
+            {
+                return new OnlineIndexContext( descriptor, getOnlineAccessor( ruleId ) );
+            }
+        } );
+
+        IndexContext result = contractCheckedContext( false, flippableContext );
+        return serviceDecoratedContext( ruleId, result );
+    }
+
+    private IndexContext createOnlineIndexContext( long ruleId, IndexDescriptor descriptor )
+    {
+        IndexAccessor onlineAccessor = getOnlineAccessor( ruleId );
+        IndexContext result = new OnlineIndexContext( descriptor, onlineAccessor );
+        result = contractCheckedContext( true, result );
+        result = serviceDecoratedContext( ruleId, result );
+        return result;
+    }
+
+    private IndexContext createFailedIndexContext( long ruleId, IndexDescriptor descriptor )
+    {
+        IndexContext result = new FailedIndexContext( descriptor, getPopulator( ruleId ) );
+        result = contractCheckedContext( true, result );
+        return serviceDecoratedContext( ruleId, result );
+    }
+
+    private IndexContext createRecoveringIndexContext( long ruleId, IndexDescriptor descriptor )
+    {
+        IndexContext result = new RecoveringIndexContext( descriptor );
+        result = contractCheckedContext( true, result );
+        return serviceDecoratedContext( ruleId, result );
+    }
+
+    private IndexPopulator getPopulator( long ruleId )
+    {
+        return provider.getPopulator( ruleId, providerDependencies );
+    }
+
+    private IndexAccessor getOnlineAccessor( long ruleId  )
+    {
+        return provider.getOnlineAccessor( ruleId, providerDependencies );
+    }
+
+    private IndexContext contractCheckedContext( boolean created, IndexContext result )
+    {
+        result = new ContractCheckingIndexContext( created, result );
+        return result;
+    }
+
+    private IndexContext serviceDecoratedContext( long ruleId, IndexContext result )
+    {
+        // TODO: Merge auto removing and rule updating?
+        result = new RuleUpdateFilterIndexContext( result );
+        result = new ServiceStateUpdatingIndexContext( ruleId, result );
+        return result;
+    }
+
+    private IndexDescriptor createDescriptor( IndexRule rule )
+    {
+        return new IndexDescriptor( rule.getLabel(), rule.getPropertyKey() );
+    }
+
     private void awaitIndexFuture( Future<Void> future )
     {
         try
@@ -228,51 +332,35 @@ public class IndexingService extends LifecycleAdapter
         }
     }
 
-    private IndexContext createOnlineIndexContext( IndexRule rule )
+    private void dropAllContexts( Set<IndexContext> recoveringIndexes )
     {
-        IndexContext result = new OnlineIndexContext( provider.getOnlineAccessor( rule.getId(), providerDependencies ) );
-        result = new RuleUpdateFilterIndexContext( result, rule );
-        result = new ContractCheckingIndexContext( result );
-        result = new ServiceStateUpdatingIndexContext( rule, result );
-
-        return result;
-    }
-
-    private IndexContext createPopulatingIndexContext( IndexRule rule )
-    {
-        final long ruleId = rule.getId();
-        FlippableIndexContext flippableContext = new FlippableIndexContext( );
-
-        // TODO: This is here because there is a circular dependency from PopulatingIndexContext to FlippableContext
-        flippableContext.setFlipTarget( singleContext( new PopulatingIndexContext( scheduler, rule,
-                provider.getPopulator( ruleId, providerDependencies ), flippableContext, storeView, logging ) ) );
-        flippableContext.flip();
-
-        // Prepare for flipping to online mode
-        flippableContext.setFlipTarget( new IndexContextFactory()
+        try
         {
-            @Override
-            public IndexContext create()
+            for ( IndexContext indexContext : recoveringIndexes )
             {
-                return new OnlineIndexContext( provider.getOnlineAccessor( ruleId, providerDependencies ) );
+                indexContext.drop().get();
             }
-        } );
-
-        // TODO: Merge auto removing and rule updating?
-        IndexContext result = new RuleUpdateFilterIndexContext( flippableContext, rule );
-        result = new ContractCheckingIndexContext( result );
-        result = new ServiceStateUpdatingIndexContext( rule, result );
-        return result;
+        }
+        // TODO Overhaul of what to throw
+        catch ( InterruptedException e )
+        {
+            Thread.interrupted();
+            throw new RuntimeException( e );
+        }
+        catch ( ExecutionException e )
+        {
+            throw new RuntimeException( e );
+        }
     }
 
     class ServiceStateUpdatingIndexContext extends DelegatingIndexContext
     {
         private final long ruleId;
 
-        ServiceStateUpdatingIndexContext( IndexRule rule, IndexContext delegate )
+        ServiceStateUpdatingIndexContext( long ruleId, IndexContext delegate )
         {
             super( delegate );
-            this.ruleId = rule.getId();
+            this.ruleId = ruleId;
         }
 
         @Override
@@ -326,10 +414,8 @@ public class IndexingService extends LifecycleAdapter
          * Retrieve all nodes in the database with a given label and property, as pairs of node id and
          * property value.
          *
-         * @param labelId
-         * @param propertyKeyId
          * @return a {@link StoreScan} to start and to stop the scan.
          */
-        StoreScan visitNodesWithPropertyAndLabel( long labelId, long propertyKeyId, Visitor<Pair<Long, Object>> visitor );
+        StoreScan visitNodesWithPropertyAndLabel( IndexDescriptor descriptor, Visitor<Pair<Long, Object>> visitor );
     }
 }

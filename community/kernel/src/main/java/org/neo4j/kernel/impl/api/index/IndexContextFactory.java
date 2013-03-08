@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+
 public interface IndexContextFactory
 {
     IndexContext create();

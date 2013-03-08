@@ -31,6 +31,19 @@ import org.neo4j.kernel.api.index.NodePropertyUpdate;
 /**
  * Controls access to {@link IndexPopulator}, {@link IndexAccessor} during different stages
  * of a lifecycle of a schema index. It's designed to be decorated with multiple stacked instances.
+ *
+ * The contract of IndexContext is
+ *
+ * <ul>
+ *     <li>The index may not be created twice</li>
+ *     <li>The context may not be closed twice</li>
+ *     <li>Close or drop both close the context</li>
+ *     <li>The index may not be dropped before it has been created</li>
+ *     <li>Update and force may only be called after the index has been created and before it is closed</li>
+ *     <li>It is an error to close or drop the index while there are still ongoing calls to update and force</li>
+ * </ul>
+ *
+ * @see org.neo4j.kernel.impl.api.index.ContractCheckingIndexContext
  */
 public interface IndexContext
 {
@@ -50,6 +63,8 @@ public interface IndexContext
      * its completion.
      */
     Future<Void> close();
+
+    IndexDescriptor getDescriptor();
 
     InternalIndexState getState();
 
@@ -90,6 +105,12 @@ public interface IndexContext
         public Future<Void> close()
         {
             return VOID;
+        }
+
+        @Override
+        public IndexDescriptor getDescriptor()
+        {
+            return null;
         }
     }
 }

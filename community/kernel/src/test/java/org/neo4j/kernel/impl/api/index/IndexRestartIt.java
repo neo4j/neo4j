@@ -27,7 +27,6 @@ import static org.mockito.Mockito.mock;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.single;
-import static org.neo4j.kernel.api.index.InternalIndexState.NON_EXISTENT;
 import static org.neo4j.kernel.api.index.InternalIndexState.ONLINE;
 import static org.neo4j.kernel.api.index.InternalIndexState.POPULATING;
 import static org.neo4j.test.DoubleLatch.awaitLatch;
@@ -78,7 +77,7 @@ public class IndexRestartIt
     }
 
     @Test
-    public void shouldHandleRestartOfPopulatingIndex() throws Exception
+    public void shouldHandleRestartIndexThatHasNotComeOnlineYet() throws Exception
     {
         // Given
         startDb();
@@ -87,25 +86,6 @@ public class IndexRestartIt
         // And Given
         stopDb();
         provider.setInitialIndexState( POPULATING );
-
-        // When
-        startDb();
-
-        IndexDefinition index = getSingleIndex();
-        assertThat( db.schema().getIndexState( index), not( equalTo( Schema.IndexState.FAILED ) ) );
-        assertEquals( 2, provider.populatorCallCount.get() );
-    }
-
-    @Test
-    public void shouldHandleRestartWhereIndexWasNotPersisted() throws Exception
-    {
-        // Given
-        startDb();
-        createIndex();
-
-        // And Given
-        stopDb();
-        provider.setInitialIndexState( NON_EXISTENT );
 
         // When
         startDb();
@@ -169,7 +149,7 @@ public class IndexRestartIt
         private final IndexPopulator mockedPopulator = mock( IndexPopulator.class );
         private final IndexAccessor mockedWriter = mock( IndexAccessor.class );
         private final CountDownLatch writerLatch = new CountDownLatch( 1 );
-        private InternalIndexState initialIndexState = NON_EXISTENT;
+        private InternalIndexState initialIndexState = POPULATING;
         private final AtomicInteger populatorCallCount = new AtomicInteger();
         private final AtomicInteger writerCallCount = new AtomicInteger();
         

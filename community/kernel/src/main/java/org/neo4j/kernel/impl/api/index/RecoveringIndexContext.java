@@ -19,54 +19,28 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import static org.neo4j.helpers.FutureAdapter.VOID;
+
 import java.util.concurrent.Future;
 
 import org.neo4j.kernel.api.index.InternalIndexState;
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
 
-public abstract class AbstractDelegatingIndexContext implements IndexContext
+public class RecoveringIndexContext extends AbstractSwallowingIndexContext
 {
-    protected abstract IndexContext getDelegate();
-
-    @Override
-    public void create()
+    public RecoveringIndexContext( IndexDescriptor descriptor )
     {
-        getDelegate().create();
-    }
-    
-    @Override
-    public void update( Iterable<NodePropertyUpdate> updates )
-    {
-        getDelegate().update( updates );
-    }
-
-    @Override
-    public Future<Void> drop()
-    {
-        return getDelegate().drop();
+        super( descriptor, null );
     }
 
     @Override
     public InternalIndexState getState()
     {
-        return getDelegate().getState();
+        return InternalIndexState.POPULATING;
     }
 
     @Override
-    public IndexDescriptor getDescriptor()
+    public Future<Void> drop()
     {
-        return getDelegate().getDescriptor();
-    }
-
-    @Override
-    public void force()
-    {
-        getDelegate().force();
-    }
-    
-    @Override
-    public Future<Void> close()
-    {
-        return getDelegate().close();
+        return VOID;
     }
 }

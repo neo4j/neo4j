@@ -114,7 +114,21 @@ public class FlippableIndexContext implements IndexContext
             lock.readLock().unlock();
         }
     }
-    
+
+    @Override
+    public IndexDescriptor getDescriptor()
+    {
+        lock.readLock().lock();
+        try
+        {
+            return delegate.getDescriptor();
+        }
+        finally
+        {
+            lock.readLock().unlock();
+        }
+    }
+
     @Override
     public InternalIndexState getState()
     {

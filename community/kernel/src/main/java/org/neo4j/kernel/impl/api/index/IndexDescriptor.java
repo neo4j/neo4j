@@ -19,38 +19,32 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import static org.neo4j.helpers.FutureAdapter.VOID;
+import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 
-import java.util.concurrent.Future;
-
-import org.neo4j.kernel.api.index.IndexPopulator;
-import org.neo4j.kernel.api.index.InternalIndexState;
-
-public class FailedIndexContext extends AbstractSwallowingIndexContext
+/**
+ * Description of a single index as needed by the {@link IndexContext} cake
+ *
+ * This is a IndexContext cake level representation of {@link IndexRule}
+ *
+ */
+public class IndexDescriptor
 {
-    protected final IndexPopulator populator;
+    private final long labelId;
+    private final long propertyKeyId;
 
-    public FailedIndexContext( IndexDescriptor descriptor, IndexPopulator populator )
+    IndexDescriptor( long labelId, long propertyKeyId )
     {
-       this( descriptor, populator, null );
+        this.labelId = labelId;
+        this.propertyKeyId = propertyKeyId;
     }
 
-    public FailedIndexContext( IndexDescriptor descriptor, IndexPopulator populator, Throwable cause )
+    public long getLabelId()
     {
-        super( descriptor, cause );
-        this.populator = populator;
+        return labelId;
     }
 
-    @Override
-    public Future<Void> drop()
+    public long getPropertyKeyId()
     {
-        populator.drop();
-        return VOID;
-    }
-
-    @Override
-    public InternalIndexState getState()
-    {
-        return InternalIndexState.FAILED;
+        return propertyKeyId;
     }
 }

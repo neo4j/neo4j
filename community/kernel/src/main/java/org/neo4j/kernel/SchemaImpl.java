@@ -116,9 +116,6 @@ public class SchemaImpl implements Schema
                     return IndexState.POPULATING;
                 case ONLINE:
                     return IndexState.ONLINE;
-                case NON_EXISTENT:
-                    throw new NotFoundException( format( "No index for label %s on property %s",
-                            index.getLabel().name(), propertyKey ) );
                 case FAILED:
                     return IndexState.FAILED;
                 default:

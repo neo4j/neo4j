@@ -76,7 +76,8 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
         {
             Directory directory = directoryFactory.open( dir( dependencies.getRootDirectory(), indexId ) );
             if ( !IndexReader.indexExists( directory ) )
-                return InternalIndexState.NON_EXISTENT;
+                return InternalIndexState.POPULATING;
+            
             Map<String, String> commitData = IndexReader.getCommitUserData( directory );
             return ONLINE.equals( commitData.get( KEY_STATUS ) ) ? InternalIndexState.ONLINE : InternalIndexState.POPULATING;
         }

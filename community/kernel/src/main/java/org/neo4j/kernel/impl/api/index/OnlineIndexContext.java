@@ -29,10 +29,12 @@ import org.neo4j.kernel.api.index.NodePropertyUpdate;
 
 public class OnlineIndexContext implements IndexContext
 {
+    private final IndexDescriptor descriptor;
     private final IndexAccessor writer;
 
-    public OnlineIndexContext( IndexAccessor writer )
+    public OnlineIndexContext( IndexDescriptor descriptor, IndexAccessor writer )
     {
+        this.descriptor = descriptor;
         this.writer = writer;
     }
     
@@ -53,6 +55,12 @@ public class OnlineIndexContext implements IndexContext
     {
         writer.drop();
         return VOID;
+    }
+
+    @Override
+    public IndexDescriptor getDescriptor()
+    {
+        return descriptor;
     }
 
     @Override

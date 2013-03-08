@@ -522,7 +522,7 @@ public class WriteTransactionTest
         }
         
         @Override
-        public void update( Iterable<NodePropertyUpdate> updates )
+        public void updateIndexes( Iterable<NodePropertyUpdate> updates )
         {
             this.updates.addAll( asCollection( updates ) );
         }
