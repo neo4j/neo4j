@@ -55,8 +55,6 @@ trait QueryContext {
 
   def setLabelsOnNode(node: Long, labelIds: Iterable[Long]): Int
 
-  def replaceLabelsOfNode(node: Long, labelIds: Iterable[Long])
-
   def removeLabelsFromNode(node: Long, labelIds: Iterable[Long]): Int
 
   def getOrCreatePropertyKeyId(propertyKey: String): Long
@@ -70,6 +68,8 @@ trait QueryContext {
   def close(success: Boolean)
 
   def exactIndexSearch(id: Long, value: Any): Iterator[Node]
+
+  def getNodesByLabel(id: Long): Iterator[Node]
 
   /**
    * This should not exist. It's a transient stated before locking is done somewhere else

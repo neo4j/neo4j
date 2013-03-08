@@ -35,5 +35,7 @@ trait PlanContext {
   def checkRelIndex(idxName: String)
 
   def close(success: Boolean)
+
+  def getLabelId(labelName: String): Option[Long]
 }
 

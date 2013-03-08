@@ -102,8 +102,6 @@ class SnitchingQueryContext extends QueryContext {
 
   def removeLabelsFromNode(node: Long, labelIds: Iterable[Long]): Int = {???}
 
-  def replaceLabelsOfNode(node: Long, labelIds: Iterable[Long]) {???}
-
   def getTransaction = ???
 
   def getOrCreatePropertyKeyId(propertyKey: String) = ???
@@ -115,4 +113,6 @@ class SnitchingQueryContext extends QueryContext {
   def dropIndexRule(labelIds: Long, propertyKeyId: Long) = ???
 
   def exactIndexSearch(id: Long, value: Any): Iterator[Node] = ???
+
+  def getNodesByLabel(id: Long): Iterator[Node] = ???
 }

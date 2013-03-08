@@ -51,10 +51,6 @@ class DelegatingQueryContext(inner: QueryContext) extends QueryContext {
     inner.removeLabelsFromNode(node, labelIds)
   }
 
-  def replaceLabelsOfNode(node: Long, labelIds: Iterable[Long]) {
-    inner.replaceLabelsOfNode(node, labelIds)
-  }
-
   def getTransaction = inner.getTransaction
 
   def getOrCreatePropertyKeyId(propertyKey: String) = inner.getOrCreatePropertyKeyId(propertyKey)
@@ -66,6 +62,8 @@ class DelegatingQueryContext(inner: QueryContext) extends QueryContext {
   def dropIndexRule(labelIds: Long, propertyKeyId: Long) = inner.dropIndexRule(labelIds, propertyKeyId)
 
   def exactIndexSearch(id: Long, value: Any): Iterator[Node] = inner.exactIndexSearch(id, value)
+
+  def getNodesByLabel(id: Long): Iterator[Node] = inner.getNodesByLabel(id)
 }
 
 class DelegatingOperations[T <: PropertyContainer](protected val inner: Operations[T]) extends Operations[T] {

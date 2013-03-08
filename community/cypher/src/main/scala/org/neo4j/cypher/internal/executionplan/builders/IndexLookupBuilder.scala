@@ -28,14 +28,10 @@ import values.LabelValue
 import org.neo4j.cypher.internal.commands.IndexHint
 import org.neo4j.cypher.internal.executionplan.ExecutionPlanInProgress
 import org.neo4j.cypher.internal.commands.Equals
-import scala.Some
 
 class IndexLookupBuilder extends PlanBuilder {
   def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext) =
-    plan.query.start.exists {
-      case Unsolved(IndexHint(_, _, _, None)) => true
-      case _                                  => false
-    }
+    plan.query.start.exists(interestingFilter)
 
   def apply(plan: ExecutionPlanInProgress, ctx: PlanContext): ExecutionPlanInProgress = {
     val startItem = extractInterestingStartItem(plan)
@@ -100,11 +96,14 @@ class IndexLookupBuilder extends PlanBuilder {
       case _ => None
     }
 
-  private def extractInterestingStartItem(plan: ExecutionPlanInProgress): QueryToken[StartItem] = {
-    plan.query.start.filter {
-      case Unsolved(_: IndexHint) => true
-    }.head
+  private def extractInterestingStartItem(plan: ExecutionPlanInProgress): QueryToken[StartItem] =
+    plan.query.start.filter(interestingFilter).head
+
+  private def interestingFilter: PartialFunction[QueryToken[StartItem], Boolean] = {
+    case Unsolved(IndexHint(_, _, _, None)) => true
+    case _                                  => false
   }
+
 
   def priority = PlanBuilder.IndexLookup
 }

@@ -25,7 +25,10 @@ import org.neo4j.graphdb.{Relationship, Node}
 import org.neo4j.cypher.internal.executionplan.{PlanBuilder, ExecutionPlanInProgress}
 import org.neo4j.cypher.internal.spi.PlanContext
 
-class IndexQueryBuilder extends PlanBuilder {
+/*
+This class is responsible for taking unsolved StartItems and transforming them into StartPipes
+ */
+class StartPointBuilder extends PlanBuilder {
   def apply(plan: ExecutionPlanInProgress, context: PlanContext) = {
     val q = plan.query
     val p = plan.pipe
@@ -39,17 +42,25 @@ class IndexQueryBuilder extends PlanBuilder {
 
   override def missingDependencies(plan: ExecutionPlanInProgress): Seq[String] = super.missingDependencies(plan)
 
-  def canWorkWith(plan: ExecutionPlanInProgress, context: PlanContext) =
-    plan.query.start.exists(mapQueryToken(context).isDefinedAt)
+  def canWorkWith(plan: ExecutionPlanInProgress, context: PlanContext) = {
+    val startItemTransformer = mapQueryToken(context)
+    plan.query.start.exists(startItemTransformer.isDefinedAt)
+  }
 
   private def genNodeStart(entityFactory: EntityProducerFactory): PartialFunction[StartItem, EntityProducer[Node]] =
     entityFactory.nodeByIndex orElse
       entityFactory.nodeByIndexQuery orElse
-      entityFactory.nodeByIndexHint
+      entityFactory.nodeByIndexHint orElse
+      entityFactory.nodeById orElse
+      entityFactory.nodesAll orElse
+      entityFactory.nodeByLabel
+
 
   private def genRelationshipStart(entityFactory: EntityProducerFactory): PartialFunction[StartItem, EntityProducer[Relationship]] =
     entityFactory.relationshipByIndex orElse
-      entityFactory.relationshipByIndexQuery
+      entityFactory.relationshipByIndexQuery orElse
+      entityFactory.relationshipById orElse
+      entityFactory.relationshipsAll
 
   private def mapQueryToken(planContext: PlanContext): PartialFunction[QueryToken[StartItem], (Pipe => Pipe)] = {
     lazy val entityFactory = new EntityProducerFactory(planContext)
@@ -66,5 +77,5 @@ class IndexQueryBuilder extends PlanBuilder {
   }
 
 
-  def priority: Int = PlanBuilder.IndexQuery
+  def priority = PlanBuilder.IndexQuery
 }

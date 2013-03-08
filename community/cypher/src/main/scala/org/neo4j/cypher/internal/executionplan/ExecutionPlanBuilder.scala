@@ -27,11 +27,9 @@ import internal.spi.gdsimpl.TransactionBoundPlanContext
 import internal.spi.{PlanContext, QueryContext}
 import internal.{ExecutionContext, ClosingIterator}
 import internal.commands._
-import internal.mutation.{CreateNode, CreateRelationship}
-import internal.symbols.{CypherType, NodeType, RelationshipType, SymbolTable}
+import internal.symbols.SymbolTable
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.cypher.ExecutionResult
-import javacompat.{PlanDescription => JPlanDescription}
 import org.neo4j.kernel.{GraphDatabaseAPI, ThreadToStatementContextBridge}
 import util.Try
 import values.ResolvedLabel
@@ -83,7 +81,6 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService) extends PatternGraphBuil
 
     var continue = true
     var planInProgress = ExecutionPlanInProgress(initialPSQ, new ParameterPipe(), isUpdating = false)
-    checkFirstQueryPattern(planInProgress)
 
     while (continue) {
       while (builders.exists(_.canWorkWith(planInProgress, context))) {
@@ -113,31 +110,11 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService) extends PatternGraphBuil
     (planInProgress.pipe, planInProgress.isUpdating)
   }
 
-
   private def resolveLabel(name: String) = {
     val ctx = graph.asInstanceOf[GraphDatabaseAPI]
          .getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge])
          .getCtxForReading
     Try { ResolvedLabel(name, ctx.getLabelId(name)) }.toOption
-  }
-
-  private def checkFirstQueryPattern(planInProgress: ExecutionPlanInProgress) {
-    val startPoints = getStartPointsFromPlan(planInProgress.query)
-    validatePattern(startPoints, planInProgress.query.patterns.map(_.token))
-  }
-
-  private def validatePattern(symbols: SymbolTable, patterns: Seq[Pattern]) = {
-    //We build the graph here, because the pattern graph builder finds problems with the pattern
-    //that we don't find other wise. This should be moved out from the patternGraphBuilder, but not right now
-    buildPatternGraph(symbols, patterns)
-  }
-
-  private def getStartPointsFromPlan(query: PartiallySolvedQuery): SymbolTable = {
-    val startMap: Map[String, CypherType] = query.start.map(_.token).
-      map(x => x.identifierName -> x.typ).toMap
-
-    val symbols = SymbolTable(startMap)
-    symbols
   }
 
   private def getQueryResultColumns(q: AbstractQuery, currentSymbols: SymbolTable): List[String] = q match {
@@ -223,9 +200,7 @@ The Neo4j Team""")
   }
 
   lazy val builders = Seq(
-    new NodeByIdBuilder(graph),
-    new IndexQueryBuilder,
-    new GraphGlobalStartBuilder(graph),
+    new StartPointBuilder,
     new FilterBuilder,
     new NamedPathBuilder,
     new ExtractBuilder,
@@ -235,13 +210,13 @@ The Neo4j Team""")
     new SliceBuilder,
     new AggregationBuilder,
     new ShortestPathBuilder,
-    new RelationshipByIdBuilder(graph),
     new CreateNodesAndRelationshipsBuilder(graph),
     new UpdateActionBuilder(graph),
     new EmptyResultBuilder,
     new TraversalMatcherBuilder(graph),
     new TopPipeBuilder,
     new DistinctBuilder,
-    new IndexLookupBuilder
+    new IndexLookupBuilder,
+    new StartPointChoosingBuilder
   )
 }

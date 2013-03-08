@@ -48,7 +48,6 @@ foreach(x in [1,2,3] :
     println(result.dumpToString())
   }
 
-
   @Test def shouldGetReferenceNode() {
     val query = Query.
       start(NodeById("n", Literal(0))).
@@ -2747,6 +2746,22 @@ RETURN x0.name?
 
     //WHEN
     val result = parseAndExecute("MATCH n:Person-->() USING INDEX n:Person(name) WHERE n.name = 'Jacob' RETURN n")
+
+    //THEN
+    assert(result.toList === List(Map("n"->jake)))
+  }
+
+
+  @Test
+  def should_be_Able_to_use_label_as_start_point() {
+    //GIVEN
+    val andres = createLabeledNode(Map("name" -> "Andres"), "Person")
+    val jake = createLabeledNode(Map("name" -> "Jacob"), "Person")
+    relate(andres, createNode())
+    relate(jake, createNode())
+
+    //WHEN
+    val result = parseAndExecute("MATCH n:Person-->() WHERE n.name = 'Jacob' RETURN n")
 
     //THEN
     assert(result.toList === List(Map("n"->jake)))

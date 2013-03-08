@@ -21,10 +21,10 @@ package org.neo4j.cypher.internal.executionplan.builders
 
 import org.neo4j.cypher.internal.executionplan.{ExecutionPlanInProgress, PlanBuilder}
 import org.neo4j.cypher.internal.spi.PlanContext
-import org.neo4j.cypher.internal.commands.{IndexHint, Equals, HasLabel}
+import org.neo4j.cypher.internal.commands.{NodeByLabel, IndexHint, Equals, HasLabel}
 import org.neo4j.cypher.internal.commands.expressions.{Property, Identifier}
 import org.neo4j.cypher.internal.commands.values.LabelValue
-import org.neo4j.cypher.{UnableToPickIndexException, IndexHintException}
+import org.neo4j.cypher.UnableToPickIndexException
 
 /*
 This builder is concerned with finding queries without start items and without index hints, and
@@ -37,33 +37,57 @@ class StartPointChoosingBuilder extends PlanBuilder {
 
     val labelPropertyCombo: Map[String, Map[String, Seq[String]]] = extractPropertiesForLabels(identifierToLabel, plan)
 
-    val possibleHints = for {
-      (identifier, labelsAndProps) <- labelPropertyCombo
-      (label, props)               <- labelsAndProps
-      prop                         <- props
-
-      if( ctx.getIndexRuleId(label, prop).nonEmpty )
-    } yield IndexHint(identifier, label, prop, None )
-
-    possibleHints.toList match {
-      case head :: Nil  => plan.copy( query = plan.query.copy(start=Seq(Unsolved(possibleHints.head))))
-      case head :: tail => throw new UnableToPickIndexException("More than one index available to start from, please use index hints to pick one.")
-      case Nil          => throw new UnableToPickIndexException("There is no index available to start the query from, please add an explicit start clause.")
+    val noProperty = !labelPropertyCombo.exists {
+      case (identifier, map) => map.values.exists(_.nonEmpty)
     }
 
+    val singleLabelPredicate =
+      identifierToLabel.size == 1 &&
+        identifierToLabel.values.head.size == 1
 
+    if (noProperty && singleLabelPredicate) {
+      val (identifier, labels) = identifierToLabel.head
+
+      produceLabelStartItem(plan, identifier, labels.head)
+    } else {
+      tryToFindMatchingIndex(labelPropertyCombo, ctx, plan)
+    }
+  }
+
+  private def produceLabelStartItem(plan: ExecutionPlanInProgress, identifier: String, label: String): ExecutionPlanInProgress = {
+    plan.copy(query = plan.query.copy(start = Seq(Unsolved(NodeByLabel(identifier, label)))))
+  }
+
+  private def tryToFindMatchingIndex(labelPropertyCombo: Map[String, Map[String, Seq[String]]], ctx: PlanContext, plan: ExecutionPlanInProgress): ExecutionPlanInProgress = {
+    val possibleHints = for {
+      (identifier, labelsAndProps) <- labelPropertyCombo
+      (label, props) <- labelsAndProps
+      prop <- props
+
+      if (ctx.getIndexRuleId(label, prop).nonEmpty)
+    } yield IndexHint(identifier, label, prop, None)
+
+    val labels = labelPropertyCombo.head._2.keys.toList
+
+    possibleHints.toList match {
+      case head :: Nil             => plan.copy(query = plan.query.copy(start = Seq(Unsolved(possibleHints.head))))
+      case head :: tail            => throw new UnableToPickIndexException("More than one index available to start from, please use index hints to pick one.")
+      case Nil if labels.size == 1 => produceLabelStartItem(plan, labelPropertyCombo.keys.head, labels.head)
+      case Nil                     => throw new UnableToPickIndexException("There is no index available to start the query from, please add an explicit start clause.")
+    }
   }
 
   def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext) =
     plan.pipe.symbols.isEmpty &&
-      plan.query.start.isEmpty
+      plan.query.start.isEmpty &&
+      !plan.query.extracted
 
   def priority = PlanBuilder.IndexLookup
 
-  private def extractIdentifiersWithLabels(plan: ExecutionPlanInProgress):Map[String, Seq[String]] = {
+  private def extractIdentifiersWithLabels(plan: ExecutionPlanInProgress): Map[String, Seq[String]] = {
     val labelledNodes: Seq[(String, Seq[LabelValue])] = plan.query.where.flatMap {
       case Unsolved(HasLabel(Identifier(identifier), labelNames)) => Some(identifier -> labelNames)
-      case _ => None
+      case _                                                      => None
     }
 
     var identifierToLabel = Map[String, Seq[String]]()
@@ -78,23 +102,21 @@ class StartPointChoosingBuilder extends PlanBuilder {
   }
 
   private def extractPropertiesForLabels(identifierToLabel: Map[String, Seq[String]], plan: ExecutionPlanInProgress):
-  Map[String, Map[String, Seq[String]]] =
-  {
-    identifierToLabel.map
-      {
-        case (identifier, labels) =>
+  Map[String, Map[String, Seq[String]]] = {
+    identifierToLabel.map {
+      case (identifier, labels) =>
 
-          val properties: Seq[String] = plan.query.where.flatMap {
-            case Unsolved(Equals(Property(Identifier(id), propertyName), expression)) if id == identifier =>
-              Some(propertyName)
-            case Unsolved(Equals(expression, Property(Identifier(id), propertyName))) if id == identifier =>
-              Some(propertyName)
-            case _ => None
-          }
+        val properties: Seq[String] = plan.query.where.flatMap {
+          case Unsolved(Equals(Property(Identifier(id), propertyName), expression)) if id == identifier =>
+            Some(propertyName)
+          case Unsolved(Equals(expression, Property(Identifier(id), propertyName))) if id == identifier =>
+            Some(propertyName)
+          case _                                                                                        => None
+        }
 
-          val toMap: Map[String, Seq[String]] = labels.map(label => label -> properties).toMap
-          identifier -> toMap
+        val propertiesPerLabel: Map[String, Seq[String]] = labels.map(label => label -> properties).toMap
+        identifier -> propertiesPerLabel
 
-      }.toMap
+    }.toMap
   }
 }

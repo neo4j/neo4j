@@ -30,32 +30,52 @@ import org.neo4j.cypher.internal.commands.NodeByIndex
 import org.neo4j.cypher.internal.commands.NodeByIndexQuery
 import org.neo4j.cypher.internal.spi.gdsimpl.TransactionBoundPlanContext
 import org.neo4j.kernel.GraphDatabaseAPI
+import org.neo4j.cypher.internal.symbols.{NodeType, SymbolTable}
 
-class TraversalMatcherBuilder(graph: GraphDatabaseService) extends LegacyPlanBuilder {
-  def apply(plan: ExecutionPlanInProgress): ExecutionPlanInProgress = extractExpanderStepsFromQuery(plan) match {
-    case None              => throw new ThisShouldNotHappenError("Andres", "This plan should not have been accepted")
-    case Some(longestPath) =>
-      val LongestTrail(start, end, longestTrail) = longestPath
+class TraversalMatcherBuilder(graph: GraphDatabaseService) extends LegacyPlanBuilder with PatternGraphBuilder {
+  def apply(plan: ExecutionPlanInProgress): ExecutionPlanInProgress = {
+    extractExpanderStepsFromQuery(plan) match {
+      case None              => throw new ThisShouldNotHappenError("Andres", "This plan should not have been accepted")
+      case Some(longestPath) =>
+        val LongestTrail(start, end, longestTrail) = longestPath
 
-      val unsolvedItems = plan.query.start.filter(_.unsolved)
-      val (startToken, startNodeFn) = identifier2nodeFn(graph, start, unsolvedItems)
+        val unsolvedItems = plan.query.start.filter(_.unsolved)
+        val (startToken, startNodeFn) = identifier2nodeFn(graph, start, unsolvedItems)
 
-      val (matcher,tokens) = chooseCorrectMatcher(end, longestPath, startNodeFn, startToken, unsolvedItems)
+        val (matcher, tokens) = chooseCorrectMatcher(end, longestPath, startNodeFn, startToken, unsolvedItems)
 
-      val solvedPatterns = longestTrail.patterns
+        val solvedPatterns = longestTrail.patterns
 
-      val newWhereClause = markPredicatesAsSolved(plan, longestTrail)
+        checkPattern(plan, tokens)
 
-      val newQ = plan.query.copy(
-        patterns = plan.query.patterns.filterNot(p => solvedPatterns.contains(p.token)) ++ solvedPatterns.map(Solved(_)),
-        start = plan.query.start.filterNot(tokens.contains) ++ tokens.map(_.solve),
-        where = newWhereClause
-      )
+        val newWhereClause = markPredicatesAsSolved(plan, longestTrail)
 
-      val pipe = new TraversalMatchPipe(plan.pipe, matcher, longestTrail)
+        val newQ = plan.query.copy(
+          patterns = plan.query.patterns.filterNot(p => solvedPatterns.contains(p.token)) ++ solvedPatterns.map(Solved(_)),
+          start = plan.query.start.filterNot(tokens.contains) ++ tokens.map(_.solve),
+          where = newWhereClause
+        )
 
-      plan.copy(pipe = pipe, query = newQ)
+        val pipe = new TraversalMatchPipe(plan.pipe, matcher, longestTrail)
+
+        plan.copy(pipe = pipe, query = newQ)
+    }
   }
+
+  private def checkPattern(plan: ExecutionPlanInProgress, tokens: Seq[QueryToken[StartItem]]) {
+    val newIdentifiers = tokens.map(_.token).map(x => x.identifierName -> NodeType()).toMap
+    val newSymbolTable = plan.pipe.symbols.add(newIdentifiers)
+    validatePattern(newSymbolTable, plan.query.patterns.map(_.token))
+    validatePattern(plan.pipe.symbols, plan.query.patterns.map(_.token))
+  }
+
+
+  private def validatePattern(symbols: SymbolTable, patterns: Seq[Pattern]) = {
+    //We build the graph here, because the pattern graph builder finds problems with the pattern
+    //that we don't find other wise. This should be moved out from the patternGraphBuilder, but not right now
+    buildPatternGraph(symbols, patterns)
+  }
+
 
   private def markPredicatesAsSolved(in: ExecutionPlanInProgress, trail: Trail): Seq[QueryToken[Predicate]] = {
     val originalWhere = in.query.where

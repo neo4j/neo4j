@@ -21,25 +21,36 @@ package org.neo4j.cypher.internal.executionplan.builders
 
 import org.junit.Assert._
 import org.neo4j.cypher.internal.executionplan.PartiallySolvedQuery
-import org.junit.Test
+import org.junit.{Ignore, Test}
 import org.neo4j.cypher.internal.commands._
-import expressions.{Identifier, Property, Literal}
-import org.neo4j.graphdb.event.{KernelEventHandler, TransactionEventHandler}
-import java.lang.Iterable
-import org.neo4j.graphdb._
-import index._
-import java.util.Map
+import expressions._
+import expressions.Literal
+import expressions.Property
 import org.neo4j.cypher.internal.pipes.NodeStartPipe
 import org.scalatest.mock.MockitoSugar
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.spi.PlanContext
 import org.neo4j.cypher.IndexHintException
+import org.neo4j.cypher.internal.commands.IndexHint
+import org.neo4j.cypher.internal.commands.AllNodes
+import org.neo4j.cypher.internal.commands.Equals
+import scala.Some
+import org.neo4j.cypher.internal.commands.NodeByIndexQuery
+import org.neo4j.cypher.internal.executionplan.builders.Solved
+import org.neo4j.cypher.internal.executionplan.builders.Unsolved
+import org.neo4j.cypher.internal.commands.IndexHint
+import org.neo4j.cypher.internal.commands.AllNodes
+import org.neo4j.cypher.internal.commands.Equals
+import scala.Some
+import org.neo4j.cypher.internal.commands.NodeByIndexQuery
+import org.neo4j.cypher.internal.executionplan.builders.Solved
+import org.neo4j.cypher.internal.executionplan.builders.Unsolved
 
-class IndexQueryBuilderTest extends BuilderTest with MockitoSugar {
+class StartPointBuilderTest extends BuilderTest with MockitoSugar {
 
   override val context = mock[PlanContext]
-  val builder = new IndexQueryBuilder()
+  val builder = new StartPointBuilder()
 
   @Test
   def says_yes_to_node_by_id_queries() {
@@ -129,89 +140,30 @@ class IndexQueryBuilderTest extends BuilderTest with MockitoSugar {
     intercept[IndexHintException](assertAccepts(q))
   }
 
-  /*
-
-
-
   @Test
-  def throws_when_finding_hints_without_matching_predicate() {
-    //GIVEN
-    val q = PartiallySolvedQuery().copy(
-      hints = Seq(Unsolved(IndexHint("n", "Person", "name"))))
+  def says_yes_to_global_queries() {
+    val q = PartiallySolvedQuery().
+      copy(start = Seq(Unsolved(AllNodes("s"))))
 
-    //THEN
-    intercept[IndexHintException](assertAccepts(q))
+    assertAccepts(q)
   }
 
   @Test
-  def throws_when_the_predicate_is_not_usable_for_index_seek() {
-    //GIVEN
-    val q = PartiallySolvedQuery().copy(
-      where = Seq(Unsolved(Or(
-        Equals(Property(Identifier("n"), "name"), Literal("Stefan")),
-        Equals(Property(Identifier("n"), "age"), Literal(35))))),
-      hints = Seq(Unsolved(IndexHint("n", "Person", "name"))))
+  def says_yes_to_global_rel_queries() {
+    val q = PartiallySolvedQuery().
+      copy(start = Seq(Unsolved(AllRelationships("s"))))
 
-    //THEN
-    intercept[IndexHintException](assertAccepts(q))
+    assertAccepts(q)
   }
-   */
-}
 
-class Fake_Database_That_Has_All_Indexes extends GraphDatabaseService with IndexManager {
-  def createNode(): Node = null
+  @Test
+  def only_takes_one_global_start_item_at_the_time() {
+    val q = PartiallySolvedQuery().
+      copy(start = Seq(Unsolved(AllNodes("s")), Unsolved(AllNodes("x"))))
 
-  def createNode(labels: Label*): Node = null
+    val remaining = assertAccepts(q).query
 
-  def existsForNodes(indexName: String): Boolean = true
-
-  def existsForRelationships(indexName: String): Boolean = true
-
-  def forNodes(indexName: String): Index[Node] = null
-
-  def forNodes(indexName: String, customConfiguration: Map[String, String]): Index[Node] = null
-
-  def forRelationships(indexName: String): RelationshipIndex = null
-
-  def forRelationships(indexName: String, customConfiguration: Map[String, String]): RelationshipIndex = null
-
-  def getConfiguration(index: Index[_ <: PropertyContainer]): Map[String, String] = null
-
-  def getNodeAutoIndexer: AutoIndexer[Node] = null
-
-  def getRelationshipAutoIndexer: RelationshipAutoIndexer = null
-
-  def nodeIndexNames(): Array[String] = null
-
-  def relationshipIndexNames(): Array[String] = null
-
-  def removeConfiguration(index: Index[_ <: PropertyContainer], key: String): String = ""
-
-  def setConfiguration(index: Index[_ <: PropertyContainer], key: String, value: String): String = ""
-
-  def beginTx(): Transaction = null
-
-  def getAllNodes: Iterable[Node] = null
-
-  def getNodeById(id: Long): Node = null
-
-  def getReferenceNode: Node = null
-
-  def getRelationshipById(id: Long): Relationship = null
-
-  def getRelationshipTypes: Iterable[RelationshipType] = null
-
-  def index(): IndexManager = this
-
-  def registerKernelEventHandler(handler: KernelEventHandler): KernelEventHandler = null
-
-  def registerTransactionEventHandler[T](handler: TransactionEventHandler[T]): TransactionEventHandler[T] = null
-
-  def shutdown() {}
-
-  def unregisterKernelEventHandler(handler: KernelEventHandler): KernelEventHandler = null
-
-  def unregisterTransactionEventHandler[T](handler: TransactionEventHandler[T]): TransactionEventHandler[T] = null
-
-  def schema() = ???
+    assertEquals("No more than 1 startitem should be solved", 1, remaining.start.filter(_.solved).length)
+    assertEquals("Stuff should remain", 1, remaining.start.filterNot(_.solved).length)
+  }
 }

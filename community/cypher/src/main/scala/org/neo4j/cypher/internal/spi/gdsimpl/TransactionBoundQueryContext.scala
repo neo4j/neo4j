@@ -85,9 +85,7 @@ class TransactionBoundQueryContext(graph: GraphDatabaseAPI) extends QueryContext
     case (count, labelId) => if (ctx.removeLabelFromNode(labelId, node)) count + 1 else count
   }
 
-  def replaceLabelsOfNode(node: Long, labelIds: Iterable[Long]) {
-    ???
-  }
+  def getNodesByLabel(id: Long): Iterator[Node] = ctx.getNodesWithLabel(id).iterator().asScala.map(nodeOps.getById(_))
 
   class NodeOperations extends BaseOperations[Node] {
     def delete(obj: Node) {
@@ -169,4 +167,5 @@ class TransactionBoundQueryContext(graph: GraphDatabaseAPI) extends QueryContext
       obj.setProperty(propertyKey, value)
     }
   }
+
 }

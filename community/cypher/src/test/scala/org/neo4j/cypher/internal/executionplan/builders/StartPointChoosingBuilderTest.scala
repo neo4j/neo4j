@@ -86,7 +86,7 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
     val plan = assertAccepts(query)
 
     // Then
-    assert(plan.query.start.toList === Seq(Unsolved(IndexHint(identifier, label, property, None))))
+    assert(plan.query.start.toList === List(Unsolved(IndexHint(identifier, label, property, None))))
   }
 
   @Test
@@ -111,26 +111,40 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
   }
 
   @Test
-  def should_throw_if_no_possible_indexes_are_available() {
+  def should_produce_label_start_points_when_no_property_predicate_is_used() {
+    // Given MATCH n:Person
+    val identifier = "n"
+    val label = "Person"
+    val query = q(where = Seq(
+      Unsolved(HasLabel(Identifier(identifier), Seq(LabelName(label))))
+    ))
+
+    // When
+    val plan = assertAccepts(query)
+
+    assert(plan.query.start.toList === List(Unsolved(NodeByLabel("n", "Person"))))
+  }
+
+  @Test
+  def should_produce_label_start_points_when_no_matching_index_exist() {
     // Given
     val identifier = "n"
     val label = "Person"
-    val property1 = "prop"
+    val property = "prop"
     val expression = Literal(42)
     val query = q(where = Seq(
       Unsolved(HasLabel(Identifier(identifier), Seq(LabelName(label)))),
-      Unsolved(Equals(Property(Identifier(identifier), property1), expression))
+      Unsolved(Equals(Property(Identifier(identifier), property), expression))
     ))
 
     when( context.getIndexRuleId( "Person", "prop" ) ).thenReturn( None )
 
     // When
-    intercept[UnableToPickIndexException]( assertAccepts(query) )
+    val plan = assertAccepts(query)
+
+    // Then
+    assert(plan.query.start.toList === Seq(Unsolved(NodeByLabel("n", "Person"))))
   }
-
-
-
-
 
   private def q(start: Seq[QueryToken[StartItem]] = Seq(),
                 where: Seq[QueryToken[Predicate]] = Seq()) =

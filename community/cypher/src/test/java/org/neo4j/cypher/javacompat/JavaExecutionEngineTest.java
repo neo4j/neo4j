@@ -50,7 +50,6 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 
 public class JavaExecutionEngineTest
 {
-
     private GraphDatabaseService db;
     private ExecutionEngine engine;
     private Node andreasNode;

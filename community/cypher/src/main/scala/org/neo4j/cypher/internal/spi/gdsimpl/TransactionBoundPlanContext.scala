@@ -41,19 +41,11 @@ class TransactionBoundPlanContext(graph: GraphDatabaseAPI) extends PlanContext {
     tx.finish()
   }
 
-  def getIndexRuleId(labelName: String, propertyKey: String) = {
+  def getIndexRuleId(labelName: String, propertyKey: String): Option[Long] = tryGet {
     val labelId = ctx.getLabelId(labelName)
     val propertyKeyId = ctx.getPropertyKeyId(propertyKey)
 
-    try {
-      Some(ctx.getIndexRule(labelId, propertyKeyId).getId)
-    } catch {
-      // TODO: This should be a more specific exception class
-      case e: KernelException =>
-        e.printStackTrace()
-        None
-    }
-
+    ctx.getIndexRule(labelId, propertyKeyId).getId
   }
 
   def checkNodeIndex(idxName: String) {
@@ -63,4 +55,10 @@ class TransactionBoundPlanContext(graph: GraphDatabaseAPI) extends PlanContext {
   def checkRelIndex(idxName: String) {
     if (!graph.index.existsForRelationships(idxName)) throw new MissingIndexException(idxName)
   }
+
+  private def tryGet[T](f: => T): Option[T] = try Some(f) catch {
+    case _: KernelException => None
+  }
+
+  def getLabelId(labelName: String): Option[Long] = tryGet(ctx.getLabelId(labelName))
 }
