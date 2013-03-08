@@ -27,6 +27,7 @@ import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.awaitIndexState;
 import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.mockSchemaIndexProvider;
 
 import java.util.Arrays;
@@ -42,6 +43,8 @@ import org.mockito.Matchers;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.graphdb.schema.Schema.IndexState;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.ThreadToStatementContextBridge;
 import org.neo4j.kernel.api.LabelNotFoundKernelException;
@@ -134,9 +137,10 @@ public class IndexCRUDIT
     private void createIndex( Label myLabel, String indexProperty )
     {
         Transaction tx = db.beginTx();
-        db.schema().indexCreator( myLabel ).on( indexProperty ).create();
+        IndexDefinition index = db.schema().indexCreator( myLabel ).on( indexProperty ).create();
         tx.success();
         tx.finish();
+        awaitIndexState( db, index, IndexState.ONLINE );
     }
 
     @Before

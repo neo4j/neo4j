@@ -20,12 +20,11 @@
 package org.neo4j.kernel.api.impl.index;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.awaitIndexState;
 
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 import org.junit.After;
 import org.junit.Before;
@@ -55,7 +54,7 @@ public class SchemaIndexAcceptanceTest
         IndexDefinition index = db.schema().indexCreator( label ).on( key ).create();
         tx.success();
         tx.finish();
-        awaitIndexState( index, IndexState.ONLINE );
+        awaitIndexState( db, index, IndexState.ONLINE );
         
         restart();
         
@@ -91,16 +90,5 @@ public class SchemaIndexAcceptanceTest
         for ( Map.Entry<String, Object> property : map( properties ).entrySet() )
             node.setProperty( property.getKey(), property.getValue() );
         return node;
-    }
-
-    private void awaitIndexState( IndexDefinition index, IndexState state )
-    {
-        long timeot = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis( 10 );
-        while( db.schema().getIndexState( index )  != state )
-        {
-            Thread.yield();
-            if ( System.currentTimeMillis() > timeot )
-                fail( "Expected index to come online within a reasonable time." );
-        }
     }
 }
