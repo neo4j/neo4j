@@ -25,20 +25,21 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.impl.api.index.IndexingService.IndexStoreView;
-import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.logging.Logging;
 
 public class PopulatingIndexContext implements IndexContext
 {
     private final JobScheduler scheduler;
+    private final IndexDescriptor descriptor;
     private final IndexPopulationJob job;
 
-    public PopulatingIndexContext( JobScheduler scheduler, IndexRule rule, IndexPopulator writer,
+    public PopulatingIndexContext( JobScheduler scheduler, IndexDescriptor descriptor, IndexPopulator writer,
                                    FlippableIndexContext flipper, IndexStoreView storeView, Logging logging )
     {
-        this.scheduler = scheduler;
-        this.job       = new IndexPopulationJob( rule, writer, flipper, storeView, logging );
+        this.scheduler  = scheduler;
+        this.descriptor = descriptor;
+        this.job        = new IndexPopulationJob( descriptor, writer, flipper, storeView, logging );
     }
 
     @Override
@@ -57,6 +58,12 @@ public class PopulatingIndexContext implements IndexContext
     public Future<Void> drop()
     {
         return job.cancel();
+    }
+
+    @Override
+    public IndexDescriptor getDescriptor()
+    {
+        return descriptor;
     }
 
     @Override

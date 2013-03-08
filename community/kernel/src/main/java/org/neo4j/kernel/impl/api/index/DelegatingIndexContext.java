@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+
 public class DelegatingIndexContext extends AbstractDelegatingIndexContext
 {
     private final IndexContext delegate;

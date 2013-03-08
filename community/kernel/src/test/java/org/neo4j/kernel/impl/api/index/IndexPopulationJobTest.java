@@ -193,7 +193,7 @@ public class IndexPopulationJobTest
         FlippableIndexContext index = mock( FlippableIndexContext.class );
         IndexStoreView storeView = mock( IndexStoreView.class );
         ControlledStoreScan storeScan = new ControlledStoreScan();
-        when( storeView.visitNodesWithPropertyAndLabel( anyLong(), anyLong(),
+        when( storeView.visitNodesWithPropertyAndLabel( any(IndexDescriptor.class),
                 Matchers.<Visitor<Pair<Long,Object>>>any() ) ).thenReturn( storeScan );
         final IndexPopulationJob job = newIndexPopulationJob( FIRST, name, populator, index, storeView );
         
@@ -386,8 +386,9 @@ public class IndexPopulationJobTest
             throws LabelNotFoundKernelException, PropertyKeyNotFoundException
     {
         IndexRule indexRule = new IndexRule( 0, context.getLabelId( FIRST.name() ), context.getPropertyKeyId( name ) );
+        IndexDescriptor descriptor = new IndexDescriptor( indexRule.getLabel(), indexRule.getPropertyKey() );
         flipper.setFlipTarget( mock( IndexContextFactory.class ) );
-        return new IndexPopulationJob( indexRule, populator, flipper, storeView, new SingleLoggingService( SYSTEM ) );
+        return new IndexPopulationJob( descriptor, populator, flipper, storeView, new SingleLoggingService( SYSTEM ) );
     }
 
     private long createNode( Map<String, Object> properties, Label... labels )

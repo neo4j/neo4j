@@ -35,7 +35,6 @@ import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.impl.api.index.IndexingService.StoreScan;
-import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
 
@@ -47,12 +46,12 @@ import org.neo4j.kernel.logging.Logging;
  */
 public class IndexPopulationJob implements Runnable
 {
-    private final long labelId;
-    private final long propertyKeyId;
     private final IndexingService.IndexStoreView storeView;
 
     // NOTE: unbounded queue expected here
     private final Queue<NodePropertyUpdate> queue = new ConcurrentLinkedQueue<NodePropertyUpdate>();
+
+    private final IndexDescriptor descriptor;
     private final IndexPopulator populator;
     private final FlippableIndexContext flipper;
     private final StringLogger log;
@@ -61,13 +60,12 @@ public class IndexPopulationJob implements Runnable
     private volatile StoreScan storeScan;
     private volatile boolean cancelled;
 
-    public IndexPopulationJob( IndexRule indexRule, IndexPopulator writer, FlippableIndexContext flipper,
+    public IndexPopulationJob( IndexDescriptor descriptor, IndexPopulator writer, FlippableIndexContext flipper,
                                IndexingService.IndexStoreView storeView, Logging logging )
     {
+        this.descriptor = descriptor;
         this.populator = writer;
         this.flipper = flipper;
-        this.labelId = indexRule.getLabel();
-        this.propertyKeyId = indexRule.getPropertyKey();
         this.storeView = storeView;
         this.log = logging.getLogger( getClass() );
     }
@@ -93,13 +91,13 @@ public class IndexPopulationJob implements Runnable
                     populateFromQueueIfAvailable( Long.MAX_VALUE );
                     populator.close( true );
                 }
-            }, new FailedIndexContext( populator ) );
+            }, new FailedIndexContext( descriptor, populator ) );
             success = true;
         }
         catch ( RuntimeException e )
         {
             log.error( "Failed to create index.", e );
-            flipper.setFlipTarget( singleContext( new FailedIndexContext( populator, e ) ) );
+            flipper.setFlipTarget( singleContext( new FailedIndexContext( descriptor, populator, e ) ) );
             flipper.flip();
         }
         catch ( FlippableIndexContext.FlipFailedKernelException e )
@@ -112,7 +110,7 @@ public class IndexPopulationJob implements Runnable
             // The reason for having the flipper transition to the failed index context in the first
             // place is that we would otherwise introduce a race condition where updates could come
             // in to the old context, if something failed in the job we send to the flipper.
-            flipper.setFlipTarget( singleContext( new FailedIndexContext( populator, e ) ) );
+            flipper.setFlipTarget( singleContext( new FailedIndexContext( descriptor, populator, e ) ) );
             flipper.flip();
         }
         finally
@@ -131,7 +129,7 @@ public class IndexPopulationJob implements Runnable
 
     private void indexAllNodes()
     {
-        storeScan = storeView.visitNodesWithPropertyAndLabel( labelId, propertyKeyId, new Visitor<Pair<Long, Object>>()
+        storeScan = storeView.visitNodesWithPropertyAndLabel( descriptor, new Visitor<Pair<Long, Object>>()
         {
             @Override
             public boolean visit( Pair<Long, Object> element )

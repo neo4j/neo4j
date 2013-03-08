@@ -19,54 +19,52 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import static org.neo4j.helpers.FutureAdapter.VOID;
+
 import java.util.concurrent.Future;
 
-import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 
-public abstract class AbstractDelegatingIndexContext implements IndexContext
+public abstract class AbstractSwallowingIndexContext implements IndexContext
 {
-    protected abstract IndexContext getDelegate();
+    private final IndexDescriptor descriptor;
+    private final Throwable cause;
+
+
+    public AbstractSwallowingIndexContext( IndexDescriptor descriptor, Throwable cause )
+    {
+        this.descriptor = descriptor;
+        this.cause = cause;
+    }
 
     @Override
     public void create()
     {
-        getDelegate().create();
+        String message = "Unable to create index, it is in a " + getState().name() + " state.";
+        throw new UnsupportedOperationException( message, cause );
     }
-    
+
+
     @Override
     public void update( Iterable<NodePropertyUpdate> updates )
     {
-        getDelegate().update( updates );
-    }
-
-    @Override
-    public Future<Void> drop()
-    {
-        return getDelegate().drop();
-    }
-
-    @Override
-    public InternalIndexState getState()
-    {
-        return getDelegate().getState();
-    }
-
-    @Override
-    public IndexDescriptor getDescriptor()
-    {
-        return getDelegate().getDescriptor();
+        // intentionally swallow updates, we're failed and nothing but re-population or dropIndex will solve this
     }
 
     @Override
     public void force()
     {
-        getDelegate().force();
     }
-    
+
+    @Override
+    public IndexDescriptor getDescriptor()
+    {
+        return descriptor;
+    }
+
     @Override
     public Future<Void> close()
     {
-        return getDelegate().close();
+        return VOID;
     }
 }

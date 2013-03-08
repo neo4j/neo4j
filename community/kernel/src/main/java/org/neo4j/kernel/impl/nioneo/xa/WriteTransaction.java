@@ -629,7 +629,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
 
             // property change set for index updates
             Iterable<NodePropertyUpdate> updates = convertIntoLogicalPropertyUpdates();
-            indexes.update( updates );
+            indexes.updateIndexes( updates );
             
             if ( neoStoreCommand != null )
             {

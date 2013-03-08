@@ -33,6 +33,7 @@ import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.IndexingService.StoreScan;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
@@ -79,14 +80,16 @@ public class NeoStoreIndexStoreView implements IndexingService.IndexStoreView
 
     @SuppressWarnings( "unchecked" )
     @Override
-    public StoreScan visitNodesWithPropertyAndLabel( long labelId, long propertyKeyId, Visitor<Pair<Long, Object>> visitor )
+    public StoreScan visitNodesWithPropertyAndLabel( IndexDescriptor descriptor, Visitor<Pair<Long, Object>> visitor )
     {
         // Create a processor that for each accepted node (containing the desired label) looks through its properties,
         // getting the desired one (if any) and feeds to the index manipulator.
+        long propertyKeyId = descriptor.getPropertyKeyId();
         final RecordStore.Processor processor = new NodeIndexingProcessor( propertyStore, propertyKeyId, visitor );
 
         // Run the processor for the nodes containing the given label.
         // TODO When we've got a decent way of getting nodes with a label, use that instead.
+        long labelId = descriptor.getLabelId();
         final Predicate<NodeRecord> predicate = new NodeLabelFilterPredicate( nodeStore, labelId );
 
         // Run the processor

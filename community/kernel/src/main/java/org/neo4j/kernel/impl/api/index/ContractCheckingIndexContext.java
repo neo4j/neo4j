@@ -20,18 +20,15 @@
 package org.neo4j.kernel.impl.api.index;
 
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.neo4j.kernel.api.index.NodePropertyUpdate;
+
 /**
- * IndexContext layer that enforces the dynamic contract of IndexContext
+ * IndexContext layer that enforces the dynamic contract of IndexContext (cf. Test)
  *
- * <ul>
- *     <li>The index may not be created twice</li>
- *     <li>The context may not be closed twice</li>
- *     <li>Close or drop both close the context</li>
- *     <li>The index may not be dropped before it has been created</li>
- * </ul>
- *
+ * @see org.neo4j.kernel.impl.api.index.IndexContext
  */
 public class ContractCheckingIndexContext extends DelegatingIndexContext
 {
@@ -47,6 +44,11 @@ public class ContractCheckingIndexContext extends DelegatingIndexContext
      *
      * INIT -[:create]-> CREATING -[:implicit]-> CREATED -[:close|:drop]-> CLOSED
      * INIT -[:close] -> CLOSED
+     *
+     * Additionally, ContractCheckingIndexContext keeps track of the number of open
+     * calls that started in CREATED state and are still running.  This allows us
+     * to prevent calls to close() or drop() to go through while there are pending
+     * commits.
      **/
     private static enum State {
         INIT,
@@ -55,12 +57,19 @@ public class ContractCheckingIndexContext extends DelegatingIndexContext
         CLOSED
     }
 
+    private final AtomicReference<State> state;
+    private final AtomicInteger openCalls;
 
-    private final AtomicReference<State> state = new AtomicReference<State>( State.INIT );
-
-    public ContractCheckingIndexContext( IndexContext delegate )
+    public ContractCheckingIndexContext( boolean created, IndexContext delegate )
     {
         super( delegate );
+        this.state =  new AtomicReference<State>( created ? State.CREATED : State.INIT );
+        this.openCalls = new AtomicInteger( 0 );
+    }
+
+    ContractCheckingIndexContext( IndexContext delegate )
+    {
+        this(false, delegate);
     }
 
     @Override
@@ -85,6 +94,34 @@ public class ContractCheckingIndexContext extends DelegatingIndexContext
 
 
     @Override
+    public void update( Iterable<NodePropertyUpdate> updates )
+    {
+        openCall( "update" );
+        try
+        {
+            super.update( updates );
+        }
+        finally
+        {
+            closeCall();
+        }
+    }
+
+    @Override
+    public void force()
+    {
+        openCall( "force" );
+        try
+        {
+            super.force();
+        }
+        finally
+        {
+            closeCall();
+        }
+    }
+
+    @Override
     public Future<Void> drop()
     {
         if ( state.compareAndSet( State.INIT, State.CLOSED ) )
@@ -94,7 +131,10 @@ public class ContractCheckingIndexContext extends DelegatingIndexContext
             throw new IllegalStateException( "Concurrent drop while creating index" );
 
         if ( state.compareAndSet( State.CREATED, State.CLOSED ) )
+        {
+            ensureNoOpenCalls( "drop" );
             return super.drop();
+        }
 
         throw new IllegalStateException( "IndexContext already closed" );
     }
@@ -109,8 +149,40 @@ public class ContractCheckingIndexContext extends DelegatingIndexContext
             throw new IllegalStateException( "Concurrent close while creating index" );
 
         if ( state.compareAndSet( State.CREATED, State.CLOSED ) )
+        {
+            ensureNoOpenCalls( "close" );
             return super.close();
+        }
 
         throw new IllegalStateException( "IndexContext already closed" );
     }
+
+    private void openCall( String name )
+    {
+        // do not open call unless we are in CREATED
+        if ( State.CREATED.equals( state.get() ) )
+        {
+            // increment openCalls for closers to see
+            openCalls.incrementAndGet();
+            // ensure that the previous increment actually gets seen by closers
+            if ( State.CLOSED.equals( state.get() ) )
+                throw new IllegalStateException("Cannot call " + name + "() after index has been closed" );
+        }
+        else
+            throw new IllegalStateException("Cannot call " + name + "() before index has been created" );
+    }
+
+    private void ensureNoOpenCalls(String name)
+    {
+        if (openCalls.get() > 0)
+            throw new IllegalStateException( "Concurrent " + name + "() while updates have not completed" );
+
+    }
+
+    private void closeCall()
+    {
+        // rollback once the call finished or failed
+        openCalls.decrementAndGet();
+    }
+
 }

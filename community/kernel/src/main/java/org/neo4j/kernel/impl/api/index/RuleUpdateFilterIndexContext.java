@@ -22,25 +22,23 @@ package org.neo4j.kernel.impl.api.index;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.FilteringIterable;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
-import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 
 public class RuleUpdateFilterIndexContext extends DelegatingIndexContext
 {
-    private final IndexRule rule;
-
-    private final Predicate<NodePropertyUpdate> ruleMatchingUpdates = new Predicate<NodePropertyUpdate>()
+    private final Predicate<NodePropertyUpdate> ruleMatchingUpdates =  new Predicate<NodePropertyUpdate>()
     {
         @Override
         public boolean accept( NodePropertyUpdate item )
         {
-            return item.getPropertyKeyId() == rule.getPropertyKey() && item.forLabel( rule.getLabel() );
+            IndexDescriptor descriptor = RuleUpdateFilterIndexContext.this.getDescriptor();
+            return
+                item.getPropertyKeyId() == descriptor.getPropertyKeyId() && item.forLabel( descriptor.getLabelId() );
         }
     };
 
-    public RuleUpdateFilterIndexContext( IndexContext delegate, IndexRule rule )
+    public RuleUpdateFilterIndexContext( IndexContext delegate )
     {
         super( delegate );
-        this.rule = rule;
     }
 
     @Override

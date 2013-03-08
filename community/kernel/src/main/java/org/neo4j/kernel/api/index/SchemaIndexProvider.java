@@ -102,7 +102,7 @@ public abstract class SchemaIndexProvider extends Service implements Comparable<
         @Override
         public InternalIndexState getInitialState( long indexId, Dependencies dependencies )
         {
-            return InternalIndexState.NON_EXISTENT;
+            return InternalIndexState.POPULATING;
         }
     };
     
