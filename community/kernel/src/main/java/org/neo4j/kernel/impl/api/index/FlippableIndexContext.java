@@ -23,8 +23,9 @@ import java.util.concurrent.Future;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import org.neo4j.kernel.api.InternalIndexState;
 import org.neo4j.kernel.api.KernelException;
+import org.neo4j.kernel.api.index.InternalIndexState;
+import org.neo4j.kernel.api.index.NodePropertyUpdate;
 
 public class FlippableIndexContext implements IndexContext
 {

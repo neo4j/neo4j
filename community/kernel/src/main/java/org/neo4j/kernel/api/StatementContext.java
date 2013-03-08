@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.api;
 
+import org.neo4j.kernel.api.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 
 /**

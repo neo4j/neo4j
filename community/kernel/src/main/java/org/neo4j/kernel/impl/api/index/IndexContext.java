@@ -23,10 +23,13 @@ import static org.neo4j.helpers.FutureAdapter.VOID;
 
 import java.util.concurrent.Future;
 
-import org.neo4j.kernel.api.InternalIndexState;
+import org.neo4j.kernel.api.index.IndexAccessor;
+import org.neo4j.kernel.api.index.IndexPopulator;
+import org.neo4j.kernel.api.index.InternalIndexState;
+import org.neo4j.kernel.api.index.NodePropertyUpdate;
 
 /**
- * Controls access to {@link IndexPopulator}, {@link IndexWriter} during different stages
+ * Controls access to {@link IndexPopulator}, {@link IndexAccessor} during different stages
  * of a lifecycle of a schema index. It's designed to be decorated with multiple stacked instances.
  */
 public interface IndexContext

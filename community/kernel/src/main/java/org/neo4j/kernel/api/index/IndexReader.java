@@ -17,34 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api;
+package org.neo4j.kernel.api.index;
 
-/**
- * Defines the state of a given index.
- */
-public enum InternalIndexState
+public interface IndexReader
 {
-    /**
-     * Denotes that an index is in the process of being created.
-     */
-    POPULATING,
+    // TODO
     
-    /**
-     * Given after the database has populated the index, and notified the index provider that the index is in
-     * fact populated.
-     */
-    ONLINE,
-    
-    /**
-     * Given when asked about an index that, in fact, does not exist.
-     */
-    NON_EXISTENT,
-    
-    /**
-     * Denotes that the index, for one reason or another, is broken. Information about the
-     * failure is expected to have been logged.
-     *
-     * Dropping a failed index should be possible, as long as the failure is not caused by eg. out of memory.
-     */
-    FAILED;
+    public static class Adapter implements IndexReader
+    {
+    }
 }

@@ -25,8 +25,11 @@ import java.util.Map;
 import java.util.Set;
 
 import org.neo4j.helpers.Service;
-import org.neo4j.kernel.api.InternalIndexState;
-import org.neo4j.kernel.api.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.IndexAccessor;
+import org.neo4j.kernel.api.index.IndexPopulator;
+import org.neo4j.kernel.api.index.InternalIndexState;
+import org.neo4j.kernel.api.index.NodePropertyUpdate;
+import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.util.CopyOnWriteHashMap;
 
 @Service.Implementation( InMemoryIndexProvider.class )
@@ -40,7 +43,7 @@ public class InMemoryIndexProvider extends SchemaIndexProvider
     }
 
     @Override
-    public IndexWriter getWriter( long indexId, Dependencies dependencies )
+    public IndexAccessor getOnlineAccessor( long indexId, Dependencies dependencies )
     {
         InMemoryIndexWriter populator = new InMemoryIndexWriter();
         writers.put( indexId, populator );
@@ -61,7 +64,7 @@ public class InMemoryIndexProvider extends SchemaIndexProvider
         return populator;
     }
     
-    private static class InMemoryIndexWriter implements IndexPopulator, IndexWriter
+    private static class InMemoryIndexWriter extends IndexAccessor.Adapter implements IndexPopulator
     {
         private final Map<Object, Set<Long>> indexData = new HashMap<Object, Set<Long>>();
 
@@ -98,13 +101,13 @@ public class InMemoryIndexProvider extends SchemaIndexProvider
         }
 
         @Override
-        public void createIndex()
+        public void create()
         {
             indexData.clear();
         }
 
         @Override
-        public void dropIndex()
+        public void drop()
         {
         }
         

@@ -51,12 +51,15 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.ThreadToStatementContextBridge;
-import org.neo4j.kernel.api.InternalIndexState;
 import org.neo4j.kernel.api.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.PropertyKeyNotFoundException;
-import org.neo4j.kernel.api.SchemaIndexProvider;
-import org.neo4j.kernel.api.SchemaIndexProvider.Dependencies;
 import org.neo4j.kernel.api.StatementContext;
+import org.neo4j.kernel.api.index.IndexAccessor;
+import org.neo4j.kernel.api.index.IndexPopulator;
+import org.neo4j.kernel.api.index.InternalIndexState;
+import org.neo4j.kernel.api.index.NodePropertyUpdate;
+import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.SchemaIndexProvider.Dependencies;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
@@ -91,7 +94,7 @@ public class IndexRecoveryIT
         IndexDefinition index = single( indexes );
         assertThat( db.schema().getIndexState( index), equalTo( Schema.IndexState.POPULATING ) );
         verify( mockedIndexProvider, times( 2 ) ).getPopulator( anyLong(), Matchers.<Dependencies>any() );
-        verify( mockedIndexProvider, times( 0 ) ).getWriter( anyLong(), Matchers.<Dependencies>any() );
+        verify( mockedIndexProvider, times( 0 ) ).getOnlineAccessor( anyLong(), Matchers.<Dependencies>any() );
         latch.countDown();
     }
 
@@ -125,7 +128,7 @@ public class IndexRecoveryIT
         IndexDefinition index = single( indexes );
         assertThat( db.schema().getIndexState( index), equalTo( Schema.IndexState.POPULATING ) );
         verify( mockedIndexProvider, times( 2 ) ).getPopulator( anyLong(), Matchers.<Dependencies>any() );
-        verify( mockedIndexProvider, times( 0 ) ).getWriter( anyLong(), Matchers.<Dependencies>any() );
+        verify( mockedIndexProvider, times( 0 ) ).getOnlineAccessor( anyLong(), Matchers.<Dependencies>any() );
         latch.countDown();
     }
     
@@ -143,7 +146,7 @@ public class IndexRecoveryIT
         killDb();
         when( mockedIndexProvider.getInitialState( anyLong(), Matchers.<Dependencies>any() ) ).thenReturn( InternalIndexState.ONLINE );
         GatheringIndexWriter writer = new GatheringIndexWriter();
-        when( mockedIndexProvider.getWriter( anyLong(), Matchers.<Dependencies>any() ) ).thenReturn( writer );
+        when( mockedIndexProvider.getOnlineAccessor( anyLong(), Matchers.<Dependencies>any() ) ).thenReturn( writer );
 
         // When
         startDb();
@@ -156,7 +159,7 @@ public class IndexRecoveryIT
         IndexDefinition index = single( indexes );
         assertThat( db.schema().getIndexState( index), equalTo( Schema.IndexState.ONLINE ) );
         verify( mockedIndexProvider, times( 1 ) ).getPopulator( anyLong(), Matchers.<Dependencies>any() );
-        verify( mockedIndexProvider, times( 1 ) ).getWriter( anyLong(), Matchers.<Dependencies>any() );
+        verify( mockedIndexProvider, times( 1 ) ).getOnlineAccessor( anyLong(), Matchers.<Dependencies>any() );
         assertEquals( expectedUpdates, writer.updates ); 
     }
     
@@ -274,12 +277,12 @@ public class IndexRecoveryIT
         }
     }
     
-    private static class GatheringIndexWriter extends IndexWriter.Adapter
+    private static class GatheringIndexWriter extends IndexAccessor.Adapter
     {
         private final Set<NodePropertyUpdate> updates = new HashSet<NodePropertyUpdate>();
         
         @Override
-        public void update( Iterable<NodePropertyUpdate> updates )
+        public void updateAndCommit( Iterable<NodePropertyUpdate> updates )
         {
             this.updates.addAll( asCollection( updates ) );
         }
@@ -290,7 +293,7 @@ public class IndexRecoveryIT
         return new IndexPopulator.Adapter()
         {
             @Override
-            public void createIndex()
+            public void create()
             {
                 try
                 {

@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api.index;
 
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.FilteringIterable;
+import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 
 public class RuleUpdateFilterIndexContext extends DelegatingIndexContext

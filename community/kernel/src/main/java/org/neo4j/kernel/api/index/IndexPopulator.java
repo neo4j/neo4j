@@ -17,10 +17,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api.index;
+package org.neo4j.kernel.api.index;
 
-import org.neo4j.kernel.api.InternalIndexState;
-import org.neo4j.kernel.api.SchemaIndexProvider;
 
 /**
  * Used for initial population of an index.
@@ -30,12 +28,12 @@ public interface IndexPopulator
     /**
      * Remove all data in the index and paves the way for populating an index.
      */
-    void createIndex();
+    void create();
 
     /**
      * Closes and deletes this index.
      */
-    void dropIndex();
+    void drop();
     
     /**
      * Called when initially populating an index over existing data. Guaranteed to be
@@ -64,12 +62,12 @@ public interface IndexPopulator
     public static class Adapter implements IndexPopulator
     {
         @Override
-        public void createIndex()
+        public void create()
         {
         }
         
         @Override
-        public void dropIndex()
+        public void drop()
         {
         }
         

@@ -31,9 +31,10 @@ import java.util.concurrent.TimeoutException;
 
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.kernel.api.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.SchemaIndexProvider;
-import org.neo4j.kernel.api.SchemaIndexProvider.Dependencies;
+import org.neo4j.kernel.api.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.index.NodePropertyUpdate;
+import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.SchemaIndexProvider.Dependencies;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -47,10 +48,10 @@ import org.neo4j.kernel.logging.Logging;
  *
  * <h3>Recovery procedure</h3>
  *
- * Each index has a state, as defined in {@link org.neo4j.kernel.api.InternalIndexState}, which is used during recovery. If
- * an index is anything but {@link org.neo4j.kernel.api.InternalIndexState#ONLINE}, it will simply be destroyed and re-created.
+ * Each index has a state, as defined in {@link org.neo4j.kernel.api.index.InternalIndexState}, which is used during recovery. If
+ * an index is anything but {@link org.neo4j.kernel.api.index.InternalIndexState#ONLINE}, it will simply be destroyed and re-created.
  *
- * If, however, it is {@link org.neo4j.kernel.api.InternalIndexState#ONLINE}, the index provider is required to also guarantee
+ * If, however, it is {@link org.neo4j.kernel.api.index.InternalIndexState#ONLINE}, the index provider is required to also guarantee
  * that the index had been flushed to disk.
  */
 public class IndexingService extends LifecycleAdapter
@@ -229,7 +230,7 @@ public class IndexingService extends LifecycleAdapter
 
     private IndexContext createOnlineIndexContext( IndexRule rule )
     {
-        IndexContext result = new OnlineIndexContext( provider.getWriter( rule.getId(), providerDependencies ) );
+        IndexContext result = new OnlineIndexContext( provider.getOnlineAccessor( rule.getId(), providerDependencies ) );
         result = new RuleUpdateFilterIndexContext( result, rule );
         result = new ContractCheckingIndexContext( result );
         result = new ServiceStateUpdatingIndexContext( rule, result );
@@ -253,7 +254,7 @@ public class IndexingService extends LifecycleAdapter
             @Override
             public IndexContext create()
             {
-                return new OnlineIndexContext( provider.getWriter( ruleId, providerDependencies ) );
+                return new OnlineIndexContext( provider.getOnlineAccessor( ruleId, providerDependencies ) );
             }
         } );
 

@@ -23,7 +23,9 @@ import static org.neo4j.helpers.FutureAdapter.VOID;
 
 import java.util.concurrent.Future;
 
-import org.neo4j.kernel.api.InternalIndexState;
+import org.neo4j.kernel.api.index.IndexPopulator;
+import org.neo4j.kernel.api.index.InternalIndexState;
+import org.neo4j.kernel.api.index.NodePropertyUpdate;
 
 public class FailedIndexContext implements IndexContext
 {
@@ -56,7 +58,7 @@ public class FailedIndexContext implements IndexContext
     @Override
     public Future<Void> drop()
     {
-        populator.dropIndex();
+        populator.drop();
         return VOID;
     }
 

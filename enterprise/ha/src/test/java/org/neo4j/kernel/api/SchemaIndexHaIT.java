@@ -48,11 +48,13 @@ import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema.IndexState;
+import org.neo4j.kernel.api.index.IndexAccessor;
+import org.neo4j.kernel.api.index.IndexPopulator;
+import org.neo4j.kernel.api.index.InternalIndexState;
+import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.UpdatePuller;
 import org.neo4j.kernel.impl.api.index.InMemoryIndexProvider;
-import org.neo4j.kernel.impl.api.index.IndexPopulator;
-import org.neo4j.kernel.impl.api.index.IndexWriter;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.ClusterManager;
@@ -255,9 +257,9 @@ public class SchemaIndexHaIT
         }
 
         @Override
-        public IndexWriter getWriter( long indexId, Dependencies dependencies )
+        public IndexAccessor getOnlineAccessor( long indexId, Dependencies dependencies )
         {
-            return inMemoryDelegate.getWriter( indexId, dependencies );
+            return inMemoryDelegate.getOnlineAccessor( indexId, dependencies );
         }
 
         @Override

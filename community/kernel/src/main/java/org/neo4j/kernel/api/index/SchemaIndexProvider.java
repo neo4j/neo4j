@@ -17,14 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api;
+package org.neo4j.kernel.api.index;
 
 import java.io.File;
 
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
-import org.neo4j.kernel.impl.api.index.IndexPopulator;
-import org.neo4j.kernel.impl.api.index.IndexWriter;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 
@@ -46,7 +44,7 @@ import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
  * These are the rules you must adhere to here:
  *
  * <ul>
- * <li>You CANNOT say that the state of the index is {@link org.neo4j.kernel.api.InternalIndexState#ONLINE}</li>
+ * <li>You CANNOT say that the state of the index is {@link org.neo4j.kernel.api.index.InternalIndexState#ONLINE}</li>
  * <li>You MUST store all updates given to you</li>
  * <li>You MAY persistently store the updates</li>
  * </ul>
@@ -56,9 +54,8 @@ import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
  *
  * Once population is done, the index needs to be "flipped" to an online mode of operation.
  *
- * The index will be notified, through the {@link org.neo4j.kernel.impl.api.index.IndexPopulator#populationCompleted()}
- * method, that population is done, and that the index should turn it's state to {@link org.neo4j.kernel.api
- * .InternalIndexState#ONLINE}.
+ * The index will be notified, through the {@link org.neo4j.kernel.api.index.IndexPopulator#populationCompleted()}
+ * method, that population is done, and that the index should turn it's state to {@link org.neo4j.kernel.api.index.InternalIndexState#ONLINE}.
  *
  * If the index is persisted to disk, this is a <i>vital</i> part of the index lifecycle.
  * For a persisted index, the index MUST NOT store the state as online unless it first guarantees that the entire index
@@ -67,16 +64,15 @@ import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
  * when it in fact was not yet fully populated. This would break the database recovery process.
  *
  * If you are implementing this interface, you can choose to not store index state. In that case,
- * you should report index state as {@link org.neo4j.kernel.api.InternalIndexState#NON_EXISTENT} upon startup.
+ * you should report index state as {@link org.neo4j.kernel.api.index.InternalIndexState#NON_EXISTENT} upon startup.
  * This will cause the database to re-create the index from scratch again.
  *
  * These are the rules you must adhere to here:
  *
  * <ul>
- * <li>You MUST have flushed the index to durable storage if you are to persist index state as {@link org.neo4j
- * .kernel.api.InternalIndexState#ONLINE}</li>
+ * <li>You MUST have flushed the index to durable storage if you are to persist index state as {@link org.neo4j.kernel.api.index.InternalIndexState#ONLINE}</li>
  * <li>You MAY decide not to store index state</li>
- * <li>If you don't store index state, you MUST default to {@link org.neo4j.kernel.api.InternalIndexState#NON_EXISTENT}</li>
+ * <li>If you don't store index state, you MUST default to {@link org.neo4j.kernel.api.index.InternalIndexState#NON_EXISTENT}</li>
  * </ul>
  *
  * <h3>Online operation</h3>
@@ -88,11 +84,11 @@ public abstract class SchemaIndexProvider extends Service implements Comparable<
 {
     public static final SchemaIndexProvider NO_INDEX_PROVIDER = new SchemaIndexProvider( "none", -1 )
     {
-        private final IndexWriter singleWriter = new IndexWriter.Adapter();
+        private final IndexAccessor singleWriter = new IndexAccessor.Adapter();
         private final IndexPopulator singlePopulator = new IndexPopulator.Adapter();
         
         @Override
-        public IndexWriter getWriter( long indexId, Dependencies dependencies )
+        public IndexAccessor getOnlineAccessor( long indexId, Dependencies dependencies )
         {
             return singleWriter;
         }
@@ -143,9 +139,9 @@ public abstract class SchemaIndexProvider extends Service implements Comparable<
     /**
      * Used for updating an index once initial population has completed.
      * @param indexId the index id to get a writer for.
-     * @return an {@link IndexWriter} used for updating an online index at runtime.
+     * @return an {@link IndexAccessor} used for updating an online index at runtime.
      */
-    public abstract IndexWriter getWriter( long indexId, Dependencies dependencies );
+    public abstract IndexAccessor getOnlineAccessor( long indexId, Dependencies dependencies );
 
     // Design idea: we add methods here like:
     //    getReader( IndexDefinition index )

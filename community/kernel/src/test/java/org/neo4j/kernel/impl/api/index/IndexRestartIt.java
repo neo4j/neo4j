@@ -27,9 +27,9 @@ import static org.mockito.Mockito.mock;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.single;
-import static org.neo4j.kernel.api.InternalIndexState.NON_EXISTENT;
-import static org.neo4j.kernel.api.InternalIndexState.ONLINE;
-import static org.neo4j.kernel.api.InternalIndexState.POPULATING;
+import static org.neo4j.kernel.api.index.InternalIndexState.NON_EXISTENT;
+import static org.neo4j.kernel.api.index.InternalIndexState.ONLINE;
+import static org.neo4j.kernel.api.index.InternalIndexState.POPULATING;
 import static org.neo4j.test.DoubleLatch.awaitLatch;
 
 import java.util.Arrays;
@@ -45,8 +45,10 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.api.InternalIndexState;
-import org.neo4j.kernel.api.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.IndexAccessor;
+import org.neo4j.kernel.api.index.IndexPopulator;
+import org.neo4j.kernel.api.index.InternalIndexState;
+import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
@@ -164,7 +166,7 @@ public class IndexRestartIt
     private class ControlledSchemaIndexProvider extends SchemaIndexProvider
     {
         private final IndexPopulator mockedPopulator = mock( IndexPopulator.class );
-        private final IndexWriter mockedWriter = mock( IndexWriter.class );
+        private final IndexAccessor mockedWriter = mock( IndexAccessor.class );
         private final CountDownLatch writerLatch = new CountDownLatch( 1 );
         private InternalIndexState initialIndexState = NON_EXISTENT;
         private final AtomicInteger populatorCallCount = new AtomicInteger();
@@ -194,7 +196,7 @@ public class IndexRestartIt
         }
 
         @Override
-        public IndexWriter getWriter( long indexId, Dependencies dependencies )
+        public IndexAccessor getOnlineAccessor( long indexId, Dependencies dependencies )
         {
             writerCallCount.incrementAndGet();
             writerLatch.countDown();

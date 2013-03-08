@@ -30,9 +30,9 @@ import org.junit.Test;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.ThreadToStatementContextBridge;
-import org.neo4j.kernel.api.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.InternalIndexState;
 import org.neo4j.kernel.api.StatementContext;
+import org.neo4j.kernel.api.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.test.ImpermanentGraphDatabase;
 

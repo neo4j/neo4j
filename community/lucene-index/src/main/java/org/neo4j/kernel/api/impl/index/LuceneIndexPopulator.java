@@ -40,8 +40,8 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.util.Version;
 import org.neo4j.index.impl.lucene.IndexType;
 import org.neo4j.index.impl.lucene.LuceneDataSource;
-import org.neo4j.kernel.impl.api.index.IndexPopulator;
-import org.neo4j.kernel.impl.api.index.NodePropertyUpdate;
+import org.neo4j.kernel.api.index.IndexPopulator;
+import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 
 class LuceneIndexPopulator implements IndexPopulator
@@ -64,7 +64,7 @@ class LuceneIndexPopulator implements IndexPopulator
     }
 
     @Override
-    public void createIndex()
+    public void create()
     {
         deleteDirectory();
         
@@ -93,7 +93,7 @@ class LuceneIndexPopulator implements IndexPopulator
     }
 
     @Override
-    public void dropIndex()
+    public void drop()
     {
         try
         {

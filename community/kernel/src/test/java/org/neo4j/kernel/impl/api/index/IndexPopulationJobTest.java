@@ -53,10 +53,12 @@ import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.ThreadToStatementContextBridge;
-import org.neo4j.kernel.api.InternalIndexState;
 import org.neo4j.kernel.api.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.PropertyKeyNotFoundException;
 import org.neo4j.kernel.api.StatementContext;
+import org.neo4j.kernel.api.index.IndexPopulator;
+import org.neo4j.kernel.api.index.InternalIndexState;
+import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.impl.api.index.IndexingService.IndexStoreView;
 import org.neo4j.kernel.impl.api.index.IndexingService.StoreScan;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
@@ -82,7 +84,7 @@ public class IndexPopulationJobTest
         job.run();
 
         // THEN
-        verify( populator ).createIndex();
+        verify( populator ).create();
         verify( populator ).add( nodeId, value );
         verify( populator ).close( true );
 
@@ -104,7 +106,7 @@ public class IndexPopulationJobTest
         job.run();
 
         // THEN
-        verify( populator ).createIndex();
+        verify( populator ).create();
         verify( populator ).add( node1, value );
         verify( populator ).add( node4, value );
         verify( populator ).close( true );

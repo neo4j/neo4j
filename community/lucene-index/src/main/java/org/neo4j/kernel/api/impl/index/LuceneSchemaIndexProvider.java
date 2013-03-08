@@ -26,10 +26,10 @@ import java.util.Map;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.store.Directory;
 import org.neo4j.helpers.Service;
-import org.neo4j.kernel.api.InternalIndexState;
-import org.neo4j.kernel.api.SchemaIndexProvider;
-import org.neo4j.kernel.impl.api.index.IndexWriter;
-import org.neo4j.kernel.impl.api.index.IndexPopulator;
+import org.neo4j.kernel.api.index.IndexAccessor;
+import org.neo4j.kernel.api.index.IndexPopulator;
+import org.neo4j.kernel.api.index.InternalIndexState;
+import org.neo4j.kernel.api.index.SchemaIndexProvider;
 
 @Service.Implementation(SchemaIndexProvider.class)
 public class LuceneSchemaIndexProvider extends SchemaIndexProvider
@@ -62,9 +62,9 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
     }
 
     @Override
-    public IndexWriter getWriter( long indexId, Dependencies dependencies )
+    public IndexAccessor getOnlineAccessor( long indexId, Dependencies dependencies )
     {
-        return new IndexWriter.Adapter()
+        return new IndexAccessor.Adapter()
         {
         };
     }

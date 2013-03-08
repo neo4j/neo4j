@@ -29,10 +29,10 @@ import java.util.Collection;
 
 import org.neo4j.helpers.Predicate;
 import org.neo4j.kernel.api.ConstraintViolationKernelException;
-import org.neo4j.kernel.api.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.InternalIndexState;
 import org.neo4j.kernel.api.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.StatementContext;
+import org.neo4j.kernel.api.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 
 public class TransactionStateAwareStatementContext extends DelegatingStatementContext

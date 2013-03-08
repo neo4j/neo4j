@@ -45,8 +45,11 @@ import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.ThreadToStatementContextBridge;
 import org.neo4j.kernel.api.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.PropertyKeyNotFoundException;
-import org.neo4j.kernel.api.SchemaIndexProvider;
-import org.neo4j.kernel.api.SchemaIndexProvider.Dependencies;
+import org.neo4j.kernel.api.index.IndexAccessor;
+import org.neo4j.kernel.api.index.IndexPopulator;
+import org.neo4j.kernel.api.index.NodePropertyUpdate;
+import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.SchemaIndexProvider.Dependencies;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
@@ -150,7 +153,7 @@ public class IndexCRUDIT
     {
         GatheringIndexWriter writer = new GatheringIndexWriter( propertyKey );
         when(mockedIndexProvider.getPopulator( anyLong(), Matchers.<Dependencies>any() )).thenReturn( writer );
-        when(mockedIndexProvider.getWriter( anyLong(), Matchers.<Dependencies>any() )).thenReturn( writer );
+        when(mockedIndexProvider.getOnlineAccessor( anyLong(), Matchers.<Dependencies>any() )).thenReturn( writer );
         return writer;
     }
 
@@ -161,7 +164,7 @@ public class IndexCRUDIT
     }
 
 
-    private class GatheringIndexWriter extends IndexWriter.Adapter implements IndexPopulator
+    private class GatheringIndexWriter extends IndexAccessor.Adapter implements IndexPopulator
     {
         private final Set<NodePropertyUpdate> updates = new HashSet<NodePropertyUpdate>();
         private final String propertyKey;
@@ -172,7 +175,7 @@ public class IndexCRUDIT
         }
 
         @Override
-        public void createIndex()
+        public void create()
         {
         }
 

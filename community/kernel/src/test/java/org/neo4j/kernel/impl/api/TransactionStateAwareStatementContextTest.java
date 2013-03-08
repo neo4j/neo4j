@@ -43,9 +43,9 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
-import org.neo4j.kernel.api.InternalIndexState;
 import org.neo4j.kernel.api.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.StatementContext;
+import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 
 public class TransactionStateAwareStatementContextTest

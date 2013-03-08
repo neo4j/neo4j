@@ -17,23 +17,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api.index;
+package org.neo4j.kernel.api.index;
 
 /**
  * Used for online operation of an index.
  */
-public interface IndexWriter
+public interface IndexAccessor
 {
     /**
      * Delete this index
      */
-    void dropIndex();
+    void drop();
 
     /**
      * Apply a set of changes to this index. This method will only ever be called by one thread at a time.
      * @param updates
      */
-    void update(Iterable<NodePropertyUpdate> updates);
+    void updateAndCommit( Iterable<NodePropertyUpdate> updates );
 
     /**
      * Forces this index to disk.
@@ -44,16 +44,18 @@ public interface IndexWriter
      * Closes this index writer. There will not be any interactions after this call.
      */
     void close();
+    
+    IndexReader newTransactionBoundReader();
 
-    public static class Adapter implements IndexWriter
+    public static class Adapter implements IndexAccessor
     {
         @Override
-        public void dropIndex()
+        public void drop()
         {
         }
 
         @Override
-        public void update(Iterable<NodePropertyUpdate> updates)
+        public void updateAndCommit( Iterable<NodePropertyUpdate> updates )
         {
         }
 
@@ -65,6 +67,12 @@ public interface IndexWriter
         @Override
         public void close()
         {
+        }
+
+        @Override
+        public IndexReader newTransactionBoundReader()
+        {
+            return new IndexReader.Adapter();
         }
     }
 }

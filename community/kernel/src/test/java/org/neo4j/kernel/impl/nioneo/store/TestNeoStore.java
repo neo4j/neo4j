@@ -22,8 +22,8 @@ package org.neo4j.kernel.impl.nioneo.store;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.kernel.api.SchemaIndexProvider.NO_DEPENDENCIES;
-import static org.neo4j.kernel.api.SchemaIndexProvider.NO_INDEX_PROVIDER;
+import static org.neo4j.kernel.api.index.SchemaIndexProvider.NO_DEPENDENCIES;
+import static org.neo4j.kernel.api.index.SchemaIndexProvider.NO_INDEX_PROVIDER;
 import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
 
 import java.io.File;

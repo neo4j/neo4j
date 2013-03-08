@@ -45,10 +45,10 @@ import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.index.impl.lucene.LuceneUtil;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
-import org.neo4j.kernel.api.InternalIndexState;
-import org.neo4j.kernel.api.SchemaIndexProvider;
-import org.neo4j.kernel.impl.api.index.IndexPopulator;
-import org.neo4j.kernel.impl.api.index.NodePropertyUpdate;
+import org.neo4j.kernel.api.index.IndexPopulator;
+import org.neo4j.kernel.api.index.InternalIndexState;
+import org.neo4j.kernel.api.index.NodePropertyUpdate;
+import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 
 public class LuceneSchemaIndexPopulatorTest
@@ -238,7 +238,7 @@ public class LuceneSchemaIndexPopulatorTest
         provider = new LuceneSchemaIndexProvider( directoryFactory );
         providerDependencies = new SchemaIndexProvider.Dependencies( fs, new File( "ignored" ) );
         index = provider.getPopulator( indexId, providerDependencies );
-        index.createIndex();
+        index.create();
     }
 
     @After

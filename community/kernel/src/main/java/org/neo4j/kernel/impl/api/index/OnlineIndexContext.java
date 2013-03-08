@@ -23,13 +23,15 @@ import static org.neo4j.helpers.FutureAdapter.VOID;
 
 import java.util.concurrent.Future;
 
-import org.neo4j.kernel.api.InternalIndexState;
+import org.neo4j.kernel.api.index.IndexAccessor;
+import org.neo4j.kernel.api.index.InternalIndexState;
+import org.neo4j.kernel.api.index.NodePropertyUpdate;
 
 public class OnlineIndexContext implements IndexContext
 {
-    private final IndexWriter writer;
+    private final IndexAccessor writer;
 
-    public OnlineIndexContext( IndexWriter writer )
+    public OnlineIndexContext( IndexAccessor writer )
     {
         this.writer = writer;
     }
@@ -43,13 +45,13 @@ public class OnlineIndexContext implements IndexContext
     @Override
     public void update( Iterable<NodePropertyUpdate> updates )
     {
-        writer.update( updates );
+        writer.updateAndCommit( updates );
     }
 
     @Override
     public Future<Void> drop()
     {
-        writer.dropIndex();
+        writer.drop();
         return VOID;
     }
 
