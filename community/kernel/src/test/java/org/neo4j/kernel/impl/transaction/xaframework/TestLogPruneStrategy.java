@@ -35,15 +35,24 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
-import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.XidImpl;
 import org.neo4j.kernel.impl.transaction.xaframework.LogExtractor.LogLoader;
+import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
 public class TestLogPruneStrategy
 {
-    private final FileSystemAbstraction FS = new EphemeralFileSystemAbstraction();
+    @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+    private EphemeralFileSystemAbstraction FS;
+    
+    @Before
+    public void before()
+    {
+        FS = fs.get();
+    }
     
     @Test
     public void noPruning() throws Exception

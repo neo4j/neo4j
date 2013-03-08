@@ -97,5 +97,6 @@ public class NestedTransactionLocksIT
         }
         lock.release();
         assertNotNull( future.get() );
+        otherTx.shutdown();
     }
 }

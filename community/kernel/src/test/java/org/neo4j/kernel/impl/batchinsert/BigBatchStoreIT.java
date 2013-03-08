@@ -41,16 +41,15 @@ import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.kernel.IdType;
-import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 import org.neo4j.unsafe.batchinsert.BatchInserters;
 import org.neo4j.unsafe.batchinsert.BatchRelationship;
 
 public class BigBatchStoreIT implements RelationshipType
 {
     private static final String PATH = "target/var/bigb";
-    private FileSystemAbstraction fileSystem;
+    @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     private org.neo4j.unsafe.batchinsert.BatchInserter db;
     public @Rule
     TestName testName = new TestName()
@@ -65,8 +64,7 @@ public class BigBatchStoreIT implements RelationshipType
     @Before
     public void doBefore()
     {
-        fileSystem = new EphemeralFileSystemAbstraction();
-        db = BatchInserters.inserter( PATH, fileSystem );
+        db = BatchInserters.inserter( PATH, fs.get());
     }
     
     @After
@@ -122,18 +120,18 @@ public class BigBatchStoreIT implements RelationshipType
 
         assertEquals( asSet( asList( relBelowTheLine, relAboveTheLine ) ), asIds( db.getRelationships( idBelow ) ) );
         db.shutdown();
-        db = BatchInserters.inserter( PATH, fileSystem );
+        db = BatchInserters.inserter( PATH, fs.get() );
         assertEquals( asSet( asList( relBelowTheLine, relAboveTheLine ) ), asIds( db.getRelationships( idBelow ) ) );
         db.shutdown();
         
-        GraphDatabaseService edb = new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentDatabase( PATH );
+        GraphDatabaseService edb = new TestGraphDatabaseFactory().setFileSystem( fs.get() ).newImpermanentDatabase( PATH );
         assertEquals( nodeAboveTheLine, edb.getNodeById( highMark ).getId() );
         assertEquals( relBelowTheLine, edb.getNodeById( idBelow ).getSingleRelationship( this, Direction.OUTGOING ).getId() );
         assertEquals( relAboveTheLine, edb.getNodeById( idBelow ).getSingleRelationship( this, Direction.INCOMING ).getId() );
         assertEquals(   asSet( asList( edb.getRelationshipById( relBelowTheLine ), edb.getRelationshipById( relAboveTheLine ) ) ),
                         asSet( asCollection( edb.getNodeById( idBelow ).getRelationships() ) ) );
         edb.shutdown();
-        db = BatchInserters.inserter( PATH, fileSystem );
+        db = BatchInserters.inserter( PATH, fs.get() );
     }
     
     @Test( expected=IllegalArgumentException.class )

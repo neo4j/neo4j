@@ -42,6 +42,7 @@ import javax.transaction.xa.Xid;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Node;
@@ -74,8 +75,8 @@ import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.DevNullLoggingService;
+import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
 public class TestNeoStore
 {
@@ -83,7 +84,7 @@ public class TestNeoStore
     private RelationshipTypeStore rtStore;
     private NeoStoreXaDataSource ds;
     private NeoStoreXaConnection xaCon;
-    private final EphemeralFileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
+    @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     private final String path = "dir";
 
     private File file( String name )
@@ -96,7 +97,7 @@ public class TestNeoStore
     {
         Config config = new Config( new HashMap<String, String>(), GraphDatabaseSettings.class );
         StoreFactory sf = new StoreFactory( config, new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(),
-                fileSystem, StringLogger.SYSTEM, null );
+                fs.get(), StringLogger.SYSTEM, null );
         sf.createNeoStore( file( "neo" ) ).close();
     }
 
@@ -153,11 +154,11 @@ public class TestNeoStore
                 InternalAbstractGraphDatabase.Configuration.logical_log.name(), file( "nioneo_logical.log" ).getPath() ),
                 GraphDatabaseSettings.class );
         StoreFactory sf = new StoreFactory( config, new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(),
-                fileSystem, StringLogger.DEV_NULL, null );
+                fs.get(), StringLogger.DEV_NULL, null );
 
         ds = new NeoStoreXaDataSource(config, sf, lockManager, StringLogger.DEV_NULL,
                 new XaFactory(config, TxIdGenerator.DEFAULT, new PlaceboTm( lockManager, TxIdGenerator.DEFAULT ),
-                        new DefaultLogBufferFactory(), fileSystem, new DevNullLoggingService(), RecoveryVerifier.ALWAYS_VALID,
+                        new DefaultLogBufferFactory(), fs.get(), new DevNullLoggingService(), RecoveryVerifier.ALWAYS_VALID,
                         LogPruneStrategies.NO_PRUNING ), TransactionStateFactory.noStateFactory( new DevNullLoggingService() ),
                         new TransactionInterceptorProviders( Collections.<TransactionInterceptorProvider>emptyList(), new DependencyResolver()
         {
@@ -209,16 +210,16 @@ public class TestNeoStore
                 "neo.relationshiptypestore.db.names",
         } )
         {
-            fileSystem.deleteFile( file( file ) );
-            fileSystem.deleteFile( file( file + ".id" ) );
+            fs.get().deleteFile( file( file ) );
+            fs.get().deleteFile( file( file + ".id" ) );
         }
         
         File file = new File( "." );
-        for ( File nioFile : fileSystem.listFiles( file ) )
+        for ( File nioFile : fs.get().listFiles( file ) )
         {
             if ( nioFile.getName().startsWith( "nioneo_logical.log" ) )
             {
-                fileSystem.deleteFile( nioFile );
+                fs.get().deleteFile( nioFile );
             }
         }
     }
@@ -999,7 +1000,7 @@ public class TestNeoStore
         Config config = new Config( MapUtil.stringMap( "string_block_size", "62", "array_block_size", "302" ),
                 GraphDatabaseSettings.class );
         StoreFactory sf = new StoreFactory( config, new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(),
-                fileSystem, StringLogger.DEV_NULL, null );
+                fs.get(), StringLogger.DEV_NULL, null );
         sf.createNeoStore( file( "neo" ) ).close();
 
         initializeStores();
@@ -1014,12 +1015,12 @@ public class TestNeoStore
     public void setVersion() throws Exception
     {
         String storeDir = "target/test-data/set-version";
-        new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentDatabase( storeDir ).shutdown();
-        assertEquals( 1, NeoStore.setVersion( fileSystem, new File( storeDir ), 10 ) );
-        assertEquals( 10, NeoStore.setVersion( fileSystem, new File( storeDir ), 12 ) );
+        new TestGraphDatabaseFactory().setFileSystem( fs.get() ).newImpermanentDatabase( storeDir ).shutdown();
+        assertEquals( 1, NeoStore.setVersion( fs.get(), new File( storeDir ), 10 ) );
+        assertEquals( 10, NeoStore.setVersion( fs.get(), new File( storeDir ), 12 ) );
 
         StoreFactory sf = new StoreFactory( new Config( new HashMap<String, String>(), GraphDatabaseSettings.class ),
-                new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(), fileSystem, StringLogger.DEV_NULL, null );
+                new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(), fs.get(), StringLogger.DEV_NULL, null );
 
         NeoStore neoStore = sf.newNeoStore( new File( storeDir, NeoStore.DEFAULT_NAME ) );
         assertEquals( 12, neoStore.getVersion() );

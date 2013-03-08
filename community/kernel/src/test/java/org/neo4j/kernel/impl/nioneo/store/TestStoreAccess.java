@@ -29,8 +29,10 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 
+import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
@@ -52,14 +54,14 @@ public class TestStoreAccess
         assertTrue( "Store should be unclean", isUnclean( snapshot ) );
     }
     
-    private final EphemeralFileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
+    @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     private final File storeDir = new File( "dir" );
     
     private EphemeralFileSystemAbstraction produceUncleanStore()
     {
-        GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fileSystem )
+        GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fs.get() )
                 .newImpermanentDatabase( storeDir.getPath() );
-        EphemeralFileSystemAbstraction snapshot = fileSystem.snapshot();
+        EphemeralFileSystemAbstraction snapshot = fs.get().snapshot();
         db.shutdown();
         return snapshot;
     }

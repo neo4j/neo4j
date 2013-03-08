@@ -25,13 +25,14 @@ import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 import org.neo4j.unsafe.batchinsert.BatchInserter;
 import org.neo4j.unsafe.batchinsert.BatchInserters;
 
@@ -41,13 +42,12 @@ public class TestPropertyIndex
     public void lazyLoadWithinWriteTransaction() throws Exception
     {
         File dir = new File( "dir" );
-        EphemeralFileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
-        BatchInserter inserter = BatchInserters.inserter( dir.getPath(), fileSystem );
+        BatchInserter inserter = BatchInserters.inserter( dir.getPath(), fs.get() );
         int count = 3000;
         long nodeId = inserter.createNode( mapWithManyProperties( count /* larger than initial property index load threshold */ ) );
         inserter.shutdown();
         
-        GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentDatabase( dir.getPath() );
+        GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fs.get() ).newImpermanentDatabase( dir.getPath() );
         Transaction tx = db.beginTx();
         try
         {
@@ -70,4 +70,6 @@ public class TestPropertyIndex
             properties.put( "key:" + i, "value" );
         return properties;
     }
+
+    @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
 }

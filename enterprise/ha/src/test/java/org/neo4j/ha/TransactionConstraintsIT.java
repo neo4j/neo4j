@@ -247,6 +247,7 @@ public class TransactionConstraintsIT extends AbstractClusterTest
         
         assertNotNull( writeLockFuture.get() );
         thread2.execute( new FinishTx( tx2, true ) );
+        thread2.shutdown();
     }
 
     @Ignore( "Known issue where locks acquired from Transaction#acquireXXXLock() methods doesn't get properly released when calling Lock#release() method" )

@@ -95,6 +95,7 @@ public class TestEphemeralFileChannel
         channel.read( buffer, 15 );
         buffer.flip();
         assertEquals( longValue, buffer.getLong() );
+        fs.shutdown();
     }
     
     @Test
@@ -117,6 +118,7 @@ public class TestEphemeralFileChannel
         // THEN
         assertEquals( bytes.length, nrOfReadBytes );
         assertTrue( Arrays.equals( bytes, readBytes ) );
+        fs.shutdown();
     }
     
     @Test
@@ -150,5 +152,6 @@ public class TestEphemeralFileChannel
         assertEquals( asSet( subdir1, file1, file2 ), asSet( fs.listFiles( dir1 ) ) );
         assertEquals( asSet( file3 ), asSet( fs.listFiles( dir2 ) ) );
         assertEquals( asSet( file4 ), asSet( fs.listFiles( subdir1 ) ) );
+        fs.shutdown();
     }
 }

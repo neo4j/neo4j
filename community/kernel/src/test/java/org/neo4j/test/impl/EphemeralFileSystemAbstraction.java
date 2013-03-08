@@ -63,7 +63,7 @@ public class EphemeralFileSystemAbstraction extends LifecycleAdapter implements 
     
     public EphemeralFileSystemAbstraction()
     {
-        files = new HashMap<File, EphemeralFileData>();
+        this( new HashMap<File, EphemeralFileData>() );
     }
     
     private EphemeralFileSystemAbstraction( Map<File, EphemeralFileData> files )
