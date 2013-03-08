@@ -23,14 +23,15 @@ import static org.junit.Assert.assertEquals;
 
 import java.io.File;
 
+import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
 public class TestIdReuse
 {
@@ -62,13 +63,13 @@ public class TestIdReuse
         makeSureIdsGetsReused( "neostore.propertystore.db.strings", string, 20 );
     }
     
-    private final EphemeralFileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
+    @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     
     private void makeSureIdsGetsReused( String fileName, Object value, int iterations ) throws Exception
     {
         File storeDir = new File( "target/var/idreuse" );
         File file = new File( storeDir, fileName );
-        GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fileSystem ).
+        GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fs.get() ).
             newImpermanentDatabaseBuilder( storeDir.getPath() ).
             setConfig( GraphDatabaseSettings.use_memory_mapped_buffers.name(), GraphDatabaseSetting.BooleanSetting.FALSE ).
             newGraphDatabase();
@@ -78,7 +79,7 @@ public class TestIdReuse
         }
         db.shutdown();
         long sizeBefore = file.length();
-        db = new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentDatabase( storeDir.getPath() );
+        db = new TestGraphDatabaseFactory().setFileSystem( fs.get() ).newImpermanentDatabase( storeDir.getPath() );
         for ( int i = 0; i < iterations; i++ )
         {
             setSomeAndRemoveSome( db.getReferenceNode(), value );

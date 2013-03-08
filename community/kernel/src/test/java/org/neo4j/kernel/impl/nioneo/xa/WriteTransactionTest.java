@@ -47,8 +47,8 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.ArgumentMatcher;
 import org.neo4j.helpers.Predicate;
@@ -75,7 +75,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.LogPruneStrategies;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
 import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
 import org.neo4j.kernel.logging.SingleLoggingService;
-import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
+import org.neo4j.test.EphemeralFileSystemRule;
 
 public class WriteTransactionTest
 {
@@ -450,7 +450,7 @@ public class WriteTransactionTest
         assertEquals( "SchemaStore", ruleId+1, neoStore.getSchemaStore().getHighId() );
     }
 
-    private EphemeralFileSystemAbstraction fileSystemAbstraction;
+    @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     private CapturingXaLogicalLog log;
     private TransactionState transactionState;
     private final Config config = new Config( stringMap() );
@@ -463,11 +463,10 @@ public class WriteTransactionTest
     @Before
     public void before() throws Exception
     {
-        fileSystemAbstraction = new EphemeralFileSystemAbstraction();
-        log = new CapturingXaLogicalLog( fileSystemAbstraction );
+        log = new CapturingXaLogicalLog( fs.get() );
         transactionState = TransactionState.NO_STATE;
         storeFactory = new StoreFactory( config, idGeneratorFactory, windowPoolFactory,
-                fileSystemAbstraction, SYSTEM, new DefaultTxHook() );
+                fs.get(), SYSTEM, new DefaultTxHook() );
         neoStore = storeFactory.createNeoStore( new File( "neostore" ) );
         cacheAccessBackDoor = mock( CacheAccessBackDoor.class );
     }
@@ -487,12 +486,6 @@ public class WriteTransactionTest
         {
             commands.add( command );
         }
-    }
-    
-    @After
-    public void after() throws Exception
-    {
-        fileSystemAbstraction.shutdown();
     }
     
     private ArgumentMatcher<Collection<DynamicRecord>> firstRecordIdMatching( final int ruleId )

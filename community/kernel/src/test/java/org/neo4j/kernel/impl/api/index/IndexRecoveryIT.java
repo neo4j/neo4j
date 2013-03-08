@@ -42,6 +42,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
 import org.junit.After;
+import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.Matchers;
 import org.neo4j.graphdb.Label;
@@ -60,8 +61,8 @@ import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.index.SchemaIndexProvider.Dependencies;
+import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
 public class IndexRecoveryIT
 {
@@ -190,7 +191,7 @@ public class IndexRecoveryIT
     }
     
     private GraphDatabaseAPI db;
-    private EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
+    @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     private final SchemaIndexProvider mockedIndexProvider = mock( SchemaIndexProvider.class);
     private final String key = "number_of_bananas_owned";
 
@@ -200,7 +201,7 @@ public class IndexRecoveryIT
             db.shutdown();
 
         TestGraphDatabaseFactory factory = new TestGraphDatabaseFactory();
-        factory.setFileSystem( fs );
+        factory.setFileSystem( fs.get() );
         factory.setSchemaIndexProviders( Arrays.asList( mockedIndexProvider ) );
         when( mockedIndexProvider.getKey() ).thenReturn( "my-index" );
         db = (GraphDatabaseAPI) factory.newImpermanentDatabase();
@@ -208,11 +209,18 @@ public class IndexRecoveryIT
     
     private void killDb()
     {
-        EphemeralFileSystemAbstraction snapshot = fs.snapshot();
         if ( db != null )
-            db.shutdown();
-        fs.shutdown();
-        fs = snapshot;
+        {
+            fs.snapshot( new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    db.shutdown();
+                    db = null;
+                }
+            } );
+        }
     }
     
     private Future<Void> killDbInSeparateThread()
@@ -236,7 +244,6 @@ public class IndexRecoveryIT
     {
         if ( db != null )
             db.shutdown();
-        fs.shutdown();
     }
 
     private void rotateLogs()

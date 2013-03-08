@@ -30,6 +30,7 @@ import java.util.Set;
 
 import javax.transaction.xa.Xid;
 
+import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -39,9 +40,9 @@ import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
+import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.LogTestUtils.LogHookAdapter;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
 public class TestInjectMultipleStartEntries
 {
@@ -50,9 +51,8 @@ public class TestInjectMultipleStartEntries
     {
         // GIVEN
         // -- a database with one additional data source and some initial data
-        EphemeralFileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
         GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory()
-                .setFileSystem( fileSystem ).newImpermanentDatabase( storeDir );
+                .setFileSystem( fs.get() ).newImpermanentDatabase( storeDir );
         XaDataSourceManager xaDs = db.getXaDataSourceManager();
         XaDataSource additionalDs = new DummyXaDataSource( "dummy", "dummy".getBytes(), new FakeXAResource( "dummy" ) );
         xaDs.registerDataSource( additionalDs );
@@ -66,11 +66,12 @@ public class TestInjectMultipleStartEntries
 
         // THEN
         // -- the logical log should only contain unique start entries after this transaction
-        filterNeostoreLogicalLog( fileSystem, new File( storeDir, LOGICAL_LOG_DEFAULT_NAME + ".v0" ),
+        filterNeostoreLogicalLog( fs.get(), new File( storeDir, LOGICAL_LOG_DEFAULT_NAME + ".v0" ),
                 new VerificationLogHook() );
     }
     
     private final String storeDir = "dir";
+    @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     
     private static class VerificationLogHook extends LogHookAdapter<LogEntry>
     {

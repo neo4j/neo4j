@@ -36,9 +36,9 @@ import java.nio.channels.FileChannel;
 import java.util.Collections;
 import java.util.concurrent.Future;
 
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -51,6 +51,7 @@ import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.GraphProperties;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.ProcessStreamHandler;
 import org.neo4j.test.TargetDirectory;
@@ -59,22 +60,15 @@ import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
 public class TestGraphProperties
 {
-    private EphemeralFileSystemAbstraction fileSystem;
+    @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     private TestGraphDatabaseFactory factory;
     
     @Before
     public void before() throws Exception
     {
-        fileSystem = new EphemeralFileSystemAbstraction();
-        factory = new TestGraphDatabaseFactory().setFileSystem( fileSystem );
+        factory = new TestGraphDatabaseFactory().setFileSystem( fs.get() );
     }
 
-    @After
-    public void after() throws Exception
-    {
-        fileSystem.shutdown();
-    }
-    
     @Test
     public void basicProperties() throws Exception
     {
@@ -194,7 +188,7 @@ public class TestGraphProperties
 
         NeoStore neoStore = new StoreFactory( new Config( Collections.<String, String>emptyMap(),
                 GraphDatabaseSettings.class ),
-                new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(), fileSystem, StringLogger.DEV_NULL,
+                new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(), fs.get(), StringLogger.DEV_NULL,
                 null ).newNeoStore( new File( storeDir, NeoStore.DEFAULT_NAME ) );
         long prop = neoStore.getGraphNextProp();
         assertTrue( prop != 0 );
@@ -247,9 +241,8 @@ public class TestGraphProperties
 
         worker1.shutdown();
         worker2.shutdown();
-        
         db.shutdown();
-    }
+   }
 
     @Test
     public void upgradeDoesntAccidentallyAssignPropertyChainZero() throws Exception
@@ -282,6 +275,7 @@ public class TestGraphProperties
         properties = db.getNodeManager().getGraphProperties();
         assertEquals( "a value", properties.getProperty( "a property" ) );
         db.shutdown();
+        fileSystem.shutdown();
     }
 
     private void removeLastNeoStoreRecord( FileSystemAbstraction fileSystem, String storeDir ) throws IOException
@@ -332,13 +326,14 @@ public class TestGraphProperties
         db.getNodeManager().clearCache();
         assertEquals( "a value", properties.getProperty( "a property" ) );
         db.shutdown();
+        fileSystem.shutdown();
     }
 
     @Test
     public void twoUncleanInARow() throws Exception
     {
         String storeDir = "dir";
-        EphemeralFileSystemAbstraction snapshot = produceUncleanStore( fileSystem, storeDir );
+        EphemeralFileSystemAbstraction snapshot = produceUncleanStore( fs.get(), storeDir );
         snapshot = produceUncleanStore( snapshot, storeDir );
         snapshot = produceUncleanStore( snapshot, storeDir );
         

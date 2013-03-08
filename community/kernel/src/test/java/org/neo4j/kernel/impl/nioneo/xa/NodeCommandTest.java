@@ -31,6 +31,7 @@ import java.util.Set;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.DefaultTxHook;
@@ -41,14 +42,14 @@ import org.neo4j.kernel.impl.nioneo.store.NodeStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.InMemoryLogBuffer;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.ImpermanentGraphDatabase;
-import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
 public class NodeCommandTest
 {
     private NodeStore nodeStore;
     private ImpermanentGraphDatabase gdb;
-    private EphemeralFileSystemAbstraction fs;
+    @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
 
     @Test
     public void shouldSerializeAndDeserializeUnusedRecords() throws Exception
@@ -150,9 +151,8 @@ public class NodeCommandTest
     @Before
     public void before() throws Exception
     {
-        fs = new EphemeralFileSystemAbstraction();
         StoreFactory storeFactory = new StoreFactory( new Config(), new DefaultIdGeneratorFactory(),
-                new DefaultWindowPoolFactory(), fs, StringLogger.DEV_NULL, new DefaultTxHook() );
+                new DefaultWindowPoolFactory(), fs.get(), StringLogger.DEV_NULL, new DefaultTxHook() );
         File storeFile = new File( "nodestore" );
         storeFactory.createNodeStore( storeFile );
         nodeStore = storeFactory.newNodeStore( storeFile );
@@ -162,6 +162,5 @@ public class NodeCommandTest
     public void after() throws Exception
     {
         nodeStore.close();
-        fs.shutdown();
     }
 }

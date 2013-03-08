@@ -36,6 +36,7 @@ import java.util.regex.Pattern;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
@@ -46,8 +47,8 @@ import org.neo4j.shell.impl.AbstractServer;
 import org.neo4j.shell.impl.CollectingOutput;
 import org.neo4j.shell.impl.RmiLocation;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
+import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
 @Ignore( "Not a unit test" )
 public abstract class AbstractShellTest
@@ -57,7 +58,7 @@ public abstract class AbstractShellTest
     private ShellClient shellClient;
     private Integer remotelyAvailableOnPort;
     protected static final RelationshipType RELATIONSHIP_TYPE = withName( "TYPE" );
-    private final EphemeralFileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
+    @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
 
     private Transaction tx;
 
@@ -71,7 +72,7 @@ public abstract class AbstractShellTest
     
     protected GraphDatabaseAPI newDb()
     {
-        return (GraphDatabaseAPI) new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentDatabase();
+        return (GraphDatabaseAPI) new TestGraphDatabaseFactory().setFileSystem( fs.get() ).newImpermanentDatabase();
     }
 
     protected ShellServer newServer( GraphDatabaseAPI db ) throws ShellException, RemoteException

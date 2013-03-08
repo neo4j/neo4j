@@ -35,12 +35,13 @@ import java.util.Collection;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.DefaultTxHook;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule.Kind;
-import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
+import org.neo4j.test.EphemeralFileSystemRule;
 
 public class SchemaStoreTest
 {
@@ -144,17 +145,16 @@ public class SchemaStoreTest
 
     private Config config;
     private SchemaStore store;
-    private EphemeralFileSystemAbstraction fileSystemAbstraction;
+    @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     private StoreFactory storeFactory;
     
     @Before
     public void before() throws Exception
     {
         config = new Config( stringMap() );
-        fileSystemAbstraction = new EphemeralFileSystemAbstraction();
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory();
         DefaultWindowPoolFactory windowPoolFactory = new DefaultWindowPoolFactory();
-        storeFactory = new StoreFactory( config, idGeneratorFactory, windowPoolFactory, fileSystemAbstraction, SYSTEM,
+        storeFactory = new StoreFactory( config, idGeneratorFactory, windowPoolFactory, fs.get(), SYSTEM,
                 new DefaultTxHook() );
         File file = new File( "schema-store" );
         storeFactory.createSchemaStore( file );
@@ -165,6 +165,5 @@ public class SchemaStoreTest
     public void after() throws Exception
     {
         store.close();
-        fileSystemAbstraction.shutdown();
     }
 }

@@ -40,6 +40,7 @@ import java.util.Set;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.DefaultTxHook;
@@ -51,7 +52,7 @@ import org.neo4j.kernel.impl.nioneo.store.NodeStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.util.Bits;
 import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
+import org.neo4j.test.EphemeralFileSystemRule;
 
 public class NodeLabelRecordLogicTest
 {
@@ -314,14 +315,14 @@ public class NodeLabelRecordLogicTest
         return header|bits.getLongs()[0];
     }
     
-    private EphemeralFileSystemAbstraction fs;
+    @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     private NodeStore nodeStore;
     
     @Before
     public void startUp()
     {
         StoreFactory storeFactory = new StoreFactory( new Config(), new DefaultIdGeneratorFactory(),
-                new DefaultWindowPoolFactory(), (fs = new EphemeralFileSystemAbstraction()), StringLogger.SYSTEM,
+                new DefaultWindowPoolFactory(), fs.get(), StringLogger.SYSTEM,
                 new DefaultTxHook() );
         File storeFile = new File( "store" );
         storeFactory.createNodeStore( storeFile );
@@ -333,8 +334,6 @@ public class NodeLabelRecordLogicTest
     {
         if ( nodeStore != null )
             nodeStore.close();
-        if ( fs != null )
-            fs.shutdown();
     }
 
     private NodeRecord nodeRecordWithInlinedLabels( long... labels )

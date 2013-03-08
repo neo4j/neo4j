@@ -134,18 +134,18 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
     }
     
     @Override
-    protected FileSystemAbstraction createFileSystemAbstraction()
-    {
-        return life.add( new EphemeralFileSystemAbstraction() );
-    }
-    
-    @Override
     public void shutdown()
     {
         if ( TRACK_UNCLOSED_DATABASE_INSTANCES )
             startedButNotYetClosed.remove( new File( getStoreDir() ) );
-        
+
         super.shutdown();
+    }
+    
+    @Override
+    protected FileSystemAbstraction createFileSystemAbstraction()
+    {
+        return life.add( new EphemeralFileSystemAbstraction() );
     }
 
     private static Map<String, String> withForcedInMemoryConfiguration( Map<String, String> params )

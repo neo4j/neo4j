@@ -26,6 +26,7 @@ import java.util.Random;
 
 import javax.transaction.xa.Xid;
 
+import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -33,6 +34,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.transaction.XidImpl;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry.Start;
+import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
@@ -45,7 +47,7 @@ public class TestTxEntries
     private final int refMe = 1;
     private final long startPosition = 1000;
     private final String storeDir = "dir";
-    private final EphemeralFileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
+    @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
 
     /*
      * Starts a JVM, executes a tx that fails on prepare and rollbacks,
@@ -55,10 +57,16 @@ public class TestTxEntries
     @Test
     public void testStartEntryWrittenOnceOnRollback() throws Exception
     {
-        GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentDatabase( storeDir );
+        final GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fs.get() ).newImpermanentDatabase( storeDir );
         createSomeTransactions( db );
-        EphemeralFileSystemAbstraction snapshot = fileSystem.snapshot();
-        db.shutdown();
+        EphemeralFileSystemAbstraction snapshot = fs.snapshot( new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                db.shutdown();
+            }
+        } );
         
         new TestGraphDatabaseFactory().setFileSystem( snapshot ).newImpermanentDatabase( storeDir ).shutdown();
     }

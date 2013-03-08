@@ -37,6 +37,7 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
@@ -46,7 +47,7 @@ import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
+import org.neo4j.test.EphemeralFileSystemRule;
 
 public class TestDynamicStore
 {
@@ -54,14 +55,13 @@ public class TestDynamicStore
             new DefaultIdGeneratorFactory();
     public static WindowPoolFactory WINDOW_POOL_FACTORY =
             new DefaultWindowPoolFactory();
-    public FileSystemAbstraction FILE_SYSTEM =
-            new EphemeralFileSystemAbstraction();
+    @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
 
     private File path()
     {
         String path = "dynamicstore";
         File file = new File( path );
-        FILE_SYSTEM.mkdirs( file );
+        fs.get().mkdirs( file );
         return file;
     }
 
@@ -119,14 +119,14 @@ public class TestDynamicStore
 
     private void createEmptyStore( File fileName, int blockSize )
     {
-        new StoreFactory( config(), ID_GENERATOR_FACTORY, new DefaultWindowPoolFactory(), FILE_SYSTEM,
+        new StoreFactory( config(), ID_GENERATOR_FACTORY, new DefaultWindowPoolFactory(), fs.get(),
                 StringLogger.SYSTEM, null ).createDynamicArrayStore( fileName, blockSize );
     }
 
     private DynamicArrayStore newStore()
     {
         return new DynamicArrayStore( dynamicStoreFile(), config(), IdType.ARRAY_BLOCK, ID_GENERATOR_FACTORY,
-                WINDOW_POOL_FACTORY, FILE_SYSTEM, StringLogger.SYSTEM );
+                WINDOW_POOL_FACTORY, fs.get(), StringLogger.SYSTEM );
     }
 
     private void deleteBothFiles()
@@ -152,7 +152,7 @@ public class TestDynamicStore
         {
             log.setLevel( Level.OFF );
             createEmptyStore( dynamicStoreFile(), 30 );
-            FileChannel fileChannel = FILE_SYSTEM.open( dynamicStoreFile(), "rw" );
+            FileChannel fileChannel = fs.get().open( dynamicStoreFile(), "rw" );
             fileChannel.truncate( fileChannel.size() - 2 );
             fileChannel.close();
             DynamicArrayStore store = newStore();

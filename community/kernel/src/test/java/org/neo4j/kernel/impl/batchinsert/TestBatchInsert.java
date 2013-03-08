@@ -34,6 +34,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
+import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
@@ -46,9 +47,9 @@ import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
 public class TestBatchInsert
 {
@@ -92,24 +93,17 @@ public class TestBatchInsert
         properties.put( "key18", new char[] {1,2,3,4,5,6,7,8,9} );
     }
     
-    private EphemeralFileSystemAbstraction fileSystem;
+    @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
 
     private BatchInserter newBatchInserter()
     {
-        return newBatchInserter( true );
-    }
-
-    private BatchInserter newBatchInserter( boolean eraseOld )
-    {
-        if ( eraseOld || fileSystem == null )
-            fileSystem = new EphemeralFileSystemAbstraction();
-        return new BatchInserterImpl( "neo-batch-db", fileSystem, MapUtil.stringMap() );
+        return new BatchInserterImpl( "neo-batch-db", fs.get(), MapUtil.stringMap() );
     }
 
     private GraphDatabaseService switchToEmbeddedGraphDatabaseService( BatchInserter inserter )
     {
         inserter.shutdown();
-        return new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentDatabase( inserter.getStore() );
+        return new TestGraphDatabaseFactory().setFileSystem( fs.get() ).newImpermanentDatabase( inserter.getStore() );
     }
     
     @Test
@@ -151,7 +145,7 @@ public class TestBatchInsert
         // inserter.shutdown();
         gds.shutdown();
 
-        GraphDatabaseService db = newBatchInserter( false /*delete old dir*/).getGraphDbService();
+        GraphDatabaseService db = newBatchInserter().getGraphDbService();
         from = db.getNodeById( fromId );
         assertEquals( "one", from.getProperty( "1" ) );
         to = db.getNodeById( toId );
@@ -175,7 +169,7 @@ public class TestBatchInsert
 
         inserter.shutdown();
 
-        inserter = newBatchInserter( false /*delete old dir*/);
+        inserter = newBatchInserter();
 
         props = inserter.getNodeProperties( tehNode );
         assertEquals( 2, props.size() );
@@ -191,7 +185,7 @@ public class TestBatchInsert
         assertEquals( "bar2", props.get( "foo2" ) );
 
         inserter.shutdown();
-        inserter = newBatchInserter( false /*delete old dir*/);
+        inserter = newBatchInserter();
 
         props = inserter.getNodeProperties( tehNode );
         assertEquals( "bar3", props.get( "foo" ) );
@@ -220,7 +214,7 @@ public class TestBatchInsert
 
         inserter.shutdown();
 
-        inserter = newBatchInserter( false /*delete old dir*/);
+        inserter = newBatchInserter();
 
         props = inserter.getRelationshipProperties( theRel );
         assertEquals( 2, props.size() );
@@ -236,7 +230,7 @@ public class TestBatchInsert
         assertEquals( "bar2", props.get( "foo2" ) );
 
         inserter.shutdown();
-        inserter = newBatchInserter( false /*delete old dir*/);
+        inserter = newBatchInserter();
 
         props = inserter.getRelationshipProperties( theRel );
         assertEquals( "bar3", props.get( "foo" ) );
@@ -301,7 +295,7 @@ public class TestBatchInsert
             }
         }
         inserter.shutdown();
-        inserter = newBatchInserter( false /*delete old dir*/);
+        inserter = newBatchInserter();
 
         for ( String key : properties.keySet() )
         {

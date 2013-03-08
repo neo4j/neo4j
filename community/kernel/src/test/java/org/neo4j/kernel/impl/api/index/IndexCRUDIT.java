@@ -36,6 +36,7 @@ import java.util.Set;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.Matchers;
 import org.neo4j.graphdb.Label;
@@ -50,8 +51,8 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.index.SchemaIndexProvider.Dependencies;
+import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
 public class IndexCRUDIT
 {
@@ -112,7 +113,7 @@ public class IndexCRUDIT
 
     private GraphDatabaseAPI db;
     private TestGraphDatabaseFactory factory;
-    private final EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
+    @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     private final SchemaIndexProvider mockedIndexProvider = mock( SchemaIndexProvider.class );
     private ThreadToStatementContextBridge ctxProvider;
     private final Label myLabel = label( "MYLABEL" );
@@ -143,7 +144,7 @@ public class IndexCRUDIT
     {
         when( mockedIndexProvider.getKey() ).thenReturn( "none" );
         factory = new TestGraphDatabaseFactory();
-        factory.setFileSystem( fs );
+        factory.setFileSystem( fs.get() );
         factory.setSchemaIndexProviders( Arrays.asList( mockedIndexProvider ) );
         db = (GraphDatabaseAPI) factory.newImpermanentDatabase();
         ctxProvider = db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );

@@ -23,10 +23,12 @@ import static org.junit.Assert.assertEquals;
 
 import java.io.File;
 
+import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
@@ -39,11 +41,10 @@ public class TestApplyTransactions
          * Create a tx on a db (as if the master), extract that, apply on dest (as if pullUpdate on slave).
          * Let slave crash uncleanly.
          */
-        EphemeralFileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
         File baseStoreDir = new File( "base" );
         File originStoreDir = new File( baseStoreDir, "origin" );
         File destStoreDir = new File( baseStoreDir, "destination" );
-        GraphDatabaseAPI origin = (GraphDatabaseAPI) new TestGraphDatabaseFactory().setFileSystem( fileSystem )
+        GraphDatabaseAPI origin = (GraphDatabaseAPI) new TestGraphDatabaseFactory().setFileSystem( fs.get() )
                 .newImpermanentDatabase( originStoreDir.getPath() );
         Transaction tx = origin.beginTx();
         origin.createNode();
@@ -55,23 +56,31 @@ public class TestApplyTransactions
         InMemoryLogBuffer theTx = new InMemoryLogBuffer();
         originNeoDataSource.getLogExtractor( latestTxId, latestTxId ).extractNext( theTx );
 
-        GraphDatabaseAPI dest = (GraphDatabaseAPI) new TestGraphDatabaseFactory().setFileSystem( fileSystem )
+        final GraphDatabaseAPI dest = (GraphDatabaseAPI) new TestGraphDatabaseFactory().setFileSystem( fs.get() )
                 .newImpermanentDatabase( destStoreDir.getPath() );
         XaDataSource destNeoDataSource = dest.getXaDataSourceManager().getXaDataSource( Config.DEFAULT_DATA_SOURCE_NAME );
         destNeoDataSource.applyCommittedTransaction( latestTxId, theTx );
         origin.shutdown();
-        EphemeralFileSystemAbstraction snapshot = fileSystem.snapshot();
-        dest.shutdown();
+        EphemeralFileSystemAbstraction snapshot = fs.snapshot( new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                dest.shutdown();
+            }
+        } );
 
         /*
          * Open crashed db, try to extract the transaction it reports as latest. It should be there.
          */
-        dest = (GraphDatabaseAPI) new TestGraphDatabaseFactory().setFileSystem( snapshot )
+        GraphDatabaseAPI newDest = (GraphDatabaseAPI) new TestGraphDatabaseFactory().setFileSystem( snapshot )
                 .newImpermanentDatabase( destStoreDir.getPath() );
-        destNeoDataSource = dest.getXaDataSourceManager().getXaDataSource( Config.DEFAULT_DATA_SOURCE_NAME );
+        destNeoDataSource = newDest.getXaDataSourceManager().getXaDataSource( Config.DEFAULT_DATA_SOURCE_NAME );
         latestTxId = (int) destNeoDataSource.getLastCommittedTxId();
         theTx = new InMemoryLogBuffer();
         long extractedTxId = destNeoDataSource.getLogExtractor( latestTxId, latestTxId ).extractNext( theTx );
         assertEquals( latestTxId, extractedTxId );
     }
+    
+    @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
 }

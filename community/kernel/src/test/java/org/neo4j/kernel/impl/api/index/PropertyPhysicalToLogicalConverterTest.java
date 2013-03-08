@@ -27,6 +27,7 @@ import java.io.File;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.DefaultTxHook;
@@ -39,7 +40,7 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
+import org.neo4j.test.EphemeralFileSystemRule;
 
 public class PropertyPhysicalToLogicalConverterTest
 {
@@ -168,7 +169,7 @@ public class PropertyPhysicalToLogicalConverterTest
         return block;
     }
     
-    private EphemeralFileSystemAbstraction fs;
+    @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     private PropertyStore store;
     private final String longString = "my super looooooooooooooooooooooooooooooooooooooong striiiiiiiiiiiiiiiiiiiiiiing";
     private final String longerString = "my super looooooooooooooooooooooooooooooooooooooong striiiiiiiiiiiiiiiiiiiiiiingdd";
@@ -178,9 +179,8 @@ public class PropertyPhysicalToLogicalConverterTest
     @Before
     public void before() throws Exception
     {
-        fs = new EphemeralFileSystemAbstraction();
         StoreFactory storeFactory = new StoreFactory( new Config(), new DefaultIdGeneratorFactory(),
-                new DefaultWindowPoolFactory(), fs, StringLogger.DEV_NULL, new DefaultTxHook() );
+                new DefaultWindowPoolFactory(), fs.get(), StringLogger.DEV_NULL, new DefaultTxHook() );
         File storeFile = new File( "propertystore" );
         storeFactory.createPropertyStore( storeFile );
         store = storeFactory.newPropertyStore( storeFile );
@@ -191,6 +191,5 @@ public class PropertyPhysicalToLogicalConverterTest
     public void after() throws Exception
     {
         store.close();
-        fs.shutdown();
     }
 }

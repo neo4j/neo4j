@@ -39,6 +39,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
@@ -49,8 +50,8 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
 public class IndexRestartIt
 {
@@ -115,7 +116,7 @@ public class IndexRestartIt
     }
 
     private GraphDatabaseAPI db;
-    private final EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
+    @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     private TestGraphDatabaseFactory factory;
     private final ControlledSchemaIndexProvider provider = new ControlledSchemaIndexProvider();
     private final Label myLabel = label( "MyLabel" );
@@ -138,7 +139,7 @@ public class IndexRestartIt
     public void before() throws Exception
     {
         factory = new TestGraphDatabaseFactory();
-        factory.setFileSystem( fs );
+        factory.setFileSystem( fs.get() );
         factory.setSchemaIndexProviders( Arrays.<SchemaIndexProvider>asList( provider ) );
     }
 

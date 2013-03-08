@@ -39,6 +39,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.transaction.xa.Xid;
 
+import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.Pair;
@@ -46,14 +47,14 @@ import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.DumpLogicalLog.CommandFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.LogTestUtils;
 import org.neo4j.test.LogTestUtils.LogHookAdapter;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
 public class TestPartialTransactionCopier
 {
-    private final EphemeralFileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
+    @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     
     @SuppressWarnings( "unchecked" )
     @Test
@@ -70,7 +71,7 @@ public class TestPartialTransactionCopier
         Integer brokenTxIdentifier = broken.other();
 
         // And I've read the log header on that broken file
-        FileChannel brokenLog = fileSystem.open( brokenLogFile, "rw" );
+        FileChannel brokenLog = fs.get().open( brokenLogFile, "rw" );
         ByteBuffer buffer = allocate( 9 + Xid.MAXGTRIDSIZE + Xid.MAXBQUALSIZE * 10 );
         readLogHeader( buffer, brokenLog, true );
 
@@ -86,7 +87,7 @@ public class TestPartialTransactionCopier
 
         // Then
         assertThat(
-                logEntries( fileSystem, newLogFile ),
+                logEntries( fs.get(), newLogFile ),
                 containsExactly(
                         startEntry( brokenTxIdentifier, masterId, meId ),
                         nodeCommandEntry( brokenTxIdentifier, /*nodeId=*/2 ),
@@ -115,7 +116,7 @@ public class TestPartialTransactionCopier
 
     private LogBuffer createNewLogWithHeader( File newLogFile ) throws IOException
     {
-        FileChannel newLog = fileSystem.open( newLogFile, "rw" );
+        FileChannel newLog = fs.get().open( newLogFile, "rw" );
         LogBuffer newLogBuffer = new DirectLogBuffer( newLog, allocate(  10000 ) );
 
         ByteBuffer buf = allocate( 100 );
@@ -128,7 +129,7 @@ public class TestPartialTransactionCopier
     private Pair<File, Integer> createBrokenLogFile( String storeDir ) throws Exception
     {
         GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory()
-                .setFileSystem( fileSystem ).newImpermanentDatabase( storeDir );
+                .setFileSystem( fs.get() ).newImpermanentDatabase( storeDir );
         for ( int i = 0; i < 4; i++ )
         {
             Transaction tx = db.beginTx();
@@ -164,7 +165,7 @@ public class TestPartialTransactionCopier
                 return true;
             }
         };
-        File brokenLogFile = filterNeostoreLogicalLog( fileSystem,
+        File brokenLogFile = filterNeostoreLogicalLog( fs.get(),
                 new File( storeDir, "nioneo_logical.log.v0"), filter );
 
         return Pair.of( brokenLogFile, brokenTxIdentifier.get() );
