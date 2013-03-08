@@ -76,7 +76,7 @@ public class BigJumpingStoreIT
         @Override
         protected FileSystemAbstraction createFileSystemAbstraction()
         {
-            return new JumpingFileSystemAbstraction( SIZE_PER_JUMP );
+            return life.add( new JumpingFileSystemAbstraction( SIZE_PER_JUMP ) );
         }
     }
 

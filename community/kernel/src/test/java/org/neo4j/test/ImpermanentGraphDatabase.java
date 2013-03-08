@@ -24,8 +24,10 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSetting.TRUE;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.use_memory_mapped_buffers;
 import static org.neo4j.kernel.InternalAbstractGraphDatabase.Configuration.ephemeral;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
@@ -49,6 +51,13 @@ import org.neo4j.tooling.GlobalGraphOperations;
  */
 public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
 {
+    /**
+     * If enabled will track unclosed database instances in tests. The place of instantiation
+     * will get printed in an exception with the message "Unclosed database instance".
+     */
+    private static boolean TRACK_UNCLOSED_DATABASE_INSTANCES = false;
+    private static final Map<File, Exception> startedButNotYetClosed = new ConcurrentHashMap<File, Exception>();
+    
     static final String PATH = "test-data/impermanent-db";
 
     public ImpermanentGraphDatabase()
@@ -87,6 +96,7 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
     {
         super( PATH, withForcedInMemoryConfiguration( params ), indexProviders, kernelExtensions, cacheProviders,
                 transactionInterceptorProviders );
+        trackUnclosedUse( PATH );
     }
 
     public ImpermanentGraphDatabase( String storeDir, Map<String, String> params, Iterable<IndexProvider> indexProviders,
@@ -96,6 +106,27 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
     {
         super( storeDir, withForcedInMemoryConfiguration( params ), indexProviders, kernelExtensions, cacheProviders,
                 transactionInterceptorProviders );
+        trackUnclosedUse( storeDir );
+    }
+    
+    private void trackUnclosedUse( String path )
+    {
+        if ( TRACK_UNCLOSED_DATABASE_INSTANCES )
+        {
+            Exception testThatDidntCloseDb = startedButNotYetClosed.put( new File( path ),
+                    new Exception( "Unclosed database instance" ) );
+            if ( testThatDidntCloseDb != null )
+                testThatDidntCloseDb.printStackTrace();
+        }
+    }
+    
+    @Override
+    public void shutdown()
+    {
+        if ( TRACK_UNCLOSED_DATABASE_INSTANCES )
+            startedButNotYetClosed.remove( new File( getStoreDir() ) );
+
+        super.shutdown();
     }
     
     @Override

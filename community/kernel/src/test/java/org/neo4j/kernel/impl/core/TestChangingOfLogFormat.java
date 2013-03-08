@@ -28,13 +28,16 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
 public class TestChangingOfLogFormat
 {
@@ -49,10 +52,10 @@ public class TestChangingOfLogFormat
         tx.success();
         tx.finish();
         
-        Pair<Pair<File, File>, Pair<File, File>> copy = copyLogicalLog( fileSystem, logBaseFileName );
+        Pair<Pair<File, File>, Pair<File, File>> copy = copyLogicalLog( fs.get(), logBaseFileName );
         decrementLogFormat( copy.other().other() );
         db.shutdown();
-        renameCopiedLogicalLog( fileSystem, copy );
+        renameCopiedLogicalLog( fs.get(), copy );
         
         try
         {
@@ -61,14 +64,13 @@ public class TestChangingOfLogFormat
         }
         catch ( Exception e )
         {   // Good
-            e.printStackTrace();
         }
     }
     
     private void decrementLogFormat( File file ) throws IOException
     {
         // Gotten from LogIoUtils class
-        FileChannel channel = fileSystem.open( file, "rw" );
+        FileChannel channel = fs.get().open( file, "rw" );
         ByteBuffer buffer = ByteBuffer.wrap( new byte[8] );
         channel.read( buffer );
         buffer.flip();
@@ -84,6 +86,17 @@ public class TestChangingOfLogFormat
         channel.close();
     }
     
-    private final EphemeralFileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
-    private final TestGraphDatabaseFactory factory = new TestGraphDatabaseFactory().setFileSystem( fileSystem );
+    @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+    private TestGraphDatabaseFactory factory;
+    
+    @Before
+    public void before() throws Exception
+    {
+        factory = new TestGraphDatabaseFactory().setFileSystem( fs.get() );
+    }
+
+    @After
+    public void after() throws Exception
+    {
+    }
 }

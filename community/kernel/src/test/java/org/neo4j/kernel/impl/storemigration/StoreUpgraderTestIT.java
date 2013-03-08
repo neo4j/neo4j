@@ -35,12 +35,14 @@ import java.io.IOException;
 import java.util.Map;
 
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.storemigration.monitoring.SilentMigrationProgressMonitor;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
 public class StoreUpgraderTestIT
@@ -171,8 +173,9 @@ public class StoreUpgraderTestIT
         }
     }
 
-    private final EphemeralFileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
+    @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     private final File workingDirectory = new File( "dir" );
+    private EphemeralFileSystemAbstraction fileSystem;
 
     private StoreUpgrader newUpgrader( UpgradeConfiguration config, StoreMigrator migrator, DatabaseFiles files )
     {
@@ -183,6 +186,7 @@ public class StoreUpgraderTestIT
     @Before
     public void before() throws Exception
     {
+        fileSystem = fs.get();
         prepareSampleLegacyDatabase( fileSystem, workingDirectory );
     }
 }

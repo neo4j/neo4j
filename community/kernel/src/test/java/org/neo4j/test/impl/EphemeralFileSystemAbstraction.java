@@ -50,6 +50,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
 import org.neo4j.helpers.collection.PrefetchingIterator;
@@ -59,16 +60,21 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 public class EphemeralFileSystemAbstraction extends LifecycleAdapter implements FileSystemAbstraction
 {
+    private static AtomicReference<Exception> lastInstantiated = new AtomicReference<Exception>();
+    
     private final Map<File, EphemeralFileData> files;
     
     public EphemeralFileSystemAbstraction()
     {
-        files = new HashMap<File, EphemeralFileData>();
+        this( new HashMap<File, EphemeralFileData>() );
     }
     
     private EphemeralFileSystemAbstraction( Map<File, EphemeralFileData> files )
     {
         this.files = files;
+        Exception unclosed = lastInstantiated.getAndSet( new Exception( "Unclosed Ephemeral file system" ) );
+        if ( unclosed != null )
+            unclosed.printStackTrace();
     }
 
     @Override
@@ -77,6 +83,7 @@ public class EphemeralFileSystemAbstraction extends LifecycleAdapter implements 
         for ( EphemeralFileData file : files.values() )
             free( file );
         files.clear();
+        lastInstantiated.set( null );
     }
 
     @Override

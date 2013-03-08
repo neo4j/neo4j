@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.junit.After;
+import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.configuration.Config;
@@ -41,7 +42,7 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyType;
 import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
+import org.neo4j.test.EphemeralFileSystemRule;
 
 public class PropertyWriterTestIT
 {
@@ -53,7 +54,7 @@ public class PropertyWriterTestIT
         File outputDir = new File( "target/outputDatabase" );
         File fileName = new File( outputDir, "neostore" );
         StoreFactory storeFactory = new StoreFactory( config, defaultIdGeneratorFactory(),
-                new DefaultWindowPoolFactory(), new EphemeralFileSystemAbstraction(),
+                new DefaultWindowPoolFactory(), fs.get(),
                 StringLogger.DEV_NULL, defaultTxHook() );
         neoStore = storeFactory.createNeoStore( fileName );
         return neoStore.getPropertyStore();
@@ -129,4 +130,5 @@ public class PropertyWriterTestIT
         propertyStore.close();
     }
 
+    @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
 }

@@ -30,22 +30,23 @@ import java.util.Map;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.index.Index;
+import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
 public class TestIndexImplOnNeo
 {
-    private final EphemeralFileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
+    @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     private GraphDatabaseService db;
 
     @Before
     public void createDb() throws Exception
     {
-        db = new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentDatabase( "mydb" );
+        db = new TestGraphDatabaseFactory().setFileSystem( fs.get() ).newImpermanentDatabase( "mydb" );
     }
     
     private void restartDb() throws Exception
