@@ -30,10 +30,18 @@ import java.util.concurrent.TimeoutException;
 
 import org.junit.Ignore;
 import org.neo4j.helpers.FutureAdapter;
+import org.neo4j.kernel.api.index.SchemaIndexProvider;
 
 @Ignore( "This is not a test" )
 public class SchemaIndexTestHelper
 {
+    public static SchemaIndexProvider mockSchemaIndexProvider( String key )
+    {
+        SchemaIndexProvider mock = mock( SchemaIndexProvider.class );
+        when( mock.getKey() ).thenReturn( key );
+        return mock;
+    }
+    
     public static IndexContext mockIndexContext()
     {
         IndexContext result = mock( IndexContext.class );

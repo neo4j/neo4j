@@ -22,12 +22,12 @@ package org.neo4j.kernel.impl.api.index;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.anyLong;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.mockSchemaIndexProvider;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -114,7 +114,7 @@ public class IndexCRUDIT
     private GraphDatabaseAPI db;
     private TestGraphDatabaseFactory factory;
     @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
-    private final SchemaIndexProvider mockedIndexProvider = mock( SchemaIndexProvider.class );
+    private final SchemaIndexProvider mockedIndexProvider = mockSchemaIndexProvider( "none" );
     private ThreadToStatementContextBridge ctxProvider;
     private final Label myLabel = label( "MYLABEL" );
     
@@ -200,6 +200,12 @@ public class IndexCRUDIT
 
         @Override
         public void update( Iterable<NodePropertyUpdate> updates )
+        {
+            this.updates.addAll( asCollection( updates ) );
+        }
+        
+        @Override
+        public void updateAndCommit( Iterable<NodePropertyUpdate> updates )
         {
             this.updates.addAll( asCollection( updates ) );
         }
