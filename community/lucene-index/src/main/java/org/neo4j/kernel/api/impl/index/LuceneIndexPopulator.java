@@ -42,7 +42,7 @@ import org.neo4j.index.impl.lucene.IndexType;
 import org.neo4j.index.impl.lucene.LuceneDataSource;
 import org.neo4j.kernel.impl.api.index.IndexPopulator;
 import org.neo4j.kernel.impl.api.index.NodePropertyUpdate;
-import org.neo4j.kernel.impl.util.FileUtils;
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 
 class LuceneIndexPopulator implements IndexPopulator
 {
@@ -53,9 +53,11 @@ class LuceneIndexPopulator implements IndexPopulator
     private IndexReader globalReader;
     private final List<NodePropertyUpdate> updates = new ArrayList<NodePropertyUpdate>();
     private final int queueThreshold;
+    private final FileSystemAbstraction fs;
 
-    LuceneIndexPopulator( File dir, DirectoryFactory factory, int queueThreshold )
+    LuceneIndexPopulator( FileSystemAbstraction fs, File dir, DirectoryFactory factory, int queueThreshold )
     {
+        this.fs = fs;
         this.dir = dir;
         this.factory = factory;
         this.queueThreshold = queueThreshold;
@@ -64,7 +66,6 @@ class LuceneIndexPopulator implements IndexPopulator
     @Override
     public void createIndex()
     {
-        new Exception( "CREATE INDEX " + dir ).printStackTrace();
         deleteDirectory();
         
         IndexWriterConfig writerConfig = new IndexWriterConfig( Version.LUCENE_35, LuceneDataSource.KEYWORD_ANALYZER );
@@ -83,7 +84,7 @@ class LuceneIndexPopulator implements IndexPopulator
     {
         try
         {
-            FileUtils.deleteRecursively( dir );
+            fs.deleteRecursively( dir );
         }
         catch ( IOException e )
         {
@@ -97,7 +98,7 @@ class LuceneIndexPopulator implements IndexPopulator
         try
         {
             writer.close( true );
-            FileUtils.deleteRecursively( dir );
+            fs.deleteRecursively( dir );
         }
         catch ( IOException e )
         {
@@ -202,7 +203,6 @@ class LuceneIndexPopulator implements IndexPopulator
     @Override
     public void close( boolean populationCompletedSuccessfully )
     {
-        System.err.println( "CLOSING " + dir + ", " + populationCompletedSuccessfully );
         try
         {
             if ( populationCompletedSuccessfully )

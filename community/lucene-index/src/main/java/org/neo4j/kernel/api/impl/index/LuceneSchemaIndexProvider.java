@@ -28,8 +28,8 @@ import org.apache.lucene.store.Directory;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.api.InternalIndexState;
 import org.neo4j.kernel.api.SchemaIndexProvider;
-import org.neo4j.kernel.impl.api.index.IndexPopulator;
 import org.neo4j.kernel.impl.api.index.IndexWriter;
+import org.neo4j.kernel.impl.api.index.IndexPopulator;
 
 @Service.Implementation(SchemaIndexProvider.class)
 public class LuceneSchemaIndexProvider extends SchemaIndexProvider
@@ -57,7 +57,8 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
     @Override
     public IndexPopulator getPopulator( long indexId, Dependencies dependencies )
     {
-        return new LuceneIndexPopulator( dir( dependencies.getRootDirectory(), indexId ), directoryFactory, 10000 );
+        return new LuceneIndexPopulator( dependencies.getFileSystem(),
+                dir( dependencies.getRootDirectory(), indexId ), directoryFactory, 10000 );
     }
 
     @Override
