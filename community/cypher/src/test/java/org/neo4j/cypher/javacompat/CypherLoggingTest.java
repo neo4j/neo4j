@@ -19,35 +19,63 @@
  */
 package org.neo4j.cypher.javacompat;
 
+import java.io.IOException;
+
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.kernel.logging.BufferingLogger;
 import org.neo4j.test.ImpermanentGraphDatabase;
 
-import java.io.IOException;
-
 import static org.junit.Assert.assertEquals;
 
-public class CypherLoggingTest {
-
+public class CypherLoggingTest
+{
     private ExecutionEngine engine;
-    private BufferingLogger logger = new BufferingLogger();
-    private static final String LINE_SEPARATOR = System.getProperty("line.separator");
+    private boolean debugEnabled;
+    private BufferingLogger logger = new BufferingLogger()
+    {
+        @Override
+        public boolean isDebugEnabled()
+        {
+            return debugEnabled;
+        }
+    };
+    private static final String LINE_SEPARATOR = System.getProperty( "line.separator" );
 
     @Test
-    public void logging() throws Exception {
-        engine.execute("START n=node(0) CREATE (foo {test:'me'}) RETURN n");
-        engine.execute("START n=node(*) RETURN n");
+    public void shouldLogQueriesWhenDebugLoggingIsEnabled() throws Exception
+    {
+        // given
+        debugEnabled = true;
 
+        // when
+        engine.execute( "START n=node(0) CREATE (foo {test:'me'}) RETURN n" );
+        engine.execute( "START n=node(*) RETURN n" );
+
+        // then
         assertEquals(
                 "START n=node(0) CREATE (foo {test:'me'}) RETURN n" + LINE_SEPARATOR +
                         "START n=node(*) RETURN n" + LINE_SEPARATOR,
-                logger.toString());
+                logger.toString() );
+    }
 
+    @Test
+    public void shouldNotLogQueriesWhenDebugLoggingIsDisabled() throws Exception
+    {
+        // given
+        debugEnabled = false;
+
+        // when
+        engine.execute( "START n=node(0) CREATE (foo {test:'me'}) RETURN n" );
+        engine.execute( "START n=node(*) RETURN n" );
+
+        // then
+        assertEquals("", logger.toString() );
     }
 
     @Before
-    public void setup() throws IOException {
-        engine = new ExecutionEngine(new ImpermanentGraphDatabase(), logger);
+    public void setup() throws IOException
+    {
+        engine = new ExecutionEngine( new ImpermanentGraphDatabase(), logger );
     }
 }
