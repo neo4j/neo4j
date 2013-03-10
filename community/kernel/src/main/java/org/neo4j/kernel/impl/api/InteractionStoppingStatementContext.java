@@ -166,6 +166,13 @@ public class InteractionStoppingStatementContext implements StatementContext
         return delegate.getPropertyKeyName( propertyId );
     }
 
+    @Override
+    public Iterable<Long> exactIndexLookup( IndexRule indexRule, Object value )
+    {
+        assertOperationsAllowed();
+        return delegate.exactIndexLookup( indexRule, value );
+    }
+
     private void assertOperationsAllowed()
     {
         if ( closed )
