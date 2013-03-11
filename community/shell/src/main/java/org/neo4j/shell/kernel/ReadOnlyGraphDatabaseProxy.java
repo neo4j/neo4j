@@ -112,20 +112,6 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
             return PlaceboTransaction.NO_LOCK;
         }
     };
-    private final TransactionBuilder txBuilder = new TransactionBuilder()
-    {
-        @Override
-        public TransactionBuilder unforced()
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public Transaction begin()
-        {
-            return beginTx();
-        }
-    };
     private final AbstractTransactionManager txManager = new AbstractTransactionManager()
     {
         @Override
@@ -1156,5 +1142,11 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
     public TxIdGenerator getTxIdGenerator()
     {
         return actual.getTxIdGenerator();
+    }
+
+    @Override
+    public Iterable<Node> findByLabelAndProperty( Label label, String propertyName, Object value )
+    {
+        return actual.findByLabelAndProperty( label, propertyName, value );
     }
 }
