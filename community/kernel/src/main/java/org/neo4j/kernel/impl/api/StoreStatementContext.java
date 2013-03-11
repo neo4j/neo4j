@@ -329,7 +329,7 @@ public class StoreStatementContext implements StatementContext
     }
 
     @Override
-    public Iterable<Long> exactIndexLookup( IndexRule indexRule, Object value )
+    public Iterable<Long> exactIndexLookup( long indexId, Object value )
     {
         return empty();
     }

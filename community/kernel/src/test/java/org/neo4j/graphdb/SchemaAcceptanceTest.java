@@ -30,6 +30,8 @@ import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.single;
 
+import java.util.concurrent.TimeUnit;
+
 import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.graphdb.schema.IndexDefinition;
@@ -66,10 +68,9 @@ public class SchemaAcceptanceTest
         
         // Then
         Iterable<IndexDefinition> indexes = schema.getIndexes( Labels.MY_LABEL );
-        long timeout = System.currentTimeMillis() + 1000 * 5;
 
         assertEquals( asSet( property ), asSet( singlePropertyKey( indexes ) ) );
-        awaitIndexState( single( indexes ), Schema.IndexState.ONLINE, schema, timeout );
+        schema.awaitIndexOnline( single( indexes), TimeUnit.SECONDS, 5L );
     }
 
     @Test(expected = ConstraintViolationException.class)
@@ -210,6 +211,24 @@ public class SchemaAcceptanceTest
         assertFalse( "Index should have been deleted", asSet( beansAPI.schema().getIndexes( label ) ).contains( index ) );
     }
 
+    @Test
+    public void awaitingIndexComingOnlineWorks()
+    {
+        // GIVEN
+        GraphDatabaseService beansAPI = dbRule.getGraphDatabaseService();
+        String property = "name";
+        Labels label = Labels.MY_LABEL;
+
+        // WHEN
+        IndexDefinition index = createIndexRule( beansAPI, label, property );
+
+        // PASS
+        beansAPI.schema().awaitIndexOnline( index, TimeUnit.MINUTES, 1L );
+
+        // THEN
+        assertEquals( Schema.IndexState.ONLINE, beansAPI.schema().getIndexState( index ) );
+    }
+
     private IndexDefinition createIndexRule( GraphDatabaseService beansAPI, Label label, String property )
     {
         Transaction tx = beansAPI.beginTx();
@@ -236,18 +255,6 @@ public class SchemaAcceptanceTest
         finally
         {
             tx.finish();
-        }
-    }
-    
-    private void awaitIndexState( IndexDefinition index, Schema.IndexState state, Schema schema, long timeout )
-    {
-        while( schema.getIndexState( index )  != state )
-        {
-            Thread.yield();
-            if ( System.currentTimeMillis() > timeout )
-            {
-                fail( "Expected index to come online within a reasonable time." );
-            }
         }
     }
 

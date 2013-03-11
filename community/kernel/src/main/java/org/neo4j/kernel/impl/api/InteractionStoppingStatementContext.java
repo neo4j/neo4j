@@ -167,10 +167,10 @@ public class InteractionStoppingStatementContext implements StatementContext
     }
 
     @Override
-    public Iterable<Long> exactIndexLookup( IndexRule indexRule, Object value )
+    public Iterable<Long> exactIndexLookup( long indexId, Object value )
     {
         assertOperationsAllowed();
-        return delegate.exactIndexLookup( indexRule, value );
+        return delegate.exactIndexLookup( indexId, value );
     }
 
     private void assertOperationsAllowed()

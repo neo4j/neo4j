@@ -19,6 +19,8 @@
  */
 package org.neo4j.graphdb.schema;
 
+import java.util.concurrent.TimeUnit;
+
 import org.neo4j.graphdb.Label;
 
 /**
@@ -74,4 +76,16 @@ public interface Schema
      * @return the current {@link IndexState} of the index
      */
     IndexState getIndexState( IndexDefinition index );
+
+    /**
+     * Wait until an index comes online
+     *
+     * @param index the index that we want to wait for
+     * @param unit TimeUnit of duration
+     * @param duration duration to wait for the index to come online
+     *
+     * @throws IllegalStateException if the index did not enter the ONLINE state within the given duration or
+     * if the index entered the FAILED state
+     */
+    void awaitIndexOnline( IndexDefinition index, TimeUnit unit, long duration );
 }

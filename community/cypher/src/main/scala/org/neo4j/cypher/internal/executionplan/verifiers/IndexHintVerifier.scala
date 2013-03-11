@@ -21,12 +21,15 @@ package org.neo4j.cypher.internal.executionplan.verifiers
 
 import org.neo4j.cypher.internal.commands.{Equals, IndexHint, Query, AbstractQuery}
 import org.neo4j.cypher.internal.commands.expressions.{Identifier, Property}
-import org.neo4j.cypher.IndexHintException
+import org.neo4j.cypher.{SyntaxException, IndexHintException}
 
 object IndexHintVerifier extends Verifier {
   override val verifyFunction: PartialFunction[AbstractQuery, Unit] = {
     case query: Query =>
       val predicateAtoms = query.where.atoms
+
+      if ( (! query.hints.isEmpty) && (! query.start.isEmpty) )
+        throw new SyntaxException("Cannot use index hints with start clause")
 
       query.hints.foreach {
         case IndexHint(id, label, prop, _) =>

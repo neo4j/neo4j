@@ -34,6 +34,10 @@ include::ql/start/index.asciidoc[]
 
 :leveloffset: 2
 
+include::ql/using/index.asciidoc[]
+
+:leveloffset: 2
+
 include::ql/match/index.asciidoc[]
 
 :leveloffset: 2

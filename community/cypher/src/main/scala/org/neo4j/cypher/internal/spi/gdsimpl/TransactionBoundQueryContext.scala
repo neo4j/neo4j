@@ -75,7 +75,10 @@ class TransactionBoundQueryContext(graph: GraphDatabaseAPI) extends QueryContext
 
   def getTransaction = tx
 
-  def exactIndexSearch(id: Long, value: Any): Iterator[Node] = ???
+  def exactIndexSearch(id: Long, value: Any): Iterator[Node] = {
+    // TODO Replace with real impl: ctx.exactIndexLookup(id, value)
+    GlobalGraphOperations.at(graph).getAllNodes.iterator().asScala
+  }
 
   val nodeOps = new NodeOperations
 

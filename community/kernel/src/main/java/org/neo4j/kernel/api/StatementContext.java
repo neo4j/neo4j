@@ -145,5 +145,5 @@ public interface StatementContext
     /**
      * Returns an iterable with the matched nodes.
      */
-    Iterable<Long> exactIndexLookup( IndexRule indexRule, Object value );
+    Iterable<Long> exactIndexLookup( long indexId, Object value );
 }

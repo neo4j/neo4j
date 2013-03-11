@@ -23,11 +23,7 @@ import org.neo4j.graphdb.{Transaction, DynamicLabel, Node}
 import org.neo4j.graphdb.DynamicLabel._
 import org.neo4j.kernel.GraphDatabaseAPI
 import collection.JavaConverters._
-
-/*
- * Copyright (C) 2012 Neo Technology
- * All rights reserved
- */
+import java.util.concurrent.TimeUnit
 
 trait GraphIcing {
 
@@ -44,5 +40,20 @@ trait GraphIcing {
       val indexDefs = graph.schema.getIndexes(DynamicLabel.label(label)).asScala.toList
       indexDefs.map(_.getPropertyKeys.asScala.toList)
     }
+
+    def createIndex(label:String, property:String) {
+      val tx = graph.beginTx()
+      val indexDef = try {
+        val indexDef = graph.schema().indexCreator(DynamicLabel.label(label)).on(property).create()
+        tx.success()
+        indexDef
+      }
+      finally {
+        tx.finish()
+      }
+      graph.schema().awaitIndexOnline( indexDef, TimeUnit.MINUTES, 1L )
+    }
+
+
   }
 }

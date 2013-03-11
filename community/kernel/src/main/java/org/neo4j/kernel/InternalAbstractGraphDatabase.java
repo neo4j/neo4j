@@ -1507,7 +1507,7 @@ public abstract class InternalAbstractGraphDatabase
         }
 
         // Ha! We found an index - let's use it to find matching nodes
-        return map2nodes( ctx.exactIndexLookup( indexRule, value ) );
+        return map2nodes( ctx.exactIndexLookup( indexRule.getId(), value ) );
     }
 
     private Iterable<Node> getNodesByLabelAndPropertyWithoutIndex( final String propertyName, final Object value, StatementContext ctx, long labelId )

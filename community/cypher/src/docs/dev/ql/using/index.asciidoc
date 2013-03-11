@@ -1,0 +1,15 @@
+[[query-using]
+
+Using
+=====
+
+If you do not specify an explicit +START+ clause, Cypher needs to infer where in the graph to start your query.
+One way Cypher might find start points is by looking at available indexes, but currently this can only be done automatically
+when there is only one index that is applicable to the query.
+If there is more than one possible index to use, you must use an index hint to tell cypher which index to use.
+
+NOTE: You cannot use index hints if your query has a +START+ clause.
+
+include::query-using-an-index-hint.asciidoc[]
+
+include::query-using-multiple-index-hints.asciidoc[]

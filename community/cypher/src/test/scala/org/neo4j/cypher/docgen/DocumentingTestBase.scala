@@ -87,6 +87,7 @@ trait DocumentationHelper {
 }
 
 abstract class DocumentingTestBase extends Assertions with DocumentationHelper with GraphIcing {
+
   def testQuery(title: String, text: String, queryText: String, returns: String, assertions: (ExecutionResult => Unit)*) {
     internalTestQuery(title, text, queryText, returns, None, assertions: _*)
   }

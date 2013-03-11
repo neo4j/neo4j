@@ -67,7 +67,7 @@ trait QueryContext {
 
   def close(success: Boolean)
 
-  def exactIndexSearch(id: Long, value: Any): Iterator[Node]
+  def exactIndexSearch(indexId: Long, value: Any): Iterator[Node]
 
   def getNodesByLabel(id: Long): Iterator[Node]
 

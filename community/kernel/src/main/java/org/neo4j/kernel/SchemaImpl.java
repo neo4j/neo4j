@@ -21,9 +21,12 @@ package org.neo4j.kernel;
 
 import static java.lang.String.format;
 import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.graphdb.schema.Schema.IndexState.*;
 import static org.neo4j.helpers.collection.Iterables.empty;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.helpers.collection.IteratorUtil.single;
+
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.NotFoundException;
@@ -98,7 +101,29 @@ public class SchemaImpl implements Schema
             }
         }, indexRules );
     }
-    
+
+    @Override
+    public void awaitIndexOnline( IndexDefinition index, TimeUnit unit, long duration )
+    {
+        long now     = System.currentTimeMillis();
+        long timeout = now + unit.toMillis( duration );
+        do
+        {
+            IndexState state = getIndexState( index );
+            switch (state)
+            {
+                case ONLINE:
+                    return;
+                case FAILED:
+                    throw new IllegalStateException( "Index did not come online but entered the FAILED state instead" );
+                default:
+                    Thread.yield();
+                    break;
+            }
+        } while ( System.currentTimeMillis() < timeout );
+        throw new IllegalStateException( "Expected index to come online within a reasonable time." );
+    }
+
     @Override
     public IndexState getIndexState( IndexDefinition index )
     {
@@ -113,11 +138,11 @@ public class SchemaImpl implements Schema
             switch ( indexState )
             {
                 case POPULATING:
-                    return IndexState.POPULATING;
+                    return POPULATING;
                 case ONLINE:
-                    return IndexState.ONLINE;
+                    return ONLINE;
                 case FAILED:
-                    return IndexState.FAILED;
+                    return FAILED;
                 default:
                     throw new IllegalArgumentException( String.format( "Illegal index state %s", indexState ) );
             }
