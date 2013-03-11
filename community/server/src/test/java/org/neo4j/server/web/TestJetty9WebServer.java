@@ -43,7 +43,7 @@ import org.neo4j.server.logging.InMemoryAppender;
 import org.neo4j.test.ImpermanentGraphDatabase;
 
 @Path("/")
-public class TestJetty7WebServer {
+public class TestJetty9WebServer {
 
 	@GET
 	public Response index()
@@ -51,39 +51,39 @@ public class TestJetty7WebServer {
 		return Response.status( Status.NO_CONTENT )
                 .build();
 	}
-	
+
 	@Test
 	public void shouldBeAbleToRestart() throws Throwable
 	{
 		// TODO: This is needed because WebServer has a cyclic
 		// dependency to NeoServer, which should be removed.
-		// Once that is done, we should instantiate WebServer 
+		// Once that is done, we should instantiate WebServer
 		// here directly.
         AbstractGraphDatabase db = mock(AbstractGraphDatabase.class);
 		WrappingNeoServer neoServer = new WrappingNeoServer(db);
 		WebServer server = neoServer.getWebServer();
-		
-		try 
+
+		try
 		{
 			server.setAddress("127.0.0.1");
 			server.setPort(7878);
-			
+
 			server.addJAXRSPackages(Arrays.asList(new String[]{"org.neo4j.server.web"}), "/", null );
-			
+
 			server.start();
 			server.stop();
 			server.start();
-		} finally 
+		} finally
 		{
-			try 
+			try
 			{
 				server.stop();
 			} catch(Throwable t)
-			{	
-				
+			{
+
 			}
 		}
-		
+
 	}
 
     @Test
@@ -107,5 +107,5 @@ public class TestJetty7WebServer {
         assertThat( appender.toString(), containsString( "Server started on" ) );
         testBootstrapper.stop();
     }
-	
+
 }
