@@ -69,4 +69,9 @@ public abstract class AbstractDelegatingIndexContext implements IndexContext
     {
         return getDelegate().close();
     }
+
+    @Override
+    public String toString() {
+        return String.format( "%s -> %s", getClass().getSimpleName(), getDelegate().toString() );
+    }
 }

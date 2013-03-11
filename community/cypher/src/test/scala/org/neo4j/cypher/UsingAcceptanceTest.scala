@@ -19,15 +19,16 @@
  */
 package org.neo4j.cypher
 
+import internal.helpers.GraphIcing
 import org.junit.Test
 import org.scalatest.Assertions
 
-class UsingAcceptanceTest extends ExecutionEngineHelper with Assertions {
+class UsingAcceptanceTest extends ExecutionEngineHelper with Assertions with GraphIcing {
 
   @Test(expected = /* THEN */ classOf[SyntaxException])
   def failIfUsingIndexWithStartClause() {
     // GIVEN
-    createIndex("Person", "name")
+    graph.createIndex("Person", "name")
 
     // WHEN
     parseAndExecute("start n=node(*) using index n:Person(name) where n:Person and n.name = \"kabam\" return n")
@@ -36,7 +37,7 @@ class UsingAcceptanceTest extends ExecutionEngineHelper with Assertions {
   @Test(expected = /* THEN */ classOf[IndexHintException])
   def failIfUsingAnIdentifierWithLabelNotUsedInMatch() {
     // GIVEN
-    createIndex("Person", "name")
+    graph.createIndex("Person", "name")
 
     // WHEN
     parseAndExecute("match n-->() using index n:Person(name) where n.name = \"kabam\" return n")
@@ -61,7 +62,7 @@ class UsingAcceptanceTest extends ExecutionEngineHelper with Assertions {
   @Test(expected = /* THEN */ classOf[IndexHintException])
   def failIfUsingHintsWithUnusableEqualityPredicate() {
     // GIVEN
-    createIndex("Person", "name")
+    graph.createIndex("Person", "name")
 
     // WHEN
     parseAndExecute("match n:Person-->() using index n:Person(name) where n.name <> \"kabam\" return n")
@@ -70,8 +71,8 @@ class UsingAcceptanceTest extends ExecutionEngineHelper with Assertions {
   @Test(expected = /* THEN */ classOf[IndexHintException])
   def failIfJoiningIndexHintsInEqualityPredicates() {
     // GIVEN
-    createIndex("Person", "name")
-    createIndex("Food", "name")
+    graph.createIndex("Person", "name")
+    graph.createIndex("Food", "name")
 
     // WHEN
     parseAndExecute("match n:Person-->m:Food using index n:Person(name) using index m:Food(name) where n.name = m.name return n")

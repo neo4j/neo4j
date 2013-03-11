@@ -23,7 +23,6 @@ import static java.lang.Long.parseLong;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-import static org.neo4j.kernel.api.impl.index.LuceneIndexPopulator.SINGLE_KEY;
 
 import java.io.File;
 import java.io.IOException;
@@ -33,18 +32,15 @@ import java.util.Set;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.neo4j.index.impl.lucene.LuceneUtil;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
+import org.neo4j.kernel.api.impl.index.LuceneSchemaIndexProvider.DocumentLogic;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
@@ -229,12 +225,13 @@ public class LuceneSchemaIndexPopulatorTest
     private DirectoryFactory directoryFactory;
     private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
     private final long indexId = 0;
+    private final DocumentLogic documentLogic = new LuceneSchemaIndexProvider.DocumentLogic();
     
     @Before
     public void before() throws Exception
     {
         directory = new RAMDirectory();
-        directoryFactory = new EphemeralDirectoryFactory();
+        directoryFactory = new DirectoryFactory.Single( directory );
         provider = new LuceneSchemaIndexProvider( directoryFactory );
         providerDependencies = new SchemaIndexProvider.Dependencies( fs, new File( "ignored" ) );
         index = provider.getPopulator( indexId, providerDependencies );
@@ -254,7 +251,7 @@ public class LuceneSchemaIndexPopulatorTest
         
         for ( Hit hit : expectedHits )
         {
-            TopDocs hits = searcher.search( query( hit.value ), 10 );
+            TopDocs hits = searcher.search( documentLogic.newQuery( hit.value ), 10 );
             assertEquals( "Unexpected number of index results from " + hit.value, hit.nodeIds.length, hits.totalHits );
             Set<Long> foundNodeIds = new HashSet<Long>();
             for ( int i = 0; i < hits.totalHits; i++ )
@@ -266,34 +263,11 @@ public class LuceneSchemaIndexPopulatorTest
         }
     }
 
-    private Query query( Object value )
-    {
-        if ( value instanceof String )
-        {
-            return new TermQuery( new Term( SINGLE_KEY, (String) value ) );
-        }
-        else if ( value instanceof Number )
-        {
-            Number number = (Number) value;
-            return LuceneUtil.rangeQuery( SINGLE_KEY, number, number, true, true );
-        }
-        throw new UnsupportedOperationException( value.toString() );
-    }
-
     private void switchToVerification() throws CorruptIndexException, IOException
     {
         index.close( true );
         assertEquals( InternalIndexState.ONLINE, provider.getInitialState( indexId, providerDependencies ) );
         reader = IndexReader.open( directory );
         searcher = new IndexSearcher( reader );
-    }
-    
-    private class EphemeralDirectoryFactory implements DirectoryFactory
-    {
-        @Override
-        public Directory open( File dir ) throws IOException
-        {
-            return directory;
-        }
     }
 }

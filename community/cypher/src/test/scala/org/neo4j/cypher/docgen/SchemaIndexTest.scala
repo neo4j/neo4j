@@ -21,10 +21,7 @@ package org.neo4j.cypher.docgen
 
 import org.neo4j.cypher.StatisticsChecker
 import org.junit.Test
-import org.neo4j.graphdb.{Transaction, DynamicLabel}
-import scala.collection.JavaConverters._
 import org.neo4j.cypher.internal.helpers.GraphIcing
-import org.neo4j.graphdb.schema.IndexDefinition
 
 class SchemaIndexTest extends DocumentingTestBase with StatisticsChecker with GraphIcing {
   def graphDescription = List(

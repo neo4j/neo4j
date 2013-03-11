@@ -2735,14 +2735,7 @@ RETURN x0.name?
     relate(andres, createNode())
     relate(jake, createNode())
 
-    val tx = graph.beginTx()
-    val index = graph.schema().indexCreator(label("Person")).on("name").create()
-    tx.success()
-    tx.finish()
-
-    while(graph.schema().getIndexState(index) == IndexState.POPULATING) {
-      Thread.sleep(10)
-    }
+    graph.createIndex("Person", "name")
 
     //WHEN
     val result = parseAndExecute("MATCH n:Person-->() USING INDEX n:Person(name) WHERE n.name = 'Jacob' RETURN n")
