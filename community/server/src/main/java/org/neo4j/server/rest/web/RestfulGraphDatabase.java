@@ -20,7 +20,10 @@
 package org.neo4j.server.rest.web;
 
 import static java.lang.String.format;
+import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.helpers.collection.IteratorUtil.single;
+import static org.neo4j.helpers.collection.MapUtil.toMap;
+import static org.neo4j.server.rest.domain.JsonHelper.readJson;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -49,10 +52,13 @@ import javax.ws.rs.core.UriInfo;
 
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.NotFoundException;
+import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Pair;
+import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
 import org.neo4j.server.rest.domain.EndNodeNotFoundException;
 import org.neo4j.server.rest.domain.EvaluationException;
+import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.domain.StartNodeNotFoundException;
 import org.neo4j.server.rest.domain.TraverserReturnType;
 import org.neo4j.server.rest.repr.BadInputException;
@@ -67,6 +73,7 @@ import org.neo4j.server.rest.web.DatabaseActions.RelationshipDirection;
 @Path( "/" )
 public class RestfulGraphDatabase
 {
+
     @SuppressWarnings( "serial" )
     public static class AmpersandSeparatedCollection extends LinkedHashSet<String>
     {
@@ -120,10 +127,9 @@ public class RestfulGraphDatabase
     protected static final String PATH_AUTO_INDEXED_PROPERTIES = PATH_AUTO_INDEX + "/properties";
     protected static final String PATH_AUTO_INDEX_PROPERTY_DELETE = PATH_AUTO_INDEXED_PROPERTIES + "/{property}";
     protected static final String PATH_AUTO_INDEX_GET = PATH_AUTO_INDEX + "/{key}/{value}";
-    
-    public static final String PATH_ALL_NODES = "nodes";
-    public static final String PATH_ALL_NODES_LABELED = PATH_ALL_NODES + "/labeled/{label}";
-    
+
+    public static final String PATH_ALL_NODES_LABELED = "label/{label}/nodes";
+
     public static final String PATH_SCHEMA = "schema";
     public static final String PATH_SCHEMA_INDEX = PATH_SCHEMA + "/index";
     public static final String PATH_SCHEMA_INDEX_LABEL = PATH_SCHEMA_INDEX + "/{label}";
@@ -511,13 +517,16 @@ public class RestfulGraphDatabase
 
     @GET
     @Path( PATH_ALL_NODES_LABELED )
-    public Response allNodesWithLabel( @PathParam( "label" ) String labelName )
+    public Response getNodesWithLabelAndProperty( @PathParam("label") String labelName, @Context UriInfo uriInfo )
     {
         try
         {
             if ( labelName.isEmpty() )
                 throw new BadInputException( "Empty label name" );
-            return output.ok( actions.getNodesWithLabel( labelName ) );
+
+            Map<String, Object> properties = toMap( map( queryParamsToProperties, uriInfo.getQueryParameters().entrySet()));
+
+            return output.ok( actions.getNodesWithLabel( labelName, properties ) );
         }
         catch ( BadInputException e )
         {
@@ -1636,4 +1645,24 @@ public class RestfulGraphDatabase
     {
         return output.ok( actions.getSchemaIndexes( labelName ) );
     }
+
+
+    private Function<Map.Entry<String,List<String>>,Pair<String,Object>> queryParamsToProperties =
+            new Function<Map.Entry<String, List<String>>, Pair<String, Object>>()
+    {
+        @Override
+        public Pair<String, Object> apply( Map.Entry<String, List<String>> queryEntry )
+        {
+            try
+            {
+                return Pair.of( queryEntry.getKey(), readJson( queryEntry.getValue().get( 0 ) ) );
+            }
+            catch ( JsonParseException e )
+            {
+                throw new IllegalArgumentException(
+                        String.format( "Unable to deserialize property value for %s.", queryEntry.getKey() ),
+                        e );
+            }
+        }
+    };
 }

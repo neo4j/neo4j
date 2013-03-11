@@ -14,3 +14,5 @@ include::removing-a-label-from-a-node.asciidoc[]
 include::listing-labels-for-a-node.asciidoc[]
 
 include::get-all-nodes-with-a-label.asciidoc[]
+
+include::get-nodes-by-label-and-property.asciidoc[]

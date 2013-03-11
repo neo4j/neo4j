@@ -1480,7 +1480,8 @@ public abstract class InternalAbstractGraphDatabase
     }
 
     @Override
-    public Iterable<Node> findByLabelAndProperty( final Label myLabel, final String propertyName, final Object value )
+    public Iterable<Node> findNodesByLabelAndProperty( final Label myLabel, final String propertyName,
+                                                       final Object value )
     {
         StatementContext ctx = statementContextProvider.getCtxForReading();
 

@@ -65,7 +65,7 @@ public class IndexingAcceptanceTest
         }
 
         // Then
-        Node result = single( beansAPI.findByLabelAndProperty( Labels.MY_LABEL, "name", "Hawking" ) );
+        Node result = single( beansAPI.findNodesByLabelAndProperty( Labels.MY_LABEL, "name", "Hawking" ) );
         assertThat( result, is( myNode ) );
     }
 
@@ -101,7 +101,7 @@ public class IndexingAcceptanceTest
 
 
         // Then
-        Node result = single( beansAPI.findByLabelAndProperty( Labels.MY_LABEL, "name", "Hawking" ) );
+        Node result = single( beansAPI.findNodesByLabelAndProperty( Labels.MY_LABEL, "name", "Hawking" ) );
         assertThat( result, is( myNode ) );
     }
 
@@ -112,7 +112,7 @@ public class IndexingAcceptanceTest
         GraphDatabaseService beansAPI = dbRule.getGraphDatabaseService();
 
         // When/Then
-        Iterable<Node> result = beansAPI.findByLabelAndProperty( Labels.MY_LABEL, "name", "Hawking" );
+        Iterable<Node> result = beansAPI.findNodesByLabelAndProperty( Labels.MY_LABEL, "name", "Hawking" );
         assertThat( result, is( Iterables.<Node>empty() ) );
     }
 }

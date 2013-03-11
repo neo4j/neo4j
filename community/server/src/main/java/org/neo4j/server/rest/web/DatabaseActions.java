@@ -28,6 +28,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import com.sun.jersey.api.core.HttpContext;
 import org.apache.lucene.search.Sort;
 import org.neo4j.graphalgo.CommonEvaluators;
 import org.neo4j.graphalgo.CostEvaluator;
@@ -62,6 +63,7 @@ import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.IterableWrapper;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.index.lucene.QueryContext;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.TransactionBuilder;
@@ -99,8 +101,6 @@ import org.neo4j.server.rest.repr.ScoredRelationshipRepresentation;
 import org.neo4j.server.rest.repr.ValueRepresentation;
 import org.neo4j.server.rest.repr.WeightedPathRepresentation;
 import org.neo4j.tooling.GlobalGraphOperations;
-
-import com.sun.jersey.api.core.HttpContext;
 
 public class DatabaseActions
 {
@@ -1581,9 +1581,22 @@ public class DatabaseActions
         }
     }
 
-    public ListRepresentation getNodesWithLabel( String labelName )
+    public ListRepresentation getNodesWithLabel( String labelName, Map<String, Object> properties)
     {
-        Iterable<Node> nodes = GlobalGraphOperations.at( graphDb ).getAllNodesWithLabel( label( labelName ) );
+        Iterable<Node> nodes = null;
+
+        if(properties.size() == 0)
+        {
+            nodes = GlobalGraphOperations.at( graphDb ).getAllNodesWithLabel( label( labelName ) );
+        } else if(properties.size() == 1)
+        {
+            Map.Entry<String, Object> prop = Iterables.single(properties.entrySet());
+            nodes = graphDb.findNodesByLabelAndProperty( label( labelName ), prop.getKey(), prop.getValue() );
+        } else {
+            throw new IllegalArgumentException( "Too many properties specified. Either specify one property to " +
+                    "filter by, or none at all." );
+        }
+
         IterableWrapper<NodeRepresentation, Node> nodeRepresentations =
                 new IterableWrapper<NodeRepresentation, Node>( nodes )
         {

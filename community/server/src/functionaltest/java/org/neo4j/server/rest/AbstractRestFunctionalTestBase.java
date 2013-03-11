@@ -19,8 +19,13 @@
  */
 package org.neo4j.server.rest;
 
-import static org.junit.Assert.assertEquals;
+import static java.lang.String.format;
+import static java.net.URLEncoder.encode;
+import static org.junit.Assert.*;
+import static org.neo4j.server.rest.domain.JsonHelper.createJsonFrom;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
@@ -216,12 +221,17 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
     protected String getDocumentationSectionName() {
         return "dev/rest-api";
     }
-    
+
     public String getNodesWithLabelUri( String label )
     {
-        return getDataUri() + "nodes/labeled/" + label;
+        return format( "%slabel/%s/nodes", getDataUri(), label );
     }
-    
+
+    public String getNodesWithLabelAndPropertyUri( String label, String property, Object value ) throws UnsupportedEncodingException
+    {
+        return format( "%slabel/%s/nodes?%s=%s", getDataUri(), label, property, encode( createJsonFrom( value ), "UTF-8" ) );
+    }
+
     public String getSchemaIndexLabelUri( String label )
     {
         return getDataUri() + "schema/index/" + label;

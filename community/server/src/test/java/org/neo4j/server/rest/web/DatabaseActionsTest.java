@@ -1111,7 +1111,7 @@ public class DatabaseActionsTest
         graphdbHelper.createNode( label( label2 ) );
 
         // WHEN
-        List<Object> representation = serialize( actions.getNodesWithLabel( label1 ) );
+        List<Object> representation = serialize( actions.getNodesWithLabel( label1, map()));
 
         // THEN
         assertEquals( asSet( node1, node2 ), asSet( map( new Function<Object, Long>()
@@ -1124,6 +1124,14 @@ public class DatabaseActionsTest
             }
         }, representation ) ) );
     }
+
+    @Test(expected=/*THEN*/IllegalArgumentException.class)
+    public void getNodesWithLabelAndSeveralPropertiesShouldFail() throws Exception
+    {
+        // WHEN
+        actions.getNodesWithLabel( "Person", map("name", "bob", "age", 12));
+    }
+
 
     private void assertPaths( int numPaths, long[] nodes, int length, List<Object> result )
     {
