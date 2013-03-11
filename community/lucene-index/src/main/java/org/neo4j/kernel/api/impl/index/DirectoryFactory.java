@@ -47,4 +47,20 @@ public interface DirectoryFactory
             return new RAMDirectory();
         }
     };
+    
+    public static class Single implements DirectoryFactory
+    {
+        private final Directory directory;
+
+        public Single( Directory directory )
+        {
+            this.directory = directory;
+        }
+
+        @Override
+        public Directory open( File dir ) throws IOException
+        {
+            return directory;
+        }
+    }
 }

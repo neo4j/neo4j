@@ -20,6 +20,7 @@
 package org.neo4j.kernel.api.impl.index;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.awaitIndexState;
@@ -59,6 +60,7 @@ public class SchemaIndexAcceptanceTest
         restart();
         
         assertEquals( IndexState.ONLINE, db.schema().getIndexState( index ) );
+        fail( "Assert index contents as well" );
     }
     
     private final String storeDir = TargetDirectory.forTest( getClass() ).graphDbDir( true ).getAbsolutePath();

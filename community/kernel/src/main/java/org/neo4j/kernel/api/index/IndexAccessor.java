@@ -25,27 +25,35 @@ package org.neo4j.kernel.api.index;
 public interface IndexAccessor
 {
     /**
-     * Delete this index
+     * Deletes this index as well as closes all used external resources.
+     * There will not be any interactions after this call.
      */
     void drop();
 
     /**
-     * Apply a set of changes to this index. This method will only ever be called by one thread at a time.
-     * @param updates
+     * Apply a set of changes to this index.
+     * Updates must be visible in {@link #newReader() readers} created after this update.
      */
     void updateAndCommit( Iterable<NodePropertyUpdate> updates );
 
     /**
-     * Forces this index to disk.
+     * Forces this index to disk. Called at certain points from within Neo4j for example when
+     * rotating the logical log. After completion of this call there cannot be any essential state that
+     * hasn't been forced to disk.
      */
     void force();
     
     /**
-     * Closes this index writer. There will not be any interactions after this call.
+     * Closes this index accessor. There will not be any interactions after this call.
+     * After completion of this call there cannot be any essential state that hasn't been forced to disk.
      */
     void close();
     
-    IndexReader newTransactionBoundReader();
+    /**
+     * @return a new {@link IndexReader} responsible for looking up results in the index. The returned
+     * reader must honor repeatable reads.
+     */
+    IndexReader newReader();
 
     public static class Adapter implements IndexAccessor
     {
@@ -70,7 +78,7 @@ public interface IndexAccessor
         }
 
         @Override
-        public IndexReader newTransactionBoundReader()
+        public IndexReader newReader()
         {
             return new IndexReader.Adapter();
         }
