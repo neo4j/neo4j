@@ -36,7 +36,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.test.ImpermanentGraphDatabase;
+import org.neo4j.test.TestGraphDatabaseFactory;
 
 public class SocnetTest
 {
@@ -49,7 +49,7 @@ public class SocnetTest
     @BeforeClass
     public static void setup() throws Exception
     {
-        graphDb = new ImpermanentGraphDatabase();
+        graphDb = new TestGraphDatabaseFactory().newImpermanentDatabase();
         index = graphDb.index().forNodes( "nodes" );
         personRepository = new PersonRepository( graphDb, index );
     }

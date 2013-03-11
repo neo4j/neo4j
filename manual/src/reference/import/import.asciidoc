@@ -4,7 +4,7 @@ Data Import
 
 For high-performance data import, the batch insert facilities described in this chapter are recommended.
 
-Other ways to import data into Neo4j include using Gremlin graph import (see <<rest-api-load-a-sample-graph>>) or using the Geoff notation (see http://geoff.nigelsmall.net/).
+Other ways to import data into Neo4j include using Gremlin graph import (see <<rest-api-load-a-sample-graph>>) or using the Geoff notation (see http://nigelsmall.com/geoff ).
 
 
 :leveloffset: 2

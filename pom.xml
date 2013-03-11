@@ -143,6 +143,9 @@
         <module>packaging</module>
         <module>packaging/installer-linux</module>
       </modules>
+      <properties>
+        <attach-docs-phase>verify</attach-docs-phase>
+      </properties>
     </profile>
     <profile>
       <id>neodev</id>
@@ -190,7 +193,7 @@
         <attach-java-sources-phase>package</attach-java-sources-phase>
         <attach-java-test-sources-phase>package</attach-java-test-sources-phase>
         <attach-test-jar-phase>package</attach-test-jar-phase>
-        <attach-docs-phase>package</attach-docs-phase>
+        <attach-docs-phase>verify</attach-docs-phase>
         <integration-test-phase>integration-test</integration-test-phase>
       </properties>
     </profile>

@@ -34,7 +34,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.UniqueFactory;
 
-public class GetOrCreateTest extends AbstractJavaDocTestbase
+public class GetOrCreateIT extends AbstractJavaDocTestbase
 {
     interface GetOrCreate
     {
@@ -61,7 +61,7 @@ public class GetOrCreateTest extends AbstractJavaDocTestbase
 
     class ThreadRunner implements Runnable
     {
-        public static final int NUM_USERS = 1000;
+        public static final int NUM_USERS = 10;
         final GetOrCreate impl;
 
         ThreadRunner( GetOrCreate impl )
@@ -93,7 +93,7 @@ public class GetOrCreateTest extends AbstractJavaDocTestbase
             final AtomicReference<RuntimeException> failure = new AtomicReference<RuntimeException>();
             for ( int i = 0; i < Runtime.getRuntime().availableProcessors()*2; i++ )
             {
-                threads.add( new Thread( GetOrCreateTest.class.getSimpleName() + " thread " + i )
+                threads.add( new Thread( GetOrCreateIT.class.getSimpleName() + " thread " + i )
                 {
                     @Override
                     public void run()

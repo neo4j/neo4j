@@ -25,24 +25,18 @@ import java.util.Date;
 
 import javax.management.ObjectName;
 
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.jmx.JmxUtils;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.test.TestGraphDatabaseFactory;
 
 public class JmxTest
 {
-    @Rule
-    public TemporaryFolder temp = new TemporaryFolder();
-
     @Test
     public void readJmxProperties()
     {
-        GraphDatabaseService graphDbService = new GraphDatabaseFactory().newEmbeddedDatabase( temp.getRoot()
-                .getAbsolutePath() );
+        GraphDatabaseService graphDbService = new TestGraphDatabaseFactory().newImpermanentDatabase();
         try
         {
             Date startTime = getStartTimeFromManagementBean( graphDbService );
