@@ -54,7 +54,6 @@ import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Pair;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
 import org.neo4j.server.rest.domain.EndNodeNotFoundException;
 import org.neo4j.server.rest.domain.EvaluationException;

@@ -21,11 +21,10 @@ package org.neo4j.server.rest;
 
 import static java.lang.String.format;
 import static java.net.URLEncoder.encode;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 import static org.neo4j.server.rest.domain.JsonHelper.createJsonFrom;
 
 import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
