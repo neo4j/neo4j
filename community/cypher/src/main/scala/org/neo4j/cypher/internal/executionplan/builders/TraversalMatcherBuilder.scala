@@ -66,7 +66,6 @@ class TraversalMatcherBuilder(graph: GraphDatabaseService) extends LegacyPlanBui
     val newIdentifiers = tokens.map(_.token).map(x => x.identifierName -> NodeType()).toMap
     val newSymbolTable = plan.pipe.symbols.add(newIdentifiers)
     validatePattern(newSymbolTable, plan.query.patterns.map(_.token))
-    validatePattern(plan.pipe.symbols, plan.query.patterns.map(_.token))
   }
 
 
