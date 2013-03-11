@@ -74,4 +74,5 @@ public interface Schema
      * @return the current {@link IndexState} of the index
      */
     IndexState getIndexState( IndexDefinition index );
+
 }

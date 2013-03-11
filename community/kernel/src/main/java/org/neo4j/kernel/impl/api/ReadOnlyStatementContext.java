@@ -141,12 +141,6 @@ public class ReadOnlyStatementContext implements StatementContext
     }
 
     @Override
-    public Iterable<Long> exactIndexLookup( IndexRule indexRule, Object value )
-    {
-        return delegate.exactIndexLookup( indexRule, value );
-    }
-
-    @Override
     public void close( boolean successful )
     {
         delegate.close( successful );

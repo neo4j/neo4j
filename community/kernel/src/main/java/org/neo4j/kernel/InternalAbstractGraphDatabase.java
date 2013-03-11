@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel;
 
-import static org.neo4j.helpers.collection.Iterables.filter;
-import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
 import static org.slf4j.impl.StaticLoggerBinder.getSingleton;
 
@@ -38,7 +36,6 @@ import javax.transaction.NotSupportedException;
 import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
 
-import ch.qos.logback.classic.LoggerContext;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -60,14 +57,10 @@ import org.neo4j.graphdb.index.IndexProviders;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.helpers.DaemonThreadFactory;
 import org.neo4j.helpers.Function;
-import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.Settings;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.KernelAPI;
-import org.neo4j.kernel.api.KernelException;
-import org.neo4j.kernel.api.SchemaRuleNotFoundException;
-import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConfigurationChange;
@@ -101,7 +94,6 @@ import org.neo4j.kernel.impl.core.TxEventSyncHookFactory;
 import org.neo4j.kernel.impl.index.IndexStore;
 import org.neo4j.kernel.impl.nioneo.store.DefaultWindowPoolFactory;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
-import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
@@ -144,6 +136,8 @@ import org.neo4j.kernel.logging.ClassicLoggingService;
 import org.neo4j.kernel.logging.LogbackService;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.tooling.GlobalGraphOperations;
+
+import ch.qos.logback.classic.LoggerContext;
 
 /**
  * Base implementation of GraphDatabaseService. Responsible for creating services, handling dependencies between them,
@@ -1477,65 +1471,5 @@ public abstract class InternalAbstractGraphDatabase
         {
             config.removeConfigurationChangeListener( listener );
         }
-    }
-
-    @Override
-    public Iterable<Node> findByLabelAndProperty( final Label myLabel, final String propertyName, final Object value )
-    {
-        StatementContext ctx = statementContextProvider.getCtxForReading();
-
-        long propertyId;
-        long labelId;
-        try
-        {
-            propertyId = ctx.getPropertyKeyId( propertyName );
-            labelId = ctx.getLabelId( myLabel.name() );
-        } catch ( KernelException e )
-        {
-            return Iterables.empty();
-        }
-
-        IndexRule indexRule;
-        try
-        {
-            indexRule = ctx.getIndexRule( labelId, propertyId );
-        } catch ( SchemaRuleNotFoundException e )
-        {
-            // If we don't find a matching index rule, we'll scan all nodes and filter manually
-            return getNodesByLabelAndPropertyWithoutIndex( propertyName, value, ctx, labelId );
-        }
-
-        // Ha! We found an index - let's use it to find matching nodes
-        return map2nodes( ctx.exactIndexLookup( indexRule, value ) );
-    }
-
-    private Iterable<Node> getNodesByLabelAndPropertyWithoutIndex( final String propertyName, final Object value, StatementContext ctx, long labelId )
-    {
-        Iterable<Long> nodesWithLabel = ctx.getNodesWithLabel( labelId );
-        final NodeProxy.NodeLookup lookup = createNodeLookup();
-
-        Iterable<Long> matches = filter( new Predicate<Long>()
-        {
-            @Override
-            public boolean accept( Long item )
-            {
-                Object propertyValue = lookup.lookup( item ).getProperty( nodeManager, propertyName, null );
-                return propertyValue != null && propertyValue.equals( value );
-            }
-        }, nodesWithLabel );
-
-        return map2nodes( matches );
-    }
-
-    private Iterable<Node> map2nodes( Iterable<Long> input )
-    {
-        return map( new Function<Long, Node>()
-        {
-            @Override
-            public Node apply( Long id )
-            {
-                return getNodeById( id );
-            }
-        }, input );
     }
 }

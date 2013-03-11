@@ -38,12 +38,22 @@ public interface StatementContext
     /**
      * Returns a label id for a label name. If the label doesn't exist prior to
      * this call it gets created.
+     * 
+     * @param label the name of the label to get the id for.
+     * @return the label id for the given label name.
+     * @throws ConstraintViolationKernelException if the label name violates some
+     * constraint, for example if it's null or of zero length.
      */
     long getOrCreateLabelId( String label ) throws ConstraintViolationKernelException;
     
     /**
      * Returns a label id for a label name. If the label doesn't exist a
      * {@link LabelNotFoundKernelException} will be thrown.
+     * 
+     * @param label the name of the label to get the id for.
+     * @return the label id for the given label name.
+     * @throws LabelNotFoundKernelException if the label for the given name
+     * doesn't exist.
      */
     long getLabelId( String label ) throws LabelNotFoundKernelException;
     
@@ -51,6 +61,11 @@ public interface StatementContext
      * Labels a node with the label corresponding to the given label id.
      * If the node already had that label nothing will happen. Label ids
      * are retrieved from {@link #getOrCreateLabelId(String)} or {@link #getLabelId(String)}.
+     * 
+     * @param labelId the label id to label the node with.
+     * @param nodeId the node id to add the label to.
+     * @return {@code true} if the node didn't have this label before and was added,
+     * {@code false} if the node already had this label.
      */
     boolean addLabelToNode( long labelId, long nodeId );
     
@@ -59,17 +74,28 @@ public interface StatementContext
      * {@code true} if the node is labeled with the label, otherwise {@code false.}
      * Label ids are retrieved from {@link #getOrCreateLabelId(String)} or
      * {@link #getLabelId(String)}.
+     * 
+     * @param labelId the label to check.
+     * @param nodeId the node to check.
+     * @return whether or not the node is labeled with the given label.
      */
     boolean isLabelSetOnNode( long labelId, long nodeId );
     
     /**
      * Returns all labels set on node with id {@code nodeId}.
      * If the node has no labels an empty {@link Iterable} will be returned.
+     * 
+     * @param nodeId the id of the node.
+     * @return the label ids for the given node.
      */
     Iterable<Long> getLabelsForNode( long nodeId );
     
     /**
      * Returns the label name for the given label id.
+     * 
+     * @param labelId the label id to get the name for.
+     * @return the name of the label with the given id.
+     * @throws LabelNotFoundKernelException if the label doesn't exist.
      */
     String getLabelName( long labelId ) throws LabelNotFoundKernelException;
     
@@ -78,6 +104,8 @@ public interface StatementContext
      * their parent transaction {@link TransactionContext#finish()} finishes.
      * As an example statement-bound locks can be released when closing
      * a statement. 
+     * 
+     * @param successful whether or not the statement has been successful.
      */
     void close( boolean successful );
 
@@ -85,6 +113,11 @@ public interface StatementContext
      * Removes a label with the corresponding id from a node.
      * If the node doesn't have that label nothing will happen. Label ids
      * are retrieved from {@link #getOrCreateLabelId(String)} or {@link #getLabelId(String)}.
+     *
+     * @param labelId the label id to label the node with.
+     * @param nodeId the node id to remove the label from.
+     * @return {@code true} if the node had this label and was removed,
+     * {@code false} if the node didn't have this label.
      */
     boolean removeLabelFromNode( long labelId, long nodeId );
 
@@ -97,53 +130,73 @@ public interface StatementContext
     /**
      * Adds a {@link IndexRule} to the database which applies globally on both
      * existing as well as new data.
+     * 
+     * @param labelId the label id to attach the rule to.
+     * @param propertyKey the property key to index.
+     * @return the id of the created index.
+     * @throws ConstraintViolationKernelException if a similar or conflicting rule already exists.
      */
     IndexRule addIndexRule( long labelId, long propertyKey ) throws ConstraintViolationKernelException;
     
     /**
      * Returns the index rule ID for the given labelId and propertyKey.
+     * 
+     * @param labelId the label id for the index rule.
+     * @param propertyKey the property key for the index rule.
+     * @return the index rule id.
+     * @throws SchemaRuleNotFoundException if no such index rule exists.
      */
     IndexRule getIndexRule( long labelId, long propertyKey ) throws SchemaRuleNotFoundException;
 
     /**
-     * Get all indexes for a label.
+     * @param labelId the label to get rules for.
+     * @return all index rules for that labelId.
      */
     Iterable<IndexRule> getIndexRules( long labelId );
     
     /**
-     * Returns all index rules.
+     * @return all index rules.
      */
     Iterable<IndexRule> getIndexRules();
 
     /**
      * Retrieve the state of an index.
+     * @return
      */
     InternalIndexState getIndexState( IndexRule indexRule ) throws IndexNotFoundKernelException;
     
     /**
      * Drops a {@link IndexRule} from the database
+     *
+     * @throws ConstraintViolationKernelException if the index is not found
      */
     void dropIndexRule( IndexRule indexRule ) throws ConstraintViolationKernelException;
 
     /**
      * Returns a property key id for a property key. If the key doesn't exist prior to
      * this call it gets created.
+     * 
+     * @param propertyKey the name property key to get the id for.
+     * @return the property key id for the given property key.
+     * constraint, for example if it's null or of zero length.
      */
     long getOrCreatePropertyKeyId( String propertyKey );
 
     /**
      * Returns a property key id for the given property key. If the property key doesn't exist a
      * {@link PropertyKeyNotFoundException} will be thrown.
+     * 
+     * @param propertyKey the property key to get the id for.
+     * @return the property key id for the given property key.
+     * @throws PropertyKeyNotFoundException if the property key doesn't exist.
      */
     long getPropertyKeyId( String propertyKey ) throws PropertyKeyNotFoundException;
 
     /**
      * Returns the name of a property given it's property key id
+     * @param propertyId the property key id for the given property key.
+     * @return the property key for the property key id.
+     * @throws PropertyKeyIdNotFoundException if the property key id doesn't exist.
      */
     String getPropertyKeyName( long propertyId ) throws PropertyKeyIdNotFoundException;
-
-    /**
-     * Returns an iterable with the matched nodes.
-     */
-    Iterable<Long> exactIndexLookup( IndexRule indexRule, Object value );
 }

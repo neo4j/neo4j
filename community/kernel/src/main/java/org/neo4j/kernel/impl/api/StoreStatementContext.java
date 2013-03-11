@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import static org.neo4j.helpers.collection.Iterables.empty;
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.map;
 
@@ -326,11 +325,5 @@ public class StoreStatementContext implements StatementContext
         {
             throw new PropertyKeyIdNotFoundException( propertyId, e );
         }
-    }
-
-    @Override
-    public Iterable<Long> exactIndexLookup( IndexRule indexRule, Object value )
-    {
-        return empty();
     }
 }
