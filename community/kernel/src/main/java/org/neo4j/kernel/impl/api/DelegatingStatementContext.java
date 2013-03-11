@@ -145,4 +145,10 @@ public class DelegatingStatementContext implements StatementContext
     {
         return delegate.getPropertyKeyName( propertyId );
     }
+
+    @Override
+    public Iterable<Long> exactIndexLookup( IndexRule indexRule, Object value )
+    {
+        return delegate.exactIndexLookup( indexRule, value );
+    }
 }
