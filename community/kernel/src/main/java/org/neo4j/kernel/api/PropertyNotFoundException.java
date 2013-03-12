@@ -17,39 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api.index;
+package org.neo4j.kernel.api;
 
-import org.neo4j.kernel.impl.nioneo.store.IndexRule;
-
-/**
- * Description of a single index as needed by the {@link IndexProxy} cake
- *
- * This is a IndexContext cake level representation of {@link IndexRule}
- */
-public class IndexDescriptor
+public class PropertyNotFoundException extends KernelException
 {
-    private final long labelId;
-    private final long propertyKeyId;
-
-    public IndexDescriptor( long labelId, long propertyKeyId )
+    public PropertyNotFoundException( String message, Throwable cause )
     {
-        this.labelId = labelId;
-        this.propertyKeyId = propertyKeyId;
-    }
-
-    public long getLabelId()
-    {
-        return labelId;
-    }
-
-    public long getPropertyKeyId()
-    {
-        return propertyKeyId;
-    }
-    
-    @Override
-    public String toString()
-    {
-        return getClass().getName() + "[label:" + labelId + ", on:" + propertyKeyId + "]";
+        super( message, cause );
     }
 }

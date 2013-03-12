@@ -19,17 +19,23 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import static org.junit.Assert.assertEquals;
+import static org.hamcrest.core.IsEqual.equalTo;
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
+import java.util.Collections;
 import java.util.Set;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.neo4j.kernel.impl.api.state.OldTxStateBridge;
+import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 
 public class TxStateTest
 {
+
     @Test
     public void shouldGetAddedLabels() throws Exception
     {
@@ -153,13 +159,55 @@ public class TxStateTest
         // THEN
         assertEquals( asSet( rule ), state.getIndexRuleDiffSets().getAdded() );
     }
+
+    @Test
+    public void shouldIncludeAddedNodesWithCorrectProperty() throws Exception
+    {
+        // Given
+        long nodeId = 1337l;
+        int propertyKey = 2;
+        int propValue = 42;
+
+        DiffSets<Long> nodesWithChangedProp = new DiffSets<Long>( asSet(nodeId), emptySet );
+        when( legacyState.getDeletedNodes() ).thenReturn( emptySet );
+        when( legacyState.getNodesWithChangedProperty( propertyKey, propValue ) ).thenReturn( nodesWithChangedProp );
+
+        // When
+        DiffSets<Long> diff = state.getNodesWithChangedProperty( propertyKey, propValue );
+
+        // Then
+        assertThat( diff.getAdded(),   equalTo( asSet( nodeId ) ));
+        assertThat( diff.getRemoved(), equalTo( emptySet ) );
+    }
     
+    @Test
+    public void shouldExcludeNodesWithCorrectPropertyRemoved() throws Exception
+    {
+        // Given
+        long nodeId = 1337l;
+        int propertyKey = 2;
+        int propValue = 42;
+
+        DiffSets<Long> nodesWithChangedProp = new DiffSets<Long>( emptySet, asSet(nodeId) );
+        when( legacyState.getNodesWithChangedProperty( propertyKey, propValue ) ).thenReturn( nodesWithChangedProp );
+
+        // When
+        DiffSets<Long> diff = state.getNodesWithChangedProperty( propertyKey, propValue );
+
+        // Then
+        assertThat( diff.getAdded(), equalTo( emptySet ) );
+        assertThat( diff.getRemoved(),   equalTo( asSet( nodeId ) ));
+    }
+
     private TxState state;
+    private OldTxStateBridge legacyState;
+    private final Set<Long> emptySet = Collections.<Long>emptySet();
     
     @Before
     public void before() throws Exception
     {
-        state = new TxState();
+        legacyState = mock( OldTxStateBridge.class );
+        state = new TxState(legacyState);
     }
 
     private IndexRule newIndexRule( long ruleId, long labelId, long propertyKey )

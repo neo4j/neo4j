@@ -30,6 +30,7 @@ import java.util.Set;
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.kernel.impl.api.PersistenceCache.CachedNodeEntity;
+import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.cache.LockStripedCache;
 
 public class PersistenceCacheTest

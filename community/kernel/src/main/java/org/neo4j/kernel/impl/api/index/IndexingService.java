@@ -158,6 +158,11 @@ public class IndexingService extends LifecycleAdapter
         return indexProxy;
     }
 
+    public IndexDescriptor getIndexDescriptor( long indexId ) throws IndexNotFoundKernelException
+    {
+        return getProxyForRule( indexId ).getDescriptor();
+    }
+
     /**
      * Called while the database starts up, before recovery.
      *

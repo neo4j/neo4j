@@ -23,6 +23,7 @@ import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.TransactionContext;
 import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.PropertyIndexManager;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
@@ -62,17 +63,20 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     private final XaDataSourceManager dataSourceManager;
     private final LockManager lockManager;
     private final PersistenceCache persistenceCache;
+    private final NodeManager nodeManager;
     private final SchemaCache schemaCache;
     private IndexingService indexService;
     private NeoStore neoStore;
 
     public Kernel( AbstractTransactionManager transactionManager, PropertyIndexManager propertyIndexManager,
-            PersistenceManager persistenceManager, XaDataSourceManager dataSourceManager, LockManager lockManager,
+            PersistenceManager persistenceManager, NodeManager nodeManager,
+            XaDataSourceManager dataSourceManager, LockManager lockManager,
             SchemaCache schemaCache )
     {
         this.transactionManager = transactionManager;
         this.propertyIndexManager = propertyIndexManager;
         this.persistenceManager = persistenceManager;
+        this.nodeManager = nodeManager;
         this.dataSourceManager = dataSourceManager;
         this.lockManager = lockManager;
         this.persistenceCache = new PersistenceCache( new NodeCacheLoader( persistenceManager ) );
@@ -116,9 +120,9 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     public TransactionContext newTransactionContext()
     {
         // I/O
-        // TODO figure out another way to get access to the PropertyStore, or to not having to pass it in
+        // TODO The store layer should depend on a clean abstraction of the data, not on all the XXXManagers from the old code base
         TransactionContext result = new StoreTransactionContext( propertyIndexManager,
-                persistenceManager, neoStore, indexService );
+                persistenceManager, nodeManager, neoStore, indexService );
         // + Transaction life cycle
         // XXX: This is disabled during transition phase, we are still using the legacy transaction management stuff
         //result = new TransactionLifecycleTransactionContext( result, transactionManager, propertyIndexManager, persistenceManager, cache );
@@ -141,8 +145,9 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     public StatementContext newReadOnlyStatementContext()
     {
         // I/O
-        StatementContext result = new StoreStatementContext( propertyIndexManager,
-                persistenceManager, neoStore, indexService, new IndexReaderFactory.NonCaching( indexService ) );
+        StatementContext result = new StoreStatementContext(
+                propertyIndexManager, persistenceManager, nodeManager,
+                neoStore, indexService, new IndexReaderFactory.NonCaching( indexService ) );
         // + Cache
         result = new CachingStatementContext( result, persistenceCache, schemaCache );
         // + Read only access

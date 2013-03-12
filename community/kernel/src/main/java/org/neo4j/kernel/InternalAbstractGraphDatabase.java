@@ -62,6 +62,7 @@ import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.Settings;
+import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelException;
@@ -465,7 +466,7 @@ public abstract class InternalAbstractGraphDatabase
         
         SchemaCache schemaCache = new SchemaCache( Collections.<SchemaRule>emptyList() );
 
-        kernelAPI = life.add( new Kernel( txManager, propertyIndexManager, persistenceManager,
+        kernelAPI = life.add( new Kernel( txManager, propertyIndexManager, persistenceManager, nodeManager,
                 xaDataSourceManager, lockManager, schemaCache ) );
         // XXX: Circular dependency, temporary during transition to KernelAPI
         txManager.setKernel(kernelAPI);

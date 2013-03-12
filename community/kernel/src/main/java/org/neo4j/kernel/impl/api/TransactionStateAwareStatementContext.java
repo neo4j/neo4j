@@ -28,11 +28,17 @@ import static org.neo4j.helpers.collection.IteratorUtil.singleOrNull;
 import java.util.Collection;
 
 import org.neo4j.helpers.Predicate;
+import org.neo4j.helpers.ThisShouldNotHappenError;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.ConstraintViolationKernelException;
+import org.neo4j.kernel.api.PropertyKeyIdNotFoundException;
+import org.neo4j.kernel.api.PropertyNotFoundException;
 import org.neo4j.kernel.api.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.InternalIndexState;
+import org.neo4j.kernel.impl.api.index.IndexDescriptor;
+import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 
 public class TransactionStateAwareStatementContext extends DelegatingStatementContext
@@ -43,6 +49,13 @@ public class TransactionStateAwareStatementContext extends DelegatingStatementCo
     {
         super( actual );
         this.state = state;
+    }
+
+    @Override
+    public Object getNodePropertyValue( long nodeId, long propertyId )
+            throws PropertyNotFoundException, PropertyKeyIdNotFoundException
+    {
+        throw new UnsupportedOperationException( "only implemented in StoreStatementContext for now" );
     }
 
     @Override
@@ -190,14 +203,79 @@ public class TransactionStateAwareStatementContext extends DelegatingStatementCo
     @Override
     public Iterable<IndexRule> getIndexRules( long labelId )
     {
-        Iterable<IndexRule> committedRules = delegate.getIndexRules( labelId );
-        return state.getIndexRuleDiffSetsByLabel( labelId ).apply( committedRules );
+        return state.getIndexRuleDiffSetsByLabel( labelId ).apply( delegate.getIndexRules( labelId ) );
     }
 
     @Override
     public Iterable<IndexRule> getIndexRules()
     {
-        Iterable<IndexRule> committedRules = delegate.getIndexRules();
-        return state.getIndexRuleDiffSets().apply( committedRules );
+        return state.getIndexRuleDiffSets().apply( delegate.getIndexRules() );
+    }
+
+    @Override
+    public Iterable<Long> exactIndexLookup( long indexId, final Object value ) throws IndexNotFoundKernelException
+    {
+        IndexDescriptor idx = delegate.getIndexDescriptor( indexId );
+
+        // Start with nodes where the given property has changed
+        DiffSets<Long> diff = state.getNodesWithChangedProperty( idx.getPropertyKeyId(), value );
+
+        // Filter out deleted nodes
+        diff.removeAll( state.getDeletedNodes() );
+
+        // Ensure remaining nodes have the correct label
+        diff = diff.filterAdded( new HasLabelFilter( idx.getLabelId() ) );
+
+        // Include newly labeled nodes that already had the correct property
+        Iterable<Long> addedNodesWithLabel = state.getAddedNodesWithLabel( idx.getLabelId() );
+        diff.addAll( Iterables.filter( new HasPropertyFilter( idx.getPropertyKeyId(), value ), addedNodesWithLabel ) );
+
+        // Apply to actual index lookup
+        return diff.apply( delegate.exactIndexLookup( indexId, value ) );
+    }
+
+    private class HasPropertyFilter implements Predicate<Long>
+    {
+        private final Object value;
+        private final long propertyKeyId;
+
+        public HasPropertyFilter( long propertyKeyId, Object value )
+        {
+            this.value = value;
+            this.propertyKeyId = propertyKeyId;
+        }
+
+        @Override
+        public boolean accept( Long nodeId )
+        {
+            try
+            {
+                return value.equals( delegate.getNodePropertyValue( nodeId, propertyKeyId ) );
+            }
+            catch ( PropertyNotFoundException e )
+            {
+                return false;
+            }
+            catch ( PropertyKeyIdNotFoundException e )
+            {
+                throw new ThisShouldNotHappenError( "Stefan/Jake", "propertyKeyId became invalid during indexQuery" );
+            }
+        }
+    }
+
+    private class HasLabelFilter implements Predicate<Long>
+    {
+        private final long labelId;
+
+        public HasLabelFilter( long labelId )
+        {
+            this.labelId = labelId;
+        }
+
+        @Override
+        public boolean accept( Long nodeId )
+        {
+            return isLabelSetOnNode( labelId, nodeId );
+        }
     }
 }

@@ -31,7 +31,7 @@ import org.neo4j.kernel.impl.core.TransactionState;
  * This is an intermediary layer in the {@link StatementContext} cake which takes into
  * account what's in the old {@link TransactionState}. This is necessary since the
  * transaction state currently exists in two places: {@link TransactionState} and
- * {@link TxState} (managed by {@link TransactionStateAwareStatementContext}.
+ * {@link org.neo4j.kernel.impl.api.state.TxState} (managed by {@link TransactionStateAwareStatementContext}.
  * 
  * Please remove when all NodeImpl/RelationshipImpl/TransactionState functionality lives
  * in the {@link KernelAPI}.

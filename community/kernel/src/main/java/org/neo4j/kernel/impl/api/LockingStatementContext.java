@@ -20,6 +20,8 @@
 package org.neo4j.kernel.impl.api;
 
 import org.neo4j.kernel.api.ConstraintViolationKernelException;
+import org.neo4j.kernel.api.PropertyKeyIdNotFoundException;
+import org.neo4j.kernel.api.PropertyNotFoundException;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 
@@ -73,5 +75,13 @@ public class LockingStatementContext extends DelegatingStatementContext
     {
         lockHolder.acquireSchemaReadLock();
         return delegate.getIndexRules();
+    }
+
+    @Override
+    public Object getNodePropertyValue( long nodeId, long propertyId )
+            throws PropertyKeyIdNotFoundException, PropertyNotFoundException
+    {
+        lockHolder.acquireNodeReadLock( nodeId );
+        return super.getNodePropertyValue( nodeId, propertyId );
     }
 }

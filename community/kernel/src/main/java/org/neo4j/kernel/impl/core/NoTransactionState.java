@@ -19,12 +19,14 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import static java.util.Collections.emptySet;
+
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Set;
 
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.event.TransactionData;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.transaction.TxHook;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
@@ -194,12 +196,24 @@ public class NoTransactionState implements TransactionState
     @Override
     public Set<Long> getCreatedNodes()
     {
-        return Collections.emptySet();
+        return emptySet();
     }
 
     @Override
     public Set<Long> getCreatedRelationships()
     {
-        return Collections.emptySet();
+        return emptySet();
+    }
+
+    @Override
+    public Set<Long> getDeletedNodes()
+    {
+        return emptySet();
+    }
+
+    @Override
+    public Iterable<WritableTransactionState.CowNodeElement> getChangedNodes()
+    {
+        return Iterables.empty();
     }
 }

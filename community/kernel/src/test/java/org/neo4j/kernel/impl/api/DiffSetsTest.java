@@ -24,6 +24,8 @@ import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
 import org.junit.Test;
+import org.neo4j.helpers.Function;
+import org.neo4j.helpers.Predicate;
 
 public class DiffSetsTest
 {
@@ -118,4 +120,29 @@ public class DiffSetsTest
         assertEquals( asSet( 1L ), actual.getAdded() );
         assertEquals( asSet( 3L ), actual.getRemoved() );
     }
+
+
+    @Test
+    public void testFilterAdded()
+    {
+        // GIVEN
+        DiffSets<Long> actual = new DiffSets<Long>();
+        actual.addAll( asSet( 1L, 2L ) );
+        actual.removeAll( asSet( 3L, 4L ) );
+
+        // WHEN
+        DiffSets<Long> filtered = actual.filterAdded(ODD_FILTER);
+
+        // THEN
+        assertEquals( asSet( 1L ), filtered.getAdded() );
+        assertEquals( asSet( 3L, 4L ), filtered.getRemoved() );
+    }
+
+    private static final Predicate<Long> ODD_FILTER = new Predicate<Long>() {
+        @Override
+        public boolean accept( Long item )
+        {
+            return item % 2 == 1l;
+        }
+    };
 }

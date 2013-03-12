@@ -62,7 +62,7 @@ public class NodeImpl extends ArrayBasedPrimitive
     private volatile long relChainPosition = Record.NO_NEXT_RELATIONSHIP.intValue();
     private final long id;
 
-    NodeImpl( long id, long firstRel, long firstProp )
+    public NodeImpl( long id, long firstRel, long firstProp )
     {
         this( id, firstRel, firstProp, false );
     }

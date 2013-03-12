@@ -101,6 +101,11 @@ public interface TransactionState
     Set<Long> getCreatedNodes();
     
     Set<Long> getCreatedRelationships();
+
+    Set<Long> getDeletedNodes();
+
+    // Tech debt, this is here waiting for transaction state to move to the TxState class
+    Iterable<WritableTransactionState.CowNodeElement> getChangedNodes();
     
     public static final TransactionState NO_STATE = new NoTransactionState();
 }

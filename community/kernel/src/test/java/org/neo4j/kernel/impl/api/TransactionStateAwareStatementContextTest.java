@@ -19,15 +19,11 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static java.util.Arrays.asList;
+import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.*;
 import static org.mockito.Matchers.anyLong;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.collection.Iterables.option;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
@@ -46,10 +42,14 @@ import org.mockito.stubbing.Answer;
 import org.neo4j.kernel.api.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.index.InternalIndexState;
+import org.neo4j.kernel.impl.api.index.IndexDescriptor;
+import org.neo4j.kernel.impl.api.state.OldTxStateBridge;
+import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 
 public class TransactionStateAwareStatementContextTest
 {
+
     @Test
     public void addOnlyLabelShouldBeVisibleInTx() throws Exception
     {
@@ -348,6 +348,131 @@ public class TransactionStateAwareStatementContextTest
         assertEquals( asSet(), asSet( rulesByLabel ) );
     }
     
+    
+    // Index state
+
+    @Test
+    public void shouldExcludeRemovedNodesFromIndexQuery() throws Exception
+    {
+        // Given
+        long labelId = 2l;
+        long propertyKeyId = 3l;
+        String value = "My Value";
+
+        IndexDescriptor indexDescriptor = new IndexDescriptor( labelId, propertyKeyId );
+        when( store.getIndexDescriptor( 1337l ) ).thenReturn( indexDescriptor );
+        when( store.exactIndexLookup( 1337l, value ) ).thenReturn( asList( 1l, 2l, 3l ) );
+        when( oldTxState.getDeletedNodes() ).thenReturn( asList( 2l ) );
+        when( oldTxState.getNodesWithChangedProperty( propertyKeyId, value) ).thenReturn( new DiffSets<Long>(  ) );
+
+        // When
+        Iterable<Long> result = txContext.exactIndexLookup( 1337l, value );
+
+        // Then
+        assertThat( asSet( result ), equalTo( asSet( 1l, 3l ) ) );
+    }
+
+    @Test
+    public void shouldExcludeChangedNodesWithMissingLabelFromIndexQuery() throws Exception
+    {
+        // Given
+        long labelId = 2l;
+        long propertyKeyId = 3l;
+        String value = "My Value";
+
+        IndexDescriptor indexDescriptor = new IndexDescriptor( labelId, propertyKeyId );
+        when( store.getIndexDescriptor( 1337l ) ).thenReturn( indexDescriptor );
+        when( store.exactIndexLookup( 1337l, value ) ).thenReturn( asList( 2l, 3l ) );
+
+        when( store.isLabelSetOnNode( labelId, 1l ) ).thenReturn( false );
+        when( oldTxState.getDeletedNodes() ).thenReturn( Collections.<Long>emptyList() );
+        when( oldTxState.getNodesWithChangedProperty( propertyKeyId, value) ).thenReturn(
+                new DiffSets<Long>( asSet( 1l ), Collections.<Long>emptySet() ) );
+
+        // When
+        Iterable<Long> result = txContext.exactIndexLookup( 1337l, value );
+
+        // Then
+        assertThat( asSet( result ), equalTo( asSet( 2l, 3l ) ) );
+    }
+
+    @Test
+    public void shouldIncludeCreatedNodesWithCorrectLabelAndProperty() throws Exception
+    {
+        // Given
+        long labelId = 2l;
+        long propertyKeyId = 3l;
+        String value = "My Value";
+
+        IndexDescriptor indexDescriptor = new IndexDescriptor( labelId, propertyKeyId );
+        when( store.getIndexDescriptor( 1337l ) ).thenReturn( indexDescriptor );
+        when( store.exactIndexLookup( 1337l, value ) ).thenReturn( asList( 2l, 3l ) );
+
+        when( store.isLabelSetOnNode( labelId, 1l ) ).thenReturn( false );
+        when( oldTxState.getDeletedNodes() ).thenReturn( Collections.<Long>emptyList() );
+        when( oldTxState.getNodesWithChangedProperty( propertyKeyId, value) ).thenReturn(
+                new DiffSets<Long>( asSet( 1l ), Collections.<Long>emptySet() ) );
+
+        // When
+        txContext.addLabelToNode( labelId, 1l );
+        Iterable<Long> result = txContext.exactIndexLookup( 1337l, value );
+
+        // Then
+        assertThat( asSet( result ), equalTo( asSet( 1l, 2l, 3l ) ) );
+
+    }
+
+    @Test
+    public void shouldIncludeExistingNodesWithCorrectPropertyAfterAddingLabel() throws Exception
+    {
+        // Given
+        long labelId = 2l;
+        long propertyKeyId = 3l;
+        String value = "My Value";
+
+        IndexDescriptor indexDescriptor = new IndexDescriptor( labelId, propertyKeyId );
+        when( store.getIndexDescriptor( 1337l ) ).thenReturn( indexDescriptor );
+        when( store.exactIndexLookup( 1337l, value ) ).thenReturn( asList( 2l, 3l ) );
+
+        when( store.isLabelSetOnNode( labelId, 1l ) ).thenReturn( false );
+        when( store.getNodePropertyValue( 1l, propertyKeyId ) ).thenReturn( value );
+        when( oldTxState.getDeletedNodes() ).thenReturn( Collections.<Long>emptyList() );
+        when( oldTxState.getNodesWithChangedProperty( propertyKeyId, value) ).thenReturn( new DiffSets<Long>( ) );
+
+        // When
+        txContext.addLabelToNode( labelId, 1l );
+        Iterable<Long> result = txContext.exactIndexLookup( 1337l, value );
+
+        // Then
+        assertThat( asSet( result ), equalTo( asSet( 1l, 2l, 3l ) ) );
+
+    }
+
+    @Test
+    public void shouldExcludeNodesWithRemovedProperty() throws Exception
+    {
+        // Given
+        long labelId = 2l;
+        long propertyKeyId = 3l;
+        String value = "My Value";
+
+        IndexDescriptor indexDescriptor = new IndexDescriptor( labelId, propertyKeyId );
+        when( store.getIndexDescriptor( 1337l ) ).thenReturn( indexDescriptor );
+        when( store.exactIndexLookup( 1337l, value ) ).thenReturn( asList( 2l, 3l ) );
+
+        when( store.isLabelSetOnNode( labelId, 1l ) ).thenReturn( true );
+        when( oldTxState.getDeletedNodes() ).thenReturn( Collections.<Long>emptyList() );
+        when( oldTxState.getNodesWithChangedProperty( propertyKeyId, value) ).thenReturn(
+                new DiffSets<Long>( Collections.<Long>emptySet(), asSet( 1l ) ) );
+
+        // When
+        txContext.addLabelToNode( labelId, 1l );
+        Iterable<Long> result = txContext.exactIndexLookup( 1337l, value );
+
+        // Then
+        assertThat( asSet( result ), equalTo( asSet( 2l, 3l ) ) );
+    }
+
     private ExceptionExpectingFunction<SchemaRuleNotFoundException> getIndexRule()
     {
         return new ExceptionExpectingFunction<SchemaRuleNotFoundException>()
@@ -386,8 +511,9 @@ public class TransactionStateAwareStatementContextTest
     private int rulesCreated;
 
     private StatementContext store;
+    private OldTxStateBridge oldTxState;
     private TxState state;
-    private StatementContext txContext;
+    private TransactionStateAwareStatementContext txContext;
     
     @Before
     public void before() throws Exception
@@ -405,7 +531,10 @@ public class TransactionStateAwareStatementContextTest
                         (Long) invocation.getArguments()[1] );
             }
         } );
-        state = new TxState();
+
+        oldTxState = mock( OldTxStateBridge.class );
+
+        state = new TxState(oldTxState);
         txContext = new TransactionStateAwareStatementContext( store, state );
     }
     

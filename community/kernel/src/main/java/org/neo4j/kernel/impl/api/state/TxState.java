@@ -17,13 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api;
+package org.neo4j.kernel.impl.api.state;
 
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
+import org.neo4j.kernel.impl.api.DiffSets;
+import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 
 public class TxState
@@ -35,7 +38,14 @@ public class TxState
     private final Map<Long, LabelState> labelStates = new HashMap<Long, LabelState>();
     
     private final DiffSets<IndexRule> ruleDiffSets = new DiffSets<IndexRule>();
-    
+
+    private final OldTxStateBridge legacyState;
+
+    public TxState(OldTxStateBridge legacyState)
+    {
+        this.legacyState = legacyState;
+    }
+
     public boolean hasChanges()
     {
         return !nodeStates.isEmpty() || !labelStates.isEmpty();
@@ -119,11 +129,6 @@ public class TxState
         LabelState labelState = getState( labelStates, rule.getLabel(), LABEL_STATE_CREATOR );
         labelState.getIndexRuleDiffSets().remove( rule );
     }
-
-    public Iterable<LabelState> getLabelStates()
-    {
-        return labelStates.values();
-    }
     
     public DiffSets<IndexRule> getIndexRuleDiffSetsByLabel( long labelId )
     {
@@ -135,13 +140,16 @@ public class TxState
     {
         return ruleDiffSets;
     }
-    
-    public boolean hasAddedIndexRule( long labelId, long propertyKey )
+
+    public DiffSets<Long> getNodesWithChangedProperty( long propertyKeyId, Object value )
     {
-        LabelState state = getState( labelStates, labelId, null );
-        return state != null ? state.hasAddedIndexRule( propertyKey ) : false;
+        return legacyState.getNodesWithChangedProperty( propertyKeyId, value );
     }
-    
+
+    public Iterable<Long> getDeletedNodes() {
+        return legacyState.getDeletedNodes();
+    }
+
     private static interface StateCreator<STATE>
     {
         STATE newState( long id );
@@ -178,12 +186,12 @@ public class TxState
             return new LabelState( id );
         }
     };
-    
-    static class EntityState
+
+    public static class EntityState
     {
         private final long id;
-        
-        EntityState( long id )
+
+        public EntityState( long id )
         {
             this.id = id;
         }
@@ -196,7 +204,7 @@ public class TxState
     
     public static class NodeState extends EntityState
     {
-        NodeState( long id )
+        public NodeState( long id )
         {
             super( id );
         }
@@ -214,7 +222,7 @@ public class TxState
         private final DiffSets<Long> nodeDiffSets = new DiffSets<Long>();
         private final DiffSets<IndexRule> indexRuleDiffSets = new DiffSets<IndexRule>();
 
-        LabelState( long id )
+        public LabelState( long id )
         {
             super( id );
         }
@@ -227,18 +235,6 @@ public class TxState
         public DiffSets<IndexRule> getIndexRuleDiffSets()
         {
             return indexRuleDiffSets;
-        }
-
-        public boolean hasAddedIndexRule( long propertyKey )
-        {
-            for ( IndexRule addedRule : indexRuleDiffSets.getAdded() )
-            {
-                if ( addedRule.getPropertyKey() == propertyKey )
-                {
-                    return true;
-                }
-            }
-            return false;
         }
     }
 }

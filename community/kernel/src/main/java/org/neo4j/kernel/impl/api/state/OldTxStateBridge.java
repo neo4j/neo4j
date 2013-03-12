@@ -17,39 +17,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api.index;
+package org.neo4j.kernel.impl.api.state;
 
-import org.neo4j.kernel.impl.nioneo.store.IndexRule;
+import org.neo4j.kernel.impl.api.DiffSets;
 
 /**
- * Description of a single index as needed by the {@link IndexProxy} cake
- *
- * This is a IndexContext cake level representation of {@link IndexRule}
+ * Temporary anti-corruption while the old {@link org.neo4j.kernel.impl.core.TransactionState} class
+ * still remains.
  */
-public class IndexDescriptor
+public interface OldTxStateBridge
 {
-    private final long labelId;
-    private final long propertyKeyId;
 
-    public IndexDescriptor( long labelId, long propertyKeyId )
-    {
-        this.labelId = labelId;
-        this.propertyKeyId = propertyKeyId;
-    }
+    Iterable<Long> getDeletedNodes();
 
-    public long getLabelId()
-    {
-        return labelId;
-    }
-
-    public long getPropertyKeyId()
-    {
-        return propertyKeyId;
-    }
-    
-    @Override
-    public String toString()
-    {
-        return getClass().getName() + "[label:" + labelId + ", on:" + propertyKeyId + "]";
-    }
+    /**
+     * A diff set of nodes that have had the given property key and value added or removed/changed.
+     */
+    DiffSets<Long> getNodesWithChangedProperty(long propertyKey, Object value);
 }

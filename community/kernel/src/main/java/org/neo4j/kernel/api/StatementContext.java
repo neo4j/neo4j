@@ -21,6 +21,7 @@ package org.neo4j.kernel.api;
 
 import org.neo4j.kernel.api.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.InternalIndexState;
+import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 
 /**
@@ -101,9 +102,14 @@ public interface StatementContext
     IndexRule addIndexRule( long labelId, long propertyKey ) throws ConstraintViolationKernelException;
     
     /**
-     * Returns the index rule ID for the given labelId and propertyKey.
+     * Returns the index rule for the given labelId and propertyKey.
      */
     IndexRule getIndexRule( long labelId, long propertyKey ) throws SchemaRuleNotFoundException;
+
+    /**
+     * Returns the index descriptor for the given indexId.
+     */
+    IndexDescriptor getIndexDescriptor( long indexId ) throws IndexNotFoundKernelException;
 
     /**
      * Get all indexes for a label.
@@ -141,6 +147,13 @@ public interface StatementContext
      * Returns the name of a property given it's property key id
      */
     String getPropertyKeyName( long propertyId ) throws PropertyKeyIdNotFoundException;
+
+
+    /**
+     * Returns the value of the property given it's property key id for the node with the given node id
+     */
+    Object getNodePropertyValue( long nodeId, long propertyId)
+            throws PropertyKeyIdNotFoundException, PropertyNotFoundException;
 
     /**
      * Returns an iterable with the matched nodes.

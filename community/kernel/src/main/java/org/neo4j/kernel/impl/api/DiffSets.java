@@ -21,12 +21,14 @@ package org.neo4j.kernel.impl.api;
 
 import static org.neo4j.helpers.collection.Iterables.concat;
 import static org.neo4j.helpers.collection.Iterables.filter;
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
 import org.neo4j.helpers.Predicate;
+import org.neo4j.helpers.collection.Iterables;
 
 /**
  * Given a sequence of add and removal operations, instances of DiffSets track
@@ -144,6 +146,14 @@ public class DiffSets<T>
         if ( removedElements == null )
         {
             removedElements = newSet();
+            ensureFilterHasBeenCreated();
+        }
+    }
+
+    private void ensureFilterHasBeenCreated()
+    {
+        if (filter == null)
+        {
             filter = new Predicate<T>()
             {
                 @Override
@@ -170,9 +180,19 @@ public class DiffSets<T>
     {
         Iterable<T> result = source;
         if ( removedElements != null && !removedElements.isEmpty() )
+        {
+            ensureFilterHasBeenCreated();
             result = filter( filter, result );
+        }
         if ( addedElements != null && !addedElements.isEmpty() )
             result = concat( result, addedElements );
         return result;
+    }
+
+    public DiffSets<T> filterAdded( Predicate<T> addedFilter )
+    {
+        Iterable<T> newAdded = Iterables.filter( addedFilter, getAdded() );
+        Set<T> newRemoved = getRemoved();
+        return new DiffSets<T>( asSet( newAdded ), asSet( newRemoved ) );
     }
 }

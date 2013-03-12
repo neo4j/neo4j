@@ -33,6 +33,7 @@ import javax.transaction.Transaction;
 
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.event.TransactionData;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.transaction.LockManager;
@@ -71,6 +72,7 @@ public class WritableTransactionState implements TransactionState
                 new ArrayMap<Long,CowRelElement>();
         private final Set<Long> createdNodes = new HashSet<Long>();
         private final Set<Long> createdRelationships = new HashSet<Long>();
+        private final Set<Long> deletedNodes = new HashSet<Long>();
         private CowGraphElement graph;
 
         public CowNodeElement nodeElement( long id, boolean create )
@@ -122,6 +124,11 @@ public class WritableTransactionState implements TransactionState
         CowEntityElement( long id )
         {
             this.id = id;
+        }
+
+        public long getId()
+        {
+            return id;
         }
 
         public ArrayMap<Integer, PropertyData> getPropertyAddMap( boolean create )
@@ -539,6 +546,7 @@ public class WritableTransactionState implements TransactionState
         PrimitiveElement element = getPrimitiveElement( true );
         element.nodeElement( id, true ).setDeleted();
         element.createdNodes.remove( id );
+        element.deletedNodes.add( id );
     }
     
     @Override
@@ -727,6 +735,21 @@ public class WritableTransactionState implements TransactionState
     public Set<Long> getCreatedRelationships()
     {
         return primitiveElement != null ? primitiveElement.createdRelationships : Collections.<Long>emptySet();
+    }
+
+    @Override
+    public Set<Long> getDeletedNodes()
+    {
+        return primitiveElement.deletedNodes;
+    }
+
+    @Override
+    public Iterable<CowNodeElement> getChangedNodes()
+    {
+        if ( primitiveElement == null )
+            return Iterables.empty();
+
+        return primitiveElement.nodes.values();
     }
 
     @Override
