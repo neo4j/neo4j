@@ -740,7 +740,7 @@ public class WritableTransactionState implements TransactionState
     @Override
     public Set<Long> getDeletedNodes()
     {
-        return primitiveElement.deletedNodes;
+        return primitiveElement != null ? primitiveElement.deletedNodes : Collections.<Long>emptySet();
     }
 
     @Override
