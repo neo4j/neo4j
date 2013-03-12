@@ -45,7 +45,7 @@ public class Neo4jBasicTest
     @Before
     public void prepareTestDatabase()
     {
-        graphDb = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().newGraphDatabase();
+        graphDb = new TestGraphDatabaseFactory().newImpermanentDatabase();
     }
     // END SNIPPET: beforeTest
 

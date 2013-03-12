@@ -21,7 +21,7 @@ Eclipse::
    In the dialog, choose _Add External JARs_, browse to the Neo4j 'lib/' directory and select all of the jar files.
  * Another option is to use http://help.eclipse.org/indigo/index.jsp?topic=/org.eclipse.jdt.doc.user/reference/preferences/java/buildpath/ref-preferences-user-libraries.htm[User Libraries].
 IntelliJ IDEA::
- See http://www.jetbrains.com/idea/webhelp/libraries-global-libraries-and-the-configure-library-dialog.html[Libraries, Global Libraries, and the Configure Library dialog]
+ See http://www.jetbrains.com/idea/webhelp/configuring-project-and-global-libraries.html[Libraries, Global Libraries, and the Configure Library dialog]
 NetBeans::
  * Right-click on the _Libraries_ node of the project, choose _Add JAR/Folder_, browse to the Neo4j 'lib/' directory and select all of the jar files.
  * You can also handle libraries from the project node, see http://netbeans.org/kb/docs/java/project-setup.html#projects-classpath[Managing a Project's Classpath].
@@ -147,8 +147,6 @@ classifier=sources
 tag=shutdownHook
 ----
 
-If you want a _read-only view_ of the database, use +http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/kernel/EmbeddedReadOnlyGraphDatabase.html[EmbeddedReadOnlyGraphDatabase]+. 
-
 [[tutorials-java-embedded-setup-config]]
 === Starting an embedded database with configuration settings ===
 
@@ -157,21 +155,37 @@ To start Neo4j with configuration settings, a Neo4j properties file can be loade
 [snippet,java]
 ----
 component=neo4j-examples
-source=org/neo4j/examples/StartWithConfiguration.java
+source=org/neo4j/examples/StartWithConfigurationTest.java
 classifier=test-sources
 tag=startDbWithConfig
 ----
 
-Or you could of course create you own +Map<String, String>+ programatically and use that instead, like so:
+Or you could of course create you own +Map<String, String>+ programmatically and use that instead, like so:
 
 [snippet,java]
 ----
 component=neo4j-examples
-source=org/neo4j/examples/StartWithConfiguration.java
+source=org/neo4j/examples/StartWithConfigurationTest.java
 classifier=test-sources
-tag=startDbWithConfigInMap
+tag=startDbWithMapConfig
 ----
 
 For configuration settings, see <<embedded-configuration>>.
 
+[[tutorials-java-embedded-setup-readonly]]
+=== Starting an embedded read-only instance ===
+
+If you want a _read-only view_ of the database, create an instance this way:
+
+[snippet,java]
+----
+component=neo4j-examples
+source=org/neo4j/examples/ReadOnlyTest.java
+classifier=test-sources
+tag=createReadOnlyInstance
+----
+
+Obviously the database has to exist already in this case.
+
+NOTE: Concurrent access to the same database files by multiple (read-only or write) instances is not supported.
 

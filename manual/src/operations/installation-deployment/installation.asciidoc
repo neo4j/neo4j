@@ -23,7 +23,7 @@ TIP: Follow the links in the table for details on dependency configuration with 
 
 NOTE: The listed dependencies do not contain the implementation, but pulls it in transitively.
 
-For more information regarding licensing, see the http://neo4j.org/licensing-guide/[Licensing Guide].
+For more information regarding licensing, see the http://www.neo4j.org/learn/licensing[Licensing Guide].
 
 
 == Embedded Installation ==

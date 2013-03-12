@@ -146,7 +146,7 @@ public class EmbeddedNeo4j
     {
         // Registers a shutdown hook for the Neo4j instance so that it
         // shuts down nicely when the VM exits (even if you "Ctrl-C" the
-        // running example before it's completed)
+        // running application).
         Runtime.getRuntime().addShutdownHook( new Thread()
         {
             @Override

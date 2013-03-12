@@ -109,26 +109,27 @@ The delete semantics can be summarized in the following bullets:
 
 [[transactions-unique-nodes]]
 == Creating unique nodes ==
-In many use cases, a certain level of uniqueness is desired among entities. You could for instance imagine that only
-one user with a certain e-mail address may exist in a system. If multiple concurrent threads naively try to create the
-user, duplicates will be created. There are three main strategies for ensuring uniqueness, and they all work across HA
-and single-instance deployments.
+In many use cases, a certain level of uniqueness is desired among entities.
+You could for instance imagine that only one user with a certain e-mail address may exist in a system.
+If multiple concurrent threads naively try to create the user, duplicates will be created.
+There are three main strategies for ensuring uniqueness, and they all work across HA and single-instance deployments.
 
 === Single thread ===
-By using a single thread, no two threads will even try to create a particular entity simultaneously. On HA,
-an external single-threaded client can perform the operations on the cluster.
+By using a single thread, no two threads will even try to create a particular entity simultaneously.
+On HA, an external single-threaded client can perform the operations on the cluster.
 
 [[transactions-get-or-create]]
 === Get or create ===
 By using http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/index/Index.html#putIfAbsent%28T,%20java.lang.String,%20java.lang.Object%29[+put-if-absent+] functionality,
-entity uniqueness can be guaranteed using an index. Here the index acts as the lock and will only lock the smallest part needed to guaranteed uniqueness across threads and transactions.
+entity uniqueness can be guaranteed using an index.
+Here the index acts as the lock and will only lock the smallest part needed to guaranteed uniqueness across threads and transactions.
 To get the more high-level +get-or-create+ functionality make use of http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/index/UniqueFactory.html[+UniqueFactory+] as seen in the example below.
 
-Example code:
+.Example code
 [snippet,java]
 ----
 component=neo4j-examples
-source=org/neo4j/examples/GetOrCreateTest.java
+source=org/neo4j/examples/GetOrCreateIT.java
 classifier=test-sources
 tag=getOrCreate
 ----
@@ -140,16 +141,16 @@ While this is a working solution, please consider using the preferred  <<transac
 By using explicit, pessimistic locking, unique creation of entities can be achieved in a multi-threaded environment.
 It is most commonly done by locking on a single or a set of common nodes.
 
-One might be tempted to use Java synchronization for this, but it is dangerous. By mixing locks in the Neo4j kernel
-and in the Java runtime, it is easy to produce deadlocks that are not detectable by Neo4j. As long as all locking is
-done by Neo4j, all deadlocks will be detected and avoided.
+One might be tempted to use Java synchronization for this, but this is dangerous.
+By mixing locks in the Neo4j kernel and in the Java runtime, it is easy to produce deadlocks that are not detectable by Neo4j.
+As long as all locking is done by Neo4j, all deadlocks will be detected and avoided.
 Also, a solution using manual synchronization doesn't ensure uniqueness in an HA environment.
 
-Example code:
+.Example code
 [snippet,java]
 ----
 component=neo4j-examples
-source=org/neo4j/examples/GetOrCreateTest.java
+source=org/neo4j/examples/GetOrCreateIT.java
 classifier=test-sources
 tag=pessimisticLocking
 ----
