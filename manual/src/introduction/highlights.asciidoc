@@ -6,10 +6,11 @@ As a robust, scalable and high-performance database, Neo4j is suitable for full 
 
 It features:
 
-* true ACID transactions
-* high availability
-* scales to billions of nodes and relationships
-* high speed querying through traversals
+* true ACID transactions,
+* high availability,
+* scales to billions of nodes and relationships,
+* high speed querying through traversals,
+* declarative graph query language.
 
 Proper ACID behavior is the foundation of data reliability.
 Neo4j enforces that all operations that modify data occur within a transaction, guaranteeing consistent data.

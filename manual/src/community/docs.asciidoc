@@ -65,8 +65,7 @@ This is how a document should start:
 [source]
 ----
 [[unique-id-verbose-is-ok]]
-The Document Title
-==================
+= The Document Title =
 ----
 
 To push the headings down to the right level in the output, the +leveloffset+ 

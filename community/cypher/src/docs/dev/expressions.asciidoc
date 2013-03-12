@@ -2,6 +2,8 @@
 Expressions
 ===========
 
+== Expressions in general ==
+
 An expression in Cypher can be:
 
 * A numeric literal (integer or double): `13`, `40000`, `3.14`.

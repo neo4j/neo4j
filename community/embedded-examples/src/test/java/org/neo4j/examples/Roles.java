@@ -27,16 +27,16 @@ import static org.neo4j.visualization.asciidoc.AsciidocHelper.createQueryResultS
 import org.junit.Test;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Path;
+import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.graphdb.traversal.Evaluators;
-import org.neo4j.graphdb.traversal.TraversalDescription;
-import org.neo4j.graphdb.traversal.Traverser;
-import org.neo4j.kernel.Traversal;
+import org.neo4j.graphdb.ReturnableEvaluator;
+import org.neo4j.graphdb.StopEvaluator;
+import org.neo4j.graphdb.TraversalPosition;
+import org.neo4j.graphdb.Traverser;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.test.GraphDescription.Graph;
 
-public class RolesTest extends AbstractJavaDocTestbase
+public class Roles extends AbstractJavaDocTestbase
 {
     private static final String NAME = "name";
 
@@ -178,12 +178,12 @@ public class RolesTest extends AbstractJavaDocTestbase
         System.out.println( "All admins:" );
         // START SNIPPET: get-admins
         Node admins = getNodeByName( "Admins" );
-        TraversalDescription traversalDescription = Traversal.description()
-                .breadthFirst()
-                .evaluator( Evaluators.excludeStartPosition() )
-                .relationships( RoleRels.PART_OF, Direction.INCOMING )
-                .relationships( RoleRels.MEMBER_OF, Direction.INCOMING );
-        Traverser traverser = traversalDescription.traverse( admins );
+        Traverser traverser = admins.traverse(
+                Traverser.Order.BREADTH_FIRST,
+                StopEvaluator.END_OF_GRAPH,
+                ReturnableEvaluator.ALL_BUT_START_NODE,
+                RoleRels.PART_OF, Direction.INCOMING,
+                RoleRels.MEMBER_OF, Direction.INCOMING );
         // END SNIPPET: get-admins
         
         gen.get().addSnippet( "o-get-admins", createOutputSnippet( traverserToString( traverser ) ) );
@@ -199,14 +199,13 @@ public class RolesTest extends AbstractJavaDocTestbase
         //Jale's memberships
         // START SNIPPET: get-user-memberships
         Node jale = getNodeByName( "Jale" );
-        traversalDescription = Traversal.description()
-                .depthFirst()
-                .evaluator( Evaluators.excludeStartPosition() )
-                .relationships( RoleRels.MEMBER_OF, Direction.OUTGOING )
-                .relationships( RoleRels.PART_OF, Direction.OUTGOING );
-        traverser = traversalDescription.traverse( jale );
+        traverser = jale.traverse(
+                Traverser.Order.DEPTH_FIRST,
+                StopEvaluator.END_OF_GRAPH,
+                ReturnableEvaluator.ALL_BUT_START_NODE,
+                RoleRels.MEMBER_OF, Direction.OUTGOING,
+                RoleRels.PART_OF, Direction.OUTGOING );
         // END SNIPPET: get-user-memberships
-
         gen.get().addSnippet( "o-get-user-memberships", createOutputSnippet( traverserToString( traverser ) ) );
         query = "start jale=node("
                 + jale.getId()
@@ -222,14 +221,13 @@ public class RolesTest extends AbstractJavaDocTestbase
         // get all groups
         // START SNIPPET: get-groups
         Node referenceNode = getNodeByName( "Reference_Node") ;
-        traversalDescription = Traversal.description()
-                .breadthFirst()
-                .evaluator( Evaluators.excludeStartPosition() )
-                .relationships( RoleRels.ROOT, Direction.INCOMING )
-                .relationships( RoleRels.PART_OF, Direction.INCOMING );
-        traverser = traversalDescription.traverse( referenceNode );
+        traverser = referenceNode.traverse(
+                Traverser.Order.BREADTH_FIRST,
+                StopEvaluator.END_OF_GRAPH,
+                ReturnableEvaluator.ALL_BUT_START_NODE,
+                RoleRels.ROOT, Direction.INCOMING,
+                RoleRels.PART_OF, Direction.INCOMING );
         // END SNIPPET: get-groups
-
         gen.get().addSnippet( "o-get-groups", createOutputSnippet( traverserToString( traverser ) ) );
         query = "start refNode=node("
                 + referenceNode.getId()
@@ -244,13 +242,27 @@ public class RolesTest extends AbstractJavaDocTestbase
         
         //get all members
         // START SNIPPET: get-members
-        traversalDescription = Traversal.description()
-                .breadthFirst()
-                .evaluator(
-                        Evaluators.includeWhereLastRelationshipTypeIs( RoleRels.MEMBER_OF ) );
-        traverser = traversalDescription.traverse( referenceNode );
+        traverser = referenceNode.traverse(
+                Traverser.Order.BREADTH_FIRST,
+                StopEvaluator.END_OF_GRAPH,
+                new ReturnableEvaluator()
+                {
+                    @Override
+                    public boolean isReturnableNode(
+                            TraversalPosition currentPos )
+                    {
+                        if ( currentPos.isStartNode() )
+                        {
+                            return false;
+                        }
+                        Relationship rel = currentPos.lastRelationshipTraversed();
+                        return rel.isType( RoleRels.MEMBER_OF );
+                    }
+                },
+                RoleRels.ROOT, Direction.INCOMING,
+                RoleRels.PART_OF, Direction.INCOMING,
+                RoleRels.MEMBER_OF, Direction.INCOMING );
         // END SNIPPET: get-members
-
         gen.get().addSnippet( "o-get-members", createOutputSnippet( traverserToString( traverser ) ) );
         query = "start refNode=node("+ referenceNode.getId() +") " +
         		"match refNode<-[:ROOT]->root, p=root<-[PART_OF*0..]-()<-[:MEMBER_OF]-user " +
@@ -275,11 +287,10 @@ public class RolesTest extends AbstractJavaDocTestbase
     {
         // START SNIPPET: read-traverser
         String output = "";
-        for ( Path path : traverser )
+        for ( Node node : traverser )
         {
-            Node node = path.endNode();
             output += "Found: " + node.getProperty( NAME ) + " at depth: "
-                      + ( path.length() - 1 ) + "\n";
+                      + ( traverser.currentPosition().depth() - 1 ) + "\n";
         }
         // END SNIPPET: read-traverser
         return output;

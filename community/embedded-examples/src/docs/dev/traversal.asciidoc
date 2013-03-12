@@ -8,10 +8,12 @@ For more examples of traversals, see <<data-modeling-examples>>.
 
 == The Matrix ==
 
-The traversals from the Matrix example above, this time using the new traversal API:
+This is the first graph we want to traverse into:
+
+image::examples-matrix.png[title="Matrix node space view", scaledwidth="75%"]
 
 [TIP]
-The source code of the examples is found here:
+The source code of this example is found here:
 https://github.com/neo4j/neo4j/blob/{neo4j-git-tag}/community/embedded-examples/src/main/java/org/neo4j/examples/NewMatrix.java[NewMatrix.java]
 
 .Friends and friends of friends
@@ -130,63 +132,3 @@ For options regarding output of a +Path+, see the
 http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/kernel/Traversal.html[Traversal] class.
 
 
-[NOTE]
-The following examples use a deprecated traversal API.
-It shares the underlying implementation with the new traversal API, so performance-wise they are equal.
-The functionality it provides is very limited in comparison. 
-
-== Old traversal API ==
-
-This is the first graph we want to traverse into:
-
-image::examples-matrix.png[title="Matrix node space view", scaledwidth="75%"]
-
-[TIP]
-The source code of the examples is found here:
-https://github.com/neo4j/neo4j/blob/{neo4j-git-tag}/community/embedded-examples/src/main/java/org/neo4j/examples/Matrix.java[Matrix.java]
-
-.Friends and friends of friends
-[snippet,java]
-----
-component=neo4j-examples
-classifier=sources
-source=org/neo4j/examples/Matrix.java
-tag=get-friends
-----
-
-Let's perform the actual traversal and print the results:
-
-[snippet,java]
-----
-component=neo4j-examples
-classifier=sources
-source=org/neo4j/examples/Matrix.java
-tag=friends-usage
-----
-
-Which will give us the following output:
-
-include::matrix-traversal-java-friends.asciidoc[]
-
-.Who coded the Matrix?
-[snippet,java]
-----
-component=neo4j-examples
-classifier=sources
-source=org/neo4j/examples/Matrix.java
-tag=find-hackers
-----
-    
-Print out the result:    
-
-[snippet,java]
-----
-component=neo4j-examples
-classifier=sources
-source=org/neo4j/examples/Matrix.java
-tag=find--hackers-usage
-----
-
-Now we know who coded the Matrix:
-
-include::matrix-traversal-java-hackers.asciidoc[]

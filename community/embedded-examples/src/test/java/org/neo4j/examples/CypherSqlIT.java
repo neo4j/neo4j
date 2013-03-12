@@ -29,17 +29,18 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.neo4j.kernel.impl.annotations.Documented;
-import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.TestData.Title;
+import org.neo4j.test.TestGraphDatabaseFactory;
 
-public class CypherSqlTest extends AbstractJavaDocTestbase
+public class CypherSqlIT extends AbstractJavaDocTestbase
 {
     private static CypherSql cyperSql;
 
     @BeforeClass
     public static void setUpDbs() throws SQLException
     {
-        cyperSql = new CypherSql( new ImpermanentGraphDatabase() );
+        cyperSql = new CypherSql(
+                new TestGraphDatabaseFactory().newImpermanentDatabase() );
         cyperSql.createDbs();
     }
 
