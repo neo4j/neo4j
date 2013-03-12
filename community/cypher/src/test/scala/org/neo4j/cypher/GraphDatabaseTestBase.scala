@@ -157,19 +157,6 @@ class GraphDatabaseTestBase extends JUnitSuite {
     nodes
   }
 
-  def createIndex(labelName: String, prop: String) = {
-    val tx = graph.beginTx()
-
-    graph.schema().
-      indexCreator(label(labelName)).
-      on(prop).
-      create()
-
-    tx.success()
-    tx.finish()
-  }
-
-
   def createDiamond(): (Node, Node, Node, Node) = {
     //    Graph:
     //             (a)

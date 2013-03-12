@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.helpers
 
-import org.neo4j.graphdb.{Transaction, DynamicLabel, Node}
+import org.neo4j.graphdb.{DynamicLabel, Node}
 import org.neo4j.graphdb.DynamicLabel._
 import org.neo4j.kernel.GraphDatabaseAPI
 import collection.JavaConverters._
@@ -32,7 +32,6 @@ trait GraphIcing {
 
     def addLabels(input: String*) = input.foreach(l => n.addLabel(label(l)))
   }
-
 
   implicit class RichGraph(graph: GraphDatabaseAPI) {
 
@@ -51,7 +50,7 @@ trait GraphIcing {
       finally {
         tx.finish()
       }
-      graph.schema().awaitIndexOnline( indexDef, TimeUnit.MINUTES, 1L )
+      graph.schema().awaitIndexOnline(indexDef, TimeUnit.SECONDS, 10)
     }
 
 

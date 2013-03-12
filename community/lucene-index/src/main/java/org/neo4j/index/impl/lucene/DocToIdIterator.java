@@ -24,13 +24,13 @@ import java.util.Collection;
 import org.apache.lucene.document.Document;
 import org.neo4j.graphdb.index.IndexHits;
 
-class DocToIdIterator extends AbstractIndexHits<Long>
+public class DocToIdIterator extends AbstractIndexHits<Long>
 {
     private final Collection<Long> exclude;
     private IndexReference searcherOrNull;
     private final IndexHits<Document> source;
     
-    DocToIdIterator( IndexHits<Document> source, Collection<Long> exclude, IndexReference searcherOrNull )
+    public DocToIdIterator( IndexHits<Document> source, Collection<Long> exclude, IndexReference searcherOrNull )
     {
         this.source = source;
         this.exclude = exclude;
@@ -77,6 +77,7 @@ class DocToIdIterator extends AbstractIndexHits<Long>
         }
     }
 
+    @Override
     public int size()
     {
         /*
@@ -92,6 +93,7 @@ class DocToIdIterator extends AbstractIndexHits<Long>
         return searcherOrNull==null;
     }
 
+    @Override
     public float currentScore()
     {
         return source.currentScore();

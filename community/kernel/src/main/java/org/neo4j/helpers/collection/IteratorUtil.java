@@ -396,6 +396,34 @@ public abstract class IteratorUtil
      * Adds all the items in {@code iterator} to {@code collection}.
      * @param <C> the type of {@link Collection} to add to items to.
      * @param <T> the type of items in the collection and iterator.
+     * @param iterator the {@link Iterator} to grab the items from.
+     * @param collection the {@link Collection} to add the items to.
+     * @return the {@code collection} which was passed in, now filled
+     * with the items from {@code iterator}.
+     */
+    public static <C extends Collection<T>,T> C addToCollectionUnique( Iterator<T> iterator,
+            C collection )
+    {
+        while ( iterator.hasNext() )
+        {
+            addUnique( collection, iterator.next() );
+        }
+        return collection;
+    }
+
+    private static <T, C extends Collection<T>> void addUnique( C collection, T item )
+    {
+        if ( !collection.add( item ) )
+        {
+            throw new IllegalStateException( "Encountered an already added item:" + item +
+                    " when adding items uniquely to a collection:" + collection );
+        }
+    }
+    
+    /**
+     * Adds all the items in {@code iterator} to {@code collection}.
+     * @param <C> the type of {@link Collection} to add to items to.
+     * @param <T> the type of items in the collection and iterator.
      * @param iterable the {@link Iterator} to grab the items from.
      * @param collection the {@link Collection} to add the items to.
      * @return the {@code collection} which was passed in, now filled
@@ -404,9 +432,24 @@ public abstract class IteratorUtil
     public static <C extends Collection<T>,T> C addToCollection( Iterable<T> iterable,
             C collection )
     {
-        return addToCollection(iterable.iterator(), collection);
+        return addToCollection( iterable.iterator(), collection );
     }
 
+    /**
+     * Adds all the items in {@code iterator} to {@code collection}.
+     * @param <C> the type of {@link Collection} to add to items to.
+     * @param <T> the type of items in the collection and iterator.
+     * @param iterable the {@link Iterator} to grab the items from.
+     * @param collection the {@link Collection} to add the items to.
+     * @return the {@code collection} which was passed in, now filled
+     * with the items from {@code iterator}.
+     */
+    public static <C extends Collection<T>,T> C addToCollectionUnique( Iterable<T> iterable,
+            C collection )
+    {
+        return addToCollectionUnique( iterable.iterator(), collection );
+    }
+    
     /**
      * Convenience method for looping over an {@link Iterator}. Converts the
      * {@link Iterator} to an {@link Iterable} by wrapping it in an
@@ -505,6 +548,18 @@ public abstract class IteratorUtil
     }
 
     /**
+     * Creates a {@link Set} from an {@link Iterable}.
+     *
+     * @param iterable The items to create the set from.
+     * @param <T> The generic type of items.
+     * @return a set containing all items from the {@link Iterable}.
+     */
+    public static <T> Set<T> asUniqueSet( Iterable<T> iterable )
+    {
+        return addToCollectionUnique( iterable, new HashSet<T>() );
+    }
+    
+    /**
      * Creates a {@link Set} from an array of items.
      *
      * @param items the items to add to the set.
@@ -516,8 +571,23 @@ public abstract class IteratorUtil
     }
 
     /**
+     * Creates a {@link Set} from an array of items.
+     *
+     * @param items the items to add to the set.
+     * @return the {@link Set} containing the items.
+     */
+    public static <T> Set<T> asUniqueSet( T... items )
+    {
+        HashSet<T> set = new HashSet<T>();
+        for ( T item : items )
+            addUnique( set, item );
+        return set;
+    }
+    
+    /**
      * Function for converting Enum to String
      */
+    @SuppressWarnings( "rawtypes" )
     public static Function<Enum, String> ENUM_NAME = new Function<Enum, String>()
     {
         @Override
@@ -533,6 +603,7 @@ public abstract class IteratorUtil
      * @param enums the enums to convert.
      * @return the set of enum names
      */
+    @SuppressWarnings( "rawtypes" )
     public static Set<String> asEnumNameSet( Iterable<Enum> enums )
     {
         return asSet( map( ENUM_NAME, enums ) );

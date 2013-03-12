@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.api.index;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.awaitFuture;
@@ -49,6 +50,44 @@ public class FlippableIndexContextTest
 
         // THEN
         verify( other ).drop();
+    }
+
+    @Test(expected = FlippableIndexContext.FlipFailedKernelException.class)
+    public void shouldNotBeAbleToFlipAfterClosed() throws Exception
+    {
+        //GIVEN
+        IndexContext actual = mockIndexContext();
+        IndexContext failed = mockIndexContext();
+        IndexContextFactory indexContextFactory = mock( IndexContextFactory.class );
+
+        FlippableIndexContext delegate = new FlippableIndexContext( actual );
+
+        //WHEN
+        delegate.close().get();
+
+        delegate.setFlipTarget( indexContextFactory );
+        delegate.flip( emptyRunnable(), failed);
+
+        //THEN throws exception
+    }
+
+    @Test(expected = FlippableIndexContext.FlipFailedKernelException.class)
+    public void shouldNotBeAbleToFlipAfterDrop() throws Exception
+    {
+        //GIVEN
+        IndexContext actual = mockIndexContext();
+        IndexContext failed = mockIndexContext();
+        IndexContextFactory indexContextFactory = mock( IndexContextFactory.class );
+
+        FlippableIndexContext delegate = new FlippableIndexContext( actual );
+        delegate.setFlipTarget( indexContextFactory );
+
+        //WHEN
+        delegate.drop().get();
+
+        delegate.flip( emptyRunnable(), failed );
+
+        //THEN throws exception
     }
 
     @Test
@@ -132,4 +171,14 @@ public class FlippableIndexContextTest
         };
     }
 
+    private Runnable emptyRunnable()
+    {
+        return new Runnable()
+        {
+            @Override
+            public void run()
+            {
+            }
+        };
+    }
 }
