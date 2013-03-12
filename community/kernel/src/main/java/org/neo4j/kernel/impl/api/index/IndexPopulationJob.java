@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.api.index;
 import static org.neo4j.helpers.FutureAdapter.latchGuardedValue;
 import static org.neo4j.helpers.ValueGetter.NO_VALUE;
 import static org.neo4j.helpers.collection.Iterables.filter;
-import static org.neo4j.kernel.impl.api.index.IndexingService.singleContext;
+import static org.neo4j.kernel.impl.api.index.IndexingService.singleProxy;
 
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -53,14 +53,14 @@ public class IndexPopulationJob implements Runnable
 
     private final IndexDescriptor descriptor;
     private final IndexPopulator populator;
-    private final FlippableIndexContext flipper;
+    private final FlippableIndexProxy flipper;
     private final StringLogger log;
     private final CountDownLatch doneSignal = new CountDownLatch( 1 );
 
     private volatile StoreScan storeScan;
     private volatile boolean cancelled;
 
-    public IndexPopulationJob( IndexDescriptor descriptor, IndexPopulator writer, FlippableIndexContext flipper,
+    public IndexPopulationJob( IndexDescriptor descriptor, IndexPopulator writer, FlippableIndexProxy flipper,
                                IndexingService.IndexStoreView storeView, Logging logging )
     {
         this.descriptor = descriptor;
@@ -93,12 +93,12 @@ public class IndexPopulationJob implements Runnable
                 }
             };
 
-            FailedIndexContext failureTarget = new FailedIndexContext( descriptor, populator );
+            FailedIndexProxy failureTarget = new FailedIndexProxy( descriptor, populator );
 
             flipper.flip( duringFlip, failureTarget );
             success = true;
         }
-        catch ( FlippableIndexContext.FlipFailedKernelException e )
+        catch ( FlippableIndexProxy.FlipFailedKernelException e )
         {
             log.error( "Failed to create index.", e );
             // The flipper will have already flipped to a failed index context here, but
@@ -108,13 +108,13 @@ public class IndexPopulationJob implements Runnable
             // The reason for having the flipper transition to the failed index context in the first
             // place is that we would otherwise introduce a race condition where updates could come
             // in to the old context, if something failed in the job we send to the flipper.
-            flipper.setFlipTarget( singleContext( new FailedIndexContext( descriptor, populator, e ) ) );
+            flipper.setFlipTarget( singleProxy( new FailedIndexProxy( descriptor, populator, e ) ) );
             flipper.flip();
         }
         catch ( RuntimeException e )
         {
             log.error( "Failed to create index.", e );
-            flipper.setFlipTarget( singleContext( new FailedIndexContext( descriptor, populator, e ) ) );
+            flipper.setFlipTarget( singleProxy( new FailedIndexProxy( descriptor, populator, e ) ) );
             flipper.flip();
         }
         finally

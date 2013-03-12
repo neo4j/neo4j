@@ -19,20 +19,20 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.mockIndexContext;
+import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.mockIndexProxy;
 
 import org.junit.Test;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.test.DoubleLatch;
 
-public class ContractCheckingIndexContextTest
+public class ContractCheckingIndexProxyTest
 {
     @Test( expected = /* THEN */ IllegalStateException.class )
     public void shouldNotCreateIndexTwice()
     {
         // GIVEN
-        IndexContext inner = mockIndexContext();
-        IndexContext outer = new ContractCheckingIndexContext( inner );
+        IndexProxy inner = mockIndexProxy();
+        IndexProxy outer = new ContractCheckingIndexProxy( inner );
 
         // WHEN
         outer.create();
@@ -43,8 +43,8 @@ public class ContractCheckingIndexContextTest
     public void shouldNotCloseIndexTwice()
     {
         // GIVEN
-        IndexContext inner = mockIndexContext();
-        IndexContext outer = new ContractCheckingIndexContext( inner );
+        IndexProxy inner = mockIndexProxy();
+        IndexProxy outer = new ContractCheckingIndexProxy( inner );
 
         // WHEN
         outer.close();
@@ -55,8 +55,8 @@ public class ContractCheckingIndexContextTest
     public void shouldNotDropIndexTwice()
     {
         // GIVEN
-        IndexContext inner = mockIndexContext();
-        IndexContext outer = new ContractCheckingIndexContext( inner );
+        IndexProxy inner = mockIndexProxy();
+        IndexProxy outer = new ContractCheckingIndexProxy( inner );
 
         // WHEN
         outer.drop();
@@ -67,8 +67,8 @@ public class ContractCheckingIndexContextTest
     public void shouldNotDropAfterClose()
     {
         // GIVEN
-        IndexContext inner = mockIndexContext();
-        IndexContext outer = new ContractCheckingIndexContext( inner );
+        IndexProxy inner = mockIndexProxy();
+        IndexProxy outer = new ContractCheckingIndexProxy( inner );
 
         // WHEN
         outer.close();
@@ -80,8 +80,8 @@ public class ContractCheckingIndexContextTest
     public void shouldDropAfterCreate()
     {
         // GIVEN
-        IndexContext inner = mockIndexContext();
-        IndexContext outer = new ContractCheckingIndexContext( inner );
+        IndexProxy inner = mockIndexProxy();
+        IndexProxy outer = new ContractCheckingIndexProxy( inner );
 
         // WHEN
         outer.create();
@@ -95,8 +95,8 @@ public class ContractCheckingIndexContextTest
     public void shouldCloseAfterCreate()
     {
         // GIVEN
-        IndexContext inner = mockIndexContext();
-        IndexContext outer = new ContractCheckingIndexContext( inner );
+        IndexProxy inner = mockIndexProxy();
+        IndexProxy outer = new ContractCheckingIndexProxy( inner );
 
         // WHEN
         outer.create();
@@ -110,8 +110,8 @@ public class ContractCheckingIndexContextTest
     public void shouldNotUpdateBeforeCreate()
     {
         // GIVEN
-        IndexContext inner = mockIndexContext();
-        IndexContext outer = new ContractCheckingIndexContext( inner );
+        IndexProxy inner = mockIndexProxy();
+        IndexProxy outer = new ContractCheckingIndexProxy( inner );
 
         // WHEN
         outer.update( null );
@@ -121,8 +121,8 @@ public class ContractCheckingIndexContextTest
     public void shouldNotUpdateAfterClose()
     {
         // GIVEN
-        IndexContext inner = mockIndexContext();
-        IndexContext outer = new ContractCheckingIndexContext( inner );
+        IndexProxy inner = mockIndexProxy();
+        IndexProxy outer = new ContractCheckingIndexProxy( inner );
 
         // WHEN
         outer.create();
@@ -134,8 +134,8 @@ public class ContractCheckingIndexContextTest
     public void shouldNotForceBeforeCreate()
     {
         // GIVEN
-        IndexContext inner = mockIndexContext();
-        IndexContext outer = new ContractCheckingIndexContext( inner );
+        IndexProxy inner = mockIndexProxy();
+        IndexProxy outer = new ContractCheckingIndexProxy( inner );
 
         // WHEN
         outer.force();
@@ -145,8 +145,8 @@ public class ContractCheckingIndexContextTest
     public void shouldNotForceAfterClose()
     {
         // GIVEN
-        IndexContext inner = mockIndexContext();
-        IndexContext outer = new ContractCheckingIndexContext( inner );
+        IndexProxy inner = mockIndexProxy();
+        IndexProxy outer = new ContractCheckingIndexProxy( inner );
 
         // WHEN
         outer.create();
@@ -159,7 +159,7 @@ public class ContractCheckingIndexContextTest
     {
         // GIVEN
         final DoubleLatch latch = new DoubleLatch();
-        final IndexContext inner = new IndexContext.Adapter()
+        final IndexProxy inner = new IndexProxy.Adapter()
         {
             @Override
             public void create()
@@ -167,7 +167,7 @@ public class ContractCheckingIndexContextTest
                 latch.startAndAwaitFinish();
             }
         };
-        final IndexContext outer = new ContractCheckingIndexContext( inner );
+        final IndexProxy outer = new ContractCheckingIndexProxy( inner );
 
         // WHEN
         new Thread( new Runnable()
@@ -196,7 +196,7 @@ public class ContractCheckingIndexContextTest
     {
         // GIVEN
         final DoubleLatch latch = new DoubleLatch();
-        final IndexContext inner = new IndexContext.Adapter()
+        final IndexProxy inner = new IndexProxy.Adapter()
         {
             @Override
             public void create()
@@ -204,7 +204,7 @@ public class ContractCheckingIndexContextTest
                 latch.startAndAwaitFinish();
             }
         };
-        final IndexContext outer = new ContractCheckingIndexContext( inner );
+        final IndexProxy outer = new ContractCheckingIndexProxy( inner );
 
         // WHEN
         new Thread( new Runnable()
@@ -233,7 +233,7 @@ public class ContractCheckingIndexContextTest
     {
         // GIVEN
         final DoubleLatch latch = new DoubleLatch();
-        final IndexContext inner = new IndexContext.Adapter()
+        final IndexProxy inner = new IndexProxy.Adapter()
         {
             @Override
             public void update(Iterable<NodePropertyUpdate> updates)
@@ -241,7 +241,7 @@ public class ContractCheckingIndexContextTest
                 latch.startAndAwaitFinish();
             }
         };
-        final IndexContext outer = new ContractCheckingIndexContext( inner );
+        final IndexProxy outer = new ContractCheckingIndexProxy( inner );
         outer.create();
 
         // WHEN
@@ -270,7 +270,7 @@ public class ContractCheckingIndexContextTest
     {
         // GIVEN
         final DoubleLatch latch = new DoubleLatch();
-        final IndexContext inner = new IndexContext.Adapter()
+        final IndexProxy inner = new IndexProxy.Adapter()
         {
             @Override
             public void force()
@@ -278,7 +278,7 @@ public class ContractCheckingIndexContextTest
                 latch.startAndAwaitFinish();
             }
         };
-        final IndexContext outer = new ContractCheckingIndexContext( inner );
+        final IndexProxy outer = new ContractCheckingIndexProxy( inner );
         outer.create();
 
         // WHEN

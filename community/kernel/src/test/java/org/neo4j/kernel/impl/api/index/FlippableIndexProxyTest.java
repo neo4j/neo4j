@@ -25,7 +25,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.awaitFuture;
 import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.awaitLatch;
-import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.mockIndexContext;
+import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.mockIndexProxy;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
@@ -33,16 +33,16 @@ import java.util.concurrent.Future;
 import org.junit.Test;
 import org.neo4j.test.OtherThreadExecutor;
 
-public class FlippableIndexContextTest
+public class FlippableIndexProxyTest
 {
     @Test
     public void shouldBeAbleToSwitchDelegate() throws Exception
     {
         // GIVEN
-        IndexContext actual = mockIndexContext();
-        IndexContext other = mockIndexContext();
-        FlippableIndexContext delegate = new FlippableIndexContext(actual);
-        delegate.setFlipTarget( IndexingService.singleContext( other ) );
+        IndexProxy actual = mockIndexProxy();
+        IndexProxy other = mockIndexProxy();
+        FlippableIndexProxy delegate = new FlippableIndexProxy(actual);
+        delegate.setFlipTarget( IndexingService.singleProxy( other ) );
 
         // WHEN
         delegate.flip();
@@ -52,15 +52,15 @@ public class FlippableIndexContextTest
         verify( other ).drop();
     }
 
-    @Test(expected = FlippableIndexContext.FlipFailedKernelException.class)
+    @Test(expected = FlippableIndexProxy.FlipFailedKernelException.class)
     public void shouldNotBeAbleToFlipAfterClosed() throws Exception
     {
         //GIVEN
-        IndexContext actual = mockIndexContext();
-        IndexContext failed = mockIndexContext();
-        IndexContextFactory indexContextFactory = mock( IndexContextFactory.class );
+        IndexProxy actual = mockIndexProxy();
+        IndexProxy failed = mockIndexProxy();
+        IndexProxyFactory indexContextFactory = mock( IndexProxyFactory.class );
 
-        FlippableIndexContext delegate = new FlippableIndexContext( actual );
+        FlippableIndexProxy delegate = new FlippableIndexProxy( actual );
 
         //WHEN
         delegate.close().get();
@@ -71,15 +71,15 @@ public class FlippableIndexContextTest
         //THEN throws exception
     }
 
-    @Test(expected = FlippableIndexContext.FlipFailedKernelException.class)
+    @Test(expected = FlippableIndexProxy.FlipFailedKernelException.class)
     public void shouldNotBeAbleToFlipAfterDrop() throws Exception
     {
         //GIVEN
-        IndexContext actual = mockIndexContext();
-        IndexContext failed = mockIndexContext();
-        IndexContextFactory indexContextFactory = mock( IndexContextFactory.class );
+        IndexProxy actual = mockIndexProxy();
+        IndexProxy failed = mockIndexProxy();
+        IndexProxyFactory indexContextFactory = mock( IndexProxyFactory.class );
 
-        FlippableIndexContext delegate = new FlippableIndexContext( actual );
+        FlippableIndexProxy delegate = new FlippableIndexProxy( actual );
         delegate.setFlipTarget( indexContextFactory );
 
         //WHEN
@@ -94,10 +94,10 @@ public class FlippableIndexContextTest
     public void shouldBlockAccessDuringFlipAndThenDelegateToCorrectContext() throws Exception
     {
         // GIVEN
-        final IndexContext contextBeforeFlip = mockIndexContext();
-        final IndexContext contextAfterFlip = mockIndexContext();
-        final FlippableIndexContext flippable = new FlippableIndexContext( contextBeforeFlip );
-        flippable.setFlipTarget( IndexingService.singleContext( contextAfterFlip ) );
+        final IndexProxy contextBeforeFlip = mockIndexProxy();
+        final IndexProxy contextAfterFlip = mockIndexProxy();
+        final FlippableIndexProxy flippable = new FlippableIndexProxy( contextBeforeFlip );
+        flippable.setFlipTarget( IndexingService.singleProxy( contextAfterFlip ) );
 
         // And given complicated thread race condition tools
         final CountDownLatch triggerFinishFlip = new CountDownLatch( 1 );
@@ -135,7 +135,7 @@ public class FlippableIndexContextTest
         verify( contextAfterFlip ).drop();
     }
 
-    private OtherThreadExecutor.WorkerCommand<Void, Void> dropTheIndex( final FlippableIndexContext flippable )
+    private OtherThreadExecutor.WorkerCommand<Void, Void> dropTheIndex( final FlippableIndexProxy flippable )
     {
         return new OtherThreadExecutor.WorkerCommand<Void, Void>()
         {
@@ -149,7 +149,7 @@ public class FlippableIndexContextTest
     }
 
     private OtherThreadExecutor.WorkerCommand<Void, Void> startFlipAndWaitForLatchBeforeFinishing(
-            final FlippableIndexContext flippable, final CountDownLatch triggerFinishFlip,
+            final FlippableIndexProxy flippable, final CountDownLatch triggerFinishFlip,
             final CountDownLatch triggerExternalAccess )
     {
         return new OtherThreadExecutor.WorkerCommand<Void, Void>()

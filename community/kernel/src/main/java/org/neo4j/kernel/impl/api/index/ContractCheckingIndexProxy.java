@@ -28,9 +28,9 @@ import org.neo4j.kernel.api.index.NodePropertyUpdate;
 /**
  * IndexContext layer that enforces the dynamic contract of IndexContext (cf. Test)
  *
- * @see org.neo4j.kernel.impl.api.index.IndexContext
+ * @see org.neo4j.kernel.impl.api.index.IndexProxy
  */
-public class ContractCheckingIndexContext extends DelegatingIndexContext
+public class ContractCheckingIndexProxy extends DelegatingIndexProxy
 {
     /**
      * State machine for IndexContexts
@@ -60,14 +60,14 @@ public class ContractCheckingIndexContext extends DelegatingIndexContext
     private final AtomicReference<State> state;
     private final AtomicInteger openCalls;
 
-    public ContractCheckingIndexContext( boolean created, IndexContext delegate )
+    public ContractCheckingIndexProxy( boolean created, IndexProxy delegate )
     {
         super( delegate );
         this.state =  new AtomicReference<State>( created ? State.CREATED : State.INIT );
         this.openCalls = new AtomicInteger( 0 );
     }
 
-    ContractCheckingIndexContext( IndexContext delegate )
+    ContractCheckingIndexProxy( IndexProxy delegate )
     {
         this(false, delegate);
     }

@@ -67,7 +67,7 @@ public class IndexingService extends LifecycleAdapter
     private final JobScheduler scheduler;
     private final SchemaIndexProvider provider;
 
-    private final ConcurrentHashMap<Long, IndexContext> indexes = new ConcurrentHashMap<Long, IndexContext>();
+    private final ConcurrentHashMap<Long, IndexProxy> indexes = new ConcurrentHashMap<Long, IndexProxy>();
     private boolean serviceRunning = false;
     private final IndexStoreView storeView;
     private final Logging logging;
@@ -94,23 +94,23 @@ public class IndexingService extends LifecycleAdapter
     @Override
     public void start()
     {
-        Set<IndexContext> rebuildingIndexes = new HashSet<IndexContext>();
+        Set<IndexProxy> rebuildingIndexes = new HashSet<IndexProxy>();
         Map<Long, IndexDescriptor> rebuildingIndexDescriptors = new HashMap<Long, IndexDescriptor>();
 
         // Find all indexes that are not already online, do not require rebuilding, and create them
-        for ( Map.Entry<Long, IndexContext> entry : indexes.entrySet() )
+        for ( Map.Entry<Long, IndexProxy> entry : indexes.entrySet() )
         {
             long ruleId = entry.getKey();
-            IndexContext indexContext = entry.getValue();
-            switch ( indexContext.getState() )
+            IndexProxy indexProxy = entry.getValue();
+            switch ( indexProxy.getState() )
             {
             case ONLINE:
                 // Don't do anything, index is ok.
                 break;
             case POPULATING:
                 // Remember for rebuilding
-                rebuildingIndexes.add( indexContext );
-                rebuildingIndexDescriptors.put( ruleId, indexContext.getDescriptor() );
+                rebuildingIndexes.add( indexProxy );
+                rebuildingIndexDescriptors.put( ruleId, indexProxy.getDescriptor() );
                 break;
             case FAILED:
                 // Don't do anything, the user needs to drop the index and re-create
@@ -118,17 +118,17 @@ public class IndexingService extends LifecycleAdapter
             }
         }
 
-        // Drop placeholder contexts for indexes that need to be rebuilt
-        dropAllContexts( rebuildingIndexes );
+        // Drop placeholder proxies for indexes that need to be rebuilt
+        dropAllIndexes( rebuildingIndexes );
 
         // Rebuild indexes by recreating and repopulating them
         for ( Map.Entry<Long, IndexDescriptor> entry : rebuildingIndexDescriptors.entrySet() )
         {
             long ruleId = entry.getKey();
             IndexDescriptor descriptor = entry.getValue();
-            IndexContext indexContext = createPopulatingIndexContext( ruleId, descriptor );
-            indexContext.create();
-            indexes.put( ruleId, indexContext );
+            IndexProxy indexProxy = createPopulatingIndexProxy( ruleId, descriptor );
+            indexProxy.create();
+            indexes.put( ruleId, indexProxy );
         }
 
         serviceRunning = true;
@@ -138,24 +138,24 @@ public class IndexingService extends LifecycleAdapter
     public void stop()
     {
         serviceRunning = false;
-        Collection<IndexContext> indexesToStop = new ArrayList<IndexContext>( indexes.values() );
+        Collection<IndexProxy> indexesToStop = new ArrayList<IndexProxy>( indexes.values() );
         indexes.clear();
         Collection<Future<Void>> indexStopFutures = new ArrayList<Future<Void>>();
-        for ( IndexContext index : indexesToStop )
+        for ( IndexProxy index : indexesToStop )
             indexStopFutures.add( index.close() );
 
         for ( Future<Void> future : indexStopFutures )
             awaitIndexFuture( future );
     }
 
-    public IndexContext getContextForRule( long indexId ) throws IndexNotFoundKernelException
+    public IndexProxy getProxyForRule( long indexId ) throws IndexNotFoundKernelException
     {
-        IndexContext indexContext = indexes.get( indexId );
-        if ( indexContext == null )
+        IndexProxy indexProxy = indexes.get( indexId );
+        if ( indexProxy == null )
         {
             throw new IndexNotFoundKernelException( "No index with id " + indexId + " exists." );
         }
-        return indexContext;
+        return indexProxy;
     }
 
     /**
@@ -169,22 +169,22 @@ public class IndexingService extends LifecycleAdapter
         {
             long ruleId = indexRule.getId();
             IndexDescriptor descriptor = createDescriptor( indexRule );
-            IndexContext indexContext = null;
+            IndexProxy indexProxy = null;
             switch ( provider.getInitialState( ruleId, providerDependencies ) )
             {
                 case ONLINE:
-                    indexContext = createOnlineIndexContext( ruleId, descriptor );
+                    indexProxy = createOnlineIndexProxy( ruleId, descriptor );
                     break;
                 case POPULATING:
                     // The database was shut down during population, or a crash has occurred, or some other
                     // sad thing.
-                    indexContext = createRecoveringIndexContext( ruleId, descriptor );
+                    indexProxy = createRecoveringIndexProxy( ruleId, descriptor );
                     break;
                 case FAILED:
-                    indexContext = createFailedIndexContext( ruleId, descriptor );
+                    indexProxy = createFailedIndexProxy( ruleId, descriptor );
                     break;
             }
-            indexes.put( ruleId, indexContext );
+            indexes.put( ruleId, indexProxy );
         }
     }
 
@@ -197,13 +197,13 @@ public class IndexingService extends LifecycleAdapter
      */
     public void createIndex( IndexRule rule )
     {
-        IndexContext index = indexes.get( rule.getId() );
+        IndexProxy index = indexes.get( rule.getId() );
         long ruleId = rule.getId();
         IndexDescriptor descriptor = createDescriptor( rule );
         if ( serviceRunning )
         {
             assert index == null : "Index " + rule + " already exists";
-            index = createPopulatingIndexContext( ruleId, descriptor );
+            index = createPopulatingIndexProxy( ruleId, descriptor );
 
             // Trigger the creation, only if the service is online. Otherwise,
             // creation will be triggered on start().
@@ -211,7 +211,7 @@ public class IndexingService extends LifecycleAdapter
         }
         else if ( index == null )
         {
-            index = createPopulatingIndexContext( ruleId, descriptor );
+            index = createPopulatingIndexProxy( ruleId, descriptor );
         }
         
         indexes.put( rule.getId(), index );
@@ -219,13 +219,13 @@ public class IndexingService extends LifecycleAdapter
 
     public void updateIndexes( Iterable<NodePropertyUpdate> updates )
     {
-        for ( IndexContext context : indexes.values() )
-            context.update( updates );
+        for ( IndexProxy index : indexes.values() )
+            index.update( updates );
     }
 
     public void dropIndex( IndexRule rule )
     {
-        IndexContext index = indexes.remove( rule.getId() );
+        IndexProxy index = indexes.remove( rule.getId() );
         if ( serviceRunning )
         {
             assert index != null : "Index " + rule + " doesn't exists";
@@ -233,52 +233,52 @@ public class IndexingService extends LifecycleAdapter
         }
     }
 
-    private IndexContext createPopulatingIndexContext( final long ruleId, final IndexDescriptor descriptor )
+    private IndexProxy createPopulatingIndexProxy( final long ruleId, final IndexDescriptor descriptor )
     {
-        FlippableIndexContext flippableContext = new FlippableIndexContext( );
+        FlippableIndexProxy flippableIndex = new FlippableIndexProxy( );
 
-        // TODO: This is here because there is a circular dependency from PopulatingIndexContext to FlippableContext
+        // TODO: This is here because there is a circular dependency from PopulatingIndexProxy to FlippableIndexProxy
         IndexPopulator populator = getPopulator( ruleId );
-        PopulatingIndexContext populatingContext =
-                new PopulatingIndexContext( scheduler, descriptor, populator, flippableContext, storeView, logging );
-        flippableContext.setFlipTarget( singleContext( populatingContext ) );
-        flippableContext.flip();
+        PopulatingIndexProxy populatingIndex =
+                new PopulatingIndexProxy( scheduler, descriptor, populator, flippableIndex, storeView, logging );
+        flippableIndex.setFlipTarget( singleProxy( populatingIndex ) );
+        flippableIndex.flip();
 
         // Prepare for flipping to online mode
-        flippableContext.setFlipTarget( new IndexContextFactory()
+        flippableIndex.setFlipTarget( new IndexProxyFactory()
         {
             @Override
-            public IndexContext create()
+            public IndexProxy create()
             {
-                return new OnlineIndexContext( descriptor, getOnlineAccessor( ruleId ) );
+                return new OnlineIndexProxy( descriptor, getOnlineAccessor( ruleId ) );
             }
         } );
 
-        IndexContext result = contractCheckedContext( false, flippableContext );
-        return serviceDecoratedContext( ruleId, result );
+        IndexProxy result = contractCheckedProxy( false, flippableIndex );
+        return serviceDecoratedProxy( ruleId, result );
     }
 
-    private IndexContext createOnlineIndexContext( long ruleId, IndexDescriptor descriptor )
+    private IndexProxy createOnlineIndexProxy( long ruleId, IndexDescriptor descriptor )
     {
         IndexAccessor onlineAccessor = getOnlineAccessor( ruleId );
-        IndexContext result = new OnlineIndexContext( descriptor, onlineAccessor );
-        result = contractCheckedContext( true, result );
-        result = serviceDecoratedContext( ruleId, result );
+        IndexProxy result = new OnlineIndexProxy( descriptor, onlineAccessor );
+        result = contractCheckedProxy( true, result );
+        result = serviceDecoratedProxy( ruleId, result );
         return result;
     }
 
-    private IndexContext createFailedIndexContext( long ruleId, IndexDescriptor descriptor )
+    private IndexProxy createFailedIndexProxy( long ruleId, IndexDescriptor descriptor )
     {
-        IndexContext result = new FailedIndexContext( descriptor, getPopulator( ruleId ) );
-        result = contractCheckedContext( true, result );
-        return serviceDecoratedContext( ruleId, result );
+        IndexProxy result = new FailedIndexProxy( descriptor, getPopulator( ruleId ) );
+        result = contractCheckedProxy( true, result );
+        return serviceDecoratedProxy( ruleId, result );
     }
 
-    private IndexContext createRecoveringIndexContext( long ruleId, IndexDescriptor descriptor )
+    private IndexProxy createRecoveringIndexProxy( long ruleId, IndexDescriptor descriptor )
     {
-        IndexContext result = new RecoveringIndexContext( descriptor );
-        result = contractCheckedContext( true, result );
-        return serviceDecoratedContext( ruleId, result );
+        IndexProxy result = new RecoveringIndexProxy( descriptor );
+        result = contractCheckedProxy( true, result );
+        return serviceDecoratedProxy( ruleId, result );
     }
 
     private IndexPopulator getPopulator( long ruleId )
@@ -291,17 +291,17 @@ public class IndexingService extends LifecycleAdapter
         return provider.getOnlineAccessor( ruleId, providerDependencies );
     }
 
-    private IndexContext contractCheckedContext( boolean created, IndexContext result )
+    private IndexProxy contractCheckedProxy( boolean created, IndexProxy result )
     {
-        result = new ContractCheckingIndexContext( created, result );
+        result = new ContractCheckingIndexProxy( created, result );
         return result;
     }
 
-    private IndexContext serviceDecoratedContext( long ruleId, IndexContext result )
+    private IndexProxy serviceDecoratedProxy( long ruleId, IndexProxy result )
     {
         // TODO: Merge auto removing and rule updating?
-        result = new RuleUpdateFilterIndexContext( result );
-        result = new ServiceStateUpdatingIndexContext( ruleId, result );
+        result = new RuleUpdateFilterIndexProxy( result );
+        result = new ServiceStateUpdatingIndexProxy( ruleId, result );
         return result;
     }
 
@@ -332,13 +332,13 @@ public class IndexingService extends LifecycleAdapter
         }
     }
 
-    private void dropAllContexts( Set<IndexContext> recoveringIndexes )
+    private void dropAllIndexes( Set<IndexProxy> recoveringIndexes )
     {
         try
         {
-            for ( IndexContext indexContext : recoveringIndexes )
+            for ( IndexProxy indexProxy : recoveringIndexes )
             {
-                indexContext.drop().get();
+                indexProxy.drop().get();
             }
         }
         // TODO Overhaul of what to throw
@@ -353,11 +353,11 @@ public class IndexingService extends LifecycleAdapter
         }
     }
 
-    class ServiceStateUpdatingIndexContext extends DelegatingIndexContext
+    class ServiceStateUpdatingIndexProxy extends DelegatingIndexProxy
     {
         private final long ruleId;
 
-        ServiceStateUpdatingIndexContext( long ruleId, IndexContext delegate )
+        ServiceStateUpdatingIndexProxy( long ruleId, IndexProxy delegate )
         {
             super( delegate );
             this.ruleId = ruleId;
@@ -373,20 +373,20 @@ public class IndexingService extends LifecycleAdapter
 
     public void flushAll()
     {
-        for ( IndexContext context : indexes.values() )
+        for ( IndexProxy index : indexes.values() )
         {
-            context.force();
+            index.force();
         }
     }
 
-    public static IndexContextFactory singleContext( final IndexContext context )
+    public static IndexProxyFactory singleProxy( final IndexProxy proxy )
     {
-        return new IndexContextFactory()
+        return new IndexProxyFactory()
         {
             @Override
-            public IndexContext create()
+            public IndexProxy create()
             {
-                return context;
+                return proxy;
             }
         };
     }

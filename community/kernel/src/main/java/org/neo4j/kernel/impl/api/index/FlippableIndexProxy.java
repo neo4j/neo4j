@@ -24,10 +24,12 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.neo4j.kernel.api.KernelException;
+import org.neo4j.kernel.api.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 
-public class FlippableIndexContext implements IndexContext
+public class FlippableIndexProxy implements IndexProxy
 {
     private boolean closed;
 
@@ -48,15 +50,15 @@ public class FlippableIndexContext implements IndexContext
     };
 
     private final ReadWriteLock lock = new ReentrantReadWriteLock(true);
-    private IndexContextFactory flipTarget;
-    private IndexContext delegate;
+    private IndexProxyFactory flipTarget;
+    private IndexProxy delegate;
 
-    public FlippableIndexContext()
+    public FlippableIndexProxy()
     {
         this( null );
     }
 
-    public FlippableIndexContext( IndexContext originalDelegate )
+    public FlippableIndexProxy( IndexProxy originalDelegate )
     {
         this.delegate = originalDelegate;
     }
@@ -161,12 +163,26 @@ public class FlippableIndexContext implements IndexContext
         }
     }
     
-    public IndexContext getDelegate()
+    @Override
+    public IndexReader newReader() throws IndexNotFoundKernelException
+    {
+        lock.readLock().lock();
+        try
+        {
+            return delegate.newReader();
+        }
+        finally
+        {
+            lock.readLock().unlock();
+        }
+    }
+    
+    public IndexProxy getDelegate()
     {
         return delegate;
     }
 
-    public void setFlipTarget( IndexContextFactory flipTarget )
+    public void setFlipTarget( IndexProxyFactory flipTarget )
     {
         lock.writeLock().lock();
         try
@@ -200,8 +216,8 @@ public class FlippableIndexContext implements IndexContext
             lock.writeLock().unlock();
         }
     }
-
-    public void flip( Runnable actionDuringFlip, IndexContext failureFlipTarget ) throws FlipFailedKernelException
+    
+    public void flip( Runnable actionDuringFlip, IndexProxy failureFlipTarget ) throws FlipFailedKernelException
     {
         lock.writeLock().lock();
         try
@@ -209,7 +225,8 @@ public class FlippableIndexContext implements IndexContext
             assertStillOpenForBusiness();
             actionDuringFlip.run();
             this.delegate = flipTarget.create();
-        } catch ( Exception e )
+        }
+        catch ( Exception e )
         {
             this.delegate = failureFlipTarget;
             throw new FlipFailedKernelException( "Failed to transition index to new context, see nested exception.", e );

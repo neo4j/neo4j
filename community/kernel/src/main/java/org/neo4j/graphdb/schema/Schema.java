@@ -81,11 +81,10 @@ public interface Schema
      * Wait until an index comes online
      *
      * @param index the index that we want to wait for
-     * @param unit TimeUnit of duration
      * @param duration duration to wait for the index to come online
-     *
+     * @param unit TimeUnit of duration
      * @throws IllegalStateException if the index did not enter the ONLINE state within the given duration or
      * if the index entered the FAILED state
      */
-    void awaitIndexOnline( IndexDefinition index, TimeUnit unit, long duration );
+    void awaitIndexOnline( IndexDefinition index, long duration, TimeUnit unit );
 }

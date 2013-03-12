@@ -21,21 +21,23 @@ package org.neo4j.kernel.impl.api.index;
 
 import java.util.concurrent.Future;
 
+import org.neo4j.kernel.api.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexPopulator;
+import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.impl.api.index.IndexingService.IndexStoreView;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.logging.Logging;
 
-public class PopulatingIndexContext implements IndexContext
+public class PopulatingIndexProxy implements IndexProxy
 {
     private final JobScheduler scheduler;
     private final IndexDescriptor descriptor;
     private final IndexPopulationJob job;
 
-    public PopulatingIndexContext( JobScheduler scheduler, IndexDescriptor descriptor, IndexPopulator writer,
-                                   FlippableIndexContext flipper, IndexStoreView storeView, Logging logging )
+    public PopulatingIndexProxy( JobScheduler scheduler, IndexDescriptor descriptor, IndexPopulator writer,
+                                   FlippableIndexProxy flipper, IndexStoreView storeView, Logging logging )
     {
         this.scheduler  = scheduler;
         this.descriptor = descriptor;
@@ -82,5 +84,20 @@ public class PopulatingIndexContext implements IndexContext
     public Future<Void> close()
     {
         return job.cancel();
+    }
+    
+    @Override
+    public IndexReader newReader() throws IndexNotFoundKernelException
+    {
+        throw new IndexNotFoundKernelException( descriptor + " is still populating" );
+    }
+    
+    @Override
+    public String toString()
+    {
+        return getClass().getSimpleName() + "{" +
+                "descriptor=" + descriptor +
+                ", job=" + job +
+                '}';
     }
 }

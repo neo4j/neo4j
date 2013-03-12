@@ -22,10 +22,9 @@ package org.neo4j.kernel.impl.api.index;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 
 /**
- * Description of a single index as needed by the {@link IndexContext} cake
+ * Description of a single index as needed by the {@link IndexProxy} cake
  *
  * This is a IndexContext cake level representation of {@link IndexRule}
- *
  */
 public class IndexDescriptor
 {
@@ -46,5 +45,11 @@ public class IndexDescriptor
     public long getPropertyKeyId()
     {
         return propertyKeyId;
+    }
+    
+    @Override
+    public String toString()
+    {
+        return getClass().getName() + "[label:" + labelId + ", on:" + propertyKeyId + "]";
     }
 }

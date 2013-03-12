@@ -1043,9 +1043,9 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
         }
 
         @Override
-        public void awaitIndexOnline( IndexDefinition index, TimeUnit unit, long duration )
+        public void awaitIndexOnline( IndexDefinition index, long duration, TimeUnit unit )
         {
-            actual.awaitIndexOnline( index, unit, duration );
+            actual.awaitIndexOnline( index, duration, unit );
         }
     }
 

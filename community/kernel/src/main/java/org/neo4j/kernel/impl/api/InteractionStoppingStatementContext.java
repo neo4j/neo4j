@@ -167,7 +167,7 @@ public class InteractionStoppingStatementContext implements StatementContext
     }
 
     @Override
-    public Iterable<Long> exactIndexLookup( long indexId, Object value )
+    public Iterable<Long> exactIndexLookup( long indexId, Object value ) throws IndexNotFoundKernelException
     {
         assertOperationsAllowed();
         return delegate.exactIndexLookup( indexId, value );

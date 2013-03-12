@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.api;
 
 import static java.util.Arrays.asList;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -28,10 +29,12 @@ import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.cache_type;
 import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.helpers.collection.IteratorUtil.asUniqueSet;
 import static org.neo4j.helpers.collection.MapUtil.map;
 
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import org.junit.After;
 import org.junit.Before;
@@ -40,6 +43,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.PropertyKeyNotFoundException;
 import org.neo4j.kernel.api.StatementContext;
@@ -58,7 +62,7 @@ public class StoreStatementContextTest
         // GIVEN
         Transaction tx = db.beginTx();
         long nodeId = db.createNode().getId();
-        String labelName = "mylabel";
+        String labelName = label.name();
         long labelId = statement.getOrCreateLabelId( labelName );
 
         // WHEN
@@ -76,7 +80,7 @@ public class StoreStatementContextTest
         // GIVEN
         Transaction tx = db.beginTx();
         long nodeId = db.createNode().getId();
-        String labelName1 = "mylabel", labelName2 = "myOtherLabel";
+        String labelName1 = label.name(), labelName2 = label2.name();
         long labelId1 = statement.getOrCreateLabelId( labelName1 );
         long labelId2 = statement.getOrCreateLabelId( labelName2 );
         statement.addLabelToNode( labelId1, nodeId );
@@ -94,7 +98,7 @@ public class StoreStatementContextTest
     public void should_be_able_to_get_label_name_for_label() throws Exception
     {
         // GIVEN
-        String labelName = "LabelName";
+        String labelName = label.name();
         long labelId = statement.getOrCreateLabelId( labelName );
 
         // WHEN
@@ -109,7 +113,7 @@ public class StoreStatementContextTest
     {
         // GIVEN
         Transaction tx = db.beginTx();
-        String labelName = "MyLabel";
+        String labelName = label.name();
         long labelId = statement.getOrCreateLabelId( labelName );
         long node = db.createNode().getId();
         statement.addLabelToNode( labelId, node );
@@ -136,7 +140,6 @@ public class StoreStatementContextTest
         // GIVEN
         GraphDatabaseService db = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
                 .setConfig( cache_type, "none" ).newGraphDatabase();
-        Label label = label( "the-label" );
         Node node = createLabeledNode( db, map( "name", "Node" ), label );
 
         // WHEN
@@ -150,7 +153,6 @@ public class StoreStatementContextTest
     public void should_return_true_when_adding_new_label() throws Exception
     {
         // GIVEN
-        Label label = label( "the-label" );
         Node node = createLabeledNode( db, map() );
 
         // WHEN
@@ -175,7 +177,6 @@ public class StoreStatementContextTest
     public void should_return_false_when_adding_existing_label() throws Exception
     {
         // GIVEN
-        Label label = label( "the-label" );
         Node node = createLabeledNode( db, map(), label );
 
         // WHEN
@@ -200,7 +201,6 @@ public class StoreStatementContextTest
     public void should_return_true_when_remove_existing_label() throws Exception
     {
         // GIVEN
-        Label label = label( "the-label" );
         Node node = createLabeledNode( db, map(), label );
 
         // WHEN
@@ -225,7 +225,6 @@ public class StoreStatementContextTest
     public void should_return_false_when_removing_non_existent_label() throws Exception
     {
         // GIVEN
-        Label label = label( "the-label" );
         Node node = createLabeledNode( db, map() );
 
         // WHEN
@@ -250,13 +249,11 @@ public class StoreStatementContextTest
     public void should_return_all_nodes_with_label() throws Exception
     {
         // GIVEN
-        Label label1 = label( "first-label" );
-        Label label2 = label( "second-label" );
-        Node node1 = createLabeledNode( db, map( "name", "First", "age", 1L ), label1 );
-        Node node2 = createLabeledNode( db, map( "type", "Node", "count", 10 ), label1, label2 );
+        Node node1 = createLabeledNode( db, map( "name", "First", "age", 1L ), label );
+        Node node2 = createLabeledNode( db, map( "type", "Node", "count", 10 ), label, label2 );
 
         // WHEN
-        Iterable<Long> nodesForLabel1 = statement.getNodesWithLabel( statement.getLabelId( label1.name() ) );
+        Iterable<Long> nodesForLabel1 = statement.getNodesWithLabel( statement.getLabelId( label.name() ) );
         Iterable<Long> nodesForLabel2 = statement.getNodesWithLabel( statement.getLabelId( label2.name() ) );
 
         // THEN
@@ -267,9 +264,6 @@ public class StoreStatementContextTest
     @Test
     public void should_create_property_key_if_not_exists() throws Exception
     {
-        // GIVEN
-        String propertyKey = "name";
-
         // WHEN
         long id = statement.getOrCreatePropertyKeyId( propertyKey );
 
@@ -281,7 +275,6 @@ public class StoreStatementContextTest
     public void should_get_previously_created_property_key() throws Exception
     {
         // GIVEN
-        String propertyKey = "name";
         long id = statement.getOrCreatePropertyKeyId( propertyKey );
 
         // WHEN
@@ -295,7 +288,6 @@ public class StoreStatementContextTest
     public void should_be_able_to_get_or_create_previously_created_property_key() throws Exception
     {
         // GIVEN
-        String propertyKey = "name";
         long id = statement.getOrCreatePropertyKeyId( propertyKey );
 
         // WHEN
@@ -320,20 +312,38 @@ public class StoreStatementContextTest
         }
     }
     
+    @Test
+    public void should_find_nodes_with_given_label_and_property_via_index() throws Exception
+    {
+        // GIVEN
+        long indexId = createIndexAndAwaitOnline( label, propertyKey );
+        String name = "Mr. Taylor";
+        Node mrTaylor = createLabeledNode( db, map( propertyKey, name ), label );
+
+        // WHEN
+        Set<Long> foundNodes = asUniqueSet( statement.exactIndexLookup( indexId, name ) );
+
+        // THEN
+        assertEquals( asSet( mrTaylor.getId() ), foundNodes );
+    }
+    
     private GraphDatabaseAPI db;
     private StatementContext statement;
+    private final Label label = label( "first-label" ), label2 = label( "second-label" );
+    private final String propertyKey = "name";
 
     @Before
     public void before()
     {
         db = new ImpermanentGraphDatabase();
+        IndexingService indexingService = db.getDependencyResolver().resolveDependency( IndexingService.class );
         statement = new StoreStatementContext(
                 db.getDependencyResolver().resolveDependency( PropertyIndexManager.class ),
                 db.getDependencyResolver().resolveDependency( PersistenceManager.class ),
                 // Ooh, jucky
                 db.getDependencyResolver().resolveDependency( XaDataSourceManager.class )
                         .getNeoStoreDataSource().getNeoStore(),
-                db.getDependencyResolver().resolveDependency( IndexingService.class ));
+                indexingService, new IndexReaderFactory.Caching( indexingService ) );
     }
 
     @After
@@ -357,5 +367,24 @@ public class StoreStatementContextTest
         {
             tx.finish();
         }
+    }
+
+    private long createIndexAndAwaitOnline( Label label, String propertyKey ) throws Exception
+    {
+        Transaction tx = db.beginTx();
+        IndexDefinition index = null;
+        try
+        {
+            index = db.schema().indexCreator( label ).on( propertyKey ).create();
+            tx.success();
+        }
+        finally
+        {
+            tx.finish();
+        }
+        
+        db.schema().awaitIndexOnline( index, 10, SECONDS );
+        return statement.getIndexRule( statement.getLabelId( label.name() ),
+                statement.getPropertyKeyId( propertyKey ) ).getId();
     }
 }
