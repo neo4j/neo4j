@@ -19,13 +19,28 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
+import static org.apache.lucene.document.Field.Index.NOT_ANALYZED;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.index.impl.lucene.IndexType.instantiateField;
+import static org.neo4j.index.impl.lucene.IndexType.newBaseDocument;
+import static org.neo4j.kernel.api.impl.index.IndexWriterFactories.standard;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.Map;
 
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Field.Index;
+import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
 import org.neo4j.helpers.Service;
+import org.neo4j.index.impl.lucene.LuceneUtil;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.InternalIndexState;
@@ -34,9 +49,9 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 @Service.Implementation(SchemaIndexProvider.class)
 public class LuceneSchemaIndexProvider extends SchemaIndexProvider
 {
-    static final String KEY_STATUS = "status";
-    static final String ONLINE = "online";
     private final DirectoryFactory directoryFactory;
+    private final DocumentLogic documentLogic = new DocumentLogic();
+    private final WriterLogic writerLogic = new WriterLogic();
     
     public LuceneSchemaIndexProvider()
     {
@@ -57,16 +72,23 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
     @Override
     public IndexPopulator getPopulator( long indexId, Dependencies dependencies )
     {
-        return new LuceneIndexPopulator( dependencies.getFileSystem(),
-                dir( dependencies.getRootDirectory(), indexId ), directoryFactory, 10000 );
+        return new LuceneIndexPopulator( standard( directoryFactory ),
+                dependencies.getFileSystem(), dir( dependencies.getRootDirectory(), indexId ), 10000,
+                documentLogic, writerLogic );
     }
 
     @Override
     public IndexAccessor getOnlineAccessor( long indexId, Dependencies dependencies )
     {
-        return new IndexAccessor.Adapter()
+        try
         {
-        };
+            return new LuceneIndexAccessor( standard( directoryFactory ), dependencies.getFileSystem(),
+                    dir( dependencies.getRootDirectory(), indexId ), documentLogic, writerLogic );
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
     }
 
     @Override
@@ -75,15 +97,74 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
         try
         {
             Directory directory = directoryFactory.open( dir( dependencies.getRootDirectory(), indexId ) );
-            if ( !IndexReader.indexExists( directory ) )
-                return InternalIndexState.POPULATING;
-            
-            Map<String, String> commitData = IndexReader.getCommitUserData( directory );
-            return ONLINE.equals( commitData.get( KEY_STATUS ) ) ? InternalIndexState.ONLINE : InternalIndexState.POPULATING;
+            return writerLogic.hasOnlineStatus( directory ) ? InternalIndexState.ONLINE : InternalIndexState.POPULATING;
         }
         catch ( IOException e )
         {
             throw new RuntimeException( e );
+        }
+    }
+    
+    static class DocumentLogic
+    {
+        private static final String NODE_ID_KEY = "_id_";
+        private static final String SINGLE_PROPERTY_KEY = "key";
+        
+        Document newDocument( long nodeId, Object value )
+        {
+            Document document = newBaseDocument( nodeId );
+            document.add( new Field( NODE_ID_KEY, "" + nodeId, Store.YES, Index.NOT_ANALYZED ) );
+            document.add( instantiateField( SINGLE_PROPERTY_KEY, value, NOT_ANALYZED ) );
+            return document;
+        }
+
+        public Query newQuery( Object value )
+        {
+            if ( value instanceof String )
+            {
+                return new TermQuery( new Term( SINGLE_PROPERTY_KEY, (String) value ) );
+            }
+            else if ( value instanceof Number )
+            {
+                Number number = (Number) value;
+                return LuceneUtil.rangeQuery( SINGLE_PROPERTY_KEY, number, number, true, true );
+            }
+            throw new UnsupportedOperationException( value.toString() + ", " + value.getClass() );
+        }
+        
+        public Term newQueryForChangeOrRemove( long nodeId, Object value )
+        {
+            return new Term( NODE_ID_KEY, "" + nodeId );
+        }
+
+        public long getNodeId( Document from )
+        {
+            return Long.parseLong( from.get( NODE_ID_KEY ) );
+        }
+    }
+    
+    static class WriterLogic
+    {
+        private static final String KEY_STATUS = "status";
+        private static final String ONLINE = "online";
+        
+        public void forceAndMarkAsOnline( IndexWriter writer ) throws IOException
+        {
+            writer.commit( stringMap( KEY_STATUS, ONLINE ) );
+        }
+        
+        public boolean hasOnlineStatus( Directory directory ) throws IOException
+        {
+            if ( !IndexReader.indexExists( directory ) )
+                return false;
+            
+            Map<String, String> commitData = IndexReader.getCommitUserData( directory );
+            return ONLINE.equals( commitData.get( KEY_STATUS ) );
+        }
+
+        public void close( IndexWriter writer ) throws IOException
+        {
+            writer.close( true );
         }
     }
 }

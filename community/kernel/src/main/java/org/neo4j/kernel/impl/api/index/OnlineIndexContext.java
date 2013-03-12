@@ -30,12 +30,12 @@ import org.neo4j.kernel.api.index.NodePropertyUpdate;
 public class OnlineIndexContext implements IndexContext
 {
     private final IndexDescriptor descriptor;
-    private final IndexAccessor writer;
+    private final IndexAccessor accessor;
 
-    public OnlineIndexContext( IndexDescriptor descriptor, IndexAccessor writer )
+    public OnlineIndexContext( IndexDescriptor descriptor, IndexAccessor accessor )
     {
         this.descriptor = descriptor;
-        this.writer = writer;
+        this.accessor = accessor;
     }
     
     @Override
@@ -47,13 +47,13 @@ public class OnlineIndexContext implements IndexContext
     @Override
     public void update( Iterable<NodePropertyUpdate> updates )
     {
-        writer.updateAndCommit( updates );
+        accessor.updateAndCommit( updates );
     }
 
     @Override
     public Future<Void> drop()
     {
-        writer.drop();
+        accessor.drop();
         return VOID;
     }
 
@@ -72,12 +72,13 @@ public class OnlineIndexContext implements IndexContext
     @Override
     public void force()
     {
-        writer.force();
+        accessor.force();
     }
 
     @Override
     public Future<Void> close()
     {
+        accessor.close();
         return VOID;
     }
 }

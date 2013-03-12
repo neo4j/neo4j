@@ -80,7 +80,14 @@ public class InMemoryIndexProvider extends SchemaIndexProvider
         {
             for ( NodePropertyUpdate update : updates )
             {
-
+                switch ( update.getUpdateMode() )
+                {
+                case ADDED:
+                    add( update.getNodeId(), update.getValueAfter() );
+                    break;
+//                case CHANGED:
+//                    change( update.getNodeId(), update.getValueBefore(), update.getValueAfter() );
+                }
             }
         }
 

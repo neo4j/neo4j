@@ -82,8 +82,8 @@ public class IndexPopulationJob implements Runnable
             if ( cancelled )
                 // We remain in POPULATING state
                 return;
-                
-            flipper.flip( new Runnable()
+
+            Runnable duringFlip = new Runnable()
             {
                 @Override
                 public void run()
@@ -91,14 +91,12 @@ public class IndexPopulationJob implements Runnable
                     populateFromQueueIfAvailable( Long.MAX_VALUE );
                     populator.close( true );
                 }
-            }, new FailedIndexContext( descriptor, populator ) );
+            };
+
+            FailedIndexContext failureTarget = new FailedIndexContext( descriptor, populator );
+
+            flipper.flip( duringFlip, failureTarget );
             success = true;
-        }
-        catch ( RuntimeException e )
-        {
-            log.error( "Failed to create index.", e );
-            flipper.setFlipTarget( singleContext( new FailedIndexContext( descriptor, populator, e ) ) );
-            flipper.flip();
         }
         catch ( FlippableIndexContext.FlipFailedKernelException e )
         {
@@ -110,6 +108,12 @@ public class IndexPopulationJob implements Runnable
             // The reason for having the flipper transition to the failed index context in the first
             // place is that we would otherwise introduce a race condition where updates could come
             // in to the old context, if something failed in the job we send to the flipper.
+            flipper.setFlipTarget( singleContext( new FailedIndexContext( descriptor, populator, e ) ) );
+            flipper.flip();
+        }
+        catch ( RuntimeException e )
+        {
+            log.error( "Failed to create index.", e );
             flipper.setFlipTarget( singleContext( new FailedIndexContext( descriptor, populator, e ) ) );
             flipper.flip();
         }
@@ -175,7 +179,6 @@ public class IndexPopulationJob implements Runnable
     /**
      * A transaction happened that produced the given updates. Let this job incorporate its data
      * into, feeding it to the {@link IndexPopulator}.
-     * @param updates
      */
     public void update( Iterable<NodePropertyUpdate> updates )
     {

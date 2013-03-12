@@ -29,6 +29,8 @@ import org.neo4j.kernel.api.index.NodePropertyUpdate;
 
 public class FlippableIndexContext implements IndexContext
 {
+    private boolean closed;
+
     public static final class FlipFailedKernelException extends KernelException
     {
         public FlipFailedKernelException( String message, Throwable cause )
@@ -93,6 +95,7 @@ public class FlippableIndexContext implements IndexContext
         lock.readLock().lock();
         try
         {
+            closed = true;
             return delegate.drop();
         }
         finally
@@ -149,6 +152,7 @@ public class FlippableIndexContext implements IndexContext
         lock.readLock().lock();
         try
         {
+            closed = true;
             return delegate.close();
         }
         finally
@@ -175,6 +179,8 @@ public class FlippableIndexContext implements IndexContext
         }
     }
 
+    //TODO: We should not duplicated code between the flips. Should we even have multiple flips? Why don't they
+    //throw the same exceptions?
     public void flip()
     {
         flip( NO_OP );
@@ -185,6 +191,7 @@ public class FlippableIndexContext implements IndexContext
         lock.writeLock().lock();
         try
         {
+            assertStillOpenForBusiness();
             actionDuringFlip.run();
             this.delegate = flipTarget.create();
         }
@@ -193,16 +200,16 @@ public class FlippableIndexContext implements IndexContext
             lock.writeLock().unlock();
         }
     }
-    
+
     public void flip( Runnable actionDuringFlip, IndexContext failureFlipTarget ) throws FlipFailedKernelException
     {
         lock.writeLock().lock();
         try
         {
+            assertStillOpenForBusiness();
             actionDuringFlip.run();
             this.delegate = flipTarget.create();
-        }
-        catch( Exception e )
+        } catch ( Exception e )
         {
             this.delegate = failureFlipTarget;
             throw new FlipFailedKernelException( "Failed to transition index to new context, see nested exception.", e );
@@ -210,6 +217,24 @@ public class FlippableIndexContext implements IndexContext
         finally
         {
             lock.writeLock().unlock();
+        }
+    }
+
+    @Override
+    public String toString()
+    {
+        return "FlippableIndexContext{" +
+                "delegate=" + delegate +
+                ", lock=" + lock +
+                ", flipTarget=" + flipTarget +
+                '}';
+    }
+
+    private void assertStillOpenForBusiness()
+    {
+        if ( closed )
+        {
+            throw new IllegalStateException( this + " has been closed. No more interactions allowed" );
         }
     }
 }

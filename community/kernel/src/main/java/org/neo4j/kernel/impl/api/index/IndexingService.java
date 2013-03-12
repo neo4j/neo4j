@@ -143,7 +143,7 @@ public class IndexingService extends LifecycleAdapter
         Collection<Future<Void>> indexStopFutures = new ArrayList<Future<Void>>();
         for ( IndexContext index : indexesToStop )
             indexStopFutures.add( index.close() );
-        
+
         for ( Future<Void> future : indexStopFutures )
             awaitIndexFuture( future );
     }

@@ -275,7 +275,7 @@ class ErrorMessagesTest extends ExecutionEngineHelper with Assertions with Strin
   }
 
   @Test def creating_an_index_twice_should_return_sensible_error() {
-    createIndex("LabelName", "Prop")
+    graph.createIndex("LabelName", "Prop")
 
     expectError(
       "CREATE INDEX ON :LabelName(Prop)",
