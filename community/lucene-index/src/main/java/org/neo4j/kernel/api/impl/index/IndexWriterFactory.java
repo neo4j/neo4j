@@ -17,32 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.index;
+package org.neo4j.kernel.api.impl.index;
 
-import static org.neo4j.helpers.collection.Iterables.empty;
+import java.io.File;
+import java.io.IOException;
 
-/**
- * Reader for an {@link IndexAccessor}.
- * Must honor repeatable reads, which means that if a lookup is executed multiple times the same result set
- * must be returned.
- */
-public interface IndexReader
+import org.apache.lucene.index.IndexWriter;
+
+public interface IndexWriterFactory
 {
-    Iterable<Long> lookup( Object value );
-    
-    void close();
-    
-    public static class Adapter implements IndexReader
-    {
-        @Override
-        public Iterable<Long> lookup( Object value )
-        {
-            return empty();
-        }
-        
-        @Override
-        public void close()
-        {
-        }
-    }
+    IndexWriter create( File directory ) throws IOException;
 }

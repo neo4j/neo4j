@@ -19,72 +19,46 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import static org.apache.lucene.document.Field.Index.NOT_ANALYZED;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.index.impl.lucene.IndexType.instantiateField;
-import static org.neo4j.index.impl.lucene.IndexType.newBaseDocument;
-import static org.neo4j.kernel.api.impl.index.LuceneSchemaIndexProvider.KEY_STATUS;
-import static org.neo4j.kernel.api.impl.index.LuceneSchemaIndexProvider.ONLINE;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.lucene.document.Document;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.util.Version;
-import org.neo4j.index.impl.lucene.IndexType;
-import org.neo4j.index.impl.lucene.LuceneDataSource;
+import org.neo4j.kernel.api.impl.index.LuceneSchemaIndexProvider.DocumentLogic;
+import org.neo4j.kernel.api.impl.index.LuceneSchemaIndexProvider.WriterLogic;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 
 class LuceneIndexPopulator implements IndexPopulator
 {
-    static final String SINGLE_KEY = "key";
-    private final File dir;
-    private final DirectoryFactory factory;
+    private final File directory;
     private org.apache.lucene.index.IndexWriter writer;
-    private IndexReader globalReader;
     private final List<NodePropertyUpdate> updates = new ArrayList<NodePropertyUpdate>();
     private final int queueThreshold;
+    private final IndexWriterFactory indexWriterFactory;
     private final FileSystemAbstraction fs;
+    private final DocumentLogic documentLogic;
+    private final WriterLogic writerLogic;
 
-    LuceneIndexPopulator( FileSystemAbstraction fs, File dir, DirectoryFactory factory, int queueThreshold )
+    LuceneIndexPopulator( IndexWriterFactory indexWriterFactory, FileSystemAbstraction fs, File directory,
+            int queueThreshold, DocumentLogic documentLogic, WriterLogic writerLogic )
     {
+        this.indexWriterFactory = indexWriterFactory;
         this.fs = fs;
-        this.dir = dir;
-        this.factory = factory;
+        this.directory = directory;
         this.queueThreshold = queueThreshold;
+        this.documentLogic = documentLogic;
+        this.writerLogic = writerLogic;
     }
 
     @Override
     public void create()
     {
-        deleteDirectory();
-        
-        IndexWriterConfig writerConfig = new IndexWriterConfig( Version.LUCENE_35, LuceneDataSource.KEYWORD_ANALYZER );
-        writerConfig.setMaxBufferedDocs( 100000 ); // TODO figure out depending on environment?
         try
         {
-            writer = new IndexWriter( factory.open( dir ), writerConfig );
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
-    }
-
-    private void deleteDirectory()
-    {
-        try
-        {
-            fs.deleteRecursively( dir );
+            fs.deleteRecursively( directory );
+            writer = indexWriterFactory.create( directory );
         }
         catch ( IOException e )
         {
@@ -97,8 +71,8 @@ class LuceneIndexPopulator implements IndexPopulator
     {
         try
         {
-            writer.close( true );
-            fs.deleteRecursively( dir );
+            writerLogic.close( writer );
+            fs.deleteRecursively( directory );
         }
         catch ( IOException e )
         {
@@ -111,19 +85,12 @@ class LuceneIndexPopulator implements IndexPopulator
     {
         try
         {
-            writer.addDocument( newDocument( nodeId, propertyValue ) );
+            writer.addDocument( documentLogic.newDocument( nodeId, propertyValue ) );
         }
         catch ( IOException e )
         {
             throw new RuntimeException( e );
         }
-    }
-
-    private Document newDocument( long nodeId, Object propertyValue )
-    {
-        Document document = newBaseDocument( nodeId );
-        addToDocument( document, propertyValue );
-        return document;
     }
 
     @Override
@@ -148,56 +115,23 @@ class LuceneIndexPopulator implements IndexPopulator
 
     private void applyQueuedUpdates() throws IOException
     {
-        IndexReader reader = upToDateReader();
-        IndexSearcher searcher = new IndexSearcher( reader );
-        try
+        for ( NodePropertyUpdate update : this.updates )
         {
-            for ( NodePropertyUpdate update : this.updates )
+            long nodeId = update.getNodeId();
+            switch ( update.getUpdateMode() )
             {
-                switch ( update.getUpdateMode() )
-                {
-                case ADDED: addFromUpdate( reader, update.getNodeId(), update.getValueAfter() ); break;
-                case CHANGED: changeFromUpdate( reader, update.getNodeId(), update.getValueBefore(), update.getValueAfter() ); break;
-                case REMOVED: removeFromUpdate( reader, update.getNodeId(), update.getValueBefore() ); break;
-                }
+            case ADDED:
+                writer.addDocument( documentLogic.newDocument( nodeId, update.getValueAfter() ) );
+                break;
+            case CHANGED:
+                writer.updateDocument( documentLogic.newQueryForChangeOrRemove( nodeId, update.getValueBefore() ),
+                        documentLogic.newDocument( nodeId, update.getValueAfter() ) );
+                break;
+            case REMOVED:
+                writer.deleteDocuments( documentLogic.newQueryForChangeOrRemove( nodeId, update.getValueBefore() ) );
+                break;
             }
         }
-        finally
-        {
-            searcher.close();
-        }
-    }
-
-    private void addFromUpdate( IndexReader reader, long nodeId, Object value ) throws IOException
-    {
-        writer.addDocument( newDocument( nodeId, value ) );
-    }
-    
-    private void changeFromUpdate( IndexReader reader, long nodeId, Object valueBefore, Object valueAfter ) throws IOException
-    {
-        writer.updateDocument( nodeTerm( nodeId ), newDocument( nodeId, valueAfter ) );
-    }
-    
-    private void removeFromUpdate( IndexReader reader, long nodeId, Object valueBefore ) throws IOException
-    {
-        writer.deleteDocuments( nodeTerm( nodeId ) );
-    }
-
-    private IndexReader upToDateReader() throws IOException
-    {
-        if ( globalReader == null )
-            // This is the first time we read something, just open it
-            return (globalReader = IndexReader.open( writer, false ));
-        
-        IndexReader refreshedReader = IndexReader.openIfChanged( globalReader, writer, false );
-        if ( refreshedReader != null )
-        {   // Something changed, update our reader reference
-            globalReader.close();
-            return (globalReader = refreshedReader);
-        }
-        
-        // Nothing was changed, return the previous reader reference
-        return globalReader;
     }
 
     @Override
@@ -208,7 +142,7 @@ class LuceneIndexPopulator implements IndexPopulator
             if ( populationCompletedSuccessfully )
             {
                 applyQueuedUpdates();
-                writer.commit( stringMap( KEY_STATUS, ONLINE ) );
+                writerLogic.forceAndMarkAsOnline( writer );
             }
         }
         catch ( IOException e )
@@ -220,22 +154,12 @@ class LuceneIndexPopulator implements IndexPopulator
         {
             try
             {
-                writer.close( true );
+                writerLogic.close( writer );
             }
             catch ( IOException e )
             {
                 throw new RuntimeException( e );
             }
         }
-    }
-
-    private Term nodeTerm( long nodeId )
-    {
-        return IndexType.EXACT.idTerm( nodeId );
-    }
-
-    private void addToDocument( Document document, Object value )
-    {
-        document.add( instantiateField( SINGLE_KEY, value, NOT_ANALYZED ) );
     }
 }

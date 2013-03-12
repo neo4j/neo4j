@@ -513,6 +513,7 @@ public class LifeSupport
                 }
                 catch ( Throwable e )
                 {
+                    e.printStackTrace();
                     throw new LifecycleException( instance, LifecycleStatus.STARTED, LifecycleStatus.STOPPED, e );
                 }
                 finally
