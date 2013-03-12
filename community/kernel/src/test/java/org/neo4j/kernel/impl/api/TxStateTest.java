@@ -107,7 +107,7 @@ public class TxStateTest
         state.addLabelToNode( 2, 2 );
 
         // WHEN
-        Iterable<Long> nodes = state.getAddedNodesWithLabel( 2 );
+        Iterable<Long> nodes = state.getNodesWithLabelAdded( 2 );
 
         // THEN
         assertEquals( asSet( 0L, 2L ), asSet( nodes ) );
@@ -124,7 +124,7 @@ public class TxStateTest
         state.removeLabelFromNode( 2, 2 );
 
         // WHEN
-        Iterable<Long> nodes = state.getRemovedNodesWithLabel( 2 );
+        Iterable<Long> nodes = state.getNodesWithLabelRemoved( 2 );
 
         // THEN
         assertEquals( asSet( 0L, 2L ), asSet( nodes ) );

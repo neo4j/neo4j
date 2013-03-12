@@ -449,6 +449,32 @@ public class TransactionStateAwareStatementContextTest
     }
 
     @Test
+    public void shouldExcludeExistingNodesWithCorrectPropertyAfterRemovingLabel() throws Exception
+    {
+        // Given
+        long labelId = 2l;
+        long propertyKeyId = 3l;
+        String value = "My Value";
+
+        IndexDescriptor indexDescriptor = new IndexDescriptor( labelId, propertyKeyId );
+        when( store.getIndexDescriptor( 1337l ) ).thenReturn( indexDescriptor );
+        when( store.exactIndexLookup( 1337l, value ) ).thenReturn( asList( 1l, 2l, 3l ) );
+        when( store.isLabelSetOnNode( labelId, 1l ) ).thenReturn( true );
+
+        when( store.getNodePropertyValue( 1l, propertyKeyId ) ).thenReturn( value );
+        when( oldTxState.getDeletedNodes() ).thenReturn( Collections.<Long>emptyList() );
+        when( oldTxState.getNodesWithChangedProperty( propertyKeyId, value) ).thenReturn( new DiffSets<Long>( ) );
+
+        // When
+        txContext.removeLabelFromNode( labelId, 1l );
+        Iterable<Long> result = txContext.exactIndexLookup( 1337l, value );
+
+        // Then
+        assertThat( asSet( result ), equalTo( asSet( 2l, 3l ) ) );
+    }
+
+
+    @Test
     public void shouldExcludeNodesWithRemovedProperty() throws Exception
     {
         // Given
