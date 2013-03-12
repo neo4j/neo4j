@@ -101,7 +101,7 @@ public class TxState
     /**
      * Returns all nodes that, in this tx, has got labelId added.
      */
-    public Iterable<Long> getAddedNodesWithLabel( long labelId )
+    public Iterable<Long> getNodesWithLabelAdded( long labelId )
     {
         LabelState state = getState( labelStates, labelId, null );
         return state == null ? Collections.<Long>emptySet() : state.getNodeDiffSets().getAdded();
@@ -110,7 +110,7 @@ public class TxState
     /**
      * Returns all nodes that, in this tx, has got labelId removed.
      */
-    public Collection<Long> getRemovedNodesWithLabel( long labelId )
+    public Collection<Long> getNodesWithLabelRemoved( long labelId )
     {
         LabelState state = getState( labelStates, labelId, null );
         return state == null ? Collections.<Long>emptySet() : state.getNodeDiffSets().getRemoved();

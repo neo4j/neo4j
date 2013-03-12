@@ -105,7 +105,7 @@ public class TransactionStateAwareStatementContext extends DelegatingStatementCo
             return committed;
         
         Iterable<Long> result = committed;
-        final Collection<Long> removed = state.getRemovedNodesWithLabel( labelId );
+        final Collection<Long> removed = state.getNodesWithLabelRemoved( labelId );
         if ( !removed.isEmpty() )
         {
             result = filter( new Predicate<Long>()
@@ -118,7 +118,7 @@ public class TransactionStateAwareStatementContext extends DelegatingStatementCo
             }, result );
         }
         
-        Iterable<Long> added = state.getAddedNodesWithLabel( labelId );
+        Iterable<Long> added = state.getNodesWithLabelAdded( labelId );
         return concat( result, added );
     }
 
@@ -227,8 +227,13 @@ public class TransactionStateAwareStatementContext extends DelegatingStatementCo
         diff = diff.filterAdded( new HasLabelFilter( idx.getLabelId() ) );
 
         // Include newly labeled nodes that already had the correct property
-        Iterable<Long> addedNodesWithLabel = state.getAddedNodesWithLabel( idx.getLabelId() );
-        diff.addAll( Iterables.filter( new HasPropertyFilter( idx.getPropertyKeyId(), value ), addedNodesWithLabel ) );
+        HasPropertyFilter hasPropertyFilter = new HasPropertyFilter( idx.getPropertyKeyId(), value );
+        Iterable<Long> addedNodesWithLabel = state.getNodesWithLabelAdded( idx.getLabelId() );
+        diff.addAll( Iterables.filter( hasPropertyFilter, addedNodesWithLabel ) );
+
+        // Remove de-labeled nodes that had the correct value before
+        Iterable<Long> removedNodesWithLabel = state.getNodesWithLabelRemoved( idx.getLabelId() );
+        diff.removeAll( Iterables.filter( hasPropertyFilter, removedNodesWithLabel ) );
 
         // Apply to actual index lookup
         return diff.apply( delegate.exactIndexLookup( indexId, value ) );
