@@ -23,20 +23,20 @@ import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.FilteringIterable;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 
-public class RuleUpdateFilterIndexContext extends DelegatingIndexContext
+public class RuleUpdateFilterIndexProxy extends DelegatingIndexProxy
 {
     private final Predicate<NodePropertyUpdate> ruleMatchingUpdates =  new Predicate<NodePropertyUpdate>()
     {
         @Override
         public boolean accept( NodePropertyUpdate item )
         {
-            IndexDescriptor descriptor = RuleUpdateFilterIndexContext.this.getDescriptor();
+            IndexDescriptor descriptor = RuleUpdateFilterIndexProxy.this.getDescriptor();
             return
                 item.getPropertyKeyId() == descriptor.getPropertyKeyId() && item.forLabel( descriptor.getLabelId() );
         }
     };
 
-    public RuleUpdateFilterIndexContext( IndexContext delegate )
+    public RuleUpdateFilterIndexProxy( IndexProxy delegate )
     {
         super( delegate );
     }

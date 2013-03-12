@@ -19,90 +19,49 @@
  */
 package org.neo4j.graphdb;
 
-import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertThat;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.junit.Assert.assertEquals;
 import static org.neo4j.helpers.collection.Iterables.single;
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.helpers.collection.MapUtil.map;
 
-import org.junit.Ignore;
+import java.util.Map;
+import java.util.Set;
+
 import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.graphdb.schema.Schema;
-import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.test.ImpermanentDatabaseRule;
 
 public class IndexingAcceptanceTest
 {
-    public
-    @Rule
-    ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule();
-
-    private enum Labels implements Label
-    {
-        MY_LABEL,
-        MY_OTHER_LABEL
-    }
-
     @Test
     public void searchingForNodeByPropertyShouldWorkWithoutIndex() throws Exception
     {
         // Given
         GraphDatabaseService beansAPI = dbRule.getGraphDatabaseService();
-        Node myNode;
+        Node myNode = createNode( beansAPI, map( "name", "Hawking" ), Labels.MY_LABEL );
 
         // When
-        Transaction tx = beansAPI.beginTx();
-        try
-        {
-            myNode = beansAPI.createNode();
-            myNode.addLabel( Labels.MY_LABEL );
-            myNode.setProperty( "name", "Hawking" );
-
-            tx.success();
-        } finally
-        {
-            tx.finish();
-        }
+        Node result = single( beansAPI.findNodesByLabelAndProperty( Labels.MY_LABEL, "name", "Hawking" ) );
 
         // Then
-        Node result = single( beansAPI.findNodesByLabelAndProperty( Labels.MY_LABEL, "name", "Hawking" ) );
-        assertThat( result, is( myNode ) );
+        assertEquals( result, myNode );
     }
 
-    @Test @Ignore("TODO: Un-ignore once we can read from Lucene")
+    @Test
     public void searchingUsesIndexWhenItExists() throws Exception
     {
         // Given
         GraphDatabaseService beansAPI = dbRule.getGraphDatabaseService();
-        Node myNode;
+        Node myNode = createNode( beansAPI, map( "name", "Hawking" ), Labels.MY_LABEL );
+        createIndex( beansAPI, Labels.MY_LABEL, "name" );
 
         // When
-        Transaction tx = beansAPI.beginTx();
-        IndexDefinition indexDef;
-        try
-        {
-            myNode = beansAPI.createNode();
-            myNode.addLabel( Labels.MY_LABEL );
-            myNode.setProperty( "name", "Hawking" );
-            indexDef = beansAPI.schema().indexCreator( Labels.MY_LABEL ).on( "name" ).create();
-
-            tx.success();
-        } finally
-        {
-            tx.finish();
-        }
-
-        while ( beansAPI.schema().getIndexState( indexDef ) == Schema.IndexState.POPULATING )
-        {
-            Thread.sleep( 10 );
-        }
-
-        assertThat( beansAPI.schema().getIndexState( indexDef ), is( Schema.IndexState.ONLINE ) );
-
+        Node result = single( beansAPI.findNodesByLabelAndProperty( Labels.MY_LABEL, "name", "Hawking" ) );
 
         // Then
-        Node result = single( beansAPI.findNodesByLabelAndProperty( Labels.MY_LABEL, "name", "Hawking" ) );
-        assertThat( result, is( myNode ) );
+        assertEquals( result, myNode );
     }
 
     @Test
@@ -113,6 +72,66 @@ public class IndexingAcceptanceTest
 
         // When/Then
         Iterable<Node> result = beansAPI.findNodesByLabelAndProperty( Labels.MY_LABEL, "name", "Hawking" );
-        assertThat( result, is( Iterables.<Node>empty() ) );
+        assertEquals( asSet(), asSet( result ) );
+    }
+    
+    @Test
+    public void shouldSeeIndexUpdatesWhenQueryingOutsideTransaction() throws Exception
+    {
+        // GIVEN
+        GraphDatabaseService beansAPI = dbRule.getGraphDatabaseService();
+        createIndex( beansAPI, Labels.MY_LABEL, "name" );
+        Node firstNode = createNode( beansAPI, map( "name", "Mattias" ), Labels.MY_LABEL );
+
+        // WHEN
+        Set<Node> firstResult = asSet( beansAPI.findNodesByLabelAndProperty( Labels.MY_LABEL, "name", "Mattias" ) );
+        Node secondNode = createNode( beansAPI, map( "name", "Taylor" ), Labels.MY_LABEL );
+        Set<Node> secondResult = asSet( beansAPI.findNodesByLabelAndProperty( Labels.MY_LABEL, "name", "Taylor" ) );
+
+        // THEN
+        assertEquals( asSet( firstNode ), firstResult );
+        assertEquals( asSet( secondNode ), secondResult );
+    }
+
+    public @Rule
+    ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule();
+
+    private enum Labels implements Label
+    {
+        MY_LABEL, MY_OTHER_LABEL
+    }
+
+    private Node createNode( GraphDatabaseService beansAPI, Map<String, Object> properties, Label... labels )
+    {
+        Transaction tx = beansAPI.beginTx();
+        try
+        {
+            Node node = beansAPI.createNode( labels );
+            for ( Map.Entry<String,Object> property : properties.entrySet() )
+                node.setProperty( property.getKey(), property.getValue() );
+            tx.success();
+            return node;
+        }
+        finally
+        {
+            tx.finish();
+        }
+    }
+
+    private IndexDefinition createIndex( GraphDatabaseService beansAPI, Label label, String property )
+    {
+        Transaction tx = beansAPI.beginTx();
+        IndexDefinition indexDef;
+        try
+        {
+            indexDef = beansAPI.schema().indexCreator( label ).on( property ).create();
+            tx.success();
+        }
+        finally
+        {
+            tx.finish();
+        }
+        beansAPI.schema().awaitIndexOnline( indexDef, 10, SECONDS );
+        return indexDef;
     }
 }

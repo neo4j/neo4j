@@ -35,7 +35,7 @@ class UsingTest extends DocumentingTestBase {
     "Stefan" -> Map("surname" -> "Plantikow")
   )
 
-  def section = "Set"
+  def section = "Using"
 
   @Test def query_using_single_index_hint() {
     db.createIndex("Swedish", "surname")

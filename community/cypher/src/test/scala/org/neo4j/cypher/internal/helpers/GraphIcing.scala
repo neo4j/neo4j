@@ -50,7 +50,7 @@ trait GraphIcing {
       finally {
         tx.finish()
       }
-      graph.schema().awaitIndexOnline(indexDef, TimeUnit.SECONDS, 10)
+      graph.schema().awaitIndexOnline(indexDef, 10, TimeUnit.SECONDS)
     }
 
 

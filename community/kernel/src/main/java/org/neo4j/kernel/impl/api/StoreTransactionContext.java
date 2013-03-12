@@ -26,14 +26,14 @@ import org.neo4j.kernel.impl.core.PropertyIndexManager;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 
-public class TemporaryLabelAsPropertyTransactionContext implements TransactionContext
+public class StoreTransactionContext implements TransactionContext
 {
     private final PropertyIndexManager propertyIndexManager;
     private final PersistenceManager persistenceManager;
     private final NeoStore neoStore;
     private final IndexingService indexingService;
 
-    public TemporaryLabelAsPropertyTransactionContext( PropertyIndexManager propertyIndexManager,
+    public StoreTransactionContext( PropertyIndexManager propertyIndexManager,
             PersistenceManager persistenceManager, NeoStore neoStore, IndexingService indexingService )
     {
         this.propertyIndexManager = propertyIndexManager;
@@ -45,7 +45,8 @@ public class TemporaryLabelAsPropertyTransactionContext implements TransactionCo
     @Override
     public StatementContext newStatementContext()
     {
-        return new StoreStatementContext( propertyIndexManager, persistenceManager, neoStore, indexingService );
+        return new StoreStatementContext( propertyIndexManager, persistenceManager, neoStore, indexingService,
+                new IndexReaderFactory.Caching( indexingService ) );
     }
 
     @Override

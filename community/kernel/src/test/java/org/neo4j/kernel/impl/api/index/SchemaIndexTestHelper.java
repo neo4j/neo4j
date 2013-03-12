@@ -47,9 +47,9 @@ public class SchemaIndexTestHelper
         return mock;
     }
     
-    public static IndexContext mockIndexContext()
+    public static IndexProxy mockIndexProxy()
     {
-        IndexContext result = mock( IndexContext.class );
+        IndexProxy result = mock( IndexProxy.class );
         when( result.drop() ).thenReturn( FutureAdapter.VOID );
         when( result.close() ).thenReturn( FutureAdapter.VOID );
         return result;

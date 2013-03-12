@@ -23,38 +23,36 @@ import static org.neo4j.helpers.FutureAdapter.VOID;
 
 import java.util.concurrent.Future;
 
-import org.neo4j.kernel.api.index.IndexAccessor;
-import org.neo4j.kernel.api.index.InternalIndexState;
+import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 
-public class OnlineIndexContext implements IndexContext
+public abstract class AbstractSwallowingIndexProxy implements IndexProxy
 {
     private final IndexDescriptor descriptor;
-    private final IndexAccessor accessor;
+    private final Throwable cause;
 
-    public OnlineIndexContext( IndexDescriptor descriptor, IndexAccessor accessor )
+    public AbstractSwallowingIndexProxy( IndexDescriptor descriptor, Throwable cause )
     {
         this.descriptor = descriptor;
-        this.accessor = accessor;
+        this.cause = cause;
     }
-    
+
     @Override
     public void create()
     {
-        throw new UnsupportedOperationException(  );
+        String message = "Unable to create index, it is in a " + getState().name() + " state.";
+        throw new UnsupportedOperationException( message, cause );
     }
 
     @Override
     public void update( Iterable<NodePropertyUpdate> updates )
     {
-        accessor.updateAndCommit( updates );
+        // intentionally swallow updates, we're failed and nothing but re-population or dropIndex will solve this
     }
 
     @Override
-    public Future<Void> drop()
+    public void force()
     {
-        accessor.drop();
-        return VOID;
     }
 
     @Override
@@ -64,21 +62,14 @@ public class OnlineIndexContext implements IndexContext
     }
 
     @Override
-    public InternalIndexState getState()
+    public Future<Void> close()
     {
-        return InternalIndexState.ONLINE;
+        return VOID;
     }
     
     @Override
-    public void force()
+    public IndexReader newReader()
     {
-        accessor.force();
-    }
-
-    @Override
-    public Future<Void> close()
-    {
-        accessor.close();
-        return VOID;
+        throw new UnsupportedOperationException();
     }
 }

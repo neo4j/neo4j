@@ -69,7 +69,7 @@ public class SchemaAcceptanceTest
         Iterable<IndexDefinition> indexes = schema.getIndexes( Labels.MY_LABEL );
 
         assertEquals( asSet( property ), asSet( singlePropertyKey( indexes ) ) );
-        schema.awaitIndexOnline( single( indexes), TimeUnit.SECONDS, 5L );
+        schema.awaitIndexOnline( single( indexes), 5L, TimeUnit.SECONDS );
     }
 
     @Test(expected = ConstraintViolationException.class)
@@ -222,7 +222,7 @@ public class SchemaAcceptanceTest
         IndexDefinition index = createIndexRule( beansAPI, label, property );
 
         // PASS
-        beansAPI.schema().awaitIndexOnline( index, TimeUnit.MINUTES, 1L );
+        beansAPI.schema().awaitIndexOnline( index, 1L, TimeUnit.MINUTES );
 
         // THEN
         assertEquals( Schema.IndexState.ONLINE, beansAPI.schema().getIndexState( index ) );

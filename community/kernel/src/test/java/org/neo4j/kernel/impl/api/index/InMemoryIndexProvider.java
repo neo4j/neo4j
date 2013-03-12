@@ -25,8 +25,10 @@ import java.util.Map;
 import java.util.Set;
 
 import org.neo4j.helpers.Service;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexPopulator;
+import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
@@ -35,7 +37,7 @@ import org.neo4j.kernel.impl.util.CopyOnWriteHashMap;
 @Service.Implementation( InMemoryIndexProvider.class )
 public class InMemoryIndexProvider extends SchemaIndexProvider
 {
-    private final Map<Long, IndexPopulator> writers = new CopyOnWriteHashMap<Long, IndexPopulator>();
+    private final Map<Long, InMemoryIndexWriter> indexes = new CopyOnWriteHashMap<Long, InMemoryIndexWriter>();
 
     public InMemoryIndexProvider()
     {
@@ -45,28 +47,31 @@ public class InMemoryIndexProvider extends SchemaIndexProvider
     @Override
     public IndexAccessor getOnlineAccessor( long indexId, Dependencies dependencies )
     {
-        InMemoryIndexWriter populator = new InMemoryIndexWriter();
-        writers.put( indexId, populator );
-        return populator;
+        InMemoryIndexWriter index = indexes.get( indexId );
+        if ( index == null || index.state != InternalIndexState.ONLINE )
+            throw new IllegalStateException( "Index " + indexId + " not online yet" );
+        return index;
     }
 
     @Override
     public InternalIndexState getInitialState( long indexId, Dependencies dependencies )
     {
-        return null;
+        InMemoryIndexWriter index = indexes.get( indexId );
+        return index != null ? index.state : InternalIndexState.POPULATING;
     }
 
     @Override
     public IndexPopulator getPopulator( long indexId, Dependencies dependencies )
     {
         InMemoryIndexWriter populator = new InMemoryIndexWriter();
-        writers.put( indexId, populator );
+        indexes.put( indexId, populator );
         return populator;
     }
     
     private static class InMemoryIndexWriter extends IndexAccessor.Adapter implements IndexPopulator
     {
         private final Map<Object, Set<Long>> indexData = new HashMap<Object, Set<Long>>();
+        private InternalIndexState state = InternalIndexState.POPULATING;
 
         @Override
         public void add( long nodeId, Object propertyValue )
@@ -75,6 +80,11 @@ public class InMemoryIndexProvider extends SchemaIndexProvider
             nodes.add( nodeId );
         }
 
+        private void removed( long nodeId, Object valueBefore )
+        {
+            getLongs( valueBefore ).remove( nodeId );
+        }
+        
         @Override
         public void update( Iterable<NodePropertyUpdate> updates )
         {
@@ -85,10 +95,23 @@ public class InMemoryIndexProvider extends SchemaIndexProvider
                 case ADDED:
                     add( update.getNodeId(), update.getValueAfter() );
                     break;
-//                case CHANGED:
-//                    change( update.getNodeId(), update.getValueBefore(), update.getValueAfter() );
+                case CHANGED:
+                    removed( update.getNodeId(), update.getValueBefore() );
+                    add( update.getNodeId(), update.getValueAfter() );
+                    break;
+                case REMOVED:
+                    removed( update.getNodeId(), update.getValueBefore() );
+                    break;
+                default:
+                    throw new UnsupportedOperationException();
                 }
             }
+        }
+        
+        @Override
+        public void updateAndCommit( Iterable<NodePropertyUpdate> updates )
+        {
+            update( updates );
         }
 
         @Override
@@ -116,11 +139,42 @@ public class InMemoryIndexProvider extends SchemaIndexProvider
         @Override
         public void drop()
         {
+            indexData.clear();
         }
         
         @Override
         public void close( boolean populationCompletedSuccessfully )
         {
+            if ( populationCompletedSuccessfully )
+                state = InternalIndexState.ONLINE;
+        }
+
+        @Override
+        public void close()
+        {
+        }
+        
+        @Override
+        public IndexReader newReader()
+        {
+            return new InMemoryReader( indexData );
+        }
+    }
+    
+    private static class InMemoryReader implements IndexReader
+    {
+        private final HashMap<Object, Set<Long>> indexData;
+
+        InMemoryReader( Map<Object, Set<Long>> indexData )
+        {
+            this.indexData = new HashMap<Object, Set<Long>>( indexData );
+        }
+
+        @Override
+        public Iterable<Long> lookup( Object value )
+        {
+            Set<Long> result = indexData.get( value );
+            return result != null ? result : Iterables.<Long>empty();
         }
 
         @Override

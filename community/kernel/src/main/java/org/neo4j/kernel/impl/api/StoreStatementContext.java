@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import static org.neo4j.helpers.collection.Iterables.empty;
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.map;
 
@@ -58,11 +57,14 @@ public class StoreStatementContext implements StatementContext
     private final PersistenceManager persistenceManager;
     private final NeoStore neoStore;
     private final IndexingService indexService;
+    private final IndexReaderFactory indexReaderFactory;
 
     public StoreStatementContext( PropertyIndexManager propertyIndexManager,
-            PersistenceManager persistenceManager, NeoStore neoStore, IndexingService indexService )
+            PersistenceManager persistenceManager, NeoStore neoStore, IndexingService indexService,
+            IndexReaderFactory indexReaderFactory )
     {
         this.indexService = indexService;
+        this.indexReaderFactory = indexReaderFactory;
         assert neoStore != null : "No neoStore provided";
         this.propertyIndexManager = propertyIndexManager;
         this.persistenceManager = persistenceManager;
@@ -293,7 +295,7 @@ public class StoreStatementContext implements StatementContext
     @Override
     public InternalIndexState getIndexState( IndexRule indexRule ) throws IndexNotFoundKernelException
     {
-        return indexService.getContextForRule( indexRule.getId() ).getState();
+        return indexService.getProxyForRule( indexRule.getId() ).getState();
     }
 
     @Override
@@ -329,8 +331,8 @@ public class StoreStatementContext implements StatementContext
     }
 
     @Override
-    public Iterable<Long> exactIndexLookup( long indexId, Object value )
+    public Iterable<Long> exactIndexLookup( long indexId, Object value ) throws IndexNotFoundKernelException
     {
-        return empty();
+        return indexReaderFactory.newReader( indexId ).lookup( value );
     }
 }

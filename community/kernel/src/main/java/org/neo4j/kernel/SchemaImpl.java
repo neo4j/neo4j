@@ -103,7 +103,7 @@ public class SchemaImpl implements Schema
     }
 
     @Override
-    public void awaitIndexOnline( IndexDefinition index, TimeUnit unit, long duration )
+    public void awaitIndexOnline( IndexDefinition index, long duration, TimeUnit unit )
     {
         long now     = System.currentTimeMillis();
         long timeout = now + unit.toMillis( duration );

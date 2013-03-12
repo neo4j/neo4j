@@ -21,12 +21,14 @@ package org.neo4j.kernel.impl.api.index;
 
 import java.util.concurrent.Future;
 
+import org.neo4j.kernel.api.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 
-public abstract class AbstractDelegatingIndexContext implements IndexContext
+public abstract class AbstractDelegatingIndexProxy implements IndexProxy
 {
-    protected abstract IndexContext getDelegate();
+    protected abstract IndexProxy getDelegate();
 
     @Override
     public void create()
@@ -71,7 +73,14 @@ public abstract class AbstractDelegatingIndexContext implements IndexContext
     }
 
     @Override
-    public String toString() {
+    public IndexReader newReader() throws IndexNotFoundKernelException
+    {
+        return getDelegate().newReader();
+    }
+    
+    @Override
+    public String toString()
+    {
         return String.format( "%s -> %s", getClass().getSimpleName(), getDelegate().toString() );
     }
 }
