@@ -78,7 +78,7 @@ public class IndexPopulationJobTest
         // GIVEN
         String value = "Taylor";
         long nodeId = createNode( map( name, value ), FIRST );
-        IndexPopulationJob job = newIndexPopulationJob( FIRST, name, populator, new FlippableIndexContext() );
+        IndexPopulationJob job = newIndexPopulationJob( FIRST, name, populator, new FlippableIndexProxy() );
 
         // WHEN
         job.run();
@@ -100,7 +100,7 @@ public class IndexPopulationJobTest
         createNode( map( name, value ), SECOND );
         createNode( map( age, 31 ), FIRST );
         long node4 = createNode( map( age, 35, name, value ), FIRST );
-        IndexPopulationJob job = newIndexPopulationJob( FIRST, name, populator, new FlippableIndexContext() );
+        IndexPopulationJob job = newIndexPopulationJob( FIRST, name, populator, new FlippableIndexProxy() );
 
         // WHEN
         job.run();
@@ -127,7 +127,7 @@ public class IndexPopulationJobTest
         long propertyKeyId = context.getPropertyKeyId( name );
         NodeChangingWriter populator = new NodeChangingWriter( changeNode, propertyKeyId, value1, changedValue,
                 firstLabelId );
-        IndexPopulationJob job = newIndexPopulationJob( FIRST, name, populator, new FlippableIndexContext() );
+        IndexPopulationJob job = newIndexPopulationJob( FIRST, name, populator, new FlippableIndexProxy() );
         populator.setJob( job );
 
         // WHEN
@@ -152,7 +152,7 @@ public class IndexPopulationJobTest
         long node3 = createNode( map( name, value3 ), FIRST );
         long propertyKeyId = context.getPropertyKeyId( name );
         NodeDeletingWriter populator = new NodeDeletingWriter( node2, propertyKeyId, value2, firstLabelId );
-        IndexPopulationJob job = newIndexPopulationJob( FIRST, name, populator, new FlippableIndexContext() );
+        IndexPopulationJob job = newIndexPopulationJob( FIRST, name, populator, new FlippableIndexProxy() );
         populator.setJob( job );
 
         // WHEN
@@ -172,7 +172,7 @@ public class IndexPopulationJobTest
         IndexPopulator failingPopulator = mock( IndexPopulator.class );
         doThrow( new RuntimeException( "BORK BORK" ) ).when( failingPopulator ).add( anyLong(), any() );
 
-        FlippableIndexContext index = new FlippableIndexContext();
+        FlippableIndexProxy index = new FlippableIndexProxy();
 
         createNode( map( name, "Taylor" ), FIRST );
         IndexPopulationJob job = newIndexPopulationJob( FIRST, name, failingPopulator, index );
@@ -190,7 +190,7 @@ public class IndexPopulationJobTest
         // GIVEN
         createNode( map( name, "Mattias" ), FIRST );
         IndexPopulator populator = mock( IndexPopulator.class );
-        FlippableIndexContext index = mock( FlippableIndexContext.class );
+        FlippableIndexProxy index = mock( FlippableIndexProxy.class );
         IndexStoreView storeView = mock( IndexStoreView.class );
         ControlledStoreScan storeScan = new ControlledStoreScan();
         when( storeView.visitNodesWithPropertyAndLabel( any(IndexDescriptor.class),
@@ -220,7 +220,7 @@ public class IndexPopulationJobTest
         verify( populator, times( 1 ) ).close( false );
         verify( index, times( 0 ) ).flip();
         verify( index, times( 0 ) ).flip( Matchers.<Runnable>any() );
-        verify( index, times( 0 ) ).flip( Matchers.<Runnable>any(), Matchers.<IndexContext>any() );
+        verify( index, times( 0 ) ).flip( Matchers.<Runnable>any(), Matchers.<IndexProxy>any() );
     }
     
     private static class ControlledStoreScan implements StoreScan
@@ -374,7 +374,7 @@ public class IndexPopulationJobTest
     }
 
     private IndexPopulationJob newIndexPopulationJob( Label label, String propertyKey, IndexPopulator populator,
-            FlippableIndexContext flipper )
+            FlippableIndexProxy flipper )
             throws LabelNotFoundKernelException, PropertyKeyNotFoundException
     {
         NeoStore neoStore = db.getXaDataSourceManager().getNeoStoreDataSource().getNeoStore();
@@ -382,12 +382,12 @@ public class IndexPopulationJobTest
     }
     
     private IndexPopulationJob newIndexPopulationJob( Label label, String propertyKey, IndexPopulator populator,
-            FlippableIndexContext flipper, IndexStoreView storeView )
+            FlippableIndexProxy flipper, IndexStoreView storeView )
             throws LabelNotFoundKernelException, PropertyKeyNotFoundException
     {
         IndexRule indexRule = new IndexRule( 0, context.getLabelId( FIRST.name() ), context.getPropertyKeyId( name ) );
         IndexDescriptor descriptor = new IndexDescriptor( indexRule.getLabel(), indexRule.getPropertyKey() );
-        flipper.setFlipTarget( mock( IndexContextFactory.class ) );
+        flipper.setFlipTarget( mock( IndexProxyFactory.class ) );
         return new IndexPopulationJob( descriptor, populator, flipper, storeView, new SingleLoggingService( SYSTEM ) );
     }
 

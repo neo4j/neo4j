@@ -24,15 +24,17 @@ import static org.neo4j.helpers.FutureAdapter.VOID;
 import java.util.concurrent.Future;
 
 import org.neo4j.kernel.api.index.IndexAccessor;
+import org.neo4j.kernel.api.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexPopulator;
+import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 
 /**
  * Controls access to {@link IndexPopulator}, {@link IndexAccessor} during different stages
- * of a lifecycle of a schema index. It's designed to be decorated with multiple stacked instances.
+ * of the lifecycle of a schema index. It's designed to be decorated with multiple stacked instances.
  *
- * The contract of IndexContext is
+ * The contract of {@link IndexProxy} is
  *
  * <ul>
  *     <li>The index may not be created twice</li>
@@ -43,9 +45,9 @@ import org.neo4j.kernel.api.index.NodePropertyUpdate;
  *     <li>It is an error to close or drop the index while there are still ongoing calls to update and force</li>
  * </ul>
  *
- * @see org.neo4j.kernel.impl.api.index.ContractCheckingIndexContext
+ * @see ContractCheckingIndexProxy
  */
-public interface IndexContext
+public interface IndexProxy
 {
     void create();
     
@@ -70,7 +72,14 @@ public interface IndexContext
 
     void force();
     
-    public static class Adapter implements IndexContext
+    /**
+     * 
+     * @return
+     * @throws IndexNotFoundKernelException if the index isn't online yet.
+     */
+    IndexReader newReader() throws IndexNotFoundKernelException;
+    
+    public static class Adapter implements IndexProxy
     {
         public static final Adapter EMPTY = new Adapter();
 
@@ -93,7 +102,7 @@ public interface IndexContext
         @Override
         public InternalIndexState getState()
         {
-            throw new UnsupportedOperationException(  );
+            throw new UnsupportedOperationException();
         }
 
         @Override
@@ -111,6 +120,12 @@ public interface IndexContext
         public IndexDescriptor getDescriptor()
         {
             return null;
+        }
+
+        @Override
+        public IndexReader newReader()
+        {
+            return new IndexReader.Adapter();
         }
     }
 }

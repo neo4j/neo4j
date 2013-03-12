@@ -38,7 +38,6 @@ import javax.transaction.NotSupportedException;
 import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
 
-import ch.qos.logback.classic.LoggerContext;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -68,6 +67,7 @@ import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelException;
 import org.neo4j.kernel.api.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.StatementContext;
+import org.neo4j.kernel.api.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConfigurationChange;
@@ -144,6 +144,8 @@ import org.neo4j.kernel.logging.ClassicLoggingService;
 import org.neo4j.kernel.logging.LogbackService;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.tooling.GlobalGraphOperations;
+
+import ch.qos.logback.classic.LoggerContext;
 
 /**
  * Base implementation of GraphDatabaseService. Responsible for creating services, handling dependencies between them,
@@ -1491,23 +1493,28 @@ public abstract class InternalAbstractGraphDatabase
         {
             propertyId = ctx.getPropertyKeyId( propertyName );
             labelId = ctx.getLabelId( myLabel.name() );
-        } catch ( KernelException e )
+        }
+        catch ( KernelException e )
         {
             return Iterables.empty();
         }
 
-        IndexRule indexRule;
         try
         {
-            indexRule = ctx.getIndexRule( labelId, propertyId );
-        } catch ( SchemaRuleNotFoundException e )
-        {
-            // If we don't find a matching index rule, we'll scan all nodes and filter manually
-            return getNodesByLabelAndPropertyWithoutIndex( propertyName, value, ctx, labelId );
+            IndexRule indexRule = ctx.getIndexRule( labelId, propertyId );
+            // Ha! We found an index - let's use it to find matching nodes
+            return map2nodes( ctx.exactIndexLookup( indexRule.getId(), value ) );
         }
-
-        // Ha! We found an index - let's use it to find matching nodes
-        return map2nodes( ctx.exactIndexLookup( indexRule.getId(), value ) );
+        catch ( SchemaRuleNotFoundException e )
+        {
+            // If we don't find a matching index rule, we'll scan all nodes and filter manually (below)
+        }
+        catch ( IndexNotFoundKernelException e )
+        {
+            // If we don't find a matching index rule, we'll scan all nodes and filter manually (below)
+        }
+        
+        return getNodesByLabelAndPropertyWithoutIndex( propertyName, value, ctx, labelId );
     }
 
     private Iterable<Node> getNodesByLabelAndPropertyWithoutIndex( final String propertyName, final Object value, StatementContext ctx, long labelId )

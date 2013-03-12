@@ -23,37 +23,39 @@ import static org.neo4j.helpers.FutureAdapter.VOID;
 
 import java.util.concurrent.Future;
 
+import org.neo4j.kernel.api.index.IndexAccessor;
+import org.neo4j.kernel.api.index.IndexReader;
+import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 
-public abstract class AbstractSwallowingIndexContext implements IndexContext
+public class OnlineIndexProxy implements IndexProxy
 {
     private final IndexDescriptor descriptor;
-    private final Throwable cause;
+    private final IndexAccessor accessor;
 
-
-    public AbstractSwallowingIndexContext( IndexDescriptor descriptor, Throwable cause )
+    public OnlineIndexProxy( IndexDescriptor descriptor, IndexAccessor accessor )
     {
         this.descriptor = descriptor;
-        this.cause = cause;
+        this.accessor = accessor;
     }
-
+    
     @Override
     public void create()
     {
-        String message = "Unable to create index, it is in a " + getState().name() + " state.";
-        throw new UnsupportedOperationException( message, cause );
+        throw new UnsupportedOperationException(  );
     }
-
 
     @Override
     public void update( Iterable<NodePropertyUpdate> updates )
     {
-        // intentionally swallow updates, we're failed and nothing but re-population or dropIndex will solve this
+        accessor.updateAndCommit( updates );
     }
 
     @Override
-    public void force()
+    public Future<Void> drop()
     {
+        accessor.drop();
+        return VOID;
     }
 
     @Override
@@ -63,8 +65,36 @@ public abstract class AbstractSwallowingIndexContext implements IndexContext
     }
 
     @Override
+    public InternalIndexState getState()
+    {
+        return InternalIndexState.ONLINE;
+    }
+    
+    @Override
+    public void force()
+    {
+        accessor.force();
+    }
+
+    @Override
     public Future<Void> close()
     {
+        accessor.close();
         return VOID;
+    }
+    
+    @Override
+    public IndexReader newReader()
+    {
+        return accessor.newReader();
+    }
+    
+    @Override
+    public String toString()
+    {
+        return getClass().getSimpleName() + "{" +
+                "accessor=" + accessor +
+                ", descriptor=" + descriptor +
+                '}';
     }
 }

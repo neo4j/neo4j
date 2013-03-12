@@ -19,8 +19,18 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-
-public interface IndexContextFactory
+public class DelegatingIndexProxy extends AbstractDelegatingIndexProxy
 {
-    IndexContext create();
+    private final IndexProxy delegate;
+
+    public DelegatingIndexProxy( IndexProxy delegate )
+    {
+        this.delegate = delegate;
+    }
+    
+    @Override
+    protected IndexProxy getDelegate()
+    {
+        return delegate;
+    }
 }

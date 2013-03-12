@@ -117,7 +117,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     {
         // I/O
         // TODO figure out another way to get access to the PropertyStore, or to not having to pass it in
-        TransactionContext result = new TemporaryLabelAsPropertyTransactionContext( propertyIndexManager,
+        TransactionContext result = new StoreTransactionContext( propertyIndexManager,
                 persistenceManager, neoStore, indexService );
         // + Transaction life cycle
         // XXX: This is disabled during transition phase, we are still using the legacy transaction management stuff
@@ -142,7 +142,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     {
         // I/O
         StatementContext result = new StoreStatementContext( propertyIndexManager,
-                persistenceManager, neoStore, indexService );
+                persistenceManager, neoStore, indexService, new IndexReaderFactory.NonCaching( indexService ) );
         // + Cache
         result = new CachingStatementContext( result, persistenceCache, schemaCache );
         // + Read only access

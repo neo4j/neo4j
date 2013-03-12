@@ -141,7 +141,7 @@ public class ReadOnlyStatementContext implements StatementContext
     }
 
     @Override
-    public Iterable<Long> exactIndexLookup( long indexId, Object value )
+    public Iterable<Long> exactIndexLookup( long indexId, Object value ) throws IndexNotFoundKernelException
     {
         return delegate.exactIndexLookup( indexId, value );
     }

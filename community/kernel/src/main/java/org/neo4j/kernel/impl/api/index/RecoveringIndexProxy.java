@@ -23,34 +23,24 @@ import static org.neo4j.helpers.FutureAdapter.VOID;
 
 import java.util.concurrent.Future;
 
-import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.InternalIndexState;
 
-public class FailedIndexContext extends AbstractSwallowingIndexContext
+public class RecoveringIndexProxy extends AbstractSwallowingIndexProxy
 {
-    protected final IndexPopulator populator;
-
-    public FailedIndexContext( IndexDescriptor descriptor, IndexPopulator populator )
+    public RecoveringIndexProxy( IndexDescriptor descriptor )
     {
-       this( descriptor, populator, null );
-    }
-
-    public FailedIndexContext( IndexDescriptor descriptor, IndexPopulator populator, Throwable cause )
-    {
-        super( descriptor, cause );
-        this.populator = populator;
-    }
-
-    @Override
-    public Future<Void> drop()
-    {
-        populator.drop();
-        return VOID;
+        super( descriptor, null );
     }
 
     @Override
     public InternalIndexState getState()
     {
-        return InternalIndexState.FAILED;
+        return InternalIndexState.POPULATING;
+    }
+
+    @Override
+    public Future<Void> drop()
+    {
+        return VOID;
     }
 }

@@ -144,6 +144,7 @@ public interface StatementContext
 
     /**
      * Returns an iterable with the matched nodes.
+     * @throws IndexNotFoundKernelException if no such index found.
      */
-    Iterable<Long> exactIndexLookup( long indexId, Object value );
+    Iterable<Long> exactIndexLookup( long indexId, Object value ) throws IndexNotFoundKernelException;
 }
