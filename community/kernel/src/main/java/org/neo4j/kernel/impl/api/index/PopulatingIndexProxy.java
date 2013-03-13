@@ -95,9 +95,6 @@ public class PopulatingIndexProxy implements IndexProxy
     @Override
     public String toString()
     {
-        return getClass().getSimpleName() + "{" +
-                "descriptor=" + descriptor +
-                ", job=" + job +
-                '}';
+        return getClass().getSimpleName() + "[job:" + job + "]";
     }
 }

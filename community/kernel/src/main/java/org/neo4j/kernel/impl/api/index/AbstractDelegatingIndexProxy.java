@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import java.io.IOException;
 import java.util.concurrent.Future;
 
 import org.neo4j.kernel.api.index.IndexNotFoundKernelException;
@@ -31,19 +32,19 @@ public abstract class AbstractDelegatingIndexProxy implements IndexProxy
     protected abstract IndexProxy getDelegate();
 
     @Override
-    public void create()
+    public void create() throws IOException
     {
         getDelegate().create();
     }
     
     @Override
-    public void update( Iterable<NodePropertyUpdate> updates )
+    public void update( Iterable<NodePropertyUpdate> updates ) throws IOException
     {
         getDelegate().update( updates );
     }
 
     @Override
-    public Future<Void> drop()
+    public Future<Void> drop() throws IOException
     {
         return getDelegate().drop();
     }
@@ -61,13 +62,13 @@ public abstract class AbstractDelegatingIndexProxy implements IndexProxy
     }
 
     @Override
-    public void force()
+    public void force() throws IOException
     {
         getDelegate().force();
     }
     
     @Override
-    public Future<Void> close()
+    public Future<Void> close() throws IOException
     {
         return getDelegate().close();
     }

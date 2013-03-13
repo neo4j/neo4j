@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api.index;
 
 import static org.neo4j.helpers.FutureAdapter.VOID;
 
+import java.io.IOException;
 import java.util.concurrent.Future;
 
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -42,17 +43,17 @@ public class OnlineIndexProxy implements IndexProxy
     @Override
     public void create()
     {
-        throw new UnsupportedOperationException(  );
+        throw new UnsupportedOperationException();
     }
 
     @Override
-    public void update( Iterable<NodePropertyUpdate> updates )
+    public void update( Iterable<NodePropertyUpdate> updates ) throws IOException
     {
         accessor.updateAndCommit( updates );
     }
 
     @Override
-    public Future<Void> drop()
+    public Future<Void> drop() throws IOException
     {
         accessor.drop();
         return VOID;
@@ -71,13 +72,13 @@ public class OnlineIndexProxy implements IndexProxy
     }
     
     @Override
-    public void force()
+    public void force() throws IOException
     {
         accessor.force();
     }
 
     @Override
-    public Future<Void> close()
+    public Future<Void> close() throws IOException
     {
         accessor.close();
         return VOID;
@@ -92,9 +93,6 @@ public class OnlineIndexProxy implements IndexProxy
     @Override
     public String toString()
     {
-        return getClass().getSimpleName() + "{" +
-                "accessor=" + accessor +
-                ", descriptor=" + descriptor +
-                '}';
+        return getClass().getSimpleName() + "[accessor:" + accessor + ", descriptor:" + descriptor + "]";
     }
 }

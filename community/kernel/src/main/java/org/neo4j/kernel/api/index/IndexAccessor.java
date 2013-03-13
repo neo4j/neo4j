@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.api.index;
 
+import java.io.IOException;
+
 /**
  * Used for online operation of an index.
  */
@@ -27,27 +29,33 @@ public interface IndexAccessor
     /**
      * Deletes this index as well as closes all used external resources.
      * There will not be any interactions after this call.
+     * 
+     * @throws IOException if unable to drop index.
      */
-    void drop();
+    void drop() throws IOException;
 
     /**
      * Apply a set of changes to this index.
      * Updates must be visible in {@link #newReader() readers} created after this update.
      */
-    void updateAndCommit( Iterable<NodePropertyUpdate> updates );
+    void updateAndCommit( Iterable<NodePropertyUpdate> updates ) throws IOException;
 
     /**
      * Forces this index to disk. Called at certain points from within Neo4j for example when
      * rotating the logical log. After completion of this call there cannot be any essential state that
      * hasn't been forced to disk.
+     * 
+     * @throws IOException if there was a problem forcing the state to persistent storage.
      */
-    void force();
+    void force() throws IOException;
     
     /**
      * Closes this index accessor. There will not be any interactions after this call.
      * After completion of this call there cannot be any essential state that hasn't been forced to disk.
+     * 
+     * @throws IOException if unable to close index.
      */
-    void close();
+    void close() throws IOException;
     
     /**
      * @return a new {@link IndexReader} responsible for looking up results in the index. The returned
