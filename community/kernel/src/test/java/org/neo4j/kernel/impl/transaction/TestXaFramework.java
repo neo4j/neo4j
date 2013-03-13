@@ -157,7 +157,7 @@ public class TestXaFramework extends AbstractNeo4jTestCase
 
     private static class DummyTransaction extends XaTransaction
     {
-        private java.util.List<XaCommand> commandList = new java.util.ArrayList<XaCommand>();
+        private final java.util.List<XaCommand> commandList = new java.util.ArrayList<XaCommand>();
 
         public DummyTransaction( int identifier, XaLogicalLog log, TransactionState state )
         {
@@ -267,10 +267,10 @@ public class TestXaFramework extends AbstractNeo4jTestCase
                         new DummyCommandFactory(),
                         new DummyTransactionFactory(), stateFactory, new TransactionInterceptorProviders(
                         Iterables.<TransactionInterceptorProvider>empty(),
-                        new DependencyResolver()
+                        new DependencyResolver.Adapter()
                         {
                             @Override
-                            public <T> T resolveDependency( Class<T> type )
+                            public <T> T resolveDependency( Class<T> type, SelectionStrategy<T> selector )
                             {
                                 return (T) new Config( MapUtil.stringMap(
                                         GraphDatabaseSettings.intercept_committing_transactions.name(),
@@ -288,6 +288,7 @@ public class TestXaFramework extends AbstractNeo4jTestCase
             }
         }
 
+        @Override
         public void init()
         {
         }
@@ -305,6 +306,7 @@ public class TestXaFramework extends AbstractNeo4jTestCase
             File dir = new File( "." );
             File files[] = dir.listFiles( new FilenameFilter()
             {
+                @Override
                 public boolean accept( File dir, String fileName )
                 {
                     return fileName.startsWith( resourceFile().getPath() );
@@ -451,6 +453,7 @@ public class TestXaFramework extends AbstractNeo4jTestCase
         File dir = new File( "." );
         File files[] = dir.listFiles( new FilenameFilter()
         {
+            @Override
             public boolean accept( File dir, String fileName )
             {
                 return fileName.startsWith( resourceFile().getPath() );
@@ -515,6 +518,7 @@ public class TestXaFramework extends AbstractNeo4jTestCase
         File dir = new File( "." );
         File files[] = dir.listFiles( new FilenameFilter()
         {
+            @Override
             public boolean accept( File dir, String fileName )
             {
                 return fileName.startsWith( resourceFile().getPath() );
