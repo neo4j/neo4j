@@ -19,61 +19,26 @@
  */
 package org.neo4j.kernel.api;
 
-import org.neo4j.kernel.api.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.index.InternalIndexState;
-import org.neo4j.kernel.impl.api.index.IndexDescriptor;
-import org.neo4j.kernel.impl.nioneo.store.IndexRule;
+import org.neo4j.kernel.api.operations.EntityOperations;
+import org.neo4j.kernel.api.operations.LabelOperations;
+import org.neo4j.kernel.api.operations.PropertyOperations;
+import org.neo4j.kernel.api.operations.SchemaOperations;
 
 /**
  * Interface for accessing and modifying the underlying graph.
  * A statement is executing within a {@link TransactionContext transaction}
  * and will be able to see all previous changes made within that transaction.
  * When done using a statement it must be closed.
+ *
+ * Note that this interface only combines a set of interfaces that define operations that the
+ * database can perform.
  * 
  * One main difference between a {@link TransactionContext} and a {@link StatementContext}
  * is life cycle of some locks, where read locks can live within one statement,
  * whereas write locks will live for the entire transaction.
  */
-public interface StatementContext
+public interface StatementContext extends EntityOperations, PropertyOperations, LabelOperations, SchemaOperations
 {
-    /**
-     * Returns a label id for a label name. If the label doesn't exist prior to
-     * this call it gets created.
-     */
-    long getOrCreateLabelId( String label ) throws ConstraintViolationKernelException;
-    
-    /**
-     * Returns a label id for a label name. If the label doesn't exist a
-     * {@link LabelNotFoundKernelException} will be thrown.
-     */
-    long getLabelId( String label ) throws LabelNotFoundKernelException;
-    
-    /**
-     * Labels a node with the label corresponding to the given label id.
-     * If the node already had that label nothing will happen. Label ids
-     * are retrieved from {@link #getOrCreateLabelId(String)} or {@link #getLabelId(String)}.
-     */
-    boolean addLabelToNode( long labelId, long nodeId );
-    
-    /**
-     * Checks if a node is labeled with a certain label or not. Returns
-     * {@code true} if the node is labeled with the label, otherwise {@code false.}
-     * Label ids are retrieved from {@link #getOrCreateLabelId(String)} or
-     * {@link #getLabelId(String)}.
-     */
-    boolean isLabelSetOnNode( long labelId, long nodeId );
-    
-    /**
-     * Returns all labels set on node with id {@code nodeId}.
-     * If the node has no labels an empty {@link Iterable} will be returned.
-     */
-    Iterable<Long> getLabelsForNode( long nodeId );
-    
-    /**
-     * Returns the label name for the given label id.
-     */
-    String getLabelName( long labelId ) throws LabelNotFoundKernelException;
-    
     /**
      * Closes this statement. Statements must be closed when done and before
      * their parent transaction {@link TransactionContext#finish()} finishes.
@@ -81,83 +46,4 @@ public interface StatementContext
      * a statement. 
      */
     void close( boolean successful );
-
-    /**
-     * Removes a label with the corresponding id from a node.
-     * If the node doesn't have that label nothing will happen. Label ids
-     * are retrieved from {@link #getOrCreateLabelId(String)} or {@link #getLabelId(String)}.
-     */
-    boolean removeLabelFromNode( long labelId, long nodeId );
-
-    /**
-     * @param labelId the label id of the label that returned nodes are guaranteed to have
-     * @return ids of all nodes that have the given label
-     */
-    Iterable<Long> getNodesWithLabel( long labelId );
-    
-    /**
-     * Adds a {@link IndexRule} to the database which applies globally on both
-     * existing as well as new data.
-     */
-    IndexRule addIndexRule( long labelId, long propertyKey ) throws ConstraintViolationKernelException;
-    
-    /**
-     * Returns the index rule for the given labelId and propertyKey.
-     */
-    IndexRule getIndexRule( long labelId, long propertyKey ) throws SchemaRuleNotFoundException;
-
-    /**
-     * Returns the index descriptor for the given indexId.
-     */
-    IndexDescriptor getIndexDescriptor( long indexId ) throws IndexNotFoundKernelException;
-
-    /**
-     * Get all indexes for a label.
-     */
-    Iterable<IndexRule> getIndexRules( long labelId );
-    
-    /**
-     * Returns all index rules.
-     */
-    Iterable<IndexRule> getIndexRules();
-
-    /**
-     * Retrieve the state of an index.
-     */
-    InternalIndexState getIndexState( IndexRule indexRule ) throws IndexNotFoundKernelException;
-    
-    /**
-     * Drops a {@link IndexRule} from the database
-     */
-    void dropIndexRule( IndexRule indexRule ) throws ConstraintViolationKernelException;
-
-    /**
-     * Returns a property key id for a property key. If the key doesn't exist prior to
-     * this call it gets created.
-     */
-    long getOrCreatePropertyKeyId( String propertyKey );
-
-    /**
-     * Returns a property key id for the given property key. If the property key doesn't exist a
-     * {@link PropertyKeyNotFoundException} will be thrown.
-     */
-    long getPropertyKeyId( String propertyKey ) throws PropertyKeyNotFoundException;
-
-    /**
-     * Returns the name of a property given it's property key id
-     */
-    String getPropertyKeyName( long propertyId ) throws PropertyKeyIdNotFoundException;
-
-
-    /**
-     * Returns the value of the property given it's property key id for the node with the given node id
-     */
-    Object getNodePropertyValue( long nodeId, long propertyId)
-            throws PropertyKeyIdNotFoundException, PropertyNotFoundException;
-
-    /**
-     * Returns an iterable with the matched nodes.
-     * @throws IndexNotFoundKernelException if no such index found.
-     */
-    Iterable<Long> exactIndexLookup( long indexId, Object value ) throws IndexNotFoundKernelException;
 }

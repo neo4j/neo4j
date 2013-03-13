@@ -23,8 +23,7 @@ package org.neo4j.kernel.api;
  * Represents a transaction of changes to the underlying graph.
  * Actual changes are made in the {@link #newStatementContext() statements}
  * created from this transaction context. Changes made within a transaction
- * are visible to all operations within it. The changes are stored to the
- * graph upon {@link #finish() commit}, after marked as {@link #success() successful}.
+ * are visible to all operations within it.
  * 
  * Usage of a transaction context:
  * <ol>
