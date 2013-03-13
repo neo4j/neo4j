@@ -24,6 +24,7 @@
     <pico.version>2.11.2</pico.version>
     <licensing.prepend.text>notice-agpl-prefix.txt</licensing.prepend.text>
     <licensing.phase>compile</licensing.phase>
+    <lucene.version>3.6.2</lucene.version>
   </properties>
 
   <modules>
@@ -234,6 +235,11 @@
   
   <dependencyManagement>
     <dependencies>
+      <dependency>
+          <groupId>org.apache.lucene</groupId>
+          <artifactId>lucene-core</artifactId>
+          <version>${lucene.version}</version>
+      </dependency>
       <!-- special -->
       <dependency>
         <groupId>${jta.groupId}</groupId>
