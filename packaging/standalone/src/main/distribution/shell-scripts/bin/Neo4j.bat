@@ -20,7 +20,7 @@ rem along with this program.  If not, see <http://www.gnu.org/licenses/>.
 set serviceName=Neo4j-Server
 set serviceDisplayName=Neo4j-Server
 set serviceStartType=auto
-set classpath="-DserverClasspath=lib/*.jar;system/lib/*.jar;plugins/*.jar;system/coordinator/lib/*.jar;./conf*"
+set classpath="-DserverClasspath=lib/*.jar;system/lib/*.jar;plugins/**/*.jar;./conf*"
 set mainclass="-DserverMainClass=org.neo4j.server.Bootstrapper"
 set configFile="conf\neo4j-wrapper.conf"
 
