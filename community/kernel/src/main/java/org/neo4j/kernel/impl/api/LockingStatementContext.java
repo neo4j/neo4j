@@ -25,14 +25,16 @@ import org.neo4j.kernel.api.PropertyNotFoundException;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 
-public class LockingStatementContext extends DelegatingStatementContext
+public class LockingStatementContext extends CompositeStatementContext
 {
     private final LockHolder lockHolder;
+    private final StatementContext delegate;
 
     public LockingStatementContext( StatementContext actual, LockHolder lockHolder )
     {
         super( actual );
         this.lockHolder = lockHolder;
+        this.delegate = actual;
     }
 
     @Override

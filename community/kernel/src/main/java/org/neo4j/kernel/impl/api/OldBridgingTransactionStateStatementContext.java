@@ -37,15 +37,20 @@ import org.neo4j.kernel.impl.core.TransactionState;
  * in the {@link KernelAPI}.
  */
 @Deprecated
-public class OldBridgingTransactionStateStatementContext extends DelegatingStatementContext
+public class OldBridgingTransactionStateStatementContext extends CompositeStatementContext
 {
+
+    // TODO: TxState now knows about node that are deleted, refactor this logic to live inside transaction state aware context instead.
+
     private final TransactionState oldTransactionState;
+    private final StatementContext delegate;
 
     public OldBridgingTransactionStateStatementContext( StatementContext delegate,
             TransactionState oldTransactionState )
     {
         super( delegate );
         this.oldTransactionState = oldTransactionState;
+        this.delegate = delegate;
     }
 
     @Override
@@ -77,5 +82,11 @@ public class OldBridgingTransactionStateStatementContext extends DelegatingState
                 return !oldTransactionState.nodeIsDeleted( nodeId.longValue() );
             }
         }, delegate.getNodesWithLabel( labelId ) );
+    }
+
+    @Override
+    public void close( boolean successful )
+    {
+        delegate.close( successful );
     }
 }

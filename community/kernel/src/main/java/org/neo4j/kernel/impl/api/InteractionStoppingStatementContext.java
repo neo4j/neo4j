@@ -19,79 +19,21 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.neo4j.kernel.api.ConstraintViolationKernelException;
-import org.neo4j.kernel.api.LabelNotFoundKernelException;
-import org.neo4j.kernel.api.PropertyKeyIdNotFoundException;
-import org.neo4j.kernel.api.PropertyKeyNotFoundException;
-import org.neo4j.kernel.api.PropertyNotFoundException;
-import org.neo4j.kernel.api.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.StatementContext;
-import org.neo4j.kernel.api.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.index.InternalIndexState;
-import org.neo4j.kernel.impl.api.index.IndexDescriptor;
-import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 
-/**
- * Directly implements the interface to force updating this class whenever StatementContext changes.
- * When you add methods here, make sure that they call the assertOperationsAllowed() method before delegating.
- */
-public class InteractionStoppingStatementContext implements StatementContext
+public class InteractionStoppingStatementContext extends CompositeStatementContext
 {
-    private final StatementContext delegate;
     private boolean closed;
 
     public InteractionStoppingStatementContext( StatementContext delegate )
     {
-        this.delegate = delegate;
+        super(delegate);
     }
 
     @Override
-    public long getOrCreateLabelId( String label ) throws ConstraintViolationKernelException
+    protected void beforeOperation()
     {
         assertOperationsAllowed();
-        return delegate.getOrCreateLabelId( label );
-    }
-
-    @Override
-    public long getLabelId( String label ) throws LabelNotFoundKernelException
-    {
-        assertOperationsAllowed();
-        return delegate.getLabelId( label );
-    }
-
-    @Override
-    public boolean addLabelToNode( long labelId, long nodeId )
-    {
-        assertOperationsAllowed();
-        return delegate.addLabelToNode( labelId, nodeId );
-    }
-
-    @Override
-    public boolean isLabelSetOnNode( long labelId, long nodeId )
-    {
-        assertOperationsAllowed();
-        return delegate.isLabelSetOnNode( labelId, nodeId );
-    }
-    
-    @Override
-    public Iterable<Long> getLabelsForNode( long nodeId )
-    {
-        assertOperationsAllowed();
-        return delegate.getLabelsForNode( nodeId );
-    }
-    
-    @Override
-    public String getLabelName( long labelId ) throws LabelNotFoundKernelException
-    {
-        assertOperationsAllowed();
-        return delegate.getLabelName( labelId );
-    }
-
-    @Override
-    public boolean removeLabelFromNode( long labelId, long nodeId )
-    {
-        assertOperationsAllowed();
-        return delegate.removeLabelFromNode( labelId, nodeId );
     }
 
     @Override
@@ -99,110 +41,17 @@ public class InteractionStoppingStatementContext implements StatementContext
     {
         assertOperationsAllowed();
         closed = true;
-        delegate.close( successful );
-    }
-    
-    @Override
-    public Iterable<Long> getNodesWithLabel( long labelId )
-    {
-        assertOperationsAllowed();
-        return delegate.getNodesWithLabel( labelId );
+        super.close( successful );
     }
 
-    @Override
-    public IndexRule addIndexRule( long labelId, long propertyKey ) throws ConstraintViolationKernelException
+    public boolean isOpen()
     {
-        assertOperationsAllowed();
-        return delegate.addIndexRule( labelId, propertyKey );
-    }
-
-    @Override
-    public IndexRule getIndexRule( long labelId, long propertyKey ) throws SchemaRuleNotFoundException
-    {
-        assertOperationsAllowed();
-        return delegate.getIndexRule( labelId, propertyKey );
-    }
-
-    @Override
-    public IndexDescriptor getIndexDescriptor( long indexId ) throws IndexNotFoundKernelException
-
-    {
-        assertOperationsAllowed();
-        return delegate.getIndexDescriptor( indexId );
-    }
-
-    @Override
-    public void dropIndexRule( IndexRule indexRule ) throws ConstraintViolationKernelException
-    {
-        assertOperationsAllowed();
-        delegate.dropIndexRule( indexRule );
-    }
-
-    @Override
-    public Iterable<IndexRule> getIndexRules( long labelId )
-    {
-        assertOperationsAllowed();
-        return delegate.getIndexRules( labelId );
-    }
-    
-    @Override
-    public Iterable<IndexRule> getIndexRules()
-    {
-        assertOperationsAllowed();
-        return delegate.getIndexRules();
-    }
-
-    @Override
-    public InternalIndexState getIndexState( IndexRule indexRule ) throws IndexNotFoundKernelException
-    {
-        assertOperationsAllowed();
-        return delegate.getIndexState( indexRule );
-    }
-
-    @Override
-    public long getOrCreatePropertyKeyId( String propertyKey )
-    {
-        assertOperationsAllowed();
-        return delegate.getOrCreatePropertyKeyId( propertyKey );
-    }
-
-    @Override
-    public long getPropertyKeyId( String propertyKey ) throws PropertyKeyNotFoundException
-    {
-        assertOperationsAllowed();
-        return delegate.getPropertyKeyId( propertyKey );
-    }
-
-    @Override
-    public String getPropertyKeyName( long propertyId ) throws PropertyKeyIdNotFoundException
-    {
-        assertOperationsAllowed();
-        return delegate.getPropertyKeyName( propertyId );
-    }
-
-    @Override
-    public Object getNodePropertyValue( long nodeId, long propertyId )
-            throws PropertyKeyIdNotFoundException, PropertyNotFoundException
-    {
-        assertOperationsAllowed();
-        return delegate.getNodePropertyValue( nodeId, propertyId );
-    }
-
-    @Override
-    public Iterable<Long> exactIndexLookup( long indexId, Object value ) throws IndexNotFoundKernelException
-    {
-        assertOperationsAllowed();
-        return delegate.exactIndexLookup( indexId, value );
+        return !closed;
     }
 
     private void assertOperationsAllowed()
     {
         if ( closed )
             throw new IllegalStateException( "This StatementContext has been closed. No more interaction allowed" );
-    }
-
-    public boolean isOpen()
-    {
-        return !closed;
     }
 }

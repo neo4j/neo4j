@@ -20,161 +20,18 @@
 package org.neo4j.kernel.impl.api;
 
 import org.neo4j.graphdb.NotInTransactionException;
-import org.neo4j.kernel.api.ConstraintViolationKernelException;
-import org.neo4j.kernel.api.LabelNotFoundKernelException;
-import org.neo4j.kernel.api.PropertyKeyIdNotFoundException;
-import org.neo4j.kernel.api.PropertyKeyNotFoundException;
-import org.neo4j.kernel.api.PropertyNotFoundException;
-import org.neo4j.kernel.api.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.StatementContext;
-import org.neo4j.kernel.api.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.index.InternalIndexState;
-import org.neo4j.kernel.impl.api.index.IndexDescriptor;
-import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 
-/*
- * Don't make this class extends DelegatingStatementContext. We
- * want any changes to StatementContext to be manually checked
- * here and not simply passed on.
- */
-public class ReadOnlyStatementContext implements StatementContext
+public class ReadOnlyStatementContext extends CompositeStatementContext
 {
-    private final StatementContext delegate;
-
     public ReadOnlyStatementContext( StatementContext delegate )
     {
-        this.delegate = delegate;
+        super(delegate);
     }
 
     @Override
-    public long getOrCreateLabelId( String label )
+    public void beforeWriteOperation()
     {
-        throw readOnlyException();
-    }
-
-    @Override
-    public boolean addLabelToNode( long labelId, long nodeId )
-    {
-        throw readOnlyException();
-    }
-
-    @Override
-    public long getLabelId( String label ) throws LabelNotFoundKernelException
-    {
-        return delegate.getLabelId( label );
-    }
-
-    @Override
-    public boolean isLabelSetOnNode( long labelId, long nodeId )
-    {
-        return delegate.isLabelSetOnNode( labelId, nodeId );
-    }
-    
-    @Override
-    public Iterable<Long> getLabelsForNode( long nodeId )
-    {
-        return delegate.getLabelsForNode( nodeId );
-    }
-    
-    @Override
-    public String getLabelName( long labelId ) throws LabelNotFoundKernelException
-    {
-        return delegate.getLabelName( labelId );
-    }
-
-    @Override
-    public boolean removeLabelFromNode( long labelId, long nodeId )
-    {
-        throw readOnlyException();
-    }
-    
-    @Override
-    public Iterable<Long> getNodesWithLabel( long labelId )
-    {
-        return delegate.getNodesWithLabel( labelId );
-    }
-
-    @Override
-    public IndexRule addIndexRule( long labelId, long propertyKey ) throws ConstraintViolationKernelException
-    {
-        throw readOnlyException();
-    }
-    
-    @Override
-    public void dropIndexRule( IndexRule indexRule ) throws ConstraintViolationKernelException
-    {
-        throw readOnlyException();
-    }
-    
-    @Override
-    public Iterable<IndexRule> getIndexRules( long labelId )
-    {
-        return delegate.getIndexRules( labelId );
-    }
-
-    @Override
-    public Iterable<IndexRule> getIndexRules()
-    {
-        return delegate.getIndexRules();
-    }
-
-    @Override
-    public InternalIndexState getIndexState( IndexRule indexRule ) throws IndexNotFoundKernelException
-    {
-        return delegate.getIndexState( indexRule );
-    }
-
-    @Override
-    public long getOrCreatePropertyKeyId( String propertyKey )
-    {
-        throw readOnlyException();
-    }
-
-    @Override
-    public long getPropertyKeyId( String propertyKey ) throws PropertyKeyNotFoundException
-    {
-        return delegate.getPropertyKeyId( propertyKey );
-    }
-
-    @Override
-    public Object getNodePropertyValue( long nodeId, long propertyId )
-            throws PropertyKeyIdNotFoundException, PropertyNotFoundException
-    {
-        return delegate.getNodePropertyValue( nodeId, propertyId );
-    }
-
-    @Override
-    public String getPropertyKeyName( long propertyId ) throws PropertyKeyIdNotFoundException
-    {
-        return delegate.getPropertyKeyName( propertyId );
-    }
-
-    @Override
-    public Iterable<Long> exactIndexLookup( long indexId, Object value ) throws IndexNotFoundKernelException
-    {
-        return delegate.exactIndexLookup( indexId, value );
-    }
-
-    @Override
-    public void close( boolean successful )
-    {
-        delegate.close( successful );
-    }
-
-    @Override
-    public IndexRule getIndexRule( long labelId, long propertyKey ) throws SchemaRuleNotFoundException
-    {
-        return delegate.getIndexRule( labelId, propertyKey );
-    }
-
-    @Override
-    public IndexDescriptor getIndexDescriptor( long indexId ) throws IndexNotFoundKernelException
-    {
-        return delegate.getIndexDescriptor( indexId );
-    }
-
-    private NotInTransactionException readOnlyException()
-    {
-        return new NotInTransactionException( "You have to be in a transaction context to perform write operations." );
+        throw new NotInTransactionException( "You have to be in a transaction context to perform write operations." );
     }
 }

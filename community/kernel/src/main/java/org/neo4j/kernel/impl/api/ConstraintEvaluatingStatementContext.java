@@ -23,11 +23,14 @@ import org.neo4j.kernel.api.ConstraintViolationKernelException;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 
-public class ConstraintEvaluatingStatementContext extends DelegatingStatementContext
+public class ConstraintEvaluatingStatementContext extends CompositeStatementContext
 {
+    private final StatementContext delegate;
+
     public ConstraintEvaluatingStatementContext( StatementContext delegate )
     {
         super( delegate );
+        this.delegate = delegate;
     }
 
     @Override

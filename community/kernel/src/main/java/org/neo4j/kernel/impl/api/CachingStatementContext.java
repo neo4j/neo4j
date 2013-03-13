@@ -50,7 +50,7 @@ import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule.Kind;
 
-public class CachingStatementContext extends DelegatingStatementContext
+public class CachingStatementContext extends CompositeStatementContext
 {
     private static final Function<? super SchemaRule, IndexRule> TO_INDEX_RULE =
             new Function<SchemaRule, IndexRule>()
@@ -63,12 +63,14 @@ public class CachingStatementContext extends DelegatingStatementContext
     };
     private final PersistenceCache persistenceCache;
     private final SchemaCache schemaCache;
+    private final StatementContext delegate;
 
     public CachingStatementContext( StatementContext actual, PersistenceCache persistenceCache, SchemaCache schemaCache )
     {
         super( actual );
         this.persistenceCache = persistenceCache;
         this.schemaCache = schemaCache;
+        this.delegate = actual;
     }
     
     @Override

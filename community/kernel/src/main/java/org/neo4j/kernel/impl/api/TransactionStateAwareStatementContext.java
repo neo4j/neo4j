@@ -41,14 +41,16 @@ import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 
-public class TransactionStateAwareStatementContext extends DelegatingStatementContext
+public class TransactionStateAwareStatementContext extends CompositeStatementContext
 {
     private final TxState state;
+    private final StatementContext delegate;
 
     public TransactionStateAwareStatementContext( StatementContext actual, TxState state )
     {
         super( actual );
         this.state = state;
+        this.delegate = actual;
     }
 
     @Override
