@@ -145,7 +145,7 @@ public class WritableTransactionState implements TransactionState
                 throw new IllegalStateException( this + " has been deleted in this tx" );
         }
 
-        protected boolean isDeleted()
+        public boolean isDeleted()
         {
             return deleted;
         }

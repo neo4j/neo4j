@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.TransactionContext;
@@ -62,23 +63,26 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     private final PersistenceManager persistenceManager;
     private final XaDataSourceManager dataSourceManager;
     private final LockManager lockManager;
+    private final DependencyResolver dependencyResolver;
     private final PersistenceCache persistenceCache;
-    private final NodeManager nodeManager;
     private final SchemaCache schemaCache;
+
+    // These non-final components are all circular dependencies in various configurations.
+    // As we work towards refactoring the old kernel, we should work to remove these.
     private IndexingService indexService;
     private NeoStore neoStore;
+    private NodeManager nodeManager;
 
     public Kernel( AbstractTransactionManager transactionManager, PropertyIndexManager propertyIndexManager,
-            PersistenceManager persistenceManager, NodeManager nodeManager,
-            XaDataSourceManager dataSourceManager, LockManager lockManager,
-            SchemaCache schemaCache )
+            PersistenceManager persistenceManager, XaDataSourceManager dataSourceManager, LockManager lockManager,
+            SchemaCache schemaCache, DependencyResolver dependencyResolver )
     {
         this.transactionManager = transactionManager;
         this.propertyIndexManager = propertyIndexManager;
         this.persistenceManager = persistenceManager;
-        this.nodeManager = nodeManager;
         this.dataSourceManager = dataSourceManager;
         this.lockManager = lockManager;
+        this.dependencyResolver = dependencyResolver;
         this.persistenceCache = new PersistenceCache( new NodeCacheLoader( persistenceManager ) );
         this.schemaCache = schemaCache;
     }
@@ -86,6 +90,8 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     @Override
     public void start() throws Throwable
     {
+        nodeManager = dependencyResolver.resolveDependency( NodeManager.class );
+
         dataSourceManager.addDataSourceRegistrationListener( new DataSourceRegistrationListener()
         {
             @Override

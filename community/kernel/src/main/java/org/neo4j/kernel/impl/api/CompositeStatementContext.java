@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.api;
 
 import org.neo4j.kernel.api.ConstraintViolationKernelException;
+import org.neo4j.kernel.api.EntityNotFoundException;
 import org.neo4j.kernel.api.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.PropertyKeyIdNotFoundException;
 import org.neo4j.kernel.api.PropertyKeyNotFoundException;
@@ -208,7 +209,7 @@ public abstract class CompositeStatementContext implements StatementContext
 
     @Override
     public Object getNodePropertyValue( long nodeId, long propertyId ) throws PropertyKeyIdNotFoundException,
-            PropertyNotFoundException
+            PropertyNotFoundException, EntityNotFoundException
     {
         beforeOperation();
         beforeReadOperation();

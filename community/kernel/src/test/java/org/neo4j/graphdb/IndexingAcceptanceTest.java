@@ -20,7 +20,10 @@
 package org.neo4j.graphdb;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.Iterables.single;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.MapUtil.map;
@@ -91,6 +94,72 @@ public class IndexingAcceptanceTest
         // THEN
         assertEquals( asSet( firstNode ), firstResult );
         assertEquals( asSet( secondNode ), secondResult );
+    }
+
+    @Test
+    public void createdNodeShouldShowUpWithinTransaction() throws Exception
+    {
+        // GIVEN
+        GraphDatabaseService beansAPI = dbRule.getGraphDatabaseService();
+        createIndex( beansAPI, Labels.MY_LABEL, "name" );
+
+        // WHEN
+        Transaction tx = beansAPI.beginTx();
+
+        Node firstNode = createNode( beansAPI, map( "name", "Mattias" ), Labels.MY_LABEL );
+        long sizeBeforeDelete = count( beansAPI.findNodesByLabelAndProperty( Labels.MY_LABEL, "name", "Mattias" ) );
+        firstNode.delete();
+        long sizeAfterDelete = count( beansAPI.findNodesByLabelAndProperty( Labels.MY_LABEL, "name", "Mattias" ) );
+
+        tx.finish();
+
+        // THEN
+        assertThat( sizeBeforeDelete, equalTo(1l) );
+        assertThat( sizeAfterDelete, equalTo(0l) );
+    }
+
+    @Test
+    public void deletedNodeShouldShowUpWithinTransaction() throws Exception
+    {
+        // GIVEN
+        GraphDatabaseService beansAPI = dbRule.getGraphDatabaseService();
+        createIndex( beansAPI, Labels.MY_LABEL, "name" );
+        Node firstNode = createNode( beansAPI, map( "name", "Mattias" ), Labels.MY_LABEL );
+
+        // WHEN
+        Transaction tx = beansAPI.beginTx();
+
+        long sizeBeforeDelete = count( beansAPI.findNodesByLabelAndProperty( Labels.MY_LABEL, "name", "Mattias" ) );
+        firstNode.delete();
+        long sizeAfterDelete = count( beansAPI.findNodesByLabelAndProperty( Labels.MY_LABEL, "name", "Mattias" ) );
+
+        tx.finish();
+
+        // THEN
+        assertThat( sizeBeforeDelete, equalTo(1l) );
+        assertThat( sizeAfterDelete, equalTo(0l) );
+    }
+
+    @Test
+    public void createdNodeShouldShowUpInIndexQuery() throws Exception
+    {
+        // GIVEN
+        GraphDatabaseService beansAPI = dbRule.getGraphDatabaseService();
+        createIndex( beansAPI, Labels.MY_LABEL, "name" );
+        createNode( beansAPI, map( "name", "Mattias" ), Labels.MY_LABEL );
+
+        // WHEN
+        Transaction tx = beansAPI.beginTx();
+
+        long sizeBeforeDelete = count( beansAPI.findNodesByLabelAndProperty( Labels.MY_LABEL, "name", "Mattias" ) );
+        createNode( beansAPI, map( "name", "Mattias" ), Labels.MY_LABEL );
+        long sizeAfterDelete = count( beansAPI.findNodesByLabelAndProperty( Labels.MY_LABEL, "name", "Mattias" ) );
+
+        tx.finish();
+
+        // THEN
+        assertThat( sizeBeforeDelete, equalTo(1l) );
+        assertThat( sizeAfterDelete, equalTo(2l) );
     }
 
     public @Rule

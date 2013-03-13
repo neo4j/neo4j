@@ -31,6 +31,7 @@ import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.api.ConstraintViolationKernelException;
+import org.neo4j.kernel.api.EntityNotFoundException;
 import org.neo4j.kernel.api.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.PropertyKeyIdNotFoundException;
 import org.neo4j.kernel.api.PropertyKeyNotFoundException;
@@ -42,6 +43,7 @@ import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.KeyNotFoundException;
+import org.neo4j.kernel.impl.core.NodeImpl;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.PropertyIndexManager;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
@@ -351,12 +353,16 @@ public class StoreStatementContext implements StatementContext
 
     @Override
     public Object getNodePropertyValue( long nodeId, long propertyKeyId )
-            throws PropertyKeyIdNotFoundException, PropertyNotFoundException
+            throws PropertyKeyIdNotFoundException, PropertyNotFoundException, EntityNotFoundException
     {
         try
         {
             String propertyKey = getPropertyKeyName( propertyKeyId );
             return nodeManager.getNodeForProxy( nodeId, null ).getProperty( nodeManager, propertyKey );
+        }
+        catch (IllegalStateException e)
+        {
+            throw new EntityNotFoundException( "Unable to load node " + nodeId + ".", e );
         }
         catch (NotFoundException e)
         {

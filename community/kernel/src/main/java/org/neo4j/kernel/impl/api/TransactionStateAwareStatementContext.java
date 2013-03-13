@@ -31,6 +31,7 @@ import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.ConstraintViolationKernelException;
+import org.neo4j.kernel.api.EntityNotFoundException;
 import org.neo4j.kernel.api.PropertyKeyIdNotFoundException;
 import org.neo4j.kernel.api.PropertyNotFoundException;
 import org.neo4j.kernel.api.SchemaRuleNotFoundException;
@@ -250,6 +251,10 @@ public class TransactionStateAwareStatementContext extends CompositeStatementCon
                 return value.equals( delegate.getNodePropertyValue( nodeId, propertyKeyId ) );
             }
             catch ( PropertyNotFoundException e )
+            {
+                return false;
+            }
+            catch ( EntityNotFoundException e )
             {
                 return false;
             }

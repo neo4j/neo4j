@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.operations;
 
+import org.neo4j.kernel.api.EntityNotFoundException;
 import org.neo4j.kernel.api.PropertyKeyIdNotFoundException;
 import org.neo4j.kernel.api.PropertyKeyNotFoundException;
 import org.neo4j.kernel.api.PropertyNotFoundException;
@@ -47,6 +48,6 @@ public interface PropertyOperations
      * Returns the value of the property given it's property key id for the node with the given node id
      */
     Object getNodePropertyValue( long nodeId, long propertyId)
-            throws PropertyKeyIdNotFoundException, PropertyNotFoundException;
+            throws PropertyKeyIdNotFoundException, PropertyNotFoundException, EntityNotFoundException;
 
 }

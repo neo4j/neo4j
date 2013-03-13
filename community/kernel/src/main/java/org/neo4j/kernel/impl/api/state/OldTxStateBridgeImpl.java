@@ -63,20 +63,23 @@ public class OldTxStateBridgeImpl implements OldTxStateBridge
             }
 
             // All nodes where property has been added or changed
-            ArrayMap<Integer,PropertyData> propAddMap = changedNode.getPropertyAddMap( false );
-            if(propAddMap != null)
+            if(!changedNode.isDeleted())
             {
-                for ( PropertyData propertyData : propAddMap.values() )
+                ArrayMap<Integer,PropertyData> propAddMap = changedNode.getPropertyAddMap( false );
+                if(propAddMap != null)
                 {
-                    if( propertyData.getIndex() == propertyKey )
+                    for ( PropertyData propertyData : propAddMap.values() )
                     {
-                        // Added if value is the same, removed if value is different.
-                        if( propertyData.getValue().equals( value ))
+                        if( propertyData.getIndex() == propertyKey )
                         {
-                            diff.add( changedNode.getId() );
-                        } else
-                        {
-                            diff.remove( changedNode.getId() );
+                            // Added if value is the same, removed if value is different.
+                            if( propertyData.getValue().equals( value ))
+                            {
+                                diff.add( changedNode.getId() );
+                            } else
+                            {
+                                diff.remove( changedNode.getId() );
+                            }
                         }
                     }
                 }

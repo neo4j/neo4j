@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.api;
 
 import org.neo4j.kernel.api.ConstraintViolationKernelException;
+import org.neo4j.kernel.api.EntityNotFoundException;
 import org.neo4j.kernel.api.PropertyKeyIdNotFoundException;
 import org.neo4j.kernel.api.PropertyNotFoundException;
 import org.neo4j.kernel.api.StatementContext;
@@ -81,7 +82,7 @@ public class LockingStatementContext extends CompositeStatementContext
 
     @Override
     public Object getNodePropertyValue( long nodeId, long propertyId )
-            throws PropertyKeyIdNotFoundException, PropertyNotFoundException
+            throws PropertyKeyIdNotFoundException, PropertyNotFoundException, EntityNotFoundException
     {
         lockHolder.acquireNodeReadLock( nodeId );
         return super.getNodePropertyValue( nodeId, propertyId );
