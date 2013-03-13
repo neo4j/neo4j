@@ -51,7 +51,7 @@ public class SingleStatementTransactionContextTest
         transactionContext.newStatementContext();
 
         // WHEN
-        transactionContext.finish();
+        transactionContext.commit();
     }
 
     @Test

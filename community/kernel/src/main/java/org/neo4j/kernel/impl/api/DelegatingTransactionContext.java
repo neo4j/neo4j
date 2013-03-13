@@ -38,20 +38,20 @@ public class DelegatingTransactionContext implements TransactionContext
     }
 
     @Override
-    public void success()
+    public void prepare()
     {
-        delegate.success();
+        delegate.prepare();
     }
 
     @Override
-    public void failure()
+    public void commit()
     {
-        delegate.failure();
+        delegate.commit();
     }
 
     @Override
-    public void finish()
+    public void rollback()
     {
-        delegate.finish();
+        delegate.rollback();
     }
 }

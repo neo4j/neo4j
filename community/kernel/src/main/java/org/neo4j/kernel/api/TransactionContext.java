@@ -45,27 +45,30 @@ public interface TransactionContext
      */
     StatementContext newStatementContext();
 
-    // TODO: It should be possible to implement distributed txs on top of this
-    // replace with below methods with eg. .prepare(), .rollback() and .commit()
+    // NOTE: The below methods don't yet do actual transaction work, that is still carried by
+    //       the old TransactionImpl, WriteTransaction and friends.
 
     /**
-     * Marks this transaction as successful, so that a call to {@link #finish()} will
-     * commit it. This call has no effect if {@link #failure()} has been called.
-     * By default a transaction isn't marked as successful, so this must be called
-     * in order to commit this transaction.
+     * Writes the changes this transaction wants to perform down to disk. If this method
+     * returns successfully, the database guarantees that we can recover this transaction
+     * after a crash.
+     *
+     * Normally, you should not use this, it is implicitly called by {@link #commit()}, but
+     * it is a necessary thing if you are implementing two-phase commits.
      */
-    void success();
-    
+    void prepare();
+
     /**
-     * Marks this transaction as failed, so that a call to {@link #finalize()} will
-     * roll it back. No calls to {@link #success()} will be able to mark this transaction
-     * as successful after this call.
+     * Commit this transaction, this will make the changes in this context visible to other
+     * transactions.
+     *
+     * If you have not called {@link #prepare()} before calling this method, the transaction
+     * is implicitly prepared.
      */
-    void failure();
-    
+    void commit();
+
     /**
-     * Commits or rolls back this transaction depending on how {@link #success()}
-     * and {@link #failure()} has been used.
+     * Roll back this transaction, undoing any changes that have been made.
      */
-    void finish();
+    void rollback();
 }

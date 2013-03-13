@@ -74,22 +74,22 @@ public class TransactionLifecycleTransactionContext implements TransactionContex
     }
 
     @Override
-    public void success()
+    public void prepare()
     {
-        transaction.success();
     }
 
     @Override
-    public void finish()
+    public void commit()
     {
-        // - flush changes from tx state to the store
-        // - tx.finish()
+        transaction.success();
         transaction.finish();
     }
 
     @Override
-    public void failure()
+    public void rollback()
     {
         transaction.failure();
+        transaction.finish();
     }
+
 }

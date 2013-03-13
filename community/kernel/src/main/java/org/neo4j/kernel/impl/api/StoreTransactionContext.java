@@ -53,17 +53,17 @@ public class StoreTransactionContext implements TransactionContext
     }
 
     @Override
-    public void success()
-    {
-    }
-    
-    @Override
-    public void failure()
+    public void prepare()
     {
     }
 
     @Override
-    public void finish()
+    public void commit()
+    {
+    }
+
+    @Override
+    public void rollback()
     {
     }
 }

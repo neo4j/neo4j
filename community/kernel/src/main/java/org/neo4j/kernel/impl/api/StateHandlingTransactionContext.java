@@ -64,14 +64,10 @@ public class StateHandlingTransactionContext extends DelegatingTransactionContex
     }
 
     @Override
-    public void finish()
+    public void commit()
     {
         // - Ensure transaction is committed to disk at this point
-        super.finish();
-        // - commit schema changes from tx state to the schema cache
-        //   (this is instead currently done via WriteTransaction, so that even externally applied
-        //    transactions updates the schema cache)
-//        schemaCache.apply( state );
+        super.commit();
         // - commit changes from tx state to the cache
         // TODO: This should *not* be done here, it should be done as part of transaction application (eg WriteTransaction)
         persistenceCache.apply( state );

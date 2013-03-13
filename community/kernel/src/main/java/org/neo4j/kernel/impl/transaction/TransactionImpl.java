@@ -136,8 +136,7 @@ class TransactionImpl implements Transaction
     {
         // make sure tx not suspended
         txManager.commit();
-        transactionContext.success();
-        transactionContext.finish();
+        transactionContext.commit();
     }
 
     void ensureStatementContextClosed()
@@ -166,8 +165,7 @@ class TransactionImpl implements Transaction
     {
         // make sure tx not suspended
         txManager.rollback();
-        transactionContext.failure();
-        transactionContext.finish();
+        transactionContext.rollback();
     }
 
     @Override

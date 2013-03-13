@@ -58,11 +58,24 @@ public class LockingTransactionContext extends DelegatingTransactionContext
     }
 
     @Override
-    public void finish()
+    public void commit()
     {
         try
         {
-            super.finish();
+            super.commit();
+        }
+        finally
+        {
+            lockHolder.releaseLocks();
+        }
+    }
+
+    @Override
+    public void rollback()
+    {
+        try
+        {
+            super.rollback();
         }
         finally
         {

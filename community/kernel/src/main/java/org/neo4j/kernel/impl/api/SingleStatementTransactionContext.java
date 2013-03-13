@@ -47,15 +47,32 @@ public class SingleStatementTransactionContext extends DelegatingTransactionCont
     }
 
     @Override
-    public void finish()
+    public void prepare()
+    {
+        closeShop();
+        super.prepare();
+    }
+
+    @Override
+    public void commit()
+    {
+        closeShop();
+        super.commit();
+    }
+
+    @Override
+    public void rollback()
+    {
+        closeShop();
+        super.rollback();
+    }
+
+    private void closeShop()
     {
         if ( anyActiveStatement() )
-        {
-            throw new IllegalStateException( "Cannot finish since there is an active statements" );
-        }
-
+            throw new IllegalStateException( "Cannot commit, prepare or roll back since there is still " +
+                                             "an active statement." );
         finished = true;
-        super.finish();
     }
 
     private void assertNewStatementAllowed()

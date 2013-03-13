@@ -117,8 +117,7 @@ public class KernelIT
         long labelId = statement.getOrCreateLabelId( "labello" );
         statement.addLabelToNode( labelId, node.getId() );
         statement.close();
-        tx.success();
-        tx.finish();
+        tx.commit();
         outerTx.finish();
     }
     
