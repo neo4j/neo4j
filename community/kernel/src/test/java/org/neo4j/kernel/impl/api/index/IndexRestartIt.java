@@ -29,6 +29,7 @@ import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.single;
 import static org.neo4j.kernel.api.index.InternalIndexState.ONLINE;
 import static org.neo4j.kernel.api.index.InternalIndexState.POPULATING;
+import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstanceSchemaIndexProviderFactory;
 import static org.neo4j.test.DoubleLatch.awaitLatch;
 
 import java.util.Arrays;
@@ -49,6 +50,7 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
@@ -120,7 +122,8 @@ public class IndexRestartIt
     {
         factory = new TestGraphDatabaseFactory();
         factory.setFileSystem( fs.get() );
-        factory.setSchemaIndexProviders( Arrays.<SchemaIndexProvider>asList( provider ) );
+        factory.setKernelExtensions( Arrays.<KernelExtensionFactory<?>>asList(
+                singleInstanceSchemaIndexProviderFactory( "test", provider ) ) );
     }
 
     @After
@@ -155,7 +158,7 @@ public class IndexRestartIt
         
         public ControlledSchemaIndexProvider()
         {
-            super( "test", 10 );
+            super( 10 );
             setInitialIndexState( initialIndexState );
         }
         
@@ -170,14 +173,14 @@ public class IndexRestartIt
         }
 
         @Override
-        public IndexPopulator getPopulator( long indexId, Dependencies dependencies )
+        public IndexPopulator getPopulator( long indexId )
         {
             populatorCallCount.incrementAndGet();
             return mockedPopulator;
         }
 
         @Override
-        public IndexAccessor getOnlineAccessor( long indexId, Dependencies dependencies )
+        public IndexAccessor getOnlineAccessor( long indexId )
         {
             writerCallCount.incrementAndGet();
             writerLatch.countDown();
@@ -185,7 +188,7 @@ public class IndexRestartIt
         }
 
         @Override
-        public InternalIndexState getInitialState( long indexId, Dependencies dependencies )
+        public InternalIndexState getInitialState( long indexId )
         {
             return initialIndexState;
         }

@@ -21,7 +21,6 @@ package org.neo4j.kernel;
 
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.map;
-import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
 import static org.slf4j.impl.StaticLoggerBinder.getSingleton;
 
 import java.io.File;
@@ -68,7 +67,6 @@ import org.neo4j.kernel.api.KernelException;
 import org.neo4j.kernel.api.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConfigurationChange;
 import org.neo4j.kernel.configuration.ConfigurationChangeListener;
@@ -221,8 +219,6 @@ public abstract class InternalAbstractGraphDatabase
     protected KernelAPI kernelAPI;
     protected ThreadToStatementContextBridge statementContextProvider;
     protected BridgingCacheAccess cacheBridge;
-    protected SchemaIndexProvider schemaIndexProvider;
-    protected SchemaIndexProvider.Dependencies schemaIndexProviderDependencies;
     protected JobScheduler jobScheduler;
 
     protected final LifeSupport life = new LifeSupport();
@@ -233,11 +229,9 @@ public abstract class InternalAbstractGraphDatabase
                                              Iterable<IndexProvider> indexProviders,
                                              Iterable<KernelExtensionFactory<?>> kernelExtensions,
                                              Iterable<CacheProvider> cacheProviders,
-                                             Iterable<TransactionInterceptorProvider> transactionInterceptorProviders,
-                                             Iterable<SchemaIndexProvider> schemaIndexProviders )
+                                             Iterable<TransactionInterceptorProvider> transactionInterceptorProviders )
     {
         this.params = params;
-        this.schemaIndexProvider = selectHighestPrioritized( schemaIndexProviders );
 
         dependencyResolver = new DependencyResolverImpl();
 
@@ -264,18 +258,8 @@ public abstract class InternalAbstractGraphDatabase
         this.kernelExtensions = new KernelExtensions( kernelExtensions, config, dependencyResolver );
         this.transactionInterceptorProviders = new TransactionInterceptorProviders( transactionInterceptorProviders,
                 dependencyResolver );
-
-        this.storeDir = config.get( Configuration.store_dir );
-    }
-
-    private SchemaIndexProvider selectHighestPrioritized( Iterable<SchemaIndexProvider> schemaIndexProviders )
-    {
-        List<SchemaIndexProvider> list = addToCollection( schemaIndexProviders, new ArrayList<SchemaIndexProvider>() );
-        if ( list.isEmpty() )
-            return SchemaIndexProvider.NO_INDEX_PROVIDER;
         
-        Collections.sort( list );
-        return list.get( list.size()-1 );
+        this.storeDir = config.get( Configuration.store_dir );
     }
 
     private Map<String, CacheProvider> mapCacheProviders( Iterable<CacheProvider> cacheProviders )
@@ -342,9 +326,6 @@ public abstract class InternalAbstractGraphDatabase
     protected void create()
     {
         fileSystem = createFileSystemAbstraction();
-        schemaIndexProviderDependencies = new SchemaIndexProvider.Dependencies( fileSystem,
-                new File( new File( new File( storeDir, "schema" ), "index" ), this.schemaIndexProvider.getKey() ) );
-
 
         // Create logger
         this.logging = createLogging();
@@ -838,8 +819,8 @@ public abstract class InternalAbstractGraphDatabase
             // TODO IO stuff should be done in lifecycle. Refactor!
             neoDataSource = new NeoStoreXaDataSource( config,
                     storeFactory, lockManager, logging.getLogger( NeoStoreXaDataSource.class ),
-                    xaFactory, stateFactory, cacheBridge, schemaIndexProvider, schemaIndexProviderDependencies,
-                    transactionInterceptorProviders, jobScheduler, logging );
+                    xaFactory, stateFactory, cacheBridge,
+                    transactionInterceptorProviders, jobScheduler, logging, dependencyResolver );
             xaDataSourceManager.registerDataSource( neoDataSource );
 
         }
@@ -1336,14 +1317,6 @@ public abstract class InternalAbstractGraphDatabase
             else if ( IndexingService.class.isAssignableFrom( type ) )
             {
                 return (T) neoDataSource.getIndexService();
-            }
-            else if ( SchemaIndexProvider.class.isAssignableFrom( type ) )
-            {
-                return (T) schemaIndexProvider;
-            }
-            else if ( SchemaIndexProvider.Dependencies.class.isAssignableFrom( type ) )
-            {
-                return (T) schemaIndexProviderDependencies;
             }
             else if ( JobScheduler.class.isAssignableFrom( type ) )
             {

@@ -30,6 +30,7 @@ import static org.neo4j.helpers.collection.IteratorUtil.asUniqueSet;
 import static org.neo4j.helpers.collection.IteratorUtil.single;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.ha.HaSettings.tx_push_factor;
+import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstanceSchemaIndexProviderFactory;
 import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
 import static org.neo4j.test.ha.ClusterManager.masterAvailable;
 
@@ -54,6 +55,7 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.UpdatePuller;
 import org.neo4j.kernel.impl.api.index.InMemoryIndexProvider;
@@ -268,25 +270,25 @@ public class SchemaIndexHaIT
         
         public ControlledSchemaIndexProvider()
         {
-            super( "controlled", 10 );
+            super( 10 );
         }
         
         @Override
-        public IndexPopulator getPopulator( long indexId, Dependencies dependencies )
+        public IndexPopulator getPopulator( long indexId )
         {
-            return new ControlledIndexPopulator( inMemoryDelegate.getPopulator( indexId, dependencies ), latch );
+            return new ControlledIndexPopulator( inMemoryDelegate.getPopulator( indexId ), latch );
         }
 
         @Override
-        public IndexAccessor getOnlineAccessor( long indexId, Dependencies dependencies )
+        public IndexAccessor getOnlineAccessor( long indexId )
         {
-            return inMemoryDelegate.getOnlineAccessor( indexId, dependencies );
+            return inMemoryDelegate.getOnlineAccessor( indexId );
         }
 
         @Override
-        public InternalIndexState getInitialState( long indexId, Dependencies dependencies )
+        public InternalIndexState getInitialState( long indexId )
         {
-            return inMemoryDelegate.getInitialState( indexId, dependencies );
+            return inMemoryDelegate.getInitialState( indexId );
         }
     }
 
@@ -299,7 +301,8 @@ public class SchemaIndexHaIT
         public GraphDatabaseBuilder newHighlyAvailableDatabaseBuilder( String path )
         {
             ControlledSchemaIndexProvider provider = new ControlledSchemaIndexProvider();
-            setSchemaIndexProviders( Arrays.<SchemaIndexProvider>asList( provider ) );
+            KernelExtensionFactory<?> factory = singleInstanceSchemaIndexProviderFactory( "controlled", provider );
+            setKernelExtensions( Arrays.<KernelExtensionFactory<?>>asList( factory ) );
             return dbReferenceCapturingBuilder( perDbIndexProvider, provider,
                     super.newHighlyAvailableDatabaseBuilder( path ) );
         }

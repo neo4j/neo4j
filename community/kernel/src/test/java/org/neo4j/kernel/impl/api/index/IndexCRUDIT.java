@@ -22,13 +22,14 @@ package org.neo4j.kernel.impl.api.index;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.anyLong;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.awaitIndexState;
-import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.mockSchemaIndexProvider;
+import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstanceSchemaIndexProviderFactory;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -39,7 +40,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.mockito.Matchers;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -53,7 +53,7 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.api.index.SchemaIndexProvider.Dependencies;
+import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
@@ -117,7 +117,9 @@ public class IndexCRUDIT
     private GraphDatabaseAPI db;
     private TestGraphDatabaseFactory factory;
     @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
-    private final SchemaIndexProvider mockedIndexProvider = mockSchemaIndexProvider( "none" );
+    private final SchemaIndexProvider mockedIndexProvider = mock( SchemaIndexProvider.class );
+    private final KernelExtensionFactory<?> mockedIndexProviderFactory =
+            singleInstanceSchemaIndexProviderFactory( "none", mockedIndexProvider );
     private ThreadToStatementContextBridge ctxProvider;
     private final Label myLabel = label( "MYLABEL" );
     
@@ -146,10 +148,9 @@ public class IndexCRUDIT
     @Before
     public void before() throws Exception
     {
-        when( mockedIndexProvider.getKey() ).thenReturn( "none" );
         factory = new TestGraphDatabaseFactory();
         factory.setFileSystem( fs.get() );
-        factory.setSchemaIndexProviders( Arrays.asList( mockedIndexProvider ) );
+        factory.setKernelExtensions( Arrays.<KernelExtensionFactory<?>>asList( mockedIndexProviderFactory ) );
         db = (GraphDatabaseAPI) factory.newImpermanentDatabase();
         ctxProvider = db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
     }
@@ -157,8 +158,8 @@ public class IndexCRUDIT
     private GatheringIndexWriter newWriter( String propertyKey )
     {
         GatheringIndexWriter writer = new GatheringIndexWriter( propertyKey );
-        when(mockedIndexProvider.getPopulator( anyLong(), Matchers.<Dependencies>any() )).thenReturn( writer );
-        when(mockedIndexProvider.getOnlineAccessor( anyLong(), Matchers.<Dependencies>any() )).thenReturn( writer );
+        when( mockedIndexProvider.getPopulator( anyLong() ) ).thenReturn( writer );
+        when( mockedIndexProvider.getOnlineAccessor( anyLong() ) ).thenReturn( writer );
         return writer;
     }
 
@@ -167,8 +168,7 @@ public class IndexCRUDIT
     {
         db.shutdown();
     }
-
-
+    
     private class GatheringIndexWriter extends IndexAccessor.Adapter implements IndexPopulator
     {
         private final Set<NodePropertyUpdate> updates = new HashSet<NodePropertyUpdate>();

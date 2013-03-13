@@ -31,6 +31,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.single;
+import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstanceSchemaIndexProviderFactory;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -44,7 +45,6 @@ import java.util.concurrent.Future;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
-import org.mockito.Matchers;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -60,7 +60,7 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.api.index.SchemaIndexProvider.Dependencies;
+import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
@@ -74,7 +74,7 @@ public class IndexRecoveryIT
         Label myLabel = label( "MyLabel" );
 
         CountDownLatch latch = new CountDownLatch( 1 );
-        when( mockedIndexProvider.getPopulator( anyLong(), Matchers.<Dependencies>any() ) ).thenReturn( indexPopulatorWithControlledCompletionTiming( latch ) );
+        when( mockedIndexProvider.getPopulator( anyLong() ) ).thenReturn( indexPopulatorWithControlledCompletionTiming( latch ) );
         createIndex( myLabel );
 
         // And Given
@@ -83,9 +83,9 @@ public class IndexRecoveryIT
         killFuture.get();
 
         // When
-        when( mockedIndexProvider.getInitialState( anyLong(), Matchers.<Dependencies>any() ) ).thenReturn( InternalIndexState.POPULATING );
+        when( mockedIndexProvider.getInitialState( anyLong() ) ).thenReturn( InternalIndexState.POPULATING );
         latch = new CountDownLatch( 1 );
-        when( mockedIndexProvider.getPopulator( anyLong(), Matchers.<Dependencies>any() ) ).thenReturn( indexPopulatorWithControlledCompletionTiming( latch ) );
+        when( mockedIndexProvider.getPopulator( anyLong() ) ).thenReturn( indexPopulatorWithControlledCompletionTiming( latch ) );
         startDb();
 
         // Then
@@ -95,8 +95,8 @@ public class IndexRecoveryIT
 
         IndexDefinition index = single( indexes );
         assertThat( db.schema().getIndexState( index), equalTo( Schema.IndexState.POPULATING ) );
-        verify( mockedIndexProvider, times( 2 ) ).getPopulator( anyLong(), Matchers.<Dependencies>any() );
-        verify( mockedIndexProvider, times( 0 ) ).getOnlineAccessor( anyLong(), Matchers.<Dependencies>any() );
+        verify( mockedIndexProvider, times( 2 ) ).getPopulator( anyLong() );
+        verify( mockedIndexProvider, times( 0 ) ).getOnlineAccessor( anyLong() );
         latch.countDown();
     }
 
@@ -108,7 +108,7 @@ public class IndexRecoveryIT
         Label myLabel = label( "MyLabel" );
 
         CountDownLatch latch = new CountDownLatch( 1 );
-        when( mockedIndexProvider.getPopulator( anyLong(), Matchers.<Dependencies>any() ) ).thenReturn( indexPopulatorWithControlledCompletionTiming( latch ) );
+        when( mockedIndexProvider.getPopulator( anyLong() ) ).thenReturn( indexPopulatorWithControlledCompletionTiming( latch ) );
         createIndex( myLabel );
         rotateLogs();
 
@@ -117,8 +117,8 @@ public class IndexRecoveryIT
         latch.countDown();
         killFuture.get();
         latch = new CountDownLatch( 1 );
-        when( mockedIndexProvider.getPopulator( anyLong(), Matchers.<Dependencies>any() ) ).thenReturn( indexPopulatorWithControlledCompletionTiming( latch ) );
-        when( mockedIndexProvider.getInitialState( anyLong(), Matchers.<Dependencies>any() ) ).thenReturn( InternalIndexState.POPULATING );
+        when( mockedIndexProvider.getPopulator( anyLong() ) ).thenReturn( indexPopulatorWithControlledCompletionTiming( latch ) );
+        when( mockedIndexProvider.getInitialState( anyLong() ) ).thenReturn( InternalIndexState.POPULATING );
 
         // When
         startDb();
@@ -130,8 +130,8 @@ public class IndexRecoveryIT
 
         IndexDefinition index = single( indexes );
         assertThat( db.schema().getIndexState( index), equalTo( Schema.IndexState.POPULATING ) );
-        verify( mockedIndexProvider, times( 2 ) ).getPopulator( anyLong(), Matchers.<Dependencies>any() );
-        verify( mockedIndexProvider, times( 0 ) ).getOnlineAccessor( anyLong(), Matchers.<Dependencies>any() );
+        verify( mockedIndexProvider, times( 2 ) ).getPopulator( anyLong() );
+        verify( mockedIndexProvider, times( 0 ) ).getOnlineAccessor( anyLong() );
         latch.countDown();
     }
     
@@ -147,9 +147,9 @@ public class IndexRecoveryIT
 
         // And Given
         killDb();
-        when( mockedIndexProvider.getInitialState( anyLong(), Matchers.<Dependencies>any() ) ).thenReturn( InternalIndexState.ONLINE );
+        when( mockedIndexProvider.getInitialState( anyLong() ) ).thenReturn( InternalIndexState.ONLINE );
         GatheringIndexWriter writer = new GatheringIndexWriter();
-        when( mockedIndexProvider.getOnlineAccessor( anyLong(), Matchers.<Dependencies>any() ) ).thenReturn( writer );
+        when( mockedIndexProvider.getOnlineAccessor( anyLong() ) ).thenReturn( writer );
 
         // When
         startDb();
@@ -161,8 +161,8 @@ public class IndexRecoveryIT
 
         IndexDefinition index = single( indexes );
         assertThat( db.schema().getIndexState( index), equalTo( Schema.IndexState.ONLINE ) );
-        verify( mockedIndexProvider, times( 1 ) ).getPopulator( anyLong(), Matchers.<Dependencies>any() );
-        verify( mockedIndexProvider, times( 1 ) ).getOnlineAccessor( anyLong(), Matchers.<Dependencies>any() );
+        verify( mockedIndexProvider, times( 1 ) ).getPopulator( anyLong() );
+        verify( mockedIndexProvider, times( 1 ) ).getOnlineAccessor( anyLong() );
         assertEquals( expectedUpdates, writer.updates ); 
     }
     
@@ -176,8 +176,8 @@ public class IndexRecoveryIT
 
         // And Given
         killDb();
-        when( mockedIndexProvider.getInitialState( anyLong(), Matchers.<Dependencies>any() ) ).thenReturn( InternalIndexState.FAILED );
-        when( mockedIndexProvider.getPopulator( anyLong(), Matchers.<Dependencies>any() ) ).thenReturn( mock(IndexPopulator.class) );
+        when( mockedIndexProvider.getInitialState( anyLong() ) ).thenReturn( InternalIndexState.FAILED );
+        when( mockedIndexProvider.getPopulator( anyLong() ) ).thenReturn( mock(IndexPopulator.class) );
 
         // When
         startDb();
@@ -189,12 +189,14 @@ public class IndexRecoveryIT
 
         IndexDefinition index = single( indexes );
         assertThat( db.schema().getIndexState( index ), equalTo( Schema.IndexState.FAILED ) );
-        verify( mockedIndexProvider, times( 2 ) ).getPopulator( anyLong(), Matchers.<Dependencies>any() );
+        verify( mockedIndexProvider, times( 2 ) ).getPopulator( anyLong() );
     }
     
     private GraphDatabaseAPI db;
     @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
-    private final SchemaIndexProvider mockedIndexProvider = mock( SchemaIndexProvider.class);
+    private final SchemaIndexProvider mockedIndexProvider = mock( SchemaIndexProvider.class );
+    private final KernelExtensionFactory<?> mockedIndexProviderFactory =
+            singleInstanceSchemaIndexProviderFactory( "my-index", mockedIndexProvider );
     private final String key = "number_of_bananas_owned";
 
     private void startDb()
@@ -204,8 +206,7 @@ public class IndexRecoveryIT
 
         TestGraphDatabaseFactory factory = new TestGraphDatabaseFactory();
         factory.setFileSystem( fs.get() );
-        factory.setSchemaIndexProviders( Arrays.asList( mockedIndexProvider ) );
-        when( mockedIndexProvider.getKey() ).thenReturn( "my-index" );
+        factory.setKernelExtensions( Arrays.<KernelExtensionFactory<?>>asList( mockedIndexProviderFactory ) );
         db = (GraphDatabaseAPI) factory.newImpermanentDatabase();
     }
     

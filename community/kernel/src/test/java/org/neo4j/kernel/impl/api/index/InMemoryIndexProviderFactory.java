@@ -17,41 +17,27 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.extension;
+package org.neo4j.kernel.impl.api.index;
 
 import org.neo4j.helpers.Service;
+import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
-public abstract class KernelExtensionFactory<DEPENDENCIES> extends Service
+@Service.Implementation( KernelExtensionFactory.class )
+public class InMemoryIndexProviderFactory extends KernelExtensionFactory<InMemoryIndexProviderFactory.Dependencies>
 {
-    protected KernelExtensionFactory( String key )
+    public interface Dependencies
     {
-        super( key );
     }
-
-    /**
-     * Return the class that contains GraphDatabaseSetting fields that define
-     * the properties needed by this extension.
-     *
-     * @return a class or null if no settings are needed
-     */
-    public Class getSettingsClass()
-    {
-        return null;
-    }
-
-    /**
-     * Create a new instance of this kernel extension.
-     *
-     * @param dependencies
-     * @return
-     */
-    public abstract Lifecycle newKernelExtension( DEPENDENCIES dependencies )
-            throws Throwable;
     
-    @Override
-    public String toString()
+    public InMemoryIndexProviderFactory()
     {
-        return "KernelExtension:" + getClass().getSimpleName() + getKeys();
+        super( "in-memory" );
+    }
+
+    @Override
+    public Lifecycle newKernelExtension( Dependencies dependencies ) throws Throwable
+    {
+        return new InMemoryIndexProvider();
     }
 }

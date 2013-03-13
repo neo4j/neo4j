@@ -55,7 +55,7 @@ public class TestGraphDatabaseFactory
             public GraphDatabaseService newDatabase( Map<String, String> config )
             {
                 return new ImpermanentGraphDatabase( storeDir, config, indexProviders, kernelExtensions,
-                        cacheProviders, txInterceptorProviders, schemaIndexProviders )
+                        cacheProviders, txInterceptorProviders )
                 {
                     @Override
                     protected FileSystemAbstraction createFileSystemAbstraction()

@@ -52,7 +52,6 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.KernelData;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.ha.cluster.DefaultElectionCredentialsProvider;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberChangeEvent;
@@ -144,12 +143,11 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                                          Iterable<IndexProvider> indexProviders,
                                          Iterable<KernelExtensionFactory<?>> kernelExtensions,
                                          Iterable<CacheProvider> cacheProviders,
-                                         Iterable<TransactionInterceptorProvider> txInterceptorProviders,
-                                         Iterable<SchemaIndexProvider> schemaIndexProvider )
+                                         Iterable<TransactionInterceptorProvider> txInterceptorProviders )
     {
         super( storeDir, params, Iterables.<Class<?>,Class<?>>iterable( GraphDatabaseSettings.class, HaSettings.class,
                 NetworkInstance.Configuration.class, ClusterSettings.class ), indexProviders, kernelExtensions,
-                cacheProviders, txInterceptorProviders, schemaIndexProvider );
+                cacheProviders, txInterceptorProviders );
         run();
     }
 

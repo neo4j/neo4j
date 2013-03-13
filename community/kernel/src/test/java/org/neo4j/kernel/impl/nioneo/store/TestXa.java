@@ -21,8 +21,6 @@ package org.neo4j.kernel.impl.nioneo.store;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.kernel.api.index.SchemaIndexProvider.NO_DEPENDENCIES;
-import static org.neo4j.kernel.api.index.SchemaIndexProvider.NO_INDEX_PROVIDER;
 import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME;
 import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
 
@@ -45,6 +43,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.graphdb.DependencyResolver.Adapter;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
@@ -54,6 +53,7 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.TransactionInterceptorProviders;
+import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.core.PropertyIndex;
@@ -354,18 +354,36 @@ public class TestXa
                 new XaFactory( config, TxIdGenerator.DEFAULT, txManager,
                         logBufferFactory, fileSystem, new DevNullLoggingService(), RecoveryVerifier.ALWAYS_VALID,
                         LogPruneStrategies.NO_PRUNING ), TransactionStateFactory.noStateFactory( new DevNullLoggingService() ),
-                        noCacheAccess(), NO_INDEX_PROVIDER, NO_DEPENDENCIES, new TransactionInterceptorProviders(
-                                Collections.<TransactionInterceptorProvider>emptyList(), new DependencyResolver.Adapter()
-                        {
-                            @Override
-                            public <T> T resolveDependency( Class<T> type, SelectionStrategy<T> selector )
-                            {
-                                return (T) config;
-                            }
-                        } ), null, new SingleLoggingService( DEV_NULL ) );
+                        noCacheAccess(), new TransactionInterceptorProviders(
+                                Collections.<TransactionInterceptorProvider>emptyList(), dependencyResolverForConfig( config ) ), null,
+                                new SingleLoggingService( DEV_NULL ), dependencyResolverForNoIndexProvider() );
         neoStoreXaDataSource.init();
         neoStoreXaDataSource.start();
         return neoStoreXaDataSource;
+    }
+
+    private DependencyResolver dependencyResolverForNoIndexProvider()
+    {
+        return new DependencyResolver.Adapter()
+        {
+            @Override
+            public <T> T resolveDependency( Class<T> type, SelectionStrategy<T> selector ) throws IllegalArgumentException
+            {
+                return (T) SchemaIndexProvider.NO_INDEX_PROVIDER;
+            }
+        };
+    }
+
+    private Adapter dependencyResolverForConfig( final Config config )
+    {
+        return new DependencyResolver.Adapter()
+                  {
+                     @Override
+                     public <T> T resolveDependency( Class<T> type, SelectionStrategy<T> selector )
+                     {
+        return (T) config;
+                     }
+                  };
     }
 
     private CacheAccessBackDoor noCacheAccess()

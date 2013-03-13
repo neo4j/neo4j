@@ -35,7 +35,6 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.api.index.NodePropertyUpdate.add;
 import static org.neo4j.kernel.api.index.NodePropertyUpdate.change;
 import static org.neo4j.kernel.api.index.NodePropertyUpdate.remove;
-import static org.neo4j.kernel.api.index.SchemaIndexProvider.NO_DEPENDENCIES;
 import static org.neo4j.kernel.api.index.SchemaIndexProvider.NO_INDEX_PROVIDER;
 import static org.neo4j.kernel.impl.util.StringLogger.SYSTEM;
 
@@ -517,7 +516,7 @@ public class WriteTransactionTest
         
         public CapturingIndexingService()
         {
-            super( null, NO_INDEX_PROVIDER, NO_DEPENDENCIES, new NeoStoreIndexStoreView( neoStore ),
+            super( null, NO_INDEX_PROVIDER, new NeoStoreIndexStoreView( neoStore ),
                     new SingleLoggingService( SYSTEM ) );
         }
         

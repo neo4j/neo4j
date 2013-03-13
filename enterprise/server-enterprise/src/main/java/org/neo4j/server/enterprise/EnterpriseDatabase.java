@@ -68,8 +68,7 @@ public class EnterpriseDatabase extends CommunityDatabase
                         List<SchemaIndexProvider> schemaIndexProviders =
                                 Iterables.toList( Service.load( SchemaIndexProvider.class ) );
                         return new HighlyAvailableGraphDatabase( databaseStoreDirectory, databaseProperties,
-                                indexProviders, kernelExtensions, cacheProviders, txInterceptorProviders,
-                                schemaIndexProviders );
+                                indexProviders, kernelExtensions, cacheProviders, txInterceptorProviders );
                     }
                 };
 

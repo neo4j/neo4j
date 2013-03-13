@@ -24,7 +24,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import org.neo4j.helpers.Service;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexPopulator;
@@ -34,18 +33,17 @@ import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.util.CopyOnWriteHashMap;
 
-@Service.Implementation( InMemoryIndexProvider.class )
 public class InMemoryIndexProvider extends SchemaIndexProvider
 {
     private final Map<Long, InMemoryIndexWriter> indexes = new CopyOnWriteHashMap<Long, InMemoryIndexWriter>();
 
     public InMemoryIndexProvider()
     {
-        super( "in-memory", 0 );
+        super( 0 );
     }
-
+    
     @Override
-    public IndexAccessor getOnlineAccessor( long indexId, Dependencies dependencies )
+    public IndexAccessor getOnlineAccessor( long indexId )
     {
         InMemoryIndexWriter index = indexes.get( indexId );
         if ( index == null || index.state != InternalIndexState.ONLINE )
@@ -54,14 +52,14 @@ public class InMemoryIndexProvider extends SchemaIndexProvider
     }
 
     @Override
-    public InternalIndexState getInitialState( long indexId, Dependencies dependencies )
+    public InternalIndexState getInitialState( long indexId )
     {
         InMemoryIndexWriter index = indexes.get( indexId );
         return index != null ? index.state : InternalIndexState.POPULATING;
     }
 
     @Override
-    public IndexPopulator getPopulator( long indexId, Dependencies dependencies )
+    public IndexPopulator getPopulator( long indexId )
     {
         InMemoryIndexWriter populator = new InMemoryIndexWriter();
         indexes.put( indexId, populator );

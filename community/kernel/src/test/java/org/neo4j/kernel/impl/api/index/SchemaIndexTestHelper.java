@@ -36,15 +36,39 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema.IndexState;
 import org.neo4j.helpers.FutureAdapter;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.lifecycle.Lifecycle;
 
 @Ignore( "This is not a test" )
 public class SchemaIndexTestHelper
 {
-    public static SchemaIndexProvider mockSchemaIndexProvider( String key )
+    public static KernelExtensionFactory<SingleInstanceSchemaIndexProviderFactoryDependencies> singleInstanceSchemaIndexProviderFactory(
+            String key, final SchemaIndexProvider provider )
     {
-        SchemaIndexProvider mock = mock( SchemaIndexProvider.class );
-        when( mock.getKey() ).thenReturn( key );
-        return mock;
+        return new SingleInstanceSchemaIndexProviderFactory( key, provider );
+    }
+    
+    public interface SingleInstanceSchemaIndexProviderFactoryDependencies
+    {
+    }
+    
+    private static class SingleInstanceSchemaIndexProviderFactory
+        extends KernelExtensionFactory<SingleInstanceSchemaIndexProviderFactoryDependencies>
+    {
+        private final SchemaIndexProvider provider;
+
+        private SingleInstanceSchemaIndexProviderFactory( String key, SchemaIndexProvider provider )
+        {
+            super( key );
+            this.provider = provider;
+        }
+
+        @Override
+        public Lifecycle newKernelExtension( SingleInstanceSchemaIndexProviderFactoryDependencies dependencies )
+                throws Throwable
+        {
+            return provider;
+        }
     }
     
     public static IndexProxy mockIndexProxy()

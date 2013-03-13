@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.nioneo.xa;
 
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.map;
+import static org.neo4j.kernel.api.index.SchemaIndexProvider.HIGHEST_PRIORITIZED_OR_NONE;
 
 import java.io.File;
 import java.io.IOException;
@@ -33,6 +34,7 @@ import java.util.List;
 import java.util.Properties;
 import java.util.regex.Pattern;
 
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
@@ -47,7 +49,6 @@ import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.TransactionInterceptorProviders;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.api.index.SchemaIndexProvider.Dependencies;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
@@ -111,7 +112,6 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
 
     private final StoreFactory storeFactory;
     private final XaFactory xaFactory;
-    private final SchemaIndexProvider indexProvider;
     private final JobScheduler scheduler;
 
     private final Config config;
@@ -134,7 +134,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
     private final TransactionStateFactory stateFactory;
     private final CacheAccessBackDoor cacheAccess;
     private final Logging logging;
-    private final Dependencies indexProviderDependencies;
+    private final DependencyResolver dependencyResolver;
 
     private enum Diagnostics implements DiagnosticsExtractor<NeoStoreXaDataSource>
     {
@@ -220,17 +220,15 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
      */
     public NeoStoreXaDataSource( Config config, StoreFactory sf, LockManager lockManager,
                                  StringLogger stringLogger, XaFactory xaFactory, TransactionStateFactory stateFactory,
-                                 CacheAccessBackDoor cacheAccess, SchemaIndexProvider indexProvider,
-                                 SchemaIndexProvider.Dependencies indexProviderDependencies,
-                                 TransactionInterceptorProviders providers, JobScheduler scheduler, Logging logging )
+                                 CacheAccessBackDoor cacheAccess, TransactionInterceptorProviders providers,
+                                 JobScheduler scheduler, Logging logging, DependencyResolver dependencyResolver )
             throws IOException
     {
         super( BRANCH_ID, Config.DEFAULT_DATA_SOURCE_NAME );
         this.config = config;
         this.stateFactory = stateFactory;
         this.cacheAccess = cacheAccess;
-        this.indexProvider = indexProvider;
-        this.indexProviderDependencies = indexProviderDependencies;
+        this.dependencyResolver = dependencyResolver;
         this.providers = providers;
         this.scheduler = scheduler;
         this.logging = logging;
@@ -269,8 +267,11 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
         }
         neoStore = storeFactory.newNeoStore( store );
 
+        SchemaIndexProvider indexProvider = dependencyResolver.resolveDependency( SchemaIndexProvider.class,
+                HIGHEST_PRIORITIZED_OR_NONE );
+        
         indexingService = life.add( new IndexingService( scheduler, indexProvider,
-                indexProviderDependencies, new NeoStoreIndexStoreView( neoStore ), logging ) );
+                new NeoStoreIndexStoreView( neoStore ), logging ) );
         
         xaContainer = xaFactory.newXaContainer(this, config.get( Configuration.logical_log ),
                 new CommandFactory( neoStore, indexingService ), tf, stateFactory, providers  );

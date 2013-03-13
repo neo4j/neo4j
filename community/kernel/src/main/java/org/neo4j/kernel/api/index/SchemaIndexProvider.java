@@ -19,12 +19,18 @@
  */
 package org.neo4j.kernel.api.index;
 
-import java.io.File;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_dir;
+import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
 
-import org.neo4j.helpers.Service;
-import org.neo4j.kernel.DefaultFileSystemAbstraction;
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+import org.neo4j.graphdb.DependencyResolver.SelectionStrategy;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 /**
  * Contract for implementing an index in Neo4j.
@@ -44,7 +50,7 @@ import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
  * These are the rules you must adhere to here:
  *
  * <ul>
- * <li>You CANNOT say that the state of the index is {@link org.neo4j.kernel.api.index.InternalIndexState#ONLINE}</li>
+ * <li>You CANNOT say that the state of the index is {@link InternalIndexState#ONLINE}</li>
  * <li>You MUST store all updates given to you</li>
  * <li>You MAY persistently store the updates</li>
  * </ul>
@@ -55,7 +61,7 @@ import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
  * Once population is done, the index needs to be "flipped" to an online mode of operation.
  *
  * The index will be notified, through the {@link org.neo4j.kernel.api.index.IndexPopulator#populationCompleted()}
- * method, that population is done, and that the index should turn it's state to {@link org.neo4j.kernel.api.index.InternalIndexState#ONLINE}.
+ * method, that population is done, and that the index should turn it's state to {@link InternalIndexState#ONLINE}.
  *
  * If the index is persisted to disk, this is a <i>vital</i> part of the index lifecycle.
  * For a persisted index, the index MUST NOT store the state as online unless it first guarantees that the entire index
@@ -64,15 +70,15 @@ import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
  * when it in fact was not yet fully populated. This would break the database recovery process.
  *
  * If you are implementing this interface, you can choose to not store index state. In that case,
- * you should report index state as {@link org.neo4j.kernel.api.index.InternalIndexState#NON_EXISTENT} upon startup.
+ * you should report index state as {@link InternalIndexState#NON_EXISTENT} upon startup.
  * This will cause the database to re-create the index from scratch again.
  *
  * These are the rules you must adhere to here:
  *
  * <ul>
- * <li>You MUST have flushed the index to durable storage if you are to persist index state as {@link org.neo4j.kernel.api.index.InternalIndexState#ONLINE}</li>
+ * <li>You MUST have flushed the index to durable storage if you are to persist index state as {@link InternalIndexState#ONLINE}</li>
  * <li>You MAY decide not to store index state</li>
- * <li>If you don't store index state, you MUST default to {@link org.neo4j.kernel.api.index.InternalIndexState#NON_EXISTENT}</li>
+ * <li>If you don't store index state, you MUST default to {@link InternalIndexState#NON_EXISTENT}</li>
  * </ul>
  *
  * <h3>Online operation</h3>
@@ -80,53 +86,52 @@ import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
  * Once the index is online, the database will move to using the {@link #getWriter(long) index writer} to write to the
  * index.
  */
-public abstract class SchemaIndexProvider extends Service implements Comparable<SchemaIndexProvider>
+public abstract class SchemaIndexProvider extends LifecycleAdapter implements Comparable<SchemaIndexProvider>
 {
-    public static final SchemaIndexProvider NO_INDEX_PROVIDER = new SchemaIndexProvider( "none", -1 )
+    public static final SchemaIndexProvider NO_INDEX_PROVIDER = new SchemaIndexProvider( -1 )
     {
         private final IndexAccessor singleWriter = new IndexAccessor.Adapter();
         private final IndexPopulator singlePopulator = new IndexPopulator.Adapter();
         
         @Override
-        public IndexAccessor getOnlineAccessor( long indexId, Dependencies dependencies )
+        public IndexAccessor getOnlineAccessor( long indexId )
         {
             return singleWriter;
         }
         
         @Override
-        public IndexPopulator getPopulator( long indexId, Dependencies dependencies )
+        public IndexPopulator getPopulator( long indexId )
         {
             return singlePopulator;
         }
         
         @Override
-        public InternalIndexState getInitialState( long indexId, Dependencies dependencies )
+        public InternalIndexState getInitialState( long indexId )
         {
             return InternalIndexState.POPULATING;
         }
     };
     
-    public static final Dependencies NO_DEPENDENCIES = new Dependencies( new DefaultFileSystemAbstraction(), null );
+    public static final SelectionStrategy<SchemaIndexProvider> HIGHEST_PRIORITIZED_OR_NONE =
+            new SelectionStrategy<SchemaIndexProvider>()
+    {
+        @Override
+        public SchemaIndexProvider select( Class<SchemaIndexProvider> type, Iterable<SchemaIndexProvider> candidates )
+                throws IllegalArgumentException
+        {
+            List<SchemaIndexProvider> all = addToCollection( candidates, new ArrayList<SchemaIndexProvider>() );
+            if ( all.isEmpty() )
+                return NO_INDEX_PROVIDER;
+            Collections.sort( all );
+            return all.get( all.size()-1 );
+        }
+    };
     
     private final int priority;
-    private final String key;
-
-    /**
-     * Create a new instance of a service implementation identified with the
-     * specified key(s).
-     *
-     * @param key the main key for identifying this service implementation
-     */
-    protected SchemaIndexProvider( String key, int priority )
-    {
-        super( key );
-        this.key = key;
-        this.priority = priority;
-    }
     
-    public String getKey()
+    protected SchemaIndexProvider( int priority )
     {
-        return key;
+        this.priority = priority;
     }
 
     /**
@@ -134,50 +139,30 @@ public abstract class SchemaIndexProvider extends Service implements Comparable<
      * @param indexId the index id to get a populator for.
      * @return an {@link IndexPopulator} used for initially populating a created index.
      */
-    public abstract IndexPopulator getPopulator( long indexId, Dependencies dependencies );
+    public abstract IndexPopulator getPopulator( long indexId );
 
     /**
      * Used for updating an index once initial population has completed.
      * @param indexId the index id to get a writer for.
      * @return an {@link IndexAccessor} used for updating an online index at runtime.
      */
-    public abstract IndexAccessor getOnlineAccessor( long indexId, Dependencies dependencies );
-
-    // Design idea: we add methods here like:
-    //    getReader( IndexDefinition index )
+    public abstract IndexAccessor getOnlineAccessor( long indexId );
 
     /**
      * Called during startup to find out which state an index is in.
      * @param indexId the index id to get the state for.
      * @return
      */
-    public abstract InternalIndexState getInitialState( long indexId, Dependencies dependencies );
+    public abstract InternalIndexState getInitialState( long indexId );
     
     @Override
     public int compareTo( SchemaIndexProvider o )
     {
-        return priority - o.priority;
+        return this.priority - o.priority;
     }
     
-    public static class Dependencies
+    protected File getRootDirectory( Config config, String key )
     {
-        private final FileSystemAbstraction fileSystem;
-        private final File rootDirectory;
-
-        public Dependencies( FileSystemAbstraction fileSystem, File rootDirectory )
-        {
-            this.fileSystem = fileSystem;
-            this.rootDirectory = rootDirectory;
-        }
-        
-        public FileSystemAbstraction getFileSystem()
-        {
-            return fileSystem;
-        }
-        
-        public File getRootDirectory()
-        {
-            return rootDirectory;
-        }
+        return new File( new File( new File( config.get( store_dir ), "schema" ), "index" ), key );
     }
 }

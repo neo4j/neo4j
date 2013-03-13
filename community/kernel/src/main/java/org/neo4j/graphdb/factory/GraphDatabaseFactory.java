@@ -33,7 +33,6 @@ import org.neo4j.helpers.Service;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.EmbeddedReadOnlyGraphDatabase;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
@@ -48,7 +47,6 @@ public class GraphDatabaseFactory
     protected List<KernelExtensionFactory<?>> kernelExtensions;
     protected List<CacheProvider> cacheProviders;
     protected List<TransactionInterceptorProvider> txInterceptorProviders;
-    protected List<SchemaIndexProvider> schemaIndexProviders;
     protected FileSystemAbstraction fileSystem;
 
     public GraphDatabaseFactory()
@@ -61,7 +59,6 @@ public class GraphDatabaseFactory
         }
         cacheProviders = Iterables.toList( Service.load( CacheProvider.class ) );
         txInterceptorProviders = Iterables.toList( Service.load( TransactionInterceptorProvider.class ) );
-        schemaIndexProviders = Iterables.toList( Service.load( SchemaIndexProvider.class ) );
     }
 
     public GraphDatabaseService newEmbeddedDatabase( String path )
@@ -81,12 +78,12 @@ public class GraphDatabaseFactory
                 if ( TRUE.equalsIgnoreCase( config.get( read_only.name() ) ) )
                 {
                     return new EmbeddedReadOnlyGraphDatabase( path, config, indexProviders, kernelExtensions,
-                            cacheProviders, txInterceptorProviders, schemaIndexProviders );
+                            cacheProviders, txInterceptorProviders );
                 }
                 else
                 {
                     return new EmbeddedGraphDatabase( path, config, indexProviders, kernelExtensions, cacheProviders,
-                            txInterceptorProviders, schemaIndexProviders );
+                            txInterceptorProviders );
                 }
             }
         } );
@@ -122,6 +119,11 @@ public class GraphDatabaseFactory
     public void setKernelExtensions( Iterable<KernelExtensionFactory<?>> newKernelExtensions )
     {
         kernelExtensions.clear();
+        addKernelExtensions( newKernelExtensions );
+    }
+    
+    public void addKernelExtensions( Iterable<KernelExtensionFactory<?>> newKernelExtensions )
+    {
         for ( KernelExtensionFactory<?> newKernelExtension : newKernelExtensions )
         {
             kernelExtensions.add( newKernelExtension );
@@ -145,12 +147,5 @@ public class GraphDatabaseFactory
         {
             txInterceptorProviders.add( newTxInterceptorProvider );
         }
-    }
-    
-    public void setSchemaIndexProviders( List<SchemaIndexProvider> schemaIndexProviders )
-    {
-        this.schemaIndexProviders.clear();
-        for ( SchemaIndexProvider provider : schemaIndexProviders )
-            this.schemaIndexProviders.add( provider );
     }
 }

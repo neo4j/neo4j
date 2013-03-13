@@ -27,7 +27,6 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.IndexProvider;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
@@ -77,18 +76,16 @@ public class EmbeddedGraphDatabase extends InternalAbstractGraphDatabase
                 Service.load( IndexProvider.class ),
                 Iterables.<KernelExtensionFactory<?>,KernelExtensionFactory>cast( Service.load( KernelExtensionFactory.class ) ),
                 Service.load( CacheProvider.class ),
-                Service.load( TransactionInterceptorProvider.class ),
-                Service.load( SchemaIndexProvider.class ) );
+                Service.load( TransactionInterceptorProvider.class ) );
     }
 
     public EmbeddedGraphDatabase( String storeDir, Map<String, String> params, Iterable<IndexProvider> indexProviders,
                                   Iterable<KernelExtensionFactory<?>> kernelExtensions,
                                   Iterable<CacheProvider> cacheProviders,
-                                  Iterable<TransactionInterceptorProvider> txInterceptorProviders,
-                                  Iterable<SchemaIndexProvider> schemaIndexProviders )
+                                  Iterable<TransactionInterceptorProvider> txInterceptorProviders )
     {
         super( storeDir, params, Iterables.<Class<?>, Class<?>>iterable( (Class<?>) GraphDatabaseSettings.class ),
-                indexProviders, kernelExtensions, cacheProviders, txInterceptorProviders, schemaIndexProviders );
+                indexProviders, kernelExtensions, cacheProviders, txInterceptorProviders );
 
         run();
     }

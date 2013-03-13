@@ -42,7 +42,6 @@ import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.StoreLockerLifecycleAdapter;
 import org.neo4j.kernel.TransactionInterceptorProviders;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.BranchDetectingTxVerifier;
 import org.neo4j.kernel.ha.BranchedDataException;
@@ -443,10 +442,8 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                         resolver.resolveDependency( XaFactory.class ),
                         resolver.resolveDependency( TransactionStateFactory.class ),
                         resolver.resolveDependency( CacheAccessBackDoor.class ),
-                        resolver.resolveDependency( SchemaIndexProvider.class ),
-                        resolver.resolveDependency( SchemaIndexProvider.Dependencies.class ),
                         resolver.resolveDependency( TransactionInterceptorProviders.class ),
-                        resolver.resolveDependency( JobScheduler.class ), logging );
+                        resolver.resolveDependency( JobScheduler.class ), logging, resolver );
                 xaDataSourceManager.registerDataSource( nioneoDataSource );
             }
             catch ( IOException e )

@@ -40,7 +40,6 @@ import org.neo4j.kernel.api.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.api.index.SchemaIndexProvider.Dependencies;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -71,14 +70,12 @@ public class IndexingService extends LifecycleAdapter
     private boolean serviceRunning = false;
     private final IndexStoreView storeView;
     private final Logging logging;
-    private final Dependencies providerDependencies;
 
     public IndexingService( JobScheduler scheduler, SchemaIndexProvider provider,
-            SchemaIndexProvider.Dependencies providerDependencies, IndexStoreView storeView, Logging logging )
+            IndexStoreView storeView, Logging logging )
     {
         this.scheduler = scheduler;
         this.provider = provider;
-        this.providerDependencies = providerDependencies;
         this.storeView = storeView;
         this.logging = logging;
 
@@ -175,7 +172,7 @@ public class IndexingService extends LifecycleAdapter
             long ruleId = indexRule.getId();
             IndexDescriptor descriptor = createDescriptor( indexRule );
             IndexProxy indexProxy = null;
-            switch ( provider.getInitialState( ruleId, providerDependencies ) )
+            switch ( provider.getInitialState( ruleId ) )
             {
                 case ONLINE:
                     indexProxy = createOnlineIndexProxy( ruleId, descriptor );
@@ -288,12 +285,12 @@ public class IndexingService extends LifecycleAdapter
 
     private IndexPopulator getPopulator( long ruleId )
     {
-        return provider.getPopulator( ruleId, providerDependencies );
+        return provider.getPopulator( ruleId );
     }
 
     private IndexAccessor getOnlineAccessor( long ruleId  )
     {
-        return provider.getOnlineAccessor( ruleId, providerDependencies );
+        return provider.getOnlineAccessor( ruleId );
     }
 
     private IndexProxy contractCheckedProxy( boolean created, IndexProxy result )

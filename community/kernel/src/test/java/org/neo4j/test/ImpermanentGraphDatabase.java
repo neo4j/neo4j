@@ -19,7 +19,6 @@
  */
 package org.neo4j.test;
 
-import static java.util.Arrays.asList;
 import static org.neo4j.graphdb.factory.GraphDatabaseSetting.FALSE;
 import static org.neo4j.graphdb.factory.GraphDatabaseSetting.TRUE;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.use_memory_mapped_buffers;
@@ -39,9 +38,7 @@ import org.neo4j.graphdb.index.IndexProvider;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
-import org.neo4j.kernel.impl.api.index.InMemoryIndexProvider;
 import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
@@ -96,29 +93,26 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
                 Iterables.<KernelExtensionFactory<?>, KernelExtensionFactory>cast( Service.load(
                         KernelExtensionFactory.class ) ),
                 Service.load( CacheProvider.class ),
-                Service.load( TransactionInterceptorProvider.class ),
-                asList( (SchemaIndexProvider) new InMemoryIndexProvider() ));
+                Service.load( TransactionInterceptorProvider.class ) );
     }
     
     public ImpermanentGraphDatabase( Map<String, String> params, Iterable<IndexProvider> indexProviders,
                                      Iterable<KernelExtensionFactory<?>> kernelExtensions,
                                      Iterable<CacheProvider> cacheProviders,
-                                     Iterable<TransactionInterceptorProvider> transactionInterceptorProviders,
-                                     Iterable<SchemaIndexProvider> schemaIndexProviders )
+                                     Iterable<TransactionInterceptorProvider> transactionInterceptorProviders )
     {
         super( PATH, withForcedInMemoryConfiguration( params ), indexProviders, kernelExtensions, cacheProviders,
-                transactionInterceptorProviders, schemaIndexProviders );
+                transactionInterceptorProviders );
         trackUnclosedUse( PATH );
     }
 
     public ImpermanentGraphDatabase( String storeDir, Map<String, String> params, Iterable<IndexProvider> indexProviders,
                                         Iterable<KernelExtensionFactory<?>> kernelExtensions,
                                         Iterable<CacheProvider> cacheProviders,
-                                        Iterable<TransactionInterceptorProvider> transactionInterceptorProviders,
-                                        Iterable<SchemaIndexProvider> schemaIndexProviders )
+                                        Iterable<TransactionInterceptorProvider> transactionInterceptorProviders )
     {
         super( storeDir, withForcedInMemoryConfiguration( params ), indexProviders, kernelExtensions, cacheProviders,
-                transactionInterceptorProviders, schemaIndexProviders );
+                transactionInterceptorProviders );
         trackUnclosedUse( storeDir );
     }
     

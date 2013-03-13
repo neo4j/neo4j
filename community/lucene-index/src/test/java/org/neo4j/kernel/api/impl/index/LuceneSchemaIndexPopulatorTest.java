@@ -22,9 +22,10 @@ package org.neo4j.kernel.api.impl.index;
 import static java.lang.Long.parseLong;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_dir;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
@@ -44,7 +45,7 @@ import org.neo4j.kernel.api.impl.index.LuceneSchemaIndexProvider.DocumentLogic;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 
 public class LuceneSchemaIndexPopulatorTest
@@ -217,7 +218,6 @@ public class LuceneSchemaIndexPopulatorTest
     }
     
     private LuceneSchemaIndexProvider provider;
-    private SchemaIndexProvider.Dependencies providerDependencies;
     private Directory directory;
     private IndexPopulator index;
     private IndexReader reader;
@@ -232,9 +232,9 @@ public class LuceneSchemaIndexPopulatorTest
     {
         directory = new RAMDirectory();
         directoryFactory = new DirectoryFactory.Single( directory );
-        provider = new LuceneSchemaIndexProvider( directoryFactory );
-        providerDependencies = new SchemaIndexProvider.Dependencies( fs, new File( "ignored" ) );
-        index = provider.getPopulator( indexId, providerDependencies );
+        provider = new LuceneSchemaIndexProvider( directoryFactory, fs,
+                new Config( stringMap( store_dir.name(), "whatever" ) ) );
+        index = provider.getPopulator( indexId );
         index.create();
     }
 
@@ -266,7 +266,7 @@ public class LuceneSchemaIndexPopulatorTest
     private void switchToVerification() throws CorruptIndexException, IOException
     {
         index.close( true );
-        assertEquals( InternalIndexState.ONLINE, provider.getInitialState( indexId, providerDependencies ) );
+        assertEquals( InternalIndexState.ONLINE, provider.getInitialState( indexId ) );
         reader = IndexReader.open( directory );
         searcher = new IndexSearcher( reader );
     }
