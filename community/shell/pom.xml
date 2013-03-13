@@ -23,10 +23,7 @@
 
   <properties>
     <sun.jta.version>1.1</sun.jta.version>
-    <lucene.groupId>org.apache.lucene</lucene.groupId>
-    <lucene.artifactId>lucene-core</lucene.artifactId>
-    <lucene.version>3.5.0</lucene.version>
-    <lucene.main.version>3.5.0</lucene.main.version>
+    <lucene.version>3.6.2</lucene.version>
     <jline.groupId>org.apache.servicemix.bundles</jline.groupId>
     <jline.artifactId>org.apache.servicemix.bundles.jline</jline.artifactId>
     <jline.version>0.9.94_1</jline.version>
@@ -71,7 +68,7 @@ the relevant Commercial Agreement.
               <packageName>org.neo4j.shell</packageName>
             </manifest>
             <manifestEntries>
-              <Class-Path>neo4j-kernel-${project.version}.jar neo4j-index-${project.version}.jar lucene-core-${lucene.main.version}.jar ${lucene.artifactId}-${lucene.version}.jar jta-${sun.jta.version}.jar ${jta.artifactId}-${jta.version}.jar jline-${jline.main.version}.jar
+              <Class-Path>neo4j-kernel-${project.version}.jar neo4j-index-${project.version}.jar lucene-core-${lucene.version}.jar jta-${sun.jta.version}.jar ${jta.artifactId}-${jta.version}.jar jline-${jline.main.version}.jar
                 ${jline.artifactId}-${jline.version}.jar</Class-Path>
               <Agent-Class>org.neo4j.shell.StartClient</Agent-Class>
             </manifestEntries>
