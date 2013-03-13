@@ -163,10 +163,10 @@ public class TestNeoStore
                         new DefaultLogBufferFactory(), fs.get(), new DevNullLoggingService(), RecoveryVerifier.ALWAYS_VALID,
                         LogPruneStrategies.NO_PRUNING ), TransactionStateFactory.noStateFactory( new DevNullLoggingService() ),
                         noCacheAccess(), NO_INDEX_PROVIDER, NO_DEPENDENCIES,
-                        new TransactionInterceptorProviders( Collections.<TransactionInterceptorProvider>emptyList(), new DependencyResolver()
+                        new TransactionInterceptorProviders( Collections.<TransactionInterceptorProvider>emptyList(), new DependencyResolver.Adapter()
         {
             @Override
-            public <T> T resolveDependency( Class<T> type ) throws IllegalArgumentException
+            public <T> T resolveDependency( Class<T> type, SelectionStrategy<T> selector )
             {
                 return (T) config;
             }

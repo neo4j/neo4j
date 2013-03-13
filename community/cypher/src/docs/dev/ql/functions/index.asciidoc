@@ -14,6 +14,8 @@ include::includes/cypher-functions-graph.asciidoc[]
 Predicates are boolean functions that return true or false for a given set of input.
 They are most commonly used to filter out subgraphs in the +WHERE+ part of a query.
 
+See also <<query-operators-comparison>>.
+
 :leveloffset: 3
 
 include::all.asciidoc[]
@@ -48,6 +50,8 @@ include::last.asciidoc[]
 == Collection functions ==
 Collection functions return collections of things -- nodes in a path, and so on.
 
+See also <<query-operators-collection>>.
+
 :leveloffset: 3
 
 include::nodes.asciidoc[]
@@ -72,6 +76,8 @@ include::reduce.asciidoc[]
 These functions all operate on numerical expressions only, and will return an
 error if used on any other values.
 
+See also <<query-operators-mathematical>>.
+
 :leveloffset: 3
 
 include::abs.asciidoc[]
@@ -82,9 +88,13 @@ include::sqrt.asciidoc[]
 
 include::sign.asciidoc[]
 
+:leveloffset: 2
+
 == String functions ==
 These functions all operate on string expressions only, and will return an
-error if used on any other values. Except STR(), which converts to strings.
+error if used on any other values. Except `STR()`, which converts to strings.
+
+See also <<query-operators-string>>.
 
 :leveloffset: 3
 

@@ -226,6 +226,14 @@ public enum ElectionState
                             context.voted( data.getRole(), new URI( message.getHeader( Message.FROM ) ),
                                     data.getVoteCredentials() );
 
+                            /*
+                             * This is the URI of the current role holder and, yes, it could very well be null. However
+                             * we don't really care. If it is null then the election would not have sent one vote
+                             * request less than needed (i.e. ask the master last) since, well, it doesn't exist. So
+                             * the immediate effect is that the else (which checks for null) will never be called.
+                             */
+                            URI currentElected = context.getClusterContext().getConfiguration().getElected( data.getRole() );
+
                             if ( context.getVoteCount( data.getRole() ) == context.getNeededVoteCount() )
                             {
                                 // We have all votes now
@@ -250,11 +258,11 @@ public enum ElectionState
                                 }
                                 context.getClusterContext().timeouts.cancelTimeout( "election-" + data.getRole() );
                             }
-                            else if ( context.getVoteCount( data.getRole() ) == context.getNeededVoteCount() - 1 )
+                            else if ( context.getVoteCount( data.getRole() ) == context.getNeededVoteCount() - 1 &&
+                                    currentElected != null )
                             {
                                 // Missing one vote, the one from the current role holder
-                                outgoing.offer( Message.to( ElectionMessage.vote, context.getClusterContext().
-                                        getConfiguration().getElected( data.getRole() ), data.getRole() ) );
+                                outgoing.offer( Message.to( ElectionMessage.vote, currentElected, data.getRole() ) );
                             }
                             break;
                         }

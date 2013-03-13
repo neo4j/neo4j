@@ -20,7 +20,9 @@
 package org.neo4j.graphalgo.impl.path;
 
 import static org.neo4j.graphdb.traversal.Evaluators.includeWhereEndNodeIs;
+import static org.neo4j.graphdb.traversal.InitialBranchState.NO_STATE;
 import static org.neo4j.helpers.collection.IteratorUtil.firstOrNull;
+import static org.neo4j.kernel.StandardExpander.toPathExpander;
 import static org.neo4j.kernel.Traversal.traversal;
 
 import java.util.Iterator;
@@ -33,7 +35,9 @@ import org.neo4j.graphalgo.impl.util.BestFirstSelectorFactory;
 import org.neo4j.graphalgo.impl.util.StopAfterWeightIterator;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.PathExpander;
 import org.neo4j.graphdb.RelationshipExpander;
+import org.neo4j.graphdb.traversal.InitialBranchState;
 import org.neo4j.graphdb.traversal.TraversalBranch;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.TraversalMetadata;
@@ -55,21 +59,36 @@ public class TraversalAStar implements PathFinder<WeightedPath>
 
     private final EstimateEvaluator<Double> estimateEvaluator;
 
+    @SuppressWarnings( "unchecked" )
+    public <T> TraversalAStar( PathExpander<T> expander,
+            CostEvaluator<Double> costEvaluator, EstimateEvaluator<Double> estimateEvaluator )
+    {
+        this( expander, NO_STATE, costEvaluator, estimateEvaluator );
+    }
+    
+    public <T> TraversalAStar( PathExpander<T> expander, InitialBranchState<T> initialState,
+            CostEvaluator<Double> costEvaluator, EstimateEvaluator<Double> estimateEvaluator )
+    {
+        this.costEvaluator = costEvaluator;
+        this.estimateEvaluator = estimateEvaluator;
+        this.traversalDescription = traversal().uniqueness( Uniqueness.NONE ).expand( expander, initialState );
+    }
+    
+    @SuppressWarnings( "unchecked" )
     public TraversalAStar( RelationshipExpander expander, CostEvaluator<Double> costEvaluator,
             EstimateEvaluator<Double> estimateEvaluator )
     {
-        this.traversalDescription = traversal().uniqueness(
-                Uniqueness.NONE ).expand( expander );
-        this.costEvaluator = costEvaluator;
-        this.estimateEvaluator = estimateEvaluator;
+        this( toPathExpander( expander ), costEvaluator, estimateEvaluator );
     }
 
+    @Override
     public Iterable<WeightedPath> findAllPaths( Node start, final Node end )
     {
         lastTraverser = traversalDescription.order(
                 new SelectorFactory( end ) ).evaluator( includeWhereEndNodeIs( end ) ).traverse( start );
         return new Iterable<WeightedPath>()
         {
+            @Override
             public Iterator<WeightedPath> iterator()
             {
                 return new StopAfterWeightIterator( lastTraverser.iterator(), costEvaluator );
@@ -77,6 +96,7 @@ public class TraversalAStar implements PathFinder<WeightedPath>
         };
     }
 
+    @Override
     public WeightedPath findSinglePath( Node start, Node end )
     {
         return firstOrNull( findAllPaths( start, end ) );
@@ -104,6 +124,7 @@ public class TraversalAStar implements PathFinder<WeightedPath>
             return this.estimateH + this.wayLengthG;
         }
 
+        @Override
         public int compareTo( PositionData o )
         {
             return f().compareTo( o.f() );

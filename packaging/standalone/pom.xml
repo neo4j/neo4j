@@ -39,8 +39,8 @@
     <!-- other filter properties -->
     <wrapper.conf>conf/neo4j-wrapper.conf</wrapper.conf>
     <neo4j.version>${project.version}</neo4j.version>
-    <windows-wrapper.version>4</windows-wrapper.version>
-    <windows-wrapper.filename>windows-service-wrapper-*.jar</windows-wrapper.filename>
+    <windows-wrapper.version>5</windows-wrapper.version>
+    <windows-wrapper.filename>windows-service-wrapper-${windows-wrapper.version}.jar</windows-wrapper.filename>
     
     <!-- conf/neo4j-server.properties filter properties -->
     <org.neo4j.database.location>data/graph.db</org.neo4j.database.location>

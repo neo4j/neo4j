@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.ha;
 
+import static org.neo4j.helpers.collection.Iterables.option;
 import static org.neo4j.kernel.ha.DelegateInvocationHandler.snapshot;
 
 import java.io.File;
@@ -40,7 +41,6 @@ import org.neo4j.cluster.member.paxos.PaxosClusterMemberAvailability;
 import org.neo4j.cluster.member.paxos.PaxosClusterMemberEvents;
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.protocol.cluster.ClusterListener;
-import org.neo4j.kernel.ha.cluster.DefaultElectionCredentialsProvider;
 import org.neo4j.cluster.protocol.election.ElectionCredentialsProvider;
 import org.neo4j.cluster.protocol.election.NotElectableElectionCredentialsProvider;
 import org.neo4j.graphdb.DependencyResolver;
@@ -54,6 +54,7 @@ import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.KernelData;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.ha.cluster.DefaultElectionCredentialsProvider;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberChangeEvent;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberContext;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberListener;
@@ -584,10 +585,10 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     @Override
     public DependencyResolver getDependencyResolver()
     {
-        return new DependencyResolver()
+        return new DependencyResolver.Adapter()
         {
             @Override
-            public <T> T resolveDependency( Class<T> type ) throws IllegalArgumentException
+            public <T> T resolveDependency( Class<T> type, SelectionStrategy<T> selector )
             {
                 T result;
                 try
@@ -625,7 +626,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                         throw e;
                     }
                 }
-                return result;
+                return selector.select( type, option( result ) );
             }
         };
     }
@@ -644,5 +645,4 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
             accessGuard.await( stateSwitchTimeoutMillis );
         }
     }
-
 }

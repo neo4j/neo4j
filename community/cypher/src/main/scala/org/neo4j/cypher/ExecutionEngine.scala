@@ -53,7 +53,7 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
 
   @throws(classOf[SyntaxException])
   def profile(query: String, params: Map[String, Any]): ExecutionResult = {
-    logger.info(query)
+    logger.debug(query)
     prepare(query).profile(queryContext, params)
   }
 
@@ -69,7 +69,7 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
 
   @throws(classOf[SyntaxException])
   def execute(query: String, params: Map[String, Any]): ExecutionResult = {
-    logger.info(query)
+    logger.debug(query)
     prepare(query).execute(queryContext, params)
   }
 

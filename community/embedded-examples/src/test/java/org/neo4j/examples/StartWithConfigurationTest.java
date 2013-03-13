@@ -28,7 +28,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.test.TargetDirectory;
 
-public class StartWithConfiguration
+public class StartWithConfigurationTest
 {
     @Test
     public void loadFromFile()
@@ -47,7 +47,7 @@ public class StartWithConfiguration
     @Test
     public void loadFromHashmap()
     {
-        // START SNIPPET: startDbWithConfigInMap
+        // START SNIPPET: startDbWithMapConfig
         Map<String, String> config = new HashMap<String, String>();
         config.put( "neostore.nodestore.db.mapped_memory", "10M" );
         config.put( "string_block_size", "60" );
@@ -56,7 +56,7 @@ public class StartWithConfiguration
             .newEmbeddedDatabaseBuilder( storeDir )
             .setConfig( config )
             .newGraphDatabase();
-        // END SNIPPET: startDbWithConfigInMap
+        // END SNIPPET: startDbWithMapConfig
         assertNotNull( graphDb );
         graphDb.shutdown();
     }

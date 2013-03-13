@@ -13,7 +13,7 @@ ____
 ____
 
 The simplest possible graph is a single Node, a record that has named values referred to as Properties. 
-A Node could start with a single Property and grow to a few million, though that can get a little awkward. 
+A Node could start with a single Property and grow to a few million Properties, though that can get a little awkward. 
 At some point it makes sense to distribute the data into multiple nodes, organized with explicit Relationships.
 
 ["dot", "graphdb-GVE.svg", "meta"]
