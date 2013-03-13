@@ -85,7 +85,7 @@ public class OSGiIT
                 mavenBundle().groupId( "org.apache.geronimo.specs" ).artifactId(
                         "geronimo-jta_1.1_spec" ).version( GERONIMO_JTA_VERSION ),
                 wrappedBundle( mavenBundle().groupId( "org.apache.lucene" ).artifactId(
-                        "lucene-core" ).version( "3.5.0" ) ),
+                        "lucene-core" ).version( "3.6.2" ) ),
                 wrappedBundle( mavenBundle().groupId( "org.neo4j" ).artifactId(
                         "neo4j-kernel" ).version( NEO4J_VERSION ) ),
                 wrappedBundle( mavenBundle().groupId( "org.neo4j" ).artifactId(
@@ -114,7 +114,7 @@ public class OSGiIT
         ArrayList<Option> ops = new ArrayList<Option>();
         ops.addAll( Arrays.asList( instance.testOptions() ) );
         ops.addAll( Arrays.asList( instance.gogoShellOptions() ) );
-        ExamSystem system = PaxExamRuntime.createServerSystem( (Option[]) ops.toArray( new Option[]{} ) );
+        ExamSystem system = PaxExamRuntime.createServerSystem( ops.toArray( new Option[]{} ) );
         // create Container (you should have exactly one configured!) and start.
         TestContainer container = PaxExamRuntime.createContainer( system );
         container.start();
