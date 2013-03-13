@@ -83,7 +83,7 @@ public class OtherThreadExecutor<T> implements ThreadFactory, Visitor<LineLogger
         return commandExecutor.submit( new Callable<R>()
         {
             @Override
-            public R call()
+            public R call() throws Exception
             {
                 executionState = ExecutionState.EXECUTING;
                 try
@@ -127,7 +127,7 @@ public class OtherThreadExecutor<T> implements ThreadFactory, Visitor<LineLogger
     
     public interface WorkerCommand<T, R>
     {
-        R doWork( T state );
+        R doWork( T state ) throws Exception;
     }
 
     @Override

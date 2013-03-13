@@ -24,6 +24,7 @@ import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -71,7 +72,7 @@ public class SchemaIndexTestHelper
         }
     }
     
-    public static IndexProxy mockIndexProxy()
+    public static IndexProxy mockIndexProxy() throws IOException
     {
         IndexProxy result = mock( IndexProxy.class );
         when( result.drop() ).thenReturn( FutureAdapter.VOID );

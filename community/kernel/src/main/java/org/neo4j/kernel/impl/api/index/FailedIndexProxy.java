@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api.index;
 
 import static org.neo4j.helpers.FutureAdapter.VOID;
 
+import java.io.IOException;
 import java.util.concurrent.Future;
 
 import org.neo4j.kernel.api.index.IndexPopulator;
@@ -42,7 +43,7 @@ public class FailedIndexProxy extends AbstractSwallowingIndexProxy
     }
 
     @Override
-    public Future<Void> drop()
+    public Future<Void> drop() throws IOException
     {
         populator.drop();
         return VOID;

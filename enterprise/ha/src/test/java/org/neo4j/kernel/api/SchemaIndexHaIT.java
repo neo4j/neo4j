@@ -35,6 +35,7 @@ import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
 import static org.neo4j.test.ha.ClusterManager.masterAvailable;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -255,7 +256,7 @@ public class SchemaIndexHaIT
         }
         
         @Override
-        public void close( boolean populationCompletedSuccessfully )
+        public void close( boolean populationCompletedSuccessfully ) throws IOException
         {
             inMemoryDelegate.close( populationCompletedSuccessfully );
             assertTrue( populationCompletedSuccessfully );

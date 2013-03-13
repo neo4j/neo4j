@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import java.io.IOException;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -73,7 +74,7 @@ public class ContractCheckingIndexProxy extends DelegatingIndexProxy
     }
 
     @Override
-    public void create()
+    public void create() throws IOException
     {
         if ( state.compareAndSet( State.INIT, State.CREATING ) )
         {
@@ -94,7 +95,7 @@ public class ContractCheckingIndexProxy extends DelegatingIndexProxy
 
 
     @Override
-    public void update( Iterable<NodePropertyUpdate> updates )
+    public void update( Iterable<NodePropertyUpdate> updates ) throws IOException
     {
         openCall( "update" );
         try
@@ -108,7 +109,7 @@ public class ContractCheckingIndexProxy extends DelegatingIndexProxy
     }
 
     @Override
-    public void force()
+    public void force() throws IOException
     {
         openCall( "force" );
         try
@@ -122,7 +123,7 @@ public class ContractCheckingIndexProxy extends DelegatingIndexProxy
     }
 
     @Override
-    public Future<Void> drop()
+    public Future<Void> drop() throws IOException
     {
         if ( state.compareAndSet( State.INIT, State.CLOSED ) )
             return super.drop();
@@ -140,7 +141,7 @@ public class ContractCheckingIndexProxy extends DelegatingIndexProxy
     }
 
     @Override
-    public Future<Void> close()
+    public Future<Void> close() throws IOException
     {
         if ( state.compareAndSet( State.INIT, State.CLOSED ) )
             return super.close();

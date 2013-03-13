@@ -20,7 +20,9 @@
 package org.neo4j.kernel.impl.api.index;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
+import static org.neo4j.helpers.Exceptions.launderedException;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -29,9 +31,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeoutException;
 
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.Visitor;
@@ -41,7 +41,9 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
+import org.neo4j.kernel.impl.nioneo.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.Logging;
 
@@ -70,6 +72,7 @@ public class IndexingService extends LifecycleAdapter
     private boolean serviceRunning = false;
     private final IndexStoreView storeView;
     private final Logging logging;
+    private final StringLogger logger;
 
     public IndexingService( JobScheduler scheduler, SchemaIndexProvider provider,
             IndexStoreView storeView, Logging logging )
@@ -78,6 +81,7 @@ public class IndexingService extends LifecycleAdapter
         this.provider = provider;
         this.storeView = storeView;
         this.logging = logging;
+        this.logger = logging.getLogger( getClass() );
 
         if ( provider == null )
         {
@@ -89,7 +93,7 @@ public class IndexingService extends LifecycleAdapter
 
     // Recovery semantics: This is to be called after initIndexes, and after the database has run recovery.
     @Override
-    public void start()
+    public void start() throws Exception
     {
         Set<IndexProxy> rebuildingIndexes = new HashSet<IndexProxy>();
         Map<Long, IndexDescriptor> rebuildingIndexDescriptors = new HashMap<Long, IndexDescriptor>();
@@ -135,14 +139,37 @@ public class IndexingService extends LifecycleAdapter
     public void stop()
     {
         serviceRunning = false;
+        closeAllIndexes();
+    }
+
+    private void closeAllIndexes()
+    {
         Collection<IndexProxy> indexesToStop = new ArrayList<IndexProxy>( indexes.values() );
         indexes.clear();
         Collection<Future<Void>> indexStopFutures = new ArrayList<Future<Void>>();
         for ( IndexProxy index : indexesToStop )
-            indexStopFutures.add( index.close() );
+        {
+            try
+            {
+                indexStopFutures.add( index.close() );
+            }
+            catch ( IOException e )
+            {
+                logger.error( "Unable to close index", e );
+            }
+        }
 
         for ( Future<Void> future : indexStopFutures )
-            awaitIndexFuture( future );
+        {
+            try
+            {
+                awaitIndexFuture( future );
+            }
+            catch ( Exception e )
+            {
+                logger.error( "Error awaiting index to close", e );
+            }
+        }
     }
 
     public IndexProxy getProxyForRule( long indexId ) throws IndexNotFoundKernelException
@@ -209,7 +236,14 @@ public class IndexingService extends LifecycleAdapter
 
             // Trigger the creation, only if the service is online. Otherwise,
             // creation will be triggered on start().
-            index.create();
+            try
+            {
+                index.create();
+            }
+            catch ( IOException e )
+            {
+                throw new RuntimeException( e );
+            }
         }
         else if ( index == null )
         {
@@ -222,7 +256,16 @@ public class IndexingService extends LifecycleAdapter
     public void updateIndexes( Iterable<NodePropertyUpdate> updates )
     {
         for ( IndexProxy index : indexes.values() )
-            index.update( updates );
+        {
+            try
+            {
+                index.update( updates );
+            }
+            catch ( IOException e )
+            {
+                throw new UnderlyingStorageException( "Unable to update " + index, e );
+            }
+        }
     }
 
     public void dropIndex( IndexRule rule )
@@ -231,7 +274,14 @@ public class IndexingService extends LifecycleAdapter
         if ( serviceRunning )
         {
             assert index != null : "Index " + rule + " doesn't exists";
-            awaitIndexFuture( index.drop() );
+            try
+            {
+                awaitIndexFuture( index.drop() );
+            }
+            catch ( Exception e )
+            {
+                throw launderedException( e );
+            }
         }
     }
 
@@ -312,46 +362,24 @@ public class IndexingService extends LifecycleAdapter
         return new IndexDescriptor( rule.getLabel(), rule.getPropertyKey() );
     }
 
-    private void awaitIndexFuture( Future<Void> future )
+    private void awaitIndexFuture( Future<Void> future ) throws Exception
     {
         try
         {
             future.get( 1, MINUTES );
         }
-        // TODO Overhaul of what to throw
         catch ( InterruptedException e )
         {
             Thread.interrupted();
-            throw new RuntimeException( e );
-        }
-        catch ( ExecutionException e )
-        {
-            throw new RuntimeException( e );
-        }
-        catch ( TimeoutException e )
-        {
-            throw new RuntimeException( e );
+            throw e;
         }
     }
 
-    private void dropAllIndexes( Set<IndexProxy> recoveringIndexes )
+    private void dropAllIndexes( Set<IndexProxy> recoveringIndexes ) throws Exception
     {
-        try
+        for ( IndexProxy indexProxy : recoveringIndexes )
         {
-            for ( IndexProxy indexProxy : recoveringIndexes )
-            {
-                indexProxy.drop().get();
-            }
-        }
-        // TODO Overhaul of what to throw
-        catch ( InterruptedException e )
-        {
-            Thread.interrupted();
-            throw new RuntimeException( e );
-        }
-        catch ( ExecutionException e )
-        {
-            throw new RuntimeException( e );
+            indexProxy.drop().get();
         }
     }
 
@@ -366,7 +394,7 @@ public class IndexingService extends LifecycleAdapter
         }
 
         @Override
-        public Future<Void> drop()
+        public Future<Void> drop() throws IOException
         {
             indexes.remove( ruleId, this );
             return super.drop();
@@ -377,7 +405,14 @@ public class IndexingService extends LifecycleAdapter
     {
         for ( IndexProxy index : indexes.values() )
         {
-            index.force();
+            try
+            {
+                index.force();
+            }
+            catch ( IOException e )
+            {
+                throw new UnderlyingStorageException( "Unable to force " + index, e );
+            }
         }
     }
 

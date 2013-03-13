@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api.index;
 
 import static org.neo4j.helpers.FutureAdapter.VOID;
 
+import java.io.IOException;
 import java.util.concurrent.Future;
 
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -49,28 +50,28 @@ import org.neo4j.kernel.api.index.NodePropertyUpdate;
  */
 public interface IndexProxy
 {
-    void create();
+    void create() throws IOException;
     
-    void update( Iterable<NodePropertyUpdate> updates );
+    void update( Iterable<NodePropertyUpdate> updates ) throws IOException;
     
     /**
      * Initiates dropping this index context. The returned {@link Future} can be used to await
      * its completion.
      * Must close the context as well.
      */
-    Future<Void> drop();
+    Future<Void> drop() throws IOException;
 
     /**
      * Initiates a closing of this index context. The returned {@link Future} can be used to await
      * its completion.
      */
-    Future<Void> close();
+    Future<Void> close() throws IOException;
 
     IndexDescriptor getDescriptor();
 
     InternalIndexState getState();
 
-    void force();
+    void force() throws IOException;
     
     /**
      * 

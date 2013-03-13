@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.index;
 
+import java.io.IOException;
 
 /**
  * Used for initial population of an index.
@@ -28,12 +29,12 @@ public interface IndexPopulator
     /**
      * Remove all data in the index and paves the way for populating an index.
      */
-    void create();
+    void create() throws IOException;
 
     /**
      * Closes and deletes this index.
      */
-    void drop();
+    void drop() throws IOException;
     
     /**
      * Called when initially populating an index over existing data. Guaranteed to be
@@ -57,17 +58,17 @@ public interface IndexPopulator
      * as {@link InternalIndexState#ONLINE} so that future invocations of its parent
      * {@link SchemaIndexProvider#getInitialState(long)} also returns {@link InternalIndexState#ONLINE}.
      */
-    void close( boolean populationCompletedSuccessfully );
+    void close( boolean populationCompletedSuccessfully ) throws IOException;
     
     public static class Adapter implements IndexPopulator
     {
         @Override
-        public void create()
+        public void create() throws IOException
         {
         }
         
         @Override
-        public void drop()
+        public void drop() throws IOException
         {
         }
         
@@ -82,7 +83,7 @@ public interface IndexPopulator
         }
 
         @Override
-        public void close( boolean populationCompletedSuccessfully )
+        public void close( boolean populationCompletedSuccessfully ) throws IOException
         {
         }
     }

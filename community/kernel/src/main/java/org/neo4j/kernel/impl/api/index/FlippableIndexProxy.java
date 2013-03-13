@@ -19,10 +19,13 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import java.io.IOException;
+import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.api.KernelException;
 import org.neo4j.kernel.api.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexReader;
@@ -41,11 +44,12 @@ public class FlippableIndexProxy implements IndexProxy
         }
     }
     
-    private static final Runnable NO_OP = new Runnable()
+    private static final Callable<Void> NO_OP = new Callable<Void>()
     {
         @Override
-        public void run()
+        public Void call() throws Exception
         {
+            return null;
         }
     };
 
@@ -64,7 +68,7 @@ public class FlippableIndexProxy implements IndexProxy
     }
     
     @Override
-    public void create()
+    public void create() throws IOException
     {
         lock.readLock().lock();
         try
@@ -78,7 +82,7 @@ public class FlippableIndexProxy implements IndexProxy
     }
     
     @Override
-    public void update( Iterable<NodePropertyUpdate> updates )
+    public void update( Iterable<NodePropertyUpdate> updates ) throws IOException
     {
         lock.readLock().lock();
         try
@@ -92,7 +96,7 @@ public class FlippableIndexProxy implements IndexProxy
     }
     
     @Override
-    public Future<Void> drop()
+    public Future<Void> drop() throws IOException
     {
         lock.readLock().lock();
         try
@@ -107,7 +111,7 @@ public class FlippableIndexProxy implements IndexProxy
     }
     
     @Override
-    public void force()
+    public void force() throws IOException
     {
         lock.readLock().lock();
         try
@@ -149,7 +153,7 @@ public class FlippableIndexProxy implements IndexProxy
     }
     
     @Override
-    public Future<Void> close()
+    public Future<Void> close() throws IOException
     {
         lock.readLock().lock();
         try
@@ -195,41 +199,40 @@ public class FlippableIndexProxy implements IndexProxy
         }
     }
 
-    //TODO: We should not duplicated code between the flips. Should we even have multiple flips? Why don't they
-    //throw the same exceptions?
     public void flip()
     {
-        flip( NO_OP );
+        try
+        {
+            flip( NO_OP );
+        }
+        catch ( FlipFailedKernelException e )
+        {
+            throw new ThisShouldNotHappenError( "Mattias",
+                    "Flipping without a particular action should not fail this way" );
+        }
     }
 
-    public void flip( Runnable actionDuringFlip )
+    public void flip( Callable<Void> actionDuringFlip ) throws FlipFailedKernelException
     {
-        lock.writeLock().lock();
-        try
-        {
-            assertStillOpenForBusiness();
-            actionDuringFlip.run();
-            this.delegate = flipTarget.create();
-        }
-        finally
-        {
-            lock.writeLock().unlock();
-        }
+        flip( actionDuringFlip, delegate );
     }
     
-    public void flip( Runnable actionDuringFlip, IndexProxy failureFlipTarget ) throws FlipFailedKernelException
+    public void flip( Callable<Void> actionDuringFlip, IndexProxy failureFlipTarget ) throws FlipFailedKernelException
     {
         lock.writeLock().lock();
         try
         {
             assertStillOpenForBusiness();
-            actionDuringFlip.run();
-            this.delegate = flipTarget.create();
-        }
-        catch ( Exception e )
-        {
-            this.delegate = failureFlipTarget;
-            throw new FlipFailedKernelException( "Failed to transition index to new context, see nested exception.", e );
+            try
+            {
+                actionDuringFlip.call();
+                this.delegate = flipTarget.create();
+            }
+            catch ( Exception e )
+            {
+                this.delegate = failureFlipTarget;
+                throw new FlipFailedKernelException( "Failed to transition index to new context, see nested exception.", e );
+            }
         }
         finally
         {
@@ -240,11 +243,7 @@ public class FlippableIndexProxy implements IndexProxy
     @Override
     public String toString()
     {
-        return "FlippableIndexContext{" +
-                "delegate=" + delegate +
-                ", lock=" + lock +
-                ", flipTarget=" + flipTarget +
-                '}';
+        return getClass().getSimpleName() + " -> " + delegate + "[target:" + flipTarget + "]";
     }
 
     private void assertStillOpenForBusiness()

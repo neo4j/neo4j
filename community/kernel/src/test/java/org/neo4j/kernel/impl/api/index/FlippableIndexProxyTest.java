@@ -27,10 +27,13 @@ import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.awaitFuture;
 import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.awaitLatch;
 import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.mockIndexProxy;
 
+import java.io.IOException;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 
 import org.junit.Test;
+import org.neo4j.kernel.impl.api.index.FlippableIndexProxy.FlipFailedKernelException;
 import org.neo4j.test.OtherThreadExecutor;
 
 public class FlippableIndexProxyTest
@@ -52,7 +55,7 @@ public class FlippableIndexProxyTest
         verify( other ).drop();
     }
 
-    @Test(expected = FlippableIndexProxy.FlipFailedKernelException.class)
+    @Test(expected = IllegalStateException.class)
     public void shouldNotBeAbleToFlipAfterClosed() throws Exception
     {
         //GIVEN
@@ -66,12 +69,12 @@ public class FlippableIndexProxyTest
         delegate.close().get();
 
         delegate.setFlipTarget( indexContextFactory );
-        delegate.flip( emptyRunnable(), failed);
+        delegate.flip( noOp(), failed);
 
         //THEN throws exception
     }
 
-    @Test(expected = FlippableIndexProxy.FlipFailedKernelException.class)
+    @Test(expected = IllegalStateException.class)
     public void shouldNotBeAbleToFlipAfterDrop() throws Exception
     {
         //GIVEN
@@ -85,7 +88,7 @@ public class FlippableIndexProxyTest
         //WHEN
         delegate.drop().get();
 
-        delegate.flip( emptyRunnable(), failed );
+        delegate.flip( noOp(), failed );
 
         //THEN throws exception
     }
@@ -140,7 +143,7 @@ public class FlippableIndexProxyTest
         return new OtherThreadExecutor.WorkerCommand<Void, Void>()
         {
             @Override
-            public Void doWork( Void state )
+            public Void doWork( Void state ) throws IOException
             {
                 awaitFuture( flippable.drop() );
                 return null;
@@ -155,15 +158,16 @@ public class FlippableIndexProxyTest
         return new OtherThreadExecutor.WorkerCommand<Void, Void>()
         {
             @Override
-            public Void doWork( Void state )
+            public Void doWork( Void state ) throws FlipFailedKernelException
             {
-                flippable.flip( new Runnable()
+                flippable.flip( new Callable<Void>()
                 {
                     @Override
-                    public void run()
+                    public Void call()
                     {
                         triggerExternalAccess.countDown();
                         awaitLatch( triggerFinishFlip );
+                        return null;
                     }
                 } );
                 return null;
@@ -171,13 +175,14 @@ public class FlippableIndexProxyTest
         };
     }
 
-    private Runnable emptyRunnable()
+    private Callable<Void> noOp()
     {
-        return new Runnable()
+        return new Callable<Void>()
         {
             @Override
-            public void run()
+            public Void call() throws Exception
             {
+                return null;
             }
         };
     }

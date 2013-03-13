@@ -39,6 +39,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 
 import org.junit.After;
@@ -219,8 +220,8 @@ public class IndexPopulationJobTest
         // THEN
         verify( populator, times( 1 ) ).close( false );
         verify( index, times( 0 ) ).flip();
-        verify( index, times( 0 ) ).flip( Matchers.<Runnable>any() );
-        verify( index, times( 0 ) ).flip( Matchers.<Runnable>any(), Matchers.<IndexProxy>any() );
+        verify( index, times( 0 ) ).flip( Matchers.<Callable<Void>>any() );
+        verify( index, times( 0 ) ).flip( Matchers.<Callable<Void>>any(), Matchers.<IndexProxy>any() );
     }
     
     private static class ControlledStoreScan implements StoreScan

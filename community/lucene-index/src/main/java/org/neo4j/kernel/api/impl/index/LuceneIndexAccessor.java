@@ -51,17 +51,10 @@ class LuceneIndexAccessor implements IndexAccessor
     }
 
     @Override
-    public void drop()
+    public void drop() throws IOException
     {
-        try
-        {
-            writerLogic.close( writer );
-            fileSystem.deleteRecursively( dir );
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
+        writerLogic.close( writer );
+        fileSystem.deleteRecursively( dir );
     }
 
     @Override
@@ -113,29 +106,15 @@ class LuceneIndexAccessor implements IndexAccessor
     }
     
     @Override
-    public void force()
+    public void force() throws IOException
     {
-        try
-        {
-            writerLogic.forceAndMarkAsOnline( writer );
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
+        writerLogic.forceAndMarkAsOnline( writer );
     }
 
     @Override
-    public void close()
+    public void close() throws IOException
     {
-        try
-        {
-            writerLogic.close( writer );
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
+        writerLogic.close( writer );
     }
 
     @Override

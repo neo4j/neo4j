@@ -24,7 +24,9 @@ import static org.neo4j.helpers.ValueGetter.NO_VALUE;
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.kernel.impl.api.index.IndexingService.singleProxy;
 
+import java.io.IOException;
 import java.util.Queue;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
@@ -83,13 +85,14 @@ public class IndexPopulationJob implements Runnable
                 // We remain in POPULATING state
                 return;
 
-            Runnable duringFlip = new Runnable()
+            Callable<Void> duringFlip = new Callable<Void>()
             {
                 @Override
-                public void run()
+                public Void call() throws IOException
                 {
                     populateFromQueueIfAvailable( Long.MAX_VALUE );
                     populator.close( true );
+                    return null;
                 }
             };
 
@@ -98,23 +101,17 @@ public class IndexPopulationJob implements Runnable
             flipper.flip( duringFlip, failureTarget );
             success = true;
         }
-        catch ( FlippableIndexProxy.FlipFailedKernelException e )
+        catch ( Throwable t )
         {
-            log.error( "Failed to create index.", e );
+            log.error( "Failed to populate index.", t );
             // The flipper will have already flipped to a failed index context here, but
             // it will not include the cause of failure, so we do another flip to a failed
             // context that does.
-
+    
             // The reason for having the flipper transition to the failed index context in the first
             // place is that we would otherwise introduce a race condition where updates could come
             // in to the old context, if something failed in the job we send to the flipper.
-            flipper.setFlipTarget( singleProxy( new FailedIndexProxy( descriptor, populator, e ) ) );
-            flipper.flip();
-        }
-        catch ( RuntimeException e )
-        {
-            log.error( "Failed to create index.", e );
-            flipper.setFlipTarget( singleProxy( new FailedIndexProxy( descriptor, populator, e ) ) );
+            flipper.setFlipTarget( singleProxy( new FailedIndexProxy( descriptor, populator, t ) ) );
             flipper.flip();
         }
         finally
@@ -123,6 +120,10 @@ public class IndexPopulationJob implements Runnable
             {
                 if ( !success )
                     populator.close( false );
+            }
+            catch ( Throwable e )
+            {
+                log.warn( "Unable to close failed populator", e );
             }
             finally
             {
@@ -184,5 +185,11 @@ public class IndexPopulationJob implements Runnable
     {
         for ( NodePropertyUpdate update : updates )
             queue.add( update );
+    }
+    
+    @Override
+    public String toString()
+    {
+        return getClass().getSimpleName() + "[populator:" + populator + ",descriptor:" + descriptor + "]";
     }
 }
