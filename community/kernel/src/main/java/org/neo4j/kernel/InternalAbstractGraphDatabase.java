@@ -33,7 +33,6 @@ import java.util.concurrent.Executors;
 import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
 
-import ch.qos.logback.classic.LoggerContext;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -122,6 +121,8 @@ import org.neo4j.kernel.logging.ClassicLoggingService;
 import org.neo4j.kernel.logging.LogbackService;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.tooling.GlobalGraphOperations;
+
+import ch.qos.logback.classic.LoggerContext;
 
 /**
  * Base implementation of GraphDatabaseService. Responsible for creating services, handling dependencies between them,
@@ -1215,11 +1216,9 @@ public abstract class InternalAbstractGraphDatabase
      *
      * @author ceefour
      */
-    class DependencyResolverImpl
-            implements DependencyResolver
+    class DependencyResolverImpl extends DependencyResolver.Adapter
     {
-        @Override
-        public <T> T resolveDependency( Class<T> type )
+        private <T> T resolveKnownSingleDependency( Class<T> type )
         {
             if ( type.equals( Map.class ) )
             {
@@ -1317,11 +1316,19 @@ public abstract class InternalAbstractGraphDatabase
             {
                 return (T) DependencyResolverImpl.this;
             }
-            else
-            {
-                // Try with kernel extensions
-                return kernelExtensions.resolveDependency( type );
-            }
+            return null;
+        }
+        
+        @Override
+        public <T> T resolveDependency( Class<T> type, SelectionStrategy<T> selector )
+        {
+            // Try known single dependencies
+            T result = resolveKnownSingleDependency( type );
+            if ( result != null )
+                return selector.select( type, Iterables.option( result ) );
+            
+            // Try with kernel extensions
+            return kernelExtensions.resolveDependency( type, selector );
         }
     }
 

@@ -624,6 +624,7 @@ public final class Iterables
             this.function = function;
         }
 
+        @Override
         public Iterator<TO> iterator()
         {
             return new MapIterator<FROM, TO>( from.iterator(), function );
@@ -641,11 +642,13 @@ public final class Iterables
                 this.function = function;
             }
 
+            @Override
             public boolean hasNext()
             {
                 return fromIterator.hasNext();
             }
 
+            @Override
             public TO next()
             {
                 FROM from = fromIterator.next();
@@ -653,6 +656,7 @@ public final class Iterables
                 return function.apply( from );
             }
 
+            @Override
             public void remove()
             {
                 fromIterator.remove();
@@ -663,9 +667,9 @@ public final class Iterables
     private static class FilterIterable<T>
             implements Iterable<T>
     {
-        private Iterable<T> iterable;
+        private final Iterable<T> iterable;
 
-        private Predicate<? super T> specification;
+        private final Predicate<? super T> specification;
 
         public FilterIterable( Iterable<T> iterable, Predicate<? super T> specification )
         {
@@ -673,6 +677,7 @@ public final class Iterables
             this.specification = specification;
         }
 
+        @Override
         public Iterator<T> iterator()
         {
             return new FilterIterator<T>( iterable.iterator(), specification );
@@ -681,9 +686,9 @@ public final class Iterables
         static class FilterIterator<T>
                 implements Iterator<T>
         {
-            private Iterator<T> iterator;
+            private final Iterator<T> iterator;
 
-            private Predicate<? super T> specification;
+            private final Predicate<? super T> specification;
 
             private T currentValue;
             boolean finished = false;
@@ -717,6 +722,7 @@ public final class Iterables
                 return found;
             }
 
+            @Override
             public T next()
             {
                 if ( !nextConsumed )
@@ -738,12 +744,14 @@ public final class Iterables
                 return null;
             }
 
+            @Override
             public boolean hasNext()
             {
                 return !finished &&
                         (!nextConsumed || moveToNextValid());
             }
 
+            @Override
             public void remove()
             {
             }
@@ -753,13 +761,14 @@ public final class Iterables
     private static class FlattenIterable<T, I extends Iterable<? extends T>>
             implements Iterable<T>
     {
-        private Iterable<I> iterable;
+        private final Iterable<I> iterable;
 
         public FlattenIterable( Iterable<I> iterable )
         {
             this.iterable = iterable;
         }
 
+        @Override
         public Iterator<T> iterator()
         {
             return new FlattenIterator<T, I>( iterable.iterator() );
@@ -768,7 +777,7 @@ public final class Iterables
         static class FlattenIterator<T, I extends Iterable<? extends T>>
                 implements Iterator<T>
         {
-            private Iterator<I> iterator;
+            private final Iterator<I> iterator;
             private Iterator<? extends T> currentIterator;
 
             public FlattenIterator( Iterator<I> iterator )
@@ -777,6 +786,7 @@ public final class Iterables
                 currentIterator = null;
             }
 
+            @Override
             public boolean hasNext()
             {
                 if ( currentIterator == null )
@@ -801,11 +811,13 @@ public final class Iterables
                 return currentIterator.hasNext();
             }
 
+            @Override
             public T next()
             {
                 return currentIterator.next();
             }
 
+            @Override
             public void remove()
             {
                 if ( currentIterator == null )
@@ -821,7 +833,7 @@ public final class Iterables
     private static class CacheIterable<T>
             implements Iterable<T>
     {
-        private Iterable<T> iterable;
+        private final Iterable<T> iterable;
         private Iterable<T> cache;
 
         private CacheIterable( Iterable<T> iterable )
@@ -901,5 +913,36 @@ public final class Iterables
             }
         }
         return -1;
+    }
+
+    public static <T> Iterable<T> option( final T item )
+    {
+        if ( item == null )
+            return empty();
+
+        return new Iterable<T>()
+        {
+            @Override
+            public Iterator<T> iterator()
+            {
+                return new PrefetchingIterator<T>()
+                {
+                    private boolean returned;
+
+                    @Override
+                    protected T fetchNextOrNull()
+                    {
+                        try
+                        {
+                            return !returned ? item : null;
+                        }
+                        finally
+                        {
+                            returned = true;
+                        }
+                    }
+                };
+            }
+        };
     }
 }

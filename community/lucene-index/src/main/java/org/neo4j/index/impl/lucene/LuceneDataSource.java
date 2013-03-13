@@ -105,7 +105,7 @@ import org.neo4j.kernel.logging.Logging;
 public class LuceneDataSource extends LogBackedXaDataSource
 {
     private final Config config;
-    private FileSystemAbstraction fileSystemAbstraction;
+    private final FileSystemAbstraction fileSystemAbstraction;
 
     public static abstract class Configuration
             extends LogBackedXaDataSource.Configuration
@@ -164,7 +164,7 @@ public class LuceneDataSource extends LogBackedXaDataSource
     private IndexClockCache indexSearchers;
     private XaContainer xaContainer;
     private File baseStorePath;
-    private ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
+    private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
     final IndexStore indexStore;
     private final XaFactory xaFactory;
     IndexProviderStore providerStore;
@@ -222,11 +222,13 @@ public class LuceneDataSource extends LogBackedXaDataSource
 
         nodeEntityType = new EntityType()
         {
+            @Override
             public Document newDocument( Object entityId )
             {
                 return IndexType.newBaseDocument( (Long) entityId );
             }
 
+            @Override
             public Class<? extends PropertyContainer> getType()
             {
                 return Node.class;
@@ -234,6 +236,7 @@ public class LuceneDataSource extends LogBackedXaDataSource
         };
         relationshipEntityType = new EntityType()
         {
+            @Override
             public Document newDocument( Object entityId )
             {
                 RelationshipId relId = (RelationshipId) entityId;
@@ -245,6 +248,7 @@ public class LuceneDataSource extends LogBackedXaDataSource
                 return doc;
             }
 
+            @Override
             public Class<? extends PropertyContainer> getType()
             {
                 return Relationship.class;
@@ -253,10 +257,10 @@ public class LuceneDataSource extends LogBackedXaDataSource
 
         XaCommandFactory cf = new LuceneCommandFactory();
         XaTransactionFactory tf = new LuceneTransactionFactory();
-        DependencyResolver dummy = new DependencyResolver()
+        DependencyResolver dummy = new DependencyResolver.Adapter()
         {
             @Override
-            public <T> T resolveDependency( Class<T> type ) throws IllegalArgumentException
+            public <T> T resolveDependency( Class<T> type, SelectionStrategy<T> selector )
             {
                 return (T) LuceneDataSource.this.config;
             }
@@ -884,11 +888,13 @@ public class LuceneDataSource extends LogBackedXaDataSource
         files.add( providerStore.getFile() );
         return new ClosableIterable<File>()
         {
+            @Override
             public Iterator<File> iterator()
             {
                 return files.iterator();
             }
 
+            @Override
             public void close()
             {
                 for ( SnapshotDeletionPolicy deletionPolicy : snapshots )
