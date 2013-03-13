@@ -19,6 +19,8 @@
  */
 package org.neo4j.server;
 
+import static org.neo4j.helpers.collection.Iterables.option;
+
 import java.io.File;
 import java.net.URI;
 import java.util.ArrayList;
@@ -78,10 +80,9 @@ public abstract class AbstractNeoServer implements NeoServer
     private InterruptThreadTimer interruptStartupTimer;
     private DatabaseActions databaseActions;
 
-    private DependencyResolver dependencyResolver = new DependencyResolver()
+    private final DependencyResolver dependencyResolver = new DependencyResolver.Adapter()
     {
-        @Override
-        public <T> T resolveDependency( Class<T> type ) throws IllegalArgumentException
+        private <T> T resolveKnownSingleDependency( Class<T> type )
         {
             if ( type.equals( Database.class ) )
             {
@@ -101,10 +102,13 @@ public abstract class AbstractNeoServer implements NeoServer
                 DependencyResolver kernelDependencyResolver = database.getGraph().getDependencyResolver();
                 return (T) kernelDependencyResolver.resolveDependency( Logging.class );
             }
-            else
-            {
-                throw new IllegalArgumentException( "Could not resolve dependency of type:" + type.getName() );
-            }
+            return null;
+        }
+        
+        @Override
+        public <T> T resolveDependency( Class<T> type, SelectionStrategy<T> selector )
+        {
+            return selector.select( type, option( resolveKnownSingleDependency( type ) ) );
         }
     };
 

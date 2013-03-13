@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.extension;
 
+import static org.neo4j.helpers.collection.Iterables.filter;
+
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
@@ -31,6 +33,7 @@ import java.util.Map;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Listeners;
+import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -39,15 +42,14 @@ import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.kernel.lifecycle.LifecycleListener;
 import org.neo4j.kernel.lifecycle.LifecycleStatus;
 
-public class KernelExtensions
-        implements Lifecycle, DependencyResolver
+public class KernelExtensions extends DependencyResolver.Adapter implements Lifecycle
 {
-    private List<KernelExtensionFactory<?>> kernelExtensionFactories;
-    private DependencyResolver dependencyResolver;
-    private LifeSupport life = new LifeSupport();
-    private Map<Iterable<String>, Lifecycle> extensions = new HashMap<Iterable<String>, Lifecycle>();
+    private final List<KernelExtensionFactory<?>> kernelExtensionFactories;
+    private final DependencyResolver dependencyResolver;
+    private final LifeSupport life = new LifeSupport();
+    private final Map<Iterable<String>, Lifecycle> extensions = new HashMap<Iterable<String>, Lifecycle>();
     private Iterable<KernelExtensionListener> listeners = Listeners.newListeners();
-    private Config config;
+    private final Config config;
 
     public KernelExtensions( Iterable<KernelExtensionFactory<?>> kernelExtensionFactories, Config config,
                              DependencyResolver dependencyResolver )
@@ -190,18 +192,18 @@ public class KernelExtensions
         listeners = Listeners.removeListener( listener, listeners );
     }
 
+    @SuppressWarnings( { "unchecked", "rawtypes" } )
     @Override
-    public <T> T resolveDependency( Class<T> type ) throws IllegalArgumentException
+    public <T> T resolveDependency( final Class<T> type, SelectionStrategy<T> selector ) throws IllegalArgumentException
     {
-        for ( Lifecycle extension : life.getLifecycleInstances() )
+        return selector.select( type, filter( new Predicate()
         {
-            if ( type.isInstance( extension ) )
+            @Override
+            public boolean accept( Object extension )
             {
-                return (T) extension;
+                return type.isInstance( extension );
             }
-        }
-
-        throw new IllegalArgumentException( "Could not resolve dependency of type:" + type.getName() );
+        }, life.getLifecycleInstances() ) );
     }
 
     private Object getKernelExtensionDependencies( KernelExtensionFactory<?> factory )
