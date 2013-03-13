@@ -25,6 +25,8 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.cluster.ClusterSettings.default_timeout;
 import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.helpers.collection.IteratorUtil.asUniqueSet;
 import static org.neo4j.helpers.collection.IteratorUtil.single;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.ha.HaSettings.tx_push_factor;
@@ -75,7 +77,7 @@ public class SchemaIndexHaIT
         cluster.sync();
 
         // THEN
-        awaitIndexOnline( index, cluster );
+        awaitIndexOnline( index, cluster, data );
     }
     
     @Test
@@ -93,7 +95,7 @@ public class SchemaIndexHaIT
         cluster.sync();
 
         // THEN
-        awaitIndexOnline( index, cluster );
+        awaitIndexOnline( index, cluster, data );
     }
     
     @Test
@@ -104,7 +106,7 @@ public class SchemaIndexHaIT
         ManagedCluster cluster = startCluster( clusterOfSize( 3 ), dbFactory );
         HighlyAvailableGraphDatabase firstMaster = cluster.getMaster();
         // where the master gets some data created as well as an index
-        createSomeData( firstMaster );
+        Map<Object, Node> data = createSomeData( firstMaster );
         createIndex( firstMaster );
         dbFactory.triggerFinish( firstMaster );
         // Pick a slave, pull the data and the index
@@ -123,7 +125,7 @@ public class SchemaIndexHaIT
         
         // THEN
         assertEquals( "Unexpected new master", aSlave, newMaster );
-        awaitIndexOnline( single( newMaster.schema().getIndexes() ), newMaster );
+        awaitIndexOnline( single( newMaster.schema().getIndexes() ), newMaster, data );
     }
 
     private final File storeDir = TargetDirectory.forTest( getClass() ).graphDbDir( true );
@@ -186,13 +188,15 @@ public class SchemaIndexHaIT
         return index;
     }
 
-    private static void awaitIndexOnline( IndexDefinition index, ManagedCluster cluster ) throws InterruptedException
+    private static void awaitIndexOnline( IndexDefinition index, ManagedCluster cluster,
+            Map<Object, Node> expectedDdata ) throws InterruptedException
     {
         for ( GraphDatabaseService db : cluster.getAllMembers() )
-            awaitIndexOnline( index, db );
+            awaitIndexOnline( index, db, expectedDdata );
     }
     
-    private static void awaitIndexOnline( IndexDefinition index, GraphDatabaseService db ) throws InterruptedException
+    private static void awaitIndexOnline( IndexDefinition index, GraphDatabaseService db,
+            Map<Object, Node> expectedDdata ) throws InterruptedException
     {
         long timeout = System.currentTimeMillis() + SECONDS.toMillis( 60 );
         while( !indexOnline( index, db ) )
@@ -202,6 +206,19 @@ public class SchemaIndexHaIT
             {
                 fail( "Expected index to come online within a reasonable time." );
             }
+        }
+        
+        assertIndexContents( index, db, expectedDdata );
+    }
+
+    private static void assertIndexContents( IndexDefinition index, GraphDatabaseService db,
+            Map<Object, Node> expectedDdata )
+    {
+        for ( Map.Entry<Object, Node> entry : expectedDdata.entrySet() )
+        {
+            assertEquals( asSet( entry.getValue() ),
+                    asUniqueSet( db.findNodesByLabelAndProperty( index.getLabel(),
+                            single( index.getPropertyKeys() ), entry.getKey() ) ) );
         }
     }
 
@@ -220,21 +237,25 @@ public class SchemaIndexHaIT
     private static class ControlledIndexPopulator extends IndexPopulator.Adapter
     {
         private final DoubleLatch latch;
+        private final IndexPopulator inMemoryDelegate;
 
-        public ControlledIndexPopulator( DoubleLatch latch )
+        public ControlledIndexPopulator( IndexPopulator inMemoryDelegate, DoubleLatch latch )
         {
+            this.inMemoryDelegate = inMemoryDelegate;
             this.latch = latch;
         }
 
         @Override
         public void add( long nodeId, Object propertyValue )
         {
+            inMemoryDelegate.add( nodeId, propertyValue );
             latch.startAndAwaitFinish();
         }
         
         @Override
         public void close( boolean populationCompletedSuccessfully )
         {
+            inMemoryDelegate.close( populationCompletedSuccessfully );
             assertTrue( populationCompletedSuccessfully );
             latch.finish();
         }
@@ -253,7 +274,7 @@ public class SchemaIndexHaIT
         @Override
         public IndexPopulator getPopulator( long indexId, Dependencies dependencies )
         {
-            return new ControlledIndexPopulator( latch );
+            return new ControlledIndexPopulator( inMemoryDelegate.getPopulator( indexId, dependencies ), latch );
         }
 
         @Override
@@ -265,7 +286,7 @@ public class SchemaIndexHaIT
         @Override
         public InternalIndexState getInitialState( long indexId, Dependencies dependencies )
         {
-            return InternalIndexState.POPULATING;
+            return inMemoryDelegate.getInitialState( indexId, dependencies );
         }
     }
 
