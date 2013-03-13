@@ -24,7 +24,6 @@ import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
 import org.junit.Test;
-import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Predicate;
 
 public class DiffSetsTest
