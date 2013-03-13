@@ -116,7 +116,7 @@ public class KernelIT
         Node node = db.createNode();
         long labelId = statement.getOrCreateLabelId( "labello" );
         statement.addLabelToNode( labelId, node.getId() );
-        statement.close( true );
+        statement.close();
         tx.success();
         tx.finish();
         outerTx.finish();

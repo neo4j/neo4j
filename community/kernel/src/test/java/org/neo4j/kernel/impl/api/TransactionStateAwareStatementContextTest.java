@@ -177,28 +177,14 @@ public class TransactionStateAwareStatementContextTest
     }
 
     @Test
-    public void unsuccessfulCloseShouldntDelegateDownLabels() throws Exception
+    public void closeShouldDelegateDownLabels() throws Exception
     {
         // GIVEN
         commitNoLabels();
         txContext.addLabelToNode( labelId1, nodeId );
         
         // WHEN
-        txContext.close( false );
-
-        // THEN
-        verify( store, never() ).addLabelToNode( labelId1, nodeId );
-    }
-    
-    @Test
-    public void successfulCloseShouldDelegateDownLabels() throws Exception
-    {
-        // GIVEN
-        commitNoLabels();
-        txContext.addLabelToNode( labelId1, nodeId );
-        
-        // WHEN
-        txContext.close( true );
+        txContext.close();
 
         // THEN
         verify( store ).addLabelToNode( labelId1, nodeId );
@@ -212,7 +198,7 @@ public class TransactionStateAwareStatementContextTest
         txContext.addIndexRule( labelId1, key1 );
 
         // WHEN
-        txContext.close( true );
+        txContext.close();
 
         // THEN
         verify( store ).addIndexRule( labelId1, key1 );
@@ -255,6 +241,8 @@ public class TransactionStateAwareStatementContextTest
     {
         // GIVEN
         commitNoLabels();
+        when( store.addLabelToNode( labelId1, nodeId ) ).thenReturn( true );
+
 
         // WHEN
         boolean added = txContext.addLabelToNode( labelId1, nodeId );
@@ -590,6 +578,9 @@ public class TransactionStateAwareStatementContextTest
             for ( long label : nodeLabels.labelIds )
             {
                 when( store.isLabelSetOnNode( label, nodeLabels.nodeId ) ).thenReturn( true );
+                when( store.removeLabelFromNode( label, nodeLabels.nodeId ) ).thenReturn( true );
+                when( store.addLabelToNode( label, nodeLabels.nodeId ) ).thenReturn( false );
+
                 Collection<Long> nodes = allLabels.get( label );
                 if ( nodes == null )
                 {

@@ -182,9 +182,6 @@ public class StoreStatementContext implements StatementContext
     @Override
     public boolean removeLabelFromNode( long labelId, long nodeId )
     {
-        if ( !isLabelSetOnNode( labelId, nodeId ) )
-            return false;
-        
         persistenceManager.removeLabelFromNode( labelId, nodeId );
         return true;
     }
@@ -221,7 +218,7 @@ public class StoreStatementContext implements StatementContext
     }
     
     @Override
-    public void close( boolean successful )
+    public void close()
     {
     }
 

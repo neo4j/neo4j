@@ -85,11 +85,11 @@ public abstract class CompositeStatementContext implements StatementContext
     //
 
     @Override
-    public void close(boolean success)
+    public void close()
     {
         if(delegateToClose != null)
         {
-            delegateToClose.close( success );
+            delegateToClose.close();
         } else
         {
             throw new IllegalStateException( "Asked to close, but was not given a full implementation of statement " +

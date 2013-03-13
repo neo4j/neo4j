@@ -64,7 +64,7 @@ public class SingleStatementTransactionContextTest
 
         TransactionContext transactionContext = new SingleStatementTransactionContext( actual );
         StatementContext firstStatement = transactionContext.newStatementContext();
-        firstStatement.close( true );
+        firstStatement.close();
 
         // WHEN
         StatementContext secondStatement = transactionContext.newStatementContext();

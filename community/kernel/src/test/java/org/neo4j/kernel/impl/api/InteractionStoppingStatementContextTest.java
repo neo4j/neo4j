@@ -32,7 +32,7 @@ public class InteractionStoppingStatementContextTest
     {
         // GIVEN
         StatementContext statement = new InteractionStoppingStatementContext( mock( StatementContext.class ) );
-        statement.close( true );
+        statement.close();
 
         // WHEN
         statement.getLabelId( "my label" );

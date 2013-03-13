@@ -83,10 +83,4 @@ public class OldBridgingTransactionStateStatementContext extends CompositeStatem
             }
         }, delegate.getNodesWithLabel( labelId ) );
     }
-
-    @Override
-    public void close( boolean successful )
-    {
-        delegate.close( successful );
-    }
 }

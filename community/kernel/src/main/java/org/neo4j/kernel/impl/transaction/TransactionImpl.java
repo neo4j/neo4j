@@ -146,7 +146,7 @@ class TransactionImpl implements Transaction
         {
             try
             {
-                currentStatementContext.close( getStatus() != Status.STATUS_MARKED_ROLLBACK );
+                currentStatementContext.close();
             }
             finally
             {

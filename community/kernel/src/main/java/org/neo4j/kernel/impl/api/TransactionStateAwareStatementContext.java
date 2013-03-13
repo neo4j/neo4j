@@ -61,15 +61,6 @@ public class TransactionStateAwareStatementContext extends CompositeStatementCon
     }
 
     @Override
-    public boolean addLabelToNode( long labelId, long nodeId )
-    {
-        boolean addedToState = state.addLabelToNode( labelId, nodeId );
-        if ( !addedToState || delegate.isLabelSetOnNode( labelId, nodeId ) )
-            return false;
-        return true;
-    }
-
-    @Override
     public boolean isLabelSetOnNode( long labelId, long nodeId )
     {
         if ( state.hasChanges() )
@@ -90,11 +81,32 @@ public class TransactionStateAwareStatementContext extends CompositeStatementCon
     }
 
     @Override
+    public boolean addLabelToNode( long labelId, long nodeId )
+    {
+        if(isLabelSetOnNode( labelId, nodeId ))
+        {
+            // Label is already in state or in store, no-op
+            return false;
+        }
+
+        state.addLabelToNode( labelId, nodeId );
+        delegate.addLabelToNode( labelId, nodeId );
+
+        return true;
+    }
+
+    @Override
     public boolean removeLabelFromNode( long labelId, long nodeId )
     {
-        boolean removedFromState = state.removeLabelFromNode( labelId, nodeId );
-        if ( !removedFromState || !delegate.isLabelSetOnNode( labelId, nodeId ) )
+        if(!isLabelSetOnNode( labelId, nodeId ))
+        {
+            // Label does not exist in state nor in store, no-op
             return false;
+        }
+
+        state.removeLabelFromNode( labelId, nodeId );
+        delegate.removeLabelFromNode( labelId, nodeId );
+
         return true;
     }
     
@@ -122,28 +134,6 @@ public class TransactionStateAwareStatementContext extends CompositeStatementCon
         
         Iterable<Long> added = state.getNodesWithLabelAdded( labelId );
         return concat( result, added );
-    }
-
-    @Override
-    public void close( boolean successful )
-    {
-        if ( successful )
-        {
-            applyNodeChangesToTransaction();
-        }
-        delegate.close( successful );
-    }
-
-    private void applyNodeChangesToTransaction()
-    {
-        for ( TxState.NodeState node : state.getNodeStates() )
-        {
-            DiffSets<Long> labelDiffSets = node.getLabelDiffSets();
-            for ( Long labelId : labelDiffSets.getAdded() )
-                delegate.addLabelToNode( labelId, node.getId() );
-            for ( Long labelId : labelDiffSets.getRemoved() )
-                delegate.removeLabelFromNode( labelId, node.getId() );
-        }
     }
     
     @Override

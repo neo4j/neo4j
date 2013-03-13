@@ -45,5 +45,5 @@ public interface StatementContext extends EntityOperations, PropertyOperations, 
      * As an example statement-bound locks can be released when closing
      * a statement. 
      */
-    void close( boolean successful );
+    void close();
 }
