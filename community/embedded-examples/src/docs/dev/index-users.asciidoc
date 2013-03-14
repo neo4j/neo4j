@@ -3,27 +3,12 @@ User database with index
 ========================
 
 You have a user database, and want to retrieve users by name.
-To begin with, this is the structure of the database we want to create:
-	
-image::users.png[title="Node space view of users", scaledwidth="100%"]
-
-That is, the reference node is connected to a users-reference node to which all users are connected.
 
 [TIP]
 The source code used in this example is found here:
 https://github.com/neo4j/neo4j/blob/{neo4j-git-tag}/community/embedded-examples/src/main/java/org/neo4j/examples/EmbeddedNeo4jWithIndexing.java[EmbeddedNeo4jWithIndexing.java]
 
-To begin with, we define the relationship types we want to use:
-
-[snippet,java]
-----
-component=neo4j-examples
-source=org/neo4j/examples/EmbeddedNeo4jWithIndexing.java
-classifier=sources
-tag=createRelTypes
-----
-
-Then we have created two helper methods to handle user names and adding users to the database:
+We have created two helper methods to handle user names and adding users to the database:
     
 [snippet,java]
 ----

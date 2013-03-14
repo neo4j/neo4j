@@ -45,20 +45,21 @@ class GraphityTest extends DocumentingTestBase {
     testQuery(
       title = "Find Activity Streams in a network without scaling penalty",
       text = """This is an approach for scaling the retrieval of activity streams in a friend graph put forward by Rene Pickard as http://www.rene-pickhardt.de/graphity-an-efficient-graph-model-for-retrieving-the-top-k-news-feeds-for-users-in-social-networks/[Graphity].
- In short, a linked list is created for every persons friends in the order that the last activities of these friends have occured. When new activities occur for a friend, all the ordered friend lists that this friend is part of are reordered,
- transfering computing load to the time of new event updates instead of activity stream reads.
+In short, a linked list is created for every persons friends in the order that the last activities of these friends have occured.
+When new activities occur for a friend, all the ordered friend lists that this friend is part of are reordered, transferring computing load to the time of new event updates instead of activity stream reads.
 
 [TIP]
- This approach of course makes excessive use of relationship types. Right now now the maximum amount of relationship types in Neo4j is 65.000 which needs
- to be taken into consideration when designing a production system with this approach.
-        
- To find the activity stream for a person, just follow the linked list of the friend list, and retrieve the needed amount of activities form the respective activity list of the friends.""",
+This approach of course makes excessive use of relationship types.
+This needs to be taken into consideration when designing a production system with this approach.
+See <<capabilities-capacity>> for the maximum number of relationship types.
+
+To find the activity stream for a person, just follow the linked list of the friend list, and retrieve the needed amount of activities form the respective activity list of the friends.""",
       queryText = "START me=node:node_auto_index(name = \"Jane\") " +
         "MATCH p=me-[:jane_knows*]->friend, " +
         "friend-[:has]->status " +
         "RETURN me.name, friend.name, status.name, length(p) " +
         "ORDER BY length(p)",
-      returns = "The activity stream for Jane.",
+      returns = "The returns the activity stream for Jane.",
       assertions = (p) => assertEquals(List(Map("status.name" -> "Bill_s1", "friend.name" -> "Bill", "me.name" -> "Jane", "length(p)" -> 1),
           Map("status.name" -> "Joe_s1", "friend.name" -> "Joe", "me.name" -> "Jane", "length(p)" -> 2),
           Map("status.name" -> "Bob_s1", "friend.name" -> "Bob", "me.name" -> "Jane", "length(p)" -> 3)
