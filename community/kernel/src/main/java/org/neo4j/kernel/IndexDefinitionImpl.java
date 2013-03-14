@@ -20,9 +20,6 @@
 package org.neo4j.kernel;
 
 import static java.util.Arrays.asList;
-import static org.neo4j.helpers.collection.IteratorUtil.single;
-
-import java.util.Collection;
 
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Label;
@@ -37,14 +34,14 @@ import org.neo4j.kernel.api.StatementContext;
 class IndexDefinitionImpl implements IndexDefinition
 {
     private final Label label;
-    private final Collection<String> propertyKey;
+    private final String propertyKey;
     private final ThreadToStatementContextBridge ctxProvider;
 
     public IndexDefinitionImpl( ThreadToStatementContextBridge ctxProvider, Label label, String propertyKey )
     {
         this.ctxProvider = ctxProvider;
         this.label = label;
-        this.propertyKey = asList( propertyKey );
+        this.propertyKey = propertyKey;
     }
 
     @Override
@@ -56,7 +53,7 @@ class IndexDefinitionImpl implements IndexDefinition
     @Override
     public Iterable<String> getPropertyKeys()
     {
-        return propertyKey;
+        return asList( propertyKey );
     }
 
     @Override
@@ -67,11 +64,12 @@ class IndexDefinitionImpl implements IndexDefinition
         {
             context.dropIndexRule(
                     context.getIndexRule( context.getLabelId( label.name() ),
-                    context.getPropertyKeyId( single( propertyKey ) ) ) );
+                    context.getPropertyKeyId( propertyKey ) ) );
         }
         catch ( ConstraintViolationKernelException e )
         {
-            throw new ConstraintViolationException(String.format("Unable to drop index on label `%s` for property %s.", label.name(), propertyKey), e );
+            throw new ConstraintViolationException( String.format(
+                    "Unable to drop index on label `%s` for property %s.", label.name(), propertyKey ), e );
         }
         catch ( LabelNotFoundKernelException e )
         {
@@ -83,7 +81,8 @@ class IndexDefinitionImpl implements IndexDefinition
         }
         catch ( SchemaRuleNotFoundException e )
         {
-            throw new ConstraintViolationException(String.format("Unable to drop index on label `%s` for property %s.", label.name(), propertyKey), e );
+            throw new ConstraintViolationException( String.format(
+                    "Unable to drop index on label `%s` for property %s.", label.name(), propertyKey ), e );
         }
     }
     
@@ -112,5 +111,11 @@ class IndexDefinitionImpl implements IndexDefinition
         if ( !propertyKey.equals( other.propertyKey ) )
             return false;
         return true;
+    }
+    
+    @Override
+    public String toString()
+    {
+        return "IndexDefinition[label:" + label + ", on:" + propertyKey + "]";
     }
 }

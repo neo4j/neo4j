@@ -26,8 +26,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.helpers.collection.Iterables.count;
-import static org.neo4j.helpers.collection.Iterables.filter;
-import static org.neo4j.helpers.collection.Iterables.single;
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.first;
@@ -40,17 +38,17 @@ import static org.neo4j.kernel.impl.util.StringLogger.SYSTEM;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
+import javax.transaction.xa.XAException;
+
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.mockito.ArgumentMatcher;
-import org.neo4j.helpers.Predicate;
+import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.DefaultTxHook;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
@@ -66,9 +64,11 @@ import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
+import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 import org.neo4j.kernel.impl.nioneo.store.SchemaStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.nioneo.xa.Command.PropertyCommand;
+import org.neo4j.kernel.impl.nioneo.xa.Command.SchemaRuleCommand;
 import org.neo4j.kernel.impl.transaction.xaframework.DefaultLogBufferFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.LogPruneStrategies;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
@@ -136,8 +136,28 @@ public class WriteTransactionTest
     @Test
     public void shouldWriteProperBeforeAndAfterPropertyRecordsWhenAddingProperty() throws Exception
     {
+        // THEN
+        Visitor<XaCommand> verifier = new Visitor<XaCommand>()
+        {
+            @Override
+            public boolean visit( XaCommand element )
+            {
+                if ( element instanceof PropertyCommand )
+                {
+                    PropertyRecord before = ((PropertyCommand) element).getBefore();
+                    assertFalse( before.inUse() );
+                    assertEquals( Collections.emptyList(), before.getPropertyBlocks() );
+
+                    PropertyRecord after = ((PropertyCommand) element).getAfter();
+                    assertTrue( after.inUse() );
+                    assertEquals( 1, count( after.getPropertyBlocks() ) );
+                }
+                return true;
+            }
+        };
+        
         // GIVEN
-        WriteTransaction writeTransaction = newWriteTransaction( NO_INDEXING );
+        WriteTransaction writeTransaction = newWriteTransaction( NO_INDEXING, verifier );
         int nodeId = 1;
         writeTransaction.setCommitTxId( nodeId );
         writeTransaction.nodeCreate( nodeId );
@@ -147,23 +167,6 @@ public class WriteTransactionTest
         // WHEN
         writeTransaction.nodeAddProperty( nodeId, propertyIndex, value );
         writeTransaction.doPrepare();
-
-        // THEN
-        PropertyCommand propertyCommand = (PropertyCommand) single( filter( new Predicate<XaCommand>()
-        {
-            @Override
-            public boolean accept( XaCommand item )
-            {
-                return item instanceof PropertyCommand;
-            }
-        }, log.commands ) );
-        PropertyRecord before = propertyCommand.getBefore();
-        assertFalse( before.inUse() );
-        assertEquals( Collections.emptyList(), before.getPropertyBlocks() );
-
-        PropertyRecord after = propertyCommand.getAfter();
-        assertTrue( after.inUse() );
-        assertEquals( 1, count( after.getPropertyBlocks() ) );
     }
     
     // TODO change property record
@@ -183,8 +186,7 @@ public class WriteTransactionTest
         writeTransaction.nodeCreate( nodeId );
         writeTransaction.nodeAddProperty( nodeId, propertyIndex1, value1 );
         writeTransaction.nodeAddProperty( nodeId, propertyIndex2, value2 );
-        writeTransaction.doPrepare();
-        writeTransaction.doCommit();
+        prepareAndCommit( writeTransaction );
 
         // THEN
         assertEquals( asSet(
@@ -205,8 +207,7 @@ public class WriteTransactionTest
         writeTransaction.nodeCreate( nodeId );
         PropertyData property1 = writeTransaction.nodeAddProperty( nodeId, propertyIndex1, value1 );
         PropertyData property2 = writeTransaction.nodeAddProperty( nodeId, propertyIndex2, value2 );
-        writeTransaction.doPrepare();
-        writeTransaction.doCommit();
+        prepareAndCommit( writeTransaction );
         
         // WHEN
         CapturingIndexingService indexingService = new CapturingIndexingService();
@@ -214,8 +215,7 @@ public class WriteTransactionTest
         writeTransaction = newWriteTransaction( indexingService );
         writeTransaction.nodeChangeProperty( nodeId, property1, newValue1 );
         writeTransaction.nodeChangeProperty( nodeId, property2, newValue2 );
-        writeTransaction.doPrepare();
-        writeTransaction.doCommit();
+        prepareAndCommit( writeTransaction );
 
         // THEN
         assertEquals( asSet(
@@ -236,16 +236,14 @@ public class WriteTransactionTest
         writeTransaction.nodeCreate( nodeId );
         PropertyData property1 = writeTransaction.nodeAddProperty( nodeId, propertyIndex1, value1 );
         PropertyData property2 = writeTransaction.nodeAddProperty( nodeId, propertyIndex2, value2 );
-        writeTransaction.doPrepare();
-        writeTransaction.doCommit();
+        prepareAndCommit( writeTransaction );
         
         // WHEN
         CapturingIndexingService indexingService = new CapturingIndexingService();
         writeTransaction = newWriteTransaction( indexingService );
         writeTransaction.nodeRemoveProperty( nodeId, property1 );
         writeTransaction.nodeRemoveProperty( nodeId, property2 );
-        writeTransaction.doPrepare();
-        writeTransaction.doCommit();
+        prepareAndCommit( writeTransaction );
 
         // THEN
         assertEquals( asSet(
@@ -267,15 +265,13 @@ public class WriteTransactionTest
         writeTransaction.nodeCreate( nodeId );
         writeTransaction.nodeAddProperty( nodeId, propertyIndex1, value1 );
         writeTransaction.nodeAddProperty( nodeId, propertyIndex2, value2 );
-        writeTransaction.doPrepare();
-        writeTransaction.doCommit();
+        prepareAndCommit( writeTransaction );
         
         // WHEN
         CapturingIndexingService indexingService = new CapturingIndexingService();
         writeTransaction = newWriteTransaction( indexingService );
         writeTransaction.addLabelToNode( labelId, nodeId );
-        writeTransaction.doPrepare();
-        writeTransaction.doCommit();
+        prepareAndCommit( writeTransaction );
 
         // THEN
         assertEquals( asSet(
@@ -296,16 +292,14 @@ public class WriteTransactionTest
         writeTransaction.nodeCreate( nodeId );
         writeTransaction.nodeAddProperty( nodeId, propertyIndex1, value1 );
         writeTransaction.addLabelToNode( labelId1, nodeId );
-        writeTransaction.doPrepare();
-        writeTransaction.doCommit();
+        prepareAndCommit( writeTransaction );
         
         // WHEN
         CapturingIndexingService indexingService = new CapturingIndexingService();
         writeTransaction = newWriteTransaction( indexingService );
         writeTransaction.nodeAddProperty( nodeId, propertyIndex2, value2 );
         writeTransaction.addLabelToNode( labelId2, nodeId );
-        writeTransaction.doPrepare();
-        writeTransaction.doCommit();
+        prepareAndCommit( writeTransaction );
 
         // THEN
         assertEquals( asSet(
@@ -329,15 +323,13 @@ public class WriteTransactionTest
         writeTransaction.nodeAddProperty( nodeId, propertyIndex1, value1 );
         writeTransaction.nodeAddProperty( nodeId, propertyIndex2, value2 );
         writeTransaction.addLabelToNode( labelId, nodeId );
-        writeTransaction.doPrepare();
-        writeTransaction.doCommit();
+        prepareAndCommit( writeTransaction );
         
         // WHEN
         CapturingIndexingService indexingService = new CapturingIndexingService();
         writeTransaction = newWriteTransaction( indexingService );
         writeTransaction.removeLabelFromNode( labelId, nodeId );
-        writeTransaction.doPrepare();
-        writeTransaction.doCommit();
+        prepareAndCommit( writeTransaction );
 
         // THEN
         assertEquals( asSet(
@@ -360,16 +352,14 @@ public class WriteTransactionTest
         writeTransaction.nodeAddProperty( nodeId, propertyIndex2, value2 );
         writeTransaction.addLabelToNode( labelId1, nodeId );
         writeTransaction.addLabelToNode( labelId2, nodeId );
-        writeTransaction.doPrepare();
-        writeTransaction.doCommit();
+        prepareAndCommit( writeTransaction );
         
         // WHEN
         CapturingIndexingService indexingService = new CapturingIndexingService();
         writeTransaction = newWriteTransaction( indexingService );
         writeTransaction.nodeRemoveProperty( nodeId, property1 );
         writeTransaction.removeLabelFromNode( labelId2, nodeId );
-        writeTransaction.doPrepare();
-        writeTransaction.doCommit();
+        prepareAndCommit( writeTransaction );
 
         // THEN
         assertEquals( asSet(
@@ -388,19 +378,17 @@ public class WriteTransactionTest
         PropertyIndex propertyIndex1 = new PropertyIndex( "key", 1 ), propertyIndex2 = new PropertyIndex( "key2", 2 );
         Object value1 = "first", value2 = 4;
         writeTransaction.nodeCreate( nodeId );
-        PropertyData property1 = writeTransaction.nodeAddProperty( nodeId, propertyIndex1, value1 );
+        writeTransaction.nodeAddProperty( nodeId, propertyIndex1, value1 );
         writeTransaction.addLabelToNode( labelId1, nodeId );
         writeTransaction.addLabelToNode( labelId2, nodeId );
-        writeTransaction.doPrepare();
-        writeTransaction.doCommit();
+        prepareAndCommit( writeTransaction );
 
         // WHEN
         CapturingIndexingService indexingService = new CapturingIndexingService();
         writeTransaction = newWriteTransaction( indexingService );
         writeTransaction.nodeAddProperty( nodeId, propertyIndex2, value2 );
         writeTransaction.removeLabelFromNode( labelId2, nodeId );
-        writeTransaction.doPrepare();
-        writeTransaction.doCommit();
+        prepareAndCommit( writeTransaction );
 
         // THEN
         assertEquals( asSet(
@@ -432,8 +420,7 @@ public class WriteTransactionTest
         for ( int i = 0; i < 10; i++ )
             tx.addLabelToNode( 10000 + i, nodeId );
         tx.createSchemaRule( new IndexRule( ruleId, 100, propertyIndexId ) );
-        tx.doPrepare();
-        tx.doCommit();
+        prepareAndCommit( tx );
 
         // THEN
         assertEquals( "NodeStore", nodeId+1, neoStore.getNodeStore().getHighId() );
@@ -448,9 +435,25 @@ public class WriteTransactionTest
         assertEquals( "PropertyIndex NameStore", 2, neoStore.getPropertyStore().getIndexStore().getNameStore().getHighId() );
         assertEquals( "SchemaStore", ruleId+1, neoStore.getSchemaStore().getHighId() );
     }
+    
+    @Test
+    public void createdSchemaRuleRecordMustBeWrittenHeavy() throws Exception
+    {
+        // THEN
+        Visitor<XaCommand> verifier = heavySchemaRuleVerifier();
+        
+        // GIVEN
+        WriteTransaction tx = newWriteTransaction( NO_INDEXING, verifier );
+        long ruleId = 0, labelId = 5, propertyKeyId = 7;
+        SchemaRule rule = new IndexRule( ruleId, labelId, propertyKeyId );
+
+        // WHEN
+        tx.createSchemaRule( rule );
+        prepareAndCommit( tx );
+    }
 
     @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
-    private CapturingXaLogicalLog log;
+    private VerifyingXaLogicalLog log;
     private TransactionState transactionState;
     private final Config config = new Config( stringMap() );
     private final DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory();
@@ -462,7 +465,6 @@ public class WriteTransactionTest
     @Before
     public void before() throws Exception
     {
-        log = new CapturingXaLogicalLog( fs.get() );
         transactionState = TransactionState.NO_STATE;
         storeFactory = new StoreFactory( config, idGeneratorFactory, windowPoolFactory,
                 fs.get(), SYSTEM, new DefaultTxHook() );
@@ -470,40 +472,34 @@ public class WriteTransactionTest
         cacheAccessBackDoor = mock( CacheAccessBackDoor.class );
     }
     
-    private static class CapturingXaLogicalLog extends XaLogicalLog
+    private static class VerifyingXaLogicalLog extends XaLogicalLog
     {
-        private final Collection<XaCommand> commands = new ArrayList<XaCommand>();
+        private final Visitor<XaCommand> verifier;
 
-        public CapturingXaLogicalLog( FileSystemAbstraction fs )
+        public VerifyingXaLogicalLog( FileSystemAbstraction fs, Visitor<XaCommand> verifier )
         {
             super( new File( "log" ), null, null, null, new DefaultLogBufferFactory(),
                     fs, new SingleLoggingService( SYSTEM ), LogPruneStrategies.NO_PRUNING, null );
+            this.verifier = verifier;
         }
         
         @Override
         public synchronized void writeCommand( XaCommand command, int identifier ) throws IOException
         {
-            commands.add( command );
+            this.verifier.visit( command );
         }
     }
     
-    private ArgumentMatcher<Collection<DynamicRecord>> firstRecordIdMatching( final int ruleId )
-    {
-        return new ArgumentMatcher<Collection<DynamicRecord>>()
-        {
-            @Override
-            public boolean matches( Object argument )
-            {
-                Collection<DynamicRecord> records = (Collection<DynamicRecord>) argument; 
-                return first( records ).getId() == ruleId;
-            }
-        };
-    }
-
     static IndexingService NO_INDEXING = mock( IndexingService.class );
 
     private WriteTransaction newWriteTransaction( IndexingService indexing )
     {
+        return newWriteTransaction( indexing, nullVisitor );
+    }
+    
+    private WriteTransaction newWriteTransaction( IndexingService indexing, Visitor<XaCommand> verifier )
+    {
+        log = new VerifyingXaLogicalLog( fs.get(), verifier );
         WriteTransaction result = new WriteTransaction( 0, log, transactionState, neoStore,
                 cacheAccessBackDoor, indexing );
         result.setCommitTxId( neoStore.getLastCommittedTx()+1 );
@@ -528,4 +524,33 @@ public class WriteTransactionTest
     }
     
     private static final long[] none = new long[0];
+
+    private static final Visitor<XaCommand> nullVisitor = new Visitor<XaCommand>()
+    {
+        @Override
+        public boolean visit( XaCommand element )
+        {
+            return true;
+        }
+    };
+
+    private Visitor<XaCommand> heavySchemaRuleVerifier()
+    {
+        return new Visitor<XaCommand>()
+        {
+            @Override
+            public boolean visit( XaCommand element )
+            {
+                for ( DynamicRecord record : ((SchemaRuleCommand) element).getRecords() )
+                    assertFalse( record + " should have been heavy", record.isLight() );
+                return true;
+            }
+        };
+    }
+
+    private void prepareAndCommit( WriteTransaction tx ) throws XAException
+    {
+        tx.doPrepare();
+        tx.doCommit();
+    }
 }
