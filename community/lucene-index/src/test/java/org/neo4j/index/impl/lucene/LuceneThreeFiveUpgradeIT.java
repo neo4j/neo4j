@@ -41,7 +41,7 @@ import org.neo4j.test.TargetDirectory;
 
 /**
  * Tests upgrade from a neo4j 1.5 store (which had lucene version 3.1.0) to a
- * new neo4j version which has lucene version 3.5.0
+ * new neo4j version which has a newer lucene version
  */
 @Ignore( "Not valid since 2.0 and forwards, since the store format was changed" )
 public class LuceneThreeFiveUpgradeIT

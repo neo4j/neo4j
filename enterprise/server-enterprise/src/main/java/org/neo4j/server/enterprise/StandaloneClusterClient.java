@@ -123,13 +123,7 @@ public class StandaloneClusterClient
 
     private static void verifyConfig( Map<String, String> config )
     {
-        boolean discovery = Boolean.parseBoolean( config.get( ClusterSettings.cluster_discovery_enabled.getClass() ) );
-        if ( discovery && !config.containsKey( ClusterSettings.cluster_discovery_url.name() ) )
-        {
-            System.err.println( "No discovery URL supplied" );
-            System.exit( 1 );
-        }
-        else if ( !discovery && !config.containsKey( ClusterSettings.initial_hosts.name() ) )
+        if ( !config.containsKey( ClusterSettings.initial_hosts.name() ) )
         {
             System.err.println( "No initial hosts to connect to supplied" );
             System.exit( 1 );
@@ -141,9 +135,7 @@ public class StandaloneClusterClient
         Map<String, String> result = new HashMap<String, String>( config );
         Map<String, String> existingConfig = loadStrictly( propertiesFile );
         for ( Setting<?> setting : new Setting[] {
-                ClusterSettings.cluster_discovery_enabled,
                 ClusterSettings.initial_hosts,
-                ClusterSettings.cluster_discovery_url,
                 ClusterSettings.cluster_name,
                 ClusterSettings.cluster_server } )
                 // TODO add timeouts

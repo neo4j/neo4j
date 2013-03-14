@@ -73,6 +73,18 @@ public class Predicates
         return new OrPredicate<T>( predicates );
     }
 
+    public static <T> Predicate<T> equalTo( final T allowed )
+    {
+        return new Predicate<T>()
+        {
+            @Override
+            public boolean accept( T item )
+            {
+                return allowed == null ? item == null : allowed.equals( item );
+            }
+        };
+    }
+
     public static <T> Predicate<T> in( final T... allowed )
     {
         return in( Arrays.asList( allowed ) );

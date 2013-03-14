@@ -25,7 +25,7 @@ import org.neo4j.kernel.{ThreadToStatementContextBridge, GraphDatabaseAPI}
 import org.neo4j.kernel.api.{ConstraintViolationKernelException, StatementContext}
 import collection.JavaConverters._
 import org.neo4j.graphdb.DynamicRelationshipType.withName
-import org.neo4j.cypher.{CouldNotDropIndexException, IndexAlreadyDefinedException}
+import org.neo4j.cypher.{EntityNotFoundException, CouldNotDropIndexException, IndexAlreadyDefinedException}
 import org.neo4j.tooling.GlobalGraphOperations
 import org.neo4j.kernel.api.SchemaRuleNotFoundException
 
@@ -93,7 +93,12 @@ class TransactionBoundQueryContext(graph: GraphDatabaseAPI) extends QueryContext
       obj.delete()
     }
 
-    def getById(id: Long) = graph.getNodeById(id)
+    def getById(id: Long) = try {
+          graph.getNodeById(id)
+        } catch {
+          case e:NotFoundException => throw new EntityNotFoundException(s"Node with id $id", e )
+          case e:RuntimeException => throw e
+        }
 
     def all: Iterator[Node] = GlobalGraphOperations.at(graph).getAllNodes.iterator().asScala
 

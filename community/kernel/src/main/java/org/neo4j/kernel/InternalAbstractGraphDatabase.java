@@ -21,6 +21,7 @@ package org.neo4j.kernel;
 
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.map;
+import static java.lang.String.format;
 import static org.slf4j.impl.StaticLoggerBinder.getSingleton;
 
 import java.io.File;
@@ -952,7 +953,7 @@ public abstract class InternalAbstractGraphDatabase
     {
         if ( id < 0 || id > MAX_NODE_ID )
         {
-            throw new NotFoundException( "Node[" + id + "]" );
+            throw new NotFoundException( format( "Node %d not found", id ) );
         }
         return nodeManager.getNodeById( id );
     }
@@ -962,7 +963,7 @@ public abstract class InternalAbstractGraphDatabase
     {
         if ( id < 0 || id > MAX_RELATIONSHIP_ID )
         {
-            throw new NotFoundException( "Relationship[" + id + "]" );
+            throw new NotFoundException( format("Relationship %d not found", id));
         }
         return nodeManager.getRelationshipById( id );
     }

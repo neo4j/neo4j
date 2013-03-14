@@ -79,11 +79,7 @@ public class ClusterClient extends LifecycleAdapter
     {
         HostnamePort getAddress();
 
-        boolean clusterDiscoveryEnabled();
-
         List<HostnamePort> getInitialHosts();
-
-        String getDiscoveryUrl();
 
         String getClusterName();
 
@@ -120,21 +116,9 @@ public class ClusterClient extends LifecycleAdapter
         return new Configuration()
         {
             @Override
-            public boolean clusterDiscoveryEnabled()
-            {
-                return config.get( ClusterSettings.cluster_discovery_enabled );
-            }
-
-            @Override
             public List<HostnamePort> getInitialHosts()
             {
                 return config.get( ClusterSettings.initial_hosts );
-            }
-
-            @Override
-            public String getDiscoveryUrl()
-            {
-                return config.get( ClusterSettings.cluster_discovery_url );
             }
 
             @Override
@@ -351,21 +335,9 @@ public class ClusterClient extends LifecycleAdapter
         life.add( new ClusterJoin( new ClusterJoin.Configuration()
         {
             @Override
-            public boolean isDiscoveryEnabled()
-            {
-                return config.clusterDiscoveryEnabled();
-            }
-
-            @Override
             public List<HostnamePort> getInitialHosts()
             {
                 return config.getInitialHosts();
-            }
-
-            @Override
-            public String getDiscoveryUrl()
-            {
-                return config.getDiscoveryUrl();
             }
 
             @Override

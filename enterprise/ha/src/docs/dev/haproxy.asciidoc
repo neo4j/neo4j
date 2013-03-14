@@ -90,11 +90,10 @@ be moved to run on port 80, and authentication can also be added. See the HAProx
 == Configuring separate sets for master and slaves ==
 
 It is possible to set HAProxy backends up to only include slaves or the master. For example, it may be desired
-to only write to slaves. To accomplish this, you need to have a small extension on the server than can report
-whether or not the machine is master via HTTP response codes. In this example, the extension exposes two URLs:
+to only write to slaves. To accomplish this, Neo4j provides _health check URLs_ that HAProxy (or any load balancer for that matter) can use to distinguish machines using HTTP response codes. The two URLs are:
 
-* +/hastatus/master+, which returns 200 if the machine is the master, and 404 if the machine is a slave
-* +/hastatus/slave+, which returns 200 if the machine is a slave, and 404 if the machine is the master
+* +/db/manage/server/ha/master+, which returns 200 if the machine is the master, and 404 if the machine is a slave
+* +/db/manage/server/ha/slave+, which returns 200 if the machine is a slave, and 404 if the machine is the master
 
 The following example excludes the master from the set of machines. Request will only be sent to the slaves.
 
@@ -115,7 +114,7 @@ frontend http-in
     default_backend neo4j-slaves
 
 backend neo4j-slaves
-    option httpchk GET /hastatus/slave
+    option httpchk GET /db/manage/server/ha/slave
     server s1 10.0.1.10:7474 maxconn 32 check
     server s2 10.0.1.11:7474 maxconn 32 check
     server s3 10.0.1.12:7474 maxconn 32 check

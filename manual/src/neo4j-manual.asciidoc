@@ -3,8 +3,8 @@
 :neo4j-buildnumber: {neo4j-version}
 :neo4j-git-tag: {gitversion}
 
-:lucene-version: 3_5_0
-:lucene-version-printed: 3.5.0
+:lucene-version: 3_6_2
+:lucene-version-printed: 3.6.2
 
 :console: 0
 

@@ -19,6 +19,8 @@
  */
 package org.neo4j.index.impl.lucene;
 
+import static org.junit.Assert.*;
+
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -29,6 +31,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
+
 import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -42,8 +45,7 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.index.Neo4jTestCase;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.index.IndexStore;
-
-import static org.junit.Assert.*;
+import org.neo4j.kernel.impl.util.FileUtils;
 
 public class TestMigration
 {
@@ -83,6 +85,8 @@ public class TestMigration
     private GraphDatabaseService unpackDbFrom( String file ) throws IOException
     {
         File path = new File( "target/var/zipup" );
+        FileUtils.deleteRecursively( path );
+        path.mkdirs();
         ZipInputStream zip = new ZipInputStream( getClass().getClassLoader().getResourceAsStream( file ) );
         ZipEntry entry = null;
         byte[] buffer = new byte[2048];

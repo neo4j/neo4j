@@ -398,7 +398,7 @@ return distinct center""")
 
   @Test
   def failed_query_should_not_leave_dangling_transactions() {
-    intercept[NotFoundException](parseAndExecute("START left=node(1), right=node(3,4) CREATE UNIQUE left-[r:KNOWS]->right RETURN r"))
+    intercept[EntityNotFoundException](parseAndExecute("START left=node(1), right=node(3,4) CREATE UNIQUE left-[r:KNOWS]->right RETURN r"))
 
     assertNull("Did not expect to be in a transaction now", graph.getTxManager.getTransaction)
   }

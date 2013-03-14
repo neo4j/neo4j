@@ -235,7 +235,8 @@ public class CypherFunctionalTest extends AbstractRestFunctionalTestBase {
 
         Map<String, Object> resultMap = jsonToMap( response );
         assertEquals( 2, resultMap.size() );
-        assertThat( response, anyOf(containsString("\"I\", \"you\""), containsString("\"I\",\"you\"")) );
+        assertThat( response, anyOf( containsString( "\"I\", \"you\"" ), containsString(
+                "\"I\",\"you\"" )) );
     }
 
     /**
@@ -279,8 +280,9 @@ public class CypherFunctionalTest extends AbstractRestFunctionalTestBase {
         String script = "start n = node(%I%) return n.array1, n.array2";
         String response = cypherRestCall( script, Status.OK );
 
-        assertThat( response, anyOf(containsString( "[ 1, 2, 3 ]" ),containsString( "[1,2,3]" )) );
-        assertThat( response, anyOf(containsString( "[ \"a\", \"b\", \"c\" ]" ),containsString( "[\"a\",\"b\",\"c\"]" )) );
+        assertThat( response, anyOf( containsString( "[ 1, 2, 3 ]" ), containsString( "[1,2,3]" )) );
+        assertThat( response, anyOf( containsString( "[ \"a\", \"b\", \"c\" ]" ),
+                containsString( "[\"a\",\"b\",\"c\"]" )) );
     }
 
     void setProperty(String nodeName, String propertyName, Object propertyValue) {
@@ -307,8 +309,11 @@ public class CypherFunctionalTest extends AbstractRestFunctionalTestBase {
                 ".name = {name} return TYPE(r)";
         String response = cypherRestCall( script, Status.BAD_REQUEST, Pair.of( "startName", "I" ), Pair.of( "name", "you" ) );
 
-        assertEquals( 3, ( jsonToMap( response ) ).size() );
+        Map responseMap = ( jsonToMap( response ) );
+        assertEquals( 4, responseMap.size() );
         assertThat( response, containsString( "message" ) );
+        assertThat( ((String) responseMap.get( "message" )), containsString( "Unknown identifier" ) );
+        assertThat( ((String) responseMap.get( "message" )), containsString( "frien" ) );
     }
 
     private String cypherRestCall( String script, Status status, Pair<String, String> ...params )

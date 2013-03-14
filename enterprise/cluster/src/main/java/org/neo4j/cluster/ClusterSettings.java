@@ -47,13 +47,7 @@ public class ClusterSettings
     public static final Setting<String> cluster_name = setting( "ha.cluster_name", STRING, "neo4j.ha",
             illegalValueMessage( "Must be a valid cluster name" , matches( ANY )));
 
-    @Description( "Whether to enable cluster discovery or not" )
-    public static final Setting<Boolean> cluster_discovery_enabled = setting( "ha.discovery.enabled", BOOLEAN, FALSE );
-
-    @Description( "The URL to use if cluster discovery is enabled" )
-    public static final Setting<String> cluster_discovery_url = setting( "ha.discovery.url", STRING, NO_DEFAULT );
-
-    @Description( "If cluster discovery is disabled, use this list of potential cluster members" )
+    @Description( "This is the list of potential cluster members" )
     public static final Setting<List<HostnamePort>> initial_hosts = setting( "ha.initial_hosts",
             list( ",", HOSTNAME_PORT ), "" );
 

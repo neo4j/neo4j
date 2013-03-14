@@ -71,6 +71,7 @@
         <exclude>**/*.bat</exclude>
         <exclude>**/neo4j-backup*</exclude>
         <exclude>**/neo4j-coord*</exclude>
+        <exclude>**/*arbiter*</exclude>
       </excludes>
       <filtered>true</filtered>
     </fileSet>
