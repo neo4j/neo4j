@@ -91,7 +91,6 @@ public final class HaBackupProvider extends BackupExtensionService
         params.put( HaSettings.server_id.name(), "-1" );
         params.put( ClusterSettings.cluster_name.name(), clusterName );
         params.put( ClusterSettings.initial_hosts.name(), from );
-        params.put( ClusterSettings.cluster_discovery_enabled.name(), "false" );
         final Config config = new Config( params,
                 ClusterSettings.class, OnlineBackupSettings.class );
 
