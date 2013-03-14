@@ -22,6 +22,9 @@ package org.neo4j.cypher
 import internal.helpers.GraphIcing
 import org.junit.Test
 import org.scalatest.Assertions
+import org.neo4j.cypher.internal.spi.QueryContext
+import org.neo4j.cypher.internal.spi.gdsimpl.TransactionBoundQueryContext
+import org.neo4j.kernel.EmbeddedGraphDatabase
 
 class UsingAcceptanceTest extends ExecutionEngineHelper with Assertions with GraphIcing {
 
