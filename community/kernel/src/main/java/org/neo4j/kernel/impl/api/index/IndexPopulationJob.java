@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import static java.lang.String.format;
 import static org.neo4j.helpers.FutureAdapter.latchGuardedValue;
 import static org.neo4j.helpers.ValueGetter.NO_VALUE;
 import static org.neo4j.helpers.collection.Iterables.filter;
@@ -78,6 +79,8 @@ public class IndexPopulationJob implements Runnable
         boolean success = false;
         try
         {
+            log.info( format( "Index population started for label id %d on property id %d",
+                    descriptor.getLabelId(), descriptor.getPropertyKeyId() ) );
             populator.create();
 
             indexAllNodes();
@@ -100,6 +103,8 @@ public class IndexPopulationJob implements Runnable
 
             flipper.flip( duringFlip, failureTarget );
             success = true;
+            log.info( format( "Index population completed for label id %d on property id %d, index is now online.",
+                    descriptor.getLabelId(), descriptor.getPropertyKeyId() ) );
         }
         catch ( Throwable t )
         {
