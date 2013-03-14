@@ -10,7 +10,7 @@ neo4j-backup - Neo4j Backup Tool
 SYNOPSIS
 --------
 
-*neo4j-backup* {-full|-incremental} -from SourceURI -to Directory
+*neo4j-backup* -from SourceURI -to Directory
 
 [[neo4j-backup-manpage-description]]
 DESCRIPTION
@@ -31,6 +31,8 @@ BACKUP TYPE
 *-incremental*::
   copies the changes that have taken place since the last full or
 incremental backup to an existing backup store.
+
+The backup tool will automatically detect whether it needs to do a full or an incremental backup.
 
 [[neo4j-backup-manpage-souceuri]]
 SOURCE URI
@@ -71,20 +73,21 @@ EXAMPLES
 
 [source,shell]
 ----
-# Performing a full backup
-neo4j-backup -full -from single://192.168.1.34 -to /mnt/backup/neo4j-backup
+# Performing a backup the first time: create a blank directory and run the backup tool
+mkdir /mnt/backup/neo4j-backup
+neo4j-backup -from single://192.168.1.34 -to /mnt/backup/neo4j-backup
 
-# Performing an incremental backup
-neo4j-backup -incremental -from single://freja -to /mnt/backup/neo4j-backup
+# Subsequent backups using the same _target_-directory will be incremental and therefore quick
+neo4j-backup -from single://freja -to /mnt/backup/neo4j-backup
 
-# Performing an incremental backup where the service is registered on a custom port
-neo4j-backup -incremental -from single://freja:9999 -to /mnt/backup/neo4j-backup
+# Performing a backup where the service is registered on a custom port
+neo4j-backup -from single://freja:9999 -to /mnt/backup/neo4j-backup
 
-# Performing a full backup from HA cluster, specifying two cluster members
-./neo4j-backup -full -from ha://oden:5001,loke:5002 -to /mnt/backup/neo4j-backup
+# Performing a backup from HA cluster, specifying only one cluster member
+./neo4j-backup -from ha://oden:5002 -to /mnt/backup/neo4j-backup
 
-# Performing an incremental backup from HA cluster, specifying only one cluster member
-./neo4j-backup -incremental -from ha://oden:5002 -to /mnt/backup/neo4j-backup
+# Performing a backup from HA cluster, specifying two cluster members
+./neo4j-backup -from ha://oden:5001,loke:5002 -to /mnt/backup/neo4j-backup
 ----
 
 [[neo4j-backup-manpage-restore]]
