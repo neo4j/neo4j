@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
@@ -27,6 +28,7 @@ import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
@@ -40,6 +42,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.PropertyTracker;
 import org.neo4j.test.ImpermanentGraphDatabase;
+import org.neo4j.tooling.GlobalGraphOperations;
 
 public class NodeManagerTest
 {
@@ -176,6 +179,50 @@ public class NodeManagerTest
         assertEquals( allRelationships.size(), allRelationshipsSet.size() );
         assertEquals( asSet( firstCommittedRelationship, firstAdditionalRelationship, secondAdditionalRelationship ),
                 allRelationshipsSet );
+    }
+    
+    @Test
+    public void getAllNodesIteratorShouldPickUpHigherIdsThanHighIdWhenStarted() throws Exception
+    {
+        // GIVEN
+        Transaction tx = db.beginTx();
+        Node node1 = db.createNode();
+        Node node2 = db.createNode();
+        tx.success();
+        tx.finish();
+        
+        // WHEN
+        Iterator<Node> allNodes = GlobalGraphOperations.at( db ).getAllNodes().iterator();
+        allNodes.next();
+        tx = db.beginTx();
+        Node node3 = db.createNode();
+        tx.success();
+        tx.finish();
+
+        // THEN
+        assertEquals( asList( node1, node2, node3 ), addToCollection( allNodes, new ArrayList<Node>() ) );
+    }
+    
+    @Test
+    public void getAllRelationshipsIteratorShouldPickUpHigherIdsThanHighIdWhenStarted() throws Exception
+    {
+        // GIVEN
+        Transaction tx = db.beginTx();
+        Relationship relationship1 = createRelationshipAssumingTxWith( "key", 1 );
+        Relationship relationship2 = createRelationshipAssumingTxWith( "key", 2 );
+        tx.success();
+        tx.finish();
+        
+        // WHEN
+        Iterator<Relationship> allRelationships = GlobalGraphOperations.at( db ).getAllRelationships().iterator();
+        tx = db.beginTx();
+        Relationship relationship3 = createRelationshipAssumingTxWith( "key", 3 );
+        tx.success();
+        tx.finish();
+
+        // THEN
+        assertEquals( asList( relationship1, relationship2, relationship3 ),
+                addToCollection( allRelationships, new ArrayList<Relationship>() ) );
     }
     
     private void delete( Relationship relationship )
