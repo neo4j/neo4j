@@ -278,6 +278,17 @@ public class TransactionStateAwareStatementContextTest
     }
 
     @Test
+    public void removingNodeShouldLeadToLabelsNotBeingVisible() throws Exception
+    {
+        // Given
+        commitLabels( labelId1 );
+        when( oldTxState.nodeIsDeleted( nodeId ) ).thenReturn( true );
+
+        // When
+        assertThat( txContext.isLabelSetOnNode( labelId1, nodeId ), equalTo( false ));
+    }
+
+    @Test
     public void removingNonExistentLabelFromNodeShouldRespondFalse() throws Exception
     {
         // GIVEN
@@ -463,7 +474,7 @@ public class TransactionStateAwareStatementContextTest
 
 
     @Test
-    public void shouldExcludeNodesWithRemovedProperty() throws Exception
+    public void shouldExcludeNodesWithRemovedPropertyFromIndexQuery() throws Exception
     {
         // Given
         long labelId = 2l;

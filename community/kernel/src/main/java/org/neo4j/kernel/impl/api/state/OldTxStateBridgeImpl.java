@@ -41,6 +41,12 @@ public class OldTxStateBridgeImpl implements OldTxStateBridge
     }
 
     @Override
+    public boolean nodeIsDeleted( long nodeId )
+    {
+        return state.nodeIsDeleted( nodeId );
+    }
+
+    @Override
     public DiffSets<Long> getNodesWithChangedProperty( long propertyKey, Object value )
     {
         DiffSets<Long> diff = new DiffSets<Long>();

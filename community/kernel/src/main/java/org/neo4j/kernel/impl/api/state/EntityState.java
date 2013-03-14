@@ -19,21 +19,17 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
-import org.neo4j.kernel.impl.api.DiffSets;
-
-/**
- * Temporary anti-corruption while the old {@link org.neo4j.kernel.impl.core.TransactionState} class
- * still remains.
- */
-public interface OldTxStateBridge
+public class EntityState
 {
+    private final long id;
 
-    Iterable<Long> getDeletedNodes();
+    public EntityState( long id )
+    {
+        this.id = id;
+    }
 
-    boolean nodeIsDeleted( long nodeId );
-
-    /**
-     * A diff set of nodes that have had the given property key and value added or removed/changed.
-     */
-    DiffSets<Long> getNodesWithChangedProperty(long propertyKey, Object value);
+    public long getId()
+    {
+        return id;
+    }
 }

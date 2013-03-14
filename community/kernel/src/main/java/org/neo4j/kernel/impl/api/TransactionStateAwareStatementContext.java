@@ -66,6 +66,7 @@ public class TransactionStateAwareStatementContext extends CompositeStatementCon
     {
         if ( state.hasChanges() )
         {
+
             Boolean labelState = state.getLabelState( nodeId, labelId );
             if ( labelState != null )
                 return labelState.booleanValue();
@@ -164,7 +165,7 @@ public class TransactionStateAwareStatementContext extends CompositeStatementCon
         {
             committedRules = emptyList();
         }
-        DiffSets<IndexRule> ruleDiffSet = state.getIndexRuleDiffSetsByLabel( labelId );
+        DiffSets<IndexRule> ruleDiffSet = state.getIndexesAddedAndRemovedForLabel( labelId );
         Iterable<IndexRule> rules = ruleDiffSet.apply( committedRules );
         IndexRule single = singleOrNull( rules );
         if ( single == null )
@@ -178,7 +179,7 @@ public class TransactionStateAwareStatementContext extends CompositeStatementCon
     public InternalIndexState getIndexState( IndexRule indexRule ) throws IndexNotFoundKernelException
     {
         // If index is in our state, then return populating
-        DiffSets<IndexRule> diffSet = state.getIndexRuleDiffSetsByLabel( indexRule.getLabel() );
+        DiffSets<IndexRule> diffSet = state.getIndexesAddedAndRemovedForLabel( indexRule.getLabel() );
         if( diffSet.isAdded( indexRule) )
         {
             return InternalIndexState.POPULATING;
@@ -196,7 +197,7 @@ public class TransactionStateAwareStatementContext extends CompositeStatementCon
     @Override
     public Iterable<IndexRule> getIndexRules( long labelId )
     {
-        return state.getIndexRuleDiffSetsByLabel( labelId ).apply( delegate.getIndexRules( labelId ) );
+        return state.getIndexesAddedAndRemovedForLabel( labelId ).apply( delegate.getIndexRules( labelId ) );
     }
 
     @Override
