@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api;
+package org.neo4j.kernel.impl.api.state;
 
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.*;
@@ -29,6 +29,7 @@ import java.util.Set;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.neo4j.kernel.impl.api.DiffSets;
 import org.neo4j.kernel.impl.api.state.OldTxStateBridge;
 import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
@@ -143,7 +144,7 @@ public class TxStateTest
         state.addIndexRule( rule2 );
         
         // THEN
-        assertEquals( asSet( rule ), state.getIndexRuleDiffSetsByLabel( labelId ).getAdded() );
+        assertEquals( asSet( rule ), state.getIndexesAddedAndRemovedForLabel( labelId ).getAdded() );
     }
 
     @Test

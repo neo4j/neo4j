@@ -30,6 +30,7 @@ import java.util.Set;
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.kernel.impl.api.PersistenceCache.CachedNodeEntity;
+import org.neo4j.kernel.impl.api.state.NodeState;
 import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.cache.LockStripedCache;
 
@@ -84,7 +85,7 @@ public class PersistenceCacheTest
     private LockStripedCache.Loader<PersistenceCache.CachedNodeEntity> loader;
     private PersistenceCache cache;
     private TxState state;
-    private TxState.NodeState nodeState;
+    private NodeState nodeState;
     
     @Before
     public void before() throws Exception
@@ -92,6 +93,6 @@ public class PersistenceCacheTest
         loader = mock( LockStripedCache.Loader.class );
         cache = new PersistenceCache( loader );
         state = mock( TxState.class );
-        nodeState = new TxState.NodeState( nodeId );
+        nodeState = new NodeState( nodeId );
     }
 }

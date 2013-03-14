@@ -135,6 +135,33 @@ public class DiffSets<T>
         return resultSet( removedElements );
     }
 
+    @SuppressWarnings( "unchecked" )
+    public Iterable<T> apply( Iterable<T> source )
+    {
+        Iterable<T> result = source;
+        if ( removedElements != null && !removedElements.isEmpty() )
+        {
+            ensureFilterHasBeenCreated();
+            result = filter( filter, result );
+        }
+        if ( addedElements != null && !addedElements.isEmpty() )
+            result = concat( result, addedElements );
+        return result;
+    }
+
+    public DiffSets<T> filterAdded( Predicate<T> addedFilter )
+    {
+        Iterable<T> newAdded = Iterables.filter( addedFilter, getAdded() );
+        Set<T> newRemoved = getRemoved();
+        return new DiffSets<T>( asSet( newAdded ), asSet( newRemoved ) );
+    }
+
+    public boolean isEmpty()
+    {
+        return (removedElements == null || removedElements.size() == 0) &&
+                (addedElements   == null || addedElements.size()   == 0);
+    }
+
     private void ensureAddedHasBeenCreated()
     {
         if ( addedElements == null )
@@ -173,26 +200,5 @@ public class DiffSets<T>
     private Set<T> resultSet( Set<T> coll )
     {
         return coll == null ? Collections.<T> emptySet() : Collections.unmodifiableSet( coll );
-    }
-
-    @SuppressWarnings( "unchecked" )
-    public Iterable<T> apply( Iterable<T> source )
-    {
-        Iterable<T> result = source;
-        if ( removedElements != null && !removedElements.isEmpty() )
-        {
-            ensureFilterHasBeenCreated();
-            result = filter( filter, result );
-        }
-        if ( addedElements != null && !addedElements.isEmpty() )
-            result = concat( result, addedElements );
-        return result;
-    }
-
-    public DiffSets<T> filterAdded( Predicate<T> addedFilter )
-    {
-        Iterable<T> newAdded = Iterables.filter( addedFilter, getAdded() );
-        Set<T> newRemoved = getRemoved();
-        return new DiffSets<T>( asSet( newAdded ), asSet( newRemoved ) );
     }
 }

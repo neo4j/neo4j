@@ -23,7 +23,7 @@ import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 
 import org.neo4j.kernel.impl.api.state.TxState;
-import org.neo4j.kernel.impl.api.state.TxState.NodeState;
+import org.neo4j.kernel.impl.api.state.NodeState;
 import org.neo4j.kernel.impl.cache.EntityWithSize;
 import org.neo4j.kernel.impl.cache.LockStripedCache;
 import org.neo4j.kernel.impl.cache.SoftLruCache;

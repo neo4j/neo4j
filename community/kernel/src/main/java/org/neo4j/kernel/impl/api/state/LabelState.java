@@ -20,20 +20,35 @@
 package org.neo4j.kernel.impl.api.state;
 
 import org.neo4j.kernel.impl.api.DiffSets;
+import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 
-/**
- * Temporary anti-corruption while the old {@link org.neo4j.kernel.impl.core.TransactionState} class
- * still remains.
- */
-public interface OldTxStateBridge
+public class LabelState extends EntityState
 {
 
-    Iterable<Long> getDeletedNodes();
+    public static final StateFactory<LabelState> FACTORY = new StateFactory<LabelState>()
+    {
+        @Override
+        public LabelState newState( long id )
+        {
+            return new LabelState(id);
+        }
+    };
 
-    boolean nodeIsDeleted( long nodeId );
+    private final DiffSets<Long> nodeDiffSets = new DiffSets<Long>();
+    private final DiffSets<IndexRule> indexRuleDiffSets = new DiffSets<IndexRule>();
 
-    /**
-     * A diff set of nodes that have had the given property key and value added or removed/changed.
-     */
-    DiffSets<Long> getNodesWithChangedProperty(long propertyKey, Object value);
+    public LabelState( long id )
+    {
+        super( id );
+    }
+
+    public DiffSets<Long> getNodeDiffSets()
+    {
+        return nodeDiffSets;
+    }
+
+    public DiffSets<IndexRule> getIndexRuleDiffSets()
+    {
+        return indexRuleDiffSets;
+    }
 }
