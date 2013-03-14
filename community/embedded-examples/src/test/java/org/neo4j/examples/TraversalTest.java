@@ -30,10 +30,9 @@ import static org.neo4j.visualization.asciidoc.AsciidocHelper.*;
 public class TraversalTest extends AbstractJavaDocTestbase
 {
     /**
-     * In contrary to
-     * http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/Node.html#traverse[Node#traverse] a
-     * http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/traversal/TraversalDescription.html[traversal description] is built (using a
-     * fluent interface) and such a description can spawn
+     * A
+     * http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/traversal/TraversalDescription.html[traversal description] is built using a
+     * fluent interface and such a description can then spawn
      * http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/traversal/Traverser.html[traversers].
      * 
      * @@graph
@@ -102,7 +101,7 @@ public class TraversalTest extends AbstractJavaDocTestbase
      * 
      * @@relationshipoutput
      * 
-     * The source code for the traversers in this example is available at:
+     * TIP: The source code for the traversers in this example is available at:
      * @@github
      */
     @Test
