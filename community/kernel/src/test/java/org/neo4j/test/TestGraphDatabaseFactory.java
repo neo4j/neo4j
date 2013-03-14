@@ -25,6 +25,9 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.logging.Logging;
+import org.neo4j.kernel.logging.SingleLoggingService;
 
 /**
  * Test factory for graph databases
@@ -32,6 +35,8 @@ import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 public class TestGraphDatabaseFactory
     extends GraphDatabaseFactory
 {
+    private boolean systemOutLogging;
+
     public GraphDatabaseService newImpermanentDatabase()
     {
         return newImpermanentDatabaseBuilder().newGraphDatabase();
@@ -65,6 +70,15 @@ public class TestGraphDatabaseFactory
                         else
                             return super.createFileSystemAbstraction();
                     }
+                    
+                    @Override
+                    protected Logging createLogging()
+                    {
+                        if ( TestGraphDatabaseFactory.this.systemOutLogging )
+                            return new SingleLoggingService( StringLogger.SYSTEM );
+                        else
+                            return super.createLogging();
+                    }
                 };
             }
         } );
@@ -73,6 +87,12 @@ public class TestGraphDatabaseFactory
     public TestGraphDatabaseFactory setFileSystem( FileSystemAbstraction fileSystem )
     {
         this.fileSystem = fileSystem;
+        return this;
+    }
+    
+    public TestGraphDatabaseFactory useSystemOutLogging()
+    {
+        systemOutLogging = true;
         return this;
     }
 }

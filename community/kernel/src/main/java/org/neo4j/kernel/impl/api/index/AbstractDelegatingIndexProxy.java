@@ -32,9 +32,9 @@ public abstract class AbstractDelegatingIndexProxy implements IndexProxy
     protected abstract IndexProxy getDelegate();
 
     @Override
-    public void create() throws IOException
+    public void start() throws IOException
     {
-        getDelegate().create();
+        getDelegate().start();
     }
     
     @Override

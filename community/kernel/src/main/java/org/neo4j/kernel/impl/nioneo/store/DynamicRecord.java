@@ -25,7 +25,6 @@ public class DynamicRecord extends Abstract64BitRecord
     private byte[] data = null;
     private int length;
     private long nextBlock = Record.NO_NEXT_BLOCK.intValue();
-    private boolean isLight = true;
     private int type;
     private boolean startRecord = true;
 
@@ -54,14 +53,9 @@ public class DynamicRecord extends Abstract64BitRecord
         this.type = type;
     }
 
-    void setIsLight( boolean status )
-    {
-        this.isLight = status;
-    }
-
     public boolean isLight()
     {
-        return isLight;
+        return data == null;
     }
 
     public void setLength( int length )
@@ -87,7 +81,6 @@ public class DynamicRecord extends Abstract64BitRecord
 
     public void setData( byte[] data )
     {
-        isLight = false;
         this.length = data.length;
         this.data = data;
     }
@@ -119,7 +112,7 @@ public class DynamicRecord extends Abstract64BitRecord
         buf.append( "DynamicRecord[" )
                 .append( getId() )
                 .append( ",used=" ).append(inUse() ).append( "," )
-                .append( "light=" ).append( isLight )
+                .append( "light=" ).append( isLight() )
                 .append("(" ).append( length ).append( "),type=" );
         PropertyType type = PropertyType.getPropertyType( this.type << 24, true );
         if ( type == null ) buf.append( this.type ); else buf.append( type.name() );
@@ -167,7 +160,6 @@ public class DynamicRecord extends Abstract64BitRecord
             result.data = data.clone();
         result.setInUse( inUse() );
         result.length = length;
-        result.isLight = isLight;
         result.nextBlock = nextBlock;
         result.type = type;
         result.startRecord = startRecord;

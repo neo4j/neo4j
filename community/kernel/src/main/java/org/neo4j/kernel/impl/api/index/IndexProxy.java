@@ -50,7 +50,7 @@ import org.neo4j.kernel.api.index.NodePropertyUpdate;
  */
 public interface IndexProxy
 {
-    void create() throws IOException;
+    void start() throws IOException;
     
     void update( Iterable<NodePropertyUpdate> updates ) throws IOException;
     
@@ -85,7 +85,7 @@ public interface IndexProxy
         public static final Adapter EMPTY = new Adapter();
 
         @Override
-        public void create()
+        public void start()
         {
         }
 

@@ -120,7 +120,7 @@ public class IndexingService extends LifecycleAdapter
         }
 
         // Drop placeholder proxies for indexes that need to be rebuilt
-        dropAllIndexes( rebuildingIndexes );
+        dropIndexes( rebuildingIndexes );
 
         // Rebuild indexes by recreating and repopulating them
         for ( Map.Entry<Long, IndexDescriptor> entry : rebuildingIndexDescriptors.entrySet() )
@@ -128,7 +128,7 @@ public class IndexingService extends LifecycleAdapter
             long ruleId = entry.getKey();
             IndexDescriptor descriptor = entry.getValue();
             IndexProxy indexProxy = createPopulatingIndexProxy( ruleId, descriptor );
-            indexProxy.create();
+            indexProxy.start();
             indexes.put( ruleId, indexProxy );
         }
 
@@ -233,12 +233,9 @@ public class IndexingService extends LifecycleAdapter
         {
             assert index == null : "Index " + rule + " already exists";
             index = createPopulatingIndexProxy( ruleId, descriptor );
-
-            // Trigger the creation, only if the service is online. Otherwise,
-            // creation will be triggered on start().
             try
             {
-                index.create();
+                index.start();
             }
             catch ( IOException e )
             {
@@ -247,7 +244,7 @@ public class IndexingService extends LifecycleAdapter
         }
         else if ( index == null )
         {
-            index = createPopulatingIndexProxy( ruleId, descriptor );
+            index = createRecoveringIndexProxy( ruleId, descriptor );
         }
         
         indexes.put( rule.getId(), index );
@@ -290,7 +287,7 @@ public class IndexingService extends LifecycleAdapter
         FlippableIndexProxy flippableIndex = new FlippableIndexProxy( );
 
         // TODO: This is here because there is a circular dependency from PopulatingIndexProxy to FlippableIndexProxy
-        IndexPopulator populator = getPopulator( ruleId );
+        IndexPopulator populator = getPopulatorFromProvider( ruleId );
         PopulatingIndexProxy populatingIndex =
                 new PopulatingIndexProxy( scheduler, descriptor, populator, flippableIndex, storeView, logging );
         flippableIndex.setFlipTarget( singleProxy( populatingIndex ) );
@@ -302,50 +299,50 @@ public class IndexingService extends LifecycleAdapter
             @Override
             public IndexProxy create()
             {
-                return new OnlineIndexProxy( descriptor, getOnlineAccessor( ruleId ) );
+                return new OnlineIndexProxy( descriptor, getOnlineAccessorFromProvider( ruleId ) );
             }
         } );
 
-        IndexProxy result = contractCheckedProxy( false, flippableIndex );
+        IndexProxy result = contractCheckedProxy( flippableIndex, false );
         return serviceDecoratedProxy( ruleId, result );
     }
 
     private IndexProxy createOnlineIndexProxy( long ruleId, IndexDescriptor descriptor )
     {
-        IndexAccessor onlineAccessor = getOnlineAccessor( ruleId );
+        IndexAccessor onlineAccessor = getOnlineAccessorFromProvider( ruleId );
         IndexProxy result = new OnlineIndexProxy( descriptor, onlineAccessor );
-        result = contractCheckedProxy( true, result );
+        result = contractCheckedProxy( result, true );
         result = serviceDecoratedProxy( ruleId, result );
         return result;
     }
 
     private IndexProxy createFailedIndexProxy( long ruleId, IndexDescriptor descriptor )
     {
-        IndexProxy result = new FailedIndexProxy( descriptor, getPopulator( ruleId ) );
-        result = contractCheckedProxy( true, result );
+        IndexProxy result = new FailedIndexProxy( descriptor, getPopulatorFromProvider( ruleId ) );
+        result = contractCheckedProxy( result, true );
         return serviceDecoratedProxy( ruleId, result );
     }
 
     private IndexProxy createRecoveringIndexProxy( long ruleId, IndexDescriptor descriptor )
     {
         IndexProxy result = new RecoveringIndexProxy( descriptor );
-        result = contractCheckedProxy( true, result );
+        result = contractCheckedProxy( result, true );
         return serviceDecoratedProxy( ruleId, result );
     }
 
-    private IndexPopulator getPopulator( long ruleId )
+    private IndexPopulator getPopulatorFromProvider( long ruleId )
     {
         return provider.getPopulator( ruleId );
     }
 
-    private IndexAccessor getOnlineAccessor( long ruleId  )
+    private IndexAccessor getOnlineAccessorFromProvider( long ruleId  )
     {
         return provider.getOnlineAccessor( ruleId );
     }
 
-    private IndexProxy contractCheckedProxy( boolean created, IndexProxy result )
+    private IndexProxy contractCheckedProxy( IndexProxy result, boolean started )
     {
-        result = new ContractCheckingIndexProxy( created, result );
+        result = new ContractCheckingIndexProxy( result, started );
         return result;
     }
 
@@ -375,7 +372,7 @@ public class IndexingService extends LifecycleAdapter
         }
     }
 
-    private void dropAllIndexes( Set<IndexProxy> recoveringIndexes ) throws Exception
+    private void dropIndexes( Set<IndexProxy> recoveringIndexes ) throws Exception
     {
         for ( IndexProxy indexProxy : recoveringIndexes )
         {
