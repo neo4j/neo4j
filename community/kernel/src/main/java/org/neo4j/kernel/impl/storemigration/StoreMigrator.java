@@ -19,33 +19,11 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
-import static org.neo4j.helpers.collection.IteratorUtil.first;
-import static org.neo4j.kernel.impl.nioneo.store.PropertyStore.encodeString;
-
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
 
-import org.neo4j.helpers.Pair;
-import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeStore;
-import org.neo4j.kernel.impl.nioneo.store.PropertyIndexRecord;
-import org.neo4j.kernel.impl.nioneo.store.PropertyIndexStore;
-import org.neo4j.kernel.impl.nioneo.store.Record;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipStore;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeRecord;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeStore;
-import org.neo4j.kernel.impl.storemigration.legacystore.LegacyDynamicRecord;
-import org.neo4j.kernel.impl.storemigration.legacystore.LegacyDynamicRecordFetcher;
-import org.neo4j.kernel.impl.storemigration.legacystore.LegacyDynamicStoreReader;
-import org.neo4j.kernel.impl.storemigration.legacystore.LegacyNeoStoreReader;
-import org.neo4j.kernel.impl.storemigration.legacystore.LegacyPropertyIndexStoreReader;
-import org.neo4j.kernel.impl.storemigration.legacystore.LegacyPropertyRecord;
-import org.neo4j.kernel.impl.storemigration.legacystore.LegacyRelationshipTypeStoreReader;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 
@@ -71,100 +49,61 @@ public class StoreMigrator
         new Migration( legacyStore, neoStore ).migrate();
         progressMonitor.finished();
     }
-
+    
     protected class Migration
     {
         private final LegacyStore legacyStore;
         private final NeoStore neoStore;
         private final long totalEntities;
-        private int percentComplete = 0;
+        private int percentComplete;
 
         public Migration( LegacyStore legacyStore, NeoStore neoStore )
         {
             this.legacyStore = legacyStore;
             this.neoStore = neoStore;
-            totalEntities = legacyStore.getNodeStoreReader().getMaxId() + legacyStore.getRelationshipStoreReader().getMaxId();
+            totalEntities = legacyStore.getNodeStoreReader().getMaxId();
         }
 
         private void migrate() throws IOException
         {
-            migrateNeoStore( neoStore );
-            migrateNodes( neoStore.getNodeStore(), new PropertyWriter( neoStore.getPropertyStore() ) );
-            migrateRelationships( neoStore.getRelationshipStore(), new PropertyWriter( neoStore.getPropertyStore() ) );
-            migratePropertyIndexes( neoStore.getPropertyStore().getIndexStore() );
-            legacyStore.getPropertyStoreReader().close();
-            migrateRelationshipTypes( neoStore.getRelationshipTypeStore() );
+            // Migrate
+            migrateNodes( neoStore.getNodeStore() );
+            
+            // Close
+            neoStore.close();
             legacyStore.close();
+            
+            // Just copy unchanged stores that doesn't need migration
+            legacyStore.copyNeoStore( neoStore );
+            legacyStore.copyRelationshipStore( neoStore );
+            legacyStore.copyRelationshipTypeStore( neoStore );
+            legacyStore.copyRelationshipTypeNameStore( neoStore );
+            legacyStore.copyPropertyStore( neoStore );
+            legacyStore.copyPropertyIndexStore( neoStore );
+            legacyStore.copyPropertyIndexNameStore( neoStore );
+            legacyStore.copyDynamicStringPropertyStore( neoStore );
+            legacyStore.copyDynamicArrayPropertyStore( neoStore );
         }
-
-        private void migrateNeoStore( NeoStore neoStore )
-        {
-            LegacyNeoStoreReader neoStoreReader = legacyStore.getNeoStoreReader();
-
-            neoStore.setCreationTime( neoStoreReader.getCreationTime() );
-            neoStore.setRandomNumber( neoStoreReader.getRandomNumber() );
-            neoStore.setVersion( neoStoreReader.getVersion() );
-            updateLastCommittedTxInSimulatedRecoveredStatus( neoStore, neoStoreReader.getLastCommittedTx() );
-        }
-
-        private void updateLastCommittedTxInSimulatedRecoveredStatus( NeoStore neoStore, long lastCommittedTx )
-        {
-            neoStore.setRecoveredStatus( true );
-            neoStore.setLastCommittedTx( lastCommittedTx );
-            neoStore.setRecoveredStatus( false );
-        }
-
-        private void migrateNodes( NodeStore nodeStore, PropertyWriter propertyWriter ) throws IOException
+        
+        private void migrateNodes( NodeStore nodeStore ) throws IOException
         {
             Iterable<NodeRecord> records = legacyStore.getNodeStoreReader().readNodeStore();
-            // estimate total number of nodes using file size then calc number of dots or percentage complete
             for ( NodeRecord nodeRecord : records )
             {
-                reportProgress(nodeRecord.getId());
+                reportProgress( nodeRecord.getId() );
                 nodeStore.setHighId( nodeRecord.getId() + 1 );
                 if ( nodeRecord.inUse() )
                 {
-                    long startOfPropertyChain = nodeRecord.getNextProp();
-                    if ( startOfPropertyChain != Record.NO_NEXT_RELATIONSHIP.intValue() )
-                    {
-                        long propertyRecordId = migrateProperties( startOfPropertyChain, propertyWriter );
-                        nodeRecord.setNextProp( propertyRecordId );
-                    }
                     nodeStore.updateRecord( nodeRecord );
-                } else
+                }
+                else
                 {
                     nodeStore.freeId( nodeRecord.getId() );
                 }
             }
             legacyStore.getNodeStoreReader().close();
         }
-
-        private void migrateRelationships( RelationshipStore relationshipStore, PropertyWriter propertyWriter ) throws IOException
-        {
-            long nodeMaxId = legacyStore.getNodeStoreReader().getMaxId();
-
-            Iterable<RelationshipRecord> records = legacyStore.getRelationshipStoreReader().readRelationshipStore();
-            for ( RelationshipRecord relationshipRecord : records )
-            {
-                reportProgress( nodeMaxId + relationshipRecord.getId() );
-                relationshipStore.setHighId( relationshipRecord.getId() + 1 );
-                if ( relationshipRecord.inUse() )
-                {
-                    long startOfPropertyChain = relationshipRecord.getNextProp();
-                    if ( startOfPropertyChain != Record.NO_NEXT_RELATIONSHIP.intValue() )
-                    {
-                        long propertyRecordId = migrateProperties( startOfPropertyChain, propertyWriter );
-                        relationshipRecord.setNextProp( propertyRecordId );
-                    }
-                    relationshipStore.updateRecord( relationshipRecord );
-                } else
-                {
-                    relationshipStore.freeId( relationshipRecord.getId() );
-                }
-            }
-            legacyStore.getRelationshipStoreReader().close();
-        }
-
+        
         private void reportProgress( long id )
         {
             int newPercent = (int) (id * 100 / totalEntities);
@@ -172,98 +111,6 @@ public class StoreMigrator
                 percentComplete = newPercent;
                 progressMonitor.percentComplete( percentComplete );
             }
-        }
-
-        private long migrateProperties( long startOfPropertyChain, PropertyWriter propertyWriter ) throws IOException
-        {
-            LegacyPropertyRecord propertyRecord = legacyStore.getPropertyStoreReader().readPropertyRecord( startOfPropertyChain );
-            List<Pair<Integer, Object>> properties = new ArrayList<Pair<Integer, Object>>();
-            while ( propertyRecord.getNextProp() != Record.NO_NEXT_PROPERTY.intValue() )
-            {
-                properties.add( extractValue( propertyRecord ) );
-                propertyRecord = legacyStore.getPropertyStoreReader().readPropertyRecord( propertyRecord.getNextProp() );
-            }
-            properties.add( extractValue( propertyRecord ) );
-            return propertyWriter.writeProperties( properties );
-        }
-
-        private Pair<Integer, Object> extractValue( LegacyPropertyRecord propertyRecord )
-        {
-            int keyIndexId = propertyRecord.getKeyIndexId();
-            Object value = propertyRecord.getType().getValue( propertyRecord, legacyStore.getDynamicRecordFetcher() );
-            return Pair.of( keyIndexId, value );
-        }
-
-        public void migrateRelationshipTypes( RelationshipTypeStore relationshipTypeStore ) throws IOException
-        {
-            LegacyRelationshipTypeStoreReader relationshipTypeStoreReader = legacyStore.getRelationshipTypeStoreReader();
-            LegacyDynamicStoreReader relationshipTypeNameStoreReader = legacyStore.getRelationshipTypeNameStoreReader();
-
-            for ( RelationshipTypeRecord relationshipTypeRecord : relationshipTypeStoreReader.readRelationshipTypes() )
-            {
-                List<LegacyDynamicRecord> dynamicRecords = relationshipTypeNameStoreReader.getPropertyChain( relationshipTypeRecord.getNameId() );
-                String name = LegacyDynamicRecordFetcher.joinRecordsIntoString( relationshipTypeRecord.getNameId(), dynamicRecords );
-                createRelationshipType( relationshipTypeStore, name, relationshipTypeRecord.getId() );
-            }
-            relationshipTypeNameStoreReader.close();
-        }
-
-        public void createRelationshipType( RelationshipTypeStore relationshipTypeStore, String name, int id )
-        {
-            long nextIdFromStore = relationshipTypeStore.nextId();
-            while ( nextIdFromStore < id )
-            {
-                nextIdFromStore = relationshipTypeStore.nextId();
-            }
-
-            RelationshipTypeRecord record = new RelationshipTypeRecord( id );
-
-            record.setInUse( true );
-            record.setCreated();
-            Collection<DynamicRecord> keyRecords = relationshipTypeStore.allocateNameRecords(
-                    encodeString( name ) );
-            record.setNameId( (int) first( keyRecords ).getId() );
-            for ( DynamicRecord keyRecord : keyRecords )
-            {
-                record.addNameRecord( keyRecord );
-            }
-            relationshipTypeStore.updateRecord( record );
-        }
-
-        public void migratePropertyIndexes( PropertyIndexStore propIndexStore ) throws IOException
-        {
-            LegacyPropertyIndexStoreReader indexStoreReader = legacyStore.getPropertyIndexStoreReader();
-            LegacyDynamicStoreReader propertyIndexKeyStoreReader = legacyStore.getPropertyIndexKeyStoreReader();
-
-            for ( PropertyIndexRecord propertyIndexRecord : indexStoreReader.readPropertyIndexStore() )
-            {
-                List<LegacyDynamicRecord> dynamicRecords = propertyIndexKeyStoreReader.getPropertyChain( propertyIndexRecord.getNameId() );
-                String key = LegacyDynamicRecordFetcher.joinRecordsIntoString( propertyIndexRecord.getNameId(), dynamicRecords );
-                createPropertyIndex( propIndexStore, key, propertyIndexRecord.getId() );
-            }
-            propertyIndexKeyStoreReader.close();
-        }
-
-        public void createPropertyIndex( PropertyIndexStore propIndexStore, String key, int id )
-        {
-            long nextIdFromStore = propIndexStore.nextId();
-            while ( nextIdFromStore < id )
-            {
-                nextIdFromStore = propIndexStore.nextId();
-            }
-
-            PropertyIndexRecord record = new PropertyIndexRecord( id );
-
-            record.setInUse( true );
-            record.setCreated();
-            Collection<DynamicRecord> keyRecords = propIndexStore.allocateNameRecords(
-                    encodeString( key ) );
-            record.setNameId( (int) first( keyRecords ).getId() );
-            for ( DynamicRecord keyRecord : keyRecords )
-            {
-                record.addNameRecord( keyRecord );
-            }
-            propIndexStore.updateRecord( record );
         }
     }
 }

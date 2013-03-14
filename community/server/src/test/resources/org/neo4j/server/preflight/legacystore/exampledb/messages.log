@@ -42,3 +42,288 @@ Fri Sep 30 15:29:19 BST 2011: NeoStore closed
 Fri Sep 30 15:29:19 BST 2011: Closed log /Users/apcj/projects/neo4j/legacy-store-creator/target/output-database/index/lucene.log
 Fri Sep 30 15:29:19 BST 2011: NeoStore closed
 Fri Sep 30 15:29:19 BST 2011: TM shutting down
+2013-03-18 12:50:29.984+0000 INFO  [org.neo4j]: --- INITIALIZED diagnostics START ---
+2013-03-18 12:50:29.999+0000 INFO  [org.neo4j]: Neo4j Kernel properties:
+    neostore.propertystore.db.mapped_memory=222M
+    neostore.nodestore.db.mapped_memory=61M
+    allow_store_upgrade=true
+    neostore.relationshipstore.db.mapped_memory=272M
+    neostore.propertystore.db.strings.mapped_memory=189M
+    store_dir=C:\Users\Mattias\Java\neo4j\community\server\src\test\resources\org\neo4j\server\preflight\legacystore\exampledb
+    neostore.propertystore.db.arrays.mapped_memory=214M
+2013-03-18 12:50:29.999+0000 INFO  [org.neo4j]: Diagnostics providers:
+    org.neo4j.kernel.configuration.Config
+    org.neo4j.kernel.info.DiagnosticsManager
+    SYSTEM_MEMORY
+    JAVA_MEMORY
+    OPERATING_SYSTEM
+    JAVA_VIRTUAL_MACHINE
+    CLASSPATH
+    LIBRARY_PATH
+    SYSTEM_PROPERTIES
+    NETWORK
+2013-03-18 12:50:29.999+0000 INFO  [org.neo4j]: System memory information:
+    Total Physical memory: 15,98 GB
+    Free Physical memory: 9,90 GB
+    Committed virtual memory: 305,57 MB
+    Total swap space: 16,95 GB
+    Free swap space: 10,59 GB
+2013-03-18 12:50:30.004+0000 INFO  [org.neo4j]: JVM memory information:
+    Free  memory: 237,31 MB
+    Total memory: 245,06 MB
+    Max   memory: 3,55 GB
+    Garbage Collector: PS Scavenge: [PS Eden Space, PS Survivor Space]
+    Garbage Collector: PS MarkSweep: [PS Eden Space, PS Survivor Space, PS Old Gen, PS Perm Gen]
+    Memory Pool: Code Cache (Non-heap memory): committed=2,44 MB, used=441,56 kB, max=48,00 MB, threshold=0,00 B
+    Memory Pool: PS Eden Space (Heap memory): committed=63,94 MB, used=7,75 MB, max=1,31 GB, threshold=?
+    Memory Pool: PS Survivor Space (Heap memory): committed=10,63 MB, used=0,00 B, max=10,63 MB, threshold=?
+    Memory Pool: PS Old Gen (Heap memory): committed=170,50 MB, used=0,00 B, max=2,66 GB, threshold=0,00 B
+    Memory Pool: PS Perm Gen (Non-heap memory): committed=20,75 MB, used=5,77 MB, max=82,00 MB, threshold=0,00 B
+2013-03-18 12:50:30.009+0000 INFO  [org.neo4j]: Operating system information:
+    Operating System: Windows 7; version: 6.1; arch: amd64; cpus: 8
+    Process id: 4748@Mattias-PC
+    Byte order: LITTLE_ENDIAN
+    Local timezone: Europe/Berlin
+2013-03-18 12:50:30.019+0000 INFO  [org.neo4j]: JVM information:
+    VM Name: Java HotSpot(TM) 64-Bit Server VM
+    VM Vendor: Oracle Corporation
+    VM Version: 21.0-b17
+    JIT compiler: HotSpot 64-Bit Tiered Compilers
+    VM Arguments: [-Dfile.encoding=UTF-8]
+2013-03-18 12:50:30.019+0000 INFO  [org.neo4j]: Java classpath:
+     [classpath + loader.0] file:/C:/Users/Mattias/.m2/repository/org/neo4j/neo4j-kernel/1.9-SNAPSHOT/neo4j-kernel-1.9-SNAPSHOT.jar
+     [loader.1] file:/C:/Java/jdk1.7.0/jre/lib/ext/zipfs.jar
+     [bootstrap] C:\Java\jdk1.7.0\jre\lib\jce.jar
+     [classpath + loader.0] file:/C:/Users/Mattias/.m2/repository/org/apache/geronimo/specs/geronimo-jta_1.1_spec/1.1.1/geronimo-jta_1.1_spec-1.1.1.jar
+     [loader.1] file:/C:/Java/jdk1.7.0/jre/lib/ext/sunjce_provider.jar
+     [bootstrap] C:\Java\jdk1.7.0\jre\lib\charsets.jar
+     [bootstrap] C:\Java\jdk1.7.0\jre\lib\sunrsasign.jar
+     [loader.1] file:/C:/Java/jdk1.7.0/jre/lib/ext/localedata.jar
+     [loader.1] file:/C:/Java/jdk1.7.0/jre/lib/ext/dnsns.jar
+     [bootstrap] C:\Java\jdk1.7.0\jre\lib\resources.jar
+     [classpath + loader.0] file:/C:/Users/Mattias/eclipse-workspace/upgrader/target/classes/
+     [bootstrap] C:\Java\jdk1.7.0\jre\lib\jsse.jar
+     [loader.1] file:/C:/Java/jdk1.7.0/jre/lib/ext/sunmscapi.jar
+     [bootstrap] C:\Java\jdk1.7.0\jre\classes
+     [bootstrap] C:\Java\jdk1.7.0\jre\lib\rt.jar
+     [loader.1] file:/C:/Java/jdk1.7.0/jre/lib/ext/sunec.jar
+2013-03-18 12:50:30.019+0000 INFO  [org.neo4j]: Library path:
+    C:\Java\jdk1.7.0\bin
+    C:\Windows\Sun\Java\bin
+    C:\Windows\System32
+    C:\Windows
+    C:\Program Files\wbin
+    C:\Program Files (x86)\NVIDIA Corporation\PhysX\Common
+    C:\Windows\System32
+    C:\Windows
+    C:\Windows\System32\wbem
+    C:\Windows\System32\WindowsPowerShell\v1.0
+    C:\Java\jdk1.7.0\bin
+    C:\Program Files (x86)\Git\cmd
+    C:\Program Files\apache-maven-3.0.4\bin
+    C:\Program Files\Java\jdk1.6.0_25\bin
+    C:\Users\Mattias\bin
+    C:\Program Files\SlikSvn\bin
+    C:\Program Files (x86)\Launch4j
+    C:\Program Files (x86)\GtkSharp\2.12\bin
+    C:\Python27
+    C:\Users\Mattias\eclipse-workspace\upgrader
+2013-03-18 12:50:30.019+0000 INFO  [org.neo4j]: System.properties:
+    sun.boot.library.path = C:\Java\jdk1.7.0\jre\bin
+    user.country.format = SE
+    path.separator = ;
+    file.encoding.pkg = sun.io
+    user.country = US
+    user.script = 
+    sun.java.launcher = SUN_STANDARD
+    sun.os.patch.level = Service Pack 1
+    user.dir = C:\Users\Mattias\eclipse-workspace\upgrader
+    user.variant = 
+    sun.jnu.encoding = Cp1252
+    sun.management.compiler = HotSpot 64-Bit Tiered Compilers
+    user.home = C:\Users\Mattias
+    user.timezone = Europe/Berlin
+    file.encoding = UTF-8
+    user.name = Mattias
+    sun.java.command = Upgrader
+    sun.arch.data.model = 64
+    user.language = en
+    user.language.format = sv
+    awt.toolkit = sun.awt.windows.WToolkit
+    file.separator = \
+    sun.io.unicode.encoding = UnicodeLittle
+    sun.cpu.endian = little
+    sun.desktop = windows
+    sun.cpu.isalist = amd64
+2013-03-18 12:50:30.024+0000 INFO  [org.neo4j]: Network information:
+    Interface Software Loopback Interface 1:
+        address: 127.0.0.1
+        address: 0:0:0:0:0:0:0:1
+    Interface WAN Miniport (SSTP):
+    Interface WAN Miniport (L2TP):
+    Interface WAN Miniport (PPTP):
+    Interface WAN Miniport (PPPOE):
+    Interface WAN Miniport (IPv6):
+    Interface WAN Miniport (Network Monitor):
+    Interface WAN Miniport (IP):
+    Interface RAS Async Adapter:
+    Interface Realtek RTL8188CE Wireless LAN 802.11n COMBO PCI-E NIC:
+        address: 172.16.14.36
+        address: fe80:0:0:0:a935:ae85:ac2a:1d8a%10
+    Interface Teredo Tunneling Pseudo-Interface:
+        address: 2001:0:4137:9e76:1c11:1dcc:53ef:f1db
+        address: fe80:0:0:0:1c11:1dcc:53ef:f1db%11
+    Interface JMicron PCI Express Gigabit Ethernet Adapter:
+        address: fe80:0:0:0:aca0:cac4:a325:69ce%12
+    Interface WAN Miniport (IKEv2):
+    Interface Microsoft ISATAP Adapter #2:
+    Interface Microsoft ISATAP Adapter:
+        address: fe80:0:0:0:0:5efe:ac10:e24%15
+    Interface JMicron PCI Express Gigabit Ethernet Adapter-QoS Packet Scheduler-0000:
+    Interface JMicron PCI Express Gigabit Ethernet Adapter-WFP LightWeight Filter-0000:
+    Interface Realtek RTL8188CE Wireless LAN 802.11n COMBO PCI-E NIC-Virtual WiFi Filter Driver-0000:
+    Interface Realtek RTL8188CE Wireless LAN 802.11n COMBO PCI-E NIC-QoS Packet Scheduler-0000:
+    Interface WAN Miniport (Network Monitor)-QoS Packet Scheduler-0000:
+    Interface WAN Miniport (IP)-QoS Packet Scheduler-0000:
+    Interface WAN Miniport (IPv6)-QoS Packet Scheduler-0000:
+    Interface Realtek RTL8188CE Wireless LAN 802.11n COMBO PCI-E NIC-Native WiFi Filter Driver-0000:
+    Interface Realtek RTL8188CE Wireless LAN 802.11n COMBO PCI-E NIC-WFP LightWeight Filter-0000:
+2013-03-18 12:50:30.059+0000 INFO  [org.neo4j]: --- INITIALIZED diagnostics END ---
+2013-03-18 12:50:31.744+0000 INFO  [org.neo4j]: Starting upgrade of database store files
+2013-03-18 12:50:31.990+0000 INFO  [org.neo4j]: Store upgrade 10% complete
+2013-03-18 12:50:32.125+0000 INFO  [org.neo4j]: Store upgrade 20% complete
+2013-03-18 12:50:32.215+0000 INFO  [org.neo4j]: Store upgrade 30% complete
+2013-03-18 12:50:32.280+0000 INFO  [org.neo4j]: Store upgrade 40% complete
+2013-03-18 12:50:32.285+0000 INFO  [org.neo4j]: Store upgrade 50% complete
+2013-03-18 12:50:32.285+0000 INFO  [org.neo4j]: Store upgrade 60% complete
+2013-03-18 12:50:32.290+0000 INFO  [org.neo4j]: Store upgrade 70% complete
+2013-03-18 12:50:32.290+0000 INFO  [org.neo4j]: Store upgrade 80% complete
+2013-03-18 12:50:32.415+0000 INFO  [org.neo4j]: Store upgrade 90% complete
+2013-03-18 12:50:32.500+0000 INFO  [org.neo4j]: Store upgrade 100% complete
+2013-03-18 12:50:32.580+0000 INFO  [org.neo4j]: Finished upgrade of database store files
+2013-03-18 12:50:34.000+0000 INFO  [org.neo4j]: [C:\Users\Mattias\Java\neo4j\community\server\src\test\resources\org\neo4j\server\preflight\legacystore\exampledb\neostore.relationshiptypestore.db.names] brickCount=0 brickSize=0b mappedMem=0b (storeSize=38038b)
+2013-03-18 12:50:34.000+0000 INFO  [org.neo4j]: [C:\Users\Mattias\Java\neo4j\community\server\src\test\resources\org\neo4j\server\preflight\legacystore\exampledb\neostore.relationshiptypestore.db] brickCount=0 brickSize=0b mappedMem=0b (storeSize=5000b)
+2013-03-18 12:50:34.000+0000 INFO  [org.neo4j]: [C:\Users\Mattias\Java\neo4j\community\server\src\test\resources\org\neo4j\server\preflight\legacystore\exampledb\neostore.propertystore.db.strings] brickCount=5 brickSize=198144b mappedMem=198180864b (storeSize=1152128b)
+2013-03-18 12:50:34.000+0000 INFO  [org.neo4j]: [C:\Users\Mattias\Java\neo4j\community\server\src\test\resources\org\neo4j\server\preflight\legacystore\exampledb\neostore.propertystore.db.index.keys] brickCount=0 brickSize=0b mappedMem=0b (storeSize=494b)
+2013-03-18 12:50:34.000+0000 INFO  [org.neo4j]: [C:\Users\Mattias\Java\neo4j\community\server\src\test\resources\org\neo4j\server\preflight\legacystore\exampledb\neostore.propertystore.db.index] brickCount=0 brickSize=0b mappedMem=0b (storeSize=117b)
+2013-03-18 12:50:34.000+0000 INFO  [org.neo4j]: [C:\Users\Mattias\Java\neo4j\community\server\src\test\resources\org\neo4j\server\preflight\legacystore\exampledb\neostore.propertystore.db.arrays] brickCount=0 brickSize=224384b mappedMem=224395264b (storeSize=128128b)
+2013-03-18 12:50:34.000+0000 INFO  [org.neo4j]: [C:\Users\Mattias\Java\neo4j\community\server\src\test\resources\org\neo4j\server\preflight\legacystore\exampledb\neostore.propertystore.db] brickCount=0 brickSize=232757b mappedMem=232783872b (storeSize=164041b)
+2013-03-18 12:50:34.000+0000 INFO  [org.neo4j]: [C:\Users\Mattias\Java\neo4j\community\server\src\test\resources\org\neo4j\server\preflight\legacystore\exampledb\neostore.relationshipstore.db] brickCount=0 brickSize=285186b mappedMem=285212672b (storeSize=49533b)
+2013-03-18 12:50:34.000+0000 INFO  [org.neo4j]: [C:\Users\Mattias\Java\neo4j\community\server\src\test\resources\org\neo4j\server\preflight\legacystore\exampledb\neostore.nodestore.db] brickCount=0 brickSize=63963b mappedMem=63963136b (storeSize=9018b)
+2013-03-18 12:50:34.005+0000 INFO  [org.neo4j]: [C:\Users\Mattias\Java\neo4j\community\server\src\test\resources\org\neo4j\server\preflight\legacystore\exampledb\neostore] brickCount=0 brickSize=0b mappedMem=0b (storeSize=54b)
+2013-03-18 12:50:34.015+0000 INFO  [org.neo4j]: Opened logical log [C:\Users\Mattias\Java\neo4j\community\server\src\test\resources\org\neo4j\server\preflight\legacystore\exampledb\nioneo_logical.log.1] version=0, lastTxId=1004 (clean)
+2013-03-18 12:50:34.060+0000 INFO  [org.neo4j]: TM new log: tm_tx_log.1
+2013-03-18 12:50:34.200+0000 INFO  [org.neo4j]: --- STARTED diagnostics for KernelDiagnostics:Versions START ---
+2013-03-18 12:50:34.205+0000 INFO  [org.neo4j]: Graph Database: org.neo4j.kernel.EmbeddedGraphDatabase StoreId[time:1317392957120, id:-472309512128245482, store version: 13561656364791302]
+2013-03-18 12:50:34.205+0000 INFO  [org.neo4j]: Kernel version: Neo4j - Graph Database Kernel 1.9-SNAPSHOT (revision: 1.9.M02-431-geb57146)
+2013-03-18 12:50:34.205+0000 INFO  [org.neo4j]: Neo4j component versions:
+2013-03-18 12:50:34.205+0000 INFO  [org.neo4j]:   Neo4j - Graph Database Kernel 1.9-SNAPSHOT (revision: 1.9.M02-431-geb57146)
+2013-03-18 12:50:34.205+0000 INFO  [org.neo4j]: --- STARTED diagnostics for KernelDiagnostics:Versions END ---
+2013-03-18 12:50:34.205+0000 INFO  [org.neo4j]: --- STARTED diagnostics for NEO_STORE_VERSIONS START ---
+2013-03-18 12:50:34.210+0000 INFO  [org.neo4j]: Store versions:
+    Store versions:
+      NeoStore v0.A.0
+      NodeStore v0.A.0
+      RelationshipStore v0.A.0
+      RelationshipTypeStore v0.A.0
+      PropertyStore v0.A.0
+      PropertyIndexStore v0.A.0
+      StringPropertyStore v0.A.0
+      ArrayPropertyStore v0.A.0
+2013-03-18 12:50:34.210+0000 INFO  [org.neo4j]: --- STARTED diagnostics for NEO_STORE_VERSIONS END ---
+2013-03-18 12:50:34.210+0000 INFO  [org.neo4j]: --- STARTED diagnostics for NEO_STORE_ID_USAGE START ---
+2013-03-18 12:50:34.210+0000 INFO  [org.neo4j]: Id usage:
+    Id usage:
+      NodeStore: used=1002 high=1001
+      RelationshipStore: used=1501 high=1500
+      RelationshipTypeStore: used=1000 high=999
+      PropertyStore: used=4001 high=4000
+      PropertyIndexStore: used=13 high=12
+      StringPropertyStore: used=9001 high=9000
+      ArrayPropertyStore: used=1001 high=1000
+2013-03-18 12:50:34.210+0000 INFO  [org.neo4j]: --- STARTED diagnostics for NEO_STORE_ID_USAGE END ---
+2013-03-18 12:50:34.210+0000 INFO  [org.neo4j]: --- STARTED diagnostics for PERSISTENCE_WINDOW_POOL_STATS START ---
+2013-03-18 12:50:34.210+0000 INFO  [org.neo4j]: --- STARTED diagnostics for PERSISTENCE_WINDOW_POOL_STATS END ---
+2013-03-18 12:50:34.210+0000 INFO  [org.neo4j]: --- STARTED diagnostics for KernelDiagnostics:StoreFiles START ---
+2013-03-18 12:50:34.210+0000 INFO  [org.neo4j]: Disk space on partition (Total / Free / Free %): 100176752640 / 13366861824 / 86
+Storage files: (filename : modification date - size)
+      active_tx_log: 2013-03-18T13:50:34+0100 - 11,00 B
+      index:
+        lucene-store.db: 2013-02-11T17:07:53+0100 - 32,00 B
+        lucene.log.active: 2013-02-11T17:07:53+0100 - 4,00 B
+      - Total: 2013-02-11T17:07:53+0100 - 36,00 B
+      lock: 2013-03-18T13:50:30+0100 - 0,00 B
+      messages.log: 2013-02-11T17:07:53+0100 - 19,58 kB
+      neostore: 2013-03-18T13:50:34+0100 - 54,00 B
+      neostore.id: 2013-03-18T13:50:33+0100 - 9,00 B
+      neostore.nodestore.db: 2013-03-18T13:50:34+0100 - 8,81 kB
+      neostore.nodestore.db.id: 2013-03-18T13:50:33+0100 - 3,92 kB
+      neostore.propertystore.db: 2013-03-18T13:50:34+0100 - 160,20 kB
+      neostore.propertystore.db.arrays: 2013-03-18T13:50:34+0100 - 125,13 kB
+      neostore.propertystore.db.arrays.id: 2013-03-18T13:50:33+0100 - 9,00 B
+      neostore.propertystore.db.id: 2013-03-18T13:50:33+0100 - 9,00 B
+      neostore.propertystore.db.index: 2013-03-18T13:50:34+0100 - 117,00 B
+      neostore.propertystore.db.index.id: 2013-03-18T13:50:33+0100 - 9,00 B
+      neostore.propertystore.db.index.keys: 2013-03-18T13:50:34+0100 - 494,00 B
+      neostore.propertystore.db.index.keys.id: 2013-03-18T13:50:33+0100 - 9,00 B
+      neostore.propertystore.db.strings: 2013-03-18T13:50:34+0100 - 1,10 MB
+      neostore.propertystore.db.strings.id: 2013-03-18T13:50:32+0100 - 9,00 B
+      neostore.relationshipstore.db: 2013-03-18T13:50:34+0100 - 48,37 kB
+      neostore.relationshipstore.db.id: 2013-03-18T13:50:33+0100 - 7,83 kB
+      neostore.relationshiptypestore.db: 2013-03-18T13:50:34+0100 - 4,88 kB
+      neostore.relationshiptypestore.db.id: 2013-03-18T13:50:32+0100 - 9,00 B
+      neostore.relationshiptypestore.db.names: 2013-03-18T13:50:34+0100 - 37,15 kB
+      neostore.relationshiptypestore.db.names.id: 2013-03-18T13:50:32+0100 - 9,00 B
+      nioneo_logical.log.1: 2013-03-18T13:50:34+0100 - 16,00 B
+      nioneo_logical.log.active: 2013-03-18T13:50:34+0100 - 4,00 B
+      store_lock: 2013-03-18T13:50:30+0100 - 0,00 B
+      tm_tx_log.1: 2013-03-18T13:50:34+0100 - 0,00 B
+      upgrade:
+      - Total: 2013-03-18T13:50:34+0100 - 0,00 B
+      upgrade_backup:
+        active_tx_log: 2013-02-11T17:07:53+0100 - 11,00 B
+        messages.log: 2013-03-18T13:50:33+0100 - 14,01 kB
+        neostore: 2013-02-11T17:07:53+0100 - 51,00 B
+        neostore.id: 2013-02-11T17:07:53+0100 - 9,00 B
+        neostore.nodestore.db: 2013-02-11T17:07:53+0100 - 8,81 kB
+        neostore.nodestore.db.id: 2013-02-11T17:07:53+0100 - 3,92 kB
+        neostore.propertystore.db: 2013-02-11T17:07:53+0100 - 671,46 kB
+        neostore.propertystore.db.arrays: 2013-02-11T17:07:53+0100 - 1,27 MB
+        neostore.propertystore.db.arrays.id: 2013-02-11T17:07:53+0100 - 46,88 kB
+        neostore.propertystore.db.id: 2013-02-11T17:07:53+0100 - 128,92 kB
+        neostore.propertystore.db.index: 2013-02-11T17:07:53+0100 - 137,00 B
+        neostore.propertystore.db.index.id: 2013-02-11T17:07:53+0100 - 17,00 B
+        neostore.propertystore.db.index.keys: 2013-02-11T17:07:53+0100 - 628,00 B
+        neostore.propertystore.db.index.keys.id: 2013-02-11T17:07:53+0100 - 17,00 B
+        neostore.propertystore.db.strings: 2013-02-11T17:07:53+0100 - 5,39 MB
+        neostore.propertystore.db.strings.id: 2013-02-11T17:07:53+0100 - 199,23 kB
+        neostore.relationshipstore.db: 2013-02-11T17:07:53+0100 - 48,36 kB
+        neostore.relationshipstore.db.id: 2013-02-11T17:07:53+0100 - 7,82 kB
+        neostore.relationshiptypestore.db: 2013-02-11T17:07:53+0100 - 4,91 kB
+        neostore.relationshiptypestore.db.id: 2013-02-11T17:07:53+0100 - 9,00 B
+        neostore.relationshiptypestore.db.names: 2013-02-11T17:07:53+0100 - 42,06 kB
+        neostore.relationshiptypestore.db.names.id: 2013-02-11T17:07:53+0100 - 9,00 B
+        nioneo_logical.log.active: 2013-02-11T17:07:53+0100 - 4,00 B
+        tm_tx_log.1: 2013-02-11T17:07:53+0100 - 28,68 kB
+        tm_tx_log.2: 2013-02-11T17:07:53+0100 - 440,00 B
+      - Total: 2013-03-18T13:50:33+0100 - 7,84 MB
+2013-03-18 12:50:34.225+0000 INFO  [org.neo4j]: --- STARTED diagnostics for KernelDiagnostics:StoreFiles END ---
+2013-03-18 12:50:34.230+0000 INFO  [org.neo4j]: Started - database is now available
+2013-03-18 12:50:34.230+0000 INFO  [org.neo4j]: GC Monitor started. 
+2013-03-18 12:50:34.230+0000 INFO  [org.neo4j]: Stopping - database is now unavailable
+2013-03-18 12:50:34.230+0000 INFO  [org.neo4j]: GC Monitor stopped. 
+2013-03-18 12:50:34.255+0000 INFO  [org.neo4j]: TM shutting down
+2013-03-18 12:50:34.475+0000 INFO  [org.neo4j]: Closed log C:\Users\Mattias\Java\neo4j\community\server\src\test\resources\org\neo4j\server\preflight\legacystore\exampledb\nioneo_logical.log
+2013-03-18 12:50:34.520+0000 INFO  [org.neo4j]: C:\Users\Mattias\Java\neo4j\community\server\src\test\resources\org\neo4j\server\preflight\legacystore\exampledb\neostore.relationshiptypestore.db.names hit=0 miss=2000 switches=0 ooe=0
+2013-03-18 12:50:34.620+0000 INFO  [org.neo4j]: C:\Users\Mattias\Java\neo4j\community\server\src\test\resources\org\neo4j\server\preflight\legacystore\exampledb\neostore.relationshiptypestore.db hit=0 miss=1000 switches=0 ooe=0
+2013-03-18 12:50:34.710+0000 INFO  [org.neo4j]: C:\Users\Mattias\Java\neo4j\community\server\src\test\resources\org\neo4j\server\preflight\legacystore\exampledb\neostore.propertystore.db.strings hit=0 miss=0 switches=0 ooe=0
+2013-03-18 12:50:34.810+0000 INFO  [org.neo4j]: C:\Users\Mattias\Java\neo4j\community\server\src\test\resources\org\neo4j\server\preflight\legacystore\exampledb\neostore.propertystore.db.index.keys hit=0 miss=24 switches=0 ooe=0
+2013-03-18 12:50:34.940+0000 INFO  [org.neo4j]: C:\Users\Mattias\Java\neo4j\community\server\src\test\resources\org\neo4j\server\preflight\legacystore\exampledb\neostore.propertystore.db.index hit=0 miss=13 switches=0 ooe=0
+2013-03-18 12:50:35.100+0000 INFO  [org.neo4j]: C:\Users\Mattias\Java\neo4j\community\server\src\test\resources\org\neo4j\server\preflight\legacystore\exampledb\neostore.propertystore.db.arrays hit=0 miss=0 switches=0 ooe=0
+2013-03-18 12:50:35.240+0000 INFO  [org.neo4j]: C:\Users\Mattias\Java\neo4j\community\server\src\test\resources\org\neo4j\server\preflight\legacystore\exampledb\neostore.propertystore.db hit=0 miss=0 switches=0 ooe=0
+2013-03-18 12:50:35.345+0000 INFO  [org.neo4j]: C:\Users\Mattias\Java\neo4j\community\server\src\test\resources\org\neo4j\server\preflight\legacystore\exampledb\neostore.relationshipstore.db hit=0 miss=0 switches=0 ooe=0
+2013-03-18 12:50:35.485+0000 INFO  [org.neo4j]: C:\Users\Mattias\Java\neo4j\community\server\src\test\resources\org\neo4j\server\preflight\legacystore\exampledb\neostore.nodestore.db hit=0 miss=0 switches=0 ooe=0
+2013-03-18 12:50:35.570+0000 INFO  [org.neo4j]: C:\Users\Mattias\Java\neo4j\community\server\src\test\resources\org\neo4j\server\preflight\legacystore\exampledb\neostore hit=0 miss=12 switches=0 ooe=0
+2013-03-18 12:50:35.665+0000 INFO  [org.neo4j]: NeoStore closed
+2013-03-18 12:50:35.665+0000 INFO  [org.neo4j]: --- STOPPING diagnostics START ---
+2013-03-18 12:50:35.665+0000 INFO  [org.neo4j]: --- STOPPING diagnostics END ---

@@ -55,7 +55,7 @@ public class DatabaseFiles
     {
         try
         {
-            StoreFiles.move( fs, fromDirectory, toDirectory );
+            StoreFile.move( fs, fromDirectory, toDirectory );
             LogFiles.move( fs, fromDirectory, toDirectory );
         }
         catch ( IOException e )

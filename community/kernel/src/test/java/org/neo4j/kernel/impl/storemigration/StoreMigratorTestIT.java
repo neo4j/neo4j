@@ -62,8 +62,7 @@ public class StoreMigratorTestIT
     {
         URL legacyStoreResource = getClass().getResource( "legacystore/exampledb/neostore" );
 
-        LegacyStore legacyStore = new LegacyStore( fs, new File( legacyStoreResource.getFile() ),
-                StringLogger.DEV_NULL );
+        LegacyStore legacyStore = new LegacyStore( fs, new File( legacyStoreResource.getFile() ) );
 
         Config config = MigrationTestUtils.defaultConfig();
         File outputDir = new File( "target/outputDatabase" );
@@ -73,12 +72,14 @@ public class StoreMigratorTestIT
         String storeFileName = "target/outputDatabase/neostore";
         StoreFactory factory = new StoreFactory( config, new DefaultIdGeneratorFactory(),
                 new DefaultWindowPoolFactory(), fs, StringLogger.DEV_NULL, new DefaultTxHook() );
-        NeoStore neoStore = factory.createNeoStore( new File( storeFileName ));
+        NeoStore neoStore = factory.createNeoStore( new File( storeFileName ) );
 
         ListAccumulatorMigrationProgressMonitor monitor = new ListAccumulatorMigrationProgressMonitor();
 
         new StoreMigrator( monitor ).migrate( legacyStore, neoStore );
 
+        neoStore = factory.newNeoStore( new File( storeFileName ) );
+        
         verifyNeoStore( neoStore);
 
         neoStore.close();
@@ -104,7 +105,7 @@ public class StoreMigratorTestIT
     {
         assertEquals( 1317392957120l, neoStore.getCreationTime() );
         assertEquals( -472309512128245482l, neoStore.getRandomNumber() );
-        assertEquals( 0l, neoStore.getVersion() );
+        assertEquals( 1l, neoStore.getVersion() );
         assertEquals( 1004l, neoStore.getLastCommittedTx() );
     }
 

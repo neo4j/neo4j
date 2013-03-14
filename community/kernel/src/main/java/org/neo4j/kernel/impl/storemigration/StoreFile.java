@@ -25,21 +25,44 @@ import java.io.IOException;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
+import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
 
-public class StoreFiles
+public enum StoreFile
 {
-    public static final String[] fileNames = {
-            NeoStore.DEFAULT_NAME,
-            neoStore( StoreFactory.NODE_STORE_NAME ),
-            neoStore( StoreFactory.PROPERTY_STORE_NAME ),
-            neoStore( StoreFactory.PROPERTY_ARRAYS_STORE_NAME ),
-            neoStore( StoreFactory.PROPERTY_INDEX_STORE_NAME ),
-            neoStore( StoreFactory.PROPERTY_INDEX_KEYS_STORE_NAME ),
-            neoStore( StoreFactory.PROPERTY_STRINGS_STORE_NAME ),
-            neoStore( StoreFactory.RELATIONSHIP_STORE_NAME ),
-            neoStore( StoreFactory.RELATIONSHIP_TYPE_STORE_NAME ),
-            neoStore( StoreFactory.RELATIONSHIP_TYPE_NAMES_STORE_NAME ),
-    };
+    NEO_STORE( "NeoStore", "" ),
+    NODE_STORE( "NodeStore", StoreFactory.NODE_STORE_NAME ),
+    PROPERTY_STORE( "PropertyStore", StoreFactory.PROPERTY_STORE_NAME ),
+    PROPERTY_ARRAY_STORE( "ArrayPropertyStore", StoreFactory.PROPERTY_ARRAYS_STORE_NAME ),
+    PROPERTY_STRING_STORE( "StringPropertyStore", StoreFactory.PROPERTY_STRINGS_STORE_NAME ),
+    PROPERTY_INDEX_STORE( "PropertyIndexStore", StoreFactory.PROPERTY_INDEX_STORE_NAME ),
+    PROPERTY_INDEX_KEYS_STORE( "StringPropertyStore", StoreFactory.PROPERTY_INDEX_KEYS_STORE_NAME ),
+    RELATIONSHIP_STORE( "RelationshipStore", StoreFactory.RELATIONSHIP_STORE_NAME ),
+    RELATIONSHIP_TYPE_STORE( "RelationshipTypeStore", StoreFactory.RELATIONSHIP_TYPE_STORE_NAME ),
+    RELATIONSHIP_TYPE_NAMES_STORE( "StringPropertyStore", StoreFactory.RELATIONSHIP_TYPE_NAMES_STORE_NAME );
+    
+    private final String typeDescriptor;
+    private final String storeFileNamePart;
+
+    private StoreFile( String typeDescriptor, String storeFileNamePart )
+    {
+        this.typeDescriptor = typeDescriptor;
+        this.storeFileNamePart = storeFileNamePart;
+    }
+    
+    public String legacyVersion()
+    {
+        return typeDescriptor + " " + LegacyStore.LEGACY_VERSION;
+    }
+    
+    public String storeFileName()
+    {
+        return NeoStore.DEFAULT_NAME + storeFileNamePart;
+    }
+    
+    public String idFileName()
+    {
+        return storeFileName() + ".id";
+    }
 
     /**
      * Moves a database's store files from one directory
@@ -54,16 +77,11 @@ public class StoreFiles
             throws IOException
     {
         // TODO: change the order that files are moved to handle failure conditions properly
-        for ( String fileName : fileNames )
+        for ( StoreFile storeFile : StoreFile.values() )
         {
-            moveFile( fs, fileName, fromDirectory, toDirectory );
-            moveFile( fs, fileName + ".id", fromDirectory, toDirectory );
+            moveFile( fs, storeFile.storeFileName(), fromDirectory, toDirectory );
+            moveFile( fs, storeFile.idFileName(), fromDirectory, toDirectory );
         }
-    }
-
-    private static String neoStore( String part )
-    {
-        return NeoStore.DEFAULT_NAME + part;
     }
 
     /**

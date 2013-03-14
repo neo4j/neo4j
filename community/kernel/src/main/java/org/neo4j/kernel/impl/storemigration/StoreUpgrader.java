@@ -123,7 +123,7 @@ public class StoreUpgrader
                 fileSystemAbstraction, StringLogger.DEV_NULL, null ).createNeoStore( upgradeFileName );
         try
         {
-            storeMigrator.migrate( new LegacyStore( fileSystemAbstraction, storageFileName, StringLogger.DEV_NULL ),
+            storeMigrator.migrate( new LegacyStore( fileSystemAbstraction, storageFileName ),
                     neoStore );
         }
         catch ( IOException e )

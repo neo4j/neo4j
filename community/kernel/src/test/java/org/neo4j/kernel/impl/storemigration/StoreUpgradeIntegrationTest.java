@@ -25,6 +25,7 @@ import static org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.ALL_STORES_
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.allStoreFilesHaveVersion;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.prepareSampleLegacyDatabase;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.truncateFile;
+import static org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore.LEGACY_VERSION;
 
 import java.io.File;
 import java.io.IOException;
@@ -38,16 +39,16 @@ import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader.UnableToUpgradeException;
+import org.neo4j.test.TargetDirectory;
 
 public class StoreUpgradeIntegrationTest
 {
     @Test
     public void shouldUpgradeAutomaticallyOnDatabaseStartup() throws IOException
     {
-        File workingDirectory = new File( "target/" + StoreUpgraderTestIT.class.getSimpleName() );
         prepareSampleLegacyDatabase( fileSystem, workingDirectory );
 
-        assertTrue( allStoreFilesHaveVersion( fileSystem, workingDirectory, "v0.9.9" ) );
+        assertTrue( allStoreFilesHaveVersion( fileSystem, workingDirectory, LEGACY_VERSION ) );
 
         HashMap params = new HashMap();
         params.put( Config.ALLOW_STORE_UPGRADE, "true" );
@@ -61,12 +62,9 @@ public class StoreUpgradeIntegrationTest
     @Test
     public void shouldAbortOnNonCleanlyShutdown() throws IOException
     {
-        File workingDirectory = new File(
-                "target/" + StoreUpgraderTestIT.class.getSimpleName()
-                        + "shouldAbordOnNonCleanlyShutdown" );
         prepareSampleLegacyDatabase( fileSystem, workingDirectory );
 
-        assertTrue( allStoreFilesHaveVersion( fileSystem, workingDirectory, "v0.9.9" ) );
+        assertTrue( allStoreFilesHaveVersion( fileSystem, workingDirectory, LEGACY_VERSION ) );
         StoreUpgraderTestIT.truncateAllFiles( fileSystem, workingDirectory );
         // Now everything has lost the version info
 
@@ -88,12 +86,9 @@ public class StoreUpgradeIntegrationTest
     @Test
     public void shouldAbortOnCorruptStore() throws IOException
     {
-        File workingDirectory = new File(
-                "target/" + StoreUpgraderTestIT.class.getSimpleName()
-                        + "shouldAbortOnCorruptStore" );
         prepareSampleLegacyDatabase( fileSystem, workingDirectory );
 
-        assertTrue( allStoreFilesHaveVersion( fileSystem, workingDirectory, "v0.9.9" ) );
+        assertTrue( allStoreFilesHaveVersion( fileSystem, workingDirectory, LEGACY_VERSION ) );
         truncateFile(fileSystem, new File( workingDirectory,
                 "neostore.propertystore.db.index.keys" ),
                 "StringPropertyStore v0.9.9" );
@@ -114,4 +109,5 @@ public class StoreUpgradeIntegrationTest
     }
     
     private final FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
+    private final File workingDirectory = TargetDirectory.forTest( getClass() ).graphDbDir( true );
 }

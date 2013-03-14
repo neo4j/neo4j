@@ -19,12 +19,14 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.ALL_STORES_VERSION;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.allStoreFilesHaveVersion;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.alwaysAllowed;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.changeVersionNumber;
+import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.containsAnyLogicalLogs;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.defaultConfig;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.prepareSampleLegacyDatabase;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.truncateFile;
@@ -32,7 +34,6 @@ import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.verifyFile
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Map;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -40,6 +41,7 @@ import org.junit.Test;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
+import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
 import org.neo4j.kernel.impl.storemigration.monitoring.SilentMigrationProgressMonitor;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.EphemeralFileSystemRule;
@@ -50,12 +52,14 @@ public class StoreUpgraderTestIT
     @Test
     public void shouldUpgradeAnOldFormatStore() throws IOException
     {
-        assertTrue( allStoreFilesHaveVersion( fileSystem, workingDirectory, "v0.9.9" ) );
+        assertTrue( allStoreFilesHaveVersion( fileSystem, workingDirectory, LegacyStore.LEGACY_VERSION ) );
 
         newUpgrader( alwaysAllowed(), new StoreMigrator( new SilentMigrationProgressMonitor() ),
                 new DatabaseFiles( fileSystem ) ).attemptUpgrade( new File( workingDirectory, NeoStore.DEFAULT_NAME ) );
 
         assertTrue( allStoreFilesHaveVersion( fileSystem, workingDirectory, ALL_STORES_VERSION ) );
+
+        assertFalse( containsAnyLogicalLogs( fileSystem, workingDirectory ) );
     }
 
     @Test
@@ -64,8 +68,11 @@ public class StoreUpgraderTestIT
         newUpgrader( alwaysAllowed(), new StoreMigrator( new SilentMigrationProgressMonitor() ), new DatabaseFiles( fileSystem ) )
                 .attemptUpgrade( new File( workingDirectory, NeoStore.DEFAULT_NAME ) );
 
-        verifyFilesHaveSameContent( fileSystem, MigrationTestUtils.findOldFormatStoreDirectory(), new File(
-                workingDirectory, "upgrade_backup" ) );
+        File backupDirectory = new File( workingDirectory, "upgrade_backup" );
+
+        verifyFilesHaveSameContent( fileSystem, MigrationTestUtils.findOldFormatStoreDirectory(), backupDirectory );
+
+        assertTrue( containsAnyLogicalLogs( fileSystem, backupDirectory ) );
     }
 
     @Test
@@ -167,9 +174,9 @@ public class StoreUpgraderTestIT
 
     public static void truncateAllFiles( FileSystemAbstraction fileSystem, File workingDirectory ) throws IOException
     {
-        for ( Map.Entry<String, String> legacyFile : UpgradableDatabase.fileNamesToExpectedVersions.entrySet() )
+        for ( StoreFile storeFile : StoreFile.values() )
         {
-            truncateFile( fileSystem, new File( workingDirectory, legacyFile.getKey() ), legacyFile.getValue() );
+            truncateFile( fileSystem, new File( workingDirectory, storeFile.storeFileName() ), storeFile.legacyVersion() );
         }
     }
 
@@ -182,7 +189,7 @@ public class StoreUpgraderTestIT
         return new StoreUpgrader( defaultConfig(), StringLogger.DEV_NULL, config, new UpgradableDatabase(fileSystem), migrator,
                 files, new DefaultIdGeneratorFactory(), fileSystem );
     }
-    
+
     @Before
     public void before() throws Exception
     {

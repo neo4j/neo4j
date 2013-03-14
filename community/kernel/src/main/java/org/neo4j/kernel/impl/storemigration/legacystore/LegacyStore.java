@@ -19,14 +19,28 @@
  */
 package org.neo4j.kernel.impl.storemigration.legacystore;
 
+import static org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.buildTypeDescriptorAndVersion;
+
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
+import java.util.ArrayList;
+import java.util.Collection;
 
+import org.neo4j.helpers.UTF8;
+import org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore;
+import org.neo4j.kernel.impl.nioneo.store.DynamicArrayStore;
+import org.neo4j.kernel.impl.nioneo.store.DynamicStringStore;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.IdGeneratorImpl;
+import org.neo4j.kernel.impl.nioneo.store.NeoStore;
+import org.neo4j.kernel.impl.nioneo.store.PropertyIndexStore;
+import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipStore;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
-import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
  * Reader for a database in an older store format version. 
@@ -34,99 +48,47 @@ import org.neo4j.kernel.impl.util.StringLogger;
  * Since only one store migration is supported at any given version (migration from the previous store version)
  * the reader code is specific for the current upgrade and changes with each store format version.
  * 
- * {@link #FROM_VERSION} marks which version it's able to read.
+ * {@link #LEGACY_VERSION} marks which version it's able to read.
  */
-public class LegacyStore
+public class LegacyStore implements Closeable
 {
-    public static final String LEGACY_VERSION = "v0.9.9";
-    public static final String FROM_VERSION = "NeoStore " + LEGACY_VERSION;
+    public static final String LEGACY_VERSION = "v0.A.0";
 
     private final File storageFileName;
-    private LegacyNeoStoreReader neoStoreReader;
-    private LegacyPropertyStoreReader propertyStoreReader;
     private LegacyNodeStoreReader nodeStoreReader;
-    private LegacyDynamicRecordFetcher dynamicRecordFetcher;
-    private LegacyPropertyIndexStoreReader propertyIndexStoreReader;
-    private LegacyDynamicStoreReader propertyIndexKeyStoreReader;
-    private LegacyRelationshipStoreReader relationshipStoreReader;
-    private LegacyRelationshipTypeStoreReader relationshipTypeStoreReader;
-    private LegacyDynamicStoreReader relationshipTypeNameStoreReader;
-    private final StringLogger log;
+    private final Collection<Closeable> allStoreReaders = new ArrayList<Closeable>();
 
     private final FileSystemAbstraction fs;
 
     public LegacyStore( FileSystemAbstraction fs, File storageFileName ) throws IOException
     {
-        this( fs, storageFileName, StringLogger.DEV_NULL );
-    }
-
-    public LegacyStore( FileSystemAbstraction fs, File storageFileName, StringLogger log ) throws IOException
-    {
         this.fs = fs;
         this.storageFileName = storageFileName;
-        this.log = log;
+        assertLegacyAndCurrentVersionHaveSameLength( LEGACY_VERSION, CommonAbstractStore.ALL_STORES_VERSION );
         initStorage();
+    }
+    
+    /**
+     * Store files that don't need migration are just copied and have their trailing versions replaced
+     * by the current version. For this to work the legacy version and the current version must have the 
+     * same encoded length.
+     */
+    static void assertLegacyAndCurrentVersionHaveSameLength( String legacyVersion, String currentVersion )
+    {
+        if ( UTF8.encode( legacyVersion ).length != UTF8.encode( currentVersion ).length )
+            throw new IllegalStateException( "Encoded version string length must remain the same between versions" );
     }
 
     protected void initStorage() throws IOException
     {
-        neoStoreReader = new LegacyNeoStoreReader( fs, getStorageFileName(), log );
-        propertyStoreReader = new LegacyPropertyStoreReader( fs, new File( getStorageFileName().getPath() + StoreFactory.PROPERTY_STORE_NAME ), log );
-        dynamicRecordFetcher = new LegacyDynamicRecordFetcher( fs, new File( getStorageFileName().getPath() + StoreFactory.PROPERTY_STRINGS_STORE_NAME ),
-                new File( getStorageFileName().getPath() + StoreFactory.PROPERTY_ARRAYS_STORE_NAME ), log );
-        nodeStoreReader = new LegacyNodeStoreReader( fs, new File( getStorageFileName().getPath() + StoreFactory.NODE_STORE_NAME ));
-        relationshipStoreReader = new LegacyRelationshipStoreReader( fs, new File( getStorageFileName().getPath() + StoreFactory.RELATIONSHIP_STORE_NAME ));
-        relationshipTypeStoreReader = new LegacyRelationshipTypeStoreReader( fs, new File( getStorageFileName().getPath() + StoreFactory.RELATIONSHIP_TYPE_STORE_NAME ));
-        relationshipTypeNameStoreReader = new LegacyDynamicStoreReader( fs, new File( getStorageFileName().getPath() + StoreFactory.RELATIONSHIP_TYPE_NAMES_STORE_NAME ), LegacyDynamicStoreReader.FROM_VERSION_STRING, log );
-        propertyIndexStoreReader = new LegacyPropertyIndexStoreReader( fs, new File( getStorageFileName().getPath() + StoreFactory.PROPERTY_INDEX_STORE_NAME ));
-        propertyIndexKeyStoreReader = new LegacyDynamicStoreReader( fs, new File( getStorageFileName().getPath() + StoreFactory.PROPERTY_INDEX_KEYS_STORE_NAME ), LegacyDynamicStoreReader.FROM_VERSION_STRING, log );
+        allStoreReaders.add( nodeStoreReader = new LegacyNodeStoreReader( fs, new File( getStorageFileName().getPath() + StoreFactory.NODE_STORE_NAME ) ) );
     }
 
     public File getStorageFileName()
     {
         return storageFileName;
     }
-
-    public LegacyNeoStoreReader getNeoStoreReader()
-    {
-        return neoStoreReader;
-    }
-
-    public LegacyPropertyStoreReader getPropertyStoreReader()
-    {
-        return propertyStoreReader;
-    }
-
-    public LegacyNodeStoreReader getNodeStoreReader()
-    {
-        return nodeStoreReader;
-    }
-
-    public LegacyRelationshipStoreReader getRelationshipStoreReader()
-    {
-        return relationshipStoreReader;
-    }
-
-    public LegacyDynamicRecordFetcher getDynamicRecordFetcher()
-    {
-        return dynamicRecordFetcher;
-    }
-
-    public LegacyPropertyIndexStoreReader getPropertyIndexStoreReader()
-    {
-        return propertyIndexStoreReader;
-    }
-
-    public LegacyDynamicStoreReader getPropertyIndexKeyStoreReader()
-    {
-        return propertyIndexKeyStoreReader;
-    }
-
-    public LegacyDynamicStoreReader getRelationshipTypeNameStoreReader()
-    {
-        return relationshipTypeNameStoreReader;
-    }
-
+    
     public static long getUnsignedInt(ByteBuffer buf)
     {
         return buf.getInt()&0xFFFFFFFFL;
@@ -137,19 +99,96 @@ public class LegacyStore
         return modifier == 0 && base == IdGeneratorImpl.INTEGER_MINUS_ONE ? -1 : base|modifier;
     }
 
-    public LegacyRelationshipTypeStoreReader getRelationshipTypeStoreReader()
-    {
-        return relationshipTypeStoreReader;
-    }
-
+    @Override
     public void close() throws IOException
     {
-        neoStoreReader.close();
-        propertyStoreReader.close();
-        dynamicRecordFetcher.close();
-        nodeStoreReader.close();
-        relationshipStoreReader.close();
-        relationshipTypeNameStoreReader.close();
-        propertyIndexKeyStoreReader.close();
+        for ( Closeable storeReader : allStoreReaders )
+            storeReader.close();
+    }
+
+    private void copyStore( File targetBaseStorageFileName, String storeNamePart, String versionTrailer )
+            throws IOException
+    {
+        File targetStoreFileName = new File( targetBaseStorageFileName.getPath() + storeNamePart );
+        fs.copyFile( new File( storageFileName + storeNamePart ), targetStoreFileName );
+        
+        setStoreVersionTrailer( targetStoreFileName, versionTrailer );
+        
+        fs.copyFile(
+                new File( storageFileName + storeNamePart + ".id" ),
+                new File( targetBaseStorageFileName + storeNamePart + ".id" ) );
+    }
+
+    private void setStoreVersionTrailer( File targetStoreFileName, String versionTrailer ) throws IOException
+    {
+        FileChannel fileChannel = fs.open( targetStoreFileName, "rw" );
+        try
+        {
+            byte[] trailer = UTF8.encode( versionTrailer );
+            fileChannel.position( fileChannel.size()-trailer.length );
+            fileChannel.write( ByteBuffer.wrap( trailer ) );
+        }
+        finally
+        {
+            fileChannel.close();
+        }
+    }
+
+    public void copyNeoStore( NeoStore neoStore ) throws IOException
+    {
+        copyStore( neoStore.getStorageFileName(), "", neoStore.getTypeAndVersionDescriptor() );
+    }
+
+    public void copyRelationshipStore( NeoStore neoStore ) throws IOException
+    {
+        copyStore( neoStore.getStorageFileName(), StoreFactory.RELATIONSHIP_STORE_NAME,
+                buildTypeDescriptorAndVersion( RelationshipStore.TYPE_DESCRIPTOR ) );
+    }
+
+    public void copyRelationshipTypeStore( NeoStore neoStore ) throws IOException
+    {
+        copyStore( neoStore.getStorageFileName(), StoreFactory.RELATIONSHIP_TYPE_STORE_NAME,
+                buildTypeDescriptorAndVersion( RelationshipTypeStore.TYPE_DESCRIPTOR ) );
+    }
+
+    public void copyRelationshipTypeNameStore( NeoStore neoStore ) throws IOException
+    {
+        copyStore( neoStore.getStorageFileName(), StoreFactory.RELATIONSHIP_TYPE_NAMES_STORE_NAME,
+                buildTypeDescriptorAndVersion( DynamicStringStore.TYPE_DESCRIPTOR ) );
+    }
+
+    public void copyPropertyStore( NeoStore neoStore ) throws IOException
+    {
+        copyStore( neoStore.getStorageFileName(), StoreFactory.PROPERTY_STORE_NAME,
+                buildTypeDescriptorAndVersion( PropertyStore.TYPE_DESCRIPTOR ) );
+    }
+
+    public void copyPropertyIndexStore( NeoStore neoStore ) throws IOException
+    {
+        copyStore( neoStore.getStorageFileName(), StoreFactory.PROPERTY_INDEX_STORE_NAME,
+                buildTypeDescriptorAndVersion( PropertyIndexStore.TYPE_DESCRIPTOR ) );
+    }
+
+    public void copyPropertyIndexNameStore( NeoStore neoStore ) throws IOException
+    {
+        copyStore( neoStore.getStorageFileName(), StoreFactory.PROPERTY_INDEX_KEYS_STORE_NAME,
+                buildTypeDescriptorAndVersion( DynamicStringStore.TYPE_DESCRIPTOR ) );
+    }
+
+    public void copyDynamicStringPropertyStore( NeoStore neoStore ) throws IOException
+    {
+        copyStore( neoStore.getStorageFileName(), StoreFactory.PROPERTY_STRINGS_STORE_NAME,
+                buildTypeDescriptorAndVersion( DynamicStringStore.TYPE_DESCRIPTOR ) );
+    }
+
+    public void copyDynamicArrayPropertyStore( NeoStore neoStore ) throws IOException
+    {
+        copyStore( neoStore.getStorageFileName(), StoreFactory.PROPERTY_ARRAYS_STORE_NAME,
+                buildTypeDescriptorAndVersion( DynamicArrayStore.TYPE_DESCRIPTOR ) );
+    }
+
+    public LegacyNodeStoreReader getNodeStoreReader()
+    {
+        return nodeStoreReader;
     }
 }
