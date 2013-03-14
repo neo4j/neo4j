@@ -123,42 +123,7 @@
         <exclude>org.scala-lang:scala-library</exclude>
         <exclude>org.neo4j.app:windows-service-wrapper:*</exclude>
         <exclude>com.googlecode.concurrentlinkedhashmap:concurrentlinkedhashmap-lru</exclude>
-        <exclude>com.googlecode.concurrentlinkedhashmap:concurrentlinkedhashmap-lru</exclude>
-        <exclude>com.tinkerpop:*</exclude>
-        <exclude>com.tinkerpop.*:*</exclude>
-        <exclude>org.neo4j.server.plugin:neo4j-gremlin-plugin</exclude>
-        <exclude>org.codehaus.groovy:groovy</exclude>
-        <exclude>org.fusesource.jansi:jansi</exclude>
-        <exclude>antlr:antlr</exclude>
-        <exclude>asm:asm-commons</exclude>
-        <exclude>asm:asm-util</exclude>
-        <exclude>asm:asm-analysis</exclude>
-        <exclude>asm:asm-tree</exclude>
-        <exclude>stax:stax-api</exclude>
-        <exclude>org.codehaus.jettison:jettison</exclude>
       </excludes>
-    </dependencySet>
-    <dependencySet>
-      <outputDirectory>/plugins/gremlin1.5</outputDirectory>
-      <directoryMode>0755</directoryMode>
-      <fileMode>0755</fileMode>
-      <unpack>false</unpack>
-      <useProjectArtifact>false</useProjectArtifact>
-      <useStrictFiltering>true</useStrictFiltering>
-      <includes>
-        <include>com.tinkerpop:*</include>
-        <include>com.tinkerpop.*:*</include>
-        <include>org.neo4j.server.plugin:neo4j-gremlin-plugin</include>
-        <include>org.codehaus.groovy:groovy</include>
-        <include>org.fusesource.jansi:jansi</include>
-        <include>antlr:antlr</include>
-        <include>asm:asm-commons</include>
-        <include>asm:asm-util</include>
-        <include>asm:asm-analysis</include>
-        <include>asm:asm-tree</include>
-        <include>stax:stax-api</include>
-        <include>org.codehaus.jettison:jettison</include>
-      </includes>
     </dependencySet>
     <!-- java api docs -->
     <dependencySet>
