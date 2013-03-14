@@ -33,7 +33,7 @@ import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
-public class TestStringLogger
+public class StringLoggerTest
 {
     private final FileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
     
@@ -93,7 +93,7 @@ public class TestStringLogger
     public void makeSureRotationDoesNotRecurse() throws Exception
     {
         final String baseMessage = "base message";
-        File target = TargetDirectory.forTest( TestStringLogger.class ).directory( "recursionTest", true );
+        File target = TargetDirectory.forTest( StringLoggerTest.class ).directory( "recursionTest", true );
         final StringLogger logger = StringLogger.loggerDirectory( fileSystem, target,
                 baseMessage.length()
         /*rotation threshold*/ );

@@ -39,15 +39,15 @@ public abstract class StringLogger
 {
     public static final String DEFAULT_NAME = "messages.log";
     public static final String DEFAULT_ENCODING = "UTF-8";
-    public static final StringLogger SYSTEM =
-            new ActualStringLogger( new PrintWriter( System.out, true ) )
-            {
-                @Override
-                public void close()
-                {
-                    // don't close System.out
-                }
-            };
+    public static final StringLogger SYSTEM = new ActualStringLogger( new PrintWriter( System.out, true ) )
+    {
+        @Override
+        public void close()
+        {
+            // don't close System.out
+        }
+    };
+
     private static final int DEFAULT_THRESHOLD_FOR_ROTATION = 100 * 1024 * 1024;
     private static final int NUMBER_OF_OLD_LOGS_TO_KEEP = 2;
 
