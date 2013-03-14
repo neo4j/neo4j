@@ -19,13 +19,18 @@
  */
 package org.neo4j.shell.kernel.apps.cypher;
 
-import org.neo4j.helpers.Service;
-import org.neo4j.shell.*;
-
 import java.rmi.RemoteException;
+
 import org.neo4j.cypher.CypherException;
 import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.cypher.javacompat.ExecutionResult;
+import org.neo4j.helpers.Service;
+import org.neo4j.shell.App;
+import org.neo4j.shell.AppCommandParser;
+import org.neo4j.shell.Continuation;
+import org.neo4j.shell.Output;
+import org.neo4j.shell.Session;
+import org.neo4j.shell.ShellException;
 
 @Service.Implementation( App.class )
 public class Profile extends Start
@@ -48,18 +53,16 @@ public class Profile extends Start
     protected Continuation exec( AppCommandParser parser, Session session, Output out )
             throws ShellException, RemoteException
     {
-        String query = parser.getLine();
+        String query = parser.getLineWithoutApp();
 
         if ( isComplete( query ) )
         {
-            String queryWithoutSemicolon = query.substring( "PROFILE".length(), query.lastIndexOf( ";" ) );
-
             ExecutionEngine engine = new ExecutionEngine( getServer().getDb(), getCypherLogger() );
             try
             {
-                ExecutionResult result = engine.profile(queryWithoutSemicolon, getParameters(session));
+                ExecutionResult result = engine.profile( query, getParameters( session ) );
                 out.println( result.dumpToString() );
-                out.println( result.executionPlanDescription().toString());
+                out.println( result.executionPlanDescription().toString() );
             } catch ( CypherException e )
             {
                 throw ShellException.wrapCause( e );
