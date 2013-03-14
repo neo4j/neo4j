@@ -23,9 +23,10 @@ import static org.hamcrest.CoreMatchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.junit.matchers.JUnitMatchers.containsString;
+import static org.hamcrest.CoreMatchers.containsString;
 
 import java.io.UnsupportedEncodingException;
+import java.util.Map;
 
 import javax.ws.rs.core.Response.Status;
 
@@ -81,12 +82,12 @@ public class CypherPluginFunctionalTest extends AbstractRestFunctionalTestBase {
     @Graph( "I know you" )
     public void error_gets_returned_as_json() throws Exception {
         String response = doRestCall( "start x = node(%I%) return x.dummy", Status.BAD_REQUEST );
-        assertEquals( 4, JsonHelper.jsonToMap( response )
-                .size() );
+        final Map<String, Object> responseMap = JsonHelper.jsonToMap( response );
+        assertEquals( 5, responseMap.size() );
         assertThat( response, containsString( "BadInputException" ) );
         assertThat( response, containsString( "NotFoundException" ) );
+        assertThat( response, containsString( "message" ) );
     }
-
 
     /**
      * Paths can be returned
@@ -137,7 +138,8 @@ public class CypherPluginFunctionalTest extends AbstractRestFunctionalTestBase {
                 ".name = {name} return TYPE(r)";
         String response = doRestCall( script, Status.BAD_REQUEST, Pair.of( "startName", "I" ), Pair.of( "name", "you" ) );
 
-        assertEquals( 4, ( JsonHelper.jsonToMap( response ) ).size() );
+        final Map<String,Object> responseMap = JsonHelper.jsonToMap( response );
+        assertEquals( 5, responseMap.size() );
         assertTrue( response.contains( "message" ) );
         assertTrue( response.contains( "BadInputException" ) );
         assertTrue( response.contains( "SyntaxException" ) );
@@ -156,10 +158,10 @@ public class CypherPluginFunctionalTest extends AbstractRestFunctionalTestBase {
                 ".name = {name} return TYPE(r)";
         String response = doRestCall( script, Status.BAD_REQUEST, Pair.of( "startName", "I" ), Pair.of( "name", "you" ) );
 
-        System.out.println( response );
-        assertEquals( 4, ( JsonHelper.jsonToMap( response ) ).size() );
+        assertEquals( 5, ( JsonHelper.jsonToMap( response ) ).size() );
         assertTrue( response.contains( "message" ) );
         assertTrue( response.contains( "Unknown identifier" ) );
+        assertThat( response, containsString( "frien" ) );
     }
     
     @Override
