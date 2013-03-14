@@ -41,9 +41,8 @@ public class OnlineIndexProxy implements IndexProxy
     }
     
     @Override
-    public void create()
+    public void start()
     {
-        throw new UnsupportedOperationException();
     }
 
     @Override

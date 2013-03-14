@@ -34,11 +34,11 @@ public class ContractCheckingIndexProxyTest
     {
         // GIVEN
         IndexProxy inner = mockIndexProxy();
-        IndexProxy outer = new ContractCheckingIndexProxy( inner );
+        IndexProxy outer = newContractCheckingIndexProxy( inner );
 
         // WHEN
-        outer.create();
-        outer.create();
+        outer.start();
+        outer.start();
     }
 
     @Test( expected = /* THEN */ IllegalStateException.class )
@@ -46,7 +46,7 @@ public class ContractCheckingIndexProxyTest
     {
         // GIVEN
         IndexProxy inner = mockIndexProxy();
-        IndexProxy outer = new ContractCheckingIndexProxy( inner );
+        IndexProxy outer = newContractCheckingIndexProxy( inner );
 
         // WHEN
         outer.close();
@@ -58,7 +58,7 @@ public class ContractCheckingIndexProxyTest
     {
         // GIVEN
         IndexProxy inner = mockIndexProxy();
-        IndexProxy outer = new ContractCheckingIndexProxy( inner );
+        IndexProxy outer = newContractCheckingIndexProxy( inner );
 
         // WHEN
         outer.drop();
@@ -70,7 +70,7 @@ public class ContractCheckingIndexProxyTest
     {
         // GIVEN
         IndexProxy inner = mockIndexProxy();
-        IndexProxy outer = new ContractCheckingIndexProxy( inner );
+        IndexProxy outer = newContractCheckingIndexProxy( inner );
 
         // WHEN
         outer.close();
@@ -83,10 +83,10 @@ public class ContractCheckingIndexProxyTest
     {
         // GIVEN
         IndexProxy inner = mockIndexProxy();
-        IndexProxy outer = new ContractCheckingIndexProxy( inner );
+        IndexProxy outer = newContractCheckingIndexProxy( inner );
 
         // WHEN
-        outer.create();
+        outer.start();
 
         // PASS
         outer.drop();
@@ -98,10 +98,10 @@ public class ContractCheckingIndexProxyTest
     {
         // GIVEN
         IndexProxy inner = mockIndexProxy();
-        IndexProxy outer = new ContractCheckingIndexProxy( inner );
+        IndexProxy outer = newContractCheckingIndexProxy( inner );
 
         // WHEN
-        outer.create();
+        outer.start();
 
         // PASS
         outer.close();
@@ -113,7 +113,7 @@ public class ContractCheckingIndexProxyTest
     {
         // GIVEN
         IndexProxy inner = mockIndexProxy();
-        IndexProxy outer = new ContractCheckingIndexProxy( inner );
+        IndexProxy outer = newContractCheckingIndexProxy( inner );
 
         // WHEN
         outer.update( null );
@@ -124,10 +124,10 @@ public class ContractCheckingIndexProxyTest
     {
         // GIVEN
         IndexProxy inner = mockIndexProxy();
-        IndexProxy outer = new ContractCheckingIndexProxy( inner );
+        IndexProxy outer = newContractCheckingIndexProxy( inner );
 
         // WHEN
-        outer.create();
+        outer.start();
         outer.close();
         outer.update( null );
     }
@@ -137,7 +137,7 @@ public class ContractCheckingIndexProxyTest
     {
         // GIVEN
         IndexProxy inner = mockIndexProxy();
-        IndexProxy outer = new ContractCheckingIndexProxy( inner );
+        IndexProxy outer = newContractCheckingIndexProxy( inner );
 
         // WHEN
         outer.force();
@@ -148,10 +148,10 @@ public class ContractCheckingIndexProxyTest
     {
         // GIVEN
         IndexProxy inner = mockIndexProxy();
-        IndexProxy outer = new ContractCheckingIndexProxy( inner );
+        IndexProxy outer = newContractCheckingIndexProxy( inner );
 
         // WHEN
-        outer.create();
+        outer.start();
         outer.close();
         outer.force();
     }
@@ -164,12 +164,12 @@ public class ContractCheckingIndexProxyTest
         final IndexProxy inner = new IndexProxy.Adapter()
         {
             @Override
-            public void create()
+            public void start()
             {
                 latch.startAndAwaitFinish();
             }
         };
-        final IndexProxy outer = new ContractCheckingIndexProxy( inner );
+        final IndexProxy outer = newContractCheckingIndexProxy( inner );
 
         // WHEN
         runInSeparateThread( new ThrowingRunnable()
@@ -177,7 +177,7 @@ public class ContractCheckingIndexProxyTest
             @Override
             public void run() throws IOException
             {
-                outer.create();
+                outer.start();
             }
         } );
 
@@ -200,12 +200,12 @@ public class ContractCheckingIndexProxyTest
         final IndexProxy inner = new IndexProxy.Adapter()
         {
             @Override
-            public void create()
+            public void start()
             {
                 latch.startAndAwaitFinish();
             }
         };
-        final IndexProxy outer = new ContractCheckingIndexProxy( inner );
+        final IndexProxy outer = newContractCheckingIndexProxy( inner );
 
         // WHEN
         runInSeparateThread( new ThrowingRunnable()
@@ -213,7 +213,7 @@ public class ContractCheckingIndexProxyTest
             @Override
             public void run() throws IOException
             {
-                outer.create();
+                outer.start();
             }
         } );
 
@@ -242,8 +242,8 @@ public class ContractCheckingIndexProxyTest
                 latch.startAndAwaitFinish();
             }
         };
-        final IndexProxy outer = new ContractCheckingIndexProxy( inner );
-        outer.create();
+        final IndexProxy outer = newContractCheckingIndexProxy( inner );
+        outer.start();
 
         // WHEN
         runInSeparateThread( new ThrowingRunnable()
@@ -279,8 +279,8 @@ public class ContractCheckingIndexProxyTest
                 latch.startAndAwaitFinish();
             }
         };
-        final IndexProxy outer = new ContractCheckingIndexProxy( inner );
-        outer.create();
+        final IndexProxy outer = newContractCheckingIndexProxy( inner );
+        outer.start();
 
         // WHEN
         runInSeparateThread( new ThrowingRunnable()
@@ -325,5 +325,10 @@ public class ContractCheckingIndexProxyTest
                 }
             }
         } ).start();
+    }
+
+    private ContractCheckingIndexProxy newContractCheckingIndexProxy( IndexProxy inner )
+    {
+        return new ContractCheckingIndexProxy( inner, false );
     }
 }

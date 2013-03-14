@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
+import static java.util.Collections.unmodifiableCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.first;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.readAndFlip;
 
@@ -1054,16 +1055,15 @@ public abstract class Command extends XaCommand
     
     static class SchemaRuleCommand extends Command
     {
-        private final NeoStore neoStore;
         private final IndexingService indexes;
         private final SchemaStore store;
         private final Collection<DynamicRecord> records;
         private final SchemaRule schemaRule;
 
-        SchemaRuleCommand( NeoStore neoStore, SchemaStore store, IndexingService indexes, Collection<DynamicRecord> records, SchemaRule schemaRule )
+        SchemaRuleCommand( NeoStore neoStore, SchemaStore store, IndexingService indexes,
+                Collection<DynamicRecord> records, SchemaRule schemaRule )
         {
-            super( schemaRule.getId(), first( records ).inUse() ? Mode.CREATE : Mode.DELETE );
-            this.neoStore = neoStore;
+            super( first( records ).getId(), first( records ).inUse() ? Mode.CREATE : Mode.DELETE );
             this.indexes = indexes;
             this.store = store;
             this.records = records;
@@ -1087,6 +1087,11 @@ public abstract class Command extends XaCommand
         {
             cacheAccess.removeSchemaRuleFromCache( getKey() );
         }
+        
+        Collection<DynamicRecord> getRecords()
+        {
+            return unmodifiableCollection( records );
+        }
 
         @Override
         public void execute()
@@ -1104,6 +1109,8 @@ public abstract class Command extends XaCommand
                     case DELETE:
                         indexes.dropIndex( (IndexRule)schemaRule );
                         break;
+                    default:
+                        throw new IllegalStateException( getMode().name() );
                 }
             }
         }
@@ -1120,14 +1127,19 @@ public abstract class Command extends XaCommand
             return schemaRule;
         }
 
-        static Command readFromFile( NeoStore neoStore, IndexingService indexes, ReadableByteChannel byteChannel, ByteBuffer buffer )
-                throws IOException
+        static Command readFromFile( NeoStore neoStore, IndexingService indexes, ReadableByteChannel byteChannel,
+                ByteBuffer buffer ) throws IOException
         {
             Collection<DynamicRecord> records = new ArrayList<DynamicRecord>();
             readDynamicRecords( byteChannel, buffer, records, COLLECTION_DYNAMIC_RECORD_ADDER );
-            ByteBuffer deserialized = AbstractDynamicStore.concatData( records, new byte[100] );
-            return new SchemaRuleCommand( neoStore, neoStore.getSchemaStore(), indexes, records,
-                    SchemaRule.Kind.deserialize( first( records ).getId(), deserialized ) );
+            
+            SchemaRule rule = null;
+            if ( first( records ).inUse() )
+            {
+                ByteBuffer deserialized = AbstractDynamicStore.concatData( records, new byte[100] );
+                rule = SchemaRule.Kind.deserialize( first( records ).getId(), deserialized );
+            }
+            return new SchemaRuleCommand( neoStore, neoStore.getSchemaStore(), indexes, records, rule );
         }
     }
     

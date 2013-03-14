@@ -38,9 +38,9 @@ public abstract class AbstractSwallowingIndexProxy implements IndexProxy
     }
 
     @Override
-    public void create()
+    public void start()
     {
-        String message = "Unable to create index, it is in a " + getState().name() + " state.";
+        String message = "Unable to start index, it is in a " + getState().name() + " state.";
         throw new UnsupportedOperationException( message, cause );
     }
 

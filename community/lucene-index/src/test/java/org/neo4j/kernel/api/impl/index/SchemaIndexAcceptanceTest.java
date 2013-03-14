@@ -19,8 +19,12 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.helpers.collection.Iterables.count;
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.helpers.collection.IteratorUtil.asUniqueSet;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.awaitIndexState;
 
@@ -28,6 +32,7 @@ import java.util.Map;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -35,8 +40,8 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema.IndexState;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.EphemeralFileSystemRule;
+import org.neo4j.test.TestGraphDatabaseFactory;
 
 public class SchemaIndexAcceptanceTest
 {
@@ -59,9 +64,31 @@ public class SchemaIndexAcceptanceTest
         restart();
         
         assertEquals( IndexState.ONLINE, db.schema().getIndexState( index ) );
+        assertEquals( asSet( node1 ), asUniqueSet( db.findNodesByLabelAndProperty( label, "name", "One" ) ) );
+        assertEquals( asSet( node2 ), asUniqueSet( db.findNodesByLabelAndProperty( label, "name", "Two" ) ) );
+        assertEquals( asSet( node3 ), asUniqueSet( db.findNodesByLabelAndProperty( label, "name", "Three" ) ) );
     }
     
-    private final String storeDir = TargetDirectory.forTest( getClass() ).graphDbDir( true ).getAbsolutePath();
+    @Test
+    public void recoveryAfterCreateAndDropIndex() throws Exception
+    {
+        // GIVEN
+        Label label = label( "PERSON" );
+        String propertyKey = "id";
+        IndexDefinition indexDefinition = createIndex( label, propertyKey );
+        createSomeData( label, propertyKey );
+        doStuff( db, label, propertyKey );
+        dropIndex( indexDefinition );
+        doStuff( db, label, propertyKey );
+        
+        // WHEN
+        crashAndRestart();
+        
+        // THEN
+        assertEquals( asSet(), asSet( db.schema().getIndexes( label ) ) );
+    }
+ 
+    @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     private GraphDatabaseService db;
     private final Label label = label( "label" );
     private final String key = "key";
@@ -69,15 +96,33 @@ public class SchemaIndexAcceptanceTest
     @Before
     public void before() throws Exception
     {
-        db = new EmbeddedGraphDatabase( storeDir );
+        db = newDb();
+    }
+
+    private GraphDatabaseService newDb()
+    {
+        return new TestGraphDatabaseFactory().setFileSystem( fs.get() ).newImpermanentDatabase();
+    }
+    
+    private void crashAndRestart()
+    {
+        fs.snapshot( new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                db.shutdown();
+            }
+        } );
+        db = newDb();
     }
     
     private void restart()
     {
         db.shutdown();
-        db = new EmbeddedGraphDatabase( storeDir );
+        db = newDb();
     }
-
+    
     @After
     public void after() throws Exception
     {
@@ -90,5 +135,45 @@ public class SchemaIndexAcceptanceTest
         for ( Map.Entry<String, Object> property : map( properties ).entrySet() )
             node.setProperty( property.getKey(), property.getValue() );
         return node;
+    }
+
+    private void dropIndex( IndexDefinition indexDefinition )
+    {
+        Transaction tx = db.beginTx();
+        indexDefinition.drop();
+        tx.success();
+        tx.finish();
+    }
+
+    private IndexDefinition createIndex( Label label, String propertyKey )
+    {
+        Transaction tx = db.beginTx();
+        IndexDefinition indexDefinition = db.schema().indexCreator( label ).on( propertyKey ).create();
+        tx.success();
+        tx.finish();
+        db.schema().awaitIndexOnline( indexDefinition, 1, MINUTES );
+        return indexDefinition;
+    }
+
+    private static void doStuff( GraphDatabaseService db, Label label, String propertyKey )
+    {
+        Iterable<Node> nodes = db.findNodesByLabelAndProperty( label, propertyKey, 3323 );
+        for ( Node node : nodes )
+            count( node.getLabels() );
+    }
+
+    private void createSomeData( Label label, String propertyKey )
+    {
+        Transaction tx = db.beginTx();
+        try
+        {
+            Node node = db.createNode( label );
+            node.setProperty( propertyKey, "yeah" );
+            tx.success();
+        }
+        finally
+        {
+            tx.finish();
+        }
     }
 }

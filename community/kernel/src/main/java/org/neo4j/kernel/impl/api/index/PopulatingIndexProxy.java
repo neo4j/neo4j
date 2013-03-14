@@ -45,7 +45,7 @@ public class PopulatingIndexProxy implements IndexProxy
     }
 
     @Override
-    public void create()
+    public void start()
     {
         scheduler.submit( job );
     }

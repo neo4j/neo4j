@@ -35,7 +35,7 @@ import org.neo4j.kernel.impl.util.CopyOnWriteHashMap;
 
 public class InMemoryIndexProvider extends SchemaIndexProvider
 {
-    private final Map<Long, InMemoryIndexWriter> indexes = new CopyOnWriteHashMap<Long, InMemoryIndexWriter>();
+    private final Map<Long, InMemoryIndex> indexes = new CopyOnWriteHashMap<Long, InMemoryIndex>();
 
     public InMemoryIndexProvider()
     {
@@ -45,7 +45,7 @@ public class InMemoryIndexProvider extends SchemaIndexProvider
     @Override
     public IndexAccessor getOnlineAccessor( long indexId )
     {
-        InMemoryIndexWriter index = indexes.get( indexId );
+        InMemoryIndex index = indexes.get( indexId );
         if ( index == null || index.state != InternalIndexState.ONLINE )
             throw new IllegalStateException( "Index " + indexId + " not online yet" );
         return index;
@@ -54,19 +54,19 @@ public class InMemoryIndexProvider extends SchemaIndexProvider
     @Override
     public InternalIndexState getInitialState( long indexId )
     {
-        InMemoryIndexWriter index = indexes.get( indexId );
+        InMemoryIndex index = indexes.get( indexId );
         return index != null ? index.state : InternalIndexState.POPULATING;
     }
 
     @Override
     public IndexPopulator getPopulator( long indexId )
     {
-        InMemoryIndexWriter populator = new InMemoryIndexWriter();
+        InMemoryIndex populator = new InMemoryIndex();
         indexes.put( indexId, populator );
         return populator;
     }
     
-    private static class InMemoryIndexWriter extends IndexAccessor.Adapter implements IndexPopulator
+    public static class InMemoryIndex extends IndexAccessor.Adapter implements IndexPopulator
     {
         private final Map<Object, Set<Long>> indexData = new HashMap<Object, Set<Long>>();
         private InternalIndexState state = InternalIndexState.POPULATING;

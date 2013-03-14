@@ -27,72 +27,64 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 
 /**
- * IndexContext layer that enforces the dynamic contract of IndexContext (cf. Test)
+ * {@link IndexProxy} layer that enforces the dynamic contract of {@link IndexProxy} (cf. Test)
  *
  * @see org.neo4j.kernel.impl.api.index.IndexProxy
  */
 public class ContractCheckingIndexProxy extends DelegatingIndexProxy
 {
     /**
-     * State machine for IndexContexts
+     * State machine for {@link IndexProxy proxies}
      *
-     * The logic of ContractCheckingIndexContext hinges on the fact that all states
+     * The logic of {@link ContractCheckingIndexProxy} hinges on the fact that all states
      * are always entered and checked in this order (States may be skipped though):
      *
-     * INIT > CREATING > CREATED > CLOSED
+     * INIT > STARTING > STARTED > CLOSED
      *
      * Valid state transitions are:
      *
-     * INIT -[:create]-> CREATING -[:implicit]-> CREATED -[:close|:drop]-> CLOSED
+     * INIT -[:start]-> STARTING -[:implicit]-> STARTED -[:close|:drop]-> CLOSED
      * INIT -[:close] -> CLOSED
      *
-     * Additionally, ContractCheckingIndexContext keeps track of the number of open
-     * calls that started in CREATED state and are still running.  This allows us
+     * Additionally, {@link ContractCheckingIndexProxy} keeps track of the number of open
+     * calls that started in STARTED state and are still running.  This allows us
      * to prevent calls to close() or drop() to go through while there are pending
      * commits.
      **/
-    private static enum State {
-        INIT,
-        CREATING,
-        CREATED,
-        CLOSED
+    private static enum State
+    {
+        INIT, STARTING, STARTED, CLOSED
     }
 
     private final AtomicReference<State> state;
     private final AtomicInteger openCalls;
 
-    public ContractCheckingIndexProxy( boolean created, IndexProxy delegate )
+    public ContractCheckingIndexProxy( IndexProxy delegate, boolean started )
     {
         super( delegate );
-        this.state =  new AtomicReference<State>( created ? State.CREATED : State.INIT );
+        this.state = new AtomicReference<State>( started ? State.STARTED : State.INIT );
         this.openCalls = new AtomicInteger( 0 );
     }
 
-    ContractCheckingIndexProxy( IndexProxy delegate )
-    {
-        this(false, delegate);
-    }
-
     @Override
-    public void create() throws IOException
+    public void start() throws IOException
     {
-        if ( state.compareAndSet( State.INIT, State.CREATING ) )
+        if ( state.compareAndSet( State.INIT, State.STARTING ) )
         {
             try
             {
-                super.create();
+                super.start();
             }
             finally
             {
-                state.set( State.CREATED );
+                this.state.set( State.STARTED );
             }
         }
         else
         {
-            throw new IllegalStateException( "IndexContext can only create index initially" );
+            throw new IllegalStateException( "An IndexProxy can only be started once" );
         }
     }
-
 
     @Override
     public void update( Iterable<NodePropertyUpdate> updates ) throws IOException
@@ -128,16 +120,16 @@ public class ContractCheckingIndexProxy extends DelegatingIndexProxy
         if ( state.compareAndSet( State.INIT, State.CLOSED ) )
             return super.drop();
 
-        if ( State.CREATING.equals( state.get() ) )
+        if ( State.STARTING.equals( state.get() ) )
             throw new IllegalStateException( "Concurrent drop while creating index" );
 
-        if ( state.compareAndSet( State.CREATED, State.CLOSED ) )
+        if ( state.compareAndSet( State.STARTED, State.CLOSED ) )
         {
             ensureNoOpenCalls( "drop" );
             return super.drop();
         }
 
-        throw new IllegalStateException( "IndexContext already closed" );
+        throw new IllegalStateException( "IndexProxy already closed" );
     }
 
     @Override
@@ -146,22 +138,22 @@ public class ContractCheckingIndexProxy extends DelegatingIndexProxy
         if ( state.compareAndSet( State.INIT, State.CLOSED ) )
             return super.close();
 
-        if ( state.compareAndSet( State.CREATING, State.CLOSED ) )
+        if ( state.compareAndSet( State.STARTING, State.CLOSED ) )
             throw new IllegalStateException( "Concurrent close while creating index" );
 
-        if ( state.compareAndSet( State.CREATED, State.CLOSED ) )
+        if ( state.compareAndSet( State.STARTED, State.CLOSED ) )
         {
             ensureNoOpenCalls( "close" );
             return super.close();
         }
 
-        throw new IllegalStateException( "IndexContext already closed" );
+        throw new IllegalStateException( "IndexProxy already closed" );
     }
 
     private void openCall( String name )
     {
-        // do not open call unless we are in CREATED
-        if ( State.CREATED.equals( state.get() ) )
+        // do not open call unless we are in STARTED
+        if ( State.STARTED.equals( state.get() ) )
         {
             // increment openCalls for closers to see
             openCalls.incrementAndGet();
@@ -170,7 +162,7 @@ public class ContractCheckingIndexProxy extends DelegatingIndexProxy
                 throw new IllegalStateException("Cannot call " + name + "() after index has been closed" );
         }
         else
-            throw new IllegalStateException("Cannot call " + name + "() before index has been created" );
+            throw new IllegalStateException("Cannot call " + name + "() before index has been started" );
     }
 
     private void ensureNoOpenCalls(String name)
@@ -185,5 +177,4 @@ public class ContractCheckingIndexProxy extends DelegatingIndexProxy
         // rollback once the call finished or failed
         openCalls.decrementAndGet();
     }
-
 }

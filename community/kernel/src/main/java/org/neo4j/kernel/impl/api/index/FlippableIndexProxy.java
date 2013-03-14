@@ -68,12 +68,12 @@ public class FlippableIndexProxy implements IndexProxy
     }
     
     @Override
-    public void create() throws IOException
+    public void start() throws IOException
     {
         lock.readLock().lock();
         try
         {
-            delegate.create();
+            delegate.start();
         }
         finally
         {

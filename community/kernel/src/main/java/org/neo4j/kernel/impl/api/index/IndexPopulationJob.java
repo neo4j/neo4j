@@ -62,11 +62,11 @@ public class IndexPopulationJob implements Runnable
     private volatile StoreScan storeScan;
     private volatile boolean cancelled;
 
-    public IndexPopulationJob( IndexDescriptor descriptor, IndexPopulator writer, FlippableIndexProxy flipper,
+    public IndexPopulationJob( IndexDescriptor descriptor, IndexPopulator populator, FlippableIndexProxy flipper,
                                IndexingService.IndexStoreView storeView, Logging logging )
     {
         this.descriptor = descriptor;
-        this.populator = writer;
+        this.populator = populator;
         this.flipper = flipper;
         this.storeView = storeView;
         this.log = logging.getLogger( getClass() );
