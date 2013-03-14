@@ -68,6 +68,12 @@ terms of the relevant Commercial Agreement.
       </activation>
       <dependencies>
         <dependency>
+          <groupId>org.neo4j</groupId>
+          <artifactId>parent</artifactId>
+          <version>${project.version}</version>
+          <type>pom</type>
+        </dependency>
+        <dependency>
           <groupId>org.neo4j.build</groupId>
           <artifactId>community-build</artifactId>
           <version>${project.version}</version>
