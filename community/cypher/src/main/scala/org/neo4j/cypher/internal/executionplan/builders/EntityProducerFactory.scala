@@ -85,14 +85,9 @@ class EntityProducerFactory(planContext: PlanContext) {
       val expression = valueExp getOrElse
         (throw new InternalException("Something went wrong trying to build your query."))
 
-      val label = DynamicLabel.label(labelName)
-
       (m: ExecutionContext, state: QueryState) => {
         val value = expression(m)(state)
-        state.query.exactIndexSearch(indexId, value) // This is the real call. The next is not the call you are looking for
-        state.query.nodeOps.all.filter {
-          case node:Node => node.hasLabel(label) && node.getProperty(propertyName, null) == value
-        }
+        state.query.exactIndexSearch(indexId, value)
       }
   }
 
