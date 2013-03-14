@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import static java.lang.String.format;
 import static java.util.Arrays.asList;
 
 import java.util.ArrayList;
@@ -324,7 +325,7 @@ public class NodeManager
         Node node = getNodeByIdOrNull( nodeId );
         if ( node == null )
         {
-            throw new NotFoundException( "Node[" + nodeId + "]" );
+            throw new NotFoundException( format( "Node %d not found", nodeId ) );
         }
         return node;
     }
@@ -448,7 +449,7 @@ public class NodeManager
         NodeImpl node = getLightNode( nodeId );
         if ( node == null )
         {
-            throw new NotFoundException( "Node[" + nodeId + "] not found." );
+            throw new NotFoundException( format( "Node %d not found", nodeId ) );
         }
         return node;
     }
@@ -512,7 +513,7 @@ public class NodeManager
         Relationship relationship = getRelationshipByIdOrNull( id );
         if ( relationship == null )
         {
-            throw new NotFoundException( "Relationship[" + id + "]" );
+            throw new NotFoundException( format( "Relationship %d not found", id ) );
         }
         return relationship;
     }
@@ -628,7 +629,7 @@ public class NodeManager
             RelationshipRecord data = persistenceManager.loadLightRelationship( relId );
             if ( data == null )
             {
-                throw new NotFoundException( "Relationship[" + relId + "] not found." );
+                throw new NotFoundException( format( "Relationship %d not found", relId ) );
             }
             int typeId = data.getType();
             RelationshipType type = getRelationshipTypeById( typeId );

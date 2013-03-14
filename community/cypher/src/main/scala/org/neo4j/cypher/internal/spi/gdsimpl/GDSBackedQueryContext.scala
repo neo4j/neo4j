@@ -20,14 +20,12 @@
 package org.neo4j.cypher.internal.spi.gdsimpl
 
 import org.neo4j.cypher.internal.spi.{Operations, QueryContext}
-import org.neo4j.graphdb.Direction
-import org.neo4j.graphdb.GraphDatabaseService
-import org.neo4j.graphdb.Node
-import org.neo4j.graphdb.Relationship
+import org.neo4j.graphdb._
 import org.neo4j.graphdb.DynamicRelationshipType.withName
 import collection.JavaConverters._
 import java.lang.{Iterable=>JIterable}
 import org.neo4j.tooling.GlobalGraphOperations
+import org.neo4j.cypher.EntityNotFoundException
 
 class GDSBackedQueryContext(graph: GraphDatabaseService) extends QueryContext {
 
@@ -72,9 +70,15 @@ class GDSBackedQueryContext(graph: GraphDatabaseService) extends QueryContext {
         obj.getPropertyKeys.asScala
       }
 
-      def getById(id: Long): Node = {
-        graph.getNodeById(id)
-      }
+      def getById(id: Long): Node =
+        try
+        {
+          graph.getNodeById(id)
+        }
+        catch
+        {
+          case e: NotFoundException => throw new EntityNotFoundException(e.getMessage)
+        }
 
       def indexGet(name: String, key: String, value: Any): Iterator[Node] =
         graph.index.forNodes(name).get(key, value).iterator().asScala
@@ -111,7 +115,14 @@ class GDSBackedQueryContext(graph: GraphDatabaseService) extends QueryContext {
         obj.getPropertyKeys.asScala
 
       def getById(id: Long): Relationship =
-        graph.getRelationshipById(id)
+        try
+        {
+          graph.getRelationshipById(id)
+        }
+        catch
+        {
+          case e:NotFoundException => throw new EntityNotFoundException(e.getMessage)
+        }
 
       def indexGet(name: String, key: String, value: Any): Iterator[Relationship] =
         graph.index.forRelationships(name).get(key, value).iterator().asScala

@@ -19,23 +19,27 @@
  */
 package org.neo4j.server.rest.web;
 
-import org.neo4j.cypher.javacompat.ExecutionResult;
-import org.neo4j.server.database.CypherExecutor;
-import org.neo4j.server.rest.repr.BadInputException;
-import org.neo4j.server.rest.repr.CypherResultRepresentation;
-import org.neo4j.server.rest.repr.InputFormat;
-import org.neo4j.server.rest.repr.OutputFormat;
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
-import java.util.HashMap;
-import java.util.Map;
 
-@Path( "/cypher" )
-public class CypherService {
+import org.neo4j.cypher.CypherException;
+import org.neo4j.cypher.javacompat.ExecutionResult;
+import org.neo4j.server.database.CypherExecutor;
+import org.neo4j.server.rest.repr.BadInputException;
+import org.neo4j.server.rest.repr.CypherResultRepresentation;
+import org.neo4j.server.rest.repr.InputFormat;
+import org.neo4j.server.rest.repr.OutputFormat;
+import org.neo4j.server.rest.repr.ValueRepresentation;
+
+@Path("/cypher")
+public class CypherService
+{
 
     private static final String PARAMS_KEY = "params";
     private static final String QUERY_KEY = "query";
@@ -46,36 +50,52 @@ public class CypherService {
     private OutputFormat output;
     private InputFormat input;
 
-    public CypherService(@Context CypherExecutor cypherExecutor, @Context InputFormat input, @Context OutputFormat output) {
+    public CypherService( @Context CypherExecutor cypherExecutor, @Context InputFormat input,
+                          @Context OutputFormat output )
+    {
         this.cypherExecutor = cypherExecutor;
         this.input = input;
         this.output = output;
     }
 
     @POST
-    @SuppressWarnings({ "unchecked" })
-    public Response cypher(String body,
-                           @QueryParam( INCLUDE_PLAN_PARAM ) boolean includePlan,
-                           @QueryParam( PROFILE_PARAM ) boolean profile) throws BadInputException {
-        Map<String,Object> command = input.readMap( body );
-        
-        if( !command.containsKey(QUERY_KEY) ) {
-            return output.badRequest(new BadInputException( "You have to provide the 'query' parameter." ));
+    @SuppressWarnings({"unchecked"})
+    public Response cypher( String body,
+                            @QueryParam(INCLUDE_PLAN_PARAM) boolean includePlan,
+                            @QueryParam(PROFILE_PARAM) boolean profile ) throws BadInputException
+    {
+        Map<String, Object> command = input.readMap( body );
+
+        if ( !command.containsKey( QUERY_KEY ) )
+        {
+            return output.badRequest( new BadInputException( "You have to provide the 'query' parameter." ) );
         }
-        
-        String query =  (String) command.get(QUERY_KEY);
-        Map<String,Object> params = (Map<String, Object>) (command.containsKey(PARAMS_KEY) ? command.get(PARAMS_KEY) : new HashMap<String, Object>());
-        try {
-            if (profile) {
+
+        String query = (String) command.get( QUERY_KEY );
+        Map<String, Object> params = (Map<String, Object>) (command.containsKey( PARAMS_KEY ) ? command.get(
+                PARAMS_KEY ) : new HashMap<String, Object>());
+        try
+        {
+            if ( profile )
+            {
                 ExecutionResult result = cypherExecutor.getExecutionEngine().profile( query, params );
-                return output.ok(new CypherResultRepresentation( result, true ));
+                return output.ok( new CypherResultRepresentation( result, true ) );
             }
-            else {
+            else
+            {
                 ExecutionResult result = cypherExecutor.getExecutionEngine().execute( query, params );
-                return output.ok(new CypherResultRepresentation( result, includePlan ));
+                return output.ok( new CypherResultRepresentation( result, includePlan ) );
             }
-        } catch(Exception e) {
-            return output.badRequest(e);
+        }
+        catch ( Throwable e )
+        {
+            if (e.getCause() instanceof CypherException)
+            {
+                return output.badRequest( e.getCause() );
+            } else
+            {
+                return output.badRequest( e );
+            }
         }
     }
 }

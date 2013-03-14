@@ -117,6 +117,9 @@ define(
           else if error.data.exception == "PropertyValueException"
             title = "Issue with property value"
             description = error.data.message
+          else if error.data.fullname.indexOf("org.neo4j.cypher") is 0
+            title = "Cypher error"
+            description = error.data.message
           else
             title = error.data.exception
             description = error.data.message
