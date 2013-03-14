@@ -19,6 +19,10 @@
  */
 package org.neo4j.visualization.asciidoc;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.visualization.graphviz.AsciiDocSimpleStyle;
@@ -26,10 +30,6 @@ import org.neo4j.visualization.graphviz.AsciiDocStyle;
 import org.neo4j.visualization.graphviz.GraphStyle;
 import org.neo4j.visualization.graphviz.GraphvizWriter;
 import org.neo4j.walk.Walker;
-
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
 
 public class AsciidocHelper
 {
@@ -172,7 +172,7 @@ public class AsciidocHelper
     {
         String[] keywordsToBreakOn = new String[] {"start", "create unique", "set", "delete", "foreach",
         "match", "where", "with", "return", "skip", "limit", "order by", "asc", "ascending",
-        "desc", "descending", "create", "remove", "drop"};
+        "desc", "descending", "create", "remove", "drop", "using"};
 
         String[] unbreakableKeywords = new String[] {"label", "values", "on", "index"};
         return createLanguageSnippet( query, "cypher", keywordsToBreakOn, unbreakableKeywords );
