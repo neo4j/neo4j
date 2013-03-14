@@ -338,28 +338,37 @@ public class NodeManager
     @SuppressWarnings( "unchecked" )
     public Iterator<Node> getAllNodes()
     {
-        final long highId = getHighestPossibleIdInUse( Node.class );
         Iterator<Node> committedNodes = new PrefetchingIterator<Node>()
         {
+            private long highId = getHighestPossibleIdInUse( Node.class );
             private long currentId;
 
             @Override
             protected Node fetchNextOrNull()
             {
-                while ( currentId <= highId )
-                {
-                    try
+                while ( true )
+                {   // This outer loop is for checking if highId has changed since we started.
+                    while ( currentId <= highId )
                     {
-                        Node node = getNodeByIdOrNull( currentId );
-                        if ( node != null )
+                        try
                         {
-                            return node;
+                            Node node = getNodeByIdOrNull( currentId );
+                            if ( node != null )
+                            {
+                                return node;
+                            }
+                        }
+                        finally
+                        {
+                            currentId++;
                         }
                     }
-                    finally
-                    {
-                        currentId++;
-                    }
+                
+                    long newHighId = getHighestPossibleIdInUse( Node.class );
+                    if ( newHighId > highId )
+                        highId = newHighId;
+                    else
+                        break;
                 }
                 return null;
             }
@@ -521,28 +530,37 @@ public class NodeManager
     @SuppressWarnings( "unchecked" )
     public Iterator<Relationship> getAllRelationships()
     {
-        final long highId = getHighestPossibleIdInUse( Relationship.class );
         Iterator<Relationship> committedRelationships = new PrefetchingIterator<Relationship>()
         {
+            private long highId = getHighestPossibleIdInUse( Relationship.class );
             private long currentId;
 
             @Override
             protected Relationship fetchNextOrNull()
             {
-                while ( currentId <= highId )
-                {
-                    try
+                while ( true )
+                {   // This outer loop is for checking if highId has changed since we started.
+                    while ( currentId <= highId )
                     {
-                        Relationship relationship = getRelationshipByIdOrNull( currentId );
-                        if ( relationship != null )
+                        try
                         {
-                            return relationship;
+                            Relationship relationship = getRelationshipByIdOrNull( currentId );
+                            if ( relationship != null )
+                            {
+                                return relationship;
+                            }
+                        }
+                        finally
+                        {
+                            currentId++;
                         }
                     }
-                    finally
-                    {
-                        currentId++;
-                    }
+
+                    long newHighId = getHighestPossibleIdInUse( Node.class );
+                    if ( newHighId > highId )
+                        highId = newHighId;
+                    else
+                        break;
                 }
                 return null;
             }
