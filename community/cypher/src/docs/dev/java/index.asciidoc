@@ -6,7 +6,18 @@ Execute Cypher Queries from Java
 The full source code of the example:
 https://github.com/neo4j/neo4j/blob/{neo4j-git-tag}/community/cypher/src/test/java/org/neo4j/cypher/javacompat/JavaQuery.java[JavaQuery.java]
 
-In Java, you can use the <<cypher-query-lang,Cypher query language>> like this:
+In Java, you can use the <<cypher-query-lang,Cypher query language>> as per the example below.
+First, let's add some data.
+
+[snippet,java]
+----
+component=neo4j-cypher
+source=org/neo4j/cypher/javacompat/JavaQuery.java
+tag=addData
+classifier=test-sources
+----
+
+Execute a query:
 
 [snippet,java]
 ----
@@ -16,7 +27,9 @@ tag=execute
 classifier=test-sources
 ----
 
-Which will output:
+NOTE: Keep the +ExecutionEngine+ around, don't create a new one for each query!
+
+The result will be:
 
 include::java-cypher-queries-result.asciidoc[]
 
@@ -32,11 +45,11 @@ tag=columns
 classifier=test-sources
 ----
 
-This outputs:
+This contains:
 
 include::java-cypher-queries-columns.asciidoc[]
 
-To fetch the result items in a single column, do like this:
+To fetch the result items from a single column, do like this:
 
 [snippet,java]
 ----

@@ -86,7 +86,9 @@ trait DocumentationHelper {
 
 abstract class DocumentingTestBase extends Assertions with DocumentationHelper {
   def testQuery(title: String, text: String, queryText: String, returns: String, assertions: (ExecutionResult => Unit)*) {
-    dumpGraphViz(dir, graphvizOptions.trim)
+    if (!graphvizExecutedAfter) {
+      dumpGraphViz(dir, graphvizOptions.trim)
+    }
     var consoleData: String = ""
     if (generateConsole) {
       if (generateInitialGraphForConsole) {
@@ -102,6 +104,9 @@ abstract class DocumentingTestBase extends Assertions with DocumentationHelper {
 
     val writer: PrintWriter = createWriter(title, dir)
     dumpToFile(dir, writer, title, query, returns, text, result, consoleData)
+    if (graphvizExecutedAfter) {
+      dumpGraphViz(dir, graphvizOptions.trim)
+    }
   }
 
   var db: GraphDatabaseService = null
@@ -114,7 +119,8 @@ abstract class DocumentingTestBase extends Assertions with DocumentationHelper {
   var generateConsole: Boolean = true
   var generateInitialGraphForConsole: Boolean = true
   val graphvizOptions: String = ""
-  val noTitle: Boolean = false;
+  val noTitle: Boolean = false
+  val graphvizExecutedAfter: Boolean = false
 
   def section: String
   val dir = createDir(section)

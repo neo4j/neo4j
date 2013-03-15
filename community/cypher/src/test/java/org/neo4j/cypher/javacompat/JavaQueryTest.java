@@ -38,10 +38,12 @@ public class JavaQueryTest
         assertTrue( jq.columnsString.contains( "n.name" ) );
         assertTrue( jq.resultString.contains( "Node[" ) );
         assertTrue( jq.resultString.contains( "name" ) );
-        assertTrue( jq.resultString.contains( "reference" ) );
+        assertTrue( jq.resultString.contains( "my" ) );
         assertTrue( jq.resultString.contains( "1 row" ) );
         assertTrue( jq.nodeResult.contains( "Node[" ) );
-        assertTrue( jq.nodeResult.contains( "reference" ) );
+        assertTrue( jq.nodeResult.contains( "my" ) );
+        assertTrue( jq.rows.contains( "n.name: my node; n: Node[" ) );
+        assertTrue( jq.rows.contains( "];" ) );
 
         gen.saveToFile( "result", AsciidocHelper.createOutputSnippet( jq.resultString ) );
         gen.saveToFile( "columns", AsciidocHelper.createOutputSnippet( jq.columnsString ) );
