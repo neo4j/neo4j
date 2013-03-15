@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.executionplan.builders
 
 import org.neo4j.cypher.internal.executionplan.{ExecutionPlanInProgress, PlanBuilder}
 import org.neo4j.cypher.internal.spi.PlanContext
-import org.neo4j.cypher.internal.commands.{NodeByLabel, IndexHint, Equals, HasLabel}
+import org.neo4j.cypher.internal.commands.{NodeByLabel, SchemaIndex, Equals, HasLabel}
 import org.neo4j.cypher.internal.commands.expressions.{Property, Identifier}
 import org.neo4j.cypher.internal.commands.values.LabelValue
 import org.neo4j.cypher.UnableToPickIndexException
@@ -65,7 +65,7 @@ class StartPointChoosingBuilder extends PlanBuilder {
       prop <- props
 
       if (ctx.getIndexRuleId(label, prop).nonEmpty)
-    } yield IndexHint(identifier, label, prop, None)
+    } yield SchemaIndex(identifier, label, prop, None)
 
     val labels = labelPropertyCombo.head._2.keys.toList
 

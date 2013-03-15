@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.commands._
 import org.neo4j.cypher.internal.commands.expressions.{Expression, Identifier, Property}
 import org.neo4j.cypher.IndexHintException
 import values.LabelValue
-import org.neo4j.cypher.internal.commands.IndexHint
+import org.neo4j.cypher.internal.commands.SchemaIndex
 import org.neo4j.cypher.internal.executionplan.ExecutionPlanInProgress
 import org.neo4j.cypher.internal.commands.Equals
 
@@ -35,7 +35,7 @@ class IndexLookupBuilder extends PlanBuilder {
 
   def apply(plan: ExecutionPlanInProgress, ctx: PlanContext): ExecutionPlanInProgress = {
     val startItem = extractInterestingStartItem(plan)
-    val hint = startItem.token.asInstanceOf[IndexHint]
+    val hint = startItem.token.asInstanceOf[SchemaIndex]
     val foundPredicates = findMatchingPredicates(plan, hint)
 
     val (originalLabelPred, labelPredicatesAfterThis) = extractLabelPredicates(plan, hint)
@@ -58,7 +58,7 @@ class IndexLookupBuilder extends PlanBuilder {
   }
 
 
-  private def extractLabelPredicates(plan: ExecutionPlanInProgress, hint: IndexHint): (QueryToken[Predicate], Seq[QueryToken[Predicate]]) = {
+  private def extractLabelPredicates(plan: ExecutionPlanInProgress, hint: SchemaIndex): (QueryToken[Predicate], Seq[QueryToken[Predicate]]) = {
     val unsolvedHasLabels: Seq[(Unsolved[Predicate], Seq[LabelValue])] = plan.query.where.flatMap {
       case x@Unsolved(HasLabel(Identifier(identifier), labelNames))
         if hint.identifier == identifier && labelNames.exists(_.name == hint.label) => Some((x, labelNames))
@@ -76,7 +76,7 @@ class IndexLookupBuilder extends PlanBuilder {
   }
 
 
-  private def solveLabelPredicates(hint: IndexHint, labelValue: Seq[LabelValue], rest: Seq[LabelValue]): Seq[QueryToken[Predicate]] = {
+  private def solveLabelPredicates(hint: SchemaIndex, labelValue: Seq[LabelValue], rest: Seq[LabelValue]): Seq[QueryToken[Predicate]] = {
     val solvedLabelPredicate: QueryToken[Predicate] = Solved(HasLabel(Identifier(hint.identifier), labelValue))
     val remainingLabelPredicates = Seq(solvedLabelPredicate) ++ (if (rest.nonEmpty)
       Some[QueryToken[Predicate]](Unsolved(HasLabel(Identifier(hint.identifier), rest)))
@@ -85,7 +85,7 @@ class IndexLookupBuilder extends PlanBuilder {
     remainingLabelPredicates
   }
 
-  private def findMatchingPredicates(plan: ExecutionPlanInProgress, hint: IndexHint): Seq[(Unsolved[Predicate], Expression)] =
+  private def findMatchingPredicates(plan: ExecutionPlanInProgress, hint: SchemaIndex): Seq[(Unsolved[Predicate], Expression)] =
     plan.query.where.flatMap {
       case x@Unsolved(Equals(Property(Identifier(id), prop), expression))
         if id == hint.identifier && prop == hint.property => Some((x, expression))
@@ -100,7 +100,7 @@ class IndexLookupBuilder extends PlanBuilder {
     plan.query.start.filter(interestingFilter).head
 
   private def interestingFilter: PartialFunction[QueryToken[StartItem], Boolean] = {
-    case Unsolved(IndexHint(_, _, _, None)) => true
+    case Unsolved(SchemaIndex(_, _, _, None)) => true
     case _                                  => false
   }
 

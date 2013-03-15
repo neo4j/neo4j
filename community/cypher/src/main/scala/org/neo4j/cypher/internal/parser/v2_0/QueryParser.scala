@@ -217,7 +217,7 @@ START clause or a CREATE clause, and the body can be one of three: BodyReturn, B
   case class QueryStart(startItems: Seq[StartItem],
                         namedPaths: Seq[NamedPath],
                         patterns: Seq[Pattern],
-                        hints: Seq[IndexHint],
+                        hints: Seq[SchemaIndex],
                         updates: Seq[UpdateAction],
                         predicate: Predicate)
 

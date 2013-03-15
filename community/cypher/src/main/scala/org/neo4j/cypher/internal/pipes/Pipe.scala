@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.pipes
 
 import org.neo4j.cypher.internal.symbols.SymbolTable
 import org.neo4j.cypher.internal.ExecutionContext
-import org.neo4j.cypher.PlanDescription
+import org.neo4j.cypher.{NullPlanDescription, PlanDescription}
 import org.neo4j.helpers.ThisShouldNotHappenError
 
 /**
@@ -49,7 +49,7 @@ object NullPipe extends Pipe {
 
   val symbols: SymbolTable = SymbolTable()
 
-  val executionPlanDescription = PlanDescription(this, "Null")
+  val executionPlanDescription = NullPlanDescription
 }
 
 abstract class PipeWithSource(val source: Pipe) extends Pipe {

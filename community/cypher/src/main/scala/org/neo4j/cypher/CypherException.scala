@@ -20,7 +20,7 @@
 package org.neo4j.cypher
 
 import internal.commands.expressions.Expression
-import internal.commands.IndexHint
+import internal.commands.SchemaIndex
 
 abstract class CypherException(message: String, cause: Throwable) extends RuntimeException(message, cause) {
   def this(message:String) = this(message, null)
@@ -68,7 +68,7 @@ class UnknownLabelException(labelName: String) extends CypherException(s"The pro
 
 class IndexHintException(identifier: String, label: String, property: String, message: String)
   extends CypherException(s"$message\nLabel: `$label`\nProperty name: `$property`") {
-  def this(hint:IndexHint, message:String) = this(hint.identifier, hint.label, hint.property, message)
+  def this(hint:SchemaIndex, message:String) = this(hint.identifier, hint.label, hint.property, message)
 }
 
 class UnableToPickIndexException(message: String) extends CypherException(message)

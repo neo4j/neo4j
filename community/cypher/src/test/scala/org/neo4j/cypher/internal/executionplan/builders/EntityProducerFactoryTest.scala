@@ -21,12 +21,11 @@ package org.neo4j.cypher.internal.executionplan.builders
 
 import org.neo4j.cypher.internal.spi.{QueryContext, PlanContext}
 import org.scalatest.mock.MockitoSugar
-import org.junit.{Ignore, Before, Test}
+import org.junit.{Before, Test}
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.commands.IndexHint
+import org.neo4j.cypher.internal.commands.SchemaIndex
 import org.neo4j.cypher.IndexHintException
 import org.scalatest.Assertions
-import org.neo4j.graphdb.Node
 import org.neo4j.cypher.internal.commands.expressions.Literal
 import org.neo4j.cypher.internal.pipes.QueryState
 
@@ -49,10 +48,9 @@ class EntityProducerFactoryTest extends MockitoSugar with Assertions {
     when(planContext.getIndexRuleId(label, prop)).thenReturn(None)
 
     //WHEN
-    intercept[IndexHintException](factory.nodeByIndexHint(IndexHint("id", label, prop, None)))
+    intercept[IndexHintException](factory.nodeByIndexHint(SchemaIndex("id", label, prop, None)))
   }
 
-  @Ignore("Waiting for Kernel API implementation")
   @Test
   def calls_the_right_methods() {
     //GIVEN
@@ -67,7 +65,7 @@ class EntityProducerFactoryTest extends MockitoSugar with Assertions {
     val state = QueryState().copy(inner = queryContext)
 
     //WHEN
-    val func = factory.nodeByIndexHint(IndexHint("id", label, prop, Some(Literal(value))))
+    val func = factory.nodeByIndexHint(SchemaIndex("id", label, prop, Some(Literal(value))))
     assert(func(null, state) === indexResult)
   }
 }

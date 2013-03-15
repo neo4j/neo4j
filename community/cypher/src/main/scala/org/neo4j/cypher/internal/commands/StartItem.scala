@@ -25,54 +25,58 @@ import org.neo4j.cypher.internal.symbols._
 import org.neo4j.cypher.internal.mutation.CreateNode
 import org.neo4j.cypher.internal.mutation.CreateRelationship
 
-abstract class StartItem(val identifierName: String) extends TypeSafe with AstNode[StartItem] {
+abstract class StartItem(val identifierName: String, val args: Map[String, String])
+extends TypeSafe with AstNode[StartItem] {
   def mutating : Boolean
-
   override def addsToRow() = Seq(identifierName)
+  def name: String = getClass.getSimpleName
 }
 
 trait ReadOnlyStartItem extends StartItem {
   def mutating = false
   def children:Seq[AstNode[_]] = Seq.empty
-
   def throwIfSymbolsMissing(symbols: SymbolTable) {}
   def symbolTableDependencies = Set.empty
-   
   def rewrite(f: (Expression) => Expression) = this
 }
 
 case class RelationshipById(varName: String, expression: Expression)
-  extends StartItem(varName) with ReadOnlyStartItem
+  extends StartItem(varName, Map.empty) with ReadOnlyStartItem
 
 case class RelationshipByIndex(varName: String, idxName: String, key: Expression, expression: Expression)
-  extends StartItem(varName) with ReadOnlyStartItem
+  extends StartItem(varName, Map("idxName" -> idxName, "key" -> key.toString(), "expr" -> expression.toString()))
+  with ReadOnlyStartItem
 
 case class RelationshipByIndexQuery(varName: String, idxName: String, query: Expression)
-  extends StartItem(varName) with ReadOnlyStartItem
+  extends StartItem(varName, Map("idxName" -> idxName, "query" -> query.toString()))
+  with ReadOnlyStartItem
 
 case class NodeByIndex(varName: String, idxName: String, key: Expression, expression: Expression)
-  extends StartItem(varName) with ReadOnlyStartItem
+  extends StartItem(varName, Map("idxName" -> idxName, "key" -> key.toString(), "expr" -> expression.toString()))
+  with ReadOnlyStartItem
 
 case class NodeByIndexQuery(varName: String, idxName: String, query: Expression)
-  extends StartItem(varName) with ReadOnlyStartItem
+  extends StartItem(varName, Map("idxName" -> idxName, "query" -> query.toString()))
+  with ReadOnlyStartItem
 
-case class IndexHint(identifier: String, label: String, property: String, query: Option[Expression])
-  extends StartItem(identifier) with ReadOnlyStartItem
+case class SchemaIndex(identifier: String, label: String, property: String, query: Option[Expression])
+  extends StartItem(identifier, Map("label" -> label, "property" -> property) ++ query.map("query" -> _.toString()))
+  with ReadOnlyStartItem
 
 case class NodeById(varName: String, expression: Expression)
-  extends StartItem(varName) with ReadOnlyStartItem
+  extends StartItem(varName, Map("name" -> expression.toString()))
+  with ReadOnlyStartItem
 
 case class NodeByLabel(varName: String, label: String)
-  extends StartItem(varName) with ReadOnlyStartItem
+  extends StartItem(varName, Map("label" -> label.toString))
+  with ReadOnlyStartItem
 
-case class AllNodes(columnName: String)
-  extends StartItem(columnName) with ReadOnlyStartItem
+case class AllNodes(columnName: String) extends StartItem(columnName, Map.empty) with ReadOnlyStartItem
 
-case class AllRelationships(columnName: String)
-  extends StartItem(columnName) with ReadOnlyStartItem
+case class AllRelationships(columnName: String) extends StartItem(columnName, Map.empty) with ReadOnlyStartItem
 
 //We need to wrap the inner classes to be able to have two different rewrite methods
-abstract class UpdatingStartItem(val updateAction:UpdateAction, name:String) extends StartItem(name) {
+abstract class UpdatingStartItem(val updateAction:UpdateAction, name:String) extends StartItem(name, Map.empty) {
 
   override def mutating = true
   override def children = Seq(updateAction)

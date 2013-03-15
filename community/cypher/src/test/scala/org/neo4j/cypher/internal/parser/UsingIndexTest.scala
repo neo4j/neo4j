@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.parser
 
 import v2_0.{AbstractPattern, UsingIndex}
 import org.junit.Test
-import org.neo4j.cypher.internal.commands.IndexHint
+import org.neo4j.cypher.internal.commands.SchemaIndex
 
 
 class UsingIndexTest extends UsingIndex with ParserTest {
@@ -29,10 +29,10 @@ class UsingIndexTest extends UsingIndex with ParserTest {
     implicit val parserToTest = indexHints
 
     parsing("USING INDEX n:User(name)") shouldGive
-      Seq(IndexHint("n", "User", "name", None))
+      Seq(SchemaIndex("n", "User", "name", None))
 
     parsing("USING INDEX ` 1`:` 2`(` 3`)") shouldGive
-      Seq(IndexHint(" 1", " 2", " 3", None))
+      Seq(SchemaIndex(" 1", " 2", " 3", None))
 
     assertFails("USING INDEX n.user(name)")
     assertFails("USING INDEX n.user(name, age)")

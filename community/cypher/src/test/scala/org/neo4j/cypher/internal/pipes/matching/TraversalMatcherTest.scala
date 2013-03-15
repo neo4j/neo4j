@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.pipes.matching
 import org.junit.Test
 import org.neo4j.cypher.GraphDatabaseTestBase
 import org.neo4j.graphdb.{Node, Path}
-import org.neo4j.cypher.internal.pipes.{NullDecorator, MutableMaps, QueryState}
+import org.neo4j.cypher.internal.pipes.{EntityProducer, NullDecorator, MutableMaps, QueryState}
 import org.neo4j.graphdb.DynamicRelationshipType.withName
 import org.neo4j.graphdb.Direction.OUTGOING
 import org.neo4j.cypher.internal.commands.True
@@ -61,7 +61,7 @@ class TraversalMatcherTest extends GraphDatabaseTestBase {
     assert(result.head.lastRelationship() === r2)
   }
 
-  private def produce(x: Node*) = (_: ExecutionContext, _: QueryState) => x.iterator
+  private def produce(x: Node*) = EntityProducer[Node]("Produce") { (_: ExecutionContext, _: QueryState) => x.iterator }
 
   @Test def tree() {
     /*Data nodes and rels

@@ -26,8 +26,8 @@ import org.neo4j.cypher.GraphDatabaseTestBase
 import org.neo4j.cypher.internal.executionplan.{ExecutionPlanInProgress, PartiallySolvedQuery}
 import org.junit.Assert._
 import org.neo4j.cypher.internal.commands.expressions.Literal
-import org.neo4j.cypher.internal.pipes.ParameterPipe
 import org.neo4j.cypher.internal.parser.v1_9.CypherParserImpl
+import org.neo4j.cypher.internal.pipes.NullPipe
 
 class TraversalMatcherBuilderTest extends GraphDatabaseTestBase with Assertions with BuilderTest {
   var builder: TraversalMatcherBuilder = null
@@ -41,7 +41,7 @@ class TraversalMatcherBuilderTest extends GraphDatabaseTestBase with Assertions 
       copy(start = Seq(Unsolved(NodeByIndex("n", "index", Literal("key"), Literal("expression"))))
     )
 
-    assertFalse("This query should not be accepted", builder.canWorkWith(plan(new ParameterPipe(), q)))
+    assertFalse("This query should not be accepted", builder.canWorkWith(plan(NullPipe, q)))
   }
 
   @Test def should_accept_variable_length_paths() {
@@ -49,7 +49,7 @@ class TraversalMatcherBuilderTest extends GraphDatabaseTestBase with Assertions 
                   "MATCH me-[:jane_knows*]->friend-[:has]->status " +
                   "RETURN me")
 
-    assertTrue("This query should not be accepted", builder.canWorkWith(plan(new ParameterPipe(), q)))
+    assertTrue("This query should not be accepted", builder.canWorkWith(plan(NullPipe, q)))
   }
 
   @Test def should_not_accept_queries_with_varlength_paths() {
@@ -57,7 +57,7 @@ class TraversalMatcherBuilderTest extends GraphDatabaseTestBase with Assertions 
                   "MATCH me-[:LOVES*]->banana-[:LIKES*]->you " +
                   "RETURN me")
 
-    assertTrue("This query should be accepted", builder.canWorkWith(plan(new ParameterPipe(), q)))
+    assertTrue("This query should be accepted", builder.canWorkWith(plan(NullPipe, q)))
   }
 
   @Test def should_handle_loops() {
@@ -65,13 +65,13 @@ class TraversalMatcherBuilderTest extends GraphDatabaseTestBase with Assertions 
                   "MATCH me-[:LIKES]->(u1)<-[:LIKES]->you, me-[:HATES]->(u2)<-[:HATES]->you " +
                   "RETURN me")
 
-    assertTrue("This query should be accepted", builder.canWorkWith(plan(new ParameterPipe(), q)))
+    assertTrue("This query should be accepted", builder.canWorkWith(plan(NullPipe, q)))
   }
 
   @Test def should_not_take_on_path_expression_predicates() {
     val q = query("START a=node({self}) MATCH a-->b WHERE b-->() RETURN b")
 
-    val testPlan = plan(new ParameterPipe(), q)
+    val testPlan = plan(NullPipe, q)
     assertTrue("This query should be accepted", builder.canWorkWith(testPlan))
 
     val newPlan = builder.apply(testPlan)
