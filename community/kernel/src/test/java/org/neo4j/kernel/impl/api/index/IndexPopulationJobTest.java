@@ -20,9 +20,9 @@
 package org.neo4j.kernel.impl.api.index;
 
 import static java.util.Arrays.asList;
+import static junit.framework.Assert.assertEquals;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.doThrow;
@@ -33,7 +33,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.MapUtil.map;
-import static org.neo4j.kernel.impl.util.StringLogger.SYSTEM;
+import static org.neo4j.kernel.impl.util.TestLogger.LogCall.info;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -65,6 +65,8 @@ import org.neo4j.kernel.impl.api.index.IndexingService.StoreScan;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreIndexStoreView;
+import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.impl.util.TestLogger;
 import org.neo4j.kernel.logging.SingleLoggingService;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.ImpermanentGraphDatabase;
@@ -196,7 +198,7 @@ public class IndexPopulationJobTest
         ControlledStoreScan storeScan = new ControlledStoreScan();
         when( storeView.visitNodesWithPropertyAndLabel( any(IndexDescriptor.class),
                 Matchers.<Visitor<Pair<Long,Object>>>any() ) ).thenReturn( storeScan );
-        final IndexPopulationJob job = newIndexPopulationJob( FIRST, name, populator, index, storeView );
+        final IndexPopulationJob job = newIndexPopulationJob( FIRST, name, populator, index, storeView, StringLogger.DEV_NULL );
         
         OtherThreadExecutor<Void> populationJobRunner = new OtherThreadExecutor<Void>(
                 "Population job test runner", null );
@@ -222,6 +224,28 @@ public class IndexPopulationJobTest
         verify( index, times( 0 ) ).flip();
         verify( index, times( 0 ) ).flip( Matchers.<Callable<Void>>any() );
         verify( index, times( 0 ) ).flip( Matchers.<Callable<Void>>any(), Matchers.<IndexProxy>any() );
+    }
+
+    @Test
+    public void shouldLogJobProgress() throws Exception
+    {
+        // Given
+        createNode( map( name, "irrelephant" ), FIRST );
+        TestLogger logger = new TestLogger();
+        FlippableIndexProxy index = mock( FlippableIndexProxy.class );
+        NeoStoreIndexStoreView store = new NeoStoreIndexStoreView(
+                db.getXaDataSourceManager().getNeoStoreDataSource().getNeoStore() );
+
+        IndexPopulationJob job = newIndexPopulationJob( FIRST, name, populator, index, store, logger);
+
+        // When
+        job.run();
+
+        // Then
+        logger.assertExactly(
+            info( "Index population started for label id 0 on property id 2" ),
+            info( "Index population completed for label id 0 on property id 2, index is now online." )
+        );
     }
     
     private static class ControlledStoreScan implements StoreScan
@@ -379,17 +403,18 @@ public class IndexPopulationJobTest
             throws LabelNotFoundKernelException, PropertyKeyNotFoundException
     {
         NeoStore neoStore = db.getXaDataSourceManager().getNeoStoreDataSource().getNeoStore();
-        return newIndexPopulationJob( label, propertyKey, populator, flipper, new NeoStoreIndexStoreView( neoStore ) );
+        return newIndexPopulationJob( label, propertyKey, populator, flipper, new NeoStoreIndexStoreView( neoStore ),
+                StringLogger.DEV_NULL );
     }
     
     private IndexPopulationJob newIndexPopulationJob( Label label, String propertyKey, IndexPopulator populator,
-            FlippableIndexProxy flipper, IndexStoreView storeView )
+            FlippableIndexProxy flipper, IndexStoreView storeView, StringLogger logger )
             throws LabelNotFoundKernelException, PropertyKeyNotFoundException
     {
-        IndexRule indexRule = new IndexRule( 0, context.getLabelId( FIRST.name() ), context.getPropertyKeyId( name ) );
+        IndexRule indexRule = new IndexRule( 0, context.getLabelId( label.name() ), context.getPropertyKeyId( propertyKey ) );
         IndexDescriptor descriptor = new IndexDescriptor( indexRule.getLabel(), indexRule.getPropertyKey() );
         flipper.setFlipTarget( mock( IndexProxyFactory.class ) );
-        return new IndexPopulationJob( descriptor, populator, flipper, storeView, new SingleLoggingService( SYSTEM ) );
+        return new IndexPopulationJob( descriptor, populator, flipper, storeView, new SingleLoggingService( logger ) );
     }
 
     private long createNode( Map<String, Object> properties, Label... labels )
