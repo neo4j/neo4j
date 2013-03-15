@@ -1,3 +1,8 @@
+2.0.M01
+-------
+o Added support for labels
+o Added support for label-based indexes
+
 1.9.M05 (2013-03-05)
 --------------------
 o Added support for X-Forwarded-Host and X-Forwarded-Proto headers to allow parameterising of 

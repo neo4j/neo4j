@@ -1,7 +1,7 @@
 2.0.M01
 -------
 o Adds support for adding, listing, removing, and testing of labels
-  (Complete for kernel, beans API)
+o Adds support for creating, querying, and dropping label-based indexes
 
 1.9.M05 (2013-03-05)
 --------------------
