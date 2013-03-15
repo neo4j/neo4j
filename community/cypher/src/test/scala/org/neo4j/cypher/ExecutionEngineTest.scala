@@ -2436,4 +2436,19 @@ RETURN x0.name?
     //THEN DOESN'T THROW EXCEPTION
     assert(result.toList === List(Map("id" -> 0)))
   }
+
+  @Test
+  def shouldProduceProfileWhenUsingLimit() {
+    // GIVEN
+    createNode()
+    createNode()
+    createNode()
+    val result = engine.profile("""START n=node(*) RETURN n LIMIT 1""")
+
+    // WHEN
+    result.toList
+
+    // THEN PASS
+    println(result.executionPlanDescription())
+  }
 }

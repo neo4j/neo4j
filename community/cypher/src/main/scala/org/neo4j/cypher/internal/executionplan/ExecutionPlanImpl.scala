@@ -146,20 +146,15 @@ class ExecutionPlanImpl(inputQuery: Query, graph: GraphDatabaseService) extends 
   private def prepareStateAndResult(params: Map[String, Any], pipe: Pipe, profile: Boolean): (QueryState, Iterator[ExecutionContext], () => PlanDescription) = {
     val tx = graph.beginTx()
 
-    val decorator: PipeDecorator = if (profile)
-      new Profiler()
-    else
-      NullDecorator
-
 
     try {
       val gdsContext = new GDSBackedQueryContext(graph)
 
+      val decorator: PipeDecorator = if (profile) new Profiler() else NullDecorator
       val state = new QueryState(graph, gdsContext, params, decorator)
       val results = pipe.createResults(state)
-      val descriptor = () => decorator.decorate(pipe.executionPlanDescription)
-
       val closingIterator = new ClosingIterator[ExecutionContext](results, state.query, tx)
+      val descriptor = () => decorator.decorate(pipe.executionPlanDescription, closingIterator.isEmpty)
 
       (state, closingIterator, descriptor)
     } catch {
