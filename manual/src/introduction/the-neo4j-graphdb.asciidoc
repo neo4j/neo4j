@@ -276,4 +276,8 @@ You can track the status of your index by asking for the index state through the
 Note, however, that this is not yet possible through cypher.
 
 How to use indexes in the different APIs:
-<<query-schema-index, Cypher>>
+
+* <<query-schema-index, Cypher>>
+* <<tutorials-java-embedded-new-index, Java Core API>>
+* <<rest-api-schema-indexes, REST API>>
+
