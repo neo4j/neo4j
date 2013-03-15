@@ -1,0 +1,15 @@
+[[cypher-execution-plans]]
+Execution Plans
+===============
+Cypher is a declarative language. To achieve this a query goes through a couple of different phases. The final product
+is an execution plan, which is what steps the execution engine will follow to fulfill the query.
+
+The first phase is parsing, which turns the query into an object representation of the query. Next Cypher will build
+an execution plan. Parsing and execution plan building are time costly operations. To save on this work, Cypher will
+cache all plans it builds. It does this by creating a cache map with the string query as key and the execution plan as
+value. To make full use of this cache, it's imperative that users use the same query string every time. Parameters help
+make queries easier to re-use for Cypher.
+
+When Cypher is building execution plans, it looks at the schema to see if it can find useful indexes. These index
+decisions are only valid until the schema changes, so adding or removing indexes leads to the execution plan cache to
+be flushed.

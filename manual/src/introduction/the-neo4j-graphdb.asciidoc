@@ -269,9 +269,11 @@ Performance is gained by creating indexes, which improve the speed of looking up
 Once you’ve specified which properties to index, Neo4j will make sure your indexes are kept up to date as your graph evolves.
 Any operation that looks up nodes by the newly indexed properties will see a significant performance boost.
 
-Indexes in Neo4j are +eventually+ +available+. That means that when you first create an index, the operation returns immediately.
+Indexes in Neo4j are _eventually available_. That means that when you first create an index, the operation returns immediately.
 The index is not immediately available for querying, however. The new index will be created in the background, and eventually come online.
 
 You can track the status of your index by asking for the index state through the API you are using.
 Note, however, that this is not yet possible through cypher.
 
+How to use indexes in the different APIs:
+<<query-schema-index, Cypher>>
