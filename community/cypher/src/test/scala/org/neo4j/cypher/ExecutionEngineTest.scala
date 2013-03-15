@@ -2424,4 +2424,16 @@ RETURN x0.name?
     //THEN DOESN'T THROW EXCEPTION
     assert(result.toList === List())
   }
+
+  @Test
+  def should_allow_expression_alias_in_order_by_with_distinct() {
+    //WHEN
+    val result = parseAndExecute(
+      """START n=node(*)
+        RETURN distinct ID(n) as id
+        ORDER BY id DESC""")
+
+    //THEN DOESN'T THROW EXCEPTION
+    assert(result.toList === List(Map("id" -> 0)))
+  }
 }
