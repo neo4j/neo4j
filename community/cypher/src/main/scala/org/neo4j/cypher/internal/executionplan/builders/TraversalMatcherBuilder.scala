@@ -47,13 +47,22 @@ class TraversalMatcherBuilder(graph: GraphDatabaseService) extends PlanBuilder {
 
       val newQ = plan.query.copy(
         patterns = plan.query.patterns.filterNot(p => solvedPatterns.contains(p.token)) ++ solvedPatterns.map(Solved(_)),
-        start = plan.query.start.filterNot(tokens.contains) ++ tokens.map(_.solve),
+        start = markStartItemsSolved(plan.query.start, tokens, longestTrail),
         where = newWhereClause
       )
 
       val pipe = new TraversalMatchPipe(plan.pipe, matcher, longestTrail)
 
       plan.copy(pipe = pipe, query = newQ)
+  }
+
+  private def markStartItemsSolved(startItems: Seq[QueryToken[StartItem]], done: Seq[QueryToken[StartItem]], trail:Trail): Seq[QueryToken[StartItem]] = {
+    val newStart = startItems.filterNot(done.contains) ++ done.map(_.solve)
+
+    newStart.map {
+      case t@Unsolved(AllNodes(key)) if key == trail.end => t.solve
+      case x                                             => x
+    }
   }
 
   private def markPredicatesAsSolved(in: ExecutionPlanInProgress, trail: Trail): Seq[QueryToken[Predicate]] = {
