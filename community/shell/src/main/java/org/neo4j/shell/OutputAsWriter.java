@@ -24,6 +24,7 @@ import java.io.Writer;
 
 public class OutputAsWriter extends Writer
 {
+    private final static String LINE_SEPARATOR = System.getProperty( "line.separator" );
     private final Output out;
 
     public OutputAsWriter( Output out )
@@ -34,7 +35,16 @@ public class OutputAsWriter extends Writer
     @Override
     public void write( char[] cbuf, int off, int len ) throws IOException
     {
-        out.print( new String( cbuf, off, len ) );
+        String string = String.valueOf( cbuf, off, len );
+        int lastNewline = string.lastIndexOf( LINE_SEPARATOR );
+        if ( lastNewline == -1 )
+        {
+            out.print( string );
+        } else
+        {
+            out.println( string.substring( 0, lastNewline ) );
+            out.print( string.substring( lastNewline + LINE_SEPARATOR.length() ) );
+        }
     }
 
     @Override
