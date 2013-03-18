@@ -296,7 +296,7 @@ public class UpgradeStoreIT
         buffer.flip();
         channel.write( buffer );
 
-        // It's the same length as the current version v0.9.9
+        // It's the same length as the current version
         channel.position( channel.size() - UTF8.encode( oldVersionToSet ).length );
         buffer = ByteBuffer.wrap( UTF8.encode( oldVersionToSet ) );
         channel.write( buffer );

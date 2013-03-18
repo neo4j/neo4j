@@ -38,7 +38,7 @@ public class ReadRecordsTestIT
         URL nodeStoreFile = getClass().getResource( "exampledb/neostore.nodestore.db" );
 
         LegacyNodeStoreReader nodeStoreReader = new LegacyNodeStoreReader( fs, new File( nodeStoreFile.getFile() ) );
-        assertEquals( 1001, nodeStoreReader.getMaxId() );
+        assertEquals( 1002, nodeStoreReader.getMaxId() );
         Iterable<NodeRecord> records = nodeStoreReader.readNodeStore();
         int nodeCount = 0;
         for ( NodeRecord record : records )

@@ -28,6 +28,7 @@ import static org.junit.Assume.assumeTrue;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.changeVersionNumber;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.truncateFile;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.truncateToFixedLength;
+import static org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore.LEGACY_VERSION;
 import static org.neo4j.kernel.impl.util.FileUtils.copyRecursively;
 
 import java.io.File;
@@ -92,7 +93,7 @@ public class UpgradableDatabaseTestIT
 
         copyRecursively( resourceDirectory, workingDirectory );
 
-        truncateFile( fileSystem, new File( workingDirectory, "neostore.nodestore.db" ), "StringPropertyStore v0.9.9" );
+        truncateFile( fileSystem, new File( workingDirectory, "neostore.nodestore.db" ), "StringPropertyStore " + LEGACY_VERSION );
 
         assertFalse( new UpgradableDatabase(fileSystem).storeFilesUpgradeable( new File( workingDirectory, "neostore" ) ) );
     }
@@ -110,7 +111,7 @@ public class UpgradableDatabaseTestIT
         copyRecursively( resourceDirectory, workingDirectory );
 
         int shortFileLength = 5 /* (RelationshipTypeStore.RECORD_SIZE) */ * 3;
-        assertTrue( shortFileLength < UTF8.encode( "StringPropertyStore v0.9.9" ).length );
+        assertTrue( shortFileLength < UTF8.encode( "StringPropertyStore " + LEGACY_VERSION ).length );
         truncateToFixedLength( fileSystem, new File( workingDirectory, "neostore.relationshiptypestore.db" ), shortFileLength );
 
         assertFalse( new UpgradableDatabase(fileSystem).storeFilesUpgradeable( new File( workingDirectory, "neostore" ) ) );
@@ -140,7 +141,7 @@ public class UpgradableDatabaseTestIT
         catch (StoreUpgrader.UnableToUpgradeException e)
         {
             assertThat( e.getMessage(), is("'neostore.nodestore.db' has a store version number that we cannot upgrade " +
-                    "from. Expected 'NodeStore v0.9.9' but file is version 'NodeStore v0.9.5'.") );
+                    "from. Expected 'NodeStore " + LEGACY_VERSION + "' but file is version 'NodeStore v0.9.5'.") );
         }
     }
 }

@@ -91,7 +91,7 @@ public class StoreUpgradeIntegrationTest
         assertTrue( allStoreFilesHaveVersion( fileSystem, workingDirectory, LEGACY_VERSION ) );
         truncateFile(fileSystem, new File( workingDirectory,
                 "neostore.propertystore.db.index.keys" ),
-                "StringPropertyStore v0.9.9" );
+                "StringPropertyStore " + LEGACY_VERSION );
 
         Map<String, String> params = new HashMap<String, String>();
         params.put( Config.ALLOW_STORE_UPGRADE, "true" );
