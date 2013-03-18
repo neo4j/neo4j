@@ -52,6 +52,7 @@ trait Expressions extends Base with ParserPattern with Predicates with StringLit
   (ignoreCase("true") ^^^ Literal(true)
       | ignoreCase("false") ^^^ Literal(false)
       | ignoreCase("null") ^^^ Literal(null)
+      | ignoreCase("gettimestamp") ^^^ Literal(System.currentTimeMillis) 
       | pathExpression
       | extract
       | reduce
