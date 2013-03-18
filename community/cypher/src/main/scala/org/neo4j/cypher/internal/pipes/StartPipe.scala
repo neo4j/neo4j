@@ -20,13 +20,11 @@
 package org.neo4j.cypher.internal.pipes
 
 import org.neo4j.graphdb.{Relationship, Node, PropertyContainer}
-import java.lang.String
+import org.neo4j.cypher.internal.data.SimpleVal._
 import org.neo4j.cypher.internal.symbols._
 import org.neo4j.cypher.internal.ExecutionContext
 
 abstract class StartPipe[T <: PropertyContainer](source: Pipe, name: String, createSource: EntityProducer[T]) extends PipeWithSource(source) {
-  def this(inner: Pipe, name: String, sourceIterable: Iterator[T]) = this (inner, name, (a,b) => sourceIterable)
-
   def identifierType: CypherType
 
   val symbols = source.symbols.add(name, identifierType)
@@ -40,23 +38,21 @@ abstract class StartPipe[T <: PropertyContainer](source: Pipe, name: String, cre
     })
   }
 
-  def visibleName: String
-
-  override def executionPlanDescription = source.executionPlanDescription.andThen(this, visibleName, "name" -> name)
+  override def executionPlanDescription = {
+    val description = createSource.description :+ (("identifier" -> fromStr(name)))
+    source.executionPlanDescription
+      .andThen(this, s"${createSource.name}", description: _*)
+  }
 
   def throwIfSymbolsMissing(symbols: SymbolTable) {}
 }
 
-class NodeStartPipe(source: Pipe, name: String, createSource: (ExecutionContext, QueryState) => Iterator[Node])
+class NodeStartPipe(source: Pipe, name: String, createSource: EntityProducer[Node])
   extends StartPipe[Node](source, name, createSource) {
   def identifierType = NodeType()
-
-  def visibleName = "Nodes"
 }
 
-class RelationshipStartPipe(source: Pipe, name: String, createSource: (ExecutionContext, QueryState) => Iterator[Relationship])
+class RelationshipStartPipe(source: Pipe, name: String, createSource: EntityProducer[Relationship])
   extends StartPipe[Relationship](source, name, createSource) {
   def identifierType = RelationshipType()
-
-  def visibleName = "Rels"
 }

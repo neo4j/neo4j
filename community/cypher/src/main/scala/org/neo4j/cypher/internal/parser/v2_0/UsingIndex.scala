@@ -19,13 +19,13 @@
  */
 package org.neo4j.cypher.internal.parser.v2_0
 
-import org.neo4j.cypher.internal.commands.IndexHint
+import org.neo4j.cypher.internal.commands.SchemaIndex
 
 
 trait UsingIndex extends Expressions {
-  def indexHints: Parser[Seq[IndexHint]] = rep(indexHint)
+  def indexHints: Parser[Seq[SchemaIndex]] = rep(indexHint)
 
-  def indexHint: Parser[IndexHint] = USING ~> INDEX ~> identity ~ ":" ~ escapableString ~ parens(escapableString) ^^ {
-    case id ~ ":" ~ label ~ prop => IndexHint(id, label, prop, None)
+  def indexHint: Parser[SchemaIndex] = USING ~> INDEX ~> identity ~ ":" ~ escapableString ~ parens(escapableString) ^^ {
+    case id ~ ":" ~ label ~ prop => SchemaIndex(id, label, prop, None)
   }
 }

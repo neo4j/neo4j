@@ -80,7 +80,7 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService) extends PatternGraphBuil
     val initialPSQ = PartiallySolvedQuery(inputQuery).rewrite(LabelResolution(resolveLabel))
 
     var continue = true
-    var planInProgress = ExecutionPlanInProgress(initialPSQ, new ParameterPipe(), isUpdating = false)
+    var planInProgress = ExecutionPlanInProgress(initialPSQ, NullPipe, isUpdating = false)
 
     while (continue) {
       while (builders.exists(_.canWorkWith(planInProgress, context))) {

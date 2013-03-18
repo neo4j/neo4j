@@ -24,13 +24,14 @@ import org.neo4j.cypher.internal.commands._
 import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.graphdb
 import graphdb.{Node, GraphDatabaseService}
-import org.neo4j.cypher.internal.pipes.{ParameterPipe, TraversalMatchPipe, EntityProducer}
+import org.neo4j.cypher.internal.pipes.{TraversalMatchPipe, EntityProducer, NullPipe}
 import org.neo4j.cypher.internal.pipes.matching.{Trail, TraversalMatcher, MonoDirectionalTraversalMatcher, BidirectionalTraversalMatcher}
 import org.neo4j.cypher.internal.commands.NodeByIndex
 import org.neo4j.cypher.internal.commands.NodeByIndexQuery
 import org.neo4j.cypher.internal.spi.gdsimpl.TransactionBoundPlanContext
 import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.cypher.internal.symbols.{NodeType, SymbolTable}
+
 
 class TraversalMatcherBuilder(graph: GraphDatabaseService) extends LegacyPlanBuilder with PatternGraphBuilder {
   def apply(plan: ExecutionPlanInProgress): ExecutionPlanInProgress = {
@@ -122,7 +123,7 @@ class TraversalMatcherBuilder(graph: GraphDatabaseService) extends LegacyPlanBui
 
   def canWorkWith(plan: ExecutionPlanInProgress) = {
     val steps = extractExpanderStepsFromQuery(plan)
-    steps.nonEmpty && plan.pipe.isInstanceOf[ParameterPipe]
+    steps.nonEmpty && plan.pipe == NullPipe
   }
 
   private def extractExpanderStepsFromQuery(plan: ExecutionPlanInProgress): Option[LongestTrail] = {
