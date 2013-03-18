@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.executionplan.builders
 
 import org.junit.Assert._
 import org.neo4j.cypher.internal.executionplan.PartiallySolvedQuery
-import org.junit.{Ignore, Test}
+import org.junit.Test
 import org.neo4j.cypher.internal.commands._
 import expressions._
 import expressions.Literal
@@ -32,20 +32,10 @@ import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.spi.PlanContext
 import org.neo4j.cypher.IndexHintException
-import org.neo4j.cypher.internal.commands.IndexHint
+import org.neo4j.cypher.internal.commands.SchemaIndex
 import org.neo4j.cypher.internal.commands.AllNodes
 import org.neo4j.cypher.internal.commands.Equals
-import scala.Some
 import org.neo4j.cypher.internal.commands.NodeByIndexQuery
-import org.neo4j.cypher.internal.executionplan.builders.Solved
-import org.neo4j.cypher.internal.executionplan.builders.Unsolved
-import org.neo4j.cypher.internal.commands.IndexHint
-import org.neo4j.cypher.internal.commands.AllNodes
-import org.neo4j.cypher.internal.commands.Equals
-import scala.Some
-import org.neo4j.cypher.internal.commands.NodeByIndexQuery
-import org.neo4j.cypher.internal.executionplan.builders.Solved
-import org.neo4j.cypher.internal.executionplan.builders.Unsolved
 
 class StartPointBuilderTest extends BuilderTest with MockitoSugar {
 
@@ -117,7 +107,7 @@ class StartPointBuilderTest extends BuilderTest with MockitoSugar {
     //GIVEN
     val q = PartiallySolvedQuery().copy(
       where = Seq(Unsolved(Equals(Property(Identifier("n"), propertyKey), Literal("Stefan")))),
-      start = Seq(Unsolved(IndexHint("n", labelName, propertyKey, Some(Literal("a"))))))
+      start = Seq(Unsolved(SchemaIndex("n", labelName, propertyKey, Some(Literal("a"))))))
 
     when(context.getIndexRuleId(labelName, propertyKey)).thenReturn(Some(1L))
 
@@ -132,7 +122,7 @@ class StartPointBuilderTest extends BuilderTest with MockitoSugar {
     //GIVEN
     val q = PartiallySolvedQuery().copy(
       where = Seq(Unsolved(Equals(Property(Identifier("n"), "name"), Literal("Stefan")))),
-      start = Seq(Unsolved(IndexHint("n", "Person", "name", None))))
+      start = Seq(Unsolved(SchemaIndex("n", "Person", "name", None))))
 
     when(context.getIndexRuleId(any(), any())).thenReturn(None)
 

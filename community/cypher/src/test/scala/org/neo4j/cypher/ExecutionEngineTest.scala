@@ -2744,7 +2744,6 @@ RETURN x0.name?
     assert(result.toList === List(Map("n"->jake)))
   }
 
-
   @Test
   def should_be_Able_to_use_label_as_start_point() {
     //GIVEN

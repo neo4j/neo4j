@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.executionplan.builders
 
 import org.junit.Test
 import org.neo4j.cypher.internal.executionplan.PartiallySolvedQuery
-import org.neo4j.cypher.internal.commands.{HasLabel, Equals, IndexHint}
+import org.neo4j.cypher.internal.commands.{HasLabel, Equals, SchemaIndex}
 import org.neo4j.cypher.internal.commands.expressions.{Literal, Property, Identifier}
 import org.neo4j.cypher.IndexHintException
 import org.neo4j.cypher.internal.commands.values.LabelName
@@ -65,7 +65,7 @@ class IndexLookupBuilderTest extends BuilderTest {
     val property = "prop"
 
     val q = PartiallySolvedQuery().copy(
-      start = Seq(Unsolved(IndexHint(identifier, label, property, None)))
+      start = Seq(Unsolved(SchemaIndex(identifier, label, property, None)))
     )
 
     //WHEN
@@ -88,7 +88,7 @@ class IndexLookupBuilderTest extends BuilderTest {
       Unsolved(HasLabel(Identifier(identifier), Seq(LabelName(label2)))))
 
     val q = PartiallySolvedQuery().copy(
-      start = Seq(Unsolved(IndexHint(identifier, label1, property, None))),
+      start = Seq(Unsolved(SchemaIndex(identifier, label1, property, None))),
       where = Seq(Unsolved(predicate), Unsolved(labelPredicate))
     )
 
@@ -96,7 +96,7 @@ class IndexLookupBuilderTest extends BuilderTest {
     val plan = assertAccepts(q)
 
     //THEN
-    assert(plan.query.start === Seq(Unsolved(IndexHint(identifier, label1, property, Some(valueExpression)))))
+    assert(plan.query.start === Seq(Unsolved(SchemaIndex(identifier, label1, property, Some(valueExpression)))))
     assert(plan.query.where.toSet === (expectedLabelPredicates :+ Solved(predicate)).toSet)
   }
 
@@ -104,7 +104,7 @@ class IndexLookupBuilderTest extends BuilderTest {
     val labelPredicate = HasLabel(Identifier(identifier), Seq(LabelName(label)))
 
     val q = PartiallySolvedQuery().copy(
-      start = Seq(Unsolved(IndexHint(identifier, label, property, None))),
+      start = Seq(Unsolved(SchemaIndex(identifier, label, property, None))),
       where = Seq(Unsolved(predicate), Unsolved(labelPredicate))
     )
 
@@ -112,7 +112,7 @@ class IndexLookupBuilderTest extends BuilderTest {
     val plan = assertAccepts(q)
 
     //THEN
-    assert(plan.query.start === Seq(Unsolved(IndexHint(identifier, label, property, Some(valueExpression)))))
+    assert(plan.query.start === Seq(Unsolved(SchemaIndex(identifier, label, property, Some(valueExpression)))))
     assert(plan.query.where === Seq(Solved(predicate), Solved(labelPredicate)))
   }
 }

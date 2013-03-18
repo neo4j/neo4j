@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.executionplan.verifiers
 
-import org.neo4j.cypher.internal.commands.{Equals, IndexHint, Query, AbstractQuery}
+import org.neo4j.cypher.internal.commands.{Equals, SchemaIndex, Query, AbstractQuery}
 import org.neo4j.cypher.internal.commands.expressions.{Identifier, Property}
 import org.neo4j.cypher.{SyntaxException, IndexHintException}
 
@@ -32,7 +32,7 @@ object IndexHintVerifier extends Verifier {
         throw new SyntaxException("Cannot use index hints with start clause")
 
       query.hints.foreach {
-        case IndexHint(id, label, prop, _) =>
+        case SchemaIndex(id, label, prop, _) =>
 
           val valid = predicateAtoms.exists(_ match {
             case Equals(Property(Identifier(identifier), property), _) => id == identifier && property == prop

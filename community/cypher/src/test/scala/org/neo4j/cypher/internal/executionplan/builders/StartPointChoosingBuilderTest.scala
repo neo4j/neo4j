@@ -65,7 +65,7 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
     val plan = assertAccepts(query)
 
     // Then
-    assert(plan.query.start.toList === Seq(Unsolved(IndexHint(identifier, label, property, None))))
+    assert(plan.query.start.toList === Seq(Unsolved(SchemaIndex(identifier, label, property, None))))
   }
 
   @Test
@@ -86,7 +86,7 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
     val plan = assertAccepts(query)
 
     // Then
-    assert(plan.query.start.toList === List(Unsolved(IndexHint(identifier, label, property, None))))
+    assert(plan.query.start.toList === List(Unsolved(SchemaIndex(identifier, label, property, None))))
   }
 
   @Test

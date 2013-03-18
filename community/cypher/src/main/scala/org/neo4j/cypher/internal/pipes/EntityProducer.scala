@@ -19,14 +19,21 @@
  */
 package org.neo4j.cypher.internal.pipes
 
-import org.neo4j.cypher.internal.symbols.SymbolTable
+import org.neo4j.graphdb.PropertyContainer
 import org.neo4j.cypher.internal.ExecutionContext
-import org.neo4j.cypher.PlanDescription
+import org.neo4j.cypher.internal.data.SimpleVal
 
-class ParameterPipe() extends Pipe {
-  protected def internalCreateResults(state: QueryState) = Iterator(ExecutionContext())
+trait EntityProducer[T <: PropertyContainer] extends ((ExecutionContext, QueryState) => Iterator[T])
+{
+  def name: String
+  def description: Seq[(String, SimpleVal)]
+}
 
-  val symbols = SymbolTable()
-
-  override def executionPlanDescription = PlanDescription(this, "ParameterPipe")
+object EntityProducer {
+  def apply[T <: PropertyContainer](nameStr: String, args: (String, SimpleVal)*)(f:(ExecutionContext, QueryState) => Iterator[T]) =
+    new EntityProducer[T] {
+      def name = nameStr
+      def description = args
+      def apply(m: ExecutionContext, q: QueryState) = f(m, q)
+    }
 }

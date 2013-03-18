@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher
 
+import javacompat.ProfilerStatistics
 import org.scalatest.Assertions
 import org.junit.Test
 
@@ -39,7 +40,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineHelper with Assertions {
     val result: ExecutionResult = engine.profile("START n=node(1) RETURN n")
 
     //WHEN THEN
-    assertRows(1)(result)("Nodes", "ParameterPipe")
+    assertRows(1)(result)("NodeById")
   }
 
   @Test
@@ -49,7 +50,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineHelper with Assertions {
     val result: ExecutionResult = engine.profile("START n=node(1) RETURN n.foo")
 
     //WHEN THEN
-    assertDbHits(1)(result)("ColumnFilter", "Extract", "Nodes")
+    assertDbHits(1)(result)("ColumnFilter", "Extract", "NodeById")
   }
 
   @Test
@@ -67,7 +68,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineHelper with Assertions {
     val result: ExecutionResult = engine.profile("START n=node(*) RETURN n.foo?")
 
     //WHEN THEN
-    assertDbHits(1)(result)("ColumnFilter", "Extract", "Nodes")
+    assertDbHits(1)(result)("ColumnFilter", "Extract", "AllNodes")
   }
 
   private def assertRows(expectedRows: Int)(result: ExecutionResult)(names: String*) {
@@ -75,7 +76,8 @@ class ProfilerAcceptanceTest extends ExecutionEngineHelper with Assertions {
   }
 
   private def assertDbHits(expectedHits: Int)(result: ExecutionResult)(names: String*) {
-    assert(expectedHits === parentCd(result, names).getProfilerStatistics.getDbHits)
+    val statistics: ProfilerStatistics = parentCd(result, names).getProfilerStatistics
+    assert(expectedHits === statistics.getDbHits)
   }
 
   private def parentCd(result: ExecutionResult, names: Seq[String]) = {

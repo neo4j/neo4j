@@ -23,7 +23,7 @@ import org.scalatest.Assertions
 import org.junit.Test
 
 import org.neo4j.cypher.internal.executionplan.verifiers.IndexHintVerifier
-import org.neo4j.cypher.internal.commands.{IndexHint, Equals, Or, Query}
+import org.neo4j.cypher.internal.commands.{SchemaIndex, Equals, Or, Query}
 import org.neo4j.cypher.internal.commands.expressions.{Literal, Identifier, Property}
 import org.neo4j.cypher.IndexHintException
 
@@ -38,7 +38,7 @@ class IndexHintVerifierTest extends Assertions {
       where = Or(
         Equals(Property(Identifier("n"), "name"), Literal("Stefan")),
         Equals(Property(Identifier("n"), "age"), Literal(35))),
-      hints = Seq(IndexHint("n", "Person", "name", None)))
+      hints = Seq(SchemaIndex("n", "Person", "name", None)))
 
     //THEN
     intercept[IndexHintException](verifier.verify(q))
