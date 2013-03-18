@@ -1,4 +1,7 @@
+/* @override 
+	http://localhost:7474/webadmin/css/typography.css */
 
+html { font-size: 100%; }
 p { 
   margin: 0.5em 0; 
   font-size:12px; 

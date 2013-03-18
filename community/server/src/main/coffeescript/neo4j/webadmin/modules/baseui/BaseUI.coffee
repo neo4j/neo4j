@@ -41,9 +41,13 @@ define(
         @render()
 
       render : ->
-        $(@el).html( @template() )
+        $(@el).html( @template( ) )
         @_renderMainView()
         @_renderMenu()
+        $('#guide-button').click( ( event ) =>
+            event.preventDefault();
+            @guide.show()
+        );
         return this
 
       remove : =>
@@ -60,4 +64,7 @@ define(
       _renderMenu : ->
         @menuView.attach($("#mainmenu"))
         @menuView.render()
+
+      useGuide : (guide) ->
+        @guide = guide
 )
