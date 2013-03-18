@@ -19,6 +19,7 @@
  */
 package org.neo4j.backup;
 
+import static java.lang.String.format;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -34,6 +35,8 @@ import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.when;
+import static org.neo4j.backup.BackupTool.MISMATCHED_STORE_ID;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -48,15 +51,16 @@ import org.neo4j.consistency.checking.full.TaskExecutionOrder;
 import org.neo4j.consistency.store.windowpool.WindowPoolImplementation;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.nioneo.store.MismatchingStoreIdException;
+import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.test.TargetDirectory;
 
 public class BackupToolTest
 {
     @Test
-    public void runsBackup() throws Exception
+    public void shouldSelectFullBackupModeWhenDestinationEmpty() throws Exception
     {
-        // given
-        String[] args = new String[]{"-full", "-from", "single://localhost", "-to", "my_backup"};
+        String[] args = new String[]{"-from", "single://localhost", "-to", "my_backup"};
         BackupService service = mock( BackupService.class );
         PrintStream systemOut = mock( PrintStream.class );
 
@@ -71,10 +75,84 @@ public class BackupToolTest
     }
 
     @Test
+    public void shouldSelectIncrementalBackupModeWhenDestinationExists() throws Exception
+    {
+        String[] args = new String[]{"-from", "single://localhost", "-to", "my_backup"};
+        BackupService service = mock( BackupService.class );
+        when(service.directoryContainsDb( anyString() )).thenReturn( true );
+        PrintStream systemOut = mock( PrintStream.class );
+
+        // when
+        new BackupTool( service, systemOut ).run( args );
+
+        // then
+        verify( service ).doIncrementalBackup( eq( "localhost" ), eq( BackupServer.DEFAULT_PORT ),
+                eq( "my_backup" ), eq( true ) );
+        verify( systemOut ).println( "Performing incremental backup from 'single://localhost'" );
+        verify( systemOut ).println( "Done" );
+    }
+
+    @Test
+    public void shouldIgnoreIncrementalFlag() throws Exception
+    {
+        String[] args = new String[]{"-incremental", "-from", "single://localhost", "-to", "my_backup"};
+        BackupService service = mock( BackupService.class );
+        PrintStream systemOut = mock( PrintStream.class );
+
+        // when
+        new BackupTool( service, systemOut ).run( args );
+
+        // then
+        verify( service ).doFullBackup( eq( "localhost" ), eq( BackupServer.DEFAULT_PORT ),
+                eq( "my_backup" ), eq( true ), any( Config.class ) );
+        verify( systemOut ).println( "Performing full backup from 'single://localhost'" );
+        verify( systemOut ).println( "Done" );
+    }
+
+    @Test
+    public void shouldIgnoreFullFlag() throws Exception
+    {
+        String[] args = new String[]{"-full", "-from", "single://localhost", "-to", "my_backup"};
+        BackupService service = mock( BackupService.class );
+        when(service.directoryContainsDb( anyString() )).thenReturn( true );
+        PrintStream systemOut = mock( PrintStream.class );
+
+        // when
+        new BackupTool( service, systemOut ).run( args );
+
+        // then
+        verify( service ).doIncrementalBackup( eq( "localhost" ), eq( BackupServer.DEFAULT_PORT ),
+                eq( "my_backup" ), eq( true ) );
+        verify( systemOut ).println( "Performing incremental backup from 'single://localhost'" );
+        verify( systemOut ).println( "Done" );
+    }
+
+    @Test
+    public void shouldFailWhenDestinationIsForeign() throws Exception
+    {
+        String[] args = new String[]{"-from", "single://localhost", "-to", "my_backup"};
+        BackupService service = mock( BackupService.class );
+        when( service.directoryContainsDb( anyString() ) ).thenReturn( true );
+        StoreId expected = new StoreId( 42, 87, 117 );
+        StoreId encountered = new StoreId( 287, 345, 756 );
+        when( service.doIncrementalBackup( eq( "localhost" ), eq( BackupServer.DEFAULT_PORT ),
+                eq( "my_backup" ), eq( true ) ) ).thenThrow( new MismatchingStoreIdException( expected, encountered ) );
+        PrintStream systemOut = mock( PrintStream.class );
+
+        // when
+        new BackupTool( service, systemOut ).run( args );
+
+        // then
+        verify( systemOut ).println( "Performing incremental backup from 'single://localhost'" );
+        verify( systemOut ).println( "Backup failed." );
+        verify( systemOut ).println( format( MISMATCHED_STORE_ID, expected, encountered ) );
+    }
+
+    @Test
     public void appliesDefaultTuningConfigurationForConsistencyChecker() throws Exception
     {
         // given
-        String[] args = new String[]{"-full", "-from", "single://localhost",
+        String[] args = new String[]{"-from", "single://localhost",
                 "-to", "my_backup"};
         BackupService service = mock( BackupService.class );
         PrintStream systemOut = mock( PrintStream.class );
@@ -104,7 +182,7 @@ public class BackupToolTest
         properties.setProperty( ConsistencyCheckSettings.consistency_check_property_owners.name(), "true" );
         properties.store( new FileWriter( propertyFile ), null );
 
-        String[] args = new String[]{"-full", "-from", "single://localhost",
+        String[] args = new String[]{"-from", "single://localhost",
                 "-to", "my_backup", "-config", propertyFile.getPath()};
         BackupService service = mock( BackupService.class );
         PrintStream systemOut = mock( PrintStream.class );
@@ -123,7 +201,7 @@ public class BackupToolTest
     {
         // given
         File propertyFile = TargetDirectory.forTest( getClass() ).file( "nonexistent_file" );
-        String[] args = new String[]{"-full", "-from", "single://localhost",
+        String[] args = new String[]{"-from", "single://localhost",
                 "-to", "my_backup", "-config", propertyFile.getPath()};
         BackupService service = mock( BackupService.class );
         PrintStream systemOut = mock( PrintStream.class );
@@ -146,58 +224,10 @@ public class BackupToolTest
     }
 
     @Test
-    public void exitWithFailureIfNoModeSpecified() throws Exception
-    {
-        // given
-        String[] args = new String[]{"-from", "single://localhost", "-to", "my_backup"};
-        BackupService service = mock( BackupService.class );
-        PrintStream systemOut = mock( PrintStream.class );
-        BackupTool backupTool = new BackupTool( service, systemOut );
-
-        try
-        {
-            // when
-            backupTool.run( args );
-            fail( "should exit abnormally" );
-        }
-        catch ( BackupTool.ToolFailureException e )
-        {
-            // then
-            assertEquals( e.getMessage(), "Specify either -full or -incremental" );
-        }
-
-        verifyZeroInteractions( service );
-    }
-
-    @Test
-    public void exitWithFailureIfBothModesSpecified() throws Exception
-    {
-        // given
-        String[] args = new String[]{"-full", "-incremental", "-from", "single://localhost", "-to", "my_backup"};
-        BackupService service = mock( BackupService.class );
-        PrintStream systemOut = mock( PrintStream.class );
-        BackupTool backupTool = new BackupTool( service, systemOut );
-
-        try
-        {
-            // when
-            backupTool.run( args );
-            fail( "should exit abnormally" );
-        }
-        catch ( BackupTool.ToolFailureException e )
-        {
-            // then
-            assertEquals( e.getMessage(), "Specify either -full or -incremental" );
-        }
-
-        verifyZeroInteractions( service );
-    }
-
-    @Test
     public void exitWithFailureIfNoSourceSpecified() throws Exception
     {
         // given
-        String[] args = new String[]{"-full", "-to", "my_backup"};
+        String[] args = new String[]{"-to", "my_backup"};
         BackupService service = mock( BackupService.class );
         PrintStream systemOut = mock( PrintStream.class );
         BackupTool backupTool = new BackupTool( service, systemOut );
@@ -226,7 +256,7 @@ public class BackupToolTest
     public void exitWithFailureIfInvalidSourceSpecified() throws Exception
     {
         // given
-        String[] args = new String[]{"-full", "-from", "foo:localhost:123", "-to", "my_backup"};
+        String[] args = new String[]{"-from", "foo:localhost:123", "-to", "my_backup"};
         BackupService service = mock( BackupService.class );
         PrintStream systemOut = mock( PrintStream.class );
         BackupTool backupTool = new BackupTool( service, systemOut );
@@ -252,7 +282,7 @@ public class BackupToolTest
     public void exitWithFailureIfNoDestinationSpecified() throws Exception
     {
         // given
-        String[] args = new String[]{"-full", "-from", "single://localhost"};
+        String[] args = new String[]{"-from", "single://localhost"};
         BackupService service = mock( BackupService.class );
         PrintStream systemOut = mock( PrintStream.class );
         BackupTool backupTool = new BackupTool( service, systemOut );

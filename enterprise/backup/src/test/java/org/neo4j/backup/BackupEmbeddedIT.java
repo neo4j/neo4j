@@ -80,15 +80,14 @@ public class BackupEmbeddedIT
         startDb( null );
         assertEquals(
                 0,
-                runBackupToolFromOtherJvmToGetExitCode( "-full", "-from",
+                runBackupToolFromOtherJvmToGetExitCode( "-from",
                         BackupTool.DEFAULT_SCHEME + "://localhost", "-to",
                         BACKUP_PATH.getPath() ) );
         assertEquals( DbRepresentation.of( db ), DbRepresentation.of( BACKUP_PATH ) );
         createSomeData( db );
         assertEquals(
                 0,
-                runBackupToolFromOtherJvmToGetExitCode( "-incremental",
-                        "-from", BackupTool.DEFAULT_SCHEME + "://localhost",
+                runBackupToolFromOtherJvmToGetExitCode( "-from", BackupTool.DEFAULT_SCHEME + "://localhost",
                         "-to", BACKUP_PATH.getPath() ) );
         assertEquals( DbRepresentation.of( db ), DbRepresentation.of( BACKUP_PATH ) );
     }
@@ -101,20 +100,19 @@ public class BackupEmbeddedIT
         startDb( "" + port );
         assertEquals(
                 1,
-                runBackupToolFromOtherJvmToGetExitCode( "-full", "-from",
+                runBackupToolFromOtherJvmToGetExitCode( "-from",
                         BackupTool.DEFAULT_SCHEME + "://localhost", "-to",
                         BACKUP_PATH.getPath() ) );
         assertEquals(
                 0,
-                runBackupToolFromOtherJvmToGetExitCode( "-full", "-from",
+                runBackupToolFromOtherJvmToGetExitCode( "-from",
                         BackupTool.DEFAULT_SCHEME + "://localhost:" + port,
                         "-to", BACKUP_PATH.getPath() ) );
         assertEquals( DbRepresentation.of( db ), DbRepresentation.of( BACKUP_PATH ) );
         createSomeData( db );
         assertEquals(
                 0,
-                runBackupToolFromOtherJvmToGetExitCode( "-incremental",
-                        "-from", BackupTool.DEFAULT_SCHEME + "://localhost:"
+                runBackupToolFromOtherJvmToGetExitCode( "-from", BackupTool.DEFAULT_SCHEME + "://localhost:"
                                  + port, "-to",
                         BACKUP_PATH.getPath() ) );
         assertEquals( DbRepresentation.of( db ), DbRepresentation.of( BACKUP_PATH ) );
