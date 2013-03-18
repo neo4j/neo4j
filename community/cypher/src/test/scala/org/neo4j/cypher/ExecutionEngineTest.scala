@@ -2451,4 +2451,16 @@ RETURN x0.name?
     // THEN PASS
     println(result.executionPlanDescription())
   }
+
+  @Test
+  def shouldBeAbleToCallGetTimestamp() {
+    val result = engine.execute("START n=node(*) RETURN gettimestamp")
+
+    val ts:Long = result.toList.head("gettimestamp") match {
+      case x:Long => x
+      case _ => 0L
+    }
+    assert(ts != 0L)
+    assert(ts <= System.currentTimeMillis)
+  }
 }
