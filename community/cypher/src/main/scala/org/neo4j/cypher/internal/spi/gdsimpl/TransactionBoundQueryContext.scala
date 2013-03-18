@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.spi.gdsimpl
 
-import org.neo4j.cypher.internal.spi.{Operations, QueryContext}
+import org.neo4j.cypher.internal.spi._
 import org.neo4j.graphdb._
 import org.neo4j.kernel.{ThreadToStatementContextBridge, GraphDatabaseAPI}
 import org.neo4j.kernel.api.{ConstraintViolationKernelException, StatementContext}
@@ -28,6 +28,7 @@ import org.neo4j.graphdb.DynamicRelationshipType.withName
 import org.neo4j.cypher.{EntityNotFoundException, CouldNotDropIndexException, IndexAlreadyDefinedException}
 import org.neo4j.tooling.GlobalGraphOperations
 import org.neo4j.kernel.api.SchemaRuleNotFoundException
+import collection.mutable
 
 class TransactionBoundQueryContext(graph: GraphDatabaseAPI) extends QueryContext {
 
@@ -145,7 +146,7 @@ class TransactionBoundQueryContext(graph: GraphDatabaseAPI) extends QueryContext
 
   def dropIndexRule(labelId: Long, propertyKeyId: Long) {
     try {
-      ctx.dropIndexRule(ctx.getIndexRule(labelId, propertyKeyId));
+      ctx.dropIndexRule(ctx.getIndexRule(labelId, propertyKeyId))
     } catch {
       case e: ConstraintViolationKernelException =>
         val labelName = getLabelName(labelId)
@@ -157,6 +158,18 @@ class TransactionBoundQueryContext(graph: GraphDatabaseAPI) extends QueryContext
         throw new CouldNotDropIndexException(labelName, propName, e)
     }
   }
+
+  def upgrade(context: QueryContext): LockingQueryContext = new RepeatableReadQueryContext(context, new Locker {
+    private val locks = new mutable.ListBuffer[Lock]
+
+    def releaseAllLocks() {
+      locks.foreach(_.release())
+    }
+
+    def acquireLock(p: PropertyContainer) {
+      locks += tx.acquireWriteLock(p)
+    }
+  })
 
   abstract class BaseOperations[T <: PropertyContainer] extends Operations[T] {
     def getProperty(obj: T, propertyKey: String) = obj.getProperty(propertyKey, null)
@@ -173,5 +186,4 @@ class TransactionBoundQueryContext(graph: GraphDatabaseAPI) extends QueryContext
       obj.setProperty(propertyKey, value)
     }
   }
-
 }

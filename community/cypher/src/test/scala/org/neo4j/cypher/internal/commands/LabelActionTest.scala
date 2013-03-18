@@ -21,13 +21,13 @@ package org.neo4j.cypher.internal.commands
 
 import expressions.Literal
 import org.neo4j.cypher.internal.ExecutionContext
-import org.neo4j.cypher.{CypherTypeException, GraphDatabaseTestBase}
+import org.neo4j.cypher.GraphDatabaseTestBase
 import org.scalatest.Assertions
-import org.neo4j.cypher.internal.spi.QueryContext
+import org.neo4j.cypher.internal.spi.{LockingQueryContext, QueryContext}
 import org.neo4j.graphdb.{Direction, Node}
 import org.neo4j.cypher.internal.pipes.{NullDecorator, QueryState}
 import org.junit.Test
-import values.{ResolvedLabel, LabelName}
+import values.ResolvedLabel
 
 class LabelActionTest extends GraphDatabaseTestBase with Assertions {
   val queryContext = new SnitchingQueryContext
@@ -115,4 +115,6 @@ class SnitchingQueryContext extends QueryContext {
   def exactIndexSearch(id: Long, value: Any): Iterator[Node] = ???
 
   def getNodesByLabel(id: Long): Iterator[Node] = ???
+
+  def upgrade(context: QueryContext): LockingQueryContext = ???
 }
