@@ -22,11 +22,11 @@ package org.neo4j.cypher
 import internal.commands.expressions.{Literal, Identifier}
 import internal.commands.{GreaterThan, True}
 import internal.pipes._
+import internal.pipes.QueryStateHelper.queryStateFrom
 import internal.pipes.matching._
 import internal.symbols.IntegerType
 import matching.SingleStep
 import org.neo4j.graphdb._
-import index.{IndexHits, Index, IndexManager}
 import java.util.{Iterator => JIterator}
 import java.lang.{Iterable => JIterable}
 import org.junit.{Test, Before}
@@ -37,7 +37,6 @@ import org.mockito.Mockito._
 import org.neo4j.kernel.{ThreadToStatementContextBridge, GraphDatabaseAPI}
 import org.neo4j.helpers.collection.IteratorWrapper
 import org.neo4j.kernel.impl.core.NodeManager
-import collection.JavaConverters._
 
 class LazyTest extends ExecutionEngineHelper with Assertions with MockitoSugar {
 
@@ -85,7 +84,7 @@ class LazyTest extends ExecutionEngineHelper with Assertions with MockitoSugar {
     val ctx = internal.ExecutionContext().newWith("a" -> monitoredNode)
 
     //When:
-    val iter = matcher.findMatchingPaths(QueryState(graph), ctx)
+    val iter = matcher.findMatchingPaths(queryStateFrom(graph), ctx)
 
     //Then:
     assert(limiter.count === 0)
@@ -203,7 +202,7 @@ class LazyTest extends ExecutionEngineHelper with Assertions with MockitoSugar {
     val traversalMatchPipe = createTraversalMatcherPipe(limiter)
 
     //When:
-    val result = traversalMatchPipe.createResults(QueryState(graph))
+    val result = traversalMatchPipe.createResults(queryStateFrom(graph))
 
     //Then:
     assert(limiter.count === 0)
@@ -219,7 +218,7 @@ class LazyTest extends ExecutionEngineHelper with Assertions with MockitoSugar {
     val pipe = new FilterPipe(input, GreaterThan(Identifier("val"), Literal(3)))
 
     //When:
-    val iter = pipe.createResults(QueryState())
+    val iter = pipe.createResults(QueryStateHelper.empty)
 
     //Then:
     assert(limited.count === 0)

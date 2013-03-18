@@ -23,13 +23,13 @@ import expressions.{Identifier, Property}
 import org.scalatest.Assertions
 import org.junit.Test
 import org.neo4j.cypher.internal.ExecutionContext
-import org.neo4j.cypher.internal.pipes.QueryState
+import org.neo4j.cypher.internal.pipes.{QueryStateHelper, QueryState}
 
 class PropertyValueTest extends Assertions {
   @Test def nullNodeShouldGiveNullProperty() {
     val p = Property(Identifier("identifier"), "property")
     val ctx = ExecutionContext.from("identifier" -> null)
-    val state = QueryState()
+    val state = QueryStateHelper.empty
 
     assert(p(ctx)(state) === null)
   }

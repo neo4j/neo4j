@@ -21,26 +21,10 @@ package org.neo4j.cypher.internal.spi.gdsimpl
 
 import org.neo4j.cypher.internal.spi.PlanContext
 import org.neo4j.cypher.MissingIndexException
-import org.neo4j.kernel.{ThreadToStatementContextBridge, GraphDatabaseAPI}
-import org.neo4j.graphdb.Transaction
 import org.neo4j.kernel.api.{KernelException, StatementContext}
 import org.neo4j.kernel.api.index.InternalIndexState
 
-class TransactionBoundPlanContext(graph: GraphDatabaseAPI) extends PlanContext {
-
-  val tx: Transaction = graph.beginTx()
-  private val ctx: StatementContext = graph
-    .getDependencyResolver
-    .resolveDependency(classOf[ThreadToStatementContextBridge])
-    .getCtxForWriting
-
-  def close(success: Boolean) {
-    if (success)
-      tx.success()
-    else
-      tx.failure()
-    tx.finish()
-  }
+class TransactionBoundPlanContext(ctx: StatementContext) extends PlanContext {
 
   def getIndexRuleId(labelName: String, propertyKey: String): Option[Long] = try {
     val labelId = ctx.getLabelId(labelName)
@@ -59,11 +43,11 @@ class TransactionBoundPlanContext(graph: GraphDatabaseAPI) extends PlanContext {
   }
 
   def checkNodeIndex(idxName: String) {
-    if (!graph.index.existsForNodes(idxName)) throw new MissingIndexException(idxName)
+    throw new MissingIndexException(idxName)
   }
 
   def checkRelIndex(idxName: String) {
-    if (!graph.index.existsForRelationships(idxName)) throw new MissingIndexException(idxName)
+    throw new MissingIndexException(idxName)
   }
 
   private def tryGet[T](f: => T): Option[T] = try Some(f) catch {

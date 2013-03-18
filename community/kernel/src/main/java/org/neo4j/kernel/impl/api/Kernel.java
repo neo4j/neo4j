@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.api;
 
 import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.TransactionContext;
@@ -157,6 +158,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
         // I/O
         StatementContext result = new StoreStatementContext(propertyIndexManager, nodeManager,
                 neoStore, indexService, new IndexReaderFactory.NonCaching( indexService ) );
+
         // + Cache
         result = new CachingStatementContext( result, persistenceCache, schemaCache );
         // + Read only access

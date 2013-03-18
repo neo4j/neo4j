@@ -54,19 +54,20 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService) extends PatternGraphBuil
   }
 
   def buildPipes(in: AbstractQuery): (Pipe, Boolean) = {
-    val planContext = new TransactionBoundPlanContext(graph.asInstanceOf[GraphDatabaseAPI])
+    val tx = graph.beginTx()
     try {
+      val statementContext = graph.asInstanceOf[GraphDatabaseAPI].getDependencyResolver
+        .resolveDependency(classOf[ThreadToStatementContextBridge]).getCtxForWriting
+      val planContext = new TransactionBoundPlanContext(statementContext)
       val result: (Pipe, Boolean) = in match {
-        case q: Query => buildQuery(q, planContext)
+        case q: Query          => buildQuery(q, planContext)
         case q: IndexOperation => buildIndexQuery(q)
-        case q: Union => buildUnionQuery(q, planContext)
+        case q: Union          => buildUnionQuery(q, planContext)
       }
-      planContext.close(success = true)
-      result
-    } catch {
-      case e:Throwable =>
-        planContext.close(success = false)
-        throw e
+      tx.success()
+      return result
+    } finally {
+      tx.finish()
     }
   }
 
@@ -148,7 +149,7 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService) extends PatternGraphBuil
   private def getEagerReadWriteQuery(pipe: Pipe, columns: List[String]): (QueryContext, Map[String, Any], Boolean) => ExecutionResult = {
     val func = (queryContext: QueryContext, params: Map[String, Any], profile: Boolean) => {
       val (state, results, descriptor) = prepareStateAndResult(queryContext, params, pipe, profile)
-      new EagerPipeExecutionResult(results, columns, state, graph, descriptor)
+      new EagerPipeExecutionResult(results, columns, state, descriptor)
     }
 
     func
@@ -209,7 +210,7 @@ The Neo4j Team""")
     new CreateNodesAndRelationshipsBuilder(graph),
     new UpdateActionBuilder(graph),
     new EmptyResultBuilder,
-    new TraversalMatcherBuilder(graph),
+    new TraversalMatcherBuilder,
     new TopPipeBuilder,
     new DistinctBuilder,
     new IndexLookupBuilder,

@@ -26,7 +26,7 @@ import org.junit.Before
 import org.neo4j.graphdb.{DynamicLabel, Node}
 import org.neo4j.graphdb.DynamicLabel.label
 import collection.JavaConverters._
-import org.neo4j.kernel.GraphDatabaseAPI
+import org.neo4j.kernel.{ThreadToStatementContextBridge, GraphDatabaseAPI}
 
 trait ExecutionEngineHelper extends GraphDatabaseTestBase with GraphIcing {
 
@@ -45,7 +45,14 @@ trait ExecutionEngineHelper extends GraphDatabaseTestBase with GraphIcing {
 
   def parseAndExecute(q: String, params: (String, Any)*): ExecutionResult = {
     val plan = engine.prepare(q)
-    val ctx = new TransactionBoundQueryContext(graph)
+    val tx = graph.beginTx()
+
+    val statementContext = graph
+      .getDependencyResolver
+      .resolveDependency(classOf[ThreadToStatementContextBridge])
+      .getCtxForWriting
+
+    val ctx = new TransactionBoundQueryContext(graph, tx, statementContext)
     plan.execute(ctx, params.toMap)
   }
 

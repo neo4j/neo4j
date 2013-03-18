@@ -28,7 +28,7 @@ import org.neo4j.graphdb.{Path, Direction}
 import org.neo4j.cypher.internal.ExecutionContext
 import values.LabelName
 import org.neo4j.cypher.internal.spi.gdsimpl.TransactionBoundQueryContext
-import org.neo4j.cypher.internal.pipes.{NullDecorator, QueryState}
+import org.neo4j.cypher.internal.pipes.{QueryStateHelper, NullDecorator, QueryState}
 
 class PatternPredicateTest extends GraphDatabaseTestBase with Assertions {
 
@@ -83,10 +83,7 @@ class PatternPredicateTest extends GraphDatabaseTestBase with Assertions {
     assert(result === true)
   }
 
-  private def state = {
-    val ctx = new TransactionBoundQueryContext(graph)
-    new QueryState(graph, ctx, Map.empty, NullDecorator)
-  }
+  private def state = QueryStateHelper.queryStateFrom(graph)
 
   private def createExecutionContext(m: Map[String, Any]):ExecutionContext = {
     ExecutionContext().newFrom(m)

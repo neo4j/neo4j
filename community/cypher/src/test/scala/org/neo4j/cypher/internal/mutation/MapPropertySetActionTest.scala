@@ -22,9 +22,8 @@ package org.neo4j.cypher.internal.mutation
 import org.junit.{After, Before, Test}
 import org.neo4j.cypher.GraphDatabaseTestBase
 import org.neo4j.cypher.internal.commands.expressions.Literal
-import org.neo4j.cypher.internal.pipes.{NullDecorator, QueryState}
+import org.neo4j.cypher.internal.pipes.{QueryStateHelper, QueryState}
 import org.neo4j.graphdb.{PropertyContainer, Transaction}
-import org.neo4j.cypher.internal.spi.gdsimpl.TransactionBoundQueryContext
 import org.neo4j.cypher.internal.ExecutionContext
 
 class MapPropertySetActionTest extends GraphDatabaseTestBase {
@@ -35,7 +34,7 @@ class MapPropertySetActionTest extends GraphDatabaseTestBase {
   @Before
   def init() {
     tx = graph.beginTx()
-    state = new QueryState(graph, new TransactionBoundQueryContext(graph), Map.empty, NullDecorator)
+    state = QueryStateHelper.queryStateFrom(graph)
   }
 
   @After

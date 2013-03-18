@@ -19,23 +19,22 @@
  */
 package org.neo4j.cypher.internal.pipes
 
-import org.junit.Assert
-import org.junit.Test
-import org.scalatest.junit.JUnitSuite
-import org.neo4j.cypher.internal.commands.ReturnItem
-import org.neo4j.cypher.internal.symbols.NodeType
-import collection.mutable.Map
-import org.neo4j.cypher.internal.commands.expressions.Identifier
+import org.neo4j.kernel.{ThreadToStatementContextBridge, GraphDatabaseAPI}
+import org.neo4j.cypher.internal.spi.gdsimpl.TransactionBoundQueryContext
 
-class ColumnFilterPipeTest extends JUnitSuite {
-  @Test def shouldReturnColumnsFromReturnItems() {
-    val col = "extractReturnItems"
-    val returnItems = List(ReturnItem(Identifier(col), col))
-    val source = new FakePipe(List(Map("x" -> "x", col -> "bar")), col -> NodeType())
 
-    val columnPipe = new ColumnFilterPipe(source, returnItems)
+object QueryStateHelper {
+  def empty = new QueryState(null, null, Map.empty, NullDecorator)
 
-    Assert.assertEquals(Map(col -> NodeType()), columnPipe.symbols.identifiers)
-    Assert.assertEquals(List(Map(col -> "bar")), columnPipe.createResults(QueryStateHelper.empty).toList)
+  def queryStateFrom(db: GraphDatabaseAPI) = {
+    val tx = db.beginTx()
+
+    val ctx = db
+      .getDependencyResolver
+      .resolveDependency(classOf[ThreadToStatementContextBridge])
+      .getCtxForWriting
+
+    new QueryState(db, new TransactionBoundQueryContext(db, tx, ctx), Map.empty, NullDecorator, None)
   }
 }
+

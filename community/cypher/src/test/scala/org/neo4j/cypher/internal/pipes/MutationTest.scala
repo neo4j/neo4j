@@ -33,12 +33,7 @@ import org.neo4j.cypher.internal.spi.QueryContext
 
 class MutationTest extends ExecutionEngineHelper with Assertions {
 
-  def createQueryState = {
-    queryContext = new TransactionBoundQueryContext(graph)
-    new QueryState(graph, queryContext, Map.empty, NullDecorator)
-  }
-
-  var queryContext: QueryContext = null
+  def createQueryState = QueryStateHelper.queryStateFrom(graph)
 
 
   @Test
@@ -127,7 +122,7 @@ class MutationTest extends ExecutionEngineHelper with Assertions {
     val state = createQueryState
     createNodePipe.createResults(state).toList
 
-    queryContext.close(success = true)
+    state.inner.close(success = true)
 
     intercept[NotFoundException](graph.getNodeById(node_id))
   }

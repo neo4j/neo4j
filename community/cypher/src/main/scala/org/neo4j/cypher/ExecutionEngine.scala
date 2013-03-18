@@ -26,10 +26,11 @@ import internal.LRUCache
 import internal.spi.gdsimpl.TransactionBoundQueryContext
 import scala.collection.JavaConverters._
 import java.util.{Map => JavaMap}
-import org.neo4j.kernel.{GraphDatabaseAPI, InternalAbstractGraphDatabase}
-import org.neo4j.graphdb.GraphDatabaseService
+import org.neo4j.kernel.{ThreadToStatementContextBridge, GraphDatabaseAPI, InternalAbstractGraphDatabase}
+import org.neo4j.graphdb.{Transaction, GraphDatabaseService}
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.impl.util.StringLogger
+import org.neo4j.kernel.api.StatementContext
 
 
 class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = StringLogger.DEV_NULL) {
@@ -73,7 +74,16 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
     prepare(query).execute(queryContext, params)
   }
 
-  private def queryContext = new TransactionBoundQueryContext(graph.asInstanceOf[GraphDatabaseAPI])
+  private def queryContext = {
+    val tx = graph.beginTx()
+
+    val ctx = graph.asInstanceOf[GraphDatabaseAPI]
+      .getDependencyResolver
+      .resolveDependency(classOf[ThreadToStatementContextBridge])
+      .getCtxForWriting
+
+    new TransactionBoundQueryContext(graph.asInstanceOf[GraphDatabaseAPI], tx, ctx)
+  }
 
   @throws(classOf[SyntaxException])
   def execute(query: String, params: JavaMap[String, Any]): ExecutionResult = execute(query, params.asScala.toMap)
@@ -93,20 +103,8 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
   def isPrepared(query : String) : Boolean =
     executionPlanCache.containsKey(query)
 
-  @throws(classOf[SyntaxException])
-  @deprecated(message = "You should not parse queries manually any more. Use the execute(String) instead")
-  def execute(query: AbstractQuery): ExecutionResult = execute(query, Map[String, Any]())
-
-  @throws(classOf[SyntaxException])
-  @deprecated(message = "You should not parse queries manually any more. Use the execute(String) instead")
-  def execute(query: AbstractQuery, map: JavaMap[String, Any]): ExecutionResult = execute(query, map.asScala.toMap)
-
-  @throws(classOf[SyntaxException])
-  @deprecated(message = "You should not parse queries manually any more. Use the execute(String) instead")
-  def execute(query: AbstractQuery, params: Map[String, Any]): ExecutionResult = {
-    val ctx = new TransactionBoundQueryContext(graph.asInstanceOf[GraphDatabaseAPI])
-    planBuilder.build(query).execute(ctx, params)
-  }
+  def execute(query: AbstractQuery, params: Map[String, Any]): ExecutionResult =
+    planBuilder.build(query).execute(queryContext, params)
 
   private def checkScalaVersion() {
     if (util.Properties.versionString.matches("^version 2.9.0")) {

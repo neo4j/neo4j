@@ -25,12 +25,6 @@ import org.neo4j.cypher.internal.spi.{UpdateCountingQueryContext, QueryContext}
 import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.cypher.ParameterNotFoundException
 
-object QueryState {
-  def empty = new QueryState(null, null, Map.empty, NullDecorator)
-  def apply() = empty
-  def apply(db: GraphDatabaseAPI) = new QueryState(db, new TransactionBoundQueryContext(db), Map.empty, NullDecorator, None)
-}
-
 case class QueryState(db: GraphDatabaseService,
                       inner: QueryContext,
                       params: Map[String, Any],

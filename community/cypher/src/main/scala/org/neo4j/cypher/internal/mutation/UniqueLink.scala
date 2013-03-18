@@ -20,10 +20,10 @@
 package org.neo4j.cypher.internal.mutation
 
 import org.neo4j.cypher.internal.commands._
-import expressions.{Expression, Identifier, Literal, Collection}
+import expressions.{Expression, Identifier, Literal}
 import expressions.Identifier._
 import org.neo4j.cypher.internal.symbols.{RelationshipType, NodeType, SymbolTable}
-import org.neo4j.graphdb.{Transaction, Node, Direction}
+import org.neo4j.graphdb.{Node, Direction}
 import org.neo4j.cypher.internal.pipes.QueryState
 import org.neo4j.cypher.{SyntaxException, CypherTypeException, UniquePathNotUniqueException}
 import collection.Map
@@ -33,15 +33,16 @@ import values.LabelValue
 
 object UniqueLink {
   def apply(start: String, end: String, relName: String, relType: String, dir: Direction): UniqueLink =
-    new UniqueLink(NamedExpectation(start, Map.empty, true), NamedExpectation(end, Map.empty, true), NamedExpectation(relName, Map.empty, true), relType, dir)
+    new UniqueLink(
+      NamedExpectation(start, Map.empty, bare = true),
+      NamedExpectation(end, Map.empty, bare = true),
+      NamedExpectation(relName, Map.empty, bare = true), relType, dir)
 }
 
 case class UniqueLink(start: NamedExpectation, end: NamedExpectation, rel: NamedExpectation, relType: String, dir: Direction)
   extends GraphElementPropertyFunctions with Pattern with MapSupport {
 
   def exec(context: ExecutionContext, state: QueryState): Option[(UniqueLink, CreateUniqueResult)] = {
-
-    def tx: Transaction = state.query.getTransaction
 
     def getNode(expect: NamedExpectation): Option[Node] = context.get(expect.name) match {
       case Some(n: Node)                             => Some(n)
@@ -68,12 +69,7 @@ case class UniqueLink(start: NamedExpectation, end: NamedExpectation, rel: Named
           val createRel = CreateRelationship(rel.name,
             RelationshipEndpoint(Literal(startNode), Map(), Seq.empty, bare = true),
             RelationshipEndpoint(Literal(endNode), Map(), Seq.empty, bare = true), relType, expectations.properties)
-          Some(this->Update(Seq(UpdateWrapper(Seq(), createRel, rel.name)), () => {
-            // TODO: This should not be done here. The QueryContext should take the necessary locks while reading the
-            // graph. For now, let's rip out the inside of objects and get to the transaction.
-
-            Seq(tx.acquireWriteLock(startNode), tx.acquireWriteLock(endNode))
-          }))
+          Some(this->Update(Seq(UpdateWrapper(Seq(), createRel, rel.name))))
         case List(r) => Some(this->Traverse(rel.name -> r))
         case _ => throw new UniquePathNotUniqueException("The pattern " + this + " produced multiple possible paths, and that is not allowed")
       }
@@ -108,7 +104,7 @@ case class UniqueLink(start: NamedExpectation, end: NamedExpectation, rel: Named
 
       rels match {
         case List() =>
-          Some(this -> Update(createUpdateActions(), () => Seq(tx.acquireWriteLock(startNode))))
+          Some(this -> Update(createUpdateActions()))
 
         case List(r) => Some(this -> Traverse(rel.name -> r, other.name -> r.getOtherNode(startNode)))
 

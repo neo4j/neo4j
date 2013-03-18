@@ -19,7 +19,21 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.neo4j.kernel.api.*;
+import static java.lang.String.format;
+import static java.lang.reflect.Proxy.newProxyInstance;
+
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+
+import org.neo4j.kernel.api.ConstraintViolationKernelException;
+import org.neo4j.kernel.api.EntityNotFoundException;
+import org.neo4j.kernel.api.LabelNotFoundKernelException;
+import org.neo4j.kernel.api.LegacyOperations;
+import org.neo4j.kernel.api.PropertyKeyIdNotFoundException;
+import org.neo4j.kernel.api.PropertyKeyNotFoundException;
+import org.neo4j.kernel.api.PropertyNotFoundException;
+import org.neo4j.kernel.api.SchemaRuleNotFoundException;
+import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.operations.EntityOperations;
@@ -28,12 +42,6 @@ import org.neo4j.kernel.api.operations.PropertyOperations;
 import org.neo4j.kernel.api.operations.SchemaOperations;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
-
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.Method;
-
-import static java.lang.String.format;
-import static java.lang.reflect.Proxy.newProxyInstance;
 
 /**
  * This is syntax sugar, it helps implementing statement contexts that either just want to delegate
@@ -45,6 +53,7 @@ public abstract class CompositeStatementContext implements StatementContext
     private final PropertyOperations propertyOperations;
     private final LabelOperations labelOperations;
     private final SchemaOperations schemaOperations;
+    private final LegacyOperations legacyOperations;
 
     private final StatementContext delegateToClose;
 
@@ -66,6 +75,7 @@ public abstract class CompositeStatementContext implements StatementContext
         this.labelOperations    = unsupportedOpDelegate;
         this.schemaOperations   = unsupportedOpDelegate;
         this.delegateToClose    = unsupportedOpDelegate;
+        this.legacyOperations   = unsupportedOpDelegate;
 
     }
 
@@ -75,17 +85,8 @@ public abstract class CompositeStatementContext implements StatementContext
         this.propertyOperations = delegate;
         this.labelOperations    = delegate;
         this.schemaOperations   = delegate;
+        this.legacyOperations   = delegate;
         this.delegateToClose    = delegate;
-    }
-
-    public CompositeStatementContext( EntityOperations entityOperations, PropertyOperations propertyOperations,
-                                      LabelOperations labelOperations, SchemaOperations schemaOperations )
-    {
-        this.entityOperations   = entityOperations;
-        this.propertyOperations = propertyOperations;
-        this.labelOperations    = labelOperations;
-        this.schemaOperations   = schemaOperations;
-        this.delegateToClose    = null;
     }
 
     // Hook methods
@@ -301,6 +302,34 @@ public abstract class CompositeStatementContext implements StatementContext
 
         afterReadOperation();
         afterOperation();
+        return result;
+    }
+
+    @Override
+    public boolean hasLegacyNodeIndex( String indexName )
+    {
+        beforeOperation();
+        beforeReadOperation();
+
+        boolean result = legacyOperations.hasLegacyNodeIndex( indexName );
+
+        afterReadOperation();
+        afterOperation();
+
+        return result;
+    }
+
+    @Override
+    public boolean hasLegacyRelationshipIndex( String indexName )
+    {
+        beforeOperation();
+        beforeReadOperation();
+
+        boolean result = legacyOperations.hasLegacyRelationshipIndex( indexName );
+
+        afterReadOperation();
+        afterOperation();
+
         return result;
     }
 

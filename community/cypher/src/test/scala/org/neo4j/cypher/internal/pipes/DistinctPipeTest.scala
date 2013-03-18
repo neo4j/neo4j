@@ -31,7 +31,7 @@ class DistinctPipeTest extends Assertions {
     val pipe = createDistinctPipe(List(Map("x" -> 1), Map("x" -> 2)))
 
     //WHEN
-    val result = pipe.createResults(QueryState())
+    val result = pipe.createResults(QueryStateHelper.empty)
 
     //THEN
     assert(result.toList === List(Map("x" -> 1), Map("x" -> 2)))
@@ -43,7 +43,7 @@ class DistinctPipeTest extends Assertions {
     val pipe = createDistinctPipe(List(Map("x" -> 1), Map("x" -> 2)), expressions)
 
     //WHEN
-    val result = pipe.createResults(QueryState())
+    val result = pipe.createResults(QueryStateHelper.empty)
 
     //THEN
     assert(result.toList === List(Map("doubled" -> 2), Map("doubled" -> 4)))
@@ -54,7 +54,7 @@ class DistinctPipeTest extends Assertions {
     val pipe = createDistinctPipe(List(Map("x" -> 1), Map("x" -> 1)))
 
     //WHEN
-    val result = pipe.createResults(QueryState())
+    val result = pipe.createResults(QueryStateHelper.empty)
 
     //THEN
     assert(result.toList === List(Map("x" -> 1)))

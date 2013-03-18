@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api;
 
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.PrefetchingIterator;
@@ -62,7 +63,8 @@ public class StoreStatementContext extends CompositeStatementContext
     private final NodeStore nodeStore;
 
     public StoreStatementContext( PropertyIndexManager propertyIndexManager, NodeManager nodeManager,
-            NeoStore neoStore, IndexingService indexService, IndexReaderFactory indexReaderFactory )
+            NeoStore neoStore, IndexingService indexService, IndexReaderFactory indexReaderFactory)
+
     {
         this.indexService = indexService;
         this.indexReaderFactory = indexReaderFactory;
@@ -337,5 +339,17 @@ public class StoreStatementContext extends CompositeStatementContext
     public Iterable<Long> exactIndexLookup( long indexId, Object value ) throws IndexNotFoundKernelException
     {
         return indexReaderFactory.newReader( indexId ).lookup( value );
+    }
+
+    @Override
+    public boolean hasLegacyNodeIndex( String indexName )
+    {
+        throw new UnsupportedOperationException(  );
+    }
+
+    @Override
+    public boolean hasLegacyRelationshipIndex( String indexName )
+    {
+        throw new UnsupportedOperationException(  );
     }
 }

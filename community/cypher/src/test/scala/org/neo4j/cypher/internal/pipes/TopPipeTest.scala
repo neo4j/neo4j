@@ -31,7 +31,7 @@ class TopPipeTest extends Assertions {
   @Test def top10From5ReturnsAll() {
     val input = createFakePipeWith(5)
     val pipe = new TopPipe(input, List(SortItem(Identifier("a"), ascending = true)), Literal(10))
-    val result = pipe.createResults(QueryState()).map(ctx => ctx("a")).toList
+    val result = pipe.createResults(QueryStateHelper.empty).map(ctx => ctx("a")).toList
 
     assert(result === List(0, 1, 2, 3, 4))
   }
@@ -39,7 +39,7 @@ class TopPipeTest extends Assertions {
   @Test def top5From10ReturnsAll() {
     val input = createFakePipeWith(10)
     val pipe = new TopPipe(input, List(SortItem(Identifier("a"), ascending = true)), Literal(5))
-    val result = pipe.createResults(QueryState()).map(ctx => ctx("a")).toList
+    val result = pipe.createResults(QueryStateHelper.empty).map(ctx => ctx("a")).toList
 
     assert(result === List(0, 1, 2, 3, 4))
   }
@@ -49,7 +49,7 @@ class TopPipeTest extends Assertions {
     val input = new FakePipe(in, "a" -> IntegerType())
 
     val pipe = new TopPipe(input, List(SortItem(Identifier("a"), ascending = true)), Literal(5))
-    val result = pipe.createResults(QueryState()).map(ctx => ctx("a")).toList
+    val result = pipe.createResults(QueryStateHelper.empty).map(ctx => ctx("a")).toList
 
     assert(result === List(0, 1, 2, 3, 4))
   }
@@ -58,7 +58,7 @@ class TopPipeTest extends Assertions {
     val input = new FakePipe(Iterator(), "a" -> IntegerType())
 
     val pipe = new TopPipe(input, List(SortItem(Identifier("a"), ascending = true)), Literal(5))
-    val result = pipe.createResults(QueryState()).map(ctx => ctx("a")).toList
+    val result = pipe.createResults(QueryStateHelper.empty).map(ctx => ctx("a")).toList
 
     assert(result === List())
   }

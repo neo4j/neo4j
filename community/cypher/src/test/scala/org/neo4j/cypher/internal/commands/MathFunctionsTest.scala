@@ -28,7 +28,7 @@ import org.junit.Test
 import org.scalatest.Assertions
 import org.neo4j.cypher.CypherTypeException
 import org.neo4j.cypher.internal.ExecutionContext
-import org.neo4j.cypher.internal.pipes.QueryState
+import org.neo4j.cypher.internal.pipes.{QueryStateHelper, QueryState}
 
 class MathFunctionsTest extends Assertions {
   @Test def absTests() {
@@ -60,5 +60,5 @@ class MathFunctionsTest extends Assertions {
     intercept[CypherTypeException](calc(SqrtFunction(Literal("wut"))))
   }
 
-  private def calc(e:Expression) = e(ExecutionContext.empty)(QueryState())
+  private def calc(e:Expression) = e(ExecutionContext.empty)(QueryStateHelper.empty)
 }

@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.symbols._
 import org.scalatest.Assertions
 import org.junit.Test
 import org.neo4j.cypher.internal.ExecutionContext
-import org.neo4j.cypher.internal.pipes.QueryState
+import org.neo4j.cypher.internal.pipes.{QueryStateHelper, QueryState}
 
 class ReduceTest extends Assertions {
   @Test def canReturnSomethingFromAnIterable() {
@@ -32,7 +32,7 @@ class ReduceTest extends Assertions {
     val expression = Add(Identifier("acc"), LengthFunction(Identifier("n")))
     val collection = Identifier("l")
     val m = ExecutionContext.from("l" -> l)
-    val s = QueryState()
+    val s = QueryStateHelper.empty
 
     val reduce = ReduceFunction(collection, "n", expression, "acc", Literal(0))
 
@@ -43,7 +43,7 @@ class ReduceTest extends Assertions {
     val expression = Add(Identifier("acc"), LengthFunction(Identifier("n")))
     val collection = Literal(null)
     val m = ExecutionContext.empty
-    val s = QueryState()
+    val s = QueryStateHelper.empty
 
     val reduce = ReduceFunction(collection, "n", expression, "acc", Literal(0))
 
