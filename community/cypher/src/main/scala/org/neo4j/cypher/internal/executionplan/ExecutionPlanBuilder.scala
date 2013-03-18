@@ -57,9 +57,9 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService) extends PatternGraphBuil
     val planContext = new TransactionBoundPlanContext(graph.asInstanceOf[GraphDatabaseAPI])
     try {
       val result: (Pipe, Boolean) = in match {
-        case q: Query => buildQuery(q, planContext)
+        case q: Query          => buildQuery(q, planContext)
         case q: IndexOperation => buildIndexQuery(q)
-        case q: Union => buildUnionQuery(q, planContext)
+        case q: Union          => buildUnionQuery(q, planContext)
       }
       planContext.close(success = true)
       result
@@ -148,7 +148,7 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService) extends PatternGraphBuil
   private def getEagerReadWriteQuery(pipe: Pipe, columns: List[String]): (QueryContext, Map[String, Any], Boolean) => ExecutionResult = {
     val func = (queryContext: QueryContext, params: Map[String, Any], profile: Boolean) => {
       val (state, results, descriptor) = prepareStateAndResult(queryContext, params, pipe, profile)
-      new EagerPipeExecutionResult(results, columns, state, graph, descriptor)
+      new EagerPipeExecutionResult(results, columns, state, descriptor)
     }
 
     func

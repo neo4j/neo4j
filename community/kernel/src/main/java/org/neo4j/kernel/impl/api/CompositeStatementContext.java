@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.api;
 import org.neo4j.kernel.api.ConstraintViolationKernelException;
 import org.neo4j.kernel.api.EntityNotFoundException;
 import org.neo4j.kernel.api.LabelNotFoundKernelException;
+import org.neo4j.kernel.api.LegacyOperations;
 import org.neo4j.kernel.api.PropertyKeyIdNotFoundException;
 import org.neo4j.kernel.api.PropertyKeyNotFoundException;
 import org.neo4j.kernel.api.PropertyNotFoundException;
@@ -46,6 +47,7 @@ public abstract class CompositeStatementContext implements StatementContext
     private final PropertyOperations propertyOperations;
     private final LabelOperations labelOperations;
     private final SchemaOperations schemaOperations;
+    private final LegacyOperations legacyOperations;
 
     private final StatementContext delegateToClose;
 
@@ -57,17 +59,8 @@ public abstract class CompositeStatementContext implements StatementContext
         this.propertyOperations = delegate;
         this.labelOperations    = delegate;
         this.schemaOperations   = delegate;
+        this.legacyOperations   = delegate;
         this.delegateToClose    = delegate;
-    }
-
-    public CompositeStatementContext( EntityOperations entityOperations, PropertyOperations propertyOperations,
-                                      LabelOperations labelOperations, SchemaOperations schemaOperations )
-    {
-        this.entityOperations   = entityOperations;
-        this.propertyOperations = propertyOperations;
-        this.labelOperations    = labelOperations;
-        this.schemaOperations   = schemaOperations;
-        this.delegateToClose    = null;
     }
 
     // Hook methods
@@ -283,6 +276,34 @@ public abstract class CompositeStatementContext implements StatementContext
 
         afterReadOperation();
         afterOperation();
+        return result;
+    }
+
+    @Override
+    public boolean hasLegacyNodeIndex( String indexName )
+    {
+        beforeOperation();
+        beforeReadOperation();
+
+        boolean result = legacyOperations.hasLegacyNodeIndex( indexName );
+
+        afterReadOperation();
+        afterOperation();
+
+        return result;
+    }
+
+    @Override
+    public boolean hasLegacyRelationshipIndex( String indexName )
+    {
+        beforeOperation();
+        beforeReadOperation();
+
+        boolean result = legacyOperations.hasLegacyRelationshipIndex( indexName );
+
+        afterReadOperation();
+        afterOperation();
+
         return result;
     }
 

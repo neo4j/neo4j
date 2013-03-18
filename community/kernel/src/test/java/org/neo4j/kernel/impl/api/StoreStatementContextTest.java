@@ -21,13 +21,14 @@ package org.neo4j.kernel.impl.api;
 
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.cache_type;
 import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
@@ -56,6 +57,7 @@ import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.PropertyIndexManager;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.test.ImpermanentGraphDatabase;
@@ -67,7 +69,6 @@ public class StoreStatementContextTest
     public void should_be_able_to_read_a_node_property() throws Exception
     {
         // GIVEN
-        String labelName = "mylabel";
         String propertyKey = "myproperty";
         int propertyValue = 42;
 
@@ -86,11 +87,10 @@ public class StoreStatementContextTest
         assertThat( propertyValue, equalTo( result ) );
     }
 
-    @Test(expected = /* THEN */ PropertyNotFoundException.class)
+    @Test
     public void should_throw_when_reading_a_missing_node_property() throws Exception
     {
         // GIVEN
-        String labelName = "mylabel";
         String propertyKey = "myproperty";
         int propertyValue = 42;
 
@@ -103,7 +103,17 @@ public class StoreStatementContextTest
 
         // WHEN
         long propertyKeyId = statement.getPropertyKeyId( propertyKey );
-        statement.getNodePropertyValue( nodeId, propertyKeyId );
+        try
+        {
+            statement.getNodePropertyValue( nodeId, propertyKeyId );
+
+            fail( "Should have thrown exception" );
+        }
+        // THEN
+        catch ( PropertyNotFoundException e )
+        {
+            assertEquals( "No property with id 0 on node with id 2", e.getMessage() );
+        }
     }
 
     @Test
@@ -371,7 +381,8 @@ public class StoreStatementContextTest
         IndexingService mockIndexService = mock(IndexingService.class);
         when( mockIndexService.getIndexDescriptor( 1337l ) ).thenReturn( idxDesc );
 
-        StoreStatementContext ctx = new StoreStatementContext( null, null, null, mock( NeoStore.class ), mockIndexService, null);
+        StoreStatementContext ctx = new StoreStatementContext( null, null, null, mock( NeoStore.class ),
+                mockIndexService, null, null );
 
         // WHEN
         IndexDescriptor idx = ctx.getIndexDescriptor( 1337l );
@@ -405,14 +416,16 @@ public class StoreStatementContextTest
     {
         db = new ImpermanentGraphDatabase();
         IndexingService indexingService = db.getDependencyResolver().resolveDependency( IndexingService.class );
+        @SuppressWarnings("deprecation")// Ooh, jucky
+        NeoStoreXaDataSource neoStoreDataSource = db.getDependencyResolver()
+                .resolveDependency( XaDataSourceManager.class ).getNeoStoreDataSource();
         statement = new StoreStatementContext(
                 db.getDependencyResolver().resolveDependency( PropertyIndexManager.class ),
                 db.getDependencyResolver().resolveDependency( PersistenceManager.class ),
                 db.getDependencyResolver().resolveDependency( NodeManager.class ),
-                // Ooh, jucky
-                db.getDependencyResolver().resolveDependency( XaDataSourceManager.class )
-                        .getNeoStoreDataSource().getNeoStore(),
-                indexingService, new IndexReaderFactory.Caching( indexingService ) );
+                neoStoreDataSource.getNeoStore(),
+                indexingService, new IndexReaderFactory.Caching( indexingService ),
+                null );
     }
 
     @After

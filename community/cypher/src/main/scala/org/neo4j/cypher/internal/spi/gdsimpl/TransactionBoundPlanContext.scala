@@ -49,11 +49,13 @@ class TransactionBoundPlanContext(graph: GraphDatabaseAPI) extends PlanContext {
   }
 
   def checkNodeIndex(idxName: String) {
-    if (!graph.index.existsForNodes(idxName)) throw new MissingIndexException(idxName)
+    if (!ctx.hasLegacyNodeIndex(idxName))
+      throw new MissingIndexException(idxName)
   }
 
   def checkRelIndex(idxName: String) {
-    if (!graph.index.existsForRelationships(idxName)) throw new MissingIndexException(idxName)
+    if (!ctx.hasLegacyRelationshipIndex(idxName))
+      throw new MissingIndexException(idxName)
   }
 
   private def tryGet[T](f: => T): Option[T] = try Some(f) catch {

@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.api;
 
 import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.TransactionContext;
@@ -72,6 +73,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     private IndexingService indexService;
     private NeoStore neoStore;
     private NodeManager nodeManager;
+    private IndexManager indexManager;
 
     public Kernel( AbstractTransactionManager transactionManager, PropertyIndexManager propertyIndexManager,
             PersistenceManager persistenceManager, XaDataSourceManager dataSourceManager, LockManager lockManager,
@@ -91,6 +93,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     public void start() throws Throwable
     {
         nodeManager = dependencyResolver.resolveDependency( NodeManager.class );
+        indexManager = dependencyResolver.resolveDependency( IndexManager.class );
 
         dataSourceManager.addDataSourceRegistrationListener( new DataSourceRegistrationListener()
         {
@@ -127,8 +130,8 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     {
         // I/O
         // TODO The store layer should depend on a clean abstraction of the data, not on all the XXXManagers from the old code base
-        TransactionContext result = new StoreTransactionContext( propertyIndexManager,
-                persistenceManager, nodeManager, neoStore, indexService );
+        TransactionContext result = new StoreTransactionContext(
+                propertyIndexManager, persistenceManager, nodeManager, neoStore, indexService, indexManager );
         // + Transaction life cycle
         // XXX: This is disabled during transition phase, we are still using the legacy transaction management stuff
         //result = new TransactionLifecycleTransactionContext( result, transactionManager, propertyIndexManager, persistenceManager, cache );
@@ -152,8 +155,8 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     {
         // I/O
         StatementContext result = new StoreStatementContext(
-                propertyIndexManager, persistenceManager, nodeManager,
-                neoStore, indexService, new IndexReaderFactory.NonCaching( indexService ) );
+                propertyIndexManager, persistenceManager, nodeManager, neoStore, indexService,
+                new IndexReaderFactory.NonCaching( indexService ), indexManager );
         // + Cache
         result = new CachingStatementContext( result, persistenceCache, schemaCache );
         // + Read only access
