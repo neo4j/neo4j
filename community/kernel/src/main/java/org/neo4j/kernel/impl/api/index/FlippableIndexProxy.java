@@ -250,7 +250,7 @@ public class FlippableIndexProxy implements IndexProxy
     {
         if ( closed )
         {
-            throw new IllegalStateException( this + " has been closed. No more interactions allowed" );
+            throw new IllegalStateException( this.getClass().getSimpleName() + " has been closed. No more interactions allowed" );
         }
     }
 }

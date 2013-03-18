@@ -68,6 +68,7 @@ import org.neo4j.kernel.api.KernelException;
 import org.neo4j.kernel.api.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConfigurationChange;
 import org.neo4j.kernel.configuration.ConfigurationChangeListener;
@@ -1480,8 +1481,11 @@ public abstract class InternalAbstractGraphDatabase
         try
         {
             IndexRule indexRule = ctx.getIndexRule( labelId, propertyId );
-            // Ha! We found an index - let's use it to find matching nodes
-            return map2nodes( ctx.exactIndexLookup( indexRule.getId(), value ) );
+            if(ctx.getIndexState( indexRule ) == InternalIndexState.ONLINE)
+            {
+                // Ha! We found an index - let's use it to find matching nodes
+                return map2nodes( ctx.exactIndexLookup( indexRule.getId(), value ) );
+            }
         }
         catch ( SchemaRuleNotFoundException e )
         {

@@ -45,26 +45,22 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 
 public class LuceneSchemaIndexProvider extends SchemaIndexProvider
 {
     private final DirectoryFactory directoryFactory;
     private final DocumentLogic documentLogic = new DocumentLogic();
     private final WriterLogic writerLogic = new WriterLogic();
-    private final FileSystemAbstraction fs;
     private final File rootDirectory;
     
-    public LuceneSchemaIndexProvider( DirectoryFactory directoryFactory, FileSystemAbstraction fs,
-            Config config )
+    public LuceneSchemaIndexProvider( DirectoryFactory directoryFactory, Config config )
     {
         super( 1 );
         this.directoryFactory = directoryFactory;
-        this.fs = fs;
         this.rootDirectory = getRootDirectory( config, LuceneSchemaIndexProviderFactory.KEY );
     }
     
-    private File dir( long indexId )
+    private File dirFile( long indexId )
     {
         return new File( rootDirectory, "" + indexId );
     }
@@ -72,8 +68,7 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
     @Override
     public IndexPopulator getPopulator( long indexId )
     {
-        return new LuceneIndexPopulator( standard( directoryFactory ),
-                fs, dir( indexId ), 10000, documentLogic, writerLogic );
+        return new LuceneIndexPopulator( standard( ), directoryFactory, dirFile( indexId ), 10000, documentLogic, writerLogic );
     }
 
     @Override
@@ -81,8 +76,7 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
     {
         try
         {
-            return new LuceneIndexAccessor( standard( directoryFactory ), fs,
-                    dir( indexId ), documentLogic, writerLogic );
+            return new LuceneIndexAccessor( standard( ), directoryFactory, dirFile( indexId ), documentLogic, writerLogic );
         }
         catch ( IOException e )
         {
@@ -91,12 +85,24 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
     }
 
     @Override
+    public void shutdown() throws Throwable
+    {
+        directoryFactory.close();
+    }
+
+    @Override
     public InternalIndexState getInitialState( long indexId )
     {
         try
         {
-            Directory directory = directoryFactory.open( dir( indexId ) );
-            return writerLogic.hasOnlineStatus( directory ) ? InternalIndexState.ONLINE : InternalIndexState.POPULATING;
+            Directory directory = directoryFactory.open( dirFile( indexId ) );
+            try {
+                boolean status = writerLogic.hasOnlineStatus( directory );
+                return status ? InternalIndexState.ONLINE : InternalIndexState.POPULATING;
+            }
+            finally {
+                directory.close();
+            }
         }
         catch ( IOException e )
         {

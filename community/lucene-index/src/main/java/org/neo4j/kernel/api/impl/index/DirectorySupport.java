@@ -19,12 +19,15 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import java.io.File;
 import java.io.IOException;
 
-import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.store.Directory;
 
-public interface IndexWriterFactory
+public class DirectorySupport
 {
-    IndexWriter create( File directory ) throws IOException;
+    public static void deleteDirectoryContents(Directory directory) throws IOException
+    {
+        for (String fileName : directory.listAll())
+            directory.deleteFile( fileName );
+    }
 }

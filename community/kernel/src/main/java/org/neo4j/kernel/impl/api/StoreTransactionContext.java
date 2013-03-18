@@ -60,6 +60,7 @@ public class StoreTransactionContext implements TransactionContext
     @Override
     public void commit()
     {
+
     }
 
     @Override

@@ -89,6 +89,12 @@ public class StoreStatementContext implements StatementContext
     }
 
     @Override
+    public void close()
+    {
+        indexReaderFactory.close();
+    }
+
+    @Override
     public long getOrCreateLabelId( String label ) throws ConstraintViolationKernelException
     {
         try
@@ -216,11 +222,6 @@ public class StoreStatementContext implements StatementContext
                 };
             }
         };
-    }
-    
-    @Override
-    public void close()
-    {
     }
 
     @Override

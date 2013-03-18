@@ -19,42 +19,44 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
+import static org.neo4j.kernel.api.impl.index.DirectorySupport.deleteDirectoryContents;
+
 import java.io.File;
 import java.io.IOException;
 
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.search.SearcherFactory;
+import org.apache.lucene.search.SearcherManager;
+import org.apache.lucene.store.Directory;
 import org.neo4j.kernel.api.impl.index.LuceneSchemaIndexProvider.DocumentLogic;
 import org.neo4j.kernel.api.impl.index.LuceneSchemaIndexProvider.WriterLogic;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
-import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 
 class LuceneIndexAccessor implements IndexAccessor
 {
     private final IndexWriter writer;
-    private final File dir;
+    private final Directory dir;
     private final DocumentLogic documentLogic;
-    private final RefreshableIndexSearcher refreshableSearcher;
     private final WriterLogic writerLogic;
-    private final FileSystemAbstraction fileSystem;
-    
-    public LuceneIndexAccessor( IndexWriterFactory indexWriterFactory, FileSystemAbstraction fileSystem, File dir,
+    private final SearcherManager searcherManager;
+
+    public LuceneIndexAccessor( LuceneIndexWriterFactory indexWriterFactory, DirectoryFactory dirFactory, File dirFile,
             DocumentLogic documentLogic, WriterLogic writerLogic ) throws IOException
     {
-        this.fileSystem = fileSystem;
-        this.dir = dir;
+        this.dir = dirFactory.open( dirFile );
         this.documentLogic = documentLogic;
         this.writerLogic = writerLogic;
         this.writer = indexWriterFactory.create( dir );
-        this.refreshableSearcher = new RefreshableIndexSearcher( writer );
+        this.searcherManager = new SearcherManager( writer, true, new SearcherFactory());
     }
 
     @Override
     public void drop() throws IOException
     {
         writerLogic.close( writer );
-        fileSystem.deleteRecursively( dir );
+        deleteDirectoryContents( dir );
     }
 
     @Override
@@ -81,7 +83,7 @@ class LuceneIndexAccessor implements IndexAccessor
             }
             
             // Call refresh here since we are guaranteed to be the only thread writing concurrently.
-            refreshableSearcher.refresh();
+            searcherManager.maybeRefresh();
         }
         catch ( IOException e )
         {
@@ -115,11 +117,12 @@ class LuceneIndexAccessor implements IndexAccessor
     public void close() throws IOException
     {
         writerLogic.close( writer );
+        dir.close();
     }
 
     @Override
     public IndexReader newReader()
     {
-        return new LuceneIndexAccessorReader( refreshableSearcher.getUpToDateSearcher(), documentLogic );
+        return new LuceneIndexAccessorReader( searcherManager, documentLogic );
     }
 }

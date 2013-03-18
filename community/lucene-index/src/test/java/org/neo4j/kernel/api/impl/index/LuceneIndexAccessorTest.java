@@ -20,16 +20,15 @@
 package org.neo4j.kernel.api.impl.index;
 
 import static java.util.Arrays.asList;
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.asUniqueSet;
 import static org.neo4j.kernel.api.impl.index.IndexWriterFactories.standard;
 
 import java.io.File;
 
-import org.apache.lucene.store.Directory;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.kernel.api.impl.index.LuceneSchemaIndexProvider.DocumentLogic;
@@ -40,6 +39,7 @@ import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 
 public class LuceneIndexAccessorTest
 {
+
     @Test
     public void indexReaderShouldHonorRepeatableReads() throws Exception
     {
@@ -118,32 +118,26 @@ public class LuceneIndexAccessorTest
         reader.close();
     }
     
-    @Test
-    public void droppingIndexShouldDeleteAndCloseIt() throws Exception
-    {
-        // WHEN
-        accessor.drop();
-
-        // THEN
-        verify( fs ).deleteRecursively( dir );
-    }
-    
     private final FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
     private final long nodeId = 1, nodeId2 = 2;
     private final Object value = "value", value2 = 40;
-    private Directory directory;
-    private IndexWriterFactory factory;
     private final DocumentLogic documentLogic = new LuceneSchemaIndexProvider.DocumentLogic();
     private final WriterLogic writerLogic = new LuceneSchemaIndexProvider.WriterLogic();
     private final File dir = new File( "dir" );
     private LuceneIndexAccessor accessor;
+    private DirectoryFactory.InMemoryDirectoryFactory dirFactory;
     
     @Before
     public void before() throws Exception
     {
-        directory = DirectoryFactory.IN_MEMORY.open( dir );
-        factory = standard( new DirectoryFactory.Single( directory ) );
-        accessor = new LuceneIndexAccessor( factory, fs, dir, documentLogic, writerLogic );
+        dirFactory = new DirectoryFactory.InMemoryDirectoryFactory();
+        accessor = new LuceneIndexAccessor( standard(), dirFactory, dir, documentLogic, writerLogic );
+    }
+
+    @After
+    public void after()
+    {
+        dirFactory.close();
     }
 
     private NodePropertyUpdate add( long nodeId, Object value )

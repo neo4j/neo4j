@@ -22,24 +22,9 @@ package org.neo4j.kernel.api.impl.index;
 import java.io.IOException;
 
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.Version;
-import org.neo4j.index.impl.lucene.LuceneDataSource;
 
-public class IndexWriterFactories
+public interface LuceneIndexWriterFactory
 {
-    public static LuceneIndexWriterFactory standard( )
-    {
-        return new LuceneIndexWriterFactory()
-        {
-            @Override
-            public IndexWriter create( Directory directory ) throws IOException
-            {
-                IndexWriterConfig writerConfig = new IndexWriterConfig( Version.LUCENE_35, LuceneDataSource.KEYWORD_ANALYZER );
-                writerConfig.setMaxBufferedDocs( 100000 ); // TODO figure out depending on environment?
-                return new IndexWriter( directory, writerConfig );
-            }
-        };
-    }
+    IndexWriter create( Directory directory ) throws IOException;
 }

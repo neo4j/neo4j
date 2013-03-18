@@ -30,7 +30,9 @@ import org.neo4j.kernel.impl.api.index.IndexingService;
 public interface IndexReaderFactory
 {
     IndexReader newReader( long indexId ) throws IndexNotFoundKernelException;
-    
+
+    void close();
+
     public static class Caching implements IndexReaderFactory
     {
         private final Map<Long,IndexReader> indexReaders = new HashMap<Long, IndexReader>();
@@ -53,6 +55,16 @@ public interface IndexReaderFactory
             }
             return reader;
         }
+
+        @Override
+        public void close()
+        {
+            for ( IndexReader indexReader : indexReaders.values() )
+            {
+                indexReader.close();
+            }
+            indexReaders.clear();
+        }
     }
     
     public static class NonCaching implements IndexReaderFactory
@@ -68,6 +80,11 @@ public interface IndexReaderFactory
         public IndexReader newReader( long indexId ) throws IndexNotFoundKernelException
         {
             return indexingService.getProxyForRule( indexId ).newReader();
+        }
+
+        @Override
+        public void close()
+        {
         }
     }
 }

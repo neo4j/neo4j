@@ -24,40 +24,44 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.lucene.store.Directory;
 import org.neo4j.kernel.api.impl.index.LuceneSchemaIndexProvider.DocumentLogic;
 import org.neo4j.kernel.api.impl.index.LuceneSchemaIndexProvider.WriterLogic;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
-import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 
 class LuceneIndexPopulator implements IndexPopulator
 {
-    private final File directory;
     private org.apache.lucene.index.IndexWriter writer;
     private final List<NodePropertyUpdate> updates = new ArrayList<NodePropertyUpdate>();
     private final int queueThreshold;
-    private final IndexWriterFactory indexWriterFactory;
-    private final FileSystemAbstraction fs;
+    private final LuceneIndexWriterFactory indexWriterFactory;
     private final DocumentLogic documentLogic;
     private final WriterLogic writerLogic;
+    private final DirectoryFactory dirFactory;
+    private final File dirFile;
 
-    LuceneIndexPopulator( IndexWriterFactory indexWriterFactory, FileSystemAbstraction fs, File directory,
+    private Directory directory;
+
+    LuceneIndexPopulator( LuceneIndexWriterFactory indexWriterFactory, DirectoryFactory dirFactory, File dirFile,
             int queueThreshold, DocumentLogic documentLogic, WriterLogic writerLogic )
     {
         this.indexWriterFactory = indexWriterFactory;
-        this.fs = fs;
-        this.directory = directory;
         this.queueThreshold = queueThreshold;
         this.documentLogic = documentLogic;
         this.writerLogic = writerLogic;
+        this.dirFactory = dirFactory;
+        this.dirFile = dirFile;
     }
+
 
     @Override
     public void create()
     {
         try
         {
-            fs.deleteRecursively( directory );
+            this.directory = dirFactory.open( dirFile );
+            DirectorySupport.deleteDirectoryContents( directory );
             writer = indexWriterFactory.create( directory );
         }
         catch ( IOException e )
@@ -72,7 +76,7 @@ class LuceneIndexPopulator implements IndexPopulator
         try
         {
             writerLogic.close( writer );
-            fs.deleteRecursively( directory );
+            DirectorySupport.deleteDirectoryContents( directory );
         }
         catch ( IOException e )
         {
@@ -147,7 +151,6 @@ class LuceneIndexPopulator implements IndexPopulator
         }
         catch ( IOException e )
         {
-            populationCompletedSuccessfully = false;
             throw new RuntimeException( e );
         }
         finally
@@ -155,6 +158,7 @@ class LuceneIndexPopulator implements IndexPopulator
             try
             {
                 writerLogic.close( writer );
+                directory.close();
             }
             catch ( IOException e )
             {

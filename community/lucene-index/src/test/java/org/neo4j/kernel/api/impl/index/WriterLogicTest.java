@@ -33,12 +33,14 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Version;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.kernel.api.impl.index.LuceneSchemaIndexProvider.WriterLogic;
 
 public class WriterLogicTest
 {
+
     @Test
     public void forceShouldSetOnlineStatus() throws Exception
     {
@@ -89,11 +91,19 @@ public class WriterLogicTest
     
     private final WriterLogic logic = new WriterLogic();
     private Directory directory;
+    private DirectoryFactory.InMemoryDirectoryFactory dirFactory;
     
     @Before
     public void before() throws Exception
     {
-        directory = DirectoryFactory.IN_MEMORY.open( new File( "dir" ) );
+        dirFactory = new DirectoryFactory.InMemoryDirectoryFactory();
+        directory = dirFactory.open( new File( "dir" ) );
+    }
+
+    @After
+    public void after()
+    {
+        dirFactory.close();
     }
     
     private IndexWriter newWriter() throws IOException

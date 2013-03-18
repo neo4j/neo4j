@@ -23,7 +23,6 @@ import org.neo4j.helpers.Service;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
-import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 
 @Service.Implementation( KernelExtensionFactory.class )
 public class LuceneSchemaIndexProviderFactory extends KernelExtensionFactory<LuceneSchemaIndexProviderFactory.Dependencies>
@@ -33,8 +32,6 @@ public class LuceneSchemaIndexProviderFactory extends KernelExtensionFactory<Luc
     public interface Dependencies
     {
         Config getConfig();
-        
-        FileSystemAbstraction getFileSystemAbstraction();
     }
     
     public LuceneSchemaIndexProviderFactory()
@@ -45,15 +42,14 @@ public class LuceneSchemaIndexProviderFactory extends KernelExtensionFactory<Luc
     @Override
     public LuceneSchemaIndexProvider newKernelExtension( Dependencies dependencies ) throws Throwable
     {
-        return new LuceneSchemaIndexProvider( directoryFactory( dependencies ),
-                dependencies.getFileSystemAbstraction(), dependencies.getConfig() );
+        return new LuceneSchemaIndexProvider( directoryFactory( dependencies ), dependencies.getConfig() );
     }
 
     private DirectoryFactory directoryFactory( Dependencies dependencies )
     {
         if ( dependencies.getConfig().get( InternalAbstractGraphDatabase.Configuration.ephemeral ) )
         {
-            return DirectoryFactory.IN_MEMORY;
+            return new DirectoryFactory.InMemoryDirectoryFactory();
         }
         else
         {

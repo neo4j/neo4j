@@ -26,6 +26,7 @@ import java.util.Iterator;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.SearcherManager;
 import org.neo4j.helpers.Function;
 import org.neo4j.index.impl.lucene.Hits;
 import org.neo4j.index.impl.lucene.HitsIterator;
@@ -36,10 +37,12 @@ class LuceneIndexAccessorReader implements IndexReader
 {
     private final IndexSearcher searcher;
     private final DocumentLogic documentLogic;
+    private final SearcherManager searcherManager;
 
-    LuceneIndexAccessorReader( IndexSearcher searcher, DocumentLogic documentLogic )
+    LuceneIndexAccessorReader( SearcherManager searcherManager, DocumentLogic documentLogic )
     {
-        this.searcher = searcher;
+        this.searcherManager = searcherManager;
+        this.searcher = searcherManager.acquire();
         this.documentLogic = documentLogic;
     }
 
@@ -77,8 +80,7 @@ class LuceneIndexAccessorReader implements IndexReader
     {
         try
         {
-            searcher.getIndexReader().close();
-            searcher.close();
+            searcherManager.release( searcher );
         }
         catch ( IOException e )
         {

@@ -115,7 +115,7 @@ public class SchemaImpl implements Schema
                 case ONLINE:
                     return;
                 case FAILED:
-                    throw new IllegalStateException( "Index did not come online but entered the FAILED state instead" );
+                    throw new IllegalStateException( "Index entered a FAILED state. Please see database logs." );
                 default:
                     Thread.yield();
                     break;

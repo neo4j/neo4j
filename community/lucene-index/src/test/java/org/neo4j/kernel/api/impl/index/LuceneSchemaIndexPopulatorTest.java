@@ -231,8 +231,8 @@ public class LuceneSchemaIndexPopulatorTest
     public void before() throws Exception
     {
         directory = new RAMDirectory();
-        directoryFactory = new DirectoryFactory.Single( directory );
-        provider = new LuceneSchemaIndexProvider( directoryFactory, fs,
+        directoryFactory = new DirectoryFactory.Single( new DirectoryFactory.UncloseableDirectory(directory) );
+        provider = new LuceneSchemaIndexProvider( directoryFactory,
                 new Config( stringMap( store_dir.name(), "whatever" ) ) );
         index = provider.getPopulator( indexId );
         index.create();
@@ -243,6 +243,7 @@ public class LuceneSchemaIndexPopulatorTest
     {
         if ( reader != null )
             reader.close();
+        directory.close();
     }
 
     private void assertIndexedValues( Hit... expectedHits ) throws IOException
