@@ -19,26 +19,21 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.fail;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.junit.Ignore;
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.graphdb.schema.Schema.IndexState;
 import org.neo4j.helpers.FutureAdapter;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 @Ignore( "This is not a test" )
 public class SchemaIndexTestHelper
@@ -111,17 +106,6 @@ public class SchemaIndexTestHelper
         {
             Thread.interrupted();
             throw new RuntimeException( e );
-        }
-    }
-
-    public static void awaitIndexState( GraphDatabaseService db, IndexDefinition index, IndexState state )
-    {
-        long timeot = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis( 10 );
-        while( db.schema().getIndexState( index )  != state )
-        {
-            Thread.yield();
-            if ( System.currentTimeMillis() > timeot )
-                fail( "Expected index to come online within a reasonable time." );
         }
     }
 }

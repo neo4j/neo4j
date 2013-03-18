@@ -49,6 +49,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
@@ -63,12 +64,12 @@ public class EphemeralFileSystemAbstraction extends LifecycleAdapter implements 
     
     public EphemeralFileSystemAbstraction()
     {
-        this( new HashMap<File, EphemeralFileData>() );
+        this.files = new ConcurrentHashMap<File, EphemeralFileData>();
     }
     
     private EphemeralFileSystemAbstraction( Map<File, EphemeralFileData> files )
     {
-        this.files = files;
+        this.files = new ConcurrentHashMap<File, EphemeralFileData>( files );
     }
 
     @Override

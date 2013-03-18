@@ -26,9 +26,9 @@ import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.asUniqueSet;
 import static org.neo4j.helpers.collection.MapUtil.map;
-import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.awaitIndexState;
 
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import org.junit.After;
 import org.junit.Before;
@@ -59,7 +59,7 @@ public class SchemaIndexAcceptanceTest
         IndexDefinition index = db.schema().indexCreator( label ).on( key ).create();
         tx.success();
         tx.finish();
-        awaitIndexState( db, index, IndexState.ONLINE );
+        db.schema().awaitIndexOnline( index, 10, TimeUnit.SECONDS );
         
         restart();
         
