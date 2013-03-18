@@ -148,7 +148,7 @@ class RebuildFromLogs
         {
             if ( target.isDirectory() )
             {
-                if ( BackupService.directoryContainsDb( target.getAbsolutePath() ) )
+                if ( new BackupService().directoryContainsDb( target.getAbsolutePath() ) )
                 {
                     printUsage( "target graph database already exists" );
                     System.exit( -1 );
