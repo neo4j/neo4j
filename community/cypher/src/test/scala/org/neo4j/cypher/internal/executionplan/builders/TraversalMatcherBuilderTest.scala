@@ -19,25 +19,32 @@
  */
 package org.neo4j.cypher.internal.executionplan.builders
 
-import org.junit.{Before, Test}
+import org.junit.{After, Before, Test}
 import org.neo4j.cypher.internal.commands._
 import org.scalatest.Assertions
 import org.neo4j.cypher.GraphDatabaseTestBase
-import org.neo4j.cypher.internal.executionplan.{PlanBuilder, ExecutionPlanInProgress, PartiallySolvedQuery}
+import org.neo4j.cypher.internal.executionplan.{ExecutionPlanInProgress, PartiallySolvedQuery}
 import org.junit.Assert._
 import org.neo4j.cypher.internal.commands.expressions.Literal
 import org.neo4j.cypher.internal.parser.v1_9.CypherParserImpl
 import org.neo4j.cypher.internal.pipes.NullPipe
 import org.neo4j.cypher.internal.spi.PlanContext
 import org.neo4j.cypher.internal.spi.gdsimpl.TransactionBoundPlanContext
+import org.neo4j.graphdb.Transaction
 
 class TraversalMatcherBuilderTest extends GraphDatabaseTestBase with Assertions with BuilderTest {
   var builder: TraversalMatcherBuilder = null
   var ctx: PlanContext = null
+  var tx: Transaction = null
 
   @Before def init() {
     builder = new TraversalMatcherBuilder
-    ctx = new TransactionBoundPlanContext(graph)
+    tx = graph.beginTx()
+    ctx = new TransactionBoundPlanContext(statementContext)
+  }
+
+  @After def cleanup() {
+    tx.finish()
   }
 
   @Test def should_not_accept_queries_without_patterns() {

@@ -33,7 +33,7 @@ import org.neo4j.cypher.internal.symbols.{NodeType, SymbolTable}
 import org.neo4j.cypher.internal.spi.PlanContext
 
 class TraversalMatcherBuilder extends PlanBuilder with PatternGraphBuilder {
-  def apply(plan: ExecutionPlanInProgress, ctx: PlanContext): ExecutionPlanInProgress = {
+  def apply(plan: ExecutionPlanInProgress, ctx: PlanContext): ExecutionPlanInProgress =
     extractExpanderStepsFromQuery(plan) match {
       case None              => throw new ThisShouldNotHappenError("Andres", "This plan should not have been accepted")
       case Some(longestPath) =>
@@ -60,7 +60,6 @@ class TraversalMatcherBuilder extends PlanBuilder with PatternGraphBuilder {
 
         plan.copy(pipe = pipe, query = newQ)
     }
-  }
 
   private def checkPattern(plan: ExecutionPlanInProgress, tokens: Seq[QueryToken[StartItem]]) {
     val newIdentifiers = tokens.map(_.token).map(x => x.identifierName -> NodeType()).toMap
