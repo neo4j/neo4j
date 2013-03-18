@@ -31,10 +31,10 @@ class LRUCache[K, V](cacheSize: Int) {
     .maximumWeightedCapacity(cacheSize)
     .build()
 
-  def getOrElseUpdate(key: K, f: => V): V = {
-    val oldValue = inner.putIfAbsent(key, new LazyValue(f))
+  def getOrElseUpdate(key: K, valueByName: => V): V = {
+    val oldValue = inner.putIfAbsent(key, new LazyValue(valueByName))
     if (oldValue == null) {
-      f
+      valueByName
     } else {
       oldValue.value
     }
