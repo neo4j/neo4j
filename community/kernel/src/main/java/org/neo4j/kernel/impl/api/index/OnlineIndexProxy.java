@@ -50,6 +50,12 @@ public class OnlineIndexProxy implements IndexProxy
     {
         accessor.updateAndCommit( updates );
     }
+    
+    @Override
+    public void recover( Iterable<NodePropertyUpdate> updates ) throws IOException
+    {
+        accessor.recover( updates );
+    }
 
     @Override
     public Future<Void> drop() throws IOException

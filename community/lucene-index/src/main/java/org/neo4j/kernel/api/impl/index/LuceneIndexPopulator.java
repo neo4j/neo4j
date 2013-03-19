@@ -128,11 +128,11 @@ class LuceneIndexPopulator implements IndexPopulator
                 writer.addDocument( documentLogic.newDocument( nodeId, update.getValueAfter() ) );
                 break;
             case CHANGED:
-                writer.updateDocument( documentLogic.newQueryForChangeOrRemove( nodeId, update.getValueBefore() ),
+                writer.updateDocument( documentLogic.newQueryForChangeOrRemove( nodeId ),
                         documentLogic.newDocument( nodeId, update.getValueAfter() ) );
                 break;
             case REMOVED:
-                writer.deleteDocuments( documentLogic.newQueryForChangeOrRemove( nodeId, update.getValueBefore() ) );
+                writer.deleteDocuments( documentLogic.newQueryForChangeOrRemove( nodeId ) );
                 break;
             }
         }

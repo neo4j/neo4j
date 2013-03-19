@@ -41,6 +41,14 @@ public interface IndexAccessor
     void updateAndCommit( Iterable<NodePropertyUpdate> updates ) throws IOException;
 
     /**
+     * Apply a set of changes to this index. This method will be called instead of
+     * {@link #updateAndCommit(Iterable)} during recovery of the database when starting up after
+     * a crash or similar. Updates given here may have already been applied to this index, so
+     * additional checks must be in place so that data doesn't get duplicated, but is idempotent.
+     */
+    void recover( Iterable<NodePropertyUpdate> updates ) throws IOException;
+    
+    /**
      * Forces this index to disk. Called at certain points from within Neo4j for example when
      * rotating the logical log. After completion of this call there cannot be any essential state that
      * hasn't been forced to disk.
@@ -72,6 +80,11 @@ public interface IndexAccessor
 
         @Override
         public void updateAndCommit( Iterable<NodePropertyUpdate> updates )
+        {
+        }
+        
+        @Override
+        public void recover( Iterable<NodePropertyUpdate> updates ) throws IOException
         {
         }
 

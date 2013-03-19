@@ -252,15 +252,32 @@ public class IndexingService extends LifecycleAdapter
 
     public void updateIndexes( Iterable<NodePropertyUpdate> updates )
     {
-        for ( IndexProxy index : indexes.values() )
+        if ( serviceRunning )
         {
-            try
+            for ( IndexProxy index : indexes.values() )
             {
-                index.update( updates );
+                try
+                {
+                    index.update( updates );
+                }
+                catch ( IOException e )
+                {
+                    throw new UnderlyingStorageException( "Unable to update " + index, e );
+                }
             }
-            catch ( IOException e )
+        }
+        else
+        {
+            for ( IndexProxy index : indexes.values() )
             {
-                throw new UnderlyingStorageException( "Unable to update " + index, e );
+                try
+                {
+                    index.recover( updates );
+                }
+                catch ( IOException e )
+                {
+                    throw new UnderlyingStorageException( "Unable to update " + index, e );
+                }
             }
         }
     }

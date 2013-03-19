@@ -54,6 +54,8 @@ public interface IndexProxy
     
     void update( Iterable<NodePropertyUpdate> updates ) throws IOException;
     
+    void recover( Iterable<NodePropertyUpdate> updates ) throws IOException;
+    
     /**
      * Initiates dropping this index context. The returned {@link Future} can be used to await
      * its completion.
@@ -91,6 +93,11 @@ public interface IndexProxy
 
         @Override
         public void update( Iterable<NodePropertyUpdate> updates )
+        {
+        }
+        
+        @Override
+        public void recover( Iterable<NodePropertyUpdate> updates ) throws IOException
         {
         }
 

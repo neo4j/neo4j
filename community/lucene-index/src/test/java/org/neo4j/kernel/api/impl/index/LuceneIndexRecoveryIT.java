@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.helpers.collection.IteratorUtil.asUniqueSet;
 
 import java.io.File;
 import java.io.IOException;
@@ -53,9 +53,8 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 
 public class LuceneIndexRecoveryIT
 {
-
     @Test
-    public void shouldNotAddTwiceDuringRecovery() throws Exception
+    public void addShouldBeIdempotentWhenDoingRecovery() throws Exception
     {
         // Given
         startDb(createLuceneIndexFactory());
@@ -74,6 +73,65 @@ public class LuceneIndexRecoveryIT
 
         // Then
         assertEquals( 1, doIndexLookup( myLabel, 12 ).size() );
+    }
+
+    @Test
+    public void changeShouldBeIdempotentWhenDoingRecovery() throws Exception
+    {
+        // Given
+        startDb(createLuceneIndexFactory());
+        Label myLabel = label( "MyLabel" );
+        createIndex( myLabel, true );
+        long node = createNode( myLabel, 12 );
+        rotateLogs();
+        
+        updateNode( node, 13 );
+
+        // And Given
+        killDb();
+
+        // When
+        startDb( createLuceneIndexFactory() );
+
+        // Then
+        assertEquals( 0, doIndexLookup( myLabel, 12 ).size() );
+        assertEquals( 1, doIndexLookup( myLabel, 13 ).size() );
+    }
+    
+    @Test
+    public void removeShouldBeIdempotentWhenDoingRecovery() throws Exception
+    {
+        // Given
+        startDb(createLuceneIndexFactory());
+        Label myLabel = label( "MyLabel" );
+        createIndex( myLabel, true );
+        long node = createNode( myLabel, 12 );
+        rotateLogs();
+        
+        deleteNode( node );
+
+        // And Given
+        killDb();
+
+        // When
+        startDb( createLuceneIndexFactory() );
+
+        // Then
+        assertEquals( 0, doIndexLookup( myLabel, 12 ).size() );
+    }
+    
+    private void deleteNode( long node )
+    {
+        Transaction tx = db.beginTx();
+        try
+        {
+            db.getNodeById( node ).delete();
+            tx.success();
+        }
+        finally
+        {
+            tx.finish();
+        }
     }
 
     @Test
@@ -126,7 +184,7 @@ public class LuceneIndexRecoveryIT
 
     private GraphDatabaseAPI db;
     private DirectoryFactory directoryFactory;
-    private DirectoryFactory ignoreCloseDirectoryFactory = new DirectoryFactory()
+    private final DirectoryFactory ignoreCloseDirectoryFactory = new DirectoryFactory()
     {
         @Override
         public Directory open( File dir ) throws IOException
@@ -206,7 +264,7 @@ public class LuceneIndexRecoveryIT
     {
         Transaction tx = db.beginTx();
         Iterable<Node> iter = db.findNodesByLabelAndProperty( myLabel, NUM_BANANAS_KEY, value );
-        Set<Node> nodes = asSet( iter );
+        Set<Node> nodes = asUniqueSet( iter );
         tx.success();
         tx.finish();
         return nodes;
