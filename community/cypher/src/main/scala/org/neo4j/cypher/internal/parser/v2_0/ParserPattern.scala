@@ -124,7 +124,9 @@ trait ParserPattern extends Base with Labels {
       }
   }
 
-  private def path: Parser[List[AbstractPattern]] = relationship | shortestPath
+  private def path: Parser[List[AbstractPattern]] =
+    relationship | shortestPath | optParens(singleNodeDefinition) ^^ (List(_))
+
   private def pathFacingOut: Parser[List[AbstractPattern]] = relationshipFacingOut | shortestPath
 
   private def relationshipFacingOut = relationship ^^ (x => x.map(_.makeOutgoing))

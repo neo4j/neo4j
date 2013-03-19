@@ -40,6 +40,7 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.kernel.impl.nioneo.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.storemigration.LogFiles;
 import org.neo4j.kernel.impl.storemigration.StoreFiles;
 import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedByConfigurationException;
@@ -54,11 +55,12 @@ public class BackupTool
 {
     private static final String TO = "to";
     private static final String FROM = "from";
-    private static final String INCREMENTAL = "incremental";
-    private static final String FULL = "full";
     private static final String VERIFY = "verify";
     private static final String CONFIG = "config";
     public static final String DEFAULT_SCHEME = "single";
+
+    static final String MISMATCHED_STORE_ID = "You tried to perform a backup from database %s, " +
+            "but the target directory contained a backup from database %s. ";
 
     public static void main( String[] args )
     {
@@ -90,7 +92,6 @@ public class BackupTool
 
         checkArguments( arguments );
 
-        boolean full = arguments.has( FULL );
         String from = arguments.get( FROM, null );
         String to = arguments.get( TO, null );
         boolean verify = arguments.getBoolean( VERIFY, true, true );
@@ -134,7 +135,7 @@ public class BackupTool
             {
                 getClass().getClassLoader().loadClass( "ch.qos.logback.classic.LoggerContext" );
                 LifeSupport life = new LifeSupport();
-                LogbackService logbackService = life.add( new LogbackService( tuningConfiguration, (LoggerContext) getSingleton().getLoggerFactory(), "neo4j-backup-logback.xml" ));
+                LogbackService logbackService = life.add( new LogbackService( tuningConfiguration, (LoggerContext) getSingleton().getLoggerFactory(), "neo4j-backup-logback.xml" ) );
                 life.start();
                 logging = logbackService;
             }
@@ -146,24 +147,17 @@ public class BackupTool
             try
             {
                 backupURI = service.resolve( backupURI, arguments, logging );
-            } catch (Throwable e)
+            }
+            catch ( Throwable e )
             {
                 throw new ToolFailureException( e.getMessage() );
             }
         }
-        doBackup( full, backupURI, to, verify, tuningConfiguration );
+        doBackup( backupURI, to, verify, tuningConfiguration );
     }
 
     private void checkArguments( Args arguments ) throws ToolFailureException
     {
-        boolean full = arguments.has( FULL );
-        boolean incremental = arguments.has( INCREMENTAL );
-        if ( full & incremental || !(full | incremental) )
-        {
-            throw new ToolFailureException( "Specify either " + dash( FULL ) + " or "
-                    + dash( INCREMENTAL ) );
-        }
-
         if ( arguments.get( FROM, null ) == null )
         {
             throw new ToolFailureException( "Please specify " + dash( FROM ) + ", examples:\n" +
@@ -202,18 +196,28 @@ public class BackupTool
         return new Config( specifiedProperties, GraphDatabaseSettings.class, ConsistencyCheckSettings.class );
     }
 
-    private void doBackup( boolean trueForFullFalseForIncremental, URI from, String to, boolean checkConsistency,
-                           Config tuningConfiguration ) throws ToolFailureException
+    private void doBackup( URI from, String to, boolean checkConsistency, Config tuningConfiguration ) throws ToolFailureException
     {
-        if ( trueForFullFalseForIncremental )
+        if ( backupService.directoryContainsDb( to ) )
         {
-            doBackupFull( from, to, checkConsistency, tuningConfiguration );
+            try
+            {
+                doBackupIncremental( from, to, checkConsistency, tuningConfiguration );
+
+                systemOut.println( "Done" );
+            }
+            catch ( MismatchingStoreIdException e )
+            {
+                systemOut.println("Backup failed.");
+                systemOut.println( String.format( MISMATCHED_STORE_ID, e.getExpected(), e.getEncountered() ) );
+            }
         }
         else
         {
-            doBackupIncremental( from, to, checkConsistency, tuningConfiguration );
+            doBackupFull( from, to, checkConsistency, tuningConfiguration );
+
+            systemOut.println( "Done" );
         }
-        systemOut.println( "Done" );
     }
 
     private void doBackupFull( URI from, String to, boolean checkConsistency, Config tuningConfiguration ) throws

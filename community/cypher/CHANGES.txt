@@ -15,6 +15,7 @@ o Profiler now shows which entity producers have been chosen
 ------
 o Fixed #578 - problem with profiling queries that use LIMIT
 o Fixes #550 - problem when using START after WITH
+o Allows single node patterns in MATCH
 
 1.9.M05 (2013-03-05)
 --------------------

@@ -322,7 +322,7 @@ class BackupService
         };
     }
 
-    static boolean directoryContainsDb( String targetDirectory )
+    boolean directoryContainsDb( String targetDirectory )
     {
         return new File( targetDirectory, NeoStore.DEFAULT_NAME ).exists();
     }
