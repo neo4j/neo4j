@@ -58,23 +58,54 @@ trait MatchClause extends Base with ParserPattern {
     (props ++ expressions).seqMap(s => Seq(f(left.name, right.name)))
   }
 
-  def matchTranslator(abstractPattern: AbstractPattern): Maybe[Any] = matchTranslator(successIfIdentifiers, abstractPattern)
+  def matchTranslator(abstractPattern: AbstractPattern): Maybe[Any] =
+    matchTranslator(successIfIdentifiers, abstractPattern)
 
-  def matchTranslator(transform: TransformType, abstractPattern: AbstractPattern): Maybe[Any] =
-    abstractPattern match {
-      case ParsedNamedPath(name, patterns) => parsedPath(name, patterns, transform)
+  def matchTranslator(transform: TransformType, abstractPattern: AbstractPattern): Maybe[Any] = {
+    val f = matchFunction(transform)
+    if (f.isDefinedAt(abstractPattern))
+      f(abstractPattern)
+    else
+      No(Seq("failed to parse MATCH pattern"))
+  }
 
-      case ParsedRelation(name, props, left, right, relType, dir, optional, predicate) =>
-        transform(left, right, props, (l, r) => RelatedTo(left = l, right = r, relName = name, relTypes = relType, direction = dir, optional = optional, predicate = True()))
+  def matchFunction(transform: TransformType): PartialFunction[AbstractPattern, Maybe[Any]] =
+    matchNamePath(transform) orElse
+    matchRelation(transform) orElse
+    matchVarLengthRelation(transform) orElse
+    matchShortestPath(transform) orElse
+    matchEntity(transform)
 
-      case ParsedVarLengthRelation(name, props, left, right, relType, dir, optional, predicate, min, max, relIterator) =>
-        transform(left, right, props, (l, r) => VarLengthRelatedTo(pathName = name, start = l, end = r, minHops = min, maxHops = max, relTypes = relType, direction = dir, relIterator = relIterator, optional = optional, predicate = predicate))
+  def matchNamePath(transform: TransformType): PartialFunction[AbstractPattern, Maybe[Any]] = {
+    case ParsedNamedPath(name, patterns) =>
+      parsedPath(name, patterns, transform)
+  }
 
-      case ParsedShortestPath(name, props, left, right, relType, dir, optional, predicate, max, single, relIterator) =>
-        transform(left, right, props, (l, r) => ShortestPath(pathName = name, start = l, end = r, relTypes = relType, dir = dir, maxDepth = max, optional = optional, single = single, relIterator = relIterator, predicate = predicate))
+  def matchRelation(transform: TransformType): PartialFunction[AbstractPattern, Maybe[Any]] = {
+    case ParsedRelation(name, props, left, right, relType, dir, optional, predicate) =>
+      transform(left, right, props, (l, r) => RelatedTo(left = l, right = r, relName = name, relTypes = relType,
+        direction = dir, optional = optional, predicate = True()))
+  }
 
-      case x => No(Seq("failed to parse MATCH pattern"))
-    }
+  def matchVarLengthRelation(transform: TransformType): PartialFunction[AbstractPattern, Maybe[Any]] = {
+    case ParsedVarLengthRelation(name, props, left, right, relType, dir, optional, predicate, min, max, relIterator) =>
+      transform(left, right, props, (l, r) => VarLengthRelatedTo(pathName = name, start = l, end = r, minHops = min,
+        maxHops = max, relTypes = relType, direction = dir, relIterator = relIterator, optional = optional,
+        predicate = predicate))
+  }
+
+  def matchShortestPath(transform: TransformType): PartialFunction[AbstractPattern, Maybe[Any]] = {
+    case ParsedShortestPath(name, props, left, right, relType, dir, optional, predicate, max, single, relIterator) =>
+      transform(left, right, props, (l, r) => ShortestPath(pathName = name, start = l, end = r, relTypes = relType,
+        dir = dir, maxDepth = max, optional = optional, single = single, relIterator = relIterator,
+        predicate = predicate))
+
+  }
+
+  def matchEntity(transform: TransformType): PartialFunction[AbstractPattern, Maybe[Any]] = {
+    case ParsedEntity(name, _, _, _) =>
+      Yes(Seq(SingleNode(name)))
+  }
 
   private def parsedPath(name: String, patterns: Seq[AbstractPattern], transform: TransformType): Maybe[NamedPath] = {
     val namedPathPatterns = patterns.map(matchTranslator(transform, _))

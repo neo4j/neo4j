@@ -112,7 +112,7 @@ class SyntaxExceptionTest extends JUnitSuite {
   @Test def shortestPathCanNotHaveMultipleLinksInIt() {
     expectError(
       "start a=node(0), b=node(1) match p=shortestPath(a-->()-->b) return p",
-      "Wrong number of parameters for function shortestPath")
+      "expected single path segment")
   }
 
   @Test def oldNodeSyntaxGivesHelpfulError() {

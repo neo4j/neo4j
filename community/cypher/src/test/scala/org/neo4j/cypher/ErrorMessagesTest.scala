@@ -101,19 +101,7 @@ class ErrorMessagesTest extends ExecutionEngineHelper with Assertions with Strin
   @Test def badMatch5() {
     expectSyntaxError(
       "start p=node(2) match p[:likes]->dude return dude.name",
-      "failed to parse MATCH pattern", 24)
-  }
-
-  @Test def badMatch7() {
-    expectSyntaxError(
-      "start p=node(2) match p->dude return dude.name",
-      "failed to parse MATCH pattern", 24)
-  }
-
-  @Test def badMatch8() {
-    expectSyntaxError(
-      "start p=node(2) match p->dude return dude.name",
-      "failed to parse MATCH pattern", 24)
+      "expected return clause", 23)
   }
 
   @Ignore @Test def missingComaBetweenColumns() {
