@@ -33,6 +33,7 @@ import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.single;
 import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstanceSchemaIndexProviderFactory;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
@@ -293,6 +294,12 @@ public class IndexRecoveryIT
         
         @Override
         public void updateAndCommit( Iterable<NodePropertyUpdate> updates )
+        {
+            this.updates.addAll( asCollection( updates ) );
+        }
+
+        @Override
+        public void recover( Iterable<NodePropertyUpdate> updates ) throws IOException
         {
             this.updates.addAll( asCollection( updates ) );
         }
