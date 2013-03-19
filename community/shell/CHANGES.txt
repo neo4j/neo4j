@@ -5,8 +5,7 @@ o shell variables passed to cypher queries as parameters
 o allow json for shell variable values, maps, arrays, etc
 o dump command for exporting a db or the subgraph of a cypher statement
 o can reassign shell variables, export a=10 && export b=a -> b=10
-o shell can execute a contents file directly with -f file which is faster
-  than piping via stdout
+o shell can execute a file directly with -f
 
 1.9.M05
 -------

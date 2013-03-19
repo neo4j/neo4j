@@ -1,5 +1,11 @@
 For Release Notes, see http://neo4j.org/release-notes#neo4j-${project.version}
 
+2.0.M01
+-------
+o Added support for labels across all APIs: Cypher, Core Java and REST
+o Added support for the new label-based indexes across all APIs: Cypher, Core Java and REST
+o Improvements to shell, including import/export of small graphs via cypher statements
+
 1.9.M05 (2013-03-05)
 --------------------
 
