@@ -45,6 +45,8 @@ include::head.asciidoc[]
 
 include::last.asciidoc[]
 
+include::now.asciidoc[]
+
 :leveloffset: 2
 
 == Collection functions ==

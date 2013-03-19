@@ -443,6 +443,23 @@ class FunctionsTest extends DocumentingTestBase {
     )
   }
 
+  @Test def now() {
+    testThis(
+      title = "NOW",
+      syntax = "NOW( expression )",
+      arguments = List("expression" -> "A format expression"),
+      text = "`NOW` returns the current time. Currently the only format option available is 'ms', for milliseconds since Jan 1, 1970",
+      queryText = "start n=node(1) return now('ms')",
+      returns = "The time in milliseconds.",
+      assertions = (p) => assert(
+        p.toList.head("now('ms')") match { 
+          // this should pass unless your machine is really slow
+          case x:Long => System.currentTimeMillis - x < 100000
+          case _ => false
+        })
+    )
+  }
+
   private def testThis(title: String, syntax: String, arguments: List[(String, String)], text: String, queryText: String, returns: String, assertions: (ExecutionResult => Unit)*) {
     val argsText = arguments.map(x => "* _" + x._1 + ":_ " + x._2).mkString("\r\n\r\n")
     val fullText = String.format("""%s

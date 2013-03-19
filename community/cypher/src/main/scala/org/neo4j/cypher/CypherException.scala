@@ -55,3 +55,5 @@ class InvalidAggregateException(message:String) extends CypherException(message)
 class NodeStillHasRelationshipsException(val nodeId:Long, cause:Throwable) extends CypherException("Node with id " + nodeId + " still has relationships, and can not be deleted.")
 
 class ProfilerStatisticsNotReadyException() extends CypherException("This result has not been materialised yet. Iterate over it to get profiler stats.")
+
+class UnsupportedFormatException(format:String) extends CypherException("This format is not supported: "+format)
