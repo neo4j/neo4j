@@ -57,13 +57,15 @@ class DelegatingQueryContext(inner: QueryContext) extends QueryContext {
 
   def getPropertyKeyId(propertyKey: String) = inner.getPropertyKeyId(propertyKey)
 
-  def addIndexRule(labelIds: Long, propertyKeyId: Long) = inner.addIndexRule(labelIds, propertyKeyId)
+  def addIndexRule(labelIds: Long, propertyKeyId: Long) { inner.addIndexRule(labelIds, propertyKeyId) }
 
-  def dropIndexRule(labelIds: Long, propertyKeyId: Long) = inner.dropIndexRule(labelIds, propertyKeyId)
+  def dropIndexRule(labelIds: Long, propertyKeyId: Long) { inner.dropIndexRule(labelIds, propertyKeyId) }
 
   def exactIndexSearch(id: Long, value: Any): Iterator[Node] = inner.exactIndexSearch(id, value)
 
   def getNodesByLabel(id: Long): Iterator[Node] = inner.getNodesByLabel(id)
+
+  def upgrade(context: QueryContext): LockingQueryContext = inner.upgrade(context)
 }
 
 class DelegatingOperations[T <: PropertyContainer](protected val inner: Operations[T]) extends Operations[T] {

@@ -17,25 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher
+package org.neo4j.kernel.api;
 
-import internal.pipes.QueryState
-import collection.Map
-import javacompat.{PlanDescription => JPlanDescription}
-
-class EagerPipeExecutionResult(result: Iterator[Map[String, Any]],
-                               columns: List[String],
-                               state: QueryState,
-                               planDescriptor: () => PlanDescription)
-  extends PipeExecutionResult(result, columns, state, planDescriptor) {
-
-  val (eagerResult,timeTaken) = super.createTimedResults
-  lazy val inner = eagerResult.iterator
-
-  override def next() = inner.next().toMap
-  override def hasNext = inner.hasNext
-
-  override def queryStatistics = state.getStatistics
-
-  override def createTimedResults = (eagerResult,timeTaken)
+public interface LegacyOperations
+{
+    boolean hasLegacyNodeIndex(String indexName);
+    boolean hasLegacyRelationshipIndex(String indexName);
 }

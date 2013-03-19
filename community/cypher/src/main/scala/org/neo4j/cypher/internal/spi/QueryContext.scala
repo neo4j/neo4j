@@ -77,6 +77,14 @@ trait QueryContext {
    */
   @Deprecated
   def getTransaction: Transaction
+
+  def upgradeToLockingQueryContext: LockingQueryContext = upgrade(this)
+
+  def upgrade(context: QueryContext): LockingQueryContext
+}
+
+trait LockingQueryContext extends QueryContext {
+  def releaseLocks()
 }
 
 trait Operations[T <: PropertyContainer] {

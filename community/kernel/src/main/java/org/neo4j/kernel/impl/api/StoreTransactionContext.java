@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.TransactionContext;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -34,22 +35,25 @@ public class StoreTransactionContext implements TransactionContext
     private final NeoStore neoStore;
     private final IndexingService indexingService;
     private final NodeManager nodeManager;
+    private final IndexManager indexManager;
 
-    public StoreTransactionContext( PropertyIndexManager propertyIndexManager,
-            PersistenceManager persistenceManager, NodeManager nodeManager, NeoStore neoStore, IndexingService indexingService )
+    public StoreTransactionContext( PropertyIndexManager propertyIndexManager, PersistenceManager persistenceManager,
+                                    NodeManager nodeManager, NeoStore neoStore, IndexingService indexingService,
+                                    IndexManager indexManager )
     {
         this.propertyIndexManager = propertyIndexManager;
         this.persistenceManager = persistenceManager;
         this.nodeManager = nodeManager;
         this.neoStore = neoStore;
         this.indexingService = indexingService;
+        this.indexManager = indexManager;
     }
     
     @Override
     public StatementContext newStatementContext()
     {
         return new StoreStatementContext( propertyIndexManager, persistenceManager, nodeManager, neoStore, indexingService,
-                new IndexReaderFactory.Caching( indexingService ) );
+                new IndexReaderFactory.Caching( indexingService ), indexManager );
     }
 
     @Override

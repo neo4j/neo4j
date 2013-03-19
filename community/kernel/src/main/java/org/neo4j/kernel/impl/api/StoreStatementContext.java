@@ -27,6 +27,7 @@ import java.util.Iterator;
 
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.PrefetchingIterator;
@@ -74,10 +75,12 @@ public class StoreStatementContext implements StatementContext
     private final NeoStore neoStore;
     private final IndexingService indexService;
     private final IndexReaderFactory indexReaderFactory;
+    private final IndexManager indexManager;
 
     public StoreStatementContext( PropertyIndexManager propertyIndexManager,
             PersistenceManager persistenceManager, NodeManager nodeManager,
-            NeoStore neoStore, IndexingService indexService, IndexReaderFactory indexReaderFactory )
+            NeoStore neoStore, IndexingService indexService, IndexReaderFactory indexReaderFactory,
+            IndexManager indexManager )
     {
         this.indexService = indexService;
         this.indexReaderFactory = indexReaderFactory;
@@ -86,6 +89,7 @@ public class StoreStatementContext implements StatementContext
         this.persistenceManager = persistenceManager;
         this.nodeManager = nodeManager;
         this.neoStore = neoStore;
+        this.indexManager = indexManager;
     }
 
     @Override
@@ -149,7 +153,7 @@ public class StoreStatementContext implements StatementContext
         try
         {
             for ( Long existingLabel : persistenceManager.getLabelsForNode( nodeId ) )
-                if ( existingLabel.longValue() == labelId )
+                if ( existingLabel == labelId )
                     return true;
             return false;
         }
@@ -375,5 +379,17 @@ public class StoreStatementContext implements StatementContext
     public Iterable<Long> exactIndexLookup( long indexId, Object value ) throws IndexNotFoundKernelException
     {
         return indexReaderFactory.newReader( indexId ).lookup( value );
+    }
+
+    @Override
+    public boolean hasLegacyNodeIndex( String indexName )
+    {
+        return indexManager.existsForNodes( indexName );
+    }
+
+    @Override
+    public boolean hasLegacyRelationshipIndex( String indexName )
+    {
+        return indexManager.existsForRelationships( indexName );
     }
 }
