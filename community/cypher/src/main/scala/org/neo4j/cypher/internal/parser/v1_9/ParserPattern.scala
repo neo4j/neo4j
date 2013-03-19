@@ -29,13 +29,9 @@ trait ParserPattern extends Base {
   def usePattern[T](translator: AbstractPattern => Maybe[T], acceptable: Seq[T] => Boolean): Parser[Seq[T]] = Parser {
     case in =>
       usePattern(translator)(in) match {
-        case Success(patterns, rest) =>
-          if (acceptable(patterns))
-            Success(patterns, rest)
-          else
-            Failure("", rest)
-        case Failure(msg, rest) => Failure(msg, rest)
-        case Error(msg, rest) => Error(msg, rest)
+        case Success(patterns, rest) if acceptable(patterns) => Success(patterns, rest)
+        case Success(_, rest)                                => Failure("", rest)
+        case ns: NoSuccess                                   => ns
       }
   }
 
@@ -100,9 +96,9 @@ trait ParserPattern extends Base {
   private def nodeFromExpression = Parser {
     case in => expression(in) match {
       case Success(exp@Identifier(name), rest) => Success(ParsedEntity(name, exp, Map[String, Expression](), True()), rest)
-      case Success(exp, rest) => Success(ParsedEntity(namer.name(None), exp, Map[String, Expression](), True()), rest)
-      case x: Error => x
-      case Failure(msg, rest) => failure("expected an expression that is a node", rest)
+      case Success(exp, rest)                  => Success(ParsedEntity(namer.name(None), exp, Map[String, Expression](), True()), rest)
+      case x: Error                            => x
+      case Failure(_, rest)                    => failure("expected an expression that is a node", rest)
     }
   }
 
@@ -110,7 +106,7 @@ trait ParserPattern extends Base {
     case name => ParsedEntity(name, Identifier(name), Map[String, Expression](), True())
   }
 
-  private def path: Parser[List[AbstractPattern]] = relationship | shortestPath
+  private def path: Parser[List[AbstractPattern]] = relationship | shortestPath | optParens(nodeIdentifier) ^^ (List(_))
   private def pathFacingOut: Parser[List[AbstractPattern]] = relationshipFacingOut | shortestPath
 
   private def relationshipFacingOut = relationship ^^ (x => x.map(_.makeOutgoing))

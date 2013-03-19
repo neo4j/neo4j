@@ -2140,6 +2140,24 @@ foreach(x in [1,2,3] :
     runners.foreach(_.report())
   }
 
+  @Test def single_node_match_pattern() {
+    testFrom_1_9("start s = node(*) match s return s",
+      Query.
+        start(AllNodes("s")).
+        matches(SingleNode("s")).
+        returns(ReturnItem(Identifier("s"), "s")))
+  }
+
+  @Test def single_node_match_pattern_path() {
+    testFrom_1_9("start s = node(*) match p = s return s",
+      Query.
+        start(AllNodes("s")).
+        matches(SingleNode("s")).
+        namedPaths(NamedPath("p", SingleNode("s"))).
+        returns(ReturnItem(Identifier("s"), "s")))
+  }
+
+
   private def run(f: () => Unit) =
     new Runnable() {
       var error: Option[Throwable] = None
