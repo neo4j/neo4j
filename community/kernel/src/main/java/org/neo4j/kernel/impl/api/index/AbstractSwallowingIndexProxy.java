@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api.index;
 
 import static org.neo4j.helpers.FutureAdapter.VOID;
 
+import java.io.IOException;
 import java.util.concurrent.Future;
 
 import org.neo4j.kernel.api.index.IndexReader;
@@ -46,6 +47,12 @@ public abstract class AbstractSwallowingIndexProxy implements IndexProxy
 
     @Override
     public void update( Iterable<NodePropertyUpdate> updates )
+    {
+        // intentionally swallow updates, we're failed and nothing but re-population or dropIndex will solve this
+    }
+    
+    @Override
+    public void recover( Iterable<NodePropertyUpdate> updates ) throws IOException
     {
         // intentionally swallow updates, we're failed and nothing but re-population or dropIndex will solve this
     }

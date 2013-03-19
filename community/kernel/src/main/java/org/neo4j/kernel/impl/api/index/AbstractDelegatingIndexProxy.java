@@ -42,6 +42,12 @@ public abstract class AbstractDelegatingIndexProxy implements IndexProxy
     {
         getDelegate().update( updates );
     }
+    
+    @Override
+    public void recover( Iterable<NodePropertyUpdate> updates ) throws IOException
+    {
+        getDelegate().recover( updates );
+    }
 
     @Override
     public Future<Void> drop() throws IOException

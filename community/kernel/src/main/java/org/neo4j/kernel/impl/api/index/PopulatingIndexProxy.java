@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import java.io.IOException;
 import java.util.concurrent.Future;
 
 import org.neo4j.kernel.api.index.IndexNotFoundKernelException;
@@ -54,6 +55,12 @@ public class PopulatingIndexProxy implements IndexProxy
     public void update( Iterable<NodePropertyUpdate> updates )
     {
         job.update( updates );
+    }
+    
+    @Override
+    public void recover( Iterable<NodePropertyUpdate> updates ) throws IOException
+    {
+        throw new UnsupportedOperationException( "Recovered updates shouldn't reach this place" );
     }
 
     @Override

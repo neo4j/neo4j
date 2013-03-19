@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -108,6 +109,12 @@ public class InMemoryIndexProvider extends SchemaIndexProvider
         
         @Override
         public void updateAndCommit( Iterable<NodePropertyUpdate> updates )
+        {
+            update( updates );
+        }
+        
+        @Override
+        public void recover( Iterable<NodePropertyUpdate> updates ) throws IOException
         {
             update( updates );
         }
