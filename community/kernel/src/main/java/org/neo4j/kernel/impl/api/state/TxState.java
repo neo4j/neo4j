@@ -209,7 +209,12 @@ public class TxState
         }
         return result;
     }
-    
+
+    public boolean haveIndexesBeenDropped()
+    {
+        return ! getIndexRuleDiffSets().getRemoved().isEmpty();
+    }
+
     private static final StateCreator<NodeState> NODE_STATE_CREATOR = new StateCreator<NodeState>()
     {
         @Override

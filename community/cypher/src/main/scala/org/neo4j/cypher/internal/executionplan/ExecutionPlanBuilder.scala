@@ -58,7 +58,7 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService) extends PatternGraphBuil
     try {
       val statementContext = graph.asInstanceOf[GraphDatabaseAPI].getDependencyResolver
         .resolveDependency(classOf[ThreadToStatementContextBridge]).getCtxForWriting
-      val planContext = new TransactionBoundPlanContext(statementContext)
+      val planContext = new TransactionBoundPlanContext(statementContext, graph)
       val result: (Pipe, Boolean) = in match {
         case q: Query          => buildQuery(q, planContext)
         case q: IndexOperation => buildIndexQuery(q)

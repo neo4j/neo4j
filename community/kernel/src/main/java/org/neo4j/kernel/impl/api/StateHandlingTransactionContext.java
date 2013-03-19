@@ -21,6 +21,8 @@ package org.neo4j.kernel.impl.api;
 
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.TransactionContext;
+import org.neo4j.kernel.api.operations.SchemaOperations;
+import org.neo4j.kernel.impl.api.state.OldTxStateBridgeImpl;
 import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.core.TransactionState;
 
@@ -35,14 +37,17 @@ public class StateHandlingTransactionContext extends DelegatingTransactionContex
      */
     @Deprecated
     private final TransactionState oldTransactionState;
+    private final UpdateableSchemaState schemaState;
 
     public StateHandlingTransactionContext( TransactionContext actual, TxState state,
-            PersistenceCache persistenceCache, TransactionState oldTransactionState, SchemaCache schemaCache )
+            PersistenceCache persistenceCache, TransactionState oldTransactionState, SchemaCache schemaCache,
+            UpdateableSchemaState schemaState )
     {
         super(actual);
         this.persistenceCache = persistenceCache;
         this.oldTransactionState = oldTransactionState;
         this.schemaCache = schemaCache;
+        this.schemaState = schemaState;
         this.state = state;
     }
 
@@ -67,8 +72,15 @@ public class StateHandlingTransactionContext extends DelegatingTransactionContex
     {
         // - Ensure transaction is committed to disk at this point
         super.commit();
+
         // - commit changes from tx state to the cache
         // TODO: This should *not* be done here, it should be done as part of transaction application (eg WriteTransaction)
         persistenceCache.apply( state );
+
+        // - discard and/or update schema state
+        if ( state.haveIndexesBeenDropped() )
+        {
+            schemaState.flush();
+        }
     }
 }

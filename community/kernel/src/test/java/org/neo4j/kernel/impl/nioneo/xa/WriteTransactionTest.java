@@ -53,6 +53,7 @@ import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.DefaultTxHook;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.api.KernelSchemaStateStore;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.core.PropertyIndex;
@@ -516,7 +517,7 @@ public class WriteTransactionTest
         public CapturingIndexingService()
         {
             super( null, NO_INDEX_PROVIDER, new NeoStoreIndexStoreView( neoStore ),
-                    new SingleLoggingService( SYSTEM ) );
+                    new KernelSchemaStateStore(), new SingleLoggingService( SYSTEM ) );
         }
         
         @Override

@@ -25,10 +25,10 @@ import static java.lang.reflect.Proxy.newProxyInstance;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 
+import org.neo4j.helpers.Function;
 import org.neo4j.kernel.api.ConstraintViolationKernelException;
 import org.neo4j.kernel.api.EntityNotFoundException;
 import org.neo4j.kernel.api.LabelNotFoundKernelException;
-import org.neo4j.kernel.api.LegacyOperations;
 import org.neo4j.kernel.api.PropertyKeyIdNotFoundException;
 import org.neo4j.kernel.api.PropertyKeyNotFoundException;
 import org.neo4j.kernel.api.PropertyNotFoundException;
@@ -47,13 +47,12 @@ import org.neo4j.kernel.impl.nioneo.store.IndexRule;
  * This is syntax sugar, it helps implementing statement contexts that either just want to delegate
  * to some other context, or wants to split it's own implementation into multiple parts to minimize clutter.
  */
-public abstract class CompositeStatementContext implements StatementContext
+public class CompositeStatementContext implements StatementContext
 {
     private final EntityOperations entityOperations;
     private final PropertyOperations propertyOperations;
     private final LabelOperations labelOperations;
     private final SchemaOperations schemaOperations;
-    private final LegacyOperations legacyOperations;
 
     private final StatementContext delegateToClose;
 
@@ -75,7 +74,6 @@ public abstract class CompositeStatementContext implements StatementContext
         this.labelOperations    = unsupportedOpDelegate;
         this.schemaOperations   = unsupportedOpDelegate;
         this.delegateToClose    = unsupportedOpDelegate;
-        this.legacyOperations   = unsupportedOpDelegate;
 
     }
 
@@ -85,7 +83,15 @@ public abstract class CompositeStatementContext implements StatementContext
         this.propertyOperations = delegate;
         this.labelOperations    = delegate;
         this.schemaOperations   = delegate;
-        this.legacyOperations   = delegate;
+        this.delegateToClose    = delegate;
+    }
+
+    public CompositeStatementContext( StatementContext delegate, SchemaOperations schemaOperations )
+    {
+        this.entityOperations   = delegate;
+        this.propertyOperations = delegate;
+        this.labelOperations    = delegate;
+        this.schemaOperations   = schemaOperations;
         this.delegateToClose    = delegate;
     }
 
@@ -117,6 +123,7 @@ public abstract class CompositeStatementContext implements StatementContext
                     "implementation of the statement context interface." );
         }
     }
+
 
     //
     // READ OPERATIONS
@@ -306,30 +313,15 @@ public abstract class CompositeStatementContext implements StatementContext
     }
 
     @Override
-    public boolean hasLegacyNodeIndex( String indexName )
+    public <K> boolean schemaStateContains( K key )
     {
         beforeOperation();
         beforeReadOperation();
 
-        boolean result = legacyOperations.hasLegacyNodeIndex( indexName );
+        boolean result = schemaOperations.schemaStateContains( key );
 
         afterReadOperation();
         afterOperation();
-
-        return result;
-    }
-
-    @Override
-    public boolean hasLegacyRelationshipIndex( String indexName )
-    {
-        beforeOperation();
-        beforeReadOperation();
-
-        boolean result = legacyOperations.hasLegacyRelationshipIndex( indexName );
-
-        afterReadOperation();
-        afterOperation();
-
         return result;
     }
 
@@ -412,5 +404,18 @@ public abstract class CompositeStatementContext implements StatementContext
 
         afterWriteOperation();
         afterOperation();
+    }
+
+    @Override
+    public <K, V> V getOrCreateFromSchemaState( K key, Function<K, V> creator )
+    {
+        beforeOperation();
+        beforeWriteOperation();
+
+        V result = schemaOperations.getOrCreateFromSchemaState( key, creator );
+
+        afterWriteOperation();
+        afterOperation();
+        return result;
     }
 }

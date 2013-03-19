@@ -50,6 +50,7 @@ import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.TransactionInterceptorProviders;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.core.PropertyIndex;
@@ -113,6 +114,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
     private final StoreFactory storeFactory;
     private final XaFactory xaFactory;
     private final JobScheduler scheduler;
+    private final UpdateableSchemaState updateableSchemaState;
 
     private final Config config;
     private final LifeSupport life = new LifeSupport();
@@ -221,7 +223,9 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
     public NeoStoreXaDataSource( Config config, StoreFactory sf, LockManager lockManager,
                                  StringLogger stringLogger, XaFactory xaFactory, TransactionStateFactory stateFactory,
                                  CacheAccessBackDoor cacheAccess, TransactionInterceptorProviders providers,
-                                 JobScheduler scheduler, Logging logging, DependencyResolver dependencyResolver )
+                                 JobScheduler scheduler, Logging logging,
+                                 UpdateableSchemaState updateableSchemaState,
+                                 DependencyResolver dependencyResolver )
             throws IOException
     {
         super( BRANCH_ID, Config.DEFAULT_DATA_SOURCE_NAME );
@@ -238,6 +242,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
         msgLog = stringLogger;
         this.storeFactory = sf;
         this.xaFactory = xaFactory;
+        this.updateableSchemaState = updateableSchemaState;
 
     }
 
@@ -271,7 +276,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
                 HIGHEST_PRIORITIZED_OR_NONE );
         
         indexingService = life.add( new IndexingService( scheduler, indexProvider,
-                new NeoStoreIndexStoreView( neoStore ), logging ) );
+                new NeoStoreIndexStoreView( neoStore ), updateableSchemaState, logging ) );
         
         xaContainer = xaFactory.newXaContainer(this, config.get( Configuration.logical_log ),
                 new CommandFactory( neoStore, indexingService ), tf, stateFactory, providers  );

@@ -135,6 +135,11 @@ public class DiffSets<T>
         return resultSet( removedElements );
     }
 
+    public boolean isEmpty()
+    {
+        return getAdded().isEmpty() && getRemoved().isEmpty();
+    }
+
     private void ensureAddedHasBeenCreated()
     {
         if ( addedElements == null )

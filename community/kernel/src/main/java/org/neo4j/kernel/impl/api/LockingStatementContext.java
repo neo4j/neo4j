@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import org.neo4j.helpers.Function;
 import org.neo4j.kernel.api.ConstraintViolationKernelException;
 import org.neo4j.kernel.api.EntityNotFoundException;
 import org.neo4j.kernel.api.PropertyKeyIdNotFoundException;
@@ -64,6 +65,20 @@ public class LockingStatementContext extends CompositeStatementContext
     {
         lockHolder.acquireSchemaWriteLock();
         delegate.dropIndexRule( indexRule );
+    }
+
+    @Override
+    public <K, V> V getOrCreateFromSchemaState( K key, Function<K, V> creator )
+    {
+        lockHolder.acquireSchemaReadLock();
+        return delegate.getOrCreateFromSchemaState( key, creator );
+    }
+
+    @Override
+    public <K> boolean schemaStateContains( K key )
+    {
+        lockHolder.acquireSchemaReadLock();
+        return super.schemaStateContains( key );
     }
 
     @Override

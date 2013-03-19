@@ -37,7 +37,8 @@ import org.neo4j.kernel.api.operations.SchemaOperations;
  * is life cycle of some locks, where read locks can live within one statement,
  * whereas write locks will live for the entire transaction.
  */
-public interface StatementContext extends EntityOperations, PropertyOperations, LabelOperations, SchemaOperations, LegacyOperations
+public interface StatementContext extends
+        EntityOperations, PropertyOperations, LabelOperations, SchemaOperations
 {
     /**
      * Closes this statement. Statements must be closed when done and before

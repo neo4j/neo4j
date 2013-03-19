@@ -17,10 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api;
+package org.neo4j.kernel.impl.api;
 
-public interface LegacyOperations
-{
-    boolean hasLegacyNodeIndex(String indexName);
-    boolean hasLegacyRelationshipIndex(String indexName);
+import org.neo4j.helpers.Function;
+
+public interface SchemaState {
+
+    <K, V>V get( K key );
+
+    <K, V> V getOrCreate( K key, Function<K, V> creator );
+
+    void flush();
 }

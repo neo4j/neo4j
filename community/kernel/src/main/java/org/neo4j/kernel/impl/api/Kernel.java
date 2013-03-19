@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.api;
 
 import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.TransactionContext;
@@ -68,6 +67,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     private final LockManager lockManager;
     private final DependencyResolver dependencyResolver;
     private final SchemaCache schemaCache;
+    private final UpdateableSchemaState schemaState;
 
     // These non-final components are all circular dependencies in various configurations.
     // As we work towards refactoring the old kernel, we should work to remove these.
@@ -78,7 +78,8 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
 
     public Kernel( AbstractTransactionManager transactionManager, PropertyIndexManager propertyIndexManager,
             PersistenceManager persistenceManager, XaDataSourceManager dataSourceManager, LockManager lockManager,
-            SchemaCache schemaCache, DependencyResolver dependencyResolver )
+            SchemaCache schemaCache, UpdateableSchemaState schemaState,
+            DependencyResolver dependencyResolver )
     {
         this.transactionManager = transactionManager;
         this.propertyIndexManager = propertyIndexManager;
@@ -87,6 +88,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
         this.lockManager = lockManager;
         this.dependencyResolver = dependencyResolver;
         this.schemaCache = schemaCache;
+        this.schemaState = schemaState;
     }
     
     @Override
@@ -140,7 +142,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
 
         // + Transaction state and Caching
         result = new StateHandlingTransactionContext( result, newTxState(), persistenceCache,
-                transactionManager.getTransactionState(), schemaCache );
+                transactionManager.getTransactionState(), schemaCache, schemaState );
         // + Constraints evaluation
         result = new ConstraintEvaluatingTransactionContext( result );
         // + Locking
@@ -158,7 +160,6 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
         // I/O
         StatementContext result = new StoreStatementContext(propertyIndexManager, nodeManager,
                 neoStore, indexService, new IndexReaderFactory.NonCaching( indexService ) );
-
         // + Cache
         result = new CachingStatementContext( result, persistenceCache, schemaCache );
         // + Read only access

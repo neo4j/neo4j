@@ -71,7 +71,7 @@ class TransactionBoundQueryContext(graph: GraphDatabaseAPI, tx: Transaction, ctx
   def getTransaction = tx
 
   def exactIndexSearch(id: Long, value: Any) =
-    ctx.exactIndexLookup(id, value).asScala.map((id: java.lang.Long) => nodeOps.getById(id))
+    ctx.exactIndexLookup(id, value).iterator().asScala.map((id: java.lang.Long) => nodeOps.getById(id))
 
   val nodeOps = new NodeOperations
 
@@ -81,7 +81,7 @@ class TransactionBoundQueryContext(graph: GraphDatabaseAPI, tx: Transaction, ctx
     case (count, labelId) => if (ctx.removeLabelFromNode(labelId, node)) count + 1 else count
   }
 
-  def getNodesByLabel(id: Long): Iterator[Node] = ctx.getNodesWithLabel(id).asScala.map(nodeOps.getById(_))
+  def getNodesByLabel(id: Long): Iterator[Node] = ctx.getNodesWithLabel(id).iterator().asScala.map(nodeOps.getById(_))
 
   class NodeOperations extends BaseOperations[Node] {
     def delete(obj: Node) {
@@ -180,4 +180,13 @@ class TransactionBoundQueryContext(graph: GraphDatabaseAPI, tx: Transaction, ctx
       obj.setProperty(propertyKey, value)
     }
   }
+
+  def getOrCreateFromSchemaState[T](s: String, creator: (String) => T) = {
+    val javaCreator = new org.neo4j.helpers.Function[String,T](){
+      def apply(key: String) = creator(key)
+    }
+    ctx.getOrCreateFromSchemaState(s, javaCreator)
+  }
+
+  def schemaStateContains(key: String) = ctx.schemaStateContains(key)
 }

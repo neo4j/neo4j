@@ -117,4 +117,8 @@ class SnitchingQueryContext extends QueryContext {
   def getNodesByLabel(id: Long): Iterator[Node] = ???
 
   def upgrade(context: QueryContext): LockingQueryContext = ???
+
+  def getOrCreateFromSchemaState[T](s: String, creator: (String) => T) = ???
+
+  def schemaStateContains(key: String) = ???
 }

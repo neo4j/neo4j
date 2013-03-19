@@ -64,6 +64,7 @@ import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.Settings;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.helpers.collection.LruMap;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelException;
 import org.neo4j.kernel.api.SchemaRuleNotFoundException;
@@ -77,7 +78,9 @@ import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.extension.KernelExtensions;
 import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.impl.api.Kernel;
+import org.neo4j.kernel.impl.api.KernelSchemaStateStore;
 import org.neo4j.kernel.impl.api.SchemaCache;
+import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.cache.Cache;
 import org.neo4j.kernel.impl.cache.CacheProvider;
@@ -221,6 +224,7 @@ public abstract class InternalAbstractGraphDatabase
     protected ThreadToStatementContextBridge statementContextProvider;
     protected BridgingCacheAccess cacheBridge;
     protected JobScheduler jobScheduler;
+    protected UpdateableSchemaState updateableSchemaState;
 
     protected final LifeSupport life = new LifeSupport();
     private final Map<String,CacheProvider> cacheProviders;
@@ -387,9 +391,13 @@ public abstract class InternalAbstractGraphDatabase
 
         stateFactory = createTransactionStateFactory();
 
+        int queryCacheSize = config.get(GraphDatabaseSettings.query_cache_size);
+        updateableSchemaState = new KernelSchemaStateStore( new LruMap<Object, Object>(queryCacheSize) );
+
         if ( readOnly )
         {
-            txManager = new ReadOnlyTxManager( xaDataSourceManager, logging.getLogger( ReadOnlyTxManager.class ) );
+            StringLogger roTxManagerLogging = logging.getLogger(ReadOnlyTxManager.class);
+            txManager = new ReadOnlyTxManager( xaDataSourceManager, updateableSchemaState, roTxManagerLogging);
         }
         else
         {
@@ -425,7 +433,7 @@ public abstract class InternalAbstractGraphDatabase
 
         relationshipTypeCreator = createRelationshipTypeCreator();
 
-        persistenceSource = life.add( new NioNeoDbPersistenceSource( xaDataSourceManager ) );
+        persistenceSource = life.add(new NioNeoDbPersistenceSource(xaDataSourceManager));
 
         syncHook = new DefaultTxEventSyncHookFactory();
 
@@ -446,7 +454,7 @@ public abstract class InternalAbstractGraphDatabase
         SchemaCache schemaCache = new SchemaCache( Collections.<SchemaRule>emptyList() );
 
         kernelAPI = life.add( new Kernel( txManager, propertyIndexManager, persistenceManager,
-                xaDataSourceManager, lockManager, schemaCache, dependencyResolver ) );
+                xaDataSourceManager, lockManager, schemaCache, updateableSchemaState, dependencyResolver ) );
         // XXX: Circular dependency, temporary during transition to KernelAPI - TxManager should not depend on KernelAPI
         txManager.setKernel(kernelAPI);
 
@@ -821,9 +829,8 @@ public abstract class InternalAbstractGraphDatabase
             neoDataSource = new NeoStoreXaDataSource( config,
                     storeFactory, lockManager, logging.getLogger( NeoStoreXaDataSource.class ),
                     xaFactory, stateFactory, cacheBridge,
-                    transactionInterceptorProviders, jobScheduler, logging, dependencyResolver );
+                    transactionInterceptorProviders, jobScheduler, logging, updateableSchemaState, dependencyResolver );
             xaDataSourceManager.registerDataSource( neoDataSource );
-
         }
         catch ( IOException e )
         {

@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.api;
 
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.TransactionFailureException;
-import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.PrefetchingIterator;
@@ -64,11 +63,11 @@ public class StoreStatementContext extends CompositeStatementContext
 
     public StoreStatementContext( PropertyIndexManager propertyIndexManager, NodeManager nodeManager,
             NeoStore neoStore, IndexingService indexService, IndexReaderFactory indexReaderFactory)
-
     {
+        assert neoStore != null : "No neoStore provided";
+
         this.indexService = indexService;
         this.indexReaderFactory = indexReaderFactory;
-        assert neoStore != null : "No neoStore provided";
         this.propertyIndexManager = propertyIndexManager;
         this.nodeManager = nodeManager;
         this.neoStore = neoStore;
@@ -342,14 +341,14 @@ public class StoreStatementContext extends CompositeStatementContext
     }
 
     @Override
-    public boolean hasLegacyNodeIndex( String indexName )
+    public <K, V> V getOrCreateFromSchemaState( K key, Function<K, V> creator )
     {
-        throw new UnsupportedOperationException(  );
+        throw new UnsupportedOperationException( "Schema state is not handled by the stores" );
     }
 
     @Override
-    public boolean hasLegacyRelationshipIndex( String indexName )
+    public <K> boolean schemaStateContains( K key )
     {
-        throw new UnsupportedOperationException(  );
+        throw new UnsupportedOperationException( "Schema state is not handled by the stores" );
     }
 }

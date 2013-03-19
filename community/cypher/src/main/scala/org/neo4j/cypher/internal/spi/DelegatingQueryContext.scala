@@ -64,6 +64,10 @@ class DelegatingQueryContext(inner: QueryContext) extends QueryContext {
   def getNodesByLabel(id: Long): Iterator[Node] = inner.getNodesByLabel(id)
 
   def upgrade(context: QueryContext): LockingQueryContext = inner.upgrade(context)
+
+  def getOrCreateFromSchemaState[T](s: String, creator: (String) => T) = inner.getOrCreateFromSchemaState(s, creator)
+
+  def schemaStateContains(key: String) = inner.schemaStateContains(key)
 }
 
 class DelegatingOperations[T <: PropertyContainer](protected val inner: Operations[T]) extends Operations[T] {

@@ -23,8 +23,9 @@ import org.neo4j.cypher.internal.spi.PlanContext
 import org.neo4j.cypher.MissingIndexException
 import org.neo4j.kernel.api.{KernelException, StatementContext}
 import org.neo4j.kernel.api.index.InternalIndexState
+import org.neo4j.graphdb.GraphDatabaseService
 
-class TransactionBoundPlanContext(ctx: StatementContext) extends PlanContext {
+class TransactionBoundPlanContext(ctx: StatementContext, gdb:GraphDatabaseService) extends PlanContext {
 
   def getIndexRuleId(labelName: String, propertyKey: String): Option[Long] = try {
     val labelId = ctx.getLabelId(labelName)
@@ -42,12 +43,16 @@ class TransactionBoundPlanContext(ctx: StatementContext) extends PlanContext {
     case _: KernelException => None
   }
 
-  def checkNodeIndex(idxName: String) {
-    throw new MissingIndexException(idxName)
+  def checkNodeIndex(idxName: String)  {
+    if ( !gdb.index().existsForNodes(idxName) ) {
+      throw new MissingIndexException(idxName)
+    }
   }
 
-  def checkRelIndex(idxName: String) {
-    throw new MissingIndexException(idxName)
+  def checkRelIndex(idxName: String)  {
+    if ( !gdb.index().existsForRelationships(idxName) ) {
+      throw new MissingIndexException(idxName)
+    }
   }
 
   private def tryGet[T](f: => T): Option[T] = try Some(f) catch {

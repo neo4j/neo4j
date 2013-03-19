@@ -25,7 +25,7 @@ import java.lang.reflect.Field;
 import java.util.Iterator;
 
 /**
- * allows to catch, analyse and react on exceptions that are thrown by the inner iterable
+ * allows to catch, analyse and react on exceptions that are thrown by the delegate iterable
  * useful for exception conversion on iterator methods
  * Uses sun.misc.Unsafe internally to rethrow original exceptions !
  * @param <T>

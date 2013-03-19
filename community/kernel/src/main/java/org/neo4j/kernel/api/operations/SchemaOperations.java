@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.operations;
 
+import org.neo4j.helpers.Function;
 import org.neo4j.kernel.api.ConstraintViolationKernelException;
 import org.neo4j.kernel.api.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.IndexNotFoundKernelException;
@@ -28,7 +29,6 @@ import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 
 public interface SchemaOperations
 {
-
     /**
      * Adds a {@link org.neo4j.kernel.impl.nioneo.store.IndexRule} to the database which applies globally on both
      * existing as well as new data.
@@ -65,4 +65,21 @@ public interface SchemaOperations
      */
     void dropIndexRule( IndexRule indexRule ) throws ConstraintViolationKernelException;
 
+    /**
+     * The schema state is flushed when ever the schema is updated. If you build objects
+     * the rely on the current state of the schema, use this to make sure you don't use
+     * outdated schema information.
+     *
+     * Additionally, schema state entries are evicted using an LRU policy. The size
+     * of the LRU cache is determined by GraphDatabaseSettings.query_cache_size
+     *
+     * NOTE: This currently is solely used by Cypher and might or might not be turned into
+     * a more generic facility in teh future
+     */
+    <K, V> V getOrCreateFromSchemaState( K key, Function<K, V> creator );
+
+    /**
+     * Check if some key is in the schema state.
+     */
+    <K> boolean schemaStateContains( K key );
 }

@@ -25,6 +25,7 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.*;
 import org.neo4j.kernel.api.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.InternalIndexState;
+import org.neo4j.kernel.api.operations.SchemaOperations;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
@@ -39,12 +40,21 @@ public class TransactionStateStatementContext extends CompositeStatementContext
 {
     private final TxState state;
     private final StatementContext delegate;
+    private final SchemaOperations schemaOperations;
 
-    public TransactionStateStatementContext(StatementContext actual, TxState state)
+    public TransactionStateStatementContext( StatementContext actual,
+                                             SchemaOperations schemaOperations,
+                                             TxState state )
     {
-        super( actual );
+        super( actual, schemaOperations );
         this.state = state;
         this.delegate = actual;
+        this.schemaOperations = schemaOperations;
+    }
+
+    public TransactionStateStatementContext( StatementContext actual, TxState state )
+    {
+        this( actual, actual, state);
     }
 
     @Override
@@ -145,7 +155,7 @@ public class TransactionStateStatementContext extends CompositeStatementContext
         Iterable<IndexRule> committedRules;
         try
         {
-            committedRules = option( delegate.getIndexRule( labelId, propertyKey ) );
+            committedRules = option( schemaOperations.getIndexRule( labelId, propertyKey ) );
         }
         catch ( SchemaRuleNotFoundException e )
         {

@@ -21,6 +21,7 @@
 package org.neo4j.cypher.internal.spi
 
 import org.neo4j.graphdb._
+import org.neo4j.cypher.ExecutionPlan
 
 /*
  * Developer note: This is an attempt at an internal graph database API, which defines a clean cut between
@@ -35,6 +36,7 @@ import org.neo4j.graphdb._
  * the core layer, we can move that responsibility outside of the scope of cypher.
  */
 trait QueryContext {
+
   def nodeOps: Operations[Node]
 
   def relationshipOps: Operations[Relationship]
@@ -74,6 +76,10 @@ trait QueryContext {
   def upgradeToLockingQueryContext: LockingQueryContext = upgrade(this)
 
   def upgrade(context: QueryContext): LockingQueryContext
+
+  def getOrCreateFromSchemaState[T](key: String, creator:String => T): T
+
+  def schemaStateContains(key: String): Boolean
 }
 
 trait LockingQueryContext extends QueryContext {
