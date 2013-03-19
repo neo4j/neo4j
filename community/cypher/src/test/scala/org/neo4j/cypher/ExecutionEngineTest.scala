@@ -2451,4 +2451,16 @@ RETURN x0.name?
     // THEN PASS
     println(result.executionPlanDescription())
   }
+
+  @Test
+  def shouldBeAbleToCallNowMS() {
+    val result = engine.execute("START n=node(*) RETURN now('ms')")
+
+    val ts:Long = result.toList.head("now('ms')") match {
+      case x:Long => x
+      case _ => 0L
+    }
+    assert(ts != 0L)
+    assert(ts <= System.currentTimeMillis)
+  }
 }
