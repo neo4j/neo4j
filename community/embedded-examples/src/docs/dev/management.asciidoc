@@ -2,10 +2,8 @@
 Reading a management attribute
 ==============================
 
-The http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/kernel/EmbeddedGraphDatabase.html[EmbeddedGraphDatabase]
-class includes a 
-http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/kernel/EmbeddedGraphDatabase.html#getManagementBean%28java.lang.Class%29[convenience method]
-to get instances of Neo4j management beans.
+The http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/jmx/JmxUtils.html[JmxUtils]
+class includes methods to access Neo4j management beans.
 The common JMX service can be used as well, but from your code you probably rather
 want to use the approach outlined here.
 

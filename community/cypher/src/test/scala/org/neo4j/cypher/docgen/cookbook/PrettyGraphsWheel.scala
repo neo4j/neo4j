@@ -28,6 +28,7 @@ class PrettyGraphsWheelTest extends DocumentingTestBase {
   def section = "cookbook"
   generateInitialGraphForConsole = false
   override val graphvizOptions = "graph [layout=neato]"
+  override val graphvizExecutedAfter = true
 
   @Test def completeGraph() {
     testQuery(

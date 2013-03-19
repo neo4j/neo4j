@@ -31,6 +31,8 @@ case class NamedPath(pathName: String, pathPattern: Pattern*) extends Traversabl
   }
 
   def rewrite(f: Expression => Expression) = NamedPath(pathName, pathPattern.map(_.rewrite(f)): _*)
+
+  override def toString() = "NamedPath(%s = %s)".format(pathName, pathPattern.mkString(","))
 }
 
 trait PathExtractor {
@@ -41,6 +43,7 @@ trait PathExtractor {
     val firstNode: String = getFirstNode
 
     val p: Seq[PropertyContainer] = pathPattern.foldLeft(Seq(get(firstNode)))((soFar, p) => p match {
+      case SingleNode(name)                         => Seq(get(name))
       case RelatedTo(_, right, relName, _, _, _) => soFar ++ Seq(get(relName), get(right))
       case path: PathPattern => getPath(ctx, path.pathName, soFar)
     })
@@ -48,13 +51,12 @@ trait PathExtractor {
     buildPath(p)
   }
 
-  private def getFirstNode[U]: String = {
-    val firstNode = pathPattern.head match {
+  private def getFirstNode[U]: String =
+    pathPattern.head match {
       case RelatedTo(left, _, _, _, _, _) => left
-      case path: PathPattern => path.start
+      case SingleNode(name)               => name
+      case path: PathPattern              => path.start
     }
-    firstNode
-  }
 
   private def buildPath(pieces: Seq[PropertyContainer]): Path =
     if (pieces.contains(null))

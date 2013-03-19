@@ -2555,6 +2555,33 @@ create a-[r:REL]->b
         returns(ReturnItem(Identifier("n"), "n", renamed = false)))
   }
 
+  @Test def single_node_match_pattern() {
+    testFrom1_9("start s = node(*) match s return s",
+      Query.
+        start(AllNodes("s")).
+        matches(SingleNode("s")).
+        returns(ReturnItem(Identifier("s"), "s")))
+  }
+
+
+  @Test def awesome_single_labeled_node_match_pattern() {
+    testFrom2_0("match s:nostart return s",
+      Query.
+        matches(SingleNode("s")).
+        where(HasLabel(Identifier("s"), Seq(LabelName("nostart")))).
+        returns(ReturnItem(Identifier("s"), "s")))
+  }
+
+  @Test def single_node_match_pattern_path() {
+    testFrom1_9("start s = node(*) match p = s return s",
+      Query.
+        start(AllNodes("s")).
+        matches(SingleNode("s")).
+        namedPaths(NamedPath("p", SingleNode("s"))).
+        returns(ReturnItem(Identifier("s"), "s")))
+  }
+
+
   private def run(f: () => Unit) =
     new Runnable() {
       var error: Option[Throwable] = None
