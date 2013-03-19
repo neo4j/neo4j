@@ -52,6 +52,8 @@ include::head.asciidoc[]
 
 include::last.asciidoc[]
 
+include::now.asciidoc[]
+
 :leveloffset: 1
 
 [[query-functions-collection]]
@@ -136,4 +138,3 @@ include::trim.asciidoc[]
 include::lower.asciidoc[]
 
 include::upper.asciidoc[]
-

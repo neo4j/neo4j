@@ -164,6 +164,7 @@ trait Expressions extends Base with ParserPattern with Predicates with StringLit
     "rtrim" -> func(1, args => RTrimFunction(args.head)),
     "trim" -> func(1, args => TrimFunction(args.head)),
     "str" -> func(1, args => StrFunction(args.head)),
+    "now" -> func(1, args => NowFunction(args.head)),
     "shortestpath" -> Function(x => false, args => null),
     "range" -> Function(x => x == 2 || x == 3, args => {
       val step = if (args.size == 2) Literal(1) else args(2)
