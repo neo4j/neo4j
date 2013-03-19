@@ -35,7 +35,6 @@ import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.repr.CypherResultRepresentation;
 import org.neo4j.server.rest.repr.InputFormat;
 import org.neo4j.server.rest.repr.OutputFormat;
-import org.neo4j.server.rest.repr.ValueRepresentation;
 
 @Path("/cypher")
 public class CypherService

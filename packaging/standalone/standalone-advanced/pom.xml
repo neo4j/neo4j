@@ -20,6 +20,10 @@
       into a downloadable installer.</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
+  <properties>
+    <assembly.name>advanced</assembly.name>
+  </properties>
+
   <scm>
     <url>https://github.com/neo4j/packaging/tree/master/standalone/standalone-advanced</url>
   </scm>
@@ -68,66 +72,6 @@ terms of the relevant Commercial Agreement.
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-assembly-plugin</artifactId>
-        <configuration>
-          <attach>false</attach>
-          <finalName>${server.shortname}-advanced-${project.version}</finalName>
-          <appendAssemblyId>true</appendAssemblyId>
-          <outputDirectory>${project.parent.build.directory}</outputDirectory>
-        </configuration>
-        <executions>
-          <execution>
-            <id>advanced-unix-dist</id>
-            <phase>package</phase>
-            <goals>
-              <goal>single</goal>
-            </goals>
-            <configuration>
-              <descriptors>
-                <descriptor>src/main/assemblies/advanced-unix-dist.xml</descriptor>
-              </descriptors>
-            </configuration>
-          </execution>
-          <execution>
-            <id>advanced-windows-dist</id>
-            <phase>package</phase>
-            <goals>
-              <goal>single</goal>
-            </goals>
-            <configuration>
-              <descriptors>
-                <descriptor>src/main/assemblies/advanced-windows-dist.xml</descriptor>
-              </descriptors>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <artifactId>maven-dependency-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>get-javadoc-sources</id>
-            <phase>none</phase>
-          </execution>
-          <execution>
-            <id>unpack-manpages</id>
-            <phase>generate-resources</phase>
-            <goals><goal>unpack</goal></goals>
-             <configuration>
-               <artifactItems>
-                 <artifactItem>
-                  <groupId>org.neo4j.doc</groupId>
-                  <artifactId>neo4j-manual</artifactId>
-                  <version>${neo4j.version}</version>
-                  <classifier>manpages</classifier>
-                  <type>jar</type>
-                  <outputDirectory>${project.build.directory}/manpages</outputDirectory>
-                  <includes>*.txt,**/*.txt</includes>
-                  <excludes>META-INF/**</excludes>
-                 </artifactItem>
-               </artifactItems>
-             </configuration>
-          </execution>
-        </executions>
       </plugin>
 
        <plugin>
@@ -166,12 +110,6 @@ terms of the relevant Commercial Agreement.
       <version>${neo4j.version}</version>
     </dependency>
     <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-advanced</artifactId>
-      <version>${neo4j.version}</version>
-      <classifier>javadoc</classifier>
-    </dependency>
-    <dependency>
       <groupId>org.neo4j.app</groupId>
       <artifactId>neo4j-server-advanced</artifactId>
       <version>${neo4j.version}</version>
@@ -189,9 +127,27 @@ terms of the relevant Commercial Agreement.
         </exclusion>
       </exclusions>
     </dependency>
-    
-
   </dependencies>
+
+  <profiles>
+    <profile>
+      <id>not-neo-minimal-build</id>
+      <activation>
+        <activeByDefault>false</activeByDefault>
+        <property>
+          <name>!minimalBuild</name>
+        </property>
+      </activation>
+      <dependencies>
+        <dependency>
+          <groupId>org.neo4j</groupId>
+          <artifactId>neo4j-advanced</artifactId>
+          <version>${neo4j.version}</version>
+          <classifier>javadoc</classifier>
+        </dependency>
+      </dependencies>
+    </profile>    
+   </profiles>
 
   <distributionManagement>
     <site>
