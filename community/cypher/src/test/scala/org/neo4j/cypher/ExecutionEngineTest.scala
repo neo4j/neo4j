@@ -2449,6 +2449,32 @@ RETURN x0.name?
     result.toList
 
     // THEN PASS
-    println(result.executionPlanDescription())
+    result.executionPlanDescription()
   }
+
+  @Test
+  def should_be_able_to_handle_single_node_patterns() {
+    //GIVEN
+    val n = createNode("foo" -> "bar")
+
+    //WHEN
+    val result = parseAndExecute("start n=node(1) match n where n.foo = 'bar' return n")
+
+    //THEN
+    assert(result.toList === List(Map("n" -> n)))
+  }
+
+  @Test
+  def should_be_able_to_handle_single_node_path_patterns() {
+    //GIVEN
+    val n = createNode("foo" -> "bar")
+
+    //WHEN
+    val result = parseAndExecute("start n=node(1) match p = n return p")
+
+    //THEN
+    assert(result.toList === List(Map("p" -> PathImpl(n))))
+  }
+
+
 }
