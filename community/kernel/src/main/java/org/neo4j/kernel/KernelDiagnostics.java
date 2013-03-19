@@ -142,7 +142,7 @@ abstract class KernelDiagnostics implements DiagnosticsProvider
         {
             long free = storeDir.getFreeSpace();
             long total = storeDir.getTotalSpace();
-            long percentage = total != 0 ? ((total - free) * 100 / total) : 0;
+            long percentage = total != 0 ? (free * 100 / total) : 0;
             return String.format( "Disk space on partition (Total / Free / Free %%): %s / %s / %s", total, free, percentage );
         }
     }
