@@ -32,6 +32,7 @@ class Profiler extends PipeDecorator {
   val contextStats: mutable.Map[Pipe, ProfilingQueryContext] = mutable.Map.empty
   val iterStats: mutable.Map[Pipe, ProfilingIterator] = mutable.Map.empty
 
+
   def decorate(pipe: Pipe, iter: Iterator[ExecutionContext]): Iterator[ExecutionContext] = {
     val resultIter = new ProfilingIterator(iter)
 
@@ -54,11 +55,11 @@ class Profiler extends PipeDecorator {
     state.copy(inner = decoratedContext)
   }
 
-  def decorate(plan: PlanDescription): PlanDescription = plan.mapArgs {
+  def decorate(plan: PlanDescription, isProfileReady: => Boolean): PlanDescription = plan.mapArgs {
     p: PlanDescription =>
-      val iteratorStats = iterStats(p.pipe)
+      val iteratorStats: ProfilingIterator = iterStats(p.pipe)
 
-      if (iteratorStats.nonEmpty)
+      if ( ! isProfileReady )
         throw new ProfilerStatisticsNotReadyException()
 
       val newArgs = p.args :+ "_rows" -> PrimVal(iteratorStats.count)

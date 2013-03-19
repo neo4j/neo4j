@@ -46,6 +46,28 @@ object RelatedTo {
     new RelatedTo(left, right, relName, Seq(relType), direction, optional)
 }
 
+case class SingleNode(name:String) extends Pattern {
+  def nodes = Seq.empty
+
+  def optional = false
+
+  def possibleStartPoints = Seq(name->NodeType())
+
+  def predicate = True()
+
+  def rels = Seq.empty
+
+  def relTypes = Seq.empty
+
+  def rewrite(f: (Expression) => Expression) = this
+
+  def children = Seq.empty
+
+  def symbolTableDependencies = Set.empty
+
+  def throwIfSymbolsMissing(symbols: SymbolTable) {}
+}
+
 case class RelatedTo(left: String,
                      right: String,
                      relName: String,

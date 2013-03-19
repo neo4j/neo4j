@@ -52,26 +52,24 @@ public class JavaQuery
     {
         clearDbPath();
 
-        // START SNIPPET: execute
+        // START SNIPPET: addData
         GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( DB_PATH );
-        // add some data first, keep id of node so we can refer to it
-        long id;
         Transaction tx = db.beginTx();
         try
         {
-            Node refNode = db.createNode();
-            id = refNode.getId();
-            refNode.setProperty( "name", "reference node" );
+            Node myNode = db.createNode();
+            myNode.setProperty( "name", "my node" );
             tx.success();
         }
         finally
         {
             tx.finish();
         }
+        // END SNIPPET: addData
 
-        // let's execute a query now
+        // START SNIPPET: execute
         ExecutionEngine engine = new ExecutionEngine( db );
-        ExecutionResult result = engine.execute( "start n=node("+id+") return n, n.name" );
+        ExecutionResult result = engine.execute( "start n=node(*) where n.name! = 'my node' return n, n.name" );
         // END SNIPPET: execute
         // START SNIPPET: columns
         List<String> columns = result.columns();
@@ -86,7 +84,7 @@ public class JavaQuery
         }
         // END SNIPPET: items
         // the result is now empty, get a new one
-        result = engine.execute( "start n=node("+id+") return n, n.name" );
+        result = engine.execute( "start n=node(*) where n.name! = 'my node' return n, n.name" );
         // START SNIPPET: rows
         for ( Map<String, Object> row : result )
         {
@@ -97,7 +95,7 @@ public class JavaQuery
             rows += "\n";
         }
         // END SNIPPET: rows
-        resultString = engine.execute( "start n=node("+id+") return n, n.name" ).dumpToString();
+        resultString = engine.execute( "start n=node(*) where n.name! = 'my node' return n, n.name" ).dumpToString();
         columnsString = columns.toString();
         db.shutdown();
     }

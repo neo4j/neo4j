@@ -2726,8 +2726,7 @@ RETURN x0.name?
     assert(result.toList === List())
   }
 
-  @Ignore("Waiting for Kernel API implementation")
-  @Test
+  @Test  @Ignore
   def should_be_able_to_use_index_hints() {
     //GIVEN
     val andres = createLabeledNode(Map("name" -> "Andres"), "Person")
@@ -2739,6 +2738,7 @@ RETURN x0.name?
 
     //WHEN
     val result = parseAndExecute("MATCH n:Person-->() USING INDEX n:Person(name) WHERE n.name = 'Jacob' RETURN n")
+    println(result.executionPlanDescription())
 
     //THEN
     assert(result.toList === List(Map("n"->jake)))
@@ -2758,4 +2758,57 @@ RETURN x0.name?
     //THEN
     assert(result.toList === List(Map("n"->jake)))
   }
+
+  @Test
+  def should_allow_expression_alias_in_order_by_with_distinct() {
+    //WHEN
+    val result = parseAndExecute(
+      """START n=node(*)
+        RETURN distinct ID(n) as id
+        ORDER BY id DESC""")
+
+    //THEN DOESN'T THROW EXCEPTION
+    assert(result.toList === List(Map("id" -> 0)))
+  }
+
+  @Test
+  def shouldProduceProfileWhenUsingLimit() {
+    // GIVEN
+    createNode()
+    createNode()
+    createNode()
+    val result = engine.profile("""START n=node(*) RETURN n LIMIT 1""")
+
+    // WHEN
+    result.toList
+
+    // THEN PASS
+    result.executionPlanDescription()
+  }
+
+  @Test
+  def should_be_able_to_handle_single_node_patterns() {
+    //GIVEN
+    val n = createNode("foo" -> "bar")
+
+    //WHEN
+    val result = parseAndExecute("start n=node(1) match n where n.foo = 'bar' return n")
+
+    //THEN
+    assert(result.toList === List(Map("n" -> n)))
+  }
+
+  @Test
+  def should_be_able_to_handle_single_node_path_patterns() {
+    //GIVEN
+    val n = createNode("foo" -> "bar")
+
+    //WHEN
+    val result = parseAndExecute("start n=node(1) match p = n return p")
+
+    //THEN
+    assert(result.toList === List(Map("p" -> PathImpl(n))))
+  }
+
+
 }

@@ -65,6 +65,14 @@ Force the server to use IPv4 network addresses, in 'conf/neo4j-wrapper.conf' und
 wrapper.java.additional.3=-Djava.net.preferIPv4Stack=true
 ----
 
+Specify the number of threads used by the Neo4j Web server to control the level of concurrent HTTP requests that the server will service.
+[source]
+----
+org.neo4j.server.webserver.maxthreads=200
+----
+
+NOTE: The default value is 10 times the number of CPUs reported available by the JVM.
+
 Low-level performance tuning parameters can be explicitly set by referring
 to the following property:
 
