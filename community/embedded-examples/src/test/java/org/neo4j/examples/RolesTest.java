@@ -50,7 +50,7 @@ public class RolesTest extends AbstractJavaDocTestbase
     /**
      * This is an example showing a hierarchy of 
      * roles. 
-     * What's interesting is that a tree is not sufficient for storing this structure,
+     * What's interesting is that a tree is not sufficient for storing this kind of structure,
      * as elaborated below.
      * 
      * image::roles.png[scaledwidth="100%"]
@@ -62,7 +62,7 @@ public class RolesTest extends AbstractJavaDocTestbase
      * directed acyclic graphs] (DAGs) 
      * in SQL based DBs. DAGs are almost trees, but with a twist: it may be possible to reach 
      * the same node through different paths. Trees are restricted from this possibility, which 
-     * makes them much easier to handle. In our case it is "Ali" and "Engin", 
+     * makes them much easier to handle. In our case it is ``Ali'' and ``Engin'', 
      * as they are both admins and users and thus reachable through these group nodes.
      * Reality often looks this way and can't be captured by tree structures.
      * 
@@ -79,7 +79,7 @@ public class RolesTest extends AbstractJavaDocTestbase
      * to model the group hierarchy and +MEMBER_OF+ (blue edges) to model membership in groups. 
      * We also connect the top level groups to the reference node by +ROOT+ relationships. 
      * This gives us a useful partitioning of the graph. Neo4j has no predefined relationship 
-     * types, you are free to create any relationship types and give them any semantics you want.
+     * types, you are free to create any relationship types and give them the semantics you want.
      * 
      * Lets now have a look at how to retrieve information from the graph. The Java code is using
      * the Neo4j Traversal API (see <<tutorial-traversal-java-api>>), the queries are done using <<cypher-query-lang, Cypher>>.

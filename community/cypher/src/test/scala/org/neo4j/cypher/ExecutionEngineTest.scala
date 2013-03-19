@@ -2726,7 +2726,6 @@ RETURN x0.name?
     assert(result.toList === List())
   }
 
-  @Ignore("Waiting for Kernel API implementation")
   @Test
   def should_be_able_to_use_index_hints() {
     //GIVEN
@@ -2757,5 +2756,32 @@ RETURN x0.name?
 
     //THEN
     assert(result.toList === List(Map("n"->jake)))
+  }
+
+  @Test
+  def should_allow_expression_alias_in_order_by_with_distinct() {
+    //WHEN
+    val result = parseAndExecute(
+      """START n=node(*)
+        RETURN distinct ID(n) as id
+        ORDER BY id DESC""")
+
+    //THEN DOESN'T THROW EXCEPTION
+    assert(result.toList === List(Map("id" -> 0)))
+  }
+
+  @Test
+  def shouldProduceProfileWhenUsingLimit() {
+    // GIVEN
+    createNode()
+    createNode()
+    createNode()
+    val result = engine.profile("""START n=node(*) RETURN n LIMIT 1""")
+
+    // WHEN
+    result.toList
+
+    // THEN PASS
+    result.executionPlanDescription()
   }
 }

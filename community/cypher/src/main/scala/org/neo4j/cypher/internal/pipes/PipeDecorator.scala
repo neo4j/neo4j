@@ -30,13 +30,13 @@ trait PipeDecorator {
 
   def decorate(pipe: Pipe, iter: Iterator[ExecutionContext]): Iterator[ExecutionContext]
 
-  def decorate(plan: PlanDescription): PlanDescription
+  def decorate(plan: PlanDescription, isProfileReady: => Boolean): PlanDescription
 }
 
 object NullDecorator extends PipeDecorator {
   def decorate(pipe: Pipe, iter: Iterator[ExecutionContext]): Iterator[ExecutionContext] = iter
 
-  def decorate(plan: PlanDescription): PlanDescription = plan
+  def decorate(plan: PlanDescription, isProfileReady: => Boolean): PlanDescription = plan
 
   def decorate(pipe: Pipe, state: QueryState): QueryState = state
 }

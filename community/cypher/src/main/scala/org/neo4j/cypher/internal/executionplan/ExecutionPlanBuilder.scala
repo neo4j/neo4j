@@ -157,18 +157,14 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService) extends PatternGraphBuil
   private def prepareStateAndResult(queryContext: QueryContext, params: Map[String, Any], pipe: Pipe, profile:Boolean):
     (QueryState, Iterator[ExecutionContext], () => PlanDescription) = {
 
-    val decorator = if(profile) {
-      new Profiler()
-    } else {
-      NullDecorator
-    }
+    val decorator = if (profile) new Profiler() else NullDecorator
     val state = new QueryState(graph, queryContext, params, decorator)
     val results = pipe.createResults(state)
-    val descriptor = () => decorator.decorate(pipe.executionPlanDescription)
 
 
     try {
       val closingIterator = new ClosingIterator[ExecutionContext](results, queryContext)
+      val descriptor = () => decorator.decorate(pipe.executionPlanDescription, closingIterator.isEmpty)
       (state, closingIterator, descriptor)
     }
     catch {

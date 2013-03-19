@@ -18,11 +18,8 @@
  */
 package org.neo4j.examples;
 
-import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.index.Index;
@@ -33,21 +30,12 @@ public class EmbeddedNeo4jWithIndexing
     private static final String USERNAME_KEY = "username";
     private static GraphDatabaseService graphDb;
     private static Index<Node> nodeIndex;
-    private static Index<Node> referenceIndex;
-
-    // START SNIPPET: createRelTypes
-    private static enum RelTypes implements RelationshipType
-    {
-        USER
-    }
-    // END SNIPPET: createRelTypes
 
     public static void main( final String[] args )
     {
         // START SNIPPET: startDb
         graphDb = new GraphDatabaseFactory().newEmbeddedDatabase( DB_PATH );
         nodeIndex = graphDb.index().forNodes( "nodes" );
-        referenceIndex = graphDb.index().forNodes( "references" );
         registerShutdownHook();
         // END SNIPPET: startDb
 
@@ -55,17 +43,10 @@ public class EmbeddedNeo4jWithIndexing
         Transaction tx = graphDb.beginTx();
         try
         {
-            // Create users sub reference node
-            Node usersReferenceNode = graphDb.createNode();
-            usersReferenceNode.setProperty( "reference", "users" );
-            referenceIndex.add( usersReferenceNode, "reference", "users" );
-
             // Create some users and index their names with the IndexService
             for ( int id = 0; id < 100; id++ )
             {
                 Node userNode = createAndIndexUser( idToUserName( id ) );
-                usersReferenceNode.createRelationshipTo( userNode,
-                    RelTypes.USER );
             }
             // END SNIPPET: addUsers
             System.out.println( "Users created" );
@@ -73,24 +54,19 @@ public class EmbeddedNeo4jWithIndexing
             // Find a user through the search index
             // START SNIPPET: findUser
             int idToFind = 45;
-            Node foundUser = nodeIndex.get( USERNAME_KEY,
-                idToUserName( idToFind ) ).getSingle();
+            String userName = idToUserName( idToFind );
+            Node foundUser = nodeIndex.get( USERNAME_KEY, userName ).getSingle();
             System.out.println( "The username of user " + idToFind + " is "
                 + foundUser.getProperty( USERNAME_KEY ) );
             // END SNIPPET: findUser
 
             // Delete the persons and remove them from the index
-            for ( Relationship relationship : usersReferenceNode.getRelationships(
-                    RelTypes.USER, Direction.OUTGOING ) )
+            for ( Node user : nodeIndex.query( USERNAME_KEY, "*" ) )
             {
-                Node user = relationship.getEndNode();
                 nodeIndex.remove(  user, USERNAME_KEY,
                         user.getProperty( USERNAME_KEY ) );
                 user.delete();
-                relationship.delete();
             }
-            referenceIndex.remove( usersReferenceNode );
-            usersReferenceNode.delete();
             tx.success();
         }
         finally

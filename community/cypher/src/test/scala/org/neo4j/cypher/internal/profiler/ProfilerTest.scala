@@ -41,7 +41,7 @@ class ProfilerTest extends Assertions with MockitoSugar {
 
     //WHEN
     materialize(pipe.createResults(queryState))
-    val decoratedResult = profiler.decorate(pipe.executionPlanDescription)
+    val decoratedResult = profiler.decorate(pipe.executionPlanDescription, true)
 
     //THEN
     assertRecorded(decoratedResult, "foo", rows = 10, dbAccess = 20)
@@ -60,7 +60,7 @@ class ProfilerTest extends Assertions with MockitoSugar {
 
     //WHEN
     materialize(pipe3.createResults(queryState))
-    val decoratedResult = profiler.decorate(pipe3.executionPlanDescription)
+    val decoratedResult = profiler.decorate(pipe3.executionPlanDescription, true)
 
     //THEN
     assertRecorded(decoratedResult, "foo", rows = 10, dbAccess = 25)

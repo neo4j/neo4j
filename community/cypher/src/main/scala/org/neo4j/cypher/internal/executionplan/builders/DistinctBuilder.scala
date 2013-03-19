@@ -21,7 +21,8 @@ package org.neo4j.cypher.internal.executionplan.builders
 
 import org.neo4j.cypher.internal.executionplan.{PlanBuilder, ExecutionPlanInProgress, LegacyPlanBuilder}
 import org.neo4j.cypher.internal.pipes.DistinctPipe
-import org.neo4j.cypher.internal.commands.expressions.Expression
+import org.neo4j.cypher.internal.commands.expressions.{CachedExpression, Expression}
+import org.neo4j.cypher.internal.symbols.{SymbolTable, CypherType, AnyType}
 
 
 class DistinctBuilder extends LegacyPlanBuilder {
@@ -33,8 +34,12 @@ class DistinctBuilder extends LegacyPlanBuilder {
 
     val pipe = new DistinctPipe(plan.pipe, expressions)
 
+
+    val newQuery = cacheExpressions(plan, expressions, plan.pipe.symbols)
+
+
     //Mark stuff as done
-    val query = plan.query.copy(
+    val query = newQuery.copy(
       aggregateQuery = Solved(true),
       extracted = true,
       returns = plan.query.returns.map(_.solve)
@@ -42,6 +47,23 @@ class DistinctBuilder extends LegacyPlanBuilder {
 
     plan.copy(pipe = pipe, query = query)
   }
+
+
+  def cacheExpressions(plan: ExecutionPlanInProgress, expressions: Map[String, Expression], symbols: SymbolTable) =
+    plan.query.rewrite    {
+      inputExpression =>
+        val found: Option[(String, Expression)] = expressions.find {
+          case (key, exp) => exp == inputExpression
+        }
+
+        if ( found.isEmpty ) {
+          inputExpression
+        } else        {
+          val calculatedType: CypherType = inputExpression.evaluateType(AnyType(), symbols)
+          val key: String = found.get._1
+          CachedExpression(key, calculatedType)
+        }
+    }
 
   def canWorkWith(plan: ExecutionPlanInProgress) = {
 
