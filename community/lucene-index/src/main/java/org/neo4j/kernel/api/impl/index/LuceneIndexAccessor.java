@@ -25,8 +25,11 @@ import java.io.File;
 import java.io.IOException;
 
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.SearcherFactory;
 import org.apache.lucene.search.SearcherManager;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.neo4j.kernel.api.impl.index.LuceneSchemaIndexProvider.DocumentLogic;
 import org.neo4j.kernel.api.impl.index.LuceneSchemaIndexProvider.WriterLogic;
@@ -60,34 +63,64 @@ class LuceneIndexAccessor implements IndexAccessor
     }
 
     @Override
-    public void updateAndCommit( Iterable<NodePropertyUpdate> updates )
+    public void updateAndCommit( Iterable<NodePropertyUpdate> updates ) throws IOException
     {
-        try
+        for ( NodePropertyUpdate update : updates )
         {
-            for ( NodePropertyUpdate update : updates )
+            switch ( update.getUpdateMode() )
             {
-                switch ( update.getUpdateMode() )
-                {
-                case ADDED:
-                    add( update.getNodeId(), update.getValueAfter() );
-                    break;
-                case CHANGED:
-                    change( update.getNodeId(), update.getValueBefore(), update.getValueAfter() );
-                    break;
-                case REMOVED:
-                    remove( update.getNodeId(), update.getValueBefore() );
-                    break;
-                default:
-                    throw new UnsupportedOperationException();
-                }
+            case ADDED:
+                add( update.getNodeId(), update.getValueAfter() );
+                break;
+            case CHANGED:
+                change( update.getNodeId(), update.getValueBefore(), update.getValueAfter() );
+                break;
+            case REMOVED:
+                remove( update.getNodeId(), update.getValueBefore() );
+                break;
+            default:
+                throw new UnsupportedOperationException();
             }
-            
-            // Call refresh here since we are guaranteed to be the only thread writing concurrently.
-            searcherManager.maybeRefresh();
         }
-        catch ( IOException e )
+        
+        // Call refresh here since we are guaranteed to be the only thread writing concurrently.
+        searcherManager.maybeRefresh();
+    }
+    
+    @Override
+    public void recover( Iterable<NodePropertyUpdate> updates ) throws IOException
+    {
+        for ( NodePropertyUpdate update : updates )
         {
-            throw new RuntimeException( e );
+            switch ( update.getUpdateMode() )
+            {
+            case ADDED:
+                addRecovered( update.getNodeId(), update.getValueAfter() );
+                break;
+            case CHANGED:
+                change( update.getNodeId(), update.getValueBefore(), update.getValueAfter() );
+                break;
+            case REMOVED:
+                remove( update.getNodeId(), update.getValueBefore() );
+                break;
+            default:
+                throw new UnsupportedOperationException();
+            }
+        }
+        searcherManager.maybeRefresh();
+    }
+
+    private void addRecovered( long nodeId, Object value ) throws IOException
+    {
+        IndexSearcher searcher = searcherManager.acquire();
+        TopDocs hits = searcher.search( new TermQuery( documentLogic.newQueryForChangeOrRemove( nodeId ) ), 1 );
+        if ( hits.totalHits > 0 )
+        {
+            writer.updateDocument( documentLogic.newQueryForChangeOrRemove( nodeId ), documentLogic.newDocument( nodeId, value ) );
+        }
+        else
+        {
+            add( nodeId, value );
         }
     }
 
@@ -98,13 +131,13 @@ class LuceneIndexAccessor implements IndexAccessor
 
     private void change( long nodeId, Object valueBefore, Object valueAfter ) throws IOException
     {
-        writer.updateDocument( documentLogic.newQueryForChangeOrRemove( nodeId, valueBefore ),
+        writer.updateDocument( documentLogic.newQueryForChangeOrRemove( nodeId ),
                 documentLogic.newDocument( nodeId, valueAfter ) );
     }
     
     private void remove( long nodeId, Object value ) throws IOException
     {
-        writer.deleteDocuments( documentLogic.newQueryForChangeOrRemove( nodeId, value ) );
+        writer.deleteDocuments( documentLogic.newQueryForChangeOrRemove( nodeId ) );
     }
     
     @Override

@@ -96,6 +96,21 @@ public class FlippableIndexProxy implements IndexProxy
     }
     
     @Override
+    public void recover( Iterable<NodePropertyUpdate> updates ) throws IOException
+    {
+        // TODO Shouldn't need the lock
+        lock.readLock().lock();
+        try
+        {
+            delegate.recover( updates );
+        }
+        finally
+        {
+            lock.readLock().unlock();
+        }
+    }
+    
+    @Override
     public Future<Void> drop() throws IOException
     {
         lock.readLock().lock();

@@ -137,7 +137,7 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
             throw new UnsupportedOperationException( value.toString() + ", " + value.getClass() );
         }
         
-        public Term newQueryForChangeOrRemove( long nodeId, Object value )
+        public Term newQueryForChangeOrRemove( long nodeId )
         {
             return new Term( NODE_ID_KEY, "" + nodeId );
         }
