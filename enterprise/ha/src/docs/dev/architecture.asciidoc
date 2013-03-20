@@ -9,7 +9,7 @@ To deploy such an application in a multi machine setup the only required change 
 Since both implement the same interface, no additional changes are required.
 
 .Multiple Neo4j instances in HA mode
-image::ha-architecture.svg[alt="Neo4j Highly Available Cluster"]
+image::ha-architecture.svg[alt="Neo4j Highly Available Cluster", scaledwidth="100%"]
 
 When running Neo4j in HA mode there is always a single master and zero or more slaves.
 Compared to other master-slave replication setups Neo4j HA can handle write requests on all machines so there is no need to redirect those to the master specifically.
