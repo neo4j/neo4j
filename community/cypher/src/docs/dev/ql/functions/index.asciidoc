@@ -1,22 +1,24 @@
 [[query-function]]
 Functions
 =========
-Most functions in Cypher will return +null+ if the input parameter is +null+.
 
-Here is a list of the functions in Cypher, seperated into three different sections: Predicates, Scalar functions and Aggregated functions
+This chapter contains information on all functions in Cypher.
+Note that related information exists in <<query-operators>>.
 
-.Graph
-include::includes/cypher-functions-graph.asciidoc[]
+NOTE: Most functions in Cypher will return +null+ if the input parameter is +null+.
 
-:leveloffset: 2
-
+[[query-predicates]]
 == Predicates ==
+
 Predicates are boolean functions that return true or false for a given set of input.
 They are most commonly used to filter out subgraphs in the +WHERE+ part of a query.
 
 See also <<query-operators-comparison>>.
 
-:leveloffset: 3
+.Graph
+include::includes/cypher-functions-graph.asciidoc[]
+
+:leveloffset: 2
 
 include::all.asciidoc[]
 
@@ -26,12 +28,17 @@ include::none.asciidoc[]
 
 include::single.asciidoc[]
 
-:leveloffset: 2
+:leveloffset: 1
 
+[[query-functions-scalar]]
 == Scalar functions ==
+
 Scalar functions return a single value.
 
-:leveloffset: 3
+.Graph
+include::includes/cypher-functions-graph.asciidoc[]
+
+:leveloffset: 2
 
 include::length.asciidoc[]
 
@@ -45,14 +52,19 @@ include::head.asciidoc[]
 
 include::last.asciidoc[]
 
-:leveloffset: 2
+:leveloffset: 1
 
+[[query-functions-collection]]
 == Collection functions ==
+
 Collection functions return collections of things -- nodes in a path, and so on.
 
 See also <<query-operators-collection>>.
 
-:leveloffset: 3
+.Graph
+include::includes/cypher-functions-graph.asciidoc[]
+
+:leveloffset: 2
 
 include::nodes.asciidoc[]
 
@@ -68,15 +80,19 @@ include::range.asciidoc[]
 
 include::reduce.asciidoc[]
 
-:leveloffset: 2
+:leveloffset: 1
 
+[[query-functions-mathematical]]
 == Mathematical functions ==
-These functions all operate on numerical expressions only, and will return an
-error if used on any other values.
+
+These functions all operate on numerical expressions only, and will return an error if used on any other values.
 
 See also <<query-operators-mathematical>>.
 
-:leveloffset: 3
+.Graph
+include::includes/cypher-functions-graph.asciidoc[]
+
+:leveloffset: 2
 
 include::abs.asciidoc[]
 
@@ -86,15 +102,20 @@ include::sqrt.asciidoc[]
 
 include::sign.asciidoc[]
 
-:leveloffset: 2
+:leveloffset: 1
 
+[[query-functions-string]]
 == String functions ==
-These functions all operate on string expressions only, and will return an
-error if used on any other values. Except `STR()`, which converts to strings.
+
+These functions all operate on string expressions only, and will return an error if used on any other values.
+Except `STR()`, which converts to strings.
 
 See also <<query-operators-string>>.
 
-:leveloffset: 3
+.Graph
+include::includes/cypher-functions-graph.asciidoc[]
+
+:leveloffset: 2
 
 include::str.asciidoc[]
 
@@ -115,3 +136,4 @@ include::trim.asciidoc[]
 include::lower.asciidoc[]
 
 include::upper.asciidoc[]
+

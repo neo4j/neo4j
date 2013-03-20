@@ -11,6 +11,4 @@ match to find it.
 Inside of the `FOREACH` parentheses, you can do any updating commands -- `CREATE`, `CREATE UNIQUE`, `DELETE`,
 and `FOREACH`.
 
-:leveloffset: 2
-
 include::mark-all-nodes-along-a-path.asciidoc[]

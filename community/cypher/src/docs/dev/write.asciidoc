@@ -1,0 +1,26 @@
+[[query-write]]
+= Writing Clauses =
+
+Write data to the database.
+
+:leveloffset: 2
+
+include::ql/create/index.asciidoc[]
+
+:leveloffset: 2
+
+include::ql/create-unique/index.asciidoc[]
+
+:leveloffset: 2
+
+include::ql/set/index.asciidoc[]
+
+:leveloffset: 2
+
+include::ql/delete/index.asciidoc[]
+
+:leveloffset: 2
+
+include::ql/foreach/index.asciidoc[]
+
+
