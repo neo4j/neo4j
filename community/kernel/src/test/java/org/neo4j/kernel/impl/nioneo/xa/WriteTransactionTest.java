@@ -78,6 +78,9 @@ import org.neo4j.test.EphemeralFileSystemRule;
 
 public class WriteTransactionTest
 {
+
+    public static final String LONG_STRING = "string value long enough not to be stored as a short string";
+
     @Test
     public void shouldAddSchemaRuleToCacheWhenApplyingTransactionThatCreatesOne() throws Exception
     {
@@ -261,7 +264,7 @@ public class WriteTransactionTest
         long[] labelIds = new long[] {labelId};
         WriteTransaction writeTransaction = newWriteTransaction( NO_INDEXING );
         PropertyIndex propertyIndex1 = new PropertyIndex( "key", 1 ), propertyIndex2 = new PropertyIndex( "key2", 2 );
-        Object value1 = "first", value2 = 4;
+        Object value1 = LONG_STRING, value2 = LONG_STRING.getBytes();
         writeTransaction.nodeCreate( nodeId );
         writeTransaction.nodeAddProperty( nodeId, propertyIndex1, value1 );
         writeTransaction.nodeAddProperty( nodeId, propertyIndex2, value2 );

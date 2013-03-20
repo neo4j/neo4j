@@ -705,7 +705,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
                 if ( binarySearch( labelsBefore, labelAfter ) < 0 )
                 {
                     // This label has been added. Go through all node properties and create updates for this label
-                    ArrayMap<Integer, PropertyData> properties = nodeLoadProperties( nodeId, false );
+                    ArrayMap<Integer, PropertyData> properties = nodeFullyLoadProperties( nodeId );
                     for ( PropertyData property : properties.values() )
                     {
                         updates.add( NodePropertyUpdate.add( nodeId, property.getIndex(), property.getValue(),
@@ -718,7 +718,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
                 if ( binarySearch( labelsAfter, labelBefore ) < 0 )
                 {
                     // This label has been removed. Go through all node properties and create updates for this label
-                    ArrayMap<Integer, PropertyData> properties = nodeLoadProperties( nodeId, false );
+                    ArrayMap<Integer, PropertyData> properties = nodeFullyLoadProperties( nodeId );
                     for ( PropertyData property : properties.values() )
                         updates.add( NodePropertyUpdate.remove( nodeId, property.getIndex(), property.getValue(),
                                 new long[] {labelBefore} ) );
@@ -1087,6 +1087,19 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             throw new InvalidRecordException( "Relationship[" + relId + "] not in use" );
         }
         return ReadTransaction.loadProperties( getPropertyStore(), relRecord.getNextProp() );
+    }
+
+    private ArrayMap<Integer,PropertyData> nodeFullyLoadProperties( long nodeId )
+    {
+        ArrayMap<Integer, PropertyData> properties = nodeLoadProperties( nodeId, false );
+        for ( PropertyData propertyData : properties.values() )
+        {
+            if (propertyData.getValue() == null )
+            {
+                propertyData.setNewValue( loadPropertyValue( propertyData ) );
+            }
+        }
+        return properties;
     }
 
     @Override

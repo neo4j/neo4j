@@ -34,9 +34,6 @@ public class NodePropertyUpdate
     private final long[] labelsBefore;
     private final long[] labelsAfter;
 
-    /**
-     * @param labels a sorted array of labels this property update is for.
-     */
     public NodePropertyUpdate( long nodeId, long propertyKeyId, Object valueBefore, long[] labelsBefore,
             Object valueAfter, long[] labelsAfter )
     {
@@ -109,13 +106,13 @@ public class NodePropertyUpdate
         StringBuilder result = new StringBuilder( getClass().getSimpleName() + "[" + nodeId + ", prop:" + propertyKeyId + " " );
         switch ( updateMode )
         {
-        case ADDED: result.append( "add:" + valueAfter ); break;
-        case CHANGED: result.append( "change:" + valueBefore + " => " + valueAfter ); break;
-        case REMOVED: result.append( "remove:" + valueBefore ); break;
+        case ADDED: result.append( "add:" ).append( valueAfter ); break;
+        case CHANGED: result.append( "change:" ).append( valueBefore ).append( " => " ).append( valueAfter ); break;
+        case REMOVED: result.append( "remove:" ).append( valueBefore ); break;
         default: throw new IllegalArgumentException( updateMode.toString() );
         }
-        result.append( ", labelsBefore:" + Arrays.toString( labelsBefore ) );
-        result.append( ", labelsAfter:" + Arrays.toString( labelsAfter ) );
+        result.append( ", labelsBefore:" ).append( Arrays.toString( labelsBefore ) );
+        result.append( ", labelsAfter:" ).append( Arrays.toString( labelsAfter ) );
         return result.append( "]" ).toString();
     }
 
@@ -129,8 +126,6 @@ public class NodePropertyUpdate
         result = prime * result + (int) (nodeId ^ (nodeId >>> 32));
         result = prime * result + (int) (propertyKeyId ^ (propertyKeyId >>> 32));
         result = prime * result + updateMode.hashCode();
-        result = prime * result + ((valueAfter == null) ? 0 : valueAfter.hashCode());
-        result = prime * result + ((valueBefore == null) ? 0 : valueBefore.hashCode());
         return result;
     }
 
@@ -144,31 +139,42 @@ public class NodePropertyUpdate
         if ( getClass() != obj.getClass() )
             return false;
         NodePropertyUpdate other = (NodePropertyUpdate) obj;
-        if ( !Arrays.equals( labelsBefore, other.labelsBefore ) )
-            return false;
-        if ( !Arrays.equals( labelsAfter, other.labelsAfter ) )
-            return false;
-        if ( nodeId != other.nodeId )
-            return false;
-        if ( propertyKeyId != other.propertyKeyId )
-            return false;
-        if ( updateMode != other.updateMode )
-            return false;
-        if ( valueAfter == null )
+        return Arrays.equals( labelsBefore, other.labelsBefore ) &&
+                Arrays.equals( labelsAfter, other.labelsAfter ) &&
+                nodeId == other.nodeId &&
+                propertyKeyId == other.propertyKeyId &&
+                updateMode == other.updateMode &&
+                propertyValuesEqual( valueBefore, other.valueBefore ) &&
+                propertyValuesEqual( valueAfter, other.valueAfter );
+    }
+
+    public static boolean propertyValuesEqual(Object a, Object b)
+    {
+        if ( a == null )
         {
-            if ( other.valueAfter != null )
-                return false;
+            return b == null;
         }
-        else if ( !valueAfter.equals( other.valueAfter ) )
-            return false;
-        if ( valueBefore == null )
+        if ( b == null )
         {
-            if ( other.valueBefore != null )
-                return false;
-        }
-        else if ( !valueBefore.equals( other.valueBefore ) )
             return false;
-        return true;
+        }
+        if (a instanceof int[] && b instanceof int[])
+        {
+            return Arrays.equals( (int[]) a, (int[]) b );
+        }
+        if (a instanceof boolean[] && b instanceof boolean[])
+        {
+            return Arrays.equals( (boolean[]) a, (boolean[]) b );
+        }        
+        if (a instanceof byte[] && b instanceof byte[])
+        {
+            return Arrays.equals( (byte[]) a, (byte[]) b );
+        }
+        if (a instanceof Object[] && b instanceof Object[])
+        {
+            return Arrays.equals( (Object[]) a, (Object[]) b );
+        }
+        return a.equals( b );
     }
     
     public static final long[] EMPTY_LONG_ARRAY = new long[0];
