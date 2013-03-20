@@ -67,14 +67,14 @@ public class StoreMigrator
         private void migrate() throws IOException
         {
             // Migrate
+            migrateNeoStore( neoStore );
             migrateNodes( neoStore.getNodeStore() );
-            
+
             // Close
             neoStore.close();
             legacyStore.close();
-            
+
             // Just copy unchanged stores that doesn't need migration
-            legacyStore.copyNeoStore( neoStore );
             legacyStore.copyRelationshipStore( neoStore );
             legacyStore.copyRelationshipTypeStore( neoStore );
             legacyStore.copyRelationshipTypeNameStore( neoStore );
@@ -84,7 +84,13 @@ public class StoreMigrator
             legacyStore.copyDynamicStringPropertyStore( neoStore );
             legacyStore.copyDynamicArrayPropertyStore( neoStore );
         }
-        
+
+        private void migrateNeoStore( NeoStore neoStore ) throws IOException
+        {
+            legacyStore.copyNeoStore( neoStore );
+            neoStore.setStoreVersion( NeoStore.versionStringToLong( NeoStore.ALL_STORES_VERSION ) );
+        }
+
         private void migrateNodes( NodeStore nodeStore ) throws IOException
         {
             Iterable<NodeRecord> records = legacyStore.getNodeStoreReader().readNodeStore();
@@ -103,7 +109,7 @@ public class StoreMigrator
             }
             legacyStore.getNodeStoreReader().close();
         }
-        
+
         private void reportProgress( long id )
         {
             int newPercent = (int) (id * 100 / totalEntities);

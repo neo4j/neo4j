@@ -55,7 +55,7 @@ import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.tooling.GlobalGraphOperations;
 
-public class StoreMigratorTestIT
+public class StoreMigratorIT
 {
     @Test
     public void shouldMigrate() throws IOException
@@ -80,7 +80,7 @@ public class StoreMigratorTestIT
 
         neoStore = factory.newNeoStore( new File( storeFileName ) );
         
-        verifyNeoStore( neoStore);
+        verifyNeoStore( neoStore );
 
         neoStore.close();
 
@@ -106,6 +106,7 @@ public class StoreMigratorTestIT
         assertEquals( 1317392957120l, neoStore.getCreationTime() );
         assertEquals( -472309512128245482l, neoStore.getRandomNumber() );
         assertEquals( 1l, neoStore.getVersion() );
+        assertEquals( NeoStore.ALL_STORES_VERSION, NeoStore.versionLongToString( neoStore.getStoreVersion() ) );
         assertEquals( 1004l, neoStore.getLastCommittedTx() );
     }
 
