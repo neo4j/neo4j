@@ -19,11 +19,6 @@
  */
 package org.neo4j.test.impl;
 
-import static java.lang.Math.max;
-import static java.lang.Math.min;
-import static java.util.Arrays.asList;
-import static org.neo4j.helpers.collection.IteratorUtil.loop;
-
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -56,6 +51,11 @@ import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.impl.nioneo.store.FileLock;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+
+import static java.lang.Math.max;
+import static java.lang.Math.min;
+import static java.util.Arrays.asList;
+import static org.neo4j.helpers.collection.IteratorUtil.loop;
 
 public class EphemeralFileSystemAbstraction extends LifecycleAdapter implements FileSystemAbstraction
 {
@@ -262,8 +262,8 @@ public class EphemeralFileSystemAbstraction extends LifecycleAdapter implements 
 
     private boolean directoryMatches( List<String> directoryPathItems, List<String> fileNamePathItems )
     {
-        return fileNamePathItems.size() > directoryPathItems.size() ?
-                fileNamePathItems.subList( 0, directoryPathItems.size() ).equals( directoryPathItems ) : false;
+        return fileNamePathItems.size() > directoryPathItems.size() &&
+               fileNamePathItems.subList( 0, directoryPathItems.size() ).equals( directoryPathItems );
     }
 
     private List<String> splitPath( File path )
@@ -490,10 +490,9 @@ public class EphemeralFileSystemAbstraction extends LifecycleAdapter implements 
             return available; // return how much data was read
         }
 
-        @Override
-        public EphemeralFileData clone()
+        EphemeralFileData copy()
         {
-            EphemeralFileData copy = new EphemeralFileData( fileAsBuffer.clone() );
+            EphemeralFileData copy = new EphemeralFileData( fileAsBuffer.copy() );
             copy.size = size;
             return copy;
         }
@@ -625,10 +624,9 @@ public class EphemeralFileSystemAbstraction extends LifecycleAdapter implements 
         private static volatile AtomicReferenceArray<Queue<Reference<ByteBuffer>>> POOLS;
         private static final byte[] zeroBuffer = new byte[1024];
 
-        @Override
-        public DynamicByteBuffer clone()
+        DynamicByteBuffer copy()
         {
-            return new DynamicByteBuffer( buf );
+            return new DynamicByteBuffer( buf ); // invoke "copy constructor"
         }
 
         static
@@ -648,6 +646,7 @@ public class EphemeralFileSystemAbstraction extends LifecycleAdapter implements 
             buf = allocate( 0 );
         }
 
+        /** This is a copying constructor, the input buffer is just read from, never stored in 'this'. */
         private DynamicByteBuffer( ByteBuffer toClone )
         {
             int sizeIndex = sizeIndexFor( toClone.capacity() );
@@ -658,23 +657,14 @@ public class EphemeralFileSystemAbstraction extends LifecycleAdapter implements 
         private void copyByteBufferContents( ByteBuffer from, ByteBuffer to )
         {
             int positionBefore = from.position();
-            int limitBefore = from.limit();
-            byte[] scratchPad = new byte[8096];
             try
             {
                 from.position( 0 );
-                while ( from.remaining() > 0 )
-                {
-                    int bytes = Math.min( scratchPad.length, from.remaining() );
-                    from.get( scratchPad, 0, bytes );
-                    to.put( scratchPad, 0, bytes );
-                }
+                to.put( from );
             }
             finally
             {
-                from.limit( limitBefore );
                 from.position( positionBefore );
-                to.limit( limitBefore );
                 to.position( 0 );
             }
         }
@@ -798,7 +788,11 @@ public class EphemeralFileSystemAbstraction extends LifecycleAdapter implements 
             // Double size each time, but after 1M only increase by 1M at a time, until required amount is reached.
             int newSize = buf.capacity();
             int sizeIndex = sizeIndexFor( newSize );
-            for ( ; newSize < totalAmount; newSize += Math.min( newSize, 1024 * 1024 ), sizeIndex++ );
+            while ( newSize < totalAmount )
+            {
+                newSize += Math.min( newSize, 1024 * 1024 );
+                sizeIndex++;
+            }
             int oldPosition = this.buf.position();
             ByteBuffer buf = allocate( sizeIndex );
             this.buf.position( 0 );
@@ -834,7 +828,7 @@ public class EphemeralFileSystemAbstraction extends LifecycleAdapter implements 
         Map<File, EphemeralFileData> copiedFiles = new HashMap<File, EphemeralFileData>();
         for ( Map.Entry<File, EphemeralFileData> file : files.entrySet() )
         {
-            copiedFiles.put( file.getKey(), file.getValue().clone() );
+            copiedFiles.put( file.getKey(), file.getValue().copy() );
         }
         return new EphemeralFileSystemAbstraction( copiedFiles );
     }
@@ -869,8 +863,7 @@ public class EphemeralFileSystemAbstraction extends LifecycleAdapter implements 
         FileChannel sink = this.open( to, "rw" );
         try
         {
-            int available = 0;
-            while ( (available = (int) (source.size() - source.position())) > 0 )
+            for ( int available; (available = (int) (source.size() - source.position())) > 0; )
             {
                 buffer.clear();
                 buffer.limit( min( available, buffer.capacity() ) );
