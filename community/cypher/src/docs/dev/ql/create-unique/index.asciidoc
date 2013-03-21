@@ -16,8 +16,6 @@ The examples start out with the following data set:
 
 include::includes/cypher-createunique-graph.asciidoc[]
 
-:leveloffset: 2
-
 include::create-relationship-if-it-is-missing.asciidoc[]
 
 include::create-node-if-missing.asciidoc[]
