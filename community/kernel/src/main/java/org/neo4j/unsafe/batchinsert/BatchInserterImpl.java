@@ -41,6 +41,8 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConfigurationDefaults;
 import org.neo4j.kernel.impl.batchinsert.SimpleRelationship;
 import org.neo4j.kernel.impl.index.IndexStore;
+import org.neo4j.kernel.impl.nioneo.store.AbstractStore;
+import org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.nioneo.store.DefaultWindowPoolFactory;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
@@ -96,9 +98,11 @@ public class BatchInserterImpl implements BatchInserter
         Map<String,String> stringParams )
     {
         rejectAutoUpgrade( stringParams );
+        storeDir = FileUtils.fixSeparatorsInPath(storeDir);
         msgLog = StringLogger.logger( storeDir );
         Map<String,String> params = getDefaultParams();
         params.put( GraphDatabaseSettings.use_memory_mapped_buffers.name(), GraphDatabaseSetting.BooleanSetting.FALSE );
+        params.put( CommonAbstractStore.Configuration.store_dir.name(), storeDir );
         params.putAll( stringParams );
         final FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
 
