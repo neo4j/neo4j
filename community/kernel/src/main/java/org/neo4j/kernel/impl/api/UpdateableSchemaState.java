@@ -23,5 +23,7 @@ import java.util.Map;
 
 public interface UpdateableSchemaState extends SchemaState
 {
+    void replace(Map<Object, Object> updates);
+
     <K, V> void apply(Map<K, V> updates);
 }

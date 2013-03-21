@@ -36,9 +36,9 @@ import values.ResolvedLabel
 
 class ExecutionPlanBuilder(graph: GraphDatabaseService) extends PatternGraphBuilder {
 
-  def build(inputQuery: AbstractQuery): ExecutionPlan = {
+  def build(planContext: PlanContext, inputQuery: AbstractQuery): ExecutionPlan = {
 
-    val (p, isUpdating) = buildPipes(inputQuery)
+    val (p, isUpdating) = buildPipes(planContext, inputQuery)
 
     val columns = getQueryResultColumns(inputQuery, p.symbols)
     val func = if (isUpdating) {
@@ -53,23 +53,11 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService) extends PatternGraphBuil
     }
   }
 
-  def buildPipes(in: AbstractQuery): (Pipe, Boolean) = {
-    val tx = graph.beginTx()
-    try {
-      val statementContext = graph.asInstanceOf[GraphDatabaseAPI].getDependencyResolver
-        .resolveDependency(classOf[ThreadToStatementContextBridge]).getCtxForWriting
-      val planContext = new TransactionBoundPlanContext(statementContext, graph)
-      val result: (Pipe, Boolean) = in match {
-        case q: Query          => buildQuery(q, planContext)
-        case q: IndexOperation => buildIndexQuery(q)
-        case q: Union          => buildUnionQuery(q, planContext)
-      }
-      tx.success()
-      return result
-    } finally {
-      tx.finish()
+  def buildPipes(planContext: PlanContext, in: AbstractQuery): (Pipe, Boolean) = in match {
+      case q: Query          => buildQuery(q, planContext)
+      case q: IndexOperation => buildIndexQuery(q)
+      case q: Union          => buildUnionQuery(q, planContext)
     }
-  }
 
   val unionBuilder = new UnionBuilder(this)
 

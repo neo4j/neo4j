@@ -43,18 +43,8 @@ trait ExecutionEngineHelper extends GraphDatabaseTestBase with GraphIcing {
     result
   }
 
-  def parseAndExecute(q: String, params: (String, Any)*): ExecutionResult = {
-    val plan = engine.prepare(q)
-    val tx = graph.beginTx()
-
-    val statementContext = graph
-      .getDependencyResolver
-      .resolveDependency(classOf[ThreadToStatementContextBridge])
-      .getCtxForWriting
-
-    val ctx = new TransactionBoundQueryContext(graph, tx, statementContext)
-    plan.execute(ctx, params.toMap)
-  }
+  def parseAndExecute(q: String, params: (String, Any)*): ExecutionResult =
+    engine.execute(q, params.toMap)
 
   def executeScalar[T](q: String, params: (String, Any)*):T = engine.execute(q, params.toMap).toList match {
     case List(m) => if (m.size!=1)

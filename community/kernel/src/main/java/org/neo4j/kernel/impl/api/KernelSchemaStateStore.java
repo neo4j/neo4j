@@ -79,6 +79,17 @@ public class KernelSchemaStateStore implements UpdateableSchemaState
             return currentValue;
     }
 
+    public void replace(Map<Object, Object> replacement)
+    {
+        lock.writeLock().lock();
+        try {
+            state = replacement;
+        }
+        finally {
+            lock.writeLock().unlock();
+        }
+    }
+
     public <K, V> void apply(Map<K, V> updates)
     {
         lock.writeLock().lock();

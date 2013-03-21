@@ -65,7 +65,7 @@ class DelegatingQueryContext(inner: QueryContext) extends QueryContext {
 
   def upgrade(context: QueryContext): LockingQueryContext = inner.upgrade(context)
 
-  def getOrCreateFromSchemaState[T](s: String, creator: (String) => T) = inner.getOrCreateFromSchemaState(s, creator)
+  def getOrCreateFromSchemaState[K, V](key: K, creator: => V): V = inner.getOrCreateFromSchemaState(key, creator)
 
   def schemaStateContains(key: String) = inner.schemaStateContains(key)
 }

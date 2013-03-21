@@ -181,11 +181,11 @@ class TransactionBoundQueryContext(graph: GraphDatabaseAPI, tx: Transaction, ctx
     }
   }
 
-  def getOrCreateFromSchemaState[T](s: String, creator: (String) => T) = {
-    val javaCreator = new org.neo4j.helpers.Function[String,T](){
-      def apply(key: String) = creator(key)
+  def getOrCreateFromSchemaState[K, V](key: K, creator: => V) = {
+    val javaCreator = new org.neo4j.helpers.Function[K, V](){
+      def apply(key: K) = creator
     }
-    ctx.getOrCreateFromSchemaState(s, javaCreator)
+    ctx.getOrCreateFromSchemaState(key, javaCreator)
   }
 
   def schemaStateContains(key: String) = ctx.schemaStateContains(key)

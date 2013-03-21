@@ -118,7 +118,7 @@ class SnitchingQueryContext extends QueryContext {
 
   def upgrade(context: QueryContext): LockingQueryContext = ???
 
-  def getOrCreateFromSchemaState[T](s: String, creator: (String) => T) = ???
+  def getOrCreateFromSchemaState[K, V](key: K, creator: => V): V = ???
 
   def schemaStateContains(key: String) = ???
 }

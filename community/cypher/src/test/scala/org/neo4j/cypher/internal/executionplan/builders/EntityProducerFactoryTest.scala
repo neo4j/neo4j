@@ -37,7 +37,7 @@ class EntityProducerFactoryTest extends MockitoSugar with Assertions {
   @Before
   def init() {
     planContext = mock[PlanContext]
-    factory = new EntityProducerFactory(planContext)
+    factory = new EntityProducerFactory
   }
 
   @Test
@@ -48,7 +48,7 @@ class EntityProducerFactoryTest extends MockitoSugar with Assertions {
     when(planContext.getIndexRuleId(label, prop)).thenReturn(None)
 
     //WHEN
-    intercept[IndexHintException](factory.nodeByIndexHint(SchemaIndex("id", label, prop, None)))
+    intercept[IndexHintException](factory.nodeByIndexHint(planContext, SchemaIndex("id", label, prop, None)))
   }
 
   @Test
@@ -65,7 +65,7 @@ class EntityProducerFactoryTest extends MockitoSugar with Assertions {
     val state = QueryStateHelper.empty.copy(inner = queryContext)
 
     //WHEN
-    val func = factory.nodeByIndexHint(SchemaIndex("id", label, prop, Some(Literal(value))))
+    val func = factory.nodeByIndexHint(planContext, SchemaIndex("id", label, prop, Some(Literal(value))))
     assert(func(null, state) === indexResult)
   }
 }

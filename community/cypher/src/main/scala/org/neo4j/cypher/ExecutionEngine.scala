@@ -22,14 +22,16 @@ package org.neo4j.cypher
 import internal.commands._
 import internal.executionplan.ExecutionPlanBuilder
 import internal.executionplan.verifiers.{IndexHintVerifier, Verifier}
-import internal.spi.gdsimpl.TransactionBoundQueryContext
+import internal.LRUCache
+import internal.spi.gdsimpl.{TransactionBoundPlanContext, TransactionBoundQueryContext}
 import internal.spi.QueryContext
 import scala.collection.JavaConverters._
 import java.util.{Map => JavaMap}
 import org.neo4j.kernel.{ThreadToStatementContextBridge, GraphDatabaseAPI, InternalAbstractGraphDatabase}
-import org.neo4j.graphdb.GraphDatabaseService
+import org.neo4j.graphdb.{Transaction, GraphDatabaseService}
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.impl.util.StringLogger
+import org.neo4j.kernel.api.StatementContext
 
 
 class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = StringLogger.DEV_NULL) {
@@ -38,13 +40,17 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
 
   val parser = createCorrectParser()
   val planBuilder = new ExecutionPlanBuilder(graph)
-
   val verifiers:Seq[Verifier] = Seq(IndexHintVerifier)
+
+  private val queryCache = new LRUCache[String, AbstractQuery](getQueryCacheSize)
+
 
   @throws(classOf[SyntaxException])
   def profile(query: String, params: Map[String, Any]): ExecutionResult = {
     logger.debug(query)
-    prepare(query).profile(queryContext, params)
+    prepare(query, { (plan: ExecutionPlan, queryContext: QueryContext) =>
+      plan.profile(queryContext, params)
+    })
   }
 
   @throws(classOf[SyntaxException])
@@ -60,17 +66,17 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
   @throws(classOf[SyntaxException])
   def execute(query: String, params: Map[String, Any]): ExecutionResult = {
     logger.debug(query)
-    prepare(query).execute(queryContext, params)
+    prepare(query, { (plan: ExecutionPlan, queryContext: QueryContext) =>
+      plan.execute(queryContext, params)
+    })
   }
 
-  private def queryContext = {
-    val tx = graph.beginTx()
+  private def getStatementContext = graph.asInstanceOf[GraphDatabaseAPI]
+    .getDependencyResolver
+    .resolveDependency(classOf[ThreadToStatementContextBridge])
+    .getCtxForWriting
 
-    val ctx = graph.asInstanceOf[GraphDatabaseAPI]
-      .getDependencyResolver
-      .resolveDependency(classOf[ThreadToStatementContextBridge])
-      .getCtxForWriting
-
+  private def createQueryContext(tx: Transaction, ctx: StatementContext) = {
     new TransactionBoundQueryContext(graph.asInstanceOf[GraphDatabaseAPI], tx, ctx)
   }
 
@@ -78,12 +84,55 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
   def execute(query: String, params: JavaMap[String, Any]): ExecutionResult = execute(query, params.asScala.toMap)
 
   @throws(classOf[SyntaxException])
-  def prepare(query: String): ExecutionPlan =  {
-    val parsedQuery: AbstractQuery = parser.parse(query)
-    verify(parsedQuery)
-    withQueryContext { (ctx:QueryContext) =>
-      ctx.getOrCreateFromSchemaState(query, (_) => planBuilder.build(parsedQuery))
+  def prepare[T](query: String, run: (ExecutionPlan, QueryContext) => T): T =  {
+    // parse query
+    val cachedQuery = queryCache.getOrElseUpdate(query, {
+      val parsedQuery = parser.parse(query)
+      verify(parsedQuery)
+      parsedQuery
+    })
+
+    var n = 0
+    while (n < ExecutionEngine.PLAN_BUILDING_TRIES) {
+      // create transaction and query context
+      var touched = false
+      var statementContext: StatementContext = null
+      var queryContext: QueryContext = null
+      val tx = graph.beginTx()
+      val plan = try {
+        statementContext = getStatementContext
+        queryContext = createQueryContext(tx, statementContext)
+
+        // fetch plan cache
+        val planCache =
+          queryContext.getOrCreateFromSchemaState(this, new LRUCache[String, ExecutionPlan](getQueryCacheSize))
+
+        // get plan or build it
+        planCache.getOrElseUpdate(query, {
+          touched = true
+          val planContext = new TransactionBoundPlanContext(statementContext, graph)
+          planBuilder.build(planContext, cachedQuery)
+        })
+      }
+      catch {
+        case (t: Throwable) =>
+          tx.failure()
+          tx.finish()
+          throw t
+      }
+
+      if (touched) {
+        tx.success()
+        tx.finish()
+      }
+      else {
+          return run(plan, queryContext)
+      }
+
+      n += 1
     }
+
+    throw new IllegalStateException("Could not execute query due to insanely frequent schema changes")
   }
 
   def verify(query: AbstractQuery) {
@@ -91,25 +140,20 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
       verifier.verify(query)
   }
 
-  def isPrepared(query : String) : Boolean = withQueryContext {
-    (ctx:QueryContext) => ctx.schemaStateContains(query)
-  }
-
-  def execute(query: AbstractQuery, params: Map[String, Any]): ExecutionResult =
-    planBuilder.build(query).execute(queryContext, params)
-
-  private def withQueryContext[T]( f: QueryContext => T ) : T = {
-    val ctx = queryContext
-    var success = true
+  def execute(query: AbstractQuery, params: Map[String, Any]): ExecutionResult = {
+    val tx = graph.beginTx()
     try {
-      f(ctx)
-    } catch {
-      case t : Throwable =>
-        success = false
+      verify(query)
+      val statementContext = getStatementContext
+      val queryContext = createQueryContext(tx, statementContext)
+      val planContext = new TransactionBoundPlanContext(statementContext, graph)
+      planBuilder.build(planContext, query).execute(queryContext, params)
+    }
+    catch {
+      case (t: Throwable) =>
+        tx.failure()
+        tx.finish()
         throw t
-    } finally
-    {
-      ctx.close(success)
     }
   }
 
@@ -139,6 +183,7 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
 
 object ExecutionEngine {
   val DEFAULT_QUERY_CACHE_SIZE: Int = 100
+  val PLAN_BUILDING_TRIES: Int = 20
 }
 
 

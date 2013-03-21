@@ -77,7 +77,7 @@ trait QueryContext {
 
   def upgrade(context: QueryContext): LockingQueryContext
 
-  def getOrCreateFromSchemaState[T](key: String, creator:String => T): T
+  def getOrCreateFromSchemaState[K, V](key: K, creator: => V): V
 
   def schemaStateContains(key: String): Boolean
 }
