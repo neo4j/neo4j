@@ -44,6 +44,8 @@
         <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
         <docs.url>http://docs.neo4j.org/chunked/${project.version}/server.html</docs.url>
         <docs-plugin.filter>true</docs-plugin.filter>
+        
+        <neo4j.version>${project.version}</neo4j.version>
 
         <neo4j-server.mainClass>org.neo4j.server.Bootstrapper</neo4j-server.mainClass>
         <neo-server.home>target/generated-resources/appassembler/jsw</neo-server.home>
@@ -303,6 +305,7 @@
         <resources>
             <resource>
                 <directory>src/main/resources</directory>
+                <filtering>true</filtering>
             </resource>
             <resource>
                 <directory>${project.build.directory}/generated-sources</directory>
