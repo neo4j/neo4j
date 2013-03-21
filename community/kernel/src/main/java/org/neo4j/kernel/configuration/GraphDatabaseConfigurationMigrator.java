@@ -30,8 +30,8 @@ import org.neo4j.helpers.Settings;
 public class GraphDatabaseConfigurationMigrator extends BaseConfigurationMigrator
 {
     {
-        add( new SpecificPropertyMigration( "enable_online_backup", "enable_online_backup has been replaced with " +
-                "online_backup_enabled and online_backup_port" )
+        add( new SpecificPropertyMigration( "enable_online_backup",
+                "enable_online_backup has been replaced with online_backup_enabled and online_backup_port" )
         {
             @Override
             public void setValueWithOldSetting( String value, Map<String, String> rawConfiguration )
@@ -45,11 +45,11 @@ public class GraphDatabaseConfigurationMigrator extends BaseConfigurationMigrato
                     {   // Multi-value config, which means we have to parse the port
                         Args args = parseMapFromConfigValue( "enable_online_backup", value );
                         port = args.get( "port", "6372" );
-                        port = ":"+port;
+                        port = "0.0.0.0:"+port;
                     }
                     else if ( Boolean.parseBoolean( value ) == true )
                     {   // Single-value config, true/false
-                        port = ":6372-6382";
+                        port = "0.0.0.0:6372-6382";
                     }
 
                     if ( port != null )
@@ -61,14 +61,15 @@ public class GraphDatabaseConfigurationMigrator extends BaseConfigurationMigrato
             }
         } );
 
-        add( new SpecificPropertyMigration( "online_backup_port", "online_backup_port has been replaced with online_backup_server, which is a hostname:port setting" )
+        add( new SpecificPropertyMigration( "online_backup_port",
+                "online_backup_port has been replaced with online_backup_server, which is a hostname:port setting" )
         {
             @Override
             public void setValueWithOldSetting( String value, Map<String, String> rawConfiguration )
             {
                 if ( value != null )
                 {
-                    rawConfiguration.put( "online_backup_server", ":"+value );
+                    rawConfiguration.put( "online_backup_server", "0.0.0.0:"+value );
                 }
             }
         } );
