@@ -2809,6 +2809,4 @@ RETURN x0.name?
     //THEN
     assert(result.toList === List(Map("p" -> PathImpl(n))))
   }
-
-
 }
