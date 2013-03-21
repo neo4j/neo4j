@@ -19,14 +19,20 @@
  */
 package org.neo4j.cypher.internal.executionplan.verifiers
 
-import org.neo4j.cypher.internal.commands.AbstractQuery
+import org.neo4j.cypher.internal.commands.Query
+import org.neo4j.cypher.PatternException
 
-abstract class Verifier {
-  protected def verifyFunction: PartialFunction[AbstractQuery, Unit]
 
-  def verify(q: AbstractQuery) {
-   if (verifyFunction.isDefinedAt(q))
-     verifyFunction.apply(q)
+object OptionalPatternWithoutStartVerifier extends Verifier {
+  def verifyFunction = {
+    case Query(_, start, _, patterns, _, _, _, _, _, _, _, _)
+      if start.isEmpty && patterns.exists(_.optional) =>
+
+      val optionalRelationships: String = patterns.
+        filter(_.optional).
+        flatMap(_.rels.map("`" + _ + "`")).
+        mkString(", ")
+
+      throw new PatternException("Can't use optional patterns without explicit START clause. Optional relationships: " + optionalRelationships)
   }
 }
-

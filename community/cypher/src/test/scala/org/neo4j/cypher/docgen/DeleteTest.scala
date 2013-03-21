@@ -38,13 +38,14 @@ class DeleteTest extends DocumentingTestBase {
   @Test def delete_single_node() {
     val id = db.inTx(() => {
       val a = db.createNode()
+      a.setProperty("name", "Danny")
       a.getId
     })
 
     testQuery(
       title = "Delete single node",
       text = "To delete a node, use the +DELETE+ clause.",
-      queryText = "start n = node(" + id + ") delete n",
+      queryText = "match n where n.name='Danny' delete n",
       returns = "Nothing is returned from this query, except the count of affected nodes.",
       assertions = (p) => assertIsDeleted(db.getNodeById(id)))
   }

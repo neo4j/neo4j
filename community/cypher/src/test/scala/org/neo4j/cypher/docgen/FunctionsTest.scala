@@ -87,7 +87,7 @@ class FunctionsTest extends DocumentingTestBase {
       syntax = "SINGLE(identifier in collection WHERE predicate)",
       arguments = common_arguments,
       text = """Returns true if the predicate holds for exactly one of the elements in the collection.""",
-      queryText = """start n=node(%A%) match p=n-->b where SINGLE(var in nodes(p) WHERE var.eyes = "blue") return p""",
+      queryText = """match p=n-->b where n.name='A' and SINGLE(var in nodes(p) WHERE var.eyes = "blue") return p""",
       returns = """Exactly one node in every returned path will have the `eyes` property set to `"blue"`.""",
       assertions = (p) => assertEquals(1, p.toSeq.length))
   }
@@ -109,7 +109,7 @@ class FunctionsTest extends DocumentingTestBase {
       syntax = "LENGTH( collection )",
       arguments = List("collection" -> "An expression that returns a collection"),
       text = """To return or filter on the length of a collection, use the `LENGTH()` function.""",
-      queryText = """start a=node(%A%) match p=a-->b-->c return length(p)""",
+      queryText = """match p=a-->b-->c where a.name='A' return length(p)""",
       returns = """The length of the path `p` is returned by the query.""",
       assertions = (p) => assertEquals(2, p.columnAs[Int]("length(p)").toList.head))
   }
@@ -120,7 +120,7 @@ class FunctionsTest extends DocumentingTestBase {
       syntax = "LABELS( node )",
       arguments = List("node" -> "Any expression that returns a single node"),
       text = """Returns a collection of string representations for the labels attached to a node.""",
-      queryText = """start a=node(%A%) return labels(a)""",
+      queryText = """match a where a.name='A' return labels(a)""",
       returns = """The labels of `n` is returned by the query.""",
       assertions = {
         (p) =>
@@ -142,7 +142,7 @@ class FunctionsTest extends DocumentingTestBase {
       text = """To return a single property, or the value of a function from a collection of nodes or relationships,
  you can use `EXTRACT`. It will go through a collection, run an expression on every element, and return the results
  in an collection with these values. It works like the `map` method in functional languages such as Lisp and Scala.""",
-      queryText = """start a=node(%A%), b=node(%B%), c=node(%D%) match p=a-->b-->c return extract(n in nodes(p) : n.age)""",
+      queryText = """match p=a-->b-->c where a.name='A' and b.name='B' and c.name='D' return extract(n in nodes(p) : n.age)""",
       returns = """The age property of all nodes in the path are returned.""",
       assertions = (p) => assertEquals(List(Map("extract(n in nodes(p) : n.age)" -> List(38, 25, 54))), p.toList))
   }
@@ -161,7 +161,7 @@ class FunctionsTest extends DocumentingTestBase {
       text = """To run an expression against individual elements of a collection, and store the result of the expression in
  an accumulator, you can use `REDUCE`. It will go through a collection, run an expression on every element, storing the partial result 
  in the accumulator. It works like the `fold` or `reduce` method in functional languages such as Lisp and Scala.""",
-      queryText = """start a=node(%A%), b=node(%B%), c=node(%D%) match p=a-->b-->c return reduce(totalAge = 0, n in nodes(p) : totalAge + n.age)""",
+      queryText = """match p=a-->b-->c where a.name='A' and b.name='B' and c.name='D' return reduce(totalAge = 0, n in nodes(p) : totalAge + n.age)""",
       returns = """The age property of all nodes in the path are summed and returned as a single value.""",
       assertions = (p) => assertEquals(List(Map("reduce(totalAge = 0, n in nodes(p) : totalAge + n.age)" -> 117)), p.toList))
   }
@@ -214,7 +214,7 @@ class FunctionsTest extends DocumentingTestBase {
       syntax = "FILTER(identifier in collection : predicate)",
       arguments = common_arguments,
       text = "`FILTER` returns all the elements in a collection that comply to a predicate.",
-      queryText = """start a=node(%E%) return a.array, filter(x in a.array : length(x) = 3)""",
+      queryText = """match a where a.name='E' return a.array, filter(x in a.array : length(x) = 3)""",
       returns = "This returns the property named `array` and a list of values in it, which have the length `3`.",
       assertions = (p) => {
         val array = p.columnAs[Iterable[_]]("filter(x in a.array : length(x) = 3)").toList.head
@@ -228,7 +228,7 @@ class FunctionsTest extends DocumentingTestBase {
       syntax = "NODES( path )",
       arguments = List("path" -> "A path."),
       text = """Returns all nodes in a path.""",
-      queryText = """start a=node(%A%), c=node(%E%) match p=a-->b-->c return NODES(p)""",
+      queryText = """match p=a-->b-->c where a.name='A' and c.name='E' return NODES(p)""",
       returns = """All the nodes in the path `p` are returned by the example query.""",
       assertions = (p) => assert(List(node("A"), node("B"), node("E")) === p.columnAs[List[Node]]("NODES(p)").toList.head)
     )
@@ -240,7 +240,7 @@ class FunctionsTest extends DocumentingTestBase {
       syntax = "RELATIONSHIPS( path )",
       arguments = List("path" -> "A path."),
       text = """Returns all relationships in a path.""",
-      queryText = """start a=node(%A%), c=node(%E%) match p=a-->b-->c return RELATIONSHIPS(p)""",
+      queryText = """match p=a-->b-->c where a.name='A' and c.name='E' return RELATIONSHIPS(p)""",
       returns = """All the relationships in the path `p` are returned.""",
       assertions = (p) => assert(2 === p.columnAs[List[Node]]("RELATIONSHIPS(p)").toSeq.head.length)
     )
@@ -252,9 +252,9 @@ class FunctionsTest extends DocumentingTestBase {
       syntax = "ID( property-container )",
       arguments = List("property-container" -> "A node or a relationship."),
       text = """Returns the id of the relationship or node.""",
-      queryText = """start a=node(%A%, %B%, %C%) return ID(a)""",
+      queryText = """match a return ID(a)""",
       returns = """This returns the node id for three nodes.""",
-      assertions = (p) => assert(Seq(node("A").getId, node("B").getId, node("C").getId) === p.columnAs[Int]("ID(a)").toSeq)
+      assertions = (p) => assert(Seq(1,2,3,4,5) === p.columnAs[Int]("ID(a)").toSeq)
     )
   }
 
@@ -264,7 +264,7 @@ class FunctionsTest extends DocumentingTestBase {
       syntax = "COALESCE( expression [, expression]* )",
       arguments = List("expression" -> "The expression that might return null."),
       text = """Returns the first non-+null+ value in the list of expressions passed to it.""",
-      queryText = """start a=node(%A%) return coalesce(a.hairColour?, a.eyes?)""",
+      queryText = """match a where a.name='A' return coalesce(a.hairColour?, a.eyes?)""",
       returns = """""",
       assertions = (p) => assert(Seq("brown") === p.columnAs[String]("coalesce(a.hairColour?, a.eyes?)").toSeq)
     )
@@ -276,9 +276,9 @@ class FunctionsTest extends DocumentingTestBase {
       syntax = "ABS( expression )",
       arguments = List("expression" -> "A numeric expression."),
       text = "`ABS` returns the absolute value of a number.",
-      queryText = """start a=node(%A%), c=node(%E%) return a.age, c.age, abs(a.age - c.age)""",
+      queryText = """match a, e where a.name = 'A' and e.name = 'E' return a.age, e.age, abs(a.age - e.age)""",
       returns = "The absolute value of the age difference is returned.",
-      assertions = (p) => assert(List(Map("abs(a.age - c.age)"->3.0, "a.age"->38, "c.age"->41)) === p.toList)
+      assertions = (p) => assert(List(Map("abs(a.age - e.age)"->3.0, "a.age"->38, "e.age"->41)) === p.toList)
     )
   }
 
@@ -481,7 +481,7 @@ class FunctionsTest extends DocumentingTestBase {
       text = "The expression is calculated, and compared in order with the +WHEN+ clauses until a match is found. " +
              "If no match is found\nthe expression in the +ELSE+ clause is used, or null, if no +ELSE+ case exists.",
       queryText =
-        """start n=node(*) return CASE n.eyes
+        """match n return CASE n.eyes
     WHEN 'blue'  THEN 1
     WHEN 'brown' THEN 2
                  ELSE 3
@@ -508,7 +508,7 @@ END as result""",
       text = "The predicates are evaluated in order until a true value is found, and the result value is used.If no " +
         "match is found the expression in the +ELSE + clause is used, or null, if no + ELSE + case exists.",
       queryText =
-        """start n=node(*) return CASE
+        """match n return CASE
     WHEN n.eyes = 'blue'  THEN 1
     WHEN n.age < 40       THEN 2
                           ELSE 3

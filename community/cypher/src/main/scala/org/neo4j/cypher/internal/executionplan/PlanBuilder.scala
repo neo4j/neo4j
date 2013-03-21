@@ -25,7 +25,11 @@ import org.neo4j.cypher.internal.spi.PlanContext
 PlanBuilders are basically partial functions that can execute for some input, and can answer if an
 input is something it can work on.
 
-The idea is that they take an ExecutionPlanInProgress, and moves it a little bit towards a more solved plan.
+The idea is that they take an ExecutionPlanInProgress, and moves it a little bit towards a more solved plan, which is
+represented by the stack of Pipes.
+
+A PlanBuilder should only concern itself with the first PartiallySolvedQuery part - the tail query parts will be seen
+later.
 
 It's important that PlanBuilders never return the input unchanged.
 */
