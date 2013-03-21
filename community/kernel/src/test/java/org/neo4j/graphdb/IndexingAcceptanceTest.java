@@ -31,6 +31,7 @@ import static org.neo4j.helpers.collection.MapUtil.map;
 import java.util.Map;
 import java.util.Set;
 
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.graphdb.schema.IndexDefinition;
@@ -38,6 +39,60 @@ import org.neo4j.test.ImpermanentDatabaseRule;
 
 public class IndexingAcceptanceTest
 {
+    public static final String LONG_STRING = "a long string that has to be stored in dynamic records";
+
+    @Ignore
+    @Test
+    public void shouldUseDynamicPropertiesToIndexANodeWhenAddedAlongsideExistingPropertiesInASeparateTransaction() throws Exception
+    {
+        // Given
+        GraphDatabaseService beansAPI = dbRule.getGraphDatabaseAPI();
+
+        // When
+        long id;
+        {
+            Transaction tx = beansAPI.beginTx();
+            IndexDefinition indexDefinition;
+            try
+            {
+                Node myNode = beansAPI.createNode();
+                id = myNode.getId();
+                myNode.setProperty( "key0", true );
+                myNode.setProperty( "key1", true );
+
+                indexDefinition = beansAPI.schema().indexCreator( Labels.MY_LABEL ).on( "key2" ).create();
+                tx.success();
+            }
+            finally
+            {
+                tx.finish();
+            }
+            beansAPI.schema().awaitIndexOnline( indexDefinition, 10, SECONDS );
+        }
+        {
+            Transaction tx = beansAPI.beginTx();
+            try
+            {
+                Node myNode = beansAPI.getNodeById( id );
+                myNode.addLabel( Labels.MY_LABEL );
+                myNode.setProperty( "key2", LONG_STRING );
+                myNode.setProperty( "key3", LONG_STRING );
+
+                tx.success();
+            }
+            finally
+            {
+                tx.finish();
+            }
+        }
+
+        // Then
+        // fails because the node is actually indexed with property value of 54 null chars
+        // (same length as real property value, but all characters set to \u0000)
+        Node foundNode = single( beansAPI.findNodesByLabelAndProperty( Labels.MY_LABEL, "key2", LONG_STRING ) );
+        assertEquals( id, foundNode.getId() );
+    }
+
     @Test
     public void searchingForNodeByPropertyShouldWorkWithoutIndex() throws Exception
     {
