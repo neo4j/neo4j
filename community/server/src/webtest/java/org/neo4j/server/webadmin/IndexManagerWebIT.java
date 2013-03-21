@@ -19,9 +19,11 @@
  */
 package org.neo4j.server.webadmin;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.openqa.selenium.By;
 
+@Ignore("On avengers wall to be resolved")
 public class IndexManagerWebIT extends AbstractWebadminTest {
 
     @Test
