@@ -23,25 +23,30 @@ import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.single;
 import static org.neo4j.kernel.api.index.InternalIndexState.ONLINE;
 import static org.neo4j.kernel.api.index.InternalIndexState.POPULATING;
 import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstanceSchemaIndexProviderFactory;
 import static org.neo4j.test.DoubleLatch.awaitLatch;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.hamcrest.CoreMatchers;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
@@ -51,11 +56,41 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 public class IndexRestartIt
 {
+    /* This is somewhat difficult to test since dropping an index while it's populating forces it to be cancelled
+     * first (and also awaiting cancellation to complete). So this is a best-effort to have the timing as close
+     * as possible. If this proves to be flaky, remove it right away.
+     */
+    @Test
+    public void shouldBeAbleToDropIndexWhileItIsPopulating() throws Exception
+    {
+        // GIVEN
+        startDb();
+        DoubleLatch populationCompletionLatch = provider.installPopulationJobCompletionLatch();
+        IndexDefinition index = createIndex();
+        populationCompletionLatch.awaitStart(); // await population job to start
+
+        // WHEN
+        dropIndex( index, populationCompletionLatch );
+
+        // THEN
+        assertEquals( asSet(), asSet( db.schema().getIndexes( myLabel ) ) );
+        try
+        {
+            db.schema().getIndexState( index );
+            fail( "This index should have been deleted" );
+        }
+        catch ( NotFoundException e )
+        {
+            assertThat( e.getMessage(), CoreMatchers.containsString( myLabel.name() ) );
+        }
+    }
+    
     @Test
     public void shouldHandleRestartOfOnlineIndex() throws Exception
     {
@@ -105,7 +140,7 @@ public class IndexRestartIt
     
     private void startDb()
     {
-        if(db != null)
+        if ( db != null )
             db.shutdown();
 
         db = (GraphDatabaseAPI) factory.newImpermanentDatabase();
@@ -132,12 +167,13 @@ public class IndexRestartIt
         db.shutdown();
     }
 
-    private void createIndex()
+    private IndexDefinition createIndex()
     {
         Transaction tx = db.beginTx();
-        db.schema().indexCreator( myLabel ).on( "number_of_bananas_owned" ).create();
+        IndexDefinition index = db.schema().indexCreator( myLabel ).on( "number_of_bananas_owned" ).create();
         tx.success();
         tx.finish();
+        return index;
     }
 
     private IndexDefinition getSingleIndex()
@@ -147,9 +183,24 @@ public class IndexRestartIt
         return single( indexes );
     }
     
+    private void dropIndex( IndexDefinition index, DoubleLatch populationCompletionLatch )
+    {
+        Transaction tx = db.beginTx();
+        try
+        {
+            index.drop();
+            populationCompletionLatch.finish();
+            tx.success();
+        }
+        finally
+        {
+            tx.finish();
+        }
+    }
+    
     private class ControlledSchemaIndexProvider extends SchemaIndexProvider
     {
-        private final IndexPopulator mockedPopulator = mock( IndexPopulator.class );
+        private IndexPopulator mockedPopulator = new IndexPopulator.Adapter();
         private final IndexAccessor mockedWriter = mock( IndexAccessor.class );
         private final CountDownLatch writerLatch = new CountDownLatch( 1 );
         private InternalIndexState initialIndexState = POPULATING;
@@ -160,6 +211,21 @@ public class IndexRestartIt
         {
             super( 10 );
             setInitialIndexState( initialIndexState );
+        }
+        
+        DoubleLatch installPopulationJobCompletionLatch()
+        {
+            final DoubleLatch populationCompletionLatch = new DoubleLatch();
+            mockedPopulator = new IndexPopulator.Adapter()
+            {
+                @Override
+                public void create() throws IOException
+                {
+                    populationCompletionLatch.startAndAwaitFinish();
+                    super.create();
+                }
+            };
+            return populationCompletionLatch;
         }
         
         public void awaitFullyPopulated()

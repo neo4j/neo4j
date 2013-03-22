@@ -23,6 +23,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.Iterables.single;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
@@ -32,6 +33,7 @@ import static org.neo4j.helpers.collection.MapUtil.map;
 import java.util.Map;
 import java.util.Set;
 
+import org.hamcrest.CoreMatchers;
 import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.graphdb.schema.IndexDefinition;
@@ -39,6 +41,57 @@ import org.neo4j.test.ImpermanentDatabaseRule;
 
 public class IndexingAcceptanceTest
 {
+    @Test
+    public void shouldHandleAddingDataToAsWellAsDeletingIndexInTheSameTransaction() throws Exception
+    {
+        // GIVEN
+        GraphDatabaseService beansAPI = dbRule.getGraphDatabaseAPI();
+        IndexDefinition index = null;
+        Labels label = Labels.MY_LABEL;
+        String key = "key";
+        {
+            Transaction tx = beansAPI.beginTx();
+            try
+            {
+                Node node = beansAPI.createNode( label );
+                node.setProperty( key, "value" );
+                index = beansAPI.schema().indexCreator( label ).on( key ).create();
+                tx.success();
+            }
+            finally
+            {
+                tx.finish();
+            }
+            beansAPI.schema().awaitIndexOnline( index, 10, SECONDS );
+        }
+
+        // WHEN
+        Transaction tx = beansAPI.beginTx();
+        try
+        {
+            Node node = beansAPI.createNode( label );
+            node.setProperty( key, "other value" );
+            index.drop();
+            tx.success();
+        }
+        finally
+        {
+            tx.finish();
+        }
+
+        // THEN
+        assertEquals( asSet(), asSet( beansAPI.schema().getIndexes( label ) ) );
+        try
+        {
+            beansAPI.schema().getIndexState( index );
+            fail( "Should not succeed" );
+        }
+        catch ( NotFoundException e )
+        {
+            assertThat( e.getMessage(), CoreMatchers.containsString( label.name() ) );
+        }
+    }
+    
     /* This test is a bit interesting. It tests a case where we've got a property that sits in one
      * property block and the value is of a long type. So given that plus that there's an index for that
      * label/property, do an update that changes the long value into a value that requires two property blocks.
