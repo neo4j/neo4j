@@ -605,19 +605,6 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
                     }
                 }
             }
-            // schema rules
-            for ( SchemaRuleCommand command : schemaRuleCommands )
-            {
-                command.execute();
-                switch ( command.getMode() )
-                {
-                    case DELETE:
-                        cacheAccess.removeSchemaRuleFromCache( command.getKey() );
-                        break;
-                    default:
-                        cacheAccess.addSchemaRule( command.getSchemaRule() );
-                }
-            }
 
             // primitives
 //            java.util.Collections.sort( nodeCommands, sorter ); // it's a TreeMap so already sorted.
@@ -630,6 +617,28 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             // property change set for index updates
             Iterable<NodePropertyUpdate> updates = convertIntoLogicalPropertyUpdates();
             indexes.updateIndexes( updates );
+            
+            // schema rules. Execute these after generating the property updates so. If executed
+            // before and we've got a transaction that sets properties/labels as well as creating an index
+            // we might end up with this corner-case:
+            // 1) index rule created and index population job started
+            // 2) index population job processes some nodes, but doesn't complete
+            // 3) we gather up property updates and send those to the indexes. The newly created population
+            //    job might get those as updates
+            // 4) the population job will apply those updates as added properties, and might end up with duplicate
+            //    entries for the same property
+            for ( SchemaRuleCommand command : schemaRuleCommands )
+            {
+                command.execute();
+                switch ( command.getMode() )
+                {
+                    case DELETE:
+                        cacheAccess.removeSchemaRuleFromCache( command.getKey() );
+                        break;
+                    default:
+                        cacheAccess.addSchemaRule( command.getSchemaRule() );
+                }
+            }
             
             if ( neoStoreCommand != null )
             {
