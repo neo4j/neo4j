@@ -162,9 +162,21 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
         {
             if ( !IndexReader.indexExists( directory ) )
                 return false;
-            
-            Map<String, String> commitData = IndexReader.getCommitUserData( directory );
-            return ONLINE.equals( commitData.get( KEY_STATUS ) );
+
+            IndexReader reader = null;
+            try
+            {
+                reader = IndexReader.open( directory );
+                Map<String, String> userData = reader.getIndexCommit().getUserData();
+                return ONLINE.equals( userData.get( KEY_STATUS ) );
+            }
+            finally
+            {
+                if ( reader != null )
+                {
+                    reader.close();
+                }
+            }
         }
 
         public void close( IndexWriter writer ) throws IOException
