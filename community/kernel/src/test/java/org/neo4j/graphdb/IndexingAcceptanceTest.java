@@ -26,6 +26,7 @@ import static org.junit.Assert.assertThat;
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.Iterables.single;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.helpers.collection.IteratorUtil.asUniqueSet;
 import static org.neo4j.helpers.collection.MapUtil.map;
 
 import java.util.Map;
@@ -38,8 +39,66 @@ import org.neo4j.test.ImpermanentDatabaseRule;
 
 public class IndexingAcceptanceTest
 {
-    public static final String LONG_STRING = "a long string that has to be stored in dynamic records";
+    /* This test is a bit interesting. It tests a case where we've got a property that sits in one
+     * property block and the value is of a long type. So given that plus that there's an index for that
+     * label/property, do an update that changes the long value into a value that requires two property blocks.
+     * This is interesting because the transaction logic compares before/after views per property record and
+     * not per node as a whole.
+     * 
+     * In this case this change will be converted into one "add" and one "remove" property updates instead of
+     * a single "change" property update. At the very basic level it's nice to test for this corner-case so
+     * that the externally observed behavior is correct, even if this test doesn't assert anything about
+     * the underlying add/remove vs. change internal details.
+     */
+    @Test
+    public void shouldInterpretPropertyAsChangedEvenIfPropertyMovesFromOneRecordToAnother() throws Exception
+    {
+        // GIVEN
+        GraphDatabaseService beansAPI = dbRule.getGraphDatabaseAPI();
+        long smallValue = 10L, bigValue = 1L << 62;
+        Node myNode = null;
+        {
+            Transaction tx = beansAPI.beginTx();
+            IndexDefinition indexDefinition;
+            try
+            {
+                myNode = beansAPI.createNode( Labels.MY_LABEL );
+                myNode.setProperty( "pad0", true );
+                myNode.setProperty( "pad1", true );
+                myNode.setProperty( "pad2", true );
+                // Use a small long here which will only occupy one property block
+                myNode.setProperty( "key", smallValue );
 
+                indexDefinition = beansAPI.schema().indexCreator( Labels.MY_LABEL ).on( "key" ).create();
+                tx.success();
+            }
+            finally
+            {
+                tx.finish();
+            }
+            beansAPI.schema().awaitIndexOnline( indexDefinition, 10, SECONDS );
+        }
+
+        // WHEN
+        Transaction tx = beansAPI.beginTx();
+        try
+        {
+            // A big long value which will occupy two property blocks
+            myNode.setProperty( "key", bigValue );
+            tx.success();
+        }
+        finally
+        {
+            tx.finish();
+        }
+
+        // THEN
+        assertEquals( asSet( myNode ),
+                      asUniqueSet( beansAPI.findNodesByLabelAndProperty( Labels.MY_LABEL, "key", bigValue ) ) );
+        assertEquals( asSet(),
+                      asUniqueSet( beansAPI.findNodesByLabelAndProperty( Labels.MY_LABEL, "key", smallValue ) ) );
+    }
+    
     @Test
     public void shouldUseDynamicPropertiesToIndexANodeWhenAddedAlongsideExistingPropertiesInASeparateTransaction() throws Exception
     {
@@ -216,9 +275,11 @@ public class IndexingAcceptanceTest
         assertThat( sizeAfterDelete, equalTo(2l) );
     }
 
+    public static final String LONG_STRING = "a long string that has to be stored in dynamic records";
+    
     public @Rule
     ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule();
-
+    
     private enum Labels implements Label
     {
         MY_LABEL, MY_OTHER_LABEL
