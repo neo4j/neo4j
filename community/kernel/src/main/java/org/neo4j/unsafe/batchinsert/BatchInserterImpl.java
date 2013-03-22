@@ -228,11 +228,7 @@ public class BatchInserterImpl implements BatchInserter
             current = getPropertyStore().getRecord( nextProp );
             if ( (target = current.removePropertyBlock( propIndex )) != null )
             {
-                if ( target.isLight() )
-                {
-                    // TODO super heavy here when we support schema indexing?
-                    getPropertyStore().makeHeavy( target );
-                }
+                getPropertyStore().ensureHeavy( target );
                 for ( DynamicRecord dynRec : target.getValueRecords() )
                 {
                     current.addDeletedRecord( dynRec );
@@ -337,13 +333,10 @@ public class BatchInserterImpl implements BatchInserter
             {
                 thatHas = current;
                 PropertyBlock removed = thatHas.removePropertyBlock( index );
-                if ( removed.isLight() )
+                getPropertyStore().ensureHeavy( removed );
+                for ( DynamicRecord dynRec : removed.getValueRecords() )
                 {
-                    getPropertyStore().makeHeavy( removed );
-                    for ( DynamicRecord dynRec : removed.getValueRecords() )
-                    {
-                        thatHas.addDeletedRecord( dynRec );
-                    }
+                    thatHas.addDeletedRecord( dynRec );
                 }
                 getPropertyStore().updateRecord( thatHas );
             }
@@ -809,10 +802,7 @@ public class BatchInserterImpl implements BatchInserter
              */
             for ( PropertyBlock propBlock : propRecord.getPropertyBlocks() )
             {
-                if ( propBlock.isLight() )
-                {
-                    propStore.makeHeavy( propBlock );
-                }
+                propStore.ensureHeavy( propBlock );
                 for ( DynamicRecord rec : propBlock.getValueRecords() )
                 {
                     rec.setInUse( false );

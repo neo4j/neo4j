@@ -115,7 +115,17 @@ public class PropertyPhysicalToLogicalConverter
     {
         if ( block == null )
             return null;
-        
-        return block.getType().getValue( block, propertyStore );
+
+        Object value = block.getType().getValue( block, propertyStore );
+        if ( value instanceof String )
+        {
+            String stringValue = (String) value;
+            if (stringValue.startsWith( "\u0000" ))
+            {
+                stringValue = (String) block.getType().getValue( block, propertyStore );
+                System.out.println( "stringValue = " + stringValue );
+            }
+        }
+        return value;
     }
 }

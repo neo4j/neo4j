@@ -279,8 +279,11 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
         return recordList;
     }
 
-    public void makeHeavy( DynamicRecord record )
+    public void ensureHeavy( DynamicRecord record )
     {
+        if ( !record.isLight() )
+            return;
+
         long blockId = record.getId();
         PersistenceWindow window = acquireWindow( blockId, OperationType.READ );
         try
@@ -604,11 +607,8 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
         int totalSize = 0, i = 0;
         for ( DynamicRecord record : records )
         {
-            if ( record.isLight() )
-            {
-                makeHeavy( record );
-            }
-            
+            ensureHeavy( record );
+
             int offset = 0;
             if ( i++ == 0 )
             {   // This is the first one, read out the header separately

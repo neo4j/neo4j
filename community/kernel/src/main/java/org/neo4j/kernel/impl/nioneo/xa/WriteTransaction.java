@@ -111,9 +111,9 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         }
 
         @Override
-        public void makeHeavy( NodeRecord record )
+        public void ensureHeavy( NodeRecord record )
         {
-            getNodeStore().makeHeavy( record );
+            getNodeStore().ensureHeavy( record );
         }
     }, true );
     private final RecordChanges<Long,PropertyRecord,PrimitiveRecord> propertyRecords =
@@ -142,10 +142,10 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         }
 
         @Override
-        public void makeHeavy( PropertyRecord record )
+        public void ensureHeavy( PropertyRecord record )
         {
             for ( PropertyBlock block : record.getPropertyBlocks() )
-                getPropertyStore().makeHeavy( block );
+                getPropertyStore().ensureHeavy( block );
         }
     }, true );
     private final RecordChanges<Long,RelationshipRecord,Void> relRecords =
@@ -164,7 +164,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         }
 
         @Override
-        public void makeHeavy( RelationshipRecord record )
+        public void ensureHeavy( RelationshipRecord record )
         {
         }
     }, false );
@@ -1489,10 +1489,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         {
             index = indexStore.getRecord( id );
         }
-        if ( index.isLight() )
-        {
-            indexStore.makeHeavy( index );
-        }
+        indexStore.ensureHeavy( index );
         return indexStore.getStringFor( index );
     }
 
@@ -1825,7 +1822,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
                 }
 
                 @Override
-                public void makeHeavy( NeoStoreRecord record )
+                public void ensureHeavy( NeoStoreRecord record )
                 {
                 }
             }, false );

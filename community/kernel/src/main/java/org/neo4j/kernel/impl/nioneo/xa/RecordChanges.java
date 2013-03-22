@@ -137,7 +137,7 @@ public class RecordChanges<KEY,RECORD extends AbstractBaseRecord,ADDITIONAL>
 
         RECORD forChangingData()
         {
-            makeHeavy();
+            ensureHeavy();
             return prepareForChange();
         }
         
@@ -152,13 +152,13 @@ public class RecordChanges<KEY,RECORD extends AbstractBaseRecord,ADDITIONAL>
             return this.record;
         }
         
-        private void makeHeavy()
+        private void ensureHeavy()
         {
             if ( !created )
             {
-                loader.makeHeavy( record );
+                loader.ensureHeavy( record );
                 if ( before != null )
-                    loader.makeHeavy( before );
+                    loader.ensureHeavy( before );
             }
         }
         
@@ -169,7 +169,7 @@ public class RecordChanges<KEY,RECORD extends AbstractBaseRecord,ADDITIONAL>
         
         RECORD forReadingData()
         {
-            makeHeavy();
+            ensureHeavy();
             return this.record;
         }
         
@@ -207,6 +207,6 @@ public class RecordChanges<KEY,RECORD extends AbstractBaseRecord,ADDITIONAL>
         
         RECORD load( KEY key, ADDITIONAL additionalData );
         
-        void makeHeavy( RECORD record );
+        void ensureHeavy( RECORD record );
     }
 }

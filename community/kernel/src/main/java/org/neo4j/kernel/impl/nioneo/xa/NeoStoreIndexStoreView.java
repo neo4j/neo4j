@@ -141,7 +141,7 @@ public class NeoStoreIndexStoreView implements IndexingService.IndexStoreView
                     if ( property.getKeyIndexId() == propertyKeyId )
                     {
                         // Make sure the value is loaded, even if it's of a "heavy" kind.
-                        propertyStore.makeHeavy( property );
+                        propertyStore.ensureHeavy( property );
                         Object propertyValue = property.getType().getValue( property, propertyStore );
 
                         visitor.visit( Pair.of( node.getId(), propertyValue ) );
@@ -173,7 +173,7 @@ public class NeoStoreIndexStoreView implements IndexingService.IndexStoreView
                 int keyId = property.getKeyIndexId();
                 if ( propertyKeys.contains( (long)keyId ) )
                 {
-                    propertyStore.makeHeavy( property );
+                    propertyStore.ensureHeavy( property );
                     Object propertyValue = property.getType().getValue( property, propertyStore );
                     return Pair.of( property.getKeyIndexId(), propertyValue );
                 }

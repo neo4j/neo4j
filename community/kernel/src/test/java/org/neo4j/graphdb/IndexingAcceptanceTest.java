@@ -31,7 +31,6 @@ import static org.neo4j.helpers.collection.MapUtil.map;
 import java.util.Map;
 import java.util.Set;
 
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.graphdb.schema.IndexDefinition;
@@ -41,7 +40,6 @@ public class IndexingAcceptanceTest
 {
     public static final String LONG_STRING = "a long string that has to be stored in dynamic records";
 
-    @Ignore
     @Test
     public void shouldUseDynamicPropertiesToIndexANodeWhenAddedAlongsideExistingPropertiesInASeparateTransaction() throws Exception
     {
@@ -87,8 +85,9 @@ public class IndexingAcceptanceTest
         }
 
         // Then
-        // fails because the node is actually indexed with property value of 54 null chars
-        // (same length as real property value, but all characters set to \u0000)
+        assertEquals( LONG_STRING, beansAPI.getNodeById( id ).getProperty( "key2" ) );
+        assertEquals( LONG_STRING, beansAPI.getNodeById( id ).getProperty( "key3" ) );
+
         Node foundNode = single( beansAPI.findNodesByLabelAndProperty( Labels.MY_LABEL, "key2", LONG_STRING ) );
         assertEquals( id, foundNode.getId() );
     }

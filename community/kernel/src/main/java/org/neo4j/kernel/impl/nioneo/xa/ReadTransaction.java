@@ -240,10 +240,7 @@ class ReadTransaction implements NeoStoreTransaction
         PropertyRecord propertyRecord = getPropertyStore().getRecord(
                 property.getId() );
         PropertyBlock propertyBlock = propertyRecord.getPropertyBlock( property.getIndex() );
-        if ( propertyBlock.isLight() )
-        {
-            getPropertyStore().makeHeavy( propertyBlock );
-        }
+        getPropertyStore().ensureHeavy( propertyBlock );
         return propertyBlock.getType().getValue( propertyBlock,
                 getPropertyStore() );
     }
@@ -253,10 +250,7 @@ class ReadTransaction implements NeoStoreTransaction
     {
         PropertyIndexStore indexStore = getPropertyStore().getIndexStore();
         PropertyIndexRecord index = indexStore.getRecord( id );
-        if ( index.isLight() )
-        {
-            indexStore.makeHeavy( index );
-        }
+        indexStore.ensureHeavy( index );
         return indexStore.getStringFor( index );
     }
 

@@ -80,7 +80,7 @@ public class NodeLabelRecordLogic
         }
         else
         {   // The labels are in dynamic records
-            nodeStore.makeHeavy( node, existingLabelsBits );
+            nodeStore.ensureHeavy( node, existingLabelsBits );
             Collection<DynamicRecord> existingRecords = node.getDynamicLabelRecords();
             long[] existingLabelIds = nodeStore.getDynamicLabelsArray( existingRecords );
             long[] newLabelIds = concatAndSort( existingLabelIds, labelId );
@@ -115,7 +115,7 @@ public class NodeLabelRecordLogic
         }
         else
         {   // The labels are in dynamic records
-            nodeStore.makeHeavy( node, existingLabelsBits );
+            nodeStore.ensureHeavy( node, existingLabelsBits );
             Collection<DynamicRecord> existingRecords = node.getDynamicLabelRecords();
             long[] existingLabelIds = nodeStore.getDynamicLabelsArray( existingRecords );
             long[] newLabelIds = filter( existingLabelIds, labelId );

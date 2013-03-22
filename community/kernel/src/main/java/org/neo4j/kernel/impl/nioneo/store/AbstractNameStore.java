@@ -342,8 +342,11 @@ public abstract class AbstractNameStore<T extends AbstractNameRecord> extends Ab
         buffer.putInt( record.getNameId() );
     }
 
-    public void makeHeavy( T record )
+    public void ensureHeavy( T record )
     {
+        if (!record.isLight())
+            return;
+
         record.setIsLight( false );
         Collection<DynamicRecord> keyRecords = nameStore.getRecords( record.getNameId() );
         for ( DynamicRecord keyRecord : keyRecords )

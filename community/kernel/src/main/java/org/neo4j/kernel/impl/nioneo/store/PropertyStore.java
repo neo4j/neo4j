@@ -292,14 +292,7 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
         }
     }
 
-    /**
-     * This will add the value records without checking if they are already
-     * in the block - so make sure to call this after checking isHeavy() or
-     * you will end up with duplicates.
-     * 
-     * @param superHeavy will also make referenced records heavy.
-     */
-    public void makeHeavy( PropertyBlock block )
+    public void ensureHeavy( PropertyBlock block )
     {
         if ( block.getType() == PropertyType.STRING )
         {
@@ -313,7 +306,7 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
                 }
             }
             for ( DynamicRecord stringRecord : block.getValueRecords() )
-                stringPropertyStore.makeHeavy( stringRecord );
+                stringPropertyStore.ensureHeavy( stringRecord );
         }
         else if ( block.getType() == PropertyType.ARRAY )
         {
@@ -327,7 +320,7 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
                 }
             }
             for ( DynamicRecord arrayRecord : block.getValueRecords() )
-                arrayPropertyStore.makeHeavy( arrayRecord );
+                arrayPropertyStore.ensureHeavy( arrayRecord );
         }
     }
 

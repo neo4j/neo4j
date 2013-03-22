@@ -83,18 +83,18 @@ public class NodeStore extends AbstractStore implements Store, RecordStore<NodeR
         return getRecordSize();
     }
     
-    public void makeHeavy( NodeRecord node )
+    public void ensureHeavy( NodeRecord node )
     {
         long labels = node.getLabelField();
         byte header = NodeLabelRecordLogic.getHeader( labels );
         if ( NodeLabelRecordLogic.highHeaderBitSet( header ) )
         {
             long firstDynamicRecord = NodeLabelRecordLogic.parseLabelsBody( labels );
-            makeHeavy( node, firstDynamicRecord );
+            ensureHeavy( node, firstDynamicRecord );
         }
     }
     
-    public void makeHeavy( NodeRecord node, long firstDynamicLabelRecord )
+    public void ensureHeavy( NodeRecord node, long firstDynamicLabelRecord )
     {
         if ( !node.isLight() )
             return;
@@ -351,7 +351,7 @@ public class NodeStore extends AbstractStore implements Store, RecordStore<NodeR
         else
         {
             long firstDynamicRecord = NodeLabelRecordLogic.parseLabelsBody( labels );
-            makeHeavy( node, firstDynamicRecord );
+            ensureHeavy( node, firstDynamicRecord );
             return getDynamicLabelsArray( node.getDynamicLabelRecords() );
         }
     }
