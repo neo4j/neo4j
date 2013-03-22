@@ -23,6 +23,7 @@ import static java.lang.Boolean.parseBoolean;
 import static org.neo4j.kernel.impl.nioneo.store.PropertyStore.encodeString;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -928,15 +929,17 @@ public class BatchInserterImpl implements BatchInserter
 
     private File fixPath( File dir, StoreFactory sf )
     {
-        if ( !fileSystem.fileExists( dir ) )
+        try
         {
-            if ( !fileSystem.mkdirs( dir ) )
-            {
-                throw new UnderlyingStorageException(
-                        "Unable to create directory path["
-                                + storeDir + "] for Neo4j kernel store." );
-            }
+            fileSystem.mkdirs( dir );
         }
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException(
+                    "Unable to create directory path["
+                            + storeDir + "] for Neo4j kernel store." );
+        }
+
         File store = new File( dir, NeoStore.DEFAULT_NAME);
         if ( !fileSystem.fileExists( store ) )
         {

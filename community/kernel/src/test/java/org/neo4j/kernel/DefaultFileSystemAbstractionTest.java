@@ -48,7 +48,7 @@ public class DefaultFileSystemAbstractionTest
     @Test
     public void shouldCreatePath() throws Exception
     {
-        defaultFileSystemAbstraction.autoCreatePath( path );
+        defaultFileSystemAbstraction.mkdirs( path );
 
         assertThat( path.exists(), is( true ) );
     }
@@ -58,7 +58,7 @@ public class DefaultFileSystemAbstractionTest
     {
         path = new File( path, UUID.randomUUID() + "/" + UUID.randomUUID() );
 
-        defaultFileSystemAbstraction.autoCreatePath( path );
+        defaultFileSystemAbstraction.mkdirs( path );
 
         assertThat( path.exists(), is( true ) );
     }
@@ -68,7 +68,7 @@ public class DefaultFileSystemAbstractionTest
     {
         assertTrue( path.mkdir() );
 
-        defaultFileSystemAbstraction.autoCreatePath( path );
+        defaultFileSystemAbstraction.mkdirs( path );
 
         assertThat( path.exists(), is( true ) );
     }
@@ -80,7 +80,7 @@ public class DefaultFileSystemAbstractionTest
         path = new File( path, "some_file" );
         assertTrue( path.createNewFile() );
 
-        defaultFileSystemAbstraction.autoCreatePath( path );
+        defaultFileSystemAbstraction.mkdirs( path );
 
         assertThat( path.exists(), is( true ) );
     }
@@ -99,7 +99,7 @@ public class DefaultFileSystemAbstractionTest
 
         try
         {
-            defaultFileSystemAbstraction.autoCreatePath( path );
+            defaultFileSystemAbstraction.mkdirs( path );
 
             fail();
         }

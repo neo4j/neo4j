@@ -192,9 +192,8 @@ public class EphemeralFileSystemAbstraction extends LifecycleAdapter implements 
     }
     
     @Override
-    public boolean mkdirs( File fileName )
+    public void mkdirs( File fileName )
     {
-        return true;
     }
 
     @Override
@@ -227,12 +226,6 @@ public class EphemeralFileSystemAbstraction extends LifecycleAdapter implements 
         return true;
     }
 
-    @Override
-    public void autoCreatePath( File path )
-    {
-        // no op, all paths exist
-    }
-    
     @Override
     public File[] listFiles( File directory )
     {
