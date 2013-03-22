@@ -19,16 +19,45 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
+import org.neo4j.kernel.impl.api.DiffSets;
+import org.neo4j.kernel.impl.nioneo.store.IndexRule;
+import org.neo4j.kernel.impl.persistence.PersistenceManager;
+
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.kernel.impl.api.DiffSets;
-import org.neo4j.kernel.impl.nioneo.store.IndexRule;
-
 public class TxState
 {
+    // Heads up: Codework ahead, speed limit 50 LOC/hour
+    // This class should serve two purposes, which should be reflected in the implementation eventually. It also suffers from
+    // schizophrenia since the poor soul has to both maintain new fancy things as well as manage old transaction
+    // state from the legacy code base. Overall, it's a work in progress, and one of the major players in linking the
+    // Kernel API to the legacy code base.
+
+    // The two purposes are:
+    //   1) Maintain a "view" of the changes in a single transaction, such that read operations within that tx see uncommitted writes
+    //   2) Maintain a log of changes contained in a single transaction, that can be applied to the db on commit
+
+    // 1 is currently handled by OldTxStateBridge, along with the hashmaps and diffsets in here.
+    // 2 is handled by PersistenceManager
+
+    // We will probably want these two purposes to be specific sub-components of this class, and for this class to work
+    // as a joint interface for the two of them. Note that an important aspect here is that the log-of-changes-to-apply
+    // part of this is not only for this abstraction to use. That same functionality is needed during recovery, backup
+    // and in HA. It'd be great to have a clear-cut abstraction for just those parts, shared by all these different use cases.
+
+    // Please revise or remove above as design and implementation changes.
+
+    public static interface IdGeneration
+    {
+        // Because we generate id's up-front, rather than on commit, we need this for now.
+        // For a rainy day, we should refactor to use tx-local ids before commit and global ids after
+        long newSchemaRuleId();
+
+    }
+
     // Node ID --> NodeState
     private final Map<Long, NodeState> nodeStates = new HashMap<Long, NodeState>();
     
@@ -38,10 +67,14 @@ public class TxState
     private final DiffSets<IndexRule> ruleDiffSets = new DiffSets<IndexRule>();
 
     private final OldTxStateBridge legacyState;
+    private final PersistenceManager legacyTransaction;
+    private final IdGeneration idGeneration;
 
-    public TxState(OldTxStateBridge legacyState)
+    public TxState(OldTxStateBridge legacyState, PersistenceManager legacyTransaction, IdGeneration idGeneration)
     {
         this.legacyState = legacyState;
+        this.legacyTransaction = legacyTransaction;
+        this.idGeneration = idGeneration;
     }
 
     public boolean hasChanges()
@@ -64,16 +97,18 @@ public class TxState
         return getState( nodeStates, nodeId, NODE_STATE_CREATOR ).getLabelDiffSets();
     }
     
-    public boolean addLabelToNode( long labelId, long nodeId )
+    public void addLabelToNode( long labelId, long nodeId )
     {
         getLabelStateNodeDiffSets( labelId ).add( nodeId );
-        return getNodeStateLabelDiffSets( nodeId ).add( labelId );
+        getNodeStateLabelDiffSets( nodeId ).add( labelId );
+        legacyTransaction.addLabelToNode(labelId, nodeId);
     }
     
-    public boolean removeLabelFromNode( long labelId, long nodeId )
+    public void removeLabelFromNode( long labelId, long nodeId )
     {
         getLabelStateNodeDiffSets( labelId ).remove( nodeId );
-        return getNodeStateLabelDiffSets( nodeId ).remove(  labelId );
+        getNodeStateLabelDiffSets( nodeId ).remove(  labelId );
+        legacyTransaction.removeLabelFromNode(labelId, nodeId);
     }
     
     /**
@@ -114,18 +149,26 @@ public class TxState
         return state == null ? Collections.<Long>emptySet() : state.getNodeDiffSets().getRemoved();
     }
 
-    public void addIndexRule( IndexRule rule )
+    public IndexRule addIndexRule( long labelId, long propertyKey )
     {
+        IndexRule rule = new IndexRule( idGeneration.newSchemaRuleId(), labelId, propertyKey );
+
+        legacyTransaction.createSchemaRule( rule );
+
         ruleDiffSets.add( rule );
         LabelState labelState = getState( labelStates, rule.getLabel(), LABEL_STATE_CREATOR );
         labelState.getIndexRuleDiffSets().add( rule );
+
+        return rule;
     }
 
-    public void removeIndexRule( IndexRule rule )
+    public void dropIndexRule(IndexRule rule)
     {
         ruleDiffSets.remove( rule );
         LabelState labelState = getState( labelStates, rule.getLabel(), LABEL_STATE_CREATOR );
         labelState.getIndexRuleDiffSets().remove( rule );
+
+        legacyTransaction.dropSchemaRule( rule.getId() );
     }
     
     public DiffSets<IndexRule> getIndexRuleDiffSetsByLabel( long labelId )

@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.api;
 
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.TransactionContext;
-import org.neo4j.kernel.impl.api.state.OldTxStateBridgeImpl;
 import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.core.TransactionState;
 
@@ -37,14 +36,14 @@ public class StateHandlingTransactionContext extends DelegatingTransactionContex
     @Deprecated
     private final TransactionState oldTransactionState;
 
-    public StateHandlingTransactionContext( TransactionContext actual, PersistenceCache persistenceCache,
-            TransactionState oldTransactionState, SchemaCache schemaCache )
+    public StateHandlingTransactionContext( TransactionContext actual, TxState state,
+            PersistenceCache persistenceCache, TransactionState oldTransactionState, SchemaCache schemaCache )
     {
         super(actual);
         this.persistenceCache = persistenceCache;
         this.oldTransactionState = oldTransactionState;
         this.schemaCache = schemaCache;
-        this.state = new TxState(new OldTxStateBridgeImpl( oldTransactionState ));
+        this.state = state;
     }
 
     @Override
@@ -55,7 +54,7 @@ public class StateHandlingTransactionContext extends DelegatingTransactionContex
         // + Caching
         result = new CachingStatementContext( result, persistenceCache, schemaCache );
         // + Transaction-local state awareness
-        result = new TransactionStateAwareStatementContext( result, state );
+        result = new TransactionStateStatementContext( result, state );
         // + Old transaction state bridge
         result = new OldBridgingTransactionStateStatementContext( result, oldTransactionState );
 

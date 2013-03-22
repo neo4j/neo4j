@@ -19,25 +19,12 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import static org.neo4j.helpers.collection.Iterables.filter;
-import static org.neo4j.helpers.collection.Iterables.map;
-
-import java.util.Collections;
-import java.util.Iterator;
-
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.PrefetchingIterator;
-import org.neo4j.kernel.api.ConstraintViolationKernelException;
-import org.neo4j.kernel.api.EntityNotFoundException;
-import org.neo4j.kernel.api.LabelNotFoundKernelException;
-import org.neo4j.kernel.api.PropertyKeyIdNotFoundException;
-import org.neo4j.kernel.api.PropertyKeyNotFoundException;
-import org.neo4j.kernel.api.PropertyNotFoundException;
-import org.neo4j.kernel.api.SchemaRuleNotFoundException;
-import org.neo4j.kernel.api.StatementContext;
+import org.neo4j.kernel.api.*;
 import org.neo4j.kernel.api.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
@@ -45,16 +32,15 @@ import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.KeyNotFoundException;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.PropertyIndexManager;
-import org.neo4j.kernel.impl.nioneo.store.IndexRule;
-import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
-import org.neo4j.kernel.impl.nioneo.store.NeoStore;
-import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
-import org.neo4j.kernel.impl.nioneo.store.NodeStore;
-import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
+import org.neo4j.kernel.impl.nioneo.store.*;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule.Kind;
-import org.neo4j.kernel.impl.nioneo.store.SchemaStore;
-import org.neo4j.kernel.impl.nioneo.store.UnderlyingStorageException;
-import org.neo4j.kernel.impl.persistence.PersistenceManager;
+
+import java.util.Collections;
+import java.util.Iterator;
+
+import static org.neo4j.helpers.collection.Iterables.filter;
+import static org.neo4j.helpers.collection.Iterables.map;
+import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
 
 /**
  * This layer interacts with committed data. It currently delegates to several of the older XXXManager-type classes.
@@ -66,26 +52,31 @@ import org.neo4j.kernel.impl.persistence.PersistenceManager;
  * Cache reading and invalidation is not the concern of this part of the system, that is an optimization on top of the
  * committed data in the database, and should as such live under that abstraction.
  */
-public class StoreStatementContext implements StatementContext
+public class StoreStatementContext extends CompositeStatementContext
 {
     private final PropertyIndexManager propertyIndexManager;
     private final NodeManager nodeManager;
-    private final PersistenceManager persistenceManager;
     private final NeoStore neoStore;
     private final IndexingService indexService;
     private final IndexReaderFactory indexReaderFactory;
+    private final NodeStore nodeStore;
 
-    public StoreStatementContext( PropertyIndexManager propertyIndexManager,
-            PersistenceManager persistenceManager, NodeManager nodeManager,
+    public StoreStatementContext( PropertyIndexManager propertyIndexManager, NodeManager nodeManager,
             NeoStore neoStore, IndexingService indexService, IndexReaderFactory indexReaderFactory )
     {
         this.indexService = indexService;
         this.indexReaderFactory = indexReaderFactory;
         assert neoStore != null : "No neoStore provided";
         this.propertyIndexManager = propertyIndexManager;
-        this.persistenceManager = persistenceManager;
         this.nodeManager = nodeManager;
         this.neoStore = neoStore;
+        this.nodeStore = neoStore.getNodeStore();
+    }
+
+    @Override
+    protected void beforeWriteOperation() {
+        throw new UnsupportedOperationException(
+                "The storage layer can not be written to directly, you have to go through a transaction.") ;
     }
 
     @Override
@@ -134,22 +125,12 @@ public class StoreStatementContext implements StatementContext
     }
 
     @Override
-    public boolean addLabelToNode( long labelId, long nodeId )
-    {
-        if ( isLabelSetOnNode( labelId, nodeId ) )
-            return false;
-        
-        persistenceManager.addLabelToNode( labelId, nodeId );
-        return true;
-    }
-
-    @Override
     public boolean isLabelSetOnNode( long labelId, long nodeId )
     {
         try
         {
-            for ( Long existingLabel : persistenceManager.getLabelsForNode( nodeId ) )
-                if ( existingLabel.longValue() == labelId )
+            for ( long existingLabel : getLabelsForNode( nodeId ) )
+                if ( existingLabel == labelId )
                     return true;
             return false;
         }
@@ -164,7 +145,7 @@ public class StoreStatementContext implements StatementContext
     {
         try
         {
-            return persistenceManager.getLabelsForNode( nodeId );
+            return asIterable(nodeStore.getLabelsForNode(nodeStore.getRecord(nodeId)));
         }
         catch ( InvalidRecordException e )
         {   // TODO Might hide invalid dynamic record problem. It's here because this method
@@ -186,13 +167,6 @@ public class StoreStatementContext implements StatementContext
         }
     }
 
-    @Override
-    public boolean removeLabelFromNode( long labelId, long nodeId )
-    {
-        persistenceManager.removeLabelFromNode( labelId, nodeId );
-        return true;
-    }
-    
     @Override
     public Iterable<Long> getNodesWithLabel( final long labelId )
     {
@@ -222,22 +196,6 @@ public class StoreStatementContext implements StatementContext
                 };
             }
         };
-    }
-
-    @Override
-    public IndexRule addIndexRule( long labelId, long propertyKey ) throws ConstraintViolationKernelException
-    {
-        SchemaStore schemaStore = neoStore.getSchemaStore();
-        long id = schemaStore.nextId();
-        IndexRule rule = new IndexRule( id, labelId, propertyKey );
-        persistenceManager.createSchemaRule( rule );
-        return rule;
-    }
-
-    @Override
-    public void dropIndexRule( IndexRule indexRule ) throws ConstraintViolationKernelException
-    {
-        persistenceManager.dropSchemaRule( indexRule.getId() );
     }
 
     @Override
