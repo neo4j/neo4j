@@ -478,23 +478,8 @@
                         </goals>
                         <configuration>
                             <sources>
-                                <source>src/functionaltest/java</source>
                                 <source>src/webtest/java</source>
                             </sources>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>add-test-resource</id>
-                        <phase>generate-test-resources</phase>
-                        <goals>
-                            <goal>add-test-resource</goal>
-                        </goals>
-                        <configuration>
-                            <resources>
-                                <resource>
-                                    <directory>src/functionaltest/resources</directory>
-                                </resource>
-                            </resources>
                         </configuration>
                     </execution>
                 </executions>
@@ -869,31 +854,6 @@
                     <url>http://m2.neo4j.org/content/groups/everything/</url>
                 </repository>
             </repositories>
-        </profile>
-
-        <profile>
-          <id>neo-docs-build</id>
-          <activation>
-            <activeByDefault>false</activeByDefault>
-            <property>
-              <name>docsBuild</name>
-            </property>
-          </activation>
-          <build>
-            <pluginManagement>
-              <plugins>
-                <plugin>
-                  <groupId>org.apache.maven.plugins</groupId>
-                  <artifactId>maven-surefire-plugin</artifactId>
-                  <configuration>
-                    <includes>
-                       <include>**/*FunctionalTest.java</include>
-                     </includes>
-                  </configuration>
-                </plugin>
-              </plugins>
-            </pluginManagement>
-          </build>
         </profile>
     </profiles>
 
