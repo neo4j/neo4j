@@ -19,12 +19,11 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import java.io.IOException;
-
-import javax.transaction.xa.XAException;
-
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.kernel.impl.core.TransactionState;
+
+import javax.transaction.xa.XAException;
+import java.io.IOException;
 
 /**
  * <CODE>XaTransaction</CODE> holds all the commands that participate in the
@@ -159,7 +158,7 @@ public abstract class XaTransaction
      * Commits the transaction, loop through all commands and invoke 
      * <CODE>execute()</CODE>.
      * 
-     * @throws XAEXception
+     * @throws XAException
      *             If unable to commit
      */
     protected abstract void doCommit() throws XAException;

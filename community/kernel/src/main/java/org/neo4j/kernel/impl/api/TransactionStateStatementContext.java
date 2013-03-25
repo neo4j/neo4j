@@ -19,35 +19,28 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import static java.util.Collections.emptyList;
-import static org.neo4j.helpers.collection.Iterables.concat;
-import static org.neo4j.helpers.collection.Iterables.filter;
-import static org.neo4j.helpers.collection.Iterables.option;
-import static org.neo4j.helpers.collection.IteratorUtil.singleOrNull;
-
-import java.util.Collection;
-
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.api.ConstraintViolationKernelException;
-import org.neo4j.kernel.api.EntityNotFoundException;
-import org.neo4j.kernel.api.PropertyKeyIdNotFoundException;
-import org.neo4j.kernel.api.PropertyNotFoundException;
-import org.neo4j.kernel.api.SchemaRuleNotFoundException;
-import org.neo4j.kernel.api.StatementContext;
+import org.neo4j.kernel.api.*;
 import org.neo4j.kernel.api.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 
-public class TransactionStateAwareStatementContext extends CompositeStatementContext
+import java.util.Collection;
+
+import static java.util.Collections.emptyList;
+import static org.neo4j.helpers.collection.Iterables.*;
+import static org.neo4j.helpers.collection.IteratorUtil.singleOrNull;
+
+public class TransactionStateStatementContext extends CompositeStatementContext
 {
     private final TxState state;
     private final StatementContext delegate;
 
-    public TransactionStateAwareStatementContext( StatementContext actual, TxState state )
+    public TransactionStateStatementContext(StatementContext actual, TxState state)
     {
         super( actual );
         this.state = state;
@@ -91,8 +84,6 @@ public class TransactionStateAwareStatementContext extends CompositeStatementCon
         }
 
         state.addLabelToNode( labelId, nodeId );
-        delegate.addLabelToNode( labelId, nodeId );
-
         return true;
     }
 
@@ -106,7 +97,6 @@ public class TransactionStateAwareStatementContext extends CompositeStatementCon
         }
 
         state.removeLabelFromNode( labelId, nodeId );
-        delegate.removeLabelFromNode( labelId, nodeId );
 
         return true;
     }
@@ -140,16 +130,13 @@ public class TransactionStateAwareStatementContext extends CompositeStatementCon
     @Override
     public IndexRule addIndexRule( long labelId, long propertyKey ) throws ConstraintViolationKernelException
     {
-        IndexRule rule = delegate.addIndexRule( labelId, propertyKey ); 
-        state.addIndexRule( rule );
-        return rule;
+        return state.addIndexRule( labelId, propertyKey );
     }
 
     @Override
     public void dropIndexRule( IndexRule indexRule ) throws ConstraintViolationKernelException
     {
-        state.removeIndexRule( indexRule );
-        delegate.dropIndexRule( indexRule );
+        state.dropIndexRule(indexRule);
     }
     
     @Override

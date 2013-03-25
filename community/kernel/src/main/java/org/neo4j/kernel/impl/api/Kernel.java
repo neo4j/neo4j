@@ -24,6 +24,8 @@ import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.TransactionContext;
 import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.api.state.OldTxStateBridgeImpl;
+import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.PropertyIndexManager;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
@@ -64,7 +66,6 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     private final XaDataSourceManager dataSourceManager;
     private final LockManager lockManager;
     private final DependencyResolver dependencyResolver;
-    private final PersistenceCache persistenceCache;
     private final SchemaCache schemaCache;
 
     // These non-final components are all circular dependencies in various configurations.
@@ -72,6 +73,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     private IndexingService indexService;
     private NeoStore neoStore;
     private NodeManager nodeManager;
+    private PersistenceCache persistenceCache;
 
     public Kernel( AbstractTransactionManager transactionManager, PropertyIndexManager propertyIndexManager,
             PersistenceManager persistenceManager, XaDataSourceManager dataSourceManager, LockManager lockManager,
@@ -83,7 +85,6 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
         this.dataSourceManager = dataSourceManager;
         this.lockManager = lockManager;
         this.dependencyResolver = dependencyResolver;
-        this.persistenceCache = new PersistenceCache( new NodeCacheLoader( persistenceManager ) );
         this.schemaCache = schemaCache;
     }
     
@@ -102,7 +103,11 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
                     neoStore = ((NeoStoreXaDataSource) ds).getNeoStore();
                     indexService = ((NeoStoreXaDataSource) ds).getIndexService();
                     for ( SchemaRule schemaRule : neoStore.getSchemaStore().loadAll() )
+                    {
                         schemaCache.addSchemaRule( schemaRule );
+                    }
+
+                    persistenceCache = new PersistenceCache( new NodeCacheLoader( neoStore.getNodeStore() ) );
                 }
             }
 
@@ -127,14 +132,13 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     {
         // I/O
         // TODO The store layer should depend on a clean abstraction of the data, not on all the XXXManagers from the old code base
-        TransactionContext result = new StoreTransactionContext( propertyIndexManager,
-                persistenceManager, nodeManager, neoStore, indexService );
+        TransactionContext result = new StoreTransactionContext( propertyIndexManager, nodeManager, neoStore, indexService );
         // + Transaction life cycle
         // XXX: This is disabled during transition phase, we are still using the legacy transaction management stuff
         //result = new TransactionLifecycleTransactionContext( result, transactionManager, propertyIndexManager, persistenceManager, cache );
 
         // + Transaction state and Caching
-        result = new StateHandlingTransactionContext( result, persistenceCache,
+        result = new StateHandlingTransactionContext( result, newTxState(), persistenceCache,
                 transactionManager.getTransactionState(), schemaCache );
         // + Constraints evaluation
         result = new ConstraintEvaluatingTransactionContext( result );
@@ -151,8 +155,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     public StatementContext newReadOnlyStatementContext()
     {
         // I/O
-        StatementContext result = new StoreStatementContext(
-                propertyIndexManager, persistenceManager, nodeManager,
+        StatementContext result = new StoreStatementContext(propertyIndexManager, nodeManager,
                 neoStore, indexService, new IndexReaderFactory.NonCaching( indexService ) );
         // + Cache
         result = new CachingStatementContext( result, persistenceCache, schemaCache );
@@ -160,5 +163,15 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
         result = new ReadOnlyStatementContext( result );
 
         return result;
+    }
+
+    private TxState newTxState() {
+        return new TxState( new OldTxStateBridgeImpl(transactionManager.getTransactionState()), persistenceManager,
+                new TxState.IdGeneration() {
+            @Override
+            public long newSchemaRuleId() {
+                return neoStore.getSchemaStore().nextId();
+            }
+        });
     }
 }

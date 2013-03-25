@@ -19,14 +19,7 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.neo4j.kernel.api.ConstraintViolationKernelException;
-import org.neo4j.kernel.api.EntityNotFoundException;
-import org.neo4j.kernel.api.LabelNotFoundKernelException;
-import org.neo4j.kernel.api.PropertyKeyIdNotFoundException;
-import org.neo4j.kernel.api.PropertyKeyNotFoundException;
-import org.neo4j.kernel.api.PropertyNotFoundException;
-import org.neo4j.kernel.api.SchemaRuleNotFoundException;
-import org.neo4j.kernel.api.StatementContext;
+import org.neo4j.kernel.api.*;
 import org.neo4j.kernel.api.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.operations.EntityOperations;
@@ -35,6 +28,12 @@ import org.neo4j.kernel.api.operations.PropertyOperations;
 import org.neo4j.kernel.api.operations.SchemaOperations;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
+
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+
+import static java.lang.String.format;
+import static java.lang.reflect.Proxy.newProxyInstance;
 
 /**
  * This is syntax sugar, it helps implementing statement contexts that either just want to delegate
@@ -50,6 +49,25 @@ public abstract class CompositeStatementContext implements StatementContext
     private final StatementContext delegateToClose;
 
     // This class is divided into read and write operations, please help keep it that way for readability
+
+    public CompositeStatementContext()
+    {
+        // If not given anything to delegate to, default to making all ops unsupported.
+        StatementContext unsupportedOpDelegate = (StatementContext)newProxyInstance(getClass().getClassLoader(),
+                new Class[]{StatementContext.class}, new InvocationHandler() {
+            @Override
+            public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+                String outerName = CompositeStatementContext.this.getClass().getSimpleName();
+                throw new UnsupportedOperationException(format("%s does not support %s.", outerName, method.getName()));
+            }
+        });
+        this.entityOperations   = unsupportedOpDelegate;
+        this.propertyOperations = unsupportedOpDelegate;
+        this.labelOperations    = unsupportedOpDelegate;
+        this.schemaOperations   = unsupportedOpDelegate;
+        this.delegateToClose    = unsupportedOpDelegate;
+
+    }
 
     public CompositeStatementContext( StatementContext delegate )
     {
