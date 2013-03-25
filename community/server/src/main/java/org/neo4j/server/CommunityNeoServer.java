@@ -38,7 +38,7 @@ import org.neo4j.server.preflight.EnsurePreparedForHttpLogging;
 import org.neo4j.server.preflight.PerformRecoveryIfNecessary;
 import org.neo4j.server.preflight.PerformUpgradeIfNecessary;
 import org.neo4j.server.preflight.PreFlightTasks;
-import org.neo4j.server.web.Jetty6WebServer;
+import org.neo4j.server.web.Jetty9WebServer;
 import org.neo4j.server.web.WebServer;
 import org.neo4j.server.webadmin.rest.AdvertisableService;
 import org.neo4j.server.webadmin.rest.JmxService;
@@ -92,7 +92,7 @@ public class CommunityNeoServer extends AbstractNeoServer
 	@Override
 	protected WebServer createWebServer()
     {
-		return new Jetty6WebServer();
+		return new Jetty9WebServer();
 	}
 
     @Override

@@ -26,7 +26,7 @@ import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
 
 import org.junit.Test;
-import org.mortbay.thread.QueuedThreadPool;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
 public class JettyThreadLimitTest
 {
@@ -34,7 +34,7 @@ public class JettyThreadLimitTest
     @Test
     public void shouldHaveSensibleDefaultJettyThreadPoolSize() throws Exception
     {
-    	Jetty6WebServer server = new Jetty6WebServer();
+    	Jetty9WebServer server = new Jetty9WebServer();
         server.setPort( 7480 );
     	try {
 	        server.start();
@@ -53,7 +53,7 @@ public class JettyThreadLimitTest
     @Test
     public void shouldHaveConfigurableJettyThreadPoolSize() throws Exception
     {
-    	Jetty6WebServer server = new Jetty6WebServer();
+    	Jetty9WebServer server = new Jetty9WebServer();
         final int maxThreads = 7;
         server.setMaxThreads( maxThreads );
         server.setPort( 7480 );

@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import javax.servlet.DispatcherType;
 import javax.servlet.ServletException;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.UriInfo;
@@ -180,10 +181,10 @@ public abstract class BatchOperations
         body = replaceLocationPlaceholders(body, locations);
         URI targetUri = calculateTargetUri(uriInfo, path);
 
-        InternalJettyServletRequest req = new InternalJettyServletRequest( method, targetUri.toString(), body);
-        addHeaders( req, httpHeaders );
-
         InternalJettyServletResponse res = new InternalJettyServletResponse();
+        InternalJettyServletRequest req = new InternalJettyServletRequest( method, targetUri.toString(), body, res );
+        
+        addHeaders( req, httpHeaders );
 
         invoke( method, path, body, id, targetUri, req, res );
     }

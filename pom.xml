@@ -338,22 +338,22 @@
       <dependency>
         <groupId>ch.qos.logback</groupId>
         <artifactId>logback-classic</artifactId>
-        <version>0.9.30</version>
+        <version>1.0.9</version>
       </dependency>
       <dependency>
         <groupId>ch.qos.logback</groupId>
         <artifactId>logback-core</artifactId>
-        <version>0.9.30</version>
+        <version>1.0.9</version>
       </dependency>
       <dependency>
           <groupId>ch.qos.logback</groupId>
           <artifactId>logback-access</artifactId>
-          <version>0.9.30</version>
+          <version>1.0.9</version>
       </dependency>
       <dependency>
-          <groupId>janino</groupId>
+          <groupId>org.codehaus.janino</groupId>
           <artifactId>janino</artifactId>
-          <version>2.5.10</version>
+          <version>2.6.1</version>
       </dependency>
       <dependency>
         <groupId>org.osgi</groupId>
