@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.neo4j.build</groupId>
     <artifactId>parent-central</artifactId>
-    <version>37</version>
+    <version>38</version>
     <relativePath />
   </parent>
 
@@ -31,6 +31,7 @@
     <module>community</module>
     <module>advanced</module>
     <module>enterprise</module>
+    <module>licensecheck-config</module>
     <module>cypher-plugin</module>
   </modules>
   
