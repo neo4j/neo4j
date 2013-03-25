@@ -119,9 +119,10 @@ public class LimitedFilesystemAbstraction implements FileSystemAbstraction
     }
     
     @Override
-    public boolean mkdirs( File fileName )
+    public void mkdirs( File fileName ) throws IOException
     {
-        return inner.mkdirs( fileName );
+        ensureHasSpace();
+        inner.mkdirs( fileName );
     }
 
     @Override
@@ -129,13 +130,6 @@ public class LimitedFilesystemAbstraction implements FileSystemAbstraction
     {
         ensureHasSpace();
         return inner.renameFile( from, to );
-    }
-
-    @Override
-    public void autoCreatePath( File path ) throws IOException
-    {
-        ensureHasSpace();
-        inner.autoCreatePath( path );
     }
 
     public void runOutOfDiskSpace()

@@ -25,6 +25,7 @@ import org.neo4j.kernel.impl.annotations.Documented;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
 
+@Ignore("On avengers wall to be resolved")
 public class ConsoleWebIT extends AbstractWebadminTest {
 
     //

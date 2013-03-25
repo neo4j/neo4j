@@ -31,7 +31,7 @@ import org.neo4j.jmx.JmxUtils;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
-public class JmxTest
+public class JmxDocTest
 {
     @Test
     public void readJmxProperties()

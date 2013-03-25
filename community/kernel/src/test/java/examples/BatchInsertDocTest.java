@@ -43,7 +43,7 @@ import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 import org.neo4j.unsafe.batchinsert.BatchInserter;
 import org.neo4j.unsafe.batchinsert.BatchInserters;
 
-public class BatchInsertExampleTest
+public class BatchInsertDocTest
 {
     @Test
     public void insert() throws IOException

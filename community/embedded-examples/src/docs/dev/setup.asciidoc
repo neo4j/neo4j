@@ -155,7 +155,7 @@ To start Neo4j with configuration settings, a Neo4j properties file can be loade
 [snippet,java]
 ----
 component=neo4j-examples
-source=org/neo4j/examples/StartWithConfigurationTest.java
+source=org/neo4j/examples/StartWithConfigurationDocTest.java
 classifier=test-sources
 tag=startDbWithConfig
 ----
@@ -165,7 +165,7 @@ Or you could of course create you own +Map<String, String>+ programmatically and
 [snippet,java]
 ----
 component=neo4j-examples
-source=org/neo4j/examples/StartWithConfigurationTest.java
+source=org/neo4j/examples/StartWithConfigurationDocTest.java
 classifier=test-sources
 tag=startDbWithMapConfig
 ----
@@ -180,7 +180,7 @@ If you want a _read-only view_ of the database, create an instance this way:
 [snippet,java]
 ----
 component=neo4j-examples
-source=org/neo4j/examples/ReadOnlyTest.java
+source=org/neo4j/examples/ReadOnlyDocTest.java
 classifier=test-sources
 tag=createReadOnlyInstance
 ----

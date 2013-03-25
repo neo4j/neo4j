@@ -26,7 +26,7 @@ import org.neo4j.test.GraphDescription.Graph;
 
 import static org.neo4j.visualization.asciidoc.AsciidocHelper.*;
 
-public class DocumentationTest extends AbstractJavaDocTestbase
+public class DocumentationDocTest extends AbstractJavaDocTestbase
 {
     /**
      * This is a sample documentation test, demonstrating different ways of

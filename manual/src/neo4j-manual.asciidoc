@@ -20,6 +20,10 @@ include::tutorials/index.asciidoc[]
 
 :leveloffset: 0
 
+include::{importdir}/neo4j-cypher-docs-jar/dev/index.asciidoc[]
+
+:leveloffset: 0
+
 include::reference/index.asciidoc[]
 
 :leveloffset: 0
