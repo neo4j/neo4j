@@ -45,7 +45,7 @@ import org.ops4j.pax.exam.testforge.WaitForService;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.Constants;
 
-public class OSGiIT
+public class OSGiDocIT
 {
 
     public static final String NEO4J_VERSION = GraphDatabaseService.class.getPackage()
@@ -110,7 +110,7 @@ public class OSGiIT
     {
         // create a proper ExamSystem with your options. Focus on
         // "createServerSystem"
-        OSGiIT instance = new OSGiIT();
+        OSGiDocIT instance = new OSGiDocIT();
         ArrayList<Option> ops = new ArrayList<Option>();
         ops.addAll( Arrays.asList( instance.testOptions() ) );
         ops.addAll( Arrays.asList( instance.gogoShellOptions() ) );

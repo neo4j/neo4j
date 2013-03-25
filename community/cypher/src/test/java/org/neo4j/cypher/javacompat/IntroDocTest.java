@@ -37,7 +37,7 @@ import java.util.Map;
 import static org.neo4j.visualization.asciidoc.AsciidocHelper.createCypherSnippet;
 import static org.neo4j.visualization.asciidoc.AsciidocHelper.createQueryResultSnippet;
 
-public class IntroExamplesTest implements GraphHolder
+public class IntroDocTest implements GraphHolder
 {
     private static final String DOCS_TARGET = "target/docs/dev/general/";
     public @Rule

@@ -48,7 +48,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
-public class JavaExecutionEngineTest
+public class JavaExecutionEngineDocTest
 {
 
     private GraphDatabaseService db;
