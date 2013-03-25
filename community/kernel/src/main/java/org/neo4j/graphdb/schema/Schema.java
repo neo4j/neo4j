@@ -22,6 +22,7 @@ package org.neo4j.graphdb.schema;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.ResourceIterable;
 
 /**
  * Interface for managing the schema of your graph database. This currently includes
@@ -60,12 +61,12 @@ public interface Schema
      * @param label the {@link Label} to get {@link IndexDefinition indexes} for.
      * @return all {@link IndexDefinition indexes} attached to the given {@link Label label}.
      */
-    Iterable<IndexDefinition> getIndexes( Label label );
+    ResourceIterable<IndexDefinition> getIndexes( Label label );
     
     /**
      * @return all {@link IndexDefinition indexes} in this database.
      */
-    Iterable<IndexDefinition> getIndexes();
+    ResourceIterable<IndexDefinition> getIndexes();
 
     /**
      * Poll the database for the state of a given index. This can be used to track

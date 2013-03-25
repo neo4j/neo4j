@@ -33,8 +33,7 @@ public class PlaceboTransaction extends TopLevelTransaction
         }
     };
     
-    public PlaceboTransaction( AbstractTransactionManager transactionManager,
-            TransactionState state )
+    public PlaceboTransaction( AbstractTransactionManager transactionManager, TransactionState state )
     {
         super( transactionManager, state );
     }

@@ -51,7 +51,7 @@ trait QueryContext {
 
   def getLabelName(id: Long): String
 
-  def getLabelsForNode(node: Long): Iterable[Long]
+  def getLabelsForNode(node: Long): Iterator[Long]
 
   def isLabelSetOnNode(label: Long, node: Long): Boolean = getLabelsForNode(node).toIterator.contains(label)
 

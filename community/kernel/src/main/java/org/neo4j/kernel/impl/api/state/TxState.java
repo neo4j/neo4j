@@ -27,6 +27,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 public class TxState
 {
@@ -134,7 +135,7 @@ public class TxState
     /**
      * Returns all nodes that, in this tx, has got labelId added.
      */
-    public Iterable<Long> getNodesWithLabelAdded( long labelId )
+    public Set<Long> getNodesWithLabelAdded( long labelId )
     {
         LabelState state = getState( labelStates, labelId, null );
         return state == null ? Collections.<Long>emptySet() : state.getNodeDiffSets().getAdded();

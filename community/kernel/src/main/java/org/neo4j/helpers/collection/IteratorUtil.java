@@ -36,6 +36,7 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Set;
 
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.Function;
 
 /**
@@ -534,6 +535,10 @@ public abstract class IteratorUtil
     {
         return addToCollection( iterable, new ArrayList<T>() );
     }
+    public static <T> Collection<T> asCollection( Iterator<T> iterable )
+    {
+        return addToCollection( iterable, new ArrayList<T>() );
+    }
     
     /**
      * Creates a {@link Set} from an {@link Iterable}.
@@ -545,6 +550,11 @@ public abstract class IteratorUtil
     public static <T> Set<T> asSet( Iterable<T> iterable )
     {
         return addToCollection( iterable, new HashSet<T>() );
+    }
+
+    public static <T> Set<T> asSet( Iterator<T> iterator )
+    {
+        return addToCollection( iterator, new HashSet<T>() );
     }
 
     /**
@@ -583,7 +593,21 @@ public abstract class IteratorUtil
             addUnique( set, item );
         return set;
     }
-    
+
+    /**
+     * Creates a {@link Set} from an array of items.
+     *
+     * @param items the items to add to the set.
+     * @return the {@link Set} containing the items.
+     */
+    public static <T> Set<T> asUniqueSet( Iterator<T> items )
+    {
+        HashSet<T> set = new HashSet<T>();
+        while( items.hasNext() )
+            addUnique( set, items.next() );
+        return set;
+    }
+
     /**
      * Function for converting Enum to String
      */
@@ -702,7 +726,7 @@ public abstract class IteratorUtil
             }
         }
     }
-    
+
     public static Iterable<Long> asIterable( final long... array )
     {
         return new Iterable<Long>()
@@ -710,23 +734,28 @@ public abstract class IteratorUtil
             @Override
             public Iterator<Long> iterator()
             {
-                return new PrefetchingIterator<Long>()
+                return asIterator( array );
+            }
+        };
+    }
+
+    public static Iterator<Long> asIterator( final long... array )
+    {
+        return new PrefetchingIterator<Long>()
+        {
+            private int index;
+
+            @Override
+            protected Long fetchNextOrNull()
+            {
+                try
                 {
-                    private int index;
-                    
-                    @Override
-                    protected Long fetchNextOrNull()
-                    {
-                        try
-                        {
-                            return index < array.length ? array[index] : null;
-                        }
-                        finally
-                        {
-                            index++;
-                        }
-                    }
-                };
+                    return index < array.length ? array[index] : null;
+                }
+                finally
+                {
+                    index++;
+                }
             }
         };
     }
@@ -753,7 +782,7 @@ public abstract class IteratorUtil
     }
     
     @SuppressWarnings( "rawtypes" )
-    private static final Iterator EMPTY_ITERATOR = new Iterator()
+    private static final ResourceIterator EMPTY_ITERATOR = new ResourceIterator()
     {
         @Override
         public boolean hasNext()
@@ -772,11 +801,100 @@ public abstract class IteratorUtil
         {
             throw new UnsupportedOperationException();
         }
+
+        @Override
+        public void close()
+        {
+            // do nothing
+        }
     };
     
     @SuppressWarnings( "unchecked" )
-    public static <T> Iterator<T> emptyIterator()
+    public static <T> ResourceIterator<T> emptyIterator()
     {
         return EMPTY_ITERATOR;
+    }
+
+    public static <T> ResourceIterator<T> withResource( Iterator<T> iterator, Closeable closeable )
+    {
+        return new ResourceClosingIterator<T>( closeable, iterator );
+    }
+
+    public static <T> boolean contains( Iterator<T> iterator, T item )
+    {
+        try
+        {
+            for ( T element : loop( iterator ) )
+            {
+                if ( item == null ? element == null : item.equals( element ) )
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+        finally
+        {
+            if ( iterator instanceof ResourceIterator<?> )
+            {
+                ((ResourceIterator<?>) iterator).close();
+            }
+        }
+    }
+
+    private static class ResourceClosingIterator<T> implements ResourceIterator<T>
+    {
+        private final Closeable closeable;
+        private final Iterator<T> iterator;
+
+        ResourceClosingIterator( Closeable closeable, Iterator<T> iterator )
+        {
+            this.closeable = closeable;
+            this.iterator = iterator;
+        }
+
+        @Override
+        public void close()
+        {
+            try
+            {
+                closeable.close();
+            }
+            catch ( IOException e )
+            {
+                throw new RuntimeException( e );
+            }
+        }
+
+        @Override
+        public boolean hasNext()
+        {
+            boolean hasNext = iterator.hasNext();
+            if ( !hasNext )
+            {
+                close();
+            }
+            return hasNext;
+        }
+
+        @Override
+        public T next()
+        {
+            try
+            {
+                return iterator.next();
+            }
+            catch ( NoSuchElementException e )
+            {
+                close();
+                throw e;
+            }
+        }
+
+        @Override
+        public void remove()
+        {
+            iterator.remove();
+        }
     }
 }

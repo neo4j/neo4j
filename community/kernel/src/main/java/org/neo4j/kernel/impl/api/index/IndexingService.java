@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api.index;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.neo4j.helpers.Exceptions.launderedException;
+import static org.neo4j.helpers.collection.IteratorUtil.loop;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -198,9 +199,9 @@ public class IndexingService extends LifecycleAdapter
      *
      * @param indexRules Known index rules before recovery.
      */
-    public void initIndexes( Iterable<IndexRule> indexRules )
+    public void initIndexes( Iterator<IndexRule> indexRules )
     {
-        for ( IndexRule indexRule : indexRules )
+        for ( IndexRule indexRule : loop( indexRules ) )
         {
             long ruleId = indexRule.getId();
             IndexDescriptor descriptor = createDescriptor( indexRule );

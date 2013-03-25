@@ -20,43 +20,46 @@
 package org.neo4j.kernel.impl.api;
 
 import org.neo4j.kernel.api.StatementContext;
+import org.neo4j.kernel.api.TransactionContext;
 
-public class InteractionStoppingStatementContext extends CompositeStatementContext
+public class ReferenceCountingTransactionContext extends DelegatingTransactionContext
 {
-    private boolean closed;
-
-    public InteractionStoppingStatementContext( StatementContext delegate )
+    private final StatementContextOwner statementContext = new StatementContextOwner()
     {
-        super(delegate);
+        @Override
+        protected StatementContext createStatementContext()
+        {
+            return ReferenceCountingTransactionContext.this.createStatementContext();
+        }
+    };
+
+    public ReferenceCountingTransactionContext( TransactionContext inner )
+    {
+        super( inner );
     }
 
     @Override
-    protected void beforeOperation()
+    public StatementContext newStatementContext()
     {
-        assertOperationsAllowed();
+        return statementContext.getStatementContext();
     }
 
     @Override
-    public void close()
+    public void commit()
     {
-        markAsClosed();
-        super.close();
+        statementContext.assertAllClosed();
+        super.commit();
     }
 
-    protected void markAsClosed()
+    @Override
+    public void rollback()
     {
-        assertOperationsAllowed();
-        closed = true;
+        statementContext.assertAllClosed();
+        super.rollback();
     }
 
-    public boolean isOpen()
+    private StatementContext createStatementContext()
     {
-        return !closed;
-    }
-
-    private void assertOperationsAllowed()
-    {
-        if ( closed )
-            throw new IllegalStateException( "This StatementContext has been closed. No more interaction allowed" );
+        return super.newStatementContext();
     }
 }

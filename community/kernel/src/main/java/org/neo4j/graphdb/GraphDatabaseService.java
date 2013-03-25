@@ -119,7 +119,7 @@ public interface GraphDatabaseService
      * @param value the value looked for.
      * @return an iterable containing all matching nodes.
      */
-    Iterable<Node> findNodesByLabelAndProperty( Label label, String propertyName, Object value );
+    ResourceIterable<Node> findNodesByLabelAndProperty( Label label, String propertyName, Object value );
     
     /**
      * Returns all relationship types currently in the underlying store.

@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import java.util.Iterator;
+
 import org.neo4j.helpers.Function;
 import org.neo4j.kernel.api.ConstraintViolationKernelException;
 import org.neo4j.kernel.api.SchemaRuleNotFoundException;
@@ -62,13 +64,13 @@ public class DelegatingSchemaOperations implements SchemaOperations
     }
 
     @Override
-    public Iterable<IndexRule> getIndexRules()
+    public Iterator<IndexRule> getIndexRules()
     {
         return delegate.getIndexRules();
     }
 
     @Override
-    public Iterable<IndexRule> getIndexRules( long labelId )
+    public Iterator<IndexRule> getIndexRules( long labelId )
     {
         return delegate.getIndexRules( labelId );
     }

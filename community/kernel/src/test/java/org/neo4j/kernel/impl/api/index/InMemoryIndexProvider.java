@@ -22,10 +22,11 @@ package org.neo4j.kernel.impl.api.index;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
-import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexReader;
@@ -176,10 +177,10 @@ public class InMemoryIndexProvider extends SchemaIndexProvider
         }
 
         @Override
-        public Iterable<Long> lookup( Object value )
+        public Iterator<Long> lookup( Object value )
         {
             Set<Long> result = indexData.get( value );
-            return result != null ? result : Iterables.<Long>empty();
+            return result != null ? result.iterator() : IteratorUtil.<Long>emptyIterator();
         }
 
         @Override

@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.api.operations;
 
+import java.util.Iterator;
+
 import org.neo4j.helpers.Function;
 import org.neo4j.kernel.api.ConstraintViolationKernelException;
 import org.neo4j.kernel.api.SchemaRuleNotFoundException;
@@ -48,12 +50,12 @@ public interface SchemaOperations
     /**
      * Get all indexes for a label.
      */
-    Iterable<IndexRule> getIndexRules( long labelId );
+    Iterator<IndexRule> getIndexRules( long labelId );
 
     /**
      * Returns all index rules.
      */
-    Iterable<IndexRule> getIndexRules();
+    Iterator<IndexRule> getIndexRules();
 
     /**
      * Retrieve the state of an index.

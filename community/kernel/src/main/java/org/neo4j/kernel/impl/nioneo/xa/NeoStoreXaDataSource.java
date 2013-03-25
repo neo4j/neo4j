@@ -643,7 +643,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
         manager.registerAll( Diagnostics.class, this );
     }
 
-    private Iterable<IndexRule> loadIndexRules()
+    private Iterator<IndexRule> loadIndexRules()
     {
         return map( new Function<SchemaRule, IndexRule>()
         {

@@ -87,5 +87,9 @@ public class IndexCreatorImpl implements IndexCreator
             throw new ConstraintViolationException( String.format(
                     "Unable to create index for label '%s' on properties %s.", label.name(), propertyKeys ), e );
         }
+        finally
+        {
+            context.close();
+        }
     }
 }

@@ -22,11 +22,7 @@ package org.neo4j.kernel;
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.StatementContext;
-import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
-import org.neo4j.kernel.impl.transaction.DataSourceRegistrationListener;
-import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
-import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 /**
@@ -36,32 +32,17 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 public class ThreadToStatementContextBridge extends LifecycleAdapter
 {
     private final KernelAPI kernelAPI;
-    private StatementContext readOnlyStatementCtx;
     private final AbstractTransactionManager txManager;
-    private final XaDataSourceManager xaDataSourceManager;
 
-    public ThreadToStatementContextBridge( KernelAPI kernelAPI,
-            AbstractTransactionManager txManager, XaDataSourceManager xaDataSourceManager )
+    public ThreadToStatementContextBridge( KernelAPI kernelAPI, AbstractTransactionManager txManager )
     {
         this.kernelAPI = kernelAPI;
         this.txManager = txManager;
-        this.xaDataSourceManager = xaDataSourceManager;
     }
     
     @Override
     public void start()
     {
-        xaDataSourceManager.addDataSourceRegistrationListener( new DataSourceRegistrationListener.Adapter()
-        {
-            @Override
-            public void registeredDataSource( XaDataSource ds )
-            {
-                if ( ds.getName().equals( NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME ) )
-                {
-                    readOnlyStatementCtx = kernelAPI.newReadOnlyStatementContext();
-                }
-            }
-        } );
     }
 
     public StatementContext getCtxForReading()
@@ -72,7 +53,7 @@ public class ThreadToStatementContextBridge extends LifecycleAdapter
             return ctx;
         }
 
-        return readOnlyStatementCtx;
+        return kernelAPI.newReadOnlyStatementContext();
     }
 
     public StatementContext getCtxForWriting()

@@ -21,15 +21,21 @@ package org.neo4j.kernel;
 
 import static java.lang.String.format;
 import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.graphdb.schema.Schema.IndexState.*;
-import static org.neo4j.helpers.collection.Iterables.empty;
+import static org.neo4j.graphdb.schema.Schema.IndexState.FAILED;
+import static org.neo4j.graphdb.schema.Schema.IndexState.ONLINE;
+import static org.neo4j.graphdb.schema.Schema.IndexState.POPULATING;
 import static org.neo4j.helpers.collection.Iterables.map;
+import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
 import static org.neo4j.helpers.collection.IteratorUtil.single;
+import static org.neo4j.helpers.collection.IteratorUtil.withResource;
 
+import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.NotFoundException;
+import org.neo4j.graphdb.ResourceIterable;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
@@ -61,30 +67,45 @@ public class SchemaImpl implements Schema
     }
 
     @Override
-    public Iterable<IndexDefinition> getIndexes( final Label label )
+    public ResourceIterable<IndexDefinition> getIndexes( final Label label )
     {
-        StatementContext context = ctxProvider.getCtxForReading();
-        try
+        return new ResourceIterable<IndexDefinition>()
         {
-            return getIndexDefinitions( context, context.getIndexRules( context.getLabelId( label.name() ) ) );
-        }
-        catch ( LabelNotFoundKernelException e )
-        {
-            return empty();
-        }
+            @Override
+            public ResourceIterator<IndexDefinition> iterator()
+            {
+                StatementContext context = ctxProvider.getCtxForReading();
+                try
+                {
+                    return getIndexDefinitions( context, context.getIndexRules( context.getLabelId( label.name() ) ) );
+                }
+                catch ( LabelNotFoundKernelException e )
+                {
+                    context.close();
+                    return emptyIterator();
+                }
+            }
+        };
     }
 
     @Override
-    public Iterable<IndexDefinition> getIndexes()
+    public ResourceIterable<IndexDefinition> getIndexes()
     {
-        StatementContext context = ctxProvider.getCtxForReading();
-        return getIndexDefinitions( context, context.getIndexRules() );
+        return new ResourceIterable<IndexDefinition>()
+        {
+            @Override
+            public ResourceIterator<IndexDefinition> iterator()
+            {
+                StatementContext context = ctxProvider.getCtxForReading();
+                return getIndexDefinitions( context, context.getIndexRules() );
+            }
+        };
     }
     
-    private Iterable<IndexDefinition> getIndexDefinitions( final StatementContext context,
-            Iterable<IndexRule> indexRules )
+    private ResourceIterator<IndexDefinition> getIndexDefinitions( final StatementContext context,
+                                                                   Iterator<IndexRule> indexRules )
     {
-        return map( new Function<IndexRule, IndexDefinition>()
+        return withResource( map( new Function<IndexRule, IndexDefinition>()
         {
             @Override
             public IndexDefinition apply( IndexRule rule )
@@ -99,7 +120,7 @@ public class SchemaImpl implements Schema
                     throw new RuntimeException( e );
                 }
             }
-        }, indexRules );
+        }, indexRules ), context );
     }
 
     @Override
@@ -164,6 +185,10 @@ public class SchemaImpl implements Schema
         {
             throw new NotFoundException( format( "No index for label %s on property %s",
                     index.getLabel().name(), propertyKey ), e );
+        }
+        finally
+        {
+            context.close();
         }
     }
 }

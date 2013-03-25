@@ -19,10 +19,11 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import java.util.Collections;
+import java.util.Iterator;
 
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.impl.core.TransactionState;
@@ -62,18 +63,16 @@ public class OldBridgingTransactionStateStatementContext extends CompositeStatem
     }
     
     @Override
-    public Iterable<Long> getLabelsForNode( long nodeId )
+    public Iterator<Long> getLabelsForNode( long nodeId )
     {
         if ( oldTransactionState.nodeIsDeleted( nodeId ) )
-            return Collections.emptyList();
+            return IteratorUtil.emptyIterator();
         return delegate.getLabelsForNode( nodeId );
     }
 
     @Override
-    public Iterable<Long> getNodesWithLabel( long labelId )
+    public Iterator<Long> getNodesWithLabel( long labelId )
     {
-        if ( oldTransactionState.nodeIsDeleted( labelId ) )
-            return Collections.emptyList();
         return Iterables.filter( new Predicate<Long>()
         {
             @Override

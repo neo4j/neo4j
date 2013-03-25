@@ -19,15 +19,19 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import static java.util.Arrays.asList;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.helpers.collection.IteratorUtil.asIterator;
+
+import java.util.Iterator;
 
 import org.junit.Test;
 import org.mockito.Mockito;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 import org.neo4j.kernel.api.ConstraintViolationKernelException;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
@@ -42,7 +46,7 @@ public class ConstraintEvaluatingStatementContextTest
         IndexRule rule = new IndexRule( id, label, propertyKey );
         StatementContext inner = Mockito.mock(StatementContext.class);
         ConstraintEvaluatingStatementContext ctx = new ConstraintEvaluatingStatementContext( inner );
-        when( inner.getIndexRules( rule.getLabel() ) ).thenReturn( asList( rule ) );
+        when( inner.getIndexRules( rule.getLabel() ) ).thenAnswer( withIterator( rule ) );
 
         // WHEN
         try
@@ -56,6 +60,18 @@ public class ConstraintEvaluatingStatementContextTest
 
         // THEN
         verify( inner, never() ).addIndexRule( anyLong(), anyLong() );
+    }
+
+    private static <T> Answer<Iterator<T>> withIterator( final T... content )
+    {
+        return new Answer<Iterator<T>>()
+        {
+            @Override
+            public Iterator<T> answer( InvocationOnMock invocationOnMock ) throws Throwable
+            {
+                return asIterator( content );
+            }
+        };
     }
 
     @Test(expected = ConstraintViolationKernelException.class)

@@ -17,35 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal
+package org.neo4j.graphdb;
 
-import com.googlecode.concurrentlinkedhashmap.ConcurrentLinkedHashMap
-
-class LRUCache[K, V](cacheSize: Int) {
-
-  class LazyValue(f: () => V) {
-    lazy val value = f.apply()
-  }
-
-  val inner = new ConcurrentLinkedHashMap.Builder[K, LazyValue]
-    .maximumWeightedCapacity(cacheSize)
-    .build()
-
-  def getOrElseUpdate(key: K, creator: () => V): V = {
-    val value = new LazyValue(creator)
-    val oldValue = inner.putIfAbsent(key, value)
-
-    if (oldValue == null) {
-      value.value
-    } else {
-      oldValue.value
-    }
-  }
-
-  def get(key: K): Option[V] = Option(inner.get(key)).map(_.value)
-
-  def put(key: K, value: V) = inner.put(key, new LazyValue(() => value))
-
-  def containsKey(key: K) = inner.containsKey(key)
+public interface ResourceIterable<T> extends Iterable<T>
+{
+    @Override
+    ResourceIterator<T> iterator();
 }
-

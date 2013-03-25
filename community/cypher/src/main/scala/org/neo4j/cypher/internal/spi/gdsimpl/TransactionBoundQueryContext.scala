@@ -37,6 +37,8 @@ class TransactionBoundQueryContext(graph: GraphDatabaseAPI, tx: Transaction, ctx
   }
 
   def close(success: Boolean) {
+    ctx.close()
+
     if (success)
       tx.success()
     else
@@ -54,7 +56,7 @@ class TransactionBoundQueryContext(graph: GraphDatabaseAPI, tx: Transaction, ctx
     ctx.getLabelName(id)
 
   def getLabelsForNode(node: Long) =
-    ctx.getLabelsForNode(node).asScala.map(_.asInstanceOf[Long]).toIterable
+    ctx.getLabelsForNode(node).asScala.map(_.asInstanceOf[Long])
 
 
   override def isLabelSetOnNode(label: Long, node: Long) =
@@ -71,7 +73,7 @@ class TransactionBoundQueryContext(graph: GraphDatabaseAPI, tx: Transaction, ctx
   def getTransaction = tx
 
   def exactIndexSearch(id: Long, value: Any) =
-    ctx.exactIndexLookup(id, value).iterator().asScala.map((id: java.lang.Long) => nodeOps.getById(id))
+    ctx.exactIndexLookup(id, value).asScala.map((id: java.lang.Long) => nodeOps.getById(id))
 
   val nodeOps = new NodeOperations
 
@@ -81,7 +83,7 @@ class TransactionBoundQueryContext(graph: GraphDatabaseAPI, tx: Transaction, ctx
     case (count, labelId) => if (ctx.removeLabelFromNode(labelId, node)) count + 1 else count
   }
 
-  def getNodesByLabel(id: Long): Iterator[Node] = ctx.getNodesWithLabel(id).iterator().asScala.map(nodeOps.getById(_))
+  def getNodesByLabel(id: Long): Iterator[Node] = ctx.getNodesWithLabel(id).asScala.map(nodeOps.getById(_))
 
   class NodeOperations extends BaseOperations[Node] {
     def delete(obj: Node) {

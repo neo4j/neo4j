@@ -39,7 +39,7 @@ class RepeatableReadQueryContext(inner: QueryContext, locker: Locker) extends De
     }
   }
 
-  override def getLabelsForNode(node: Long): Iterable[Long] = {
+  override def getLabelsForNode(node: Long): Iterator[Long] = {
     lockNode(node)
     inner.getLabelsForNode(node)
   }

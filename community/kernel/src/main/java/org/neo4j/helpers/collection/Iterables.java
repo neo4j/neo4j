@@ -465,9 +465,19 @@ public final class Iterables
         return concat( Arrays.asList( (Iterable<T>[]) iterables ) );
     }
 
+    public static <T> Iterator<T> concat( Iterator<? extends T>... iterables )
+    {
+        return concatIterators( Arrays.asList( (Iterator<T>[]) iterables ) );
+    }
+
     public static <T> Iterable<T> concat( final Iterable<Iterable<T>> iterables )
     {
         return new CombiningIterable<T>( iterables );
+    }
+
+    public static <T> Iterator<T> concatIterators( final Iterable<Iterator<T>> iterators )
+    {
+        return new CombiningIterator<T>( iterators );
     }
 
     public static <FROM, TO> Function<FROM, TO> cast()

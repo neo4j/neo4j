@@ -25,6 +25,7 @@ import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Set;
 
 import org.neo4j.helpers.Predicate;
@@ -46,7 +47,7 @@ public class DiffSets<T>
     private static final DiffSets EMPTY = new DiffSets( Collections.emptySet(), Collections.emptySet() )
     {
         @Override
-        public Iterable apply( Iterable source )
+        public Iterator apply( Iterator source )
         {
             return source;
         }
@@ -181,16 +182,16 @@ public class DiffSets<T>
     }
 
     @SuppressWarnings( "unchecked" )
-    public Iterable<T> apply( Iterable<T> source )
+    public Iterator<T> apply( Iterator<T> source )
     {
-        Iterable<T> result = source;
+        Iterator<T> result = source;
         if ( removedElements != null && !removedElements.isEmpty() )
         {
             ensureFilterHasBeenCreated();
             result = filter( filter, result );
         }
         if ( addedElements != null && !addedElements.isEmpty() )
-            result = concat( result, addedElements );
+            result = concat( result, addedElements.iterator() );
         return result;
     }
 

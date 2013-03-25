@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import static org.neo4j.helpers.collection.IteratorUtil.loop;
+
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.StatementContext;
@@ -68,6 +70,14 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     private final DependencyResolver dependencyResolver;
     private final SchemaCache schemaCache;
     private final UpdateableSchemaState schemaState;
+    private final StatementContextOwner statementContext = new StatementContextOwner()
+    {
+        @Override
+        protected StatementContext createStatementContext()
+        {
+            return Kernel.this.createReadOnlyStatementContext();
+        }
+    };
 
     // These non-final components are all circular dependencies in various configurations.
     // As we work towards refactoring the old kernel, we should work to remove these.
@@ -105,7 +115,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
                 {
                     neoStore = ((NeoStoreXaDataSource) ds).getNeoStore();
                     indexService = ((NeoStoreXaDataSource) ds).getIndexService();
-                    for ( SchemaRule schemaRule : neoStore.getSchemaStore().loadAll() )
+                    for ( SchemaRule schemaRule : loop( neoStore.getSchemaStore().loadAll() ) )
                     {
                         schemaCache.addSchemaRule( schemaRule );
                     }
@@ -148,7 +158,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
         // + Locking
         result = new LockingTransactionContext( result, lockManager, transactionManager );
         // + Single statement at a time
-        result = new SingleStatementTransactionContext( result );
+        result = new ReferenceCountingTransactionContext( result );
         
         // done
         return result;
@@ -156,6 +166,11 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
 
     @Override
     public StatementContext newReadOnlyStatementContext()
+    {
+        return statementContext.getStatementContext();
+    }
+
+    private StatementContext createReadOnlyStatementContext()
     {
         // I/O
         StatementContext result = new StoreStatementContext(propertyIndexManager, nodeManager,

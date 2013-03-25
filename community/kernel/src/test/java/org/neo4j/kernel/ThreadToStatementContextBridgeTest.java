@@ -34,7 +34,7 @@ public class ThreadToStatementContextBridgeTest
         // Given
         AbstractTransactionManager txManager = mock( AbstractTransactionManager.class );
         when( txManager.getStatementContext() ).thenReturn( null );
-        ThreadToStatementContextBridge bridge = new ThreadToStatementContextBridge( null, txManager, null );
+        ThreadToStatementContextBridge bridge = new ThreadToStatementContextBridge( null, txManager );
 
         // When
         bridge.getCtxForWriting();

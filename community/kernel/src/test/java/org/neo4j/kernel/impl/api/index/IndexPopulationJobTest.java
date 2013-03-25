@@ -407,8 +407,10 @@ public class IndexPopulationJobTest
         stateHolder = new KernelSchemaStateStore();
         
         Transaction tx = db.beginTx();
-        firstLabelId = ctxProvider.getCtxForWriting().getOrCreateLabelId( FIRST.name() );
-        secondLabelId = ctxProvider.getCtxForWriting().getOrCreateLabelId( SECOND.name() );
+        StatementContext ctxForWriting = ctxProvider.getCtxForWriting();
+        firstLabelId = ctxForWriting.getOrCreateLabelId( FIRST.name() );
+        secondLabelId = ctxForWriting.getOrCreateLabelId( SECOND.name() );
+        ctxForWriting.close();
         tx.success();
         tx.finish();
     }

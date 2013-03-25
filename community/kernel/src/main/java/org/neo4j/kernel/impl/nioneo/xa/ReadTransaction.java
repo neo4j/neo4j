@@ -19,17 +19,39 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
+import static org.neo4j.helpers.collection.IteratorUtil.asIterator;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.EnumMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+
+import javax.transaction.SystemException;
+import javax.transaction.Transaction;
+
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.core.PropertyIndex;
-import org.neo4j.kernel.impl.nioneo.store.*;
+import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
+import org.neo4j.kernel.impl.nioneo.store.NameData;
+import org.neo4j.kernel.impl.nioneo.store.NeoStore;
+import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
+import org.neo4j.kernel.impl.nioneo.store.NodeStore;
+import org.neo4j.kernel.impl.nioneo.store.PropertyBlock;
+import org.neo4j.kernel.impl.nioneo.store.PropertyData;
+import org.neo4j.kernel.impl.nioneo.store.PropertyIndexRecord;
+import org.neo4j.kernel.impl.nioneo.store.PropertyIndexStore;
+import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
+import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
+import org.neo4j.kernel.impl.nioneo.store.Record;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipStore;
+import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 import org.neo4j.kernel.impl.persistence.NeoStoreTransaction;
 import org.neo4j.kernel.impl.transaction.xaframework.XaConnection;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
-
-import javax.transaction.SystemException;
-import javax.transaction.Transaction;
-import java.util.*;
 
 class ReadTransaction implements NeoStoreTransaction
 {
@@ -405,5 +427,12 @@ class ReadTransaction implements NeoStoreTransaction
     public void removeLabelFromNode( long labelId, long nodeId )
     {
         throw readOnlyException();
+    }
+
+    @Override
+    public Iterator<Long> getLabelsForNode( long nodeId )
+    {
+        NodeRecord node = getNodeStore().getRecord( nodeId );
+        return asIterator( getNodeStore().getLabelsForNode( node ) );
     }
 }

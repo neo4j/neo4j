@@ -86,7 +86,7 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
   @throws(classOf[SyntaxException])
   def prepare[T](query: String, run: (ExecutionPlan, QueryContext) => T): T =  {
     // parse query
-    val cachedQuery = queryCache.getOrElseUpdate(query, {
+    val cachedQuery = queryCache.getOrElseUpdate(query, () => {
       val parsedQuery = parser.parse(query)
       verify(parsedQuery)
       parsedQuery
@@ -108,7 +108,7 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
           queryContext.getOrCreateFromSchemaState(this, new LRUCache[String, ExecutionPlan](getQueryCacheSize))
 
         // get plan or build it
-        planCache.getOrElseUpdate(query, {
+        planCache.getOrElseUpdate(query, () => {
           touched = true
           val planContext = new TransactionBoundPlanContext(statementContext, graph)
           planBuilder.build(planContext, cachedQuery)
@@ -116,12 +116,14 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
       }
       catch {
         case (t: Throwable) =>
+          statementContext.close()
           tx.failure()
           tx.finish()
           throw t
       }
 
       if (touched) {
+        statementContext.close()
         tx.success()
         tx.finish()
       }

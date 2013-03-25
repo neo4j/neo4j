@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.api.operations;
 
+import java.util.Iterator;
+
 import org.neo4j.kernel.api.ConstraintViolationKernelException;
 import org.neo4j.kernel.api.LabelNotFoundKernelException;
 
@@ -61,7 +63,7 @@ public interface LabelOperations
      * Returns all labels set on node with id {@code nodeId}.
      * If the node has no labels an empty {@link Iterable} will be returned.
      */
-    Iterable<Long> getLabelsForNode( long nodeId );
+    Iterator<Long> getLabelsForNode( long nodeId );
 
     /**
      * Removes a label with the corresponding id from a node.

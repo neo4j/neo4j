@@ -37,6 +37,7 @@ import static org.neo4j.helpers.collection.IteratorUtil.asUniqueSet;
 import static org.neo4j.helpers.collection.MapUtil.map;
 
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
@@ -157,7 +158,7 @@ public class StoreStatementContextTest
         tx.finish();
 
         // THEN
-        Iterable<Long> readLabels = statement.getLabelsForNode( nodeId );
+        Iterator<Long> readLabels = statement.getLabelsForNode( nodeId );
         assertEquals( new HashSet<Long>( asList( labelId1, labelId2 ) ),
                 addToCollection( readLabels, new HashSet<Long>() ) );
     }
@@ -203,8 +204,8 @@ public class StoreStatementContextTest
         Node node2 = createLabeledNode( db, map( "type", "Node", "count", 10 ), label, label2 );
 
         // WHEN
-        Iterable<Long> nodesForLabel1 = statement.getNodesWithLabel( statement.getLabelId( label.name() ) );
-        Iterable<Long> nodesForLabel2 = statement.getNodesWithLabel( statement.getLabelId( label2.name() ) );
+        Iterator<Long> nodesForLabel1 = statement.getNodesWithLabel( statement.getLabelId( label.name() ) );
+        Iterator<Long> nodesForLabel2 = statement.getNodesWithLabel( statement.getLabelId( label2.name() ) );
 
         // THEN
         assertEquals( asSet( node1.getId(), node2.getId() ), asSet( nodesForLabel1 ) );

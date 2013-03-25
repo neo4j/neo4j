@@ -19,22 +19,31 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import static java.util.Collections.emptyList;
+import static org.neo4j.helpers.collection.Iterables.concat;
+import static org.neo4j.helpers.collection.Iterables.filter;
+import static org.neo4j.helpers.collection.Iterables.option;
+import static org.neo4j.helpers.collection.IteratorUtil.singleOrNull;
+
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.Set;
+
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.api.*;
+import org.neo4j.kernel.api.ConstraintViolationKernelException;
+import org.neo4j.kernel.api.EntityNotFoundException;
+import org.neo4j.kernel.api.PropertyKeyIdNotFoundException;
+import org.neo4j.kernel.api.PropertyNotFoundException;
+import org.neo4j.kernel.api.SchemaRuleNotFoundException;
+import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.operations.SchemaOperations;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
-
-import java.util.Collection;
-
-import static java.util.Collections.emptyList;
-import static org.neo4j.helpers.collection.Iterables.*;
-import static org.neo4j.helpers.collection.IteratorUtil.singleOrNull;
 
 public class TransactionStateStatementContext extends CompositeStatementContext
 {
@@ -78,9 +87,9 @@ public class TransactionStateStatementContext extends CompositeStatementContext
     }
 
     @Override
-    public Iterable<Long> getLabelsForNode( long nodeId )
+    public Iterator<Long> getLabelsForNode( long nodeId )
     {
-        Iterable<Long> committed = delegate.getLabelsForNode( nodeId );
+        Iterator<Long> committed = delegate.getLabelsForNode( nodeId );
         return state.getNodeStateLabelDiffSets( nodeId ).apply( committed );
     }
 
@@ -113,13 +122,13 @@ public class TransactionStateStatementContext extends CompositeStatementContext
     
     @SuppressWarnings( "unchecked" )
     @Override
-    public Iterable<Long> getNodesWithLabel( long labelId )
+    public Iterator<Long> getNodesWithLabel( long labelId )
     {
-        Iterable<Long> committed = delegate.getNodesWithLabel( labelId );
+        Iterator<Long> committed = delegate.getNodesWithLabel( labelId );
         if ( !state.hasChanges() )
             return committed;
-        
-        Iterable<Long> result = committed;
+
+        Iterator<Long> result = committed;
         final Collection<Long> removed = state.getNodesWithLabelRemoved( labelId );
         if ( !removed.isEmpty() )
         {
@@ -133,8 +142,8 @@ public class TransactionStateStatementContext extends CompositeStatementContext
             }, result );
         }
         
-        Iterable<Long> added = state.getNodesWithLabelAdded( labelId );
-        return concat( result, added );
+        Set<Long> added = state.getNodesWithLabelAdded( labelId );
+        return concat( result, added.iterator() );
     }
     
     @Override
@@ -162,7 +171,7 @@ public class TransactionStateStatementContext extends CompositeStatementContext
             committedRules = emptyList();
         }
         DiffSets<IndexRule> ruleDiffSet = state.getIndexRuleDiffSetsByLabel( labelId );
-        Iterable<IndexRule> rules = ruleDiffSet.apply( committedRules );
+        Iterator<IndexRule> rules = ruleDiffSet.apply( committedRules.iterator() );
         IndexRule single = singleOrNull( rules );
         if ( single == null )
             throw new SchemaRuleNotFoundException( "Index rule for label:" + labelId + " and property:" +
@@ -191,19 +200,19 @@ public class TransactionStateStatementContext extends CompositeStatementContext
     }
 
     @Override
-    public Iterable<IndexRule> getIndexRules( long labelId )
+    public Iterator<IndexRule> getIndexRules( long labelId )
     {
         return state.getIndexRuleDiffSetsByLabel( labelId ).apply( delegate.getIndexRules( labelId ) );
     }
 
     @Override
-    public Iterable<IndexRule> getIndexRules()
+    public Iterator<IndexRule> getIndexRules()
     {
         return state.getIndexRuleDiffSets().apply( delegate.getIndexRules() );
     }
 
     @Override
-    public Iterable<Long> exactIndexLookup( long indexId, final Object value ) throws IndexNotFoundKernelException
+    public Iterator<Long> exactIndexLookup( long indexId, final Object value ) throws IndexNotFoundKernelException
     {
         IndexDescriptor idx = delegate.getIndexDescriptor( indexId );
 

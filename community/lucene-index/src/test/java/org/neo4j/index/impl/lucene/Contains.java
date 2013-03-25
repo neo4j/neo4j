@@ -40,7 +40,7 @@ public class Contains<T> extends TypeSafeMatcher<IndexHits<T>>
     @Override
     public boolean matchesSafely( IndexHits<T> tIndexHits )
     {
-        Collection<T> collection = IteratorUtil.asCollection( tIndexHits );
+        Collection<T> collection = IteratorUtil.asCollection( tIndexHits.iterator() );
 
         if ( expectedItems.length != collection.size() )
         {

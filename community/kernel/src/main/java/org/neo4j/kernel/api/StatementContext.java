@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.api;
 
+import java.io.Closeable;
+
 import org.neo4j.kernel.api.operations.EntityOperations;
 import org.neo4j.kernel.api.operations.LabelOperations;
 import org.neo4j.kernel.api.operations.PropertyOperations;
@@ -38,7 +40,7 @@ import org.neo4j.kernel.api.operations.SchemaOperations;
  * whereas write locks will live for the entire transaction.
  */
 public interface StatementContext extends
-        EntityOperations, PropertyOperations, LabelOperations, SchemaOperations
+        EntityOperations, PropertyOperations, LabelOperations, SchemaOperations, Closeable
 {
     /**
      * Closes this statement. Statements must be closed when done and before
