@@ -19,34 +19,7 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
-import static java.util.Arrays.binarySearch;
-import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
-import static org.neo4j.helpers.collection.IteratorUtil.first;
-import static org.neo4j.kernel.impl.nioneo.store.PropertyStore.encodeString;
-import static org.neo4j.kernel.impl.nioneo.xa.Command.Mode.CREATE;
-import static org.neo4j.kernel.impl.nioneo.xa.Command.Mode.DELETE;
-import static org.neo4j.kernel.impl.nioneo.xa.Command.Mode.UPDATE;
-
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
-
-import javax.transaction.SystemException;
-import javax.transaction.Transaction;
-import javax.transaction.xa.XAException;
-
-import org.neo4j.graphdb.ConstraintViolationException;
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.*;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
@@ -54,29 +27,7 @@ import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.core.PropertyIndex;
 import org.neo4j.kernel.impl.core.TransactionState;
-import org.neo4j.kernel.impl.nioneo.store.AbstractDynamicStore;
-import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
-import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
-import org.neo4j.kernel.impl.nioneo.store.NameData;
-import org.neo4j.kernel.impl.nioneo.store.NeoStore;
-import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
-import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
-import org.neo4j.kernel.impl.nioneo.store.NodeStore;
-import org.neo4j.kernel.impl.nioneo.store.PrimitiveRecord;
-import org.neo4j.kernel.impl.nioneo.store.PropertyBlock;
-import org.neo4j.kernel.impl.nioneo.store.PropertyData;
-import org.neo4j.kernel.impl.nioneo.store.PropertyIndexRecord;
-import org.neo4j.kernel.impl.nioneo.store.PropertyIndexStore;
-import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
-import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
-import org.neo4j.kernel.impl.nioneo.store.PropertyType;
-import org.neo4j.kernel.impl.nioneo.store.Record;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipStore;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeRecord;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeStore;
-import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
-import org.neo4j.kernel.impl.nioneo.store.SchemaStore;
+import org.neo4j.kernel.impl.nioneo.store.*;
 import org.neo4j.kernel.impl.nioneo.xa.Command.NodeCommand;
 import org.neo4j.kernel.impl.nioneo.xa.Command.PropertyCommand;
 import org.neo4j.kernel.impl.nioneo.xa.Command.SchemaRuleCommand;
@@ -88,6 +39,17 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
 import org.neo4j.kernel.impl.transaction.xaframework.XaTransaction;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
+
+import javax.transaction.SystemException;
+import javax.transaction.Transaction;
+import javax.transaction.xa.XAException;
+import java.io.Serializable;
+import java.util.*;
+
+import static java.util.Arrays.binarySearch;
+import static org.neo4j.helpers.collection.IteratorUtil.first;
+import static org.neo4j.kernel.impl.nioneo.store.PropertyStore.encodeString;
+import static org.neo4j.kernel.impl.nioneo.xa.Command.Mode.*;
 
 /**
  * Transaction containing {@link Command commands} reflecting the operations
@@ -1726,20 +1688,6 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             return "Lockable relationship #" + this.getId();
         }
     }
-    
-    @Override
-    public boolean isNodeCreated( long nodeId )
-    {
-        RecordChange<Long, NodeRecord, Void> node = nodeRecords.getIfLoaded( nodeId );
-        return node != null ? node.isCreated() : false;
-    }
-
-    @Override
-    public boolean isRelationshipCreated( long relId )
-    {
-        RecordChange<Long, RelationshipRecord, Void> rel = relRecords.getIfLoaded( relId );
-        return rel != null ? rel.isCreated() : false;
-    }
 
     @Override
     public int getKeyIdForProperty( PropertyData property )
@@ -1922,13 +1870,5 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         NodeLabelRecordLogic manipulator = new NodeLabelRecordLogic( nodeRecord,
                 getNodeStore() );
         manipulator.remove( labelId );
-    }
-    
-    @Override
-    public Iterable<Long> getLabelsForNode( long nodeId )
-    {
-        // Don't consider changes in this transaction
-        NodeRecord node = getNodeStore().getRecord( nodeId );
-        return asIterable( getNodeStore().getLabelsForNode( node ) );
     }
 }

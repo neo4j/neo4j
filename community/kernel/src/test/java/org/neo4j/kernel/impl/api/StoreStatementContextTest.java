@@ -19,26 +19,6 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import static java.util.Arrays.asList;
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
-import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.cache_type;
-import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-import static org.neo4j.helpers.collection.IteratorUtil.asUniqueSet;
-import static org.neo4j.helpers.collection.MapUtil.map;
-
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -50,19 +30,46 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.PropertyKeyNotFoundException;
 import org.neo4j.kernel.api.PropertyNotFoundException;
-import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.PropertyIndexManager;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
-import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
+import static java.util.Arrays.asList;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.cache_type;
+import static org.neo4j.helpers.collection.IteratorUtil.*;
+import static org.neo4j.helpers.collection.MapUtil.map;
+
 public class StoreStatementContextTest
 {
+
+    @Test
+    public void shouldDeclineWriteOps() throws Exception
+    {
+        // When
+        try {
+            statement.addLabelToNode( 12, 12);
+            fail("Should have thrown unsupported operation.");
+        } catch(UnsupportedOperationException e)
+        {
+            // ok
+        }
+    }
+
     @Test
     public void should_be_able_to_read_a_node_property() throws Exception
     {
@@ -105,36 +112,16 @@ public class StoreStatementContextTest
         long propertyKeyId = statement.getPropertyKeyId( propertyKey );
         statement.getNodePropertyValue( nodeId, propertyKeyId );
     }
-
-    @Test
-    public void should_be_able_to_add_label_to_node() throws Exception
-    {
-        // GIVEN
-        Transaction tx = db.beginTx();
-        long nodeId = db.createNode().getId();
-        String labelName = label.name();
-        long labelId = statement.getOrCreateLabelId( labelName );
-
-        // WHEN
-        statement.addLabelToNode( labelId, nodeId );
-        tx.success();
-        tx.finish();
-
-        // THEN
-        assertTrue( "Label " + labelName + " wasn't set on " + nodeId, statement.isLabelSetOnNode( labelId, nodeId ) );
-    }
     
     @Test
     public void should_be_able_to_list_labels_for_node() throws Exception
     {
         // GIVEN
         Transaction tx = db.beginTx();
-        long nodeId = db.createNode().getId();
+        long nodeId = db.createNode(label, label2).getId();
         String labelName1 = label.name(), labelName2 = label2.name();
-        long labelId1 = statement.getOrCreateLabelId( labelName1 );
+        long labelId1 = statement.getLabelId( labelName1 );
         long labelId2 = statement.getOrCreateLabelId( labelName2 );
-        statement.addLabelToNode( labelId1, nodeId );
-        statement.addLabelToNode( labelId2, nodeId );
         tx.success();
         tx.finish();
 
@@ -158,28 +145,6 @@ public class StoreStatementContextTest
         assertEquals( labelName, readLabelName );
     }
 
-    @Test
-    public void should_be_able_to_remove_node_label() throws Exception
-    {
-        // GIVEN
-        Transaction tx = db.beginTx();
-        String labelName = label.name();
-        long labelId = statement.getOrCreateLabelId( labelName );
-        long node = db.createNode().getId();
-        statement.addLabelToNode( labelId, node );
-        tx.success();
-        tx.finish();
-
-        // WHEN
-        tx = db.beginTx();
-        statement.removeLabelFromNode( labelId, node );
-        tx.success();
-        tx.finish();
-
-        // THEN
-        assertFalse( statement.isLabelSetOnNode( labelId, node ) );
-    }
-
     /*
      * This test doesn't really belong here, but OTOH it does, as it has to do with this specific
      * store solution. It creates its own IGD with cache_type:none to try reproduce to trigger the problem.
@@ -198,103 +163,7 @@ public class StoreStatementContextTest
         // THEN
         assertEquals( asSet( "name" ), asSet( propertyKeys ) );
     }
-    
-    @Test
-    public void should_return_true_when_adding_new_label() throws Exception
-    {
-        // GIVEN
-        Node node = createLabeledNode( db, map() );
 
-        // WHEN
-        Transaction tx = db.beginTx();
-        boolean added = false;
-        try
-        {
-            long labelId = statement.getOrCreateLabelId( label.name() );
-            added = statement.addLabelToNode( labelId, node.getId() );
-            tx.success();
-        }
-        finally
-        {
-            tx.finish();
-        }
-
-        // THEN
-        assertTrue( "Label should have been added", added );
-    }
-    
-    @Test
-    public void should_return_false_when_adding_existing_label() throws Exception
-    {
-        // GIVEN
-        Node node = createLabeledNode( db, map(), label );
-
-        // WHEN
-        Transaction tx = db.beginTx();
-        boolean added = false;
-        try
-        {
-            long labelId = statement.getOrCreateLabelId( label.name() );
-            added = statement.addLabelToNode( labelId, node.getId() );
-            tx.success();
-        }
-        finally
-        {
-            tx.finish();
-        }
-
-        // THEN
-        assertFalse( "Label should not have been added", added );
-    }
-    
-    @Test
-    public void should_return_true_when_remove_existing_label() throws Exception
-    {
-        // GIVEN
-        Node node = createLabeledNode( db, map(), label );
-
-        // WHEN
-        Transaction tx = db.beginTx();
-        boolean removed = false;
-        try
-        {
-            long labelId = statement.getOrCreateLabelId( label.name() );
-            removed = statement.removeLabelFromNode( labelId, node.getId() );
-            tx.success();
-        }
-        finally
-        {
-            tx.finish();
-        }
-
-        // THEN
-        assertTrue( "Label should have been removed", removed );
-    }
-    
-    @Test
-    public void should_return_false_when_removing_non_existent_label() throws Exception
-    {
-        // GIVEN
-        Node node = createLabeledNode( db, map() );
-
-        // WHEN
-        Transaction tx = db.beginTx();
-        boolean removed = false;
-        try
-        {
-            long labelId = statement.getOrCreateLabelId( label.name() );
-            removed = statement.addLabelToNode( labelId, node.getId() );
-            tx.success();
-        }
-        finally
-        {
-            tx.finish();
-        }
-
-        // THEN
-        assertTrue( "Label should not have been removed", removed );
-    }
-    
     @Test
     public void should_return_all_nodes_with_label() throws Exception
     {
@@ -371,7 +240,7 @@ public class StoreStatementContextTest
         IndexingService mockIndexService = mock(IndexingService.class);
         when( mockIndexService.getIndexDescriptor( 1337l ) ).thenReturn( idxDesc );
 
-        StoreStatementContext ctx = new StoreStatementContext( null, null, null, mock( NeoStore.class ), mockIndexService, null);
+        StoreStatementContext ctx = new StoreStatementContext( null, null, mock( NeoStore.class ), mockIndexService, null);
 
         // WHEN
         IndexDescriptor idx = ctx.getIndexDescriptor( 1337l );
@@ -396,7 +265,7 @@ public class StoreStatementContextTest
     }
     
     private GraphDatabaseAPI db;
-    private StatementContext statement;
+    private StoreStatementContext statement;
     private final Label label = label( "first-label" ), label2 = label( "second-label" );
     private final String propertyKey = "name";
 
@@ -407,7 +276,6 @@ public class StoreStatementContextTest
         IndexingService indexingService = db.getDependencyResolver().resolveDependency( IndexingService.class );
         statement = new StoreStatementContext(
                 db.getDependencyResolver().resolveDependency( PropertyIndexManager.class ),
-                db.getDependencyResolver().resolveDependency( PersistenceManager.class ),
                 db.getDependencyResolver().resolveDependency( NodeManager.class ),
                 // Ooh, jucky
                 db.getDependencyResolver().resolveDependency( XaDataSourceManager.class )

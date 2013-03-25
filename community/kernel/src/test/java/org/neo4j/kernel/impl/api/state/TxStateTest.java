@@ -17,21 +17,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api;
+package org.neo4j.kernel.impl.api.state;
 
-import static org.hamcrest.core.IsEqual.equalTo;
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import org.junit.Before;
+import org.junit.Test;
+import org.neo4j.kernel.impl.api.DiffSets;
+import org.neo4j.kernel.impl.api.state.OldTxStateBridge;
+import org.neo4j.kernel.impl.api.state.TxState;
+import org.neo4j.kernel.impl.nioneo.store.IndexRule;
+import org.neo4j.kernel.impl.persistence.PersistenceManager;
 
 import java.util.Collections;
 import java.util.Set;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.neo4j.kernel.impl.api.state.OldTxStateBridge;
-import org.neo4j.kernel.impl.api.state.TxState;
-import org.neo4j.kernel.impl.nioneo.store.IndexRule;
+import static org.hamcrest.core.IsEqual.equalTo;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
 public class TxStateTest
 {
@@ -134,13 +138,11 @@ public class TxStateTest
     public void shouldAddAndGetByLabel() throws Exception
     {
         // GIVEN
-        long ruleId = 1, labelId = 2, labelId2 = 5, propertyKey = 3;
-        IndexRule rule = newIndexRule( ruleId, labelId, propertyKey );
-        IndexRule rule2 = newIndexRule( ruleId, labelId2, propertyKey );
-        
+        long labelId = 2, labelId2 = 5, propertyKey = 3;
+
         // WHEN
-        state.addIndexRule( rule );
-        state.addIndexRule( rule2 );
+        IndexRule rule = state.addIndexRule( labelId, propertyKey );
+        state.addIndexRule( labelId2, propertyKey );
         
         // THEN
         assertEquals( asSet( rule ), state.getIndexRuleDiffSetsByLabel( labelId ).getAdded() );
@@ -150,11 +152,10 @@ public class TxStateTest
     public void shouldAddAndGetByRuleId() throws Exception
     {
         // GIVEN
-        long ruleId = 1, labelId = 2, propertyKey = 3;
-        IndexRule rule = newIndexRule( ruleId, labelId, propertyKey );
+        long labelId = 2, propertyKey = 3;
         
         // WHEN
-        state.addIndexRule( rule );
+        IndexRule rule = state.addIndexRule( labelId, propertyKey );
         
         // THEN
         assertEquals( asSet( rule ), state.getIndexRuleDiffSets().getAdded() );
@@ -207,7 +208,7 @@ public class TxStateTest
     public void before() throws Exception
     {
         legacyState = mock( OldTxStateBridge.class );
-        state = new TxState(legacyState);
+        state = new TxState(legacyState, mock(PersistenceManager.class), mock(TxState.IdGeneration.class));
     }
 
     private IndexRule newIndexRule( long ruleId, long labelId, long propertyKey )
