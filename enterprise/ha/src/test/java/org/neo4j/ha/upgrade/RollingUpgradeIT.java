@@ -38,7 +38,6 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.After;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -51,7 +50,6 @@ import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.UpdatePuller;
 import org.neo4j.test.TargetDirectory;
 
-@Ignore("Currently failing. Fix is coming")
 public class RollingUpgradeIT
 {
     private TargetDirectory DIR = TargetDirectory.forTest( getClass() );
@@ -160,6 +158,7 @@ public class RollingUpgradeIT
                 HaSettings.server_id.name(), "" + serverId,
                 HaSettings.ha_server.name(), localhost + ":" + ( 6000+serverId ),
                 ClusterSettings.cluster_server.name(), localhost+":"+( 5000+serverId ),
+                "ha.coordinators", "localhost:2181", // This has changed since 1.8 so we need to provide the original config here
                 HaSettings.coordinators.name(), "localhost:2181",
                 ClusterSettings.initial_hosts.name(),
                 localhost + ":" + 5000 + "," + localhost + ":" + 5001 + "," + localhost + ":" + 5002);
@@ -183,7 +182,7 @@ public class RollingUpgradeIT
             LegacyDatabase legacyDb = legacyDbs[i];
             String storeDir = legacyDb.getStoreDir();
             stop( legacyDb );
-            Thread.sleep( 5000 );
+            Thread.sleep( 15000 );
 
             debug( "Starting it as 1.9" );
             // start that db up in this JVM
@@ -192,7 +191,6 @@ public class RollingUpgradeIT
                     .setConfig( config( i, false ) )
                     .newGraphDatabase();
             debug( "Started as 1.9" );
-            Thread.sleep( 5000 );
 
             // issue transaction and see that it propagates
             String name = "upgraded-" + i;
