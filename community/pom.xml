@@ -44,7 +44,6 @@
     <module>graphviz</module>
     <module>server</module>
     <module>server-examples</module>
-    <module>licensecheck-config</module>
   </modules>
 
   <licenses>
