@@ -42,22 +42,22 @@ public class ProtocolServer implements BindingNotifier
 {
     private URI me;
     protected StateMachineProxyFactory proxyFactory;
-    protected final ConnectedStateMachines connectedStateMachines;
+    protected final StateMachines stateMachines;
     private Iterable<BindingListener> bindingListeners = Listeners.newListeners();
     private final StringLogger msgLog;
 
-    public ProtocolServer( ConnectedStateMachines connectedStateMachines, Logging logging )
+    public ProtocolServer( StateMachines stateMachines, Logging logging )
     {
-        this.connectedStateMachines = connectedStateMachines;
+        this.stateMachines = stateMachines;
         this.msgLog = logging.getLogger( getClass() );
 
         FromHeaderMessageProcessor fromHeaderMessageProcessor = new FromHeaderMessageProcessor();
         addBindingListener( fromHeaderMessageProcessor );
-        connectedStateMachines.addMessageProcessor( fromHeaderMessageProcessor );
+        stateMachines.addMessageProcessor( fromHeaderMessageProcessor );
 
         StateMachineConversations conversations = new StateMachineConversations();
-        proxyFactory = new StateMachineProxyFactory( connectedStateMachines, conversations );
-        connectedStateMachines.addMessageProcessor( proxyFactory );
+        proxyFactory = new StateMachineProxyFactory( stateMachines, conversations );
+        stateMachines.addMessageProcessor( proxyFactory );
 
         addBindingListener( conversations );
         addBindingListener( proxyFactory );
@@ -108,19 +108,19 @@ public class ProtocolServer implements BindingNotifier
         return me;
     }
 
-    public ConnectedStateMachines getConnectedStateMachines()
+    public StateMachines getStateMachines()
     {
-        return connectedStateMachines;
+        return stateMachines;
     }
 
     public void addStateTransitionListener( StateTransitionListener stateTransitionListener )
     {
-        connectedStateMachines.addStateTransitionListener( stateTransitionListener );
+        stateMachines.addStateTransitionListener( stateTransitionListener );
     }
 
     public void removeStateTransitionListener( StateTransitionListener stateTransitionListener )
     {
-        connectedStateMachines.removeStateTransitionListener( stateTransitionListener );
+        stateMachines.removeStateTransitionListener( stateTransitionListener );
     }
 
     public <T> T newClient( Class<T> clientProxyInterface )
@@ -133,7 +133,7 @@ public class ProtocolServer implements BindingNotifier
     {
         StringBuilder builder = new StringBuilder();
         builder.append(String.format("Instance URI:")).append(me.toString()).append("\n");
-        for( StateMachine stateMachine : connectedStateMachines.getStateMachines() )
+        for( StateMachine stateMachine : stateMachines.getStateMachines() )
         {
             builder.append( "  "+stateMachine).append("\n");
         }
@@ -142,7 +142,7 @@ public class ProtocolServer implements BindingNotifier
 
     public Timeouts getTimeouts()
     {
-        return connectedStateMachines.getTimeouts();
+        return stateMachines.getTimeouts();
     }
 
     private class FromHeaderMessageProcessor

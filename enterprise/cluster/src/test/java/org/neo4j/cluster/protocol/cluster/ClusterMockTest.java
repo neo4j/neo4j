@@ -43,7 +43,7 @@ import java.util.concurrent.TimeoutException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
-import org.neo4j.cluster.ConnectedStateMachines;
+import org.neo4j.cluster.StateMachines;
 import org.neo4j.cluster.FixedNetworkLatencyStrategy;
 import org.neo4j.cluster.MultipleFailureLatencyStrategy;
 import org.neo4j.cluster.NetworkMock;
@@ -248,20 +248,20 @@ public class ClusterMockTest
         List<AssertionError> errors = new ArrayList<AssertionError>();
         for ( int j = 0; j < protocolServers.size(); j++ )
         {
-            ConnectedStateMachines connectedStateMachines = protocolServers.get( j )
+            StateMachines stateMachines = protocolServers.get( j )
                     .getServer()
-                    .getConnectedStateMachines();
+                    .getStateMachines();
 
-            State<?, ?> clusterState = connectedStateMachines.getStateMachine( ClusterMessage.class ).getState();
+            State<?, ?> clusterState = stateMachines.getStateMachine( ClusterMessage.class ).getState();
             if ( !clusterState.equals( ClusterState.entered ) )
             {
                 logger.getLogger().warn( "Instance " + (j + 1) + " is not in the cluster (" + clusterState + ")" );
                 continue;
             }
 
-            ClusterContext context = (ClusterContext) connectedStateMachines.getStateMachine( ClusterMessage.class )
+            ClusterContext context = (ClusterContext) stateMachines.getStateMachine( ClusterMessage.class )
                     .getContext();
-            HeartbeatContext heartbeatContext = (HeartbeatContext) connectedStateMachines.getStateMachine(
+            HeartbeatContext heartbeatContext = (HeartbeatContext) stateMachines.getStateMachine(
                     HeartbeatMessage.class ).getContext();
             ClusterConfiguration clusterConfiguration = context.getConfiguration();
             if ( !clusterConfiguration.getMembers().isEmpty() )
@@ -700,18 +700,18 @@ public class ClusterMockTest
         List<TestProtocolServer> protocolServers = network.getServers();
         for ( int j = 0; j < protocolServers.size(); j++ )
         {
-            ConnectedStateMachines connectedStateMachines = protocolServers.get( j )
+            StateMachines stateMachines = protocolServers.get( j )
                     .getServer()
-                    .getConnectedStateMachines();
+                    .getStateMachines();
 
-            State<?, ?> clusterState = connectedStateMachines.getStateMachine( ClusterMessage.class ).getState();
+            State<?, ?> clusterState = stateMachines.getStateMachine( ClusterMessage.class ).getState();
             if ( !clusterState.equals( ClusterState.entered ) )
             {
                 logger.getLogger().warn( "Instance " + (j + 1) + " is not in the cluster (" + clusterState + ")" );
                 continue;
             }
 
-            ClusterContext context = (ClusterContext) connectedStateMachines.getStateMachine( ClusterMessage.class )
+            ClusterContext context = (ClusterContext) stateMachines.getStateMachine( ClusterMessage.class )
                     .getContext();
             ClusterConfiguration clusterConfiguration = context.getConfiguration();
             roles.putAll( clusterConfiguration.getRoles() );

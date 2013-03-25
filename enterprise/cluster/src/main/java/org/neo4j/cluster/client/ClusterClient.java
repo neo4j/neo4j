@@ -32,7 +32,7 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.cluster.BindingListener;
 import org.neo4j.cluster.ClusterMonitor;
 import org.neo4j.cluster.ClusterSettings;
-import org.neo4j.cluster.ConnectedStateMachines;
+import org.neo4j.cluster.StateMachines;
 import org.neo4j.cluster.ExecutorLifecycleAdapter;
 import org.neo4j.cluster.MultiPaxosServerFactory;
 import org.neo4j.cluster.ProtocolServer;
@@ -481,7 +481,7 @@ public class ClusterClient extends LifecycleAdapter
 
     public void dumpDiagnostics( StringBuilder appendTo )
     {
-        ConnectedStateMachines stateMachines = server.getConnectedStateMachines();
+        StateMachines stateMachines = server.getStateMachines();
         for ( StateMachine stateMachine : stateMachines.getStateMachines() )
         {
             appendTo.append( "   " ).append( stateMachine.getMessageType().getSimpleName() ).append( ":" )

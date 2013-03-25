@@ -51,10 +51,10 @@ import org.slf4j.LoggerFactory;
  * to the correct state machine based on what type of message comes in.
  * Only one message at a time can be processed.
  */
-public class ConnectedStateMachines
+public class StateMachines
         implements MessageProcessor, MessageSource
 {
-    private final Logger logger = LoggerFactory.getLogger( ConnectedStateMachines.class );
+    private final Logger logger = LoggerFactory.getLogger( StateMachines.class );
 
     private final MessageSender sender;
     private DelayedDirectExecutor executor;
@@ -70,10 +70,10 @@ public class ConnectedStateMachines
 
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock( true );
 
-    public ConnectedStateMachines( MessageSource source,
-                                   final MessageSender sender,
-                                   TimeoutStrategy timeoutStrategy,
-                                   DelayedDirectExecutor executor, Executor stateMachineExecutor )
+    public StateMachines( MessageSource source,
+                          final MessageSender sender,
+                          TimeoutStrategy timeoutStrategy,
+                          DelayedDirectExecutor executor, Executor stateMachineExecutor )
     {
         this.sender = sender;
         this.executor = executor;

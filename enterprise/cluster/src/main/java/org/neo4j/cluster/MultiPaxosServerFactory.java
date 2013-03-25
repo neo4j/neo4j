@@ -97,10 +97,10 @@ public class MultiPaxosServerFactory
         DelayedDirectExecutor executor = new DelayedDirectExecutor();
 
         // Create state machines
-        ConnectedStateMachines connectedStateMachines = new ConnectedStateMachines( input, output, latencyCalculator,
+        StateMachines stateMachines = new StateMachines( input, output, latencyCalculator,
                 executor, stateMachineExecutor );
-        Timeouts timeouts = connectedStateMachines.getTimeouts();
-        connectedStateMachines.addMessageProcessor( latencyCalculator );
+        Timeouts timeouts = stateMachines.getTimeouts();
+        stateMachines.addMessageProcessor( latencyCalculator );
 
         AcceptorContext acceptorContext = new AcceptorContext( logging, acceptorInstanceStore );
         LearnerContext learnerContext = new LearnerContext(acceptorInstanceStore);
@@ -117,23 +117,23 @@ public class MultiPaxosServerFactory
         SnapshotContext snapshotContext = new SnapshotContext( clusterContext, learnerContext );
         AtomicBroadcastContext atomicBroadcastContext = new AtomicBroadcastContext( clusterContext, executor );
 
-        connectedStateMachines.addStateMachine( new StateMachine( atomicBroadcastContext,
+        stateMachines.addStateMachine( new StateMachine( atomicBroadcastContext,
                 AtomicBroadcastMessage.class, AtomicBroadcastState.start ) );
-        connectedStateMachines.addStateMachine( new StateMachine( acceptorContext, AcceptorMessage.class,
+        stateMachines.addStateMachine( new StateMachine( acceptorContext, AcceptorMessage.class,
                 AcceptorState.start ) );
-        connectedStateMachines.addStateMachine( new StateMachine( context, ProposerMessage.class,
+        stateMachines.addStateMachine( new StateMachine( context, ProposerMessage.class,
                 ProposerState.start ) );
-        connectedStateMachines.addStateMachine( new StateMachine( context, LearnerMessage.class, LearnerState.start ) );
-        connectedStateMachines.addStateMachine( new StateMachine( heartbeatContext, HeartbeatMessage.class,
+        stateMachines.addStateMachine( new StateMachine( context, LearnerMessage.class, LearnerState.start ) );
+        stateMachines.addStateMachine( new StateMachine( heartbeatContext, HeartbeatMessage.class,
                 HeartbeatState.start ) );
-        connectedStateMachines.addStateMachine( new StateMachine( electionContext, ElectionMessage.class,
+        stateMachines.addStateMachine( new StateMachine( electionContext, ElectionMessage.class,
                 ElectionState.start ) );
-        connectedStateMachines.addStateMachine( new StateMachine( snapshotContext, SnapshotMessage.class,
+        stateMachines.addStateMachine( new StateMachine( snapshotContext, SnapshotMessage.class,
                 SnapshotState.start ) );
-        connectedStateMachines.addStateMachine( new StateMachine( clusterContext, ClusterMessage.class,
+        stateMachines.addStateMachine( new StateMachine( clusterContext, ClusterMessage.class,
                 ClusterState.start ) );
 
-        final ProtocolServer server = new ProtocolServer( connectedStateMachines, logging );
+        final ProtocolServer server = new ProtocolServer( stateMachines, logging );
 
         server.addBindingListener( new BindingListener()
         {
@@ -144,11 +144,11 @@ public class MultiPaxosServerFactory
             }
         } );
 
-        connectedStateMachines.addMessageProcessor( new HeartbeatRefreshProcessor( connectedStateMachines.getOutgoing
+        stateMachines.addMessageProcessor( new HeartbeatRefreshProcessor( stateMachines.getOutgoing
                 () ) );
-        input.addMessageProcessor( new HeartbeatIAmAliveProcessor( connectedStateMachines.getOutgoing() ) );
+        input.addMessageProcessor( new HeartbeatIAmAliveProcessor( stateMachines.getOutgoing() ) );
 
-        server.newClient( Cluster.class ).addClusterListener( new HeartbeatJoinListener( connectedStateMachines
+        server.newClient( Cluster.class ).addClusterListener( new HeartbeatJoinListener( stateMachines
                 .getOutgoing() ) );
 
         heartbeatContext.addHeartbeatListener( new HeartbeatReelectionListener( server.newClient( Election
@@ -156,7 +156,7 @@ public class MultiPaxosServerFactory
         clusterContext.addClusterListener( new ClusterLeaveReelectionListener( server.newClient( Election.class ) ) );
         electionContext.setElectionCredentialsProvider( electionCredentialsProvider );
 
-        StateMachineRules rules = new StateMachineRules( connectedStateMachines.getOutgoing() )
+        StateMachineRules rules = new StateMachineRules( stateMachines.getOutgoing() )
                 .rule( ClusterState.start, ClusterMessage.create, ClusterState.entered,
                         internal( AtomicBroadcastMessage.entered ),
                         internal( ProposerMessage.join ),
@@ -232,7 +232,7 @@ public class MultiPaxosServerFactory
                         internal( ProposerMessage.leave ) );
 
 
-        connectedStateMachines.addStateTransitionListener( rules );
+        stateMachines.addStateTransitionListener( rules );
 
         return server;
     }

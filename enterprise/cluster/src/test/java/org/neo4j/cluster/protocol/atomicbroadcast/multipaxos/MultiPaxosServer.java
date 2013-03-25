@@ -247,11 +247,11 @@ public class MultiPaxosServer
 
     public void config()
     {
-        ClusterConfiguration configuration = ((ClusterContext) server.getConnectedStateMachines()
+        ClusterConfiguration configuration = ((ClusterContext) server.getStateMachines()
                 .getStateMachine( ClusterMessage.class )
                 .getContext()).getConfiguration();
 
-        List<URI> failed = ((HeartbeatContext) server.getConnectedStateMachines().getStateMachine( HeartbeatMessage
+        List<URI> failed = ((HeartbeatContext) server.getStateMachines().getStateMachine( HeartbeatMessage
                 .class ).getContext()).getFailed();
         System.out.println( configuration + " Failed:" + failed );
     }
