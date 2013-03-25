@@ -37,7 +37,7 @@ import org.neo4j.server.rest.repr.formats.StreamingJsonFormat;
 import org.neo4j.test.GraphDescription.Graph;
 import org.neo4j.test.TestData.Title;
 
-public class GetOnRootFunctionalTest extends AbstractRestFunctionalTestBase
+public class GetOnRootDocIT extends AbstractRestFunctionalTestBase
 {
     /**
      * The service root is your starting point to discover the REST API. It
