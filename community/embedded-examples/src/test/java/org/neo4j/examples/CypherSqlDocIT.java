@@ -32,7 +32,7 @@ import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.test.TestData.Title;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
-public class CypherSqlIT extends AbstractJavaDocTestbase
+public class CypherSqlDocIT extends AbstractJavaDocTestbase
 {
     private static CypherSql cyperSql;
 

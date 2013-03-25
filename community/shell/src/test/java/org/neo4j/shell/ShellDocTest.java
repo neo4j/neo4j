@@ -34,7 +34,7 @@ import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
-public class ShellTest
+public class ShellDocTest
 {
     private AppCommandParser parse( final String line ) throws Exception
     {

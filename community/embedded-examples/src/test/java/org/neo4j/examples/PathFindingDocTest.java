@@ -45,7 +45,7 @@ import org.neo4j.kernel.Traversal;
 
 import static org.junit.Assert.*;
 
-public class PathFindingExamplesTest
+public class PathFindingDocTest
 {
     @ClassRule
     public static TemporaryFolder temp = new TemporaryFolder();

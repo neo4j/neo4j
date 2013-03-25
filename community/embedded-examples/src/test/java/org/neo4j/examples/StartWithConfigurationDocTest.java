@@ -27,7 +27,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 
 import static org.junit.Assert.*;
 
-public class StartWithConfigurationTest
+public class StartWithConfigurationDocTest
 {
     @Test
     public void loadFromFile()

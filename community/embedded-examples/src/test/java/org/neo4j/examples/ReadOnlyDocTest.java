@@ -34,7 +34,7 @@ import org.neo4j.kernel.impl.util.FileUtils;
 /**
  * How to get a read-only Neo4j instance.
  */
-public class ReadOnlyTest
+public class ReadOnlyDocTest
 {
     protected GraphDatabaseService graphDb;
 

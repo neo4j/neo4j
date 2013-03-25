@@ -383,7 +383,7 @@ This is how to define a code snippet inclusion:
  [snippet,java]
  ----
  component=neo4j-examples
- source=org/neo4j/examples/JmxTest.java
+ source=org/neo4j/examples/JmxDocTest.java
  classifier=test-sources
  tag=getStartTime
  ----
@@ -394,7 +394,7 @@ This is how it renders:
 [snippet,java]
 ----
 component=neo4j-examples
-source=org/neo4j/examples/JmxTest.java
+source=org/neo4j/examples/JmxDocTest.java
 classifier=test-sources
 tag=getStartTime
 ----

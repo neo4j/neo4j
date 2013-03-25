@@ -9,14 +9,14 @@ want to use the approach outlined here.
 
 [TIP]
 The source code of the example is found here:
-https://github.com/neo4j/neo4j/blob/{neo4j-git-tag}/community/embedded-examples/src/test/java/org/neo4j/examples/JmxTest.java[JmxTest.java]
+https://github.com/neo4j/neo4j/blob/{neo4j-git-tag}/community/embedded-examples/src/test/java/org/neo4j/examples/JmxDocTest.java[JmxDocTest.java]
 
 This example shows how to get the start time of a database:
 	
 [snippet,java]
 ----
 component=neo4j-examples
-source=org/neo4j/examples/JmxTest.java
+source=org/neo4j/examples/JmxDocTest.java
 tag=getStartTime
 ----
 

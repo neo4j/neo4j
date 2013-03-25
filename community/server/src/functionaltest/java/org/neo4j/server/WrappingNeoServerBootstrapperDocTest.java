@@ -48,7 +48,7 @@ import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.TestData;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 
-public class WrappingNeoServerBootstrapperTest extends ExclusiveServerTestBase
+public class WrappingNeoServerBootstrapperDocTest extends ExclusiveServerTestBase
 {
     public
     @Rule
