@@ -23,7 +23,6 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.StoreLockerLifecycleAdapter.DATABASE_LOCKED_ERROR_MESSAGE;
 import static org.neo4j.server.ServerTestUtils.createTempDir;
 
 import java.io.File;
@@ -33,6 +32,7 @@ import java.util.HashMap;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.MapConfiguration;
 import org.apache.commons.io.FileUtils;
+import org.hamcrest.CoreMatchers;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -118,7 +118,7 @@ public class TestCommunityDatabase
         catch ( RuntimeException e )
         {
             // Wrapped in a lifecycle exception, needs to be dug out
-            assertThat( e.getCause().getCause().getMessage(), is( DATABASE_LOCKED_ERROR_MESSAGE ) );
+            assertThat( e.getCause().getCause(), CoreMatchers.instanceOf( IllegalStateException.class ) );
         }
     }
 

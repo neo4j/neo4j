@@ -19,12 +19,9 @@
  */
 package org.neo4j.backup;
 
-import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-import static org.neo4j.kernel.StoreLockerLifecycleAdapter.DATABASE_LOCKED_ERROR_MESSAGE;
 
 import java.io.File;
 import java.io.FilenameFilter;
@@ -505,9 +502,9 @@ public class TestBackup
             new EmbeddedGraphDatabase( path ).shutdown();
             fail( "Could start up database in same process, store not locked" );
         }
-        catch ( RuntimeException ex )
+        catch ( IllegalStateException ex )
         {
-            assertThat( ex.getCause().getCause().getMessage(), is( DATABASE_LOCKED_ERROR_MESSAGE) );
+            // Ok
         }
         StartupChecker proc = new LockProcess().start( path );
         try
@@ -552,7 +549,7 @@ public class TestBackup
             }
             catch ( RuntimeException ex )
             {
-                if (DATABASE_LOCKED_ERROR_MESSAGE.equals( ex.getCause().getCause().getMessage() ) )
+                if (ex.getCause().getCause() instanceof IllegalStateException )
                 {
                     state = ex;
                     return;

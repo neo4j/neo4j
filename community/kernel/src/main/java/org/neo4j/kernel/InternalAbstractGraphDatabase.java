@@ -266,7 +266,15 @@ public abstract class InternalAbstractGraphDatabase
         }
         catch ( Throwable throwable )
         {
-            msgLog.logMessage( "Startup failed", throwable );
+            StringBuilder msg = new StringBuilder(  );
+            msg.append( "Startup failed" );
+            while (throwable != null)
+            {
+                msg.append( ": " ).append( throwable.getMessage() );
+                throwable = throwable.getCause();
+            }
+
+            msgLog.logMessage( msg.toString(), throwable );
 
             shutdown();
 
@@ -332,7 +340,7 @@ public abstract class InternalAbstractGraphDatabase
         config.setLogger( msgLog );
 
         this.storeLocker = life.add(new StoreLockerLifecycleAdapter(
-                new StoreLocker( config, fileSystem, msgLog ), storeDir ));
+                new StoreLocker( config, fileSystem ), storeDir ));
 
         new JvmChecker(msgLog, new JvmMetadataRepository() ).checkJvmCompatibilityAndIssueWarning();
 
