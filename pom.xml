@@ -32,7 +32,6 @@
     <module>community</module>
     <module>advanced</module>
     <module>enterprise</module>
-    <module>licensecheck-config</module>
     <module>cypher-plugin</module>
   </modules>
   
