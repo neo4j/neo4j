@@ -45,9 +45,11 @@ public interface DirectoryFactory
 
     public static final DirectoryFactory PERSISTENT = new DirectoryFactory()
     {
+        @SuppressWarnings("ResultOfMethodCallIgnored")
         @Override
         public Directory open( File dir ) throws IOException
         {
+            dir.mkdirs();
             return FSDirectory.open( dir );
         }
 
