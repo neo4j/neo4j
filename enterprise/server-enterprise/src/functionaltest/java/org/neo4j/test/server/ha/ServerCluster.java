@@ -21,6 +21,7 @@ package org.neo4j.test.server.ha;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.PrintStream;
 import java.lang.reflect.Array;
 import java.net.URI;
@@ -40,6 +41,7 @@ import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState;
+import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.management.HighAvailability;
 import org.neo4j.server.Bootstrapper;
 import org.neo4j.server.configuration.Configurator;
@@ -75,7 +77,14 @@ public final class ServerCluster
             {
                 if( UGLY_CODE_DUE_TO_ISSUES_IN_HA != null )
                 {
-                    TargetDirectory.recursiveDelete( UGLY_CODE_DUE_TO_ISSUES_IN_HA.other() );
+                    try
+                    {
+                        FileUtils.deleteRecursively( UGLY_CODE_DUE_TO_ISSUES_IN_HA.other() );
+                    }
+                    catch ( IOException deleteException )
+                    {
+                        deleteException.printStackTrace();
+                    }
                 }
             }
             if( e instanceof Error )
@@ -227,17 +236,6 @@ public final class ServerCluster
         finally
         {
             writer.close();
-        }
-    }
-
-    private static void shutdownAndCleanUp( Pair<ServerManager, File>[] servers )
-    {
-        for ( File store : shutdown( File.class, servers ) )
-        {
-            if( store != null )
-            {
-                TargetDirectory.recursiveDelete( store );
-            }
         }
     }
 

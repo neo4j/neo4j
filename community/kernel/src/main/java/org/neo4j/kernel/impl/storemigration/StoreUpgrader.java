@@ -102,12 +102,11 @@ public class StoreUpgrader
                 throw new UnableToUpgradeException( e );
             }
         }
-        upgradeDirectory.mkdir();
+        fileSystemAbstraction.mkdir( upgradeDirectory );
 
         File upgradeFileName = new File( upgradeDirectory, NeoStore.DEFAULT_NAME );
         Map<String, String> upgradeConfig = new HashMap<String, String>( originalConfig.getParams() );
         upgradeConfig.put( "neo_store", upgradeFileName.getPath() );
-
 
         Config upgradeConfiguration = new Config( upgradeConfig );
         

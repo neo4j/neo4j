@@ -34,6 +34,7 @@ import org.neo4j.kernel.KernelEventHandlers;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.EphemeralFileSystemRule;
+import org.neo4j.test.TargetDirectory;
 
 public class TxManagerTest
 {
@@ -42,7 +43,8 @@ public class TxManagerTest
     {
         // Given
         XaDataSourceManager mockXaManager = mock( XaDataSourceManager.class );
-        TxManager txm = new TxManager( new File( "/dev/null" ), mockXaManager, new KernelPanicEventGenerator(
+        File txLogDir = TargetDirectory.forTest( fs.get(), getClass() ).directory( "log", true );
+        TxManager txm = new TxManager( txLogDir, mockXaManager, new KernelPanicEventGenerator(
                 new KernelEventHandlers() ), StringLogger.DEV_NULL, fs.get(), null );
         txm.doRecovery(); // Make the txm move to an ok state
 

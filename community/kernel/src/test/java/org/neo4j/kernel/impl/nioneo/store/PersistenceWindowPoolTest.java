@@ -23,11 +23,10 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.helpers.Exceptions.launderedException;
-
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.neo4j.helpers.Exceptions.launderedException;
 
 import java.io.File;
 import java.io.RandomAccessFile;
@@ -68,6 +67,9 @@ public class PersistenceWindowPoolTest
 
         // then
         assertNotSame( initialWindow, window );
+        
+        pool.close();
+        file.close();
     }
 
     @Test
@@ -129,12 +131,12 @@ public class PersistenceWindowPoolTest
         
         pool.close();
         otherThread.shutdown();
+        file.close();
     }
 
     @Test()
     public void releaseShouldUnlockWindowEvenIfExceptionIsThrown() throws Exception
     {
-
         String filename = new File( directory.directory(), "mapped.file" ).getAbsolutePath();
         RandomAccessFile file = resources.add( new RandomAccessFile( filename, "rw" ) );
         PersistenceWindowPool pool = new PersistenceWindowPool( new File("test.store"), 8, file.getChannel(), 0, false, false, StringLogger.DEV_NULL );
@@ -151,8 +153,9 @@ public class PersistenceWindowPoolTest
         {
             verify(row).unLock();
         }
-
-
+        
+        pool.close();
+        file.close();
     }
 
 
