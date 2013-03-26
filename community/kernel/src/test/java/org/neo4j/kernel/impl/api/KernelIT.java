@@ -377,12 +377,14 @@ public class KernelIT
         // WHEN
         tx = db.beginTx();
         StatementContext statement = statementContextProvider.getCtxForWriting();
-        Set<Long> nodes = asSet(statement.getNodesWithLabel(statement.getLabelId(label.name())));
+        long labelId = statement.getLabelId( label.name() );
+        Iterator<Long> nodes = statement.getNodesWithLabel( labelId );
+        Set<Long> nodeSet = asSet( nodes );
         tx.success();
         tx.finish();
 
         // THEN
-        assertThat( nodes, equalTo(Collections.<Long>emptySet()) );
+        assertThat( nodeSet, equalTo(Collections.<Long>emptySet()) );
     }
 
     private GraphDatabaseAPI db;

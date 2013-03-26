@@ -73,6 +73,7 @@ public class OldBridgingTransactionStateStatementContext extends CompositeStatem
     @Override
     public Iterator<Long> getNodesWithLabel( long labelId )
     {
+        Iterator<Long> nodesWithLabel = delegate.getNodesWithLabel(labelId);
         return Iterables.filter( new Predicate<Long>()
         {
             @Override
@@ -80,6 +81,6 @@ public class OldBridgingTransactionStateStatementContext extends CompositeStatem
             {
                 return !oldTransactionState.nodeIsDeleted( nodeId.longValue() );
             }
-        }, delegate.getNodesWithLabel( labelId ) );
+        }, nodesWithLabel);
     }
 }
