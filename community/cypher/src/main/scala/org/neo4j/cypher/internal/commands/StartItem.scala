@@ -34,7 +34,7 @@ abstract class StartItem(val identifierName: String) extends TypeSafe with AstNo
 trait ReadOnlyStartItem extends StartItem {
 
   def mutating = false
-  def children:Seq[AstNode[_]] = Seq.empty
+  def children:Seq[AstNode[_]] = Nil
 
   def throwIfSymbolsMissing(symbols: SymbolTable) {}
   def symbolTableDependencies = Set.empty

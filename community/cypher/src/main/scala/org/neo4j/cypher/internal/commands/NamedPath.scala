@@ -44,7 +44,7 @@ trait PathExtractor {
 
     val p: Seq[PropertyContainer] = pathPattern.foldLeft(Seq(get(firstNode)))((soFar, p) => p match {
       case SingleNode(name)                         => Seq(get(name))
-      case RelatedTo(_, right, relName, _, _, _, _) => soFar ++ Seq(get(relName), get(right))
+      case RelatedTo(_, right, relName, _, _, _, _) => soFar :+ get(relName) :+ get(right)
       case path: PathPattern                        => getPath(ctx, path.pathName, soFar)
     })
 

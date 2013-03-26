@@ -129,7 +129,7 @@ Expected: %s""".format(a, b, result, expected))
 }
 
 class TestExpression extends Expression {
-  def children = Seq.empty
+  def children = Nil
 
   def rewrite(f: (Expression) => Expression): Expression = null
 

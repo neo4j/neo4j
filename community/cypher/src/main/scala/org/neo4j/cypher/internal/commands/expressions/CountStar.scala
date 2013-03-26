@@ -27,7 +27,7 @@ case class CountStar() extends AggregationExpression {
 
   def createAggregationFunction = new CountStarFunction
 
-  def children = Seq.empty
+  def children = Nil
 
   def calculateType(symbols: SymbolTable): CypherType = LongType()
 
