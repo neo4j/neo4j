@@ -187,6 +187,10 @@ public class StoreStatementContext extends CompositeStatementContext
                         while ( id <= highestId )
                         {
                             NodeRecord node = nodeStore.forceGetRecord( id++ );
+
+                            if( ! node.inUse() )
+                                continue;
+
                             for ( long label : nodeStore.getLabelsForNode( node ) )
                                 if ( label == labelId )
                                     return node.getId();

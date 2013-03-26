@@ -19,12 +19,6 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import static org.junit.Assert.*;
-import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-
-import java.util.Set;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -37,6 +31,14 @@ import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.TransactionContext;
 import org.neo4j.test.ImpermanentGraphDatabase;
+
+import java.util.Collections;
+import java.util.Set;
+
+import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.*;
+import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
 public class KernelIT
 {
@@ -337,7 +339,34 @@ public class KernelIT
         // THEN
         assertEquals( asSet(), labels );
         assertFalse( "Label should not be set on node here", labelIsSet );
-        assertEquals( asSet(), nodes );
+        assertEquals(asSet(), nodes);
+    }
+
+    @Test
+    public void deletingNodeWithLabelsShouldHaveRemovalReflectedInLabelScans() throws Exception
+    {
+        // GIVEN
+        Transaction tx = db.beginTx();
+        Label label = label( "labello" );
+        Node node = db.createNode( label );
+        tx.success();
+        tx.finish();
+
+        // AND GIVEN I DELETE IT
+        tx = db.beginTx();
+        node.delete();
+        tx.success();
+        tx.finish();
+
+        // WHEN
+        tx = db.beginTx();
+        StatementContext statement = statementContextProvider.getCtxForWriting();
+        Set<Long> nodes = asSet(statement.getNodesWithLabel(statement.getLabelId(label.name())));
+        tx.success();
+        tx.finish();
+
+        // THEN
+        assertThat( nodes, equalTo(Collections.<Long>emptySet()) );
     }
 
     private GraphDatabaseAPI db;
