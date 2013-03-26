@@ -61,6 +61,7 @@ import org.neo4j.kernel.ha.com.master.Slave;
 import org.neo4j.kernel.ha.com.slave.SlaveImpl;
 import org.neo4j.kernel.ha.com.slave.SlaveServer;
 import org.neo4j.kernel.ha.id.HaIdGeneratorFactory;
+import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.index.IndexStore;
@@ -120,11 +121,13 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
     private final StringLogger msgLog;
     private final HaIdGeneratorFactory idGeneratorFactory;
     private final Logging logging;
+    private final UpdateableSchemaState updateableSchemaState;
 
     public HighAvailabilityModeSwitcher( DelegateInvocationHandler delegateHandler,
                                          ClusterMemberAvailability clusterMemberAvailability,
                                          HighAvailabilityMemberStateMachine stateHandler, GraphDatabaseAPI graphDb,
-                                         HaIdGeneratorFactory idGeneratorFactory, Config config, Logging logging )
+                                         HaIdGeneratorFactory idGeneratorFactory, Config config, Logging logging,
+                                         UpdateableSchemaState updateableSchemaState )
     {
         this.delegateHandler = delegateHandler;
         this.clusterMemberAvailability = clusterMemberAvailability;
@@ -132,6 +135,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
         this.idGeneratorFactory = idGeneratorFactory;
         this.config = config;
         this.logging = logging;
+        this.updateableSchemaState = updateableSchemaState;
         this.msgLog = logging.getLogger( getClass() );
         this.life = new LifeSupport();
         this.stateHandler = stateHandler;
@@ -443,7 +447,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                         resolver.resolveDependency( TransactionStateFactory.class ),
                         resolver.resolveDependency( CacheAccessBackDoor.class ),
                         resolver.resolveDependency( TransactionInterceptorProviders.class ),
-                        resolver.resolveDependency( JobScheduler.class ), logging, resolver );
+                        resolver.resolveDependency( JobScheduler.class ), logging, updateableSchemaState, resolver );
                 xaDataSourceManager.registerDataSource( nioneoDataSource );
             }
             catch ( IOException e )

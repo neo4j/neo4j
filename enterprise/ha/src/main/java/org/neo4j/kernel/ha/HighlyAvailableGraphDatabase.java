@@ -419,9 +419,9 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     {
 
         idGeneratorFactory = new HaIdGeneratorFactory( master, memberStateMachine, logging );
-        HighAvailabilityModeSwitcher highAvailabilityModeSwitcher = new HighAvailabilityModeSwitcher( masterDelegateInvocationHandler,
-                clusterMemberAvailability, memberStateMachine, this, (HaIdGeneratorFactory) idGeneratorFactory, config,
-                logging );
+        HighAvailabilityModeSwitcher highAvailabilityModeSwitcher = new HighAvailabilityModeSwitcher(
+                masterDelegateInvocationHandler, clusterMemberAvailability, memberStateMachine, this,
+                (HaIdGeneratorFactory) idGeneratorFactory, config, logging, updateableSchemaState );
         /*
         * We always need the mode switcher and we need it to restart on switchover. So:
         * 1) if in compatibility mode, it must be added in all 3 - to start on start and restart on switchover
