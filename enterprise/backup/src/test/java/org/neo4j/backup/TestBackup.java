@@ -19,8 +19,10 @@
  */
 package org.neo4j.backup;
 
+import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
 import java.io.File;
@@ -46,6 +48,7 @@ import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.impl.nioneo.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.subprocess.SubProcess;
@@ -502,10 +505,15 @@ public class TestBackup
             new EmbeddedGraphDatabase( path ).shutdown();
             fail( "Could start up database in same process, store not locked" );
         }
-        catch ( IllegalStateException ex )
+        catch ( RuntimeException ex )
         {
-            // Ok
+            assertThat( ex.getCause().getCause().getMessage(), is("Unable to obtain lock on store lock file: target/var/serverdb-lock/store_lock") );
         }
+        catch ( Exception e ) {
+            e.printStackTrace();
+            fail( "crap" );
+        }
+
         StartupChecker proc = new LockProcess().start( path );
         try
         {

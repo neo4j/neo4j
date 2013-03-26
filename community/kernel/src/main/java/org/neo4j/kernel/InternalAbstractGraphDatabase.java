@@ -264,17 +264,18 @@ public abstract class InternalAbstractGraphDatabase
                 throw txManager.getRecoveryError();
             }
         }
-        catch ( Throwable throwable )
+        catch ( final Throwable throwable )
         {
             StringBuilder msg = new StringBuilder(  );
             msg.append( "Startup failed" );
-            while (throwable != null)
+            Throwable temporaryThrowable = throwable;
+            while (temporaryThrowable != null)
             {
-                msg.append( ": " ).append( throwable.getMessage() );
-                throwable = throwable.getCause();
+                msg.append( ": " ).append( temporaryThrowable.getMessage() );
+                temporaryThrowable = temporaryThrowable.getCause();
             }
 
-            msgLog.logMessage( msg.toString(), throwable );
+            msgLog.logMessage( msg.toString() );
 
             shutdown();
 
