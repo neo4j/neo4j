@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.api;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.TransactionContext;
 import org.neo4j.kernel.api.operations.SchemaOperations;
-import org.neo4j.kernel.impl.api.state.OldTxStateBridgeImpl;
 import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.core.TransactionState;
 
@@ -58,8 +57,10 @@ public class StateHandlingTransactionContext extends DelegatingTransactionContex
         StatementContext result = super.newStatementContext();
         // + Caching
         result = new CachingStatementContext( result, persistenceCache, schemaCache );
+        // + SchemaState handling
+        SchemaOperations schemaStateFlushing = new SchemaStateOperations( result, schemaState );
         // + Transaction-local state awareness
-        result = new TransactionStateStatementContext( result, state );
+        result = new TransactionStateStatementContext( result, schemaStateFlushing, state );
         // + Old transaction state bridge
         result = new OldBridgingTransactionStateStatementContext( result, oldTransactionState );
 

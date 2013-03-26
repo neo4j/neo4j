@@ -49,15 +49,12 @@ public class ReadOnlyTxManager extends AbstractTransactionManager
     private int eventIdentifierCounter = 0;
 
     private XaDataSourceManager xaDsManager = null;
-    private final SchemaState schemaState;
     private final StringLogger logger;
     private KernelAPI kernel;
-    private StatementContext readOnlyStatementContext;
 
-    public ReadOnlyTxManager( XaDataSourceManager xaDsManagerToUse, SchemaState schemaState, StringLogger logger )
+    public ReadOnlyTxManager( XaDataSourceManager xaDsManagerToUse, StringLogger logger )
     {
         xaDsManager = xaDsManagerToUse;
-        this.schemaState = schemaState;
         this.logger = logger;
     }
 
@@ -332,11 +329,7 @@ public class ReadOnlyTxManager extends AbstractTransactionManager
     @Override
     public StatementContext getStatementContext()
     {
-        if(readOnlyStatementContext == null)
-        {
-            readOnlyStatementContext = kernel.newReadOnlyStatementContext();
-        }
-        return readOnlyStatementContext;
+        return kernel.newReadOnlyStatementContext();
     }
 
     @Override

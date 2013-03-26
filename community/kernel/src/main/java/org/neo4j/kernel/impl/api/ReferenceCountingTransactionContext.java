@@ -24,7 +24,7 @@ import org.neo4j.kernel.api.TransactionContext;
 
 public class ReferenceCountingTransactionContext extends DelegatingTransactionContext
 {
-    private final StatementContextOwner statementContext = new StatementContextOwner()
+    private final StatementContextOwner statementContextOwner = new StatementContextOwner()
     {
         @Override
         protected StatementContext createStatementContext()
@@ -41,20 +41,20 @@ public class ReferenceCountingTransactionContext extends DelegatingTransactionCo
     @Override
     public StatementContext newStatementContext()
     {
-        return statementContext.getStatementContext();
+        return statementContextOwner.getStatementContext();
     }
 
     @Override
     public void commit()
     {
-        statementContext.assertAllClosed();
+        statementContextOwner.closeAllStatements();
         super.commit();
     }
 
     @Override
     public void rollback()
     {
-        statementContext.assertAllClosed();
+        statementContextOwner.closeAllStatements();
         super.rollback();
     }
 

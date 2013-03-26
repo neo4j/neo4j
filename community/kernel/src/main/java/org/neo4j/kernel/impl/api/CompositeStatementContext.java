@@ -410,11 +410,9 @@ public class CompositeStatementContext implements StatementContext
     public <K, V> V getOrCreateFromSchemaState( K key, Function<K, V> creator )
     {
         beforeOperation();
-        beforeWriteOperation();
 
         V result = schemaOperations.getOrCreateFromSchemaState( key, creator );
 
-        afterWriteOperation();
         afterOperation();
         return result;
     }

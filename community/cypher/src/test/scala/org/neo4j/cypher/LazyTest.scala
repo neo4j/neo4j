@@ -38,7 +38,7 @@ import org.neo4j.kernel.{ThreadToStatementContextBridge, GraphDatabaseAPI}
 import org.neo4j.helpers.collection.IteratorWrapper
 import org.neo4j.kernel.impl.core.NodeManager
 import org.neo4j.kernel.api.StatementContext
-import org.neo4j.kernel.impl.api.{KernelSchemaStateStore, CompositeStatementContext}
+import org.neo4j.kernel.impl.api.{SchemaStateOperations, KernelSchemaStateStore, CompositeStatementContext}
 
 class LazyTest extends ExecutionEngineHelper with Assertions with MockitoSugar {
 
@@ -182,8 +182,11 @@ class LazyTest extends ExecutionEngineHelper with Assertions with MockitoSugar {
     val dependencies = mock[DependencyResolver]
     val bridge = mock[ThreadToStatementContextBridge]
     val fakeCtx = mock[StatementContext]
+    val schemaState = new KernelSchemaStateStore()
+    val schemaOps = new SchemaStateOperations(fakeCtx, schemaState)
+    val comboCtx = new CompositeStatementContext(fakeCtx, schemaOps)
     when(nodeMgre.getAllNodes).thenReturn(iter)
-    when(bridge.getCtxForWriting).thenReturn(fakeCtx)
+    when(bridge.getCtxForWriting).thenReturn(comboCtx)
     when(fakeGraph.getDependencyResolver).thenReturn(dependencies)
     when(dependencies.resolveDependency(classOf[ThreadToStatementContextBridge])).thenReturn(bridge)
     when(dependencies.resolveDependency(classOf[NodeManager])).thenReturn(nodeMgre)
@@ -198,7 +201,6 @@ class LazyTest extends ExecutionEngineHelper with Assertions with MockitoSugar {
     //Then:
     assert(counter.count === 5, "Should not have fetched more than this many nodes.")
   }
-
 
   @Test def traversalmatcherpipe_is_lazy() {
     //Given:

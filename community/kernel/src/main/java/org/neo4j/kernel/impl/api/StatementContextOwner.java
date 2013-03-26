@@ -38,6 +38,17 @@ public abstract class StatementContextOwner
 
     protected abstract StatementContext createStatementContext();
 
+    public void closeAllStatements()
+    {
+        if ( statementContext != null )
+        {
+            statementContext.close();
+            statementContext = null;
+        }
+
+        count = 0;
+    }
+
     private class StatementContextReference extends InteractionStoppingStatementContext
     {
         public StatementContextReference( StatementContext delegate )
@@ -49,19 +60,17 @@ public abstract class StatementContextOwner
         public void close()
         {
             markAsClosed();
-            if ( --count == 0 )
+            count--;
+            if ( count == 0 )
             {
                 statementContext.close();
                 statementContext = null;
             }
-        }
-    }
 
-    public void assertAllClosed()
-    {
-        if ( count > 0 )
-        {
-            throw new IllegalStateException( "Tried to close transaction context but had statement context's open" );
+            if ( count < 0 )
+            {
+                throw new IllegalStateException( "Lost track of at least one StatementContext" );
+            }
         }
     }
 }

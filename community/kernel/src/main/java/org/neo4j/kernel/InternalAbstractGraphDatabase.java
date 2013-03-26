@@ -400,7 +400,7 @@ public abstract class InternalAbstractGraphDatabase
         if ( readOnly )
         {
             StringLogger roTxManagerLogging = logging.getLogger(ReadOnlyTxManager.class);
-            txManager = new ReadOnlyTxManager( xaDataSourceManager, updateableSchemaState, roTxManagerLogging);
+            txManager = new ReadOnlyTxManager( xaDataSourceManager, roTxManagerLogging);
         }
         else
         {

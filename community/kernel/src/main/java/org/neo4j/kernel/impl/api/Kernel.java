@@ -25,6 +25,7 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.TransactionContext;
+import org.neo4j.kernel.api.operations.SchemaOperations;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.state.OldTxStateBridgeImpl;
 import org.neo4j.kernel.impl.api.state.TxState;
@@ -175,12 +176,23 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
         // I/O
         StatementContext result = new StoreStatementContext(propertyIndexManager, nodeManager,
                 neoStore, indexService, new IndexReaderFactory.NonCaching( indexService ) );
+
         // + Cache
         result = new CachingStatementContext( result, persistenceCache, schemaCache );
+
         // + Read only access
         result = new ReadOnlyStatementContext( result );
 
+        // + Schema state handling
+        result = createSchemaStateStatementContext( result );
+
         return result;
+    }
+
+    private StatementContext createSchemaStateStatementContext( StatementContext inner )
+    {
+        SchemaOperations schemaOps = new SchemaStateOperations( inner, schemaState );
+        return new CompositeStatementContext( inner, schemaOps );
     }
 
     private TxState newTxState() {

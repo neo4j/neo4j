@@ -20,12 +20,28 @@
 package org.neo4j.kernel.impl.api;
 
 import org.neo4j.helpers.Function;
+import org.neo4j.kernel.api.StatementContext;
+import org.neo4j.kernel.api.operations.SchemaOperations;
 
-public interface SchemaState {
+public class SchemaStateOperations extends DelegatingSchemaOperations
+{
+    private final UpdateableSchemaState schemaState;
 
-    <K, V> V get( K key );
+    public SchemaStateOperations( SchemaOperations delegate, UpdateableSchemaState schemaState )
+    {
+        super(delegate);
+        this.schemaState = schemaState;
+    }
 
-    <K, V> V getOrCreate( K key, Function<K, V> creator );
+    @Override
+    public <K, V> V getOrCreateFromSchemaState( K key, Function<K, V> creator )
+    {
+        return schemaState.<K, V>getOrCreate( key, creator );
+    }
 
-    void flush();
+    @Override
+    public <K> boolean schemaStateContains( K key )
+    {
+        return schemaState.<K, Object>get( key ) != null;
+    }
 }

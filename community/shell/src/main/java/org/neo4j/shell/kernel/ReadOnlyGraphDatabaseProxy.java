@@ -42,6 +42,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ReturnableEvaluator;
 import org.neo4j.graphdb.StopEvaluator;
 import org.neo4j.graphdb.Transaction;
@@ -1025,13 +1026,13 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
         }
 
         @Override
-        public Iterable<IndexDefinition> getIndexes( Label label )
+        public ResourceIterable<IndexDefinition> getIndexes( Label label )
         {
             return actual.getIndexes( label );
         }
 
         @Override
-        public Iterable<IndexDefinition> getIndexes()
+        public ResourceIterable<IndexDefinition> getIndexes()
         {
             return actual.getIndexes();
         }
@@ -1152,7 +1153,7 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
     }
 
     @Override
-    public Iterable<Node> findNodesByLabelAndProperty( Label label, String propertyName, Object value )
+    public ResourceIterable<Node> findNodesByLabelAndProperty( Label label, String propertyName, Object value )
     {
         return actual.findNodesByLabelAndProperty( label, propertyName, value );
     }
