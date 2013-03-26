@@ -80,6 +80,8 @@ public class NetworkInstance
     public interface Configuration
     {
         HostnamePort clusterServer();
+
+        int defaultPort();
     }
 
     public interface NetworkChannelsListener
@@ -431,7 +433,7 @@ public class NetworkInstance
 
     private Channel openChannel( URI clusterUri )
     {
-        SocketAddress address = new InetSocketAddress( clusterUri.getHost(), clusterUri.getPort() );
+        SocketAddress address = new InetSocketAddress( clusterUri.getHost(), clusterUri.getPort() == -1 ? config.defaultPort() : clusterUri.getPort() );
 
         ChannelFuture channelFuture = clientBootstrap.connect( address );
 //            channelFuture.awaitUninterruptibly( 5, TimeUnit.SECONDS );

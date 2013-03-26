@@ -90,6 +90,12 @@ public class NetworkSendReceiveTest
                 {
                     return conf.get( ClusterSettings.cluster_server );
                 }
+
+                @Override
+                public int defaultPort()
+                {
+                    return 5001;
+                }
             }, new DevNullLoggingService() );
 
             life.add( node );

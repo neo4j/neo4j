@@ -61,7 +61,7 @@ public final class HaBackupProvider extends BackupExtensionService
     {
         String master = null;
         StringLogger logger = logging.getLogger( HaBackupProvider.class );
-        logger.debug( "Asking cluster member at '" + address
+        logger.debug( "Asking cluster member(s) at '" + address
                 + "' for master" );
 
         String clusterName = args.get( ClusterSettings.cluster_name.name(), null );
@@ -141,7 +141,7 @@ public final class HaBackupProvider extends BackupExtensionService
 
         try
         {
-            if ( !infoReceivedLatch.tryAcquire( 10, TimeUnit.SECONDS ) )
+            if ( !infoReceivedLatch.tryAcquire( 20, TimeUnit.SECONDS ) )
             {
                 throw new RuntimeException( "Could not find backup server in cluster " + clusterName + " at " + from + ", " +
                         "operation timed out" );

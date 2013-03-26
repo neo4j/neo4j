@@ -68,6 +68,12 @@ public class NetworkedServerFactory
             {
                 return config.get( ClusterSettings.cluster_server );
             }
+
+            @Override
+            public int defaultPort()
+            {
+                return 5001;
+            }
         }, logging );
 
         ExecutorLifecycleAdapter stateMachineExecutor = new ExecutorLifecycleAdapter( new Factory<ExecutorService>()
