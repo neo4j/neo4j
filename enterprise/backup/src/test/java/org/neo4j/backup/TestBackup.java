@@ -20,6 +20,7 @@
 package org.neo4j.backup;
 
 import static org.hamcrest.core.Is.is;
+import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
@@ -45,6 +46,7 @@ import org.neo4j.graphdb.index.Index;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
+import org.neo4j.kernel.StoreLockException;
 import org.neo4j.kernel.impl.nioneo.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -507,11 +509,7 @@ public class TestBackup
         }
         catch ( RuntimeException ex )
         {
-            assertThat( ex.getCause().getCause().getMessage(), is("Unable to obtain lock on store lock file: target/var/serverdb-lock/store_lock") );
-        }
-        catch ( Exception e ) {
-            e.printStackTrace();
-            fail( "crap" );
+            assertThat( ex.getCause().getCause(), instanceOf( StoreLockException.class ) );
         }
 
         StartupChecker proc = new LockProcess().start( path );
@@ -557,7 +555,7 @@ public class TestBackup
             }
             catch ( RuntimeException ex )
             {
-                if (ex.getCause().getCause() instanceof IllegalStateException )
+                if (ex.getCause().getCause() instanceof StoreLockException )
                 {
                     state = ex;
                     return;
