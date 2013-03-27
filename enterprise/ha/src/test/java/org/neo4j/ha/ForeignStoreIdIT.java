@@ -23,8 +23,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.neo4j.cluster.ClusterSettings.cluster_server;
 import static org.neo4j.cluster.ClusterSettings.initial_hosts;
-import static org.neo4j.kernel.ha.HaSettings.ha_server;
 import static org.neo4j.cluster.ClusterSettings.server_id;
+import static org.neo4j.kernel.ha.HaSettings.ha_server;
 import static org.neo4j.kernel.ha.HaSettings.state_switch_timeout;
 
 import java.io.File;
@@ -51,6 +51,7 @@ public class ForeignStoreIdIT
                 .setConfig( server_id, "1" )
                 .setConfig( cluster_server, ":5001" )
                 .setConfig( ha_server, ":6001" )
+                .setConfig( initial_hosts, ":5001" )
                 .newGraphDatabase();
         // -- another instance preparing to join with a store with a different store ID
         String foreignDbStoreDir = createAnotherStore( DIR.directory( "2", true ), 0 );
@@ -80,6 +81,7 @@ public class ForeignStoreIdIT
         firstInstance = new HighlyAvailableGraphDatabaseFactory()
                 .newHighlyAvailableDatabaseBuilder( DIR.directory( "1", true ).getAbsolutePath() )
                 .setConfig( server_id, "1" )
+                .setConfig( initial_hosts, ":5001" )
                 .setConfig( cluster_server, ":5001" )
                 .setConfig( ha_server, ":6001" )
                 .newGraphDatabase();
