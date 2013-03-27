@@ -39,7 +39,7 @@ import org.neo4j.test.ha.ClusterManager;
 /**
  * TODO
  */
-public class TestPaxosClusterEvents
+public class TestBasicHaOperations
 {
     @Rule
     public LoggerRule logger = new LoggerRule();

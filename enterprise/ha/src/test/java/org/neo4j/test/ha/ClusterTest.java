@@ -91,14 +91,15 @@ public class ClusterTest
         ClusterManager clusterManager = new ClusterManager( fromXml( getClass().getResource( "/fourinstances.xml" ).toURI() ),
                 TargetDirectory.forTest( getClass() ).directory( "4instances", true ), MapUtil.stringMap() );
         clusterManager.start();
+        ClusterManager.ManagedCluster cluster = clusterManager.getDefaultCluster();
 
         logging.getLogger().info( "STOPPING MASTER" );
-        clusterManager.getDefaultCluster().getMaster().stop();
+        cluster.shutdown( cluster.getMaster() );
         logging.getLogger().info( "STOPPED MASTER" );
 
-        Thread.sleep( 30000 ); // OMG!!!! My Eyes!!!! It Burns Us!!!!
+        cluster.await( ClusterManager.masterAvailable() );
 
-        GraphDatabaseService master = clusterManager.getCluster( "neo4j.ha" ).getMaster();
+        GraphDatabaseService master = cluster.getMaster();
         logging.getLogger().info( "CREATE NODE" );
         Transaction tx = master.beginTx();
         master.createNode();

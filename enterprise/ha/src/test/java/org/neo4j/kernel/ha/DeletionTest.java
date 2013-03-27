@@ -126,7 +126,7 @@ public class DeletionTest
         HighlyAvailableGraphDatabase db = (HighlyAvailableGraphDatabase) new HighlyAvailableGraphDatabaseFactory().
                 newHighlyAvailableDatabaseBuilder( storeDir )
                 .setConfig( ClusterSettings.cluster_server, "127.0.0.1:" + (5001 + i) )
-                .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:5001" )
+                .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:5001,127.0.0.1:5002" )
                 .setConfig( ClusterSettings.server_id, i + "" )
                 .setConfig( HaSettings.ha_server, "127.0.0.1:" + (6666 + i) )
                 .setConfig( HaSettings.pull_interval, "0ms" )

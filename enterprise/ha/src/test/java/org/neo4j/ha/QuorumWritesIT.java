@@ -45,7 +45,7 @@ import org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.ClusterManager;
 
-public class TestQuorumWrites
+public class QuorumWritesIT
 {
     @Test
     public void testMasterStopsWritesWhenMajorityIsUnavailable() throws Throwable
