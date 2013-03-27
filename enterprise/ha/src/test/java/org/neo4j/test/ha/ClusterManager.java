@@ -57,8 +57,8 @@ import org.neo4j.jmx.impl.JmxKernelExtension;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
-import org.neo4j.kernel.ha.com.master.Slaves;
 import org.neo4j.kernel.ha.UpdatePuller;
+import org.neo4j.kernel.ha.com.master.Slaves;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.LogbackService;
@@ -221,6 +221,12 @@ public class ClusterManager
     public void stop() throws Throwable
     {
         life.stop();
+    }
+
+    @Override
+    public void shutdown() throws Throwable
+    {
+        life.shutdown();
     }
 
     /**

@@ -19,21 +19,22 @@
  */
 package org.neo4j.kernel.ha;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.ha.HaSettings.tx_push_factor;
+import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
 
 import junit.framework.Assert;
 import org.junit.After;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
 import org.neo4j.test.LoggerRule;
 import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.ha.ClusterManager;
 
 /**
  * TODO
@@ -43,52 +44,65 @@ public class TestPaxosClusterEvents
     @Rule
     public LoggerRule logger = new LoggerRule();
 
-    List<HighlyAvailableGraphDatabase> databases = new ArrayList<HighlyAvailableGraphDatabase>();
-
     public TargetDirectory dir = TargetDirectory.forTest( getClass() );
+    private ClusterManager clusterManager;
 
-    @Before
-    public void setup()
-            throws IOException
+    @After
+    public void after() throws Throwable
     {
-        HighlyAvailableGraphDatabase initialDatabase =
-                (HighlyAvailableGraphDatabase) new HighlyAvailableGraphDatabaseFactory().
-                        newHighlyAvailableDatabaseBuilder( dir.directory( "1", true ).getAbsolutePath() )
-                        .setConfig( ClusterSettings.cluster_server, "127.0.0.1:5001" )
-                        .setConfig( ClusterSettings.server_id, "1" )
-                        .setConfig( HaSettings.ha_server, "localhost:6361" )
-                        .newGraphDatabase();
-        databases.add( initialDatabase );
-
-        for ( int i = 0; i < 2; i++ )
+        if ( clusterManager != null )
         {
-            int serverId = i + 2;
-            HighlyAvailableGraphDatabase database = (HighlyAvailableGraphDatabase) new
-                    HighlyAvailableGraphDatabaseFactory().
-                    newHighlyAvailableDatabaseBuilder( dir.directory( "" + serverId, true ).getAbsolutePath() )
-                    .setConfig( ClusterSettings.cluster_server, "localhost:" + (5002 + i) )
-                    .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:5001" )
-                    .setConfig( ClusterSettings.server_id, serverId + "" )
-                    .setConfig( HaSettings.ha_server, ":" + (6362 + i) )
-                    .newGraphDatabase();
-
-            databases.add( database );
+            clusterManager.stop();
+            clusterManager = null;
         }
-
-        logger.getLogger().info( "*** All nodes started" );
     }
 
     @Test
-    public void testHa()
-            throws InterruptedException
+    public void testBasicFailover() throws Throwable
     {
+        // given
+        clusterManager = new ClusterManager( clusterOfSize( 3 ), dir.directory( "failover", true ), stringMap() );
+        clusterManager.start();
+        ClusterManager.ManagedCluster cluster = clusterManager.getDefaultCluster();
+
+        HighlyAvailableGraphDatabase master = cluster.getMaster();
+        HighlyAvailableGraphDatabase slave1 = cluster.getAnySlave();
+        HighlyAvailableGraphDatabase slave2 = cluster.getAnySlave( slave1 );
+
+        cluster.shutdown( master );
+
+        cluster.await( ClusterManager.masterAvailable() );
+
+        boolean slave1Master = slave1.isMaster();
+        boolean slave2Master = slave2.isMaster();
+
+        if ( slave1Master )
+        {
+            assertFalse( slave2Master );
+        }
+        else
+        {
+            assertTrue( slave2Master );
+        }
+    }
+
+    @Test
+    public void testBasicPropagation() throws Throwable
+    {
+        // given
+        clusterManager = new ClusterManager( clusterOfSize( 3 ), dir.directory( "propagation", true ),
+                stringMap( tx_push_factor.name(), "2" ) );
+        clusterManager.start();
+        ClusterManager.ManagedCluster cluster = clusterManager.getDefaultCluster();
+
         long nodeId = 0;
         Transaction tx = null;
+        HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
         try
         {
-            tx = databases.get( 1 ).beginTx();
+            tx = slave.beginTx();
 
-            Node node = databases.get( 1 ).createNode();
+            Node node = slave.createNode();
             node.setProperty( "Hello", "World" );
             nodeId = node.getId();
 
@@ -104,28 +118,10 @@ public class TestPaxosClusterEvents
             tx.finish();
         }
 
-        while ( true )
-        {
-            try
-            {
-                String value = databases.get( 0 ).getNodeById( nodeId ).getProperty( "Hello" ).toString();
-                logger.getLogger().info( "Hello=" + value );
-                Assert.assertEquals( "World", value );
-                break;
-            }
-            catch ( Exception e )
-            {
-                Thread.sleep( 1000 );
-            }
-        }
-    }
+        HighlyAvailableGraphDatabase master = cluster.getMaster();
 
-    @After
-    public void tearDown()
-    {
-        for ( HighlyAvailableGraphDatabase database : databases )
-        {
-            database.shutdown();
-        }
+        String value = master.getNodeById( nodeId ).getProperty( "Hello" ).toString();
+        logger.getLogger().info( "Hello=" + value );
+        assertEquals( "World", value );
     }
 }

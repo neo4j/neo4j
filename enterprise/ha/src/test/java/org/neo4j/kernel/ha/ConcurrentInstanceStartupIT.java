@@ -36,7 +36,7 @@ import org.neo4j.test.TargetDirectory;
 
 public class ConcurrentInstanceStartupIT
 {
-    public static final int INSTANCE_COUNT = 7;
+    public static final int INSTANCE_COUNT = 3;
     public static TargetDirectory testDirectory = TargetDirectory.forTest( ConcurrentInstanceStartupIT.class );
 
     @Test
