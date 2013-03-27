@@ -236,6 +236,9 @@
           <name>minimalBuild</name>
         </property>
       </activation>
+      <modules>
+        <module>packaging</module>
+      </modules>
       <properties>
         <test-resources-phase>none</test-resources-phase>
         <test-compile-phase>none</test-compile-phase>

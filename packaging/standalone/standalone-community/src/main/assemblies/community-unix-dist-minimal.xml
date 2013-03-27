@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+    Copyright (c) 2002-2013 "Neo Technology,"
+    Network Engine for Objects in Lund AB [http://neotechnology.com]
+
+    This file is part of Neo4j.
+
+    Neo4j is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as
+    published by the Free Software Foundation, either version 3 of the
+    License, or (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+-->
+<assembly>
+  <id>unix</id>
+  <formats>
+    <format>tar.gz</format>
+  </formats>
+
+  <fileSets>
+
+    <!-- filter plain text -->
+    <fileSet>
+      <directory>src/main/distribution/text/community</directory>
+      <outputDirectory>/</outputDirectory>
+      <lineEnding>unix</lineEnding>
+      <filtered>true</filtered>
+      <directoryMode>0755</directoryMode>
+      <fileMode>0644</fileMode>
+    </fileSet>
+    <!-- non-maven jars -->
+    <fileSet>
+      <directory>src/main/distribution/binary</directory>
+      <outputDirectory>/</outputDirectory>
+      <includes>
+        <include>system/lib/*.jar</include>
+        <include>lib/*.jar</include>
+        <include>plugins/gremlin1.5/*.jar</include>
+      </includes>
+    </fileSet>
+    <!-- filter and chmod 755 shell scripts -->
+    <fileSet>
+      <directory>${project.parent.basedir}/src/main/distribution/shell-scripts</directory>
+      <outputDirectory>/</outputDirectory>
+      <lineEnding>unix</lineEnding>
+      <fileMode>0755</fileMode>
+      <excludes>
+        <exclude>bin/neo4j</exclude>
+        <exclude>**/*.bat</exclude>
+        <exclude>**/neo4j-backup*</exclude>
+        <exclude>**/neo4j-coord*</exclude>
+        <exclude>**/*arbiter*</exclude>
+      </excludes>
+      <filtered>true</filtered>
+    </fileSet>
+    <!-- treat the neo4j script as special so we don't filter shell variables -->
+    <fileSet>
+      <directory>${project.parent.basedir}/src/main/distribution/shell-scripts</directory>
+      <outputDirectory>/</outputDirectory>
+      <lineEnding>unix</lineEnding>
+      <fileMode>0755</fileMode>
+      <includes>
+        <include>**/neo4j</include>
+      </includes>
+      <filtered>false</filtered>
+    </fileSet>
+  </fileSets>
+
+  <dependencySets>
+    <dependencySet>
+      <outputDirectory>/lib</outputDirectory>
+      <directoryMode>0755</directoryMode>
+      <fileMode>0755</fileMode>
+      <unpack>false</unpack>
+      <useProjectArtifact>false</useProjectArtifact>
+      <useStrictFiltering>true</useStrictFiltering>
+      <includes>
+        <include>org.neo4j:*</include>
+        <include>org.apache.geronimo.specs:geronimo-jta_1.1_spec</include>
+        <include>org.apache.servicemix.bundles:org.apache.servicemix.bundles.jline</include>
+        <include>org.apache.lucene:lucene-core</include>
+        <include>org.scala-lang:scala-library</include>
+        <include>com.googlecode.concurrentlinkedhashmap:concurrentlinkedhashmap-lru</include>
+      </includes>
+      <excludes>
+        <exclude>*:pom:*</exclude>
+        <exclude>org.neo4j:neo4j-community:jar</exclude>
+      </excludes>
+    </dependencySet>
+    <dependencySet>
+      <outputDirectory>system/lib</outputDirectory>
+      <directoryMode>0755</directoryMode>
+      <fileMode>0755</fileMode>
+      <unpack>false</unpack>
+      <useProjectArtifact>false</useProjectArtifact>
+      <useStrictFiltering>true</useStrictFiltering>
+      <excludes>
+        <exclude>org.neo4j:*</exclude>
+        <exclude>org.apache.geronimo.specs:geronimo-jta_1.1_spec</exclude>
+        <exclude>org.apache.servicemix.bundles:org.apache.servicemix.bundles.jline</exclude>
+        <exclude>org.apache.lucene:lucene-core</exclude>
+        <exclude>org.scala-lang:scala-library</exclude>
+        <exclude>org.neo4j.app:windows-service-wrapper:*</exclude>
+        <exclude>com.googlecode.concurrentlinkedhashmap:concurrentlinkedhashmap-lru</exclude>
+        <exclude>com.tinkerpop:*</exclude>
+        <exclude>com.tinkerpop.*:*</exclude>
+        <exclude>org.neo4j.server.plugin:neo4j-gremlin-plugin</exclude>
+        <exclude>org.codehaus.groovy:groovy</exclude>
+        <exclude>org.fusesource.jansi:jansi</exclude>
+        <exclude>antlr:antlr</exclude>
+        <exclude>asm:asm-commons</exclude>
+        <exclude>asm:asm-util</exclude>
+        <exclude>asm:asm-analysis</exclude>
+        <exclude>asm:asm-tree</exclude>
+        <exclude>stax:stax-api</exclude>
+        <exclude>org.codehaus.jettison:jettison</exclude>
+      </excludes>
+    </dependencySet>
+    <dependencySet>
+      <outputDirectory>/plugins/gremlin1.5</outputDirectory>
+      <directoryMode>0755</directoryMode>
+      <fileMode>0755</fileMode>
+      <unpack>false</unpack>
+      <useProjectArtifact>false</useProjectArtifact>
+      <useStrictFiltering>true</useStrictFiltering>
+      <includes>
+        <include>com.tinkerpop:*</include>
+        <include>com.tinkerpop.*:*</include>
+        <include>org.neo4j.server.plugin:neo4j-gremlin-plugin</include>
+        <include>org.codehaus.groovy:groovy</include>
+        <include>org.fusesource.jansi:jansi</include>
+        <include>antlr:antlr</include>
+        <include>asm:asm-commons</include>
+        <include>asm:asm-util</include>
+        <include>asm:asm-analysis</include>
+        <include>asm:asm-tree</include>
+        <include>stax:stax-api</include>
+        <include>org.codehaus.jettison:jettison</include>
+      </includes>
+      <excludes>
+      </excludes>
+    </dependencySet>
+ </dependencySets>
+
+</assembly>
