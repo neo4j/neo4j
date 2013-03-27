@@ -19,9 +19,6 @@
  */
 package org.neo4j.server.database;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import org.neo4j.ext.udc.UdcSettings;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -37,12 +34,15 @@ import org.neo4j.server.statistic.StatisticCollector;
 import org.neo4j.shell.ShellSettings;
 import org.rrd4j.core.RrdDb;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * NOTICE: This class to be replaced by a corresponding
  * interface in 1.10, please use available subclasses instead
  * of directly instantiating this.
  */
-public class Database implements Lifecycle
+public abstract class Database implements Lifecycle
 {
     public static final Logger log = Logger.getLogger( Database.class );
 
@@ -174,6 +174,8 @@ public class Database implements Lifecycle
         return graph;
     }
 
+    public abstract TransactionRegistry getTransactionRegistry();
+
     /**
      * This should be assigned to you via your constructor,
      * or via a DependencyResolver.
@@ -213,13 +215,11 @@ public class Database implements Lifecycle
     @Override
     public void init() throws Throwable
     {
-
     }
 
     @Override
     public void start() throws Throwable
     {
-
     }
 
     @Override

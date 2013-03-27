@@ -23,11 +23,19 @@ import org.neo4j.kernel.AbstractGraphDatabase;
 
 public class WrappingDatabase extends Database {
 
-	public WrappingDatabase(AbstractGraphDatabase db) {
+    private final CoreAPIBasedTransactionRegistry transactionRegistry;
+
+    public WrappingDatabase(AbstractGraphDatabase db) {
 		super(db);
+        this.transactionRegistry = new CoreAPIBasedTransactionRegistry(graph);
 	}
-	
-	@Override
+
+    @Override
+    public TransactionRegistry getTransactionRegistry() {
+        return transactionRegistry;
+    }
+
+    @Override
 	public void init() throws Throwable 
 	{
 		

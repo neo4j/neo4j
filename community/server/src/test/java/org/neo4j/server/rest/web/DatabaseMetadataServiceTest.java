@@ -19,21 +19,21 @@
  */
 package org.neo4j.server.rest.web;
 
-import static org.junit.Assert.assertEquals;
-import static org.neo4j.graphdb.DynamicRelationshipType.withName;
-
-import java.util.List;
-import java.util.Map;
-
-import javax.ws.rs.core.Response;
-
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.server.database.Database;
+import org.neo4j.server.database.WrappedDatabase;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.test.ImpermanentGraphDatabase;
+
+import javax.ws.rs.core.Response;
+import java.util.List;
+import java.util.Map;
+
+import static org.junit.Assert.assertEquals;
+import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 
 public class DatabaseMetadataServiceTest
 {
@@ -49,7 +49,7 @@ public class DatabaseMetadataServiceTest
         tx.success();
         tx.finish();
         
-        Database database = new Database( db );
+        Database database = new WrappedDatabase( db );
         DatabaseMetadataService service = new DatabaseMetadataService( database );
 
         Response response = service.getRelationshipTypes();

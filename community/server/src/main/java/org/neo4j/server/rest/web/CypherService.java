@@ -19,15 +19,6 @@
  */
 package org.neo4j.server.rest.web;
 
-import java.util.HashMap;
-import java.util.Map;
-
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.Response;
-
 import org.neo4j.cypher.CypherException;
 import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.server.database.CypherExecutor;
@@ -35,6 +26,14 @@ import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.repr.CypherResultRepresentation;
 import org.neo4j.server.rest.repr.InputFormat;
 import org.neo4j.server.rest.repr.OutputFormat;
+
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+import javax.ws.rs.QueryParam;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.Response;
+import java.util.HashMap;
+import java.util.Map;
 
 @Path("/cypher")
 public class CypherService
@@ -67,7 +66,7 @@ public class CypherService
                            @QueryParam( PROFILE_PARAM ) boolean profile) throws BadInputException {
 
         Map<String,Object> command = input.readMap( body );
-        
+
         if( !command.containsKey(QUERY_KEY) ) {
             return output.badRequest(new BadInputException( "You have to provide the 'query' parameter." ));
         }

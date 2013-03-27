@@ -19,51 +19,28 @@
  */
 package org.neo4j.server.database;
 
-import org.neo4j.kernel.AbstractGraphDatabase;
+public interface TransactionRegistry
+{
+    /**
+     * Associate a transaction with the current thread, re-using any transaction that is suspended for the
+     * given session.
+     */
+    void associateTransactionWithThread(long sessionId);
 
-public class WrappedDatabase extends Database {
+    /**
+     * Return a currently associated transaction to the registry.
+     */
+    void disassociateTransactionWithThread(long sessionId);
 
-    private final CoreAPIBasedTransactionRegistry transactionRegistry;
+    /**
+     * Commit the transaction currently associated with this thread.
+     */
+    void commitCurrentTransaction(long sessionId);
 
-    @SuppressWarnings("deprecation")
-	public WrappedDatabase(AbstractGraphDatabase db) {
-		this.graph = db;
-        this.transactionRegistry = new CoreAPIBasedTransactionRegistry(graph);
-	}
-	
-	@Override
-	public void init() throws Throwable 
-	{
-		
-	}
+    /**
+     * Rollback the transaction currently associated with this thread.
+     */
+    void rollbackCurrentTransaction(long sessionId);
 
-	@Override
-	public void start() throws Throwable 
-	{
-		
-	}
-
-	@Override
-	public void stop() throws Throwable 
-	{
-		
-	}
-
-    @Override
-	public void shutdown()
-    {
-        
-    }
-    
-    @Override
-	public String getLocation()
-    {
-        return graph.getStoreDir();
-    }
-
-    @Override
-    public TransactionRegistry getTransactionRegistry() {
-        return transactionRegistry;
-    }
-
+    void rollbackAll();
 }

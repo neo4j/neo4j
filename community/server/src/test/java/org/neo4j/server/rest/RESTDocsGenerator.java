@@ -42,6 +42,8 @@ import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 
 import com.sun.jersey.api.client.*;
+import org.neo4j.server.rest.domain.JsonHelper;
+import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.test.AsciiDocGenerator;
 import org.neo4j.test.GraphDefinition;
 import org.neo4j.test.TestData.Producer;
@@ -467,6 +469,16 @@ public class RESTDocsGenerator extends AsciiDocGenerator
         public String entity()
         {
             return entity;
+        }
+
+        public <T> T deserialize()
+        {
+            try
+            {
+                return (T) JsonHelper.readJson(entity);
+            } catch (JsonParseException e) {
+                throw new RuntimeException(e);
+            }
         }
 
         /**

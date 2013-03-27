@@ -19,9 +19,6 @@
  */
 package org.neo4j.server.helpers;
 
-import java.io.File;
-import java.io.IOException;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.neo4j.graphdb.Node;
@@ -29,7 +26,12 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.server.NeoServer;
+import org.neo4j.server.database.Database;
+import org.neo4j.server.database.TransactionRegistry;
 import org.neo4j.tooling.GlobalGraphOperations;
+
+import java.io.File;
+import java.io.IOException;
 
 public class ServerHelper
 {
@@ -39,6 +41,8 @@ public class ServerHelper
         {
             return;
         }
+
+        rollbackAllOpenTransactions( server );
 
         new Transactor( server.getDatabase().getGraph(), new UnitOfWork()
         {
@@ -166,5 +170,13 @@ public class ServerHelper
         if (StringUtils.isNotEmpty( hostName )) {
             builder.onHost( hostName );
         }
+    }
+
+
+    private static void rollbackAllOpenTransactions(NeoServer server)
+    {
+        Database database = server.getDatabase();
+        TransactionRegistry transactionRegistry = database.getTransactionRegistry();
+        transactionRegistry.rollbackAll();
     }
 }
