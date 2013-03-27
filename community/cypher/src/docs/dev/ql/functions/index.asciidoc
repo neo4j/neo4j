@@ -52,7 +52,7 @@ include::head.asciidoc[]
 
 include::last.asciidoc[]
 
-include::now.asciidoc[]
+include::timestamp.asciidoc[]
 
 :leveloffset: 1
 

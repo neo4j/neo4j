@@ -5,7 +5,7 @@ o Fixes #550 - problem when using START after WITH
 o Allows single node patterns in MATCH
 o Fixes problem for some patterns and all-nodes start points
 o Fixes #650 - issue when doing multiple aggregation expressions on the same identifier
-o Added now('ms') timestamp expression
+o Added timestamp function
 
 1.9.M05 (2013-03-05)
 --------------------

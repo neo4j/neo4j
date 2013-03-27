@@ -19,28 +19,20 @@
  */
 package org.neo4j.cypher.internal.commands.expressions
 
-import org.neo4j.cypher.{CypherTypeException, UnsupportedFormatException}
 import org.neo4j.cypher.internal.symbols._
 import org.neo4j.cypher.internal.ExecutionContext
-import org.neo4j.cypher.internal.spi.QueryContext
 import org.neo4j.cypher.internal.pipes.QueryState
 
-case class NowFunction(arg: Expression) extends Expression {
-  def apply(ctx: ExecutionContext)(implicit state: QueryState):Any = {
-    arg(ctx) match {
-      case "ms" => System.currentTimeMillis
-      case unknown:String => throw new UnsupportedFormatException(unknown)
-      case _ => throw new CypherTypeException("now() format needs to be a String")
-    }
-  }
+case class TimestampFunction() extends Expression {
+  def apply(ctx: ExecutionContext)(implicit state: QueryState):Any = state.readTimeStamp()
 
   def innerExpectedType = StringType()
 
-  def children = Seq(arg)
+  def children = Seq()
 
-  def rewrite(f: (Expression) => Expression) = f(NowFunction(arg.rewrite(f)))
+  def rewrite(f: (Expression) => Expression) = f(this)
 
   def calculateType(symbols: SymbolTable) = IntegerType()
 
-  def symbolTableDependencies = arg.symbolTableDependencies
+  def symbolTableDependencies = Set.empty
 }
