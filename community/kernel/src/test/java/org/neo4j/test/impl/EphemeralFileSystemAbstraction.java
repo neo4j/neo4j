@@ -53,6 +53,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
+import org.neo4j.helpers.Function;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.impl.nioneo.store.FileLock;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
@@ -73,11 +74,17 @@ public class EphemeralFileSystemAbstraction extends LifecycleAdapter implements 
     }
 
     @Override
-    public void shutdown()
+    public synchronized void shutdown()
     {
         for ( EphemeralFileData file : files.values() )
             free( file );
         files.clear();
+
+        for ( ThirdPartyFileSystem thirdPartyFileSystem : thirdPartyFileSystems.values() )
+        {
+            thirdPartyFileSystem.close();
+        }
+        thirdPartyFileSystems.clear();
     }
 
     @Override
@@ -887,5 +894,20 @@ public class EphemeralFileSystemAbstraction extends LifecycleAdapter implements 
             if ( sink != null )
                 sink.close();
         }
+    }
+
+    private final Map<Class<? extends ThirdPartyFileSystem>, ThirdPartyFileSystem> thirdPartyFileSystems =
+            new HashMap<Class<? extends ThirdPartyFileSystem>, ThirdPartyFileSystem>();
+
+    @Override
+    public synchronized <K extends ThirdPartyFileSystem> K getOrCreateThirdPartyFileSystem(
+            Class<K> clazz, Function<Class<K>, K> creator )
+    {
+        ThirdPartyFileSystem fileSystem = thirdPartyFileSystems.get( clazz );
+        if (fileSystem == null)
+        {
+            thirdPartyFileSystems.put( clazz, fileSystem = creator.apply( clazz ) );
+        }
+        return clazz.cast( fileSystem );
     }
 }

@@ -27,6 +27,7 @@ import java.io.Reader;
 import java.io.Writer;
 import java.nio.channels.FileChannel;
 
+import org.neo4j.helpers.Function;
 import org.neo4j.kernel.impl.nioneo.store.FileLock;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 
@@ -168,7 +169,14 @@ public class CannedFileSystemAbstraction implements FileSystemAbstraction
     {
         throw new UnsupportedOperationException( "TODO" );
     }
-    
+
+    @Override
+    public <K extends ThirdPartyFileSystem> K getOrCreateThirdPartyFileSystem( Class<K> clazz, Function<Class<K>, K>
+            creator )
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
     private static final FileLock SYMBOLIC_FILE_LOCK = new FileLock()
     {
         @Override

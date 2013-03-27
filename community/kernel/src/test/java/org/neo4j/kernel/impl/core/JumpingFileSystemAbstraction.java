@@ -34,6 +34,7 @@ import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.Function;
 import org.neo4j.kernel.impl.nioneo.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.nioneo.store.FileLock;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
@@ -393,6 +394,13 @@ public class JumpingFileSystemAbstraction extends LifecycleAdapter implements Fi
         {
             actual.close();
         }
+    }
+
+    @Override
+    public <K extends ThirdPartyFileSystem> K getOrCreateThirdPartyFileSystem(
+            Class<K> clazz, Function<Class<K>, K> creator )
+    {
+        return actualFileSystem.getOrCreateThirdPartyFileSystem( clazz, creator );
     }
 
     @Override

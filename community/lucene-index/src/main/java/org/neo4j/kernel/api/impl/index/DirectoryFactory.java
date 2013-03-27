@@ -32,8 +32,9 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.Lock;
 import org.apache.lucene.store.LockFactory;
 import org.apache.lucene.store.RAMDirectory;
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 
-public interface DirectoryFactory
+public interface DirectoryFactory extends FileSystemAbstraction.ThirdPartyFileSystem
 {
     Directory open( File dir ) throws IOException;
 
@@ -56,6 +57,7 @@ public interface DirectoryFactory
         @Override
         public void close()
         {
+            // No resources to release. This method only exists as a hook for test implementations.
         }
     };
     
@@ -82,7 +84,7 @@ public interface DirectoryFactory
             }
             directories.clear();
         }
-    };
+    }
     
     public static class Single implements DirectoryFactory
     {

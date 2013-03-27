@@ -29,6 +29,7 @@ import java.io.Reader;
 import java.io.Writer;
 import java.nio.channels.FileChannel;
 
+import org.neo4j.helpers.Function;
 import org.neo4j.kernel.impl.nioneo.store.FileLock;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.test.impl.ChannelInputStream;
@@ -178,5 +179,12 @@ public class LimitedFilesystemAbstraction implements FileSystemAbstraction
     public void copyRecursively( File fromDirectory, File toDirectory ) throws IOException
     {
         inner.copyRecursively( fromDirectory, toDirectory );
+    }
+
+    @Override
+    public <K extends ThirdPartyFileSystem> K getOrCreateThirdPartyFileSystem(
+            Class<K> clazz, Function<Class<K>, K> creator )
+    {
+        return inner.getOrCreateThirdPartyFileSystem( clazz, creator );
     }
 }

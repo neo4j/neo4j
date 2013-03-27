@@ -19,21 +19,29 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
+import org.neo4j.helpers.Function;
+import org.neo4j.helpers.Functions;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 
-@Service.Implementation( KernelExtensionFactory.class )
-public class LuceneSchemaIndexProviderFactory extends KernelExtensionFactory<LuceneSchemaIndexProviderFactory.Dependencies>
+@Service.Implementation(KernelExtensionFactory.class)
+public class LuceneSchemaIndexProviderFactory extends
+        KernelExtensionFactory<LuceneSchemaIndexProviderFactory.Dependencies>
 {
     static final String KEY = "lucene";
 
     public interface Dependencies
     {
+
         Config getConfig();
+
+        FileSystemAbstraction getFileSystem();
+
     }
-    
+
     public LuceneSchemaIndexProviderFactory()
     {
         super( KEY );
@@ -47,13 +55,26 @@ public class LuceneSchemaIndexProviderFactory extends KernelExtensionFactory<Luc
 
     private DirectoryFactory directoryFactory( Dependencies dependencies )
     {
+        FileSystemAbstraction fileSystem = dependencies.getFileSystem();
+
         if ( dependencies.getConfig().get( InternalAbstractGraphDatabase.Configuration.ephemeral ) )
         {
-            return new DirectoryFactory.InMemoryDirectoryFactory();
+            return fileSystem.getOrCreateThirdPartyFileSystem( DirectoryFactory.class, IN_MEMORY_FACTORY );
         }
         else
         {
-            return DirectoryFactory.PERSISTENT;
+            return fileSystem.getOrCreateThirdPartyFileSystem( DirectoryFactory.class,
+                    Functions.<Class<DirectoryFactory>, DirectoryFactory>constant( DirectoryFactory.PERSISTENT ) );
         }
     }
+
+    private static final Function<Class<DirectoryFactory>, DirectoryFactory> IN_MEMORY_FACTORY =
+            new Function<Class<DirectoryFactory>, DirectoryFactory>()
+            {
+                @Override
+                public DirectoryFactory apply( Class<DirectoryFactory> directoryFactoryClass )
+                {
+                    return new DirectoryFactory.InMemoryDirectoryFactory();
+                }
+            };
 }

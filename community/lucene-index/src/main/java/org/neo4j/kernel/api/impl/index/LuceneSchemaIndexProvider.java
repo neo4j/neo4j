@@ -87,7 +87,6 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
     @Override
     public void shutdown() throws Throwable
     {
-        directoryFactory.close();
     }
 
     @Override
