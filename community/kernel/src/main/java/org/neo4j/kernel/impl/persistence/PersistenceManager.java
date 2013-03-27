@@ -19,6 +19,16 @@
  */
 package org.neo4j.kernel.impl.persistence;
 
+import java.util.Iterator;
+import java.util.Map;
+
+import javax.transaction.RollbackException;
+import javax.transaction.Status;
+import javax.transaction.Synchronization;
+import javax.transaction.SystemException;
+import javax.transaction.Transaction;
+import javax.transaction.xa.XAResource;
+
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.Pair;
@@ -26,17 +36,17 @@ import org.neo4j.kernel.impl.core.PropertyIndex;
 import org.neo4j.kernel.impl.core.TransactionEventsSyncHook;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.core.TxEventSyncHookFactory;
-import org.neo4j.kernel.impl.nioneo.store.*;
+import org.neo4j.kernel.impl.nioneo.store.NameData;
+import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
+import org.neo4j.kernel.impl.nioneo.store.PropertyData;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
+import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 import org.neo4j.kernel.impl.nioneo.xa.NioNeoDbPersistenceSource;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.transaction.xaframework.XaConnection;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 import org.neo4j.kernel.impl.util.StringLogger;
-
-import javax.transaction.*;
-import javax.transaction.xa.XAResource;
-import java.util.Map;
 
 public class PersistenceManager
 {
@@ -383,4 +393,8 @@ public class PersistenceManager
         getResource( true ).removeLabelFromNode( labelId, nodeId );
     }
 
+    public Iterator<Long> getLabelsForNode( long nodeId )
+    {
+        return getReadOnlyResourceIfPossible().getLabelsForNode( nodeId );
+    }
 }

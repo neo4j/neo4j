@@ -39,9 +39,14 @@ public class InteractionStoppingStatementContext extends CompositeStatementConte
     @Override
     public void close()
     {
+        markAsClosed();
+        super.close();
+    }
+
+    protected void markAsClosed()
+    {
         assertOperationsAllowed();
         closed = true;
-        super.close();
     }
 
     public boolean isOpen()

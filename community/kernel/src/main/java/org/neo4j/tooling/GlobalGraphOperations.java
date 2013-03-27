@@ -19,17 +19,21 @@
  */
 package org.neo4j.tooling;
 
-import java.util.Collections;
+import static org.neo4j.helpers.collection.Iterables.map;
+import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
+import static org.neo4j.helpers.collection.IteratorUtil.withResource;
+
 import java.util.Iterator;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.helpers.collection.PrefetchingIterator;
+import org.neo4j.graphdb.ResourceIterable;
+import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.helpers.Function;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.ThreadToStatementContextBridge;
 import org.neo4j.kernel.api.LabelNotFoundKernelException;
@@ -100,7 +104,7 @@ public class GlobalGraphOperations
 
     /**
      * Returns all relationship types currently in the underlying store. Relationship types are
-     * added to the underlying store the first time they are used in a successfully commited
+     * added to the underlying store the first time they are used in a successfully committed
      * {@link Node#createRelationshipTo node.createRelationshipTo(...)}. Note that this method is
      * guaranteed to return all known relationship types, but it does not guarantee that it won't
      * return <i>more</i> than that (e.g. it can return "historic" relationship types that no longer
@@ -119,48 +123,39 @@ public class GlobalGraphOperations
      * @param label the {@link Label} to return nodes for.
      * @return an {@link Iterable} containing nodes with a specific label.
      */
-    public Iterable<Node> getAllNodesWithLabel( Label label )
+    public ResourceIterable<Node> getAllNodesWithLabel( final Label label )
+    {
+        return new ResourceIterable<Node>()
+        {
+            @Override
+            public ResourceIterator<Node> iterator()
+            {
+                return allNodesWithLabel( label.name() );
+            }
+        };
+    }
+
+    private ResourceIterator<Node> allNodesWithLabel( String label )
     {
         StatementContext context = statementCtxProvider.getCtxForReading();
         try
         {
-            long labelId = context.getLabelId( label.name() );
-            final Iterable<Long> nodeIds = context.getNodesWithLabel( labelId );
-            return new Iterable<Node>()
+            long labelId = context.getLabelId( label );
+            final Iterator<Long> nodeIds = context.getNodesWithLabel( labelId );
+            return withResource( map( new Function<Long, Node>()
             {
                 @Override
-                public Iterator<Node> iterator()
+                public Node apply( Long nodeId )
                 {
-                    final Iterator<Long> nodeIdIterator = nodeIds.iterator();
-                    return new PrefetchingIterator<Node>()
-                    {
-                        @Override
-                        protected Node fetchNextOrNull()
-                        {
-                            while ( nodeIdIterator.hasNext() )
-                            {
-                                long nodeId = nodeIdIterator.next();
-                                try
-                                {
-                                    Node node = nodeManager.getNodeByIdOrNull( nodeId );
-                                    if ( node != null )
-                                        return node;
-                                }
-                                catch ( NotFoundException e )
-                                {
-                                    // OK
-                                }
-                            }
-                            return null;
-                        }
-                    };
+                    return nodeManager.getNodeById( nodeId );
                 }
-            };
+            }, nodeIds ), context );
         }
         catch ( LabelNotFoundKernelException e )
         {
             // That label hasn't been created yet, there cannot possibly be any nodes labeled with it
-            return Collections.emptyList();
+            context.close();
+            return emptyIterator();
         }
     }
 }

@@ -20,6 +20,8 @@
 package org.neo4j.kernel.impl.core;
 
 import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.helpers.collection.Iterables.map;
+import static org.neo4j.helpers.collection.IteratorUtil.withResource;
 
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Direction;
@@ -29,12 +31,14 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.ResourceIterable;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.ReturnableEvaluator;
 import org.neo4j.graphdb.StopEvaluator;
 import org.neo4j.graphdb.Traverser;
 import org.neo4j.graphdb.Traverser.Order;
+import org.neo4j.helpers.Function;
 import org.neo4j.helpers.ThisShouldNotHappenError;
-import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.kernel.ThreadToStatementContextBridge;
 import org.neo4j.kernel.api.ConstraintViolationKernelException;
 import org.neo4j.kernel.api.LabelNotFoundKernelException;
@@ -302,64 +306,83 @@ public class NodeProxy implements Node
     @Override
     public void addLabel( Label label )
     {
+        StatementContext ctx = statementCtxProvider.getCtxForWriting();
         try
         {
-            StatementContext ctx = statementCtxProvider.getCtxForWriting();
             ctx.addLabelToNode( ctx.getOrCreateLabelId( label.name() ), getId() );
         }
         catch ( ConstraintViolationKernelException e )
         {
             throw new ConstraintViolationException( "Unable to add label.", e );
         }
+        finally
+        {
+            ctx.close();
+        }
     }
 
     @Override
     public void removeLabel( Label label )
     {
+        StatementContext ctx = statementCtxProvider.getCtxForWriting();
         try
         {
-            StatementContext ctx = statementCtxProvider.getCtxForWriting();
             ctx.removeLabelFromNode( ctx.getLabelId( label.name() ), getId() );
         }
         catch ( LabelNotFoundKernelException e )
         {
             // OK, no such label... cool
         }
+        finally
+        {
+            ctx.close();
+        }
     }
 
     @Override
     public boolean hasLabel( Label label )
     {
+        StatementContext ctx = statementCtxProvider.getCtxForReading();
         try
         {
-            StatementContext ctx = statementCtxProvider.getCtxForReading();
             return ctx.isLabelSetOnNode( ctx.getLabelId( label.name() ), getId() );
         }
         catch ( LabelNotFoundKernelException e )
         {
             return false;
         }
+        finally
+        {
+            ctx.close();
+        }
+
     }
     
     @Override
-    public Iterable<Label> getLabels()
+    public ResourceIterable<Label> getLabels()
     {
-        final StatementContext ctx = statementCtxProvider.getCtxForReading();
-        return new IterableWrapper<Label, Long>( ctx.getLabelsForNode( getId() ) )
+        return new ResourceIterable<Label>()
         {
             @Override
-            protected Label underlyingObjectToObject( Long labelId )
+            public ResourceIterator<Label> iterator()
             {
-                // TODO Don't create new label instances all the time.
-                try
+                final StatementContext ctx = statementCtxProvider.getCtxForReading();
+                return withResource( map(new Function<Long, Label>()
                 {
-                    return label( ctx.getLabelName( labelId ) );
-                }
-                catch ( LabelNotFoundKernelException e )
-                {
-                    throw new ThisShouldNotHappenError( "Mattias", "Listed labels for node " + nodeId +
-                            ", but the returned label " + labelId + " doesn't exist anymore" );
-                }
+                    @Override
+                    public Label apply( Long labelId )
+                    {
+                        try
+                        {
+                            return label( ctx.getLabelName( labelId ) );
+                        }
+                        catch ( LabelNotFoundKernelException e )
+                        {
+                            throw new ThisShouldNotHappenError( "Mattias", "Listed labels for node " + nodeId +
+                                    ", but the returned label " + labelId + " doesn't exist anymore" );
+                        }
+                    }
+                },ctx.getLabelsForNode( getId() )), ctx );
             }
         };
     }

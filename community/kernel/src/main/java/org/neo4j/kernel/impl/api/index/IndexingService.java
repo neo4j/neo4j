@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api.index;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.neo4j.helpers.Exceptions.launderedException;
+import static org.neo4j.helpers.collection.IteratorUtil.loop;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -40,6 +41,7 @@ import org.neo4j.kernel.api.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.util.JobScheduler;
@@ -73,15 +75,20 @@ public class IndexingService extends LifecycleAdapter
     private final IndexStoreView storeView;
     private final Logging logging;
     private final StringLogger logger;
+    private final UpdateableSchemaState updateableSchemaState;
 
-    public IndexingService( JobScheduler scheduler, SchemaIndexProvider provider,
-            IndexStoreView storeView, Logging logging )
+    public IndexingService( JobScheduler scheduler,
+                            SchemaIndexProvider provider,
+                            IndexStoreView storeView,
+                            UpdateableSchemaState updateableSchemaState,
+                            Logging logging )
     {
         this.scheduler = scheduler;
         this.provider = provider;
         this.storeView = storeView;
         this.logging = logging;
         this.logger = logging.getLogger( getClass() );
+        this.updateableSchemaState = updateableSchemaState;
 
         if ( provider == null )
         {
@@ -192,9 +199,9 @@ public class IndexingService extends LifecycleAdapter
      *
      * @param indexRules Known index rules before recovery.
      */
-    public void initIndexes( Iterable<IndexRule> indexRules )
+    public void initIndexes( Iterator<IndexRule> indexRules )
     {
-        for ( IndexRule indexRule : indexRules )
+        for ( IndexRule indexRule : loop( indexRules ) )
         {
             long ruleId = indexRule.getId();
             IndexDescriptor descriptor = createDescriptor( indexRule );
@@ -301,17 +308,17 @@ public class IndexingService extends LifecycleAdapter
 
     private IndexProxy createPopulatingIndexProxy( final long ruleId, final IndexDescriptor descriptor )
     {
-        FlippableIndexProxy flippableIndex = new FlippableIndexProxy( );
+        FlippableIndexProxy flipper = new FlippableIndexProxy( );
 
         // TODO: This is here because there is a circular dependency from PopulatingIndexProxy to FlippableIndexProxy
         IndexPopulator populator = getPopulatorFromProvider( ruleId );
         PopulatingIndexProxy populatingIndex =
-                new PopulatingIndexProxy( scheduler, descriptor, populator, flippableIndex, storeView, logging );
-        flippableIndex.setFlipTarget( singleProxy( populatingIndex ) );
-        flippableIndex.flip();
+            new PopulatingIndexProxy( scheduler, descriptor, populator, flipper, storeView, updateableSchemaState, logging );
+        flipper.setFlipTarget( singleProxy( populatingIndex ) );
+        flipper.flip();
 
         // Prepare for flipping to online mode
-        flippableIndex.setFlipTarget( new IndexProxyFactory()
+        flipper.setFlipTarget( new IndexProxyFactory()
         {
             @Override
             public IndexProxy create()
@@ -320,7 +327,7 @@ public class IndexingService extends LifecycleAdapter
             }
         } );
 
-        IndexProxy result = contractCheckedProxy( flippableIndex, false );
+        IndexProxy result = contractCheckedProxy( flipper, false );
         return serviceDecoratedProxy( ruleId, result );
     }
 

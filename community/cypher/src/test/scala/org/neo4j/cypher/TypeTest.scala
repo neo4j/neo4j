@@ -25,7 +25,7 @@ import internal.commands.expressions.Literal
 import internal.commands.expressions.Multiply
 import internal.commands.expressions.Subtract
 import internal.ExecutionContext
-import internal.pipes.QueryState
+import internal.pipes.{QueryStateHelper, QueryState}
 import org.junit.Test
 import org.hamcrest.CoreMatchers._
 import org.hamcrest.Matcher
@@ -107,7 +107,5 @@ class TypeTest extends ExecutionEngineHelper {
     org.junit.Assert.assertThat("\nGot a: " + x.getClass, x.asInstanceOf[Object], matcher)
   }
 
-  private def calc(e:Expression) = {
-    e(ExecutionContext.empty)(QueryState())
-  }
+  private def calc(e:Expression) = e.apply(ExecutionContext.empty)(QueryStateHelper.empty)
 }

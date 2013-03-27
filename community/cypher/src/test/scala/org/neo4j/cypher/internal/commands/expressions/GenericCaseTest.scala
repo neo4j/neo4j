@@ -23,7 +23,7 @@ import org.scalatest.Assertions
 import org.junit.Test
 import org.neo4j.cypher.internal.ExecutionContext
 import org.neo4j.cypher.internal.commands.{Predicate, Equals}
-import org.neo4j.cypher.internal.pipes.QueryState
+import org.neo4j.cypher.internal.pipes.QueryStateHelper
 
 class GenericCaseTest extends Assertions {
   @Test
@@ -34,7 +34,7 @@ class GenericCaseTest extends Assertions {
     )
 
     //WHEN
-    val result = caseExpr(ExecutionContext.empty)(QueryState.empty)
+    val result = caseExpr(ExecutionContext.empty)(QueryStateHelper.empty)
 
     //THEN
     assert(result === "one")
@@ -49,7 +49,7 @@ class GenericCaseTest extends Assertions {
     )
 
     //WHEN
-    val result = caseExpr(ExecutionContext.empty)(QueryState.empty)
+    val result = caseExpr(ExecutionContext.empty)(QueryStateHelper.empty)
 
     //THEN
     assert(result === "two")
@@ -64,7 +64,7 @@ class GenericCaseTest extends Assertions {
     )
 
     //WHEN
-    val result = caseExpr(ExecutionContext.empty)(QueryState.empty)
+    val result = caseExpr(ExecutionContext.empty)(QueryStateHelper.empty)
 
     //THEN
     assert(result === null)
@@ -79,7 +79,7 @@ class GenericCaseTest extends Assertions {
     ) defaultsTo "other"
 
     //WHEN
-    val result = caseExpr(ExecutionContext.empty)(QueryState.empty)
+    val result = caseExpr(ExecutionContext.empty)(QueryStateHelper.empty)
 
     //THEN
     assert(result === "other")

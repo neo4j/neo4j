@@ -64,7 +64,7 @@ class IndexDefinitionImpl implements IndexDefinition
         {
             context.dropIndexRule(
                     context.getIndexRule( context.getLabelId( label.name() ),
-                    context.getPropertyKeyId( propertyKey ) ) );
+                            context.getPropertyKeyId( propertyKey ) ) );
         }
         catch ( ConstraintViolationKernelException e )
         {
@@ -83,6 +83,10 @@ class IndexDefinitionImpl implements IndexDefinition
         {
             throw new ConstraintViolationException( String.format(
                     "Unable to drop index on label `%s` for property %s.", label.name(), propertyKey ), e );
+        }
+        finally
+        {
+            context.close();
         }
     }
     

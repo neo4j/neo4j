@@ -19,6 +19,7 @@
  */
 package org.neo4j.shell;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
@@ -36,11 +37,13 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.cypher.NodeStillHasRelationshipsException;
 import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.shell.impl.CollectingOutput;
 import org.neo4j.shell.impl.SameJvmClient;
@@ -443,6 +446,21 @@ public class TestApps extends AbstractShellTest
             assertTrue( "Expected notice about cause not found in " + e.getMessage(),
                     e.getMessage().contains( NodeStillHasRelationshipsException.class.getSimpleName() ) );
         }
+    }
+
+    @Ignore
+    @Test
+    public void run_query_with_planrebuilding() throws Exception
+    {
+        executeCommand( "create (:Person {name:'Andres'});" );
+        executeCommand( "create (:Person {name:'Stefan'});" );
+        executeCommand( "profile match n:Person-[?]-() where n.name = 'Andres' return n;" );
+        Transaction tx = db.beginTx();
+        IndexDefinition index = db.schema().indexCreator( DynamicLabel.label( "Person" ) ).on( "name" ).create();
+        tx.success();
+        tx.finish();
+        db.schema().awaitIndexOnline( index, 10, SECONDS );
+        executeCommand( "profile match n:Person-[?]-() where n.name = 'Andres' return n;" );
     }
     
     @Test

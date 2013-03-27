@@ -19,7 +19,9 @@
  */
 package org.neo4j.kernel.api.index;
 
-import static org.neo4j.helpers.collection.Iterables.empty;
+import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
+
+import java.util.Iterator;
 
 /**
  * Reader for an {@link IndexAccessor}.
@@ -28,16 +30,16 @@ import static org.neo4j.helpers.collection.Iterables.empty;
  */
 public interface IndexReader
 {
-    Iterable<Long> lookup( Object value );
+    Iterator<Long> lookup( Object value );
     
     void close();
     
-    public static class Adapter implements IndexReader
+    public static class Empty implements IndexReader
     {
         @Override
-        public Iterable<Long> lookup( Object value )
+        public Iterator<Long> lookup( Object value )
         {
-            return empty();
+            return emptyIterator();
         }
         
         @Override

@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.api.operations;
 
+import java.util.Iterator;
+
 import org.neo4j.kernel.api.index.IndexNotFoundKernelException;
 
 /**
@@ -33,12 +35,12 @@ public interface EntityOperations
      * @param labelId the label id of the label that returned nodes are guaranteed to have
      * @return ids of all nodes that have the given label
      */
-    Iterable<Long> getNodesWithLabel( long labelId );
+    Iterator<Long> getNodesWithLabel( long labelId );
 
     /**
      * Returns an iterable with the matched nodes.
      * @throws org.neo4j.kernel.api.index.IndexNotFoundKernelException if no such index found.
      */
-    Iterable<Long> exactIndexLookup( long indexId, Object value ) throws IndexNotFoundKernelException;
+    Iterator<Long> exactIndexLookup( long indexId, Object value ) throws IndexNotFoundKernelException;
 
 }

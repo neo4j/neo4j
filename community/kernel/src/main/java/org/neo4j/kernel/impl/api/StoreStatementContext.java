@@ -19,12 +19,26 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import static org.neo4j.helpers.collection.Iterables.filter;
+import static org.neo4j.helpers.collection.Iterables.map;
+import static org.neo4j.helpers.collection.IteratorUtil.asIterator;
+import static org.neo4j.helpers.collection.IteratorUtil.contains;
+
+import java.util.Iterator;
+
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Predicate;
+import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.PrefetchingIterator;
-import org.neo4j.kernel.api.*;
+import org.neo4j.kernel.api.ConstraintViolationKernelException;
+import org.neo4j.kernel.api.EntityNotFoundException;
+import org.neo4j.kernel.api.LabelNotFoundKernelException;
+import org.neo4j.kernel.api.PropertyKeyIdNotFoundException;
+import org.neo4j.kernel.api.PropertyKeyNotFoundException;
+import org.neo4j.kernel.api.PropertyNotFoundException;
+import org.neo4j.kernel.api.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
@@ -32,15 +46,14 @@ import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.KeyNotFoundException;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.PropertyIndexManager;
-import org.neo4j.kernel.impl.nioneo.store.*;
+import org.neo4j.kernel.impl.nioneo.store.IndexRule;
+import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
+import org.neo4j.kernel.impl.nioneo.store.NeoStore;
+import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
+import org.neo4j.kernel.impl.nioneo.store.NodeStore;
+import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule.Kind;
-
-import java.util.Collections;
-import java.util.Iterator;
-
-import static org.neo4j.helpers.collection.Iterables.filter;
-import static org.neo4j.helpers.collection.Iterables.map;
-import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
+import org.neo4j.kernel.impl.nioneo.store.UnderlyingStorageException;
 
 /**
  * This layer interacts with committed data. It currently delegates to several of the older XXXManager-type classes.
@@ -62,11 +75,12 @@ public class StoreStatementContext extends CompositeStatementContext
     private final NodeStore nodeStore;
 
     public StoreStatementContext( PropertyIndexManager propertyIndexManager, NodeManager nodeManager,
-            NeoStore neoStore, IndexingService indexService, IndexReaderFactory indexReaderFactory )
+            NeoStore neoStore, IndexingService indexService, IndexReaderFactory indexReaderFactory)
     {
+        assert neoStore != null : "No neoStore provided";
+
         this.indexService = indexService;
         this.indexReaderFactory = indexReaderFactory;
-        assert neoStore != null : "No neoStore provided";
         this.propertyIndexManager = propertyIndexManager;
         this.nodeManager = nodeManager;
         this.neoStore = neoStore;
@@ -129,10 +143,7 @@ public class StoreStatementContext extends CompositeStatementContext
     {
         try
         {
-            for ( long existingLabel : getLabelsForNode( nodeId ) )
-                if ( existingLabel == labelId )
-                    return true;
-            return false;
+            return contains( getLabelsForNode( nodeId ), labelId );
         }
         catch ( InvalidRecordException e )
         {
@@ -141,16 +152,16 @@ public class StoreStatementContext extends CompositeStatementContext
     }
     
     @Override
-    public Iterable<Long> getLabelsForNode( long nodeId )
+    public Iterator<Long> getLabelsForNode( long nodeId )
     {
         try
         {
-            return asIterable(nodeStore.getLabelsForNode(nodeStore.getRecord(nodeId)));
+            return asIterator( nodeStore.getLabelsForNode( nodeStore.getRecord( nodeId ) ) );
         }
         catch ( InvalidRecordException e )
         {   // TODO Might hide invalid dynamic record problem. It's here because this method
             // might get called with a nodeId that doesn't exist.
-            return Collections.emptyList();
+            return IteratorUtil.emptyIterator();
         }
     }
     
@@ -168,36 +179,28 @@ public class StoreStatementContext extends CompositeStatementContext
     }
 
     @Override
-    public Iterable<Long> getNodesWithLabel( final long labelId )
+    public Iterator<Long> getNodesWithLabel( final long labelId )
     {
         final NodeStore nodeStore = neoStore.getNodeStore();
         final long highestId = nodeStore.getHighestPossibleIdInUse();
-        return new Iterable<Long>()
+        return new PrefetchingIterator<Long>()
         {
+            private long id = 0;
+
             @Override
-            public Iterator<Long> iterator()
+            protected Long fetchNextOrNull()
             {
-                return new PrefetchingIterator<Long>()
+                while ( id <= highestId )
                 {
-                    private long id = 0;
-                    
-                    @Override
-                    protected Long fetchNextOrNull()
+                    NodeRecord node = nodeStore.forceGetRecord( id++ );
+                    if (node.inUse())
                     {
-                        while ( id <= highestId )
-                        {
-                            NodeRecord node = nodeStore.forceGetRecord( id++ );
-
-                            if( ! node.inUse() )
-                                continue;
-
-                            for ( long label : nodeStore.getLabelsForNode( node ) )
-                                if ( label == labelId )
-                                    return node.getId();
-                        }
-                        return null;
+                        for ( long label : nodeStore.getLabelsForNode( node ) )
+                            if ( label == labelId )
+                                return node.getId();
                     }
-                };
+                }
+                return null;
             }
         };
     }
@@ -216,7 +219,7 @@ public class StoreStatementContext extends CompositeStatementContext
                             && propertyKey == ((IndexRule)rule).getPropertyKey();
             }
 
-        }, neoStore.getSchemaStore().loadAll() ).iterator();
+        }, neoStore.getSchemaStore().loadAll() );
 
         if ( !filtered.hasNext() )
             throw new SchemaRuleNotFoundException( "Index rule for label:" + labelId + " and property:" +
@@ -236,7 +239,7 @@ public class StoreStatementContext extends CompositeStatementContext
     }
 
     @Override
-    public Iterable<IndexRule> getIndexRules( final long labelId )
+    public Iterator<IndexRule> getIndexRules( final long labelId )
     {
         return toIndexRules( new Predicate<SchemaRule>()
         {
@@ -249,7 +252,7 @@ public class StoreStatementContext extends CompositeStatementContext
     }
     
     @Override
-    public Iterable<IndexRule> getIndexRules()
+    public Iterator<IndexRule> getIndexRules()
     {
         return toIndexRules( new Predicate<SchemaRule>()
         {
@@ -261,9 +264,9 @@ public class StoreStatementContext extends CompositeStatementContext
         } );
     }
     
-    private Iterable<IndexRule> toIndexRules( Predicate<SchemaRule> filter )
+    private Iterator<IndexRule> toIndexRules( Predicate<SchemaRule> filter )
     {
-        Iterable<SchemaRule> filtered = filter( filter, neoStore.getSchemaStore().loadAll() );
+        Iterator<SchemaRule> filtered = filter( filter, neoStore.getSchemaStore().loadAll() );
         
         return map( new Function<SchemaRule, IndexRule>()
         {
@@ -334,8 +337,20 @@ public class StoreStatementContext extends CompositeStatementContext
     }
 
     @Override
-    public Iterable<Long> exactIndexLookup( long indexId, Object value ) throws IndexNotFoundKernelException
+    public Iterator<Long> exactIndexLookup( long indexId, Object value ) throws IndexNotFoundKernelException
     {
         return indexReaderFactory.newReader( indexId ).lookup( value );
+    }
+
+    @Override
+    public <K, V> V getOrCreateFromSchemaState( K key, Function<K, V> creator )
+    {
+        throw new UnsupportedOperationException( "Schema state is not handled by the stores" );
+    }
+
+    @Override
+    public <K> boolean schemaStateContains( K key )
+    {
+        throw new UnsupportedOperationException( "Schema state is not handled by the stores" );
     }
 }

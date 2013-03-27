@@ -140,13 +140,11 @@ public class TopLevelTransaction implements Transaction
         {
             if ( transactionOutcome.successCalled() )
             {
-                throw new TransactionFailureException(
-                    "Unable to commit transaction", e );
+                throw new TransactionFailureException( "Unable to commit transaction", e );
             }
             else
             {
-                throw new TransactionFailureException(
-                    "Unable to rollback transaction", e );
+                throw new TransactionFailureException( "Unable to rollback transaction", e );
             }
         }
     }

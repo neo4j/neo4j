@@ -19,9 +19,10 @@
  */
 package org.neo4j.kernel;
 
+import static java.lang.String.format;
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.map;
-import static java.lang.String.format;
+import static org.neo4j.helpers.collection.IteratorUtil.withResource;
 import static org.slf4j.impl.StaticLoggerBinder.getSingleton;
 
 import java.io.File;
@@ -29,6 +30,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
@@ -38,6 +40,7 @@ import javax.transaction.NotSupportedException;
 import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
 
+import ch.qos.logback.classic.LoggerContext;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -45,6 +48,8 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.ResourceIterable;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.config.Setting;
@@ -63,6 +68,7 @@ import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.Settings;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelException;
 import org.neo4j.kernel.api.SchemaRuleNotFoundException;
@@ -76,7 +82,9 @@ import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.extension.KernelExtensions;
 import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.impl.api.Kernel;
+import org.neo4j.kernel.impl.api.KernelSchemaStateStore;
 import org.neo4j.kernel.impl.api.SchemaCache;
+import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.cache.Cache;
 import org.neo4j.kernel.impl.cache.CacheProvider;
@@ -144,8 +152,6 @@ import org.neo4j.kernel.logging.ClassicLoggingService;
 import org.neo4j.kernel.logging.LogbackService;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.tooling.GlobalGraphOperations;
-
-import ch.qos.logback.classic.LoggerContext;
 
 /**
  * Base implementation of GraphDatabaseService. Responsible for creating services, handling dependencies between them,
@@ -222,6 +228,7 @@ public abstract class InternalAbstractGraphDatabase
     protected ThreadToStatementContextBridge statementContextProvider;
     protected BridgingCacheAccess cacheBridge;
     protected JobScheduler jobScheduler;
+    protected UpdateableSchemaState updateableSchemaState;
 
     protected final LifeSupport life = new LifeSupport();
     private final Map<String,CacheProvider> cacheProviders;
@@ -388,9 +395,12 @@ public abstract class InternalAbstractGraphDatabase
 
         stateFactory = createTransactionStateFactory();
 
+        updateableSchemaState = new KernelSchemaStateStore( newSchemaStateMap() );
+
         if ( readOnly )
         {
-            txManager = new ReadOnlyTxManager( xaDataSourceManager, logging.getLogger( ReadOnlyTxManager.class ) );
+            StringLogger roTxManagerLogging = logging.getLogger(ReadOnlyTxManager.class);
+            txManager = new ReadOnlyTxManager( xaDataSourceManager, roTxManagerLogging);
         }
         else
         {
@@ -426,7 +436,7 @@ public abstract class InternalAbstractGraphDatabase
 
         relationshipTypeCreator = createRelationshipTypeCreator();
 
-        persistenceSource = life.add( new NioNeoDbPersistenceSource( xaDataSourceManager ) );
+        persistenceSource = life.add(new NioNeoDbPersistenceSource(xaDataSourceManager));
 
         syncHook = new DefaultTxEventSyncHookFactory();
 
@@ -447,12 +457,12 @@ public abstract class InternalAbstractGraphDatabase
         SchemaCache schemaCache = new SchemaCache( Collections.<SchemaRule>emptyList() );
 
         kernelAPI = life.add( new Kernel( txManager, propertyIndexManager, persistenceManager,
-                xaDataSourceManager, lockManager, schemaCache, dependencyResolver ) );
-        // XXX: Circular dependency, temporary during transition to KernelAPI
+                xaDataSourceManager, lockManager, schemaCache, updateableSchemaState, dependencyResolver ) );
+        // XXX: Circular dependency, temporary during transition to KernelAPI - TxManager should not depend on KernelAPI
         txManager.setKernel(kernelAPI);
 
-        statementContextProvider = life.add( new ThreadToStatementContextBridge( kernelAPI, txManager,
-                xaDataSourceManager ) );
+        statementContextProvider = life.add( new ThreadToStatementContextBridge( kernelAPI, txManager
+        ) );
 
         nodeManager = guard != null ?
                 createGuardedNodeManager( readOnly, cacheProvider, nodeCache, relCache ) :
@@ -516,6 +526,10 @@ public abstract class InternalAbstractGraphDatabase
 
         // TODO This is probably too coarse-grained and we should have some strategy per user of config instead
         life.add( new ConfigurationChangedRestarter() );
+    }
+
+    private Map<Object, Object> newSchemaStateMap() {
+        return new HashMap<Object, Object>();
     }
 
     protected TransactionStateFactory createTransactionStateFactory()
@@ -822,9 +836,8 @@ public abstract class InternalAbstractGraphDatabase
             neoDataSource = new NeoStoreXaDataSource( config,
                     storeFactory, lockManager, logging.getLogger( NeoStoreXaDataSource.class ),
                     xaFactory, stateFactory, cacheBridge,
-                    transactionInterceptorProviders, jobScheduler, logging, dependencyResolver );
+                    transactionInterceptorProviders, jobScheduler, logging, updateableSchemaState, dependencyResolver );
             xaDataSourceManager.registerDataSource( neoDataSource );
-
         }
         catch ( IOException e )
         {
@@ -1300,7 +1313,7 @@ public abstract class InternalAbstractGraphDatabase
             {
                 return (T) persistenceManager;
             }
-            else if ( KernelAPI.class.isAssignableFrom( type ) )
+            else if ( KernelAPI.class.equals( type ) )
             {
                 return (T) kernelAPI;
             }
@@ -1315,6 +1328,10 @@ public abstract class InternalAbstractGraphDatabase
             else if ( StoreLockerLifecycleAdapter.class.isAssignableFrom( type ) )
             {
                 return (T) storeLocker;
+            }
+            else if ( IndexManager.class == type )
+            {
+                return type.cast( indexManager );
             }
             else if ( IndexingService.class.isAssignableFrom( type ) )
             {
@@ -1461,8 +1478,20 @@ public abstract class InternalAbstractGraphDatabase
     }
 
     @Override
-    public Iterable<Node> findNodesByLabelAndProperty( final Label myLabel, final String propertyName,
-                                                       final Object value )
+    public ResourceIterable<Node> findNodesByLabelAndProperty( final Label myLabel, final String propertyName,
+                                                               final Object value )
+    {
+        return new ResourceIterable<Node>()
+        {
+            @Override
+            public ResourceIterator<Node> iterator()
+            {
+                return nodesByLabelAndProperty( myLabel, propertyName, value );
+            }
+        };
+    }
+
+    private ResourceIterator<Node> nodesByLabelAndProperty( Label myLabel, String propertyName, Object value )
     {
         StatementContext ctx = statementContextProvider.getCtxForReading();
 
@@ -1475,7 +1504,8 @@ public abstract class InternalAbstractGraphDatabase
         }
         catch ( KernelException e )
         {
-            return Iterables.empty();
+            ctx.close();
+            return IteratorUtil.emptyIterator();
         }
 
         try
@@ -1484,7 +1514,7 @@ public abstract class InternalAbstractGraphDatabase
             if(ctx.getIndexState( indexRule ) == InternalIndexState.ONLINE)
             {
                 // Ha! We found an index - let's use it to find matching nodes
-                return map2nodes( ctx.exactIndexLookup( indexRule.getId(), value ) );
+                return map2nodes( ctx.exactIndexLookup( indexRule.getId(), value ), ctx );
             }
         }
         catch ( SchemaRuleNotFoundException e )
@@ -1495,16 +1525,16 @@ public abstract class InternalAbstractGraphDatabase
         {
             // If we don't find a matching index rule, we'll scan all nodes and filter manually (below)
         }
-        
+
         return getNodesByLabelAndPropertyWithoutIndex( propertyName, value, ctx, labelId );
     }
 
-    private Iterable<Node> getNodesByLabelAndPropertyWithoutIndex( final String propertyName, final Object value, StatementContext ctx, long labelId )
+    private ResourceIterator<Node> getNodesByLabelAndPropertyWithoutIndex( final String propertyName, final Object value, StatementContext ctx, long labelId )
     {
-        Iterable<Long> nodesWithLabel = ctx.getNodesWithLabel( labelId );
+        Iterator<Long> nodesWithLabel = ctx.getNodesWithLabel( labelId );
         final NodeProxy.NodeLookup lookup = createNodeLookup();
 
-        Iterable<Long> matches = filter( new Predicate<Long>()
+        Iterator<Long> matches = filter( new Predicate<Long>()
         {
             @Override
             public boolean accept( Long item )
@@ -1514,18 +1544,18 @@ public abstract class InternalAbstractGraphDatabase
             }
         }, nodesWithLabel );
 
-        return map2nodes( matches );
+        return map2nodes( matches, ctx );
     }
 
-    private Iterable<Node> map2nodes( Iterable<Long> input )
+    private ResourceIterator<Node> map2nodes( Iterator<Long> input, StatementContext ctx )
     {
-        return map( new Function<Long, Node>()
+        return withResource( map( new Function<Long, Node>()
         {
             @Override
             public Node apply( Long id )
             {
                 return getNodeById( id );
             }
-        }, input );
+        }, input ), ctx );
     }
 }

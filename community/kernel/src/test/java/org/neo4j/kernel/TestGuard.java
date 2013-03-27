@@ -42,7 +42,6 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 
 public class TestGuard
 {
-
     @Test
     public void testGuardNotInsertedByDefault()
     {

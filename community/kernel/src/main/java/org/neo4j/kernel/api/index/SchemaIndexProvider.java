@@ -60,8 +60,10 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
  *
  * Once population is done, the index needs to be "flipped" to an online mode of operation.
  *
- * The index will be notified, through the {@link org.neo4j.kernel.api.index.IndexPopulator#populationCompleted()}
- * method, that population is done, and that the index should turn it's state to {@link InternalIndexState#ONLINE}.
+ * The index will be notified, through the {@link org.neo4j.kernel.api.index.IndexPopulator#close(boolean)}
+ * method, that population is done, and that the index should turn it's state to {@link InternalIndexState#ONLINE} or
+ * {@link InternalIndexState#FAILED} depending on the value given to the
+ * {@link org.neo4j.kernel.api.index.IndexPopulator#close(boolean) close method}.
  *
  * If the index is persisted to disk, this is a <i>vital</i> part of the index lifecycle.
  * For a persisted index, the index MUST NOT store the state as online unless it first guarantees that the entire index
@@ -70,7 +72,7 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
  * when it in fact was not yet fully populated. This would break the database recovery process.
  *
  * If you are implementing this interface, you can choose to not store index state. In that case,
- * you should report index state as {@link InternalIndexState#NON_EXISTENT} upon startup.
+ * you should report index state as {@link InternalIndexState#POPULATING} upon startup.
  * This will cause the database to re-create the index from scratch again.
  *
  * These are the rules you must adhere to here:
@@ -78,13 +80,13 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
  * <ul>
  * <li>You MUST have flushed the index to durable storage if you are to persist index state as {@link InternalIndexState#ONLINE}</li>
  * <li>You MAY decide not to store index state</li>
- * <li>If you don't store index state, you MUST default to {@link InternalIndexState#NON_EXISTENT}</li>
+ * <li>If you don't store index state, you MUST default to {@link InternalIndexState#POPULATING}</li>
  * </ul>
  *
  * <h3>Online operation</h3>
  *
- * Once the index is online, the database will move to using the {@link #getWriter(long) index writer} to write to the
- * index.
+ * Once the index is online, the database will move to using the {@link #getOnlineAccessor(long) online accessor} to
+ * write to the index.
  */
 public abstract class SchemaIndexProvider extends LifecycleAdapter implements Comparable<SchemaIndexProvider>
 {
@@ -136,22 +138,16 @@ public abstract class SchemaIndexProvider extends LifecycleAdapter implements Co
 
     /**
      * Used for initially populating a created index, using batch insertion.
-     * @param indexId the index id to get a populator for.
-     * @return an {@link IndexPopulator} used for initially populating a created index.
      */
     public abstract IndexPopulator getPopulator( long indexId );
 
     /**
      * Used for updating an index once initial population has completed.
-     * @param indexId the index id to get a writer for.
-     * @return an {@link IndexAccessor} used for updating an online index at runtime.
      */
     public abstract IndexAccessor getOnlineAccessor( long indexId );
 
     /**
      * Called during startup to find out which state an index is in.
-     * @param indexId the index id to get the state for.
-     * @return
      */
     public abstract InternalIndexState getInitialState( long indexId );
     

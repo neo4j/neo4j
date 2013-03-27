@@ -24,7 +24,7 @@ import org.scalatest.Assertions
 import org.junit.{Assert, Test}
 import org.neo4j.cypher.internal.symbols.{SymbolTable, CypherType, AnyType}
 import org.neo4j.cypher.internal.ExecutionContext
-import org.neo4j.cypher.internal.pipes.QueryState
+import org.neo4j.cypher.internal.pipes.{QueryStateHelper, QueryState}
 
 class CoalesceTest extends Assertions {
   @Test def givenANonNullValueThenReturnsTheValue() {
@@ -47,7 +47,7 @@ class CoalesceTest extends Assertions {
     assert(calc(func) === "Hunger")
   }
 
-  private def calc(e: Expression): Any = e(ExecutionContext.empty)(QueryState.empty)
+  private def calc(e: Expression): Any = e(ExecutionContext.empty)(QueryStateHelper.empty)
 }
 
 case class BreakingExpression() extends Expression {

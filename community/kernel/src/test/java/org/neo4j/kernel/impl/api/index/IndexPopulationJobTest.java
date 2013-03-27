@@ -60,6 +60,7 @@ import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
+import org.neo4j.kernel.impl.api.KernelSchemaStateStore;
 import org.neo4j.kernel.impl.api.index.IndexingService.IndexStoreView;
 import org.neo4j.kernel.impl.api.index.IndexingService.StoreScan;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
@@ -92,6 +93,23 @@ public class IndexPopulationJobTest
         verify( populator ).close( true );
 
         verifyNoMoreInteractions( populator );
+    }
+
+    @Test
+    public void shouldFlushSchemaStateAfterPopulation() throws Exception
+    {
+        // GIVEN
+        String value = "Taylor";
+        long nodeId = createNode( map( name, value ), FIRST );
+        stateHolder.apply( MapUtil.stringMap( "key", "original_value" ) );
+        IndexPopulationJob job = newIndexPopulationJob( FIRST, name, populator, new FlippableIndexProxy() );
+
+        // WHEN
+        job.run();
+
+        // THEN
+        String result = stateHolder.get( "key" );
+        assertEquals( null, result );
     }
 
     @Test
@@ -375,6 +393,8 @@ public class IndexPopulationJobTest
     private ThreadToStatementContextBridge ctxProvider;
     private StatementContext context;
     private IndexPopulator populator;
+    private KernelSchemaStateStore stateHolder;
+
     private long firstLabelId, secondLabelId;
 
     @Before
@@ -384,10 +404,13 @@ public class IndexPopulationJobTest
         ctxProvider = db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
         context = ctxProvider.getCtxForReading();
         populator = mock( IndexPopulator.class );
+        stateHolder = new KernelSchemaStateStore();
         
         Transaction tx = db.beginTx();
-        firstLabelId = ctxProvider.getCtxForWriting().getOrCreateLabelId( FIRST.name() );
-        secondLabelId = ctxProvider.getCtxForWriting().getOrCreateLabelId( SECOND.name() );
+        StatementContext ctxForWriting = ctxProvider.getCtxForWriting();
+        firstLabelId = ctxForWriting.getOrCreateLabelId( FIRST.name() );
+        secondLabelId = ctxForWriting.getOrCreateLabelId( SECOND.name() );
+        ctxForWriting.close();
         tx.success();
         tx.finish();
     }
@@ -414,7 +437,9 @@ public class IndexPopulationJobTest
         IndexRule indexRule = new IndexRule( 0, context.getLabelId( label.name() ), context.getPropertyKeyId( propertyKey ) );
         IndexDescriptor descriptor = new IndexDescriptor( indexRule.getLabel(), indexRule.getPropertyKey() );
         flipper.setFlipTarget( mock( IndexProxyFactory.class ) );
-        return new IndexPopulationJob( descriptor, populator, flipper, storeView, new SingleLoggingService( logger ) );
+        return
+            new IndexPopulationJob( descriptor, populator, flipper, storeView,
+                                    stateHolder, new SingleLoggingService( logger ) );
     }
 
     private long createNode( Map<String, Object> properties, Label... labels )

@@ -103,10 +103,10 @@ class EagerAggregationPipeTest extends JUnitSuite {
     val grouping = Map("count(name)" -> Count(Identifier("name")))
     val aggregationPipe = new EagerAggregationPipe(source, returnItems, grouping)
 
-    assertEquals(List(Map("count(name)" -> 3)), aggregationPipe.createResults(QueryState()).toList)
+    assertEquals(List(Map("count(name)" -> 3)), aggregationPipe.createResults(QueryStateHelper.empty).toList)
   }
 
   private def createSymbolTableFor(name: String) = name -> NodeType()
 
-  private def getResults(p: Pipe): JIterable[Map[String, Any]] = p.createResults(QueryState()).map(_.m.toMap).toIterable.asJava
+  private def getResults(p: Pipe): JIterable[Map[String, Any]] = p.createResults(QueryStateHelper.empty).map(_.m.toMap).toIterable.asJava
 }

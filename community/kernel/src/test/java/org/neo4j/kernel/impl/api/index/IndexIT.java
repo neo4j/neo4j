@@ -49,6 +49,7 @@ public class IndexIT
 
         // WHEN
         IndexRule rule = statement.addIndexRule( labelId, propertyKey );
+        statement.close();
         tx.success();
         tx.finish();
 
@@ -68,6 +69,7 @@ public class IndexIT
 
         // WHEN
         IndexRule expectedRule = statement.addIndexRule( labelId, propertyKey );
+        statement.close();
         tx.success();
         tx.finish();
 
@@ -86,6 +88,7 @@ public class IndexIT
         Transaction tx = db.beginTx();
         StatementContext statement = ctxProvider.getCtxForWriting();
         IndexRule existingRule = statement.addIndexRule( labelId, propertyKey );
+        statement.close();
         tx.success();
         tx.finish();
 
@@ -95,6 +98,7 @@ public class IndexIT
         long propertyKey2 = 10;
         IndexRule addedRule = statement.addIndexRule( labelId, propertyKey2 );
         Set<IndexRule> indexRulesInTx = asSet( statement.getIndexRules( labelId ) );
+        statement.close();
         tx.success();
         tx.finish();
 
@@ -112,6 +116,7 @@ public class IndexIT
 
         // WHEN
         statement.addIndexRule( labelId, propertyKey );
+        statement.close();
         // don't mark as success
         tx.finish();
 

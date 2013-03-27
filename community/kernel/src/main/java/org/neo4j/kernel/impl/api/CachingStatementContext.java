@@ -41,6 +41,7 @@ package org.neo4j.kernel.impl.api;
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.map;
 
+import java.util.Iterator;
 import java.util.Set;
 
 import org.neo4j.helpers.Function;
@@ -92,11 +93,11 @@ public class CachingStatementContext extends CompositeStatementContext
     }
     
     @Override
-    public Iterable<Long> getLabelsForNode( long nodeId )
+    public Iterator<Long> getLabelsForNode( long nodeId )
     {
         Set<Long> labels = persistenceCache.getLabels( nodeId );
         if ( labels != null )
-            return labels;
+            return labels.iterator();
         return delegate.getLabelsForNode( nodeId );
     }
     
@@ -110,27 +111,27 @@ public class CachingStatementContext extends CompositeStatementContext
     }
 
     @Override
-    public Iterable<IndexRule> getIndexRules( long labelId )
+    public Iterator<IndexRule> getIndexRules( long labelId )
     {
         return toIndexRules( schemaCache.getSchemaRules( labelId ) );
     }
 
     @Override
-    public Iterable<IndexRule> getIndexRules()
+    public Iterator<IndexRule> getIndexRules()
     {
         return toIndexRules( schemaCache.getSchemaRules() );
     }
 
-    private Iterable<IndexRule> toIndexRules( Iterable<SchemaRule> schemaRules )
+    private Iterator<IndexRule> toIndexRules( Iterable<SchemaRule> schemaRules )
     {
-        Iterable<SchemaRule> filteredRules = filter( new Predicate<SchemaRule>()
+        Iterator<SchemaRule> filteredRules = filter( new Predicate<SchemaRule>()
         {
             @Override
             public boolean accept( SchemaRule item )
             {
                 return item.getKind() == Kind.INDEX_RULE;
             }
-        }, schemaRules );
+        }, schemaRules.iterator() );
         return map( TO_INDEX_RULE, filteredRules );
     }
 }

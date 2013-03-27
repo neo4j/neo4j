@@ -19,13 +19,13 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+
 import org.neo4j.kernel.impl.api.PersistenceCache.CachedNodeEntity;
 import org.neo4j.kernel.impl.cache.LockStripedCache;
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
 import org.neo4j.kernel.impl.nioneo.store.NodeStore;
-
-import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
 class NodeCacheLoader implements LockStripedCache.Loader<CachedNodeEntity>
 {

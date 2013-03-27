@@ -33,21 +33,24 @@ class StartPointBuilder extends PlanBuilder {
     val q = plan.query
     val p = plan.pipe
 
-    val item = q.start.filter(mapQueryToken(context).isDefinedAt).head
+    val item = q.start.filter({ (startItemToken: QueryToken[StartItem]) =>
+        mapQueryToken().isDefinedAt((context, startItemToken))
+      }).head
 
-    val newPipe = mapQueryToken(context)(item)(p)
+
+    val newPipe = mapQueryToken().apply((context, item))(p)
 
     plan.copy(pipe = newPipe, query = q.copy(start = q.start.filterNot(_ == item) :+ item.solve))
   }
 
   override def missingDependencies(plan: ExecutionPlanInProgress): Seq[String] = super.missingDependencies(plan)
 
-  def canWorkWith(plan: ExecutionPlanInProgress, context: PlanContext) = {
-    val startItemTransformer = mapQueryToken(context)
-    plan.query.start.exists(startItemTransformer.isDefinedAt)
-  }
+  def canWorkWith(plan: ExecutionPlanInProgress, context: PlanContext) =
+    plan.query.start.exists({ (itemToken: QueryToken[StartItem]) =>
+      mapQueryToken().isDefinedAt((context, itemToken))
+    })
 
-  private def genNodeStart(entityFactory: EntityProducerFactory): PartialFunction[StartItem, EntityProducer[Node]] =
+  private def genNodeStart(entityFactory: EntityProducerFactory): PartialFunction[(PlanContext, StartItem), EntityProducer[Node]] =
     entityFactory.nodeByIndex orElse
       entityFactory.nodeByIndexQuery orElse
       entityFactory.nodeByIndexHint orElse
@@ -56,22 +59,24 @@ class StartPointBuilder extends PlanBuilder {
       entityFactory.nodeByLabel
 
 
-  private def genRelationshipStart(entityFactory: EntityProducerFactory): PartialFunction[StartItem, EntityProducer[Relationship]] =
+  private def genRelationshipStart(entityFactory: EntityProducerFactory): PartialFunction[(PlanContext, StartItem), EntityProducer[Relationship]] =
     entityFactory.relationshipByIndex orElse
       entityFactory.relationshipByIndexQuery orElse
       entityFactory.relationshipById orElse
       entityFactory.relationshipsAll
 
-  private def mapQueryToken(planContext: PlanContext): PartialFunction[QueryToken[StartItem], (Pipe => Pipe)] = {
-    lazy val entityFactory = new EntityProducerFactory(planContext)
-    lazy val nodeStart: PartialFunction[StartItem, EntityProducer[Node]] = genNodeStart(entityFactory)
-    lazy val relationshipStart: PartialFunction[StartItem, EntityProducer[Relationship]] = genRelationshipStart(entityFactory)
-    val result: PartialFunction[QueryToken[StartItem], (Pipe => Pipe)] = {
-      case Unsolved(item) if nodeStart.isDefinedAt(item) =>
-        (p: Pipe) => new NodeStartPipe(p, item.identifierName, nodeStart.apply(item))
+  private def mapQueryToken(): PartialFunction[(PlanContext, QueryToken[StartItem]), (Pipe => Pipe)] = {
+    val entityFactory = new EntityProducerFactory
+    val nodeStart = genNodeStart(entityFactory)
+    val relationshipStart = genRelationshipStart(entityFactory)
+    val result: PartialFunction[(PlanContext, QueryToken[StartItem]), (Pipe => Pipe)] = {
+      case (planContext, Unsolved(item)) if nodeStart.isDefinedAt((planContext, item)) =>
+        (p: Pipe) =>
+          new NodeStartPipe(p, item.identifierName, nodeStart.apply((planContext, item)))
 
-      case Unsolved(item) if relationshipStart.isDefinedAt(item) =>
-        (p: Pipe) => new RelationshipStartPipe(p, item.identifierName, relationshipStart.apply(item))
+      case (planContext, Unsolved(item)) if relationshipStart.isDefinedAt((planContext, item)) =>
+        (p: Pipe) =>
+          new RelationshipStartPipe(p, item.identifierName, relationshipStart.apply((planContext, item)))
     }
     result
   }

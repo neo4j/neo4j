@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.executionplan.builders
 
-import org.junit.{Before, Test}
+import org.junit.{After, Before, Test}
 import org.neo4j.cypher.internal.commands._
 import org.scalatest.Assertions
 import org.neo4j.cypher.GraphDatabaseTestBase
@@ -28,12 +28,23 @@ import org.junit.Assert._
 import org.neo4j.cypher.internal.commands.expressions.Literal
 import org.neo4j.cypher.internal.parser.v1_9.CypherParserImpl
 import org.neo4j.cypher.internal.pipes.NullPipe
+import org.neo4j.cypher.internal.spi.PlanContext
+import org.neo4j.cypher.internal.spi.gdsimpl.TransactionBoundPlanContext
+import org.neo4j.graphdb.Transaction
 
 class TraversalMatcherBuilderTest extends GraphDatabaseTestBase with Assertions with BuilderTest {
   var builder: TraversalMatcherBuilder = null
+  var ctx: PlanContext = null
+  var tx: Transaction = null
 
   @Before def init() {
-    builder = new TraversalMatcherBuilder(graph)
+    builder = new TraversalMatcherBuilder
+    tx = graph.beginTx()
+    ctx = new TransactionBoundPlanContext(statementContext, graph)
+  }
+
+  @After def cleanup() {
+    tx.finish()
   }
 
   @Test def should_not_accept_queries_without_patterns() {
@@ -41,7 +52,7 @@ class TraversalMatcherBuilderTest extends GraphDatabaseTestBase with Assertions 
       copy(start = Seq(Unsolved(NodeByIndex("n", "index", Literal("key"), Literal("expression"))))
     )
 
-    assertFalse("This query should not be accepted", builder.canWorkWith(plan(NullPipe, q)))
+    assertFalse("This query should not be accepted", builder.canWorkWith(plan(NullPipe, q), ctx))
   }
 
   @Test def should_accept_variable_length_paths() {
@@ -49,7 +60,7 @@ class TraversalMatcherBuilderTest extends GraphDatabaseTestBase with Assertions 
                   "MATCH me-[:jane_knows*]->friend-[:has]->status " +
                   "RETURN me")
 
-    assertTrue("This query should not be accepted", builder.canWorkWith(plan(NullPipe, q)))
+    assertAcceptsQuery(q)
   }
 
   @Test def should_not_accept_queries_with_varlength_paths() {
@@ -57,7 +68,7 @@ class TraversalMatcherBuilderTest extends GraphDatabaseTestBase with Assertions 
                   "MATCH me-[:LOVES*]->banana-[:LIKES*]->you " +
                   "RETURN me")
 
-    assertTrue("This query should be accepted", builder.canWorkWith(plan(NullPipe, q)))
+    assertAcceptsQuery(q)
   }
 
   @Test def should_handle_loops() {
@@ -65,16 +76,16 @@ class TraversalMatcherBuilderTest extends GraphDatabaseTestBase with Assertions 
                   "MATCH me-[:LIKES]->(u1)<-[:LIKES]->you, me-[:HATES]->(u2)<-[:HATES]->you " +
                   "RETURN me")
 
-    assertTrue("This query should be accepted", builder.canWorkWith(plan(NullPipe, q)))
+    assertAcceptsQuery(q)
   }
 
   @Test def should_not_take_on_path_expression_predicates() {
     val q = query("START a=node({self}) MATCH a-->b WHERE b-->() RETURN b")
 
-    val testPlan = plan(NullPipe, q)
-    assertTrue("This query should be accepted", builder.canWorkWith(testPlan))
+    assertAcceptsQuery(q)
 
-    val newPlan = builder.apply(testPlan)
+    val testPlan = plan(NullPipe, q)
+    val newPlan = builder.apply(testPlan, ctx)
 
     assertQueryHasNotSolvedPathExpressions(newPlan)
   }
@@ -83,17 +94,21 @@ class TraversalMatcherBuilderTest extends GraphDatabaseTestBase with Assertions 
     val q = query("START a=node({self}), b = node(*) MATCH a-->b RETURN b")
 
     val testPlan = plan(NullPipe, q)
-    assertTrue("This query should be accepted", builder.canWorkWith(testPlan))
+    assertTrue("This query should be accepted", builder.canWorkWith(testPlan, ctx))
 
-    val newPlan = builder.apply(testPlan)
+    val newPlan = builder.apply(testPlan, ctx)
 
     assert(!newPlan.query.start.exists(_.unsolved), "Should have solved all start items")
+  }
+
+  private def assertAcceptsQuery(q:PartiallySolvedQuery) {
+    assertTrue("Should be able to build on this", builder.canWorkWith(plan(NullPipe, q), ctx))
   }
 
   def assertQueryHasNotSolvedPathExpressions(newPlan: ExecutionPlanInProgress) {
     newPlan.query.where.foreach {
       case Solved(pred) if pred.exists(_.isInstanceOf[PatternPredicate]) => fail("Didn't expect the predicate to be solved")
-      case _                                                           =>
+      case _                                                             =>
     }
   }
 
