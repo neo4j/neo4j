@@ -22,13 +22,14 @@ package org.neo4j.kernel.ha.cluster.zoo;
 import java.net.URI;
 
 import org.neo4j.cluster.BindingListener;
+import org.neo4j.cluster.ClusterSettings;
+import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.com.BindingNotifier;
 import org.neo4j.cluster.member.ClusterMemberAvailability;
 import org.neo4j.cluster.member.ClusterMemberEvents;
 import org.neo4j.cluster.member.ClusterMemberListener;
 import org.neo4j.helpers.Listeners;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher;
 import org.neo4j.kernel.ha.switchover.CompatibilityModeListener;
 import org.neo4j.kernel.ha.switchover.Switchover;
@@ -43,7 +44,7 @@ public class ZooKeeperHighAvailabilityEvents
     private final Logging logger;
     private final Config config;
     private final Switchover switchover;
-    private final int serverId;
+    private final InstanceId instanceId;
 
     private Iterable<ClusterMemberListener> haListeners = Listeners.newListeners();
     private Iterable<BindingListener> bindingListeners = Listeners.newListeners();
@@ -56,7 +57,7 @@ public class ZooKeeperHighAvailabilityEvents
         this.config = config;
         this.switchover = switchover;
         this.life = new LifeSupport();
-        this.serverId = config.get( HaSettings.server_id );
+        this.instanceId = new InstanceId( config.get( ClusterSettings.server_id ) );
     }
 
     @Override
@@ -87,7 +88,7 @@ public class ZooKeeperHighAvailabilityEvents
             @Override
             public void notify( ClusterMemberListener listener )
             {
-                listener.masterIsElected( URI.create( "cluster://" + client.getCachedMaster().getServerAsString() ) );
+                listener.coordinatorIsElected( new InstanceId( client.getCachedMaster().getMachineId() ) );
             }
         } );
         Listeners.notifyListeners( haListeners, new Listeners.Notification<ClusterMemberListener>()
@@ -96,8 +97,8 @@ public class ZooKeeperHighAvailabilityEvents
             public void notify( ClusterMemberListener listener )
             {
                 listener.memberIsAvailable( HighAvailabilityModeSwitcher.MASTER,
-                        URI.create( "cluster://"+client.getCachedMaster().getServerAsString() ),
-                                URI.create( "ha://" + client.getCachedMaster().getServerAsString() ) );
+                        new InstanceId( client.getCachedMaster().getMachineId() ),
+                        URI.create( "ha://" + client.getCachedMaster().getServerAsString() ));
             }
         } );
     }
@@ -123,9 +124,7 @@ public class ZooKeeperHighAvailabilityEvents
             public void notify( ClusterMemberListener listener )
             {
                 logger.getLogger( getClass() ).logMessage( "got member is available for me: "+ client.getClusterServer() );
-                listener.memberIsAvailable( role,
-                        URI.create( client.getClusterServer() ),
-                                roleUri );
+                listener.memberIsAvailable( role, new InstanceId( client.getMyMachineId() ), roleUri );
             }
         } );
     }
@@ -157,6 +156,11 @@ public class ZooKeeperHighAvailabilityEvents
     @Override
     public void memberIsUnavailable( String role )
     {
+    }
+
+    public InstanceId getInstanceId()
+    {
+        return instanceId;
     }
 
     private class ZooHaEventListener implements ZooListener
@@ -191,7 +195,7 @@ public class ZooKeeperHighAvailabilityEvents
                 @Override
                 public void notify( ClusterMemberListener listener )
                 {
-                    listener.masterIsElected( URI.create( client.getCachedMaster().getServerAsString() ) );
+                    listener.coordinatorIsElected( new InstanceId( client.getCachedMaster().getMachineId() ) );
                 }
             } );
         }
@@ -206,7 +210,7 @@ public class ZooKeeperHighAvailabilityEvents
                 public void notify( ClusterMemberListener listener )
                 {
                     listener.memberIsAvailable( HighAvailabilityModeSwitcher.MASTER,
-                            URI.create( "cluster://"+client.getCachedMaster().getServerAsString() ),
+                            new InstanceId( client.getCachedMaster().getMachineId() ),
                                     URI.create( "ha://" + client.getCachedMaster().getServerAsString() ) );
                 }
             } );

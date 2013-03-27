@@ -24,7 +24,7 @@ import static org.junit.Assert.fail;
 import static org.neo4j.cluster.ClusterSettings.cluster_server;
 import static org.neo4j.cluster.ClusterSettings.initial_hosts;
 import static org.neo4j.kernel.ha.HaSettings.ha_server;
-import static org.neo4j.kernel.ha.HaSettings.server_id;
+import static org.neo4j.cluster.ClusterSettings.server_id;
 import static org.neo4j.kernel.ha.HaSettings.state_switch_timeout;
 
 import java.io.File;

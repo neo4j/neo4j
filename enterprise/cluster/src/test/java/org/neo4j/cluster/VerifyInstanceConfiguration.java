@@ -17,35 +17,23 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cluster.protocol.election;
+package org.neo4j.cluster;
 
-import org.neo4j.cluster.InstanceId;
-import org.neo4j.cluster.protocol.heartbeat.HeartbeatListener;
+import java.net.URI;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
-/**
- * If an instance is considered failed, demote it from all its roles in the cluster.
- * If an instance comes back, ensure that all roles are elected.
- */
-public class HeartbeatReelectionListener
-    implements HeartbeatListener
+public class VerifyInstanceConfiguration
 {
-    private final Election election;
+    public final List<URI> members;
+    public final Map<String, InstanceId> roles;
+    public final Set<InstanceId> failed;
 
-    public HeartbeatReelectionListener( Election election )
+    public VerifyInstanceConfiguration( List<URI> members, Map<String, InstanceId> roles, Set<InstanceId> failed )
     {
-        this.election = election;
-    }
-
-    @Override
-    public void failed( InstanceId server )
-    {
-        // Suggest reelection for all roles of this node
-        election.demote( server );
-    }
-
-    @Override
-    public void alive( InstanceId server )
-    {
-        election.performRoleElections();
+        this.members = members;
+        this.roles = roles;
+        this.failed = failed;
     }
 }

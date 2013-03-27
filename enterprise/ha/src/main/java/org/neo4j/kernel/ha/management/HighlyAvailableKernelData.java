@@ -88,7 +88,7 @@ public class HighlyAvailableKernelData extends KernelData implements Lifecycle
         List<ClusterMemberInfo> clusterMemberInfos = new ArrayList<ClusterMemberInfo>(  );
         for ( ClusterMember clusterMember : memberInfo.getMembers() )
         {
-            ClusterMemberInfo clusterMemberInfo = new ClusterMemberInfo( clusterMember.getClusterUri().toString(),
+            ClusterMemberInfo clusterMemberInfo = new ClusterMemberInfo( clusterMember.getMemberId().toString(),
                     clusterMember.getHAUri() != null, clusterMember.isAlive(), clusterMember.getHARole(),
                     toArray( String.class, map( Functions.TO_STRING, clusterMember.getRoleURIs() ) ),
                     toArray( String.class, map( Functions.TO_STRING, clusterMember.getRoles() ) ) );

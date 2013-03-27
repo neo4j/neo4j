@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.cache;
 
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.kernel.ha.HaSettings.server_id;
+import static org.neo4j.cluster.ClusterSettings.server_id;
 
 import org.junit.After;
 import org.junit.Test;

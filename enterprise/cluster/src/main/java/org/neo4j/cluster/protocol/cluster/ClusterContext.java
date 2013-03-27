@@ -26,10 +26,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
 
+import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.LearnerContext;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.ProposerContext;
+import org.neo4j.cluster.protocol.heartbeat.HeartbeatContext;
 import org.neo4j.cluster.timeout.Timeouts;
 import org.neo4j.helpers.Listeners;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
 
@@ -40,25 +43,29 @@ import org.neo4j.kernel.logging.Logging;
  */
 public class ClusterContext
 {
-    URI me;
+    final InstanceId me;
     Iterable<ClusterListener> listeners = Listeners.newListeners();
-    ProposerContext proposerContext;
-    LearnerContext learnerContext;
+    final ProposerContext proposerContext;
+    final LearnerContext learnerContext;
+    HeartbeatContext heartbeatContext;
     public ClusterConfiguration configuration;
     public final Timeouts timeouts;
     private Executor executor;
     private Logging logging;
-    private List<URI> discoveredInstances = new ArrayList<URI>(  );
+    private List<ClusterMessage.ConfigurationRequestState> discoveredInstances = new ArrayList<ClusterMessage.ConfigurationRequestState>();
     private String joiningClusterName;
     private Iterable<URI> joiningInstances;
+    URI boundAt;
+    private boolean joinDenied;
 
-    public ClusterContext( ProposerContext proposerContext,
+    public ClusterContext( InstanceId me, ProposerContext proposerContext,
                            LearnerContext learnerContext,
                            ClusterConfiguration configuration,
                            Timeouts timeouts, Executor executor,
                            Logging logging
     )
     {
+        this.me = me;
         this.proposerContext = proposerContext;
         this.learnerContext = learnerContext;
         this.configuration = configuration;
@@ -81,15 +88,8 @@ public class ClusterContext
     // Implementation
     public void created( String name )
     {
-        configuration = new ClusterConfiguration( name, Collections.singleton( me ) );
-        Listeners.notifyListeners( listeners, executor, new Listeners.Notification<ClusterListener>()
-        {
-            @Override
-            public void notify( ClusterListener listener )
-            {
-                listener.enteredCluster( configuration );
-            }
-        } );
+        configuration = new ClusterConfiguration( name, Collections.singleton( boundAt ) );
+        joined();
     }
 
     public void joining( String name, Iterable<URI> instanceList )
@@ -97,9 +97,10 @@ public class ClusterContext
         joiningClusterName = name;
         joiningInstances = instanceList;
         discoveredInstances.clear();
+        joinDenied = false;
     }
 
-    public void acquiredConfiguration( final List<URI> memberList, final Map<String, URI> roles )
+    public void acquiredConfiguration( final Map<InstanceId, URI> memberList, final Map<String, InstanceId> roles )
     {
         configuration.setMembers( memberList );
         configuration.setRoles( roles );
@@ -107,7 +108,7 @@ public class ClusterContext
 
     public void joined()
     {
-        configuration.joined( me );
+        configuration.joined( me, boundAt );
         Listeners.notifyListeners( listeners, executor, new Listeners.Notification<ClusterListener>()
         {
             @Override
@@ -132,16 +133,11 @@ public class ClusterContext
         } );
     }
 
-    public void joined( final URI node )
+    public void joined( final InstanceId instanceId, final URI atURI )
     {
-        if ( configuration.getMembers().contains( node ) )
-        {
-            return; // Already know that this node is in - ignore
-        }
+        configuration.joined( instanceId, atURI );
 
-        configuration.joined( node );
-
-        if ( configuration.getMembers().contains( me ) )
+        if ( configuration.getMembers().containsKey( me ) )
         {
             // Make sure this node is in cluster before notifying of others joining and leaving
             Listeners.notifyListeners( listeners, executor, new Listeners.Notification<ClusterListener>()
@@ -149,7 +145,7 @@ public class ClusterContext
                 @Override
                 public void notify( ClusterListener listener )
                 {
-                    listener.joinedCluster( node );
+                    listener.joinedCluster( instanceId, atURI );
                 }
             } );
         }
@@ -160,7 +156,7 @@ public class ClusterContext
         }
     }
 
-    public void left( final URI node )
+    public void left( final InstanceId node )
     {
         configuration.left( node );
         Listeners.notifyListeners( listeners, executor, new Listeners.Notification<ClusterListener>()
@@ -173,25 +169,33 @@ public class ClusterContext
         } );
     }
 
-    public void elected( final String name, final URI node )
+    public void elected( final String roleName, final InstanceId instanceId )
     {
-        configuration.elected( name, node );
+        configuration.elected( roleName, instanceId );
         Listeners.notifyListeners( listeners, executor, new Listeners.Notification<ClusterListener>()
         {
             @Override
             public void notify( ClusterListener listener )
             {
-                listener.elected( name, node );
+                listener.elected( roleName, instanceId, configuration.getUriForId( instanceId ) );
             }
         } );
     }
 
-    public synchronized void setMe( URI me )
+    public void unelected( final String roleName, final InstanceId instanceId )
     {
-        this.me = me;
+        configuration.unelected( roleName );
+        Listeners.notifyListeners( listeners, executor, new Listeners.Notification<ClusterListener>()
+        {
+            @Override
+            public void notify( ClusterListener listener )
+            {
+                listener.unelected( roleName, instanceId, configuration.getUriForId( instanceId ) );
+            }
+        } );
     }
 
-    public URI getMe()
+    public InstanceId getMyId()
     {
         return me;
     }
@@ -201,7 +205,7 @@ public class ClusterContext
         return configuration;
     }
 
-    public synchronized boolean isMe( URI server )
+    public synchronized boolean isMe( InstanceId server )
     {
         return me.equals( server );
     }
@@ -213,7 +217,7 @@ public class ClusterContext
 
     public boolean isInCluster()
     {
-        return !configuration.getMembers().isEmpty();
+        return Iterables.count( configuration.getMemberURIs() ) != 0;
     }
 
     public Iterable<URI> getJoiningInstances()
@@ -221,7 +225,7 @@ public class ClusterContext
         return joiningInstances;
     }
 
-    public List<URI> getDiscoveredInstances()
+    public List<ClusterMessage.ConfigurationRequestState> getDiscoveredInstances()
     {
         return discoveredInstances;
     }
@@ -234,6 +238,31 @@ public class ClusterContext
     @Override
     public String toString()
     {
-        return "Me: " + me + " Config:" + configuration;
+        return "Me: " + me + " Bound at: " + boundAt + " Config:" + configuration;
+    }
+
+    public URI boundAt()
+    {
+        return boundAt;
+    }
+
+    public void setBoundAt( URI boundAt )
+    {
+        this.boundAt = boundAt;
+    }
+
+    public void setHeartbeatContext( HeartbeatContext heartbeatContext )
+    {
+        this.heartbeatContext = heartbeatContext;
+    }
+
+    public void joinDenied()
+    {
+        this.joinDenied = true;
+    }
+
+    public boolean hasJoinBeenDenied()
+    {
+        return joinDenied;
     }
 }

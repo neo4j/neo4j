@@ -86,9 +86,8 @@ public class MultiPaxosServerFactory
     }
 
     @Override
-    public ProtocolServer newProtocolServer( TimeoutStrategy timeoutStrategy, MessageSource input,
-                                             MessageSender output,
-                                             AcceptorInstanceStore acceptorInstanceStore,
+    public ProtocolServer newProtocolServer( InstanceId me, TimeoutStrategy timeoutStrategy, MessageSource input,
+                                             MessageSender output, AcceptorInstanceStore acceptorInstanceStore,
                                              ElectionCredentialsProvider electionCredentialsProvider,
                                              Executor stateMachineExecutor )
     {
@@ -105,10 +104,12 @@ public class MultiPaxosServerFactory
         AcceptorContext acceptorContext = new AcceptorContext( logging, acceptorInstanceStore );
         LearnerContext learnerContext = new LearnerContext(acceptorInstanceStore);
         ProposerContext proposerContext = new ProposerContext();
-        final ClusterContext clusterContext = new ClusterContext( proposerContext, learnerContext,
-                new ClusterConfiguration( initialConfig.getName(), initialConfig.getMembers() ), timeouts, executor,
+
+        final ClusterContext clusterContext = new ClusterContext( me, proposerContext, learnerContext,
+                new ClusterConfiguration( initialConfig.getName(), initialConfig.getMemberURIs() ), timeouts, executor,
                 logging );
         final HeartbeatContext heartbeatContext = new HeartbeatContext( clusterContext, learnerContext, executor );
+        clusterContext.setHeartbeatContext( heartbeatContext );
         final MultiPaxosContext context = new MultiPaxosContext( clusterContext, proposerContext, learnerContext,
                 heartbeatContext, timeouts );
         ElectionContext electionContext = new ElectionContext( Iterables.<ElectionRole,ElectionRole>iterable( new ElectionRole(
@@ -133,20 +134,21 @@ public class MultiPaxosServerFactory
         stateMachines.addStateMachine( new StateMachine( clusterContext, ClusterMessage.class,
                 ClusterState.start ) );
 
-        final ProtocolServer server = new ProtocolServer( stateMachines, logging );
+        final ProtocolServer server = new ProtocolServer( me, stateMachines, logging );
 
         server.addBindingListener( new BindingListener()
         {
             @Override
             public void listeningAt( URI me )
             {
-                clusterContext.setMe( me );
+                clusterContext.setBoundAt( me );
             }
         } );
 
         stateMachines.addMessageProcessor( new HeartbeatRefreshProcessor( stateMachines.getOutgoing
-                () ) );
-        input.addMessageProcessor( new HeartbeatIAmAliveProcessor( stateMachines.getOutgoing() ) );
+                (), clusterContext ) );
+        input.addMessageProcessor( new HeartbeatIAmAliveProcessor( stateMachines.getOutgoing(),
+                clusterContext ) );
 
         server.newClient( Cluster.class ).addClusterListener( new HeartbeatJoinListener( stateMachines
                 .getOutgoing() ) );
@@ -166,12 +168,12 @@ public class MultiPaxosServerFactory
                         internal( ElectionMessage.created ),
                         internal( SnapshotMessage.join ) )
 
-                .rule( ClusterState.acquiringConfiguration, ClusterMessage.configurationResponse, ClusterState.joining,
+                .rule( ClusterState.discovery, ClusterMessage.configurationResponse, ClusterState.joining,
                         internal( AcceptorMessage.join ),
                         internal( LearnerMessage.join ),
                         internal( AtomicBroadcastMessage.join ) )
 
-                .rule( ClusterState.acquiringConfiguration, ClusterMessage.configurationResponse, ClusterState.entered,
+                .rule( ClusterState.discovery, ClusterMessage.configurationResponse, ClusterState.entered,
                         internal( AtomicBroadcastMessage.entered ),
                         internal( ProposerMessage.join ),
                         internal( AcceptorMessage.join ),

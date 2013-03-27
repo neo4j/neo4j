@@ -29,6 +29,7 @@ import java.util.concurrent.CountDownLatch;
 import org.hamcrest.CoreMatchers;
 import org.junit.Assert;
 import org.junit.Test;
+import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.protocol.cluster.ClusterListener;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatListener;
@@ -60,13 +61,13 @@ public class TestSlaveOnlyCluster
             HeartbeatListener masterDownListener = new HeartbeatListener()
             {
                 @Override
-                public void failed( URI server )
+                public void failed( InstanceId server )
                 {
                     failedLatch.countDown();
                 }
 
                 @Override
-                public void alive( URI server )
+                public void alive( InstanceId server )
                 {
                 }
             };
@@ -80,7 +81,7 @@ public class TestSlaveOnlyCluster
                     highlyAvailableGraphDatabase.getDependencyResolver().resolveDependency( ClusterClient.class ).addClusterListener( new ClusterListener.Adapter()
                     {
                         @Override
-                        public void elected( String role, URI electedMember )
+                        public void elected( String role, InstanceId electedMember, URI availableAtUri )
                         {
                             electedLatch.countDown();
                         }
@@ -122,7 +123,6 @@ public class TestSlaveOnlyCluster
                 TargetDirectory.forTest( getClass() ).directory( "testCluster", true ), MapUtil.stringMap(),
                 MapUtil.<Integer, Map<String, String>>genericMap( 1, MapUtil.stringMap( HaSettings.slave_only.name(), "true" ),
                                        2, MapUtil.stringMap( HaSettings.slave_only.name(), "true" )) );
-
 
         try
         {

@@ -19,6 +19,7 @@
  */
 package org.neo4j.cluster.com.message;
 
+import java.net.URI;
 import java.util.Map;
 
 import org.junit.Test;
@@ -49,17 +50,14 @@ public class NetworkSendReceiveTest
         LifeSupport life = new LifeSupport();
 
         Server server1;
-        {
-            life.add( server1 = new Server( MapUtil.stringMap( ClusterSettings.cluster_server.name(),
-                    "localhost:1234" ) ) );
-        }
-        {
-            life.add( new Server( MapUtil.stringMap( ClusterSettings.cluster_server.name(), "localhost:1235" ) ) );
-        }
+        life.add( server1 = new Server( MapUtil.stringMap( ClusterSettings.cluster_server.name(),
+                    "localhost:1234", ClusterSettings.server_id.name(), "1" ) ) );
+        life.add( new Server( MapUtil.stringMap( ClusterSettings.cluster_server.name(), "localhost:1235",
+                ClusterSettings.server_id.name(), "2") ) );
 
         life.start();
 
-        server1.process( Message.to( TestMessage.helloWorld, "neo4j://127.0.0.1:1235", "Hello World" ) );
+        server1.process( Message.to( TestMessage.helloWorld, URI.create( "neo4j://127.0.0.1:1235" ), "Hello World" ) );
 
         try
         {
@@ -107,9 +105,10 @@ public class NetworkSendReceiveTest
                     node.addMessageProcessor( new MessageProcessor()
                     {
                         @Override
-                        public void process( Message<? extends MessageType> message )
+                        public boolean process( Message<? extends MessageType> message )
                         {
                             System.out.println( message );
+                            return true;
                         }
                     } );
                 }
@@ -140,9 +139,10 @@ public class NetworkSendReceiveTest
         }
 
         @Override
-        public void process( Message<? extends MessageType> message )
+        public boolean process( Message<? extends MessageType> message )
         {
             node.process( message );
+            return true;
         }
     }
 }

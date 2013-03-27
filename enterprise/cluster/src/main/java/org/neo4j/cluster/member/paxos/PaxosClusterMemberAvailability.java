@@ -22,6 +22,7 @@ package org.neo4j.cluster.member.paxos;
 import java.net.URI;
 
 import org.neo4j.cluster.BindingListener;
+import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.com.BindingNotifier;
 import org.neo4j.cluster.member.ClusterMemberAvailability;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcast;
@@ -39,12 +40,15 @@ public class PaxosClusterMemberAvailability implements ClusterMemberAvailability
     private URI serverClusterId;
     private StringLogger logger;
     protected AtomicBroadcastSerializer serializer;
+    private final InstanceId myId;
     private BindingNotifier binding;
     private AtomicBroadcast atomicBroadcast;
     private BindingListener bindingListener;
 
-    public PaxosClusterMemberAvailability( BindingNotifier binding, AtomicBroadcast atomicBroadcast, Logging logging )
+    public PaxosClusterMemberAvailability( InstanceId myId, BindingNotifier binding, AtomicBroadcast atomicBroadcast,
+                                           Logging logging )
     {
+        this.myId = myId;
         this.binding = binding;
         this.atomicBroadcast = atomicBroadcast;
         this.logger = logging.getLogger( getClass() );
@@ -93,7 +97,7 @@ public class PaxosClusterMemberAvailability implements ClusterMemberAvailability
     {
         try
         {
-            Payload payload = serializer.broadcast( new MemberIsAvailable( role, serverClusterId, roleUri ) );
+            Payload payload = serializer.broadcast( new MemberIsAvailable( role, myId, serverClusterId, roleUri ) );
             serializer.receive( payload );
             atomicBroadcast.broadcast( payload );
         }
@@ -108,7 +112,7 @@ public class PaxosClusterMemberAvailability implements ClusterMemberAvailability
     {
         try
         {
-            Payload payload = serializer.broadcast( new MemberIsUnavailable( role, serverClusterId ) );
+            Payload payload = serializer.broadcast( new MemberIsUnavailable( role, myId, serverClusterId ) );
             serializer.receive( payload );
             atomicBroadcast.broadcast( payload );
         }

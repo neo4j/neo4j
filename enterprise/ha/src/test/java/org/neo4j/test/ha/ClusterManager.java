@@ -250,7 +250,7 @@ public class ClusterManager
             for ( HighlyAvailableGraphDatabase member : getAllMembers() )
                 result.append( result.length() > 0 ? "," : "" ).append( ":" +
                         member.getDependencyResolver().resolveDependency(
-                                ClusterClient.class ).getServerUri().getPort() );
+                                ClusterClient.class ).getClusterServer().getPort() );
             return result.toString();
         }
         
@@ -334,7 +334,7 @@ public class ClusterManager
         public RepairKit shutdown( HighlyAvailableGraphDatabase db )
         {
             assertMember( db );
-            int serverId = db.getDependencyResolver().resolveDependency( Config.class ).get( HaSettings.server_id );
+            int serverId = db.getDependencyResolver().resolveDependency( Config.class ).get( ClusterSettings.server_id );
             members.remove( serverId );
             life.remove( db );
             db.shutdown();
@@ -369,7 +369,7 @@ public class ClusterManager
             NetworkInstance network = instance( NetworkInstance.class, clusterClientLife.getLifecycleInstances() );
             network.stop();
             
-            int serverId = db.getDependencyResolver().resolveDependency( Config.class ).get( HaSettings.server_id );
+            int serverId = db.getDependencyResolver().resolveDependency( Config.class ).get( ClusterSettings.server_id );
             //db.shutdown();
             return new StartNetworkAgainKit( db, network );
         }
@@ -388,7 +388,7 @@ public class ClusterManager
                                 "server" + serverId ).getAbsolutePath() ).
                                 setConfig( ClusterSettings.cluster_name, name ).
                                 setConfig( ClusterSettings.initial_hosts, initialHosts.toString() ).
-                                setConfig( HaSettings.server_id, serverId + "" ).
+                                setConfig( ClusterSettings.server_id, serverId + "" ).
                                 setConfig( ClusterSettings.cluster_server, member.getHost() ).
                                 setConfig( HaSettings.ha_server, ":" + haPort ).
                                 setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE ).
@@ -423,7 +423,8 @@ public class ClusterManager
                 Map<String, String> config = MapUtil.stringMap(
                         ClusterSettings.cluster_name.name(), name,
                         ClusterSettings.initial_hosts.name(), initialHosts.toString(),
-                        ClusterSettings.cluster_server.name(), member.getHost() );
+                        ClusterSettings.server_id.name(), serverId + "",
+                                ClusterSettings.cluster_server.name(), member.getHost() );
                 Config config1 = new Config( config );
                 Logging clientLogging =life.add(new LogbackService( config1, (LoggerContext) StaticLoggerBinder.getSingleton().getLoggerFactory() ));
                 life.add( new ClusterClient( ClusterClient.adapt( config1 ),
@@ -488,7 +489,7 @@ public class ClusterManager
         public int getServerId( HighlyAvailableGraphDatabase member )
         {
             assertMember( member );
-            return member.getConfig().get( HaSettings.server_id );
+            return member.getConfig().get( ClusterSettings.server_id );
         }
 
         public File getStoreDir( HighlyAvailableGraphDatabase member )

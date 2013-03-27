@@ -34,6 +34,7 @@ import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerFactory;
 
 import org.neo4j.cluster.BindingListener;
+import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.ProtocolServer;
 import org.neo4j.cluster.protocol.cluster.Cluster;
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
@@ -205,6 +206,10 @@ public class ClusterJoin
                 catch ( ExecutionException e )
                 {
                     logger.debug( "Could not join cluster " + this.config.getClusterName() );
+                    if ( e.getCause() instanceof IllegalStateException )
+                    {
+                        throw ((IllegalStateException) e.getCause());
+                    }
                 }
 
                 if ( config.isAllowedToCreateCluster() )
@@ -239,11 +244,11 @@ public class ClusterJoin
         }
 
         @Override
-        public void joinedCluster( URI member )
+        public void joinedCluster( InstanceId member, URI uri )
         {
             for ( HostnamePort host : initialHosts )
             {
-                if ( host.matches( member ) )
+                if ( host.matches( uri ) )
                 {
                     return;
                 }

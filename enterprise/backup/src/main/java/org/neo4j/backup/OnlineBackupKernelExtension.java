@@ -21,6 +21,7 @@ package org.neo4j.backup;
 
 import java.net.URI;
 
+import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.member.ClusterMemberAvailability;
 import org.neo4j.cluster.member.ClusterMemberEvents;
@@ -116,20 +117,14 @@ public class OnlineBackupKernelExtension implements Lifecycle
     {
     }
 
-    private class StartBindingListener implements ClusterMemberListener
+    private class StartBindingListener extends ClusterMemberListener.Adapter
     {
 
-
         @Override
-        public void masterIsElected( URI masterUri )
-        {
-        }
-
-        @Override
-        public void memberIsAvailable( String role, URI instanceClusterUri, URI roleUri )
+        public void memberIsAvailable( String role, InstanceId available, URI availableAtUri )
         {
             if ( graphDatabaseAPI.getDependencyResolver().resolveDependency( ClusterClient.class ).
-                    getServerUri().equals( instanceClusterUri ) && "master".equals( role ) )
+                    getServerId().equals( available ) && "master".equals( role ) )
             {
                 // It was me and i am master - yey!
                 {
@@ -148,10 +143,10 @@ public class OnlineBackupKernelExtension implements Lifecycle
         }
 
         @Override
-        public void memberIsUnavailable( String role, URI instanceClusterUri )
+        public void memberIsUnavailable( String role, InstanceId unavailableId )
         {
             if ( graphDatabaseAPI.getDependencyResolver().resolveDependency( ClusterClient.class ).
-                    getServerUri().equals( instanceClusterUri ) && "master".equals( role ) )
+                    getServerId().equals( unavailableId ) && "master".equals( role ) )
             {
                 // It was me and i am master - yey!
                 {

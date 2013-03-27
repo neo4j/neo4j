@@ -63,27 +63,36 @@ public enum AcceptorState
                     {
                         case prepare:
                         {
-                            AcceptorMessage.PrepareState prepareState = message.getPayload();
+                            AcceptorMessage.PrepareState incomingState = message.getPayload();
                             InstanceId instanceId = new InstanceId( message );
-                            AcceptorInstance instance = context.getAcceptorInstance( instanceId );
 
-                            if ( prepareState.getBallot() >= instance.getBallot() )
+                            // This creates the instance if not already present
+                            AcceptorInstance localState = context.getAcceptorInstance( instanceId );
+
+                            /*
+                             * If the incoming messages has a ballot greater than the local one, send back a promise.
+                             * This is always true for newly seen instances, the local state has ballot initialized
+                             * to -1
+                             */
+                            if ( incomingState.getBallot() >= localState.getBallot() )
                             {
-                                context.promise( instance, prepareState.getBallot() );
+                                context.promise( localState, incomingState.getBallot() );
 
                                 outgoing.offer( message.copyHeadersTo( Message.respond( ProposerMessage.promise,
-                                        message,
-                                        new ProposerMessage.PromiseState( prepareState.getBallot(),
-                                                instance.getValue() ) ), InstanceId.INSTANCE ) );
+                                        message, new ProposerMessage.PromiseState( incomingState.getBallot(),
+                                                localState.getValue() ) ), InstanceId.INSTANCE ) );
                             }
                             else
                             {
                                 // Optimization - explicit reject
-                                context.getLogger( AcceptorState.class ).debug( "Reject " + instanceId
-                                        + " ballot:" + instance.getBallot() );
+                                context.getLogger( AcceptorState.class ).debug("Rejecting prepare from "
+                                        + message.getHeader( Message.FROM ) + " for instance "
+                                        + message.getHeader( InstanceId.INSTANCE ) + " and ballot "
+                                        + incomingState.getBallot() + " (i had a prepare state ballot = "
+                                        + localState.getBallot() + ")" );
                                 outgoing.offer( message.copyHeadersTo( Message.respond( ProposerMessage
                                         .rejectPrepare, message,
-                                        new ProposerMessage.RejectPrepare( instance.getBallot() ) ),
+                                        new ProposerMessage.RejectPrepare( localState.getBallot() ) ),
                                         InstanceId.INSTANCE ) );
                             }
                             break;

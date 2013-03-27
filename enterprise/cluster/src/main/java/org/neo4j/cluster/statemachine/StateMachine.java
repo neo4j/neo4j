@@ -61,8 +61,7 @@ public class StateMachine
         return context;
     }
 
-    public void addStateTransitionListener( StateTransitionListener listener
-    )
+    public void addStateTransitionListener( StateTransitionListener listener )
     {
         List<StateTransitionListener> newlisteners = new ArrayList<StateTransitionListener>( listeners );
         newlisteners.add( listener );

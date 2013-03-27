@@ -32,8 +32,8 @@ import org.neo4j.cluster.com.message.Message;
 public class ProposerContext
 {
     // Proposer/coordinator state
-    Deque<Message> pendingValues = new LinkedList<Message>();
-    Map<InstanceId, Message> bookedInstances = new HashMap<InstanceId, Message>();
+    final Deque<Message> pendingValues = new LinkedList<Message>();
+    final Map<InstanceId, Message> bookedInstances = new HashMap<InstanceId, Message>();
 
     public long nextInstanceId = 0;
 

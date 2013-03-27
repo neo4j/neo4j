@@ -17,67 +17,80 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cluster.member.paxos;
+package org.neo4j.cluster;
 
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.net.URI;
 
-import org.neo4j.cluster.InstanceId;
-
-/**
- * This message is broadcast when a member of the cluster declares that
- * it is not ready to serve a particular role for the cluster.
- */
-public class MemberIsUnavailable
-        implements Externalizable
+public class InstanceId implements Externalizable, Comparable<InstanceId>
 {
-    private String role;
-    private InstanceId instanceId;
-    private URI clusterUri;
+    private int serverId;
 
-    public MemberIsUnavailable()
+    public InstanceId()
+    {}
+
+    public InstanceId( int serverId )
     {
+        this.serverId = serverId;
     }
 
-    public MemberIsUnavailable( String role, InstanceId instanceId, URI clusterUri)
+    @Override
+    public int compareTo( InstanceId o )
     {
-        this.role = role;
-        this.instanceId = instanceId;
-        this.clusterUri = clusterUri;
+        return serverId - o.serverId;
     }
 
-    public String getRole()
+    @Override
+    public int hashCode()
     {
-        return role;
+        return serverId;
     }
 
-    public InstanceId getInstanceId()
+    @Override
+    public String toString()
     {
-        return instanceId;
+        return Integer.toString( serverId );
     }
 
-    public URI getClusterUri()
+    @Override
+    public boolean equals( Object o )
     {
-        return clusterUri;
+        if ( this == o )
+        {
+            return true;
+        }
+
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+
+        InstanceId instanceId1 = (InstanceId) o;
+
+        if ( serverId != instanceId1.serverId )
+        {
+            return false;
+        }
+
+        return true;
     }
 
     @Override
     public void writeExternal( ObjectOutput out ) throws IOException
     {
-        out.writeUTF( role );
-        out.writeObject( instanceId );
-        out.writeUTF( clusterUri.toString() );
+        out.writeInt( serverId );
     }
 
     @Override
     public void readExternal( ObjectInput in ) throws IOException, ClassNotFoundException
     {
-        role = in.readUTF();
-        instanceId = (InstanceId) in.readObject();
-        clusterUri = URI.create( in.readUTF() );
+        serverId = in.readInt();
     }
 
+    public int toIntegerIndex()
+    {
+        return serverId;
+    }
 }

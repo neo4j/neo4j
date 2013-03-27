@@ -25,6 +25,7 @@ import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
 
+import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
 import org.neo4j.com.ServerUtil;
@@ -69,7 +70,7 @@ public class SlaveStoreWriter
 
         // Get the response, deserialise to disk
         Response response = master.copyStore( new RequestContext( 0,
-                config.get( HaSettings.server_id ), 0, new RequestContext.Tx[0], 0,
+                config.get( ClusterSettings.server_id ), 0, new RequestContext.Tx[0], 0,
                 0 ), new ToFileStoreWriter( tempStore ) );
         long highestLogVersion = XaLogicalLog.getHighestHistoryLogVersion( fileSystem,
                 tempStore, LOGICAL_LOG_DEFAULT_NAME );

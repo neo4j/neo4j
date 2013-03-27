@@ -32,6 +32,7 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.cluster.BindingListener;
 import org.neo4j.cluster.ClusterMonitor;
 import org.neo4j.cluster.ClusterSettings;
+import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.StateMachines;
 import org.neo4j.cluster.ExecutorLifecycleAdapter;
 import org.neo4j.cluster.MultiPaxosServerFactory;
@@ -77,6 +78,8 @@ public class ClusterClient extends LifecycleAdapter
 {
     public interface Configuration
     {
+        int getServerId();
+
         HostnamePort getAddress();
 
         List<HostnamePort> getInitialHosts();
@@ -115,6 +118,12 @@ public class ClusterClient extends LifecycleAdapter
     {
         return new Configuration()
         {
+            @Override
+            public int getServerId()
+            {
+                return config.get( ClusterSettings.server_id );
+            }
+
             @Override
             public List<HostnamePort> getInitialHosts()
             {
@@ -239,7 +248,8 @@ public class ClusterClient extends LifecycleAdapter
                 .timeout( ClusterMessage.leaveTimedout, config.leaveTimeout() )
                 .timeout( ElectionMessage.electionTimeout, config.electionTimeout() );
 
-        MultiPaxosServerFactory protocolServerFactory = new MultiPaxosServerFactory( new ClusterConfiguration( config
+        MultiPaxosServerFactory protocolServerFactory = new MultiPaxosServerFactory(
+                new ClusterConfiguration( config
                 .getClusterName() ), logging );
 
         InMemoryAcceptorInstanceStore acceptorInstanceStore = new InMemoryAcceptorInstanceStore();
@@ -268,7 +278,8 @@ public class ClusterClient extends LifecycleAdapter
             }
         } );
 
-        server = protocolServerFactory.newProtocolServer( timeoutStrategy, networkNodeTCP, networkNodeTCP,
+        server = protocolServerFactory.newProtocolServer( new InstanceId( config.getServerId() ), timeoutStrategy,
+                networkNodeTCP, networkNodeTCP,
                 acceptorInstanceStore, electionCredentialsProvider, stateMachineExecutor );
 
         networkNodeTCP.addNetworkChannelsListener( new NetworkInstance.NetworkChannelsListener()
@@ -445,7 +456,7 @@ public class ClusterClient extends LifecycleAdapter
     }
 
     @Override
-    public void demote( URI node )
+    public void demote( InstanceId node )
     {
         election.demote( node );
     }
@@ -457,7 +468,7 @@ public class ClusterClient extends LifecycleAdapter
     }
 
     @Override
-    public void promote( URI node, String role )
+    public void promote( InstanceId node, String role )
     {
         election.promote( node, role );
     }
@@ -503,8 +514,13 @@ public class ClusterClient extends LifecycleAdapter
         }
     }
 
-    public URI getServerUri()
+    public InstanceId getServerId()
     {
         return server.getServerId();
+    }
+
+    public URI getClusterServer()
+    {
+        return server.boundAt();
     }
 }

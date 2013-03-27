@@ -21,6 +21,7 @@ package org.neo4j.cluster.protocol.heartbeat;
 
 import java.net.URI;
 
+import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageHolder;
 import org.neo4j.cluster.protocol.cluster.ClusterListener;
@@ -30,7 +31,7 @@ import org.neo4j.cluster.protocol.cluster.ClusterListener;
  */
 public class HeartbeatJoinListener extends ClusterListener.Adapter
 {
-    private MessageHolder outgoing;
+    private final MessageHolder outgoing;
 
     public HeartbeatJoinListener( MessageHolder outgoing )
     {
@@ -38,7 +39,7 @@ public class HeartbeatJoinListener extends ClusterListener.Adapter
     }
 
     @Override
-    public void joinedCluster( URI member )
+    public void joinedCluster( InstanceId member, URI atUri )
     {
         outgoing.offer( Message.internal( HeartbeatMessage.reset_send_heartbeat, member ) );
     }

@@ -24,5 +24,5 @@ package org.neo4j.cluster.protocol.election;
  */
 public interface ElectionCredentialsProvider
 {
-    ElectionCredentials getCredentials(String role);
+    ElectionCredentials getCredentials( String role );
 }

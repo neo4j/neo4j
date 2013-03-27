@@ -43,7 +43,8 @@ public class TestClusterClientPadding
     @Before
     public void before() throws Throwable
     {
-        clusterManager = life.add( new ClusterManager( clusterWithAdditionalClients( 2, 1 ), dir.directory( "dbs", true ), stringMap() ) );
+        clusterManager = life.add( new ClusterManager( clusterWithAdditionalClients( 2, 1 ),
+                dir.directory( "dbs", true ), stringMap() ) );
         
         life.start();
         cluster = clusterManager.getDefaultCluster();

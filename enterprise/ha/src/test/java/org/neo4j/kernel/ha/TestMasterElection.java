@@ -30,6 +30,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.cluster.ClusterSettings;
+import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.member.ClusterMemberEvents;
 import org.neo4j.cluster.member.ClusterMemberListener;
 import org.neo4j.consistency.checking.incremental.intercept.VerifyingTransactionInterceptorProvider;
@@ -98,7 +99,7 @@ public class TestMasterElection
         events.addClusterMemberListener( new ClusterMemberListener.Adapter()
         {
             @Override
-            public void memberIsAvailable( String role, URI instanceClusterUri, URI roleUri )
+            public void memberIsAvailable( String role, InstanceId instanceClusterUri, URI roleUri )
             {
                 if ( role.equals( HighAvailabilityModeSwitcher.MASTER ) )
                 {
@@ -115,7 +116,7 @@ public class TestMasterElection
                 .newHighlyAvailableDatabaseBuilder( path( serverId ) )
                 .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:5001,127.0.0.1:5002,127.0.0.1:5003" )
                 .setConfig( ClusterSettings.cluster_server, "127.0.0.1:" + (5001 + serverId) )
-                .setConfig( HaSettings.server_id, "" + serverId )
+                .setConfig( ClusterSettings.server_id, "" + serverId )
                 .setConfig( HaSettings.ha_server, ":" + (8001 + serverId) )
                 .setConfig( HaSettings.tx_push_factor, "0" )
                 .setConfig( GraphDatabaseSettings.intercept_committing_transactions, "true" )

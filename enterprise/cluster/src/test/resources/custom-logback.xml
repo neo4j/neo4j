@@ -20,18 +20,17 @@
 
 -->
 <included>
-<!--
+
   <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
     <encoder>
       <pattern>%property{host} %-5level %25c{0}: %message%n</pattern>
     </encoder>
   </appender>
--->
 
   <!--
     Debug Paxos state machines
     -->
-    <logger name="org.neo4j.cluster.protocol.atomicbroadcast.multipaxos" level="warn">
+    <logger name="org.neo4j.cluster.protocol" level="debug">
     </logger>
 
   <!--
@@ -44,12 +43,9 @@
   <logger name="org.neo4j.kernel.info.DiagnosticsManager" level="warn">
   </logger>
 
-
-<!--
   <root level="debug">
     <appender-ref ref="CONSOLE"/>
   </root>
--->
 
   <logger name="org.neo4j" level="warn" additive="true">
   </logger>

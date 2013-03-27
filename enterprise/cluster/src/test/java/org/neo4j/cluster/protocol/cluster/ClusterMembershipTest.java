@@ -142,26 +142,25 @@ public class ClusterMembershipTest
         );
     }
 
-    @Ignore
+
     @Test
     public void oneNodeCreatesClusterAndThenAnotherJoinsAsFirstLeaves()
             throws URISyntaxException, ExecutionException, TimeoutException, InterruptedException
     {
         testCluster( 2, DEFAULT_NETWORK(), new ClusterTestScriptDSL().
-                rounds( 810 ).
+                rounds( 1000 ).
                 join( 0, 1 ).
                 join( 10, 2 ).
                 leave( 20, 1 )
         );
     }
 
-    @Ignore
     @Test
     public void oneNodeCreatesClusterAndThenAnotherJoinsAsFirstLeaves2()
             throws URISyntaxException, ExecutionException, TimeoutException, InterruptedException
     {
         testCluster( 2, DEFAULT_NETWORK(), new ClusterTestScriptDSL().
-                rounds( 100 ).
+                rounds( 400 ).
                 join( 0, 1 ).
                 join( 10, 2 ).
                 leave( 60, 1 )
@@ -173,7 +172,7 @@ public class ClusterMembershipTest
             throws URISyntaxException, ExecutionException, TimeoutException, InterruptedException
     {
         testCluster( 4, DEFAULT_NETWORK(), new ClusterTestScriptDSL().
-                rounds( 1000 ).
+                rounds( 200 ).
                 join( 100, 1 ).
                 join( 100, 2 ).
                 join( 100, 3 ).
@@ -189,7 +188,7 @@ public class ClusterMembershipTest
             throws URISyntaxException, ExecutionException, TimeoutException, InterruptedException
     {
         testCluster( 5, DEFAULT_NETWORK(), new ClusterTestScriptDSL().
-                rounds( 1000 ).
+                rounds( 200 ).
                 join( 100, 1 ).
                 join( 100, 2 ).
                 join( 100, 3 ).
@@ -206,10 +205,10 @@ public class ClusterMembershipTest
             throws URISyntaxException, ExecutionException, TimeoutException, InterruptedException
     {
         testCluster( 3, DEFAULT_NETWORK(), new ClusterTestScriptDSL().
-                rounds( 1000 ).
+                rounds( 400 ).
                 join( 0, 1, 2, 3 ).
                 join( 0, 2, 1, 3 ).
                 join( 0, 3, 1, 2 ).
-                message( 3300, "*** Cluster formed" ));
+                message( 390, "*** Cluster formed" ));
     }
 }

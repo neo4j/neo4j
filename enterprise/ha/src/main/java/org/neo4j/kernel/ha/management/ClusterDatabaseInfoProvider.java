@@ -58,7 +58,7 @@ public class ClusterDatabaseInfoProvider
             serverId = HighAvailabilityModeSwitcher.getServerId( haUri );
         }
 
-        return new ClusterDatabaseInfo( new ClusterMemberInfo( self.getClusterUri().toString(), self.getHAUri() != null,
+        return new ClusterDatabaseInfo( new ClusterMemberInfo( self.getMemberId().toString(), self.getHAUri() != null,
                 true, self.getHARole(),
                 Iterables.toArray(String.class, Iterables.map( Functions.TO_STRING, self.getRoleURIs() ) ),
                 Iterables.toArray(String.class, Iterables.map( Functions.TO_STRING, self.getRoles() ) ) ),

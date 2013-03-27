@@ -44,7 +44,8 @@ public class HighlyAvailableGraphDatabaseFactory
             {
                 config.put( "ephemeral", "false" );
 
-                return new HighlyAvailableGraphDatabase( path, config, indexProviders, kernelExtensions, cacheProviders, txInterceptorProviders );
+                return new HighlyAvailableGraphDatabase( path, config, indexProviders, kernelExtensions, cacheProviders,
+                        txInterceptorProviders );
             }
         });
     }

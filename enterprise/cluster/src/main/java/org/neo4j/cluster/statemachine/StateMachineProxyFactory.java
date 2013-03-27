@@ -125,7 +125,7 @@ public class StateMachineProxyFactory
     }
 
     @Override
-    public void process( Message message )
+    public boolean process( Message message )
     {
         if ( !responseFutureMap.isEmpty() )
         {
@@ -142,6 +142,7 @@ public class StateMachineProxyFactory
                 }
             }
         }
+        return true;
     }
 
     private StateMachine getStateMachine( Class<?> proxyInterface )

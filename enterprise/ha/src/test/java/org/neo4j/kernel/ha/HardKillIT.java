@@ -177,7 +177,7 @@ public class HardKillIT
                 .newHighlyAvailableDatabaseBuilder( path( serverId ) )
                 .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:5002,127.0.0.1:5003,127.0.0.1:5004" )
                 .setConfig( ClusterSettings.cluster_server, "127.0.0.1:" + (5001 + serverId) )
-                .setConfig( HaSettings.server_id, "" + serverId )
+                .setConfig( ClusterSettings.server_id, "" + serverId )
                 .setConfig( HaSettings.ha_server, ":" + (8001 + serverId) )
                 .setConfig( HaSettings.tx_push_factor, "0" );
         HighlyAvailableGraphDatabase db = (HighlyAvailableGraphDatabase) builder.newGraphDatabase();

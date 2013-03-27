@@ -22,13 +22,13 @@ package org.neo4j.cluster.protocol.election;
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.map;
 
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.protocol.cluster.ClusterContext;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatContext;
 import org.neo4j.helpers.Function;
@@ -65,7 +65,7 @@ public class ElectionContext
         for ( ElectionRole role : roles )
         {
             // Elect myself for all roles
-            clusterContext.elected( role.getName(), clusterContext.getMe() );
+            clusterContext.elected( role.getName(), clusterContext.getMyId() );
         }
     }
 
@@ -78,16 +78,16 @@ public class ElectionContext
      * Removes all roles from the provided node. This is expected to be the first call when receiving a demote
      * message for a node, since it is the way to ensure that election will happen for each role that node had
      */
-    public void nodeFailed( URI node )
+    public void nodeFailed( InstanceId node )
     {
         Iterable<String> rolesToDemote = getRoles( node );
         for ( String role : rolesToDemote )
         {
-            clusterContext.getConfiguration().getRoles().remove( role );
+            clusterContext.getConfiguration().removeElected( role );
         }
     }
 
-    public Iterable<String> getRoles( URI server )
+    public Iterable<String> getRoles( InstanceId server )
     {
         return clusterContext.getConfiguration().getRolesOf( server );
     }
@@ -112,12 +112,12 @@ public class ElectionContext
         return elections.containsKey( role );
     }
 
-    public void startDemotionProcess( String role, final URI demoteNode )
+    public void startDemotionProcess( String role, final InstanceId demoteNode )
     {
         elections.put( role, new Election( new WinnerStrategy()
         {
             @Override
-            public URI pickWinner( List<Vote> voteList )
+            public InstanceId pickWinner( List<Vote> voteList )
             {
 
                 // Remove blank votes
@@ -156,7 +156,7 @@ public class ElectionContext
         elections.put( role, new Election( new WinnerStrategy()
         {
             @Override
-            public URI pickWinner( List<Vote> voteList )
+            public InstanceId pickWinner( List<Vote> voteList )
             {
                 // Remove blank votes
                 List<Vote> filteredVoteList = Iterables.toList( Iterables.filter( new Predicate<Vote>()
@@ -186,12 +186,12 @@ public class ElectionContext
         } ) );
     }
 
-    public void startPromotionProcess( String role, final URI promoteNode )
+    public void startPromotionProcess( String role, final InstanceId promoteNode )
     {
         elections.put( role, new Election( new WinnerStrategy()
         {
             @Override
-            public URI pickWinner( List<Vote> voteList )
+            public InstanceId pickWinner( List<Vote> voteList )
             {
 
                 // Remove blank votes
@@ -224,7 +224,7 @@ public class ElectionContext
         } ) );
     }
 
-    public void voted( String role, URI suggestedNode, Comparable<Object> suggestionCredentials )
+    public void voted( String role, InstanceId suggestedNode, Comparable<Object> suggestionCredentials )
     {
         if ( isElectionProcessInProgress( role ) )
         {
@@ -233,7 +233,7 @@ public class ElectionContext
         }
     }
 
-    public URI getElectionWinner( String role )
+    public InstanceId getElectionWinner( String role )
     {
         Election election = elections.get( role );
         if ( election == null || election.getVotes().isEmpty() )
@@ -302,16 +302,16 @@ public class ElectionContext
     private static class Vote
             implements Comparable<Vote>
     {
-        private final URI suggestedNode;
+        private final InstanceId suggestedNode;
         private final Comparable<Object> voteCredentials;
 
-        private Vote( URI suggestedNode, Comparable<Object> voteCredentials )
+        private Vote( InstanceId suggestedNode, Comparable<Object> voteCredentials )
         {
             this.suggestedNode = suggestedNode;
             this.voteCredentials = voteCredentials;
         }
 
-        public URI getSuggestedNode()
+        public InstanceId getSuggestedNode()
         {
             return suggestedNode;
         }
@@ -349,7 +349,7 @@ public class ElectionContext
             return votes;
         }
 
-        public URI pickWinner()
+        public InstanceId pickWinner()
         {
             return winnerStrategy.pickWinner( votes );
         }
@@ -357,6 +357,6 @@ public class ElectionContext
 
     interface WinnerStrategy
     {
-        URI pickWinner( List<Vote> votes );
+        InstanceId pickWinner( List<Vote> votes );
     }
 }

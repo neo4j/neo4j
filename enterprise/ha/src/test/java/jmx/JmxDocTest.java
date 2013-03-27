@@ -48,10 +48,10 @@ import javax.management.ObjectName;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
 import org.neo4j.ha.CreateEmptyDb;
-import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.test.AsciiDocGenerator;
 import org.neo4j.test.TargetDirectory;
 
@@ -89,7 +89,7 @@ public class JmxDocTest
         CreateEmptyDb.at( storeDir );
         db = new HighlyAvailableGraphDatabaseFactory().
                 newHighlyAvailableDatabaseBuilder( storeDir.getAbsolutePath() )
-                .setConfig( HaSettings.server_id, "1" ).setConfig( "jmx.port", "9913" ).newGraphDatabase();
+                .setConfig( ClusterSettings.server_id, "1" ).setConfig( "jmx.port", "9913" ).newGraphDatabase();
     }
 
     @AfterClass

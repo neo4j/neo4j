@@ -63,7 +63,7 @@ public class TestClientThreadIsolation
                 HighlyAvailableGraphDatabaseFactory().
                 newHighlyAvailableDatabaseBuilder( TargetDirectory.forTest( TestClientThreadIsolation.class ).directory(
                         "master", true ).getAbsolutePath() ).
-                setConfig( HaSettings.server_id, "1" ).
+                setConfig( ClusterSettings.server_id, "1" ).
                 newGraphDatabase();
 
         final HighlyAvailableGraphDatabase slave1 = (HighlyAvailableGraphDatabase) new
@@ -72,7 +72,7 @@ public class TestClientThreadIsolation
                         "slave1", true ).getAbsolutePath() ).
                 setConfig( ClusterSettings.cluster_server, "127.0.0.1:5002" ).
                 setConfig( ClusterSettings.initial_hosts, "127.0.0.1:5001" ).
-                setConfig( HaSettings.server_id, "2" ).
+                setConfig( ClusterSettings.server_id, "2" ).
                 setConfig( HaSettings.max_concurrent_channels_per_slave, "2" ).
                 setConfig( HaSettings.ha_server, "127.0.0.1:8001" ).
                 newGraphDatabase();

@@ -21,13 +21,15 @@ package org.neo4j.kernel.ha.cluster;
 
 import java.net.URI;
 
+import org.neo4j.cluster.InstanceId;
+
 public interface HighAvailabilityMemberContext
 {
-    URI getMyId();
+    InstanceId getMyId();
 
-    URI getElectedMasterId();
+    InstanceId getElectedMasterId();
 
-    void setElectedMasterId( URI electedMasterId );
+    void setElectedMasterId( InstanceId electedMasterId );
 
     URI getAvailableHaMaster();
 

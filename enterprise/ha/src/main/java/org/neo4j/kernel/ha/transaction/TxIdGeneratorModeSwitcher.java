@@ -21,9 +21,9 @@ package org.neo4j.kernel.ha.transaction;
 
 import java.net.URI;
 
+import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.DelegateInvocationHandler;
-import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HaXaDataSourceManager;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
@@ -67,7 +67,7 @@ public class TxIdGeneratorModeSwitcher extends AbstractModeSwitcher<TxIdGenerato
     @Override
     protected TxIdGenerator getSlaveImpl( URI serverHaUri )
     {
-        return new SlaveTxIdGenerator( config.get( HaSettings.server_id ), master,
+        return new SlaveTxIdGenerator( config.get( ClusterSettings.server_id ), master,
                 HighAvailabilityModeSwitcher.getServerId( serverHaUri ), requestContextFactory, xaDsm );
     }
 }

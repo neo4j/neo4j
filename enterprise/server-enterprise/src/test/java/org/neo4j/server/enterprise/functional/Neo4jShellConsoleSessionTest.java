@@ -34,6 +34,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
@@ -73,7 +74,7 @@ public class Neo4jShellConsoleSessionTest implements ConsoleSessionFactory
                 .newHighlyAvailableDatabaseBuilder( dir.directory( "1", true ).getAbsolutePath() )
                 .setConfig( ShellSettings.remote_shell_enabled, GraphDatabaseSetting.TRUE )
                 .setConfig( ShellSettings.remote_shell_port, "1337" )
-                .setConfig( HaSettings.server_id, "1" )
+                .setConfig( ClusterSettings.server_id, "1" )
                 .setConfig( HaSettings.ha_server, "localhost:6361" )
                 .newGraphDatabase() );
         createData( master.getGraph() );
@@ -81,7 +82,7 @@ public class Neo4jShellConsoleSessionTest implements ConsoleSessionFactory
                 .newHighlyAvailableDatabaseBuilder( dir.directory( "2", true ).getAbsolutePath() )
                 .setConfig( ShellSettings.remote_shell_enabled, GraphDatabaseSetting.TRUE )
                 .setConfig( ShellSettings.remote_shell_port, "1338" )
-                .setConfig( HaSettings.server_id, "2" )
+                .setConfig( ClusterSettings.server_id, "2" )
                 .setConfig( HaSettings.ha_server, "localhost:6362" )
                 .newGraphDatabase() );
         this.consoleService = new ConsoleService( this, slave, new OutputFormat( new JsonFormat(), uri, null ) );

@@ -199,7 +199,7 @@ public final class ServerCluster
         config( dbConfig, //
                 Pair.of( ClusterSettings.cluster_name.name(), name ),//
                 Pair.of( HaSettings.ha_server.name(), "localhost:" + ports.first() ),//
-                Pair.of( HaSettings.server_id.name(), Integer.toString( id ) ),
+                Pair.of( ClusterSettings.server_id.name(), Integer.toString( id ) ),
                 Pair.of( ClusterSettings.initial_hosts.name(), ":5001,:5002,:5003" ) );
 
         return Pair.of( serverConfig.getAbsolutePath(), serverDir );

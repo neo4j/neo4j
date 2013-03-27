@@ -28,10 +28,10 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.cluster.ClusterSettings.cluster_server;
 import static org.neo4j.cluster.ClusterSettings.initial_hosts;
+import static org.neo4j.cluster.ClusterSettings.server_id;
 import static org.neo4j.cluster.client.ClusterClient.adapt;
 import static org.neo4j.helpers.collection.MapUtil.store;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.ha.HaSettings.server_id;
 
 import java.io.File;
 import java.io.IOException;
@@ -45,6 +45,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.protocol.cluster.ClusterListener;
@@ -174,9 +175,9 @@ public class StandaloneClusterClientIT
         clients[0].addClusterListener( new ClusterListener.Adapter()
         {
             @Override
-            public void joinedCluster( URI member )
+            public void joinedCluster( InstanceId member, URI memberUri )
             {
-                port.set( member.getPort() );
+                port.set( memberUri.getPort() );
                 latch.countDown();
                 clients[0].removeClusterListener( this );
             }

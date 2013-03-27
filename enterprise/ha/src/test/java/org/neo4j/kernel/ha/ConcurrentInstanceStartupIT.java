@@ -19,13 +19,14 @@
  */
 package org.neo4j.kernel.ha;
 
+import static org.junit.Assert.assertTrue;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
 
-import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.graphdb.Transaction;
@@ -33,19 +34,25 @@ import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
 import org.neo4j.test.TargetDirectory;
 
-@Ignore("This test currently fails by never finishing.")
 public class ConcurrentInstanceStartupIT
 {
+    public static final int INSTANCE_COUNT = 7;
     public static TargetDirectory testDirectory = TargetDirectory.forTest( ConcurrentInstanceStartupIT.class );
 
     @Test
     public void concurrentStartupShouldWork() throws Exception
     {
-        final CyclicBarrier barrier = new CyclicBarrier( 3 );
-        final List<Thread> daThreads = new ArrayList<Thread>( 3 );
-        final HighlyAvailableGraphDatabase[] dbs = new HighlyAvailableGraphDatabase[3];
+        StringBuffer initialHostsBuffer = new StringBuffer( "127.0.0.1:5001" );
+        for ( int i = 2; i <= INSTANCE_COUNT; i++ )
+        {
+            initialHostsBuffer.append( ",127.0.0.1:500" + i );
+        }
+        final String initialHosts = initialHostsBuffer.toString();
+        final CyclicBarrier barrier = new CyclicBarrier( INSTANCE_COUNT );
+        final List<Thread> daThreads = new ArrayList<Thread>( INSTANCE_COUNT );
+        final HighlyAvailableGraphDatabase[] dbs = new HighlyAvailableGraphDatabase[INSTANCE_COUNT];
 
-        for ( int i = 1; i <= 3; i++ )
+        for ( int i = 1; i <= INSTANCE_COUNT; i++ )
         {
             final int finalI = i;
 
@@ -57,7 +64,7 @@ public class ConcurrentInstanceStartupIT
                     try
                     {
                         barrier.await();
-                        dbs[ finalI-1 ] = startDbAtBase( finalI );
+                        dbs[ finalI-1 ] = startDbAtBase( finalI, initialHosts );
                     }
                     catch ( InterruptedException e )
                     {
@@ -78,12 +85,24 @@ public class ConcurrentInstanceStartupIT
             daThread.join();
         }
 
+        boolean masterDone = false;
+
         for ( HighlyAvailableGraphDatabase db : dbs )
         {
+            if (db.isMaster())
+            {
+                if (masterDone)
+                {
+                    throw new Exception("Two masters discovered");
+                }
+                masterDone = true;
+            }
             Transaction tx = db.beginTx();
             db.createNode();
             tx.success(); tx.finish();
         }
+
+        assertTrue( masterDone );
 
         for ( HighlyAvailableGraphDatabase db : dbs )
         {
@@ -91,13 +110,13 @@ public class ConcurrentInstanceStartupIT
         }
     }
 
-    private HighlyAvailableGraphDatabase startDbAtBase( int i )
+    private HighlyAvailableGraphDatabase startDbAtBase( int i, String initialHosts )
     {
         GraphDatabaseBuilder masterBuilder = new HighlyAvailableGraphDatabaseFactory()
                 .newHighlyAvailableDatabaseBuilder( path( i ).getAbsolutePath() )
-                .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:5001,127.0.0.1:5002,127.0.0.1:5003" )
+                .setConfig( ClusterSettings.initial_hosts, initialHosts )
                 .setConfig( ClusterSettings.cluster_server, "127.0.0.1:" + ( 5000 + i ) )
-                .setConfig( HaSettings.server_id, "" + i )
+                .setConfig( ClusterSettings.server_id, "" + i )
                 .setConfig( HaSettings.ha_server, ":" + ( 8000 + i ) )
                 .setConfig( HaSettings.tx_push_factor, "0" );
         return (HighlyAvailableGraphDatabase) masterBuilder.newGraphDatabase();

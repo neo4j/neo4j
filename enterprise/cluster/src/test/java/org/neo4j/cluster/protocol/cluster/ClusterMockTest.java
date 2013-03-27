@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -45,10 +46,12 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.neo4j.cluster.StateMachines;
 import org.neo4j.cluster.FixedNetworkLatencyStrategy;
+import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.MultipleFailureLatencyStrategy;
 import org.neo4j.cluster.NetworkMock;
 import org.neo4j.cluster.ScriptableNetworkFailureLatencyStrategy;
 import org.neo4j.cluster.TestProtocolServer;
+import org.neo4j.cluster.VerifyInstanceConfiguration;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcast;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastListener;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastSerializer;
@@ -76,12 +79,14 @@ public class ClusterMockTest
                 new MultipleFailureLatencyStrategy( new FixedNetworkLatencyStrategy( 10 ),
                         new ScriptableNetworkFailureLatencyStrategy() ),
                 new MessageTimeoutStrategy( new FixedTimeoutStrategy( 500 ) )
+                        .timeout( ClusterMessage.joiningTimeout, 1500 )
                         .timeout( HeartbeatMessage.sendHeartbeat, 200 ) );
     }
 
     List<TestProtocolServer> servers = new ArrayList<TestProtocolServer>();
     List<Cluster> out = new ArrayList<Cluster>();
     List<Cluster> in = new ArrayList<Cluster>();
+    Map<Integer, URI> members = new HashMap<Integer, URI>();
 
     @Rule
     public LoggerRule logger = new LoggerRule();
@@ -114,7 +119,19 @@ public class ClusterMockTest
         executor.shutdownNow();
     }
 
-    protected void testCluster( int nrOfServers, NetworkMock mock, ClusterTestScript script )
+    protected void testCluster( int nrOfServers, NetworkMock mock,
+                                ClusterTestScript script )
+            throws ExecutionException, InterruptedException, URISyntaxException, TimeoutException
+    {
+        int[] serverIds = new int[nrOfServers];
+        for ( int i = 1; i <= nrOfServers; i++ )
+        {
+            serverIds[i-1] = i;
+        }
+        testCluster( serverIds, null, mock, script );
+    }
+
+    protected void testCluster( int[] serverIds, VerifyInstanceConfiguration[] finalConfig, NetworkMock mock, ClusterTestScript script )
             throws ExecutionException, InterruptedException, URISyntaxException, TimeoutException
     {
         this.script = script;
@@ -124,23 +141,24 @@ public class ClusterMockTest
         out.clear();
         in.clear();
 
-        for ( int i = 0; i < nrOfServers; i++ )
+        for ( int i = 0; i < serverIds.length; i++ )
         {
             final URI uri = new URI( "server" + (i + 1) );
-            TestProtocolServer server = network.addServer( uri );
+            members.put( serverIds[i], uri );
+            TestProtocolServer server = network.addServer( serverIds[i], uri );
             final Cluster cluster = server.newClient( Cluster.class );
             clusterStateListener( uri, cluster );
 
             server.newClient( Heartbeat.class ).addHeartbeatListener( new HeartbeatListener()
             {
                 @Override
-                public void failed( URI server )
+                public void failed( InstanceId server )
                 {
                     logger.getLogger().warn( uri + ": Failed:" + server );
                 }
 
                 @Override
-                public void alive( URI server )
+                public void alive( InstanceId server )
                 {
                     logger.getLogger().debug( uri + ": Alive:" + server );
                 }
@@ -183,7 +201,14 @@ public class ClusterMockTest
 
         // Let messages settle
         network.tick( 100 );
-        verifyConfigurations();
+        if (finalConfig == null)
+        {
+            verifyConfigurations();
+        }
+        else
+        {
+            verifyConfigurations( finalConfig );
+        }
 
         logger.getLogger().debug( "All nodes leave" );
 
@@ -196,7 +221,14 @@ public class ClusterMockTest
             network.tick( 400 );
         }
 
-        verifyConfigurations();
+        if (finalConfig != null )
+        {
+            verifyConfigurations(finalConfig);
+        }
+        else
+        {
+            verifyConfigurations();
+        }
     }
 
     private void clusterStateListener( final URI uri, final Cluster cluster )
@@ -206,20 +238,20 @@ public class ClusterMockTest
             @Override
             public void enteredCluster( ClusterConfiguration clusterConfiguration )
             {
-                logger.getLogger().debug( uri + " entered cluster:" + clusterConfiguration.getMembers() );
+                logger.getLogger().debug( uri + " entered cluster:" + clusterConfiguration.getMemberURIs() );
                 in.add( cluster );
             }
 
             @Override
-            public void joinedCluster( URI member )
+            public void joinedCluster( InstanceId id, URI member )
             {
-                logger.getLogger().debug( uri + " sees a join:" + member.toString() );
+                logger.getLogger().debug( uri + " sees a join from " + id + " at URI " + member );
             }
 
             @Override
-            public void leftCluster( URI member )
+            public void leftCluster( InstanceId id )
             {
-                logger.getLogger().debug( uri + " sees a leave:" + member.toString() );
+                logger.getLogger().debug( uri + " sees a leave from " + id );
             }
 
             @Override
@@ -230,27 +262,40 @@ public class ClusterMockTest
             }
 
             @Override
-            public void elected( String role, URI electedMember )
+            public void elected( String role, InstanceId id, URI electedMember )
             {
-                logger.getLogger().debug( uri + " sees an election: " + electedMember + " elected as " + role );
+                logger.getLogger().debug( uri + " sees an election: " + id + " elected as " + role + " at URI " + electedMember );
+            }
+
+            @Override
+            public void unelected( String role, InstanceId instanceId, URI electedMember )
+            {
+                logger.getLogger().debug( uri + " sees an unelection: " + instanceId + " removed from " + role + " at URI " + electedMember );
             }
         } );
     }
 
-    public void verifyConfigurations()
+    public void verifyConfigurations( VerifyInstanceConfiguration[] toCheckAgainst )
     {
-        logger.getLogger().debug( "Verify configurations" );
+        logger.getLogger().debug( "Verify configurations against given" );
+
         List<URI> members = null;
-        Map<String, URI> roles = null;
-        List<URI> failed = null;
-        int foundConfiguration = 0;
+        Map<String, InstanceId> roles = null;
+        Set<InstanceId> failed = null;
+
+        List<AssertionError> errors = new LinkedList<AssertionError>();
+
         List<TestProtocolServer> protocolServers = network.getServers();
-        List<AssertionError> errors = new ArrayList<AssertionError>();
+
+        assertEquals( "You must provide a configuration for all instances",
+                protocolServers.size(), toCheckAgainst.length );
+
         for ( int j = 0; j < protocolServers.size(); j++ )
         {
-            StateMachines stateMachines = protocolServers.get( j )
-                    .getServer()
-                    .getStateMachines();
+            members = toCheckAgainst[j].members;
+            roles = toCheckAgainst[j].roles;
+            failed = toCheckAgainst[j].failed;
+            StateMachines stateMachines = protocolServers.get( j ).getServer().getStateMachines();
 
             State<?, ?> clusterState = stateMachines.getStateMachine( ClusterMessage.class ).getState();
             if ( !clusterState.equals( ClusterState.entered ) )
@@ -264,51 +309,17 @@ public class ClusterMockTest
             HeartbeatContext heartbeatContext = (HeartbeatContext) stateMachines.getStateMachine(
                     HeartbeatMessage.class ).getContext();
             ClusterConfiguration clusterConfiguration = context.getConfiguration();
-            if ( !clusterConfiguration.getMembers().isEmpty() )
+            if ( !clusterConfiguration.getMemberURIs().isEmpty() )
             {
-                logger.getLogger().debug( "   Server " + (j + 1) + ": Cluster:" + clusterConfiguration.getMembers() +
-                        "," +
-                        " Roles:" + clusterConfiguration.getRoles() + ", Failed:" + heartbeatContext.getFailed() );
-                foundConfiguration++;
-                if ( members == null )
-                {
-                    members = clusterConfiguration.getMembers();
-                    roles = clusterConfiguration.getRoles();
-                    failed = heartbeatContext.getFailed();
-                }
-                else
-                {
-                    try
-                    {
-                        assertEquals( "Config for server" + (j + 1) + " is wrong", new HashSet<URI>( members ),
-                                new HashSet<URI>( clusterConfiguration
-                                        .getMembers() ) );
-                    }
-                    catch ( AssertionError e )
-                    {
-                        errors.add( e );
-                    }
-                    try
-                    {
-                        assertEquals( "Roles for server" + (j + 1) + " is wrong", roles, clusterConfiguration
-                                .getRoles() );
-                    }
-                    catch ( AssertionError e )
-                    {
-                        errors.add( e );
-                    }
-                    try
-                    {
-                        assertEquals( "Failed for server" + (j + 1) + " is wrong", failed, heartbeatContext.getFailed
-                                () );
-                    }
-                    catch ( AssertionError e )
-                    {
-                        errors.add( e );
-                    }
-                }
+                logger.getLogger().debug( "   Server " + (j + 1) + ": Cluster:" + clusterConfiguration.getMemberURIs() +
+                        ", Roles:" + clusterConfiguration.getRoles() + ", Failed:" + heartbeatContext.getFailed() );
+                verifyConfigurations( stateMachines, members, roles, failed, errors );
             }
         }
+
+//        assertEquals( "In:" + in + ", Out:" + out, protocolServers.size(), Iterables.count( Iterables.<Cluster,
+//                List<Cluster>>flatten( in, out ) ) );
+
 
         if ( !errors.isEmpty() )
         {
@@ -318,15 +329,114 @@ public class ClusterMockTest
             }
             throw errors.get( 0 );
         }
+    }
 
-        if ( foundConfiguration > 0 )
+    public void verifyConfigurations()
+    {
+        logger.getLogger().debug( "Verify configurations" );
+
+        List<URI> members = null;
+        Map<String, InstanceId> roles = null;
+        Set<InstanceId> failed = null;
+
+        List<AssertionError> errors = new LinkedList<AssertionError>();
+
+        List<TestProtocolServer> protocolServers = network.getServers();
+
+        for ( int j = 0; j < protocolServers.size(); j++ )
         {
-            assertEquals( "Nr of found active members does not match configuration size", members.size(),
-                    foundConfiguration );
+            StateMachines stateMachines = protocolServers.get( j ).getServer().getStateMachines();
+
+            State<?, ?> clusterState = stateMachines.getStateMachine( ClusterMessage.class ).getState();
+            if ( !clusterState.equals( ClusterState.entered ) )
+            {
+                logger.getLogger().warn( "Instance " + (j + 1) + " is not in the cluster (" + clusterState + ")" );
+                continue;
+            }
+
+            ClusterContext context = (ClusterContext) stateMachines.getStateMachine( ClusterMessage.class )
+                    .getContext();
+            HeartbeatContext heartbeatContext = (HeartbeatContext) stateMachines.getStateMachine(
+                    HeartbeatMessage.class ).getContext();
+            ClusterConfiguration clusterConfiguration = context.getConfiguration();
+            if ( !clusterConfiguration.getMemberURIs().isEmpty() )
+            {
+                logger.getLogger().debug( "   Server " + (j + 1) + ": Cluster:" + clusterConfiguration.getMemberURIs() +
+                        ", Roles:" + clusterConfiguration.getRoles() + ", Failed:" + heartbeatContext.getFailed() );
+                if ( members == null )
+                {
+                    members = clusterConfiguration.getMemberURIs();
+                    roles = clusterConfiguration.getRoles();
+                    failed = heartbeatContext.getFailed();
+                }
+                else
+                {
+                    verifyConfigurations( stateMachines, members, roles, failed, errors );
+                }
+            }
         }
 
         assertEquals( "In:" + in + ", Out:" + out, protocolServers.size(), Iterables.count( Iterables.<Cluster,
                 List<Cluster>>flatten( in, out ) ) );
+
+
+        if ( !errors.isEmpty() )
+        {
+            for ( AssertionError error : errors )
+            {
+                logger.getLogger().error( error.toString() );
+            }
+            throw errors.get( 0 );
+        }
+    }
+
+    private void verifyConfigurations ( StateMachines stateMachines, List<URI> members, Map<String, InstanceId> roles,
+                                       Set<InstanceId> failed, List<AssertionError> errors )
+    {
+
+        ClusterContext context = (ClusterContext) stateMachines.getStateMachine( ClusterMessage.class )
+                .getContext();
+        int myId = context.getMyId().toIntegerIndex();
+
+        State<?, ?> clusterState = stateMachines.getStateMachine( ClusterMessage.class ).getState();
+        if ( !clusterState.equals( ClusterState.entered ) )
+        {
+            logger.getLogger().warn( "Instance " + myId + " is not in the cluster (" + clusterState + ")" );
+            return;
+        }
+
+
+        HeartbeatContext heartbeatContext = (HeartbeatContext) stateMachines.getStateMachine(
+                HeartbeatMessage.class ).getContext();
+        ClusterConfiguration clusterConfiguration = context.getConfiguration();
+        try
+        {
+            assertEquals( "Config for server" + myId + " is wrong", new HashSet<URI>( members ),
+                    new HashSet<URI>( clusterConfiguration
+                            .getMemberURIs() ) );
+        }
+        catch ( AssertionError e )
+        {
+            errors.add( e );
+        }
+        try
+        {
+            assertEquals( "Roles for server" + myId + " is wrong", roles, clusterConfiguration
+                    .getRoles() );
+        }
+        catch ( AssertionError e )
+        {
+            errors.add( e );
+        }
+        try
+        {
+            assertEquals( "Failed for server" + myId + " is wrong", failed, heartbeatContext.getFailed
+                    () );
+        }
+        catch ( AssertionError e )
+        {
+            errors.add( e );
+        }
     }
 
     public interface ClusterTestScript
@@ -371,15 +481,21 @@ public class ClusterMockTest
                         {
                             out.remove( cluster );
                             logger.getLogger().debug( "Join:" + cluster.toString() );
-                            if (joinServers.length == 0)
+                            if ( joinServers.length == 0 )
                             {
                                 if ( in.isEmpty() )
                                 {
                                     cluster.create( "default" );
-                                } else
+                                }
+                                else
                                 {
                                     // Use test info to figure out who to join
-                                    final Future<ClusterConfiguration> result = cluster.join( "default", URI.create( in.get( 0 ).toString() ) );
+                                    URI[] toJoin = new URI[ servers.size() ];
+                                    for ( int i = 0; i < servers.size(); i++ )
+                                    {
+                                        toJoin[i] = servers.get( i ).getServer().boundAt();
+                                    }
+                                    final Future<ClusterConfiguration> result = cluster.join( "default", toJoin );
                                     executor.submit( new Runnable()
                                     {
                                         @Override
@@ -426,7 +542,15 @@ public class ClusterMockTest
                                         {
                                             logger.getLogger().debug( "**** Node "+joinServer+" could not join cluster:" + e
                                                     .getMessage() );
-                                            cluster.create( "default" );
+                                            if ( !(e.getCause() instanceof IllegalStateException ))
+                                            {
+                                                cluster.create( "default" );
+                                            }
+                                            else
+                                            {
+                                                logger.getLogger().debug( "*** Incorrectly configured cluster? "
+                                                        + e.getCause().getMessage() );
+                                            }
                                         }
                                     }
                                 } );
@@ -483,7 +607,8 @@ public class ClusterMockTest
                 public void run()
                 {
                     Cluster server = servers.get( serverUp - 1 ).newClient( Cluster.class );
-                    network.getNetworkLatencyStrategy().getStrategy( ScriptableNetworkFailureLatencyStrategy.class )
+                    network.getNetworkLatencyStrategy()
+                            .getStrategy( ScriptableNetworkFailureLatencyStrategy.class )
                             .nodeIsUp( server
                                     .toString() );
                     logger.getLogger().debug( server + " is up" );
@@ -547,6 +672,19 @@ public class ClusterMockTest
             }, time );
         }
 
+        public ClusterTestScript verifyConfigurations( int time, final VerifyInstanceConfiguration[]
+                verifyInstanceConfigurations )
+        {
+            return addAction( new ClusterAction()
+            {
+                @Override
+                public void run()
+                {
+                    ClusterMockTest.this.verifyConfigurations( verifyInstanceConfigurations );
+                }
+            }, time );
+        }
+
         private ClusterTestScriptDSL addAction( ClusterAction action, long time )
         {
             action.time = now + time;
@@ -570,7 +708,7 @@ public class ClusterMockTest
             }
         }
 
-        public ClusterTestScriptDSL getRoles( int time, final Map<String, URI> roles )
+        public ClusterTestScriptDSL getRoles( int time, final Map<String, InstanceId> roles )
         {
             return addAction( new ClusterAction()
             {
@@ -582,17 +720,17 @@ public class ClusterMockTest
             }, 0 );
         }
 
-        public ClusterTestScriptDSL verifyCoordinatorRoleSwitched( final Map<String, URI> comparedTo )
+        public ClusterTestScriptDSL verifyCoordinatorRoleSwitched( final Map<String, InstanceId> comparedTo )
         {
             return addAction( new ClusterAction()
             {
                 @Override
                 public void run()
                 {
-                    HashMap<String, URI> roles = new HashMap<String, URI>();
+                    HashMap<String, InstanceId> roles = new HashMap<String, InstanceId>();
                     ClusterMockTest.this.getRoles( roles );
-                    URI oldCoordinator = comparedTo.get( ClusterConfiguration.COORDINATOR );
-                    URI newCoordinator = roles.get( ClusterConfiguration.COORDINATOR );
+                    InstanceId oldCoordinator = comparedTo.get( ClusterConfiguration.COORDINATOR );
+                    InstanceId newCoordinator = roles.get( ClusterConfiguration.COORDINATOR );
                     assertNotNull( "Should have had a coordinator before bringing it down", oldCoordinator );
                     assertNotNull( "Should have a new coordinator after the previous failed", newCoordinator );
                     assertTrue( "Should have elected a new coordinator", !oldCoordinator.equals( newCoordinator ) );
@@ -695,7 +833,7 @@ public class ClusterMockTest
         }
     }
 
-    private void getRoles( Map<String, URI> roles )
+    private void getRoles( Map<String, InstanceId> roles )
     {
         List<TestProtocolServer> protocolServers = network.getServers();
         for ( int j = 0; j < protocolServers.size(); j++ )

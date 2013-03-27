@@ -85,7 +85,8 @@ public class NetworkedServerFactory
             }
         } );
 
-        final ProtocolServer protocolServer = protocolServerFactory.newProtocolServer( timeoutStrategy, node, node,
+        final ProtocolServer protocolServer = protocolServerFactory.newProtocolServer(
+                new InstanceId( config.get( ClusterSettings.server_id ) ), timeoutStrategy, node, node,
                 acceptorInstanceStore, electionCredentialsProvider, stateMachineExecutor );
         node.addNetworkChannelsListener( new NetworkInstance.NetworkChannelsListener()
         {

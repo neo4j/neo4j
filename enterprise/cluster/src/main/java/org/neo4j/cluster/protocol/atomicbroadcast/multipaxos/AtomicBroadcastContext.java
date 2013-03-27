@@ -19,7 +19,6 @@
  */
 package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos;
 
-import java.net.URI;
 import java.util.concurrent.Executor;
 
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastListener;
@@ -66,7 +65,7 @@ public class AtomicBroadcastContext
         } );
     }
 
-    public URI getCoordinator()
+    public org.neo4j.cluster.InstanceId getCoordinator()
     {
         return context.getConfiguration().getElected( ClusterConfiguration.COORDINATOR );
     }

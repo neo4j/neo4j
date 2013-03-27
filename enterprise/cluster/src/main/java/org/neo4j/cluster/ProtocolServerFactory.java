@@ -34,7 +34,7 @@ import org.neo4j.cluster.timeout.TimeoutStrategy;
  */
 public interface ProtocolServerFactory
 {
-    ProtocolServer newProtocolServer( TimeoutStrategy timeouts, MessageSource input, MessageSender output,
+    ProtocolServer newProtocolServer( InstanceId me, TimeoutStrategy timeouts, MessageSource input, MessageSender output,
                                       AcceptorInstanceStore acceptorInstanceStore,
                                       ElectionCredentialsProvider electionCredentialsProvider,
                                       Executor stateMachineExecutor );

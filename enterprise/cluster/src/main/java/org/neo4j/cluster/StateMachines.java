@@ -110,7 +110,7 @@ public class StateMachines
     }
 
     @Override
-    public synchronized void process( final Message<? extends MessageType> message )
+    public boolean process( final Message<? extends MessageType> message )
     {
         stateMachineExecutor.execute( new Runnable()
         {
@@ -142,7 +142,10 @@ public class StateMachines
                             {
                                 try
                                 {
-                                    outgoingProcessor.process( outgoingMessage );
+                                    if ( !outgoingProcessor.process( outgoingMessage ) )
+                                    {
+                                        break;
+                                    }
                                 }
                                 catch ( Throwable e )
                                 {
@@ -152,14 +155,6 @@ public class StateMachines
 
                             if ( outgoingMessage.hasHeader( Message.TO ) )
                             {
-    //                            try
-    //                            {
-    //                                sender.process( outgoingMessage );
-    //                            }
-    //                            catch ( Throwable e )
-    //                            {
-    //                                logger.warn( "Message sending threw exception", e );
-    //                            }
                                 toSend.add( outgoingMessage );
                             }
                             else
@@ -167,7 +162,6 @@ public class StateMachines
                                 // Deliver internally if possible
                                 StateMachine internalStatemachine = stateMachines.get( outgoingMessage.getMessageType()
                                         .getClass() );
-                                //                if (internalStatemachine != null && stateMachine != internalStatemachine )
                                 if ( internalStatemachine != null )
                                 {
                                     internalStatemachine.handle( (Message) outgoingMessage, outgoing );
@@ -190,6 +184,7 @@ public class StateMachines
                 executor.drain();
             }
         } );
+        return true;
     }
 
     public void addStateTransitionListener( StateTransitionListener stateTransitionListener )

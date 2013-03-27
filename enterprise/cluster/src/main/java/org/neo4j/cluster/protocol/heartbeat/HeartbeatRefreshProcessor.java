@@ -26,6 +26,7 @@ import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageHolder;
 import org.neo4j.cluster.com.message.MessageProcessor;
 import org.neo4j.cluster.com.message.MessageType;
+import org.neo4j.cluster.protocol.cluster.ClusterContext;
 
 /**
  * When a message is sent out, reset the timeout for sending heartbeat to the TO host, since we only have to send i_am_alive if
@@ -33,15 +34,17 @@ import org.neo4j.cluster.com.message.MessageType;
  */
 public class HeartbeatRefreshProcessor implements MessageProcessor
 {
-    private MessageHolder outgoing;
+    private final MessageHolder outgoing;
+    private final ClusterContext clusterContext;
 
-    public HeartbeatRefreshProcessor( MessageHolder outgoing )
+    public HeartbeatRefreshProcessor( MessageHolder outgoing, ClusterContext clusterContext )
     {
         this.outgoing = outgoing;
+        this.clusterContext = clusterContext;
     }
 
     @Override
-    public void process( Message<? extends MessageType> message )
+    public boolean process( Message<? extends MessageType> message )
     {
         if ( !message.isInternal() && !message.isBroadcast() &&
                 !message.getMessageType().equals( HeartbeatMessage.i_am_alive ) )
@@ -50,12 +53,14 @@ public class HeartbeatRefreshProcessor implements MessageProcessor
             {
                 String to = message.getHeader( Message.TO );
                 if (!to.equals( message.getHeader( Message.FROM ) ))
-                    outgoing.offer( Message.internal( HeartbeatMessage.reset_send_heartbeat, new URI( to ) ) );
+                    outgoing.offer( Message.internal( HeartbeatMessage.reset_send_heartbeat,
+                            clusterContext.getConfiguration().getServerId( new URI( to ) ) ) );
             }
             catch( URISyntaxException e )
             {
                 e.printStackTrace();
             }
         }
+        return true;
     }
 }

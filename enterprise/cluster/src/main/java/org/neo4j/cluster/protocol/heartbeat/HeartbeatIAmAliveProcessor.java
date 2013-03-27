@@ -22,25 +22,29 @@ package org.neo4j.cluster.protocol.heartbeat;
 import java.net.URI;
 import java.net.URISyntaxException;
 
+import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageHolder;
 import org.neo4j.cluster.com.message.MessageProcessor;
 import org.neo4j.cluster.com.message.MessageType;
+import org.neo4j.cluster.protocol.cluster.ClusterContext;
 
 /**
  * When a message is received, create an I Am Alive message as well, since we know that the sending instance is up
  */
 public class HeartbeatIAmAliveProcessor implements MessageProcessor
 {
-    private MessageHolder output;
+    private final MessageHolder output;
+    private final ClusterContext clusterContext;
 
-    public HeartbeatIAmAliveProcessor( MessageHolder output )
+    public HeartbeatIAmAliveProcessor( MessageHolder output, ClusterContext clusterContext )
     {
         this.output = output;
+        this.clusterContext = clusterContext;
     }
 
     @Override
-    public void process( Message<? extends MessageType> message )
+    public boolean process( Message<? extends MessageType> message )
     {
         if (!message.isInternal() && !message.isBroadcast() &&
                 !message.getMessageType().equals( HeartbeatMessage.i_am_alive ))
@@ -48,15 +52,20 @@ public class HeartbeatIAmAliveProcessor implements MessageProcessor
             try
             {
                 String from = message.getHeader( Message.FROM );
-                if (!from.equals( message.getHeader( Message.TO ) ))
+                if ( !from.equals( message.getHeader( Message.TO ) ) )
+                {
+                    InstanceId id = clusterContext.getConfiguration().getServerId( new URI( from ) );
                     output.offer( message.copyHeadersTo(
                             Message.internal( HeartbeatMessage.i_am_alive,
-                                    new HeartbeatMessage.IAmAliveState( new URI( from ) ) ), Message.FROM ) );
+                                    new HeartbeatMessage.IAmAliveState( id ) ),
+                            Message.FROM ) );
+                }
             }
             catch( URISyntaxException e )
             {
                 e.printStackTrace();
             }
         }
+        return true;
     }
 }

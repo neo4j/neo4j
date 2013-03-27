@@ -91,7 +91,7 @@ public class TestItAll
                 newHighlyAvailableDatabaseBuilder( path( serverId ) )
                 .setConfig( ClusterSettings.cluster_server, "127.0.0.1:" + (5001 + serverId) )
                 .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:5001" )
-                .setConfig( HaSettings.server_id, "" + serverId )
+                .setConfig( ClusterSettings.server_id, "" + serverId )
                 .setConfig( HaSettings.ha_server, "127.0.0.1:" + (8001 + serverId) )
                 .newGraphDatabase();
 

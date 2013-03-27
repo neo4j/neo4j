@@ -19,53 +19,50 @@
  */
 package org.neo4j.kernel.ha.cluster.member;
 
-import static org.neo4j.helpers.Functions.withDefaults;
-import static org.neo4j.helpers.Settings.INTEGER;
-import static org.neo4j.helpers.Uris.parameter;
-
 import java.net.URI;
 import java.util.Collections;
 import java.util.Map;
 
-import org.neo4j.helpers.Functions;
+import org.neo4j.cluster.InstanceId;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher;
 
 public class ClusterMember
 {
-    private final URI clusterUri;
+    private final InstanceId memberId;
     private final Map<String, URI> roles;
     private final boolean alive;
 
-    public ClusterMember( URI clusterUri )
+    public ClusterMember( InstanceId memberId )
     {
-        this( clusterUri, Collections.<String, URI>emptyMap(), true );
+        this( memberId, Collections.<String, URI>emptyMap(), true );
     }
 
-    ClusterMember( URI clusterUri, Map<String, URI> roles, boolean alive )
+    ClusterMember( InstanceId memberId, Map<String, URI> roles, boolean alive )
     {
-        this.clusterUri = clusterUri;
+        this.memberId = memberId;
         this.roles = roles;
         this.alive = alive;
     }
 
-    public URI getClusterUri()
+    public InstanceId getMemberId()
     {
-        return clusterUri;
+        return memberId;
     }
 
     public int getInstanceId()
     {
-        URI haURI = getHAUri();
-
-        if ( haURI != null )
-        {
-            // Get serverId parameter, default to -1 if it is missing, and parse to integer
-            return INTEGER.apply( withDefaults( Functions.<URI, String>constant( "-1" ), parameter( "serverId" ) ).apply( haURI ));
-        } else
-        {
-            return -1;
-        }
+//        URI haURI = getHAUri();
+//
+//        if ( haURI != null )
+//        {
+//            // Get serverId parameter, default to -1 if it is missing, and parse to integer
+//            return INTEGER.apply( withDefaults( Functions.<URI, String>constant( "-1" ), parameter( "serverId" ) ).apply( haURI ));
+//        } else
+//        {
+//            return -1;
+//        }
+        return getMemberId().toIntegerIndex();
     }
 
     public URI getHAUri()
@@ -118,28 +115,28 @@ public class ClusterMember
 
     ClusterMember availableAs( String role, URI roleUri )
     {
-        return new ClusterMember( this.clusterUri, MapUtil.copyAndPut( roles, role, roleUri ), this.alive );
+        return new ClusterMember( this.memberId, MapUtil.copyAndPut( roles, role, roleUri ), this.alive );
     }
 
     ClusterMember unavailableAs( String role )
     {
-        return new ClusterMember( this.clusterUri, MapUtil.copyAndRemove( roles, role ), this.alive );
+        return new ClusterMember( this.memberId, MapUtil.copyAndRemove( roles, role ), this.alive );
     }
 
     ClusterMember alive()
     {
-        return new ClusterMember( this.clusterUri, roles, true );
+        return new ClusterMember( this.memberId, roles, true );
     }
 
     ClusterMember failed()
     {
-        return new ClusterMember( this.clusterUri, roles, false );
+        return new ClusterMember( this.memberId, roles, false );
     }
 
     @Override
     public String toString()
     {
-        return String.format( "cluster URI=%s, alive=%s, roles=%s",clusterUri.toString(), alive, roles.toString());
+        return String.format( "cluster URI=%s, alive=%s, roles=%s", memberId.toString(), alive, roles.toString() );
     }
 
     @Override
@@ -156,7 +153,7 @@ public class ClusterMember
 
         ClusterMember that = (ClusterMember) o;
 
-        if ( !clusterUri.equals( that.clusterUri ) )
+        if ( !memberId.equals( that.memberId ) )
         {
             return false;
         }
@@ -167,6 +164,6 @@ public class ClusterMember
     @Override
     public int hashCode()
     {
-        return clusterUri.hashCode();
+        return memberId.hashCode();
     }
 }

@@ -26,16 +26,14 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Collection;
 import java.util.List;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.LoggerContext;
-import org.neo4j.cluster.BindingListener;
-import org.neo4j.cluster.ClusterSettings;
-import org.neo4j.cluster.MultiPaxosServerFactory;
-import org.neo4j.cluster.NetworkedServerFactory;
-import org.neo4j.cluster.ProtocolServer;
+import org.neo4j.cluster.*;
+import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcast;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastListener;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastSerializer;
@@ -117,15 +115,15 @@ public class MultiPaxosServer
                 }
 
                 @Override
-                public void joinedCluster( URI member )
+                public void joinedCluster( InstanceId instanceId, URI member )
                 {
-                    System.out.println( "Joined cluster:" + member );
+                    System.out.println( "Joined cluster:" + instanceId + " (at URI " + member +")" );
                 }
 
                 @Override
-                public void leftCluster( URI member )
+                public void leftCluster( InstanceId instanceId )
                 {
-                    System.out.println( "Left cluster:" + member );
+                    System.out.println( "Left cluster:" + instanceId );
                 }
 
                 @Override
@@ -135,9 +133,15 @@ public class MultiPaxosServer
                 }
 
                 @Override
-                public void elected( String role, URI electedMember )
+                public void elected( String role, InstanceId instanceId, URI electedMember )
                 {
-                    System.out.println( electedMember + " was elected as " + role );
+                    System.out.println( instanceId + " at URI " + electedMember + " was elected as " + role );
+                }
+
+                @Override
+                public void unelected( String role, InstanceId instanceId, URI electedMember )
+                {
+                    System.out.println( instanceId + " at URI " + electedMember + " was removed from " + role );
                 }
             } );
 
@@ -145,13 +149,13 @@ public class MultiPaxosServer
             heartbeat.addHeartbeatListener( new HeartbeatListener()
             {
                 @Override
-                public void failed( URI server )
+                public void failed( InstanceId server )
                 {
                     System.out.println( server + " failed" );
                 }
 
                 @Override
-                public void alive( URI server )
+                public void alive( InstanceId server )
                 {
                     System.out.println( server + " alive" );
                 }
@@ -220,16 +224,16 @@ public class MultiPaxosServer
         }
     }
 
-    public void demote( String nodeUri )
+    public void demote( InstanceId nodeId )
             throws URISyntaxException
     {
-        election.demote( new URI( nodeUri ) );
+        election.demote( nodeId );
     }
 
-    public void promote( String nodeUri, String role )
+    public void promote( InstanceId nodeId, String role )
             throws URISyntaxException
     {
-        election.promote( new URI( nodeUri ), role );
+        election.promote( nodeId, role );
     }
 
     public void logging( String name, String level )
@@ -251,7 +255,7 @@ public class MultiPaxosServer
                 .getStateMachine( ClusterMessage.class )
                 .getContext()).getConfiguration();
 
-        List<URI> failed = ((HeartbeatContext) server.getStateMachines().getStateMachine( HeartbeatMessage
+        Collection<org.neo4j.cluster.InstanceId> failed = ((HeartbeatContext) server.getStateMachines().getStateMachine( HeartbeatMessage
                 .class ).getContext()).getFailed();
         System.out.println( configuration + " Failed:" + failed );
     }

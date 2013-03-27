@@ -27,7 +27,7 @@ import static org.junit.Assert.fail;
 import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
 import static org.neo4j.test.ha.ClusterManager.masterSeesAllSlavesAsAvailable;
 
-import java.net.InetAddress;
+import java.net.URI;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
@@ -35,10 +35,13 @@ import java.util.Arrays;
 import org.junit.After;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.neo4j.com.ServerUtil;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
+import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Predicate;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.jmx.Kernel;
 import org.neo4j.jmx.impl.JmxKernelExtension;
@@ -108,7 +111,7 @@ public class HaBeanIT
         assertTrue( "single instance should be master and available", ha.isAvailable() );
         assertEquals( "single instance should be master", HighAvailabilityModeSwitcher.MASTER, ha.getRole() );
         ClusterMemberInfo info = ha.getInstancesInCluster()[0];
-        assertTrue( "single instance should be the returned instance id", info.getClusterId().endsWith( ":5001" ) );
+        assertEquals( "single instance should be the returned instance id", "1", info.getClusterId() );
     }
 
     @Test
@@ -323,20 +326,27 @@ public class HaBeanIT
 
     private void assertMasterAndSlaveInformation( ClusterMemberInfo[] instancesInCluster ) throws Exception
     {
-        ClusterMemberInfo master = member( instancesInCluster, 5001 );
-        assertTrue( master.getClusterId().endsWith( ":5001" ) );
+        ClusterMemberInfo master = member( instancesInCluster, 1 );
+        assertEquals( 1137, ServerUtil.getUriForScheme( "ha", Iterables.map( new Function<String, URI>()
+        {
+            @Override
+            public URI apply( String from )
+            {
+                return URI.create( from );
+            }
+        }, Arrays.asList( master.getUris() ) ) ).getPort() );
         assertEquals( HighAvailabilityModeSwitcher.MASTER, master.getHaRole() );
-        assertTrue( "Unexpected start of HA URI " + uri( "ha", master.getUris() ),
-                uri( "ha", master.getUris() ).startsWith( "ha://" + InetAddress.getLocalHost().getHostAddress() +
-                        ":1137" ) );
-        assertTrue( "Master not available", master.isAvailable() );
 
-        ClusterMemberInfo slave = member( instancesInCluster, 5002 );
-        assertTrue( slave.getClusterId().endsWith( ":5002" ) );
+        ClusterMemberInfo slave = member( instancesInCluster, 2 );
+        assertEquals( 1138, ServerUtil.getUriForScheme( "ha", Iterables.map( new Function<String, URI>()
+        {
+            @Override
+            public URI apply( String from )
+            {
+                return URI.create( from );
+            }
+        }, Arrays.asList( slave.getUris() ) ) ).getPort() );
         assertEquals( HighAvailabilityModeSwitcher.SLAVE, slave.getHaRole() );
-        assertTrue( "Unexpected start of HA URI " + uri( "ha", slave.getUris() ),
-                uri( "ha", slave.getUris() ).startsWith( "ha://" + InetAddress.getLocalHost().getHostAddress() +
-                        ":1138" ) );
         assertTrue( "Slave not available", slave.isAvailable() );
     }
 
@@ -353,16 +363,16 @@ public class HaBeanIT
         return null; // it will never get here.
     }
 
-    private ClusterMemberInfo member( ClusterMemberInfo[] members, int clusterPort )
+    private ClusterMemberInfo member( ClusterMemberInfo[] members, int instanceId )
     {
         for ( ClusterMemberInfo member : members )
         {
-            if ( member.getClusterId().endsWith( ":" + clusterPort ) )
+            if ( member.getClusterId().equals( Integer.toString( instanceId ) ) )
             {
                 return member;
             }
         }
-        fail( "Couldn't find cluster member with cluster URI port " + clusterPort + " among " + Arrays.toString(
+        fail( "Couldn't find cluster member with cluster URI port " + instanceId + " among " + Arrays.toString(
                 members ) );
         return null; // it will never get here.
     }
@@ -373,7 +383,7 @@ public class HaBeanIT
         boolean conditionMet = false;
         while ( System.currentTimeMillis() < end )
         {
-            conditionMet = predicate.accept( member( ha.getInstancesInCluster(), 5002 ) );
+            conditionMet = predicate.accept( member( ha.getInstancesInCluster(), 2 ) );
             if ( conditionMet )
             {
                 return;

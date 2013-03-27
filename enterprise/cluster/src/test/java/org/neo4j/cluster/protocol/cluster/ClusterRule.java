@@ -55,14 +55,14 @@ public class ClusterRule
     protected void before()
             throws Throwable
     {
-        TestProtocolServer server = network.addServer( new URI( "cluster://server1" ) );
+        TestProtocolServer server = network.addServer( 1, new URI( "cluster://server1" ) );
         server.newClient( Cluster.class ).create( "default" );
         network.tickUntilDone();
         nodes.add( server );
 
         for ( int i = 1; i < nrOfNodes; i++ )
         {
-            TestProtocolServer protocolServer = network.addServer( new URI( "cluster://server" + (i + 1) ) );
+            TestProtocolServer protocolServer = network.addServer( i + 1, new URI( "cluster://server" + (i + 1) ) );
             protocolServer.newClient( Cluster.class ).join( "default", new URI( "cluster://server1" ) );
             network.tick( 10 );
             nodes.add( protocolServer );

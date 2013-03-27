@@ -32,6 +32,7 @@ import java.util.concurrent.Future;
 
 import javax.transaction.xa.XAException;
 
+import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.com.ComException;
 import org.neo4j.com.Response;
 import org.neo4j.helpers.NamedThreadFactory;
@@ -72,7 +73,7 @@ public class MasterTxIdGenerator implements TxIdGenerator, Lifecycle
             @Override
             public int getServerId()
             {
-                return config.get( HaSettings.server_id );
+                return config.get( ClusterSettings.server_id );
             }
 
             @Override
@@ -106,7 +107,7 @@ public class MasterTxIdGenerator implements TxIdGenerator, Lifecycle
             @Override
             public int getServerId()
             {
-                return config.get( HaSettings.server_id );
+                return config.get( ClusterSettings.server_id );
             }
 
             @Override

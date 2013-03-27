@@ -21,6 +21,8 @@ package org.neo4j.kernel.ha.cluster;
 
 import java.net.URI;
 
+import org.neo4j.cluster.InstanceId;
+
 /**
  * This event represents a change in the cluster members internal state. The possible states
  * are enumerated in ClusterMemberState.
@@ -29,16 +31,16 @@ public class HighAvailabilityMemberChangeEvent
 {
     private final HighAvailabilityMemberState oldState;
     private final HighAvailabilityMemberState newState;
-    private final URI serverClusterUri;
+    private final InstanceId instanceId;
     private final URI serverHaUri;
 
     public HighAvailabilityMemberChangeEvent( HighAvailabilityMemberState oldState,
                                               HighAvailabilityMemberState newState,
-                                              URI serverClusterUri, URI serverHaUri )
+                                              InstanceId instanceId, URI serverHaUri )
     {
         this.oldState = oldState;
         this.newState = newState;
-        this.serverClusterUri = serverClusterUri;
+        this.instanceId = instanceId;
         this.serverHaUri = serverHaUri;
     }
 
@@ -52,9 +54,9 @@ public class HighAvailabilityMemberChangeEvent
         return newState;
     }
 
-    public URI getServerClusterUri()
+    public InstanceId getInstanceId()
     {
-        return serverClusterUri;
+        return instanceId;
     }
 
     public URI getServerHaUri()
@@ -66,6 +68,6 @@ public class HighAvailabilityMemberChangeEvent
     public String toString()
     {
         return "HA Member State Event[ old state: "+oldState+", new state: "+newState+", server cluster URI: "+
-                serverClusterUri+", server HA URI: "+serverHaUri+"]";
+                instanceId +", server HA URI: "+serverHaUri+"]";
     }
 }

@@ -30,6 +30,7 @@ import org.neo4j.backup.BackupExtensionService;
 import org.neo4j.backup.OnlineBackupKernelExtension;
 import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.cluster.ClusterSettings;
+import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.member.ClusterMemberEvents;
 import org.neo4j.cluster.member.ClusterMemberListener;
@@ -41,7 +42,6 @@ import org.neo4j.helpers.Args;
 import org.neo4j.helpers.Predicates;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -88,7 +88,7 @@ public final class HaBackupProvider extends BackupExtensionService
     {
         LifeSupport life = new LifeSupport();
         Map<String, String> params = new HashMap<String, String>();
-        params.put( HaSettings.server_id.name(), "-1" );
+        params.put( ClusterSettings.server_id.name(), "-1" );
         params.put( ClusterSettings.cluster_name.name(), clusterName );
         params.put( ClusterSettings.initial_hosts.name(), from );
         final Config config = new Config( params,
@@ -97,7 +97,8 @@ public final class HaBackupProvider extends BackupExtensionService
         final ClusterClient clusterClient = life.add( new ClusterClient( ClusterClient.adapt( config ), logging,
                 new NotElectableElectionCredentialsProvider() ) );
         ClusterMemberEvents events = life.add( new PaxosClusterMemberEvents( clusterClient, clusterClient,
-                clusterClient, new SystemOutLogging(), Predicates.<PaxosClusterMemberEvents.ClusterMembersSnapshot>TRUE() ) );
+                clusterClient, clusterClient, new SystemOutLogging(),
+                Predicates.<PaxosClusterMemberEvents.ClusterMembersSnapshot>TRUE() ) );
 
         // Refresh the snapshot once we join
         clusterClient.addClusterListener( new ClusterListener.Adapter()
@@ -113,11 +114,11 @@ public final class HaBackupProvider extends BackupExtensionService
         final AtomicReference<URI> backupUri = new AtomicReference<URI>(  );
         events.addClusterMemberListener( new ClusterMemberListener.Adapter()
         {
-            Map<URI, URI> backupUris = new HashMap<URI, URI>();
-            URI master = null;
+            Map<InstanceId, URI> backupUris = new HashMap<InstanceId, URI>();
+            InstanceId master = null;
 
             @Override
-            public void memberIsAvailable( String role, URI clusterUri, URI roleUri )
+            public void memberIsAvailable( String role, InstanceId clusterUri, URI roleUri )
             {
                 if ( OnlineBackupKernelExtension.BACKUP.equals( role ) )
                 {
@@ -135,6 +136,17 @@ public final class HaBackupProvider extends BackupExtensionService
                 }
             }
 
+            /**
+             * Called when new master has been elected. The new master may not be available a.t.m.
+             * A call to {@link #memberIsAvailable} will confirm that the master given in
+             * the most recent {@link #coordinatorIsElected(org.neo4j.cluster.InstanceId)} call is up and running as master.
+             *
+             * @param coordinatorId the connection information to the master.
+             */
+            @Override
+            public void coordinatorIsElected( InstanceId coordinatorId )
+            {
+            }
         } );
 
         life.start();

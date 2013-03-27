@@ -40,14 +40,16 @@ import org.neo4j.kernel.logging.Logging;
  */
 public class ProtocolServer implements BindingNotifier
 {
-    private URI me;
+    private final InstanceId me;
+    private URI boundAt;
     protected StateMachineProxyFactory proxyFactory;
     protected final StateMachines stateMachines;
     private Iterable<BindingListener> bindingListeners = Listeners.newListeners();
     private final StringLogger msgLog;
 
-    public ProtocolServer( StateMachines stateMachines, Logging logging )
+    public ProtocolServer( InstanceId me, StateMachines stateMachines, Logging logging )
     {
+        this.me = me;
         this.stateMachines = stateMachines;
         this.msgLog = logging.getLogger( getClass() );
 
@@ -68,9 +70,9 @@ public class ProtocolServer implements BindingNotifier
         bindingListeners = Listeners.addListener( listener, bindingListeners );
         try
         {
-            if ( me != null )
+            if ( boundAt != null )
             {
-                listener.listeningAt( me );
+                listener.listeningAt( boundAt );
             }
         }
         catch ( Throwable t )
@@ -86,7 +88,7 @@ public class ProtocolServer implements BindingNotifier
 
     public void listeningAt( final URI me )
     {
-        this.me = me;
+        this.boundAt = me;
 
         Listeners.notifyListeners( bindingListeners, new Listeners.Notification<BindingListener>()
         {
@@ -103,7 +105,7 @@ public class ProtocolServer implements BindingNotifier
      *
      * @return server id
      */
-    public URI getServerId()
+    public InstanceId getServerId()
     {
         return me;
     }
@@ -132,10 +134,10 @@ public class ProtocolServer implements BindingNotifier
     public String toString()
     {
         StringBuilder builder = new StringBuilder();
-        builder.append(String.format("Instance URI:")).append(me.toString()).append("\n");
+        builder.append( "Instance URI: " ).append( boundAt.toString() ).append( "\n" );
         for( StateMachine stateMachine : stateMachines.getStateMachines() )
         {
-            builder.append( "  "+stateMachine).append("\n");
+            builder.append( "  " + stateMachine).append( "\n" );
         }
         return builder.toString();
     }
@@ -143,6 +145,11 @@ public class ProtocolServer implements BindingNotifier
     public Timeouts getTimeouts()
     {
         return stateMachines.getTimeouts();
+    }
+
+    public URI boundAt()
+    {
+        return boundAt;
     }
 
     private class FromHeaderMessageProcessor
@@ -157,12 +164,13 @@ public class ProtocolServer implements BindingNotifier
         }
 
         @Override
-        public void process( Message<? extends MessageType> message )
+        public boolean process( Message<? extends MessageType> message )
         {
             if ( message.hasHeader( Message.TO ) && me != null )
             {
                 message.setHeader( Message.FROM, me );
             }
+            return true;
         }
     }
 }

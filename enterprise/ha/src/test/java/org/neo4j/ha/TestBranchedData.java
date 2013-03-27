@@ -25,11 +25,11 @@ import static junit.framework.Assert.assertTrue;
 import java.io.File;
 
 import org.junit.Test;
+import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.ha.BranchedDataPolicy;
-import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.TargetDirectory;
@@ -51,7 +51,7 @@ public class TestBranchedData
 
         new HighlyAvailableGraphDatabaseFactory().
                 newHighlyAvailableDatabaseBuilder( dir.getAbsolutePath() )
-                .setConfig( HaSettings.server_id, "1" ).newGraphDatabase().shutdown();
+                .setConfig( ClusterSettings.server_id, "1" ).newGraphDatabase().shutdown();
         // It should have migrated those to the new location. Verify that.
         for ( long timestamp : timestamps )
         {
