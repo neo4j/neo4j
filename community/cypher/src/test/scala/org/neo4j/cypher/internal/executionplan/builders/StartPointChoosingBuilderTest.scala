@@ -28,7 +28,8 @@ import org.neo4j.cypher.internal.commands.HasLabel
 import org.neo4j.cypher.internal.spi.PlanContext
 import org.scalatest.mock.MockitoSugar
 import org.mockito.Mockito._
-import org.neo4j.cypher.UnableToPickIndexException
+import org.neo4j.cypher.internal.pipes.FakePipe
+import org.neo4j.cypher.internal.symbols.NodeType
 
 
 class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
@@ -37,13 +38,75 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
   override val context = mock[PlanContext]
 
   @Test
-  def should_not_accept_queries_with_start_items() {
+  def should_create_multiple_start_points_for_disjoint_graphs() {
+    // Given
+    val identifier = "n"
+    val otherIdentifier = "p"
+
+    val query = q(
+      patterns = Seq(SingleNode(identifier), SingleNode(otherIdentifier))
+    )
+
+    // When
+    val plan = assertAccepts(query)
+
+    // Then
+    assert(plan.query.start.toList === Seq(Unsolved(AllNodes(identifier)),
+                                           Unsolved(AllNodes(otherIdentifier))))
+  }
+
+  @Test
+  def should_not_create_start_points_tail_query() {
+    // Given
+    val identifier = "n"
+    val otherIdentifier = "p"
+
+    val query = q(
+      patterns = Seq(SingleNode(identifier)),
+      tail = Some(q(
+        patterns = Seq(SingleNode(otherIdentifier))
+      ))
+    )
+
+    // When
+    val plan = assertAccepts(query)
+
+    // Then
+    assert(plan.query.start.toList          === Seq(Unsolved(AllNodes(identifier))))
+    assert(plan.query.tail.get.start.toList === Seq())
+  }
+
+  @Test
+  def should_create_multiple_index_start_points_when_available_for_disjoint_graphs() {
+    // Given
+    val identifier = "n"
+    val otherIdentifier = "p"
+
+    val query = q(
+      patterns = Seq(SingleNode(identifier), SingleNode(otherIdentifier)),
+      where = Seq(HasLabel(Identifier(identifier), Seq(LabelName("Person"))),
+                  Equals(Property(Identifier(identifier),"prop1"), Literal("banana")))
+    )
+
+    when( context.getIndexRuleId( "Person", "prop1" ) ).thenReturn( Some(1337l) )
+
+    // When
+    val plan = assertAccepts(query)
+
+    // Then
+    assert(plan.query.start.toList === Seq(
+      Unsolved(SchemaIndex(identifier, "Person", "prop1", None)),
+      Unsolved(AllNodes(otherIdentifier))))
+  }
+
+  @Test
+  def should_not_accept_queries_with_start_items_on_all_levels() {
     assertRejects(
-      q(start = Seq(Unsolved(NodeById("n", 0))))
+      q(start = Seq(NodeById("n", 0)))
     )
 
     assertRejects(
-      q(start = Seq(Solved(NodeById("n", 0))))
+      q(start = Seq(NodeById("n", 0)))
     )
   }
 
@@ -55,8 +118,10 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
     val property = "prop"
     val expression = Literal(42)
     val query = q(where = Seq(
-      Unsolved(HasLabel(Identifier(identifier), Seq(LabelName(label)))),
-      Unsolved(Equals(Property(Identifier(identifier), property), expression))
+      HasLabel(Identifier(identifier), Seq(LabelName(label))),
+      Equals(Property(Identifier(identifier), property), expression)
+    ), patterns = Seq(
+      SingleNode(identifier)
     ))
 
     when( context.getIndexRuleId( "Person", "prop" ) ).thenReturn( Some(1337l) )
@@ -76,8 +141,10 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
     val property = "prop"
     val expression = Literal(42)
     val query = q(where = Seq(
-      Unsolved(HasLabel(Identifier(identifier), Seq(LabelName(label)))),
-      Unsolved(Equals(expression, Property(Identifier(identifier), property)))
+      HasLabel(Identifier(identifier), Seq(LabelName(label))),
+      Equals(expression, Property(Identifier(identifier), property))
+    ), patterns = Seq(
+      SingleNode(identifier)
     ))
 
     when( context.getIndexRuleId( "Person", "prop" ) ).thenReturn( Some(1337l) )
@@ -90,7 +157,7 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
   }
 
   @Test
-  def should_throw_if_multiple_possible_indexes_are_available() {
+  def should_pick_any_index_available() {
     // Given
     val identifier = "n"
     val label = "Person"
@@ -98,16 +165,21 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
     val property2 = "prop2"
     val expression = Literal(42)
     val query = q(where = Seq(
-      Unsolved(HasLabel(Identifier(identifier), Seq(LabelName(label)))),
-      Unsolved(Equals(Property(Identifier(identifier), property1), expression)),
-      Unsolved(Equals(Property(Identifier(identifier), property2), expression))
+      HasLabel(Identifier(identifier), Seq(LabelName(label))),
+      Equals(Property(Identifier(identifier), property1), expression),
+      Equals(Property(Identifier(identifier), property2), expression)
+    ), patterns = Seq(
+      SingleNode(identifier)
     ))
 
     when( context.getIndexRuleId( "Person", "prop1" ) ).thenReturn( Some(1337l) )
     when( context.getIndexRuleId( "Person", "prop2" ) ).thenReturn( Some(1338l) )
 
     // When
-    intercept[UnableToPickIndexException]( assertAccepts(query) )
+    val result = assertAccepts(query).query
+
+    // Then
+    assert(result.start.exists(_.token.isInstanceOf[SchemaIndex]))
   }
 
   @Test
@@ -116,7 +188,9 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
     val identifier = "n"
     val label = "Person"
     val query = q(where = Seq(
-      Unsolved(HasLabel(Identifier(identifier), Seq(LabelName(label))))
+      HasLabel(Identifier(identifier), Seq(LabelName(label)))
+    ), patterns = Seq(
+      SingleNode(identifier)
     ))
 
     // When
@@ -133,8 +207,10 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
     val property = "prop"
     val expression = Literal(42)
     val query = q(where = Seq(
-      Unsolved(HasLabel(Identifier(identifier), Seq(LabelName(label)))),
-      Unsolved(Equals(Property(Identifier(identifier), property), expression))
+      HasLabel(Identifier(identifier), Seq(LabelName(label))),
+      Equals(Property(Identifier(identifier), property), expression)
+    ), patterns = Seq(
+      SingleNode(identifier)
     ))
 
     when( context.getIndexRuleId( "Person", "prop" ) ).thenReturn( None )
@@ -146,10 +222,48 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
     assert(plan.query.start.toList === Seq(Unsolved(NodeByLabel("n", "Person"))))
   }
 
-  private def q(start: Seq[QueryToken[StartItem]] = Seq(),
-                where: Seq[QueryToken[Predicate]] = Seq()) =
+  @Test
+  def should_pick_a_global_start_point_if_nothing_else_is_possible() {
+    // Given
+    val identifier = "n"
+
+    val query = PartiallySolvedQuery().copy(
+      patterns = Seq(Unsolved(SingleNode(identifier)))
+    )
+    // When
+    val plan = assertAccepts(query)
+
+    // Then
+    assert(plan.query.start.toList === Seq(Unsolved(AllNodes(identifier))))
+  }
+
+  @Test
+  def should_not_introduce_start_points_if_provided_by_last_pipe() {
+    // Given
+    val identifier = "n"
+    val otherIdentifier = "x"
+    val pipe = new FakePipe(Iterator.empty, identifier -> NodeType())
+    val query = q(
+      patterns = Seq(SingleNode(identifier), SingleNode(otherIdentifier))
+    )
+
+    // When
+    val plan = assertAccepts(pipe, query)
+
+    // Then
+    assert(plan.query.start.toList === Seq(Unsolved(AllNodes(otherIdentifier))))
+  }
+
+  private def q(start: Seq[StartItem] = Seq(),
+                where: Seq[Predicate] = Seq(),
+                patterns: Seq[Pattern] = Seq(),
+                returns: Seq[ReturnColumn] = Seq(),
+                tail:Option[PartiallySolvedQuery] = None) =
     PartiallySolvedQuery().copy(
-      start = start,
-      where = where
+      start = start.map(Unsolved(_)),
+      where = where.map(Unsolved(_)),
+      patterns = patterns.map(Unsolved(_)),
+      returns = returns.map(Unsolved(_)),
+      tail = tail
     )
 }

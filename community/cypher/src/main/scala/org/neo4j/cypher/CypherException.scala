@@ -71,4 +71,5 @@ class IndexHintException(identifier: String, label: String, property: String, me
   def this(hint:SchemaIndex, message:String) = this(hint.identifier, hint.label, hint.property, message)
 }
 
-class UnableToPickIndexException(message: String) extends CypherException(message)
+class UnableToPickStartPointException(message: String) extends CypherException(message)
+
