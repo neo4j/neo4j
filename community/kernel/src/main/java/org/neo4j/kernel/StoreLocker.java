@@ -40,7 +40,7 @@ public class StoreLocker
     private FileLock storeLockFileLock;
     private FileChannel storeLockFileChannel;
 
-    public StoreLocker( Config configuration, FileSystemAbstraction fileSystemAbstraction)
+    public StoreLocker( Config configuration, FileSystemAbstraction fileSystemAbstraction )
     {
         this.configuration = configuration;
         this.fileSystemAbstraction = fileSystemAbstraction;
@@ -51,10 +51,9 @@ public class StoreLocker
      * <p/>
      * Creates store dir if necessary, creates store lock file if necessary
      *
-     * @throws IllegalStateException if lock could not be acquired
+     * @throws StoreLockException if lock could not be acquired
      */
-    public void checkLock( File storeDir )
-        throws IllegalStateException
+    public void checkLock( File storeDir ) throws StoreLockException
     {
         File storeLockFile = new File( storeDir, STORE_LOCK_FILENAME );
 
@@ -65,7 +64,7 @@ public class StoreLocker
                 if ( configuration.get( read_only ) )
                 {
                     String msg = "Unable to lock store as store dir does not exist and instance is in read-only mode";
-                    throw new IllegalStateException( msg );
+                    throw new StoreLockException( msg );
                 }
 
                 fileSystemAbstraction.mkdirs( storeLockFile.getParentFile() );
@@ -73,8 +72,7 @@ public class StoreLocker
         }
         catch ( IOException e )
         {
-            String msg = "Unable to create path for store dir: " + storeDir;
-            throw new IllegalStateException( msg, e );
+            throw new StoreLockException( "Unable to create path for store dir: " + storeDir, e );
         }
 
         try
@@ -82,29 +80,29 @@ public class StoreLocker
             storeLockFileChannel = fileSystemAbstraction.open( storeLockFile, "rw" );
             storeLockFileLock = fileSystemAbstraction.tryLock( storeLockFile, storeLockFileChannel );
 
-            if (storeLockFileLock == null)
-                throw new IllegalStateException( "Could not create lock file" );
+            if ( storeLockFileLock == null )
+            {
+                throw new StoreLockException( "Could not create lock file" );
+            }
         }
         catch ( OverlappingFileLockException e )
         {
-            String msg = "Unable to obtain lock on store lock file: " + storeLockFile;
-            throw new IllegalStateException( msg, e );
+            throw new StoreLockException( "Unable to obtain lock on store lock file: " + storeLockFile, e );
         }
         catch ( IOException e )
         {
-            String msg = "Unable to obtain lock on store lock file: " + storeLockFile;
-            throw new IllegalStateException( msg, e );
+            throw new StoreLockException( "Unable to obtain lock on store lock file: " + storeLockFile, e );
         }
     }
 
     public void release() throws IOException
     {
-        if (storeLockFileLock != null)
+        if ( storeLockFileLock != null )
         {
             storeLockFileLock.release();
             storeLockFileLock = null;
         }
-        if (storeLockFileChannel != null)
+        if ( storeLockFileChannel != null )
         {
             storeLockFileChannel.close();
             storeLockFileChannel = null;

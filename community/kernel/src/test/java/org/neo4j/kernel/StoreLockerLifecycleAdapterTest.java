@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel;
 
+import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
@@ -80,7 +81,7 @@ public class StoreLockerLifecycleAdapterTest
         }
         catch ( RuntimeException e )
         {
-            assertThat( e.getCause().getCause(), CoreMatchers.instanceOf( IllegalStateException.class ) );
+            assertThat( e.getCause().getCause(), instanceOf( StoreLockException.class ) );
         }
         finally
         {
@@ -103,7 +104,7 @@ public class StoreLockerLifecycleAdapterTest
         }
         catch ( RuntimeException e )
         {
-            assertThat( e.getCause().getCause(), CoreMatchers.instanceOf( IllegalStateException.class ) );
+            assertThat( e.getCause().getCause(), instanceOf( StoreLockException.class ) );
         }
         finally
         {
