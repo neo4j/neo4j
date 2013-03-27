@@ -36,11 +36,7 @@ import java.util.concurrent.Future;
 
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.kernel.api.index.IndexAccessor;
-import org.neo4j.kernel.api.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.index.IndexPopulator;
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.*;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.UnderlyingStorageException;
@@ -110,7 +106,9 @@ public class IndexingService extends LifecycleAdapter
         {
             long ruleId = entry.getKey();
             IndexProxy indexProxy = entry.getValue();
-            switch ( indexProxy.getState() )
+            InternalIndexState state = indexProxy.getState();
+            logger.info( "IndexingService.start: " + indexProxy.getDescriptor().toString() + "[" + state.name() + "]");
+            switch (state)
             {
             case ONLINE:
                 // Don't do anything, index is ok.
@@ -206,7 +204,9 @@ public class IndexingService extends LifecycleAdapter
             long ruleId = indexRule.getId();
             IndexDescriptor descriptor = createDescriptor( indexRule );
             IndexProxy indexProxy = null;
-            switch ( provider.getInitialState( ruleId ) )
+            InternalIndexState initialState = provider.getInitialState(ruleId);
+            logger.info( "initIndexes: " + descriptor.toString() + "[" + initialState.name() + "]");
+            switch (initialState)
             {
                 case ONLINE:
                     indexProxy = createOnlineIndexProxy( ruleId, descriptor );
