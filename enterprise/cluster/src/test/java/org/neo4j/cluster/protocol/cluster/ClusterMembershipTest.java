@@ -23,7 +23,6 @@ import java.net.URISyntaxException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -149,8 +148,8 @@ public class ClusterMembershipTest
     {
         testCluster( 2, DEFAULT_NETWORK(), new ClusterTestScriptDSL().
                 rounds( 1000 ).
-                join( 0, 1 ).
-                join( 10, 2 ).
+                join( 0, 1, 1 ).
+                join( 10, 2, 1, 2 ).
                 leave( 20, 1 )
         );
     }
@@ -161,8 +160,8 @@ public class ClusterMembershipTest
     {
         testCluster( 2, DEFAULT_NETWORK(), new ClusterTestScriptDSL().
                 rounds( 400 ).
-                join( 0, 1 ).
-                join( 10, 2 ).
+                join( 0, 1, 1 ).
+                join( 10, 2, 1, 2 ).
                 leave( 60, 1 )
         );
     }
@@ -182,7 +181,6 @@ public class ClusterMembershipTest
         );
     }
 
-    @Ignore
     @Test
     public void threeNodesJoinAndThenFirstLeavesAsFourthJoins2()
             throws URISyntaxException, ExecutionException, TimeoutException, InterruptedException

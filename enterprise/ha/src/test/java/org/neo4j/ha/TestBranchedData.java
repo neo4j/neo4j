@@ -51,7 +51,9 @@ public class TestBranchedData
 
         new HighlyAvailableGraphDatabaseFactory().
                 newHighlyAvailableDatabaseBuilder( dir.getAbsolutePath() )
-                .setConfig( ClusterSettings.server_id, "1" ).newGraphDatabase().shutdown();
+                .setConfig( ClusterSettings.server_id, "1" )
+                .setConfig( ClusterSettings.initial_hosts, ":5001" )
+                .newGraphDatabase().shutdown();
         // It should have migrated those to the new location. Verify that.
         for ( long timestamp : timestamps )
         {

@@ -52,7 +52,7 @@ public class ClusterSettings
 
     @Description( "This is the list of potential cluster members" )
     public static final Setting<List<HostnamePort>> initial_hosts = setting( "ha.initial_hosts",
-            list( ",", HOSTNAME_PORT ), "" );
+            list( ",", HOSTNAME_PORT ), MANDATORY );
 
     @Description( "Host name and port to use for the cluster server" )
     public static final Setting<HostnamePort> cluster_server = setting( "ha.cluster_server", HOSTNAME_PORT,

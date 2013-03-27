@@ -22,6 +22,7 @@ package org.neo4j.cluster.protocol.cluster;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -33,6 +34,7 @@ import java.util.concurrent.TimeoutException;
 import org.junit.Test;
 import org.neo4j.cluster.ClusterAssertion;
 import org.neo4j.cluster.InstanceId;
+import org.neo4j.cluster.VerifyInstanceConfiguration;
 
 /**
  * TODO
@@ -44,7 +46,7 @@ public class InstanceIdTest
     @Test
     public void nodeTriesToJoinAnotherNodeWithSameServerId() throws InterruptedException, ExecutionException,
             TimeoutException, URISyntaxException
-    {/*
+    {
         testCluster( new int[] { 1, 1 }, new VerifyInstanceConfiguration[]
                 {
                 new VerifyInstanceConfiguration( Collections.<URI>emptyList(), Collections.<String, InstanceId>emptyMap(),
@@ -57,7 +59,7 @@ public class InstanceIdTest
                 join( 100, 1, 1, 2 ).
                 join( 100, 2, 1, 2 ).
                 message( 500, "*** All nodes tried to start, should be in failed mode" )
-                );*/
+                );
     }
 
     @Test
@@ -71,7 +73,7 @@ public class InstanceIdTest
 
         Map<String, InstanceId> roles = new HashMap<String, InstanceId>();
         roles.put( "coordinator", new InstanceId( 1 ) );
-/*
+
         testCluster( new int[] {1, 2, 3, 3},
                 new VerifyInstanceConfiguration[]{
                 new VerifyInstanceConfiguration( correctMembers, roles, Collections.<InstanceId>emptySet() ),
@@ -85,7 +87,7 @@ public class InstanceIdTest
                 join( 100, 3, 1, 2, 3 ).
                 join( 5600, 4, 1, 2, 3 ).
                 message( 5700, "*** Conflicting node tried to join" )
-                );*/
+                );
     }
 
     @Test
@@ -97,8 +99,6 @@ public class InstanceIdTest
         assertion = assertion.elected( 1, "coordinator" );
         assertion = assertion.failed( 3 );
         assertion = assertion.joins( 4 );
-
-        final ClusterAssertion.InstanceAssertion[] snapshot = assertion.snapshot();
 
         List<URI> correctMembers = new ArrayList<URI>();
         correctMembers.add( URI.create( "server1" ) );
@@ -114,7 +114,7 @@ public class InstanceIdTest
         roles.put( "coordinator", new InstanceId( 1 ) );
 
         Set<InstanceId> failed = new HashSet<InstanceId>();
-/*
+
         testCluster( new int[]{ 1, 2, 3, 3 },
                 new VerifyInstanceConfiguration[]{
                         new VerifyInstanceConfiguration( correctMembers, roles, failed ),
@@ -130,7 +130,7 @@ public class InstanceIdTest
 //                        assertThat(electionHappened(1, "coordinator")).
                 down( 3000, 3 ).
                 join( 1000, 4, 1, 2, 3 )
-        );*/
+        );
     }
 
     @Test
@@ -151,7 +151,7 @@ public class InstanceIdTest
         roles.put( "coordinator", new InstanceId( 1 ) );
 
         Set<InstanceId> failed = new HashSet<InstanceId>();
-/*
+
         testCluster( new int[]{1, 2, 3, 3},
                 new VerifyInstanceConfiguration[]{
                         new VerifyInstanceConfiguration( correctMembers, roles, failed ),
@@ -167,6 +167,6 @@ public class InstanceIdTest
                         down( 3000, 3 ).
                         join( 1000, 4, 1, 2, 3 ).
                         up( 1000, 3 )
-        );*/
+        );
     }
 }

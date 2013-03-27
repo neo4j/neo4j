@@ -50,7 +50,9 @@ public class HaKernelDataTest
         {
             return (HighlyAvailableGraphDatabase) new HighlyAvailableGraphDatabaseFactory().
                     newHighlyAvailableDatabaseBuilder( dir.directory().getAbsolutePath() )
-                    .setConfig( ClusterSettings.server_id, "1" ).newGraphDatabase();
+                    .setConfig( ClusterSettings.server_id, "1" )
+                    .setConfig( ClusterSettings.initial_hosts, ":5001" )
+                    .newGraphDatabase();
         }
 
 

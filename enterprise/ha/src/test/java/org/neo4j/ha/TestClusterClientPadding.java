@@ -28,7 +28,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
-import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.ClusterManager;
 import org.neo4j.test.ha.ClusterManager.ManagedCluster;
@@ -36,17 +35,15 @@ import org.neo4j.test.ha.ClusterManager.ManagedCluster;
 public class TestClusterClientPadding
 {
     private static TargetDirectory dir = TargetDirectory.forTest( TestClusterClientPadding.class );
-    private LifeSupport life = new LifeSupport();
     private ClusterManager clusterManager;
     private ManagedCluster cluster;
     
     @Before
     public void before() throws Throwable
     {
-        clusterManager = life.add( new ClusterManager( clusterWithAdditionalClients( 2, 1 ),
-                dir.directory( "dbs", true ), stringMap() ) );
-        
-        life.start();
+        clusterManager = new ClusterManager( clusterWithAdditionalClients( 2, 1 ),
+                dir.directory( "dbs", true ), stringMap() );
+        clusterManager.start();
         cluster = clusterManager.getDefaultCluster();
         cluster.await( masterSeesMembers( 3 ) );
     }
@@ -54,7 +51,7 @@ public class TestClusterClientPadding
     @After
     public void after() throws Throwable
     {
-        life.stop();
+        clusterManager.shutdown();
     }
     
     @Test
@@ -68,7 +65,8 @@ public class TestClusterClientPadding
     @Test
     public void additionalClusterClientCanHelpBreakTiesWhenMasterFails() throws Throwable
     {
-        HighlyAvailableGraphDatabase sittingMaster = cluster.getMaster();
+        HighlyAvailableGraphDatabase sittingMaster = null;
+        sittingMaster = cluster.getMaster();
         cluster.fail( sittingMaster );
         cluster.await( masterAvailable( sittingMaster ) );
     }

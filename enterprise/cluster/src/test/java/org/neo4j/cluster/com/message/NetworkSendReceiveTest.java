@@ -51,9 +51,11 @@ public class NetworkSendReceiveTest
 
         Server server1;
         life.add( server1 = new Server( MapUtil.stringMap( ClusterSettings.cluster_server.name(),
-                    "localhost:1234", ClusterSettings.server_id.name(), "1" ) ) );
+                    "localhost:1234", ClusterSettings.server_id.name(), "1",
+                ClusterSettings.initial_hosts.name(), "localhost:1234,localhost:1235" ) ) );
         life.add( new Server( MapUtil.stringMap( ClusterSettings.cluster_server.name(), "localhost:1235",
-                ClusterSettings.server_id.name(), "2") ) );
+                ClusterSettings.server_id.name(), "2",
+                ClusterSettings.initial_hosts.name(), "localhost:1234,localhost:1235") ) );
 
         life.start();
 

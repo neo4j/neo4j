@@ -116,7 +116,7 @@ public class TestStoreCopy extends AbstractClusterTest
     {
         super( clusterWithAdditionalClients( 2, 1 ) );
     }
-    
+
     @Override
     protected void insertClusterMemberInitialData( GraphDatabaseService db, String name, int serverId )
     {

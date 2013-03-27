@@ -202,9 +202,13 @@ public enum ClusterState
                             }
                             else
                             {
-                                // No responses
-                                // Check if we picked up any other instances' requests during this phase
-                                if ( !discoveredInstances.isEmpty() )
+                                /*
+                                 * No responses. Check if we picked up any other instances' requests during this phase.
+                                 * If we did, or we are the only instance in the configuration (remember,
+                                 * joiningInstances does not contain us, ever) we can go ahead and try to start the
+                                 * cluster.
+                                 */
+                                if ( !discoveredInstances.isEmpty() || count( context.getJoiningInstances() ) == 0 )
                                 {
                                     Collections.sort( discoveredInstances );
                                     /*
@@ -213,9 +217,12 @@ public enum ClusterState
                                      * everyone will pick the same one.
                                      * If the one picked up is configured to not init a cluster then the timeout
                                      * set in else{} will take care of that.
+                                     * We also start the cluster if we are the only configured instance. joiningInstances
+                                     * does not contain us, ever.
                                      */
-                                    if ( discoveredInstances.size() > count( context.getJoiningInstances() )/2 &&
+                                    if ( ( discoveredInstances.size() > count( context.getJoiningInstances() )/2 &&
                                             discoveredInstances.get( 0 ).getJoiningId().compareTo(context.getMyId() ) >= 0 )
+                                            || count( context.getJoiningInstances() ) == 0 )
                                     {
                                         discoveredInstances.clear();
 
@@ -244,11 +251,10 @@ public enum ClusterState
                                 }
                                 else
                                 {
-                                    // Join failed
-                                    outgoing.offer( internal( ClusterMessage.joinFailure,
-                                            new TimeoutException(
-                                                    "Join failed, timeout waiting for configuration" ) ) );
-                                    return start;
+                                     context.timeouts.setTimeout( "join",
+                                    timeout( ClusterMessage.configurationTimeout, message,
+                                            new ClusterMessage.ConfigurationTimeoutState(
+                                                    4 ) ) );
                                 }
                             }
 

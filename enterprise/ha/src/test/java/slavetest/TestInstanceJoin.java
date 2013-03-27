@@ -56,10 +56,11 @@ public class TestInstanceJoin
         try
         {
             master = start( dir.directory( "master", true ).getAbsolutePath(), 0, stringMap( keep_logical_logs.name(),
-                    "1 files" ) );
+                    "1 files", ClusterSettings.initial_hosts.name(), "127.0.0.1:5001" ) );
             createNode( master, "something", "unimportant" );
             // Need to start and shutdown the slave so when we start it up later it verifies instead of copying
-            slave = start( dir.directory( "slave", true ).getAbsolutePath(), 1 );
+            slave = start( dir.directory( "slave", true ).getAbsolutePath(), 1,
+                    stringMap( ClusterSettings.initial_hosts.name(), "127.0.0.1:5001,127.0.0.1:5002" ) );
             slave.shutdown();
 
             long nodeId = createNode( master, key, value );
@@ -76,9 +77,10 @@ public class TestInstanceJoin
              */
             master.shutdown();
             master = start( dir.directory( "master", false ).getAbsolutePath(), 0, stringMap( keep_logical_logs.name(),
-                    "1 files" ) );
+                    "1 files", ClusterSettings.initial_hosts.name(), "127.0.0.1:5001" ) );
 
-            slave = start( dir.directory( "slave", false ).getAbsolutePath(), 1 );
+            slave = start( dir.directory( "slave", false ).getAbsolutePath(), 1,
+                    stringMap( ClusterSettings.initial_hosts.name(), "127.0.0.1:5001,127.0.0.1:5002" ) );
             slave.getDependencyResolver().resolveDependency( UpdatePuller.class ).pullUpdates();
 
             assertEquals( "store contents differ", value, slave.getNodeById( nodeId ).getProperty( key ) );
@@ -117,7 +119,6 @@ public class TestInstanceJoin
         HighlyAvailableGraphDatabase db = (HighlyAvailableGraphDatabase) new HighlyAvailableGraphDatabaseFactory().
                 newHighlyAvailableDatabaseBuilder( storeDir )
                 .setConfig( ClusterSettings.cluster_server, "127.0.0.1:" + (5001 + i) )
-                .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:5001,127.0.0.1:5002" )
                 .setConfig( ClusterSettings.server_id, i + "" )
                 .setConfig( HaSettings.ha_server, "127.0.0.1:" + (6666 + i) )
                 .setConfig( HaSettings.pull_interval, "0ms" )

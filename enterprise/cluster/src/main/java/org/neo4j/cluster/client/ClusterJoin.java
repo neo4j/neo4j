@@ -183,7 +183,7 @@ public class ClusterJoin
                     Iterables.map( new Function<HostnamePort, URI>()
                     {
                         @Override
-                        public URI apply( HostnamePort member)
+                        public URI apply( HostnamePort member )
                         {
                             return URI.create( "cluster://" + resolvePortOnlyHost( member ) );
                         }
