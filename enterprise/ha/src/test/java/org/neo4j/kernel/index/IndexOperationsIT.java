@@ -19,15 +19,7 @@
  */
 package org.neo4j.kernel.index;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.Future;
-
+import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -41,6 +33,13 @@ import org.neo4j.test.AbstractClusterTest;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.Future;
+
+import static org.junit.Assert.*;
+
+@Ignore
 public class IndexOperationsIT extends AbstractClusterTest
 {
     @Test
