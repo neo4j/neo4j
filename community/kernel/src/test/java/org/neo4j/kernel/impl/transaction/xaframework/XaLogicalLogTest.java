@@ -19,6 +19,14 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
+import static org.hamcrest.number.OrderingComparison.lessThan;
+import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.CALLS_REAL_METHODS;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.withSettings;
+
 import java.io.File;
 import java.nio.channels.FileChannel;
 
@@ -37,18 +45,8 @@ import org.neo4j.test.FailureOutput;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
-import static org.hamcrest.number.OrderingComparison.lessThan;
-import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.CALLS_REAL_METHODS;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.when;
-import static org.mockito.Mockito.withSettings;
-
 public class XaLogicalLogTest
 {
-    @Rule
-    public final TargetDirectory.TestDirectory dir = TargetDirectory.forTest( XaLogicalLogTest.class ).cleanTestDirectory();
     @Rule
     public final FailureOutput output = new FailureOutput();
     private static final byte[] RESOURCE_ID = new byte[]{0x00, (byte) 0x99, (byte) 0xcc};
@@ -64,8 +62,9 @@ public class XaLogicalLogTest
         when( xaTf.getCurrentVersion() ).thenAnswer( new TxVersion( TxVersion.GET ) );
         // spy on the file system abstraction so that we can spy on the file channel for the logical log
         FileSystemAbstraction fs = spy( new EphemeralFileSystemAbstraction() );
+        File dir = TargetDirectory.forTest( fs, XaLogicalLogTest.class ).directory( "log", true );
         // -- when opening the logical log, spy on the file channel we return and count invocations to channel.read(*)
-        when( fs.open( new File( dir.directory(), "logical.log.1" ), "rw" ) ).thenAnswer( new Answer<FileChannel>()
+        when( fs.open( new File( dir, "logical.log.1" ), "rw" ) ).thenAnswer( new Answer<FileChannel>()
         {
             @Override
             public FileChannel answer( InvocationOnMock invocation ) throws Throwable
@@ -88,7 +87,7 @@ public class XaLogicalLogTest
                         } ) );
             }
         } );
-        XaLogicalLog xaLogicalLog = new XaLogicalLog( new File( dir.directory(), "logical.log" ),
+        XaLogicalLog xaLogicalLog = new XaLogicalLog( new File( dir, "logical.log" ),
                                                       mock( XaResourceManager.class ),
                                                       mock( XaCommandFactory.class ),
                                                       xaTf,

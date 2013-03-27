@@ -26,7 +26,8 @@ import java.net.URISyntaxException;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
-import org.neo4j.kernel.impl.util.FileUtils;
+import org.neo4j.kernel.DefaultFileSystemAbstraction;
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 
 public class TargetDirectory
 {
@@ -89,19 +90,25 @@ public class TargetDirectory
         }
     }
 
+    private final FileSystemAbstraction fileSystem;
     private final File base;
 
-    private TargetDirectory( File base )
+    private TargetDirectory( FileSystemAbstraction fileSystem, File base )
     {
+        this.fileSystem = fileSystem;
         this.base = base.getAbsoluteFile();
     }
 
-    public static void recursiveDelete( File file )
+    private void recursiveDelete( File file )
     {
-        File[] files = file.listFiles();
-        if ( files != null ) for ( File each : files )
-            recursiveDelete( each );
-        file.delete();
+        try
+        {
+            fileSystem.deleteRecursively( file );
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
     }
 
     public File directory( String name )
@@ -112,8 +119,11 @@ public class TargetDirectory
     public File directory( String name, boolean clean )
     {
         File dir = new File( base(), name );
-        if ( clean && dir.exists() ) recursiveDelete( dir );
-        dir.mkdir();
+        if ( clean && fileSystem.fileExists( dir ) )
+        {
+            recursiveDelete( dir );
+        }
+        fileSystem.mkdir( dir );
         return dir;
     }
 
@@ -124,14 +134,21 @@ public class TargetDirectory
 
     private File base()
     {
-        if ( base.exists() )
+        if ( fileSystem.fileExists( base ) )
         {
-            if ( !base.isDirectory() )
+            if ( !fileSystem.isDirectory( base ) )
                 throw new IllegalStateException( base + " exists and is not a directory!" );
         }
         else
         {
-            base.mkdirs();
+            try
+            {
+                fileSystem.mkdirs( base );
+            }
+            catch ( IOException e )
+            {
+                throw new RuntimeException( e );
+            }
         }
         return base;
     }
@@ -147,6 +164,11 @@ public class TargetDirectory
     }
 
     public static TargetDirectory forTest( Class<?> owningTest )
+    {
+        return forTest( new DefaultFileSystemAbstraction(), owningTest );
+    }
+
+    public static TargetDirectory forTest( FileSystemAbstraction fileSystem, Class<?> owningTest )
     {
         File target = null;
         try
@@ -170,26 +192,31 @@ public class TargetDirectory
         if ( target == null )
         {
             target = new File( "target" );
-            if ( !( target.exists() && target.isDirectory() ) )
-            {
-                // Fall back to temporary directory
-                try
-                {
-                    target = File.createTempFile( "neo4j-test", "target" );
-                }
-                catch ( IOException e )
-                {
-                    throw new IllegalStateException( "Cannot create target directory" );
-                }
-            }
+//            if ( !( target.exists() && target.isDirectory() ) )
+//            {
+//                // Fall back to temporary directory
+//                try
+//                {
+//                    target = File.createTempFile( "neo4j-test", "target" );
+//                }
+//                catch ( IOException e )
+//                {
+//                    throw new IllegalStateException( "Cannot create target directory" );
+//                }
+//            }
         }
-        return new TargetDirectory(
+        return new TargetDirectory( fileSystem,
                 new File( new File( target, "test-data" ), owningTest.getName() ) );
+    }
+
+    public static TestDirectory testDirForTest( FileSystemAbstraction fileSystem, Class<?> owningTest )
+    {
+        return forTest( fileSystem, owningTest ).testDirectory();
     }
 
     public static TestDirectory testDirForTest( Class<?> owningTest )
     {
-        return forTest( owningTest ).testDirectory();
+        return testDirForTest( new DefaultFileSystemAbstraction(), owningTest );
     }
 
     public File graphDbDir( boolean clean )
@@ -199,7 +226,8 @@ public class TargetDirectory
 
     public void cleanup() throws IOException
     {
-        FileUtils.deleteRecursively( base );
+        fileSystem.deleteRecursively( base );
+        fileSystem.mkdirs( base );
     }
 
     /*

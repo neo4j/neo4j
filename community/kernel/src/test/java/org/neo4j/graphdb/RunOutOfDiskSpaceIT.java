@@ -22,32 +22,24 @@ package org.neo4j.graphdb;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.isA;
-import static org.junit.Assert.fail;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 
 import java.io.IOException;
 
 import javax.transaction.SystemException;
 
-import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.graphdb.mockfs.LimitedFileSystemGraphDatabase;
-import org.neo4j.test.TargetDirectory;
 
 public class RunOutOfDiskSpaceIT
 {
-
-    public TargetDirectory targetDir = TargetDirectory.forTest( RunOutOfDiskSpaceIT.class );
-
-    @Rule
-    public TargetDirectory.TestDirectory testDir = targetDir.cleanTestDirectory();
-
     @Test
     public void shouldPropagateIOExceptions() throws Exception
     {
         // Given
         TransactionFailureException exceptionThrown = null;
-        LimitedFileSystemGraphDatabase db = new LimitedFileSystemGraphDatabase( testDir.directory().getAbsolutePath() );
+        LimitedFileSystemGraphDatabase db = new LimitedFileSystemGraphDatabase();
 
         db.runOutOfDiskSpaceNao();
 
@@ -56,21 +48,20 @@ public class RunOutOfDiskSpaceIT
         db.createNode();
         tx.success();
 
-        try {
+        try
+        {
             tx.finish();
-            fail("Expected tx finish to throw TransactionFailureException when filesystem is full.");
-        } catch(TransactionFailureException e)
+            fail( "Expected tx finish to throw TransactionFailureException when filesystem is full." );
+        }
+        catch ( TransactionFailureException e )
         {
             exceptionThrown = e;
         }
 
         // Then
         assertThat( exceptionThrown.getCause(), isA( Throwable.class ) );
-        assertThat( exceptionThrown.getCause()
-                .getCause(), isA( Throwable.class ) );
-        assertThat( exceptionThrown.getCause()
-                .getCause()
-                .getCause(), is( instanceOf( IOException.class ) ) );
+        assertThat( exceptionThrown.getCause().getCause(), isA( Throwable.class ) );
+        assertThat( exceptionThrown.getCause().getCause().getCause(), is( instanceOf( IOException.class ) ) );
     }
 
     @Test
@@ -78,7 +69,7 @@ public class RunOutOfDiskSpaceIT
     {
         // Given
         TransactionFailureException errorCaught = null;
-        LimitedFileSystemGraphDatabase db = new LimitedFileSystemGraphDatabase( testDir.directory().getAbsolutePath() );
+        LimitedFileSystemGraphDatabase db = new LimitedFileSystemGraphDatabase();
 
         db.runOutOfDiskSpaceNao();
 
@@ -86,27 +77,28 @@ public class RunOutOfDiskSpaceIT
         db.createNode();
         tx.success();
 
-        try {
+        try
+        {
             tx.finish();
-            fail("Expected tx finish to throw TransactionFailureException when filesystem is full.");
-        } catch(TransactionFailureException e)
+            fail( "Expected tx finish to throw TransactionFailureException when filesystem is full." );
+        }
+        catch ( TransactionFailureException e )
         {
             // Expected
         }
 
         // When
-        try {
+        try
+        {
             db.beginTx();
             fail( "Expected tx begin to throw TransactionFailureException when tx manager breaks." );
-        } catch(TransactionFailureException e)
+        }
+        catch ( TransactionFailureException e )
         {
             errorCaught = e;
         }
 
         // Then
-        assertThat( errorCaught.getCause(),
-                is( instanceOf( SystemException.class ) ) );
-
+        assertThat( errorCaught.getCause(), is( instanceOf( SystemException.class ) ) );
     }
-
 }

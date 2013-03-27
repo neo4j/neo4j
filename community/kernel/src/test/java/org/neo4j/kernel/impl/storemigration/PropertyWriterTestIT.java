@@ -52,6 +52,7 @@ public class PropertyWriterTestIT
     {
         Config config = MigrationTestUtils.defaultConfig();
         File outputDir = new File( "target/outputDatabase" );
+        fs.get().mkdirs( outputDir );
         File fileName = new File( outputDir, "neostore" );
         StoreFactory storeFactory = new StoreFactory( config, defaultIdGeneratorFactory(),
                 new DefaultWindowPoolFactory(), fs.get(),
