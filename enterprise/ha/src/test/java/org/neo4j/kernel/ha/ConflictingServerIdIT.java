@@ -19,11 +19,7 @@
  */
 package org.neo4j.kernel.ha;
 
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
-import java.io.File;
-
+import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.graphdb.Transaction;
@@ -32,6 +28,12 @@ import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
 import org.neo4j.test.TargetDirectory;
 
+import java.io.File;
+
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
+@Ignore
 public class ConflictingServerIdIT
 {
     private static final File path = TargetDirectory.forTest( ConflictingServerIdIT.class ).graphDbDir( true );

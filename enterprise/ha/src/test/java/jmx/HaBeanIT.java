@@ -19,19 +19,6 @@
  */
 package jmx;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
-import static org.neo4j.test.ha.ClusterManager.masterSeesAllSlavesAsAvailable;
-
-import java.net.InetAddress;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.Arrays;
-
 import org.junit.After;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -55,6 +42,17 @@ import org.neo4j.test.ha.ClusterManager;
 import org.neo4j.test.ha.ClusterManager.ManagedCluster;
 import org.neo4j.test.ha.ClusterManager.RepairKit;
 
+import java.net.InetAddress;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Arrays;
+
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.junit.Assert.*;
+import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
+import static org.neo4j.test.ha.ClusterManager.masterSeesAllSlavesAsAvailable;
+
+@Ignore
 public class HaBeanIT
 {
     private static final TargetDirectory dir = TargetDirectory.forTest( HaBeanIT.class );
