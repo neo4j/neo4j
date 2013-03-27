@@ -7,6 +7,8 @@ Creating graph elements -- nodes and relationships, is done with +CREATE+.
 In the `CREATE` clause, patterns are used a lot.
 Read <<introduction-pattern>> for an introduction.
 
+:leveloffset: 2
+
 include::create-single-node.asciidoc[]
 
 include::create-single-node-and-set-properties.asciidoc[]
@@ -43,7 +45,7 @@ This query can be used in the following fashion:
 [snippet,java]
 ----
 component=neo4j-cypher
-source=org/neo4j/cypher/javacompat/JavaExecutionEngineDocTest.java
+source=org/neo4j/cypher/javacompat/JavaExecutionEngineTest.java
 tag=create_node_from_map
 classifier=test-sources
 ----
@@ -64,7 +66,7 @@ This query can be used in the following fashion:
 [snippet,java]
 ----
 component=neo4j-cypher
-source=org/neo4j/cypher/javacompat/JavaExecutionEngineDocTest.java
+source=org/neo4j/cypher/javacompat/JavaExecutionEngineTest.java
 tag=create_multiple_nodes_from_map
 classifier=test-sources
 ----

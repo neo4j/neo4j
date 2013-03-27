@@ -208,35 +208,6 @@
       </plugin>
     </plugins>
   </build>
-  
-  <profiles>
-    <profile>
-      <id>neo-docs-build</id>
-      <activation>
-        <activeByDefault>false</activeByDefault>
-        <property>
-          <name>docsBuild</name>
-        </property>
-      </activation>
-      <build>
-        <pluginManagement>
-          <plugins>
-            <plugin>
-              <groupId>org.apache.maven.plugins</groupId>
-              <artifactId>maven-surefire-plugin</artifactId>
-              <configuration>
-                <includes>
-                  <include>**/DocTest*.java</include>
-                  <include>**/*DocTest.java</include>
-                  <include>**/docgen/**</include>
-                </includes>
-              </configuration>
-            </plugin>
-          </plugins>
-        </pluginManagement>
-      </build>
-    </profile>
-  </profiles>
 
   <distributionManagement>
     <site>

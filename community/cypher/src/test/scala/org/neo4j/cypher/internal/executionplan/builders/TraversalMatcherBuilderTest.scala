@@ -90,17 +90,6 @@ class TraversalMatcherBuilderTest extends GraphDatabaseTestBase with Assertions 
     assertQueryHasNotSolvedPathExpressions(newPlan)
   }
 
-  @Test def should_handle_global_queries() {
-    val q = query("START a=node({self}), b = node(*) MATCH a-->b RETURN b")
-
-    val testPlan = plan(NullPipe, q)
-    assertTrue("This query should be accepted", builder.canWorkWith(testPlan, ctx))
-
-    val newPlan = builder.apply(testPlan, ctx)
-
-    assert(!newPlan.query.start.exists(_.unsolved), "Should have solved all start items")
-  }
-
   private def assertAcceptsQuery(q:PartiallySolvedQuery) {
     assertTrue("Should be able to build on this", builder.canWorkWith(plan(NullPipe, q), ctx))
   }

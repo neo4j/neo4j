@@ -47,7 +47,7 @@ With that in place, we're ready to code our tests.
 
 [TIP]
 For the full source code of this example see:
-https://github.com/neo4j/neo4j/blob/{neo4j-git-tag}/community/embedded-examples/src/test/java/org/neo4j/examples/Neo4jBasicDocTest.java[Neo4jBasicDocTest.java]
+https://github.com/neo4j/neo4j/blob/{neo4j-git-tag}/community/embedded-examples/src/test/java/org/neo4j/examples/Neo4jBasicTest.java[Neo4jBasicTest.java]
 
 
 Before each test, create a fresh database:
@@ -55,7 +55,7 @@ Before each test, create a fresh database:
 [snippet,java]
 ----
 component=neo4j-examples
-source=org/neo4j/examples/Neo4jBasicDocTest.java
+source=org/neo4j/examples/Neo4jBasicTest.java
 classifier=test-sources
 tag=beforeTest
 ----
@@ -65,7 +65,7 @@ After the test has executed, the database should be shut down:
 [snippet,java]
 ----
 component=neo4j-examples
-source=org/neo4j/examples/Neo4jBasicDocTest.java
+source=org/neo4j/examples/Neo4jBasicTest.java
 classifier=test-sources
 tag=afterTest
 ----
@@ -75,7 +75,7 @@ During a test, create nodes and check to see that they are there, while enclosin
 [snippet,java]
 ----
 component=neo4j-examples
-source=org/neo4j/examples/Neo4jBasicDocTest.java
+source=org/neo4j/examples/Neo4jBasicTest.java
 classifier=test-sources
 tag=unitTest
 ----
@@ -85,7 +85,7 @@ If you want to set configuration parameters at database creation, it's done like
 [snippet,java]
 ----
 component=neo4j-examples
-source=org/neo4j/examples/Neo4jBasicDocTest.java
+source=org/neo4j/examples/Neo4jBasicTest.java
 classifier=test-sources
 tag=startDbWithConfig
 ----

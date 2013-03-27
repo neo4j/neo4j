@@ -37,9 +37,8 @@ import java.util.Map;
 import static org.neo4j.visualization.asciidoc.AsciidocHelper.createCypherSnippet;
 import static org.neo4j.visualization.asciidoc.AsciidocHelper.createQueryResultSnippet;
 
-public class IntroDocTest implements GraphHolder
+public class IntroExamplesTest implements GraphHolder
 {
-    private static final String DOCS_TARGET = "target/docs/dev/general/";
     public @Rule
     TestData<JavaTestDocsGenerator> gen = TestData.producedThrough( JavaTestDocsGenerator.PRODUCER );
     public @Rule
@@ -53,10 +52,10 @@ public class IntroDocTest implements GraphHolder
             "Sara friend Maria", "Joe friend Steve" }, autoIndexNodes = true )
     public void intro_examples() throws Exception
     {
-        Writer fw = AsciiDocGenerator.getFW( DOCS_TARGET, gen.get().getTitle() );
+        Writer fw = AsciiDocGenerator.getFW( "target/docs/dev/", gen.get().getTitle() );
         data.get();
         fw.append( "\nImagine an example graph like the following one:\n\n" );
-        fw.append( AsciiDocGenerator.dumpToSeparateFileWithType( new File( DOCS_TARGET ), "intro.graph", 
+        fw.append( AsciiDocGenerator.dumpToSeparateFileWithType( new File("target/docs/dev/"), "intro.graph", 
                 AsciidocHelper.createGraphVizWithNodeId( "Example Graph",
                 graphdb(), "cypher-intro" ) ) );
 
@@ -64,10 +63,10 @@ public class IntroDocTest implements GraphHolder
         fw.append( "\n\n" );
         String query = "START john=node:node_auto_index(name = 'John') "
                        + "MATCH john-[:friend]->()-[:friend]->fof RETURN john, fof ";
-        fw.append( AsciiDocGenerator.dumpToSeparateFileWithType( new File( DOCS_TARGET ), "intro.query",
+        fw.append( AsciiDocGenerator.dumpToSeparateFileWithType( new File("target/docs/dev/"), "intro.query",
                 createCypherSnippet( query ) ) );
         fw.append( "\nResulting in:\n\n" );
-        fw.append( AsciiDocGenerator.dumpToSeparateFileWithType( new File( DOCS_TARGET ), "intro.result",
+        fw.append( AsciiDocGenerator.dumpToSeparateFileWithType( new File("target/docs/dev/"), "intro.result",
                 createQueryResultSnippet( engine.execute( query  ).dumpToString() ) ) );
 
         fw.append( "\nNext up we will add filtering to set more parts "
@@ -87,10 +86,10 @@ public class IntroDocTest implements GraphHolder
                 + data.get().get( "Steve" ).getId()
                 + ") MATCH user-[:friend]->follower WHERE follower.name =~ 'S.*' RETURN user, follower.name ";
         fw.append( "\n\n" );
-        fw.append( AsciiDocGenerator.dumpToSeparateFileWithType( new File( DOCS_TARGET ), "intro.query",
+        fw.append( AsciiDocGenerator.dumpToSeparateFileWithType( new File("target/docs/dev/"), "intro.query",
                 createCypherSnippet( query ) ) );
         fw.append( "\nResulting in:\n\n" );
-        fw.append( AsciiDocGenerator.dumpToSeparateFileWithType( new File( DOCS_TARGET ), "intro.result",
+        fw.append( AsciiDocGenerator.dumpToSeparateFileWithType( new File("target/docs/dev/"), "intro.result",
                 createQueryResultSnippet( engine.execute( query ).dumpToString() ) ) );
         fw.close();
     }

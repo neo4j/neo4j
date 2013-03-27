@@ -68,7 +68,7 @@ import org.neo4j.unsafe.batchinsert.BatchInserterIndexProvider;
 import org.neo4j.unsafe.batchinsert.BatchInserters;
 import org.neo4j.visualization.asciidoc.AsciidocHelper;
 
-public class ImdbDocTest
+public class ImdbExampleTest
 {
     private static GraphDatabaseService graphDb;
     private Transaction tx;

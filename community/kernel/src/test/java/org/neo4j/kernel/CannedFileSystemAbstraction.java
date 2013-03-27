@@ -109,12 +109,9 @@ public class CannedFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
-    public void mkdirs( File fileName ) throws IOException
+    public boolean mkdirs( File fileName )
     {
-        if ( cannotCreateStoreDir != null )
-        {
-            throw cannotCreateStoreDir;
-        }
+        return false;
     }
 
     @Override
@@ -144,6 +141,15 @@ public class CannedFileSystemAbstraction implements FileSystemAbstraction
     public boolean isDirectory( File file )
     {
         return false;
+    }
+
+    @Override
+    public void autoCreatePath( File path ) throws IOException
+    {
+        if ( cannotCreateStoreDir != null )
+        {
+            throw cannotCreateStoreDir;
+        }
     }
 
     @Override

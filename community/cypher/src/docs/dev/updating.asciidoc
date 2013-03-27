@@ -4,7 +4,6 @@ Updating the graph
 
 Cypher can be used for both querying and updating your graph.
 
-[[query-updating-structure]]
 == The Structure of Updating Queries ==
 
 .Quick info
@@ -41,7 +40,6 @@ Cypher can start filtering.
 
 You can chain together as many query parts as you have JVM heap for.
 
-[[query-updating-return]]
 == Returning data ==
 
 Any query can return data. If your query only reads, it has to return data -- it serves no purpose if it doesn't, and
