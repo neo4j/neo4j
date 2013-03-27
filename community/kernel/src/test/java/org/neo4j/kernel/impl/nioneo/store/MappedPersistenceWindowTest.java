@@ -51,6 +51,7 @@ public class MappedPersistenceWindowTest
 
         // when
         boolean wasClosed = window.writeOutAndCloseIfFree( false );
+        file.close();
 
         // then
         assertTrue( wasClosed );
@@ -68,6 +69,7 @@ public class MappedPersistenceWindowTest
 
         // when
         boolean wasClosed = window.writeOutAndCloseIfFree( false );
+        file.close();
 
         // then
         assertFalse( wasClosed );
@@ -95,6 +97,7 @@ public class MappedPersistenceWindowTest
 
         // when
         boolean wasClosed = window.writeOutAndCloseIfFree( false );
+        file.close();
 
         // then
         assertFalse( wasClosed );
@@ -116,6 +119,7 @@ public class MappedPersistenceWindowTest
 
         // when
         boolean wasClosed = window.writeOutAndCloseIfFree( false );
+        file.close();
 
         // then
         assertTrue( wasClosed );

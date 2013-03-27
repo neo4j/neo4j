@@ -26,11 +26,6 @@ public class LimitedFileSystemGraphDatabase extends ImpermanentGraphDatabase
 {
     private LimitedFilesystemAbstraction fs;
 
-    public LimitedFileSystemGraphDatabase( String storeDir )
-    {
-        super( storeDir );
-    }
-
     @Override
     protected FileSystemAbstraction createFileSystemAbstraction()
     {

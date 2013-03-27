@@ -158,5 +158,6 @@ public class BatchInsertDocTest
     public void before() throws Exception
     {
         fileSystem = fileSystemRule.get();
+        fileSystem.mkdirs( new File( "target" ) );
     }
 }
