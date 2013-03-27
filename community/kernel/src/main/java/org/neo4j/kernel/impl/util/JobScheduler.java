@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.util;
 
+import java.util.concurrent.TimeUnit;
+
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
 /**
@@ -26,5 +28,7 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
  */
 public interface JobScheduler extends Lifecycle
 {
-    void submit( Runnable job );
+    void schedule( Runnable job );
+
+    void scheduleRecurring( Runnable runnable, long period, TimeUnit timeUnit );
 }

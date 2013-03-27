@@ -22,31 +22,87 @@ package org.neo4j.kernel.impl.util;
 import static java.util.concurrent.Executors.newCachedThreadPool;
 
 import java.util.concurrent.ExecutorService;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.helpers.DaemonThreadFactory;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
 {
+    private final StringLogger log;
 
     private ExecutorService executor;
+    private Timer timer; // Note, we may want a pool of these in the future, to minimize contention.
+
+    public Neo4jJobScheduler( StringLogger log )
+    {
+        this.log = log;
+    }
 
     @Override
     public void start()
     {
         this.executor = newCachedThreadPool(new DaemonThreadFactory("Neo4j " + getClass().getSimpleName()));
+        this.timer = new Timer( "Neo4j Recurring Job Runner", /* daemon= */true );
+    }
+
+    @Override
+    public void schedule( Runnable job )
+    {
+        this.executor.submit( job );
+    }
+
+    @Override
+    public void scheduleRecurring( final Runnable runnable, long period, TimeUnit timeUnit )
+    {
+        timer.schedule( new TimerTask()
+        {
+            @Override
+            public void run()
+            {
+                try
+                {
+                    runnable.run();
+                } catch(RuntimeException e)
+                {
+                    log.error( "Failed running recurring job.", e );
+                }
+            }
+        }, 0, timeUnit.toMillis( period ) );
     }
 
     @Override
     public void stop()
     {
-        this.executor.shutdown();
-        this.executor = null;
-    }
+        RuntimeException exception = null;
+        try
+        {
+            if(executor != null)
+            {
+                executor.shutdown();
+                executor = null;
+            }
+        } catch(RuntimeException e)
+        {
+            exception = e;
+        }
+        try
+        {
+            if(timer != null)
+            {
+                timer.cancel();
+                timer = null;
+            }
+        } catch(RuntimeException e)
+        {
+            exception = e;
+        }
 
-    @Override
-    public void submit( Runnable job )
-    {
-        this.executor.submit( job );
+        if(exception != null)
+        {
+            throw new RuntimeException( "Unable to shut down job scheduler properly.", exception);
+        }
     }
 }

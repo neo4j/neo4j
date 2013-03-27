@@ -50,17 +50,23 @@ public class CommunityDatabase extends/* implements */ Database
         this.serverConfig = serverConfig;
     }
 
+    protected AbstractGraphDatabase createDb()
+    {
+        return (AbstractGraphDatabase) new org.neo4j.graphdb.factory.GraphDatabaseFactory()
+                .newEmbeddedDatabaseBuilder( serverConfig.getString( Configurator.DATABASE_LOCATION_PROPERTY_KEY,
+                        Configurator.DEFAULT_DATABASE_LOCATION_PROPERTY_KEY ) )
+                .setConfig( loadNeo4jProperties() )
+                .newGraphDatabase();
+    }
+
+
     @Override
     @SuppressWarnings("deprecation")
     public void start() throws Throwable
     {
         try
         {
-            this.graph = (AbstractGraphDatabase) new org.neo4j.graphdb.factory.GraphDatabaseFactory()
-                    .newEmbeddedDatabaseBuilder( serverConfig.getString( Configurator.DATABASE_LOCATION_PROPERTY_KEY,
-                            Configurator.DEFAULT_DATABASE_LOCATION_PROPERTY_KEY ) )
-                    .setConfig( loadNeo4jProperties() )
-                    .newGraphDatabase();
+            this.graph = createDb();
             log.info( "Successfully started database" );
         }
         catch ( Exception e )

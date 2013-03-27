@@ -40,6 +40,8 @@ public class ServerHelper
             return;
         }
 
+        rollbackAllOpenTransactions( server );
+
         new Transactor( server.getDatabase().getGraph(), new UnitOfWork()
         {
 
@@ -166,5 +168,11 @@ public class ServerHelper
         if (StringUtils.isNotEmpty( hostName )) {
             builder.onHost( hostName );
         }
+    }
+
+
+    private static void rollbackAllOpenTransactions(NeoServer server)
+    {
+        server.getTransactionRegistry().evictAll();
     }
 }

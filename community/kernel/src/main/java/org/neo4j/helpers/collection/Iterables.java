@@ -19,6 +19,8 @@
  */
 package org.neo4j.helpers.collection;
 
+import static java.util.Arrays.asList;
+
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -35,7 +37,7 @@ import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Predicate;
 
 /**
- * TODO
+ * TODO: Combine this and {@link IteratorUtil} into one class
  */
 public final class Iterables
 {
@@ -342,7 +344,7 @@ public final class Iterables
 
     public static <X, I extends Iterable<? extends X>> Iterable<X> flatten( I... multiIterator )
     {
-        return new FlattenIterable<X, I>( Arrays.asList( multiIterator ) );
+        return new FlattenIterable<X, I>( asList(multiIterator) );
     }
 
     public static <X, I extends Iterable<? extends X>> Iterable<X> flattenIterables( Iterable<I> multiIterator )
@@ -364,7 +366,7 @@ public final class Iterables
                     {
                         return iterable.iterator();
                     }
-                }, Arrays.asList( iterables ) ) );
+                }, asList(iterables) ) );
 
                 return new Iterator<T>()
                 {
@@ -451,7 +453,7 @@ public final class Iterables
 
     public static <T, C extends T> Iterable<T> iterable( C... items )
     {
-        return (Iterable<T>) Arrays.asList( items );
+        return (Iterable<T>) asList(items);
     }
 
     public static <T, C> Iterable<T> cast( Iterable<C> iterable )
@@ -462,12 +464,7 @@ public final class Iterables
 
     public static <T> Iterable<T> concat( Iterable<? extends T>... iterables )
     {
-        return concat( Arrays.asList( (Iterable<T>[]) iterables ) );
-    }
-
-    public static <T> Iterator<T> concat( Iterator<? extends T>... iterables )
-    {
-        return concatIterators( Arrays.asList( (Iterator<T>[]) iterables ) );
+        return concat( asList( (Iterable<T>[]) iterables ) );
     }
 
     public static <T> Iterable<T> concat( final Iterable<Iterable<T>> iterables )
@@ -475,9 +472,14 @@ public final class Iterables
         return new CombiningIterable<T>( iterables );
     }
 
-    public static <T> Iterator<T> concatIterators( final Iterable<Iterator<T>> iterators )
+    public static <T> Iterator<T> concat( Iterator<? extends T>... iterables )
     {
-        return new CombiningIterator<T>( iterators );
+        return concat( Arrays.asList( (Iterator<T>[]) iterables ).iterator() );
+    }
+
+    public static <T> Iterator<T> concat( Iterator<Iterator<T>> iterators )
+    {
+        return new CombiningIterator<T>(iterators);
     }
 
     public static <FROM, TO> Function<FROM, TO> cast()

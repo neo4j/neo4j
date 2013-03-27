@@ -4,6 +4,8 @@ REST API
 
 include::introduction.asciidoc[]
 
+include::transactional.asciidoc[]
+
 include::service-root.asciidoc[]
 
 include::streaming.asciidoc[]

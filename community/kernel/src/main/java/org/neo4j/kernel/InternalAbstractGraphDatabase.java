@@ -379,8 +379,7 @@ public abstract class InternalAbstractGraphDatabase
             throw new IllegalArgumentException( "No cache type '" + cacheTypeName + "'" );
         }
 
-        jobScheduler = life.add( new Neo4jJobScheduler() );
-
+        jobScheduler = life.add( new Neo4jJobScheduler( logging.getLogger( Neo4jJobScheduler.class ) ));
         cleanupService = life.add( CleanupService.create( jobScheduler, logging ) );
 
         kernelEventHandlers = new KernelEventHandlers();

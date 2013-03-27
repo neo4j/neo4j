@@ -19,12 +19,12 @@
  */
 package org.neo4j.server.database;
 
-import java.util.HashMap;
-
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.MapConfiguration;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.test.TestGraphDatabaseFactory;
+
+import java.util.HashMap;
 
 public class EphemeralDatabase extends CommunityDatabase {
 
@@ -36,15 +36,13 @@ public class EphemeralDatabase extends CommunityDatabase {
 		super(serverConfig);
 	}
 
-	@Override
-	@SuppressWarnings("deprecation")
-	public void start()
-	{
-		this.graph = (AbstractGraphDatabase) new TestGraphDatabaseFactory()
-			.newImpermanentDatabaseBuilder()
-			.setConfig( loadNeo4jProperties() )
-			.newGraphDatabase();
-	}
+    protected AbstractGraphDatabase createDb()
+    {
+        return (AbstractGraphDatabase) new TestGraphDatabaseFactory()
+                        .newImpermanentDatabaseBuilder()
+                        .setConfig( loadNeo4jProperties() )
+                        .newGraphDatabase();
+    }
 
 	@Override
 	public void shutdown()
