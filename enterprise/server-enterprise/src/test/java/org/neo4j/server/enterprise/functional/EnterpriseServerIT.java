@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.util.Properties;
 
 import org.junit.Test;
+import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.configuration.Configurator;
@@ -72,7 +73,8 @@ public class EnterpriseServerIT
         {
             Properties neo4jProps = new Properties();
 
-            neo4jProps.put( "ha.server_id", "1" );
+            neo4jProps.put( ClusterSettings.server_id.name(), "1" );
+            neo4jProps.put( ClusterSettings.initial_hosts.name(), ":5001" );
 
             neo4jProps.store( fos, "" );
             return tuningFile;

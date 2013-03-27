@@ -26,7 +26,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.graphdb.Transaction;
@@ -38,6 +42,20 @@ public class ConcurrentInstanceStartupIT
 {
     public static final int INSTANCE_COUNT = 3;
     public static TargetDirectory testDirectory = TargetDirectory.forTest( ConcurrentInstanceStartupIT.class );
+    private ExecutorService service;
+
+    @Before
+    public void before()
+    {
+        service = Executors.newFixedThreadPool( INSTANCE_COUNT );
+    }
+
+    @After
+    public void after()
+    {
+        service.shutdownNow();
+    }
+
 
     @Test
     public void concurrentStartupShouldWork() throws Exception

@@ -56,7 +56,7 @@ public class ClusterTest
         clusterManager.stop();
     }
 
-    @Test
+//    @Test
     public void testArbiterStartsFirstAndThenTwoInstancesJoin() throws Throwable
     {
         ClusterManager clusterManager = new ClusterManager( ClusterManager.clusterWithAdditionalArbiters( 2, 1 ),

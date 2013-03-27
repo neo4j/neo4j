@@ -41,9 +41,10 @@ public class ConflictingServerIdIT
         HighlyAvailableGraphDatabase master = null, dbWithId21 = null, dbWithId22 = null;
         try
         {
+
             GraphDatabaseBuilder masterBuilder = new HighlyAvailableGraphDatabaseFactory()
                 .newHighlyAvailableDatabaseBuilder( path( 1 ) )
-                .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:5002,127.0.0.1:5003,127.0.0.1:5004" )
+                .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:5002" )
                 .setConfig( ClusterSettings.cluster_server, "127.0.0.1:" + ( 5001 + 1 ) )
                 .setConfig( ClusterSettings.server_id, "" + 1 )
                 .setConfig( HaSettings.ha_server, ":" + ( 8001 + 1 ) )
@@ -52,7 +53,7 @@ public class ConflictingServerIdIT
 
             GraphDatabaseBuilder db21Builder = new HighlyAvailableGraphDatabaseFactory()
                     .newHighlyAvailableDatabaseBuilder( path( 2 ) )
-                    .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:5002,127.0.0.1:5003,127.0.0.1:5004" )
+                    .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:5002,127.0.0.1:5003" )
                     .setConfig( ClusterSettings.cluster_server, "127.0.0.1:" + ( 5001 + 2 ) )
                     .setConfig( ClusterSettings.server_id, "" + 2 )
                     .setConfig( HaSettings.ha_server, ":" + ( 8001 + 2 ) )
@@ -61,7 +62,7 @@ public class ConflictingServerIdIT
 
             GraphDatabaseBuilder db22Builder = new HighlyAvailableGraphDatabaseFactory()
                     .newHighlyAvailableDatabaseBuilder( path( 3 ) )
-                    .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:5002,127.0.0.1:5003,127.0.0.1:5004" )
+                    .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:5002" )
                     .setConfig( ClusterSettings.cluster_server, "127.0.0.1:" + (5001 + 3) )
                     .setConfig( ClusterSettings.server_id, "" + 2 ) // Conflicting with the above
                     .setConfig( HaSettings.ha_server, ":" + ( 8001 + 3 ) )
