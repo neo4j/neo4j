@@ -19,12 +19,12 @@
  */
 package org.neo4j.kernel.impl.cleanup;
 
+import java.io.Closeable;
+import java.util.Iterator;
+
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.logging.Logging;
-
-import java.io.Closeable;
-import java.util.Iterator;
 
 class ReferenceQueueBasedCleanupService extends CleanupService implements Runnable
 {
@@ -59,7 +59,7 @@ class ReferenceQueueBasedCleanupService extends CleanupService implements Runnab
     public void start()
     {
         running = true;
-        scheduler.submit( this );
+        scheduler.schedule( this );
     }
 
     @Override
@@ -76,7 +76,7 @@ class ReferenceQueueBasedCleanupService extends CleanupService implements Runnab
         {
             if ( running )
             {
-                scheduler.submit( this );
+                scheduler.schedule( this );
             }
         }
     }

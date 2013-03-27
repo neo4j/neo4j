@@ -524,7 +524,6 @@ public abstract class IteratorUtil
         return count( iterable.iterator() );
     }
 
-
     /**
      * Creates a collection from an iterable.
      *
@@ -579,6 +578,14 @@ public abstract class IteratorUtil
     public static <T> Set<T> asSet( T... items )
     {
         return new HashSet<T>( asList( items ) );
+    }
+
+    /**
+     * Alias for asSet()
+     */
+    public static <T> Set<T> set( T... items)
+    {
+        return asSet(items);
     }
 
     /**
@@ -780,6 +787,11 @@ public abstract class IteratorUtil
                 }
             }
         };
+    }
+
+    public static <T> Iterator<T> iterator( T ... items )
+    {
+        return asIterator(items);
     }
     
     @SuppressWarnings( "rawtypes" )

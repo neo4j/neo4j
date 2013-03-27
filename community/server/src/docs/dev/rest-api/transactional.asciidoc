@@ -1,0 +1,32 @@
+[[rest-api-transactional]]
+== Executing Statements ==
+
+The Neo4j REST API transaction endpoint allows you to execute Cypher statements within the scope of a transaction, where
+the transaction may be kept open on the server until the client asks to commit it, or to execute more statements.
+
+This is different from the <<rest-api-cypher,cypher endpoint>>, which uses opens and closes one transaction per statement.
+
+The server guards against orphaned transactions by using a timeout, transactions that have not been acted on in some way
+within the timeout will be automatically rolled back.
+You can configure the timeout in the server configuration, by setting 'org.neo4j.server.transaction.timeout' to the number
+of seconds before timeout. The default timeout is 60 seconds.
+
+[NOTE]
+This is a new feature in the API, and is still experimental. Expect this API to change without notice, until this note is removed.
+
+[TIP]
+In order to speed up queries in repeated scenarios, try not to use literals but replace them with parameters wherever possible in order to let the server cache query plans.
+
+include:create-a-transaction.asciidoc[]
+
+include:create-and-commit-a-transaction-in-one-request.asciidoc[]
+
+include:execute-statements-in-running-transaction.asciidoc[]
+
+include:commit-a-running-transaction.asciidoc[]
+
+include:rollback-a-running-transaction.asciidoc[]
+
+include:handling-errors.asciidoc[]
+
+

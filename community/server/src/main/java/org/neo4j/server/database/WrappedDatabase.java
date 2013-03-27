@@ -21,9 +21,9 @@ package org.neo4j.server.database;
 
 import org.neo4j.kernel.AbstractGraphDatabase;
 
-public class WrappedDatabase extends Database {
-
-	@SuppressWarnings("deprecation")
+public class WrappedDatabase extends Database
+{
+    @SuppressWarnings("deprecation")
 	public WrappedDatabase(AbstractGraphDatabase db) {
 		this.graph = db;
 	}
@@ -57,5 +57,4 @@ public class WrappedDatabase extends Database {
     {
         return graph.getStoreDir();
     }
-
 }

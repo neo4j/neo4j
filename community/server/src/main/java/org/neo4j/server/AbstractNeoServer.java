@@ -19,7 +19,14 @@
  */
 package org.neo4j.server;
 
+import static java.lang.Math.round;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.neo4j.helpers.collection.Iterables.option;
+import static org.neo4j.server.configuration.Configurator.DEFAULT_SCRIPT_SANDBOXING_ENABLED;
+import static org.neo4j.server.configuration.Configurator.DEFAULT_TRANSACTION_TIMEOUT;
+import static org.neo4j.server.configuration.Configurator.SCRIPT_SANDBOXING_ENABLED_KEY;
+import static org.neo4j.server.configuration.Configurator.TRANSACTION_TIMEOUT;
+import static org.neo4j.server.database.InjectableProvider.providerForSingleton;
 
 import java.io.File;
 import java.net.URI;
@@ -28,8 +35,10 @@ import java.util.Collection;
 import java.util.List;
 
 import org.apache.commons.configuration.Configuration;
+import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
+import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.kernel.logging.Logging;
@@ -53,6 +62,10 @@ import org.neo4j.server.rest.paging.RealClock;
 import org.neo4j.server.rest.repr.InputFormatProvider;
 import org.neo4j.server.rest.repr.OutputFormatProvider;
 import org.neo4j.server.rest.repr.RepresentationFormatRepository;
+import org.neo4j.server.rest.transactional.TimeoutEvictingTransactionRegistry;
+import org.neo4j.server.rest.transactional.TransactionRegistry;
+import org.neo4j.server.rest.transactional.TransactionalActions;
+import org.neo4j.server.rest.transactional.TransitionalPeriodTransactionMessContainer;
 import org.neo4j.server.rest.web.DatabaseActions;
 import org.neo4j.server.rrd.RrdDbProvider;
 import org.neo4j.server.security.KeyStoreFactory;
@@ -65,13 +78,13 @@ import org.neo4j.server.web.WebServerProvider;
 
 public abstract class AbstractNeoServer implements NeoServer
 {
+    @Deprecated // Please use #logging instead of this.
     public static final Logger log = Logger.getLogger( AbstractNeoServer.class );
 
     protected Database database;
     protected CypherExecutor cypherExecutor;
     protected Configurator configurator;
     protected WebServer webServer;
-
     protected final StatisticCollector statisticsCollector = new StatisticCollector();
 
     private PreFlightTasks preflight;
@@ -79,38 +92,9 @@ public abstract class AbstractNeoServer implements NeoServer
     private final SimpleUriBuilder uriBuilder = new SimpleUriBuilder();
     private InterruptThreadTimer interruptStartupTimer;
     private DatabaseActions databaseActions;
-
-    private final DependencyResolver dependencyResolver = new DependencyResolver.Adapter()
-    {
-        private <T> T resolveKnownSingleDependency( Class<T> type )
-        {
-            if ( type.equals( Database.class ) )
-            {
-                return (T) database;
-            }
-            else if ( type.equals( PreFlightTasks.class ) )
-            {
-                return (T) preflight;
-            }
-            else if ( type.equals( InterruptThreadTimer.class ) )
-            {
-                return (T) interruptStartupTimer;
-            }
-            else if ( type.equals( Logging.class ) )
-            {
-                // TODO logging should be owned by server, waiting for logging refactoring
-                DependencyResolver kernelDependencyResolver = database.getGraph().getDependencyResolver();
-                return (T) kernelDependencyResolver.resolveDependency( Logging.class );
-            }
-            return null;
-        }
-        
-        @Override
-        public <T> T resolveDependency( Class<T> type, SelectionStrategy<T> selector )
-        {
-            return selector.select( type, option( resolveKnownSingleDependency( type ) ) );
-        }
-    };
+    private TransactionalActions transactionalActions;
+    private TimeoutEvictingTransactionRegistry transactionRegistry;
+    private Logging logging;
 
     protected abstract PreFlightTasks createPreflightTasks();
 
@@ -119,16 +103,6 @@ public abstract class AbstractNeoServer implements NeoServer
     protected abstract Database createDatabase();
 
     protected abstract WebServer createWebServer();
-
-    protected DatabaseActions createDatabaseActions()
-    {
-        return new DatabaseActions( database,
-                new LeaseManager( new RealClock() ),
-                ForceMode.forced,
-                configurator.configuration().getBoolean(
-                        Configurator.SCRIPT_SANDBOXING_ENABLED_KEY,
-                        Configurator.DEFAULT_SCRIPT_SANDBOXING_ENABLED ) );
-    }
 
     @Override
     public void init()
@@ -141,11 +115,6 @@ public abstract class AbstractNeoServer implements NeoServer
         {
             registerModule( moduleClass );
         }
-    }
-
-    protected Logging getLogging()
-    {
-        return dependencyResolver.resolveDependency( Logging.class );
     }
 
     @Override
@@ -162,26 +131,29 @@ public abstract class AbstractNeoServer implements NeoServer
 
             database.start();
 
+            DiagnosticsManager diagnosticsManager = resolveDependency(DiagnosticsManager.class);
+            logging = resolveDependency( Logging.class );
+
+            StringLogger diagnosticsLog = diagnosticsManager.getTargetLog();
+            diagnosticsLog.info( "--- SERVER STARTED START ---" );
+
             databaseActions = createDatabaseActions();
 
-            cypherExecutor = new CypherExecutor( database, getLogging().getLogger( CypherExecutor.class ) );
+            transactionalActions = createTransactionalActions();
+
+            cypherExecutor = new CypherExecutor( database, logging.getLogger( CypherExecutor.class ) );
 
             configureWebServer();
 
             cypherExecutor.start();
 
-            DiagnosticsManager diagnosticsManager = database.getGraph().getDiagnosticsManager();
-
-            StringLogger logger = diagnosticsManager.getTargetLog();
-            logger.logMessage( "--- SERVER STARTED START ---" );
-
             diagnosticsManager.register( Configurator.DIAGNOSTICS, configurator );
 
-            startModules( logger );
+            startModules( diagnosticsLog );
 
-            startWebServer( logger );
+            startWebServer( diagnosticsLog );
 
-            logger.logMessage( "--- SERVER STARTED END ---", true );
+            diagnosticsLog.info( "--- SERVER STARTED END ---" );
 
             interruptStartupTimer.stopCountdown();
 
@@ -218,6 +190,40 @@ public abstract class AbstractNeoServer implements NeoServer
     public DependencyResolver getDependencyResolver()
     {
         return dependencyResolver;
+    }
+
+    protected DatabaseActions createDatabaseActions()
+    {
+        return new DatabaseActions( database,
+                new LeaseManager( new RealClock() ),
+                ForceMode.forced,
+                configurator.configuration().getBoolean(
+                        SCRIPT_SANDBOXING_ENABLED_KEY,
+                        DEFAULT_SCRIPT_SANDBOXING_ENABLED ) );
+    }
+
+    private TransactionalActions createTransactionalActions()
+    {
+        final int timeout = configurator.configuration().getInt( TRANSACTION_TIMEOUT, DEFAULT_TRANSACTION_TIMEOUT );
+        final RealClock clock = new RealClock();
+
+        transactionRegistry = new TimeoutEvictingTransactionRegistry(clock, logging.getLogger(TransactionRegistry.class));
+
+        resolveDependency( JobScheduler.class ).scheduleRecurring( new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                long maxAge = clock.currentTimeInMilliseconds() - (1000 * timeout);
+                transactionRegistry.evictAllIdleSince( maxAge );
+            }
+        }, round( timeout / 2.0 ), SECONDS );
+
+        return new TransactionalActions(
+                new TransitionalPeriodTransactionMessContainer( database.getGraph() ),
+                new ExecutionEngine( database.getGraph() ),
+                transactionRegistry,
+                logging.getLogger( TransactionalActions.class ));
     }
 
     protected InterruptThreadTimer createInterruptStartupTimer()
@@ -286,6 +292,11 @@ public abstract class AbstractNeoServer implements NeoServer
     public Configuration getConfiguration()
     {
         return configurator.configuration();
+    }
+
+    protected Logging getLogging()
+    {
+        return logging;
     }
 
     // TODO: Once WebServer is fully implementing LifeCycle,
@@ -513,6 +524,12 @@ public abstract class AbstractNeoServer implements NeoServer
     }
 
     @Override
+    public TransactionRegistry getTransactionRegistry()
+    {
+        return transactionRegistry;
+    }
+
+    @Override
     public URI baseUri()
     {
         return uriBuilder.buildURI( getWebServerAddress(), getWebServerPort(), false );
@@ -570,6 +587,8 @@ public abstract class AbstractNeoServer implements NeoServer
         singletons.add( new InputFormatProvider( repository ) );
         singletons.add( new OutputFormatProvider( repository ) );
         singletons.add( new CypherExecutorProvider( cypherExecutor ) );
+        singletons.add( providerForSingleton( transactionalActions, TransactionalActions.class ) );
+
         return singletons;
     }
 
@@ -598,4 +617,41 @@ public abstract class AbstractNeoServer implements NeoServer
 
         return null;
     }
+
+    protected <T> T resolveDependency( Class<T> type )
+    {
+        return dependencyResolver.resolveDependency( type );
+    }
+
+    private final DependencyResolver dependencyResolver = new DependencyResolver.Adapter()
+    {
+        private <T> T resolveKnownSingleDependency( Class<T> type )
+        {
+            if ( type.equals( Database.class ) )
+            {
+                return (T) database;
+            }
+            else if ( type.equals( PreFlightTasks.class ) )
+            {
+                return (T) preflight;
+            }
+            else if ( type.equals( InterruptThreadTimer.class ) )
+            {
+                return (T) interruptStartupTimer;
+            }
+
+            // TODO: Note that several component dependencies are inverted here. For instance, logging
+            // should be provided by the server to the kernel, not the other way around. Same goes for job
+            // scheduling and configuration. Probably several others as well.
+
+            DependencyResolver kernelDependencyResolver = database.getGraph().getDependencyResolver();
+            return kernelDependencyResolver.resolveDependency( type );
+        }
+
+        @Override
+        public <T> T resolveDependency( Class<T> type, SelectionStrategy<T> selector )
+        {
+            return selector.select( type, option( resolveKnownSingleDependency( type ) ) );
+        }
+    };
 }

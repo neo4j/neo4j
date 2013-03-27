@@ -21,13 +21,14 @@ package org.neo4j.server.database;
 
 import org.neo4j.kernel.AbstractGraphDatabase;
 
-public class WrappingDatabase extends Database {
+public class WrappingDatabase extends Database
+{
 
-	public WrappingDatabase(AbstractGraphDatabase db) {
+    public WrappingDatabase(AbstractGraphDatabase db) {
 		super(db);
 	}
-	
-	@Override
+
+    @Override
 	public void init() throws Throwable 
 	{
 		

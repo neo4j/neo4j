@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.util;
 
+import static java.nio.ByteBuffer.wrap;
+
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.io.UnsupportedEncodingException;
@@ -29,6 +31,19 @@ import java.nio.ByteBuffer;
  */
 public class BytePrinter
 {
+
+    /**
+     * Print a full byte array as nicely formatted groups of hex numbers.
+     * Output looks like:
+     *
+     * 01 02 03 04 05 06 07 08    01 02 03 04 05 06 07 08    01 02 03 04 05 06 07 08    01 02 03 04 05 06 07 08
+     * 01 02 03 04 05 06 07 08    01 02 03 04 05 06 07 08    01 02 03 04 05 06 07 08    01 02 03 04 05 06 07 08
+     *
+     */
+    public static void print( byte [] bytes, PrintStream out )
+    {
+        print( wrap( bytes ), out, 0, bytes.length );
+    }
 
     /**
      * Print a full byte buffer as nicely formatted groups of hex numbers.
@@ -178,7 +193,7 @@ public class BytePrinter
      */
     public static String hex(byte[] bytes)
     {
-        return hex( ByteBuffer.wrap( bytes ) );
+        return hex( wrap( bytes ) );
     }
 
 }

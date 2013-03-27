@@ -19,13 +19,6 @@
  */
 package org.neo4j.server.modules;
 
-import static org.neo4j.server.JAXRSHelper.listFrom;
-import static org.neo4j.server.configuration.Configurator.WEBSERVER_LIMIT_EXECUTION_TIME_PROPERTY_KEY;
-
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.List;
-
 import org.apache.commons.configuration.Configuration;
 import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -36,9 +29,17 @@ import org.neo4j.server.logging.Logger;
 import org.neo4j.server.plugins.PluginManager;
 import org.neo4j.server.web.WebServer;
 
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.List;
+
+import static org.neo4j.server.JAXRSHelper.listFrom;
+import static org.neo4j.server.configuration.Configurator.WEBSERVER_LIMIT_EXECUTION_TIME_PROPERTY_KEY;
+
 public class RESTApiModule implements ServerModule
 {
     private static final Logger log = Logger.getLogger( RESTApiModule.class );
+
     private PluginManager plugins;
 	private final Configuration config;
 	private final WebServer webServer;
@@ -60,7 +61,7 @@ public class RESTApiModule implements ServerModule
             URI restApiUri = restApiUri( );
 
             webServer.addJAXRSPackages( getPackageNames(), restApiUri.toString(), null );
-            loadPlugins( logger );
+            loadPlugins(logger);
 
             setupRequestTimeLimit();
 

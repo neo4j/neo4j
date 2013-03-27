@@ -102,6 +102,9 @@ public interface Configurator
 	String STARTUP_TIMEOUT = "org.neo4j.server.startup_timeout";
 	int DEFAULT_STARTUP_TIMEOUT = 120;
 
+    String TRANSACTION_TIMEOUT = "org.neo4j.server.transaction.timeout";
+    int DEFAULT_TRANSACTION_TIMEOUT = 60/*seconds*/;
+
     Configuration configuration();
 
     Map<String, String> getDatabaseTuningProperties();

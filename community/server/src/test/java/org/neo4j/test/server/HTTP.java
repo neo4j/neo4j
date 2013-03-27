@@ -1,0 +1,229 @@
+/**
+ * Copyright (c) 2002-2013 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package org.neo4j.test.server;
+
+import static java.util.Collections.unmodifiableMap;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.server.rest.domain.JsonHelper.createJsonFrom;
+
+import java.net.URI;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+
+import javax.ws.rs.core.MediaType;
+
+import com.sun.jersey.api.client.Client;
+import com.sun.jersey.api.client.ClientRequest;
+import com.sun.jersey.api.client.ClientResponse;
+import org.neo4j.server.rest.domain.JsonHelper;
+import org.neo4j.server.rest.domain.JsonParseException;
+
+/**
+ * A tool for performing REST HTTP requests
+ */
+public class HTTP
+{
+
+    private static final Builder BUILDER = new Builder().withHeaders("Accept", "application/json");
+    private static final Client CLIENT = new Client();
+
+    public static Builder withHeaders(Map<String, String> headers) {
+        return BUILDER.withHeaders(headers);
+    }
+
+    public static Builder withHeaders(String ... kvPairs) {
+        return BUILDER.withHeaders(kvPairs);
+    }
+
+    public static Response POST(String uri) {
+        return BUILDER.POST(uri);
+    }
+
+    public static Response POST(String uri, Object payload) {
+        return BUILDER.POST(uri, payload);
+    }
+
+    public static Response POST(String uri, RawPayload payload) {
+        return BUILDER.POST(uri, payload);
+    }
+
+    public static Response PUT(String uri) {
+        return BUILDER.PUT(uri);
+    }
+
+    public static Response PUT(String uri, Object payload) {
+        return BUILDER.PUT(uri, payload);
+    }
+
+    public static Response PUT(String uri, RawPayload payload) {
+        return BUILDER.PUT(uri, payload);
+    }
+
+    public static Response DELETE(String uri) {
+        return BUILDER.DELETE(uri);
+    }
+
+    public static Response GET(String uri) {
+        return BUILDER.GET(uri);
+    }
+
+    public static class Builder
+    {
+        private final Map<String, String> headers;
+
+        private Builder()
+        {
+            this(Collections.<String, String>emptyMap());
+        }
+
+        private Builder(Map<String, String> headers)
+        {
+            this.headers = unmodifiableMap(headers);
+        }
+
+        public Builder withHeaders(String ... kvPairs)
+        {
+            return withHeaders(stringMap(kvPairs));
+        }
+
+        public Builder withHeaders(Map<String, String> newHeaders)
+        {
+            HashMap<String, String> combined = new HashMap<String, String>();
+            combined.putAll(newHeaders);
+            combined.putAll(headers);
+            return new Builder(combined);
+        }
+
+        public Response POST(String uri)
+        {
+            return exec("POST", uri);
+        }
+
+        public Response POST(String uri, Object payload)
+        {
+            return exec("POST", uri, payload);
+        }
+
+        public Response POST(String uri, RawPayload payload)
+        {
+            return exec("POST", uri, payload);
+        }
+
+        public Response PUT(String uri)
+        {
+            return exec("PUT", uri);
+        }
+
+        public Response PUT(String uri, Object payload)
+        {
+            return exec("PUT", uri);
+        }
+
+        public Response PUT(String uri, RawPayload payload)
+        {
+            return exec("PUT", uri);
+        }
+
+        public Response DELETE(String uri)
+        {
+            return exec("DELETE", uri);
+        }
+
+        public Response GET(String uri)
+        {
+            return exec("GET", uri);
+        }
+
+        public Response exec(String method, String uri)
+        {
+            return new Response(CLIENT.handle(build().build(URI.create(uri), method)));
+        }
+
+        public Response exec(String method, String uri, Object payload)
+        {
+            String jsonPayload = payload instanceof RawPayload ? ((RawPayload)payload).get() : createJsonFrom(payload);
+            ClientRequest.Builder lastBuilder = build().entity(jsonPayload, MediaType.APPLICATION_JSON_TYPE);
+            return new Response(CLIENT.handle(lastBuilder.build(URI.create(uri), method)));
+        }
+
+        private ClientRequest.Builder build()
+        {
+            ClientRequest.Builder builder = ClientRequest.create();
+            for (Map.Entry<String, String> header : headers.entrySet()) {
+                builder = builder.header(header.getKey(), header.getValue());
+            }
+
+            return builder;
+        }
+    }
+
+    public static class Response
+    {
+        private final ClientResponse response;
+
+        public Response(ClientResponse response)
+        {
+            this.response = response;
+        }
+
+        public int status() {
+            return response.getStatus();
+        }
+
+        public <T> T content()
+        {
+            String entity = response.getEntity(String.class);
+            try {
+                return (T) JsonHelper.readJson(entity);
+            } catch (JsonParseException e) {
+                throw new RuntimeException("Unable to deserialize: " + entity, e);
+            }
+        }
+
+        public String location() {
+            if(response.getLocation() != null)
+            {
+                return response.getLocation().toString();
+            }
+            throw new RuntimeException("The request did not contain a location header, unable to provide location. Status code was: " + status());
+        }
+    }
+
+    public static class RawPayload
+    {
+        private final String payload;
+
+        public static RawPayload rawPayload( String payload )
+        {
+            return new RawPayload( payload );
+        }
+
+        private RawPayload( String payload )
+        {
+            this.payload = payload;
+        }
+
+        public String get()
+        {
+            return payload;
+        }
+    }
+}

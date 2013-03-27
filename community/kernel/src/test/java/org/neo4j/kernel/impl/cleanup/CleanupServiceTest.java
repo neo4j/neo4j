@@ -19,9 +19,13 @@
  */
 package org.neo4j.kernel.impl.cleanup;
 
-import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.*;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.*;
+
+import java.io.Closeable;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
 
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
@@ -30,10 +34,6 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
-
-import java.io.Closeable;
-import java.util.Iterator;
-import java.util.NoSuchElementException;
 
 public class CleanupServiceTest
 {
@@ -49,7 +49,7 @@ public class CleanupServiceTest
         service.start();
 
         // THEN
-        verify( scheduler ).submit( Matchers.<Runnable> any() );
+        verify( scheduler ).schedule( Matchers.<Runnable> any() );
     }
 
     @Test
@@ -65,7 +65,7 @@ public class CleanupServiceTest
         task.run();
 
         // THEN
-        verify( scheduler ).submit( Matchers.<Runnable> any() );
+        verify( scheduler ).schedule( Matchers.<Runnable> any() );
     }
 
     @Test
@@ -206,7 +206,7 @@ public class CleanupServiceTest
     private Runnable acquireCleanupTask()
     {
         ArgumentCaptor<Runnable> taskCaptor = ArgumentCaptor.forClass( Runnable.class );
-        verify( scheduler ).submit( taskCaptor.capture() );
+        verify( scheduler ).schedule( taskCaptor.capture() );
         Runnable task = taskCaptor.getValue();
         return task;
     }
