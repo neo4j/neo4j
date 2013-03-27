@@ -19,9 +19,23 @@
  */
 package org.neo4j.ha;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
+
+import java.util.concurrent.Future;
+
 import org.junit.Ignore;
 import org.junit.Test;
-import org.neo4j.graphdb.*;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Lock;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.NotFoundException;
+import org.neo4j.graphdb.NotInTransactionException;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.ha.HaSettings;
@@ -31,12 +45,6 @@ import org.neo4j.test.AbstractClusterTest;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 
-import java.util.concurrent.Future;
-
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.*;
-
-@Ignore
 public class TransactionConstraintsIT extends AbstractClusterTest
 {
     @Test
