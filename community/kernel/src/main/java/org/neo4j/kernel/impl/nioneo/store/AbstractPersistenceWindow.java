@@ -103,19 +103,11 @@ abstract class AbstractPersistenceWindow extends LockableWindow
     {
         ByteBuffer byteBuffer = buffer.getBuffer();
         byteBuffer.clear();
-
         try
         {
-            int written = 0;
-
-            while ( byteBuffer.hasRemaining() ) {
-                int writtenThisTime = getFileChannel().write( byteBuffer, position * recordSize + written );
-
-                if (writtenThisTime == 0)
-                    throw new IOException( "Unable to write to disk, reported bytes written was " + writtenThisTime );
-
-                written += writtenThisTime;
-            }
+            int count = getFileChannel().write( byteBuffer,
+                position * recordSize );
+            assert count == totalSize;
         }
         catch ( IOException e )
         {

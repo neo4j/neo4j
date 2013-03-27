@@ -44,7 +44,7 @@ public class MadeUpClient extends Client<MadeUpCommunicationInterface> implement
             byte internalProtocolVersion, byte applicationProtocolVersion, int chunkSize )
     {
         super( localhost(), port, new DevNullLoggingService(), storeIdToExpect, FRAME_LENGTH,
-                applicationProtocolVersion, Client.DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS * 1000,
+                applicationProtocolVersion, Client.DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS,
                 Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT,
                 Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT, chunkSize );
         this.internalProtocolVersion = internalProtocolVersion;

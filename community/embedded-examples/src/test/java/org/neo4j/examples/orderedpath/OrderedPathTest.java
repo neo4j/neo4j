@@ -37,7 +37,7 @@ import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.JavaDocsGenerator;
 import org.neo4j.visualization.asciidoc.AsciidocHelper;
 
-public class OrderedPathDocTest
+public class OrderedPathTest
 {
     private static OrderedPath orderedPath;
     private static JavaDocsGenerator gen;

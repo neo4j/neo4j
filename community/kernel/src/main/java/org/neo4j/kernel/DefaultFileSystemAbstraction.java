@@ -99,15 +99,9 @@ public class DefaultFileSystemAbstraction
     }
     
     @Override
-    public void mkdirs( File path ) throws IOException
+    public boolean mkdirs( File fileName )
     {
-        if (path.exists()) return;
-
-        boolean directoriesWereCreated = path.mkdirs();
-
-        if (directoriesWereCreated) return;
-
-        throw new IOException( format( UNABLE_TO_CREATE_DIRECTORY_FORMAT, path ) );
+        return fileName.mkdirs();
     }
 
     @Override
@@ -138,6 +132,18 @@ public class DefaultFileSystemAbstraction
     public boolean renameFile( File from, File to ) throws IOException
     {
         return FileUtils.renameFile( from, to );
+    }
+
+    @Override
+    public void autoCreatePath( File path ) throws IOException
+    {
+        if (path.exists()) return;
+
+        boolean directoriesWereCreated = path.mkdirs();
+
+        if (directoriesWereCreated) return;
+
+        throw new IOException( format( UNABLE_TO_CREATE_DIRECTORY_FORMAT, path ) );
     }
 
     @Override

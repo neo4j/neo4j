@@ -7,6 +7,8 @@ The examples start out with the following database:
 
 include::includes/cypher-delete-graph.asciidoc[]
 
+:leveloffset: 2
+
 include::delete-single-node.asciidoc[]
 
 include::delete-a-node-and-connected-relationships.asciidoc[]

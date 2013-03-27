@@ -4,7 +4,7 @@ Graph Algorithm examples
 
 [TIP]
 The source code used in the example is found here:
-https://github.com/neo4j/neo4j/blob/{neo4j-git-tag}/community/embedded-examples/src/test/java/org/neo4j/examples/PathFindingDocTest.java[PathFindingDocTest.java]
+https://github.com/neo4j/neo4j/blob/{neo4j-git-tag}/community/embedded-examples/src/test/java/org/neo4j/examples/PathFindingExamplesTest.java[PathFindingExamplesTest.java]
 
 
 Calculating the shortest path (least number of relationships) between two nodes:
@@ -12,7 +12,7 @@ Calculating the shortest path (least number of relationships) between two nodes:
 [snippet,java]
 ----
 component=neo4j-examples
-source=org/neo4j/examples/PathFindingDocTest.java
+source=org/neo4j/examples/PathFindingExamplesTest.java
 tag=shortestPathUsage
 ----
 
@@ -21,7 +21,7 @@ Using http://en.wikipedia.org/wiki/Dijkstra%27s_algorithm[Dijkstra's algorithm] 
 [snippet,java]
 ----
 component=neo4j-examples
-source=org/neo4j/examples/PathFindingDocTest.java
+source=org/neo4j/examples/PathFindingExamplesTest.java
 tag=dijkstraUsage
 ----
 
@@ -33,7 +33,7 @@ image::graphalgo-astar.png[scaledwidth="50%", alt="A* algorithm example graph"]
 [snippet,java]
 ----
 component=neo4j-examples
-source=org/neo4j/examples/PathFindingDocTest.java
+source=org/neo4j/examples/PathFindingExamplesTest.java
 tag=astarUsage
 ----
 

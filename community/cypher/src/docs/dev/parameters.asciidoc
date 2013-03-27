@@ -18,7 +18,7 @@ Here follows a few examples of how you can use parameters from Java.
 [snippet,java]
 ----
 component=neo4j-cypher
-source=org/neo4j/cypher/javacompat/JavaExecutionEngineDocTest.java
+source=org/neo4j/cypher/javacompat/JavaExecutionEngineTest.java
 tag=exampleWithParameterForNodeId
 classifier=test-sources
 ----
@@ -27,7 +27,7 @@ classifier=test-sources
 [snippet,java]
 ----
 component=neo4j-cypher
-source=org/neo4j/cypher/javacompat/JavaExecutionEngineDocTest.java
+source=org/neo4j/cypher/javacompat/JavaExecutionEngineTest.java
 tag=exampleWithParameterForNodeObject
 classifier=test-sources
 ----
@@ -36,7 +36,7 @@ classifier=test-sources
 [snippet,java]
 ----
 component=neo4j-cypher
-source=org/neo4j/cypher/javacompat/JavaExecutionEngineDocTest.java
+source=org/neo4j/cypher/javacompat/JavaExecutionEngineTest.java
 tag=exampleWithParameterForMultipleNodeIds
 classifier=test-sources
 ----
@@ -45,7 +45,7 @@ classifier=test-sources
 [snippet,java]
 ----
 component=neo4j-cypher
-source=org/neo4j/cypher/javacompat/JavaExecutionEngineDocTest.java
+source=org/neo4j/cypher/javacompat/JavaExecutionEngineTest.java
 tag=exampleWithStringLiteralAsParameter
 classifier=test-sources
 ----
@@ -54,7 +54,7 @@ classifier=test-sources
 [snippet,java]
 ----
 component=neo4j-cypher
-source=org/neo4j/cypher/javacompat/JavaExecutionEngineDocTest.java
+source=org/neo4j/cypher/javacompat/JavaExecutionEngineTest.java
 tag=exampleWithParametersForIndexKeyAndValue
 classifier=test-sources
 ----
@@ -63,7 +63,7 @@ classifier=test-sources
 [snippet,java]
 ----
 component=neo4j-cypher
-source=org/neo4j/cypher/javacompat/JavaExecutionEngineDocTest.java
+source=org/neo4j/cypher/javacompat/JavaExecutionEngineTest.java
 tag=exampleWithParametersForQuery
 classifier=test-sources
 ----
@@ -72,7 +72,7 @@ classifier=test-sources
 [snippet,java]
 ----
 component=neo4j-cypher
-source=org/neo4j/cypher/javacompat/JavaExecutionEngineDocTest.java
+source=org/neo4j/cypher/javacompat/JavaExecutionEngineTest.java
 tag=exampleWithParameterForSkipLimit
 classifier=test-sources
 ----
@@ -81,7 +81,7 @@ classifier=test-sources
 [snippet,java]
 ----
 component=neo4j-cypher
-source=org/neo4j/cypher/javacompat/JavaExecutionEngineDocTest.java
+source=org/neo4j/cypher/javacompat/JavaExecutionEngineTest.java
 tag=exampleWithParameterRegularExpression
 classifier=test-sources
 ----
@@ -90,7 +90,7 @@ classifier=test-sources
 [snippet,java]
 ----
 component=neo4j-cypher
-source=org/neo4j/cypher/javacompat/JavaExecutionEngineDocTest.java
+source=org/neo4j/cypher/javacompat/JavaExecutionEngineTest.java
 tag=set_properties_on_a_node_from_a_map
 classifier=test-sources
 ----

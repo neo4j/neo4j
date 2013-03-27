@@ -11,6 +11,8 @@ The examples use this graph as a starting point:
 
 include::includes/cypher-set-graph.asciidoc[]
 
+:leveloffset: 2
+
 include::set-a-property.asciidoc[]
 include::remove-a-property.asciidoc[]
 include::copying-properties-between-nodes-and-relationships.asciidoc[]

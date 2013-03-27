@@ -28,7 +28,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.test.TargetDirectory;
 
-public class StartWithConfigurationDocTest
+public class StartWithConfigurationTest
 {
     @Test
     public void loadFromFile()

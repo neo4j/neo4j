@@ -55,7 +55,7 @@ import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.test.AsciiDocGenerator;
 import org.neo4j.test.TargetDirectory;
 
-public class JmxDocTest
+public class JmxDocsTest
 {
     private static final String IFDEF_HTMLOUTPUT = "ifndef::nonhtmloutput[]\n";
     private static final String IFDEF_NONHTMLOUTPUT = "ifdef::nonhtmloutput[]\n";
@@ -79,7 +79,7 @@ public class JmxDocTest
             put( "java.util.Date", "Date (java.util.Date)" );
         }
     };
-    private static final TargetDirectory dir = TargetDirectory.forTest( JmxDocTest.class );
+    private static final TargetDirectory dir = TargetDirectory.forTest( JmxDocsTest.class );
     private static GraphDatabaseService db;
 
     @BeforeClass

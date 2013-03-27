@@ -49,7 +49,7 @@ public interface FileSystemAbstraction
     
     boolean mkdir( File fileName );
     
-    void mkdirs( File fileName ) throws IOException;
+    boolean mkdirs( File fileName );
     
     long getFileSize( File fileName );
 
@@ -58,6 +58,9 @@ public interface FileSystemAbstraction
     void deleteRecursively( File directory ) throws IOException;
     
     boolean renameFile( File from, File to ) throws IOException;
+
+    // TODO change the name to something more descriptive
+    void autoCreatePath( File path ) throws IOException;
     
     File[] listFiles( File directory );
     

@@ -135,15 +135,21 @@ public class JumpingFileSystemAbstraction extends LifecycleAdapter implements Fi
     }
     
     @Override
-    public void mkdirs( File fileName )
+    public boolean mkdirs( File fileName )
     {
-        actualFileSystem.mkdirs( fileName );
+        return actualFileSystem.mkdirs( fileName );
     }
     
     @Override
     public boolean renameFile( File from, File to ) throws IOException
     {
         return actualFileSystem.renameFile( from, to );
+    }
+    
+    @Override
+    public void autoCreatePath( File path ) throws IOException
+    {
+        actualFileSystem.autoCreatePath( path );
     }
 
     @Override

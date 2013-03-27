@@ -90,7 +90,7 @@ the web interface that comes with the server.
 [snippet,java]
 ----
 component=neo4j-server
-source=org/neo4j/server/WrappingNeoServerBootstrapperDocTest.java
+source=org/neo4j/server/WrappingNeoServerBootstrapperTest.java
 tag=usingWrappingNeoServerBootstrapper
 classifier=test-sources
 ----
@@ -109,7 +109,7 @@ the underlying database, such as database location and database configuration pa
 [snippet,java]
 ----
 component=neo4j-server
-source=org/neo4j/server/WrappingNeoServerBootstrapperDocTest.java
+source=org/neo4j/server/WrappingNeoServerBootstrapperTest.java
 tag=customConfiguredWrappingNeoServerBootstrapper
 classifier=test-sources
 ----

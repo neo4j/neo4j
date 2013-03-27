@@ -39,7 +39,7 @@ To set the stage for our examples, let's create some indexes to begin with:
 [snippet,java]
 ----
 component=neo4j-lucene-index
-source=examples/ImdbDocTest.java
+source=examples/ImdbExampleTest.java
 tag=createIndexes
 ----
 
@@ -53,7 +53,7 @@ You can also check if an index exists like this:
 [snippet,java]
 ----
 component=neo4j-lucene-index
-source=examples/ImdbDocTest.java
+source=examples/ImdbExampleTest.java
 tag=checkIfExists
 ----
 
@@ -68,7 +68,7 @@ A new index can be created with the same name at a later point in time.
 [snippet,java]
 ----
 component=neo4j-lucene-index
-source=examples/ImdbDocTest.java
+source=examples/ImdbExampleTest.java
 tag=delete
 ----
 
@@ -85,7 +85,7 @@ To begin with, let's add a few nodes to the indexes:
 [snippet,java]
 ----
 component=neo4j-lucene-index
-source=examples/ImdbDocTest.java
+source=examples/ImdbExampleTest.java
 tag=createNodes
 ----
 
@@ -96,7 +96,7 @@ Next up, we'll create relationships and index them as well:
 [snippet,java]
 ----
 component=neo4j-lucene-index
-source=examples/ImdbDocTest.java
+source=examples/ImdbExampleTest.java
 tag=createRelationships
 ----
 
@@ -116,7 +116,7 @@ http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/inde
 [snippet,java]
 ----
 component=neo4j-lucene-index
-source=examples/ImdbDocTest.java
+source=examples/ImdbExampleTest.java
 tag=removeNodeFromIndex
 ----
 
@@ -137,7 +137,7 @@ Here's a code example that demonstrates how it's done:
 [snippet,java]
 ----
 component=neo4j-lucene-index
-source=examples/ImdbDocTest.java
+source=examples/ImdbExampleTest.java
 tag=update
 ----
 
@@ -157,7 +157,7 @@ This is how to search for a single exact match:
 [snippet,java]
 ----
 component=neo4j-lucene-index
-source=examples/ImdbDocTest.java
+source=examples/ImdbExampleTest.java
 tag=getSingleNode
 ----
 
@@ -168,7 +168,7 @@ Here's how to get a single relationship by exact matching and retrieve its start
 [snippet,java]
 ----
 component=neo4j-lucene-index
-source=examples/ImdbDocTest.java
+source=examples/ImdbExampleTest.java
 tag=getSingleRelationship
 ----
 
@@ -177,7 +177,7 @@ Finally, we can iterate over all exact matches from a relationship index:
 [snippet,java]
 ----
 component=neo4j-lucene-index
-source=examples/ImdbDocTest.java
+source=examples/ImdbExampleTest.java
 tag=getRelationships
 ----
 
@@ -194,7 +194,7 @@ Here's an example using the key-query option:
 [snippet,java]
 ----
 component=neo4j-lucene-index
-source=examples/ImdbDocTest.java
+source=examples/ImdbExampleTest.java
 tag=actorsQuery
 ----
 
@@ -203,7 +203,7 @@ In the following example the query uses multiple keys:
 [snippet,java]
 ----
 component=neo4j-lucene-index
-source=examples/ImdbDocTest.java
+source=examples/ImdbExampleTest.java
 tag=matrixQuery
 ----
 
@@ -224,7 +224,7 @@ Example of querying a relationship index:
 [snippet,java]
 ----
 component=neo4j-lucene-index
-source=examples/ImdbDocTest.java
+source=examples/ImdbExampleTest.java
 tag=queryForRelationships
 ----
 
@@ -233,7 +233,7 @@ And here's an example for the special case of searching for a specific relations
 [snippet,java]
 ----
 component=neo4j-lucene-index
-source=examples/ImdbDocTest.java
+source=examples/ImdbExampleTest.java
 tag=queryForRelationshipType
 ----
 
@@ -251,7 +251,7 @@ See <<indexing-lucene-sort>> for how to sort by score.
 [snippet,java]
 ----
 component=neo4j-lucene-index
-source=examples/ImdbDocTest.java
+source=examples/ImdbExampleTest.java
 tag=queryWithScore
 ----
 
@@ -265,7 +265,7 @@ For example to create a Lucene fulltext index:
 [snippet,java]
 ----
 component=neo4j-lucene-index
-source=examples/ImdbDocTest.java
+source=examples/ImdbExampleTest.java
 tag=fulltext
 ----
 
@@ -310,7 +310,7 @@ To mark a value so that it is indexed as a numeric value, we can make use of the
 [snippet,java]
 ----
 component=neo4j-lucene-index
-source=examples/ImdbDocTest.java
+source=examples/ImdbExampleTest.java
 tag=numericRange
 ----
 
@@ -324,7 +324,7 @@ In the following example we are doing that, and have added sorting to the query 
 [snippet,java]
 ----
 component=neo4j-lucene-index
-source=examples/ImdbDocTest.java
+source=examples/ImdbExampleTest.java
 tag=sortedNumericRange
 ----
 
@@ -333,7 +333,7 @@ From/to in the ranges defaults to be _inclusive_, but you can change this behavi
 [snippet,java]
 ----
 component=neo4j-lucene-index
-source=examples/ImdbDocTest.java
+source=examples/ImdbExampleTest.java
 tag=exclusiveRange
 ----
 
@@ -347,7 +347,7 @@ Lucene performs sorting very well, and that is also exposed in the index backend
 [snippet,java]
 ----
 component=neo4j-lucene-index
-source=examples/ImdbDocTest.java
+source=examples/ImdbExampleTest.java
 tag=sortedResult
 ----
 
@@ -356,7 +356,7 @@ We sort the results by relevance (score) like this:
 [snippet,java]
 ----
 component=neo4j-lucene-index
-source=examples/ImdbDocTest.java
+source=examples/ImdbExampleTest.java
 tag=queryWithRelevance
 ----
 
@@ -368,7 +368,7 @@ Instead of passing in Lucene query syntax queries, you can instantiate such quer
 [snippet,java]
 ----
 component=neo4j-lucene-index
-source=examples/ImdbDocTest.java
+source=examples/ImdbExampleTest.java
 tag=termQuery
 ----
 
@@ -379,7 +379,7 @@ This is how to perform _wildcard_ searches using Lucene Query Objects:
 [snippet,java]
 ----
 component=neo4j-lucene-index
-source=examples/ImdbDocTest.java
+source=examples/ImdbExampleTest.java
 tag=wildcardTermQuery
 ----
 
@@ -393,7 +393,7 @@ Lucene supports querying for multiple terms in the same query, like so:
 [snippet,java]
 ----
 component=neo4j-lucene-index
-source=examples/ImdbDocTest.java
+source=examples/ImdbExampleTest.java
 tag=compoundQueries
 ----
 
@@ -407,7 +407,7 @@ The default operator (that is whether +AND+ or +OR+ is used in between different
 [snippet,java]
 ----
 component=neo4j-lucene-index
-source=examples/ImdbDocTest.java
+source=examples/ImdbExampleTest.java
 tag=defaultOperator
 ----
 
@@ -421,7 +421,7 @@ You can control the size of the cache (the maximum number of results) per index 
 [snippet,java]
 ----
 component=neo4j-lucene-index
-source=examples/ImdbDocTest.java
+source=examples/ImdbExampleTest.java
 tag=cache
 ----
 

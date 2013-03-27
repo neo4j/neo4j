@@ -27,6 +27,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.kernel.configuration.ConfigurationMigrator;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
@@ -34,7 +35,7 @@ import org.neo4j.kernel.impl.util.StringLogger;
  */
 public class EnterpriseConfigurationMigratorTest
 {
-    EnterpriseConfigurationMigrator migrator = new EnterpriseConfigurationMigrator();
+    ConfigurationMigrator migrator = new EnterpriseConfigurationMigrator();
     
     @Test
     public void testOnlineBackupMigration()
@@ -55,7 +56,7 @@ public class EnterpriseConfigurationMigratorTest
         Map<String, String> migrated = migrator.apply( original, StringLogger.SYSTEM );
         Assert.assertThat( migrated.containsKey( "enable_online_backup" ), is( false ) );
         Assert.assertThat( migrated.get( "online_backup_enabled" ), is( "true" ) );
-        Assert.assertThat( migrated.get( "online_backup_server" ), is( "0.0.0.0:123" ) );
+        Assert.assertThat( migrated.get( "online_backup_server" ), is( ":123" ) );
     }
 
     @Test

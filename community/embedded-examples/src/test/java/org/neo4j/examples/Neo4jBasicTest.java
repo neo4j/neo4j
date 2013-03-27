@@ -34,7 +34,7 @@ import static org.junit.Assert.*;
 /**
  * An example of unit testing with Neo4j.
  */
-public class Neo4jBasicDocTest
+public class Neo4jBasicTest
 {
     protected GraphDatabaseService graphDb;
 

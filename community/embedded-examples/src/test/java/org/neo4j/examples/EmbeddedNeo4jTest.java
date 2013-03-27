@@ -25,7 +25,7 @@ import org.junit.Test;
 import org.neo4j.test.JavaDocsGenerator;
 import org.neo4j.visualization.asciidoc.AsciidocHelper;
 
-public class EmbeddedNeo4jDocTest
+public class EmbeddedNeo4jTest
 {
     private static EmbeddedNeo4j hello;
     private static JavaDocsGenerator gen;
