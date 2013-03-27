@@ -144,4 +144,4 @@ Cypher supports CASE expressions, which is a generic conditional expression, sim
 languages. Two variants of +CASE+ exist - the simple form and the generic form.
 
 include::simple-case.asciidoc[]
-include::general-case.asciidoc[]
+include::generic-case.asciidoc[]
