@@ -27,7 +27,7 @@ import org.neo4j.test.GraphDescription.Graph;
 
 import static org.neo4j.visualization.asciidoc.AsciidocHelper.*;
 
-public class TraversalDocTest extends AbstractJavaDocTestbase
+public class TraversalTest extends AbstractJavaDocTestbase
 {
     /**
      * A

@@ -97,7 +97,7 @@ public class StoreFactory
         if ( !readOnly && !fileSystemAbstraction.fileExists( store ))
         {
             stringLogger.logMessage( "Creating new db @ " + store, true );
-            fileSystemAbstraction.mkdirs( store.getParentFile() );
+            fileSystemAbstraction.autoCreatePath( store.getParentFile() );
             createNeoStore( store ).close();
             created = true;
         }

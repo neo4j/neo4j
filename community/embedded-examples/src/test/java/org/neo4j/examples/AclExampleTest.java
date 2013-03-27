@@ -28,7 +28,7 @@ import org.junit.Test;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.test.GraphDescription.Graph;
 
-public class AclExampleDocTest extends AbstractJavaDocTestbase
+public class AclExampleTest extends AbstractJavaDocTestbase
 {
     
     /**

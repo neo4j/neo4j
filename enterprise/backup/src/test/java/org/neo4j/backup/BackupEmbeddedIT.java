@@ -19,11 +19,10 @@
  */
 package org.neo4j.backup;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 import static org.neo4j.graphdb.factory.GraphDatabaseSetting.osIsWindows;
 
 import java.io.File;
-import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -36,7 +35,6 @@ import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.test.DbRepresentation;
@@ -47,9 +45,7 @@ public class BackupEmbeddedIT
 {
     public static final File PATH = TargetDirectory.forTest( BackupEmbeddedIT.class ).directory( "db" );
     public static final File BACKUP_PATH = TargetDirectory.forTest( BackupEmbeddedIT.class ).directory( "backup-db" );
-
     private GraphDatabaseService db;
-    private String ip;
 
     @Before
     public void before() throws Exception
@@ -57,7 +53,6 @@ public class BackupEmbeddedIT
         if ( osIsWindows() ) return;
         FileUtils.deleteDirectory( PATH );
         FileUtils.deleteDirectory( BACKUP_PATH  );
-        ip = InetAddress.getLocalHost().getHostAddress();
     }
 
     public static DbRepresentation createSomeData( GraphDatabaseService db )
@@ -86,13 +81,13 @@ public class BackupEmbeddedIT
         assertEquals(
                 0,
                 runBackupToolFromOtherJvmToGetExitCode( "-from",
-                        BackupTool.DEFAULT_SCHEME + "://"+ ip, "-to",
+                        BackupTool.DEFAULT_SCHEME + "://localhost", "-to",
                         BACKUP_PATH.getPath() ) );
         assertEquals( DbRepresentation.of( db ), DbRepresentation.of( BACKUP_PATH ) );
         createSomeData( db );
         assertEquals(
                 0,
-                runBackupToolFromOtherJvmToGetExitCode( "-from", BackupTool.DEFAULT_SCHEME + "://"+ ip,
+                runBackupToolFromOtherJvmToGetExitCode( "-from", BackupTool.DEFAULT_SCHEME + "://localhost",
                         "-to", BACKUP_PATH.getPath() ) );
         assertEquals( DbRepresentation.of( db ), DbRepresentation.of( BACKUP_PATH ) );
     }
@@ -106,18 +101,18 @@ public class BackupEmbeddedIT
         assertEquals(
                 1,
                 runBackupToolFromOtherJvmToGetExitCode( "-from",
-                        BackupTool.DEFAULT_SCHEME + "://" + ip, "-to",
+                        BackupTool.DEFAULT_SCHEME + "://localhost", "-to",
                         BACKUP_PATH.getPath() ) );
         assertEquals(
                 0,
                 runBackupToolFromOtherJvmToGetExitCode( "-from",
-                        BackupTool.DEFAULT_SCHEME + "://"+ ip +":" + port,
+                        BackupTool.DEFAULT_SCHEME + "://localhost:" + port,
                         "-to", BACKUP_PATH.getPath() ) );
         assertEquals( DbRepresentation.of( db ), DbRepresentation.of( BACKUP_PATH ) );
         createSomeData( db );
         assertEquals(
                 0,
-                runBackupToolFromOtherJvmToGetExitCode( "-from", BackupTool.DEFAULT_SCHEME + "://"+ ip +":"
+                runBackupToolFromOtherJvmToGetExitCode( "-from", BackupTool.DEFAULT_SCHEME + "://localhost:"
                                  + port, "-to",
                         BACKUP_PATH.getPath() ) );
         assertEquals( DbRepresentation.of( db ), DbRepresentation.of( BACKUP_PATH ) );
@@ -125,14 +120,9 @@ public class BackupEmbeddedIT
 
     private void startDb( String backupPort )
     {
-        GraphDatabaseBuilder dbBuild = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( PATH
-                .getPath() ).
-                setConfig( OnlineBackupSettings.online_backup_enabled, GraphDatabaseSetting.TRUE );
-        if(backupPort != null)
-        {
-            dbBuild = dbBuild.setConfig( OnlineBackupSettings.online_backup_server, ip +":" + backupPort );
-        }
-        db = dbBuild.newGraphDatabase();
+        db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( PATH.getPath() ).
+            setConfig( OnlineBackupSettings.online_backup_enabled, GraphDatabaseSetting.TRUE ).
+            setConfig( OnlineBackupSettings.online_backup_server, ":"+backupPort ).newGraphDatabase();
         createSomeData( db );
     }
 

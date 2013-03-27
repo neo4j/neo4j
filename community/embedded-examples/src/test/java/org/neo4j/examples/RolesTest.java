@@ -36,7 +36,7 @@ import org.neo4j.kernel.Traversal;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.test.GraphDescription.Graph;
 
-public class RolesDocTest extends AbstractJavaDocTestbase
+public class RolesTest extends AbstractJavaDocTestbase
 {
     private static final String NAME = "name";
 

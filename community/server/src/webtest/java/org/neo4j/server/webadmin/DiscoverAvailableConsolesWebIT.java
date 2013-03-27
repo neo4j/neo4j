@@ -21,13 +21,11 @@ package org.neo4j.server.webadmin;
 
 import static org.neo4j.server.helpers.ServerBuilder.server;
 
-import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.configuration.Configurator;
 import org.openqa.selenium.By;
 
-@Ignore("On avengers wall to be resolved")
 public class DiscoverAvailableConsolesWebIT extends AbstractExclusiveServerWebadminTest {
 
     @Test

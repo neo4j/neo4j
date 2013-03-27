@@ -32,7 +32,7 @@ import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.test.TestData.Title;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
-public class CypherSqlDocIT extends AbstractJavaDocTestbase
+public class CypherSqlIT extends AbstractJavaDocTestbase
 {
     private static CypherSql cyperSql;
 
@@ -54,7 +54,6 @@ public class CypherSqlDocIT extends AbstractJavaDocTestbase
      * This guide is for people who understand SQL. You can use that prior
      * knowledge to quickly get going with Cypher and start exploring Neo4j.
      * 
-     * [[query-sql-start]]
      * == Start ==
      * 
      * SQL starts with the result you want -- we `SELECT` what we want and then
@@ -83,7 +82,6 @@ public class CypherSqlDocIT extends AbstractJavaDocTestbase
      * Cypher allows multiple starting points. This should not be strange from a SQL perspective -- 
      * every table in the `FROM` clause is another starting point.
      * 
-     * [[query-sql-match]]
      * == Match ==
      * 
      * Unlike SQL which operates on sets, Cypher predominantly works on sub-graphs. 
@@ -164,7 +162,6 @@ public class CypherSqlDocIT extends AbstractJavaDocTestbase
      * Some SQL dialects have recursive abilities, that allow the expression of queries like this, but you may have a hard time wrapping your head around those. 
      * Expressing something like this in SQL is hugely impractical if not practically impossible.
      * 
-     * [[query-sql-where]]
      * == Where ==
      * 
      * This is the easiest thing to understand -- it's the same animal in both languages. 
@@ -181,7 +178,6 @@ public class CypherSqlDocIT extends AbstractJavaDocTestbase
      * 
      * @@Where-cypher-result
      * 
-     * [[query-sql-return]]
      * == Return ==
      * This is SQL's `SELECT`. 
      * We just put it in the end because it felt better to have it there -- 

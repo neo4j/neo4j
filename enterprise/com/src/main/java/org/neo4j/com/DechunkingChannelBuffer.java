@@ -44,16 +44,16 @@ public class DechunkingChannelBuffer implements ChannelBuffer
     private ChannelBuffer buffer;
     private boolean more;
     private boolean hasMarkedReaderIndex;
-    private final long timeoutMillis;
+    private final long timeoutSeconds;
     private boolean failure;
     private final byte applicationProtocolVersion;
     private final byte internalProtocolVersion;
 
-    DechunkingChannelBuffer( BlockingReadHandler<ChannelBuffer> reader, long timeoutMillis, byte internalProtocolVersion,
+    DechunkingChannelBuffer( BlockingReadHandler<ChannelBuffer> reader, long timeoutSeconds, byte internalProtocolVersion,
             byte applicationProtocolVersion )
     {
         this.reader = reader;
-        this.timeoutMillis = timeoutMillis;
+        this.timeoutSeconds = timeoutSeconds;
         this.internalProtocolVersion = internalProtocolVersion;
         this.applicationProtocolVersion = applicationProtocolVersion;
         readNextChunk();
@@ -63,7 +63,7 @@ public class DechunkingChannelBuffer implements ChannelBuffer
     {
         try
         {
-            ChannelBuffer result = reader.read( timeoutMillis, TimeUnit.MILLISECONDS );
+            ChannelBuffer result = reader.read( timeoutSeconds, TimeUnit.SECONDS );
             if ( result == null )
             {
                 throw new ComException( "Channel has been closed" );

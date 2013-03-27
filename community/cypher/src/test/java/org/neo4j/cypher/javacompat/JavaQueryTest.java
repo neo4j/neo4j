@@ -25,7 +25,7 @@ import org.junit.Test;
 import org.neo4j.test.JavaDocsGenerator;
 import org.neo4j.visualization.asciidoc.AsciidocHelper;
 
-public class JavaQueryDocTest
+public class JavaQueryTest
 {
     @Test
     public void test()
