@@ -19,7 +19,6 @@
  */
 package org.neo4j.backup;
 
-import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -50,7 +49,6 @@ import org.neo4j.kernel.StoreLockException;
 import org.neo4j.kernel.impl.nioneo.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.subprocess.SubProcess;

@@ -20,11 +20,9 @@
 package org.neo4j.test.impl;
 
 import static java.util.Arrays.asList;
-import static org.hamcrest.CoreMatchers.endsWith;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
