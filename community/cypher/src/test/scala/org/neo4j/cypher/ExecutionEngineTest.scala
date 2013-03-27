@@ -2476,5 +2476,13 @@ RETURN x0.name?
     assert(result.toList === List(Map("p" -> PathImpl(n))))
   }
 
+  @Test
+  def should_handle_multiple_aggregates_on_the_same_node() {
+    //WHEN
+    val result = parseAndExecute("start n=node(*) return count(n), collect(n)")
+
+    //THEN
+    assert(result.toList === List(Map("count(n)" -> 1, "collect(n)" -> Seq(refNode))))
+  }
 
 }
