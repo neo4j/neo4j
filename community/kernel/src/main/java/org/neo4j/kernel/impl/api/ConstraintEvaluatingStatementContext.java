@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import static org.neo4j.helpers.collection.IteratorUtil.loop;
+
 import org.neo4j.kernel.api.ConstraintViolationKernelException;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
@@ -50,7 +52,7 @@ public class ConstraintEvaluatingStatementContext extends CompositeStatementCont
     @Override
     public IndexRule addIndexRule( long labelId, long propertyKey ) throws ConstraintViolationKernelException
     {
-        for ( IndexRule existingRule : getIndexRules( labelId ) )
+        for ( IndexRule existingRule : loop( getIndexRules( labelId ) ) )
         {
             if ( existingRule.getPropertyKey() == propertyKey )
             {

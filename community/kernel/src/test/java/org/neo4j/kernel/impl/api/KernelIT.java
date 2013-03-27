@@ -19,6 +19,18 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.Set;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -31,14 +43,6 @@ import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.TransactionContext;
 import org.neo4j.test.ImpermanentGraphDatabase;
-
-import java.util.Collections;
-import java.util.Set;
-
-import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.*;
-import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
 public class KernelIT
 {
@@ -93,7 +97,10 @@ public class KernelIT
         long labelId = statement.getOrCreateLabelId( "labello" );
         statement.addLabelToNode( labelId, node.getId() );
 
-        // 4: Commit through the beans API
+        // 4: Close the StatementContext
+        statement.close();
+
+        // 5: Commit through the beans API
         beansAPITx.success();
         beansAPITx.finish();
 
@@ -134,7 +141,7 @@ public class KernelIT
         Node node = db.createNode();
         long labelId = statement.getOrCreateLabelId( "labello" );
         statement.addLabelToNode( labelId, node.getId() );
-        //statement.close();  // Because we are currently using the statement context from the beans API, the Beans API will close it for us
+        statement.close();
         tx.finish();
 
         // THEN
@@ -152,7 +159,7 @@ public class KernelIT
         Node node = db.createNode();
         long labelId = statement.getOrCreateLabelId( "labello" );
         statement.addLabelToNode( labelId, node.getId() );
-        //statement.close();  // Because we are currently using the statement context from the beans API, the Beans API will close it for us
+        statement.close();
         tx.failure();
         tx.success();
         tx.finish();
@@ -175,6 +182,7 @@ public class KernelIT
         statement.addLabelToNode( labelId1, node.getId() );
         statement.addLabelToNode( labelId2, node.getId() );
         statement.removeLabelFromNode( labelId2, node.getId() );
+        statement.close();
         tx.success();
         tx.finish();
 
@@ -201,6 +209,7 @@ public class KernelIT
         assertFalse( statement.isLabelSetOnNode( labelId2, node.getId() ) );
         assertEquals( asSet( labelId1 ), asSet( statement.getLabelsForNode( node.getId() ) ) );
 
+        statement.close();
         tx.success();
         tx.finish();
     }
@@ -216,6 +225,7 @@ public class KernelIT
         long labelId2 = statement.getOrCreateLabelId( "labello2" );
         statement.addLabelToNode( labelId1, node.getId() );
         statement.addLabelToNode( labelId2, node.getId() );
+        statement.close();
         tx.success();
         tx.finish();
         tx = db.beginTx();
@@ -225,10 +235,11 @@ public class KernelIT
         statement.removeLabelFromNode( labelId2, node.getId() );
 
         // THEN
-        Iterable<Long> labelsIterable = statement.getLabelsForNode( node.getId() );
-        Set<Long> labels = asSet( labelsIterable );
+        Iterator<Long> labelsIterator = statement.getLabelsForNode( node.getId() );
+        Set<Long> labels = asSet( labelsIterator );
         assertFalse( statement.isLabelSetOnNode( labelId2, node.getId() ) );
         assertEquals( asSet( labelId1 ), labels );
+        statement.close();
         tx.success();
         tx.finish();
     }
@@ -242,6 +253,7 @@ public class KernelIT
         StatementContext statement = statementContextProvider.getCtxForWriting();
         long labelId = statement.getOrCreateLabelId( "mylabel" );
         statement.addLabelToNode( labelId, node.getId() );
+        statement.close();
         tx.success();
         tx.finish();
 
@@ -262,6 +274,7 @@ public class KernelIT
         Node node = db.createNode();
         StatementContext statement = statementContextProvider.getCtxForWriting();
         long labelId = statement.getOrCreateLabelId( "mylabel" );
+        statement.close();
         tx.success();
         tx.finish();
 
@@ -283,6 +296,7 @@ public class KernelIT
         StatementContext statement = statementContextProvider.getCtxForWriting();
         long labelId = statement.getOrCreateLabelId( "mylabel" );
         statement.addLabelToNode( labelId, node.getId() );
+        statement.close();
         tx.success();
         tx.finish();
 
@@ -303,6 +317,7 @@ public class KernelIT
         Node node = db.createNode();
         StatementContext statement = statementContextProvider.getCtxForWriting();
         long labelId = statement.getOrCreateLabelId( "mylabel" );
+        statement.close();
         tx.success();
         tx.finish();
 
@@ -333,6 +348,7 @@ public class KernelIT
         Set<Long> labels = asSet( statement.getLabelsForNode( node.getId() ) );
         boolean labelIsSet = statement.isLabelSetOnNode( labelId, node.getId() );
         Set<Long> nodes = asSet( statement.getNodesWithLabel( labelId ) );
+        statement.close();
         tx.success();
         tx.finish();
 
@@ -361,12 +377,14 @@ public class KernelIT
         // WHEN
         tx = db.beginTx();
         StatementContext statement = statementContextProvider.getCtxForWriting();
-        Set<Long> nodes = asSet(statement.getNodesWithLabel(statement.getLabelId(label.name())));
+        long labelId = statement.getLabelId( label.name() );
+        Iterator<Long> nodes = statement.getNodesWithLabel( labelId );
+        Set<Long> nodeSet = asSet( nodes );
         tx.success();
         tx.finish();
 
         // THEN
-        assertThat( nodes, equalTo(Collections.<Long>emptySet()) );
+        assertThat( nodeSet, equalTo(Collections.<Long>emptySet()) );
     }
 
     private GraphDatabaseAPI db;

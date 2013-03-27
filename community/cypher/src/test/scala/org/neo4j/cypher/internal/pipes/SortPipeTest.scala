@@ -32,7 +32,7 @@ class SortPipeTest extends JUnitSuite {
     val source = new FakePipe(List(), "x" -> ScalarType())
     val sortPipe = new SortPipe(source, List(SortItem(Identifier("x"), true)))
 
-    assertEquals(List(), sortPipe.createResults(QueryState()).toList)
+    assertEquals(List(), sortPipe.createResults(QueryStateHelper.empty).toList)
   }
 
   @Test def simpleSortingIsSupported() {
@@ -40,7 +40,7 @@ class SortPipeTest extends JUnitSuite {
     val source = new FakePipe(list, "x" -> StringType())
     val sortPipe = new SortPipe(source, List(SortItem(Identifier("x"), true)))
 
-    assertEquals(List(MutableMap("x" -> "A"), MutableMap("x" -> "B")), sortPipe.createResults(QueryState()).toList)
+    assertEquals(List(MutableMap("x" -> "A"), MutableMap("x" -> "B")), sortPipe.createResults(QueryStateHelper.empty).toList)
   }
 
   @Test def sortByTwoColumns() {
@@ -56,7 +56,7 @@ class SortPipeTest extends JUnitSuite {
     assertEquals(List(
       MutableMap("x" -> "A", "y" -> 100),
       MutableMap("x" -> "B", "y" -> 10),
-      MutableMap("x" -> "B", "y" -> 20)), sortPipe.createResults(QueryState()).toList)
+      MutableMap("x" -> "B", "y" -> 20)), sortPipe.createResults(QueryStateHelper.empty).toList)
   }
 
   @Test def sortByTwoColumnsWithOneDescending() {
@@ -72,7 +72,7 @@ class SortPipeTest extends JUnitSuite {
     assertEquals(List(
       MutableMap("x" -> "A", "y" -> 100),
       MutableMap("x" -> "B", "y" -> 20),
-      MutableMap("x" -> "B", "y" -> 10)), sortPipe.createResults(QueryState()).toList)
+      MutableMap("x" -> "B", "y" -> 10)), sortPipe.createResults(QueryStateHelper.empty).toList)
   }
 
   @Test def shouldHandleSortingWithNullValues() {
@@ -87,6 +87,6 @@ class SortPipeTest extends JUnitSuite {
     assertEquals(List(
       MutableMap("y" -> 1),
       MutableMap("y" -> 2),
-      MutableMap("y" -> null)), sortPipe.createResults(QueryState()).toList)
+      MutableMap("y" -> null)), sortPipe.createResults(QueryStateHelper.empty).toList)
   }
 }

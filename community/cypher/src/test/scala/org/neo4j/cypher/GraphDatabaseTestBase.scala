@@ -27,7 +27,6 @@ import org.neo4j.graphdb._
 import org.neo4j.test.ImpermanentGraphDatabase
 import org.neo4j.kernel.ThreadToStatementContextBridge
 import org.neo4j.kernel.api.StatementContext
-import org.neo4j.graphdb.DynamicLabel._
 import org.neo4j.kernel.GraphDatabaseAPI
 
 class GraphDatabaseTestBase extends JUnitSuite {
@@ -178,12 +177,13 @@ class GraphDatabaseTestBase extends JUnitSuite {
     relate(c, d)
     (a, b, c, d)
   }
+
+  def statementContext:StatementContext=
+    graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).getCtxForWriting
 }
 
 trait Snitch extends GraphDatabaseAPI {
   val createdNodes = collection.mutable.Queue[Node]()
-  val fetchedNodes = collection.mutable.Queue[Long]()
-  var seenNodes = 0
 
   abstract override def createNode(): Node = {
     val n = super.createNode()

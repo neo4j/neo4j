@@ -50,7 +50,7 @@ class NamedPathPipeTest extends GraphDatabaseTestBase with Assertions {
     val inner = new FakePipe(Seq(Map("a" -> a, "b" -> b, "x" -> p)))
     val pipe = new NamedPathPipe(inner, NamedPath("p", pattern))
 
-    val result = pipe.createResults(QueryState()).toList
+    val result = pipe.createResults(QueryStateHelper.empty).toList
     assert(result === List(Map("a" -> a, "b" -> b, "x" -> p, "p" -> p)))
   }
 
@@ -60,7 +60,7 @@ class NamedPathPipeTest extends GraphDatabaseTestBase with Assertions {
     val inner = new FakePipe(Seq(Map("a" -> a, "b" -> b, "x" -> p)))
     val pipe = new NamedPathPipe(inner, NamedPath("p", pattern))
 
-    val result = pipe.createResults(QueryState()).toList
+    val result = pipe.createResults(QueryStateHelper.empty).toList
     assert(result === List(Map("a" -> a, "b" -> b, "x" -> p, "p" -> PathImpl(a, r1, b, r2, c))))
   }
 }

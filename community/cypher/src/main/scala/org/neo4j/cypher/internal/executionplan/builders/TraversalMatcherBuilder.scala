@@ -19,31 +19,30 @@
  */
 package org.neo4j.cypher.internal.executionplan.builders
 
-import org.neo4j.cypher.internal.executionplan.{PlanBuilder, LegacyPlanBuilder, ExecutionPlanInProgress}
+import org.neo4j.cypher.internal.executionplan.{PlanBuilder, ExecutionPlanInProgress}
 import org.neo4j.cypher.internal.commands._
 import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.graphdb
-import graphdb.{Node, GraphDatabaseService}
-import org.neo4j.cypher.internal.pipes.{TraversalMatchPipe, EntityProducer, NullPipe}
+import org.neo4j.cypher.internal.pipes.NullPipe
+import graphdb.Node
+import org.neo4j.cypher.internal.pipes.{TraversalMatchPipe, EntityProducer}
 import org.neo4j.cypher.internal.pipes.matching.{Trail, TraversalMatcher, MonoDirectionalTraversalMatcher, BidirectionalTraversalMatcher}
 import org.neo4j.cypher.internal.commands.NodeByIndex
 import org.neo4j.cypher.internal.commands.NodeByIndexQuery
-import org.neo4j.cypher.internal.spi.gdsimpl.TransactionBoundPlanContext
-import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.cypher.internal.symbols.{NodeType, SymbolTable}
+import org.neo4j.cypher.internal.spi.PlanContext
 
-
-class TraversalMatcherBuilder(graph: GraphDatabaseService) extends LegacyPlanBuilder with PatternGraphBuilder {
-  def apply(plan: ExecutionPlanInProgress): ExecutionPlanInProgress = {
+class TraversalMatcherBuilder extends PlanBuilder with PatternGraphBuilder {
+  def apply(plan: ExecutionPlanInProgress, ctx: PlanContext): ExecutionPlanInProgress =
     extractExpanderStepsFromQuery(plan) match {
       case None              => throw new ThisShouldNotHappenError("Andres", "This plan should not have been accepted")
       case Some(longestPath) =>
         val LongestTrail(start, end, longestTrail) = longestPath
 
         val unsolvedItems = plan.query.start.filter(_.unsolved)
-        val (startToken, startNodeFn) = identifier2nodeFn(graph, start, unsolvedItems)
+        val (startToken, startNodeFn) = identifier2nodeFn(ctx, start, unsolvedItems)
 
-        val (matcher, tokens) = chooseCorrectMatcher(end, longestPath, startNodeFn, startToken, unsolvedItems)
+        val (matcher, tokens) = chooseCorrectMatcher(end, longestPath, startNodeFn, startToken, unsolvedItems, ctx)
 
         val solvedPatterns = longestTrail.patterns
 
@@ -61,7 +60,6 @@ class TraversalMatcherBuilder(graph: GraphDatabaseService) extends LegacyPlanBui
 
         plan.copy(pipe = pipe, query = newQ)
     }
-  }
 
   private def checkPattern(plan: ExecutionPlanInProgress, tokens: Seq[QueryToken[StartItem]]) {
     val newIdentifiers = tokens.map(_.token).map(x => x.identifierName -> NodeType()).toMap
@@ -101,12 +99,13 @@ class TraversalMatcherBuilder(graph: GraphDatabaseService) extends LegacyPlanBui
                            longestPath:LongestTrail,
                            startNodeFn:EntityProducer[Node],
                            startToken:QueryToken[StartItem],
-                           unsolvedItems: Seq[QueryToken[StartItem]] ): (TraversalMatcher,Seq[QueryToken[StartItem]]) = {
+                           unsolvedItems: Seq[QueryToken[StartItem]],
+                           ctx:PlanContext): (TraversalMatcher,Seq[QueryToken[StartItem]]) = {
     val (matcher, tokens) = if (end.isEmpty) {
       val matcher = new MonoDirectionalTraversalMatcher(longestPath.step, startNodeFn)
       (matcher, Seq(startToken))
     } else {
-      val (endToken, endNodeFn) = identifier2nodeFn(graph, end.get, unsolvedItems)
+      val (endToken, endNodeFn) = identifier2nodeFn(ctx, end.get, unsolvedItems)
       val step = longestPath.step
       val matcher = new BidirectionalTraversalMatcher(step, startNodeFn, endNodeFn)
       (matcher, Seq(startToken, endToken))
@@ -114,23 +113,22 @@ class TraversalMatcherBuilder(graph: GraphDatabaseService) extends LegacyPlanBui
     (matcher,tokens)
   }
 
-  def identifier2nodeFn(graph: GraphDatabaseService, identifier: String, unsolvedItems: Seq[QueryToken[StartItem]]):
+  def identifier2nodeFn(ctx:PlanContext, identifier: String, unsolvedItems: Seq[QueryToken[StartItem]]):
   (QueryToken[StartItem], EntityProducer[Node]) = {
     val startItemQueryToken = unsolvedItems.filter { (item) => identifier == item.token.identifierName }.head
-    (startItemQueryToken, mapNodeStartCreator(startItemQueryToken.token))
+    (startItemQueryToken, mapNodeStartCreator()(ctx, startItemQueryToken.token))
   }
 
-  //TODO: DON'T DO THIS!!!
-  private val planContext = new TransactionBoundPlanContext(graph.asInstanceOf[GraphDatabaseAPI])
-  private val entityFactory = new EntityProducerFactory(planContext)
+  private def mapNodeStartCreator(): PartialFunction[(PlanContext, StartItem), EntityProducer[Node]] = {
+    val entityFactory = new EntityProducerFactory
 
-  private val mapNodeStartCreator: PartialFunction[StartItem, EntityProducer[Node]] =
     entityFactory.nodeById orElse
     entityFactory.nodeByIndex orElse
     entityFactory.nodeByIndexQuery orElse
     entityFactory.nodeByIndexHint
+  }
 
-  def canWorkWith(plan: ExecutionPlanInProgress) = {
+  def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext): Boolean = {
     val steps = extractExpanderStepsFromQuery(plan)
     steps.nonEmpty && plan.pipe == NullPipe
   }

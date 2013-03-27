@@ -133,7 +133,7 @@ public interface IndexProxy
         @Override
         public IndexReader newReader()
         {
-            return new IndexReader.Adapter();
+            return new IndexReader.Empty();
         }
     }
 }

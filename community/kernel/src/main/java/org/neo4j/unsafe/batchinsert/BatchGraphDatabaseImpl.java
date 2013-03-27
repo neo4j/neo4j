@@ -34,6 +34,7 @@ import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ReturnableEvaluator;
 import org.neo4j.graphdb.StopEvaluator;
 import org.neo4j.graphdb.Transaction;
@@ -852,7 +853,7 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
     }
 
     @Override
-    public Iterable<Node> findNodesByLabelAndProperty( Label myLabel, String propertyName, Object value )
+    public ResourceIterable<Node> findNodesByLabelAndProperty( Label myLabel, String propertyName, Object value )
     {
         throw new UnsupportedOperationException();
     }

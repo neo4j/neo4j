@@ -19,7 +19,21 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.neo4j.kernel.api.*;
+import static java.lang.String.format;
+import static java.lang.reflect.Proxy.newProxyInstance;
+
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+import java.util.Iterator;
+import org.neo4j.helpers.Function;
+import org.neo4j.kernel.api.ConstraintViolationKernelException;
+import org.neo4j.kernel.api.EntityNotFoundException;
+import org.neo4j.kernel.api.LabelNotFoundKernelException;
+import org.neo4j.kernel.api.PropertyKeyIdNotFoundException;
+import org.neo4j.kernel.api.PropertyKeyNotFoundException;
+import org.neo4j.kernel.api.PropertyNotFoundException;
+import org.neo4j.kernel.api.SchemaRuleNotFoundException;
+import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.operations.EntityOperations;
@@ -29,17 +43,11 @@ import org.neo4j.kernel.api.operations.SchemaOperations;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.Method;
-
-import static java.lang.String.format;
-import static java.lang.reflect.Proxy.newProxyInstance;
-
 /**
  * This is syntax sugar, it helps implementing statement contexts that either just want to delegate
  * to some other context, or wants to split it's own implementation into multiple parts to minimize clutter.
  */
-public abstract class CompositeStatementContext implements StatementContext
+public class CompositeStatementContext implements StatementContext
 {
     private final EntityOperations entityOperations;
     private final PropertyOperations propertyOperations;
@@ -78,14 +86,13 @@ public abstract class CompositeStatementContext implements StatementContext
         this.delegateToClose    = delegate;
     }
 
-    public CompositeStatementContext( EntityOperations entityOperations, PropertyOperations propertyOperations,
-                                      LabelOperations labelOperations, SchemaOperations schemaOperations )
+    public CompositeStatementContext( StatementContext delegate, SchemaOperations schemaOperations )
     {
-        this.entityOperations   = entityOperations;
-        this.propertyOperations = propertyOperations;
-        this.labelOperations    = labelOperations;
+        this.entityOperations   = delegate;
+        this.propertyOperations = delegate;
+        this.labelOperations    = delegate;
         this.schemaOperations   = schemaOperations;
-        this.delegateToClose    = null;
+        this.delegateToClose    = delegate;
     }
 
     // Hook methods
@@ -117,17 +124,18 @@ public abstract class CompositeStatementContext implements StatementContext
         }
     }
 
+
     //
     // READ OPERATIONS
     //
 
     @Override
-    public Iterable<Long> getNodesWithLabel( long labelId )
+    public Iterator<Long> getNodesWithLabel( long labelId )
     {
         beforeOperation();
         beforeReadOperation();
 
-        Iterable<Long> result = entityOperations.getNodesWithLabel( labelId );
+        Iterator<Long> result = entityOperations.getNodesWithLabel( labelId );
 
         afterReadOperation();
         afterOperation();
@@ -135,12 +143,12 @@ public abstract class CompositeStatementContext implements StatementContext
     }
 
     @Override
-    public Iterable<Long> exactIndexLookup( long indexId, Object value ) throws IndexNotFoundKernelException
+    public Iterator<Long> exactIndexLookup( long indexId, Object value ) throws IndexNotFoundKernelException
     {
         beforeOperation();
         beforeReadOperation();
 
-        Iterable<Long> result = entityOperations.exactIndexLookup( indexId, value );
+        Iterator<Long> result = entityOperations.exactIndexLookup( indexId, value );
 
         afterReadOperation();
         afterOperation();
@@ -187,12 +195,12 @@ public abstract class CompositeStatementContext implements StatementContext
     }
 
     @Override
-    public Iterable<Long> getLabelsForNode( long nodeId )
+    public Iterator<Long> getLabelsForNode( long nodeId )
     {
         beforeOperation();
         beforeReadOperation();
 
-        Iterable<Long> result = labelOperations.getLabelsForNode( nodeId );
+        Iterator<Long> result = labelOperations.getLabelsForNode( nodeId );
 
         afterReadOperation();
         afterOperation();
@@ -266,12 +274,12 @@ public abstract class CompositeStatementContext implements StatementContext
     }
 
     @Override
-    public Iterable<IndexRule> getIndexRules( long labelId )
+    public Iterator<IndexRule> getIndexRules( long labelId )
     {
         beforeOperation();
         beforeReadOperation();
 
-        Iterable<IndexRule> result = schemaOperations.getIndexRules( labelId );
+        Iterator<IndexRule> result = schemaOperations.getIndexRules( labelId );
 
         afterReadOperation();
         afterOperation();
@@ -279,12 +287,12 @@ public abstract class CompositeStatementContext implements StatementContext
     }
 
     @Override
-    public Iterable<IndexRule> getIndexRules()
+    public Iterator<IndexRule> getIndexRules()
     {
         beforeOperation();
         beforeReadOperation();
 
-        Iterable<IndexRule> result = schemaOperations.getIndexRules();
+        Iterator<IndexRule> result = schemaOperations.getIndexRules();
 
         afterReadOperation();
         afterOperation();
@@ -298,6 +306,19 @@ public abstract class CompositeStatementContext implements StatementContext
         beforeReadOperation();
 
         InternalIndexState result = schemaOperations.getIndexState( indexRule );
+
+        afterReadOperation();
+        afterOperation();
+        return result;
+    }
+
+    @Override
+    public <K> boolean schemaStateContains( K key )
+    {
+        beforeOperation();
+        beforeReadOperation();
+
+        boolean result = schemaOperations.schemaStateContains( key );
 
         afterReadOperation();
         afterOperation();
@@ -383,5 +404,16 @@ public abstract class CompositeStatementContext implements StatementContext
 
         afterWriteOperation();
         afterOperation();
+    }
+
+    @Override
+    public <K, V> V getOrCreateFromSchemaState( K key, Function<K, V> creator )
+    {
+        beforeOperation();
+
+        V result = schemaOperations.getOrCreateFromSchemaState( key, creator );
+
+        afterOperation();
+        return result;
     }
 }

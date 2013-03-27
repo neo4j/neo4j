@@ -20,44 +20,45 @@
 package org.neo4j.cypher.internal.mutation
 
 import org.neo4j.cypher.internal.symbols.{CypherType, SymbolTable}
-import org.neo4j.cypher.internal.pipes.{QueryState}
+import org.neo4j.cypher.internal.pipes.QueryState
 import org.neo4j.helpers.ThisShouldNotHappenError
-import org.neo4j.cypher.internal.commands.StartItem
 import org.neo4j.cypher.UniquePathNotUniqueException
-import org.neo4j.graphdb.{Lock, PropertyContainer}
+import org.neo4j.graphdb.PropertyContainer
 import org.neo4j.cypher.internal.commands.expressions.Expression
 import org.neo4j.cypher.internal.ExecutionContext
 
 case class CreateUniqueAction(incomingLinks: UniqueLink*) extends UpdateAction {
 
-  def exec(context: ExecutionContext, state: QueryState): Traversable[ExecutionContext] = {
+  def exec(incomingExecContext: ExecutionContext, state: QueryState): Traversable[ExecutionContext] = {
     var linksToDo: Seq[UniqueLink] = links
-    var ctx = context
+    var executionContext = incomingExecContext
     while (linksToDo.nonEmpty) {
-      val results: Seq[(UniqueLink, CreateUniqueResult)] = executeAllRemainingPatterns(linksToDo, ctx, state)
+      val results: Seq[(UniqueLink, CreateUniqueResult)] = executeAllRemainingPatterns(linksToDo, executionContext, state)
       linksToDo = results.map(_._1)
       val updateCommands = extractUpdateCommands(results)
       val traversals = extractTraversals(results)
 
       if (results.isEmpty) {
-        Stream(ctx) //We're done
+        Stream(executionContext) //We're done
       } else if (canNotAdvanced(results)) {
         throw new Exception("Unbound pattern!") //None of the patterns can advance. Fail.
       } else if (traversals.nonEmpty) {
-        ctx = traverseNextStep(traversals, ctx) //We've found some way to move forward. Let's use it
+        executionContext = traverseNextStep(traversals, executionContext) //We've found some way to move forward. Let's use it
       } else if (updateCommands.nonEmpty) {
-        val locks = updateCommands.flatMap(_.lock()) //Failed to find a way forward - lock stuff up, and check again
+
+        val lockingContext = state.query.upgradeToLockingQueryContext
+
         try {
-          ctx = tryAgain(linksToDo, ctx, state)
+          executionContext = tryAgain(linksToDo, executionContext, state.copy(inner = lockingContext))
         } finally {
-          locks.foreach(_.release())
+          lockingContext.releaseLocks()
         }
       } else {
         throw new ThisShouldNotHappenError("Andres", "There was something in that result list I don't know how to handle.")
       }
     }
 
-    Stream(ctx)
+    Stream(executionContext)
   }
 
   override def addsToRow(): Seq[String] = Seq()
@@ -183,9 +184,7 @@ case class CanNotAdvance() extends CreateUniqueResult
 
 case class Traverse(result: (String, PropertyContainer)*) extends CreateUniqueResult
 
-case class Update(cmds: Seq[UpdateWrapper], locker: () => Seq[Lock]) extends CreateUniqueResult {
-  def lock(): Seq[Lock] = locker()
-}
+case class Update(cmds: Seq[UpdateWrapper]) extends CreateUniqueResult
 
 case class UpdateWrapper(needs: Seq[String], cmd: UpdateAction, key: String) {
   def canRun(context: ExecutionContext) = {

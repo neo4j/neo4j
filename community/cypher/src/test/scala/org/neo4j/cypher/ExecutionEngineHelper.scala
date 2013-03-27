@@ -26,7 +26,7 @@ import org.junit.Before
 import org.neo4j.graphdb.{DynamicLabel, Node}
 import org.neo4j.graphdb.DynamicLabel.label
 import collection.JavaConverters._
-import org.neo4j.kernel.GraphDatabaseAPI
+import org.neo4j.kernel.{ThreadToStatementContextBridge, GraphDatabaseAPI}
 
 trait ExecutionEngineHelper extends GraphDatabaseTestBase with GraphIcing {
 
@@ -43,11 +43,8 @@ trait ExecutionEngineHelper extends GraphDatabaseTestBase with GraphIcing {
     result
   }
 
-  def parseAndExecute(q: String, params: (String, Any)*): ExecutionResult = {
-    val plan = engine.prepare(q)
-    val ctx = new TransactionBoundQueryContext(graph)
-    plan.execute(ctx, params.toMap)
-  }
+  def parseAndExecute(q: String, params: (String, Any)*): ExecutionResult =
+    engine.execute(q, params.toMap)
 
   def executeScalar[T](q: String, params: (String, Any)*):T = engine.execute(q, params.toMap).toList match {
     case List(m) => if (m.size!=1)

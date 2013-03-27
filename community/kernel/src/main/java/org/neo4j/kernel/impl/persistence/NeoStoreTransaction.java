@@ -19,6 +19,12 @@
  */
 package org.neo4j.kernel.impl.persistence;
 
+import java.util.Iterator;
+import java.util.Map;
+
+import javax.transaction.SystemException;
+import javax.transaction.Transaction;
+
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.core.PropertyIndex;
 import org.neo4j.kernel.impl.nioneo.store.*;
@@ -313,4 +319,5 @@ public interface NeoStoreTransaction
     
     void removeLabelFromNode( long labelId, long nodeId );
 
+    Iterator<Long> getLabelsForNode( long nodeId );
 }

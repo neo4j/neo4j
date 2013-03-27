@@ -37,7 +37,7 @@ class ExecutionPlanBuilderTest extends GraphDatabaseTestBase with Assertions wit
 
     val exception = intercept[ExecutionException](timeoutAfter(1) {
       val epi = new FakeExecPlanBuilder(graph)
-      epi.build(q)
+      epi.build(null, q)
     })
 
     assertTrue( "Execution plan builder didn't throw expected exception", exception.getCause().isInstanceOf[InternalException] )

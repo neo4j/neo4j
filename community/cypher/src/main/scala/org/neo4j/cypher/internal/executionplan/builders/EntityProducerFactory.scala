@@ -28,9 +28,10 @@ import org.neo4j.cypher.internal.ExecutionContext
 import org.neo4j.cypher.{IndexHintException, InternalException}
 import org.neo4j.cypher.internal.data.SimpleVal._
 
-class EntityProducerFactory(planContext: PlanContext) {
+class EntityProducerFactory {
 
-  private def asProducer[T <: PropertyContainer](startItem: StartItem)(f: (ExecutionContext, QueryState) => Iterator[T]) =
+  private def asProducer[T <: PropertyContainer](startItem: StartItem)
+                                                (f: (ExecutionContext, QueryState) => Iterator[T]) =
     new EntityProducer[T] {
       def apply(m: ExecutionContext, q: QueryState) = f(m, q)
 
@@ -45,8 +46,8 @@ class EntityProducerFactory(planContext: PlanContext) {
     nodeByIndexHint orElse
     nodeByLabel
 
-  val nodeByIndex: PartialFunction[StartItem, EntityProducer[Node]] = {
-    case startItem @ NodeByIndex(varName, idxName, key, value) =>
+  val nodeByIndex: PartialFunction[(PlanContext, StartItem), EntityProducer[Node]] = {
+    case (planContext, startItem @ NodeByIndex(varName, idxName, key, value)) =>
       planContext.checkNodeIndex(idxName)
 
       asProducer[Node](startItem) { (m: ExecutionContext, state: QueryState) =>
@@ -56,8 +57,8 @@ class EntityProducerFactory(planContext: PlanContext) {
       }
   }
 
-  val nodeByIndexQuery: PartialFunction[StartItem, EntityProducer[Node]] = {
-    case startItem @ NodeByIndexQuery(varName, idxName, query) =>
+  val nodeByIndexQuery: PartialFunction[(PlanContext, StartItem), EntityProducer[Node]] = {
+    case (planContext, startItem @ NodeByIndexQuery(varName, idxName, query)) =>
       planContext.checkNodeIndex(idxName)
       asProducer[Node](startItem) { (m: ExecutionContext, state: QueryState) =>
         val queryText = query(m)(state)
@@ -65,34 +66,34 @@ class EntityProducerFactory(planContext: PlanContext) {
       }
   }
 
-  val nodeById: PartialFunction[StartItem, EntityProducer[Node]] = {
-    case startItem @ NodeById(varName, ids) =>
+  val nodeById: PartialFunction[(PlanContext, StartItem), EntityProducer[Node]] = {
+    case (planContext, startItem @ NodeById(varName, ids)) =>
       asProducer[Node](startItem) { (m: ExecutionContext, state: QueryState) =>
         GetGraphElements.getElements[Node](ids(m)(state), varName, state.query.nodeOps.getById)
       }
   }
 
-  val nodeByLabel: PartialFunction[StartItem, EntityProducer[Node]] = {
-    case startItem @ NodeByLabel(identifier, label) if planContext.getLabelId(label).nonEmpty =>
+  val nodeByLabel: PartialFunction[(PlanContext, StartItem), EntityProducer[Node]] = {
+    case (planContext, startItem @ NodeByLabel(identifier, label)) if planContext.getLabelId(label).nonEmpty =>
       val labelId:Long = planContext.getLabelId(label).get
 
       asProducer[Node](startItem) { (m: ExecutionContext, state: QueryState) => state.query.getNodesByLabel(labelId) }
   }
 
-  val nodesAll: PartialFunction[StartItem, EntityProducer[Node]] = {
-    case startItem @ AllNodes(identifier) =>
+  val nodesAll: PartialFunction[(PlanContext, StartItem), EntityProducer[Node]] = {
+    case (planContext, startItem @ AllNodes(identifier)) =>
       asProducer[Node](startItem) { (m: ExecutionContext, state: QueryState) => state.query.nodeOps.all }
   }
 
-  val relationshipsAll: PartialFunction[StartItem, EntityProducer[Relationship]] = {
-    case startItem @ AllRelationships(identifier) =>
+  val relationshipsAll: PartialFunction[(PlanContext, StartItem), EntityProducer[Relationship]] = {
+    case (planContext, startItem @ AllRelationships(identifier)) =>
       asProducer[Relationship](startItem) { (m: ExecutionContext, state: QueryState) =>
         state.query.relationshipOps.all }
   }
 
 
-  val nodeByIndexHint: PartialFunction[StartItem, EntityProducer[Node]] = {
-    case startItem @ SchemaIndex(identifier, labelName, propertyName, valueExp) =>
+  val nodeByIndexHint: PartialFunction[(PlanContext, StartItem), EntityProducer[Node]] = {
+    case (planContext, startItem @ SchemaIndex(identifier, labelName, propertyName, valueExp)) =>
       val indexIdGetter = planContext.getIndexRuleId(labelName, propertyName)
 
       val indexId = indexIdGetter getOrElse
@@ -107,8 +108,8 @@ class EntityProducerFactory(planContext: PlanContext) {
       }
   }
 
-  val relationshipByIndex: PartialFunction[StartItem, EntityProducer[Relationship]] = {
-    case startItem @ RelationshipByIndex(varName, idxName, key, value) =>
+  val relationshipByIndex: PartialFunction[(PlanContext, StartItem), EntityProducer[Relationship]] = {
+    case (planContext, startItem @ RelationshipByIndex(varName, idxName, key, value)) =>
       planContext.checkRelIndex(idxName)
       asProducer[Relationship](startItem) { (m: ExecutionContext, state: QueryState) =>
         val keyVal = key(m)(state).toString
@@ -117,8 +118,8 @@ class EntityProducerFactory(planContext: PlanContext) {
       }
   }
 
-  val relationshipByIndexQuery: PartialFunction[StartItem, EntityProducer[Relationship]] = {
-    case startItem @ RelationshipByIndexQuery(varName, idxName, query) =>
+  val relationshipByIndexQuery: PartialFunction[(PlanContext, StartItem), EntityProducer[Relationship]] = {
+    case (planContext, startItem @ RelationshipByIndexQuery(varName, idxName, query)) =>
       planContext.checkRelIndex(idxName)
       asProducer[Relationship](startItem) { (m: ExecutionContext, state: QueryState) =>
         val queryText = query(m)(state)
@@ -126,8 +127,8 @@ class EntityProducerFactory(planContext: PlanContext) {
       }
   }
 
-  val relationshipById: PartialFunction[StartItem, EntityProducer[Relationship]] = {
-    case startItem @ RelationshipById(varName, ids) =>
+  val relationshipById: PartialFunction[(PlanContext, StartItem), EntityProducer[Relationship]] = {
+    case (planContext, startItem @ RelationshipById(varName, ids)) =>
       asProducer[Relationship](startItem) { (m: ExecutionContext, state: QueryState) =>
         GetGraphElements.getElements[Relationship](ids(m)(state), varName, state.query.relationshipOps.getById)
       }

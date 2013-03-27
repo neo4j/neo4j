@@ -346,7 +346,6 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
             if ( tx.getStatus() == Status.STATUS_ACTIVE )
             {
                 comittedTxCount.incrementAndGet();
-                tx.ensureStatementContextClosed();
                 commit( thread, tx );
             }
             else if ( tx.getStatus() == Status.STATUS_MARKED_ROLLBACK )
@@ -586,7 +585,6 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
                 try
                 {
                     rolledBackTxCount.incrementAndGet();
-                    tx.ensureStatementContextClosed();
                     tx.doRollback();
                 }
                 catch ( XAException e )
@@ -963,7 +961,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
         {
             throw new RuntimeException( e );
         }
-        return tx != null ? ((TransactionImpl)tx).getCurrentStatementContext() : null;
+        return tx != null ? ((TransactionImpl)tx).newStatementContext() : null;
     }
 
     @Override

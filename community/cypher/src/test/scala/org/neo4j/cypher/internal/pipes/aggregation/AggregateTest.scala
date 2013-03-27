@@ -21,13 +21,13 @@ package org.neo4j.cypher.internal.pipes.aggregation
 
 import org.neo4j.cypher.internal.commands.expressions.{Identifier, Expression}
 import org.neo4j.cypher.internal.ExecutionContext
-import org.neo4j.cypher.internal.pipes.QueryState
+import org.neo4j.cypher.internal.pipes.{QueryStateHelper, QueryState}
 
 abstract class AggregateTest {
   def createAggregator(inner: Expression): AggregationFunction
 
   def aggregateOn(values: Any*): Any = {
-    implicit val state = QueryState()
+    implicit val state = QueryStateHelper.empty
     val func: AggregationFunction = createAggregator(Identifier("x"))
 
     values.foreach(value => func(ExecutionContext.from("x" -> value)))

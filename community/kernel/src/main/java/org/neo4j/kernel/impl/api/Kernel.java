@@ -19,10 +19,13 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import static org.neo4j.helpers.collection.IteratorUtil.loop;
+
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.TransactionContext;
+import org.neo4j.kernel.api.operations.SchemaOperations;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.state.OldTxStateBridgeImpl;
 import org.neo4j.kernel.impl.api.state.TxState;
@@ -67,6 +70,15 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     private final LockManager lockManager;
     private final DependencyResolver dependencyResolver;
     private final SchemaCache schemaCache;
+    private final UpdateableSchemaState schemaState;
+    private final StatementContextOwner statementContext = new StatementContextOwner()
+    {
+        @Override
+        protected StatementContext createStatementContext()
+        {
+            return Kernel.this.createReadOnlyStatementContext();
+        }
+    };
 
     // These non-final components are all circular dependencies in various configurations.
     // As we work towards refactoring the old kernel, we should work to remove these.
@@ -77,7 +89,8 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
 
     public Kernel( AbstractTransactionManager transactionManager, PropertyIndexManager propertyIndexManager,
             PersistenceManager persistenceManager, XaDataSourceManager dataSourceManager, LockManager lockManager,
-            SchemaCache schemaCache, DependencyResolver dependencyResolver )
+            SchemaCache schemaCache, UpdateableSchemaState schemaState,
+            DependencyResolver dependencyResolver )
     {
         this.transactionManager = transactionManager;
         this.propertyIndexManager = propertyIndexManager;
@@ -86,6 +99,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
         this.lockManager = lockManager;
         this.dependencyResolver = dependencyResolver;
         this.schemaCache = schemaCache;
+        this.schemaState = schemaState;
     }
     
     @Override
@@ -102,7 +116,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
                 {
                     neoStore = ((NeoStoreXaDataSource) ds).getNeoStore();
                     indexService = ((NeoStoreXaDataSource) ds).getIndexService();
-                    for ( SchemaRule schemaRule : neoStore.getSchemaStore().loadAll() )
+                    for ( SchemaRule schemaRule : loop( neoStore.getSchemaStore().loadAll() ) )
                     {
                         schemaCache.addSchemaRule( schemaRule );
                     }
@@ -139,13 +153,13 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
 
         // + Transaction state and Caching
         result = new StateHandlingTransactionContext( result, newTxState(), persistenceCache,
-                transactionManager.getTransactionState(), schemaCache );
+                transactionManager.getTransactionState(), schemaCache, schemaState );
         // + Constraints evaluation
         result = new ConstraintEvaluatingTransactionContext( result );
         // + Locking
         result = new LockingTransactionContext( result, lockManager, transactionManager );
         // + Single statement at a time
-        result = new SingleStatementTransactionContext( result );
+        result = new ReferenceCountingTransactionContext( result );
         
         // done
         return result;
@@ -154,15 +168,31 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     @Override
     public StatementContext newReadOnlyStatementContext()
     {
+        return statementContext.getStatementContext();
+    }
+
+    private StatementContext createReadOnlyStatementContext()
+    {
         // I/O
         StatementContext result = new StoreStatementContext(propertyIndexManager, nodeManager,
                 neoStore, indexService, new IndexReaderFactory.NonCaching( indexService ) );
+
         // + Cache
         result = new CachingStatementContext( result, persistenceCache, schemaCache );
+
         // + Read only access
         result = new ReadOnlyStatementContext( result );
 
+        // + Schema state handling
+        result = createSchemaStateStatementContext( result );
+
         return result;
+    }
+
+    private StatementContext createSchemaStateStatementContext( StatementContext inner )
+    {
+        SchemaOperations schemaOps = new SchemaStateOperations( inner, schemaState );
+        return new CompositeStatementContext( inner, schemaOps );
     }
 
     private TxState newTxState() {

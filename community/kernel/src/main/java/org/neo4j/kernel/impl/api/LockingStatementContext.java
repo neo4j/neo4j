@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import java.util.Iterator;
+
+import org.neo4j.helpers.Function;
 import org.neo4j.kernel.api.ConstraintViolationKernelException;
 import org.neo4j.kernel.api.EntityNotFoundException;
 import org.neo4j.kernel.api.PropertyKeyIdNotFoundException;
@@ -67,14 +70,28 @@ public class LockingStatementContext extends CompositeStatementContext
     }
 
     @Override
-    public Iterable<IndexRule> getIndexRules( long labelId )
+    public <K, V> V getOrCreateFromSchemaState( K key, Function<K, V> creator )
+    {
+        lockHolder.acquireSchemaReadLock();
+        return delegate.getOrCreateFromSchemaState( key, creator );
+    }
+
+    @Override
+    public <K> boolean schemaStateContains( K key )
+    {
+        lockHolder.acquireSchemaReadLock();
+        return super.schemaStateContains( key );
+    }
+
+    @Override
+    public Iterator<IndexRule> getIndexRules( long labelId )
     {
         lockHolder.acquireSchemaReadLock();
         return delegate.getIndexRules( labelId );
     }
     
     @Override
-    public Iterable<IndexRule> getIndexRules()
+    public Iterator<IndexRule> getIndexRules()
     {
         lockHolder.acquireSchemaReadLock();
         return delegate.getIndexRules();

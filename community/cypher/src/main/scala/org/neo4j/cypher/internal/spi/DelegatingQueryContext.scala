@@ -51,19 +51,23 @@ class DelegatingQueryContext(inner: QueryContext) extends QueryContext {
     inner.removeLabelsFromNode(node, labelIds)
   }
 
-  def getTransaction = inner.getTransaction
-
   def getOrCreatePropertyKeyId(propertyKey: String) = inner.getOrCreatePropertyKeyId(propertyKey)
 
   def getPropertyKeyId(propertyKey: String) = inner.getPropertyKeyId(propertyKey)
 
-  def addIndexRule(labelIds: Long, propertyKeyId: Long) = inner.addIndexRule(labelIds, propertyKeyId)
+  def addIndexRule(labelIds: Long, propertyKeyId: Long) { inner.addIndexRule(labelIds, propertyKeyId) }
 
-  def dropIndexRule(labelIds: Long, propertyKeyId: Long) = inner.dropIndexRule(labelIds, propertyKeyId)
+  def dropIndexRule(labelIds: Long, propertyKeyId: Long) { inner.dropIndexRule(labelIds, propertyKeyId) }
 
   def exactIndexSearch(id: Long, value: Any): Iterator[Node] = inner.exactIndexSearch(id, value)
 
   def getNodesByLabel(id: Long): Iterator[Node] = inner.getNodesByLabel(id)
+
+  def upgrade(context: QueryContext): LockingQueryContext = inner.upgrade(context)
+
+  def getOrCreateFromSchemaState[K, V](key: K, creator: => V): V = inner.getOrCreateFromSchemaState(key, creator)
+
+  def schemaStateContains(key: String) = inner.schemaStateContains(key)
 }
 
 class DelegatingOperations[T <: PropertyContainer](protected val inner: Operations[T]) extends Operations[T] {

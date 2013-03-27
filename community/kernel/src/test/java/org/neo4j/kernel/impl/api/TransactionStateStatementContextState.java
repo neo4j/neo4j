@@ -19,6 +19,30 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import static java.util.Arrays.asList;
+import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.mockito.Matchers.anyLong;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
+import static org.neo4j.helpers.Exceptions.launderedException;
+import static org.neo4j.helpers.collection.Iterables.option;
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
@@ -31,17 +55,6 @@ import org.neo4j.kernel.impl.api.state.OldTxStateBridge;
 import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
-
-import java.util.*;
-
-import static java.util.Arrays.asList;
-import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.*;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Mockito.*;
-import static org.neo4j.helpers.Exceptions.launderedException;
-import static org.neo4j.helpers.collection.Iterables.option;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
 public class TransactionStateStatementContextState
 {
@@ -321,7 +334,7 @@ public class TransactionStateStatementContextState
         
         // WHEN
         IndexRule rule = txContext.getIndexRule( labelId1, key1 );
-        Iterable<IndexRule> labelRules = txContext.getIndexRules( labelId1 );
+        Iterator<IndexRule> labelRules = txContext.getIndexRules( labelId1 );
         
         // THEN
         IndexRule expectedRule = new IndexRule( rule.getId(), labelId1, key1 );
@@ -335,13 +348,13 @@ public class TransactionStateStatementContextState
         // GIVEN
         // -- a rule that exists in the store
         IndexRule rule = new IndexRule( ruleId, labelId1, key1 );
-        when( store.getIndexRules( labelId1 ) ).thenReturn( option( rule ) );
+        when( store.getIndexRules( labelId1 ) ).thenReturn( option( rule ).iterator() );
         // -- that same rule dropped in the transaction
         txContext.dropIndexRule( rule );
         
         // WHEN
         assertException( getIndexRule(), SchemaRuleNotFoundException.class );
-        Iterable<IndexRule> rulesByLabel = txContext.getIndexRules( labelId1 );
+        Iterator<IndexRule> rulesByLabel = txContext.getIndexRules( labelId1 );
 
         // THEN
         assertEquals( asSet(), asSet( rulesByLabel ) );
@@ -360,15 +373,24 @@ public class TransactionStateStatementContextState
 
         IndexDescriptor indexDescriptor = new IndexDescriptor( labelId, propertyKeyId );
         when( store.getIndexDescriptor( 1337l ) ).thenReturn( indexDescriptor );
-        when( store.exactIndexLookup( 1337l, value ) ).thenReturn( asList( 1l, 2l, 3l ) );
+        when( store.exactIndexLookup( 1337l, value ) ).then(asAnswer(asList(1l, 2l, 3l)));
         when( oldTxState.getDeletedNodes() ).thenReturn( asList( 2l ) );
         when( oldTxState.getNodesWithChangedProperty( propertyKeyId, value) ).thenReturn( new DiffSets<Long>(  ) );
 
         // When
-        Iterable<Long> result = txContext.exactIndexLookup( 1337l, value );
+        Iterator<Long> result = txContext.exactIndexLookup( 1337l, value );
 
         // Then
         assertThat( asSet( result ), equalTo( asSet( 1l, 3l ) ) );
+    }
+
+    private static <T> Answer<Iterator<T>> asAnswer(final Iterable<T> values) {
+        return new Answer<Iterator<T>>() {
+            @Override
+            public Iterator<T> answer(InvocationOnMock invocation) throws Throwable {
+                return values.iterator();
+            }
+        };
     }
 
     @Test
@@ -381,7 +403,7 @@ public class TransactionStateStatementContextState
 
         IndexDescriptor indexDescriptor = new IndexDescriptor( labelId, propertyKeyId );
         when( store.getIndexDescriptor( 1337l ) ).thenReturn( indexDescriptor );
-        when( store.exactIndexLookup( 1337l, value ) ).thenReturn( asList( 2l, 3l ) );
+        when( store.exactIndexLookup( 1337l, value ) ).then( asAnswer(asList( 2l, 3l )) );
 
         when( store.isLabelSetOnNode( labelId, 1l ) ).thenReturn( false );
         when( oldTxState.getDeletedNodes() ).thenReturn( Collections.<Long>emptyList() );
@@ -389,7 +411,7 @@ public class TransactionStateStatementContextState
                 new DiffSets<Long>( asSet( 1l ), Collections.<Long>emptySet() ) );
 
         // When
-        Iterable<Long> result = txContext.exactIndexLookup( 1337l, value );
+        Iterator<Long> result = txContext.exactIndexLookup( 1337l, value );
 
         // Then
         assertThat( asSet( result ), equalTo( asSet( 2l, 3l ) ) );
@@ -405,7 +427,7 @@ public class TransactionStateStatementContextState
 
         IndexDescriptor indexDescriptor = new IndexDescriptor( labelId, propertyKeyId );
         when( store.getIndexDescriptor( 1337l ) ).thenReturn( indexDescriptor );
-        when( store.exactIndexLookup( 1337l, value ) ).thenReturn( asList( 2l, 3l ) );
+        when( store.exactIndexLookup( 1337l, value ) ).then( asAnswer(asList( 2l, 3l )) );
 
         when( store.isLabelSetOnNode( labelId, 1l ) ).thenReturn( false );
         when( oldTxState.getDeletedNodes() ).thenReturn( Collections.<Long>emptyList() );
@@ -414,7 +436,7 @@ public class TransactionStateStatementContextState
 
         // When
         txContext.addLabelToNode( labelId, 1l );
-        Iterable<Long> result = txContext.exactIndexLookup( 1337l, value );
+        Iterator<Long> result = txContext.exactIndexLookup( 1337l, value );
 
         // Then
         assertThat( asSet( result ), equalTo( asSet( 1l, 2l, 3l ) ) );
@@ -431,7 +453,7 @@ public class TransactionStateStatementContextState
 
         IndexDescriptor indexDescriptor = new IndexDescriptor( labelId, propertyKeyId );
         when( store.getIndexDescriptor( 1337l ) ).thenReturn( indexDescriptor );
-        when( store.exactIndexLookup( 1337l, value ) ).thenReturn( asList( 2l, 3l ) );
+        when( store.exactIndexLookup( 1337l, value ) ).then( asAnswer(asList( 2l, 3l )) );
 
         when( store.isLabelSetOnNode( labelId, 1l ) ).thenReturn( false );
         when( store.getNodePropertyValue( 1l, propertyKeyId ) ).thenReturn( value );
@@ -440,7 +462,7 @@ public class TransactionStateStatementContextState
 
         // When
         txContext.addLabelToNode( labelId, 1l );
-        Iterable<Long> result = txContext.exactIndexLookup( 1337l, value );
+        Iterator<Long> result = txContext.exactIndexLookup( 1337l, value );
 
         // Then
         assertThat( asSet( result ), equalTo( asSet( 1l, 2l, 3l ) ) );
@@ -457,7 +479,7 @@ public class TransactionStateStatementContextState
 
         IndexDescriptor indexDescriptor = new IndexDescriptor( labelId, propertyKeyId );
         when( store.getIndexDescriptor( 1337l ) ).thenReturn( indexDescriptor );
-        when( store.exactIndexLookup( 1337l, value ) ).thenReturn( asList( 1l, 2l, 3l ) );
+        when( store.exactIndexLookup( 1337l, value ) ).then( asAnswer(asList( 1l, 2l, 3l ) ));
         when( store.isLabelSetOnNode( labelId, 1l ) ).thenReturn( true );
 
         when( store.getNodePropertyValue( 1l, propertyKeyId ) ).thenReturn( value );
@@ -466,7 +488,7 @@ public class TransactionStateStatementContextState
 
         // When
         txContext.removeLabelFromNode( labelId, 1l );
-        Iterable<Long> result = txContext.exactIndexLookup( 1337l, value );
+        Iterator<Long> result = txContext.exactIndexLookup( 1337l, value );
 
         // Then
         assertThat( asSet( result ), equalTo( asSet( 2l, 3l ) ) );
@@ -483,7 +505,7 @@ public class TransactionStateStatementContextState
 
         IndexDescriptor indexDescriptor = new IndexDescriptor( labelId, propertyKeyId );
         when( store.getIndexDescriptor( 1337l ) ).thenReturn( indexDescriptor );
-        when( store.exactIndexLookup( 1337l, value ) ).thenReturn( asList( 2l, 3l ) );
+        when( store.exactIndexLookup( 1337l, value ) ).then( asAnswer(asList( 2l, 3l ) ));
 
         when( store.isLabelSetOnNode( labelId, 1l ) ).thenReturn( true );
         when( oldTxState.getDeletedNodes() ).thenReturn( Collections.<Long>emptyList() );
@@ -492,7 +514,7 @@ public class TransactionStateStatementContextState
 
         // When
         txContext.addLabelToNode( labelId, 1l );
-        Iterable<Long> result = txContext.exactIndexLookup( 1337l, value );
+        Iterator<Long> result = txContext.exactIndexLookup( 1337l, value );
 
         // Then
         assertThat( asSet( result ), equalTo( asSet( 2l, 3l ) ) );
@@ -585,9 +607,9 @@ public class TransactionStateStatementContextState
     public void before() throws Exception
     {
         store = mock( StatementContext.class );
-        when( store.getIndexRules( labelId1 ) ).thenReturn( Collections.<IndexRule>emptyList() );
-        when( store.getIndexRules( labelId2 ) ).thenReturn( Collections.<IndexRule>emptyList() );
-        when( store.getIndexRules() ).thenReturn( Collections.<IndexRule>emptyList() );
+        when( store.getIndexRules( labelId1 ) ).then( asAnswer(Collections.<IndexRule>emptyList()) );
+        when( store.getIndexRules( labelId2 ) ).then( asAnswer(Collections.<IndexRule>emptyList()) );
+        when( store.getIndexRules() ).then( asAnswer(Collections.<IndexRule>emptyList()) );
         when( store.addIndexRule( anyLong(), anyLong() ) ).thenAnswer( new Answer<IndexRule>()
         {
             @Override
@@ -626,7 +648,7 @@ public class TransactionStateStatementContextState
         Map<Long, Collection<Long>> allLabels = new HashMap<Long, Collection<Long>>();
         for ( Labels nodeLabels : labels )
         {
-            when( store.getLabelsForNode( nodeLabels.nodeId ) ).thenReturn( Arrays.<Long>asList( nodeLabels.labelIds ) );
+            when( store.getLabelsForNode( nodeLabels.nodeId ) ).then( asAnswer(Arrays.<Long>asList( nodeLabels.labelIds )) );
             for ( long label : nodeLabels.labelIds )
             {
                 when( store.isLabelSetOnNode( label, nodeLabels.nodeId ) ).thenReturn( true );
@@ -645,7 +667,7 @@ public class TransactionStateStatementContextState
         
         for ( Map.Entry<Long, Collection<Long>> entry : allLabels.entrySet() )
         {
-            when( store.getNodesWithLabel( entry.getKey() ) ).thenReturn( entry.getValue() );
+            when( store.getNodesWithLabel( entry.getKey() ) ).then( asAnswer(entry.getValue()) );
         }
     }
     

@@ -21,6 +21,7 @@
 package org.neo4j.cypher.internal.spi
 
 import org.neo4j.graphdb._
+import org.neo4j.cypher.ExecutionPlan
 
 /*
  * Developer note: This is an attempt at an internal graph database API, which defines a clean cut between
@@ -35,6 +36,7 @@ import org.neo4j.graphdb._
  * the core layer, we can move that responsibility outside of the scope of cypher.
  */
 trait QueryContext {
+
   def nodeOps: Operations[Node]
 
   def relationshipOps: Operations[Relationship]
@@ -49,7 +51,7 @@ trait QueryContext {
 
   def getLabelName(id: Long): String
 
-  def getLabelsForNode(node: Long): Iterable[Long]
+  def getLabelsForNode(node: Long): Iterator[Long]
 
   def isLabelSetOnNode(label: Long, node: Long): Boolean = getLabelsForNode(node).toIterator.contains(label)
 
@@ -71,12 +73,17 @@ trait QueryContext {
 
   def getNodesByLabel(id: Long): Iterator[Node]
 
-  /**
-   * This should not exist. It's a transient stated before locking is done somewhere else
-   * @return
-   */
-  @Deprecated
-  def getTransaction: Transaction
+  def upgradeToLockingQueryContext: LockingQueryContext = upgrade(this)
+
+  def upgrade(context: QueryContext): LockingQueryContext
+
+  def getOrCreateFromSchemaState[K, V](key: K, creator: => V): V
+
+  def schemaStateContains(key: String): Boolean
+}
+
+trait LockingQueryContext extends QueryContext {
+  def releaseLocks()
 }
 
 trait Operations[T <: PropertyContainer] {

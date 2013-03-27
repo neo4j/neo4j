@@ -24,7 +24,7 @@ import org.scalatest.Assertions
 
 
 class UnionIteratorTest extends Assertions {
-  val state = QueryState()
+  val state = QueryStateHelper.empty
 
   @Test def empty_plus_empty_is_empty() {
     //GIVEN

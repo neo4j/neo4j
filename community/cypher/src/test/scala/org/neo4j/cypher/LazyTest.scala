@@ -22,11 +22,11 @@ package org.neo4j.cypher
 import internal.commands.expressions.{Literal, Identifier}
 import internal.commands.{GreaterThan, True}
 import internal.pipes._
+import internal.pipes.QueryStateHelper.queryStateFrom
 import internal.pipes.matching._
 import internal.symbols.IntegerType
 import matching.SingleStep
 import org.neo4j.graphdb._
-import index.{IndexHits, Index, IndexManager}
 import java.util.{Iterator => JIterator}
 import java.lang.{Iterable => JIterable}
 import org.junit.{Test, Before}
@@ -37,7 +37,8 @@ import org.mockito.Mockito._
 import org.neo4j.kernel.{ThreadToStatementContextBridge, GraphDatabaseAPI}
 import org.neo4j.helpers.collection.IteratorWrapper
 import org.neo4j.kernel.impl.core.NodeManager
-import collection.JavaConverters._
+import org.neo4j.kernel.api.StatementContext
+import org.neo4j.kernel.impl.api.{SchemaStateOperations, KernelSchemaStateStore, CompositeStatementContext}
 
 class LazyTest extends ExecutionEngineHelper with Assertions with MockitoSugar {
 
@@ -85,7 +86,7 @@ class LazyTest extends ExecutionEngineHelper with Assertions with MockitoSugar {
     val ctx = internal.ExecutionContext().newWith("a" -> monitoredNode)
 
     //When:
-    val iter = matcher.findMatchingPaths(QueryState(graph), ctx)
+    val iter = matcher.findMatchingPaths(queryStateFrom(graph), ctx)
 
     //Then:
     assert(limiter.count === 0)
@@ -180,7 +181,12 @@ class LazyTest extends ExecutionEngineHelper with Assertions with MockitoSugar {
     val nodeMgre = mock[NodeManager]
     val dependencies = mock[DependencyResolver]
     val bridge = mock[ThreadToStatementContextBridge]
+    val fakeCtx = mock[StatementContext]
+    val schemaState = new KernelSchemaStateStore()
+    val schemaOps = new SchemaStateOperations(fakeCtx, schemaState)
+    val comboCtx = new CompositeStatementContext(fakeCtx, schemaOps)
     when(nodeMgre.getAllNodes).thenReturn(iter)
+    when(bridge.getCtxForWriting).thenReturn(comboCtx)
     when(fakeGraph.getDependencyResolver).thenReturn(dependencies)
     when(dependencies.resolveDependency(classOf[ThreadToStatementContextBridge])).thenReturn(bridge)
     when(dependencies.resolveDependency(classOf[NodeManager])).thenReturn(nodeMgre)
@@ -196,14 +202,13 @@ class LazyTest extends ExecutionEngineHelper with Assertions with MockitoSugar {
     assert(counter.count === 5, "Should not have fetched more than this many nodes.")
   }
 
-
   @Test def traversalmatcherpipe_is_lazy() {
     //Given:
     val limiter = new Limiter(2)
     val traversalMatchPipe = createTraversalMatcherPipe(limiter)
 
     //When:
-    val result = traversalMatchPipe.createResults(QueryState(graph))
+    val result = traversalMatchPipe.createResults(queryStateFrom(graph))
 
     //Then:
     assert(limiter.count === 0)
@@ -219,7 +224,7 @@ class LazyTest extends ExecutionEngineHelper with Assertions with MockitoSugar {
     val pipe = new FilterPipe(input, GreaterThan(Identifier("val"), Literal(3)))
 
     //When:
-    val iter = pipe.createResults(QueryState())
+    val iter = pipe.createResults(QueryStateHelper.empty)
 
     //Then:
     assert(limited.count === 0)

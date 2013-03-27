@@ -334,7 +334,7 @@ public class LabelsAcceptanceTest
     }
 
     @Test
-    public void getNodesWithLabelCommited() throws Exception
+    public void getNodesWithLabelCommitted() throws Exception
     {
         // Given
         GraphDatabaseService beansAPI = dbRule.getGraphDatabaseService();

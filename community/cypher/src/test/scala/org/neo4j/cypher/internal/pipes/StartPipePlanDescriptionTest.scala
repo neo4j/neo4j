@@ -45,7 +45,7 @@ class StartPipePlanDescriptionTest extends MockitoSugar {
   @Before
   def init() {
     planContext = mock[PlanContext]
-    factory = new EntityProducerFactory(planContext)
+    factory = new EntityProducerFactory
     when(planContext.getIndexRuleId(label, prop)).thenReturn(Some(1L))
     when(planContext.getLabelId(label)).thenReturn(Some(1L))
   }
@@ -122,7 +122,7 @@ class StartPipePlanDescriptionTest extends MockitoSugar {
   }
 
   private def createPlanDescription(startItem: StartItem): PlanDescription = {
-    val producer = factory.nodeStartItems(startItem)
+    val producer = factory.nodeStartItems((planContext, startItem))
     val pipe = new NodeStartPipe(NullPipe, "n", producer)
     pipe.executionPlanDescription
   }

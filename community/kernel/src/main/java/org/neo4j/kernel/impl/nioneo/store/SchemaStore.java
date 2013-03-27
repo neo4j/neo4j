@@ -67,34 +67,27 @@ public class SchemaStore extends AbstractDynamicStore
         return allocateRecordsFromBytes( serializer.serialize(), asList( forceGetRecord( rule.getId() ) ).iterator() );
     }
     
-    public Iterable<SchemaRule> loadAll()
+    public Iterator<SchemaRule> loadAll()
     {
-        return new Iterable<SchemaRule>()
+        return new PrefetchingIterator<SchemaRule>()
         {
-            @Override
-            public Iterator<SchemaRule> iterator()
-            {
-                return new PrefetchingIterator<SchemaRule>()
-                {
-                    private final long highestId = getHighestPossibleIdInUse();
-                    private long currentId = 1; /*record 0 contains the block size*/
-                    private final byte[] scratchData = newRecordBuffer();
+            private final long highestId = getHighestPossibleIdInUse();
+            private long currentId = 1; /*record 0 contains the block size*/
+            private final byte[] scratchData = newRecordBuffer();
 
-                    @Override
-                    protected SchemaRule fetchNextOrNull()
-                    {
-                        while ( currentId <= highestId )
-                        {
-                            long id = currentId++;
-                            DynamicRecord record = forceGetRecord( id );
-                            if ( !record.inUse() || !record.isStartRecord() )
-                                continue;
-                            
-                            return getSchemaRule( id, scratchData );
-                        }
-                        return null;
-                    }
-                };
+            @Override
+            protected SchemaRule fetchNextOrNull()
+            {
+                while ( currentId <= highestId )
+                {
+                    long id = currentId++;
+                    DynamicRecord record = forceGetRecord( id );
+                    if ( !record.inUse() || !record.isStartRecord() )
+                        continue;
+
+                    return getSchemaRule( id, scratchData );
+                }
+                return null;
             }
         };
     }

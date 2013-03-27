@@ -47,34 +47,27 @@ class LuceneIndexAccessorReader implements IndexReader
     }
 
     @Override
-    public Iterable<Long> lookup( final Object value )
+    public Iterator<Long> lookup( final Object value )
     {
-        return new Iterable<Long>()
+        try
         {
-            @Override
-            public Iterator<Long> iterator()
+            Hits hits = new Hits( searcher, documentLogic.newQuery( value ), null );
+            Iterator<Document> docs = new HitsIterator( hits );
+            return map( new Function<Document, Long>()
             {
-                try
+                @Override
+                public Long apply( Document from )
                 {
-                    Hits hits = new Hits( searcher, documentLogic.newQuery( value ), null );
-                    Iterator<Document> docs = new HitsIterator( hits );
-                    return map( new Function<Document, Long>()
-                    {
-                        @Override
-                        public Long apply( Document from )
-                        {
-                            return documentLogic.getNodeId( from );
-                        }
-                    }, docs );
+                    return documentLogic.getNodeId( from );
                 }
-                catch ( IOException e )
-                {
-                    throw new RuntimeException( e );
-                }
-            }
-        };
+            }, docs );
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
     }
-    
+
     @Override
     public void close()
     {

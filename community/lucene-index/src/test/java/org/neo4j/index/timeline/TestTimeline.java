@@ -47,35 +47,35 @@ public class TestTimeline
 {
     private GraphDatabaseService db;
     private Transaction tx;
-    
+
     @Before
     public void before() throws Exception
     {
         db = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().newGraphDatabase();
     }
-    
+
     @After
     public void after()
     {
         db.shutdown();
     }
-    
+
     private void beginTx()
     {
         tx = db.beginTx();
     }
-    
+
     private void commitTx()
     {
         tx.success();
         tx.finish();
     }
-    
+
     private interface EntityCreator<T extends PropertyContainer>
     {
         T create();
     }
-    
+
     private EntityCreator<PropertyContainer> nodeCreator = new EntityCreator<PropertyContainer>()
     {
         @Override
@@ -84,28 +84,28 @@ public class TestTimeline
             return db.createNode();
         }
     };
-    
+
     private EntityCreator<PropertyContainer> relationshipCreator = new EntityCreator<PropertyContainer>()
     {
         private final RelationshipType type = DynamicRelationshipType.withName( "whatever" );
-        
+
         @Override
         public Relationship create()
         {
             return db.createNode().createRelationshipTo( db.createNode(), type );
         }
     };
-    
+
     private TimelineIndex<PropertyContainer> nodeTimeline()
     {
         return new LuceneTimeline( db, db.index().forNodes( "timeline" ) );
     }
-    
+
     private TimelineIndex<PropertyContainer> relationshipTimeline()
     {
         return new LuceneTimeline( db, db.index().forRelationships( "timeline" ) );
     }
-    
+
     private LinkedList<Pair<PropertyContainer, Long>> createTimestamps( EntityCreator<PropertyContainer> creator,
             TimelineIndex<PropertyContainer> timeline, long... timestamps )
     {
@@ -126,7 +126,7 @@ public class TestTimeline
         timeline.add( entity, timestamp );
         return Pair.of( entity, timestamp );
     }
-    
+
     private List<PropertyContainer> sortedEntities( LinkedList<Pair<PropertyContainer, Long>> timestamps, final boolean reversed )
     {
         List<Pair<PropertyContainer, Long>> sorted = new ArrayList<Pair<PropertyContainer,Long>>( timestamps );
@@ -138,7 +138,7 @@ public class TestTimeline
                 return !reversed ? o1.other().compareTo( o2.other() ) : o2.other().compareTo( o1.other() );
             }
         } );
-        
+
         List<PropertyContainer> result = new ArrayList<PropertyContainer>();
         for ( Pair<PropertyContainer, Long> timestamp : sorted )
         {
@@ -146,10 +146,10 @@ public class TestTimeline
         }
         return result;
     }
-    
+
     // ======== Tests, although private so that we can create two versions of each,
     // ======== one for nodes and one for relationships
-    
+
     private void makeSureFirstAndLastAreReturnedCorrectly( EntityCreator<PropertyContainer> creator,
             TimelineIndex<PropertyContainer> timeline ) throws Exception
     {
@@ -157,48 +157,48 @@ public class TestTimeline
         assertEquals( timestamps.get( 1 ).first(), timeline.getFirst() );
         assertEquals( timestamps.getLast().first(), timeline.getLast() );
     }
-    
+
     private void makeSureRangesAreReturnedInCorrectOrder( EntityCreator<PropertyContainer> creator,
             TimelineIndex<PropertyContainer> timeline ) throws Exception
     {
         LinkedList<Pair<PropertyContainer, Long>> timestamps = createTimestamps( creator, timeline,
                 300000, 200000, 400000, 100000, 500000, 600000, 900000, 800000 );
-        assertEquals( sortedEntities( timestamps, false ), asCollection( timeline.getBetween( null, null ) ) );
+        assertEquals( sortedEntities( timestamps, false ), asCollection( timeline.getBetween( null, null ).iterator() ) );
     }
-    
+
     private void makeSureRangesAreReturnedInCorrectReversedOrder( EntityCreator<PropertyContainer> creator,
             TimelineIndex<PropertyContainer> timeline ) throws Exception
     {
         LinkedList<Pair<PropertyContainer, Long>> timestamps = createTimestamps( creator, timeline,
                 300000, 200000, 199999, 400000, 100000, 500000, 600000, 900000, 800000 );
-        assertEquals( sortedEntities( timestamps, true ), asCollection( timeline.getBetween( null, null, true ) ) );
+        assertEquals( sortedEntities( timestamps, true ), asCollection( timeline.getBetween( null, null, true ).iterator() ) );
     }
-    
+
     private void makeSureWeCanQueryLowerDefaultThan1970( EntityCreator<PropertyContainer> creator,
             TimelineIndex<PropertyContainer> timeline ) throws Exception
     {
         LinkedList<Pair<PropertyContainer, Long>> timestamps = createTimestamps( creator, timeline,
                 -10000, 0, 10000 );
-        assertEquals( sortedEntities( timestamps, true ), asCollection( timeline.getBetween( null, 10000L, true ) ) );
+        assertEquals( sortedEntities( timestamps, true ), asCollection( timeline.getBetween( null, 10000L, true ).iterator() ) );
     }
-    
+
     private void makeSureUncommittedChangesAreSortedCorrectly( EntityCreator<PropertyContainer> creator,
             TimelineIndex<PropertyContainer> timeline ) throws Exception
     {
         LinkedList<Pair<PropertyContainer, Long>> timestamps = createTimestamps( creator, timeline,
                 300000, 100000, 500000, 900000, 800000 );
-        
+
         beginTx();
         timestamps.addAll( createTimestamps( creator, timeline, 40000, 70000, 20000 ) );
         assertEquals( sortedEntities( timestamps, false ),
-                asCollection( timeline.getBetween( null, null ) ) );
+                asCollection( timeline.getBetween( null, null ).iterator() ) );
         commitTx();
         assertEquals( sortedEntities( timestamps, false ),
-                asCollection( timeline.getBetween( null, null ) ) );
+                asCollection( timeline.getBetween( null, null ).iterator() ) );
     }
-    
+
     // ======== The tests
-    
+
     @Test
     public void makeSureFirstAndLastAreReturnedCorrectlyNode() throws Exception
     {
@@ -210,7 +210,7 @@ public class TestTimeline
     {
         makeSureFirstAndLastAreReturnedCorrectly( relationshipCreator, relationshipTimeline() );
     }
-    
+
     @Test
     public void makeSureRangesAreReturnedInCorrectOrderNode() throws Exception
     {
@@ -234,7 +234,7 @@ public class TestTimeline
     {
         makeSureRangesAreReturnedInCorrectReversedOrder( relationshipCreator, relationshipTimeline() );
     }
-    
+
     @Test
     public void makeSureUncommittedChangesAreSortedCorrectlyNode() throws Exception
     {
@@ -246,7 +246,7 @@ public class TestTimeline
     {
         makeSureUncommittedChangesAreSortedCorrectly( relationshipCreator, relationshipTimeline() );
     }
-    
+
     @Test
     public void makeSureWeCanQueryLowerDefaultThan1970Node() throws Exception
     {

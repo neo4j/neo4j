@@ -23,22 +23,19 @@ import builders._
 import org.neo4j.cypher.internal.pipes._
 import org.neo4j.cypher._
 import internal.profiler.Profiler
-import internal.spi.gdsimpl.TransactionBoundPlanContext
 import internal.spi.{PlanContext, QueryContext}
 import internal.{ExecutionContext, ClosingIterator}
 import internal.commands._
 import internal.symbols.SymbolTable
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.cypher.ExecutionResult
-import org.neo4j.kernel.{GraphDatabaseAPI, ThreadToStatementContextBridge}
-import util.Try
 import values.ResolvedLabel
 
 class ExecutionPlanBuilder(graph: GraphDatabaseService) extends PatternGraphBuilder {
 
-  def build(inputQuery: AbstractQuery): ExecutionPlan = {
+  def build(planContext: PlanContext, inputQuery: AbstractQuery): ExecutionPlan = {
 
-    val (p, isUpdating) = buildPipes(inputQuery)
+    val (p, isUpdating) = buildPipes(planContext, inputQuery)
 
     val columns = getQueryResultColumns(inputQuery, p.symbols)
     val func = if (isUpdating) {
@@ -53,22 +50,11 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService) extends PatternGraphBuil
     }
   }
 
-  def buildPipes(in: AbstractQuery): (Pipe, Boolean) = {
-    val planContext = new TransactionBoundPlanContext(graph.asInstanceOf[GraphDatabaseAPI])
-    try {
-      val result: (Pipe, Boolean) = in match {
-        case q: Query => buildQuery(q, planContext)
-        case q: IndexOperation => buildIndexQuery(q)
-        case q: Union => buildUnionQuery(q, planContext)
-      }
-      planContext.close(success = true)
-      result
-    } catch {
-      case e:Throwable =>
-        planContext.close(success = false)
-        throw e
+  def buildPipes(planContext: PlanContext, in: AbstractQuery): (Pipe, Boolean) = in match {
+      case q: Query          => buildQuery(q, planContext)
+      case q: IndexOperation => buildIndexQuery(q)
+      case q: Union          => buildUnionQuery(q, planContext)
     }
-  }
 
   val unionBuilder = new UnionBuilder(this)
 
@@ -77,7 +63,7 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService) extends PatternGraphBuil
   def buildIndexQuery(op: IndexOperation): (Pipe, Boolean) = (new IndexOperationPipe(op), true)
 
   def buildQuery(inputQuery: Query, context: PlanContext): (Pipe, Boolean) = {
-    val initialPSQ = PartiallySolvedQuery(inputQuery).rewrite(LabelResolution(resolveLabel))
+    val initialPSQ = PartiallySolvedQuery(inputQuery).rewrite(LabelResolution((name) => resolveLabel(name, context)))
 
     var continue = true
     var planInProgress = ExecutionPlanInProgress(initialPSQ, NullPipe, isUpdating = false)
@@ -110,12 +96,8 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService) extends PatternGraphBuil
     (planInProgress.pipe, planInProgress.isUpdating)
   }
 
-  private def resolveLabel(name: String) = {
-    val ctx = graph.asInstanceOf[GraphDatabaseAPI]
-         .getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge])
-         .getCtxForReading
-    Try { ResolvedLabel(name, ctx.getLabelId(name)) }.toOption
-  }
+  private def resolveLabel(name: String, context:PlanContext): Option[ResolvedLabel] =
+    context.getLabelId(name).map(id => ResolvedLabel(name, id))
 
   private def getQueryResultColumns(q: AbstractQuery, currentSymbols: SymbolTable): List[String] = q match {
     case in: Query =>
@@ -148,7 +130,7 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService) extends PatternGraphBuil
   private def getEagerReadWriteQuery(pipe: Pipe, columns: List[String]): (QueryContext, Map[String, Any], Boolean) => ExecutionResult = {
     val func = (queryContext: QueryContext, params: Map[String, Any], profile: Boolean) => {
       val (state, results, descriptor) = prepareStateAndResult(queryContext, params, pipe, profile)
-      new EagerPipeExecutionResult(results, columns, state, graph, descriptor)
+      new EagerPipeExecutionResult(results, columns, state, descriptor)
     }
 
     func
@@ -209,7 +191,7 @@ The Neo4j Team""")
     new CreateNodesAndRelationshipsBuilder(graph),
     new UpdateActionBuilder(graph),
     new EmptyResultBuilder,
-    new TraversalMatcherBuilder(graph),
+    new TraversalMatcherBuilder,
     new TopPipeBuilder,
     new DistinctBuilder,
     new IndexLookupBuilder,

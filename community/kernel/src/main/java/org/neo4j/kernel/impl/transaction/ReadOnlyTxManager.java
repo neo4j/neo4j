@@ -31,6 +31,9 @@ import javax.transaction.xa.XAResource;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.StatementContext;
+import org.neo4j.kernel.api.operations.SchemaOperations;
+import org.neo4j.kernel.impl.api.CompositeStatementContext;
+import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.core.ReadOnlyDbException;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.transaction.xaframework.XaResource;
@@ -48,7 +51,6 @@ public class ReadOnlyTxManager extends AbstractTransactionManager
     private XaDataSourceManager xaDsManager = null;
     private final StringLogger logger;
     private KernelAPI kernel;
-    private StatementContext readOnlyStatementContext;
 
     public ReadOnlyTxManager( XaDataSourceManager xaDsManagerToUse, StringLogger logger )
     {
@@ -327,11 +329,7 @@ public class ReadOnlyTxManager extends AbstractTransactionManager
     @Override
     public StatementContext getStatementContext()
     {
-        if(readOnlyStatementContext == null)
-        {
-            readOnlyStatementContext = kernel.newReadOnlyStatementContext();
-        }
-        return readOnlyStatementContext;
+        return kernel.newReadOnlyStatementContext();
     }
 
     @Override

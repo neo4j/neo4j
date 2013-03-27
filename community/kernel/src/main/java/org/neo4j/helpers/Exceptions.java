@@ -89,10 +89,10 @@ public class Exceptions
      * and a toPeel predicate returning true for MyFarOuterException and MyOuterException
      * will return MyInnerException. If the predicate peels all exceptions null is returned. 
      * 
-     * @param exception the outer exception to peel to get to an inner cause.
+     * @param exception the outer exception to peel to get to an delegate cause.
      * @param toPeel {@link Predicate} for deciding what to peel. {@code true} means
      * to peel (i.e. remove), whereas the first {@code false} means stop and return.
-     * @return the inner cause of an exception, dictated by the predicate.
+     * @return the delegate cause of an exception, dictated by the predicate.
      */
     public static Throwable peel( Throwable exception, Predicate<Throwable> toPeel )
     {

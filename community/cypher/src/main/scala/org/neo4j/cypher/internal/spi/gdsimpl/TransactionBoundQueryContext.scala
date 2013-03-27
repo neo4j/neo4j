@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.spi.gdsimpl
 
-import org.neo4j.cypher.internal.spi.{Operations, QueryContext}
+import org.neo4j.cypher.internal.spi._
 import org.neo4j.graphdb._
 import org.neo4j.kernel.{ThreadToStatementContextBridge, GraphDatabaseAPI}
 import org.neo4j.kernel.api.{ConstraintViolationKernelException, StatementContext}
@@ -28,20 +28,17 @@ import org.neo4j.graphdb.DynamicRelationshipType.withName
 import org.neo4j.cypher.{EntityNotFoundException, CouldNotDropIndexException, IndexAlreadyDefinedException}
 import org.neo4j.tooling.GlobalGraphOperations
 import org.neo4j.kernel.api.SchemaRuleNotFoundException
+import collection.mutable
 
-class TransactionBoundQueryContext(graph: GraphDatabaseAPI) extends QueryContext {
-
-  val tx: Transaction = graph.beginTx()
-  private val ctx: StatementContext = graph
-    .getDependencyResolver
-    .resolveDependency(classOf[ThreadToStatementContextBridge])
-    .getCtxForWriting
+class TransactionBoundQueryContext(graph: GraphDatabaseAPI, tx: Transaction, ctx: StatementContext) extends QueryContext {
 
   def setLabelsOnNode(node: Long, labelIds: Iterable[Long]): Int = labelIds.foldLeft(0) {
     case (count, labelId) => if (ctx.addLabelToNode(labelId, node)) count + 1 else count
   }
 
   def close(success: Boolean) {
+    ctx.close()
+
     if (success)
       tx.success()
     else
@@ -75,8 +72,8 @@ class TransactionBoundQueryContext(graph: GraphDatabaseAPI) extends QueryContext
 
   def getTransaction = tx
 
-  def exactIndexSearch(id: Long, value: Any): Iterator[Node] =
-    ctx.exactIndexLookup(id, value).iterator().asScala.map((id: java.lang.Long) => nodeOps.getById(id))
+  def exactIndexSearch(id: Long, value: Any) =
+    ctx.exactIndexLookup(id, value).asScala.map((id: java.lang.Long) => nodeOps.getById(id))
 
   val nodeOps = new NodeOperations
 
@@ -86,7 +83,7 @@ class TransactionBoundQueryContext(graph: GraphDatabaseAPI) extends QueryContext
     case (count, labelId) => if (ctx.removeLabelFromNode(labelId, node)) count + 1 else count
   }
 
-  def getNodesByLabel(id: Long): Iterator[Node] = ctx.getNodesWithLabel(id).iterator().asScala.map(nodeOps.getById(_))
+  def getNodesByLabel(id: Long): Iterator[Node] = ctx.getNodesWithLabel(id).asScala.map(nodeOps.getById(_))
 
   class NodeOperations extends BaseOperations[Node] {
     def delete(obj: Node) {
@@ -145,7 +142,7 @@ class TransactionBoundQueryContext(graph: GraphDatabaseAPI) extends QueryContext
 
   def dropIndexRule(labelId: Long, propertyKeyId: Long) {
     try {
-      ctx.dropIndexRule(ctx.getIndexRule(labelId, propertyKeyId));
+      ctx.dropIndexRule(ctx.getIndexRule(labelId, propertyKeyId))
     } catch {
       case e: ConstraintViolationKernelException =>
         val labelName = getLabelName(labelId)
@@ -157,6 +154,18 @@ class TransactionBoundQueryContext(graph: GraphDatabaseAPI) extends QueryContext
         throw new CouldNotDropIndexException(labelName, propName, e)
     }
   }
+
+  def upgrade(context: QueryContext): LockingQueryContext = new RepeatableReadQueryContext(context, new Locker {
+    private val locks = new mutable.ListBuffer[Lock]
+
+    def releaseAllLocks() {
+      locks.foreach(_.release())
+    }
+
+    def acquireLock(p: PropertyContainer) {
+      locks += tx.acquireWriteLock(p)
+    }
+  })
 
   abstract class BaseOperations[T <: PropertyContainer] extends Operations[T] {
     def getProperty(obj: T, propertyKey: String) = obj.getProperty(propertyKey, null)
@@ -174,4 +183,12 @@ class TransactionBoundQueryContext(graph: GraphDatabaseAPI) extends QueryContext
     }
   }
 
+  def getOrCreateFromSchemaState[K, V](key: K, creator: => V) = {
+    val javaCreator = new org.neo4j.helpers.Function[K, V](){
+      def apply(key: K) = creator
+    }
+    ctx.getOrCreateFromSchemaState(key, javaCreator)
+  }
+
+  def schemaStateContains(key: String) = ctx.schemaStateContains(key)
 }

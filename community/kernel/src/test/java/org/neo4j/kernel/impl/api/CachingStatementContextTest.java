@@ -28,6 +28,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
 
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Set;
 
 import org.junit.Test;
@@ -47,10 +48,10 @@ public class CachingStatementContextTest
         StatementContext context = new CachingStatementContext( actual, cache, null );
         
         // WHEN
-        Iterable<Long> recievedLabels = context.getLabelsForNode( nodeId );
+        Iterator<Long> receivedLabels = context.getLabelsForNode( nodeId );
         
         // THEN
-        assertEquals( labels, addToCollection( recievedLabels, new HashSet<Long>() ) );
+        assertEquals( labels, addToCollection(receivedLabels, new HashSet<Long>() ) );
     }
     
     @Test
