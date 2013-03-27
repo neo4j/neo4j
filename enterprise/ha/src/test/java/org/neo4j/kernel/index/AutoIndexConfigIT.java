@@ -19,8 +19,13 @@
  */
 package org.neo4j.kernel.index;
 
+import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.assertThat;
+import static org.hamcrest.CoreMatchers.hasItem;
+import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
+import static org.neo4j.test.ha.ClusterManager.masterAvailable;
+
 import org.junit.After;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
@@ -31,13 +36,6 @@ import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.ClusterManager;
 
-import static org.hamcrest.CoreMatchers.hasItem;
-import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertThat;
-import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
-import static org.neo4j.test.ha.ClusterManager.masterAvailable;
-
-@Ignore
 public class AutoIndexConfigIT
 {
 
