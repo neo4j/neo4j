@@ -23,7 +23,6 @@ import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -58,25 +57,9 @@ import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.PropertyIndexManager;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
-import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.TestGraphDatabaseFactory;
-
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-
-import static java.util.Arrays.asList;
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.cache_type;
-import static org.neo4j.helpers.collection.IteratorUtil.*;
-import static org.neo4j.helpers.collection.MapUtil.map;
 
 public class StoreStatementContextTest
 {

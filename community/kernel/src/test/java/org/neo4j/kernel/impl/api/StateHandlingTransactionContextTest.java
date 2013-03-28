@@ -19,13 +19,10 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
-import static org.neo4j.helpers.Functions.constant;
 
 import java.util.Map;
 
@@ -33,7 +30,6 @@ import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 import org.neo4j.helpers.Function;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.api.ConstraintViolationKernelException;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.TransactionContext;
