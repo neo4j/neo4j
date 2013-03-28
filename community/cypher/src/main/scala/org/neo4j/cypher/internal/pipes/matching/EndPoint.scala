@@ -42,7 +42,7 @@ final case class EndPoint(name: String) extends Trail {
 
       existingValue match {
         case Some(existing) if endNode != existing => Iterator.empty
-        case _                                     => Iterator((Nil, mapSoFar + (name -> endNode)))
+        case _                                     => Iterator.single((Nil, mapSoFar + (name -> endNode)))
       }
     } else {
       Iterator.empty

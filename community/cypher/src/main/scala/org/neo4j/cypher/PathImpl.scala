@@ -24,6 +24,7 @@ import scala.collection.JavaConverters._
 import org.neo4j.kernel.Traversal
 import org.neo4j.graphdb.{Path, Relationship, PropertyContainer, Node}
 import java.lang.{Iterable => JavaIterable}
+import collection.mutable
 
 case class PathImpl(pathEntities: PropertyContainer*)
   extends org.neo4j.graphdb.Path
@@ -31,19 +32,20 @@ case class PathImpl(pathEntities: PropertyContainer*)
   with CypherArray {
 
   val (nodeList,relList) = {
-    var x = true
-    val nodes = scala.collection.mutable.MutableList[Node]()
-    val rels = scala.collection.mutable.MutableList[Relationship]()
+    if (pathEntities.size % 2 == 0) throw new IllegalArgumentException("Tried to construct a path that is not built like a path: even number of elements.");
+    var x = 0
+    val nodes = new Array[Node](pathEntities.size/2+1)
+    val rels = new Array[Relationship](pathEntities.size/2)
     try {
       pathEntities.foreach(e => {
-        if (x) nodes += e.asInstanceOf[Node]
-        else rels += e.asInstanceOf[Relationship]
-        x = !x
+        if ((x % 2) == 0) nodes.update(x/2, e.asInstanceOf[Node])
+        else rels.update((x-1)/2, e.asInstanceOf[Relationship])
+        x+=1
       })
     } catch {
       case e: ClassCastException => throw new IllegalArgumentException("Tried to construct a path that is not built like a path",e);
     }
-    (nodes.toList,rels.toList)
+    (new mutable.WrappedArray.ofRef(nodes),new mutable.WrappedArray.ofRef(rels))
   }
 
   require(isProperPath, "Tried to construct a path that is not built like a path")

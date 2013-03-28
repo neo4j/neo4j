@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.commands.expressions
 import org.neo4j.graphdb.Path
-import org.neo4j.cypher.SyntaxException
+import org.neo4j.cypher.{PathImpl, SyntaxException}
 import org.neo4j.cypher.internal.symbols._
 import collection.JavaConverters._
 import org.neo4j.cypher.internal.ExecutionContext
@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.pipes.QueryState
 
 case class RelationshipFunction(path: Expression) extends NullInNullOutExpression(path) {
   def compute(value: Any, m: ExecutionContext)(implicit state: QueryState) = value match {
+    case p: PathImpl => p.relList
     case p: Path => p.relationships().asScala.toSeq
     case x       => throw new SyntaxException("Expected " + path + " to be a path.")
   }

@@ -192,7 +192,7 @@ class PatternMatcher(bindings: Map[String, MatchingPair],
   }
 
   private def getPatternRelationshipsNotYetVisited[U](patternNode: PatternNode, history: History): List[PatternRelationship] =
-    history.filter(patternNode.relationships).filter(_.optional == false || includeOptionals == true).toList
+    history.filter(patternNode.relationships,includeOptionals).toList
 
   protected val isDebugging = false
 
