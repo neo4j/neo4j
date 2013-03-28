@@ -19,22 +19,6 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import static java.util.Arrays.asList;
-import static junit.framework.Assert.assertEquals;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.IsEqual.equalTo;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-import static org.neo4j.helpers.collection.MapUtil.map;
-import static org.neo4j.kernel.impl.util.TestLogger.LogCall.info;
-
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -74,6 +58,24 @@ import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 
+import static java.util.Arrays.asList;
+import static junit.framework.Assert.assertEquals;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.IsEqual.equalTo;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyLong;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.helpers.collection.MapUtil.genericMap;
+import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.kernel.impl.util.TestLogger.LogCall.error;
+import static org.neo4j.kernel.impl.util.TestLogger.LogCall.info;
+
 public class IndexPopulationJobTest
 {
     @Test
@@ -100,7 +102,7 @@ public class IndexPopulationJobTest
     {
         // GIVEN
         String value = "Taylor";
-        long nodeId = createNode( map( name, value ), FIRST );
+        createNode( map( name, value ), FIRST );
         stateHolder.apply( MapUtil.stringMap( "key", "original_value" ) );
         IndexPopulationJob job = newIndexPopulationJob( FIRST, name, populator, new FlippableIndexProxy() );
 
@@ -144,6 +146,7 @@ public class IndexPopulationJobTest
         long node1 = createNode( map( name, value1 ), FIRST );
         long node2 = createNode( map( name, value2 ), FIRST );
         long node3 = createNode( map( name, value3 ), FIRST );
+        @SuppressWarnings("UnnecessaryLocalVariable")
         long changeNode = node1;
         long propertyKeyId = context.getPropertyKeyId( name );
         NodeChangingWriter populator = new NodeChangingWriter( changeNode, propertyKeyId, value1, changedValue,
@@ -180,9 +183,9 @@ public class IndexPopulationJobTest
         job.run();
 
         // THEN
-        Map<Long, Object> expectedAdded = MapUtil.<Long,Object>genericMap( node1, value1, node2, value2, node3, value3 );
+        Map<Long, Object> expectedAdded = genericMap( node1, value1, node2, value2, node3, value3 );
         assertEquals( expectedAdded, populator.added ); 
-        Map<Long, Object> expectedRemoved = MapUtil.<Long,Object>genericMap( node2, value2 );
+        Map<Long, Object> expectedRemoved = genericMap( node2, value2 );
         assertEquals( expectedRemoved, populator.removed ); 
     }
     
@@ -245,6 +248,7 @@ public class IndexPopulationJobTest
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     public void shouldLogJobProgress() throws Exception
     {
         // Given
@@ -265,7 +269,30 @@ public class IndexPopulationJobTest
             info( "Index population completed for label id 0 on property id 2, index is now online." )
         );
     }
-    
+
+    @Test
+    @SuppressWarnings("deprecation")
+    public void shouldLogJobFailure() throws Exception
+    {
+        // Given
+        createNode( map( name, "irrelephant" ), FIRST );
+        TestLogger logger = new TestLogger();
+        FlippableIndexProxy index = mock( FlippableIndexProxy.class );
+        NeoStoreIndexStoreView store = new NeoStoreIndexStoreView(
+                db.getXaDataSourceManager().getNeoStoreDataSource().getNeoStore() );
+
+        IndexPopulationJob job = newIndexPopulationJob( FIRST, name, populator, index, store, logger);
+
+        IllegalStateException failure = new IllegalStateException( "not successful" );
+        doThrow( failure ).when( populator ).create();
+
+        // When
+        job.run();
+
+        // Then
+        logger.assertAtLeastOnce( error( "Failed to populate index.", failure ) );
+    }
+
     private static class ControlledStoreScan implements StoreScan
     {
         private final DoubleLatch latch = new DoubleLatch();
@@ -395,7 +422,7 @@ public class IndexPopulationJobTest
     private IndexPopulator populator;
     private KernelSchemaStateStore stateHolder;
 
-    private long firstLabelId, secondLabelId;
+    private long firstLabelId;
 
     @Before
     public void before() throws Exception
@@ -409,7 +436,7 @@ public class IndexPopulationJobTest
         Transaction tx = db.beginTx();
         StatementContext ctxForWriting = ctxProvider.getCtxForWriting();
         firstLabelId = ctxForWriting.getOrCreateLabelId( FIRST.name() );
-        secondLabelId = ctxForWriting.getOrCreateLabelId( SECOND.name() );
+        ctxForWriting.getOrCreateLabelId( SECOND.name() );
         ctxForWriting.close();
         tx.success();
         tx.finish();
@@ -421,6 +448,7 @@ public class IndexPopulationJobTest
         db.shutdown();
     }
 
+    @SuppressWarnings("deprecation")
     private IndexPopulationJob newIndexPopulationJob( Label label, String propertyKey, IndexPopulator populator,
             FlippableIndexProxy flipper )
             throws LabelNotFoundKernelException, PropertyKeyNotFoundException

@@ -50,6 +50,6 @@ public class IndexDescriptor
     @Override
     public String toString()
     {
-        return getClass().getName() + "[label:" + labelId + ", on:" + propertyKeyId + "]";
+        return getClass().getSimpleName() + "[label:" + labelId + ", property:" + propertyKeyId + "]";
     }
 }

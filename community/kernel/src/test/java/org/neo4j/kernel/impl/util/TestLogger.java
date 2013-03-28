@@ -19,14 +19,6 @@
  */
 package org.neo4j.kernel.impl.util;
 
-import static java.lang.String.format;
-import static java.util.Arrays.asList;
-import static org.junit.Assert.*;
-import static org.neo4j.helpers.Predicates.equalTo;
-import static org.neo4j.helpers.collection.Iterables.count;
-import static org.neo4j.helpers.collection.Iterables.filter;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -34,6 +26,15 @@ import java.util.Set;
 
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.Visitor;
+
+import static java.lang.String.format;
+import static java.util.Arrays.asList;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+import static org.neo4j.helpers.Predicates.equalTo;
+import static org.neo4j.helpers.collection.Iterables.count;
+import static org.neo4j.helpers.collection.Iterables.filter;
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
 /**
  * A string logger implementation for testing that components log things correctly.
@@ -47,7 +48,7 @@ public class TestLogger extends StringLogger
         DEBUG,
         INFO,
         WARN,
-        ERROR;
+        ERROR
     }
 
     public static final class LogCall
@@ -67,15 +68,15 @@ public class TestLogger extends StringLogger
         }
 
         // DSL sugar methods to use when writing assertions.
-        public static final LogCall debug(String msg) { return new LogCall(Level.DEBUG, msg, null, false); }
-        public static final LogCall info(String msg)  { return new LogCall(Level.INFO,  msg, null, false); }
-        public static final LogCall warn(String msg)  { return new LogCall(Level.WARN,  msg, null, false); }
-        public static final LogCall error(String msg) { return new LogCall(Level.ERROR, msg, null, false); }
+        public static LogCall debug(String msg) { return new LogCall(Level.DEBUG, msg, null, false); }
+        public static LogCall info(String msg)  { return new LogCall(Level.INFO,  msg, null, false); }
+        public static LogCall warn(String msg)  { return new LogCall(Level.WARN,  msg, null, false); }
+        public static LogCall error(String msg) { return new LogCall(Level.ERROR, msg, null, false); }
 
-        public static final LogCall debug(String msg, Throwable c) { return new LogCall(Level.DEBUG, msg, c, false); }
-        public static final LogCall info(String msg,  Throwable c) { return new LogCall(Level.INFO,  msg, c, false); }
-        public static final LogCall warn(String msg,  Throwable c) { return new LogCall(Level.WARN,  msg, c, false); }
-        public static final LogCall error(String msg, Throwable c) { return new LogCall(Level.ERROR, msg, c, false); }
+        public static LogCall debug(String msg, Throwable c) { return new LogCall(Level.DEBUG, msg, c, false); }
+        public static LogCall info(String msg,  Throwable c) { return new LogCall(Level.INFO,  msg, c, false); }
+        public static LogCall warn(String msg,  Throwable c) { return new LogCall(Level.WARN,  msg, c, false); }
+        public static LogCall error(String msg, Throwable c) { return new LogCall(Level.ERROR, msg, c, false); }
 
         @Override
         public String toString()
@@ -134,7 +135,7 @@ public class TestLogger extends StringLogger
         {
             if(actual.hasNext())
             {
-                assertEquals( actual.next(), expected.next() );
+                assertEquals( expected.next(), actual.next() );
             } else
             {
                 fail(format( "Got fewer log calls than expected. The missing log calls were: \n%s", serialize(expected)));
