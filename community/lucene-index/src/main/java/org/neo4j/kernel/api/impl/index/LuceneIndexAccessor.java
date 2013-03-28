@@ -58,7 +58,7 @@ class LuceneIndexAccessor implements IndexAccessor
     @Override
     public void drop() throws IOException
     {
-        writerLogic.close( writer );
+        closeIndexResources();
         deleteDirectoryContents( dir );
     }
 
@@ -149,8 +149,14 @@ class LuceneIndexAccessor implements IndexAccessor
     @Override
     public void close() throws IOException
     {
-        writerLogic.close( writer );
+        closeIndexResources();
         dir.close();
+    }
+
+    private void closeIndexResources() throws IOException
+    {
+        writerLogic.close( writer );
+        searcherManager.close();
     }
 
     @Override

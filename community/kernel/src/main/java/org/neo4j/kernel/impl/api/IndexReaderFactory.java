@@ -66,25 +66,4 @@ public interface IndexReaderFactory
             indexReaders.clear();
         }
     }
-    
-    public static class NonCaching implements IndexReaderFactory
-    {
-        private final IndexingService indexingService;
-
-        public NonCaching( IndexingService indexingService )
-        {
-            this.indexingService = indexingService;
-        }
-
-        @Override
-        public IndexReader newReader( long indexId ) throws IndexNotFoundKernelException
-        {
-            return indexingService.getProxyForRule( indexId ).newReader();
-        }
-
-        @Override
-        public void close()
-        {
-        }
-    }
 }

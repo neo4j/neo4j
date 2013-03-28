@@ -71,7 +71,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     private final DependencyResolver dependencyResolver;
     private final SchemaCache schemaCache;
     private final UpdateableSchemaState schemaState;
-    private final StatementContextOwner statementContext = new StatementContextOwner()
+    private final StatementContextOwner statementContextOwner = new StatementContextOwner()
     {
         @Override
         protected StatementContext createStatementContext()
@@ -168,14 +168,14 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     @Override
     public StatementContext newReadOnlyStatementContext()
     {
-        return statementContext.getStatementContext();
+        return statementContextOwner.getStatementContext();
     }
 
     private StatementContext createReadOnlyStatementContext()
     {
         // I/O
-        StatementContext result = new StoreStatementContext(propertyIndexManager, nodeManager,
-                neoStore, indexService, new IndexReaderFactory.NonCaching( indexService ) );
+        StatementContext result = new StoreStatementContext( propertyIndexManager, nodeManager,
+                neoStore, indexService, new IndexReaderFactory.Caching( indexService ) );
 
         // + Cache
         result = new CachingStatementContext( result, persistenceCache, schemaCache );
@@ -195,13 +195,16 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
         return new CompositeStatementContext( inner, schemaOps );
     }
 
-    private TxState newTxState() {
-        return new TxState( new OldTxStateBridgeImpl(transactionManager.getTransactionState()), persistenceManager,
-                new TxState.IdGeneration() {
-            @Override
-            public long newSchemaRuleId() {
-                return neoStore.getSchemaStore().nextId();
-            }
-        });
+    private TxState newTxState()
+    {
+        return new TxState( new OldTxStateBridgeImpl( transactionManager.getTransactionState() ), persistenceManager,
+                new TxState.IdGeneration()
+                {
+                    @Override
+                    public long newSchemaRuleId()
+                    {
+                        return neoStore.getSchemaStore().nextId();
+                    }
+                } );
     }
 }

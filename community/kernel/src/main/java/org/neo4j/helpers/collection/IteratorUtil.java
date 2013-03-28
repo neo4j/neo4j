@@ -841,10 +841,18 @@ public abstract class IteratorUtil
             }
         }
     }
+    
+    private static final Closeable EMPTY_CLOSEABLE = new Closeable()
+    {
+        @Override
+        public void close() throws IOException
+        {
+        }
+    };
 
     private static class ResourceClosingIterator<T> implements ResourceIterator<T>
     {
-        private final Closeable closeable;
+        private Closeable closeable;
         private final Iterator<T> iterator;
 
         ResourceClosingIterator( Closeable closeable, Iterator<T> iterator )
@@ -859,6 +867,7 @@ public abstract class IteratorUtil
             try
             {
                 closeable.close();
+                closeable = EMPTY_CLOSEABLE;
             }
             catch ( IOException e )
             {
