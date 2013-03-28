@@ -19,46 +19,73 @@
  */
 package org.neo4j.cypher.internal.executionplan.builders
 
-import org.neo4j.cypher.internal.executionplan.{ExecutionPlanInProgress, PlanBuilder}
+import org.neo4j.cypher.internal.executionplan.{PartiallySolvedQuery, PlanBuilder, ExecutionPlanInProgress}
 import org.neo4j.cypher.internal.spi.PlanContext
-import org.neo4j.cypher.internal.commands.{NodeByLabel, SchemaIndex, Equals, HasLabel}
+import org.neo4j.cypher.internal.commands._
 import org.neo4j.cypher.internal.commands.expressions.{Property, Identifier}
 import org.neo4j.cypher.internal.commands.values.LabelValue
-import org.neo4j.cypher.UnableToPickIndexException
+import org.neo4j.cypher.internal.commands.SchemaIndex
+import scala.Some
+import org.neo4j.cypher.internal.commands.HasLabel
+import org.neo4j.cypher.internal.commands.Equals
+import org.neo4j.cypher.internal.commands.NodeByLabel
 
 /*
 This builder is concerned with finding queries without start items and without index hints, and
 choosing a start point to use
  */
 class StartPointChoosingBuilder extends PlanBuilder {
+
+  type LabelName = String
+  type IdentifierName = String
+  type PropertyKey = String
+
   def apply(plan: ExecutionPlanInProgress, ctx: PlanContext): ExecutionPlanInProgress = {
 
-    val identifierToLabel: Map[String, Seq[String]] = extractIdentifiersWithLabels(plan)
-
-    val labelPropertyCombo: Map[String, Map[String, Seq[String]]] = extractPropertiesForLabels(identifierToLabel, plan)
-
-    val noProperty = !labelPropertyCombo.exists {
-      case (identifier, map) => map.values.exists(_.nonEmpty)
+    def findStartPoints( query:PartiallySolvedQuery, boundNodes:Seq[String] ) : Seq[StartItem] =
+      query.matchPattern.disconnectedPatternsWithout(boundNodes).map {
+        p => tryFindingIndexSeekPlan(p, plan.query.where, ctx) getOrElse {
+          tryFindingALabelScanPlan(p, plan.query.where) getOrElse ({
+            pickAGlobalScanStart(p)
+          })
+        }
     }
 
-    val singleLabelPredicate =
-      identifierToLabel.size == 1 &&
-        identifierToLabel.values.head.size == 1
+    def findStartPointsForFullQuery( query:PartiallySolvedQuery, boundNodes:Seq[String]): PartiallySolvedQuery = {
+      query.start match {
+        case Seq() if query.matchPattern.nonEmpty => query.copy(start=findStartPoints(query, boundNodes).map(Unsolved(_)))
+        case _                                    => query
+      }
+    }
 
-    if (noProperty && singleLabelPredicate) {
-      val (identifier, labels) = identifierToLabel.head
+    // Note: It'd be easy to combine this with having some bound start points here
+    plan.copy(query=findStartPointsForFullQuery(plan.query, plan.pipe.symbols.keys))
+  }
 
-      produceLabelStartItem(plan, identifier, labels.head)
+
+  private def pickAGlobalScanStart(pattern: MatchPattern): StartItem =
+    AllNodes(pattern.possibleStartNodes.head)
+
+  private def tryFindingALabelScanPlan(pattern: MatchPattern, where:Seq[QueryToken[Predicate]]): Option[StartItem] = {
+    val identifierToLabel: Map[IdentifierName, Seq[LabelName]] = extractIdentifiersWithLabels(pattern, where)
+    if (identifierToLabel.nonEmpty) {
+      val labelName = identifierToLabel.values.head.head
+      val identifier = identifierToLabel.keys.head
+      Some(NodeByLabel(identifier, labelName))
     } else {
-      tryToFindMatchingIndex(labelPropertyCombo, ctx, plan)
+      None
     }
   }
 
-  private def produceLabelStartItem(plan: ExecutionPlanInProgress, identifier: String, label: String): ExecutionPlanInProgress = {
-    plan.copy(query = plan.query.copy(start = Seq(Unsolved(NodeByLabel(identifier, label)))))
-  }
+  private def tryFindingIndexSeekPlan(plan: MatchPattern, where:Seq[QueryToken[Predicate]], ctx: PlanContext):
+  Option[StartItem] = {
 
-  private def tryToFindMatchingIndex(labelPropertyCombo: Map[String, Map[String, Seq[String]]], ctx: PlanContext, plan: ExecutionPlanInProgress): ExecutionPlanInProgress = {
+    val identifierToLabel: Map[IdentifierName, Seq[LabelName]] = extractIdentifiersWithLabels(plan, where)
+    val labelPropertyCombo: Map[IdentifierName, Map[LabelName, Seq[PropertyKey]]] =
+      extractPropertiesForLabels(identifierToLabel, where).filter{
+        case (identifier, labelPropertyKey) => labelPropertyKey.values.exists(_.nonEmpty)
+      }
+
     val possibleHints = for {
       (identifier, labelsAndProps) <- labelPropertyCombo
       (label, props) <- labelsAndProps
@@ -67,30 +94,25 @@ class StartPointChoosingBuilder extends PlanBuilder {
       if (ctx.getIndexRuleId(label, prop).nonEmpty)
     } yield SchemaIndex(identifier, label, prop, None)
 
-    val labels = labelPropertyCombo.head._2.keys.toList
 
-    possibleHints.toList match {
-      case head :: Nil             => plan.copy(query = plan.query.copy(start = Seq(Unsolved(possibleHints.head))))
-      case head :: tail            => throw new UnableToPickIndexException("More than one index available to start from, please use index hints to pick one.")
-      case Nil if labels.size == 1 => produceLabelStartItem(plan, labelPropertyCombo.keys.head, labels.head)
-      case Nil                     => throw new UnableToPickIndexException("There is no index available to start the query from, please add an explicit start clause.")
+    if (possibleHints.isEmpty) {
+      None
+    } else {
+      Some(possibleHints.head)
     }
   }
 
-  def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext) =
-    plan.pipe.symbols.isEmpty &&
-      plan.query.start.isEmpty &&
-      !plan.query.extracted
+  def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext) = !plan.query.extracted && plan != apply(plan, ctx) // TODO: This can be optimized
 
   def priority = PlanBuilder.IndexLookup
 
-  private def extractIdentifiersWithLabels(plan: ExecutionPlanInProgress): Map[String, Seq[String]] = {
-    val labelledNodes: Seq[(String, Seq[LabelValue])] = plan.query.where.flatMap {
+  private def extractIdentifiersWithLabels(pattern: MatchPattern, where:Seq[QueryToken[Predicate]]): Map[IdentifierName, Seq[LabelName]] = {
+    val labelledNodes: Seq[(String, Seq[LabelValue])] = where.flatMap {
       case Unsolved(HasLabel(Identifier(identifier), labelNames)) => Some(identifier -> labelNames)
       case _                                                      => None
     }
 
-    var identifierToLabel = Map[String, Seq[String]]()
+    var identifierToLabel = Map[IdentifierName, Seq[LabelName]]()
 
     labelledNodes.foreach {
       case (identifier, labelValues) =>
@@ -98,25 +120,27 @@ class StartPointChoosingBuilder extends PlanBuilder {
         identifierToLabel += (identifier -> combinedLabels)
     }
 
-    identifierToLabel
+    val identifiersInPattern = pattern.possibleStartNodes.toSet
+    identifierToLabel.filterKeys( identifiersInPattern.contains(_) )
   }
 
-  private def extractPropertiesForLabels(identifierToLabel: Map[String, Seq[String]], plan: ExecutionPlanInProgress):
-  Map[String, Map[String, Seq[String]]] = {
-    identifierToLabel.map {
-      case (identifier, labels) =>
+  private def extractPropertiesForLabels(identifierToLabel: Map[String, Seq[String]], where: Seq[QueryToken[Predicate]]):
+  Map[String, Map[String, Seq[String]]] = identifierToLabel.map {
+    case (identifier, labels) =>
 
-        val properties: Seq[String] = plan.query.where.flatMap {
-          case Unsolved(Equals(Property(Identifier(id), propertyName), expression)) if id == identifier =>
-            Some(propertyName)
-          case Unsolved(Equals(expression, Property(Identifier(id), propertyName))) if id == identifier =>
-            Some(propertyName)
-          case _                                                                                        => None
-        }
+      val properties: Seq[String] = where.flatMap {
+        case Unsolved(Equals(Property(Identifier(id), propertyName), expression)) if id == identifier =>
+          Some(propertyName)
 
-        val propertiesPerLabel: Map[String, Seq[String]] = labels.map(label => label -> properties).toMap
-        identifier -> propertiesPerLabel
+        case Unsolved(Equals(expression, Property(Identifier(id), propertyName))) if id == identifier =>
+          Some(propertyName)
 
-    }.toMap
-  }
+        case _                                                                                        => None
+      }
+
+      val propertiesPerLabel: Map[String, Seq[String]] = labels.map(label => label -> properties).toMap
+      identifier -> propertiesPerLabel
+
+  }.toMap
+
 }

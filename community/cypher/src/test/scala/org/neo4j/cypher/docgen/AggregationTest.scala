@@ -23,7 +23,7 @@ import org.junit.Test
 import org.junit.Assert._
 
 class AggregationTest extends DocumentingTestBase {
-  def graphDescription = List("A KNOWS B", "A KNOWS C", "A KNOWS D")
+  def graphDescription = List("A:Person KNOWS B:Person", "A KNOWS C:Person", "A KNOWS D:Person")
 
 
   override val properties: Map[String, Map[String, Any]] = Map(
@@ -39,7 +39,7 @@ class AggregationTest extends DocumentingTestBase {
     testQuery(
       title = "Count nodes",
       text = "To count the number of nodes, for example the number of nodes connected to one node, you can use `count(*)`.",
-      queryText = "start n=node(%A%) match (n)-->(x) return n, count(*)",
+      queryText = "match (n)-->(x) where n.name = 'A' return n, count(*)",
       returns = "This returns the start node and the count of related nodes.",
       assertions = p => assertEquals(Map("n" -> node("A"), "count(*)" -> 3), p.toList.head))
   }
@@ -48,7 +48,7 @@ class AggregationTest extends DocumentingTestBase {
     testQuery(
       title = "Group Count Relationship Types",
       text = "To count the groups of relationship types, return the types and count them with `count(*)`.",
-      queryText = "start n=node(%A%) match (n)-[r]->() return type(r), count(*)",
+      queryText = "match (n)-[r]->() where n.name='A' return type(r), count(*)",
       returns = "The relationship types and their group count is returned by the query.",
       assertions = p => assertEquals(Map("type(r)" -> "KNOWS", "count(*)" -> 3), p.toList.head))
   }
@@ -58,7 +58,7 @@ class AggregationTest extends DocumentingTestBase {
       title = "Count entities",
       text = "Instead of counting the number of results with `count(*)`, it might be more expressive to include " +
         "the name of the identifier you care about.",
-      queryText = "start n=node(%A%) match (n)-->(x) return count(x)",
+      queryText = "match (n)-->(x) where n.name = 'A' return count(x)",
       returns = "The example query returns the number of connected nodes from the start node.",
       assertions = p => assertEquals(Map("count(x)" -> 3), p.toList.head))
   }
@@ -67,7 +67,7 @@ class AggregationTest extends DocumentingTestBase {
     testQuery(
       title = "Count non-null values",
       text = "You can count the non-`null` values by using +count(<identifier>)+.",
-      queryText = "start n=node(%A%,%B%,%C%,%D%) return count(n.property?)",
+      queryText = "match n:Person return count(n.property?)",
       returns = "The count of related nodes with the `property` property set is returned by the query.",
       assertions = p => assertEquals(Map("count(n.property?)" -> 3), p.toList.head))
   }
@@ -77,7 +77,7 @@ class AggregationTest extends DocumentingTestBase {
       title = "SUM",
       text = "The +SUM+ aggregation function simply sums all the numeric values it encounters. " +
         "Nulls are silently dropped. This is an example of how you can use +SUM+.",
-      queryText = "start n=node(%A%,%B%,%C%) return sum(n.property)",
+      queryText = "match n:Person where has(n.property) return sum(n.property)",
       returns = "This returns the sum of all the values in the property `property`.",
       assertions = p => assertEquals(Map("sum(n.property)" -> (13 + 33 + 44)), p.toList.head))
   }
@@ -86,7 +86,7 @@ class AggregationTest extends DocumentingTestBase {
     testQuery(
       title = "AVG",
       text = "+AVG+ calculates the average of a numeric column.",
-      queryText = "start n=node(%A%,%B%,%C%) return avg(n.property)",
+      queryText = "match n:Person where has(n.property) return avg(n.property)",
       returns = "The average of all the values in the property `property` is returned by the example query.",
       assertions = p => assertEquals(Map("avg(n.property)" -> 30), p.toList.head))
   }
@@ -95,7 +95,7 @@ class AggregationTest extends DocumentingTestBase {
     testQuery(
       title = "MIN",
       text = "+MIN+ takes a numeric property as input, and returns the smallest value in that column.",
-      queryText = "start n=node(%A%,%B%,%C%) return min(n.property)",
+      queryText = "match n:Person where has(n.property) return min(n.property)",
       returns = "This returns the smallest of all the values in the property `property`.",
       assertions = p => assertEquals(Map("min(n.property)" -> 13), p.toList.head))
   }
@@ -104,7 +104,7 @@ class AggregationTest extends DocumentingTestBase {
     testQuery(
       title = "MAX",
       text = "+MAX+ find the largets value in a numeric column.",
-      queryText = "start n=node(%A%,%B%,%C%) return max(n.property)",
+      queryText = "match n:Person where has(n.property) return max(n.property)",
       returns = "The largest of all the values in the property `property` is returned.",
       assertions = p => assertEquals(Map("max(n.property)" -> 44), p.toList.head))
   }
@@ -113,7 +113,7 @@ class AggregationTest extends DocumentingTestBase {
     testQuery(
       title = "COLLECT",
       text = "+COLLECT+ collects all the values into a list. It will ignore null values,",
-      queryText = "start n=node(%A%,%B%,%C%,%D%) return collect(n.property?)",
+      queryText = "match n:Person return collect(n.property?)",
       returns = "Returns a single row, with all the values collected.",
       assertions = p => assertEquals(Map("collect(n.property?)" -> Seq(13, 33, 44)), p.toList.head))
   }
@@ -123,7 +123,7 @@ class AggregationTest extends DocumentingTestBase {
       title = "DISTINCT",
       text = """All aggregation functions also take the +DISTINCT+ modifier, which removes duplicates from the values.
 So, to count the number of unique eye colors from nodes related to `a`, this query can be used: """,
-      queryText = "start a=node(%A%) match a-->b return count(distinct b.eyes)",
+      queryText = "match a:Person-->b where a.name = 'A' return count(distinct b.eyes)",
       returns = "Returns the number of eye colors.",
       assertions = p => assertEquals(Map("count(distinct b.eyes)" -> 2), p.toList.head))
   }
@@ -159,8 +159,8 @@ an aggregate function.
 
 An example might be helpful:""",
       queryText = "" +
-      		"START me=node(1) " +
-      		"MATCH me-->friend-->friend_of_friend " +
+      		"MATCH me:Person-->friend:Person-->friend_of_friend:Person " +
+          "WHERE me.name = 'A'" +
       		"RETURN count(distinct friend_of_friend), count(friend_of_friend)",
       returns = "In this example we are trying to find all our friends of friends, and count them. The first aggregate function, " +
       		"+count(distinct friend_of_friend)+, will only see a `friend_of_friend` once -- +DISTINCT+ removes the duplicates. The latter " +
@@ -173,7 +173,7 @@ An example might be helpful:""",
     testQuery(
       title = "PERCENTILE_DISC",
       text = "+PERCENTILE_DISC+ calculates the percentile of a given value over a group, with a percentile from 0.0 to 1.0. It uses a rounding method, returning the nearest value to the percentile. For interpolated values, see PERCENTILE_CONT.",
-      queryText = "start n=node(%A%,%B%,%C%) return percentile_disc(n.property, 0.5)",
+      queryText = "match n:Person where has(n.property) return percentile_disc(n.property, 0.5)",
       returns = "The 50th percentile of the values in the property `property` is returned by the example query. In this case, 0.5 is the median, or 50th percentile.",
       assertions = p => assertEquals(Map("percentile_disc(n.property, 0.5)" -> 33), p.toList.head))
   }
@@ -182,7 +182,7 @@ An example might be helpful:""",
     testQuery(
       title = "PERCENTILE_CONT",
       text = "+PERCENTILE_CONT+ calculates the percentile of a given value over a group, with a percentile from 0.0 to 1.0. It uses a linear interpolation method, calculating a weighted average between two values, if the desired percentile lies between them. For nearest values using a rounding method, see PERCENTILE_DISC.",
-      queryText = "start n=node(%A%,%B%,%C%) return percentile_cont(n.property, 0.4)",
+      queryText = "match n:Person where has(n.property) return percentile_cont(n.property, 0.4)",
       returns = "The 40th percentile of the values in the property `property` is returned by the example query, calculated with a weighted average.",
       assertions = p => assertEquals(Map("percentile_cont(n.property, 0.4)" -> 29), p.toList.head))
   }

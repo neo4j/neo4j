@@ -53,8 +53,7 @@ class MultirelationalSocialNetworkTest extends DocumentingTestBase {
       title = "Who FOLLOWS or LOVES me back",
       text = """This example shows a multi-relational network between persons and things they like. 
         A multi-relational graph is a graph with more than one kind of relationship between nodes.""",
-      queryText = "START me=node:node_auto_index(name = 'Joe') " +
-                "MATCH me-[r1:FOLLOWS|:LOVES]->other-[r2]->me WHERE type(r1)=type(r2) RETURN other.name, type(r1)",
+      queryText = "MATCH me-[r1:FOLLOWS|:LOVES]->other-[r2]->me WHERE me.name='Joe' and type(r1)=type(r2) RETURN other.name, type(r1)",
       returns = "The query returns people that +FOLLOWS+ or +LOVES+ +Joe+ back.",
       (p) => assertEquals(List(Map("other.name" -> "Sara", "type(r1)" -> "FOLLOWS"),
           Map("other.name" -> "Maria", "type(r1)" -> "FOLLOWS"),

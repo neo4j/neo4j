@@ -55,12 +55,12 @@ be read from the +middle+ node, hanging off the +values+ (color +Red+) path.
 include::includes/path-tree-layout-full-range.asciidoc[]
 
 """,
-      queryText = "START root=node:node_auto_index(name = 'Root') " +
-                "MATCH " +
+      queryText = "MATCH " +
                 "startPath=root-[:`2010`]->()-[:`12`]->()-[:`31`]->startLeaf, " +
                 "endPath=root-[:`2011`]->()-[:`01`]->()-[:`03`]->endLeaf, " +
                 "valuePath=startLeaf-[:NEXT*0..]->middle-[:NEXT*0..]->endLeaf, " +
                 "vals=middle-[:VALUE]->event " +
+                "WHERE root.name = 'Root'" +
                 "RETURN event.name " +
                 "ORDER BY event.name ASC",
       returns = "Returning all events between 2010-12-31 and 2011-01-03, in this case all events.",
@@ -80,10 +80,10 @@ The query only needs one path segment +rootPath+  (color +Green+) through the in
 include::includes/path-tree-layout-zero-range.asciidoc[]
 
 """,
-      queryText = "START root=node:node_auto_index(name = 'Root') " +
-                "MATCH " +
+      queryText = "MATCH " +
                 "rootPath=root-[:`2010`]->()-[:`12`]->()-[:`31`]->leaf, " +
                 "leaf-[:VALUE]->event " +
+                "WHERE root.name = 'Root'" +
                 "RETURN event.name " +
                 "ORDER BY event.name ASC",
       returns = "Returning all events on the date 2010-12-31, in this case +Event1+ and +Event2+",
@@ -103,13 +103,13 @@ making the introduction of and common path segment +commonPath+ (color +Black+) 
 include::includes/path-tree-layout-shared-root-path.asciidoc[]
 
 """,
-      queryText = "START root=node:node_auto_index(name = 'Root') " +
-                "MATCH " +
+      queryText = "MATCH " +
                 "commonPath=root-[:`2011`]->()-[:`01`]->commonRootEnd, " +
                 "startPath=commonRootEnd-[:`01`]->startLeaf, " +
                 "endPath=commonRootEnd-[:`03`]->endLeaf, " +
                 "valuePath=startLeaf-[:NEXT*0..]->middle-[:NEXT*0..]->endLeaf, " +
                 "vals=middle-[:VALUE]->event " +
+                "WHERE root.name = 'Root'" +
                 "RETURN event.name " +
                 "ORDER BY event.name ASC",
       returns = "Returning all events between 2011-01-01 and 2011-01-03, in this case +Event2+ and +Event3+.",
