@@ -76,14 +76,13 @@ include::includes/cypher-hyperedgecommongroups-graph.asciidoc[]
 
 To return +Group1+ and +Group2+ as +User1+ and +User2+ share at least one common role in these two groups, the query looks like this:
                """,
-        queryText = "" +
-          "start u1=node:node_auto_index(name = 'User1')," +
-          "      u2=node:node_auto_index(name = 'User2') " +
+        queryText =
           "match " +
           "u1-[:hasRoleInGroup]->hyperEdge1-[:hasGroup]->group, " +
           "hyperEdge1-[:hasRole]->role, " +
           "u2-[:hasRoleInGroup]->hyperEdge2-[:hasGroup]->group, " +
           "hyperEdge2-[:hasRole]->role " +
+          "where u1.name = 'User1' and u2.name = 'User2' " +
           "return group.name, count(role) " +
           "order by group.name ASC",
         returns = "The groups where +User1+ and +User2+ share at least one common role:",

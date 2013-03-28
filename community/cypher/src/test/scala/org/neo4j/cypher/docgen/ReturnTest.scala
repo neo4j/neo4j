@@ -28,13 +28,14 @@ class ReturnTest extends DocumentingTestBase {
 
   def section = "Return"
 
-  override val properties = Map("A" -> Map("happy" -> "Yes!", "age" -> 55))
+  override val properties =
+    Map("A" -> Map("happy" -> "Yes!", "age" -> 55))
 
   @Test def returnNode() {
     testQuery(
       title = "Return nodes",
       text = "To return a node, list it in the `RETURN` statemenet.",
-      queryText = """start n=node(%B%) return n""",
+      queryText = """match n where n.name='B' return n""",
       returns = """The example will return the node.""",
       assertions = (p) => assertEquals(List(Map("n" -> node("B"))), p.toList))
   }
@@ -43,7 +44,7 @@ class ReturnTest extends DocumentingTestBase {
     testQuery(
       title = "Return relationships",
       text = "To return a relationship, just include it in the `RETURN` list.",
-      queryText = """start n=node(%A%) match (n)-[r:KNOWS]->(c) return r""",
+      queryText = """match (n)-[r:KNOWS]->(c) where n.name='A' return r""",
       returns = """The relationship is returned by the example.""",
       assertions = (p) => assertEquals(1, p.size))
   }
@@ -52,7 +53,7 @@ class ReturnTest extends DocumentingTestBase {
     testQuery(
       title = "Return property",
       text = "To return a property, use the dot separator, like this:",
-      queryText = """start n=node(%A%) return n.name""",
+      queryText = """match n where n.name='A' return n.name""",
       returns = """The value of the property `name` gets returned.""",
       assertions = (p) => assertEquals(List(Map("n.name" -> "A")), p.toList))
   }
@@ -63,7 +64,7 @@ class ReturnTest extends DocumentingTestBase {
       title = "Identifier with uncommon characters",
       text = """To introduce a placeholder that is made up of characters that are
       outside of the english alphabet, you can use the +`+ to enclose the identifier, like this:""",
-      queryText = """start `This isn't a common identifier`=node(%A%)
+      queryText = """match `This isn't a common identifier` where `This isn't a common identifier`.name='A'
 return `This isn't a common identifier`.happy""",
       returns = """The node indexed with name "A" is returned""",
       assertions = (p) => assertEquals(List(Map("This isn't a common identifier.happy" -> "Yes!")), p.toList))
@@ -74,7 +75,7 @@ return `This isn't a common identifier`.happy""",
       title = "Optional properties",
       text = """If a property might or might not be there, you can select it optionally by adding a questionmark to the identifier,
 like this:""",
-      queryText = """start n=node(%A%, %B%) return n.age?""",
+      queryText = """match n return n.age?""",
       returns = """This example returns the age when the node has that property, or +null+ if the property is not there.""",
       assertions = (p) => assertEquals(List(55, null), p.columnAs[Int]("n.age?").toList))
   }
@@ -83,7 +84,7 @@ like this:""",
     testQuery(
       title = "Unique results",
       text = """`DISTINCT` retrieves only unique rows depending on the columns that have been selected to output.""",
-      queryText = """start a=node(%A%) match (a)-->(b) return distinct b""",
+      queryText = """match (a)-->(b) where a.name='A' return distinct b""",
       returns = """The node named B is returned by the query, but only once.""",
       assertions = (p) => assertEquals(List(node("B")), p.columnAs[Node]("b").toList))
   }
@@ -92,7 +93,7 @@ like this:""",
     testQuery(
       title = "Column alias",
       text = """If the name of the column should be different from the expression used, you can rename it by using `AS` <new name>.""",
-      queryText = """start a=node(%A%) return a.age AS SomethingTotallyDifferent""",
+      queryText = """match a where a.name='A' return a.age AS SomethingTotallyDifferent""",
       returns = """Returns the age property of a node, but renames the column.""",
       assertions = (p) => assertEquals(List(55), p.columnAs[Node]("SomethingTotallyDifferent").toList))
   }
@@ -101,7 +102,7 @@ like this:""",
     testQuery(
       title = "Other expressions",
       text = "Any expression can be used as a return item - literals, predicates, properties, functions, and everything else.",
-      queryText = """start a=node(%A%) return a.age > 30, "I'm a literal", a-->()""",
+      queryText = """match a where a.name='A' return a.age > 30, "I'm a literal", a-->()""",
       returns = "Returns a predicate, a literal and function call with a pattern expression parameter.",
       assertions = (p) => {
         val row: Map[String, Any] = p.toList.head
@@ -116,7 +117,7 @@ like this:""",
     testQuery(
       title = "Return all elements",
       text = """When you want to return all nodes, relationships and paths found in a query, you can use the `*` symbol.""",
-      queryText = """start a=node(%A%) match p=a-[r]->b return *""",
+      queryText = """match p=a-[r]->b where a.name='A' return *""",
       returns = """This returns the two nodes, the relationship and the path used in the query.""",
       assertions = (p) => assertEquals(p.toList.head.keys, Set("a", "b", "r", "p")))
   }

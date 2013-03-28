@@ -41,6 +41,7 @@ create
 Here, the example shows how to add a new status update into the existing data for a user.""",
       queryText = """START me=node:node_auto_index(name='Bob')
 MATCH me-[r?:STATUS]-secondlatestupdate
+WHERE me.name='Bob'
 CREATE me-[:STATUS]->(latest_update{text:'Status',date:123})
 DELETE r
 WITH latest_update, collect(secondlatestupdate) as seconds

@@ -55,9 +55,9 @@ class PeopleSimilarityTagsTest extends DocumentingTestBase {
 * Sort the result by how many of the same things these people like.
 
 """,
-      queryText = "START me=node:node_auto_index(name = \"Joe\") " +
+      queryText =
       		"MATCH me-[:favorite]->myFavorites-[:tagged]->tag<-[:tagged]-theirFavorites<-[:favorite]-people " +
-      		"WHERE NOT(me=people) " +
+      		"WHERE me.name = 'Joe' AND NOT(me=people) " +
       		"RETURN people.name as name, count(*) as similar_favs " +
       		"ORDER BY similar_favs DESC",
       returns = "The query returns the list of possible friends ranked by them liking similar stuff that are not yet friends.",

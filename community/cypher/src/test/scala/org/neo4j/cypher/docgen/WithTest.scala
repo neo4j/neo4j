@@ -40,7 +40,7 @@ class WithTest extends DocumentingTestBase {
     testQuery(
       title = "Filter on aggregate function results",
       text = "Aggregated results have to pass through a `WITH` clause to be able to filter on.",
-      queryText = """start david=node(%D%) match david--otherPerson-->() with otherPerson, count(*) as foaf where foaf > 1 return otherPerson""",
+      queryText = """match david--otherPerson-->() where david.name='David' with otherPerson, count(*) as foaf where foaf > 1 return otherPerson""",
       returns = """The person connected to David with the at least more than one outgoing relationship will be returned by the query.""",
       assertions = (p) => assertEquals(List(node("A")), p.columnAs[Node]("otherPerson").toList)
     )
@@ -71,7 +71,8 @@ class WithTest extends DocumentingTestBase {
         "equal-signs as delimiters before and after the column list. Use at least three " +
         "before the column list, and at least three after.",
       queryText = """
-start david=node(%D%) match david--otherPerson-->()
+match david--otherPerson-->()
+where david.name='David'
 ========== otherPerson, count(*) as foaf ==========
 set otherPerson.connection_count = foaf """,
       returns = """For persons connected to David, the `connection_count` property is set to their number of outgoing relationships.""",

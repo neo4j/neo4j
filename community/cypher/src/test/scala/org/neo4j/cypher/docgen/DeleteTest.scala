@@ -28,9 +28,9 @@ class DeleteTest extends DocumentingTestBase {
   def graphDescription = List("Andres KNOWS Tobias", "Andres KNOWS Peter")
 
   override val properties = Map(
-    "Andres" -> Map("age" -> 36l),
-    "Tobias" -> Map("age" -> 25l),
-    "Peter" -> Map("age" -> 34l)
+    "Andres" -> Map("name"->"Andres", "age" -> 36l),
+    "Tobias" -> Map("name"->"Tobias", "age" -> 25l),
+    "Peter"  -> Map("name"->"Peter",  "age" -> 34l)
   )
 
   def section = "Delete"
