@@ -23,17 +23,41 @@ import java.util.concurrent.CountDownLatch;
 
 public class DoubleLatch
 {
-    private final CountDownLatch startSignal = new CountDownLatch( 1 );
-    private final CountDownLatch finishSignal = new CountDownLatch( 1 );
+    private final CountDownLatch startSignal;
+    private final CountDownLatch finishSignal;
+    private final int numberOfContestants;
+    
+    public DoubleLatch()
+    {
+        this( 1 );
+    }
+    
+    public DoubleLatch( int numberOfContestants )
+    {
+        this.numberOfContestants = numberOfContestants;
+        this.startSignal = new CountDownLatch( numberOfContestants );
+        this.finishSignal = new CountDownLatch( numberOfContestants );
+    }
+    
+    public int getNumberOfContestants()
+    {
+        return numberOfContestants;
+    }
     
     public void startAndAwaitFinish()
     {
-        startSignal.countDown();
+        start();
         awaitLatch( finishSignal );
     }
     
     public void awaitStart()
     {
+        awaitLatch( startSignal );
+    }
+    
+    public void start()
+    {
+        startSignal.countDown();
         awaitLatch( startSignal );
     }
     

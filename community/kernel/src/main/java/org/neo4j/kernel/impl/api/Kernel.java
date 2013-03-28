@@ -19,7 +19,11 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import static java.util.Collections.synchronizedList;
 import static org.neo4j.helpers.collection.IteratorUtil.loop;
+
+import java.util.ArrayList;
+import java.util.Collection;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.api.KernelAPI;
@@ -71,15 +75,8 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     private final DependencyResolver dependencyResolver;
     private final SchemaCache schemaCache;
     private final UpdateableSchemaState schemaState;
-    private final StatementContextOwner statementContextOwner = new StatementContextOwner()
-    {
-        @Override
-        protected StatementContext createStatementContext()
-        {
-            return Kernel.this.createReadOnlyStatementContext();
-        }
-    };
-
+    private final StatementContextOwners statementContextOwners = new StatementContextOwners();
+    
     // These non-final components are all circular dependencies in various configurations.
     // As we work towards refactoring the old kernel, we should work to remove these.
     private IndexingService indexService;
@@ -142,6 +139,12 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     }
     
     @Override
+    public void stop() throws Throwable
+    {
+        statementContextOwners.close();
+    }
+    
+    @Override
     public TransactionContext newTransactionContext()
     {
         // I/O
@@ -168,7 +171,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     @Override
     public StatementContext newReadOnlyStatementContext()
     {
-        return statementContextOwner.getStatementContext();
+        return statementContextOwners.get().getStatementContext();
     }
 
     private StatementContext createReadOnlyStatementContext()
@@ -206,5 +209,32 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
                         return neoStore.getSchemaStore().nextId();
                     }
                 } );
+    }
+
+    private class StatementContextOwners extends ThreadLocal<StatementContextOwner>
+    {
+        private final Collection<StatementContextOwner> all =
+                synchronizedList( new ArrayList<StatementContextOwner>() );
+        
+        @Override
+        protected StatementContextOwner initialValue()
+        {
+            StatementContextOwner owner = new StatementContextOwner()
+            {
+                @Override
+                protected StatementContext createStatementContext()
+                {
+                    return Kernel.this.createReadOnlyStatementContext();
+                }
+            };
+            all.add( owner );
+            return owner;
+        }
+        
+        void close()
+        {
+            for ( StatementContextOwner owner : all )
+                owner.closeAllStatements();
+        }
     }
 }
