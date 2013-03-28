@@ -443,6 +443,25 @@ class FunctionsTest extends DocumentingTestBase {
     )
   }
 
+  @Test def now() {
+    testThis(
+      title = "TIMESTAMP",
+      syntax = "TIMESTAMP()",
+      arguments = List.empty,
+      text = "`TIMESTAMP` returns the difference, measured in milliseconds, between the current time and midnight, " +
+        "January 1, 1970 UTC. It will return the same value during the whole one query, even if the query is a long " +
+        "running one.",
+      queryText = "start n=node(1) return timestamp()",
+      returns = "The time in milliseconds.",
+      assertions = (p) => assert(
+        p.toList.head("timestamp()") match {
+          // this should pass unless your machine is really slow
+          case x: Long => System.currentTimeMillis - x < 100000
+          case _       => false
+        })
+    )
+  }
+
   private def testThis(title: String, syntax: String, arguments: List[(String, String)], text: String, queryText: String, returns: String, assertions: (ExecutionResult => Unit)*) {
     val argsText = arguments.map(x => "* _" + x._1 + ":_ " + x._2).mkString("\r\n\r\n")
     val fullText = String.format("""%s

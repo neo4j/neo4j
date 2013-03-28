@@ -20,25 +20,30 @@
 package org.neo4j.cypher.internal.pipes
 
 import org.neo4j.graphdb.{Transaction, GraphDatabaseService}
-import org.neo4j.cypher.internal.spi.gdsimpl.GDSBackedQueryContext
 import org.neo4j.cypher.internal.spi.QueryContext
 import org.neo4j.kernel.GraphDatabaseAPI
 import java.util.concurrent.atomic.AtomicInteger
 import org.neo4j.cypher.ParameterNotFoundException
+import org.neo4j.cypher.internal.spi.gdsimpl.GDSBackedQueryContext
 
 
 object QueryState {
-  def empty = new QueryState(null, null, Map.empty, NullDecorator)
-  def apply() = empty
+  def empty: QueryState = apply(null)
 
-  def apply(db: GraphDatabaseService) = new QueryState(db, new GDSBackedQueryContext(db), Map.empty, NullDecorator, None)
+  def apply(): QueryState = empty
+
+  def apply(db: GraphDatabaseService): QueryState =
+    new QueryState(db, new GDSBackedQueryContext(db), Map.empty, NullDecorator, None, new TimeReader)
 }
 
 case class QueryState(db: GraphDatabaseService,
                       query: QueryContext,
                       params: Map[String, Any],
                       decorator: PipeDecorator,
-                      var transaction: Option[Transaction] = None) {
+                      var transaction: Option[Transaction] = None,
+                      timeReader: TimeReader = new TimeReader) {
+  def readTimeStamp(): Long = timeReader.getTime
+
 
   val createdNodes = new Counter
   val createdRelationships = new Counter
@@ -63,4 +68,8 @@ class Counter {
   def increase() {
     counter.incrementAndGet()
   }
+}
+
+class TimeReader {
+  lazy val getTime = System.currentTimeMillis()
 }

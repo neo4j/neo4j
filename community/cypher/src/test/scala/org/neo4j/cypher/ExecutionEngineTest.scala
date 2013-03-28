@@ -2485,4 +2485,14 @@ RETURN x0.name?
     assert(result.toList === List(Map("count(n)" -> 1, "collect(n)" -> Seq(refNode))))
   }
 
+  def shouldBeAbleToCallNowMS() {
+    val result = engine.execute("START n=node(*) RETURN now('ms')")
+
+    val ts:Long = result.toList.head("now('ms')") match {
+      case x:Long => x
+      case _ => 0L
+    }
+    assert(ts != 0L)
+    assert(ts <= System.currentTimeMillis)
+  }
 }
