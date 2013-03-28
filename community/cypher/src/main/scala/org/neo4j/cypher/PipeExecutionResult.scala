@@ -60,7 +60,7 @@ class PipeExecutionResult(result: Iterator[Map[String, Any]],
   }).toIterator.asJava
 
   private def calculateColumnSizes(result: Seq[Map[String, Any]]): Map[String, Int] = {
-    val columnSizes = new scala.collection.mutable.HashMap[String, Int] ++ columns.map(name => name -> name.size)
+    val columnSizes = new scala.collection.mutable.OpenHashMap[String, Int] ++ columns.map(name => name -> name.size)
 
     result.foreach((m) => {
       m.foreach((kv) => {

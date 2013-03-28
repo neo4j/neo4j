@@ -24,6 +24,10 @@ import org.neo4j.cypher.internal.symbols.SymbolTable
 import collection.JavaConverters._
 import org.neo4j.cypher.internal.data.SimpleVal
 import org.neo4j.cypher.internal.ExecutionContext
+import org.neo4j.helpers.collection.IteratorUtil
+import java.util
+import org.neo4j.graphdb.PropertyContainer
+import collection.mutable
 
 class TraversalMatchPipe(source: Pipe, matcher: TraversalMatcher, trail: Trail) extends PipeWithSource(source) {
 
@@ -36,7 +40,7 @@ class TraversalMatchPipe(source: Pipe, matcher: TraversalMatcher, trail: Trail) 
         paths.flatMap {
 
           case path =>
-            val seq = path.iterator().asScala.toSeq
+            val seq=path.iterator().asScala.toStream // todo map different path implementations better to a list, aka path.toList
             trail.decompose(seq).map(ctx.newWith)
         }
     }

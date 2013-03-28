@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.pipes.matching.SingleStepTrail
 import annotation.tailrec
 
 object TrailBuilder {
-  def findLongestTrail(patterns: Seq[Pattern], boundPoints: Seq[String], predicates: Seq[Predicate] = Seq.empty) =
+  def findLongestTrail(patterns: Seq[Pattern], boundPoints: Seq[String], predicates: Seq[Predicate] = Nil) =
     new TrailBuilder(patterns, boundPoints, predicates).findLongestTrail()
 }
 
@@ -113,7 +113,7 @@ final class TrailBuilder(patterns: Seq[Pattern], boundPoints: Seq[String], predi
       val startPoints = boundPoints.map(point => (EndPoint(point), patterns))
       val foundPaths = internalFindLongestPath(startPoints)
       val filteredPaths = foundPaths.filter {
-        case (trail, toes) => trail.size > 0 && trail.start != trail.end
+        case (trail, toes) => !trail.isEndPoint && trail.start != trail.end
       }
       filteredPaths
     }

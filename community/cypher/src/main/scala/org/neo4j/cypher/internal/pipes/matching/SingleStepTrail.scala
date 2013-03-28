@@ -33,7 +33,7 @@ final case class SingleStepTrail(next: Trail,
                                  nodePred: Predicate,
                                  pattern: Pattern,
                                  originalPredicates: Seq[Predicate]) extends Trail {
-  def end = next.end
+  val end = next.end
 
   def pathDescription = next.pathDescription ++ Seq(relName, end)
 
@@ -43,34 +43,38 @@ final case class SingleStepTrail(next: Trail,
     Some(SingleStep(id, typ, dir, steps, relPred, nodePred))
   }
 
-  def size = next.size + 1
+  val isEndPoint: Boolean = false
 
-  protected[matching] def decompose(p: Seq[PropertyContainer], m: Map[String, Any]): Iterator[(Seq[PropertyContainer], Map[String, Any])] =
-    if (p.size < 2) {
-      Iterator()
+  val size = next.size + 1
+
+  protected[matching] def decompose(p: Seq[PropertyContainer], m: Map[String, Any]): Iterator[(Seq[PropertyContainer], Map[String, Any])] = {
+    val tail = p.tail
+    if (p.isEmpty || tail.isEmpty) {
+      Iterator.empty
     } else {
-      val thisRel = p.tail.head
+      val thisRel = tail.head
       val thisNode = p.head
 
       val a = m.get(relName)
       val b = m.get(start)
 
       if ((a.nonEmpty && a.get != thisRel)||(b.nonEmpty && b.get != thisNode)) {
-        Iterator()
+        Iterator.empty
       } else {
         val newMap = m + (relName -> thisRel) + (start -> thisNode)
-        next.decompose(p.tail.tail, newMap)
+        next.decompose(tail.tail, newMap)
       }
     }
+  }
 
   def symbols(table: SymbolTable): SymbolTable =
     next.symbols(table).add(start, NodeType()).add(relName, RelationshipType())
 
   def contains(target: String): Boolean = next.contains(target) || target == end
 
-  def predicates = originalPredicates ++ next.predicates
+  val predicates = originalPredicates ++ next.predicates
 
-  def patterns = next.patterns :+ pattern
+  val patterns = next.patterns :+ pattern
 
   override def toString = {
     val left = if (Direction.INCOMING == dir) "<" else ""
@@ -84,7 +88,7 @@ final case class SingleStepTrail(next: Trail,
   }
 
 
-  def nodeNames = Seq(start) ++ next.nodeNames
+  val nodeNames = start +: next.nodeNames
 
   def add(f: (String) => Trail) = copy(next = next.add(f))
 

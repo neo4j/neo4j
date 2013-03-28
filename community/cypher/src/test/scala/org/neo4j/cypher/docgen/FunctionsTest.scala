@@ -222,7 +222,7 @@ class FunctionsTest extends DocumentingTestBase {
       text = """Returns all relationships in a path.""",
       queryText = """start a=node(%A%), c=node(%E%) match p=a-->b-->c return RELATIONSHIPS(p)""",
       returns = """All the relationships in the path `p` are returned.""",
-      assertions = (p) => assert(2 === p.columnAs[List[Node]]("RELATIONSHIPS(p)").toSeq.head.length)
+      assertions = (p) => assert(2 === p.columnAs[Seq[Node]]("RELATIONSHIPS(p)").toSeq.head.length)
     )
   }
 

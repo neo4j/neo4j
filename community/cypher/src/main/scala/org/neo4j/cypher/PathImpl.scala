@@ -24,44 +24,49 @@ import scala.collection.JavaConverters._
 import org.neo4j.kernel.Traversal
 import org.neo4j.graphdb.{Path, Relationship, PropertyContainer, Node}
 import java.lang.{Iterable => JavaIterable}
+import collection.mutable
 
 case class PathImpl(pathEntities: PropertyContainer*)
   extends org.neo4j.graphdb.Path
   with Traversable[PropertyContainer]
   with CypherArray {
 
+  val (nodeList,relList) = {
+    if (pathEntities.size % 2 == 0) throw new IllegalArgumentException("Tried to construct a path that is not built like a path: even number of elements.");
+    var x = 0
+    val nodes = new Array[Node](pathEntities.size/2+1)
+    val rels = new Array[Relationship](pathEntities.size/2)
+    try {
+      pathEntities.foreach(e => {
+        if ((x % 2) == 0) nodes.update(x/2, e.asInstanceOf[Node])
+        else rels.update((x-1)/2, e.asInstanceOf[Relationship])
+        x+=1
+      })
+    } catch {
+      case e: ClassCastException => throw new IllegalArgumentException("Tried to construct a path that is not built like a path",e);
+    }
+    (new mutable.WrappedArray.ofRef(nodes),new mutable.WrappedArray.ofRef(rels))
+  }
+
   require(isProperPath, "Tried to construct a path that is not built like a path")
 
   def isProperPath: Boolean = {
-    var x = true
-    val (nodes, rels) = pathEntities.toList.partition(e => {
-      x = !x
-      !x
-    })
-
-    val nodesContainOnlyNodes = nodes.forall(_.isInstanceOf[Node])
-    val relsAreAllRels = rels.forall(_.isInstanceOf[Relationship])
-    val atLeastOneNode = nodes.length > 0
-    val relsLengthEqualsToNodesLengthMinusOne = rels.length == nodes.length - 1
-    nodesContainOnlyNodes && relsAreAllRels && atLeastOneNode && relsLengthEqualsToNodesLengthMinusOne
+    val atLeastOneNode = nodeList.length > 0
+    val relsLengthEqualsToNodesLengthMinusOne = relList.length == nodeList.length - 1
+    atLeastOneNode && relsLengthEqualsToNodesLengthMinusOne
   }
 
-  def startNode(): Node = pathEntities.head.asInstanceOf[Node]
+  def startNode(): Node = nodeList.head
 
-  def endNode(): Node = pathEntities.last.asInstanceOf[Node]
+  def endNode(): Node = nodeList.last
 
-  def lastRelationship(): Relationship = pathEntities.length match {
-    case 1 => null
-    case _ => entities[Relationship].last
-  }
+  def lastRelationship(): Relationship = if (relList.isEmpty) null else relList.head
 
-  def relationships(): JavaIterable[Relationship] = entities[Relationship].toIterable.asJava
+  def relationships(): JavaIterable[Relationship] = relList.asJava
 
-  def entities[T <: PropertyContainer](implicit m: Manifest[T]) = pathEntities.filter(m.erasure.isInstance(_)).map(_.asInstanceOf[T])
+  def nodes(): JavaIterable[Node] = nodeList.asJava
 
-  def nodes(): JavaIterable[Node] = entities[Node].toIterable.asJava
-
-  def length(): Int = (pathEntities.length - 1) / 2
+  def length(): Int = relList.size
 
   def iterator(): JavaIterator[PropertyContainer] = pathEntities.asJava.iterator()
 
@@ -81,7 +86,7 @@ case class PathImpl(pathEntities: PropertyContainer*)
     that.asScala.toList == pathEntities.toList
   }
 
-  def reverseNodes(): JavaIterable[Node] = entities[Node].reverse.toIterable.asJava
+  def reverseNodes(): JavaIterable[Node] = nodeList.reverse.asJava
 
-  def reverseRelationships(): JavaIterable[Relationship] = entities[Relationship].reverse.toIterable.asJava
+  def reverseRelationships(): JavaIterable[Relationship] = relList.reverse.asJava
 }

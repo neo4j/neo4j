@@ -23,40 +23,42 @@ import org.neo4j.graphdb.PropertyContainer
 import org.neo4j.cypher.internal.symbols.{NodeType, SymbolTable}
 
 final case class EndPoint(name: String) extends Trail {
-  def end = name
+  val end = name
 
-  def pathDescription = Seq(name)
+  def pathDescription = nodeNames
 
-  def start = name
+  val start = name
 
-  def size = 0
+  val isEndPoint = true
+
+  val size = 0
 
   def toSteps(id: Int) = None
 
   protected[matching] def decompose(p: Seq[PropertyContainer], mapSoFar: Map[String, Any]) =
-    if (p.size == 1) {
+    if (!p.isEmpty && p.tail.isEmpty) {
       val existingValue = mapSoFar.get(name)
       val endNode = p.head
 
       existingValue match {
-        case Some(existing) if endNode != existing => Iterator()
-        case _                                     => Iterator((Seq.empty, mapSoFar ++ Map(name -> endNode)))
+        case Some(existing) if endNode != existing => Iterator.empty
+        case _                                     => Iterator.single((Nil, mapSoFar + (name -> endNode)))
       }
     } else {
-      Iterator()
+      Iterator.empty
     }
 
   def symbols(table: SymbolTable): SymbolTable = table.add(name, NodeType())
 
   def contains(target: String): Boolean = target == name
 
-  def predicates = Seq.empty
+  def predicates = Nil
 
-  def patterns = Seq.empty
+  def patterns = Nil
 
   override def toString = "(" + name + ")"
 
-  def nodeNames = Seq(name)
+  val nodeNames = Seq(name)
 
   def add(f: (String) => Trail) = f(name)
 

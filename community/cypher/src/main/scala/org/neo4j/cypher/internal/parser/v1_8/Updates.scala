@@ -47,8 +47,8 @@ trait Updates extends Base with Expressions with StartClause {
   }
 
   def set: Parser[(Seq[UpdateAction], Seq[NamedPath])] =
-    setSingleProperty ^^ ((_, Seq.empty)) |
-    setToMap ^^ (x => (Seq(x), Seq.empty))
+    setSingleProperty ^^ ((_, Nil)) |
+    setToMap ^^ (x => (Seq(x), Nil))
 
   def setToMap : Parser[UpdateAction] = ignoreCase("set") ~> expression ~ "=" ~ expression ^^ {
     case element ~ "=" ~ map => MapPropertySetAction(element, map)
