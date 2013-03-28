@@ -711,7 +711,7 @@ public class ClusterManager
                 return count( cluster.getMaster().getDependencyResolver().resolveDependency( Slaves.class ).getSlaves
                         () ) >= cluster.size() - 1;
             }
-            
+
             @Override
             public String toString()
             {

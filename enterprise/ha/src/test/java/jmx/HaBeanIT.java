@@ -34,6 +34,7 @@ import java.util.Arrays;
 
 import org.junit.After;
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.com.ServerUtil;
 import org.neo4j.graphdb.Transaction;
@@ -53,6 +54,7 @@ import org.neo4j.management.BranchedStore;
 import org.neo4j.management.ClusterMemberInfo;
 import org.neo4j.management.HighAvailability;
 import org.neo4j.management.Neo4jManager;
+import org.neo4j.test.LoggerRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.ClusterManager;
 import org.neo4j.test.ha.ClusterManager.ManagedCluster;
@@ -60,6 +62,9 @@ import org.neo4j.test.ha.ClusterManager.RepairKit;
 
 public class HaBeanIT
 {
+    @Rule
+    public LoggerRule loggerRule = new LoggerRule();
+
     private static final TargetDirectory dir = TargetDirectory.forTest( HaBeanIT.class );
     private ManagedCluster cluster;
     private ClusterManager clusterManager;
