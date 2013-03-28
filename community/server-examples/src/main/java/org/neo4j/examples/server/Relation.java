@@ -18,7 +18,7 @@
  */
 package org.neo4j.examples.server;
 
-public class Relationship
+public class Relation
 {
     public static final String OUT = "out";
     public static final String IN = "in";
@@ -39,13 +39,13 @@ public class Relationship
         return sb.toString();
     }
 
-    public Relationship( String type, String direction )
+    public Relation( String type, String direction )
     {
         setType( type );
         setDirection( direction );
     }
 
-    public Relationship( String type )
+    public Relation( String type )
     {
         this( type, null );
     }

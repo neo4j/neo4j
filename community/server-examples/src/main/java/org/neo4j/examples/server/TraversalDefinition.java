@@ -22,7 +22,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public class TraversalDescription
+public class TraversalDefinition
 {
     public static final String DEPTH_FIRST = "depth first";
     public static final String NODE = "node";
@@ -32,7 +32,7 @@ public class TraversalDescription
     private int maxDepth = 1;
     private String returnFilter = ALL;
     private String order = DEPTH_FIRST;
-    private List<Relationship> relationships = new ArrayList<Relationship>();
+    private List<Relation> relationships = new ArrayList<Relation>();
 
     public void setOrder( String order )
     {
@@ -54,7 +54,7 @@ public class TraversalDescription
         this.returnFilter = returnFilter;
     }
 
-    public void setRelationships( Relationship... relationships )
+    public void setRelationships( Relation... relationships )
     {
         this.relationships = Arrays.asList( relationships );
     }
