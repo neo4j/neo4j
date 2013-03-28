@@ -286,7 +286,7 @@ public class DummyIndexExtensionFactory extends
         }
 
         @Override
-        public Iterator<T> iterator()
+        public IndexHits<T> iterator()
         {
             return this;
         }

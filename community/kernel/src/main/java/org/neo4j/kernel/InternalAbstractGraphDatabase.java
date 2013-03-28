@@ -22,7 +22,6 @@ package org.neo4j.kernel;
 import static java.lang.String.format;
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.map;
-import static org.neo4j.helpers.collection.IteratorUtil.withResource;
 import static org.slf4j.impl.StaticLoggerBinder.getSingleton;
 
 import java.io.File;
@@ -89,6 +88,7 @@ import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.cache.Cache;
 import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.cache.MonitorGc;
+import org.neo4j.kernel.impl.cleanup.CleanupService;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.core.Caches;
 import org.neo4j.kernel.impl.core.DefaultCaches;
@@ -229,6 +229,7 @@ public abstract class InternalAbstractGraphDatabase
     protected BridgingCacheAccess cacheBridge;
     protected JobScheduler jobScheduler;
     protected UpdateableSchemaState updateableSchemaState;
+    protected CleanupService cleanupService;
 
     protected final LifeSupport life = new LifeSupport();
     private final Map<String,CacheProvider> cacheProviders;
@@ -378,7 +379,9 @@ public abstract class InternalAbstractGraphDatabase
             throw new IllegalArgumentException( "No cache type '" + cacheTypeName + "'" );
         }
 
-        jobScheduler = life.add( new Neo4jJobScheduler());
+        jobScheduler = life.add( new Neo4jJobScheduler() );
+
+        cleanupService = life.add( CleanupService.create( jobScheduler, logging ) );
 
         kernelEventHandlers = new KernelEventHandlers();
 
@@ -493,7 +496,7 @@ public abstract class InternalAbstractGraphDatabase
             life.add( kernelExtensions );
         }
 
-        schema = new SchemaImpl( statementContextProvider, propertyIndexManager );
+        schema = new SchemaImpl( statementContextProvider, cleanupService, propertyIndexManager );
 
         indexManager = new IndexManagerImpl( config, indexStore, xaDataSourceManager, txManager, this );
         nodeAutoIndexer = life.add( new NodeAutoIndexerImpl( config, indexManager, nodeManager ) );
@@ -782,6 +785,11 @@ public abstract class InternalAbstractGraphDatabase
             {
                 // TODO This should be wrapped as well
                 return InternalAbstractGraphDatabase.this;
+            }
+
+            @Override
+            public CleanupService getCleanupService() {
+                return cleanupService;
             }
 
             @Override
@@ -1219,133 +1227,137 @@ public abstract class InternalAbstractGraphDatabase
         {
             if ( type.equals( Map.class ) )
             {
-                return (T) getConfig().getParams();
+                return type.cast( getConfig().getParams() );
             }
             else if ( type.equals( Config.class ) )
             {
-                return (T) getConfig();
+                return type.cast( getConfig() );
             }
-            else if ( GraphDatabaseService.class.isAssignableFrom( type ) )
+            else if ( GraphDatabaseService.class.isAssignableFrom( type )
+                    && type.isInstance( InternalAbstractGraphDatabase.this ) )
             {
-                return (T) InternalAbstractGraphDatabase.this;
+                return type.cast( InternalAbstractGraphDatabase.this );
             }
-            else if ( TransactionManager.class.isAssignableFrom( type ) )
+            else if ( TransactionManager.class.isAssignableFrom( type ) && type.isInstance( txManager ) )
             {
-                return (T) txManager;
+                return type.cast( txManager );
             }
-            else if ( LockManager.class.isAssignableFrom( type ) )
+            else if ( LockManager.class.isAssignableFrom( type ) && type.isInstance( lockManager ) )
             {
-                return (T) lockManager;
+                return type.cast( lockManager );
             }
-            else if( StoreFactory.class.isAssignableFrom( type ) )
+            else if( StoreFactory.class.isAssignableFrom( type ) && type.isInstance( storeFactory ) )
             {
-                return (T) storeFactory;
+                return type.cast( storeFactory );
             }
-            else if ( StringLogger.class.isAssignableFrom( type ) )
+            else if ( StringLogger.class.isAssignableFrom( type ) && type.isInstance( msgLog ) )
             {
-                return (T) msgLog;
+                return type.cast( msgLog );
             }
-            else if ( Logging.class.isAssignableFrom( type ) )
+            else if ( Logging.class.isAssignableFrom( type ) && type.isInstance( logging ) )
             {
-                return (T) logging;
+                return type.cast( logging );
             }
-            else if ( IndexStore.class.isAssignableFrom( type ) )
+            else if ( IndexStore.class.isAssignableFrom( type ) && type.isInstance( indexStore ) )
             {
-                return (T) indexStore;
+                return type.cast( indexStore );
             }
-            else if ( XaFactory.class.isAssignableFrom( type ) )
+            else if ( XaFactory.class.isAssignableFrom( type ) && type.isInstance( xaFactory ) )
             {
-                return (T) xaFactory;
+                return type.cast( xaFactory );
             }
-            else if ( XaDataSourceManager.class.isAssignableFrom( type ) )
+            else if ( XaDataSourceManager.class.isAssignableFrom( type ) && type.isInstance( xaDataSourceManager ) )
             {
-                return (T) xaDataSourceManager;
+                return type.cast( xaDataSourceManager );
             }
-            else if ( FileSystemAbstraction.class.isAssignableFrom( type ) )
+            else if ( FileSystemAbstraction.class.isAssignableFrom( type ) && type.isInstance( fileSystem ) )
             {
-                return (T) fileSystem;
+                return type.cast( fileSystem );
             }
-            else if ( Guard.class.isAssignableFrom( type ) )
+            else if ( Guard.class.isAssignableFrom( type ) && type.isInstance( guard ) )
             {
-                return (T) guard;
+                return type.cast( guard );
             }
-            else if ( IndexProviders.class.isAssignableFrom( type ) )
-            {
-                return (T) indexManager;
-            }
-            else if ( KernelData.class.isAssignableFrom( type ) )
-            {
-                return (T) extensions;
-            }
-            else if ( Logging.class.isAssignableFrom( type ) )
-            {
-                return (T) logging;
-            }
-            else if ( TransactionInterceptorProviders.class.isAssignableFrom( type ) )
-            {
-                return (T) transactionInterceptorProviders;
-            }
-            else if ( KernelExtensions.class.isAssignableFrom( type ) )
-            {
-                return (T) kernelExtensions;
-            }
-            else if ( NodeManager.class.isAssignableFrom( type ) )
-            {
-                return (T) nodeManager;
-            }
-            else if ( TransactionStateFactory.class.isAssignableFrom( type ) )
-            {
-                return (T) stateFactory;
-            }
-            else if ( TxIdGenerator.class.isAssignableFrom( type ) )
-            {
-                return (T) txIdGenerator;
-            }
-            else if ( DiagnosticsManager.class.isAssignableFrom( type ) )
-            {
-                return (T) diagnosticsManager;
-            }
-            else if ( PropertyIndexManager.class.isAssignableFrom( type ) )
-            {
-                return (T) propertyIndexManager;
-            }
-            else if ( PersistenceManager.class.isAssignableFrom( type ) )
-            {
-                return (T) persistenceManager;
-            }
-            else if ( KernelAPI.class.equals( type ) )
-            {
-                return (T) kernelAPI;
-            }
-            else if ( ThreadToStatementContextBridge.class.isAssignableFrom( type ) )
-            {
-                return (T) statementContextProvider;
-            }
-            else if ( CacheAccessBackDoor.class.isAssignableFrom( type ) )
-            {
-                return (T) cacheBridge;
-            }
-            else if ( StoreLockerLifecycleAdapter.class.isAssignableFrom( type ) )
-            {
-                return (T) storeLocker;
-            }
-            else if ( IndexManager.class == type )
+            else if ( IndexProviders.class.isAssignableFrom( type ) && type.isInstance( indexManager ) )
             {
                 return type.cast( indexManager );
             }
-            else if ( IndexingService.class.isAssignableFrom( type ) )
+            else if ( KernelData.class.isAssignableFrom( type ) && type.isInstance( extensions ) )
             {
-                return (T) neoDataSource.getIndexService();
+                return type.cast( extensions );
             }
-            else if ( JobScheduler.class.isAssignableFrom( type ) )
+            else if ( TransactionInterceptorProviders.class.isAssignableFrom( type )
+                    && type.isInstance( transactionInterceptorProviders ) )
             {
-                return (T) jobScheduler;
+                return type.cast( transactionInterceptorProviders );
             }
-            else if ( DependencyResolver.class.isAssignableFrom( type ) )
+            else if ( KernelExtensions.class.isAssignableFrom( type ) && type.isInstance( kernelExtensions ) )
             {
-                return (T) DependencyResolverImpl.this;
+                return type.cast( kernelExtensions );
             }
-            return null;
+            else if ( NodeManager.class.isAssignableFrom( type ) && type.isInstance( nodeManager ) )
+            {
+                return type.cast( nodeManager );
+            }
+            else if ( TransactionStateFactory.class.isAssignableFrom( type ) && type.isInstance( stateFactory ) )
+            {
+                return type.cast( stateFactory );
+            }
+            else if ( TxIdGenerator.class.isAssignableFrom( type ) && type.isInstance( txIdGenerator ) )
+            {
+                return type.cast( txIdGenerator );
+            }
+            else if ( DiagnosticsManager.class.isAssignableFrom( type ) && type.isInstance( diagnosticsManager ) )
+            {
+                return type.cast( diagnosticsManager );
+            }
+            else if ( PropertyIndexManager.class.isAssignableFrom( type ) && type.isInstance( propertyIndexManager ) )
+            {
+                return type.cast( propertyIndexManager );
+            }
+            else if ( PersistenceManager.class.isAssignableFrom( type ) && type.isInstance( persistenceManager ) )
+            {
+                return type.cast( persistenceManager );
+            }
+            else if ( KernelAPI.class.equals( type ) )
+            {
+                return type.cast( kernelAPI );
+            }
+            else if ( ThreadToStatementContextBridge.class.isAssignableFrom( type )
+                    && type.isInstance( statementContextProvider ) )
+            {
+                return type.cast( statementContextProvider );
+            }
+            else if ( CacheAccessBackDoor.class.isAssignableFrom( type ) && type.isInstance( cacheBridge ) )
+            {
+                return type.cast( cacheBridge );
+            }
+            else if ( StoreLockerLifecycleAdapter.class.isAssignableFrom( type ) && type.isInstance( storeLocker ) )
+            {
+                return type.cast( storeLocker );
+            }
+            else if ( IndexManager.class.equals( type )&& type.isInstance( indexManager )  )
+            {
+                return type.cast( indexManager );
+            }
+            else if ( IndexingService.class.isAssignableFrom( type )
+                    && type.isInstance( neoDataSource.getIndexService() ) )
+            {
+                return type.cast( neoDataSource.getIndexService() );
+            }
+            else if ( JobScheduler.class.isAssignableFrom( type ) && type.isInstance( jobScheduler ) )
+            {
+                return type.cast( jobScheduler );
+            }
+            else if ( CleanupService.class.equals( type ) )
+            {
+                return type.cast( cleanupService );
+            }
+            else if ( DependencyResolver.class.equals( type ) )
+            {
+                return type.cast( DependencyResolverImpl.this );
+            }
+            return null;                                      
         }
         
         @Override
@@ -1549,7 +1561,7 @@ public abstract class InternalAbstractGraphDatabase
 
     private ResourceIterator<Node> map2nodes( Iterator<Long> input, StatementContext ctx )
     {
-        return withResource( map( new Function<Long, Node>()
+        return cleanupService.resourceIterator( map( new Function<Long, Node>()
         {
             @Override
             public Node apply( Long id )

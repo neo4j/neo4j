@@ -19,49 +19,62 @@
  */
 package org.neo4j.kernel.impl.cleanup;
 
-import org.neo4j.graphdb.ResourceIterator;
-
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
-class AutoCleanupResourceIterator<T> implements ResourceIterator<T> {
+import org.neo4j.graphdb.ResourceIterator;
+
+class AutoCleanupResourceIterator<T> implements ResourceIterator<T>
+{
     private final Iterator<T> iterator;
     CleanupReference cleanup;
 
-    public AutoCleanupResourceIterator(Iterator<T> iterator) {
+    public AutoCleanupResourceIterator( Iterator<T> iterator )
+    {
         this.iterator = iterator;
     }
 
     @Override
-    public void close() {
-        try {
-            cleanup.cleanupNow(true);
-        } catch (Exception e) {
-            throw new RuntimeException("Exception when closing.", e);
+    public void close()
+    {
+        try
+        {
+            cleanup.cleanupNow( true );
+        }
+        catch ( Exception e )
+        {
+            throw new RuntimeException( "Exception when closing.", e );
         }
     }
 
     @Override
-    public boolean hasNext() {
+    public boolean hasNext()
+    {
         boolean hasNext = iterator.hasNext();
-        if (!hasNext) {
+        if ( !hasNext )
+        {
             close();
         }
         return hasNext;
     }
 
     @Override
-    public T next() {
-        try {
+    public T next()
+    {
+        try
+        {
             return iterator.next();
-        } catch (NoSuchElementException e) {
+        }
+        catch ( NoSuchElementException e )
+        {
             close();
             throw e;
         }
     }
 
     @Override
-    public void remove() {
+    public void remove()
+    {
         iterator.remove();
     }
 }

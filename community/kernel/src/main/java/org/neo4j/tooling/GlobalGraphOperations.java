@@ -21,7 +21,6 @@ package org.neo4j.tooling;
 
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
-import static org.neo4j.helpers.collection.IteratorUtil.withResource;
 
 import java.util.Iterator;
 
@@ -38,6 +37,7 @@ import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.ThreadToStatementContextBridge;
 import org.neo4j.kernel.api.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.StatementContext;
+import org.neo4j.kernel.impl.cleanup.CleanupService;
 import org.neo4j.kernel.impl.core.NodeManager;
 
 /**
@@ -46,6 +46,7 @@ import org.neo4j.kernel.impl.core.NodeManager;
 public class GlobalGraphOperations
 {
     private final NodeManager nodeManager;
+    private final CleanupService cleanupService;
     private final ThreadToStatementContextBridge statementCtxProvider;
 
     private GlobalGraphOperations( GraphDatabaseService db )
@@ -53,6 +54,7 @@ public class GlobalGraphOperations
         GraphDatabaseAPI dbApi = (GraphDatabaseAPI) db;
         DependencyResolver resolver = dbApi.getDependencyResolver();
         this.nodeManager = resolver.resolveDependency( NodeManager.class );
+        this.cleanupService = resolver.resolveDependency( CleanupService.class );
         this.statementCtxProvider = resolver.resolveDependency( ThreadToStatementContextBridge.class );
     }
 
@@ -142,7 +144,7 @@ public class GlobalGraphOperations
         {
             long labelId = context.getLabelId( label );
             final Iterator<Long> nodeIds = context.getNodesWithLabel( labelId );
-            return withResource( map( new Function<Long, Node>()
+            return cleanupService.resourceIterator( map( new Function<Long, Node>()
             {
                 @Override
                 public Node apply( Long nodeId )

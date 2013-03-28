@@ -26,7 +26,7 @@ class CleanupReferenceQueue
     private final long removeTimeoutMillis;
     final ReferenceQueue<Object> queue = new ReferenceQueue<Object>();
 
-    public CleanupReferenceQueue(long removeTimeoutMillis)
+    public CleanupReferenceQueue( long removeTimeoutMillis )
     {
         this.removeTimeoutMillis = removeTimeoutMillis;
     }

@@ -31,29 +31,35 @@ import java.util.Iterator;
 
 public abstract class CleanupService extends LifecycleAdapter
 {
-    public static CleanupService create( JobScheduler scheduler, Logging logging  )
+    public static CleanupService create( JobScheduler scheduler, Logging logging )
     {
         // TODO: implement this by using sun.misc.Cleaner, since those is more efficient than PhantomReferences
-        return new ReferenceQueueBasedCleanupService( scheduler,logging, new CleanupReferenceQueue( 1000 ) );
+        return new ReferenceQueueBasedCleanupService( scheduler, logging, new CleanupReferenceQueue( 1000 ) );
     }
 
     private final StringLogger logger;
 
-    protected CleanupService(Logging logging) {
-        this.logger = logging.getLogger(getClass());
+    protected CleanupService( Logging logging )
+    {
+        this.logger = logging.getLogger( getClass() );
     }
 
     public abstract <T> ResourceIterator<T> resourceIterator( Iterator<T> iterator, Closeable closeable );
 
-    void cleanup(CleanupReference reference) {
-        try {
-            reference.cleanupNow(false);
-        } catch (IOException e) {
-            logger.warn("Failure autoclosing a resource during collection", e);
+    void cleanup( CleanupReference reference )
+    {
+        try
+        {
+            reference.cleanupNow( false );
+        }
+        catch ( IOException e )
+        {
+            logger.warn( "Failure autoclosing a resource during collection", e );
         }
     }
 
-    void logLeakedReference(CleanupReference reference) {
-        logger.warn(String.format("Resource not closed.", reference));
+    void logLeakedReference( CleanupReference reference )
+    {
+        logger.warn( String.format( "Resource not closed.", reference ) );
     }
 }

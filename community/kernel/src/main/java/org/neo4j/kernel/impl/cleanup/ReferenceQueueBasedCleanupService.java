@@ -33,10 +33,10 @@ class ReferenceQueueBasedCleanupService extends CleanupService implements Runnab
     final CleanupReferenceQueue collectedReferences;
     CleanupReference first;
 
-    ReferenceQueueBasedCleanupService(JobScheduler scheduler, Logging logging,
-                                      CleanupReferenceQueue collectedReferences)
+    ReferenceQueueBasedCleanupService( JobScheduler scheduler, Logging logging,
+                                       CleanupReferenceQueue collectedReferences )
     {
-        super(logging);
+        super( logging );
         this.scheduler = scheduler;
         this.collectedReferences = collectedReferences;
     }
@@ -44,12 +44,13 @@ class ReferenceQueueBasedCleanupService extends CleanupService implements Runnab
     @Override
     public <T> ResourceIterator<T> resourceIterator( Iterator<T> iterator, Closeable closeable )
     {
-        return linked(new AutoCleanupResourceIterator<T>(iterator), closeable);
+        return linked( new AutoCleanupResourceIterator<T>( iterator ), closeable );
     }
 
-    private <T> ResourceIterator<T> linked(AutoCleanupResourceIterator<T> iterator, Closeable handler) {
-        CleanupReference cleanup = new CleanupReference(iterator, this, handler);
-        link(cleanup);
+    private <T> ResourceIterator<T> linked( AutoCleanupResourceIterator<T> iterator, Closeable handler )
+    {
+        CleanupReference cleanup = new CleanupReference( iterator, this, handler );
+        link( cleanup );
         iterator.cleanup = cleanup;
         return iterator;
     }
@@ -68,13 +69,15 @@ class ReferenceQueueBasedCleanupService extends CleanupService implements Runnab
         {
             for ( CleanupReference reference; running && (reference = collectedReferences.remove()) != null; )
             {
-                cleanup(reference);
+                cleanup( reference );
             }
         }
         finally
         {
             if ( running )
+            {
                 scheduler.submit( this );
+            }
         }
     }
 
@@ -84,7 +87,7 @@ class ReferenceQueueBasedCleanupService extends CleanupService implements Runnab
         running = false;
         for ( CleanupReference cur = first; cur != null; cur = cur.next )
         {
-            cleanup(cur);
+            cleanup( cur );
         }
         first = null;
     }

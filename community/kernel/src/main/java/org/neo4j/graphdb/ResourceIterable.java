@@ -19,8 +19,20 @@
  */
 package org.neo4j.graphdb;
 
+/**
+ * Iterable whose {@link ResourceIterator iterators} have associated resources that must be managed.
+ *
+ * @param <T> the type of values returned through the iterators.
+ * @see ResourceIterator
+ */
 public interface ResourceIterable<T> extends Iterable<T>
 {
+    /**
+     * Returns an {@link ResourceIterator iterator} with associated resources that must be managed.
+     *
+     * Don't forget to either exhaust the returned iterator or call the
+     * {@link ResourceIterator#close() close method} on it.
+     */
     @Override
     ResourceIterator<T> iterator();
 }

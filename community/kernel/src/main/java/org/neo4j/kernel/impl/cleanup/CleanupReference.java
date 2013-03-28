@@ -29,32 +29,44 @@ class CleanupReference extends PhantomReference<Object>
     private Closeable handler;
     CleanupReference prev, next;
 
-    CleanupReference(Object referent, ReferenceQueueBasedCleanupService cleanupService, Closeable handler)
+    CleanupReference( Object referent, ReferenceQueueBasedCleanupService cleanupService, Closeable handler )
     {
         super( referent, cleanupService.collectedReferences.queue );
         this.cleanupService = cleanupService;
         this.handler = handler;
     }
 
-    void cleanupNow( boolean explicit ) throws IOException {
-        synchronized ( this )
+    void cleanupNow( boolean explicit ) throws IOException
+    {
+        boolean shouldUnlink = false;
+        try
         {
-            if ( handler != null )
+            synchronized ( this )
             {
-                if (!explicit)
+                if ( handler != null )
                 {
-                    cleanupService.logLeakedReference(this);
-                }
-                try
-                {
-                    handler.close();
-                }
-                finally
-                {
-                    handler = null;
+                    shouldUnlink = true;
+                    if ( !explicit )
+                    {
+                        cleanupService.logLeakedReference( this );
+                    }
+                    try
+                    {
+                        handler.close();
+                    }
+                    finally
+                    {
+                        handler = null;
+                    }
                 }
             }
         }
-        cleanupService.unlink( this );
+        finally
+        {
+            if ( shouldUnlink )
+            {
+                cleanupService.unlink( this );
+            }
+        }
     }
 }
