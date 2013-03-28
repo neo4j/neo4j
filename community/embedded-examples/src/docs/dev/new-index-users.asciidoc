@@ -42,6 +42,8 @@ tag=addUsers
 
 And here's how to find a user by id:
 
+NOTE: Please read <<tutorials-java-embedded-resource-iteration>> on how to properly close ResourceIterators returned from index lookups.
+
 [snippet,java]
 ----
 component=neo4j-examples
