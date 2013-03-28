@@ -19,14 +19,6 @@
  */
 package org.neo4j.server;
 
-import static org.neo4j.helpers.collection.Iterables.option;
-
-import java.io.File;
-import java.net.URI;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-
 import org.apache.commons.configuration.Configuration;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
@@ -35,12 +27,7 @@ import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.server.configuration.ConfigurationProvider;
 import org.neo4j.server.configuration.Configurator;
-import org.neo4j.server.database.CypherExecutor;
-import org.neo4j.server.database.CypherExecutorProvider;
-import org.neo4j.server.database.Database;
-import org.neo4j.server.database.DatabaseProvider;
-import org.neo4j.server.database.GraphDatabaseServiceProvider;
-import org.neo4j.server.database.InjectableProvider;
+import org.neo4j.server.database.*;
 import org.neo4j.server.logging.Logger;
 import org.neo4j.server.modules.RESTApiModule;
 import org.neo4j.server.modules.ServerModule;
@@ -63,12 +50,22 @@ import org.neo4j.server.web.SimpleUriBuilder;
 import org.neo4j.server.web.WebServer;
 import org.neo4j.server.web.WebServerProvider;
 
+import java.io.File;
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+
+import static org.neo4j.helpers.collection.Iterables.option;
+import static org.neo4j.server.database.InjectableProvider.providerForSingleton;
+
 public abstract class AbstractNeoServer implements NeoServer
 {
     public static final Logger log = Logger.getLogger( AbstractNeoServer.class );
 
     protected Database database;
     protected CypherExecutor cypherExecutor;
+    protected AtomicLongSessionDispenser sessionDispenser;
     protected Configurator configurator;
     protected WebServer webServer;
 
@@ -165,6 +162,7 @@ public abstract class AbstractNeoServer implements NeoServer
             databaseActions = createDatabaseActions();
 
             cypherExecutor = new CypherExecutor( database, getLogging().getLogger( CypherExecutor.class ) );
+            sessionDispenser = new AtomicLongSessionDispenser();
 
             configureWebServer();
 
@@ -570,6 +568,8 @@ public abstract class AbstractNeoServer implements NeoServer
         singletons.add( new InputFormatProvider( repository ) );
         singletons.add( new OutputFormatProvider( repository ) );
         singletons.add( new CypherExecutorProvider( cypherExecutor ) );
+        singletons.add( providerForSingleton(sessionDispenser, SessionDispenser.class) );
+
         return singletons;
     }
 

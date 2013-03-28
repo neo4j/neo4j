@@ -19,23 +19,21 @@
  */
 package org.neo4j.server.modules;
 
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyCollection;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
-import java.net.URI;
-import java.util.List;
-
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.junit.Test;
 import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.configuration.Configurator;
+import org.neo4j.server.database.Database;
+import org.neo4j.server.database.TransactionRegistry;
 import org.neo4j.server.web.WebServer;
+
+import java.util.List;
+
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyCollection;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.*;
 
 public class RESTApiModuleTest
 {
@@ -44,17 +42,14 @@ public class RESTApiModuleTest
     {
         WebServer webServer = mock( WebServer.class );
 
-        CommunityNeoServer neoServer = mock( CommunityNeoServer.class );
-        when( neoServer.baseUri() ).thenReturn( new URI( "http://localhost:7575" ) );
-        when( neoServer.getWebServer() ).thenReturn( webServer );
-
         Configuration config = new PropertiesConfiguration();
         String path = "/db/data";
         config.addProperty( Configurator.REST_API_PATH_PROPERTY_KEY, path );
 
-        when( neoServer.getConfiguration() ).thenReturn( config );
+        Database db = mock(Database.class);
+        when(db.getTransactionRegistry()).thenReturn(mock(TransactionRegistry.class));
 
-        RESTApiModule module = new RESTApiModule(webServer, neoServer.getDatabase(), config);
+        RESTApiModule module = new RESTApiModule(webServer, db, config);
         module.start(StringLogger.DEV_NULL);
 
         verify( webServer ).addJAXRSPackages( any( List.class ), anyString(), anyCollection() );

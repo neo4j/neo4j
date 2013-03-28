@@ -19,11 +19,6 @@
  */
 package org.neo4j.server.database;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-
 import org.apache.commons.configuration.Configuration;
 import org.neo4j.ext.udc.UdcSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -33,10 +28,16 @@ import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.shell.ShellSettings;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+
 public class CommunityDatabase extends/* implements */ Database
 {
 
     protected final Configuration serverConfig;
+    private CoreAPIBasedTransactionRegistry transactionRegistry;
 
     @SuppressWarnings("deprecation")
     public CommunityDatabase( Configuration serverConfig )
@@ -50,17 +51,24 @@ public class CommunityDatabase extends/* implements */ Database
         this.serverConfig = serverConfig;
     }
 
+    protected AbstractGraphDatabase createDb()
+    {
+        return (AbstractGraphDatabase) new org.neo4j.graphdb.factory.GraphDatabaseFactory()
+                .newEmbeddedDatabaseBuilder( serverConfig.getString( Configurator.DATABASE_LOCATION_PROPERTY_KEY,
+                        Configurator.DEFAULT_DATABASE_LOCATION_PROPERTY_KEY ) )
+                .setConfig( loadNeo4jProperties() )
+                .newGraphDatabase();
+    }
+
+
     @Override
     @SuppressWarnings("deprecation")
     public void start() throws Throwable
     {
         try
         {
-            this.graph = (AbstractGraphDatabase) new org.neo4j.graphdb.factory.GraphDatabaseFactory()
-                    .newEmbeddedDatabaseBuilder( serverConfig.getString( Configurator.DATABASE_LOCATION_PROPERTY_KEY,
-                            Configurator.DEFAULT_DATABASE_LOCATION_PROPERTY_KEY ) )
-                    .setConfig( loadNeo4jProperties() )
-                    .newGraphDatabase();
+            this.graph = createDb();
+            this.transactionRegistry = new CoreAPIBasedTransactionRegistry(getGraph());
             log.info( "Successfully started database" );
         }
         catch ( Exception e )
@@ -126,6 +134,11 @@ public class CommunityDatabase extends/* implements */ Database
         {
             databaseProperties.put( configKey, configValue );
         }
+    }
+
+    @Override
+    public TransactionRegistry getTransactionRegistry() {
+        return transactionRegistry;
     }
 
 }

@@ -19,18 +19,6 @@
  */
 package org.neo4j.server.rest.web;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
-
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -38,14 +26,27 @@ import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
-import org.neo4j.server.ServerTestUtils;
 import org.neo4j.server.database.Database;
+import org.neo4j.server.database.WrappedDatabase;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.TraverserReturnType;
 import org.neo4j.server.rest.paging.FakeClock;
 import org.neo4j.server.rest.paging.LeaseManager;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
+import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.server.EntityOutputFormat;
+
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriInfo;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class RestfulGraphDatabasePagedTraversalTest
 {
@@ -56,11 +57,13 @@ public class RestfulGraphDatabasePagedTraversalTest
     private EntityOutputFormat output;
     private GraphDbHelper helper;
     private LeaseManager leaseManager;
+    private ImpermanentGraphDatabase graph;
 
     @Before
     public void startDatabase() throws IOException
     {
-        database = new Database( ServerTestUtils.EPHEMERAL_GRAPH_DATABASE_FACTORY, null );
+        graph = new ImpermanentGraphDatabase();
+        database = new WrappedDatabase(graph);
         helper = new GraphDbHelper( database );
         output = new EntityOutputFormat( new JsonFormat(), URI.create( BASE_URI ), null );
         leaseManager = new LeaseManager( new FakeClock() );
@@ -71,7 +74,7 @@ public class RestfulGraphDatabasePagedTraversalTest
     @After
     public void shutdownDatabase() throws Throwable
     {
-        this.database.shutdown();
+        this.graph.shutdown();
     }
 
     @Test

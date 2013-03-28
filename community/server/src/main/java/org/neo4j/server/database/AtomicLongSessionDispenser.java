@@ -19,51 +19,15 @@
  */
 package org.neo4j.server.database;
 
-import org.neo4j.kernel.AbstractGraphDatabase;
+import java.util.concurrent.atomic.AtomicLong;
 
-public class WrappedDatabase extends Database {
-
-    private final CoreAPIBasedTransactionRegistry transactionRegistry;
-
-    @SuppressWarnings("deprecation")
-	public WrappedDatabase(AbstractGraphDatabase db) {
-		this.graph = db;
-        this.transactionRegistry = new CoreAPIBasedTransactionRegistry(graph);
-	}
-	
-	@Override
-	public void init() throws Throwable 
-	{
-		
-	}
-
-	@Override
-	public void start() throws Throwable 
-	{
-		
-	}
-
-	@Override
-	public void stop() throws Throwable 
-	{
-		
-	}
+public class AtomicLongSessionDispenser implements SessionDispenser
+{
+    private final AtomicLong idGenerator = new AtomicLong(0);
 
     @Override
-	public void shutdown()
-    {
-        
-    }
-    
-    @Override
-	public String getLocation()
-    {
-        return graph.getStoreDir();
-    }
-
-    @Override
-    public TransactionRegistry getTransactionRegistry() {
-        return transactionRegistry;
+    public long newSession() {
+        return idGenerator.getAndIncrement();
     }
 
 }

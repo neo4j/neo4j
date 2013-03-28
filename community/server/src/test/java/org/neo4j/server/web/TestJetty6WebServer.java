@@ -19,17 +19,6 @@
  */
 package org.neo4j.server.web;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.mock;
-
-import java.util.Arrays;
-
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.Status;
-
 import org.junit.Test;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.guard.Guard;
@@ -41,6 +30,15 @@ import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.ServerConfigurator;
 import org.neo4j.server.logging.InMemoryAppender;
 import org.neo4j.test.ImpermanentGraphDatabase;
+
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Response.Status;
+import java.util.Arrays;
+
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertThat;
 
 @Path("/")
 public class TestJetty6WebServer {
@@ -59,7 +57,7 @@ public class TestJetty6WebServer {
 		// dependency to NeoServer, which should be removed.
 		// Once that is done, we should instantiate WebServer 
 		// here directly.
-        AbstractGraphDatabase db = mock(AbstractGraphDatabase.class);
+        AbstractGraphDatabase db = new ImpermanentGraphDatabase();
 		WrappingNeoServer neoServer = new WrappingNeoServer(db);
 		WebServer server = neoServer.getWebServer();
 		
@@ -82,6 +80,7 @@ public class TestJetty6WebServer {
 			{	
 				
 			}
+            db.shutdown();
 		}
 		
 	}

@@ -19,9 +19,6 @@
  */
 package org.neo4j.server.enterprise;
 
-import java.util.List;
-import java.util.Map;
-
 import org.apache.commons.configuration.Configuration;
 import org.neo4j.graphdb.index.IndexProvider;
 import org.neo4j.helpers.Service;
@@ -37,6 +34,9 @@ import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvi
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.database.CommunityDatabase;
 import org.neo4j.server.database.GraphDatabaseFactory;
+
+import java.util.List;
+import java.util.Map;
 
 public class EnterpriseDatabase extends CommunityDatabase
 {
@@ -95,6 +95,7 @@ public class EnterpriseDatabase extends CommunityDatabase
                     serverConfig.getString( Configurator.DATABASE_LOCATION_PROPERTY_KEY,
                             Configurator.DEFAULT_DATABASE_LOCATION_PROPERTY_KEY ),
                     loadNeo4jProperties() );
+            super.start();
 
             log.info( "Successfully started database" );
         }
