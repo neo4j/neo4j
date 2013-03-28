@@ -17,37 +17,29 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.util;
+package org.neo4j.kernel.impl.cleanup;
 
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.lang.ref.ReferenceQueue;
 
-import org.neo4j.helpers.DaemonThreadFactory;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-
-import static java.util.concurrent.Executors.newCachedThreadPool;
-
-public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
+class CleanupReferenceQueue
 {
+    private final long removeTimeoutMillis;
+    final ReferenceQueue<Object> queue = new ReferenceQueue<Object>();
 
-    private ExecutorService executor;
-
-    @Override
-    public void start()
+    public CleanupReferenceQueue(long removeTimeoutMillis)
     {
-        this.executor = newCachedThreadPool(new DaemonThreadFactory("Neo4j " + getClass().getSimpleName()));
+        this.removeTimeoutMillis = removeTimeoutMillis;
     }
 
-    @Override
-    public void stop()
+    CleanupReference remove()
     {
-        this.executor.shutdown();
-        this.executor = null;
-    }
-
-    @Override
-    public void submit( Runnable job )
-    {
-        this.executor.submit( job );
+        try
+        {
+            return (CleanupReference) queue.remove( removeTimeoutMillis );
+        }
+        catch ( InterruptedException e )
+        {
+            return null;
+        }
     }
 }

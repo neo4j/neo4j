@@ -17,37 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.util;
+package org.neo4j.kernel.api.index;
 
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import org.neo4j.kernel.api.KernelException;
+import org.neo4j.kernel.impl.api.index.IndexProxy;
 
-import org.neo4j.helpers.DaemonThreadFactory;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-
-import static java.util.concurrent.Executors.newCachedThreadPool;
-
-public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
+public class IndexNotOnlineException extends KernelException
 {
-
-    private ExecutorService executor;
-
-    @Override
-    public void start()
+    public IndexNotOnlineException( IndexProxy index )
     {
-        this.executor = newCachedThreadPool(new DaemonThreadFactory("Neo4j " + getClass().getSimpleName()));
-    }
-
-    @Override
-    public void stop()
-    {
-        this.executor.shutdown();
-        this.executor = null;
-    }
-
-    @Override
-    public void submit( Runnable job )
-    {
-        this.executor.submit( job );
+        super( index + " not online yet" );
     }
 }
