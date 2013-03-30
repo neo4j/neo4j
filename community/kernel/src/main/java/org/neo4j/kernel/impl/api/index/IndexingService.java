@@ -19,10 +19,6 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.neo4j.helpers.Exceptions.launderedException;
-import static org.neo4j.helpers.collection.IteratorUtil.loop;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -39,6 +35,7 @@ import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexPopulator;
+import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
@@ -49,19 +46,24 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.Logging;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
+import static org.neo4j.helpers.Exceptions.launderedException;
+import static org.neo4j.helpers.collection.IteratorUtil.loop;
+
 /**
- * Manages the "schema indexes" that were introduced in 2.0. These indexes depend on the normal neo4j logical log
- * for transactionality. Each index has an {@link IndexRule}, which it uses to filter changes that come into the
- * database. Changes that apply to the the rule are indexed. This way, "normal" changes to the database can be
- * replayed to perform recovery after a crash.
- *
+ * Manages the "schema indexes" that were introduced in 2.0. These indexes depend on the normal neo4j logical log for
+ * transactionality. Each index has an {@link IndexRule}, which it uses to filter changes that come into the database.
+ * Changes that apply to the the rule are indexed. This way, "normal" changes to the database can be replayed to perform
+ * recovery after a crash.
+ * <p/>
  * <h3>Recovery procedure</h3>
- *
- * Each index has a state, as defined in {@link org.neo4j.kernel.api.index.InternalIndexState}, which is used during recovery. If
- * an index is anything but {@link org.neo4j.kernel.api.index.InternalIndexState#ONLINE}, it will simply be destroyed and re-created.
- *
- * If, however, it is {@link org.neo4j.kernel.api.index.InternalIndexState#ONLINE}, the index provider is required to also guarantee
- * that the index had been flushed to disk.
+ * <p/>
+ * Each index has a state, as defined in {@link org.neo4j.kernel.api.index.InternalIndexState}, which is used during
+ * recovery. If an index is anything but {@link org.neo4j.kernel.api.index.InternalIndexState#ONLINE}, it will simply be
+ * destroyed and re-created.
+ * <p/>
+ * If, however, it is {@link org.neo4j.kernel.api.index.InternalIndexState#ONLINE}, the index provider is required to
+ * also guarantee that the index had been flushed to disk.
  */
 public class IndexingService extends LifecycleAdapter
 {
@@ -94,7 +96,7 @@ public class IndexingService extends LifecycleAdapter
         {
             // For now
             throw new IllegalStateException( "You cannot run the database without providing a schema index provider, " +
-                    "please make sure that a valid provider is on your classpath." );
+                                             "please make sure that a valid provider is on your classpath." );
         }
     }
 
@@ -110,7 +112,9 @@ public class IndexingService extends LifecycleAdapter
         {
             long ruleId = entry.getKey();
             IndexProxy indexProxy = entry.getValue();
-            switch ( indexProxy.getState() )
+            InternalIndexState state = indexProxy.getState();
+            logger.info( "IndexingService.start: " + indexProxy.getDescriptor().toString() + " is " + state.name() );
+            switch ( state )
             {
             case ONLINE:
                 // Don't do anything, index is ok.
@@ -206,19 +210,20 @@ public class IndexingService extends LifecycleAdapter
             long ruleId = indexRule.getId();
             IndexDescriptor descriptor = createDescriptor( indexRule );
             IndexProxy indexProxy = null;
-            switch ( provider.getInitialState( ruleId ) )
+            InternalIndexState initialState = provider.getInitialState( ruleId );
+            logger.info( "IndexingService.initIndexes: " + descriptor.toString() + " is " + initialState.name() );
+            switch ( initialState )
             {
-                case ONLINE:
-                    indexProxy = createOnlineIndexProxy( ruleId, descriptor );
-                    break;
-                case POPULATING:
-                    // The database was shut down during population, or a crash has occurred, or some other
-                    // sad thing.
-                    indexProxy = createRecoveringIndexProxy( ruleId, descriptor );
-                    break;
-                case FAILED:
-                    indexProxy = createFailedIndexProxy( ruleId, descriptor );
-                    break;
+            case ONLINE:
+                indexProxy = createOnlineIndexProxy( ruleId, descriptor );
+                break;
+            case POPULATING:
+                // The database was shut down during population, or a crash has occurred, or some other sad thing.
+                indexProxy = createRecoveringIndexProxy( ruleId, descriptor );
+                break;
+            case FAILED:
+                indexProxy = createFailedIndexProxy( ruleId, descriptor );
+                break;
             }
             indexes.put( ruleId, indexProxy );
         }
@@ -253,7 +258,7 @@ public class IndexingService extends LifecycleAdapter
         {
             index = createRecoveringIndexProxy( ruleId, descriptor );
         }
-        
+
         indexes.put( rule.getId(), index );
     }
 
@@ -308,12 +313,13 @@ public class IndexingService extends LifecycleAdapter
 
     private IndexProxy createPopulatingIndexProxy( final long ruleId, final IndexDescriptor descriptor )
     {
-        FlippableIndexProxy flipper = new FlippableIndexProxy( );
+        FlippableIndexProxy flipper = new FlippableIndexProxy();
 
         // TODO: This is here because there is a circular dependency from PopulatingIndexProxy to FlippableIndexProxy
         IndexPopulator populator = getPopulatorFromProvider( ruleId );
         PopulatingIndexProxy populatingIndex =
-            new PopulatingIndexProxy( scheduler, descriptor, populator, flipper, storeView, updateableSchemaState, logging );
+                new PopulatingIndexProxy( scheduler, descriptor, populator, flipper, storeView, updateableSchemaState,
+                                          logging );
         flipper.setFlipTarget( singleProxy( populatingIndex ) );
         flipper.flip();
 
@@ -359,7 +365,7 @@ public class IndexingService extends LifecycleAdapter
         return provider.getPopulator( ruleId );
     }
 
-    private IndexAccessor getOnlineAccessorFromProvider( long ruleId  )
+    private IndexAccessor getOnlineAccessorFromProvider( long ruleId )
     {
         return provider.getOnlineAccessor( ruleId );
     }
@@ -448,29 +454,24 @@ public class IndexingService extends LifecycleAdapter
             }
         };
     }
-    
+
     public interface StoreScan
     {
         void run();
-        
+
         void stop();
     }
-    
-    /**
-     * The indexing services view of the universe.
-     */
+
+    /** The indexing services view of the universe. */
     public interface IndexStoreView
     {
         /**
          * Get properties of a node, if those properties exist.
-         * @param nodeId
-         * @param propertyKeys
          */
         Iterator<Pair<Integer, Object>> getNodeProperties( long nodeId, Iterator<Long> propertyKeys );
 
         /**
-         * Retrieve all nodes in the database with a given label and property, as pairs of node id and
-         * property value.
+         * Retrieve all nodes in the database with a given label and property, as pairs of node id and property value.
          *
          * @return a {@link StoreScan} to start and to stop the scan.
          */
