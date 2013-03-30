@@ -40,7 +40,7 @@ class TopPipe(source: Pipe, sortDescription: List[SortItem], countExpression: Ex
     var sorted = false
 
     if (input.isEmpty)
-      Iterator()
+      Iterator.empty
     else {
       val first = input.next()
       val count = countExpression(first).asInstanceOf[Number].intValue()

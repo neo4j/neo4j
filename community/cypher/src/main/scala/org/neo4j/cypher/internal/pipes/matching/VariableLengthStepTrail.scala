@@ -61,7 +61,7 @@ final case class VariableLengthStepTrail(next: Trail,
     curr = x._1
     left = x._2
 
-    var result: Seq[(Seq[PropertyContainer], Map[String, Any])] = Seq.empty
+    var result: Seq[(Seq[PropertyContainer], Map[String, Any])] = Nil
 
     val newNode = p.head
     val oldNode = m.get(start)
@@ -105,13 +105,15 @@ final case class VariableLengthStepTrail(next: Trail,
 
   def pathDescription = next.pathDescription ++ Seq(path, end) ++ relIterator
 
-  def patterns = next.patterns :+ pattern
+  val patterns = next.patterns :+ pattern
 
-  def predicates = next.predicates
+  val predicates = next.predicates
 
-  def size = next.size + min + 1
+  val size = next.size + min + 1
 
-  def end = next.end
+  val isEndPoint = false
+
+  val end = next.end
 
   def symbols(table: SymbolTable) = {
     val symbolTable = next.symbols(table).add(start, NodeType()).add(path, PathType())

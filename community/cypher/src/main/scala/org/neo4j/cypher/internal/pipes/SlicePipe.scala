@@ -33,7 +33,7 @@ class SlicePipe(source:Pipe, skip:Option[Expression], limit:Option[Expression]) 
     implicit val s = state
 
     if(input.isEmpty)
-      return Iterator()
+      return Iterator.empty
 
     val first: ExecutionContext = input.next()
 

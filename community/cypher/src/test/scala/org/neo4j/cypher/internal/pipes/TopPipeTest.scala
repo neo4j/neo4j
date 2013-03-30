@@ -55,12 +55,12 @@ class TopPipeTest extends Assertions {
   }
 
   @Test def emptyInputIsNotAProblem() {
-    val input = new FakePipe(Iterator(), "a" -> IntegerType())
+    val input = new FakePipe(Iterator.empty, "a" -> IntegerType())
 
     val pipe = new TopPipe(input, List(SortItem(Identifier("a"), ascending = true)), Literal(5))
     val result = pipe.createResults(QueryState()).map(ctx => ctx("a")).toList
 
-    assert(result === List())
+    assert(result === List.empty)
   }
 
   private def createFakePipeWith(count: Int): FakePipe = {

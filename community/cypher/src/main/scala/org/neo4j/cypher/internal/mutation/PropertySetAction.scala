@@ -47,7 +47,7 @@ case class PropertySetAction(prop: Property, e: Expression)
     Stream(context)
   }
 
-  def identifiers = Seq.empty
+  def identifiers = Nil
 
   def children = Seq(prop, e)
 

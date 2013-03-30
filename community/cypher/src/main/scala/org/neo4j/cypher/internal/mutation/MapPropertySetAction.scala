@@ -87,7 +87,7 @@ case class MapPropertySetAction(element: Expression, mapExpression: Expression)
   }
 
 
-  def identifiers = Seq.empty
+  def identifiers = Nil
 
   def children = Seq(element, mapExpression)
 

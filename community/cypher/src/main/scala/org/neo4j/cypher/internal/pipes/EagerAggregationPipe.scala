@@ -70,7 +70,7 @@ class EagerAggregationPipe(source: Pipe, val keyExpressions: Map[String, Express
 
       aggregationNamesAndFunctions.toMap
         .foreach { case (name, zeroValue) => newMap += name -> zeroValue  }
-      Iterator(ExecutionContext(newMap))
+      Iterator.single(ExecutionContext(newMap))
     }
 
     input.foreach(ctx => {
