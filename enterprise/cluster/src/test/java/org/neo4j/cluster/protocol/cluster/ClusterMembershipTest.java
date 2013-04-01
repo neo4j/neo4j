@@ -142,22 +142,9 @@ public class ClusterMembershipTest
         );
     }
 
-
-    @Test
-    public void oneNodeCreatesClusterAndThenAnotherJoinsAsFirstLeaves()
-            throws URISyntaxException, ExecutionException, TimeoutException, InterruptedException
-    {
-        testCluster( 2, DEFAULT_NETWORK(), new ClusterTestScriptDSL().
-                rounds( 1000 ).
-                join( 0, 1, 1 ).
-                join( 10, 2, 1, 2 ).
-                leave( 20, 1 )
-        );
-    }
-
     @Test
     @Ignore("instance 1 is in start, 2 in discovery. Correct but we don't have a way to verify it yet")
-    public void oneNodeCreatesClusterAndThenAnotherJoinsAsFirstLeaves2()
+    public void oneNodeCreatesClusterAndThenAnotherJoinsAsFirstLeaves()
             throws URISyntaxException, ExecutionException, TimeoutException, InterruptedException
     {
         testCluster( 2, DEFAULT_NETWORK(), new ClusterTestScriptDSL().
