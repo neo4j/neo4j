@@ -74,6 +74,7 @@ public class BackupHaIT
     public void stopCluster() throws Throwable
     {
         clusterManager.stop();
+        clusterManager.shutdown();
     }
 
     @Test
