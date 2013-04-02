@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
+import static java.lang.String.format;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -151,12 +153,10 @@ public class NeoStore extends AbstractStore
                 String foundVersion = versionLongToString( getStoreVersion(fileSystemAbstraction, configuration.get( Configuration.neo_store) ));
                 if ( !CommonAbstractStore.ALL_STORES_VERSION.equals( foundVersion ) )
                 {
-                    throw new IllegalStateException(
-                            String.format(
-                                    "Mismatching store version found (%s while expecting %s) and the store is not cleanly shutdown."
-                                            + " Recover the database with the previous database version and then attempt to upgrade",
-                                    foundVersion,
-                                    CommonAbstractStore.ALL_STORES_VERSION ) );
+                    throw new IllegalStateException( format(
+                            "Mismatching store version found (%s while expecting %s). The store cannot be automatically upgraded since it isn't cleanly shutdown." +
+                            " Recover by starting the database using the previous Neo4j version, followed by a clean shutdown. Then start with this version again.",
+                            foundVersion, CommonAbstractStore.ALL_STORES_VERSION ) );
                 }
             }
         }

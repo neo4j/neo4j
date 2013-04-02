@@ -22,6 +22,8 @@ package org.neo4j.kernel.impl.storemigration;
 import java.io.File;
 import java.io.IOException;
 
+import org.neo4j.helpers.Predicate;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
@@ -31,6 +33,7 @@ public enum StoreFile
 {
     NEO_STORE( "NeoStore", "" ),
     NODE_STORE( "NodeStore", StoreFactory.NODE_STORE_NAME ),
+    NODE_LABEL_STORE( "NodeLabelStore", StoreFactory.NODE_LABELS_STORE_NAME, false ),
     PROPERTY_STORE( "PropertyStore", StoreFactory.PROPERTY_STORE_NAME ),
     PROPERTY_ARRAY_STORE( "ArrayPropertyStore", StoreFactory.PROPERTY_ARRAYS_STORE_NAME ),
     PROPERTY_STRING_STORE( "StringPropertyStore", StoreFactory.PROPERTY_STRINGS_STORE_NAME ),
@@ -38,15 +41,23 @@ public enum StoreFile
     PROPERTY_INDEX_KEYS_STORE( "StringPropertyStore", StoreFactory.PROPERTY_INDEX_KEYS_STORE_NAME ),
     RELATIONSHIP_STORE( "RelationshipStore", StoreFactory.RELATIONSHIP_STORE_NAME ),
     RELATIONSHIP_TYPE_STORE( "RelationshipTypeStore", StoreFactory.RELATIONSHIP_TYPE_STORE_NAME ),
-    RELATIONSHIP_TYPE_NAMES_STORE( "StringPropertyStore", StoreFactory.RELATIONSHIP_TYPE_NAMES_STORE_NAME );
+    RELATIONSHIP_TYPE_NAMES_STORE( "StringPropertyStore", StoreFactory.RELATIONSHIP_TYPE_NAMES_STORE_NAME ),
+    SCHEMA_STORE( "SchemaStore", StoreFactory.SCHEMA_STORE_NAME, false );
     
     private final String typeDescriptor;
     private final String storeFileNamePart;
+    private final boolean existsInBoth;
 
     private StoreFile( String typeDescriptor, String storeFileNamePart )
     {
+        this( typeDescriptor, storeFileNamePart, true );
+    }
+    
+    private StoreFile( String typeDescriptor, String storeFileNamePart, boolean existsInBoth )
+    {
         this.typeDescriptor = typeDescriptor;
         this.storeFileNamePart = storeFileNamePart;
+        this.existsInBoth = existsInBoth;
     }
     
     public String legacyVersion()
@@ -63,6 +74,23 @@ public enum StoreFile
     {
         return storeFileName() + ".id";
     }
+    
+    public static Iterable<StoreFile> legacyStoreFiles()
+    {
+        return Iterables.filter( new Predicate<StoreFile>()
+        {
+            @Override
+            public boolean accept( StoreFile item )
+            {
+                return item.existsInBoth;
+            }
+        }, Iterables.iterable( values() ) );
+    }
+    
+    public static Iterable<StoreFile> currentStoreFiles()
+    {
+        return Iterables.iterable( values() );
+    }
 
     /**
      * Moves a database's store files from one directory
@@ -73,11 +101,11 @@ public enum StoreFile
      * @param toDirectory The directory to move the database files to.
      * @throws IOException If any of the move operations fail for any reason.
      */
-    public static void move( FileSystemAbstraction fs, File fromDirectory, File toDirectory )
-            throws IOException
+    public static void move( FileSystemAbstraction fs, File fromDirectory, File toDirectory,
+            Iterable<StoreFile> files ) throws IOException
     {
         // TODO: change the order that files are moved to handle failure conditions properly
-        for ( StoreFile storeFile : StoreFile.values() )
+        for ( StoreFile storeFile : files )
         {
             moveFile( fs, storeFile.storeFileName(), fromDirectory, toDirectory );
             moveFile( fs, storeFile.idFileName(), fromDirectory, toDirectory );
