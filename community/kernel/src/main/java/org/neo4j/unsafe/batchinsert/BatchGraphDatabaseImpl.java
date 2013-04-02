@@ -467,7 +467,7 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
         }
         
         @Override
-        public Iterable<Label> getLabels()
+        public ResourceIterable<Label> getLabels()
         {
             throw unsupportedOperation();
         }

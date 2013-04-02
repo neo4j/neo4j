@@ -43,6 +43,7 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterable;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.ReturnableEvaluator;
 import org.neo4j.graphdb.StopEvaluator;
 import org.neo4j.graphdb.Transaction;
@@ -503,7 +504,7 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
         }
         
         @Override
-        public Iterable<Label> getLabels()
+        public ResourceIterable<Label> getLabels()
         {
             return actual.getLabels();
         }
@@ -997,7 +998,7 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
         }
 
         @Override
-        public Iterator<T> iterator()
+        public ResourceIterator<T> iterator()
         {
             return this;
         }

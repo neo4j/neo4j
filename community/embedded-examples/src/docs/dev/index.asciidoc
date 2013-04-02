@@ -23,6 +23,10 @@ include::new-index-users.asciidoc[]
 
 :leveloffset: 2
 
+include::resource-iteration.asciidoc[]
+
+:leveloffset: 2
+
 include::unit-testing.asciidoc[]
 
 :leveloffset: 2

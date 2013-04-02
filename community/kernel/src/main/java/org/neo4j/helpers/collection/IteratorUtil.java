@@ -38,6 +38,7 @@ import java.util.Set;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.Function;
+import org.neo4j.kernel.impl.cleanup.CleanupService;
 
 /**
  * Contains common functionality regarding {@link Iterator}s and
@@ -813,11 +814,6 @@ public abstract class IteratorUtil
     public static <T> ResourceIterator<T> emptyIterator()
     {
         return EMPTY_ITERATOR;
-    }
-
-    public static <T> ResourceIterator<T> withResource( Iterator<T> iterator, Closeable closeable )
-    {
-        return new ResourceClosingIterator<T>( closeable, iterator );
     }
 
     public static <T> boolean contains( Iterator<T> iterator, T item )

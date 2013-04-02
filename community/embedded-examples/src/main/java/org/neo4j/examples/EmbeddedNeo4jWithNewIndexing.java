@@ -24,6 +24,8 @@ import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.ResourceIterable;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.schema.IndexDefinition;
@@ -87,9 +89,19 @@ public class EmbeddedNeo4jWithNewIndexing
             Label label = DynamicLabel.label( "User" );
             int idToFind = 45;
             String nameToFind = "user" + idToFind + "@neo4j.org";
-            for (Node node : graphDb.findNodesByLabelAndProperty( label, "username", nameToFind ) )
+            ResourceIterator<Node> users = graphDb.findNodesByLabelAndProperty( label, "username", nameToFind ).iterator();
+            try
             {
-                System.out.println( "The username of user " + idToFind + " is " + node.getProperty( "username" ) );
+                while ( users.hasNext() )
+                {
+                    Node node = users.next();
+                    System.out.println( "The username of user " + idToFind + " is " + node.getProperty( "username" ) );
+                }
+            }
+            finally
+            {
+                // alternatively use a transaction
+                users.close();
             }
             // END SNIPPET: findUsers
         }

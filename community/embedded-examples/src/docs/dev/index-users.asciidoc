@@ -2,6 +2,8 @@
 User database with index
 ========================
 
+NOTE: Please read <<tutorials-java-embedded-resource-iteration>> on how to properly close ResourceIterators returned from index lookups when not using a transaction.
+
 You have a user database, and want to retrieve users by name.
 
 [TIP]

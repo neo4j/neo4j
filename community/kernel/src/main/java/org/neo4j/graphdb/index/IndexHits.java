@@ -22,9 +22,7 @@ package org.neo4j.graphdb.index;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.*;
 
 /**
  * An {@link Iterator} with additional {@link #size()} and {@link #close()}
@@ -56,7 +54,7 @@ import org.neo4j.graphdb.Transaction;
  * 
  * @param <T> the type of items in the Iterator.
  */
-public interface IndexHits<T> extends Iterator<T>, Iterable<T>
+public interface IndexHits<T> extends ResourceIterator<T>, ResourceIterable<T>
 {
     /**
      * Returns the size of this iterable, in most scenarios this value is accurate
@@ -81,7 +79,7 @@ public interface IndexHits<T> extends Iterator<T>, Iterable<T>
      * You can however skip to call this method if you loop through the whole
      * result, then close() will be called automatically. Even if you loop
      * through the entire result and then call this method it will silently
-     * ignore any consequtive call (for convenience).
+     * ignore any consecutive call (for convenience).
      */
     void close();
 

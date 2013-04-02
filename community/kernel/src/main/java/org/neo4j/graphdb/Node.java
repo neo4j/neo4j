@@ -445,5 +445,5 @@ public interface Node extends PropertyContainer
      * 
      * @return all labels attached to this node.
      */
-    public Iterable<Label> getLabels();
+    public ResourceIterable<Label> getLabels();
 }

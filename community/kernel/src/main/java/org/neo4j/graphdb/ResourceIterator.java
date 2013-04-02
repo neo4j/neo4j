@@ -22,7 +22,20 @@ package org.neo4j.graphdb;
 import java.io.Closeable;
 import java.util.Iterator;
 
-public interface ResourceIterator<T> extends Iterator<T>, Closeable
-{
+/**
+ * Closeable Iterator with associated resources that needs to be managed.
+ * <p/>
+ * If the iterator is not depleted (run until {@link #hasNext()} returns {@code false}),
+ * the {@link #close()} method should be invoked to free these resources
+ * (i.e. in a {@code finally}-block, or try-with-resource).
+ *
+ * @param <T> type of values returned by this Iterator
+ */
+public interface ResourceIterator<T> extends Iterator<T>, Closeable {
+    /**
+     * Close the iterator early, freeing associated resources
+     *
+     * It is an error to use the iterator after this has been called.
+     */
     void close();
 }

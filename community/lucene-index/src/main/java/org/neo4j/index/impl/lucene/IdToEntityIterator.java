@@ -71,7 +71,7 @@ public abstract class IdToEntityIterator<T extends PropertyContainer>
         return this.ids.size();
     }
 
-    public Iterator<T> iterator()
+    public IndexHits<T> iterator()
     {
         return this;
     }
