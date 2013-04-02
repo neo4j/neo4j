@@ -34,6 +34,7 @@ import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ReturnableEvaluator;
 import org.neo4j.graphdb.StopEvaluator;
 import org.neo4j.graphdb.Traverser;
@@ -262,7 +263,7 @@ public class PathImplTest
         }
 
         @Override
-        public Iterable<Label> getLabels()
+        public ResourceIterable<Label> getLabels()
         {
             return null;
         }

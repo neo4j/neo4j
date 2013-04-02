@@ -17,36 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.index.impl.lucene;
+package org.neo4j.kernel.api.index;
 
-import java.util.Iterator;
+import org.neo4j.kernel.api.KernelException;
+import org.neo4j.kernel.impl.api.index.IndexProxy;
 
-import org.neo4j.graphdb.index.IndexHits;
-import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.helpers.collection.PrefetchingIterator;
-
-
-//TODO this is generic and should move out of the Lucene - component
-public abstract class AbstractIndexHits<T> extends PrefetchingIterator<T> implements IndexHits<T>
+public class IndexNotOnlineException extends KernelException
 {
-    public IndexHits<T> iterator()
+    public IndexNotOnlineException( IndexProxy index )
     {
-        return this;
-    }
-
-    public void close()
-    {
-    }
-    
-    public T getSingle()
-    {
-        try
-        {
-            return IteratorUtil.singleOrNull( (Iterator<T>) this );
-        }
-        finally
-        {
-            close();
-        }
+        super( index + " not online yet" );
     }
 }

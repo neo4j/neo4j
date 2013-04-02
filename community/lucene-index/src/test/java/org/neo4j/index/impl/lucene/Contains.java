@@ -20,6 +20,7 @@
 package org.neo4j.index.impl.lucene;
 
 import java.util.Collection;
+import java.util.Iterator;
 
 import org.hamcrest.Description;
 import org.hamcrest.Factory;
@@ -38,9 +39,9 @@ public class Contains<T> extends TypeSafeMatcher<IndexHits<T>>
     }
 
     @Override
-    public boolean matchesSafely( IndexHits<T> tIndexHits )
+    public boolean matchesSafely( IndexHits<T> indexHits )
     {
-        Collection<T> collection = IteratorUtil.asCollection( tIndexHits.iterator() );
+        Collection<T> collection = IteratorUtil.asCollection( indexHits.iterator() );
 
         if ( expectedItems.length != collection.size() )
         {

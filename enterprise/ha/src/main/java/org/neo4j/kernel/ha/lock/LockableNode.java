@@ -25,6 +25,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ReturnableEvaluator;
 import org.neo4j.graphdb.StopEvaluator;
 import org.neo4j.graphdb.Traverser;
@@ -242,7 +243,7 @@ public class LockableNode implements Node
     }
     
     @Override
-    public Iterable<Label> getLabels()
+    public ResourceIterable<Label> getLabels()
     {
         throw lockableNodeException();
     }

@@ -27,7 +27,6 @@ import static org.neo4j.graphdb.schema.Schema.IndexState.POPULATING;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
 import static org.neo4j.helpers.collection.IteratorUtil.single;
-import static org.neo4j.helpers.collection.IteratorUtil.withResource;
 
 import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
@@ -45,6 +44,7 @@ import org.neo4j.kernel.api.PropertyKeyNotFoundException;
 import org.neo4j.kernel.api.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.impl.cleanup.CleanupService;
 import org.neo4j.kernel.impl.core.KeyHolder;
 import org.neo4j.kernel.impl.core.PropertyIndex;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
@@ -53,11 +53,14 @@ public class SchemaImpl implements Schema
 {
     private final ThreadToStatementContextBridge ctxProvider;
     private final KeyHolder<PropertyIndex> propertyKeyManager;
+    private final CleanupService cleanupService;
 
-    public SchemaImpl( ThreadToStatementContextBridge ctxProvider, KeyHolder<PropertyIndex> propertyKeyManager )
+    public SchemaImpl( ThreadToStatementContextBridge ctxProvider, CleanupService cleanupService,
+                       KeyHolder<PropertyIndex> propertyKeyManager )
     {
         this.ctxProvider = ctxProvider;
         this.propertyKeyManager = propertyKeyManager;
+        this.cleanupService = cleanupService;
     }
 
     @Override
@@ -105,22 +108,17 @@ public class SchemaImpl implements Schema
     private ResourceIterator<IndexDefinition> getIndexDefinitions( final StatementContext context,
                                                                    Iterator<IndexRule> indexRules )
     {
-        return withResource( map( new Function<IndexRule, IndexDefinition>()
-        {
+        return cleanupService.resourceIterator(map(new Function<IndexRule, IndexDefinition>() {
             @Override
-            public IndexDefinition apply( IndexRule rule )
-            {
-                try
-                {
-                    return new IndexDefinitionImpl( ctxProvider, label( context.getLabelName( rule.getLabel() ) ),
-                            propertyKeyManager.getKeyByIdOrNull( (int) rule.getPropertyKey() ).getKey() );
-                }
-                catch ( LabelNotFoundKernelException e )
-                {
-                    throw new RuntimeException( e );
+            public IndexDefinition apply(IndexRule rule) {
+                try {
+                    return new IndexDefinitionImpl(ctxProvider, label(context.getLabelName(rule.getLabel())),
+                            propertyKeyManager.getKeyByIdOrNull((int) rule.getPropertyKey()).getKey());
+                } catch (LabelNotFoundKernelException e) {
+                    throw new RuntimeException(e);
                 }
             }
-        }, indexRules ), context );
+        }, indexRules), context);
     }
 
     @Override

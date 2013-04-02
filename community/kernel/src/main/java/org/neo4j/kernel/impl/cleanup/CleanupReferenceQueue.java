@@ -17,36 +17,29 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.index.impl.lucene;
+package org.neo4j.kernel.impl.cleanup;
 
-import java.util.Iterator;
+import java.lang.ref.ReferenceQueue;
 
-import org.neo4j.graphdb.index.IndexHits;
-import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.helpers.collection.PrefetchingIterator;
-
-
-//TODO this is generic and should move out of the Lucene - component
-public abstract class AbstractIndexHits<T> extends PrefetchingIterator<T> implements IndexHits<T>
+class CleanupReferenceQueue
 {
-    public IndexHits<T> iterator()
+    private final long removeTimeoutMillis;
+    final ReferenceQueue<Object> queue = new ReferenceQueue<Object>();
+
+    public CleanupReferenceQueue( long removeTimeoutMillis )
     {
-        return this;
+        this.removeTimeoutMillis = removeTimeoutMillis;
     }
 
-    public void close()
-    {
-    }
-    
-    public T getSingle()
+    CleanupReference remove()
     {
         try
         {
-            return IteratorUtil.singleOrNull( (Iterator<T>) this );
+            return (CleanupReference) queue.remove( removeTimeoutMillis );
         }
-        finally
+        catch ( InterruptedException e )
         {
-            close();
+            return null;
         }
     }
 }

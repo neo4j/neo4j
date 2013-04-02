@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.core;
 
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.Iterables.map;
-import static org.neo4j.helpers.collection.IteratorUtil.withResource;
 
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Direction;
@@ -43,6 +42,7 @@ import org.neo4j.kernel.ThreadToStatementContextBridge;
 import org.neo4j.kernel.api.ConstraintViolationKernelException;
 import org.neo4j.kernel.api.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.StatementContext;
+import org.neo4j.kernel.impl.cleanup.CleanupService;
 import org.neo4j.kernel.impl.transaction.LockType;
 import org.neo4j.kernel.impl.traversal.OldTraverserWrapper;
 
@@ -53,6 +53,7 @@ public class NodeProxy implements Node
         NodeImpl lookup(long nodeId);
         GraphDatabaseService getGraphDatabase();
         NodeManager getNodeManager();
+        CleanupService getCleanupService();
         NodeImpl lookup( long nodeId, LockType lock );
     }
     
@@ -367,7 +368,7 @@ public class NodeProxy implements Node
             public ResourceIterator<Label> iterator()
             {
                 final StatementContext ctx = statementCtxProvider.getCtxForReading();
-                return withResource( map(new Function<Long, Label>()
+                return nodeLookup.getCleanupService().resourceIterator( map(new Function<Long, Label>()
                 {
                     @Override
                     public Label apply( Long labelId )
