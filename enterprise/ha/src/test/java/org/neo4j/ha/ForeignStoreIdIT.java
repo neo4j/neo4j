@@ -50,7 +50,7 @@ public class ForeignStoreIdIT
                 .newHighlyAvailableDatabaseBuilder( DIR.directory( "1", true ).getAbsolutePath() )
                 .setConfig( server_id, "1" )
                 .setConfig( cluster_server, "127.0.0.1:5001" )
-                .setConfig( ha_server, "127.0.0.1:6001" )
+                .setConfig( ha_server, "127.0.0.1:6031" )
                 .setConfig( initial_hosts, "127.0.0.1:5001" )
                 .newGraphDatabase();
         // -- another instance preparing to join with a store with a different store ID
@@ -63,7 +63,7 @@ public class ForeignStoreIdIT
                 .setConfig( server_id, "2" )
                 .setConfig( initial_hosts, "127.0.0.1:5001" )
                 .setConfig( cluster_server, "127.0.0.1:5002" )
-                .setConfig( ha_server, "127.0.0.1:6002" )
+                .setConfig( ha_server, "127.0.0.1:6032" )
                 .newGraphDatabase();
         // -- and creates a node
         long foreignNode = createNode( foreignInstance, "foreigner" );
@@ -83,7 +83,7 @@ public class ForeignStoreIdIT
                 .setConfig( server_id, "1" )
                 .setConfig( initial_hosts, "127.0.0.1:5001" )
                 .setConfig( cluster_server, "127.0.0.1:5001" )
-                .setConfig( ha_server, "127.0.0.1:6001" )
+                .setConfig( ha_server, "127.0.0.1:6041" )
                 .newGraphDatabase();
         createNodes( firstInstance, 3, "first" );
         // -- another instance preparing to join with a store with a different store ID
@@ -96,7 +96,7 @@ public class ForeignStoreIdIT
                 .setConfig( server_id, "2" )
                 .setConfig( initial_hosts, "127.0.0.1:5001" )
                 .setConfig( cluster_server, "127.0.0.1:5002" )
-                .setConfig( ha_server, "127.0.0.1:6002" )
+                .setConfig( ha_server, "127.0.0.1:6042" )
                 .setConfig( state_switch_timeout, "5s" )
                 .newGraphDatabase();
 
