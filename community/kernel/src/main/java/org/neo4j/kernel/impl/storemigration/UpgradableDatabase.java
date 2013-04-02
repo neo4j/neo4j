@@ -59,7 +59,7 @@ public class UpgradableDatabase
     public void checkUpgradeable( File neoStoreFile )
     {
         File storeDirectory = neoStoreFile.getParentFile();
-        for ( StoreFile store : StoreFile.values() )
+        for ( StoreFile store : StoreFile.legacyStoreFiles() )
         {
             String expectedVersion = store.legacyVersion();
             FileChannel fileChannel = null;

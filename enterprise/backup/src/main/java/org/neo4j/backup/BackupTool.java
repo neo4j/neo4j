@@ -297,7 +297,7 @@ public class BackupTool
             throw new IOException( "Trouble making target backup directory "
                     + backupDir.getAbsolutePath() );
         }
-        StoreFile.move( fs, toDir, backupDir );
+        StoreFile.move( fs, toDir, backupDir, StoreFile.legacyStoreFiles() );
         LogFiles.move( fs, toDir, backupDir );
     }
 

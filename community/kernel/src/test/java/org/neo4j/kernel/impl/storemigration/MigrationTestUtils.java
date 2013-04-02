@@ -126,7 +126,7 @@ public class MigrationTestUtils
     public static boolean allStoreFilesHaveVersion( FileSystemAbstraction fileSystem, File workingDirectory,
             String version ) throws IOException
     {
-        for ( StoreFile storeFile : StoreFile.values() )
+        for ( StoreFile storeFile : StoreFile.legacyStoreFiles() )
         {
             FileChannel channel = fileSystem.open( new File( workingDirectory, storeFile.storeFileName() ), "r" );
             int length = UTF8.encode( version ).length;
@@ -145,7 +145,7 @@ public class MigrationTestUtils
         return true;
     }
 
-    public static boolean containsAnyLogicalLogs( EphemeralFileSystemAbstraction fileSystem, File directory )
+    public static boolean containsAnyLogicalLogs( FileSystemAbstraction fileSystem, File directory )
     {
         boolean containsLogicalLog = false;
         for ( File workingFile : fileSystem.listFiles( directory ) )
@@ -158,6 +158,18 @@ public class MigrationTestUtils
         return containsLogicalLog;
     }
 
+    public static boolean containsAnyStoreFiles( FileSystemAbstraction fileSystem, File directory )
+    {
+        for ( StoreFile file : StoreFile.values() )
+        {
+            if ( fileSystem.fileExists( new File( directory, file.storeFileName() ) ) )
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+    
     public static void verifyFilesHaveSameContent( FileSystemAbstraction fileSystem, File original,
             File other ) throws IOException
     {
@@ -202,5 +214,10 @@ public class MigrationTestUtils
     public static UpgradeConfiguration alwaysAllowed()
     {
         return new AlwaysAllowedUpgradeConfiguration();
+    }
+
+    public static File isolatedMigrationDirectoryOf( File dbDirectory )
+    {
+        return new File( dbDirectory, "upgrade" );
     }
 }
