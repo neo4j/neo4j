@@ -100,7 +100,6 @@ public class NetworkInstance
     // Receiving
     private ExecutorService sendExecutor;
     private ServerBootstrap serverBootstrap;
-    private ServerSocketChannelFactory nioChannelFactory;
     //    private Channel channel;
     private Iterable<MessageProcessor> processors = Listeners.newListeners();
 
@@ -135,10 +134,9 @@ public class NetworkInstance
         channels = new DefaultChannelGroup();
 
         // Listen for incoming connections
-        nioChannelFactory = new NioServerSocketChannelFactory(
+        serverBootstrap = new ServerBootstrap( new NioServerSocketChannelFactory(
                 Executors.newCachedThreadPool( new NamedThreadFactory( "Cluster boss" ) ),
-                Executors.newFixedThreadPool( 2, new NamedThreadFactory( "Cluster worker" ) ), 2 );
-        serverBootstrap = new ServerBootstrap( nioChannelFactory );
+                Executors.newFixedThreadPool( 2, new NamedThreadFactory( "Cluster worker" ) ), 2 ) );
         serverBootstrap.setPipelineFactory( new NetworkNodePipelineFactory() );
 
         int[] ports = config.clusterServer().getPorts();
@@ -167,8 +165,8 @@ public class NetworkInstance
         }
 
         channels.close().awaitUninterruptibly();
-        nioChannelFactory.releaseExternalResources();
         clientBootstrap.releaseExternalResources();
+        serverBootstrap.releaseExternalResources();
     }
 
     @Override
@@ -210,7 +208,6 @@ public class NetworkInstance
             }
         }
 
-        nioChannelFactory.releaseExternalResources();
         throw ex;
     }
 

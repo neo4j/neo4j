@@ -107,7 +107,6 @@ public abstract class Server<T, R> extends Protocol implements ChannelPipelineFa
     // actual work. So this is more like a core Netty I/O pool worker size.
     public final static int DEFAULT_MAX_NUMBER_OF_CONCURRENT_TRANSACTIONS = 200;
 
-    private ChannelFactory channelFactory;
     private ServerBootstrap bootstrap;
     private T requestTarget;
     private ChannelGroup channelGroup;
@@ -165,12 +164,11 @@ public abstract class Server<T, R> extends Protocol implements ChannelPipelineFa
                 + config.getServerAddress().getPort() ) );
         unfinishedTransactionExecutor = Executors.newScheduledThreadPool( 2, new NamedThreadFactory( "Unfinished " +
                 "transactions" ) );
-        channelFactory = new NioServerSocketChannelFactory(
-                executor, workerExecutor, config.getMaxConcurrentTransactions() );
         silentChannelExecutor = Executors.newSingleThreadScheduledExecutor( new NamedThreadFactory( "Silent channel " +
                 "reaper" ) );
         silentChannelExecutor.scheduleWithFixedDelay( silentChannelFinisher(), 5, 5, TimeUnit.SECONDS );
-        bootstrap = new ServerBootstrap( channelFactory );
+        bootstrap = new ServerBootstrap( new NioServerSocketChannelFactory(
+                executor, workerExecutor, config.getMaxConcurrentTransactions() ) );
         bootstrap.setPipelineFactory( this );
 
         Channel channel = null;
@@ -231,17 +229,7 @@ public abstract class Server<T, R> extends Protocol implements ChannelPipelineFa
 
         channelGroup.close().awaitUninterruptibly();
 
-        if ( Version.ID.compareTo( "3.5.7.Final" ) >= 0 )
-        {
-            channelFactory.releaseExternalResources();
-        }
-        else
-        {
-            executor.shutdown();
-            executor.awaitTermination( 10, TimeUnit.SECONDS );
-            workerExecutor.shutdown();
-            workerExecutor.awaitTermination( 10, TimeUnit.SECONDS );
-        }
+        bootstrap.releaseExternalResources();
     }
 
     @Override
