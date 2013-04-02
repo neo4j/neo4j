@@ -21,7 +21,8 @@ package org.neo4j.cypher
 
 import internal.commands._
 import internal.executionplan.ExecutionPlanBuilder
-import internal.executionplan.verifiers.{OptionalPatternWithoutStartVerifier, IndexHintVerifier, Verifier}
+import internal.executionplan.verifiers.{ShortestPathWithoutStartVerifier, OptionalPatternWithoutStartVerifier,
+IndexHintVerifier, Verifier}
 import internal.LRUCache
 import internal.spi.gdsimpl.{TransactionBoundPlanContext, TransactionBoundQueryContext}
 import internal.spi.QueryContext
@@ -40,7 +41,7 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
 
   val parser = createCorrectParser()
   val planBuilder = new ExecutionPlanBuilder(graph)
-  val verifiers:Seq[Verifier] = Seq(IndexHintVerifier, OptionalPatternWithoutStartVerifier)
+  val verifiers:Seq[Verifier] = Seq(IndexHintVerifier, OptionalPatternWithoutStartVerifier, ShortestPathWithoutStartVerifier)
 
   private val queryCache = new LRUCache[String, AbstractQuery](getQueryCacheSize)
 
