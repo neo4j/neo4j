@@ -1,0 +1,111 @@
+
+<!-- Begin slides. Just make elements with a class of slide.-->
+<section class="slide">
+    <h1>Neo4j is a <em>Graph</em> <strong>Database</strong></h1>
+    <p class="hint">Neo4j is a NOSQL hipster with serious business credentials.</p>
+</section>
+<section class="slide">
+    <h2>A <em>Graph</em> Database</h2><img src="/webadmin/deck/img/one_node.png">
+    <p class="summary">
+        Neo4j stores data in a Graph, with records called Nodes. The simplest 
+        graph has just a single node with some named values called Properties.
+    </p>
+    <p>
+        Let's draw a social graph of our friends on the Neo4j team:
+    </p>
+    <ol>
+        <li>Draw a circle for the node</li>
+        <li>Add the name Emil</li>
+        <li>Note that he is from Sweden</li>
+    </ol>
+    <ul>
+        <li>Nodes are the name for data records in a graph</li>
+        <li>Data is stored in nodes as Properties</li>
+        <li>Properties are simple name/value pairs</li>
+    </ul>
+    <p class="hint">Not yet friends with the team? Then we're future friends.</p>
+</section>
+<section class="slide">
+    <h2>More Nodes</h2>
+    <img src="/webadmin/deck/img/more_nodes.png">
+    <p class="summary">
+        Like any database, storing data in Neo4j can be as simple
+        as adding more records. Here, we'll add a few more nodes
+        for Neo4j people:
+    </p>
+    <ol>
+        <li>Emil has a klout score of 99</li>
+        <li>Johan, from Sweden, who is learning to surf</li>
+        <li>Ian, from England, who is an author</li>
+        <li>Rik, from Belgium, has a cat named Orval</li>
+        <li>Allison, from California, who surfs</li>
+    </ol>
+    <ul>
+        <li>Similar nodes (like People) can have different properties</li>
+        <li>Properties can be strings, numbers, or booleans</li>
+        <li>Neo4j can store billions of nodes</li>
+    </ul>
+    <p class="hint">Seriously, a Neo4j graph can hold multiples of the human population.</p>
+</section>
+<section class="slide">
+    <h2>Now consider Relationships</h2>
+    <img src="/webadmin/deck/img/relationships.png">
+    <p class="summary">
+        The real power of Neo4j is in connected data. To connect any two nodes, 
+        add a Relationship which describes how the data is related.
+    </p>
+    <p>
+        In our social graph, we simply say who KNOWS whom:
+    </p>
+    <ol>
+        <li>Emil KNOWS Johan and Ian</li>
+        <li>Johan KNOWS Ian and Rik</li>
+        <li>Rik and Ian KNOWS Allison</li>
+    </ol>
+    <ul>
+        <li>Relationships always have direction</li>
+        <li>Relationships always have a type</li>
+        <li>Relationships can have properties</li>
+    </ul>
+    <p class="hint">Having real relationships just feels better, doesn't it?</p>
+</section>
+<section class="slide">
+    <h2>Relationships are data</h2>
+    <img src="/webadmin/deck/img/rel-props.png">
+    <p class="summary">
+        In a property graph, relationships are data structures that can also
+        store data. 
+    </p>
+    <p>
+        Looking more closely at Emil's relationships, note that:
+    </p>
+    <ul>
+        <li>Emil has known Johan since 2001</li>
+        <li>Emil rates Ian 5 (out of 5)</li>
+        <li>Everyone else can have similar relationship properties</li>
+    </ul>
+    <p class="hint">Relationships are First Class Citizens in Neo4j.</p>
+</section>
+<section class="slide">
+    <h2>Summary</h2>
+    <p>
+        Neo4j stores data in a property graph made up of nodes and relationships,
+        with properties on both. Absolutely any domain can be stored in a graph.
+    </p>
+    <p>
+        Having "whiteboarded" a graph, you are ready to create a graph in Neo4j.
+    </p>
+    <p>Next steps:</p>
+    <ul class="big">
+        <li><a class="deck-url" href="/webadmin/deck/develop.html">Develop</a> a mini graph application</li>
+        <li><a class="deck-url" href="/webadmin/deck/tour.html">Review</a> using the Data browser and Console</li>
+        <li><a class="deck-url" href="/webadmin/deck/explore.html">Explore</a> external content</li>
+    </ul>
+    <p class="hint">Or, see <a class="deck-url" href="/webadmin/deck/guide.html">other guides</a>.</p>
+</section>
+<!-- End slides.-->
+<!-- Begin extension snippets. Add or remove as needed.-->
+<!-- deck.navigation snippet-->
+<a href="#" title="Previous" class="deck-prev-link">←</a>
+<a href="#" title="Next" class="deck-next-link">→</a>
+<!-- End extension snippets.-->
