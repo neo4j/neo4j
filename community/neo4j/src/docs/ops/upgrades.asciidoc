@@ -53,6 +53,7 @@ To perform a special upgrade (for significant changes to the database store):
 . start the database
 . the upgrade will happen during startup and the process is done when the database has been successfully started
 . "+allow_store_upgrade=true+" configuration parameter should be removed, set to "+false+" or commented out
+. information about the upgrade and progress indicator is printed in +messages.log+
 
 [[deployment-upgrading-one-nine]]
 == Upgrade 1.8 -> 1.9.M02 ==

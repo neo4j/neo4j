@@ -126,7 +126,7 @@ public class StoreFactory
                 newRelationshipStore(new File( fileName.getPath() + RELATIONSHIP_STORE_NAME)),
                 newNodeStore(new File( fileName.getPath() + NODE_STORE_NAME)),
                 // We don't need any particular upgrade when we add the schema store
-                newOrCreateSchemaStore(new File( fileName.getPath() + SCHEMA_STORE_NAME)));
+                newSchemaStore(new File( fileName.getPath() + SCHEMA_STORE_NAME)));
     }
 
     private void tryToUpgradeStores( File fileName )
@@ -142,13 +142,6 @@ public class StoreFactory
     {
         return new SchemaStore( file, config, IdType.SCHEMA, idGeneratorFactory, windowPoolFactory,
                 fileSystemAbstraction, stringLogger );
-    }
-    
-    private SchemaStore newOrCreateSchemaStore( File file )
-    {
-        if ( !fileSystemAbstraction.fileExists( file ) )
-            createSchemaStore( file );
-        return newSchemaStore( file );
     }
     
     private DynamicStringStore newDynamicStringStore(File fileName, IdType nameIdType)
@@ -195,9 +188,6 @@ public class StoreFactory
     public NodeStore newNodeStore(File baseFileName)
     {
         File labelsFileName = new File( baseFileName.getPath() + LABELS_PART );
-        if ( !fileSystemAbstraction.fileExists( labelsFileName ) )
-            createNodeLabelsStore( labelsFileName );
-        
         DynamicArrayStore dynamicLabelStore = new DynamicArrayStore( labelsFileName,
                 config, IdType.NODE_LABELS, idGeneratorFactory, windowPoolFactory, fileSystemAbstraction, stringLogger);
         return new NodeStore( baseFileName, config, idGeneratorFactory, windowPoolFactory, fileSystemAbstraction,

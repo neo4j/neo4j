@@ -38,24 +38,24 @@ public class DatabaseFiles
         if ( fs.fileExists( backupDirectory ) )
         {
             throw new StoreUpgrader.UnableToUpgradeException( String.format( "Cannot proceed with upgrade " +
-                    "because there is an existing upgrade backup in the way at %s. If you do not need this " +
-                    "backup please delete it or move it out of the way before re-attempting upgrade.",
+                    "because there is an existing upgrade backup in the way at %s from a previous upgrade attempt. " +
+                    "If you do not need this backup please delete it or move it out of the way before re-attempting upgrade.",
                     backupDirectory.getAbsolutePath() ) );
         }
         fs.mkdir( backupDirectory );
-        move( workingDirectory, backupDirectory );
+        move( workingDirectory, backupDirectory, StoreFile.legacyStoreFiles() );
     }
 
     public void moveToWorkingDirectory( File upgradeDirectory, File workingDirectory )
     {
-        move( upgradeDirectory, workingDirectory );
+        move( upgradeDirectory, workingDirectory, StoreFile.currentStoreFiles() );
     }
 
-    private void move( File fromDirectory, File toDirectory )
+    private void move( File fromDirectory, File toDirectory, Iterable<StoreFile> storeFiles )
     {
         try
         {
-            StoreFile.move( fs, fromDirectory, toDirectory );
+            StoreFile.move( fs, fromDirectory, toDirectory, storeFiles );
             LogFiles.move( fs, fromDirectory, toDirectory );
         }
         catch ( IOException e )
