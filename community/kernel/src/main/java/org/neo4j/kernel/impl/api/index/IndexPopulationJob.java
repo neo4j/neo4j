@@ -85,6 +85,7 @@ public class IndexPopulationJob implements Runnable
         {
             log.info( format( "Index population started for label id %d on property id %d",
                     descriptor.getLabelId(), descriptor.getPropertyKeyId() ) );
+            log.flush();
             populator.create();
 
             indexAllNodes();
@@ -110,10 +111,12 @@ public class IndexPopulationJob implements Runnable
             success = true;
             log.info( format( "Index population completed for label id %d on property id %d, index is now online.",
                     descriptor.getLabelId(), descriptor.getPropertyKeyId() ) );
+            log.flush();
         }
         catch ( Throwable t )
         {
             log.error( "Failed to populate index.", t );
+            log.flush();
             // The flipper will have already flipped to a failed index context here, but
             // it will not include the cause of failure, so we do another flip to a failed
             // context that does.
@@ -134,6 +137,7 @@ public class IndexPopulationJob implements Runnable
             catch ( Throwable e )
             {
                 log.warn( "Unable to close failed populator", e );
+                log.flush();
             }
             finally
             {
