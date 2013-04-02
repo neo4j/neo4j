@@ -19,13 +19,12 @@
  */
 package org.neo4j.kernel.impl.util;
 
+import static java.util.concurrent.Executors.newCachedThreadPool;
+
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 import org.neo4j.helpers.DaemonThreadFactory;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-
-import static java.util.concurrent.Executors.newCachedThreadPool;
 
 public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
 {

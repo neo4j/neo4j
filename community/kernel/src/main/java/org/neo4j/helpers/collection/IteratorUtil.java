@@ -38,7 +38,6 @@ import java.util.Set;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.Function;
-import org.neo4j.kernel.impl.cleanup.CleanupService;
 
 /**
  * Contains common functionality regarding {@link Iterator}s and

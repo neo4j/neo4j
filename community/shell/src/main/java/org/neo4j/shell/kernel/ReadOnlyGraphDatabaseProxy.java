@@ -20,7 +20,6 @@
 package org.neo4j.shell.kernel;
 
 import java.io.Serializable;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 

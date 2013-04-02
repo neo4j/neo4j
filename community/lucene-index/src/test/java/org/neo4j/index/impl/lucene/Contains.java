@@ -20,7 +20,6 @@
 package org.neo4j.index.impl.lucene;
 
 import java.util.Collection;
-import java.util.Iterator;
 
 import org.hamcrest.Description;
 import org.hamcrest.Factory;
@@ -30,7 +29,7 @@ import org.neo4j.helpers.collection.IteratorUtil;
 
 public class Contains<T> extends TypeSafeMatcher<IndexHits<T>>
 {
-    private T[] expectedItems;
+    private final T[] expectedItems;
     private String message;
 
     public Contains( T... expectedItems )
@@ -62,6 +61,7 @@ public class Contains<T> extends TypeSafeMatcher<IndexHits<T>>
         return true;
     }
 
+    @Override
     public void describeTo( Description description )
     {
         if (message != null)
