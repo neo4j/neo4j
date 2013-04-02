@@ -23,6 +23,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
@@ -40,10 +42,13 @@ import org.junit.Test;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.helpers.Function;
+import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
@@ -682,7 +687,82 @@ public class TestBatchInsert
 
         inserter.shutdown();
     }
+    
+    @Test
+    public void shouldAddInitialLabelsToCreatedNode() throws Exception
+    {
+        // GIVEN
+        BatchInserter inserter = newBatchInserter();
 
+        // WHEN
+        long node = inserter.createNode( map(), Labels.FIRST, Labels.SECOND );
+
+        // THEN
+        assertTrue( inserter.nodeHasLabel( node, Labels.FIRST ) );
+        assertTrue( inserter.nodeHasLabel( node, Labels.SECOND ) );
+        assertFalse( inserter.nodeHasLabel( node, Labels.THIRD ) );
+    }
+    
+    @Test
+    public void shouldGetNodeLabels() throws Exception
+    {
+        // GIVEN
+        BatchInserter inserter = newBatchInserter();
+        long node = inserter.createNode( map(), Labels.FIRST, Labels.THIRD );
+
+        // WHEN
+        Iterable<String> labelNames = asNames( inserter.getNodeLabels( node ) );
+
+        // THEN
+        assertEquals( asSet( Labels.FIRST.name(), Labels.THIRD.name() ), asSet( labelNames ) );
+    }
+    
+    @Test
+    public void shouldAddManyInitialLabelsAsDynamicRecords() throws Exception
+    {
+        // GIVEN
+        BatchInserter inserter = newBatchInserter();
+        Pair<Label[], Set<String>> labels = manyLabels( 200 );
+        long node = inserter.createNode( map(), labels.first() );
+
+        // WHEN
+        Iterable<String> labelNames = asNames( inserter.getNodeLabels( node ) );
+
+        // THEN
+        assertEquals( labels.other(), asSet( labelNames ) );
+    }
+    
+    @Test
+    public void shouldReplaceExistingInlinedLabelsWithDynamic() throws Exception
+    {
+        // GIVEN
+        BatchInserter inserter = newBatchInserter();
+        long node = inserter.createNode( map(), Labels.FIRST );
+
+        // WHEN
+        Pair<Label[], Set<String>> labels = manyLabels( 100 );
+        inserter.setNodeLabels( node, labels.first() );
+
+        // THEN
+        Iterable<String> labelNames = asNames( inserter.getNodeLabels( node ) );
+        assertEquals( labels.other(), asSet( labelNames ) );
+    }
+    
+    @Test
+    public void shouldReplaceExistingDynamicLabelsWithInlined() throws Exception
+    {
+        // GIVEN
+        BatchInserter inserter = newBatchInserter();
+        long node = inserter.createNode( map(), manyLabels( 150 ).first() );
+
+        // WHEN
+        inserter.setNodeLabels( node, Labels.FIRST );
+
+        // THEN
+        Iterable<String> labelNames = asNames( inserter.getNodeLabels( node ) );
+        assertEquals( asSet( Labels.FIRST.name() ), asSet( labelNames ) );
+    }
+    
     private void setAndGet( BatchInserter inserter, Object value )
     {
         long nodeId = inserter.createNode( map( "key", value ) );
@@ -702,5 +782,37 @@ public class TestBatchInsert
         int[] array = new int[length];
         for ( int i = 0, startValue = (int)Math.pow( 2, 30 ); i < length; i++ ) array[i] = startValue+i;
         return array;
+    }
+    
+    private static enum Labels implements Label
+    {
+        FIRST,
+        SECOND,
+        THIRD;
+    }
+
+    private Iterable<String> asNames( Iterable<Label> nodeLabels )
+    {
+        return map( new Function<Label,String>()
+        {
+            @Override
+            public String apply( Label from )
+            {
+                return from.name();
+            }
+        }, nodeLabels );
+    }
+
+    private Pair<Label[],Set<String>> manyLabels( int count )
+    {
+        Label[] labels = new Label[count];
+        Set<String> expectedLabelNames = new HashSet<String>();
+        for ( int i = 0; i < labels.length; i++ )
+        {
+            String labelName = "bach label " + i;
+            labels[i] = label( labelName );
+            expectedLabelNames.add( labelName );
+        }
+        return Pair.of( labels, expectedLabelNames );
     }
 }

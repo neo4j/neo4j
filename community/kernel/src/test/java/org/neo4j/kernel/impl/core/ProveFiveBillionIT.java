@@ -34,8 +34,8 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
-import org.neo4j.kernel.impl.batchinsert.BatchInserter;
-import org.neo4j.kernel.impl.batchinsert.BatchInserterImpl;
+import org.neo4j.unsafe.batchinsert.BatchInserter;
+import org.neo4j.unsafe.batchinsert.BatchInserters;
 
 @Ignore( "Requires a lot of disk space" )
 public class ProveFiveBillionIT
@@ -47,7 +47,7 @@ public class ProveFiveBillionIT
     public void proveIt() throws Exception
     {
         deleteFileOrDirectory( new File( PATH ) );
-        BatchInserter inserter = new BatchInserterImpl( PATH/*, stringMap(
+        BatchInserter inserter = BatchInserters.inserter( PATH/*, stringMap(
                 "neostore.nodestore.db.mapped_memory", "300M",
                 "neostore.relationshipstore.db.mapped_memory", "800M",
                 "neostore.propertystore.db.mapped_memory", "100M",

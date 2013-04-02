@@ -17,14 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.graphdb.index;
+package org.neo4j.helpers;
 
-/**
- * Workaround for https://issues.apache.org/jira/browse/ARIES-834
- * 
- * Should be removed when the bug is fixed or Neo4j kernel code has been refactored to use dependency injection.
- *
- */
-public interface IndexIterable extends Iterable<IndexProvider>
+public interface CloneableInPublic extends Cloneable
 {
+    Object clone();
 }

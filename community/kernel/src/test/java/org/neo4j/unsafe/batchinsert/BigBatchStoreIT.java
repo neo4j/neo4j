@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.batchinsert;
+package org.neo4j.unsafe.batchinsert;
 
 import static java.lang.Math.pow;
 import static java.util.Arrays.asList;

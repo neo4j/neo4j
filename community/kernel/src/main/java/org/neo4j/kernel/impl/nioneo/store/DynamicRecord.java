@@ -165,4 +165,19 @@ public class DynamicRecord extends Abstract64BitRecord
         result.startRecord = startRecord;
         return result;
     }
+    
+    @Override
+    public boolean equals( Object obj )
+    {
+        if ( !( obj instanceof DynamicRecord ) )
+            return false;
+        return ((DynamicRecord) obj).getId() == getId();
+    }
+    
+    @Override
+    public int hashCode()
+    {
+        long id = getId();
+        return (int) (( id >>> 32 ) ^ id );
+    }
 }

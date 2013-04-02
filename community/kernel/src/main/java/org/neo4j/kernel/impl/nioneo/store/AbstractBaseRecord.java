@@ -19,7 +19,9 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-public abstract class AbstractBaseRecord implements Cloneable
+import org.neo4j.helpers.CloneableInPublic;
+
+public abstract class AbstractBaseRecord implements CloneableInPublic
 {
     private boolean inUse;
     private boolean created = false;

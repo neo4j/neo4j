@@ -37,6 +37,7 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.helpers.CloneableInPublic;
 import org.neo4j.helpers.Function;
 
 /**
@@ -900,5 +901,17 @@ public abstract class IteratorUtil
         {
             iterator.remove();
         }
+    }
+
+    public static <T extends CloneableInPublic> Iterable<T> cloned( Iterable<T> items, final Class<T> itemClass )
+    {
+        return Iterables.map( new Function<T,T>()
+        {
+            @Override
+            public T apply( T from )
+            {
+                return itemClass.cast( from.clone() );
+            }
+        }, items );
     }
 }

@@ -20,6 +20,8 @@
 package org.neo4j.unsafe.batchinsert;
 
 import static java.lang.Boolean.parseBoolean;
+import static org.neo4j.helpers.collection.Iterables.map;
+import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
 import static org.neo4j.helpers.collection.IteratorUtil.first;
 import static org.neo4j.kernel.impl.nioneo.store.PropertyStore.encodeString;
 
@@ -33,9 +35,11 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Settings;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
@@ -44,7 +48,6 @@ import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.batchinsert.SimpleRelationship;
 import org.neo4j.kernel.impl.index.IndexStore;
 import org.neo4j.kernel.impl.nioneo.store.DefaultWindowPoolFactory;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
@@ -70,6 +73,7 @@ import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.nioneo.store.UnderlyingStorageException;
+import org.neo4j.kernel.impl.nioneo.xa.NodeLabelRecordLogic;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
 
@@ -84,11 +88,20 @@ public class BatchInserterImpl implements BatchInserter
 
     private final PropertyIndexHolder indexHolder;
     private final RelationshipTypeHolder typeHolder;
+    private final LabelHolder labelHolder;
 
     private final IdGeneratorFactory idGeneratorFactory;
 
     private final StringLogger msgLog;
     private final FileSystemAbstraction fileSystem;
+    private final Function<Long,Label> labelIdToLabelFunction = new Function<Long,Label>()
+    {
+        @Override
+        public Label apply( Long from )
+        {
+            return labelHolder.getLabel( from );
+        }
+    };
 
     BatchInserterImpl( String storeDir )
     {
@@ -136,6 +149,7 @@ public class BatchInserterImpl implements BatchInserter
         neoStore.makeStoreOk();
         NameData[] indexes = getPropertyIndexStore().getNames( 10000 );
         indexHolder = new PropertyIndexHolder( indexes );
+        labelHolder = new LabelHolder( indexHolder );
         NameData[] types = getRelationshipTypeStore().getNames( Integer.MAX_VALUE );
         typeHolder = new RelationshipTypeHolder( types );
         indexStore = new IndexStore( this.storeDir, fileSystem );
@@ -302,12 +316,7 @@ public class BatchInserterImpl implements BatchInserter
     {
         boolean result = false;
         long nextProp = primitive.getNextProp();
-        int index = indexHolder.getKeyId( name );
-
-        if ( index == -1 )
-        {
-            index = createNewPropertyIndex( name );
-        }
+        int index = getOrCreatePropertyIndex( name );
         PropertyBlock block = new PropertyBlock();
         getPropertyStore().encodeValue( block, index, value );
         int size = block.getSize();
@@ -382,6 +391,16 @@ public class BatchInserterImpl implements BatchInserter
         return result;
     }
 
+    private int getOrCreatePropertyIndex( String name )
+    {
+        int index = indexHolder.getKeyId( name );
+        if ( index == -1 )
+        {
+            index = createNewPropertyIndex( name );
+        }
+        return index;
+    }
+
     private boolean primitiveHasProperty( PrimitiveRecord record,
                                           String propertyName )
     {
@@ -415,24 +434,52 @@ public class BatchInserterImpl implements BatchInserter
     }
 
     @Override
-    public long createNode( Map<String, Object> properties )
+    public long createNode( Map<String, Object> properties, Label... labels )
     {
-        return internalCreateNode( getNodeStore().nextId(), properties );
+        return internalCreateNode( getNodeStore().nextId(), properties, labels );
     }
 
-    private long internalCreateNode( long nodeId, Map<String, Object> properties )
+    private long internalCreateNode( long nodeId, Map<String, Object> properties, Label... labels )
     {
         NodeRecord nodeRecord = new NodeRecord( nodeId, Record.NO_NEXT_RELATIONSHIP.intValue(),
                 Record.NO_NEXT_PROPERTY.intValue() );
         nodeRecord.setInUse( true );
         nodeRecord.setCreated();
         nodeRecord.setNextProp( createPropertyChain( properties ) );
+        
+        setNodeLabels( nodeRecord, labels );
+        
         getNodeStore().updateRecord( nodeRecord );
         return nodeId;
     }
 
+    private void setNodeLabels( NodeRecord nodeRecord, Label... labels )
+    {
+        NodeLabelRecordLogic manipulator = new NodeLabelRecordLogic( nodeRecord, getNodeStore() );
+        Iterable<DynamicRecord> changedDynamicLabelRecords = manipulator.set( getOrCreateLabelIds( labels ) );
+        getNodeStore().updateDynamicLabelRecords( changedDynamicLabelRecords );
+    }
+
+    private long[] getOrCreateLabelIds( Label[] labels )
+    {
+        long[] ids = new long[labels.length];
+        for ( int i = 0; i < ids.length; i++ )
+            ids[i] = getOrCreateLabelId( labels[i] );
+        return ids;
+    }
+
+    private long getOrCreateLabelId( Label label )
+    {
+        return getOrCreatePropertyIndex( label.name() );
+    }
+
+    private long getLabelId( Label label )
+    {
+        return indexHolder.getKeyId( label.name() );
+    }
+    
     @Override
-    public void createNode( long id, Map<String, Object> properties )
+    public void createNode( long id, Map<String, Object> properties, Label... labels )
     {
         if ( id < 0 || id > MAX_NODE_ID )
         {
@@ -453,7 +500,38 @@ public class BatchInserterImpl implements BatchInserter
         {
             nodeStore.setHighId( nodeId + 1 );
         }
-        internalCreateNode( nodeId, properties );
+        internalCreateNode( nodeId, properties, labels );
+    }
+    
+    @Override
+    public void setNodeLabels( long node, Label... labels )
+    {
+        NodeRecord record = getNodeRecord( node );
+        setNodeLabels( record, labels );
+        getNodeStore().updateRecord( record );
+    }
+    
+    @Override
+    public Iterable<Label> getNodeLabels( long node )
+    {
+        NodeStore nodeStore = neoStore.getNodeStore();
+        return map( labelIdToLabelFunction,
+                asIterable( getNodeStore().getLabelsForNode( nodeStore.getRecord( node ) ) ) );
+    }
+    
+    @Override
+    public boolean nodeHasLabel( long node, Label label )
+    {
+        long labelId = getLabelId( label );
+        if ( labelId == -1 )
+            return false;
+        
+        NodeStore nodeStore = neoStore.getNodeStore();
+        long[] labels = getNodeStore().getLabelsForNode( nodeStore.getRecord( node ) );
+        for ( int i = 0; i < labels.length; i++ )
+            if ( labels[i] == labelId )
+                return true;
+        return false;
     }
 
     @Override
@@ -638,40 +716,6 @@ public class BatchInserterImpl implements BatchInserter
         return rels;
     }
 
-    public Iterable<SimpleRelationship> getSimpleRelationships( long nodeId )
-    {
-        NodeRecord nodeRecord = getNodeRecord( nodeId );
-        long nextRel = nodeRecord.getNextRel();
-        List<SimpleRelationship> rels = new ArrayList<SimpleRelationship>();
-        while ( nextRel != Record.NO_NEXT_RELATIONSHIP.intValue() )
-        {
-            RelationshipRecord relRecord = getRelationshipRecord( nextRel );
-            RelationshipType type = new RelationshipTypeImpl(
-                    typeHolder.getName( relRecord.getType() ) );
-            rels.add( new SimpleRelationship( relRecord.getId(),
-                    relRecord.getFirstNode(), relRecord.getSecondNode(), type ) );
-            long firstNode = relRecord.getFirstNode();
-            long secondNode = relRecord.getSecondNode();
-            if ( firstNode == nodeId )
-            {
-                nextRel = relRecord.getFirstNextRel();
-            }
-            else if ( secondNode == nodeId )
-            {
-                nextRel = relRecord.getSecondNextRel();
-            }
-            else
-            {
-                throw new InvalidRecordException( "Node[" + nodeId
-                        + "] not part of firstNode["
-                        + firstNode
-                        + "] or secondNode["
-                        + secondNode + "]" );
-            }
-        }
-        return rels;
-    }
-
     @Override
     public BatchRelationship getRelationshipById( long relId )
     {
@@ -679,15 +723,6 @@ public class BatchInserterImpl implements BatchInserter
         RelationshipType type = new RelationshipTypeImpl(
                 typeHolder.getName( record.getType() ) );
         return new BatchRelationship( record.getId(), record.getFirstNode(),
-                record.getSecondNode(), type );
-    }
-
-    public SimpleRelationship getSimpleRelationshipById( long relId )
-    {
-        RelationshipRecord record = getRelationshipRecord( relId );
-        RelationshipType type = new RelationshipTypeImpl(
-                typeHolder.getName( record.getType() ) );
-        return new SimpleRelationship( record.getId(), record.getFirstNode(),
                 record.getSecondNode(), type );
     }
 

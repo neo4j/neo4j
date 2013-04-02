@@ -28,6 +28,8 @@ import static org.neo4j.kernel.impl.util.Bits.bitsFromLongs;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
@@ -72,7 +74,7 @@ public class NodeLabelRecordLogic
         {   // There's in-lined or no labels
             long[] newLabelIds = header == 0 ?
                     new long[] {labelId} : concatAndSort( parseInlined( existingLabelsBits, header ), labelId );
-            if ( !tryInline( newLabelIds, changedDynamicRecords ) )
+            if ( !tryInlineInNodeRecord( newLabelIds, changedDynamicRecords ) )
             {
                 changedDynamicRecords = nodeStore.allocateRecordsForDynamicLabels( newLabelIds );
                 node.setLabelField( dynamicPointer( changedDynamicRecords ), changedDynamicRecords );
@@ -90,6 +92,35 @@ public class NodeLabelRecordLogic
         return changedDynamicRecords;
     }
 
+    public Iterable<DynamicRecord> set( long[] labelIds )
+    {
+        long existingLabelsField = node.getLabelField();
+        byte header = getHeader( existingLabelsField );
+        long existingLabelsBits = parseLabelsBody( existingLabelsField );
+        Collection<DynamicRecord> changedDynamicRecords = Collections.emptyList();
+        
+        // There are existing dynamic label records, get them
+        if ( highHeaderBitSet( header ) )
+        {
+            nodeStore.ensureHeavy( node, existingLabelsBits );
+            changedDynamicRecords = node.getDynamicLabelRecords();
+            for ( DynamicRecord record : changedDynamicRecords )
+                record.setInUse( false );
+        }
+        
+        if ( !tryInlineInNodeRecord( labelIds, changedDynamicRecords ) )
+        {
+            Set<DynamicRecord> allRecords = new HashSet<DynamicRecord>( changedDynamicRecords );
+            Collection<DynamicRecord> allocatedRecords = nodeStore.allocateRecordsForDynamicLabels( labelIds,
+                    changedDynamicRecords.iterator() );
+            allRecords.addAll( allocatedRecords );
+            node.setLabelField( dynamicPointer( allocatedRecords ), allocatedRecords );
+            changedDynamicRecords = allRecords;
+        }
+        
+        return changedDynamicRecords;
+    }
+    
     private void assertNotContains( long[] existingLabels, long labelId )
     {
         if ( Arrays.binarySearch( existingLabels, labelId ) >= 0 )
@@ -110,7 +141,7 @@ public class NodeLabelRecordLogic
         if ( header > 0 && !highHeaderBitSet( header ) )
         {   // There's in-lined labels
             long[] newLabelIds = filter( parseInlined( existingLabelsBits, header ), labelId );
-            boolean inlined = tryInline( newLabelIds, changedDynamicRecords );
+            boolean inlined = tryInlineInNodeRecord( newLabelIds, changedDynamicRecords );
             assert inlined;
         }
         else
@@ -119,7 +150,7 @@ public class NodeLabelRecordLogic
             Collection<DynamicRecord> existingRecords = node.getDynamicLabelRecords();
             long[] existingLabelIds = nodeStore.getDynamicLabelsArray( existingRecords );
             long[] newLabelIds = filter( existingLabelIds, labelId );
-            if ( tryInline( newLabelIds, existingRecords ) )
+            if ( tryInlineInNodeRecord( newLabelIds, existingRecords ) )
             {
                 for ( DynamicRecord record : existingRecords )
                     record.setInUse( false );
@@ -173,7 +204,7 @@ public class NodeLabelRecordLogic
         return result;
     }
 
-    private boolean tryInline( long[] ids, Collection<DynamicRecord> changedDynamicRecords )
+    private boolean tryInlineInNodeRecord( long[] ids, Collection<DynamicRecord> changedDynamicRecords )
     {
         // We reserve the high header bit for future extensions of the format of the in-lined label bits
         // i.e. the 0-valued high header bit can allow for 0-7 in-lined labels in the bit-packed format.

@@ -49,8 +49,8 @@ import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.batchinsert.BatchInserterImpl;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.unsafe.batchinsert.BatchInserters;
 
 @Ignore
 public class UpgradeStoreIT
@@ -229,7 +229,7 @@ public class UpgradeStoreIT
 
         try
         {
-            new BatchInserterImpl( path.getPath(), stringMap( GraphDatabaseSettings.allow_store_upgrade.name(), Settings.TRUE ) );
+            BatchInserters.inserter( path.getPath(), stringMap( GraphDatabaseSettings.allow_store_upgrade.name(), Settings.TRUE ) );
             fail( "Shouldn't be able to upgrade with batch inserter" );
         }
         catch ( IllegalArgumentException e )

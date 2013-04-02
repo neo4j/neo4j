@@ -21,6 +21,7 @@ package org.neo4j.unsafe.batchinsert;
 
 import java.util.Map;
 
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.RelationshipType;
 
 /**
@@ -45,11 +46,23 @@ public interface BatchInserter
      *
      * @param properties a map containing properties or <code>null</code> if no
      * properties should be added.
+     * @param labels a list of labels to initially create the node with.
      *
      * @return The id of the created node.
      */
-    public long createNode( Map<String,Object> properties );
+    public long createNode( Map<String,Object> properties, Label... labels );
 
+    /**
+     * Creates a node with supplied id and properties. If a node with the given
+     * id exist a runtime exception will be thrown.
+     *
+     * @param id the id of the node to create.
+     * @param properties map containing properties or <code>null</code> if no
+     * properties should be added.
+     * @param labels a list of labels to initially create the node with.
+     */
+    public void createNode( long id, Map<String,Object> properties, Label... labels );
+    
     /**
      * Checks if a node with the given id exists.
      *
@@ -81,6 +94,27 @@ public interface BatchInserter
      * @return True if the node has the named property - false otherwise.
      */
     public boolean nodeHasProperty( long node, String propertyName );
+    
+    /**
+     * Replaces any existing labels for the given node with the supplied list of labels.
+     * 
+     * @param node the node to set labels for.
+     * @param labels the labels to set for the node.
+     */
+    public void setNodeLabels( long node, Label... labels );
+    
+    /**
+     * @param node the node to get labels for.
+     * @return all labels for the given node.
+     */
+    public Iterable<Label> getNodeLabels( long node );
+    
+    /**
+     * @param node the node to check.
+     * @param label the label to check.
+     * @return {@code true} if a node has a given label, otherwise {@code false}.
+     */
+    public boolean nodeHasLabel( long node, Label label );
 
     /**
      * Returns true iff the relationship with id {@code relationship} has a
@@ -144,16 +178,6 @@ public interface BatchInserter
      * @return iterable over the relationships connected to the node.
      */
     public Iterable<BatchRelationship> getRelationships( long nodeId );
-
-    /**
-     * Creates a node with supplied id and properties. If a node with the given
-     * id exist a runtime exception will be thrown.
-     *
-     * @param id the id of the node to create.
-     * @param properties map containing properties or <code>null</code> if no
-     * properties should be added.
-     */
-    public void createNode( long id, Map<String,Object> properties );
 
     /**
      * Creates a relationship between two nodes of a specific type.

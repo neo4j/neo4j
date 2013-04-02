@@ -35,8 +35,8 @@ import org.hamcrest.Matcher;
 import org.junit.Test;
 import org.junit.internal.matchers.TypeSafeMatcher;
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.kernel.impl.batchinsert.BatchInserter;
 import org.neo4j.perftest.enterprise.util.Configuration;
+import org.neo4j.unsafe.batchinsert.BatchInserter;
 
 public class DataGeneratorTest
 {

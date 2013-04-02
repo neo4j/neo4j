@@ -40,14 +40,13 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TopDocs;
-import org.neo4j.graphdb.index.BatchInserterIndex;
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.index.lucene.ValueContext;
 import org.neo4j.kernel.impl.cache.LruCache;
 import org.neo4j.kernel.impl.util.IoPrimitiveUtils;
+import org.neo4j.unsafe.batchinsert.BatchInserterIndex;
 
-class LuceneBatchInserterIndex implements BatchInserterIndex,
-        org.neo4j.unsafe.batchinsert.BatchInserterIndex
+class LuceneBatchInserterIndex implements BatchInserterIndex
 {
     private final IndexIdentifier identifier;
     private final IndexType type;
@@ -246,7 +245,7 @@ class LuceneBatchInserterIndex implements BatchInserterIndex,
     
     private double determineGoodBufferSize( double atLeast )
     {
-        double heapHint = (double)(Runtime.getRuntime().maxMemory()/(1024*1024*14));
+        double heapHint = Runtime.getRuntime().maxMemory()/(1024*1024*14);
         double result = Math.max( atLeast, heapHint );
         return Math.min( result, 700 );
     }

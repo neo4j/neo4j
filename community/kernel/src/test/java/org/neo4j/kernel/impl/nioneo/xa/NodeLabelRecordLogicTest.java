@@ -26,6 +26,8 @@ import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.helpers.collection.IteratorUtil.asUniqueSet;
+import static org.neo4j.helpers.collection.IteratorUtil.cloned;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
 import static org.neo4j.helpers.collection.IteratorUtil.first;
 import static org.neo4j.helpers.collection.IteratorUtil.single;
@@ -35,6 +37,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -300,6 +303,39 @@ public class NodeLabelRecordLogicTest
         }
     }
     
+    @Test
+    public void shouldReallocateSomeOfPreviousDynamicRecords() throws Exception
+    {
+        // GIVEN
+        NodeRecord node = nodeRecordWithDynamicLabels( nodeStore, oneByteLongs( 5 ) );
+        Set<DynamicRecord> initialRecords = asUniqueSet( node.getDynamicLabelRecords() );
+        NodeLabelRecordLogic manipulator = new NodeLabelRecordLogic( node, nodeStore );
+
+        // WHEN
+        Set<DynamicRecord> reallocatedRecords = asUniqueSet( manipulator.set( fourByteLongs( 100 ) ) );
+
+        // THEN
+        assertTrue( reallocatedRecords.containsAll( initialRecords ) );
+        assertTrue( reallocatedRecords.size() > initialRecords.size() );
+    }
+    
+    @Test
+    public void shouldReallocateAllOfPreviousDynamicRecordsAndThenSome() throws Exception
+    {
+        // GIVEN
+        NodeRecord node = nodeRecordWithDynamicLabels( nodeStore, fourByteLongs( 100 ) );
+        Set<DynamicRecord> initialRecords = asSet( cloned( node.getDynamicLabelRecords(), DynamicRecord.class ) );
+        NodeLabelRecordLogic manipulator = new NodeLabelRecordLogic( node, nodeStore );
+        
+        // WHEN
+        Set<DynamicRecord> reallocatedRecords = asUniqueSet( manipulator.set( fourByteLongs( 5 ) ) );
+
+        // THEN
+        assertTrue( "initial:" + initialRecords + ", reallocated:" + reallocatedRecords ,
+                initialRecords.containsAll( used( reallocatedRecords ) ) );
+        assertTrue( used( reallocatedRecords ).size() < initialRecords.size() );
+    }
+    
     private long dynamicLabelsLongRepresentation( Iterable<DynamicRecord> records )
     {
         return 0x8000000000L|first( records ).getId();
@@ -366,5 +402,23 @@ public class NodeLabelRecordLogicTest
             result[i] = 255-i;
         Arrays.sort( result );
         return result;
+    }
+
+    private long[] fourByteLongs( int numberOfLongs )
+    {
+        long[] result = new long[numberOfLongs];
+        for ( int i = 0; i < numberOfLongs; i++ )
+            result[i] = Integer.MAX_VALUE-i;
+        Arrays.sort( result );
+        return result;
+    }
+
+    private Set<DynamicRecord> used( Set<DynamicRecord> reallocatedRecords )
+    {
+        Set<DynamicRecord> used = new HashSet<DynamicRecord>();
+        for ( DynamicRecord record : reallocatedRecords )
+            if ( record.inUse() )
+                used.add( record );
+        return used;
     }
 }

@@ -36,11 +36,11 @@ import org.junit.Test;
 import org.neo4j.kernel.AutoConfigurator;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.batchinsert.BatchInserter;
-import org.neo4j.kernel.impl.batchinsert.BatchInserterImpl;
 import org.neo4j.kernel.impl.nioneo.store.NodeStore;
 import org.neo4j.kernel.impl.nioneo.store.Store;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.unsafe.batchinsert.BatchInserter;
+import org.neo4j.unsafe.batchinsert.BatchInserters;
 
 public class AutoconfIT
 {
@@ -68,7 +68,7 @@ public class AutoconfIT
 
     private void createBigDb( String storeDir )
     {
-        BatchInserter inserter = new BatchInserterImpl( storeDir );
+        BatchInserter inserter = BatchInserters.inserter( storeDir );
         long physicalMemory = AutoConfigurator.physicalMemory();
         long highNode = 100000000;
         if ( physicalMemory != -1 )
