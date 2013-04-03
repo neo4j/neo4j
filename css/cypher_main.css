@@ -9,13 +9,11 @@ html, body {
 
 .col {
   padding: 0;
-  margin: 10px;
+  margin: 0 10px;
   width: 420px;
-  flot: left;
+  float: left;
 }
 
-td p {
-}
 @media screen and (min-width: 1350px) {
 
   html, body {
@@ -45,7 +43,7 @@ td p {
     .col {
       float: left;
       width: 420px;
-      margin: 10px;
+      margin: 0 10px;
       padding: 10px 0;
     }
 
@@ -114,7 +112,7 @@ td p {
     .col {
       float: left;
       width: 600px;
-      margin: 10px;
+      margin: 0 10px;
       padding: 10px 0;
    }
 
@@ -196,13 +194,25 @@ td p {
 
 }
 
-
 @media print {
 
   html, body {
     font-size: 9pt;
+  }  
+  
+  footer div.mid {
+    float: right;
   }
-
+  
+  table {
+    border: solid 1px #e5e5e5 !important;
+    border-collapse: collapse !important;
+  }
+  
+  th {
+    border-bottom: solid 1px #e5e5e5 !important;
+  }
+  
   .mid {
     margin: 0;
     width: 100%;
@@ -298,7 +308,7 @@ footer div.mid {
 .col table {
   width: 100%;
   border-spacing: 0;
-  margin: 1em 0;
+  margin: 0;
   /*table-layout: fixed;*/
 }
 
@@ -339,16 +349,6 @@ footer div.mid {
   border-bottom: 1px solid #e5e5e5;
 }
 
-
-/*
-.col tr td:first-child {
-  font-family: monospace, serif;
-  font-size: 0.9em;
-  /*white-space: nowrap; */
-}
-*/
-
-
 .col td pre, .blk pre {
   white-space: nowrap;
 }
@@ -378,6 +378,10 @@ em.tx {
   overflow: auto;
 }
 
+td p {
+  margin-top: 0.1em;
+  margin-bottom: 0.1em;
+}
 
 #page_1, #page_2, #page_3, #page_4 {
   /*border: 1px solid red;*/
@@ -405,6 +409,7 @@ body .syntaxhighlighter .line.alt2 {
 }
 body .syntaxhighlighter {
   overflow: visible !important;
+  margin: 0.1em 0 0 0 !important;
 }
 
 /**** Transitions ****/

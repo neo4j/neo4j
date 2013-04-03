@@ -21,12 +21,11 @@
 <xsl:param name="variablelist.as.blocks" select="1" />
 
 <xsl:param name="paper.type" select="'A4'"/>
-<!--
-<xsl:param name="paper.type" select="'USletter'"/>
--->
+
 <xsl:param name="hyphenate">false</xsl:param>
 <!-- justify, left or right -->
 <xsl:param name="alignment">left</xsl:param>
+
 
 <xsl:param name="body.font.family" select="'FreeSerif'"/> <!-- neo -->
 <xsl:param name="body.font.master">10</xsl:param>
@@ -38,8 +37,19 @@
 <xsl:param name="body.margin.top" select="'0.5in'"/>
 <xsl:param name="bridgehead.in.toc" select="0"/>
 
-<xsl:param name="generate.toc">
-</xsl:param>
+<xsl:param name="generate.toc" select="'article  nop'"/> 
+
+<xsl:attribute-set name="table.properties">
+  <xsl:variable name="keep.together">
+    <xsl:value-of select="always"/>
+  </xsl:variable>
+</xsl:attribute-set>
+
+<xsl:param name="column.count.body" select="2"/>
+
+<xsl:attribute-set name="pgwide.properties">
+  <xsl:attribute name="start-indent">0pt</xsl:attribute>
+</xsl:attribute-set>
 
 <!-- overide setting in common.xsl -->
 <xsl:param name="table.frame.border.thickness" select="'2px'"/>

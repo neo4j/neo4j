@@ -13,11 +13,13 @@ window.onload = function() {
       var nextContainer = parent.nextElementSibling;
       if ( nextContainer.firstElementChild ) {
         nextContainer.insertBefore( h2, nextContainer.firstElementChild );
+        parent.parentNode.removeChild( parent );
       }
     }
   }
   var wall = new Masonry( document.getElementById('page'), {
-    columnWidth: 440
+    columnWidth: 440,
+    gutterWidth: 0
   });
 };
 </script>

@@ -9,124 +9,38 @@ Neo4j Cypher Refcard
 
 You can try cypher snippets live in the Neo4j Console at http://console.neo4j.org.
 
-
-== Query Syntax ==
+== Reading data ==
 
 .Read-Only Query Structure 
 [refcard]
 ----
 START me=node:people(name='Andres')
-MATCH me-[:FRIEND]-&gt;friend
-WHERE friend.age &gt; 18
+MATCH me-[:FRIEND]->friend
+WHERE friend.age > 18
 RETURN me, friend.name
 ORDER BY friend.age ASC
 SKIP 5 LIMIT 10
 ----
 
-.START
+include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/start.asciidoc[]
+
+include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/return.asciidoc[]
+
+== Writing data ==
+
+.Read-Write-Return Query Structure 
 [refcard]
 ----
-START n=node(id,[id2,id3])
-
-Load the node with id `id` into n.
-
-START n=node:indexName(key="value")
-
-Query the index for an exact value and put the result into n.
-Use node_auto_index for the auto-index.
-
-START n=node:indexName("lucene query")
-
-Query the index using a full Lucene query and put the result in n.
-
-START n=node(*)
-
-Load all nodes.
-
-START m=node(1), n=node(2)
-
-Multiple starting points.
+START emil=node:people(name='Emil')
+MATCH emil-[:MARRIED_TO]-madde
+CREATE/CREATE UNIQUE 
+emil-[:DAD]->(noomi {name:"Noomi"})<-[:MOM]-madde
+DELETE emil.spare_time
+SET emil.happy=true
+RETURN noomi 
 ----
 
-.START
-[refcard]
-----
-START n=node:indexName( "lucene query")
+include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/create.asciidoc[]
 
-Query the index using a full Lucene query and put the result in n.
-
-START n=node(*)
-
-Load all nodes.
-
-START m=node(1), n=node(2)
-
-Multiple starting points.
-----
-
-.START
-[refcard]
-----
-START n=node(*)
-
-Load all nodes.
-
-START m=node(1), n=node(2)
-
-Multiple starting points.
-----
-
-.START
-[refcard]
-----
-START n=node(id,[id2,id3])
-
-Load the node with id `id` into n.
-
-START n=node:indexName(key="value")
-
-Query the index for an exact value and put the result into n.
-Use node_auto_index for the auto-index.
-----
-
-.START
-[refcard]
-----
-START n=node(id,[id2,id3])
-
-Load the node with id `id` into n.
-
-START n=node:indexName(key="value")
-
-Query the index for an exact value and put the result into n.
-Use node_auto_index for the auto-index.
-
-START n=node:indexName( "lucene query")
-
-Query the index using a full Lucene query and put the result in n.
-
-START n=node(*)
-
-Load all nodes.
-
-START m=node(1), n=node(2)
-
-Multiple starting points.
-----
-
-.START
-[refcard]
-----
-START n=node:indexName( "lucene query")
-
-Query the index using a full Lucene query and put the result in n.
-
-START n=node(*)
-
-Load all nodes.
-
-START m=node(1), n=node(2)
-
-Multiple starting points.
-----
+include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/set.asciidoc[]
 

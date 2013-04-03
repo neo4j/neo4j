@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.neo4j.build</groupId>
     <artifactId>parent-central</artifactId>
-    <version>35</version>
+    <version>39</version>
     <relativePath />
   </parent>
   <groupId>org.neo4j.doc</groupId>
@@ -21,13 +21,14 @@
     <docs.upstream>${project.build.directory}</docs.upstream>
     <docs.importdir>${docs.upstream}/docs</docs.importdir>
     <docs-plugin.skip>true</docs-plugin.skip>
+    <doctools.version>10-SNAPSHOT</doctools.version>
   </properties>
 
   <dependencies>
     <dependency>
       <groupId>org.neo4j.build.plugins</groupId>
       <artifactId>neo4j-doctools</artifactId>
-      <version>1-SNAPSHOT</version>
+      <version>${doctools.version}</version>
       <scope>provided</scope>
     </dependency>
   </dependencies>
@@ -78,7 +79,7 @@
         <artifactId>exec-maven-plugin</artifactId>
         <executions>
           <execution>
-            <id>execute-asciidoc-html5</id>
+            <id>execute-asciidoc-html5-print</id>
             <phase>compile</phase>
             <goals>
               <goal>exec</goal>
@@ -88,9 +89,39 @@
               <arguments>
                 <argument>init</argument>
                 <argument>preview</argument>
+                <argument>HTML5_DIR_NAME=html5-print</argument>
+                <argument>HTML5_DOCINFO=docinfo</argument>
+              </arguments>
+            </configuration>
+          </execution>
+          <execution>
+            <id>execute-asciidoc-html5</id>
+            <phase>compile</phase>
+            <goals>
+              <goal>exec</goal>
+            </goals>
+            <configuration>
+              <executable>make</executable>
+              <arguments>
+                <argument>preview</argument>
+              </arguments>
+            </configuration>
+          </execution>
+          <execution>
+            <id>execute-docbook-pdf</id>
+            <phase>none</phase>
+            <goals>
+              <goal>exec</goal>
+            </goals>
+            <configuration>
+              <executable>make</executable>
+              <arguments>
                 <argument>docbook</argument>
                 <argument>pdf</argument>
                 <argument>VERSION=${neo4j.version}</argument>
+                <argument>DOCTYPE=article</argument>
+                <argument>NOTOC=1</argument>
+                <argument>NOTNUMBERED=1</argument>
               </arguments>
             </configuration>
           </execution>
@@ -123,5 +154,8 @@
     </site>
   </distributionManagement>
 
+  <modules>
+    <module>neo4j-cypher-refcard-tests</module>
+  </modules>
 </project>
 
