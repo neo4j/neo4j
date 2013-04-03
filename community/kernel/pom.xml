@@ -343,7 +343,8 @@ public class ComponentVersion extends Version
           <logResults>true</logResults>
           <!-- This is temporarily hard-coded, because the versionsBack attribute seems to not work on OS X, we'll
            need to fix that. -->
-          <comparisonVersion>1.8.1</comparisonVersion>
+          <comparisonVersion>1.9.M05</comparisonVersion>
+		  <ignoreMaintenenceVersions>false</ignoreMaintenenceVersions>
           <includes>
             <include>org/neo4j/graphdb/**</include>
           </includes>
