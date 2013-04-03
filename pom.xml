@@ -31,7 +31,6 @@
     <module>community</module>
     <module>advanced</module>
     <module>enterprise</module>
-    <module>gremlin-plugin</module>
   </modules>
   
   <build>
