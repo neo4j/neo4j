@@ -38,7 +38,7 @@ import org.neo4j.server.rest.repr.OutputFormat;
 @Path(MasterInfoService.BASE_PATH)
 public class MasterInfoService implements AdvertisableService
 {
-    public static final String BASE_PATH = "/server/ha";
+    public static final String BASE_PATH = "server/ha";
     public static final String IS_MASTER_PATH = "/master";
     public static final String IS_SLAVE_PATH = "/slave";
 

@@ -24,8 +24,8 @@ import org.neo4j.server.rest.repr.MappingSerializer;
 
 public class HaDiscoveryRepresentation extends MappingRepresentation
 {
-    private static final String IS_MASTER_KEY = "isMaster";
-    private static final String IS_SLAVE_KEY = "isSlave";
+    private static final String MASTER_KEY = "master";
+    private static final String SLAVE_KEY = "slave";
     private static final String DISCOVERY_REPRESENTATION_TYPE = "discovery";
 
     private final String basePath;
@@ -43,7 +43,7 @@ public class HaDiscoveryRepresentation extends MappingRepresentation
     @Override
     protected void serialize( MappingSerializer serializer )
     {
-        serializer.putUri( IS_MASTER_KEY, basePath + isMasterUri );
-        serializer.putUri( IS_SLAVE_KEY, basePath + isSlaveUri );
+        serializer.putUri( MASTER_KEY, basePath + isMasterUri );
+        serializer.putUri( SLAVE_KEY, basePath + isSlaveUri );
     }
 }
