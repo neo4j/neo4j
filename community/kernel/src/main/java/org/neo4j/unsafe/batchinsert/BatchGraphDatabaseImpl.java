@@ -853,7 +853,7 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
     }
 
     @Override
-    public ResourceIterable<Node> findNodesByLabelAndProperty( Label myLabel, String propertyName, Object value )
+    public ResourceIterable<Node> findNodesByLabelAndProperty( Label myLabel, String key, Object value )
     {
         throw new UnsupportedOperationException();
     }

@@ -22,7 +22,10 @@ package org.neo4j.unsafe.batchinsert;
 import java.util.Map;
 
 import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.ResourceIterable;
+import org.neo4j.graphdb.schema.IndexCreator;
 
 /**
  * The batch inserter drops support for transactions and concurrency in favor
@@ -245,9 +248,65 @@ public interface BatchInserter
     public void removeRelationshipProperty( long relationship, String property );
 
     /**
+     * Returns an {@link IndexCreator} where details about the index to create can be
+     * specified. When all details have been entered {@link IndexCreator#create() create}
+     * must be called for it to actually be created.
+     *
+     * Creating an index enables indexing for nodes with the specified label. The index will
+     * have the details supplied to the {@link IndexCreator returned index creator}.
+     *
+     * Indexes created with the method are deferred, that is they are only populated after a
+     * call to {@link #ensureSchemaIndexesOnline()}. Deferring index population allows you to
+     * insert nodes rapidly, without incurring incremental indexing overhead. This especially
+     * applies when you create multiple indexes; all of the indexes can be populated together
+     * through a single scan.
+     *
+     * After calling {@link #ensureSchemaIndexesOnline()}, all existing and all future nodes
+     * matching the index definition will be added to the index, and the index will be used
+     * when {@link #findNodesByLabelAndProperty(org.neo4j.graphdb.Label, String, Object)
+     * finding nodes via label and property}.
+     *
+     * @param label {@link Label label} on nodes to be indexed
+     *
+     * @return an {@link IndexCreator} capable of providing details for, as well as creating
+     * an index for the given {@link Label label}.
+     */
+    public IndexCreator createDeferredSchemaIndex( Label label );
+
+    /**
+     * Ensure that all schema indexes are populated. After this method
+     * returns, all indexes will be online, and future node updates will be applied
+     * to the indexes.
+     *
+     * Where possible, multiple indexes will be populated using a single scan, for increased
+     * efficiency.
+     *
+     * Note that you can call this method multiple times, each time will only populate the
+     * indexes that were created since the previous call.
+     *
+     * @see #createDeferredSchemaIndex(Label)
+     */
+    public void ensureSchemaIndexesOnline();
+
+    /**
+     * Returns all nodes having the label, and the wanted property value. If an online
+     * index is found, it will be used to lookup the requested nodes. Otherwise throws
+     * {@link org.neo4j.kernel.api.index.IndexNotOnlineException}.
+     *
+     * @param label consider nodes with this label
+     * @param key required property key
+     * @param value required property value
+     * @return an iterable containing all matching nodes. See {@link ResourceIterable} for responsibilities.
+     */
+    public ResourceIterable<Node> findNodesByLabelAndProperty( Label label, String key, Object value );
+
+    /**
      * Shuts down this batch inserter syncing all changes that are still only
      * in memory to disk. Failing to invoke this method may leave the Neo4j
      * store in a inconsistent state.
+     *
+     * Created schema indexes that aren't online at this point will start populating
+     * the next time the database is started.
      * <p>
      * After this method has been invoked any other method call to this batch
      * inserter is illegal.

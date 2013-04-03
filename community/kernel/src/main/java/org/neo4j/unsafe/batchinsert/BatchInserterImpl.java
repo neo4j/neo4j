@@ -36,9 +36,12 @@ import java.util.Map.Entry;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Settings;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
@@ -223,6 +226,24 @@ public class BatchInserterImpl implements BatchInserter
         {
             getRelationshipStore().updateRecord( relationshipRec );
         }
+    }
+
+    @Override
+    public IndexCreator createDeferredSchemaIndex( Label label )
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public void ensureSchemaIndexesOnline()
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public ResourceIterable<Node> findNodesByLabelAndProperty( Label label, String key, Object value )
+    {
+        throw new UnsupportedOperationException( "not implemented" );
     }
 
     private boolean removePrimitiveProperty( PrimitiveRecord primitive,

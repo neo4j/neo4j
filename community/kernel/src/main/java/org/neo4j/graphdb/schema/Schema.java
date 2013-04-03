@@ -51,7 +51,9 @@ public interface Schema
      * have the details supplied to the {@link IndexCreator returned index creator}.
      * All existing and all future nodes matching the index definition will be indexed,
      * speeding up future operations.
-     * 
+     *
+     * @param label {@link Label label} on nodes to be indexed
+     *
      * @return an {@link IndexCreator} capable of providing details for, as well as creating
      * an index for the given {@link Label label}.
      */

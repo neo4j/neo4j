@@ -109,17 +109,19 @@ public interface GraphDatabaseService
     public Iterable<Node> getAllNodes();
 
     /**
-     * Returns all nodes having the label, and the wanted property value. If no
-     * indexes exist for the label/property combination, a scan of all labeled
-     * nodes will be done. If an useful index is found, it will be used to
-     * return the nodes faster than scanning all would.
+     * Returns all nodes having the label, and the wanted property value.
+     * If an online index is found, it will be used to look up the requested
+     * nodes.
      *
-     * @param label the label to look for
-     * @param propertyName the property name used in the search
-     * @param value the value looked for.
-     * @return an iterable containing all matching nodes.
+     * If no indexes exist for the label/property combination, the database will
+     * scan all labelled nodes looking for the property value.
+     *
+     * @param label consider nodes with this label
+     * @param key required property key
+     * @param value required property value
+     * @return an iterable containing all matching nodes. See { @link ResourceIterable } for responsibilities.
      */
-    ResourceIterable<Node> findNodesByLabelAndProperty( Label label, String propertyName, Object value );
+    ResourceIterable<Node> findNodesByLabelAndProperty( Label label, String key, Object value );
     
     /**
      * Returns all relationship types currently in the underlying store.

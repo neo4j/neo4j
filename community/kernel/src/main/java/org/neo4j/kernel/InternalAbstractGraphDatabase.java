@@ -1490,7 +1490,7 @@ public abstract class InternalAbstractGraphDatabase
     }
 
     @Override
-    public ResourceIterable<Node> findNodesByLabelAndProperty( final Label myLabel, final String propertyName,
+    public ResourceIterable<Node> findNodesByLabelAndProperty( final Label myLabel, final String key,
                                                                final Object value )
     {
         return new ResourceIterable<Node>()
@@ -1498,12 +1498,12 @@ public abstract class InternalAbstractGraphDatabase
             @Override
             public ResourceIterator<Node> iterator()
             {
-                return nodesByLabelAndProperty( myLabel, propertyName, value );
+                return nodesByLabelAndProperty( myLabel, key, value );
             }
         };
     }
 
-    private ResourceIterator<Node> nodesByLabelAndProperty( Label myLabel, String propertyName, Object value )
+    private ResourceIterator<Node> nodesByLabelAndProperty( Label myLabel, String key, Object value )
     {
         StatementContext ctx = statementContextProvider.getCtxForReading();
 
@@ -1511,7 +1511,7 @@ public abstract class InternalAbstractGraphDatabase
         long labelId;
         try
         {
-            propertyId = ctx.getPropertyKeyId( propertyName );
+            propertyId = ctx.getPropertyKeyId( key );
             labelId = ctx.getLabelId( myLabel.name() );
         }
         catch ( KernelException e )
@@ -1538,7 +1538,7 @@ public abstract class InternalAbstractGraphDatabase
             // If we don't find a matching index rule, we'll scan all nodes and filter manually (below)
         }
 
-        return getNodesByLabelAndPropertyWithoutIndex( propertyName, value, ctx, labelId );
+        return getNodesByLabelAndPropertyWithoutIndex( key, value, ctx, labelId );
     }
 
     private ResourceIterator<Node> getNodesByLabelAndPropertyWithoutIndex( final String propertyName, final Object value, StatementContext ctx, long labelId )
