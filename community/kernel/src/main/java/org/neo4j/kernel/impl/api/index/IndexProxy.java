@@ -30,6 +30,7 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
+import org.neo4j.kernel.api.index.SchemaIndexProvider;
 
 /**
  * Controls access to {@link IndexPopulator}, {@link IndexAccessor} during different stages
@@ -70,6 +71,8 @@ public interface IndexProxy
     Future<Void> close() throws IOException;
 
     IndexDescriptor getDescriptor();
+
+    SchemaIndexProvider.Descriptor getProviderDescriptor();
 
     InternalIndexState getState();
 
@@ -126,6 +129,12 @@ public interface IndexProxy
 
         @Override
         public IndexDescriptor getDescriptor()
+        {
+            return null;
+        }
+
+        @Override
+        public SchemaIndexProvider.Descriptor getProviderDescriptor()
         {
             return null;
         }

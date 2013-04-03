@@ -31,6 +31,7 @@ import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.TransactionContext;
 import org.neo4j.kernel.api.operations.SchemaOperations;
 import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 import org.neo4j.kernel.impl.api.state.OldTxStateBridgeImpl;
 import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.core.NodeManager;
@@ -76,6 +77,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     private final SchemaCache schemaCache;
     private final UpdateableSchemaState schemaState;
     private final StatementContextOwners statementContextOwners = new StatementContextOwners();
+    private SchemaIndexProviderMap providerMap = null;
     
     // These non-final components are all circular dependencies in various configurations.
     // As we work towards refactoring the old kernel, we should work to remove these.
@@ -113,6 +115,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
                 {
                     neoStore = ((NeoStoreXaDataSource) ds).getNeoStore();
                     indexService = ((NeoStoreXaDataSource) ds).getIndexService();
+                    providerMap = ((NeoStoreXaDataSource) ds).getProviderMap();
                     for ( SchemaRule schemaRule : loop( neoStore.getSchemaStore().loadAll() ) )
                     {
                         schemaCache.addSchemaRule( schemaRule );
@@ -200,7 +203,9 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
 
     private TxState newTxState()
     {
-        return new TxState( new OldTxStateBridgeImpl( transactionManager.getTransactionState() ), persistenceManager,
+        return new TxState(
+                new OldTxStateBridgeImpl( transactionManager.getTransactionState() ),
+                persistenceManager,
                 new TxState.IdGeneration()
                 {
                     @Override
@@ -208,7 +213,9 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
                     {
                         return neoStore.getSchemaStore().nextId();
                     }
-                } );
+                },
+                providerMap
+        );
     }
 
     private class StatementContextOwners extends ThreadLocal<StatementContextOwner>

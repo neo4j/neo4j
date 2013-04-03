@@ -77,14 +77,16 @@ public enum StoreFile
     
     public static Iterable<StoreFile> legacyStoreFiles()
     {
-        return Iterables.filter( new Predicate<StoreFile>()
+        Predicate<StoreFile> predicate = new Predicate<StoreFile>()
         {
             @Override
             public boolean accept( StoreFile item )
             {
                 return item.existsInBoth;
             }
-        }, Iterables.iterable( values() ) );
+        };
+        Iterable<StoreFile> storeFiles = currentStoreFiles();
+        return Iterables.filter( predicate, storeFiles );
     }
     
     public static Iterable<StoreFile> currentStoreFiles()

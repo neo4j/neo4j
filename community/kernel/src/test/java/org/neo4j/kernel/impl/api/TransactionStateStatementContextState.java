@@ -34,6 +34,8 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.collection.Iterables.option;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.kernel.api.index.SchemaIndexProvider.NO_INDEX_PROVIDER;
+import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -50,10 +52,12 @@ import org.mockito.stubbing.Answer;
 import org.neo4j.kernel.api.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.index.InternalIndexState;
+import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.state.OldTxStateBridge;
 import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
+import org.neo4j.kernel.impl.nioneo.xa.DefaultSchemaIndexProviderMap;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 
 public class TransactionStateStatementContextState
@@ -214,10 +218,10 @@ public class TransactionStateStatementContextState
         TransactionStateStatementContext ctx = new TransactionStateStatementContext(hatesWritesCtx, mock(TxState.class));
 
         // When
-        ctx.addIndexRule(0l, 0l);
-        ctx.addLabelToNode(0l, 0l);
-        ctx.dropIndexRule(new IndexRule(0l, 0l, 0l));
-        ctx.removeLabelFromNode(0l, 0l);
+        ctx.addIndexRule( 0l, 0l );
+        ctx.addLabelToNode( 0l, 0l );
+        ctx.dropIndexRule(new IndexRule(0l, 0l, PROVIDER_DESCRIPTOR, 0l));
+        ctx.removeLabelFromNode( 0l, 0l );
 
         // These are kind of in between.. property key ids are created in micro-transactions, so these methods
         // circumvent the normal state of affairs. We may want to rub the genius-bumps over this at some point.
@@ -337,7 +341,7 @@ public class TransactionStateStatementContextState
         Iterator<IndexRule> labelRules = txContext.getIndexRules( labelId1 );
         
         // THEN
-        IndexRule expectedRule = new IndexRule( rule.getId(), labelId1, key1 );
+        IndexRule expectedRule = new IndexRule( rule.getId(), labelId1, PROVIDER_DESCRIPTOR, key1 );
         assertEquals( expectedRule, rule );
         assertEquals( asSet( expectedRule ), asSet( labelRules ) );
     }
@@ -347,7 +351,7 @@ public class TransactionStateStatementContextState
     {
         // GIVEN
         // -- a rule that exists in the store
-        IndexRule rule = new IndexRule( ruleId, labelId1, key1 );
+        IndexRule rule = new IndexRule( ruleId, labelId1, PROVIDER_DESCRIPTOR, key1 );
         when( store.getIndexRules( labelId1 ) ).thenReturn( option( rule ).iterator() );
         // -- that same rule dropped in the transaction
         txContext.dropIndexRule( rule );
@@ -615,14 +619,17 @@ public class TransactionStateStatementContextState
             @Override
             public IndexRule answer( InvocationOnMock invocation ) throws Throwable
             {
-                return new IndexRule( ruleId+rulesCreated++, (Long) invocation.getArguments()[0],
-                        (Long) invocation.getArguments()[1] );
+                return new IndexRule( ruleId+rulesCreated++,
+                        (Long) invocation.getArguments()[0],
+                        (SchemaIndexProvider.Descriptor) invocation.getArguments()[1],
+                        (Long) invocation.getArguments()[2] );
             }
         } );
 
         oldTxState = mock( OldTxStateBridge.class );
 
-        state = new TxState(oldTxState, mock(PersistenceManager.class), mock(TxState.IdGeneration.class));
+        state = new TxState( oldTxState, mock(PersistenceManager.class), mock(TxState.IdGeneration.class),
+                             new DefaultSchemaIndexProviderMap( NO_INDEX_PROVIDER ) );
         txContext = new TransactionStateStatementContext( store, state );
     }
     

@@ -24,6 +24,7 @@ import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
+import org.neo4j.kernel.impl.nioneo.xa.DefaultSchemaIndexProviderMap;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.util.TestLogger;
 import org.neo4j.kernel.logging.Logging;
@@ -32,6 +33,7 @@ import static java.util.Arrays.asList;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 import static org.neo4j.kernel.impl.util.TestLogger.LogCall.info;
 
 public class IndexingServiceTest
@@ -42,16 +44,18 @@ public class IndexingServiceTest
         // given
         TestLogger logger = new TestLogger();
         SchemaIndexProvider provider = mock( SchemaIndexProvider.class );
+        when( provider.getProviderDescriptor() ).thenReturn( PROVIDER_DESCRIPTOR );
+        SchemaIndexProviderMap providerMap = new DefaultSchemaIndexProviderMap( provider );
         IndexingService indexingService = new IndexingService(
                 mock( JobScheduler.class ),
-                provider,
+                providerMap,
                 mock( IndexingService.IndexStoreView.class ),
                 mock( UpdateableSchemaState.class ),
                 mockLogging( logger ) );
 
-        IndexRule onlineIndex = new IndexRule( 1, 1, 1 );
-        IndexRule populatingIndex = new IndexRule( 2, 2, 2 );
-        IndexRule failedIndex = new IndexRule( 3, 3, 3 );
+        IndexRule onlineIndex = new IndexRule( 1, 1, PROVIDER_DESCRIPTOR, 1 );
+        IndexRule populatingIndex = new IndexRule( 2, 2, PROVIDER_DESCRIPTOR, 2 );
+        IndexRule failedIndex = new IndexRule( 3, 3, PROVIDER_DESCRIPTOR, 3 );
 
         when( provider.getInitialState( onlineIndex.getId() ) ).thenReturn( InternalIndexState.ONLINE );
         when( provider.getInitialState( populatingIndex.getId() ) ).thenReturn( InternalIndexState.POPULATING );
@@ -74,16 +78,18 @@ public class IndexingServiceTest
         // given
         TestLogger logger = new TestLogger();
         SchemaIndexProvider provider = mock( SchemaIndexProvider.class );
+        when( provider.getProviderDescriptor() ).thenReturn( PROVIDER_DESCRIPTOR );
+        SchemaIndexProviderMap providerMap = new DefaultSchemaIndexProviderMap( provider );
         IndexingService indexingService = new IndexingService(
                 mock( JobScheduler.class ),
-                provider,
+                providerMap,
                 mock( IndexingService.IndexStoreView.class ),
                 mock( UpdateableSchemaState.class ),
                 mockLogging( logger ) );
 
-        IndexRule onlineIndex = new IndexRule( 1, 1, 1 );
-        IndexRule populatingIndex = new IndexRule( 2, 2, 2 );
-        IndexRule failedIndex = new IndexRule( 3, 3, 3 );
+        IndexRule onlineIndex = new IndexRule( 1, 1, PROVIDER_DESCRIPTOR, 1 );
+        IndexRule populatingIndex = new IndexRule( 2, 2, PROVIDER_DESCRIPTOR, 2 );
+        IndexRule failedIndex = new IndexRule( 3, 3, PROVIDER_DESCRIPTOR,  3 );
 
         when( provider.getInitialState( onlineIndex.getId() ) ).thenReturn( InternalIndexState.ONLINE );
         when( provider.getInitialState( populatingIndex.getId() ) ).thenReturn( InternalIndexState.POPULATING );

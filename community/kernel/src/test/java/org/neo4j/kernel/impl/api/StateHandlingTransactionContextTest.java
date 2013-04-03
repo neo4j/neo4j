@@ -23,6 +23,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
+import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 
 import java.util.Map;
 
@@ -46,7 +47,7 @@ public class StateHandlingTransactionContextTest
         KernelSchemaStateStore schemaState = mock( KernelSchemaStateStore.class );
 
         // GIVEN AN INNER STATEMENT CONTEXT
-        IndexRule rule = new IndexRule( 0L, 0L, 1L );
+        IndexRule rule = new IndexRule( 0L, 0L, PROVIDER_DESCRIPTOR, 1L );
         StatementContext innerStatementContext = mock( StatementContext.class );
 
         // GIVEN A TRANSACTION CONTEXT

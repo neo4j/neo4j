@@ -25,6 +25,8 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.Iterables.map;
+import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
+import static org.neo4j.helpers.collection.IteratorUtil.asIterator;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
@@ -34,8 +36,10 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -46,12 +50,20 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.schema.IndexCreator;
+import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Pair;
+import org.neo4j.helpers.Predicate;
+import org.neo4j.helpers.Predicates;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
+import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.impl.api.index.InMemoryIndexProvider;
+import org.neo4j.kernel.impl.api.index.InMemoryIndexProviderFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TargetDirectory;
@@ -111,6 +123,32 @@ public class TestBatchInsert
         return BatchInserters.batchDatabase( "neo-batch-db", fs.get() );
     }
 
+    private GraphDatabaseService newGraphDatabase()
+    {
+        return newGraphDatabase( Predicates.<TestGraphDatabaseFactory>notNull() );
+    }
+    
+    private GraphDatabaseService newGraphDatabase( final Iterable<KernelExtensionFactory<?>> extensions )
+    {
+        return newGraphDatabase( new Predicate<TestGraphDatabaseFactory>()
+        {
+            @Override
+            public boolean accept( TestGraphDatabaseFactory item )
+            {
+                item.setKernelExtensions( extensions );
+                return true;
+            }
+        } );
+    }
+    
+    private GraphDatabaseService newGraphDatabase( Predicate<TestGraphDatabaseFactory> modifier )
+    {
+        TestGraphDatabaseFactory factory = new TestGraphDatabaseFactory();
+        factory.setFileSystem( fs.get() );
+        modifier.accept( factory );
+        return factory.newImpermanentDatabase( "neo-batch-db" );
+    }
+    
     @Test
     public void testSimple()
     {
@@ -762,7 +800,63 @@ public class TestBatchInsert
         Iterable<String> labelNames = asNames( inserter.getNodeLabels( node ) );
         assertEquals( asSet( Labels.FIRST.name() ), asSet( labelNames ) );
     }
-    
+
+    @Test
+    public void shouldCreateDeferredSchemaIndexesInEmptyDatabase() throws Exception
+    {
+        // GIVEN
+        BatchInserter inserter = newBatchInserter();
+
+        // WHEN
+        IndexCreator creator = inserter.createDeferredSchemaIndex( label( "Hacker" ) ).on( "handle" );
+        IndexDefinition definition = creator.create();
+
+        // THEN
+        assertEquals( "Hacker", definition.getLabel().name() );
+        assertEquals( asCollection( asIterator( "handle" ) ), asCollection( definition.getPropertyKeys() ) );
+    }
+
+    @Test
+    public void shouldReadExistingOnlineIndexes() throws Exception
+    {
+        // GIVEN: LABEL
+        Label hackerLabel = label( "Hacker" );
+        InMemoryIndexProvider provider = new InMemoryIndexProvider();
+        InMemoryIndexProviderFactory providerFactory = new InMemoryIndexProviderFactory( provider );
+        List<KernelExtensionFactory<?>> extensions = Arrays.<KernelExtensionFactory<?>>asList( providerFactory );
+
+        // GIVEN: CREATED INDEX
+        GraphDatabaseService gdb = newGraphDatabase( extensions );
+        Transaction tx = gdb.beginTx();
+        IndexDefinition definition = createIndex( gdb, hackerLabel, "handle" );
+        tx.success();
+        tx.finish();
+
+        // GIVEN: ONLINE INDEX
+        tx = gdb.beginTx();
+        gdb.schema().awaitIndexOnline( definition, 10L, TimeUnit.SECONDS );
+        Node node = gdb.createNode( hackerLabel );
+        node.setProperty( "handle", "count0" );
+        tx.success();
+        tx.finish();
+        gdb.shutdown();
+
+        // GIVEN: BATCH INSERTER
+        BatchInserter inserter = BatchInserters.inserter( "neo-batch-db", fs.get(), stringMap(), extensions );
+
+        // WHEN
+        ResourceIterable<Long> result = inserter.findNodesByLabelAndProperty( label( "Hacker" ), "handle", "count0" );
+
+        // THEN
+        assertEquals( asSet( node.getId() ), asSet( result ));
+    }
+
+    private IndexDefinition createIndex( GraphDatabaseService gdb,  Label label, String propertyKey )
+    {
+        IndexCreator creator = gdb.schema().indexCreator( label ).on( propertyKey );
+        return creator.create();
+    }
+
     private void setAndGet( BatchInserter inserter, Object value )
     {
         long nodeId = inserter.createNode( map( "key", value ) );

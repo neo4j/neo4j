@@ -23,6 +23,7 @@ import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Functions;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
+import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
@@ -32,6 +33,9 @@ public class LuceneSchemaIndexProviderFactory extends
         KernelExtensionFactory<LuceneSchemaIndexProviderFactory.Dependencies>
 {
     static final String KEY = "lucene";
+
+    public static final SchemaIndexProvider.Descriptor PROVIDER_DESCRIPTOR =
+            new SchemaIndexProvider.Descriptor( KEY, "1.0" );
 
     public interface Dependencies
     {

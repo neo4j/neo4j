@@ -34,7 +34,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
 
-public class SchemaStore extends AbstractDynamicStore
+public class SchemaStore extends AbstractDynamicStore implements Iterable<SchemaRule>
 {
     // store version, each store ends with this string (byte encoded)
     public static final String TYPE_DESCRIPTOR = "SchemaStore";
@@ -91,7 +91,13 @@ public class SchemaStore extends AbstractDynamicStore
             }
         };
     }
-    
+
+    @Override
+    public Iterator<SchemaRule> iterator()
+    {
+        return loadAll();
+    }
+
     private byte[] newRecordBuffer()
     {
         return new byte[getRecordSize()*4];

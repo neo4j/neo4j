@@ -25,6 +25,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.IteratorUtil.asIterator;
+import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 
 import java.util.Iterator;
 
@@ -43,7 +44,7 @@ public class ConstraintEvaluatingStatementContextTest
     {
         // GIVEN
         long id = 3, label = 0, propertyKey = 7;
-        IndexRule rule = new IndexRule( id, label, propertyKey );
+        IndexRule rule = new IndexRule( id, label, PROVIDER_DESCRIPTOR, propertyKey );
         StatementContext inner = Mockito.mock(StatementContext.class);
         ConstraintEvaluatingStatementContext ctx = new ConstraintEvaluatingStatementContext( inner );
         when( inner.getIndexRules( rule.getLabel() ) ).thenAnswer( withIterator( rule ) );

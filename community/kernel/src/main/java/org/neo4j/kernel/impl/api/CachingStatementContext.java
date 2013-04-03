@@ -113,7 +113,7 @@ public class CachingStatementContext extends CompositeStatementContext
     @Override
     public Iterator<IndexRule> getIndexRules( long labelId )
     {
-        return toIndexRules( schemaCache.getSchemaRules( labelId ) );
+        return toIndexRules( schemaCache.getSchemaRulesForLabel( labelId ) );
     }
 
     @Override

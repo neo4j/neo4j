@@ -19,17 +19,6 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.neo4j.kernel.impl.api.DiffSets;
-import org.neo4j.kernel.impl.api.state.OldTxStateBridge;
-import org.neo4j.kernel.impl.api.state.TxState;
-import org.neo4j.kernel.impl.nioneo.store.IndexRule;
-import org.neo4j.kernel.impl.persistence.PersistenceManager;
-
-import java.util.Collections;
-import java.util.Set;
-
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
@@ -37,9 +26,19 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
+import java.util.Collections;
+import java.util.Set;
+
+import org.junit.Before;
+import org.junit.Test;
+import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.impl.api.DiffSets;
+import org.neo4j.kernel.impl.nioneo.store.IndexRule;
+import org.neo4j.kernel.impl.nioneo.xa.DefaultSchemaIndexProviderMap;
+import org.neo4j.kernel.impl.persistence.PersistenceManager;
+
 public class TxStateTest
 {
-
     @Test
     public void shouldGetAddedLabels() throws Exception
     {
@@ -208,11 +207,8 @@ public class TxStateTest
     public void before() throws Exception
     {
         legacyState = mock( OldTxStateBridge.class );
-        state = new TxState(legacyState, mock(PersistenceManager.class), mock(TxState.IdGeneration.class));
-    }
-
-    private IndexRule newIndexRule( long ruleId, long labelId, long propertyKey )
-    {
-        return new IndexRule( ruleId, labelId, propertyKey );
+        state = new TxState(legacyState,
+                mock(PersistenceManager.class), mock(TxState.IdGeneration.class),
+                new DefaultSchemaIndexProviderMap( SchemaIndexProvider.NO_INDEX_PROVIDER ) );
     }
 }

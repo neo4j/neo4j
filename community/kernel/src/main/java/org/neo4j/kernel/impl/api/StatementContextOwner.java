@@ -67,10 +67,12 @@ public abstract class StatementContextOwner
                 statementContext = null;
             }
 
-            if ( count < 0 )
+            if ( statementContext != null && count < 0 )
             {
                 throw new IllegalStateException( "Lost track of at least one StatementContext" );
             }
+            // If we see that count < 0 and statementContext == null we've called closeAllStatements()
+            // and this would be a cleanup, which is a best effort either way.
         }
     }
 }
