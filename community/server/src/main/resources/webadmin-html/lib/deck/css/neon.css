@@ -1,0 +1,159 @@
+/* @override 
+	http://localhost:7474/webadmin/lib/deck/css/neon.css */
+
+
+a.micro-button#guide-close {
+  position: absolute;
+  right: 8px;
+  top: 1em;
+  z-index: 99999;
+}
+
+
+.deck-container {
+  color: #aaa;
+  background-color: rgba(0, 0, 0, 1.0);
+
+  font: 1.75em "Gill Sans", "Gill Sans MT", Calibri, sans-serif;
+  margin-top: 1em;
+  min-height: 90%;
+  width: 80%;
+}
+.deck-container .slide {
+  background: black;
+  filter: alpha(opacity=100); /* internet explorer */
+  -khtml-opacity: 1.0;      /* khtml, old safari */
+  -moz-opacity: 1.0;       /* mozilla, netscape */
+  opacity: 1.0;           /* fx, safari, opera */
+  height: 80%;
+  font-weight: normal;
+  font-weight: 100;
+}
+.deck-container .slide h1 {
+  color: #0af;
+  font-weight: normal;
+  font-weight: 100;
+  text-shadow: 0 0 50px #0af, 0 0 3px #fff;
+}
+.deck-container .slide h2 {
+  color: #af0;
+  border-bottom-color: #ccc;
+  font-weight: normal;
+  font-weight: 100;
+/*  text-shadow: 0 0 15px #af0, 0 0 2px #fff;*/
+  text-shadow: 0 0 8px #af0, 0 0 1px #fff;
+  border-bottom: 1px solid #333;
+}
+.deck-container .slide h3 {
+  color: #fff;
+  font-weight: normal;
+  font-weight: 100;
+/*  text-shadow: 0 0 10px #fff, 0 0 2px #fff;*/
+  text-shadow: 0 0 5px #fff, 0 0 0px #fff;
+}
+.deck-container .slide p {
+  color: #fff;
+  font-weight: normal;
+  font-weight: 100;
+}
+.deck-container .slide pre {
+  border-color: #333;
+}
+.deck-container .slide pre code {
+  color: #fff;
+}
+.deck-container .slide code {
+  color: #f0a;
+}
+.deck-container .slide blockquote {
+  font-size: 2em;
+  padding: 1em 2em;
+  color: #fff;
+  border-left: 5px solid #fff;
+}
+.deck-container .slide blockquote p {
+  margin: 0;
+}
+.deck-container .slide blockquote cite {
+  font-size: .5em;
+  font-style: normal;
+  font-weight: normal;
+  font-weight: 100;
+  color: #aaa;
+  text-shadow: 0 0 15px #fff, 0 0 2px #fff;
+}
+.deck-container .slide ::-moz-selection {
+  background: #a0f;
+}
+.deck-container .slide ::selection {
+  background: #a0f;
+}
+.deck-container .slide a, .deck-container .slide a:hover, .deck-container .slide a:focus, .deck-container .slide a:active, .deck-container .slide a:visited {
+  color: #f0a;
+  text-decoration: none;
+}
+.deck-container .slide a:hover, .deck-container .slide a:focus {
+  text-decoration: underline;
+}
+.deck-container .deck-prev-link, .deck-container .deck-next-link {
+  background: #f0a;
+  text-shadow: 0 0 3px #fff;
+}
+.deck-container .deck-prev-link, .deck-container .deck-prev-link:hover, .deck-container .deck-prev-link:focus, .deck-container .deck-prev-link:active, .deck-container .deck-prev-link:visited, .deck-container .deck-next-link, .deck-container .deck-next-link:hover, .deck-container .deck-next-link:focus, .deck-container .deck-next-link:active, .deck-container .deck-next-link:visited {
+  color: #fff;
+}
+.deck-container .deck-prev-link:hover, .deck-container .deck-prev-link:focus, .deck-container .deck-next-link:hover, .deck-container .deck-next-link:focus {
+  text-decoration: none;
+}
+.boxshadow .deck-container .deck-prev-link:hover, .boxshadow .deck-container .deck-prev-link:focus, .boxshadow .deck-container .deck-next-link:hover, .boxshadow .deck-container .deck-next-link:focus {
+  -webkit-box-shadow: 0 0 10px #f0a, 0 0 5px #fff;
+  -moz-box-shadow: 0 0 10px #f0a, 0 0 5px #fff;
+  box-shadow: 0 0 10px #f0a, 0 0 5px #fff;
+}
+.deck-container > .slide .deck-before, .deck-container > .slide .deck-previous {
+  opacity: 0.6;
+}
+.deck-container > .slide .deck-before:not(.deck-child-current) .deck-before, .deck-container > .slide .deck-before:not(.deck-child-current) .deck-previous, .deck-container > .slide .deck-previous:not(.deck-child-current) .deck-before, .deck-container > .slide .deck-previous:not(.deck-child-current) .deck-previous {
+  opacity: 1;
+}
+.deck-container > .slide .deck-child-current {
+  opacity: 1;
+}
+.deck-container .deck-status {
+  font-size: 0.6666em;
+  color: silver;
+}
+.deck-container .goto-form {
+  background: #000;
+  border: 1px solid #f0a;
+}
+.deck-container .goto-form label {
+  color: #fff;
+}
+.deck-container.deck-menu .slide {
+  background: #333;
+}
+.deck-container.deck-menu .deck-current {
+  background: #444;
+}
+.boxshadow .deck-container.deck-menu .deck-current {
+  background: #000;
+  -webkit-box-shadow: 0 0 20px #f0a, 0 0 5px #fff;
+  -moz-box-shadow: 0 0 20px #f0a, 0 0 5px #fff;
+  box-shadow: 0 0 20px #f0a, 0 0 5px #fff;
+}
+.no-touch .deck-container.deck-menu .slide:hover {
+  background: #444;
+}
+.no-touch.boxshadow .deck-container.deck-menu .slide:hover {
+  background: #000;
+  -webkit-box-shadow: 0 0 20px #f0a, 0 0 5px #fff;
+  -moz-box-shadow: 0 0 20px #f0a, 0 0 5px #fff;
+  box-shadow: 0 0 20px #f0a, 0 0 5px #fff;
+}
+
+.deck-container > .slide .hint {
+  position: absolute;
+  bottom: 1em;
+  text-align: center;
+}

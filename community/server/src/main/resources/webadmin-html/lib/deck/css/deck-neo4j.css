@@ -1,0 +1,48 @@
+/* @override 
+	http://localhost:7474/webadmin/lib/deck/css/deck-neo4j.css */
+
+@import url(deck.core.css);
+@import url(deck.goto.css);
+@import url(deck.menu.css);
+@import url(deck.navigation.css);
+@import url(deck.status.css);
+@import url(deck.hash.css);
+@import url(deck.scale.css);
+@import url(horizontal-slide.css);
+
+@import url(neo4j.css);
+
+#guide {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 100%;
+
+  display: none;
+  z-index:1001;
+}
+
+.overlay {
+  display: none;
+}
+
+#guide-header { 
+  width: 80%; 
+  padding: 1em 48px 0;
+  height: 50px;
+  background-color: #044F67;
+  margin: 0 auto;
+}
+
+#guide-header .button-bar {
+  float: right;
+}
+
+#guide-header h1 {
+  color: white;
+}
+
+ul.button-bar.grouped li {
+  margin-left: 1em;
+}

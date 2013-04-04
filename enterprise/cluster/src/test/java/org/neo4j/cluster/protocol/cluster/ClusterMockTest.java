@@ -79,7 +79,6 @@ public class ClusterMockTest
                 new MultipleFailureLatencyStrategy( new FixedNetworkLatencyStrategy( 10 ),
                         new ScriptableNetworkFailureLatencyStrategy() ),
                 new MessageTimeoutStrategy( new FixedTimeoutStrategy( 500 ) )
-                        .timeout( ClusterMessage.joiningTimeout, 1500 )
                         .timeout( HeartbeatMessage.sendHeartbeat, 200 ) );
     }
 

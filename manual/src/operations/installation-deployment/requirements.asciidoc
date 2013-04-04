@@ -8,7 +8,7 @@ Memory constrains graph size, disk I/O constrains read/write performance, as alw
 
 Performance is generally memory or I/O bound for large graphs, and compute bound for graphs which fit in memory.
 
-Minimum::      Intel 486
+Minimum::      Intel Core i3
 Recommended::  Intel Core i7
 
 
@@ -16,33 +16,28 @@ Recommended::  Intel Core i7
 
 More memory allows even larger graphs, but runs the risk of inducing larger Garbage Collection operations.
 
-Minimum::     1GB
-Recommended:: 4-8GB
+Minimum::     2GB
+Recommended:: 16--32GB or more
 
 == Disk ==
 
 Aside from capacity, the performance characteristics of the disk are the most important when selecting storage.
 
-Minimum::     SCSI, EIDE 
+Minimum::     10GB SATA
 Recommended:: SSD w/ SATA
 
 == Filesystem ==
 
 For proper ACID behavior, the filesystem must support flush (fsync, fdatasync).
 
-Minimum::      ext3 (or similar)
+Minimum::      ext4 (or similar)
 Recommended::  ext4, ZFS
 
 == Software ==
 
 Neo4j is Java-based.
 
-Java:: Oracle Java 6
-Operating Systems:: Linux, Windows XP, Mac OS X
+Java:: http://www.oracle.com/technetwork/java/javase/downloads/index.html[Oracle Java 7]
+Operating Systems::  Linux, HP UX, Windows 2008 for production; additionally Windows XP, Mac OS X for development.
 
-== JDK Version ==
-
-The Neo4j runtime is continuously tested with 
-
-* http://www.oracle.com/technetwork/java/javase/downloads/index.html[Oracle Java Runtime Environment JRE 1.6]
 
