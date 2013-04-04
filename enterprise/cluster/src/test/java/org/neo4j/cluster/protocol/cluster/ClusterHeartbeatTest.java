@@ -76,9 +76,9 @@ public class ClusterHeartbeatTest
     {
         testCluster( 3, DEFAULT_NETWORK(), new ClusterTestScriptDSL().
                 rounds( 1000 ).
-                join( 100, 1, 1, 2, 3 ).
-                join( 100, 2, 1, 2, 3 ).
-                join( 100, 3, 1, 2, 3 ).
+                join( 100, 1, 1 ).
+                join( 100, 2, 1 ).
+                join( 100, 3, 1 ).
                 message( 3000, "*** All nodes up and ok" ).
                 down( 500, 1 ).
                 message( 1000, "*** Should have seen failure by now" ).
@@ -94,7 +94,7 @@ public class ClusterHeartbeatTest
                 leave( 300, 2 ).
                 leave( 300, 3 ) );
     }
-    
+
     @Test
     public void threeNodesJoinAndThenCoordinatorDiesForReal()
             throws URISyntaxException, ExecutionException, TimeoutException, InterruptedException
@@ -103,9 +103,9 @@ public class ClusterHeartbeatTest
 
         testCluster( 3, DEFAULT_NETWORK(), new ClusterTestScriptDSL().
                 rounds( 1000 ).
-                join( 100, 1, 1, 2, 3 ).
-                join( 100, 2, 1, 2, 3 ).
-                join( 100, 3, 1, 2, 3 ).
+                join( 100, 1, 1 ).
+                join( 100, 2, 1 ).
+                join( 100, 3, 1 ).
                 message( 3000, "*** All nodes up and ok" ).
                 getRoles( 0, roles ).
                 down( 500, 1 ).

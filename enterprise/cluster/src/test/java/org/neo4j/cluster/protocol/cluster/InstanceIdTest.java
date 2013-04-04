@@ -82,10 +82,10 @@ public class InstanceIdTest
                 new VerifyInstanceConfiguration( Collections.<URI>emptyList(), Collections.<String, InstanceId>emptyMap(),
                         Collections.<InstanceId>emptySet() )}, DEFAULT_NETWORK(), new ClusterTestScriptDSL().
                 rounds( 600 ).
-                join( 100, 1, 1, 2, 3 ).
-                join( 100, 2, 1, 2, 3 ).
-                join( 100, 3, 1, 2, 3 ).
-                join( 5000, 4, 1, 2, 3 ).
+                join( 100, 1, 1 ).
+                join( 100, 2, 1 ).
+                join( 100, 3, 1 ).
+                join( 5000, 4, 1 ).
                 message( 0, "*** Conflicting node tried to join" )
                 );
     }
@@ -124,9 +124,9 @@ public class InstanceIdTest
                 DEFAULT_NETWORK(),
                 new ClusterTestScriptDSL().
                 rounds( 8000 ).
-                join( 100, 1, 1, 2, 3 ).
-                join( 100, 2, 1, 2, 3 ).
-                join( 100, 3, 1, 2, 3 ).
+                join( 100, 1, 1 ).
+                join( 100, 2, 1 ).
+                join( 100, 3, 1 ).
 //                        assertThat(electionHappened(1, "coordinator")).
                 down( 3000, 3 ).
                 join( 1000, 4, 1, 2, 3 )
@@ -161,9 +161,9 @@ public class InstanceIdTest
                 DEFAULT_NETWORK(),
                 new ClusterTestScriptDSL().
                         rounds( 800 ).
-                        join( 100, 1, 1, 2, 3 ).
-                        join( 100, 2, 1, 2, 3 ).
-                        join( 100, 3, 1, 2, 3 ).
+                        join( 100, 1, 1 ).
+                        join( 100, 2, 1 ).
+                        join( 100, 3, 1 ).
                         down( 3000, 3 ).
                         join( 1000, 4, 1, 2, 3 ).
                         up( 1000, 3 )
