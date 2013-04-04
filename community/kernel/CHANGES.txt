@@ -1,3 +1,8 @@
+2.0.0-M02
+---------
+o BREAKING CHANGE: org.neo4j.graphdb.index.BatchInserterIndex and org.neo4j.graphdb.index.BatchInserterIndexProvider
+  has been removed in favor of the same interfaces available in org.neo4j.unsafe.batchinsert
+
 2.0.M01
 -------
 o Adds support for adding, listing, removing, and testing of labels

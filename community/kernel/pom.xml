@@ -344,7 +344,7 @@ public class ComponentVersion extends Version
           <!-- This is temporarily hard-coded, because the versionsBack attribute seems to not work on OS X, we'll
            need to fix that. -->
           <comparisonVersion>1.9.M05</comparisonVersion>
-		  <ignoreMaintenenceVersions>false</ignoreMaintenenceVersions>
+          <ignoreMaintenenceVersions>false</ignoreMaintenenceVersions>
           <includes>
             <include>org/neo4j/graphdb/**</include>
           </includes>
@@ -356,12 +356,12 @@ public class ComponentVersion extends Version
             <param>7012</param><!-- Method added to interface -->
           </excludeMessageCodes>
           <excludes>
-            <!-- Ignore known breaking changes introduced in 1.9 traversal and config APIs. -->
-            <exclude>org/neo4j/graphdb/config/**</exclude>
-            <exclude>org/neo4j/graphdb/traversal/**</exclude>
-            <exclude>org/neo4j/graphdb/factory/GraphDatabaseSetting*</exclude>
-          </excludes>
+            <!-- Ignore known breaking changes introduced in 2.0 -->
 
+            <!-- Batch inserter indexing interfaces moved to org.neo4j.unsafe.batchinsert -->
+            <exclude>org/neo4j/graphdb/index/BatchInserterIndex</exclude>
+            <exclude>org/neo4j/graphdb/index/BatchInserterIndexProvider</exclude>
+          </excludes>
         </configuration>
       </plugin>
     </plugins>
