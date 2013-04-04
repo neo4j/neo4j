@@ -2,400 +2,337 @@
 High Availability setup tutorial
 ================================
 
-This is a guide to help you understand the ways you can configure and deploy a Neo4j High Availability cluster. Two
+This guide will help you understand the ways to configure and deploy a Neo4j High Availability cluster. Two
 scenarios will be considered: The first will be configuring 3 instances to be deployed on 3 separate machines, in a
 setting similar to what might be encountered in a production environment. The second will modify the former to make
 it possible to run a cluster of 3 instances on the same physical machine, a setup most useful during development of
-applications on top of Neo4j. We will be focusing on the server configuration, since it is a superset of the embedded
-case.
+applications on top of Neo4j.
 
 == Background ==
 
-A Neo4j HA cluster consists of a set of Neo4j Enterprise instances, either running in embedded or server mode. Each
-instance requires a different number of sockets made available to it as well as informing it of the location of the
-rest of the instances so communication between them can happen. There is also the need to assign an integer ID to each
-instance which function as its identifier in the cluster.
+A Neo4j HA cluster consists of a set of running Neo4j Enterprise instances. Each instance must be assigned an
+integer ID, which serves as its identifier in the cluster.
 
-Each cluster member, on startup, contacts a set of servers as they are defined in +ha.initial_hosts+. If even one of
-them belongs already in a cluster, then the instance that is starting up will join that cluster. Otherwise at least
-half of the instances defined in the +ha.initial_hosts+ setting must be reachable and only then will a cluster will be
-formed. This is actually taken care of automatically so you won't have to worry about it - just configure properly
-+ha.initial_hosts+ and things will work.
+At startup, a Neo4j instance contacts the other instances specified in the +ha.initial_hosts+ configuration option.
+When it establishes a connection to any one of these, it determines the current state of the cluster and ensures that
+it is eligible to join the cluster. To be eligible the Neo4j instance must be hosting the same database store as
+other members of the cluster (although it is allowed to be in an older state), or be a new deployment without a
+database store.
+
+First, let's explain what settings exist and what values they accept.
+
+=== ha.server_id
+
++ha.server_id+ is the cluster identification for each instance. It must be a positive integer, unique among all
+Neo4j instances in the cluster.
+
+=== ha.cluster_server
+
++ha.cluster_server+ is an address/port setting that specifies where the Neo4j instance will listen for cluster
+communications. This is related with the +ha.initial_hosts+ setting. The default is +0.0.0.0:5001+, which is
+suitable for most deployments.
+
+=== ha.server
+
++ha.server+ is an additional address/port setting that specifies where the Neo4j instance will listen for content. It
+must be different from ha.cluster_server, typically with a different port. The default is +0.0.0.0:6361+, which is
+suitable for most deployments.
+
+=== ha.initial_hosts
+
++ha.initial_hosts+ is a comma separated list of hostname/port pairs, which specify how to reach other Neo4j instances
+in the cluster (as configured via their +ha.cluster_server+ option). These hostname/ports will be used when the Neo4j
+instances starts, to allow it up to find and join the cluster. Note the specifying the instances own address is
+permitted.
 
 [TIP]
+.Address/port format
 ==================
-Neo4j Server (see <<server>>) and Neo4j Embedded (see <<configuration-introduction>>) can both be used as nodes in
-the same HA cluster.
-This opens for scenarios where one application can insert and update data via a Java or JVM language based application,
-and other instances can run Neo4j Server and expose the data via the REST API (<<rest-api>>).
+The options +ha.cluster_server+ and +ha.server+ are specified as +<IP address>:<port>+. The IP address MUST be the
+address assigned to one of the servers network interfaces, or the value +0.0.0.0+, which will cause Neo4j to listen
+on every network interface.
+
+Either the address or the port can be omitted, in which case the default for that part will be used. If the address
+is omitted, then the port must be preceeded with a colon (eg. +:5001+).
+
+The port can also be configured as a range, like so: +<hostname>:<first port>[-<second port>]+. In this case, Neo4j
+will test each port in sequence, and select the first that is unused. Note that this usage is not permitted when the
+hostname is specified as +0.0.0.0+ (the "all interfaces" address).
 ==================
-
-Before going into specifics, let's quickly explain what settings exist and what values they accept.
-
-[TIP]
-.Address and port format
-==================
-All address/port settings can be configured either as simply an interface address or hostname (so the default port
-for that setting is used), as an address/port combination or as a port only, with the notation +:<port>+.
-In the last two cases, the port can also be defined as a port range with a hyphen like so:
-
-+[optional IP address or hostname]:<first port>[-<secondport>]+
-
-In this case, the ports are tried in sequence until one can be used to bind to. This proves useful in the case where
-clusters are setup in the same machine and there are port conflicts between the instances.
-==================
-
-[source,properties]
-----
-ha.server_id
-----
-
-+ha.server_id+ is the cluster identification for each instance. It has to be a positive integer, unique among all
-instances that comprise a cluster. The lower this value, the greater preference this instance will have for being
-elected as master.
-
-[source,properties]
-----
-ha.cluster_server
-----
-
-+ha.cluster_server+ is an address/port setting which defines where this server will bind to for cluster communications.
-This is also related with the +ha.initial_hosts+ setting as it is explained below
-
-[source,properties]
-----
-ha.initial_hosts
-----
-
-+ha.initial_hosts+ is used during instance startup so that an instance knows which other instances to contact so it can
-either join an existing cluster or, if necessary, create a new one. This setting is a comma separated list
-of +<hostname>:<port>+ pairs. The values setup here must be the +ha.cluster_server+ values of the rest of the instances
-that are to be part of the cluster
-
-[source,properties]
-----
-ha.server
-----
-
-+ha.server+ is a hostname/port setting that defines the socket where transaction data will be communicated to and from
-this instance. This is not related to clustering and must be different from +ha.cluster_server+. The value of this
-setting (so that other instances can connect to this one) will be communicated over the clustering infrastructure so
-it isn't necessary to inform other instances of this value, unlike +ha.initial_hosts+.
 
 == Getting started: Setting up a production cluster ==
 
 [[package-download]]
 === Download and unpack Neo4j Enterprise ===
 
-Download and unpack three installations of Neo4j Enterprise 
-(called +$NEO4J_HOME1+, +$NEO4J_HOME2+, +$NEO4J_HOME3+) from http://neo4j.org/download[the Neo4j download site]. For
-this section, it is assumed that each of the three installations resides on a separate physical machine, so
-address conflicts between instances are impossible. We'll call the primary network interface of each of these machines
-+$IF_1+, +$IF_2+ and +$IF_3+.
+Download Neo4j Enterprise from http://neo4j.org/download[the Neo4j download site], and unpack on 3 separate machines.
 
-=== Supply the minimal configuration for instances to form a cluster ===
+=== Configure HA related settings for each installation ===
 
-In your 'conf/neo4j.properties' file, enable HA by setting the necessary parameters for all 3 installations.
-The config files should include the following:
+The following settings should be configured for each Neo4j installation.
+Note that all 3 installations have the same configuration, except for the +ha.server_id+ property.
 
-Database instance #1
+==== Neo4j instance #1 - neo4j-01.local
 
+`conf/neo4j.properties`:
 [source,properties]
 ----
-# Unique server id for this graph database
+# Unique server id for this Neo4j instance
 # can not be negative id and must be unique
 ha.server_id = 1
 
-# IP and port for this instance to bind to for communicating data with the
-# other neo4j instances in the cluster.
-ha.server = $IF_1:6361
-
-# IP and port for this instance to bind to for communicating cluster information
-# with the other neo4j instances in the cluster.
-ha.cluster_server = $IF_1:5001
-
 # List of other known instances in this cluster
-ha.initial_hosts = $IF_1:5001,$IF_2:5001,$IF_3:5001
+ha.initial_hosts = neo4j-01.local:5001,neo4j-01.local:5001,neo4j-01.local:5001
+# Alternatively, use IP addresses:
+#ha.initial_hosts = 192.168.0.20:5001,192.168.0.21:5001,192.168.0.22:5001
 ----
 
-Database instance #2
-
+`conf/neo4j-server.properties`
 [source,properties]
 ----
-# Unique server id for this graph database
-# can not be negative id and must be unique
-ha.server_id = 2
+# Let the webserver only listen on the specified IP.
+org.neo4j.server.webserver.address=0.0.0.0
 
-# IP and port for this instance to bind to for communicating data with the
-# other neo4j instances in the cluster.
-ha.server = $IF_2:6361
-
-# IP and port for this instance to bind to for communicating cluster information
-# with the other neo4j instances in the cluster.
-ha.cluster_server = $IF_2:5001
-
-# List of other known instances in this cluster
-ha.initial_hosts = $IF_1:5001,$IF_2:5001,$IF_3:5001
-----
-
-Database instance #3
-
-[source,properties]
-----
-# Unique server id for this graph database
-# can not be negative id and must be unique
-ha.server_id = 3
-
-# IP and port for this instance to bind to for communicating data with the
-# other neo4j instances in the cluster.
-ha.server = $IF_3:6361
-
-# IP and port for this instance to bind to for communicating cluster information
-# with the other neo4j instances in the cluster.
-ha.cluster_server = $IF_3:5001
-
-# List of other known instances in this cluster
-ha.initial_hosts = $IF_1:5001,$IF_2:5001,$IF_3:5001
-----
-
-Finally, since this is a server setup, we need to configure server to start in HA mode. This is done in
-'conf/neo4j-server.properties' configuration file by setting the database mode property, like so:
-
-[source,properties]
-----
-# Allowed values:
 # HA - High Availability
 # SINGLE - Single mode, default.
-# To run in High Availability mode, configure the coord.cfg file, and the
-# neo4j.properties config file, then uncomment this line:
 org.neo4j.server.database.mode=HA
 ----
 
-Make sure that all 3 instances have the same option set.
+==== Neo4j instance #2 - neo4j-02.local
 
-[[ha-server-startup]]
-=== Start the Neo4j Servers in HA mode ===
-
-Now, you can start all 3 server instances via the cluster script.
-
-[source,shell]
-----
-neo4j_home1$ ./bin/neo4j start
-neo4j_home2$ ./bin/neo4j start
-neo4j_home3$ ./bin/neo4j start
-----
-
-[TIP]
-.Long startup times
-==================
-As already mentioned, if a cluster is not already running when an instance starts, it will wait for at least half
-of the instances configured in +ha.initial_hosts+ to be reachable. This means that the first server will wait
-for ever until the second server is started.
-==================
-
-Now, you should be able to access the 3 servers (the first one being elected as master since it was started first) at 
-http://$IF_1:7474/webadmin/\#/info/org.neo4j/High%20Availability/,
-http://$IF_2:7474/webadmin/\#/info/org.neo4j/High%20Availability/
-and
-http://$IF_3:7474/webadmin/#/info/org.neo4j/High%20Availability/
-and check the status of the HA configuration.
-Alternatively, the REST API is exposing JMX, so you can check the HA JMX bean with for example:
-
-[source,shell]
-----
-curl -H "Content-Type:application/json" -d '["org.neo4j:*"]' \
-  http://$IF_1:7474/db/manage/server/jmx/query
-----
-
-Which will get a response along the lines of the following:
-
-[source,javascript]
-----
-"description" : "Information about all instances in this cluster",
-    "name" : "InstancesInCluster",
-    "value" : [ {
-      "description" : "org.neo4j.management.InstanceInfo",
-      "value" : [ {
-        "description" : "address",
-        "name" : "address"
-      }, {
-        "description" : "instanceId",
-        "name" : "instanceId"
-      }, {
-        "description" : "lastCommittedTransactionId",
-        "name" : "lastCommittedTransactionId",
-        "value" : 1
-      }, {
-        "description" : "serverId",
-        "name" : "serverId",
-        "value" : 1
-      }, {
-        "description" : "master",
-        "name" : "master",
-        "value" : true
-      } ],
-      "type" : "org.neo4j.management.InstanceInfo"
-    }
-----
-
-[TIP]
-You can replace database #3 with an 'arbiter' instance, see <<arbiter-instances, Arbiter Instances>>
-
-That's it! You now have a Neo4j HA cluster of 3 instances working as expected. You can start putting load on either
-instance and changes should be propagated between them. For more HA related configuration options take a look at
-<<ha-configuration, HA Configuration>>
-
-== Alternative setup: Creating a localhost cluster for testing ==
-
-If you want to start a cluster similar to the one created above, but for development and testing purposes, it is
-quite convenient to have all processes on the same machine, so management becomes easier, debugging is faster and
-feedback is immediate. Doing that is quite easy, and in fact can be achieved while using mostly the same configuration
-for all instances. Most of the work will be to solve port conflicts which are minimal since we can define port ranges
-to have them resolved automatically.
-
-=== First step: Download the package ===
-
-You must again download the Neo4j <<package-download,as described previously>> but instead of having separate machines
-you will unpack it in 3 different directories. We'll use the names +$NEO4J_HOME1+, +$NEO4J_HOME2+
-and +$NEO4J_HOME3+ here as well.
-
-=== Configure the instances to work locally: Neo4j Kernel ===
-
-First thing to configure is of course the kernel and the HA communication. We will take advantage of the reachability
-of +localhost+/+127.0.0.1+ from the local machine to skip defining hostnames or IP addresses. Also we'll define ports
-as port ranges - these two practices make all configuration files practically the same, except for the +ha.server_id+
-setting which must still be set. The final configurations must include the following - note how similar they are:
-
-Database instance #1
-
+`conf/neo4j.properties`:
 [source,properties]
 ----
-# Unique server id for this graph database
+# Unique server id for this Neo4j instance
+# can not be negative id and must be unique
+ha.server_id = 2
+
+# List of other known instances in this cluster
+ha.initial_hosts = neo4j-01.local:5001,neo4j-01.local:5001,neo4j-01.local:5001
+# Alternatively, use IP addresses:
+#ha.initial_hosts = 192.168.0.20:5001,192.168.0.21:5001,192.168.0.22:5001
+----
+
++conf/neo4j-server.properties+
+[source,properties]
+----
+# Let the webserver only listen on the specified IP.
+org.neo4j.server.webserver.address=0.0.0.0
+
+# HA - High Availability
+# SINGLE - Single mode, default.
+org.neo4j.server.database.mode=HA
+----
+
+==== Neo4j instance #3 - neo4j-03.local
+
++conf/neo4j.properties+:
+[source,properties]
+----
+# Unique server id for this Neo4j instance
+# can not be negative id and must be unique
+ha.server_id = 3
+
+# List of other known instances in this cluster
+ha.initial_hosts = neo4j-01.local:5001,neo4j-01.local:5001,neo4j-01.local:5001
+# Alternatively, use IP addresses:
+#ha.initial_hosts = 192.168.0.20:5001,192.168.0.21:5001,192.168.0.22:5001
+----
+
+`conf/neo4j-server.properties`
+[source,properties]
+----
+# Let the webserver only listen on the specified IP.
+org.neo4j.server.webserver.address=0.0.0.0
+
+# HA - High Availability
+# SINGLE - Single mode, default.
+org.neo4j.server.database.mode=HA
+----
+
+=== Start the Neo4j Servers ===
+
+Start the Neo4j servers as normal. Note the startup order does not matter.
+
+[source,shell]
+----
+neo4j-01$ ./bin/neo4j start
+----
+[source,shell]
+----
+neo4j-02$ ./bin/neo4j start
+----
+[source,shell]
+----
+neo4j-03$ ./bin/neo4j start
+----
+
+[TIP]
+.Startup Time
+==================
+Note that a Neo4j HA instance will wait during startup until it can reach at least half of the instances configured in
++ha.initial_hosts+. In this example, neo4j-01 will not complete its startup until neo4j-02 is also started.
+==================
+
+Now, you should be able to access the 3 servers and check their HA status:
+
+http://neo4j-01.local:7474/webadmin/#/info/org.neo4j/High%20Availability/
+
+http://neo4j-02.local:7474/webadmin/#/info/org.neo4j/High%20Availability/
+
+http://neo4j-03.local:7474/webadmin/#/info/org.neo4j/High%20Availability/
+
+[TIP]
+You can replace database #3 with an 'arbiter' instance, see <<arbiter-instances, Arbiter Instances>>.
+
+That's it! You now have a Neo4j HA cluster of 3 instances running. You can start by making a change on any
+instance and those changes will be propagated between them. For more HA related configuration options take a look at
+<<ha-configuration, HA Configuration>>.
+
+== Alternative setup: Creating a local cluster for testing ==
+
+If you want to start a cluster similar to the one described above, but for development and testing purposes, it is
+convenient to run all Neo4j instances on the same machine. This is easy to achieve, although it requires some
+additional configuration as the defaults will conflict with each other.
+
+=== Download and unpack Neo4j Enterprise ===
+
+Download Neo4j Enterprise from http://neo4j.org/download[the Neo4j download site], and unpack into 3 separate
+directories on your test machine.
+
+=== Configure HA related settings for each installation ===
+
+The following settings should be configured for each Neo4j installation.
+
+==== Neo4j instance #1 - ~/neo4j-01
+
+`conf/neo4j.properties`:
+[source,properties]
+----
+# Unique server id for this Neo4j instance
 # can not be negative id and must be unique
 ha.server_id = 1
 
 # IP and port for this instance to bind to for communicating data with the
 # other neo4j instances in the cluster.
-ha.server = :6363-6365
-online_backup_server = :6366-6368
+ha.server = 127.0.0.1:6363
+online_backup_server = 127.0.0.1:6366
 
 # IP and port for this instance to bind to for communicating cluster information
 # with the other neo4j instances in the cluster.
-ha.cluster_server = :5001-5003
+ha.cluster_server = 127.0.0.1:5001
 
 # List of other known instances in this cluster
-ha.initial_hosts = :5001,:5002,:5003
+ha.initial_hosts = 127.0.0.1:5001,127.0.0.1:5002,127.0.0.1:5003
 ----
 
-Database instance #2
-
-[source,properties]
-----
-# Unique server id for this graph database
-# can not be negative id and must be unique
-ha.server_id = 2
-
-# IP and port for this instance to bind to for communicating data with the
-# other neo4j instances in the cluster.
-ha.server = :6363-6365
-online_backup_server = :6366-6368
-
-# IP and port for this instance to bind to for communicating cluster information
-# with the other neo4j instances in the cluster.
-ha.cluster_server = :5001-5003
-
-# List of other known instances in this cluster
-ha.initial_hosts = :5001,:5002,:5003
-----
-
-Database instance #3
-
-[source,properties]
-----
-# Unique server id for this graph database
-# can not be negative id and must be unique
-ha.server_id = 3
-
-# IP and port for this instance to bind to for communicating data with the
-# other neo4j instances in the cluster.
-ha.server = :6363-6365
-online_backup_server = :6366-6368
-
-# IP and port for this instance to bind to for communicating cluster information
-# with the other neo4j instances in the cluster.
-ha.cluster_server = :5001-5003
-
-# List of other known instances in this cluster
-ha.initial_hosts = :5001,:5002,:5003
-----
-
-[TIP]
-.Reduce the number of necessary edits
-==================
-You may want to first finish the configuration of instance #1 and then copy paste the entire directory under the homes
-for instances #2 and #3. This will allow you to simply change the file where necessary instead of doing the whole
-thing from scratch. Since they differ so little, this will be faster and safer.
-==================
-
-=== Configure the instances to work locally: Server ===
-
-We also have to setup the server via  'conf/neo4j-server.properties'. We have to change the ports the REST server
-binds to for each instance and, while we're at it, enable HA mode, like so:
-
-Database instance #1
-
+`conf/neo4j-server.properties`
 [source,properties]
 ----
 # http port (for all data, administrative, and UI access)
 org.neo4j.server.webserver.port=7474
-...
+
 # https port (for all data, administrative, and UI access)
-org.neo4j.server.webserver.https.port=7473
-...
-# Allowed values:
+org.neo4j.server.webserver.https.port=7484
+
 # HA - High Availability
 # SINGLE - Single mode, default.
-# To run in High Availability mode, configure the coord.cfg file, and the
-# neo4j.properties config file, then uncomment this line:
 org.neo4j.server.database.mode=HA
 ----
 
-Database instance #2
+==== Neo4j instance #2 - ~/neo4j-02
 
+`conf/neo4j.properties`:
+[source,properties]
+----
+# Unique server id for this Neo4j instance
+# can not be negative id and must be unique
+ha.server_id = 2
+
+# IP and port for this instance to bind to for communicating data with the
+# other neo4j instances in the cluster.
+ha.server = 127.0.0.1:6364
+online_backup_server = 127.0.0.1:6367
+
+# IP and port for this instance to bind to for communicating cluster information
+# with the other neo4j instances in the cluster.
+ha.cluster_server = 127.0.0.1:5002
+
+# List of other known instances in this cluster
+ha.initial_hosts = 127.0.0.1:5001,127.0.0.1:5002,127.0.0.1:5003
+----
+
+`conf/neo4j-server.properties`
 [source,properties]
 ----
 # http port (for all data, administrative, and UI access)
 org.neo4j.server.webserver.port=7475
-...
+
 # https port (for all data, administrative, and UI access)
-org.neo4j.server.webserver.https.port=7472
-...
-# Allowed values:
+org.neo4j.server.webserver.https.port=7485
+
 # HA - High Availability
 # SINGLE - Single mode, default.
-# To run in High Availability mode, configure the coord.cfg file, and the
-# neo4j.properties config file, then uncomment this line:
 org.neo4j.server.database.mode=HA
 ----
 
-Database instance #1
+==== Neo4j instance #3 - ~/neo4j-03
 
+`conf/neo4j.properties`:
+[source,properties]
+----
+# Unique server id for this Neo4j instance
+# can not be negative id and must be unique
+ha.server_id = 3
+
+# IP and port for this instance to bind to for communicating data with the
+# other neo4j instances in the cluster.
+ha.server = 127.0.0.1:6365
+online_backup_server = 127.0.0.1:6368
+
+# IP and port for this instance to bind to for communicating cluster information
+# with the other neo4j instances in the cluster.
+ha.cluster_server = 127.0.0.1:5003
+
+# List of other known instances in this cluster
+ha.initial_hosts = 127.0.0.1:5001,127.0.0.1:5002,127.0.0.1:5003
+----
+
+`conf/neo4j-server.properties`
 [source,properties]
 ----
 # http port (for all data, administrative, and UI access)
 org.neo4j.server.webserver.port=7476
-...
+
 # https port (for all data, administrative, and UI access)
-org.neo4j.server.webserver.https.port=7471
-...
-# Allowed values:
+org.neo4j.server.webserver.https.port=7486
+
 # HA - High Availability
 # SINGLE - Single mode, default.
-# To run in High Availability mode, configure the coord.cfg file, and the
-# neo4j.properties config file, then uncomment this line:
 org.neo4j.server.database.mode=HA
 ----
 
-=== Start the instances ===
+=== Start the Neo4j Servers ===
 
-We are done. You can now start all instances and test them as described <<ha-server-startup, above>>.
+Start the Neo4j servers as normal. Note the startup order does not matter.
+
+[source,shell]
+----
+localhost:~/neo4j-01$ ./bin/neo4j start
+----
+[source,shell]
+----
+localhost:~/neo4j-02$ ./bin/neo4j start
+----
+[source,shell]
+----
+localhost:~/neo4j-03$ ./bin/neo4j start
+----
+
+Now, you should be able to access the 3 servers and check their HA status:
+
+http://127.0.0.1:7474/webadmin/#/info/org.neo4j/High%20Availability/
+
+http://127.0.0.1:7475/webadmin/#/info/org.neo4j/High%20Availability/
+
+http://127.0.0.1:7476/webadmin/#/info/org.neo4j/High%20Availability/
