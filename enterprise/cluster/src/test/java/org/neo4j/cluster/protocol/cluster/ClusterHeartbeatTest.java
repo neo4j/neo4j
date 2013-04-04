@@ -108,7 +108,7 @@ public class ClusterHeartbeatTest
                 join( 100, 3, 1 ).
                 message( 3000, "*** All nodes up and ok" ).
                 getRoles( 0, roles ).
-                down( 500, 1 ).
+                down( 800, 1 ).
                 message( 2000, "*** Should have seen failure by now" ).
                 verifyCoordinatorRoleSwitched( roles ).
                 leave( 0, 1 ).
