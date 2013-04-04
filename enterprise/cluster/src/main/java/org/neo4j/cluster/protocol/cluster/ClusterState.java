@@ -95,7 +95,22 @@ public enum ClusterState
                             }
                             context.timeouts.setTimeout( "discovery",
                                     timeout( ClusterMessage.configurationTimeout, message,
-                                            new ClusterMessage.ConfigurationTimeoutState( 4 ) ) );
+                                            new ClusterMessage.ConfigurationTimeoutState(
+                                                    /*
+                                                     * The time when this becomes relevant is if indeed there are
+                                                     * other instances present in the configuration. If there aren't
+                                                     * we won't wait for them anyway and only this delay prevents us
+                                                     * from going ahead and creating the cluster. We still wait a bit
+                                                     * though because even if we don't have them configured they still
+                                                     * might contact us.
+                                                     * If, on the other hand, we have some configured, then we won't
+                                                     * startup anyway until half are available. So this delay doesn't
+                                                     * enter into it anyway.
+                                                     * In summary, this offers no upside if there are configured instances
+                                                     * and causes unnecessary delay if we are supposed to go ahead and
+                                                     * create the cluster.
+                                                     */
+                                                    1 ) ) );
                             return discovery;
                         }
                     }
@@ -193,12 +208,13 @@ public enum ClusterState
                                 {
                                     outgoing.offer( to( ClusterMessage.configurationRequest,
                                             potentialClusterInstanceUri,
-                                            new ClusterMessage.ConfigurationRequestState( context.getMyId(), context.boundAt() ) ) );
+                                            new ClusterMessage.ConfigurationRequestState(
+                                                    context.getMyId(), context.boundAt() ) ) );
                                 }
                                 context.timeouts.setTimeout( "join",
                                         timeout( ClusterMessage.configurationTimeout, message,
                                                 new ClusterMessage.ConfigurationTimeoutState(
-                                                        state.getRemainingPings()-1 ) ) );
+                                                        state.getRemainingPings() - 1 ) ) );
                             }
                             else
                             {
@@ -220,9 +236,17 @@ public enum ClusterState
                                      * We also start the cluster if we are the only configured instance. joiningInstances
                                      * does not contain us, ever.
                                      */
-                                    if ( ( discoveredInstances.size() > count( context.getJoiningInstances() )/2 &&
-                                            discoveredInstances.get( 0 ).getJoiningId().compareTo(context.getMyId() ) >= 0 )
-                                            || count( context.getJoiningInstances() ) == 0 )
+                                    if (    // No one to join with
+                                            count( context.getJoiningInstances() ) == 0
+                                            // enough instances discovered (half or more - i don't count myself here)
+                                            || ( discoveredInstances.size() >= count( context.getJoiningInstances() ) / 2
+                                            /*
+                                             * I am supposed to create the cluster (i am before the first in the list
+                                             * of the discovered instances). This won't run if there are no discovered
+                                             * instances so the get( 0 ) is safe.
+                                             */
+                                            && discoveredInstances.get( 0 ).getJoiningId().compareTo(context.getMyId() ) >= 0
+                                    ) )
                                     {
                                         discoveredInstances.clear();
 
