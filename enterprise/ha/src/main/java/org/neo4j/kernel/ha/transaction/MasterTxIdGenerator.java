@@ -205,7 +205,7 @@ public class MasterTxIdGenerator implements TxIdGenerator, Lifecycle
                         continue;
                     }
 
-                    if ( isSuccessfull( committer ) )
+                    if ( isSuccessful( committer ) )
                     // This committer was successful, increment counter
                     {
                         successfulReplications++;
@@ -273,7 +273,7 @@ public class MasterTxIdGenerator implements TxIdGenerator, Lifecycle
         } );
     }
 
-    private boolean isSuccessfull( Future<Void> committer )
+    private boolean isSuccessful( Future<Void> committer )
     {
         try
         {
@@ -286,11 +286,8 @@ public class MasterTxIdGenerator implements TxIdGenerator, Lifecycle
         }
         catch ( ExecutionException e )
         {
-            if ( !(e.getCause() instanceof ComException) )
-            {
-                log.error( "Slave commit threw exception", e.getCause() );
-            }
-
+            log.error( "Slave commit threw " + (e.getCause() instanceof ComException ? "communication" : "" )
+                    + " exception", e );
             return false;
         }
         catch ( CancellationException e )
