@@ -31,12 +31,33 @@ class CreateTest extends RefcardTest with StatisticsChecker {
       case "create-node" =>
         assertStats(result, nodesCreated = 1, propertiesSet = 1)
         assert(result.toList.size === 1)
+      case "create-node-from-map" =>
+        assertStats(result, nodesCreated = 1, propertiesSet = 1)
+        assert(result.toList.size === 1)
+      case "create-nodes-from-maps" =>
+        assertStats(result, nodesCreated = 2, propertiesSet = 2)
+        assert(result.toList.size === 2)
       case "create-rel" =>
         assertStats(result, relationshipsCreated = 1)
         assert(result.dumpToString.contains("KNOWS"))
       case "create-rel-prop" =>
         assertStats(result, relationshipsCreated = 1, propertiesSet = 1)
         assert(result.toList.size === 1)
+    }
+  }
+
+  override def parameters(name: String): Map[String, Any] = {
+    name match {
+      case "parameters=aname" =>
+        Map("value" -> "Bob")
+      case "parameters=map" =>
+        Map("map" -> Map("name" -> "Bob"))
+      case "parameters=maps" =>
+        Map("collectionOfMaps" -> List(Map("name" -> "Bob"), Map("name" -> "Carl")))
+      case "parameters=ayear" =>
+        Map("value" -> 2007)
+      case "" =>
+        Map()
     }
   }
 
@@ -48,14 +69,32 @@ class CreateTest extends RefcardTest with StatisticsChecker {
   def text = """.CREATE
 [refcard]
 ----
-###assertion=create-node
+###assertion=create-node parameters=aname
 //
 
-CREATE (n { name :"Name" }) 
+CREATE (n {name: {value}}) 
 
 RETURN n###
 
 Create a node with the given properties.
+
+###assertion=create-node-from-map parameters=map
+//
+
+CREATE n = {map}
+
+RETURN n###
+
+Create a node with the given properties.
+
+###assertion=create-nodes-from-maps parameters=maps
+//
+
+CREATE n = {collectionOfMaps}
+
+RETURN n###
+
+Create nodes with the given properties.
 
 ###assertion=create-rel
 START n=node(%A%), m=node(%B%)
@@ -66,10 +105,10 @@ RETURN r###
 
 Create a relationship with the given type and direction; bind an identifier to it.
 
-###assertion=create-rel-prop
+###assertion=create-rel-prop parameters=ayear
 START n=node(%A%), m=node(%B%)
 
-CREATE n-[:LOVES {since: 2007}]->m
+CREATE n-[:LOVES {since: {value}}]->m
 
 RETURN n###
 

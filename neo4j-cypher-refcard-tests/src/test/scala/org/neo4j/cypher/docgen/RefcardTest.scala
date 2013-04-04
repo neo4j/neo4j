@@ -50,11 +50,12 @@ abstract class RefcardTest extends Assertions with DocumentationHelper {
   def title: String
   def section: String
   def assert(name: String, result: ExecutionResult)
+  def parameters(name: String): Map[String, Any] = Map()
   def graphDescription: List[String]
   def indexProps: List[String] = List()
 
-  def executeQuery(queryText: String)(implicit engine: ExecutionEngine): ExecutionResult = try {
-    val result = engine.execute(replaceNodeIds(queryText))
+  def executeQuery(queryText: String, params: Map[String, Any])(implicit engine: ExecutionEngine): ExecutionResult = try {
+    val result = engine.execute(replaceNodeIds(queryText), params)
     result
   } catch {
     case e: CypherException => throw new InternalException(queryText, e)
@@ -64,14 +65,6 @@ abstract class RefcardTest extends Assertions with DocumentationHelper {
     var query = _query
     nodes.keySet.foreach((key) => query = query.replace("%" + key + "%", node(key).getId.toString))
     query
-  }
-
-  def testWithoutDocs(queryText: String, assertions: (ExecutionResult => Unit)*): (ExecutionResult, String) = {
-    var query = queryText
-    nodes.keySet.foreach((key) => query = query.replace("%" + key + "%", node(key).getId.toString))
-    val result = engine.execute(query)
-    assertions.foreach(_.apply(result))
-    (result, query)
   }
 
   def indexProperties[T <: PropertyContainer](n: T, index: Index[T]) {
@@ -89,22 +82,22 @@ abstract class RefcardTest extends Assertions with DocumentationHelper {
 
   def text: String
 
-  def expandQuery(query: String, queryPart: String, emptyGraph: Boolean, dir: File, possibleAssertion: Seq[String]) = {
+  def expandQuery(query: String, queryPart: String, emptyGraph: Boolean, dir: File, possibleAssertion: Seq[String], parametersChoice: String) = {
     val name = title.toLowerCase.replace(" ", "-")
-    runQuery(emptyGraph, query, possibleAssertion)
+    runQuery(emptyGraph, query, possibleAssertion, parametersChoice)
 
     queryPart
   }
 
-  def runQuery(emptyGraph: Boolean, query: String, possibleAssertion: Seq[String]): ExecutionResult = {
+  def runQuery(emptyGraph: Boolean, query: String, possibleAssertion: Seq[String], parametersChoice: String): ExecutionResult = {
     val result = if (emptyGraph) {
       val db = new ImpermanentGraphDatabase()
       val engine = new ExecutionEngine(db)
-      val result = executeQuery(query)(engine)
+      val result = executeQuery(query, parameters(parametersChoice))(engine)
       db.shutdown()
       result
     } else
-      executeQuery(query)
+      executeQuery(query, parameters(parametersChoice))
 
     possibleAssertion.foreach(name => {
       try {
@@ -135,8 +128,6 @@ abstract class RefcardTest extends Assertions with DocumentationHelper {
     }
   }
 
-  val assertiongRegEx = "assertion=([^\\s]*)".r
-
   private def includeGraphviz(startText: String, dir: File): String = {
     val regex = "###graph-image(.*?)###".r
     regex.findFirstMatchIn(startText) match {
@@ -148,6 +139,9 @@ abstract class RefcardTest extends Assertions with DocumentationHelper {
         txt
     }
   }
+
+  val assertiongRegEx = "assertion=([^\\s]*)".r
+  val parametersRegEx = "parameters=([^\\s]*)".r
 
   private def includeQueries(query: String, dir: File) = {
     val startText = includeGraphviz(query, dir)
@@ -162,12 +156,13 @@ abstract class RefcardTest extends Assertions with DocumentationHelper {
 
           val emptyGraph = firstLine.contains("empty-graph")
           val asserts: Seq[String] = assertiongRegEx.findFirstMatchIn(firstLine).toSeq.flatMap(_.subgroups)
+          val parameterChoice: String = parametersRegEx.findFirstMatchIn(firstLine).mkString("")
 
           val rest = query.split("\n").tail.mkString("\n")
           val q = rest.replaceAll("#", "")
           val parts = q.split("\n\n")
           val publishPart = parts(1)
-          producedText = producedText.replace(query, expandQuery(q, publishPart, emptyGraph, dir, asserts))
+          producedText = producedText.replace(query, expandQuery(q, publishPart, emptyGraph, dir, asserts, parameterChoice))
         }
     }
 
@@ -181,8 +176,8 @@ abstract class RefcardTest extends Assertions with DocumentationHelper {
     db.asInstanceOf[ImpermanentGraphDatabase].cleanContent(false)
 
     db.inTx(() => {
-      nodeIndex = db.index().forNodes("nodes")
-      relIndex = db.index().forRelationships("rels")
+      nodeIndex = db.index().forNodes("nodeIndexName")
+      relIndex = db.index().forRelationships("relationshipIndexName")
       val g = new GraphImpl(graphDescription.toArray[String])
       val description = GraphDescription.create(g)
 
@@ -190,14 +185,14 @@ abstract class RefcardTest extends Assertions with DocumentationHelper {
         case (name, node) => name -> node.getId
       }.toMap
 
-      db.getAllNodes.asScala.foreach((n) => {
-        indexProperties(n, nodeIndex)
-        n.getRelationships(Direction.OUTGOING).asScala.foreach(indexProperties(_, relIndex))
-      })
-
       properties.foreach((n) => {
         val nod = node(n._1)
         n._2.foreach((kv) => nod.setProperty(kv._1, kv._2))
+      })
+
+      db.getAllNodes.asScala.foreach((n) => {
+        indexProperties(n, nodeIndex)
+        n.getRelationships(Direction.OUTGOING).asScala.foreach(indexProperties(_, relIndex))
       })
     })
     engine = new ExecutionEngine(db)

@@ -25,6 +25,7 @@ class StartTest extends RefcardTest with StatisticsChecker {
   val graphDescription = List("ROOT LINK A", "A LINK B", "B LINK C", "C LINK ROOT")
   val section = "refcard"
   val title = "Start"
+  override def indexProps: List[String] = List("value", "name")
 
   override def assert(name: String, result: ExecutionResult) {
     name match {
@@ -43,12 +44,33 @@ class StartTest extends RefcardTest with StatisticsChecker {
       case "multiple-start-nodes-by-id" =>
         assertStats(result, deletedNodes = 0, relationshipsCreated = 0, propertiesSet = 0, deletedRelationships = 0)
         assert(result.toList.size === 1)
+      case "index-match" =>
+        assertStats(result)
+        assert(result.toList.size === 1)
+      case "index-query" =>
+        assertStats(result)
+        assert(result.dumpToString.contains("Bob"))
+    }
+  }
+
+  override def parameters(name: String): Map[String, Any] = {
+    name match {
+      case "parameters=ids" =>
+        Map("id1" -> 1, "id2" -> 2)
+      case "parameters=multiple" =>
+        Map("ids" -> List(1, 2))
+      case "parameters=index-match" =>
+        Map("key" -> "value", "value" -> 20)
+      case "parameters=index-query" =>
+        Map("query" -> "name:Bob")
+      case "" =>
+        Map()
     }
   }
 
   override val properties: Map[String, Map[String, Any]] = Map(
     "A" -> Map("value" -> 10),
-    "B" -> Map("value" -> 20),
+    "B" -> Map("value" -> 20, "name" -> "Bob"),
     "C" -> Map("value" -> 30))
 
   def text = """.START
@@ -63,40 +85,43 @@ RETURN n###
 
 Start from all nodes.
 
-### assertion=single-node-by-id
+### assertion=multiple-nodes-by-id parameters=multiple
 //
 
-START n=node(1)
+START n=node({ids})
 
 RETURN n###
 
-Start from the node with id 1.
+Start from one or more nodes specified by id.
 
-### assertion=multiple-nodes-by-id
+### assertion=multiple-start-nodes-by-id parameters=ids
 //
 
-START n=node(1, 2)
-
-RETURN n###
-
-Multiple nodes.
-
-### assertion=multiple-start-nodes-by-id
-//
-
-START n=node(1), m=node(2)
+START n=node({id1}), m=node({id2})
 
 RETURN n,m###
 
 Multiple starting points.
+
+### assertion=index-match parameters=index-match
+//
+
+START n=node:nodeIndexName({key}={value})
+
+RETURN n###
+
+Query the index with an exact query and put the result into n.
+Use node_auto_index for the auto-index.
+
+### assertion=index-match parameters=index-query
+//
+
+START n=node:nodeIndexName({query})
+
+RETURN n###
+
+Query the index using a full Lucene query. 
+A query can look like this: "name:Bob"
 ----
 """
 }
-/*
-START n=node:indexName(key="value")
-
-Query the index for an exact value and put the result into n. Use node_auto_index for the auto-index.
-START n=node:indexName("lucene query")
-
-Query the index using a full Lucene query and put the result in n. 
-*/
