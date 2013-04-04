@@ -28,11 +28,11 @@ import org.neo4j.server.rest.RestRequest;
 
 import java.io.IOException;
 
+import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
-import static org.junit.matchers.JUnitMatchers.hasItem;
 
 public class UserAgentCollectorTest extends AbstractRestFunctionalTestBase
 {
@@ -43,7 +43,6 @@ public class UserAgentCollectorTest extends AbstractRestFunctionalTestBase
     {
         functionalTestHelper = new FunctionalTestHelper( server() );
     }
-
 
     @Test
     public void shouldRecordUserAgent() throws Exception {
@@ -58,6 +57,7 @@ public class UserAgentCollectorTest extends AbstractRestFunctionalTestBase
         sendRequest("test/1.0 fuss");
         assertThat(CollectUserAgentFilter.getUserAgents(), hasItem("test/1.0"));
     }
+
     @Test
     public void shouldRecordMultipleUserAgentWithSpaces() throws Exception {
         sendRequest("test/1.0 fuss");
