@@ -472,6 +472,42 @@ public class TestLuceneBatchInsert
         provider.shutdown();
         inserter.shutdown();
     }
+    
+    @Test
+    public void shouldKeepAroundUnusedIndexesAfterConsecutiveInsertion() throws Exception
+    {
+        // GIVEN -- a batch insertion creating two indexes
+        String indexName1 = "first", indexName2 = "second", key = "name";
+        {
+            BatchInserter inserter = new BatchInserterImpl( PATH );
+            BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProvider( inserter );
+            BatchInserterIndex index1 = provider.nodeIndex( indexName1, LuceneIndexImplementation.EXACT_CONFIG );
+            index1.add( 0, map( key, "Mattias" ) );
+            BatchInserterIndex index2 = provider.nodeIndex( indexName1, LuceneIndexImplementation.EXACT_CONFIG );
+            index2.add( 0, map( key, "Mattias" ) );
+            provider.shutdown();
+            inserter.shutdown();
+        }
+
+        // WHEN -- doing a second insertion, only adding to the second index
+        {
+            BatchInserter inserter = new BatchInserterImpl( PATH );
+            BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProvider( inserter );
+            BatchInserterIndex index2 = provider.nodeIndex( indexName2, LuceneIndexImplementation.EXACT_CONFIG );
+            index2.add( 1, map( key, "Mattias" ) );
+            provider.shutdown();
+            inserter.shutdown();
+        }
+
+        // THEN -- both indexes should exist when starting up in "graph mode"
+        {
+            GraphDatabaseService db = new EmbeddedGraphDatabase( PATH );
+            assertTrue( indexName1 + " should exist", db.index().existsForNodes( indexName1 ) );
+            assertTrue( indexName2 + " should exist", db.index().existsForNodes( indexName2 ) );
+            db.shutdown();
+        }
+    }
+    
     private enum EdgeType implements RelationshipType
     {
         KNOWS

@@ -139,6 +139,7 @@ public class BatchInserterImpl implements BatchInserter
         NameData[] types = getRelationshipTypeStore().getNames( Integer.MAX_VALUE );
         typeHolder = new RelationshipTypeHolder( types );
         indexStore = new IndexStore( this.storeDir, fileSystem );
+        indexStore.start();
     }
 
     private Map<String, String> getDefaultParams()
@@ -967,6 +968,7 @@ public class BatchInserterImpl implements BatchInserter
     /**
      * @deprecated as of Neo4j 1.7
      */
+    @Deprecated
     public GraphDatabaseService getBatchGraphDbService()
     {
         return new BatchGraphDatabaseImpl( this );
