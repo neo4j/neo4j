@@ -104,7 +104,7 @@ public class StoreAccess
         this( new StoreFactory( new Config( requiredParams( params, path ) ),
                                 new DefaultIdGeneratorFactory(),
                                 new DefaultWindowPoolFactory(),
-                                fileSystem, StringLogger.SYSTEM,
+                                fileSystem, StringLogger.DEV_NULL,
                                 new DefaultTxHook() ).attemptNewNeoStore( new File( path, "neostore" ) ) );
         this.closeable = true;
     }
