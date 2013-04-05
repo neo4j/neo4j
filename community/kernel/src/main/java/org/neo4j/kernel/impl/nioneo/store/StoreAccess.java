@@ -104,16 +104,9 @@ public class StoreAccess
         this( new StoreFactory( new Config( requiredParams( params, path ) ),
                                 new DefaultIdGeneratorFactory(),
                                 new DefaultWindowPoolFactory(),
-                                fileSystem, initLogger( fileSystem, path ),
+                                fileSystem, StringLogger.SYSTEM,
                                 new DefaultTxHook() ).attemptNewNeoStore( new File( path, "neostore" ) ) );
         this.closeable = true;
-    }
-
-    private static StringLogger initLogger( FileSystemAbstraction fileSystem, String path )
-    {
-        StringLogger logger = StringLogger.loggerDirectory( fileSystem, new File( path ) );
-        logger.logMessage( "Starting " + StoreAccess.class.getSimpleName() );
-        return logger;
     }
 
     private static Map<String, String> requiredParams( Map<String, String> params, String path )
