@@ -53,7 +53,7 @@ class StartTest extends RefcardTest with StatisticsChecker {
     }
   }
 
-  override def parameters(name: String): Map[String, Any] = {
+  override def parameters(name: String): Map[String, Any] =
     name match {
       case "parameters=ids" =>
         Map("id1" -> 1, "id2" -> 2)
@@ -66,7 +66,6 @@ class StartTest extends RefcardTest with StatisticsChecker {
       case "" =>
         Map()
     }
-  }
 
   override val properties: Map[String, Map[String, Any]] = Map(
     "A" -> Map("value" -> 10),
@@ -112,6 +111,11 @@ RETURN n###
 
 Query the index with an exact query and put the result into n.
 Use node_auto_index for the auto-index.
+----
+"""
+}
+
+/*
 
 ### assertion=index-match parameters=index-query
 //
@@ -122,6 +126,5 @@ RETURN n###
 
 Query the index using a full Lucene query. 
 A query can look like this: "name:Bob"
-----
-"""
-}
+
+*/

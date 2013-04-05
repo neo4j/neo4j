@@ -21,56 +21,56 @@ package org.neo4j.cypher.docgen.refcard
 import org.neo4j.cypher.{ ExecutionResult, StatisticsChecker }
 import org.neo4j.cypher.docgen.RefcardTest
 
-class ReturnTest extends RefcardTest with StatisticsChecker {
+class DeleteTest extends RefcardTest with StatisticsChecker {
   val graphDescription = List("ROOT LINK A", "A LINK B", "B LINK C", "C LINK ROOT")
   val section = "refcard"
-  val title = "Return"
+  val title = "Delete"
 
   override def assert(name: String, result: ExecutionResult) {
     name match {
-      case "all-nodes" =>
-        assertStats(result, deletedNodes = 0, relationshipsCreated = 0, propertiesSet = 0, deletedRelationships = 0)
-        assert(result.toList.size === 4)
-      case "alias" =>
-        assertStats(result, deletedNodes = 0, relationshipsCreated = 0, propertiesSet = 0, deletedRelationships = 0)
-        assert(result.dumpToString.contains("columnName"))
-      case "unique" =>
-        assertStats(result, deletedNodes = 0, relationshipsCreated = 0, propertiesSet = 0, deletedRelationships = 0)
-        assert(result.toList.size === 1)
+      case "delete" =>
+        assertStats(result, nodesCreated = 1, deletedNodes = 1, deletedRelationships = 1)
+        assert(result.toList.size === 0)
+      case "delete-prop" =>
+        assertStats(result, nodesCreated = 1, propertiesSet = 2)
+        assert(result.toList.size === 0)
     }
   }
+
+  override def parameters(name: String): Map[String, Any] =
+    name match {
+      case "parameters=set" =>
+        Map("value" -> "a value")
+      case "parameters=map" =>
+        Map("map" -> Map("propertyName" -> "a value"))
+      case "" =>
+        Map()
+    }
 
   override val properties: Map[String, Map[String, Any]] = Map(
     "A" -> Map("value" -> 10),
     "B" -> Map("value" -> 20),
     "C" -> Map("value" -> 30))
 
-  def text = """.RETURN
+  def text = """.DELETE
 [refcard]
 ----
-###assertion=all-nodes
-//
-START n=node(*)
+###assertion=delete
+START r = relationship(1)
+CREATE (n)
 
-RETURN *###
+DELETE n, r
+###
 
-Return the value of all identifiers.
+Delete a node and a relationship.
 
-### assertion=alias
-START n=node(1)
+###assertion=delete-prop
+CREATE (n {propertyName: "value"})
 
-RETURN n AS columnName###
+DELETE n.propertyName
+###
 
-Use alias for result column name.
-
-### assertion=unique
-START x=node(%A%,%C%)
-MATCH n--x
-WHERE n.name = "B"
-
-RETURN DISTINCT n###
-
-Return unique rows.
+Delete a property.
 ----
 """
 }

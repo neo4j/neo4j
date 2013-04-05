@@ -34,22 +34,15 @@ class SetTest extends RefcardTest with StatisticsChecker {
       case "map" =>
         assertStats(result, nodesCreated = 1, propertiesSet = 1)
         assert(result.dumpToString.contains("a value"))
-      case "delete" =>
-        assertStats(result, propertiesSet = 1)
-        assert(!result.dumpToString.contains("propertyName"))
     }
   }
 
-  override def parameters(name: String): Map[String, Any] = {
+  override def parameters(name: String): Map[String, Any] =
     name match {
-      case "parameters=set" =>
-        Map("value" -> "a value")
-      case "parameters=map" =>
-        Map("map" -> Map("propertyName" -> "a value"))
-      case "" =>
-        Map()
+      case "parameters=set" => Map("value" -> "a value")
+      case "parameters=map" => Map("map" -> Map("propertyName" -> "a value"))
+      case ""               => Map()
     }
-  }
 
   override val properties: Map[String, Map[String, Any]] = Map(
     "A" -> Map("value" -> 10),
@@ -77,15 +70,6 @@ RETURN n.propertyName###
 
 Set all properties.
 This will remove any existing properties.
-
-###assertion=delete
-START n = node(%A%)
-
-SET n.propertyName=null
-
-RETURN n###
-
-Delete a property.
 ----
 """
 }

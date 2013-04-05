@@ -1,5 +1,4 @@
-Neo4j Cypher Refcard
-====================
+= Neo4j Cypher Refcard =
 
 *Cypher is the declarative query language for Neo4j, the world’s leading graph database.*
 
@@ -9,38 +8,43 @@ Neo4j Cypher Refcard
 
 You can try cypher snippets live in the Neo4j Console at http://console.neo4j.org.
 
-== Reading data ==
+== Syntax ==
 
 .Read-Only Query Structure 
 [refcard]
 ----
-START me=node:people(name='Andres')
-MATCH me-[:FRIEND]->friend
-WHERE friend.age > 18
-RETURN me, friend.name
-ORDER BY friend.age ASC
-SKIP 5 LIMIT 10
+START
+[MATCH]
+[WHERE]
+RETURN [ORDER BY] [SKIP] [LIMIT]
 ----
 
 include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/start.asciidoc[]
 
 include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/return.asciidoc[]
 
-== Writing data ==
-
-.Read-Write-Return Query Structure 
+.Write-Only Query Structure 
 [refcard]
 ----
-START emil=node:people(name='Emil')
-MATCH emil-[:MARRIED_TO]-madde
-CREATE/CREATE UNIQUE 
-emil-[:DAD]->(noomi {name:"Noomi"})<-[:MOM]-madde
-DELETE emil.spare_time
-SET emil.happy=true
-RETURN noomi 
+CREATE [UNIQUE]*
+[SET|DELETE|FOREACH]*
+[RETURN [ORDER BY] [SKIP] [LIMIT]]
+----
+
+.Read-Write Query Structure 
+[refcard]
+----
+START
+[MATCH]
+[WHERE]
+[CREATE [UNIQUE]]*
+[SET|DELETE|FOREACH]*
+[RETURN [ORDER BY] [SKIP] [LIMIT]]
 ----
 
 include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/create.asciidoc[]
 
 include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/set.asciidoc[]
+
+include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/delete.asciidoc[]
 

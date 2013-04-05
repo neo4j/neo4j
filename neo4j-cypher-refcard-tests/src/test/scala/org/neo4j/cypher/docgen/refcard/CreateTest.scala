@@ -46,7 +46,7 @@ class CreateTest extends RefcardTest with StatisticsChecker {
     }
   }
 
-  override def parameters(name: String): Map[String, Any] = {
+  override def parameters(name: String): Map[String, Any] =
     name match {
       case "parameters=aname" =>
         Map("value" -> "Bob")
@@ -59,7 +59,6 @@ class CreateTest extends RefcardTest with StatisticsChecker {
       case "" =>
         Map()
     }
-  }
 
   override val properties: Map[String, Map[String, Any]] = Map(
     "A" -> Map("value" -> 10),

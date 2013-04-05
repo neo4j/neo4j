@@ -12,4 +12,4 @@ target
 .idea
 .DS_Store
 .cache
-
+.scala_dependencies
