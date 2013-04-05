@@ -59,8 +59,6 @@ include::optional-typed-and-named-relationship.asciidoc[]
 
 include::properties-on-optional-elements.asciidoc[]
 
-include::complex-matching.asciidoc[]
-
 include::shortest-path.asciidoc[]
 
 include::all-shortest-paths.asciidoc[]
