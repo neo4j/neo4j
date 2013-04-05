@@ -1,5 +1,5 @@
-1.9.RC
-------
+1.9.RC1 (????-??-??)
+--------------------
 o Fixed #578 - problem with profiling queries that use LIMIT
 o Fixes #550 - problem when using START after WITH
 o Allows single node patterns in MATCH

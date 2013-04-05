@@ -1,5 +1,41 @@
 For Release Notes, see http://neo4j.org/release-notes#neo4j-${project.version}
 
+1.9.RC1 (????-??-??)
+--------------------
+HA:
+o Introduction of pseudo quorum writes. If half or more of the instances are unreachable, the instance will stop
+  accepting write requests and all transactions will timeout.
+
+Backup:
+o -full and -incremental backup flags are deprecated, type of backup is
+  automatically determined by the contents of the target directory
+
+Cluster:
+o Removes URL discovery mechanism for clustering
+o Moves from URI as an instance id to integers - they must be specified manually. The new setting is
+  ClusterSettings.server_id
+o Instances can now be replaced if they have marked as fail if a new instance with the same id joins the cluster
+o For a cluster to be formed now a majority of instances as configured in initial_hosts must be available
+o Fixes around cluster formation from instances concurrently starting up
+o Explicit join denial is now possible if an instance tries to join using a server_id already in use
+
+Lucene Index:
+o Lucene upgraded to 3.6.2
+
+Server:
+o Introduces new slash screen containing a guide to Neo4j. Several small aesthetic improvements
+
+Cypher:
+o Fixed #578 - problem with profiling queries that use LIMIT
+o Fixes #550 - problem when using START after WITH
+o Allows single node patterns in MATCH
+o Fixes problem for some patterns and all-nodes start points
+o Fixes #650 - issue when doing multiple aggregation expressions on the same identifier
+o Added timestamp function
+
+Packaging:
+o plugins/ subdirectory is searched recursively for server plugins
+
 1.9.M05 (2013-03-05)
 --------------------
 
