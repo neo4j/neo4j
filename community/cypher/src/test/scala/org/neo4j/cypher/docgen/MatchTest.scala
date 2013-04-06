@@ -23,6 +23,8 @@ import org.junit.Assert._
 import org.neo4j.graphdb.{DynamicRelationshipType, Path, Node}
 import org.neo4j.cypher.CuteGraphDatabaseService.gds2cuteGds
 import org.junit.Test
+import org.neo4j.tooling.GlobalGraphOperations
+import collection.JavaConverters._
 
 class MatchTest extends DocumentingTestBase {
 
@@ -47,6 +49,29 @@ class MatchTest extends DocumentingTestBase {
   )
 
   def section: String = "MATCH"
+
+  @Test def get_all_nodes() {
+    testQuery(
+      title = "Get all nodes",
+      text = "By just specifying a pattern with a single node and no labels, all nodes in the graph will be returned.",
+      queryText = """match n return n""",
+      returns = "Returns all the nodes in the database.",
+      assertions = (p) => {
+        val allNodes: List[Node] = GlobalGraphOperations.at(db).getAllNodes.asScala.toList
+
+        assertEquals(allNodes, p.columnAs[Node]("n").toList)
+      }
+    )
+  }
+  @Test def get_all_labeled_nodes() {
+    testQuery(
+      title = "Get all nodes with a label",
+      text = "Getting all nodes with a label on them is done with a single node pattern where the node has a label on it.",
+      queryText = """match movie:Movie return movie""",
+      returns = "Returns all the movies in the database.",
+      assertions = (p) => assertEquals(nodes("WallStreet", "TheAmericanPresident").toSet, p.columnAs[Node]("movie").toSet)
+    )
+  }
 
   @Test def allRelationships() {
     testQuery(
@@ -85,7 +110,7 @@ class MatchTest extends DocumentingTestBase {
       text = "When you know the relationship type you want to match on, you can specify it by using a colon together with the relationship type.",
       queryText = """match (wallstreet)<-[:ACTED_IN]-(actor) where wallstreet.title='Wall Street' return actor""",
       returns = """Returns nodes that +ACTED_IN+ Wall Street.""",
-      assertions = (p) => assertEquals(Set(node("Michael"), node("Martin"), node("Charlie")), p.columnAs[Node]("actor").toSet)
+      assertions = (p) => assertEquals(nodes("Michael","Martin","Charlie").toSet, p.columnAs[Node]("actor").toSet)
     )
   }
 
@@ -95,7 +120,7 @@ class MatchTest extends DocumentingTestBase {
       text = "To match on one of multiple types, you can specify this by chaining them together with the pipe symbol `|`.",
       queryText = """match (wallstreet)<-[:ACTED_IN|:DIRECTED]-(person) where wallstreet.title='Wall Street' return person""",
       returns = """Returns nodes with a +ACTED_IN+ or +DIRECTED+ relationship to Wall Street.""",
-      assertions = (p) => assertEquals(Set(node("Michael"), node("Martin"), node("Charlie"), node("Oliver")), p.columnAs[Node]("person").toSet)
+      assertions = (p) => assertEquals(nodes("Michael","Martin","Charlie","Oliver").toSet, p.columnAs[Node]("person").toSet)
     )
   }
 
@@ -218,7 +243,10 @@ class MatchTest extends DocumentingTestBase {
     testQuery(
       title = "Shortest path",
       text = "Finding a single shortest path between two nodes is as easy as using the `shortestPath` function. It's done like this:",
-      queryText = """start martin=node(%Martin%), oliver=node(%Oliver%) match p = shortestPath( (martin)-[*..15]-(oliver) ) return p""",
+      queryText =
+"""match p = shortestPath( (martin:Person)-[*..15]-(oliver:Person) )
+where martin.name = 'Martin Sheen' and oliver.name = 'Oliver Stone'
+return p""",
       returns = """This means: find a single shortest path between two nodes, as long as the path is max 15 relationships long. Inside of the parenthesis
  you define a single link of a path -- the starting node, the connecting relationship and the end node. Characteristics describing the relationship
  like relationship type, max hops and direction are all used when finding the shortest path. You can also mark the path as optional.""",
