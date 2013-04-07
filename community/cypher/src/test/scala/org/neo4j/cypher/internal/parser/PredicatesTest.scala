@@ -34,17 +34,17 @@ class PredicatesTest extends Predicates with MatchClause with ParserTest with Ex
     implicit val parserToTest = patternPredicate
 
     parsing("a-->(:Foo)") shouldGive
-      PatternPredicate(Seq(RelatedTo("a", "  UNNAMED5", "  UNNAMED2", Seq.empty, Direction.OUTGOING, false)), HasLabel(Identifier("  UNNAMED5"), Seq(LabelName("Foo"))))
+      PatternPredicate(Seq(RelatedTo("a", "  UNNAMED5", "  UNNAMED1", Seq.empty, Direction.OUTGOING, false)), HasLabel(Identifier("  UNNAMED5"), Seq(LabelName("Foo"))))
 
     parsing("a-->(n:Foo)") shouldGive
-      PatternPredicate(Seq(RelatedTo("a", "n", "  UNNAMED2", Seq.empty, Direction.OUTGOING, false)), HasLabel(Identifier("n"), Seq(LabelName("Foo"))))
+      PatternPredicate(Seq(RelatedTo("a", "n", "  UNNAMED1", Seq.empty, Direction.OUTGOING, false)), HasLabel(Identifier("n"), Seq(LabelName("Foo"))))
 
     parsing("a-->(:Bar:Foo)") shouldGive
-      PatternPredicate(Seq(RelatedTo("a", "  UNNAMED5", "  UNNAMED2", Seq.empty, Direction.OUTGOING, false)), HasLabel(Identifier("  UNNAMED5"), Seq(LabelName("Bar"), LabelName("Foo"))))
+      PatternPredicate(Seq(RelatedTo("a", "  UNNAMED5", "  UNNAMED1", Seq.empty, Direction.OUTGOING, false)), HasLabel(Identifier("  UNNAMED5"), Seq(LabelName("Bar"), LabelName("Foo"))))
 
     val patterns = Seq(
-      RelatedTo("a", "  UNNAMED5", "  UNNAMED2", Seq.empty, Direction.OUTGOING, false),
-      RelatedTo("  UNNAMED5", "  UNNAMED16", "  UNNAMED13", Seq.empty, Direction.OUTGOING, false))
+      RelatedTo("a", "  UNNAMED5", "  UNNAMED1", Seq.empty, Direction.OUTGOING, false),
+      RelatedTo("  UNNAMED5", "  UNNAMED16", "  UNNAMED12", Seq.empty, Direction.OUTGOING, false))
 
     val predicate = And(
       HasLabel(Identifier("  UNNAMED5"), Seq(LabelName("First"))),
@@ -59,7 +59,7 @@ class PredicatesTest extends Predicates with MatchClause with ParserTest with Ex
     )
 
     parsing("a-->(:Bar|:Foo)") shouldGive
-      PatternPredicate(Seq(RelatedTo("a", "  UNNAMED5", "  UNNAMED2", Seq.empty, Direction.OUTGOING, false)), orPred)
+      PatternPredicate(Seq(RelatedTo("a", "  UNNAMED5", "  UNNAMED1", Seq.empty, Direction.OUTGOING, false)), orPred)
   }
 
   @Test

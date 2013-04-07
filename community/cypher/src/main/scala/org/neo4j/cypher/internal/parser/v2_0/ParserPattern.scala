@@ -136,8 +136,8 @@ trait ParserPattern extends Base with Labels {
       case head ~ tails =>
         var start = head
         val links = tails.map {
-          case Tail(_, dir, relName, relProps, end, None, types, optional) =>
-            val t = ParsedRelation(relName, relProps, start, end, types, dir, optional)
+          case Tail(pathName, dir, relName, relProps, end, None, types, optional) =>
+            val t = ParsedRelation(if (Identifier.isNamed(relName)) relName else pathName, relProps, start, end, types, dir, optional)
             start = end
             t
           case Tail(pathName, dir, relName, relProps, end, Some((min, max)), types, optional) =>
@@ -172,8 +172,8 @@ trait ParserPattern extends Base with Labels {
   }
 
 
-  private def tailWithRelData: Parser[Tail] = generatedName ~ opt("<") ~ "-" ~ "[" ~ optionalName ~ opt("?") ~ opt(":" ~> rep1sep(opt(":") ~> escapableString, "|")) ~ variable_length ~ props ~ "]" ~ "-" ~ opt(">") ~ node ^^ {
-    case pathName ~ l ~ "-" ~ "[" ~ rel ~ optional ~ typez ~ varLength ~ properties ~ "]" ~ "-" ~ r ~ end => Tail(pathName, direction(l, r), rel, properties, end, varLength, typez.toSeq.flatten.distinct, optional.isDefined)
+  private def tailWithRelData: Parser[Tail] = "" ~ generatedName ~ opt("<") ~ "-" ~ "[" ~ optionalName ~ opt("?") ~ opt(":" ~> rep1sep(opt(":") ~> escapableString, "|")) ~ variable_length ~ props ~ "]" ~ "-" ~ opt(">") ~ node ^^ {
+    case _ ~ pathName ~ l ~ "-" ~ "[" ~ rel ~ optional ~ typez ~ varLength ~ properties ~ "]" ~ "-" ~ r ~ end => Tail(pathName, direction(l, r), rel, properties, end, varLength, typez.toSeq.flatten.distinct, optional.isDefined)
   } | linkErrorMessages
 
   private def linkErrorMessages: Parser[Tail] =
@@ -190,8 +190,8 @@ trait ParserPattern extends Base with Labels {
     case _ => throw new ThisShouldNotHappenError("Stefan/Andres", "This non-exhaustive match would have been a RuntimeException in the past")
   }
 
-  private def tailWithNoRelData = generatedName ~ opt("<") ~ "-" ~ generatedName ~ "-" ~ opt(">") ~ node ^^ {
-    case pathName ~ l ~ "-" ~ name ~ "-" ~ r ~ end => Tail(pathName, direction(l, r), name, Map(), end, None, Seq(), optional = false)
+  private def tailWithNoRelData = "" ~ generatedName ~ opt("<") ~ "-" ~ generatedName ~ "-" ~ opt(">") ~ node ^^ {
+    case _ ~ pathName ~ l ~ "-" ~ name ~ "-" ~ r ~ end => Tail(pathName, direction(l, r), name, Map(), end, None, Seq(), optional = false)
   }
 
   private def tail: Parser[Tail] = tailWithRelData | tailWithNoRelData

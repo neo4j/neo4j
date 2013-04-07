@@ -33,7 +33,7 @@ class MatchClauseTest extends MatchClause with Expressions with ParserTest {
 
     parsing("MATCH a-[:FOO|BAR]->b") or
     parsing("MATCH a-[:FOO|:BAR]->b") shouldGive
-      RelatedTo("a", "b", "  UNNAMED9", Seq("FOO", "BAR"), Direction.OUTGOING, false)
+      RelatedTo("a", "b", "  UNNAMED7", Seq("FOO", "BAR"), Direction.OUTGOING, false)
   }
 
   implicit def a(p: Pattern): (Seq[Pattern], Seq[NamedPath], Predicate) = (Seq(p), Seq.empty, True())
