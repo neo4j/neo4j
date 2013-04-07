@@ -27,14 +27,21 @@ public class NamedThreadFactory implements ThreadFactory
     private final ThreadGroup group;
     private final AtomicInteger threadCounter = new AtomicInteger( 1 );
     private String threadNamePrefix;
+    private final int priority;
 
     public NamedThreadFactory( String threadNamePrefix )
+    {
+        this( threadNamePrefix, Thread.NORM_PRIORITY );
+    }
+
+    public NamedThreadFactory( String threadNamePrefix, int priority )
     {
         this.threadNamePrefix = threadNamePrefix;
         SecurityManager securityManager = System.getSecurityManager();
         group = (securityManager != null) ?
                 securityManager.getThreadGroup() :
                 Thread.currentThread().getThreadGroup();
+        this.priority = priority;
     }
 
     public Thread newThread( Runnable runnable )
@@ -43,7 +50,7 @@ public class NamedThreadFactory implements ThreadFactory
         Thread result = new Thread( group, runnable, threadNamePrefix + "-" + id );
 
         result.setDaemon( false );
-        result.setPriority( Thread.NORM_PRIORITY );
+        result.setPriority( priority );
         return result;
     }
 }
