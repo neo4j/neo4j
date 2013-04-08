@@ -30,6 +30,7 @@ import org.scalatest.mock.MockitoSugar
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.pipes.FakePipe
 import org.neo4j.cypher.internal.symbols.NodeType
+import org.neo4j.graphdb.Direction
 
 
 class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
@@ -235,6 +236,38 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
 
     // Then
     assert(plan.query.start.toList === Seq(Unsolved(AllNodes(identifier))))
+  }
+
+  @Test
+  def should_be_able_to_figure_out_shortest_path_patterns() {
+    // Given
+    val node1 = "a"
+    val node2 = "b"
+    val label = "Person"
+    val property = "prop"
+    val expression1 = Literal(42)
+    val expression2 = Literal(666)
+
+    // MATCH p=shortestPath( (a:Person{prop:42}) -[*]-> (b{prop:666}) )
+    val query = q(
+      where = Seq(
+        HasLabel(Identifier(node1), Seq(LabelName(label))),
+        Equals(Property(Identifier(node1), property), expression1),
+        Equals(Property(Identifier(node2), property), expression2)),
+
+      patterns = Seq(
+        ShortestPath("p", node1, node2, Nil, Direction.OUTGOING, None, optional = false, single = true, None))
+    )
+
+    when(context.getIndexRuleId(label, property)).thenReturn(None)
+
+    // When
+    val plan = assertAccepts(query)
+
+    // Then
+    assert(plan.query.start.toList === Seq(
+      Unsolved(NodeByLabel(node1, label)),
+      Unsolved(AllNodes(node2))))
   }
 
   @Test

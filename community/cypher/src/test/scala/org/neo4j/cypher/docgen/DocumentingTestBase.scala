@@ -210,6 +210,7 @@ abstract class DocumentingTestBase extends Assertions with DocumentationHelper w
   }
 
   def node(name: String): Node = db.getNodeById(nodes.getOrElse(name, throw new NotFoundException(name)))
+  def nodes(names: String*): List[Node] = names.map(node).toList
 
   def rel(id: Long): Relationship = db.getRelationshipById(id)
 
