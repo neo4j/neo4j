@@ -34,7 +34,7 @@ class CreateUniqueTest extends CreateUnique with MatchClause with ParserTest wit
 
     val aLink = NamedExpectation("a", Identifier("a"), Map.empty, LabelSupport.labelCollection("Foo"), bare = false)
     val bLink = NamedExpectation("b", Identifier("b"), Map.empty, Seq.empty, bare = true)
-    val relLink = NamedExpectation("  UNNAMED7", Identifier("  UNNAMED7"), Map.empty, Seq.empty, bare = true)
+    val relLink = NamedExpectation("  UNNAMED5", Identifier("  UNNAMED5"), Map.empty, Seq.empty, bare = true)
 
     parsing("a:Foo-[:x]->b") shouldGive
       Seq(PathAndRelateLink(None, Seq(UniqueLink(aLink, bLink, relLink, "x", Direction.OUTGOING))))
