@@ -109,8 +109,8 @@ START n=node:nodeIndexName({key}={value})
 
 RETURN n###
 
-Query the index with an exact query and put the result into n.
-Use node_auto_index for the auto-index.
+Query the index with an exact query.
+Use `node_auto_index` for the automatic index.
 ----
 """
 }

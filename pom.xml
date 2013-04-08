@@ -108,6 +108,7 @@
               <arguments>
                 <argument>init</argument>
                 <argument>preview</argument>
+                <argument>VERSION=${refcard.version}</argument>
               </arguments>
             </configuration>
           </execution>

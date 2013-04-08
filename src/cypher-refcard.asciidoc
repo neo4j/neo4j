@@ -1,4 +1,4 @@
-= Neo4j Cypher Refcard =
+= Neo4j Cypher Refcard {neo4j-version} =
 
 *Cypher is the declarative query language for Neo4j, the world’s leading graph database.*
 
@@ -22,6 +22,8 @@ RETURN [ORDER BY] [SKIP] [LIMIT]
 include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/start.asciidoc[]
 
 include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/return.asciidoc[]
+
+include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/patterns.asciidoc[]
 
 .Write-Only Query Structure 
 [refcard]

@@ -358,9 +358,13 @@ footer div.mid {
   margin: 0;
 }
 
-em.code, em.tx {
+code, em.code, em.tx {
   font-family: "Ubuntu Mono", "Courier New", Courier, monospace, serif;
   font-style: normal;
+}
+
+code {
+  color: #005A72;
 }
 
 em.tx {
