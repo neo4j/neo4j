@@ -193,9 +193,9 @@ public class ClusterMembershipTest
     {
         testCluster( 3, DEFAULT_NETWORK(), new ClusterTestScriptDSL().
                 rounds( 400 ).
-                join( 0, 1, 2, 3 ).
-                join( 0, 2, 1, 3 ).
-                join( 0, 3, 1, 2 ).
+                join( 0, 1, 1, 2, 3 ).
+                join( 0, 2, 1, 2, 3 ).
+                join( 0, 3, 1, 2, 3 ).
                 message( 390, "*** Cluster formed" ));
     }
 }
