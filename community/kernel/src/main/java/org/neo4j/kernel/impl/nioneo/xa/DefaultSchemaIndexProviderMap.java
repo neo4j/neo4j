@@ -17,31 +17,34 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api.index;
+package org.neo4j.kernel.impl.nioneo.xa;
 
-import static org.neo4j.helpers.FutureAdapter.VOID;
-
-import java.util.concurrent.Future;
-
-import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 
-public class RecoveringIndexProxy extends AbstractSwallowingIndexProxy
+public class DefaultSchemaIndexProviderMap implements SchemaIndexProviderMap
 {
-    public RecoveringIndexProxy( IndexDescriptor descriptor, SchemaIndexProvider.Descriptor providerDescriptor )
+    private final SchemaIndexProvider indexProvider;
+
+    public DefaultSchemaIndexProviderMap( SchemaIndexProvider indexProvider )
     {
-        super( descriptor, providerDescriptor, null );
+        this.indexProvider = indexProvider;
     }
 
     @Override
-    public InternalIndexState getState()
+    public SchemaIndexProvider getDefaultProvider()
     {
-        return InternalIndexState.POPULATING;
+        return indexProvider;
     }
 
     @Override
-    public Future<Void> drop()
+    public SchemaIndexProvider apply( SchemaIndexProvider.Descriptor descriptor )
     {
-        return VOID;
+        if ( indexProvider.getProviderDescriptor().getKey().equals( descriptor.getKey() ) )
+            return indexProvider;
+
+        throw new IllegalArgumentException( "Tried to get index provider for an existing index with provider " +
+                descriptor + " whereas the default and only supported provider in this session is " +
+                indexProvider.getProviderDescriptor() );
     }
 }

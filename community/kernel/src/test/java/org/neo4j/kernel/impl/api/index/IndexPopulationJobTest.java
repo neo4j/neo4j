@@ -73,6 +73,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.MapUtil.genericMap;
 import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 import static org.neo4j.kernel.impl.util.TestLogger.LogCall.error;
 import static org.neo4j.kernel.impl.util.TestLogger.LogCall.info;
 
@@ -462,11 +463,12 @@ public class IndexPopulationJobTest
             FlippableIndexProxy flipper, IndexStoreView storeView, StringLogger logger )
             throws LabelNotFoundKernelException, PropertyKeyNotFoundException
     {
-        IndexRule indexRule = new IndexRule( 0, context.getLabelId( label.name() ), context.getPropertyKeyId( propertyKey ) );
+        IndexRule indexRule = new IndexRule( 0,
+                context.getLabelId( label.name() ), PROVIDER_DESCRIPTOR, context.getPropertyKeyId( propertyKey ) );
         IndexDescriptor descriptor = new IndexDescriptor( indexRule.getLabel(), indexRule.getPropertyKey() );
         flipper.setFlipTarget( mock( IndexProxyFactory.class ) );
         return
-            new IndexPopulationJob( descriptor, populator, flipper, storeView,
+            new IndexPopulationJob( descriptor, PROVIDER_DESCRIPTOR, populator, flipper, storeView,
                                     stateHolder, new SingleLoggingService( logger ) );
     }
 

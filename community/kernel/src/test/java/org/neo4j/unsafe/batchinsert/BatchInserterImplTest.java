@@ -68,7 +68,7 @@ public class BatchInserterImplTest
 
     private Boolean createInserterAndGetMemoryMappingConfig( Map<String, String> initialConfig ) throws Exception
     {
-        BatchInserterImpl inserter = new BatchInserterImpl(
+        BatchInserter inserter = BatchInserters.inserter(
                 TargetDirectory.forTest( getClass() ).graphDbDir( true ).getAbsolutePath(), initialConfig );
         NeoStore neoStore = ReflectionUtil.getPrivateField( inserter, "neoStore", NeoStore.class );
         Config config = ReflectionUtil.getPrivateField( neoStore, "conf", Config.class );

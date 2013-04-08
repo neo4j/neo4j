@@ -78,7 +78,7 @@ public class SchemaCache
         };
     }
     
-    public Collection<SchemaRule> getSchemaRules( long label )
+    public Collection<SchemaRule> getSchemaRulesForLabel( long label )
     {
         Map<Long,SchemaRule> rulesForLabel = rulesMap.get( label );
         return rulesForLabel != null ? unmodifiableCollection( rulesForLabel.values() ) :

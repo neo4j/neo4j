@@ -26,6 +26,7 @@ import org.neo4j.kernel.api.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
+import org.neo4j.kernel.api.index.SchemaIndexProvider;
 
 public abstract class AbstractDelegatingIndexProxy implements IndexProxy
 {
@@ -65,6 +66,12 @@ public abstract class AbstractDelegatingIndexProxy implements IndexProxy
     public IndexDescriptor getDescriptor()
     {
         return getDelegate().getDescriptor();
+    }
+
+    @Override
+    public SchemaIndexProvider.Descriptor getProviderDescriptor()
+    {
+        return getDelegate().getProviderDescriptor();
     }
 
     @Override

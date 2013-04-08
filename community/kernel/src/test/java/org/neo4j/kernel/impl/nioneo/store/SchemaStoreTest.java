@@ -21,15 +21,13 @@ package org.neo4j.kernel.impl.nioneo.store;
 
 import static java.nio.ByteBuffer.wrap;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.first;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.impl.util.BytePrinter.hex;
+import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 import static org.neo4j.kernel.impl.util.StringLogger.SYSTEM;
 
 import java.io.File;
-import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Collection;
 
@@ -40,7 +38,6 @@ import org.junit.Test;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.DefaultTxHook;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.nioneo.store.SchemaRule.Kind;
 import org.neo4j.test.EphemeralFileSystemRule;
 
 public class SchemaStoreTest
@@ -50,30 +47,19 @@ public class SchemaStoreTest
     {
         // GIVEN
         long propertyKey = 4;
-        int labelId = 0;
-        ByteBuffer expected = wrap( new byte[4+1+2+8] );
-        expected.putInt( labelId );
-        expected.put( Kind.INDEX_RULE.id() );
-        expected.putShort( (short) 1 );
-        expected.putLong( propertyKey );
-        SchemaRule indexRule = new IndexRule( store.nextId(), labelId, propertyKey );
-
+        int labelId = 1;
+        IndexRule indexRule = new IndexRule( store.nextId(), labelId, PROVIDER_DESCRIPTOR, propertyKey );
+        
         // WHEN
-        Collection<DynamicRecord> records = store.allocateFrom( indexRule );
-        long blockId = first( records ).getId();
-        for ( DynamicRecord record : records )
-            store.updateRecord( record );
+        byte[] serialized = new RecordSerializer().append( indexRule ).serialize();
+        IndexRule readIndexRule = (IndexRule) SchemaRule.Kind.deserialize( indexRule.getId(), wrap( serialized ) );
         
         // THEN
-        byte[] actual = records.iterator().next().getData();
-
-        assertEquals( 1, records.size() );
-        assertTrue( "\nExpected: " + hex( expected ) + "\n     Got: " + hex( actual ),
-                Arrays.equals( expected.array(), actual ) );
-
-        Collection<DynamicRecord> readRecords = store.getRecords( blockId );
-        assertEquals( 1, readRecords.size() );
-        assertTrue( Arrays.equals( expected.array(), readRecords.iterator().next().getData() ) );
+        assertEquals( indexRule.getId(), readIndexRule.getId() );
+        assertEquals( indexRule.getKind(), readIndexRule.getKind() );
+        assertEquals( indexRule.getLabel(), readIndexRule.getLabel() );
+        assertEquals( indexRule.getPropertyKey(), readIndexRule.getPropertyKey() );
+        assertEquals( indexRule.getProviderDescriptor(), readIndexRule.getProviderDescriptor() );
     }
     
     @Test
@@ -81,9 +67,9 @@ public class SchemaStoreTest
     {
         // GIVEN
         Collection<SchemaRule> rules = Arrays.<SchemaRule>asList(
-                new IndexRule( store.nextId(), 0, 5 ),
-                new IndexRule( store.nextId(), 1, 6 ),
-                new IndexRule( store.nextId(), 1, 7 ) );
+                new IndexRule( store.nextId(), 0, PROVIDER_DESCRIPTOR, 5 ),
+                new IndexRule( store.nextId(), 1, PROVIDER_DESCRIPTOR, 6 ),
+                new IndexRule( store.nextId(), 1, PROVIDER_DESCRIPTOR, 7 ) );
         for ( SchemaRule rule : rules )
             storeRule( rule );
 

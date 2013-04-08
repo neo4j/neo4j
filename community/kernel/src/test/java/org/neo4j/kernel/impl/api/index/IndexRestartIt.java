@@ -197,9 +197,13 @@ public class IndexRestartIt
             tx.finish();
         }
     }
-    
+
+    public static final SchemaIndexProvider.Descriptor CONTROLLED_PROVIDER_DESCRIPTOR =
+            new SchemaIndexProvider.Descriptor( "controlled", "1.0" );
+
     private class ControlledSchemaIndexProvider extends SchemaIndexProvider
     {
+
         private IndexPopulator mockedPopulator = new IndexPopulator.Adapter();
         private final IndexAccessor mockedWriter = mock( IndexAccessor.class );
         private final CountDownLatch writerLatch = new CountDownLatch( 1 );
@@ -209,7 +213,7 @@ public class IndexRestartIt
         
         public ControlledSchemaIndexProvider()
         {
-            super( 10 );
+            super( CONTROLLED_PROVIDER_DESCRIPTOR, 10 );
             setInitialIndexState( initialIndexState );
         }
         

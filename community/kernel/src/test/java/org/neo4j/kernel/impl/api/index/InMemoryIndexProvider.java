@@ -41,7 +41,7 @@ public class InMemoryIndexProvider extends SchemaIndexProvider
 
     public InMemoryIndexProvider()
     {
-        super( 0 );
+        super( InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR, 0 );
     }
     
     @Override

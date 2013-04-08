@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -43,8 +44,8 @@ public class SchemaCacheTest
         SchemaCache cache = new SchemaCache( rules );
 
         // THEN
-        assertEquals( asSet( hans, gretel ), asSet( cache.getSchemaRules( 0 ) ) );
-        assertEquals( asSet( witch ), asSet( cache.getSchemaRules( 3 ) ) );
+        assertEquals( asSet( hans, gretel ), asSet( cache.getSchemaRulesForLabel( 0 ) ) );
+        assertEquals( asSet( witch ), asSet( cache.getSchemaRulesForLabel( 3 ) ) );
         assertEquals( asSet( rules ), asSet( cache.getSchemaRules() ) );
     }
 
@@ -59,7 +60,7 @@ public class SchemaCacheTest
         cache.addSchemaRule( gretel );
 
         // THEN
-        assertEquals( asSet( hans, gretel ), asSet( cache.getSchemaRules( 0 ) ) );
+        assertEquals( asSet( hans, gretel ), asSet( cache.getSchemaRulesForLabel( 0 ) ) );
     }
 
     @Test
@@ -79,6 +80,6 @@ public class SchemaCacheTest
 
     private IndexRule newIndexRule( long id, long label, long propertyKey )
     {
-        return new IndexRule( id, label, propertyKey );
+        return new IndexRule( id, label, PROVIDER_DESCRIPTOR, propertyKey );
     }
 }

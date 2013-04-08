@@ -303,12 +303,14 @@ public class LuceneIndexRecoveryIT
     }
 
     // Creates a lucene index factory with the shared in-memory directory
-    private KernelExtensionFactory<?> createLuceneIndexFactory() {
-        return new KernelExtensionFactory<LuceneSchemaIndexProviderFactory.Dependencies>("my-index")
+    private KernelExtensionFactory<?> createLuceneIndexFactory()
+    {
+        return new KernelExtensionFactory<LuceneSchemaIndexProviderFactory.Dependencies>(
+                LuceneSchemaIndexProviderFactory.PROVIDER_DESCRIPTOR.getKey() )
         {
             @Override
-            public Lifecycle newKernelExtension( LuceneSchemaIndexProviderFactory.Dependencies dependencies ) throws
-                    Throwable
+            public Lifecycle newKernelExtension( LuceneSchemaIndexProviderFactory.Dependencies dependencies )
+                    throws Throwable
             {
                 return new LuceneSchemaIndexProvider( ignoreCloseDirectoryFactory, dependencies.getConfig() );
             }
@@ -318,14 +320,17 @@ public class LuceneIndexRecoveryIT
     // Creates a lucene index factory with the shared in-memory directory, which waits for a latch on population
     private KernelExtensionFactory<?> createPopulationBlockingIndexFactory()
     {
-        return new KernelExtensionFactory<LuceneSchemaIndexProviderFactory.Dependencies>("my-index") {
-
+        return new KernelExtensionFactory<LuceneSchemaIndexProviderFactory.Dependencies>(
+                LuceneSchemaIndexProviderFactory.PROVIDER_DESCRIPTOR.getKey() )
+        {
             @Override
             public Lifecycle newKernelExtension( LuceneSchemaIndexProviderFactory.Dependencies dependencies ) throws
                     Throwable
             {
-                final LuceneSchemaIndexProvider delegate = new LuceneSchemaIndexProvider( ignoreCloseDirectoryFactory, dependencies.getConfig() );
-                return new SchemaIndexProvider( 0 ) {
+                final LuceneSchemaIndexProvider delegate =
+                        new LuceneSchemaIndexProvider( ignoreCloseDirectoryFactory, dependencies.getConfig() );
+                return new SchemaIndexProvider( LuceneSchemaIndexProviderFactory.PROVIDER_DESCRIPTOR, 0 )
+                {
                     @Override
                     public IndexPopulator getPopulator( long indexId )
                     {

@@ -20,6 +20,7 @@
 package org.neo4j.helpers;
 
 import java.io.UnsupportedEncodingException;
+import java.nio.ByteBuffer;
 
 /**
  * Utility class for converting strings to and from UTF-8 encoded bytes.
@@ -68,6 +69,27 @@ public final class UTF8
         {
             throw new Error( "UTF-8 should be available on all JVMs", e );
         }
+    }
+
+    public static String getDecodedStringFrom( ByteBuffer source )
+    {
+        // Currently only one key is supported although the data format supports multiple
+        int count = source.getInt();
+        byte[] data = new byte[count];
+        source.get( data );
+        return UTF8.decode( data );
+    }
+
+    public static void putEncodedStringInto( String text, ByteBuffer target )
+    {
+        byte[] data = encode( text );
+        target.putInt( data.length );
+        target.put( data );
+    }
+
+    public static int computeRequiredByteBufferSize( String text )
+    {
+        return encode( text ).length + 4;
     }
 
     private UTF8()

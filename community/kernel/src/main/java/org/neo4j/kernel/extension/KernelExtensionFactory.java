@@ -39,7 +39,7 @@ public abstract class KernelExtensionFactory<DEPENDENCIES> extends Service
     {
         return null;
     }
-
+    
     /**
      * Create a new instance of this kernel extension.
      *

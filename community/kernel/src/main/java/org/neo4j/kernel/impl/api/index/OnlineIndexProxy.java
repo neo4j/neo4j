@@ -28,15 +28,19 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
+import org.neo4j.kernel.api.index.SchemaIndexProvider;
 
 public class OnlineIndexProxy implements IndexProxy
 {
     private final IndexDescriptor descriptor;
     private final IndexAccessor accessor;
+    private final SchemaIndexProvider.Descriptor providerDescriptor;
 
-    public OnlineIndexProxy( IndexDescriptor descriptor, IndexAccessor accessor )
+    public OnlineIndexProxy( IndexDescriptor descriptor, SchemaIndexProvider.Descriptor providerDescriptor,
+                             IndexAccessor accessor )
     {
         this.descriptor = descriptor;
+        this.providerDescriptor = providerDescriptor;
         this.accessor = accessor;
     }
     
@@ -68,6 +72,12 @@ public class OnlineIndexProxy implements IndexProxy
     public IndexDescriptor getDescriptor()
     {
         return descriptor;
+    }
+
+    @Override
+    public SchemaIndexProvider.Descriptor getProviderDescriptor()
+    {
+        return providerDescriptor;
     }
 
     @Override

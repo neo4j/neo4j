@@ -34,6 +34,7 @@ import static org.neo4j.kernel.api.index.NodePropertyUpdate.add;
 import static org.neo4j.kernel.api.index.NodePropertyUpdate.change;
 import static org.neo4j.kernel.api.index.NodePropertyUpdate.remove;
 import static org.neo4j.kernel.api.index.SchemaIndexProvider.NO_INDEX_PROVIDER;
+import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 import static org.neo4j.kernel.impl.util.StringLogger.SYSTEM;
 
 import java.io.File;
@@ -90,7 +91,7 @@ public class WriteTransactionTest
 
         // WHEN
         final long ruleId = neoStore.getSchemaStore().nextId();
-        IndexRule schemaRule = new IndexRule( ruleId, 10, 8 );
+        IndexRule schemaRule = new IndexRule( ruleId, 10, PROVIDER_DESCRIPTOR, 8 );
         writeTransaction.createSchemaRule( schemaRule );
         writeTransaction.prepare();
         writeTransaction.commit();
@@ -105,7 +106,7 @@ public class WriteTransactionTest
         // GIVEN
         SchemaStore schemaStore = neoStore.getSchemaStore();
         long labelId = 10, propertyKey = 10;
-        IndexRule rule = new IndexRule( schemaStore.nextId(), labelId, propertyKey );
+        IndexRule rule = new IndexRule( schemaStore.nextId(), labelId, PROVIDER_DESCRIPTOR, propertyKey );
         Collection<DynamicRecord> records = schemaStore.allocateFrom( rule );
         for ( DynamicRecord record : records )
             schemaStore.updateRecord( record );
@@ -129,7 +130,7 @@ public class WriteTransactionTest
 
         // WHEN
         final long ruleId = neoStore.getSchemaStore().nextId();
-        writeTransaction.createSchemaRule( new IndexRule( ruleId, 10, 7 ) );
+        writeTransaction.createSchemaRule( new IndexRule( ruleId, 10, PROVIDER_DESCRIPTOR, 7 ) );
         writeTransaction.prepare();
         writeTransaction.rollback();
 
@@ -423,7 +424,7 @@ public class WriteTransactionTest
                 "something long and nasty that requires dynamic records for sure I would think and hope. Ok then åäö%!=" );
         for ( int i = 0; i < 10; i++ )
             tx.addLabelToNode( 10000 + i, nodeId );
-        tx.createSchemaRule( new IndexRule( ruleId, 100, propertyIndexId ) );
+        tx.createSchemaRule( new IndexRule( ruleId, 100, PROVIDER_DESCRIPTOR, propertyIndexId ) );
         prepareAndCommit( tx );
 
         // THEN
@@ -449,7 +450,7 @@ public class WriteTransactionTest
         // GIVEN
         WriteTransaction tx = newWriteTransaction( NO_INDEXING, verifier );
         long ruleId = 0, labelId = 5, propertyKeyId = 7;
-        SchemaRule rule = new IndexRule( ruleId, labelId, propertyKeyId );
+        SchemaRule rule = new IndexRule( ruleId, labelId, PROVIDER_DESCRIPTOR, propertyKeyId );
 
         // WHEN
         tx.createSchemaRule( rule );
@@ -516,8 +517,12 @@ public class WriteTransactionTest
         
         public CapturingIndexingService()
         {
-            super( null, NO_INDEX_PROVIDER, new NeoStoreIndexStoreView( neoStore ),
-                    new KernelSchemaStateStore(), new SingleLoggingService( SYSTEM ) );
+            super(  null,
+                    new DefaultSchemaIndexProviderMap( NO_INDEX_PROVIDER ),
+                    new NeoStoreIndexStoreView( neoStore ),
+                    new KernelSchemaStateStore(),
+                    new SingleLoggingService( SYSTEM )
+                );
         }
         
         @Override

@@ -90,7 +90,8 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
  */
 public abstract class SchemaIndexProvider extends LifecycleAdapter implements Comparable<SchemaIndexProvider>
 {
-    public static final SchemaIndexProvider NO_INDEX_PROVIDER = new SchemaIndexProvider( -1 )
+    public static final SchemaIndexProvider NO_INDEX_PROVIDER =
+            new SchemaIndexProvider( new Descriptor("no-index-provider", "1.0"), -1 )
     {
         private final IndexAccessor singleWriter = new IndexAccessor.Adapter();
         private final IndexPopulator singlePopulator = new IndexPopulator.Adapter();
@@ -130,10 +131,13 @@ public abstract class SchemaIndexProvider extends LifecycleAdapter implements Co
     };
     
     private final int priority;
+
+    private final Descriptor providerDescriptor;
     
-    protected SchemaIndexProvider( int priority )
+    protected SchemaIndexProvider( Descriptor descriptor, int priority )
     {
         this.priority = priority;
+        this.providerDescriptor = descriptor;
     }
 
     /**
@@ -150,7 +154,15 @@ public abstract class SchemaIndexProvider extends LifecycleAdapter implements Co
      * Called during startup to find out which state an index is in.
      */
     public abstract InternalIndexState getInitialState( long indexId );
-    
+
+    /**
+     * @return a description of this index provider
+     */
+    public Descriptor getProviderDescriptor()
+    {
+        return providerDescriptor;
+    }
+
     @Override
     public int compareTo( SchemaIndexProvider o )
     {
@@ -160,5 +172,59 @@ public abstract class SchemaIndexProvider extends LifecycleAdapter implements Co
     protected File getRootDirectory( Config config, String key )
     {
         return new File( new File( new File( config.get( store_dir ), "schema" ), "index" ), key );
+    }
+    
+    public static class Descriptor
+    {
+        private final String key;
+        private final String version;
+
+        public Descriptor( String key, String version )
+        {
+            if (key == null)
+                throw new IllegalArgumentException( "null provider key prohibited" );
+            if (key.length() == 0)
+                throw new IllegalArgumentException( "empty provider key prohibited" );
+            if (version == null)
+                throw new IllegalArgumentException( "null provider version prohibited" );
+
+            this.key = key;
+            this.version = version;
+        }
+
+        public String getKey()
+        {
+            return key;
+        }
+
+        public String getVersion()
+        {
+            return version;
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return ( 23 + key.hashCode() ) ^ version.hashCode();
+        }
+
+        @Override
+        public boolean equals( Object obj )
+        {
+            if ( obj != null && obj instanceof Descriptor )
+            {
+                Descriptor otherDescriptor = (Descriptor) obj;
+                return key.equals( otherDescriptor.getKey() ) && version.equals( otherDescriptor.getVersion() );
+            }
+            return false;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "{key=" + key + ", version=" + version + "}";
+        }
+
+
     }
 }

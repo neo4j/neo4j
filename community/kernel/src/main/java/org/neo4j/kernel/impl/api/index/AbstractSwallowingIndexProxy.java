@@ -26,15 +26,19 @@ import java.util.concurrent.Future;
 
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
+import org.neo4j.kernel.api.index.SchemaIndexProvider;
 
 public abstract class AbstractSwallowingIndexProxy implements IndexProxy
 {
     private final IndexDescriptor descriptor;
+    private final SchemaIndexProvider.Descriptor providerDescriptor;
     private final Throwable cause;
 
-    public AbstractSwallowingIndexProxy( IndexDescriptor descriptor, Throwable cause )
+    public AbstractSwallowingIndexProxy( IndexDescriptor descriptor, SchemaIndexProvider.Descriptor providerDescriptor,
+                                         Throwable cause )
     {
         this.descriptor = descriptor;
+        this.providerDescriptor = providerDescriptor;
         this.cause = cause;
     }
 
@@ -66,6 +70,12 @@ public abstract class AbstractSwallowingIndexProxy implements IndexProxy
     public IndexDescriptor getDescriptor()
     {
         return descriptor;
+    }
+
+    @Override
+    public SchemaIndexProvider.Descriptor getProviderDescriptor()
+    {
+        return providerDescriptor;
     }
 
     @Override
