@@ -27,6 +27,10 @@ The following graph is used for the examples below:
 .Graph
 include::includes/cypher-match-graph.asciidoc[]
 
+include::get-all-nodes.asciidoc[]
+
+include::get-all-nodes-with-a-label.asciidoc[]
+
 include::related-nodes.asciidoc[]
 
 include::outgoing-relationships.asciidoc[]

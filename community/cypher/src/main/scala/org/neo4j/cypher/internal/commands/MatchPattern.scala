@@ -74,12 +74,13 @@ case class MatchPattern(nodes:Seq[String], relationships:Seq[MatchRelationship])
     var currentNodes= mutable.ListBuffer[String]()
     var currentRels = mutable.ListBuffer[MatchRelationship]()
 
-    def popNextNode {
+    def popNextNode() {
       var current = nodesLeft.head
       nodesLeft -= current
       currentNodes += current
     }
-    popNextNode
+
+    popNextNode()
 
     while(nodesLeft.nonEmpty) {
 
@@ -103,7 +104,7 @@ case class MatchPattern(nodes:Seq[String], relationships:Seq[MatchRelationship])
         currentNodes.clear()
         currentRels.clear()
 
-        popNextNode
+        popNextNode()
       }
     }
 

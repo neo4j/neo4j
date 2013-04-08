@@ -2726,7 +2726,7 @@ RETURN x0.name?
     assert(result.toList === List())
   }
 
-  @Test  @Ignore
+  @Test
   def should_be_able_to_use_index_hints() {
     //GIVEN
     val andres = createLabeledNode(Map("name" -> "Andres"), "Person")
