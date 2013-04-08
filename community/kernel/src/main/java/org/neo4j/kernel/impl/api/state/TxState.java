@@ -19,7 +19,9 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
+import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.api.DiffSets;
+import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 
@@ -70,12 +72,18 @@ public class TxState
     private final OldTxStateBridge legacyState;
     private final PersistenceManager legacyTransaction;
     private final IdGeneration idGeneration;
+    private final SchemaIndexProviderMap providerMap;
 
-    public TxState(OldTxStateBridge legacyState, PersistenceManager legacyTransaction, IdGeneration idGeneration)
+    public TxState(OldTxStateBridge legacyState,
+                   PersistenceManager legacyTransaction,
+                   IdGeneration idGeneration,
+                   SchemaIndexProviderMap providerMap
+                   )
     {
         this.legacyState = legacyState;
         this.legacyTransaction = legacyTransaction;
         this.idGeneration = idGeneration;
+        this.providerMap = providerMap;
     }
 
     public boolean hasChanges()
@@ -152,7 +160,8 @@ public class TxState
 
     public IndexRule addIndexRule( long labelId, long propertyKey )
     {
-        IndexRule rule = new IndexRule( idGeneration.newSchemaRuleId(), labelId, propertyKey );
+        SchemaIndexProvider.Descriptor providerDescriptor = providerMap.getDefaultProvider().getProviderDescriptor();
+        IndexRule rule = new IndexRule( idGeneration.newSchemaRuleId(), labelId, providerDescriptor, propertyKey );
 
         legacyTransaction.createSchemaRule( rule );
 

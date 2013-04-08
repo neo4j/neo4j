@@ -31,6 +31,7 @@ import org.neo4j.kernel.api.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
+import org.neo4j.kernel.api.index.SchemaIndexProvider;
 
 public class FlippableIndexProxy implements IndexProxy
 {
@@ -146,6 +147,20 @@ public class FlippableIndexProxy implements IndexProxy
         try
         {
             return delegate.getDescriptor();
+        }
+        finally
+        {
+            lock.readLock().unlock();
+        }
+    }
+
+    @Override
+    public SchemaIndexProvider.Descriptor getProviderDescriptor()
+    {
+        lock.readLock().lock();
+        try
+        {
+            return delegate.getProviderDescriptor();
         }
         finally
         {

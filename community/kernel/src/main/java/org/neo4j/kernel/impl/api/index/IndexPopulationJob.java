@@ -37,6 +37,7 @@ import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
+import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.api.index.IndexingService.StoreScan;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -64,12 +65,15 @@ public class IndexPopulationJob implements Runnable
 
     private volatile StoreScan storeScan;
     private volatile boolean cancelled;
+    private final SchemaIndexProvider.Descriptor providerDescriptor;
 
-    public IndexPopulationJob( IndexDescriptor descriptor, IndexPopulator populator, FlippableIndexProxy flipper,
+    public IndexPopulationJob( IndexDescriptor descriptor, SchemaIndexProvider.Descriptor providerDescriptor,
+                               IndexPopulator populator, FlippableIndexProxy flipper,
                                IndexingService.IndexStoreView storeView, UpdateableSchemaState updateableSchemaState,
                                Logging logging )
     {
         this.descriptor = descriptor;
+        this.providerDescriptor = providerDescriptor;
         this.populator = populator;
         this.flipper = flipper;
         this.storeView = storeView;
@@ -105,7 +109,7 @@ public class IndexPopulationJob implements Runnable
                 }
             };
 
-            FailedIndexProxy failureTarget = new FailedIndexProxy( descriptor, populator );
+            FailedIndexProxy failureTarget = new FailedIndexProxy( descriptor, providerDescriptor, populator );
 
             flipper.flip( duringFlip, failureTarget );
             success = true;
@@ -124,7 +128,8 @@ public class IndexPopulationJob implements Runnable
             // The reason for having the flipper transition to the failed index context in the first
             // place is that we would otherwise introduce a race condition where updates could come
             // in to the old context, if something failed in the job we send to the flipper.
-            flipper.setFlipTarget( singleProxy( new FailedIndexProxy( descriptor, populator, t ) ) );
+            flipper.setFlipTarget(
+                    singleProxy( new FailedIndexProxy( descriptor, providerDescriptor, populator, t ) ) );
             flipper.flip();
         }
         finally

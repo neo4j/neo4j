@@ -19,27 +19,10 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.IsEqual.equalTo;
-import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
+import org.neo4j.kernel.api.index.SchemaIndexProvider;
 
-import org.junit.Test;
-import org.neo4j.kernel.impl.nioneo.store.IndexRule;
-
-public class IndexRuleRepositoryTest
+public class TestSchemaIndexProviderDescriptor
 {
-    @Test
-    public void shouldIncludeIndexRuleAfterItsBeenAdded() throws Exception
-    {
-        // Given
-        IndexRuleRepository repo = new IndexRuleRepository();
-
-        // When
-        repo.add( new IndexRule( 1, 10, PROVIDER_DESCRIPTOR, 100l ) );
-
-        // Then
-        assertThat( asSet( asIterable( repo.getIndexedProperties( 10 ) )), equalTo(asSet( 100l )));
-    }
+    public final static SchemaIndexProvider.Descriptor PROVIDER_DESCRIPTOR =
+            new SchemaIndexProvider.Descriptor( "quantum-dex", "25.0" );
 }

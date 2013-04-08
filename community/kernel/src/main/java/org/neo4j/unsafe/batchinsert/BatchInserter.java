@@ -22,7 +22,6 @@ package org.neo4j.unsafe.batchinsert;
 import java.util.Map;
 
 import org.neo4j.graphdb.Label;
-import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.schema.IndexCreator;
@@ -290,15 +289,16 @@ public interface BatchInserter
 
     /**
      * Returns all nodes having the label, and the wanted property value. If an online
-     * index is found, it will be used to lookup the requested nodes. Otherwise throws
-     * {@link org.neo4j.kernel.api.index.IndexNotOnlineException}.
+     * index is found, it will be used to lookup the requested nodes.
+     *
+     * @throws IllegalArgumentException if no matching index was found
      *
      * @param label consider nodes with this label
      * @param key required property key
      * @param value required property value
-     * @return an iterable containing all matching nodes. See {@link ResourceIterable} for responsibilities.
+     * @return an iterable containing ids of all matching nodes. See {@link ResourceIterable} for responsibilities.
      */
-    public ResourceIterable<Node> findNodesByLabelAndProperty( Label label, String key, Object value );
+    public ResourceIterable<Long> findNodesByLabelAndProperty( Label label, String key, Object value );
 
     /**
      * Shuts down this batch inserter syncing all changes that are still only

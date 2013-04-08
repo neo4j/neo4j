@@ -27,6 +27,7 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
+import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.api.index.IndexingService.IndexStoreView;
 import org.neo4j.kernel.impl.util.JobScheduler;
@@ -36,15 +37,21 @@ public class PopulatingIndexProxy implements IndexProxy
 {
     private final JobScheduler scheduler;
     private final IndexDescriptor descriptor;
+    private final SchemaIndexProvider.Descriptor providerDescriptor;
     private final IndexPopulationJob job;
 
-    public PopulatingIndexProxy( JobScheduler scheduler, IndexDescriptor descriptor, IndexPopulator writer,
-                                   FlippableIndexProxy flipper, IndexStoreView storeView,
-                                   UpdateableSchemaState updateableSchemaState, Logging logging )
+    public PopulatingIndexProxy( JobScheduler scheduler,
+                                 IndexDescriptor descriptor, SchemaIndexProvider.Descriptor providerDescriptor,
+                                 IndexPopulator writer,
+                                 FlippableIndexProxy flipper, IndexStoreView storeView,
+                                 UpdateableSchemaState updateableSchemaState, Logging logging )
     {
         this.scheduler  = scheduler;
         this.descriptor = descriptor;
-        this.job        = new IndexPopulationJob( descriptor, writer, flipper, storeView, updateableSchemaState, logging );
+        this.providerDescriptor = providerDescriptor;
+
+        this.job  = new IndexPopulationJob( descriptor, providerDescriptor,
+                                            writer, flipper, storeView, updateableSchemaState, logging );
     }
 
     @Override
@@ -75,6 +82,12 @@ public class PopulatingIndexProxy implements IndexProxy
     public IndexDescriptor getDescriptor()
     {
         return descriptor;
+    }
+
+    @Override
+    public SchemaIndexProvider.Descriptor getProviderDescriptor()
+    {
+        return getProviderDescriptor();
     }
 
     @Override

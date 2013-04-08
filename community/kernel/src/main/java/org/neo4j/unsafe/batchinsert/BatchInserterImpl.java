@@ -23,6 +23,7 @@ import static java.lang.Boolean.parseBoolean;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
 import static org.neo4j.helpers.collection.IteratorUtil.first;
+import static org.neo4j.kernel.api.index.SchemaIndexProvider.HIGHEST_PRIORITIZED_OR_NONE;
 import static org.neo4j.kernel.impl.nioneo.store.PropertyStore.encodeString;
 
 import java.io.File;
@@ -34,28 +35,40 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import org.neo4j.graphdb.ConstraintViolationException;
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
-import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterable;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.schema.IndexCreator;
+import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Settings;
-import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
+import org.neo4j.kernel.api.index.IndexAccessor;
+import org.neo4j.kernel.api.index.IndexReader;
+import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.extension.KernelExtensions;
+import org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies;
+import org.neo4j.kernel.impl.api.SchemaCache;
+import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
+import org.neo4j.kernel.impl.cleanup.CleanupService;
 import org.neo4j.kernel.impl.index.IndexStore;
 import org.neo4j.kernel.impl.nioneo.store.DefaultWindowPoolFactory;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.IdGeneratorImpl;
+import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
 import org.neo4j.kernel.impl.nioneo.store.NameData;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
@@ -74,29 +87,37 @@ import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeStore;
+import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.nioneo.store.UnderlyingStorageException;
+import org.neo4j.kernel.impl.nioneo.xa.DefaultSchemaIndexProviderMap;
 import org.neo4j.kernel.impl.nioneo.xa.NodeLabelRecordLogic;
 import org.neo4j.kernel.impl.util.FileUtils;
+import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.kernel.logging.ClassicLoggingService;
 
 public class BatchInserterImpl implements BatchInserter
 {
     private static final long MAX_NODE_ID = IdType.NODE.getMaxValue();
     private static final long MAX_RELATIONSHIP_ID = IdType.RELATIONSHIP.getMaxValue();
 
+    private final LifeSupport life; 
     private final NeoStore neoStore;
     private final IndexStore indexStore;
     private final File storeDir;
-
     private final PropertyIndexHolder indexHolder;
     private final RelationshipTypeHolder typeHolder;
     private final LabelHolder labelHolder;
-
     private final IdGeneratorFactory idGeneratorFactory;
-
+    private final SchemaIndexProviderMap schemaIndexProviders;
+    // TODO use Logging instead
     private final StringLogger msgLog;
     private final FileSystemAbstraction fileSystem;
+    private final CleanupService cleanupService;
+    private final SchemaCache schemaCache;
+
     private final Function<Long,Label> labelIdToLabelFunction = new Function<Long,Label>()
     {
         @Override
@@ -106,20 +127,10 @@ public class BatchInserterImpl implements BatchInserter
         }
     };
 
-    BatchInserterImpl( String storeDir )
-    {
-        this( storeDir, new HashMap<String, String>() );
-    }
-
-    BatchInserterImpl( String storeDir,
-            Map<String, String> stringParams )
-    {
-        this( storeDir, new DefaultFileSystemAbstraction(), stringParams );
-    }
-    
     BatchInserterImpl( String storeDir, FileSystemAbstraction fileSystem,
-                       Map<String, String> stringParams )
+                       Map<String, String> stringParams, Iterable<KernelExtensionFactory<?>> kernelExtensions )
     {
+        life = new LifeSupport();
         this.fileSystem = fileSystem;
         this.storeDir = new File( FileUtils.fixSeparatorsInPath(storeDir) );
 
@@ -155,7 +166,20 @@ public class BatchInserterImpl implements BatchInserter
         labelHolder = new LabelHolder( indexHolder );
         NameData[] types = getRelationshipTypeStore().getNames( Integer.MAX_VALUE );
         typeHolder = new RelationshipTypeHolder( types );
-        indexStore = new IndexStore( this.storeDir, fileSystem );
+        indexStore = life.add( new IndexStore( this.storeDir, fileSystem ) );
+        schemaCache = new SchemaCache( neoStore.getSchemaStore() );
+
+        ClassicLoggingService logging = new ClassicLoggingService( new Config() );
+        cleanupService = life.add( CleanupService.create( life.add( new Neo4jJobScheduler( msgLog ) ), logging ) );
+        
+        KernelExtensions extensions = life.add( new KernelExtensions( kernelExtensions, config, new DependencyResolverImpl(),
+                UnsatisfiedDependencyStrategies.ignore() ) );
+
+        life.start();
+
+        SchemaIndexProvider provider =
+                extensions.resolveDependency( SchemaIndexProvider.class, HIGHEST_PRIORITIZED_OR_NONE );
+        schemaIndexProviders = new DefaultSchemaIndexProviderMap( provider );
     }
 
     private Map<String, String> getDefaultParams()
@@ -231,7 +255,7 @@ public class BatchInserterImpl implements BatchInserter
     @Override
     public IndexCreator createDeferredSchemaIndex( Label label )
     {
-        throw new UnsupportedOperationException( "not implemented" );
+        return new BatchIndexCreatorImpl( label );
     }
 
     @Override
@@ -241,9 +265,32 @@ public class BatchInserterImpl implements BatchInserter
     }
 
     @Override
-    public ResourceIterable<Node> findNodesByLabelAndProperty( Label label, String key, Object value )
+    public ResourceIterable<Long> findNodesByLabelAndProperty( Label label, String key, final Object value )
     {
-        throw new UnsupportedOperationException( "not implemented" );
+        for ( SchemaRule rule : schemaCache.getSchemaRulesForLabel( getLabelId( label ) ) )
+        {
+            if ( rule instanceof IndexRule ) {
+                final IndexRule indexRule = (IndexRule) rule;
+                if ( indexRule.getPropertyKey() == getOrCreatePropertyIndex( key ) )
+                {
+                    return new ResourceIterable<Long>()
+                    {
+                        @Override
+                        public ResourceIterator<Long> iterator()
+                        {
+                            SchemaIndexProvider.Descriptor providerDescriptor = indexRule.getProviderDescriptor();
+                            SchemaIndexProvider provider = schemaIndexProviders.apply( providerDescriptor );
+                            IndexAccessor onlineAccessor = provider.getOnlineAccessor( indexRule.getId() );
+                            IndexReader reader = onlineAccessor.newReader();
+                            ResourceIterator<Long> idIterator =
+                                    cleanupService.resourceIterator( reader.lookup( value ), reader );
+                            return idIterator;
+                        }
+                    };
+                }
+            }
+        }
+        throw new IllegalArgumentException( "No matching online index found on :" + label.name() + "(" + key + ")" );
     }
 
     private boolean removePrimitiveProperty( PrimitiveRecord primitive,
@@ -764,6 +811,7 @@ public class BatchInserterImpl implements BatchInserter
         neoStore.close();
         msgLog.logMessage( Thread.currentThread() + " Clean shutdown on BatchInserter(" + this + ")", true );
         msgLog.close();
+        life.shutdown();
     }
 
     @Override
@@ -1038,4 +1086,53 @@ public class BatchInserterImpl implements BatchInserter
         }
     }
 
+    private class BatchIndexCreatorImpl implements IndexCreator
+    {
+        private final Label label;
+        private final String propertyKey;
+
+        public BatchIndexCreatorImpl( Label label, String propertyKey )
+        {
+            if ( label == null )
+                throw new IllegalArgumentException( "Cannot create an index with a null label" );
+            this.label = label;
+            this.propertyKey = propertyKey;
+        }
+
+        private BatchIndexCreatorImpl( Label label )
+        {
+            this(label, null);
+        }
+
+        @Override
+        public IndexCreator on( String propertyKey )
+        {
+            if ( null == this.propertyKey )
+                return new BatchIndexCreatorImpl( label, propertyKey );
+            else
+                throw new IllegalArgumentException( "Indexes over compound keys are not yet supported" );
+        }
+
+        @Override
+        public IndexDefinition create() throws ConstraintViolationException
+        {
+            if ( propertyKey == null )
+                throw new IllegalStateException( "Need a property key to define an index" );
+
+            return new BatchIndexDefinitionImpl( label, propertyKey );
+        }
+    }
+
+    private class DependencyResolverImpl extends DependencyResolver.Adapter
+    {
+        @Override
+        public <T> T resolveDependency( Class<T> type, SelectionStrategy<T> selector ) throws IllegalArgumentException
+        {
+            if ( type.isInstance( FileSystemAbstraction.class ) )
+            {
+                return type.cast( fileSystem );
+            }
+            throw new IllegalArgumentException( "Unknown dependency " + type );
+        }
+    }
 }

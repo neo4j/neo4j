@@ -121,6 +121,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
 
     private NeoStore neoStore;
     private IndexingService indexingService;
+    private DefaultSchemaIndexProviderMap providerMap;
     private XaContainer xaContainer;
     private ArrayMap<Class<?>,Store> idGenerators;
 
@@ -272,10 +273,13 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
         }
         neoStore = storeFactory.newNeoStore( store );
 
-        SchemaIndexProvider indexProvider = dependencyResolver.resolveDependency( SchemaIndexProvider.class,
-                HIGHEST_PRIORITIZED_OR_NONE );
-        
-        indexingService = life.add( new IndexingService( scheduler, indexProvider,
+        final SchemaIndexProvider indexProvider =
+            dependencyResolver.resolveDependency( SchemaIndexProvider.class, HIGHEST_PRIORITIZED_OR_NONE );
+
+        // TODO: Build a real provider map
+        providerMap = new DefaultSchemaIndexProviderMap( indexProvider );
+
+        indexingService = life.add( new IndexingService( scheduler, providerMap,
                 new NeoStoreIndexStoreView( neoStore ), updateableSchemaState, logging ) );
         
         xaContainer = xaFactory.newXaContainer(this, config.get( Configuration.logical_log ),
@@ -341,6 +345,11 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
     public IndexingService getIndexService()
     {
         return indexingService;
+    }
+
+    public DefaultSchemaIndexProviderMap getProviderMap()
+    {
+        return providerMap;
     }
 
     @Override

@@ -20,24 +20,46 @@
 package org.neo4j.kernel.impl.api.index;
 
 import org.neo4j.helpers.Service;
+import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
 @Service.Implementation( KernelExtensionFactory.class )
 public class InMemoryIndexProviderFactory extends KernelExtensionFactory<InMemoryIndexProviderFactory.Dependencies>
 {
+    public static final String KEY = "in-memory";
+
+    public static final SchemaIndexProvider.Descriptor PROVIDER_DESCRIPTOR =
+            new SchemaIndexProvider.Descriptor( KEY, "1.0" );
+
+    private final InMemoryIndexProvider singleProvider;
+
     public interface Dependencies
     {
     }
     
     public InMemoryIndexProviderFactory()
     {
-        super( "in-memory" );
+        super( KEY );
+        this.singleProvider = null;
+    }
+    
+    public InMemoryIndexProviderFactory( InMemoryIndexProvider singleProvider )
+    {
+        super( KEY );
+        if ( singleProvider == null )
+            throw new IllegalArgumentException( "Null provider" );
+        this.singleProvider = singleProvider;
     }
 
     @Override
     public Lifecycle newKernelExtension( Dependencies dependencies ) throws Throwable
     {
-        return new InMemoryIndexProvider();
+        return hasSingleProvider() ? singleProvider : new InMemoryIndexProvider();
+    }
+
+    private boolean hasSingleProvider()
+    {
+        return singleProvider != null;
     }
 }

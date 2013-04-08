@@ -263,7 +263,11 @@ public class SchemaIndexHaIT
             latch.finish();
         }
     }
-    
+
+    public static final SchemaIndexProvider.Descriptor CONTROLLED_PROVIDER_DESCRIPTOR =
+            new SchemaIndexProvider.Descriptor( "controlled", "1.0" );
+
+
     private static class ControlledSchemaIndexProvider extends SchemaIndexProvider
     {
         private final SchemaIndexProvider inMemoryDelegate = new InMemoryIndexProvider();
@@ -271,7 +275,7 @@ public class SchemaIndexHaIT
         
         public ControlledSchemaIndexProvider()
         {
-            super( 10 );
+            super( CONTROLLED_PROVIDER_DESCRIPTOR, 10 );
         }
         
         @Override

@@ -19,11 +19,14 @@
  */
 package org.neo4j.unsafe.batchinsert;
 
-import java.util.HashMap;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+
 import java.util.Map;
 
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.helpers.Service;
+import org.neo4j.kernel.DefaultFileSystemAbstraction;
+import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 
 /**
@@ -45,7 +48,7 @@ public final class BatchInserters
      */
     public static BatchInserter inserter( String storeDir )
     {
-        return new BatchInserterImpl( storeDir );
+        return inserter( storeDir, stringMap() );
     }
 
     /**
@@ -57,7 +60,7 @@ public final class BatchInserters
      */
     public static BatchInserter inserter( String storeDir, Map<String,String> config )
     {
-        return new BatchInserterImpl( storeDir, config );
+        return inserter( storeDir, new DefaultFileSystemAbstraction(), config );
     }
 
     /**
@@ -68,7 +71,7 @@ public final class BatchInserters
      */
     public static BatchInserter inserter( String storeDir, FileSystemAbstraction fileSystem )
     {
-        return new BatchInserterImpl( storeDir, fileSystem, new HashMap<String, String>() );
+        return inserter( storeDir, fileSystem, stringMap() );
     }
 
     /**
@@ -78,10 +81,17 @@ public final class BatchInserters
      * @param config configuration settings to use
      * @return a new {@link BatchInserter}
      */
+    @SuppressWarnings( { "unchecked", "rawtypes" } )
     public static BatchInserter inserter( String storeDir, FileSystemAbstraction fileSystem,
             Map<String,String> config )
     {
-        return new BatchInserterImpl( storeDir, fileSystem, config );
+        return inserter( storeDir, fileSystem, config, (Iterable) Service.load( KernelExtensionFactory.class ) );
+    }
+    
+    public static BatchInserter inserter( String storeDir, FileSystemAbstraction fileSystem,
+            Map<String, String> config, Iterable<KernelExtensionFactory<?>> kernelExtensions )
+    {
+        return new BatchInserterImpl( storeDir, fileSystem, config, kernelExtensions );
     }
     
     /**
@@ -94,7 +104,7 @@ public final class BatchInserters
      */
     public static GraphDatabaseService batchDatabase( String storeDir )
     {
-        return new BatchGraphDatabaseImpl( storeDir );
+        return batchDatabase( storeDir, stringMap() );
     }
 
     /**
@@ -109,7 +119,7 @@ public final class BatchInserters
     public static GraphDatabaseService batchDatabase( String storeDir,
             Map<String, String> config )
     {
-        return new BatchGraphDatabaseImpl( storeDir, config );
+        return batchDatabase( storeDir, new DefaultFileSystemAbstraction(), config );
     }
 
     /**
@@ -122,7 +132,7 @@ public final class BatchInserters
      */
     public static GraphDatabaseService batchDatabase( String storeDir, FileSystemAbstraction fileSystem )
     {
-        return new BatchGraphDatabaseImpl( storeDir, fileSystem, MapUtil.stringMap() );
+        return batchDatabase( storeDir, fileSystem, stringMap() );
     }
 
     /**
@@ -134,9 +144,16 @@ public final class BatchInserters
      * @return a {@link GraphDatabaseService} that does not support deletions
      *         and transactions
      */
+    @SuppressWarnings( { "unchecked", "rawtypes" } )
     public static GraphDatabaseService batchDatabase( String storeDir,
             FileSystemAbstraction fileSystem, Map<String, String> config )
     {
-        return new BatchGraphDatabaseImpl( storeDir, fileSystem, config );
+        return batchDatabase( storeDir, fileSystem, config, (Iterable) Service.load( KernelExtensionFactory.class ) );
+    }
+
+    public static GraphDatabaseService batchDatabase( String storeDir, FileSystemAbstraction fileSystem,
+            Map<String, String> config, Iterable<KernelExtensionFactory<?>> kernelExtensions )
+    {
+        return new BatchGraphDatabaseImpl( storeDir, fileSystem, config, kernelExtensions );
     }
 }

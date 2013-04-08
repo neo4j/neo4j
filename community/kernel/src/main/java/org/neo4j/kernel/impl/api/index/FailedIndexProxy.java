@@ -26,19 +26,22 @@ import java.util.concurrent.Future;
 
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.InternalIndexState;
+import org.neo4j.kernel.api.index.SchemaIndexProvider;
 
 public class FailedIndexProxy extends AbstractSwallowingIndexProxy
 {
     protected final IndexPopulator populator;
 
-    public FailedIndexProxy( IndexDescriptor descriptor, IndexPopulator populator )
+    public FailedIndexProxy( IndexDescriptor descriptor, SchemaIndexProvider.Descriptor providerDescriptor,
+                             IndexPopulator populator )
     {
-       this( descriptor, populator, null );
+       this( descriptor, providerDescriptor, populator, null );
     }
 
-    public FailedIndexProxy( IndexDescriptor descriptor, IndexPopulator populator, Throwable cause )
+    public FailedIndexProxy( IndexDescriptor descriptor, SchemaIndexProvider.Descriptor providerDescriptor,
+                             IndexPopulator populator, Throwable cause )
     {
-        super( descriptor, cause );
+        super( descriptor, providerDescriptor, cause );
         this.populator = populator;
     }
 

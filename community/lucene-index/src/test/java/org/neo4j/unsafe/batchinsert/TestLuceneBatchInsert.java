@@ -34,6 +34,7 @@ import static org.neo4j.index.impl.lucene.Contains.contains;
 import static org.neo4j.index.impl.lucene.IsEmpty.isEmpty;
 import static org.neo4j.index.impl.lucene.LuceneIndexImplementation.EXACT_CONFIG;
 import static org.neo4j.index.lucene.ValueContext.numeric;
+import static org.neo4j.unsafe.batchinsert.BatchInserters.inserter;
 
 import java.io.File;
 import java.lang.reflect.Field;
@@ -78,7 +79,7 @@ public class TestLuceneBatchInsert
         // Different paths for each tests because there's a bug (on Windows)
         // causing _0.cfs file to stay open 
         String path = new File( PATH, "1" ).getAbsolutePath();
-        BatchInserter inserter = new BatchInserterImpl( path );
+        BatchInserter inserter = inserter( path );
         BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProviderNewImpl(
                 inserter );
         String indexName = "users";
@@ -132,7 +133,7 @@ public class TestLuceneBatchInsert
     public void testFulltext()
     {
         String path = new File( PATH, "2" ).getAbsolutePath();
-        BatchInserter inserter = new BatchInserterImpl( path );
+        BatchInserter inserter = inserter( path );
         BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProviderNewImpl(
                 inserter );
         String name = "users";
@@ -171,7 +172,7 @@ public class TestLuceneBatchInsert
     @Test
     public void testCanIndexRelationships()
     {
-        BatchInserter inserter = new BatchInserterImpl( new File( PATH, "5" ).getAbsolutePath() );
+        BatchInserter inserter = inserter( new File( PATH, "5" ).getAbsolutePath() );
         BatchInserterIndexProvider indexProvider = new LuceneBatchInserterIndexProviderNewImpl(
                 inserter );
         BatchInserterIndex edgesIndex = indexProvider.relationshipIndex(
@@ -197,7 +198,7 @@ public class TestLuceneBatchInsert
     @Test
     public void triggerNPEAfterFlush()
     {
-        BatchInserter inserter = new BatchInserterImpl( new File( PATH, "6" ).getAbsolutePath() );
+        BatchInserter inserter = inserter( new File( PATH, "6" ).getAbsolutePath() );
         BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProviderNewImpl(
                 inserter );
         BatchInserterIndex index = provider.nodeIndex( "Node-exact", EXACT_CONFIG );
@@ -216,7 +217,7 @@ public class TestLuceneBatchInsert
     public void testNumericValues()
     {
         String path = new File( PATH, "7" ).getAbsolutePath();
-        BatchInserter inserter = new BatchInserterImpl( path );
+        BatchInserter inserter = inserter( path );
         BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProviderNewImpl(
                 inserter );
         BatchInserterIndex index = provider.nodeIndex( "mine", EXACT_CONFIG );
@@ -243,7 +244,7 @@ public class TestLuceneBatchInsert
     public void testNumericValueArrays()
     {
         String path = new File( PATH, "8" ).getAbsolutePath();
-        BatchInserter inserter = new BatchInserterImpl( path );
+        BatchInserter inserter = inserter( path );
         BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProviderNewImpl(
                 inserter );
         BatchInserterIndex batchIndex = provider.nodeIndex( "mine", EXACT_CONFIG );
@@ -299,7 +300,7 @@ public class TestLuceneBatchInsert
     @Test
     public void indexNumbers() throws Exception
     {
-        BatchInserter inserter = new BatchInserterImpl( new File( PATH, "9" ).getAbsolutePath() );
+        BatchInserter inserter = inserter( new File( PATH, "9" ).getAbsolutePath() );
         BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProviderNewImpl(
                 inserter );
         BatchInserterIndex index = provider.nodeIndex( "mine", EXACT_CONFIG );
@@ -322,7 +323,7 @@ public class TestLuceneBatchInsert
     public void shouldCreateAutoIndexThatIsUsableInEmbedded() throws Exception
     {
         String path = new File( PATH, "10" ).getAbsolutePath();
-        BatchInserter inserter = new BatchInserterImpl( path );
+        BatchInserter inserter = inserter( path );
         BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProviderNewImpl(
                 inserter );
         BatchInserterIndex index = provider.nodeIndex( "node_auto_index", EXACT_CONFIG );
@@ -370,7 +371,7 @@ public class TestLuceneBatchInsert
     @Test
     public void addOrUpdateFlushBehaviour() throws Exception
     {
-        BatchInserter inserter = new BatchInserterImpl( new File( PATH, "9" ).getAbsolutePath() );
+        BatchInserter inserter = inserter( new File( PATH, "9" ).getAbsolutePath() );
         BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProviderNewImpl(
                 inserter );
         BatchInserterIndex index = provider.nodeIndex( "update", EXACT_CONFIG );
@@ -411,7 +412,7 @@ public class TestLuceneBatchInsert
     @Test
     public void useStandardAnalyzer() throws Exception
     {
-        BatchInserter inserter = new BatchInserterImpl( PATH );
+        BatchInserter inserter = inserter( PATH );
         BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProviderNewImpl(
                 inserter );
         BatchInserterIndex index = provider.nodeIndex( "myindex", stringMap( "analyzer", MyStandardAnalyzer.class.getName() ) );
@@ -423,7 +424,7 @@ public class TestLuceneBatchInsert
     @Test
     public void cachesShouldBeFilledWhenAddToMultipleIndexesCreatedNow() throws Exception
     {
-        BatchInserter inserter = new BatchInserterImpl( PATH );
+        BatchInserter inserter = inserter( PATH );
         BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProvider( inserter );
         BatchInserterIndex index = provider.nodeIndex( "index1", LuceneIndexImplementation.EXACT_CONFIG );
         index.setCacheCapacity( "name", 100000 );
@@ -450,7 +451,7 @@ public class TestLuceneBatchInsert
     public void cachesDoesntGetFilledWhenAddingForAnExistingIndex() throws Exception
     {
         // Prepare the test case, i.e. create a store with a populated index.
-        BatchInserter inserter = new BatchInserterImpl( PATH );
+        BatchInserter inserter = inserter( PATH );
         BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProvider( inserter );
         String indexName = "index";
         BatchInserterIndex index = provider.nodeIndex( indexName, LuceneIndexImplementation.EXACT_CONFIG );
@@ -461,7 +462,7 @@ public class TestLuceneBatchInsert
         
         // Test so that the next run doesn't start caching inserted stuff right away,
         // because that would lead to invalid results being returned.
-        inserter = new BatchInserterImpl( PATH );
+        inserter = inserter( PATH );
         provider = new LuceneBatchInserterIndexProvider( inserter );
         index = provider.nodeIndex( indexName, LuceneIndexImplementation.EXACT_CONFIG );
         index.setCacheCapacity( key, 100000 );

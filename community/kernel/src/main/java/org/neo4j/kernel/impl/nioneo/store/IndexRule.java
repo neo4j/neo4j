@@ -19,26 +19,44 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
+import static org.neo4j.helpers.UTF8.getDecodedStringFrom;
+
 import java.nio.ByteBuffer;
 
 import org.neo4j.graphdb.Label;
+import org.neo4j.helpers.UTF8;
+import org.neo4j.kernel.api.index.SchemaIndexProvider;
 
 /**
  * A {@link Label} can have zero or more index rules which will have data specified in the rules indexed.
  */
 public class IndexRule extends AbstractSchemaRule
 {
+    private final SchemaIndexProvider.Descriptor providerDescriptor;
     private final long propertyKey;
 
     public IndexRule( long id, long label, ByteBuffer serialized )
     {
-        this( id, label, readPropertyKey( serialized ) );
+        this( id, label, readProviderDescriptor( serialized ), readPropertyKey( serialized ) );
     }
 
-    public IndexRule( long id, long label, long propertyKey )
+    public IndexRule( long id, long label, SchemaIndexProvider.Descriptor providerDescriptor, long propertyKey )
     {
         super( id, label, SchemaRule.Kind.INDEX_RULE );
+
+
+        if ( providerDescriptor == null)
+            throw new IllegalArgumentException( "null provider descriptor prohibited" );
+
+        this.providerDescriptor = providerDescriptor;
         this.propertyKey = propertyKey;
+    }
+
+    private static SchemaIndexProvider.Descriptor readProviderDescriptor( ByteBuffer serialized )
+    {
+        String providerKey = getDecodedStringFrom( serialized );
+        String providerVersion = getDecodedStringFrom( serialized );
+        return new SchemaIndexProvider.Descriptor( providerKey, providerVersion );
     }
 
     private static long readPropertyKey( ByteBuffer serialized )
@@ -49,6 +67,11 @@ public class IndexRule extends AbstractSchemaRule
         return serialized.getLong();
     }
 
+    public SchemaIndexProvider.Descriptor getProviderDescriptor()
+    {
+        return providerDescriptor;
+    }
+
     public long getPropertyKey()
     {
         return propertyKey;
@@ -57,21 +80,28 @@ public class IndexRule extends AbstractSchemaRule
     @Override
     public int length()
     {
-        return super.length() + 2 /*number of property keys*/ + /*propertyKey.length*/1*8 /*the property keys*/;
+        return super.length()
+                + UTF8.computeRequiredByteBufferSize( providerDescriptor.getKey() )
+                + UTF8.computeRequiredByteBufferSize( providerDescriptor.getVersion() )
+                + 2 * 1                            /* number of property keys, for now always 1 */
+                + 8                                /* the property keys */;
     }
 
     @Override
     public void serialize( ByteBuffer target )
     {
         super.serialize( target );
-        target.putShort( (short) 1/*propertyKeys.length*/ );
+        UTF8.putEncodedStringInto( providerDescriptor.getKey(), target );
+        UTF8.putEncodedStringInto( providerDescriptor.getVersion(), target );
+        target.putShort( (short) 1 /*propertyKeys.length*/ );
         target.putLong( propertyKey );
     }
 
     @Override
     public int hashCode()
     {
-        return 31 * super.hashCode() + (int) propertyKey;
+        // TODO: Think if this needs to be extended with providerDescriptor
+        return ( 31 * super.hashCode() + (int) propertyKey );
     }
 
     @Override
@@ -92,6 +122,6 @@ public class IndexRule extends AbstractSchemaRule
     @Override
     protected String innerToString()
     {
-        return ", properties=" + propertyKey;
+        return ", provider=" + providerDescriptor + ", properties=" + propertyKey;
     }
 }

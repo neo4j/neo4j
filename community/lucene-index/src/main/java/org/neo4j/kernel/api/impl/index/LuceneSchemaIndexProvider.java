@@ -55,7 +55,7 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
     
     public LuceneSchemaIndexProvider( DirectoryFactory directoryFactory, Config config )
     {
-        super( 1 );
+        super( LuceneSchemaIndexProviderFactory.PROVIDER_DESCRIPTOR, 1 );
         this.directoryFactory = directoryFactory;
         this.rootDirectory = getRootDirectory( config, LuceneSchemaIndexProviderFactory.KEY );
     }

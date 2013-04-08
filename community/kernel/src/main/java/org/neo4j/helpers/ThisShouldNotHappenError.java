@@ -21,7 +21,14 @@ package org.neo4j.helpers;
 
 public class ThisShouldNotHappenError extends Error
 {
-    public ThisShouldNotHappenError(String developer, String message) {
-        super("Developer: " + developer + " claims that: " + message);
+    public ThisShouldNotHappenError( String developer, String message )
+    {
+        super( "Developer: " + developer + " claims that: " + message );
+    }
+
+
+    public ThisShouldNotHappenError( String developer, String message, Throwable cause )
+    {
+        super( "Developer: " + developer + " claims that: " + message, cause );
     }
 }

@@ -850,70 +850,13 @@ public abstract class IteratorUtil
         }
     }
     
-    private static final Closeable EMPTY_CLOSEABLE = new Closeable()
+    public static final Closeable EMPTY_CLOSEABLE = new Closeable()
     {
         @Override
         public void close() throws IOException
         {
         }
     };
-
-    private static class ResourceClosingIterator<T> implements ResourceIterator<T>
-    {
-        private Closeable closeable;
-        private final Iterator<T> iterator;
-
-        ResourceClosingIterator( Closeable closeable, Iterator<T> iterator )
-        {
-            this.closeable = closeable;
-            this.iterator = iterator;
-        }
-
-        @Override
-        public void close()
-        {
-            try
-            {
-                closeable.close();
-                closeable = EMPTY_CLOSEABLE;
-            }
-            catch ( IOException e )
-            {
-                throw new RuntimeException( e );
-            }
-        }
-
-        @Override
-        public boolean hasNext()
-        {
-            boolean hasNext = iterator.hasNext();
-            if ( !hasNext )
-            {
-                close();
-            }
-            return hasNext;
-        }
-
-        @Override
-        public T next()
-        {
-            try
-            {
-                return iterator.next();
-            }
-            catch ( NoSuchElementException e )
-            {
-                close();
-                throw e;
-            }
-        }
-
-        @Override
-        public void remove()
-        {
-            iterator.remove();
-        }
-    }
 
     public static <T extends CloneableInPublic> Iterable<T> cloned( Iterable<T> items, final Class<T> itemClass )
     {
