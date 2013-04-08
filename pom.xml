@@ -83,7 +83,7 @@
         <executions>
           <execution>
             <id>execute-asciidoc-html5-print</id>
-            <phase>compile</phase>
+            <phase>none</phase>
             <goals>
               <goal>exec</goal>
             </goals>
@@ -106,6 +106,7 @@
             <configuration>
               <executable>make</executable>
               <arguments>
+                <argument>init</argument>
                 <argument>preview</argument>
               </arguments>
             </configuration>
