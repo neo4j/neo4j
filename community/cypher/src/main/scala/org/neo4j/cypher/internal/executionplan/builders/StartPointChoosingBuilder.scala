@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.executionplan.builders
 import org.neo4j.cypher.internal.executionplan.{PartiallySolvedQuery, PlanBuilder, ExecutionPlanInProgress}
 import org.neo4j.cypher.internal.spi.PlanContext
 import org.neo4j.cypher.internal.commands._
-import org.neo4j.cypher.internal.commands.expressions.{Property, Identifier}
+import expressions.{Literal, IdFunction, Property, Identifier}
 import org.neo4j.cypher.internal.commands.SchemaIndex
 import org.neo4j.cypher.internal.commands.HasLabel
 import org.neo4j.cypher.internal.commands.Equals
@@ -39,6 +39,8 @@ To do this, three things are done.
     * for each pattern, find the best start points
  */
 
+
+//TODO: We should mark predicates used to find start points as solved
 class StartPointChoosingBuilder extends PlanBuilder {
   val Single = 0
   val IndexEquality = 1
@@ -56,7 +58,7 @@ class StartPointChoosingBuilder extends PlanBuilder {
   def apply(plan: ExecutionPlanInProgress, ctx: PlanContext): ExecutionPlanInProgress = {
     val q: PartiallySolvedQuery = plan.query
     val newQuery =
-      q.start match {
+      q.start match { // TODO: We should check each pattern individually, not look at the whole query
         case Seq() if q.matchPattern.nonEmpty => q.copy(start = findStartItemsForEachPattern(plan, ctx).map(Unsolved(_)))
         case _                                => q
       }
@@ -99,29 +101,35 @@ class StartPointChoosingBuilder extends PlanBuilder {
     )
   }
 
-  private def findStartStrategy(identifier: String, plan: MatchPattern, where: Seq[QueryToken[Predicate]], ctx: PlanContext):
+  private def findStartStrategy(node: String, plan: MatchPattern, where: Seq[QueryToken[Predicate]], ctx: PlanContext):
   StartItemWithRating = {
-    val labels: Seq[LabelName] = findLabelsForNode(identifier, plan, where)
-    val propertyPredicates: Seq[PropertyKey] = findEqualityPredicatesOnProperty(identifier, where)
+    val labels: Seq[LabelName] = findLabelsForNode(node, plan, where)
+    val propertyPredicates: Seq[PropertyKey] = findEqualityPredicatesOnProperty(node, where)
+    val idPredicates: Seq[Long] = findEqualityPredicatesUsingNodeId(node, where)
 
     val indexSeeks = for (
       label <- labels;
       property <- propertyPredicates
       if (ctx.getIndexRuleId(label, property).nonEmpty)
-    ) yield SchemaIndex(identifier, label, property, None)
+    ) yield SchemaIndex(node, label, property, None)
 
-    if (indexSeeks.nonEmpty) {
+    if (idPredicates.nonEmpty) {
+      StartItemWithRating(NodeById(node, idPredicates:_*), Single)
+    } else if (indexSeeks.nonEmpty) {
       // TODO: Once we have index statistics, we can pick the best one
       StartItemWithRating(indexSeeks.head, IndexEquality)
     } else if (labels.nonEmpty) {
       // TODO: Once we have label statistics, we can pick the best one
-      StartItemWithRating(NodeByLabel(identifier, labels.head), LabelScan)
+      StartItemWithRating(NodeByLabel(node, labels.head), LabelScan)
     } else {
-      StartItemWithRating(AllNodes(identifier), Global)
+      StartItemWithRating(AllNodes(node), Global)
     }
   }
 
-  def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext) = !plan.query.extracted && plan != apply(plan, ctx) // TODO: This can be optimized
+  // MATCH n WHERE id(n) = 0
+
+  def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext) =
+    !plan.query.extracted && plan != apply(plan, ctx) // TODO: This can be optimized
 
   def priority = PlanBuilder.IndexLookup
 
@@ -136,6 +144,14 @@ class StartPointChoosingBuilder extends PlanBuilder {
     where.collect {
       case Unsolved(Equals(Property(Identifier(id), propertyName), expression)) if id == identifier => propertyName
       case Unsolved(Equals(expression, Property(Identifier(id), propertyName))) if id == identifier => propertyName
+    }
+
+  private def findEqualityPredicatesUsingNodeId(identifier: IdentifierName, where: Seq[QueryToken[Predicate]]): Seq[Long] =
+    where.collect {
+      case Unsolved(Equals(IdFunction(Identifier(id)), Literal(idValue)))
+        if id == identifier && idValue.isInstanceOf[Number] => idValue.asInstanceOf[Number].longValue()
+      case Unsolved(Equals(Literal(idValue), IdFunction(Identifier(id))))
+        if id == identifier && idValue.isInstanceOf[Number] => idValue.asInstanceOf[Number].longValue()
     }
 }
 

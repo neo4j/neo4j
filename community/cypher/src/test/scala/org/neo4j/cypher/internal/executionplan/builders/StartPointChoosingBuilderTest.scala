@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.executionplan.builders
 import org.junit.Test
 import org.neo4j.cypher.internal.executionplan.PartiallySolvedQuery
 import org.neo4j.cypher.internal.commands._
-import expressions.{Property, Literal, Identifier}
+import expressions.{IdFunction, Property, Literal, Identifier}
 import values.LabelName
 import org.neo4j.cypher.internal.commands.HasLabel
 import org.neo4j.cypher.internal.spi.PlanContext
@@ -37,13 +37,16 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
   def builder = new StartPointChoosingBuilder
 
   override val context = mock[PlanContext]
+  val identifier = "n"
+  val otherIdentifier = "p"
+  val label = "Person"
+  val property = "prop"
+  val otherProperty = "prop2"
+  val expression = Literal(42)
 
   @Test
   def should_create_multiple_start_points_for_disjoint_graphs() {
     // Given
-    val identifier = "n"
-    val otherIdentifier = "p"
-
     val query = q(
       patterns = Seq(SingleNode(identifier), SingleNode(otherIdentifier))
     )
@@ -59,9 +62,6 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
   @Test
   def should_not_create_start_points_tail_query() {
     // Given
-    val identifier = "n"
-    val otherIdentifier = "p"
-
     val query = q(
       patterns = Seq(SingleNode(identifier)),
       tail = Some(q(
@@ -80,9 +80,6 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
   @Test
   def should_create_multiple_index_start_points_when_available_for_disjoint_graphs() {
     // Given
-    val identifier = "n"
-    val otherIdentifier = "p"
-
     val query = q(
       patterns = Seq(SingleNode(identifier), SingleNode(otherIdentifier)),
       where = Seq(HasLabel(Identifier(identifier), Seq(LabelName("Person"))),
@@ -114,10 +111,6 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
   @Test
   def should_pick_an_index_if_only_one_possible_exists() {
     // Given
-    val identifier = "n"
-    val label = "Person"
-    val property = "prop"
-    val expression = Literal(42)
     val query = q(where = Seq(
       HasLabel(Identifier(identifier), Seq(LabelName(label))),
       Equals(Property(Identifier(identifier), property), expression)
@@ -137,10 +130,6 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
   @Test
   def should_pick_an_index_if_only_one_possible_exists_other_side() {
     // Given
-    val identifier = "n"
-    val label = "Person"
-    val property = "prop"
-    val expression = Literal(42)
     val query = q(where = Seq(
       HasLabel(Identifier(identifier), Seq(LabelName(label))),
       Equals(expression, Property(Identifier(identifier), property))
@@ -160,21 +149,16 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
   @Test
   def should_pick_any_index_available() {
     // Given
-    val identifier = "n"
-    val label = "Person"
-    val property1 = "prop1"
-    val property2 = "prop2"
-    val expression = Literal(42)
     val query = q(where = Seq(
       HasLabel(Identifier(identifier), Seq(LabelName(label))),
-      Equals(Property(Identifier(identifier), property1), expression),
-      Equals(Property(Identifier(identifier), property2), expression)
+      Equals(Property(Identifier(identifier), property), expression),
+      Equals(Property(Identifier(identifier), otherProperty), expression)
     ), patterns = Seq(
       SingleNode(identifier)
     ))
 
-    when( context.getIndexRuleId( "Person", "prop1" ) ).thenReturn( Some(1337l) )
-    when( context.getIndexRuleId( "Person", "prop2" ) ).thenReturn( Some(1338l) )
+    when( context.getIndexRuleId( label, property ) ).thenReturn( Some(1337l) )
+    when( context.getIndexRuleId( label, otherProperty ) ).thenReturn( Some(1338l) )
 
     // When
     val result = assertAccepts(query).query
@@ -186,8 +170,6 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
   @Test
   def should_produce_label_start_points_when_no_property_predicate_is_used() {
     // Given MATCH n:Person
-    val identifier = "n"
-    val label = "Person"
     val query = q(where = Seq(
       HasLabel(Identifier(identifier), Seq(LabelName(label)))
     ), patterns = Seq(
@@ -201,12 +183,24 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
   }
 
   @Test
+  def should_identify_start_points_with_id_from_where() {
+    // Given MATCH n WHERE id(n) == 0
+    val nodeId = 0
+    val query = q(where = Seq(
+      Equals(IdFunction(Identifier(identifier)), Literal(nodeId))
+    ), patterns = Seq(
+      SingleNode(identifier)
+    ))
+
+    // When
+    val plan = assertAccepts(query)
+
+    assert(plan.query.start.toList === List(Unsolved(NodeById(identifier, nodeId))))
+  }
+
+  @Test
   def should_produce_label_start_points_when_no_matching_index_exist() {
     // Given
-    val identifier = "n"
-    val label = "Person"
-    val property = "prop"
-    val expression = Literal(42)
     val query = q(where = Seq(
       HasLabel(Identifier(identifier), Seq(LabelName(label))),
       Equals(Property(Identifier(identifier), property), expression)
@@ -226,8 +220,6 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
   @Test
   def should_pick_a_global_start_point_if_nothing_else_is_possible() {
     // Given
-    val identifier = "n"
-
     val query = PartiallySolvedQuery().copy(
       patterns = Seq(Unsolved(SingleNode(identifier)))
     )
@@ -241,22 +233,18 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
   @Test
   def should_be_able_to_figure_out_shortest_path_patterns() {
     // Given
-    val node1 = "a"
-    val node2 = "b"
-    val label = "Person"
-    val property = "prop"
     val expression1 = Literal(42)
     val expression2 = Literal(666)
 
     // MATCH p=shortestPath( (a:Person{prop:42}) -[*]-> (b{prop:666}) )
     val query = q(
       where = Seq(
-        HasLabel(Identifier(node1), Seq(LabelName(label))),
-        Equals(Property(Identifier(node1), property), expression1),
-        Equals(Property(Identifier(node2), property), expression2)),
+        HasLabel(Identifier(identifier), Seq(LabelName(label))),
+        Equals(Property(Identifier(identifier), property), expression1),
+        Equals(Property(Identifier(otherIdentifier), property), expression2)),
 
       patterns = Seq(
-        ShortestPath("p", node1, node2, Nil, Direction.OUTGOING, None, optional = false, single = true, None))
+        ShortestPath("p", identifier, otherIdentifier, Nil, Direction.OUTGOING, None, optional = false, single = true, None))
     )
 
     when(context.getIndexRuleId(label, property)).thenReturn(None)
@@ -266,15 +254,13 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
 
     // Then
     assert(plan.query.start.toList === Seq(
-      Unsolved(NodeByLabel(node1, label)),
-      Unsolved(AllNodes(node2))))
+      Unsolved(NodeByLabel(identifier, label)),
+      Unsolved(AllNodes(otherIdentifier))))
   }
 
   @Test
   def should_not_introduce_start_points_if_provided_by_last_pipe() {
     // Given
-    val identifier = "n"
-    val otherIdentifier = "x"
     val pipe = new FakePipe(Iterator.empty, identifier -> NodeType())
     val query = q(
       patterns = Seq(SingleNode(identifier), SingleNode(otherIdentifier))
