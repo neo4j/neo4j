@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.neo4j.build</groupId>
-    <artifactId>parent-central</artifactId>
+    <artifactId>parent-pom</artifactId>
     <version>39</version>
     <relativePath />
   </parent>
@@ -22,6 +22,9 @@
     <docs.importdir>${docs.upstream}/docs</docs.importdir>
     <docs-plugin.skip>true</docs-plugin.skip>
     <doctools.version>10-SNAPSHOT</doctools.version>
+    <docs.server>neo@static.neo4j.org</docs.server>
+    <docs.rootpath>/var/www/docs.neo4j.org</docs.rootpath>
+    <refcard.version>1.9</refcard.version>
   </properties>
 
   <dependencies>
@@ -122,6 +125,34 @@
                 <argument>DOCTYPE=article</argument>
                 <argument>NOTOC=1</argument>
                 <argument>NOTNUMBERED=1</argument>
+              </arguments>
+            </configuration>
+          </execution>
+          <execution>
+            <id>create-refcard-dir</id>
+            <phase>deploy</phase>
+            <goals><goal>exec</goal></goals>
+            <configuration>
+              <executable>ssh</executable>
+              <arguments>
+                <argument>${docs.server}</argument>
+                <argument>mkdir</argument>
+                <argument>-p</argument>
+                <argument>${docs.rootpath}/refcard/${refcard.version}</argument>
+              </arguments>
+            </configuration>
+          </execution>
+          <execution>
+            <id>upload-refcard</id>
+            <phase>deploy</phase>
+            <goals><goal>exec</goal></goals>
+            <configuration>
+              <executable>rsync</executable>
+              <arguments>
+                <argument>-r</argument>
+                <argument>--delete</argument>
+                <argument>${project.build.directory}/html5/</argument>
+                <argument>${docs.server}:${docs.rootpath}/refcard/${refcard.version}/</argument>
               </arguments>
             </configuration>
           </execution>
