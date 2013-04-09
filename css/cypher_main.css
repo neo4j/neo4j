@@ -358,13 +358,18 @@ footer div.mid {
   margin: 0;
 }
 
-code, em.code, em.tx {
+code, em.code, em.tx, span.monospaced {
   font-family: "Ubuntu Mono", "Courier New", Courier, monospace, serif;
   font-style: normal;
+  font-size: 14px;
 }
 
-code {
-  color: #005A72;
+code, span.monospaced {
+  color: #004759;
+}
+
+p.tableblock {
+  font-size: 14px;
 }
 
 em.tx {

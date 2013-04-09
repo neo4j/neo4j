@@ -21,26 +21,21 @@ package org.neo4j.cypher.docgen.refcard
 import org.neo4j.cypher.{ ExecutionResult, StatisticsChecker }
 import org.neo4j.cypher.docgen.RefcardTest
 
-class PatternsTest extends RefcardTest with StatisticsChecker {
+class MatchTest extends RefcardTest with StatisticsChecker {
   val graphDescription = List("ROOT KNOWS A", "A KNOWS B", "B KNOWS C", "C KNOWS ROOT")
   val section = "refcard"
-  val title = "Patterns"
+  val title = "Match"
 
   override def assert(name: String, result: ExecutionResult) {
     name match {
       case "related" =>
         assertStats(result, nodesCreated = 0)
         assert(result.toList.size === 1)
-      case "create" =>
-        assertStats(result, nodesCreated = 1, relationshipsCreated = 1, propertiesSet = 1)
-        assert(result.toList.size === 1)
     }
   }
 
   override def parameters(name: String): Map[String, Any] =
     name match {
-      case "parameters=aname" =>
-        Map("value" -> "Bob")
       case "" =>
         Map()
     }
@@ -50,98 +45,17 @@ class PatternsTest extends RefcardTest with StatisticsChecker {
     "B" -> Map("value" -> 20),
     "C" -> Map("value" -> 30))
 
-  def text = """.Patterns
+  def text = """.MATCH
 [refcard]
 ----
 ###assertion=related
 START n=node(%A%), m=node(%B%)
-MATCH
 
-(n)-->(m)
-
-RETURN n,m###
-
-A relationship from `n` to `m` exists.
-
-###assertion=related
-START n=node(%A%), m=node(%B%)
-MATCH
-
-(n)--(m)
+MATCH (n)-->(m)
 
 RETURN n,m###
 
-A relationship from `n` to `m` or from `m` to `n` exists.
-
-###assertion=related
-START n=node(%A%), m=node(%B%)
-MATCH
-
-(n)-[:KNOWS]->(m)
-
-RETURN n,m###
-
-A relationship from `n` to `m` of type `KNOWS` exists.
-
-###assertion=related
-START n=node(%A%), m=node(%B%)
-MATCH
-
-(n)-[:KNOWS|LOVES]->(m)
-
-RETURN n,m###
-
-A relationship from `n` to `m` of type `KNOWS` or `LOVES` exists.
-
-###assertion=related
-START n=node(%A%), m=node(%B%)
-MATCH
-
-(n)-[r]->(m)
-
-RETURN r###
-
-Bind an identifier to the relationship.
-
-###assertion=related
-START n=node(%A%), m=node(%B%)
-MATCH
-
-(n)-[r?]->(m)
-
-RETURN r###
-
-Optional relationship.
-
-###assertion=related
-START n=node(%A%), m=node(%B%)
-MATCH
-
-(n)-[*1..5]->(m)
-
-RETURN n,m###
-
-Variable length paths.
-
-###assertion=related
-START n=node(%A%), m=node(%B%)
-MATCH
-
-(n)-[*]->(m)
-
-RETURN n,m###
-
-Any depth.
-
-###assertion=create parameters=aname
-START n=node(%A%)
-CREATE UNIQUE
-
-(n)-[:KNOWS]->(m {propertyName: {value}})
-
-RETURN m###
-
-Match or set properties in `CREATE` or `CREATE UNIQUE` clauses.
+Any pattern can be used in `MATCH` except the ones containing property maps.
 ----
 """
 }

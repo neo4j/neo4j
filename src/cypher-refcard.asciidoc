@@ -10,6 +10,26 @@ You can try cypher snippets live in the Neo4j Console at http://console.neo4j.or
 
 == Syntax ==
 
+++++
+<div class="col"><div class="blk">
+++++
+
+[options="header", cols=",m"]
+|===
+2+| Operators
+| Mathematical       | `+`, `-`, `*`, `/`, `%`
+| Comparison         | `=`, `<>`, `<`, `>`, `<=`, `>=`
+| Boolean            | `AND`, `OR` 
+| String             | `+`
+| Collection         | `+`
+| Regular Expression | `=~`
+| Property           | `?`, `!`
+|===
+
+++++
+</div></div>
+++++
+
 .Read-Only Query Structure 
 [refcard]
 ----
@@ -24,6 +44,10 @@ include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/start.ascii
 include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/return.asciidoc[]
 
 include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/patterns.asciidoc[]
+
+include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/match.asciidoc[]
+
+include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/predicates.asciidoc[]
 
 .Write-Only Query Structure 
 [refcard]
@@ -45,6 +69,8 @@ START
 ----
 
 include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/create.asciidoc[]
+
+include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/create-unique.asciidoc[]
 
 include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/set.asciidoc[]
 

@@ -21,19 +21,22 @@ package org.neo4j.cypher.docgen.refcard
 import org.neo4j.cypher.{ ExecutionResult, StatisticsChecker }
 import org.neo4j.cypher.docgen.RefcardTest
 
-class PatternsTest extends RefcardTest with StatisticsChecker {
+class PredicatesTest extends RefcardTest with StatisticsChecker {
   val graphDescription = List("ROOT KNOWS A", "A KNOWS B", "B KNOWS C", "C KNOWS ROOT")
   val section = "refcard"
-  val title = "Patterns"
+  val title = "Predicates"
 
   override def assert(name: String, result: ExecutionResult) {
     name match {
-      case "related" =>
+      case "returns-one" =>
         assertStats(result, nodesCreated = 0)
         assert(result.toList.size === 1)
-      case "create" =>
-        assertStats(result, nodesCreated = 1, relationshipsCreated = 1, propertiesSet = 1)
-        assert(result.toList.size === 1)
+      case "returns-none" =>
+        assertStats(result, nodesCreated = 0)
+        assert(result.toList.size === 0)
+      case "returns-two" =>
+        assertStats(result, nodesCreated = 0)
+        assert(result.toList.size === 2)
     }
   }
 
@@ -46,102 +49,66 @@ class PatternsTest extends RefcardTest with StatisticsChecker {
     }
 
   override val properties: Map[String, Map[String, Any]] = Map(
-    "A" -> Map("value" -> 10),
-    "B" -> Map("value" -> 20),
+    "A" -> Map("propertyName" -> 10),
+    "B" -> Map("propertyName" -> 20),
     "C" -> Map("value" -> 30))
 
-  def text = """.Patterns
+  def text = """.Predicates
 [refcard]
 ----
-###assertion=related
+###assertion=returns-one parameters=aname
 START n=node(%A%), m=node(%B%)
-MATCH
+MATCH (n)-->(m)
+WHERE
 
-(n)-->(m)
+n.propertyName <> {value}
 
 RETURN n,m###
 
-A relationship from `n` to `m` exists.
+Use comparison operators.
 
-###assertion=related
+###assertion=returns-one parameters=aname
 START n=node(%A%), m=node(%B%)
-MATCH
+MATCH (n)-->(m)
+WHERE
 
-(n)--(m)
+n.propertyName <> {value} AND m.propertyName <> {value}
 
 RETURN n,m###
 
-A relationship from `n` to `m` or from `m` to `n` exists.
+Use boolean operators to combine predicates.
 
-###assertion=related
+
+###assertion=returns-none
 START n=node(%A%), m=node(%B%)
-MATCH
+MATCH (n)-[identifier?]->(m)
+WHERE
 
-(n)-[:KNOWS]->(m)
+identifier IS NULL
 
 RETURN n,m###
 
-A relationship from `n` to `m` of type `KNOWS` exists.
+Check if something is `null`.
 
-###assertion=related
-START n=node(%A%), m=node(%B%)
-MATCH
+###assertion=returns-two parameters=aname
+START n=node(*)
+WHERE
 
-(n)-[:KNOWS|LOVES]->(m)
+n.propertyName? = {value}
 
-RETURN n,m###
+RETURN n###
 
-A relationship from `n` to `m` of type `KNOWS` or `LOVES` exists.
+Defaults to `true` if the property does not exist.
 
-###assertion=related
-START n=node(%A%), m=node(%B%)
-MATCH
+###assertion=returns-none parameters=aname
+START n=node(*)
+WHERE
 
-(n)-[r]->(m)
+n.propertyName! = {value}
 
-RETURN r###
+RETURN n###
 
-Bind an identifier to the relationship.
-
-###assertion=related
-START n=node(%A%), m=node(%B%)
-MATCH
-
-(n)-[r?]->(m)
-
-RETURN r###
-
-Optional relationship.
-
-###assertion=related
-START n=node(%A%), m=node(%B%)
-MATCH
-
-(n)-[*1..5]->(m)
-
-RETURN n,m###
-
-Variable length paths.
-
-###assertion=related
-START n=node(%A%), m=node(%B%)
-MATCH
-
-(n)-[*]->(m)
-
-RETURN n,m###
-
-Any depth.
-
-###assertion=create parameters=aname
-START n=node(%A%)
-CREATE UNIQUE
-
-(n)-[:KNOWS]->(m {propertyName: {value}})
-
-RETURN m###
-
-Match or set properties in `CREATE` or `CREATE UNIQUE` clauses.
+Defaults to `false` if the property does not exist.
 ----
 """
 }
