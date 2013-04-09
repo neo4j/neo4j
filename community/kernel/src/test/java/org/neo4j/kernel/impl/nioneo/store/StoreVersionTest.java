@@ -48,7 +48,8 @@ public class StoreVersionTest
     public void allStoresShouldHaveTheCurrentVersionIdentifier() throws IOException
     {
         File outputDir = new File( "target/var/" + StoreVersionTest.class.getSimpleName() );
-        assertTrue( fs.get().mkdirs( outputDir ) );
+        fs.get().mkdirs( outputDir );
+
         File storeFileName = new File( outputDir, NeoStore.DEFAULT_NAME );
 
         Map<String, String> config = new HashMap<String, String>();
@@ -105,7 +106,7 @@ public class StoreVersionTest
         File outputDir = new File( "target/var/"
                 + StoreVersionTest.class.getSimpleName()
                 + "test2" );
-        assertTrue( fs.get().mkdirs( outputDir ) );
+        fs.get().mkdirs( outputDir );
 
         File storeFileName = new File( outputDir, NeoStore.DEFAULT_NAME );
 

@@ -129,7 +129,7 @@ To get the more high-level +get-or-create+ functionality make use of http://comp
 [snippet,java]
 ----
 component=neo4j-examples
-source=org/neo4j/examples/GetOrCreateIT.java
+source=org/neo4j/examples/GetOrCreateDocIT.java
 classifier=test-sources
 tag=getOrCreate
 ----
@@ -150,7 +150,7 @@ Also, a solution using manual synchronization doesn't ensure uniqueness in an HA
 [snippet,java]
 ----
 component=neo4j-examples
-source=org/neo4j/examples/GetOrCreateIT.java
+source=org/neo4j/examples/GetOrCreateDocIT.java
 classifier=test-sources
 tag=pessimisticLocking
 ----

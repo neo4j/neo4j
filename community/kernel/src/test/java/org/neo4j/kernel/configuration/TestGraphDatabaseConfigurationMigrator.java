@@ -19,12 +19,12 @@
  */
 package org.neo4j.kernel.configuration;
 
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.junit.Assert.*;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+
 import org.junit.Test;
 import org.neo4j.kernel.impl.util.StringLogger;
-
-import static org.hamcrest.CoreMatchers.*;
-import static org.junit.Assert.*;
-import static org.neo4j.helpers.collection.MapUtil.*;
 
 /**
  * Test configuration migration rules
@@ -42,10 +42,10 @@ public class TestGraphDatabaseConfigurationMigrator
     public void testEnableOnlineBackup()
     {
         ConfigurationMigrator migrator = new GraphDatabaseConfigurationMigrator(  );
-        assertThat( migrator.apply( stringMap( "enable_online_backup", "true" ), StringLogger.DEV_NULL  ), equalTo( stringMap( "online_backup_enabled", "true", "online_backup_server", ":6372-6382" ) ) );
+        assertThat( migrator.apply( stringMap( "enable_online_backup", "true" ), StringLogger.DEV_NULL  ), equalTo( stringMap( "online_backup_enabled", "true", "online_backup_server", "0.0.0.0:6372-6382" ) ) );
 
         // 1.9
-        assertThat( migrator.apply( stringMap( "online_backup_port", "1234" ), StringLogger.DEV_NULL  ), equalTo( stringMap( "online_backup_server", ":1234" ) ) );
+        assertThat( migrator.apply( stringMap( "online_backup_port", "1234" ), StringLogger.DEV_NULL  ), equalTo( stringMap( "online_backup_server", "0.0.0.0:1234" ) ) );
     }
 
     @Test

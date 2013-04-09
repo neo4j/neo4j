@@ -19,8 +19,10 @@
  */
 package org.neo4j.server.webadmin;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
+@Ignore("On avengers wall to be resolved")
 public class RedirectWebIT extends AbstractWebadminTest {
 
     @Test

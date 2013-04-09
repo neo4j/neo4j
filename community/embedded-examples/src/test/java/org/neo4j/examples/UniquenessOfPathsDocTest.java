@@ -33,7 +33,7 @@ import org.neo4j.test.GraphDescription.Graph;
 import static org.junit.Assert.*;
 import static org.neo4j.visualization.asciidoc.AsciidocHelper.*;
 
-public class UniquenessOfPathsTest extends AbstractJavaDocTestbase
+public class UniquenessOfPathsDocTest extends AbstractJavaDocTestbase
 {    
     /**
      * Uniqueness of Paths in traversals.

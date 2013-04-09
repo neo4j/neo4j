@@ -25,7 +25,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.neo4j.test.JavaDocsGenerator;
 
-public class MatrixTest
+public class MatrixDocTest
 {
     private static JavaDocsGenerator gen;
 

@@ -10,7 +10,7 @@ An example:
 [snippet,java]
 ----
 component=neo4j-lucene-index
-source=examples/ImdbExampleTest.java
+source=examples/ImdbDocTest.java
 tag=batchInsert
 ----
 

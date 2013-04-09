@@ -70,7 +70,7 @@ public class StoreLocker
                     return false;
                 }
 
-                fileSystemAbstraction.autoCreatePath( storeLockFile.getParentFile() );
+                fileSystemAbstraction.mkdirs( storeLockFile.getParentFile() );
             }
         }
         catch ( IOException e )

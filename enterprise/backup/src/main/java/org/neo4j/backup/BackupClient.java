@@ -39,7 +39,7 @@ class BackupClient extends Client<TheBackupInterface> implements TheBackupInterf
 {
     public BackupClient( String hostNameOrIp, int port, Logging logging, StoreId storeId )
     {
-        super( hostNameOrIp, port, logging, storeId, FRAME_LENGTH, PROTOCOL_VERSION, 40,
+        super( hostNameOrIp, port, logging, storeId, FRAME_LENGTH, PROTOCOL_VERSION, 40 * 1000,
                 Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT,
                 Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT, FRAME_LENGTH );
     }

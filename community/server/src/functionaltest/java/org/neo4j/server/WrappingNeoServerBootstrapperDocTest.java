@@ -53,7 +53,7 @@ import org.neo4j.test.server.ExclusiveServerTestBase;
 import com.sun.jersey.api.client.ClientHandlerException;
 import com.sun.jersey.api.client.ClientResponse.Status;
 
-public class WrappingNeoServerBootstrapperTest extends ExclusiveServerTestBase
+public class WrappingNeoServerBootstrapperDocTest extends ExclusiveServerTestBase
 {
     public
     @Rule
