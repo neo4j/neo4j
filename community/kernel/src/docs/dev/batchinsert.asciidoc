@@ -5,13 +5,15 @@ Batch Insertion
 Neo4j has a batch insertion facility intended for initial imports, which bypasses transactions and other checks in favor of performance.
 This is useful when you have a big dataset that needs to be loaded once.
 
-Batch insertion is inlcuded in the http://search.maven.org/#search|ga|1|neo4j-kernel[neo4j-kernel] component, which is part of all Neo4j distributions and editions.
+Batch insertion is included in the http://search.maven.org/#search|ga|1|neo4j-kernel[neo4j-kernel] component, which is part of all Neo4j distributions and editions.
 
 Be aware of the following points when using batch insertion:
 
 * The intended use is for initial import of data.
 * Batch insertion is _not thread safe._
 * Batch insertion is _non-transactional._
+* Batch insertion will re-populate all existing schema indexes and schema indexes created during batch insertion
+  on shutdown.
 * Unless +shutdown+ is successfully invoked at the end of the import, the database files _will_ be corrupt.
 
 WARNING: Always perform batch insertion in a _single thread_ (or use synchronization to make only one thread at a time access the batch inserter) and invoke +shutdown+ when finished.

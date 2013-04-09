@@ -35,7 +35,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
 
 import org.neo4j.helpers.Pair;
-import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexPopulator;
@@ -475,28 +474,5 @@ public class IndexingService extends LifecycleAdapter
                 return proxy;
             }
         };
-    }
-
-    public interface StoreScan
-    {
-        void run();
-
-        void stop();
-    }
-
-    /** The indexing services view of the universe. */
-    public interface IndexStoreView
-    {
-        /**
-         * Get properties of a node, if those properties exist.
-         */
-        Iterator<Pair<Integer, Object>> getNodeProperties( long nodeId, Iterator<Long> propertyKeys );
-
-        /**
-         * Retrieve all nodes in the database with a given label and property, as pairs of node id and property value.
-         *
-         * @return a {@link StoreScan} to start and to stop the scan.
-         */
-        StoreScan visitNodesWithPropertyAndLabel( IndexDescriptor descriptor, Visitor<Pair<Long, Object>> visitor );
     }
 }

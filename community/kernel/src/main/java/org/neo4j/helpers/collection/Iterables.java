@@ -20,6 +20,7 @@
 package org.neo4j.helpers.collection;
 
 import static java.util.Arrays.asList;
+import static org.neo4j.helpers.collection.IteratorUtil.asResourceIterator;
 
 import java.lang.reflect.Array;
 import java.util.ArrayList;
@@ -33,6 +34,9 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Set;
 
+import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.ResourceIterable;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Predicate;
 
@@ -637,6 +641,18 @@ public final class Iterables
 
         List<T> list = toList( iterable );
         return list.toArray( (T[]) Array.newInstance( componentType, list.size() ) );
+    }
+
+    public static <T> ResourceIterable<T> asResourceIterable( final Iterable<T> labels )
+    {
+        return new ResourceIterable<T>()
+        {
+            @Override
+            public ResourceIterator<T> iterator()
+            {
+                return asResourceIterator( labels.iterator() );
+            }
+        };
     }
 
     private static class MapIterable<FROM, TO>

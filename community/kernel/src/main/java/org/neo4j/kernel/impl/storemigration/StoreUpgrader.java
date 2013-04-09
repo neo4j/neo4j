@@ -110,7 +110,6 @@ public class StoreUpgrader
                 throw new UnableToUpgradeException( e );
             }
         }
-
         fileSystem.mkdir( upgradeDirectory );
 
         File upgradeFileName = new File( upgradeDirectory, NeoStore.DEFAULT_NAME );

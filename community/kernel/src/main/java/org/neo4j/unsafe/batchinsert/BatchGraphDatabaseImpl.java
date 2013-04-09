@@ -19,10 +19,14 @@
  */
 package org.neo4j.unsafe.batchinsert;
 
+import static org.neo4j.helpers.collection.Iterables.asResourceIterable;
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Set;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -35,6 +39,7 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterable;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.ReturnableEvaluator;
 import org.neo4j.graphdb.StopEvaluator;
 import org.neo4j.graphdb.Transaction;
@@ -44,6 +49,7 @@ import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.graphdb.schema.Schema;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.PlaceboTransaction;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.cache.LruCache;
@@ -120,7 +126,10 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
     @Override
     public Node createNode( Label... labels )
     {
-        throw unsupportedOperation();
+        long id = batchInserter.createNode( null, labels );
+        NodeBatchImpl node = new NodeBatchImpl( id, this, emptyProps() );
+        nodes.put( id, node );
+        return node;
     }
 
     private static UnsupportedOperationException unsupportedOperation()
@@ -442,25 +451,32 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
         @Override
         public void addLabel( Label label )
         {
-            throw unsupportedOperation();
+           Set<Label> labelSet = asSet( graphDbService.batchInserter.getNodeLabels( getId() ) );
+           labelSet.add( label );
+           Label[] labelIds = new Label[ labelSet.size() ];
+           graphDbService.batchInserter.setNodeLabels( getId(), labelSet.toArray( labelIds ) );
         }
 
         @Override
         public void removeLabel( Label label )
         {
-            throw unsupportedOperation();
+            Set<Label> labelSet = asSet( graphDbService.batchInserter.getNodeLabels( getId() ) );
+            labelSet.remove( label );
+            Label[] labelIds = new Label[ labelSet.size() ];
+            graphDbService.batchInserter.setNodeLabels( getId(), labelSet.toArray( labelIds ) );
         }
 
         @Override
         public boolean hasLabel( Label label )
         {
-            throw unsupportedOperation();
+            return graphDbService.batchInserter.nodeHasLabel( getId(), label );
         }
         
         @Override
         public ResourceIterable<Label> getLabels()
         {
-            throw unsupportedOperation();
+            final Iterable<Label> labels = graphDbService.batchInserter.getNodeLabels( getId() );
+            return asResourceIterable( labels );
         }
 
         @Override
@@ -827,7 +843,8 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
     @Override
     public Schema schema()
     {
-        throw new UnsupportedOperationException("Schema modification is currently not available through the Batch API.");
+        throw
+            new UnsupportedOperationException("Schema modification is currently not available through the BatchDatabase  API.");
     }
 
     @Override

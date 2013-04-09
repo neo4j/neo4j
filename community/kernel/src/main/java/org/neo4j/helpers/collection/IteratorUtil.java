@@ -747,6 +747,18 @@ public abstract class IteratorUtil
         };
     }
 
+    public static <T> Iterable<T> asIterable( final T... array )
+    {
+        return new Iterable<T>()
+        {
+            @Override
+            public Iterator<T> iterator()
+            {
+                return asIterator( array );
+            }
+        };
+    }
+
     public static Iterator<Long> asIterator( final long... array )
     {
         return new PrefetchingIterator<Long>()
@@ -874,5 +886,55 @@ public abstract class IteratorUtil
                 return itemClass.cast( from.clone() );
             }
         }, items );
+    }
+
+    public static <T> ResourceIterator<T> asResourceIterator( final Iterator<T> iterator )
+    {
+        return new ResourceIterator<T>()
+        {
+            boolean hasNext = iterator.hasNext();
+
+            @Override
+            public void close()
+            {
+                assertHasNext();
+                hasNext = false;
+            }
+
+            @Override
+            public boolean hasNext()
+            {
+                return hasNext;
+            }
+
+            @Override
+            public T next()
+            {
+                assertHasNext();
+                T result = iterator.next();
+                hasNext = iterator.hasNext();
+                return result;
+            }
+
+            @Override
+            public void remove()
+            {
+                assertHasNext();
+                try
+                {
+                    iterator.remove();
+                }
+                finally
+                {
+                    hasNext = iterator.hasNext();
+                }
+            }
+
+            private void assertHasNext()
+            {
+                if ( ! hasNext )
+                    throw new IllegalArgumentException( "Iterator already closed" );
+            }
+        };
     }
 }
