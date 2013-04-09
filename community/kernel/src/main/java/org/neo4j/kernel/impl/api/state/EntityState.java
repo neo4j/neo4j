@@ -17,41 +17,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api;
+package org.neo4j.kernel.impl.api.state;
 
-import org.neo4j.kernel.api.StatementContext;
-import org.neo4j.kernel.api.TransactionContext;
-
-public class DelegatingTransactionContext implements TransactionContext
+public class EntityState
 {
-    protected final TransactionContext delegate;
+    private final long id;
 
-    public DelegatingTransactionContext( TransactionContext delegate )
+    public EntityState( long id )
     {
-        this.delegate = delegate;
+        this.id = id;
     }
 
-    @Override
-    public StatementContext newStatementContext()
+    public long getId()
     {
-        return delegate.newStatementContext();
-    }
-
-    @Override
-    public void prepare()
-    {
-        delegate.prepare();
-    }
-
-    @Override
-    public void commit()
-    {
-        delegate.commit();
-    }
-
-    @Override
-    public void rollback()
-    {
-        delegate.rollback();
+        return id;
     }
 }

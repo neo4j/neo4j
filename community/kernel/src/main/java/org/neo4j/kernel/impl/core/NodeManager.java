@@ -365,7 +365,7 @@ public class NodeManager
         return new RelationshipProxy( id, relationshipLookups );
     }
 
-    @SuppressWarnings( "unchecked" )
+    @SuppressWarnings("unchecked")
     public Iterator<Node> getAllNodes()
     {
         Iterator<Node> committedNodes = new PrefetchingIterator<Node>()
@@ -393,20 +393,26 @@ public class NodeManager
                             currentId++;
                         }
                     }
-                
+
                     long newHighId = getHighestPossibleIdInUse( Node.class );
                     if ( newHighId > highId )
+                    {
                         highId = newHighId;
+                    }
                     else
+                    {
                         break;
+                    }
                 }
                 return null;
             }
         };
-        
+
         final TransactionState txState = getTransactionState();
         if ( !txState.hasChanges() )
+        {
             return committedNodes;
+        }
             
         /* Created nodes are put in the cache right away, even before the transaction is committed.
          * We want this iterator to include nodes that have been created, but not yes committed in
@@ -425,7 +431,7 @@ public class NodeManager
                 }
             } );
         }
-        
+
         // Filter out nodes deleted in this transaction
         Iterator<Node> filteredRemovedNodes = new FilteringIterator<Node>( committedNodes, new Predicate<Node>()
         {
@@ -435,17 +441,17 @@ public class NodeManager
                 return !txState.nodeIsDeleted( node.getId() );
             }
         } );
-        
+
         // Append nodes created in this transaction
         return new CombiningIterator<Node>( asList( filteredRemovedNodes,
-                new IteratorWrapper<Node,Long>( createdNodes.iterator() )
-        {
-            @Override
-            protected Node underlyingObjectToObject( Long id )
-            {
-                return getNodeById( id );
-            }
-        } ) );
+                new IteratorWrapper<Node, Long>( createdNodes.iterator() )
+                {
+                    @Override
+                    protected Node underlyingObjectToObject( Long id )
+                    {
+                        return getNodeById( id );
+                    }
+                } ) );
     }
 
     public NodeImpl getNodeForProxy( long nodeId, LockType lock )
@@ -492,7 +498,7 @@ public class NodeManager
         return relationship;
     }
 
-    @SuppressWarnings( "unchecked" )
+    @SuppressWarnings("unchecked")
     public Iterator<Relationship> getAllRelationships()
     {
         Iterator<Relationship> committedRelationships = new PrefetchingIterator<Relationship>()
@@ -523,9 +529,13 @@ public class NodeManager
 
                     long newHighId = getHighestPossibleIdInUse( Node.class );
                     if ( newHighId > highId )
+                    {
                         highId = newHighId;
+                    }
                     else
+                    {
                         break;
+                    }
                 }
                 return null;
             }
@@ -533,7 +543,9 @@ public class NodeManager
 
         final TransactionState txState = getTransactionState();
         if ( !txState.hasChanges() )
+        {
             return committedRelationships;
+        }
         
         /* Created relationships are put in the cache right away, even before the transaction is committed.
          * We want this iterator to include relationships that have been created, but not yes committed in
@@ -545,43 +557,45 @@ public class NodeManager
         {
             committedRelationships = new FilteringIterator<Relationship>( committedRelationships,
                     new Predicate<Relationship>()
-            {
-                @Override
-                public boolean accept( Relationship relationship )
-                {
-                    return !createdRelationships.contains( relationship.getId() );
-                }
-            } );
+                    {
+                        @Override
+                        public boolean accept( Relationship relationship )
+                        {
+                            return !createdRelationships.contains( relationship.getId() );
+                        }
+                    } );
         }
-            
+
         // Filter out relationships deleted in this transaction
         Iterator<Relationship> filteredRemovedRelationships =
                 new FilteringIterator<Relationship>( committedRelationships, new Predicate<Relationship>()
-        {
-            @Override
-            public boolean accept( Relationship relationship )
-            {
-                return !txState.relationshipIsDeleted( relationship.getId() );
-            }
-        } );
-        
+                {
+                    @Override
+                    public boolean accept( Relationship relationship )
+                    {
+                        return !txState.relationshipIsDeleted( relationship.getId() );
+                    }
+                } );
+
         // Append relationships created in this transaction
         return new CombiningIterator<Relationship>( asList( filteredRemovedRelationships,
                 new IteratorWrapper<Relationship, Long>( createdRelationships.iterator() )
-        {
-            @Override
-            protected Relationship underlyingObjectToObject( Long id )
-            {
-                return getRelationshipById( id );
-            }
-        } ) );
+                {
+                    @Override
+                    protected Relationship underlyingObjectToObject( Long id )
+                    {
+                        return getRelationshipById( id );
+                    }
+                } ) );
     }
 
     private Set<Long> asSet( RelIdIterator ids )
     {
         Set<Long> set = new HashSet<Long>();
         while ( ids.hasNext() )
+        {
             set.add( ids.next() );
+        }
         return set;
     }
 
@@ -675,14 +689,14 @@ public class NodeManager
         return persistenceManager.getRelationshipChainPosition( node.getId() );
     }
 
-    Triplet<ArrayMap<Integer,RelIdArray>,List<RelationshipImpl>,Long> getMoreRelationships( NodeImpl node )
+    Triplet<ArrayMap<Integer, RelIdArray>, List<RelationshipImpl>, Long> getMoreRelationships( NodeImpl node )
     {
         long nodeId = node.getId();
         long position = node.getRelChainPosition();
         Pair<Map<DirectionWrapper, Iterable<RelationshipRecord>>, Long> rels =
-            persistenceManager.getMoreRelationships( nodeId, position );
-        ArrayMap<Integer,RelIdArray> newRelationshipMap =
-            new ArrayMap<Integer,RelIdArray>();
+                persistenceManager.getMoreRelationships( nodeId, position );
+        ArrayMap<Integer, RelIdArray> newRelationshipMap =
+                new ArrayMap<Integer, RelIdArray>();
 
         List<RelationshipImpl> relsList = new ArrayList<RelationshipImpl>( 150 );
 
@@ -779,7 +793,7 @@ public class NodeManager
         return Arrays.asList( nodeCache, relCache );
     }
 
-    void setRollbackOnly()
+    public void setRollbackOnly()
     {
         try
         {
@@ -803,13 +817,15 @@ public class NodeManager
     {
         T existing = index.get( key, value ).getSingle();
         if ( existing != null )
+        {
             return existing;
+        }
 
         // Grab lock
         IndexLock lock = new IndexLock( index.getName(), key );
         TransactionState state = getTransactionState();
         LockElement writeLock = state.acquireWriteLock( lock );
-        
+
         // Check again -- now holding the lock
         existing = index.get( key, value ).getSingle();
         if ( existing != null )
@@ -853,7 +869,7 @@ public class NodeManager
     {
         return propertyIndexManager.getKeyByIdOrNull( keyId );
     }
-    
+
     PropertyIndex[] index( String key )
     {
         return propertyIndexManager.index( key );
@@ -868,7 +884,7 @@ public class NodeManager
     {
         return propertyIndexManager.getOrCreateId( key );
     }
-    
+
     int getRelationshipTypeIdFor( RelationshipType type ) throws KeyNotFoundException
     {
         return relTypeHolder.getIdByKey( type );
@@ -885,7 +901,8 @@ public class NodeManager
     }
 
     private <T extends PropertyContainer> void deleteFromTrackers( Primitive primitive, List<PropertyTracker<T>>
-            trackers ) {
+            trackers )
+    {
         if ( !trackers.isEmpty() )
         {
             Iterable<String> propertyKeys = primitive.getPropertyKeys( this );
@@ -903,7 +920,7 @@ public class NodeManager
 
     }
 
-    ArrayMap<Integer, PropertyData> deleteNode( NodeImpl node, TransactionState tx )
+    public ArrayMap<Integer, PropertyData> deleteNode( NodeImpl node, TransactionState tx )
     {
         deleteFromTrackers( node, nodePropertyTrackers );
 
@@ -926,7 +943,7 @@ public class NodeManager
     }
 
     PropertyData nodeChangeProperty( NodeImpl node, PropertyData property,
-            Object value, TransactionState tx )
+                                     Object value, TransactionState tx )
     {
         if ( !nodePropertyTrackers.isEmpty() )
         {
@@ -972,7 +989,7 @@ public class NodeManager
         persistenceManager.graphRemoveProperty( property );
     }
 
-    ArrayMap<Integer,PropertyData> deleteRelationship( RelationshipImpl rel, TransactionState tx )
+    ArrayMap<Integer, PropertyData> deleteRelationship( RelationshipImpl rel, TransactionState tx )
     {
         deleteFromTrackers( rel, relationshipPropertyTrackers );
 
@@ -997,7 +1014,7 @@ public class NodeManager
     }
 
     PropertyData relChangeProperty( RelationshipImpl rel,
-            PropertyData property, Object value, TransactionState tx )
+                                    PropertyData property, Object value, TransactionState tx )
     {
         if ( !relationshipPropertyTrackers.isEmpty() )
         {
@@ -1090,28 +1107,34 @@ public class NodeManager
     public boolean isDeleted( PropertyContainer entity )
     {
         if ( entity instanceof Node )
-            return isDeleted( (Node)entity );
+        {
+            return isDeleted( (Node) entity );
+        }
         else if ( entity instanceof Relationship )
-            return isDeleted( (Relationship)entity );
+        {
+            return isDeleted( (Relationship) entity );
+        }
         else
+        {
             throw new IllegalArgumentException( "Unknown entity type: " + entity + ", " + entity.getClass() );
+        }
     }
-    
+
     public boolean isDeleted( Node resource )
     {
         return getTransactionState().nodeIsDeleted( resource.getId() );
     }
-    
+
     public boolean isDeleted( Relationship resource )
     {
         return getTransactionState().relationshipIsDeleted( resource.getId() );
-    }        
-    
+    }
+
     PersistenceManager getPersistenceManager()
     {
         return persistenceManager;
     }
-    
+
     private GraphProperties instantiateGraphProperties()
     {
         return new GraphProperties( this );
@@ -1136,12 +1159,12 @@ public class NodeManager
     {
         relCache.updateSize( rel, newSize );
     }
-    
+
     public TransactionState getTransactionState()
     {
         return transactionManager.getTransactionState();
     }
-    
+
     private class NodeManagerDatasourceListener implements DataSourceRegistrationListener
     {
         @Override

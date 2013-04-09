@@ -48,22 +48,23 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 /**
- * This is the beginnings of an implementation of the Kernel API, which is meant to be an internal API for consumption by
+ * This is the beginnings of an implementation of the Kernel API, which is meant to be an internal API for
+ * consumption by
  * both the Beans API, Cypher, and any other components that want to interface with the underlying database.
- *
+ * <p/>
  * This is currently in an intermediate phase, where for many features you still have to use the beans API. To use this
  * implementation together with the beans API (eg. perform operations within the same transactions), then you should
  * use the beans API to start transactions, and use the Beans2KernelTransition class to get an {@link StatementContext}
  * that is hooked into that transaction.
- * 
+ * <p/>
  * The cake:
- * 
+ * <p/>
  * <ol>
- *   <li>Locking</li>
- *   <li>Constraint evaluation</li>
- *   <li>Transaction state</li>
- *   <li>Caching</li>
- *   <li>Store</li>
+ * <li>Locking</li>
+ * <li>Constraint evaluation</li>
+ * <li>Transaction state</li>
+ * <li>Caching</li>
+ * <li>Store</li>
  * </ol>
  */
 public class Kernel extends LifecycleAdapter implements KernelAPI
@@ -78,7 +79,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     private final UpdateableSchemaState schemaState;
     private final StatementContextOwners statementContextOwners = new StatementContextOwners();
     private SchemaIndexProviderMap providerMap = null;
-    
+
     // These non-final components are all circular dependencies in various configurations.
     // As we work towards refactoring the old kernel, we should work to remove these.
     private IndexingService indexService;
@@ -87,9 +88,10 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     private PersistenceCache persistenceCache;
 
     public Kernel( AbstractTransactionManager transactionManager, PropertyIndexManager propertyIndexManager,
-            PersistenceManager persistenceManager, XaDataSourceManager dataSourceManager, LockManager lockManager,
-            SchemaCache schemaCache, UpdateableSchemaState schemaState,
-            DependencyResolver dependencyResolver )
+                   PersistenceManager persistenceManager, XaDataSourceManager dataSourceManager,
+                   LockManager lockManager,
+                   SchemaCache schemaCache, UpdateableSchemaState schemaState,
+                   DependencyResolver dependencyResolver )
     {
         this.transactionManager = transactionManager;
         this.propertyIndexManager = propertyIndexManager;
@@ -100,7 +102,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
         this.schemaCache = schemaCache;
         this.schemaState = schemaState;
     }
-    
+
     @Override
     public void start() throws Throwable
     {
@@ -133,40 +135,43 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
                     neoStore = null;
                 }
             }
-            
+
             private boolean isNeoDataSource( XaDataSource ds )
             {
                 return ds.getName().equals( NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME );
             }
         } );
     }
-    
+
     @Override
     public void stop() throws Throwable
     {
         statementContextOwners.close();
     }
-    
+
     @Override
     public TransactionContext newTransactionContext()
     {
         // I/O
-        // TODO The store layer should depend on a clean abstraction of the data, not on all the XXXManagers from the old code base
-        TransactionContext result = new StoreTransactionContext( propertyIndexManager, nodeManager, neoStore, indexService );
+        // TODO The store layer should depend on a clean abstraction of the data, not on all the XXXManagers from the
+        // old code base
+        TransactionContext result = new StoreTransactionContext( propertyIndexManager, nodeManager, neoStore,
+                indexService );
         // + Transaction life cycle
         // XXX: This is disabled during transition phase, we are still using the legacy transaction management stuff
-        //result = new TransactionLifecycleTransactionContext( result, transactionManager, propertyIndexManager, persistenceManager, cache );
+        //result = new TransactionLifecycleTransactionContext( result, transactionManager, propertyIndexManager,
+        // persistenceManager, cache );
 
         // + Transaction state and Caching
         result = new StateHandlingTransactionContext( result, newTxState(), persistenceCache,
-                transactionManager.getTransactionState(), schemaCache, schemaState );
+                transactionManager.getTransactionState(), schemaCache, schemaState, nodeManager );
         // + Constraints evaluation
         result = new ConstraintEvaluatingTransactionContext( result );
         // + Locking
         result = new LockingTransactionContext( result, lockManager, transactionManager );
         // + Single statement at a time
         result = new ReferenceCountingTransactionContext( result );
-        
+
         // done
         return result;
     }
@@ -204,7 +209,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     private TxState newTxState()
     {
         return new TxState(
-                new OldTxStateBridgeImpl( transactionManager.getTransactionState() ),
+                new OldTxStateBridgeImpl( nodeManager, transactionManager.getTransactionState() ),
                 persistenceManager,
                 new TxState.IdGeneration()
                 {
@@ -222,7 +227,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     {
         private final Collection<StatementContextOwner> all =
                 synchronizedList( new ArrayList<StatementContextOwner>() );
-        
+
         @Override
         protected StatementContextOwner initialValue()
         {
@@ -237,11 +242,13 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
             all.add( owner );
             return owner;
         }
-        
+
         void close()
         {
             for ( StatementContextOwner owner : all )
+            {
                 owner.closeAllStatements();
+            }
         }
     }
 }

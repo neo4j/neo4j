@@ -19,40 +19,56 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.api.DiffSets;
 import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
-
+/**
+ * This organizes three disjoint containers of state. The goal is to bring that down to one, but for now, it's three.
+ * Those three are:
+ *
+ *  * TxState - this class itself, containing HashMaps and DiffSets for changes
+ *  * TransactionState - The legacy transaction state, to be refactored into this class.
+ *  * WriteTransaction - More legacy transaction state, accessed through PersistenceManager.
+ *
+ * TransactionState is used to change the view of the data within a transaction, eg. see your own writes.
+ *
+ * WriteTransaction contains the changes that will actually be applied to the store, eg. records.
+ *
+ * TxState should be a common interface for *updating* both kinds of state, and for *reading* the first kind.
+ *
+ * So, in ascii art, the current implementation is:
+ *
+ *      StateHandlingTransactionContext-------TransactionStateStatementContext
+ *                   \                                      /
+ *                    ---------------------|----------------
+ *                                         |
+ *                                      TxState
+ *                                     /      \
+ *                       PersistenceManager   TransactionState
+ *
+ *
+ * We want it to look like:
+ *
+ *      StateHandlingTransactionContext-------TransactionStateStatementContext
+ *                   \                                      /
+ *                    ---------------------|----------------
+ *                                         |
+ *                                      TxState
+ *
+ *
+ * Where, in the end implementation, the state inside TxState can be used both to overlay on the graph, eg. read writes,
+ * as well as be applied to the graph through the logical log.
+ */
 public class TxState
 {
-    // Heads up: Codework ahead, speed limit 50 LOC/hour
-    // This class should serve two purposes, which should be reflected in the implementation eventually. It also suffers from
-    // schizophrenia since the poor soul has to both maintain new fancy things as well as manage old transaction
-    // state from the legacy code base. Overall, it's a work in progress, and one of the major players in linking the
-    // Kernel API to the legacy code base.
-
-    // The two purposes are:
-    //   1) Maintain a "view" of the changes in a single transaction, such that read operations within that tx see uncommitted writes
-    //   2) Maintain a log of changes contained in a single transaction, that can be applied to the db on commit
-
-    // 1 is currently handled by OldTxStateBridge, along with the hashmaps and diffsets in here.
-    // 2 is handled by PersistenceManager
-
-    // We will probably want these two purposes to be specific sub-components of this class, and for this class to work
-    // as a joint interface for the two of them. Note that an important aspect here is that the log-of-changes-to-apply
-    // part of this is not only for this abstraction to use. That same functionality is needed during recovery, backup
-    // and in HA. It'd be great to have a clear-cut abstraction for just those parts, shared by all these different use cases.
-
-    // Please revise or remove above as design and implementation changes.
-
     public static interface IdGeneration
     {
         // Because we generate id's up-front, rather than on commit, we need this for now.
@@ -63,68 +79,80 @@ public class TxState
 
     // Node ID --> NodeState
     private final Map<Long, NodeState> nodeStates = new HashMap<Long, NodeState>();
-    
+
     // Label ID --> LabelState
     private final Map<Long, LabelState> labelStates = new HashMap<Long, LabelState>();
-    
+
     private final DiffSets<IndexRule> ruleDiffSets = new DiffSets<IndexRule>();
+    private final DiffSets<Long> nodes = new DiffSets<Long>();
+
 
     private final OldTxStateBridge legacyState;
-    private final PersistenceManager legacyTransaction;
+    private final PersistenceManager persistenceManager;
     private final IdGeneration idGeneration;
     private final SchemaIndexProviderMap providerMap;
 
-    public TxState(OldTxStateBridge legacyState,
-                   PersistenceManager legacyTransaction,
-                   IdGeneration idGeneration,
-                   SchemaIndexProviderMap providerMap
-                   )
+    public TxState( OldTxStateBridge legacyState,
+                    PersistenceManager legacyTransaction,
+                    IdGeneration idGeneration,
+                    SchemaIndexProviderMap providerMap
+    )
     {
         this.legacyState = legacyState;
-        this.legacyTransaction = legacyTransaction;
+        this.persistenceManager = legacyTransaction;
         this.idGeneration = idGeneration;
         this.providerMap = providerMap;
     }
 
     public boolean hasChanges()
     {
-        return !nodeStates.isEmpty() || !labelStates.isEmpty();
+        return !nodeStates.isEmpty() || !labelStates.isEmpty() || !nodes.isEmpty();
     }
-    
+
     public Iterable<NodeState> getNodeStates()
     {
         return nodeStates.values();
     }
-    
+
     public DiffSets<Long> getLabelStateNodeDiffSets( long labelId )
     {
-        return getState( labelStates, labelId, LABEL_STATE_CREATOR ).getNodeDiffSets();
+        return getOrCreateLabelState( labelId ).getNodeDiffSets();
     }
 
     public DiffSets<Long> getNodeStateLabelDiffSets( long nodeId )
     {
-        return getState( nodeStates, nodeId, NODE_STATE_CREATOR ).getLabelDiffSets();
+        return getOrCreateNodeState( nodeId ).getLabelDiffSets();
     }
-    
+
+    public void deleteNode( long nodeId )
+    {
+        legacyState.deleteNode( nodeId );
+        nodes.remove( nodeId );
+    }
+
+    public boolean nodeIsRemoved( long nodeId )
+    {
+        return nodes.isRemoved( nodeId );
+    }
+
     public void addLabelToNode( long labelId, long nodeId )
     {
         getLabelStateNodeDiffSets( labelId ).add( nodeId );
         getNodeStateLabelDiffSets( nodeId ).add( labelId );
-        legacyTransaction.addLabelToNode(labelId, nodeId);
+        persistenceManager.addLabelToNode( labelId, nodeId );
     }
-    
+
     public void removeLabelFromNode( long labelId, long nodeId )
     {
         getLabelStateNodeDiffSets( labelId ).remove( nodeId );
-        getNodeStateLabelDiffSets( nodeId ).remove(  labelId );
-        legacyTransaction.removeLabelFromNode(labelId, nodeId);
+        getNodeStateLabelDiffSets( nodeId ).remove( labelId );
+        persistenceManager.removeLabelFromNode( labelId, nodeId );
     }
-    
+
     /**
-     * @return
-     *      {@code true} if it has been added in this transaction.
-     *      {@code false} if it has been removed in this transaction.
-     *      {@code null} if it has not been touched in this transaction.
+     * @return {@code true} if it has been added in this transaction.
+     *         {@code false} if it has been removed in this transaction.
+     *         {@code null} if it has not been touched in this transaction.
      */
     public Boolean getLabelState( long nodeId, long labelId )
     {
@@ -133,13 +161,17 @@ public class TxState
         {
             DiffSets<Long> labelDiff = nodeState.getLabelDiffSets();
             if ( labelDiff.isAdded( labelId ) )
+            {
                 return Boolean.TRUE;
+            }
             if ( labelDiff.isRemoved( labelId ) )
+            {
                 return Boolean.FALSE;
+            }
         }
         return null;
     }
-    
+
     /**
      * Returns all nodes that, in this tx, has got labelId added.
      */
@@ -152,10 +184,10 @@ public class TxState
     /**
      * Returns all nodes that, in this tx, has got labelId removed.
      */
-    public Collection<Long> getNodesWithLabelRemoved( long labelId )
+    public DiffSets<Long> getNodesWithLabelChanged( long labelId )
     {
         LabelState state = getState( labelStates, labelId, null );
-        return state == null ? Collections.<Long>emptySet() : state.getNodeDiffSets().getRemoved();
+        return state == null ? DiffSets.<Long>emptyDiffSets() : state.getNodeDiffSets();
     }
 
     public IndexRule addIndexRule( long labelId, long propertyKey )
@@ -163,24 +195,24 @@ public class TxState
         SchemaIndexProvider.Descriptor providerDescriptor = providerMap.getDefaultProvider().getProviderDescriptor();
         IndexRule rule = new IndexRule( idGeneration.newSchemaRuleId(), labelId, providerDescriptor, propertyKey );
 
-        legacyTransaction.createSchemaRule( rule );
+        persistenceManager.createSchemaRule( rule );
 
         ruleDiffSets.add( rule );
-        LabelState labelState = getState( labelStates, rule.getLabel(), LABEL_STATE_CREATOR );
+        LabelState labelState = getOrCreateLabelState( rule.getLabel() );
         labelState.getIndexRuleDiffSets().add( rule );
 
         return rule;
     }
 
-    public void dropIndexRule(IndexRule rule)
+    public void dropIndexRule( IndexRule rule )
     {
         ruleDiffSets.remove( rule );
-        LabelState labelState = getState( labelStates, rule.getLabel(), LABEL_STATE_CREATOR );
+        LabelState labelState = getOrCreateLabelState( rule.getLabel() );
         labelState.getIndexRuleDiffSets().remove( rule );
 
-        legacyTransaction.dropSchemaRule( rule.getId() );
+        persistenceManager.dropSchemaRule( rule.getId() );
     }
-    
+
     public DiffSets<IndexRule> getIndexRuleDiffSetsByLabel( long labelId )
     {
         LabelState labelState = getState( labelStates, labelId, null );
@@ -197,100 +229,58 @@ public class TxState
         return legacyState.getNodesWithChangedProperty( propertyKeyId, value );
     }
 
-    public Iterable<Long> getDeletedNodes() {
-        return legacyState.getDeletedNodes();
+    public DiffSets<Long> getDeletedNodes()
+    {
+        return nodes;
+    }
+
+    public boolean haveIndexesBeenDropped()
+    {
+        return !getIndexRuleDiffSets().getRemoved().isEmpty();
+    }
+
+    private LabelState getOrCreateLabelState( long labelId )
+    {
+        return getState( labelStates, labelId, new StateCreator<LabelState>()
+        {
+            @Override
+            public LabelState newState( long id )
+            {
+                return new LabelState( id );
+            }
+        } );
+    }
+
+    private NodeState getOrCreateNodeState( long nodeId )
+    {
+        return getState( nodeStates, nodeId, new StateCreator<NodeState>()
+        {
+            @Override
+            public NodeState newState( long id )
+            {
+                return new NodeState( id );
+            }
+        } );
     }
 
     private static interface StateCreator<STATE>
     {
         STATE newState( long id );
     }
-    
-    private <STATE> STATE getState( Map<Long,STATE> states, long id, StateCreator<STATE> creator )
+
+    private <STATE> STATE getState( Map<Long, STATE> states, long id, StateCreator<STATE> creator )
     {
         STATE result = states.get( id );
         if ( result != null )
+        {
             return result;
-        
+        }
+
         if ( creator != null )
         {
             result = creator.newState( id );
             states.put( id, result );
         }
         return result;
-    }
-
-    public boolean haveIndexesBeenDropped()
-    {
-        return ! getIndexRuleDiffSets().getRemoved().isEmpty();
-    }
-
-    private static final StateCreator<NodeState> NODE_STATE_CREATOR = new StateCreator<NodeState>()
-    {
-        @Override
-        public NodeState newState( long id )
-        {
-            return new NodeState( id );
-        }
-    };
-    
-    private static final StateCreator<LabelState> LABEL_STATE_CREATOR = new StateCreator<LabelState>()
-    {
-        @Override
-        public LabelState newState( long id )
-        {
-            return new LabelState( id );
-        }
-    };
-
-    public static class EntityState
-    {
-        private final long id;
-
-        public EntityState( long id )
-        {
-            this.id = id;
-        }
-
-        public long getId()
-        {
-            return id;
-        }
-    }
-    
-    public static class NodeState extends EntityState
-    {
-        public NodeState( long id )
-        {
-            super( id );
-        }
-
-        private final DiffSets<Long> labelDiffSets = new DiffSets<Long>();
-
-        public DiffSets<Long> getLabelDiffSets()
-        {
-            return labelDiffSets;
-        }
-    }
-    
-    public static class LabelState extends EntityState
-    {
-        private final DiffSets<Long> nodeDiffSets = new DiffSets<Long>();
-        private final DiffSets<IndexRule> indexRuleDiffSets = new DiffSets<IndexRule>();
-
-        public LabelState( long id )
-        {
-            super( id );
-        }
-        
-        public DiffSets<Long> getNodeDiffSets()
-        {
-            return nodeDiffSets;
-        }
-        
-        public DiffSets<IndexRule> getIndexRuleDiffSets()
-        {
-            return indexRuleDiffSets;
-        }
     }
 }

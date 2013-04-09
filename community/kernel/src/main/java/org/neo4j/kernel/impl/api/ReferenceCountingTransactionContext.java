@@ -48,18 +48,18 @@ public class ReferenceCountingTransactionContext extends DelegatingTransactionCo
     public void commit()
     {
         statementContextOwner.closeAllStatements();
-        super.commit();
+        delegate.commit();
     }
 
     @Override
     public void rollback()
     {
         statementContextOwner.closeAllStatements();
-        super.rollback();
+        delegate.rollback();
     }
 
     private StatementContext createStatementContext()
     {
-        return super.newStatementContext();
+        return delegate.newStatementContext();
     }
 }

@@ -37,15 +37,16 @@ import org.neo4j.kernel.impl.util.StringLogger;
 
 public class ReadOnlyNodeManager extends NodeManager
 {
-    public ReadOnlyNodeManager(Config config, StringLogger logger, GraphDatabaseService graphDb,
-                               AbstractTransactionManager transactionManager, PersistenceManager persistenceManager,
-                               EntityIdGenerator idGenerator, RelationshipTypeHolder relationshipTypeHolder,
-                               CacheProvider cacheType, PropertyIndexManager propertyIndexManager,
-                               NodeProxy.NodeLookup nodeLookup, RelationshipProxy.RelationshipLookups relationshipLookups,
-                               Cache<NodeImpl> nodeCache, Cache<RelationshipImpl> relCache, XaDataSourceManager xaDsm,
-                               ThreadToStatementContextBridge statementCtxProvider )
+    public ReadOnlyNodeManager( Config config, StringLogger logger, GraphDatabaseService graphDb,
+                                AbstractTransactionManager transactionManager, PersistenceManager persistenceManager,
+                                EntityIdGenerator idGenerator, RelationshipTypeHolder relationshipTypeHolder,
+                                CacheProvider cacheType, PropertyIndexManager propertyIndexManager,
+                                NodeProxy.NodeLookup nodeLookup, RelationshipProxy.RelationshipLookups
+            relationshipLookups,
+                                Cache<NodeImpl> nodeCache, Cache<RelationshipImpl> relCache, XaDataSourceManager xaDsm,
+                                ThreadToStatementContextBridge statementCtxProvider )
     {
-        super(config, logger, graphDb, transactionManager, persistenceManager, idGenerator,
+        super( config, logger, graphDb, transactionManager, persistenceManager, idGenerator,
                 relationshipTypeHolder, cacheType, propertyIndexManager, nodeLookup, relationshipLookups,
                 nodeCache, relCache, xaDsm, statementCtxProvider );
     }
@@ -58,7 +59,7 @@ public class ReadOnlyNodeManager extends NodeManager
 
     @Override
     public Relationship createRelationship( Node startNodeProxy, NodeImpl startNode, Node endNode,
-        RelationshipType type )
+                                            RelationshipType type )
     {
         throw new ReadOnlyDbException();
     }
@@ -70,7 +71,7 @@ public class ReadOnlyNodeManager extends NodeManager
     }
 
     @Override
-    ArrayMap<Integer,PropertyData> deleteNode( NodeImpl node, TransactionState tx )
+    public ArrayMap<Integer, PropertyData> deleteNode( NodeImpl node, TransactionState tx )
     {
         throw new ReadOnlyDbException();
     }
@@ -83,7 +84,7 @@ public class ReadOnlyNodeManager extends NodeManager
 
     @Override
     PropertyData nodeChangeProperty( NodeImpl node, PropertyData property,
-            Object value, TransactionState tx )
+                                     Object value, TransactionState tx )
     {
         throw new ReadOnlyDbException();
     }
@@ -95,7 +96,7 @@ public class ReadOnlyNodeManager extends NodeManager
     }
 
     @Override
-    ArrayMap<Integer,PropertyData> deleteRelationship( RelationshipImpl rel, TransactionState tx )
+    ArrayMap<Integer, PropertyData> deleteRelationship( RelationshipImpl rel, TransactionState tx )
     {
         throw new ReadOnlyDbException();
     }
@@ -108,7 +109,7 @@ public class ReadOnlyNodeManager extends NodeManager
 
     @Override
     PropertyData relChangeProperty( RelationshipImpl rel,
-            PropertyData property, Object value, TransactionState tx )
+                                    PropertyData property, Object value, TransactionState tx )
     {
         throw new ReadOnlyDbException();
     }

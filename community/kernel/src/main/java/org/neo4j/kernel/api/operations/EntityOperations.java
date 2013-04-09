@@ -39,8 +39,11 @@ public interface EntityOperations
 
     /**
      * Returns an iterable with the matched nodes.
-     * @throws org.neo4j.kernel.api.index.IndexNotFoundKernelException if no such index found.
+     *
+     * @throws org.neo4j.kernel.api.index.IndexNotFoundKernelException
+     *          if no such index found.
      */
     Iterator<Long> exactIndexLookup( long indexId, Object value ) throws IndexNotFoundKernelException;
 
+    void deleteNode( long nodeId );
 }

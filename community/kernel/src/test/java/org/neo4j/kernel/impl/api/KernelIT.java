@@ -49,35 +49,35 @@ public class KernelIT
     /**
      * While we transition ownership from the Beans API to the Kernel API for core database
      * interactions, there will be a bit of a mess. Our first goal is an architecture like this:
-     *
-     *         Users
-     *        /    \
-     *  Beans API   Cypher
-     *        \    /
-     *      Kernel API
-     *           |
-     *  Kernel Implementation
-     *
+     * <p/>
+     * Users
+     * /    \
+     * Beans API   Cypher
+     * \    /
+     * Kernel API
+     * |
+     * Kernel Implementation
+     * <p/>
      * But our current intermediate architecture looks like this:
-     *
-     *           Users
-     *        /        \
-     *  Beans API <--- Cypher
-     *     |    \    /
-     *     |  Kernel API
-     *     |      |
-     *  Kernel Implementation
-     *
+     * <p/>
+     * Users
+     * /        \
+     * Beans API <--- Cypher
+     * |    \    /
+     * |  Kernel API
+     * |      |
+     * Kernel Implementation
+     * <p/>
      * Meaning Kernel API and Beans API both manipulate the underlying kernel, causing lots of corner cases. Most
      * notably, those corner cases are related to Transactions, and the interplay between three transaction APIs:
-     *   - The Beans API
-     *   - The JTA Transaction Manager API
-     *   - The Kernel TransactionContext API
-     *
+     * - The Beans API
+     * - The JTA Transaction Manager API
+     * - The Kernel TransactionContext API
+     * <p/>
      * In the long term, the goal is for JTA compliant stuff to live outside of the kernel, as an addon. The Kernel
      * API will rule supreme over the land of transactions. We are a long way away from there, however, so as a first
      * intermediary step, the JTA transaction manager rules supreme, and the Kernel API piggybacks on it.
-     *
+     * <p/>
      * This test shows us how to use both the Kernel API and the Beans API together in the same transaction,
      * during the transition phase.
      */
@@ -104,7 +104,8 @@ public class KernelIT
         beansAPITx.success();
         beansAPITx.finish();
 
-        // NOTE: Transactions are still thread-bound right now, because we use JTA to "own" transactions, meaning if you use
+        // NOTE: Transactions are still thread-bound right now, because we use JTA to "own" transactions,
+        // meaning if you use
         // both the Kernel API to create transactions while a Beans API transaction is running in the same
         // thread, the results are undefined.
 
@@ -129,7 +130,7 @@ public class KernelIT
         tx.commit();
         outerTx.finish();
     }
-    
+
     @Test
     public void changesInTransactionContextShouldBeRolledBackWhenTxIsRolledBack() throws Exception
     {
@@ -148,7 +149,7 @@ public class KernelIT
         statement = statementContextProvider.getCtxForReading();
         assertFalse( statement.isLabelSetOnNode( labelId, node.getId() ) );
     }
-    
+
     @Test
     public void shouldNotBeAbleToCommitIfFailedTransactionContext() throws Exception
     {
@@ -190,7 +191,7 @@ public class KernelIT
         statement = statementContextProvider.getCtxForReading();
         assertEquals( asSet( labelId1 ), asSet( statement.getLabelsForNode( node.getId() ) ) );
     }
-    
+
     @Test
     public void transactionStateShouldReflectRemovingAddedLabelImmediately() throws Exception
     {
@@ -243,7 +244,7 @@ public class KernelIT
         tx.success();
         tx.finish();
     }
-    
+
     @Test
     public void addingNewLabelToNodeShouldRespondTrue() throws Exception
     {
@@ -265,7 +266,7 @@ public class KernelIT
         // THEN
         assertFalse( "Shouldn't have been added now", added );
     }
-    
+
     @Test
     public void addingExistingLabelToNodeShouldRespondFalse() throws Exception
     {
@@ -308,7 +309,7 @@ public class KernelIT
         // THEN
         assertTrue( "Should have been removed now", removed );
     }
-    
+
     @Test
     public void removingNonExistentLabelFromNodeShouldRespondFalse() throws Exception
     {
@@ -329,7 +330,7 @@ public class KernelIT
         // THEN
         assertFalse( "Shouldn't have been removed now", removed );
     }
-    
+
     @Test
     public void deletingNodeWithLabelsShouldHaveThoseLabelRemovalsReflectedInTransaction() throws Exception
     {
@@ -340,22 +341,26 @@ public class KernelIT
         tx.success();
         tx.finish();
 
-        // WHEN
         tx = db.beginTx();
-        node.delete();
         StatementContext statement = statementContextProvider.getCtxForWriting();
+
+        // WHEN
+        statement.deleteNode( node.getId() );
+
+        // Then
         long labelId = statement.getLabelId( label.name() );
         Set<Long> labels = asSet( statement.getLabelsForNode( node.getId() ) );
         boolean labelIsSet = statement.isLabelSetOnNode( labelId, node.getId() );
         Set<Long> nodes = asSet( statement.getNodesWithLabel( labelId ) );
+
         statement.close();
+
         tx.success();
         tx.finish();
 
-        // THEN
+        assertEquals( asSet(), nodes );
         assertEquals( asSet(), labels );
         assertFalse( "Label should not be set on node here", labelIsSet );
-        assertEquals(asSet(), nodes);
     }
 
     @Test
@@ -384,12 +389,12 @@ public class KernelIT
         tx.finish();
 
         // THEN
-        assertThat( nodeSet, equalTo(Collections.<Long>emptySet()) );
+        assertThat( nodeSet, equalTo( Collections.<Long>emptySet() ) );
     }
 
     private GraphDatabaseAPI db;
     private ThreadToStatementContextBridge statementContextProvider;
-    
+
     @Before
     public void before() throws Exception
     {

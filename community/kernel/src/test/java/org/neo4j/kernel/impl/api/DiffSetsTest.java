@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.api;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.helpers.collection.IteratorUtil.iterator;
 
 import org.junit.Test;
 import org.neo4j.helpers.Predicate;
@@ -40,7 +41,7 @@ public class DiffSetsTest
 
         // THEN
         assertEquals( asSet( 1L, 2L ), actual.getAdded() );
-        assertTrue(actual.getRemoved().isEmpty());
+        assertTrue( actual.getRemoved().isEmpty() );
     }
 
     @Test
@@ -85,7 +86,7 @@ public class DiffSetsTest
 
         // THEN
         assertEquals( asSet( 1L ), actual.getAdded() );
-        assertTrue(actual.getRemoved().isEmpty());
+        assertTrue( actual.getRemoved().isEmpty() );
     }
 
     @Test
@@ -99,10 +100,10 @@ public class DiffSetsTest
         actual.remove( 10L );
 
         // THEN
-        assertTrue(actual.isAdded( 1L ) );
-        assertTrue(!actual.isAdded( 2L ));
-        assertTrue(actual.isRemoved( 10L ));
-        assertTrue(!actual.isRemoved( 2L ));
+        assertTrue( actual.isAdded( 1L ) );
+        assertTrue( !actual.isAdded( 2L ) );
+        assertTrue( actual.isRemoved( 10L ) );
+        assertTrue( !actual.isRemoved( 2L ) );
     }
 
     @Test
@@ -112,32 +113,32 @@ public class DiffSetsTest
         DiffSets<Long> actual = new DiffSets<Long>();
 
         // WHEN
-        actual.addAll( asSet( 1L, 2L ) );
-        actual.removeAll( asSet( 2L, 3L ) );
+        actual.addAll( iterator( 1L, 2L ) );
+        actual.removeAll( iterator( 2L, 3L ) );
 
         // THEN
         assertEquals( asSet( 1L ), actual.getAdded() );
         assertEquals( asSet( 3L ), actual.getRemoved() );
     }
 
-
     @Test
     public void testFilterAdded()
     {
         // GIVEN
         DiffSets<Long> actual = new DiffSets<Long>();
-        actual.addAll( asSet( 1L, 2L ) );
-        actual.removeAll( asSet( 3L, 4L ) );
+        actual.addAll( iterator( 1L, 2L ) );
+        actual.removeAll( iterator( 3L, 4L ) );
 
         // WHEN
-        DiffSets<Long> filtered = actual.filterAdded(ODD_FILTER);
+        DiffSets<Long> filtered = actual.filterAdded( ODD_FILTER );
 
         // THEN
         assertEquals( asSet( 1L ), filtered.getAdded() );
         assertEquals( asSet( 3L, 4L ), filtered.getRemoved() );
     }
 
-    private static final Predicate<Long> ODD_FILTER = new Predicate<Long>() {
+    private static final Predicate<Long> ODD_FILTER = new Predicate<Long>()
+    {
         @Override
         public boolean accept( Long item )
         {

@@ -20,6 +20,8 @@
 package org.neo4j.kernel.impl.api.state;
 
 import org.neo4j.kernel.impl.api.DiffSets;
+import org.neo4j.kernel.impl.core.NodeImpl;
+import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.core.WritableTransactionState;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
@@ -27,17 +29,13 @@ import org.neo4j.kernel.impl.util.ArrayMap;
 
 public class OldTxStateBridgeImpl implements OldTxStateBridge
 {
+    private final NodeManager nodeManager;
     private final TransactionState state;
 
-    public OldTxStateBridgeImpl(TransactionState transactionState)
+    public OldTxStateBridgeImpl( NodeManager nodeManager, TransactionState transactionState )
     {
+        this.nodeManager = nodeManager;
         this.state = transactionState;
-    }
-
-    @Override
-    public Iterable<Long> getDeletedNodes()
-    {
-        return state.getDeletedNodes();
     }
 
     @Override
@@ -50,12 +48,12 @@ public class OldTxStateBridgeImpl implements OldTxStateBridge
         {
 
             // All nodes where the property has been removed altogether
-            ArrayMap<Integer,PropertyData> propRmMap = changedNode.getPropertyRemoveMap( false );
-            if(propRmMap != null)
+            ArrayMap<Integer, PropertyData> propRmMap = changedNode.getPropertyRemoveMap( false );
+            if ( propRmMap != null )
             {
                 for ( PropertyData propertyData : propRmMap.values() )
                 {
-                    if( propertyData.getIndex() == propertyKey && propertyData.getValue().equals( value ) )
+                    if ( propertyData.getIndex() == propertyKey && propertyData.getValue().equals( value ) )
                     {
                         diff.remove( changedNode.getId() );
                     }
@@ -63,20 +61,21 @@ public class OldTxStateBridgeImpl implements OldTxStateBridge
             }
 
             // All nodes where property has been added or changed
-            if(!changedNode.isDeleted())
+            if ( !changedNode.isDeleted() )
             {
-                ArrayMap<Integer,PropertyData> propAddMap = changedNode.getPropertyAddMap( false );
-                if(propAddMap != null)
+                ArrayMap<Integer, PropertyData> propAddMap = changedNode.getPropertyAddMap( false );
+                if ( propAddMap != null )
                 {
                     for ( PropertyData propertyData : propAddMap.values() )
                     {
-                        if( propertyData.getIndex() == propertyKey )
+                        if ( propertyData.getIndex() == propertyKey )
                         {
                             // Added if value is the same, removed if value is different.
-                            if( propertyData.getValue().equals( value ))
+                            if ( propertyData.getValue().equals( value ) )
                             {
                                 diff.add( changedNode.getId() );
-                            } else
+                            }
+                            else
                             {
                                 diff.remove( changedNode.getId() );
                             }
@@ -86,7 +85,33 @@ public class OldTxStateBridgeImpl implements OldTxStateBridge
             }
         }
 
-
         return diff;
+    }
+
+    @Override
+    public void deleteNode( long nodeId )
+    {
+        NodeImpl node = nodeManager.getNodeForProxy( nodeId, null );
+        boolean success = false;
+        try
+        {
+            ArrayMap<Integer, PropertyData> skipMap = state.getOrCreateCowPropertyRemoveMap( node );
+            ArrayMap<Integer, PropertyData> removedProps = nodeManager.deleteNode( node, state );
+            if ( removedProps.size() > 0 )
+            {
+                for ( Integer index : removedProps.keySet() )
+                {
+                    skipMap.put( index, removedProps.get( index ) );
+                }
+            }
+            success = true;
+        }
+        finally
+        {
+            if ( !success )
+            {
+                nodeManager.setRollbackOnly();
+            }
+        }
     }
 }

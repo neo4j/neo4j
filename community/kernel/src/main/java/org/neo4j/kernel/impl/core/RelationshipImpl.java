@@ -112,10 +112,10 @@ public class RelationshipImpl extends ArrayBasedPrimitive
     
     public void delete( NodeManager nodeManager, Relationship proxy )
     {
-        NodeImpl startNode = null;
-        NodeImpl endNode = null;
+        NodeImpl startNode;
+        NodeImpl endNode;
         boolean success = false;
-        TransactionState tx = null;
+        TransactionState tx;
         try
         {
             tx = nodeManager.getTransactionState();

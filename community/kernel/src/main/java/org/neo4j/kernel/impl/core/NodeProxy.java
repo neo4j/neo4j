@@ -50,13 +50,17 @@ public class NodeProxy implements Node
 {
     public interface NodeLookup
     {
-        NodeImpl lookup(long nodeId);
+        NodeImpl lookup( long nodeId );
+
         GraphDatabaseService getGraphDatabase();
+
         NodeManager getNodeManager();
+
         CleanupService getCleanupService();
+
         NodeImpl lookup( long nodeId, LockType lock );
     }
-    
+
     private final NodeLookup nodeLookup;
     private final ThreadToStatementContextBridge statementCtxProvider;
     private final long nodeId;
@@ -83,13 +87,21 @@ public class NodeProxy implements Node
     @Override
     public void delete()
     {
-        nodeLookup.lookup(nodeId, LockType.WRITE).delete( nodeLookup.getNodeManager(), this );
+        StatementContext ctxForWriting = statementCtxProvider.getCtxForWriting();
+        try
+        {
+            ctxForWriting.deleteNode( getId() );
+        }
+        finally
+        {
+            ctxForWriting.close();
+        }
     }
 
     @Override
     public Iterable<Relationship> getRelationships()
     {
-        return nodeLookup.lookup(nodeId).getRelationships( nodeLookup.getNodeManager() );
+        return nodeLookup.lookup( nodeId ).getRelationships( nodeLookup.getNodeManager() );
     }
 
     @Override
@@ -101,99 +113,99 @@ public class NodeProxy implements Node
     @Override
     public Iterable<Relationship> getRelationships( Direction dir )
     {
-        return nodeLookup.lookup(nodeId).getRelationships( nodeLookup.getNodeManager(), dir );
+        return nodeLookup.lookup( nodeId ).getRelationships( nodeLookup.getNodeManager(), dir );
     }
 
     @Override
     public boolean hasRelationship( Direction dir )
     {
-        return nodeLookup.lookup(nodeId).hasRelationship( nodeLookup.getNodeManager(), dir );
+        return nodeLookup.lookup( nodeId ).hasRelationship( nodeLookup.getNodeManager(), dir );
     }
 
     @Override
     public Iterable<Relationship> getRelationships( RelationshipType... types )
     {
-        return nodeLookup.lookup(nodeId).getRelationships( nodeLookup.getNodeManager(), types );
+        return nodeLookup.lookup( nodeId ).getRelationships( nodeLookup.getNodeManager(), types );
     }
 
     @Override
     public Iterable<Relationship> getRelationships( Direction direction, RelationshipType... types )
     {
-        return nodeLookup.lookup(nodeId).getRelationships( nodeLookup.getNodeManager(), direction, types );
+        return nodeLookup.lookup( nodeId ).getRelationships( nodeLookup.getNodeManager(), direction, types );
     }
 
     @Override
     public boolean hasRelationship( RelationshipType... types )
     {
-        return nodeLookup.lookup(nodeId).hasRelationship( nodeLookup.getNodeManager(), types );
+        return nodeLookup.lookup( nodeId ).hasRelationship( nodeLookup.getNodeManager(), types );
     }
 
     @Override
     public boolean hasRelationship( Direction direction, RelationshipType... types )
     {
-        return nodeLookup.lookup(nodeId).hasRelationship( nodeLookup.getNodeManager(), direction, types );
+        return nodeLookup.lookup( nodeId ).hasRelationship( nodeLookup.getNodeManager(), direction, types );
     }
 
     @Override
     public Iterable<Relationship> getRelationships( RelationshipType type,
-        Direction dir )
+                                                    Direction dir )
     {
-        return nodeLookup.lookup(nodeId).getRelationships( nodeLookup.getNodeManager(), type, dir );
+        return nodeLookup.lookup( nodeId ).getRelationships( nodeLookup.getNodeManager(), type, dir );
     }
 
     @Override
     public boolean hasRelationship( RelationshipType type, Direction dir )
     {
-        return nodeLookup.lookup(nodeId).hasRelationship( nodeLookup.getNodeManager(), type, dir );
+        return nodeLookup.lookup( nodeId ).hasRelationship( nodeLookup.getNodeManager(), type, dir );
     }
 
     @Override
     public Relationship getSingleRelationship( RelationshipType type,
-        Direction dir )
+                                               Direction dir )
     {
-        return nodeLookup.lookup(nodeId).getSingleRelationship( nodeLookup.getNodeManager(), type, dir );
+        return nodeLookup.lookup( nodeId ).getSingleRelationship( nodeLookup.getNodeManager(), type, dir );
     }
 
     @Override
     public void setProperty( String key, Object value )
     {
-        nodeLookup.lookup(nodeId, LockType.WRITE).setProperty( nodeLookup.getNodeManager(), this, key, value );
+        nodeLookup.lookup( nodeId, LockType.WRITE ).setProperty( nodeLookup.getNodeManager(), this, key, value );
     }
 
     @Override
     public Object removeProperty( String key ) throws NotFoundException
     {
-        return nodeLookup.lookup(nodeId, LockType.WRITE).removeProperty( nodeLookup.getNodeManager(), this, key );
+        return nodeLookup.lookup( nodeId, LockType.WRITE ).removeProperty( nodeLookup.getNodeManager(), this, key );
     }
 
     @Override
     public Object getProperty( String key, Object defaultValue )
     {
-        return nodeLookup.lookup(nodeId).getProperty( nodeLookup.getNodeManager(), key, defaultValue );
+        return nodeLookup.lookup( nodeId ).getProperty( nodeLookup.getNodeManager(), key, defaultValue );
     }
 
     @Override
     public Iterable<Object> getPropertyValues()
     {
-        return nodeLookup.lookup(nodeId).getPropertyValues( nodeLookup.getNodeManager() );
+        return nodeLookup.lookup( nodeId ).getPropertyValues( nodeLookup.getNodeManager() );
     }
 
     @Override
     public Iterable<String> getPropertyKeys()
     {
-        return nodeLookup.lookup(nodeId).getPropertyKeys( nodeLookup.getNodeManager() );
+        return nodeLookup.lookup( nodeId ).getPropertyKeys( nodeLookup.getNodeManager() );
     }
 
     @Override
     public Object getProperty( String key ) throws NotFoundException
     {
-        return nodeLookup.lookup(nodeId).getProperty( nodeLookup.getNodeManager(), key );
+        return nodeLookup.lookup( nodeId ).getProperty( nodeLookup.getNodeManager(), key );
     }
 
     @Override
     public boolean hasProperty( String key )
     {
-        return nodeLookup.lookup(nodeId).hasProperty( nodeLookup.getNodeManager(), key );
+        return nodeLookup.lookup( nodeId ).hasProperty( nodeLookup.getNodeManager(), key );
     }
 
     public int compareTo( Object node )
@@ -219,16 +231,16 @@ public class NodeProxy implements Node
     public boolean equals( Object o )
     {
         if ( !(o instanceof Node) )
-    {
-        return false;
-    }
+        {
+            return false;
+        }
         return this.getId() == ((Node) o).getId();
     }
 
     @Override
     public int hashCode()
     {
-        return (int) (( nodeId >>> 32 ) ^ nodeId );
+        return (int) ((nodeId >>> 32) ^ nodeId);
     }
 
     @Override
@@ -239,69 +251,42 @@ public class NodeProxy implements Node
 
     @Override
     public Relationship createRelationshipTo( Node otherNode,
-        RelationshipType type )
+                                              RelationshipType type )
     {
-        return nodeLookup.lookup(nodeId, LockType.WRITE).createRelationshipTo( nodeLookup.getNodeManager(), this, otherNode, type );
-    }
-
-    /* Tentative expansion API
-    public Expansion<Relationship> expandAll()
-    {
-        return nodeLookup.lookup(nodeId).expandAll();
-    }
-
-    public Expansion<Relationship> expand( RelationshipType type )
-    {
-        return nodeLookup.lookup(nodeId).expand( type );
-    }
-
-    public Expansion<Relationship> expand( RelationshipType type,
-            Direction direction )
-    {
-        return nodeLookup.lookup(nodeId).expand( type, direction );
-    }
-
-    public Expansion<Relationship> expand( Direction direction )
-    {
-        return nodeLookup.lookup(nodeId).expand( direction );
-    }
-
-    public Expansion<Relationship> expand( RelationshipExpander expander )
-    {
-        return nodeLookup.lookup(nodeId).expand( expander );
-    }
-    */
-
-    @Override
-    public Traverser traverse( Order traversalOrder,
-        StopEvaluator stopEvaluator, ReturnableEvaluator returnableEvaluator,
-        RelationshipType relationshipType, Direction direction )
-    {
-        return OldTraverserWrapper.traverse( this,
-                                             traversalOrder, stopEvaluator,
-                                             returnableEvaluator, relationshipType, direction );
+        return nodeLookup.lookup( nodeId, LockType.WRITE ).createRelationshipTo( nodeLookup.getNodeManager(), this,
+                otherNode, type );
     }
 
     @Override
     public Traverser traverse( Order traversalOrder,
-        StopEvaluator stopEvaluator, ReturnableEvaluator returnableEvaluator,
-        RelationshipType firstRelationshipType, Direction firstDirection,
-        RelationshipType secondRelationshipType, Direction secondDirection )
+                               StopEvaluator stopEvaluator, ReturnableEvaluator returnableEvaluator,
+                               RelationshipType relationshipType, Direction direction )
     {
         return OldTraverserWrapper.traverse( this,
-                                             traversalOrder, stopEvaluator,
-                                             returnableEvaluator, firstRelationshipType, firstDirection,
-                                             secondRelationshipType, secondDirection );
+                traversalOrder, stopEvaluator,
+                returnableEvaluator, relationshipType, direction );
     }
 
     @Override
     public Traverser traverse( Order traversalOrder,
-        StopEvaluator stopEvaluator, ReturnableEvaluator returnableEvaluator,
-        Object... relationshipTypesAndDirections )
+                               StopEvaluator stopEvaluator, ReturnableEvaluator returnableEvaluator,
+                               RelationshipType firstRelationshipType, Direction firstDirection,
+                               RelationshipType secondRelationshipType, Direction secondDirection )
     {
         return OldTraverserWrapper.traverse( this,
-                                             traversalOrder, stopEvaluator,
-                                             returnableEvaluator, relationshipTypesAndDirections );
+                traversalOrder, stopEvaluator,
+                returnableEvaluator, firstRelationshipType, firstDirection,
+                secondRelationshipType, secondDirection );
+    }
+
+    @Override
+    public Traverser traverse( Order traversalOrder,
+                               StopEvaluator stopEvaluator, ReturnableEvaluator returnableEvaluator,
+                               Object... relationshipTypesAndDirections )
+    {
+        return OldTraverserWrapper.traverse( this,
+                traversalOrder, stopEvaluator,
+                returnableEvaluator, relationshipTypesAndDirections );
     }
 
     @Override
@@ -358,7 +343,7 @@ public class NodeProxy implements Node
         }
 
     }
-    
+
     @Override
     public ResourceIterable<Label> getLabels()
     {
@@ -368,7 +353,7 @@ public class NodeProxy implements Node
             public ResourceIterator<Label> iterator()
             {
                 final StatementContext ctx = statementCtxProvider.getCtxForReading();
-                return nodeLookup.getCleanupService().resourceIterator( map(new Function<Long, Label>()
+                return nodeLookup.getCleanupService().resourceIterator( map( new Function<Long, Label>()
                 {
                     @Override
                     public Label apply( Long labelId )
@@ -383,7 +368,7 @@ public class NodeProxy implements Node
                                     ", but the returned label " + labelId + " doesn't exist anymore" );
                         }
                     }
-                },ctx.getLabelsForNode( getId() )), ctx );
+                }, ctx.getLabelsForNode( getId() ) ), ctx );
             }
         };
     }

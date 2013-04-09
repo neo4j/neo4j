@@ -36,14 +36,13 @@ import org.neo4j.helpers.collection.Iterables;
  * which elements need to actually be added and removed at minimum from some
  * hypothetical target collection such that the result is equivalent to just
  * executing the sequence of additions and removals in order
- * 
- * @param <T>
- *            type of elements
+ *
+ * @param <T> type of elements
  */
 public class DiffSets<T>
 {
     @SuppressWarnings(
-    { "rawtypes", "unchecked" } )
+            {"rawtypes", "unchecked"})
     private static final DiffSets EMPTY = new DiffSets( Collections.emptySet(), Collections.emptySet() )
     {
         @Override
@@ -53,7 +52,7 @@ public class DiffSets<T>
         }
     };
 
-    @SuppressWarnings( "unchecked" )
+    @SuppressWarnings("unchecked")
     public static <T> DiffSets<T> emptyDiffSets()
     {
         return EMPTY;
@@ -104,16 +103,20 @@ public class DiffSets<T>
         return result;
     }
 
-    public void addAll( Iterable<T> elems )
+    public void addAll( Iterator<T> elems )
     {
-        for ( T elem : elems )
-            add( elem );
+        while ( elems.hasNext() )
+        {
+            add( elems.next() );
+        }
     }
 
-    public void removeAll( Iterable<T> elems )
+    public void removeAll( Iterator<T> elems )
     {
-        for ( T elem : elems )
-            remove( elem );
+        while ( elems.hasNext() )
+        {
+            remove( elems.next() );
+        }
     }
 
     public boolean isAdded( T elem )
@@ -141,10 +144,35 @@ public class DiffSets<T>
         return getAdded().isEmpty() && getRemoved().isEmpty();
     }
 
+    @SuppressWarnings("unchecked")
+    public Iterator<T> apply( Iterator<T> source )
+    {
+        Iterator<T> result = source;
+        if ( removedElements != null && !removedElements.isEmpty() )
+        {
+            ensureFilterHasBeenCreated();
+            result = filter( filter, result );
+        }
+        if ( addedElements != null && !addedElements.isEmpty() )
+        {
+            result = concat( result, addedElements.iterator() );
+        }
+        return result;
+    }
+
+    public DiffSets<T> filterAdded( Predicate<T> addedFilter )
+    {
+        Iterable<T> newAdded = Iterables.filter( addedFilter, getAdded() );
+        Set<T> newRemoved = getRemoved();
+        return new DiffSets<T>( asSet( newAdded ), asSet( newRemoved ) );
+    }
+
     private void ensureAddedHasBeenCreated()
     {
         if ( addedElements == null )
+        {
             addedElements = newSet();
+        }
     }
 
     private void ensureRemoveHasBeenCreated()
@@ -158,7 +186,7 @@ public class DiffSets<T>
 
     private void ensureFilterHasBeenCreated()
     {
-        if (filter == null)
+        if ( filter == null )
         {
             filter = new Predicate<T>()
             {
@@ -178,27 +206,7 @@ public class DiffSets<T>
 
     private Set<T> resultSet( Set<T> coll )
     {
-        return coll == null ? Collections.<T> emptySet() : Collections.unmodifiableSet( coll );
+        return coll == null ? Collections.<T>emptySet() : Collections.unmodifiableSet( coll );
     }
 
-    @SuppressWarnings( "unchecked" )
-    public Iterator<T> apply( Iterator<T> source )
-    {
-        Iterator<T> result = source;
-        if ( removedElements != null && !removedElements.isEmpty() )
-        {
-            ensureFilterHasBeenCreated();
-            result = filter( filter, result );
-        }
-        if ( addedElements != null && !addedElements.isEmpty() )
-            result = concat( result, addedElements.iterator() );
-        return result;
-    }
-
-    public DiffSets<T> filterAdded( Predicate<T> addedFilter )
-    {
-        Iterable<T> newAdded = Iterables.filter( addedFilter, getAdded() );
-        Set<T> newRemoved = getRemoved();
-        return new DiffSets<T>( asSet( newAdded ), asSet( newRemoved ) );
-    }
 }

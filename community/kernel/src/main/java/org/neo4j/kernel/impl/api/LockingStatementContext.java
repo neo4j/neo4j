@@ -54,7 +54,7 @@ public class LockingStatementContext extends CompositeStatementContext
         lockHolder.acquireNodeWriteLock( nodeId );
         return delegate.removeLabelFromNode( labelId, nodeId );
     }
-    
+
     @Override
     public IndexRule addIndexRule( long labelId, long propertyKey ) throws ConstraintViolationKernelException
     {
@@ -89,7 +89,7 @@ public class LockingStatementContext extends CompositeStatementContext
         lockHolder.acquireSchemaReadLock();
         return delegate.getIndexRules( labelId );
     }
-    
+
     @Override
     public Iterator<IndexRule> getIndexRules()
     {
@@ -103,5 +103,12 @@ public class LockingStatementContext extends CompositeStatementContext
     {
         lockHolder.acquireNodeReadLock( nodeId );
         return super.getNodePropertyValue( nodeId, propertyId );
+    }
+
+    @Override
+    public void deleteNode( long nodeId )
+    {
+        lockHolder.acquireNodeWriteLock( nodeId );
+        delegate.deleteNode( nodeId );
     }
 }

@@ -20,18 +20,16 @@
 package org.neo4j.kernel.impl.api;
 
 import static java.util.Collections.emptyList;
-import static org.neo4j.helpers.collection.Iterables.concat;
-import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.option;
 import static org.neo4j.helpers.collection.IteratorUtil.singleOrNull;
 
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.Set;
 
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.ConstraintViolationKernelException;
 import org.neo4j.kernel.api.EntityNotFoundException;
 import org.neo4j.kernel.api.PropertyKeyIdNotFoundException;
@@ -43,6 +41,7 @@ import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.operations.SchemaOperations;
 import org.neo4j.kernel.impl.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.state.TxState;
+import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 
 public class TransactionStateStatementContext extends CompositeStatementContext
@@ -63,7 +62,7 @@ public class TransactionStateStatementContext extends CompositeStatementContext
 
     public TransactionStateStatementContext( StatementContext actual, TxState state )
     {
-        this( actual, actual, state);
+        this( actual, actual, state );
     }
 
     @Override
@@ -74,13 +73,26 @@ public class TransactionStateStatementContext extends CompositeStatementContext
     }
 
     @Override
+    public void deleteNode( long nodeId )
+    {
+        state.deleteNode( nodeId );
+    }
+
+    @Override
     public boolean isLabelSetOnNode( long labelId, long nodeId )
     {
         if ( state.hasChanges() )
         {
+            if ( state.nodeIsRemoved( nodeId ) )
+            {
+                return false;
+            }
+
             Boolean labelState = state.getLabelState( nodeId, labelId );
             if ( labelState != null )
+            {
                 return labelState.booleanValue();
+            }
         }
 
         return delegate.isLabelSetOnNode( labelId, nodeId );
@@ -89,6 +101,10 @@ public class TransactionStateStatementContext extends CompositeStatementContext
     @Override
     public Iterator<Long> getLabelsForNode( long nodeId )
     {
+        if ( state.nodeIsRemoved( nodeId ) )
+        {
+            return IteratorUtil.emptyIterator();
+        }
         Iterator<Long> committed = delegate.getLabelsForNode( nodeId );
         return state.getNodeStateLabelDiffSets( nodeId ).apply( committed );
     }
@@ -96,7 +112,7 @@ public class TransactionStateStatementContext extends CompositeStatementContext
     @Override
     public boolean addLabelToNode( long labelId, long nodeId )
     {
-        if(isLabelSetOnNode( labelId, nodeId ))
+        if ( isLabelSetOnNode( labelId, nodeId ) )
         {
             // Label is already in state or in store, no-op
             return false;
@@ -109,7 +125,7 @@ public class TransactionStateStatementContext extends CompositeStatementContext
     @Override
     public boolean removeLabelFromNode( long labelId, long nodeId )
     {
-        if(!isLabelSetOnNode( labelId, nodeId ))
+        if ( !isLabelSetOnNode( labelId, nodeId ) )
         {
             // Label does not exist in state nor in store, no-op
             return false;
@@ -119,33 +135,20 @@ public class TransactionStateStatementContext extends CompositeStatementContext
 
         return true;
     }
-    
-    @SuppressWarnings( "unchecked" )
+
+    @SuppressWarnings("unchecked")
     @Override
     public Iterator<Long> getNodesWithLabel( long labelId )
     {
         Iterator<Long> committed = delegate.getNodesWithLabel( labelId );
         if ( !state.hasChanges() )
-            return committed;
-
-        Iterator<Long> result = committed;
-        final Collection<Long> removed = state.getNodesWithLabelRemoved( labelId );
-        if ( !removed.isEmpty() )
         {
-            result = filter( new Predicate<Long>()
-            {
-                @Override
-                public boolean accept( Long item )
-                {
-                    return !removed.contains( item );
-                }
-            }, result );
+            return committed;
         }
-        
-        Set<Long> added = state.getNodesWithLabelAdded( labelId );
-        return concat( result, added.iterator() );
+
+        return state.getDeletedNodes().apply( state.getNodesWithLabelChanged( labelId ).apply( committed ) );
     }
-    
+
     @Override
     public IndexRule addIndexRule( long labelId, long propertyKey ) throws ConstraintViolationKernelException
     {
@@ -155,9 +158,9 @@ public class TransactionStateStatementContext extends CompositeStatementContext
     @Override
     public void dropIndexRule( IndexRule indexRule ) throws ConstraintViolationKernelException
     {
-        state.dropIndexRule(indexRule);
+        state.dropIndexRule( indexRule );
     }
-    
+
     @Override
     public IndexRule getIndexRule( long labelId, long propertyKey ) throws SchemaRuleNotFoundException
     {
@@ -174,8 +177,10 @@ public class TransactionStateStatementContext extends CompositeStatementContext
         Iterator<IndexRule> rules = ruleDiffSet.apply( committedRules.iterator() );
         IndexRule single = singleOrNull( rules );
         if ( single == null )
+        {
             throw new SchemaRuleNotFoundException( "Index rule for label:" + labelId + " and property:" +
                     propertyKey + " not found" );
+        }
         return single;
     }
 
@@ -185,12 +190,12 @@ public class TransactionStateStatementContext extends CompositeStatementContext
     {
         // If index is in our state, then return populating
         DiffSets<IndexRule> diffSet = state.getIndexRuleDiffSetsByLabel( indexRule.getLabel() );
-        if( diffSet.isAdded( indexRule) )
+        if ( diffSet.isAdded( indexRule ) )
         {
             return InternalIndexState.POPULATING;
         }
 
-        if( diffSet.isRemoved( indexRule ))
+        if ( diffSet.isRemoved( indexRule ) )
         {
             throw new IndexNotFoundKernelException( String.format( "Index for label id %d on property id %d has been " +
                     "dropped in this transaction.", indexRule.getLabel(), indexRule.getPropertyKey() ) );
@@ -219,23 +224,20 @@ public class TransactionStateStatementContext extends CompositeStatementContext
         // Start with nodes where the given property has changed
         DiffSets<Long> diff = state.getNodesWithChangedProperty( idx.getPropertyKeyId(), value );
 
-        // Filter out deleted nodes
-        diff.removeAll( state.getDeletedNodes() );
-
         // Ensure remaining nodes have the correct label
         diff = diff.filterAdded( new HasLabelFilter( idx.getLabelId() ) );
 
         // Include newly labeled nodes that already had the correct property
         HasPropertyFilter hasPropertyFilter = new HasPropertyFilter( idx.getPropertyKeyId(), value );
-        Iterable<Long> addedNodesWithLabel = state.getNodesWithLabelAdded( idx.getLabelId() );
+        Iterator<Long> addedNodesWithLabel = state.getNodesWithLabelAdded( idx.getLabelId() ).iterator();
         diff.addAll( Iterables.filter( hasPropertyFilter, addedNodesWithLabel ) );
 
         // Remove de-labeled nodes that had the correct value before
-        Iterable<Long> removedNodesWithLabel = state.getNodesWithLabelRemoved( idx.getLabelId() );
-        diff.removeAll( Iterables.filter( hasPropertyFilter, removedNodesWithLabel ) );
+        Set<Long> removedNodesWithLabel = state.getNodesWithLabelChanged( idx.getLabelId() ).getRemoved();
+        diff.removeAll( Iterables.filter( hasPropertyFilter, removedNodesWithLabel.iterator() ) );
 
         // Apply to actual index lookup
-        return diff.apply( delegate.exactIndexLookup( indexId, value ) );
+        return state.getDeletedNodes().apply( diff.apply( delegate.exactIndexLookup( indexId, value ) ) );
     }
 
     private class HasPropertyFilter implements Predicate<Long>

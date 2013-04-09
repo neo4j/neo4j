@@ -24,23 +24,13 @@ package org.neo4j.kernel.api;
  * Actual changes are made in the {@link #newStatementContext() statements}
  * created from this transaction context. Changes made within a transaction
  * are visible to all operations within it.
- * 
- * Usage of a transaction context:
- * <ol>
- *   <li>get a {@link #newStatementContext() statement} and use it</li>
- *   <li>in a finally-block: close the statement context</li>
- *   <li>(do these above two an arbitrary number of times)</li>
- *   <li>call {@link #success()} if all statements were successful</li>
- *   <li>call {@link #finish()} to commit (if {@link #success()} has been called)
- *       or roll back (if {@link #success()} hasn't or {@link #failure()} has been called</li>
- * </ol>
  */
 public interface TransactionContext
 {
     /**
      * Creates a new {@link StatementContext statement} which operations can be performed on.
      * When done it must be {@link StatementContext#close() closed}.
-     * 
+     *
      * @return a new {@link StatementContext} to do operations on.
      */
     StatementContext newStatementContext();
@@ -52,7 +42,7 @@ public interface TransactionContext
      * Writes the changes this transaction wants to perform down to disk. If this method
      * returns successfully, the database guarantees that we can recover this transaction
      * after a crash.
-     *
+     * <p/>
      * Normally, you should not use this, it is implicitly called by {@link #commit()}, but
      * it is a necessary thing if you are implementing two-phase commits.
      */
@@ -61,7 +51,7 @@ public interface TransactionContext
     /**
      * Commit this transaction, this will make the changes in this context visible to other
      * transactions.
-     *
+     * <p/>
      * If you have not called {@link #prepare()} before calling this method, the transaction
      * is implicitly prepared.
      */

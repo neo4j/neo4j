@@ -25,6 +25,7 @@ import static java.lang.reflect.Proxy.newProxyInstance;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.util.Iterator;
+
 import org.neo4j.helpers.Function;
 import org.neo4j.kernel.api.ConstraintViolationKernelException;
 import org.neo4j.kernel.api.EntityNotFoundException;
@@ -61,50 +62,68 @@ public class CompositeStatementContext implements StatementContext
     public CompositeStatementContext()
     {
         // If not given anything to delegate to, default to making all ops unsupported.
-        StatementContext unsupportedOpDelegate = (StatementContext)newProxyInstance(getClass().getClassLoader(),
-                new Class[]{StatementContext.class}, new InvocationHandler() {
+        StatementContext unsupportedOpDelegate = (StatementContext) newProxyInstance( getClass().getClassLoader(),
+                new Class[]{StatementContext.class}, new InvocationHandler()
+        {
             @Override
-            public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+            public Object invoke( Object proxy, Method method, Object[] args ) throws Throwable
+            {
                 String outerName = CompositeStatementContext.this.getClass().getSimpleName();
-                throw new UnsupportedOperationException(format("%s does not support %s.", outerName, method.getName()));
+                throw new UnsupportedOperationException( format( "%s does not support %s.", outerName,
+                        method.getName() ) );
             }
-        });
-        this.entityOperations   = unsupportedOpDelegate;
+        } );
+        this.entityOperations = unsupportedOpDelegate;
         this.propertyOperations = unsupportedOpDelegate;
-        this.labelOperations    = unsupportedOpDelegate;
-        this.schemaOperations   = unsupportedOpDelegate;
-        this.delegateToClose    = unsupportedOpDelegate;
+        this.labelOperations = unsupportedOpDelegate;
+        this.schemaOperations = unsupportedOpDelegate;
+        this.delegateToClose = unsupportedOpDelegate;
 
     }
 
     public CompositeStatementContext( StatementContext delegate )
     {
-        this.entityOperations   = delegate;
+        this.entityOperations = delegate;
         this.propertyOperations = delegate;
-        this.labelOperations    = delegate;
-        this.schemaOperations   = delegate;
-        this.delegateToClose    = delegate;
+        this.labelOperations = delegate;
+        this.schemaOperations = delegate;
+        this.delegateToClose = delegate;
     }
 
     public CompositeStatementContext( StatementContext delegate, SchemaOperations schemaOperations )
     {
-        this.entityOperations   = delegate;
+        this.entityOperations = delegate;
         this.propertyOperations = delegate;
-        this.labelOperations    = delegate;
-        this.schemaOperations   = schemaOperations;
-        this.delegateToClose    = delegate;
+        this.labelOperations = delegate;
+        this.schemaOperations = schemaOperations;
+        this.delegateToClose = delegate;
     }
 
     // Hook methods
 
-    protected void beforeOperation() {}
-    protected void afterOperation()  {}
+    protected void beforeOperation()
+    {
+    }
 
-    protected void beforeReadOperation() {}
-    protected void afterReadOperation()  {}
+    protected void afterOperation()
+    {
+    }
 
-    protected void beforeWriteOperation() {}
-    protected void afterWriteOperation()  {}
+    protected void beforeReadOperation()
+    {
+    }
+
+    protected void afterReadOperation()
+    {
+    }
+
+    protected void beforeWriteOperation()
+    {
+    }
+
+    protected void afterWriteOperation()
+    {
+    }
 
     //
     // META OPERATIONS
@@ -113,10 +132,11 @@ public class CompositeStatementContext implements StatementContext
     @Override
     public void close()
     {
-        if(delegateToClose != null)
+        if ( delegateToClose != null )
         {
             delegateToClose.close();
-        } else
+        }
+        else
         {
             throw new IllegalStateException( "Asked to close, but was not given a full implementation of statement " +
                     "context. Please either override this close method, or give CompositeStatementContext a full " +
@@ -415,5 +435,17 @@ public class CompositeStatementContext implements StatementContext
 
         afterOperation();
         return result;
+    }
+
+    @Override
+    public void deleteNode( long nodeId )
+    {
+        beforeOperation();
+        beforeWriteOperation();
+
+        entityOperations.deleteNode( nodeId );
+
+        afterWriteOperation();
+        afterOperation();
     }
 }

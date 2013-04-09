@@ -17,41 +17,28 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api;
+package org.neo4j.kernel.impl.api.state;
 
-import org.neo4j.kernel.api.StatementContext;
-import org.neo4j.kernel.api.TransactionContext;
+import org.neo4j.kernel.impl.api.DiffSets;
+import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 
-public class DelegatingTransactionContext implements TransactionContext
+public class LabelState extends EntityState
 {
-    protected final TransactionContext delegate;
+    private final DiffSets<Long> nodeDiffSets = new DiffSets<Long>();
+    private final DiffSets<IndexRule> indexRuleDiffSets = new DiffSets<IndexRule>();
 
-    public DelegatingTransactionContext( TransactionContext delegate )
+    public LabelState( long id )
     {
-        this.delegate = delegate;
+        super( id );
     }
 
-    @Override
-    public StatementContext newStatementContext()
+    public DiffSets<Long> getNodeDiffSets()
     {
-        return delegate.newStatementContext();
+        return nodeDiffSets;
     }
 
-    @Override
-    public void prepare()
+    public DiffSets<IndexRule> getIndexRuleDiffSets()
     {
-        delegate.prepare();
-    }
-
-    @Override
-    public void commit()
-    {
-        delegate.commit();
-    }
-
-    @Override
-    public void rollback()
-    {
-        delegate.rollback();
+        return indexRuleDiffSets;
     }
 }

@@ -35,6 +35,7 @@ import org.neo4j.kernel.api.ConstraintViolationKernelException;
 import org.neo4j.kernel.api.StatementContext;
 import org.neo4j.kernel.api.TransactionContext;
 import org.neo4j.kernel.impl.api.state.TxState;
+import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 
@@ -51,16 +52,17 @@ public class StateHandlingTransactionContextTest
         StatementContext innerStatementContext = mock( StatementContext.class );
 
         // GIVEN A TRANSACTION CONTEXT
-        TransactionContext inner = mock(TransactionContext.class);
+        TransactionContext inner = mock( TransactionContext.class );
         when( inner.newStatementContext() ).thenReturn( innerStatementContext );
-        PersistenceCache persistenceCache = mock(PersistenceCache.class);
+        PersistenceCache persistenceCache = mock( PersistenceCache.class );
         TransactionState oldState = null;
         TxState txState = mock( TxState.class );
         when( txState.haveIndexesBeenDropped() ).thenReturn( true );
         SchemaCache schemaCache = null;
 
         StateHandlingTransactionContext transactionContext =
-                new StateHandlingTransactionContext( inner, txState, persistenceCache, oldState, schemaCache, schemaState );
+                new StateHandlingTransactionContext( inner, txState, persistenceCache, oldState,
+                        schemaCache, schemaState, mock( NodeManager.class ) );
 
         // GIVEN A STATEMENT CONTEXT DERIVED FROM THE TRANSACTION CONTEXT
         StatementContext statementContext = transactionContext.newStatementContext();

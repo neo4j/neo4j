@@ -53,7 +53,7 @@ public class ThreadToStatementContextBridge
     public StatementContext getCtxForWriting()
     {
         StatementContext ctx = getStatementContext();
-        if(ctx != null)
+        if ( ctx != null )
         {
             return ctx;
         }

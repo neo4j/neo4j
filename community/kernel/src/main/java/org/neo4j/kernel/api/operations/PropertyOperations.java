@@ -47,7 +47,6 @@ public interface PropertyOperations
     /**
      * Returns the value of the property given it's property key id for the node with the given node id
      */
-    Object getNodePropertyValue( long nodeId, long propertyId)
+    Object getNodePropertyValue( long nodeId, long propertyId )
             throws PropertyKeyIdNotFoundException, PropertyNotFoundException, EntityNotFoundException;
-
 }
