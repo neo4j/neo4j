@@ -206,7 +206,7 @@ public class StoreUpgraderTestIT
 
     private StoreUpgrader newUpgrader( UpgradeConfiguration config, StoreMigrator migrator, DatabaseFiles files )
     {
-        return new StoreUpgrader( defaultConfig(), StringLogger.DEV_NULL, config, new UpgradableDatabase(fileSystem), migrator,
+        return new StoreUpgrader( defaultConfig(), config, new UpgradableDatabase(fileSystem), migrator,
                 files, new DefaultIdGeneratorFactory(), fileSystem );
     }
 

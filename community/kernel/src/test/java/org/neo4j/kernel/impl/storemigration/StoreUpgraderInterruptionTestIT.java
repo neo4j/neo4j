@@ -39,7 +39,6 @@ import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
 import org.neo4j.kernel.impl.storemigration.monitoring.SilentMigrationProgressMonitor;
-import org.neo4j.kernel.impl.util.StringLogger;
 
 public class StoreUpgraderInterruptionTestIT
 {
@@ -83,7 +82,7 @@ public class StoreUpgraderInterruptionTestIT
     
     private StoreUpgrader newUpgrader( StoreMigrator migrator, DatabaseFiles files )
     {
-        return new StoreUpgrader( defaultConfig(), StringLogger.DEV_NULL, alwaysAllowed(), new UpgradableDatabase(fileSystem), migrator,
+        return new StoreUpgrader( defaultConfig(), alwaysAllowed(), new UpgradableDatabase(fileSystem), migrator,
                 files, defaultIdGeneratorFactory(), defaultFileSystemAbstraction() );        
     }
 

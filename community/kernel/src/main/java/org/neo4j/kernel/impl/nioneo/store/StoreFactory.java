@@ -131,7 +131,7 @@ public class StoreFactory
 
     private void tryToUpgradeStores( File fileName )
     {
-        new StoreUpgrader(config, stringLogger, new ConfigMapUpgradeConfiguration(config),
+        new StoreUpgrader(config, new ConfigMapUpgradeConfiguration(config),
                 new UpgradableDatabase( fileSystemAbstraction ),
                 new StoreMigrator( new VisibleMigrationProgressMonitor( stringLogger, System.out ) ),
                 new DatabaseFiles( fileSystemAbstraction ),
